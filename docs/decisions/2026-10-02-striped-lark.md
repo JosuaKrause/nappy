@@ -170,3 +170,17 @@ git log -1 -- {}` was refused as an unreadable push. The table now holds paralle
 (`--open-tty`) and `--process-slot-var`. A read under an option still missing is a false deny,
 fixed by adding the option; rerunning it under the coder identity would put a read under a
 write identity.
+
+**Input can supply a `gh api` write.** `gh api` chooses its method from its flags, and input
+appended after the written words can add `-X PUT`, `-f title=x` or `--input`: `echo "-X PUT" |
+xargs gh api repos/o/r/pulls/3/merge` merges PR 3. A written `-X GET` does not settle it, since
+gh takes the last `-X`. Under an input wrapper a call the guard would read as a read is therefore
+a write, "gh api with input-supplied arguments", unless input cannot add a flag: every active
+wrapper places its input at a replacement token (xargs `-I`/`-i`/`-J`, parallel's `{}` or its `-I`
+token), a word of the call holds that token, and no word starts with it, since `-I{} gh api {}` can
+receive `-XPUT` as one whole argument. So `xargs -I{} gh api repos/o/r/pulls/{}/comments` stays a
+read. A GraphQL call under input is always a write, because input placed in its query can add a
+mutation. The denial can merge, so a reviewer wrapper cannot exempt it. Denying every `gh api`
+under input was the simpler fix and was not taken: it would also deny the replacement-token reads
+an agent writes to walk a list of pull requests. A call that uses only parallel's other
+replacement strings (`{.}`, `{/}`) counts as appending input, a false deny open to correction.

@@ -76,7 +76,12 @@
 # only ever adds words, so `land-prs.sh`/`update-pr.sh` with a written `--dry-run` stay reads. These
 # are denied rather than asked about; the coder identity
 # wrapper's exemption still applies. An unreadable gh noun/verb can merge, so reviewer wrappers
-# cannot exempt it, just as they cannot exempt an unreadable git push.
+# cannot exempt it, just as they cannot exempt an unreadable git push. A `gh api` call such a
+# wrapper runs is a write unless input cannot add a flag to it (`input_supplies_gh_api`): `echo
+# "-X PUT" | xargs gh api repos/o/r/pulls/3/merge` merges, and a written `-X GET` is overridden by a
+# later one. It reads only when input lands at a replacement token inside a word of the call
+# (`xargs -I{} gh api repos/o/r/pulls/{}/comments`); a GraphQL call there always writes. That
+# denial can merge too, so reviewer wrappers cannot exempt it either.
 # A backslash-escaped separator outside quotes (`xargs -d \; git push origin`) is an argument the
 # shell hands to the wrapper, so it neither ends the wrapper's command nor leaves an option
 # without its value; inside a quoted script a soft separator still ends the script's own command.
@@ -533,7 +538,10 @@ def input_scan($w; $g; $i):
   | def word_end($p):
       if $g == null or $p >= $n then $p + 1
       elif $level == 0 then $g.ends[$p].z elif $level == 1 then $g.ends[$p].o else $p + 1 end;
-    {command: ($i + 1), replacements: [], unreadable: false, done: false}
+    # GNU parallel replaces `{}` unless `-I` renames it, and appends input only to a command
+    # holding no replacement string.
+    {command: ($i + 1), replacements: (if $owner == "parallel" then ["{}"] else [] end),
+     unreadable: false, done: false}
   | until(.done or .command >= $n or ($w[.command] | is_sep)
           or ($w[.command] | startswith("-") | not);
       .command as $p | $w[$p] as $x | word_end($p) as $e
@@ -601,7 +609,9 @@ def xargs_context($w; $lv; $unsure; $inputs):
        | . + [($inputs[$i] + {level: $level})]
      else . end;
      {active: (length > 0), unreadable: any(.[]; .unreadable),
-      replacements: [.[].replacements[] | select(. != "")]})];
+      replacements: [.[].replacements[] | select(. != "")],
+      # Every active wrapper places its input at a replacement token rather than appending it.
+      replacing: (length > 0 and all(.[]; any(.replacements[]; . != "")))})];
 
 # `git <subcommand>`: push, and every subcommand that can create a commit under the invoking
 # user's own name -- commit always; cherry-pick/revert/am/merge/rebase/pull unless they carry an
@@ -1014,7 +1024,9 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
       {next: $r.resume, reason: (if $r.merge_type then "gh api merge-type" else "gh api" end)}
     else {next: $r.resume, reason: null}
     end
-  | .scan_end = (if $r.crossed_at == null then null else $r.i end);
+  | .scan_end = (if $r.crossed_at == null then null else $r.i end)
+  | .end = $r.i
+  | .graphql = (($r.endpoint // "") | test("(?i)(^|/)graphql$"));
 
 # Every `gh` noun writes unless its verb is on one shared list of reads (`view`, `list`, `status`,
 # `diff`, `checks`, `checkout` -- `gh pr`'s own local-only checkout -- `watch`, `download`,
@@ -1027,6 +1039,24 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
 # (`gh status | head`, `gh --version && gh auth status`) has no noun/verb there at all, not the
 # separator itself, so it never becomes part of a denial reason. A soft separator there is
 # unreadable: inside a quoted script it can be a substitution whose following write is hidden.
+# A `gh api` call that xargs or GNU parallel runs reads only when every flag it gets is written:
+# input appended to the call can add `-X PUT` or `-f k=v` after the written words, and a later
+# `-X` overrides a written `-X GET`. So the call is a write unless every active wrapper places its
+# input at a replacement token (xargs `-I`/`-i`/`-J`, parallel's `{}` or its `-I` token), a word of
+# the call holds that token, and no word starts with it (`-I{} gh api {}` can receive `-XPUT` as a
+# whole argument). A GraphQL call under input is always a write: input placed inside its query can
+# add a mutation.
+def input_supplies_gh_api($w; $t; $i; $from; $api):
+  ($t.xargs[$i] // {active: false, replacements: []}) as $input
+  | if ($input.active | not) then false
+    elif $api.graphql or ($input.replacing | not) then true
+    else
+      ($input.replacements) as $tokens
+      | [range($from; [$api.end, $from] | max) | $w[.]] as $words
+      | (any($words[]; . as $x | any($tokens[]; . as $tok | $x | contains($tok))) | not)
+        or any($words[]; . as $x | any($tokens[]; . as $tok | $x | startswith($tok)))
+    end;
+
 def generic_reads: ["view", "list", "status", "diff", "checks", "checkout", "watch", "download", "clone", "token"];
 def read_only_nouns: ["browse", "search"];
 def detect_gh($w; $t; $i; $n; $lm; $bounded):
@@ -1042,7 +1072,11 @@ def detect_gh($w; $t; $i; $n; $lm; $bounded):
       else
         ($w[$noun_i]) as $noun
         | if read_only_nouns | index($noun) then null
-          elif $noun == "api" then detect_gh_api($w; $t; $noun_i + 1; $n; $lm; $bounded)
+          elif $noun == "api" then
+            detect_gh_api($w; $t; $noun_i + 1; $n; $lm; $bounded) as $api
+            | if $api.reason == null and input_supplies_gh_api($w; $t; $i; $noun_i + 1; $api)
+              then $api | .reason = "gh api with input-supplied arguments"
+              else $api end
           else
             (after_options($t; $noun_i + 1)) as $verb_i
             | if unreadable_input_word($w; $t; $i; $verb_i; $n) then
@@ -1126,7 +1160,8 @@ def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
 def is_push_like($reason): ($reason | startswith("git push")) or ($reason | startswith("tools/"));
 def is_merge_like($reason):
   ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type")
-  or ($reason == "gh with an input-supplied noun or verb");
+  or ($reason == "gh with an input-supplied noun or verb")
+  or ($reason == "gh api with input-supplied arguments");
 
 # One pass over the word array: a hard separator resets the current command's exemption, and so
 # does a soft one when the wrapper stood inside quotes (`inner`) or the reading is `$unsure` (every

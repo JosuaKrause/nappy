@@ -112,6 +112,8 @@
 #     later separate branch pushes and coder identity wrappers keep their existing behavior
 #   - a backslash-escaped separator given as an input-wrapper option's value (xargs -d \;,
 #     parallel --colsep \|) is that value, not the end of the wrapper's command
+#   - a gh api call under xargs or parallel is a write unless its every flag is written: input
+#     placed only at a replacement token inside a word of the call; a GraphQL call there writes
 #   - common no-value options (parallel --tag, --pipe, -X, -m, --xargs; xargs -o) and value options
 #     (parallel --tagstring, xargs --process-slot-var) leave a read under them a read
 #   - input-wrapper clusters and values share one parser: flag-shaped values never select a new
@@ -1185,6 +1187,10 @@ assert_write_guard "reviewer-wrapped lowercase parallel replacement subcommand d
     'uv run python tools/agent-identity.py run codex-reviewer -- parallel -Icmd git cmd origin v1'
 assert_write_guard "input wrapper replacement invoking the reviewer wrapper denies" deny \
     'xargs -Icmd uv run python tools/agent-identity.py run codex-reviewer -- gh pr cmd 3'
+assert_write_guard "coder-wrapped gh api with input-supplied arguments allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- xargs gh api repos/o/r/issues'
+assert_write_guard "reviewer-wrapped gh api with input-supplied arguments can merge and denies" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- xargs gh api repos/o/r/pulls/3'
 
 # The shared input option parser keeps role policy after consuming clusters/values and when an
 # unknown option makes command position unreadable. The synthetic commands are only hook JSON.
@@ -2082,6 +2088,15 @@ write_guard_never_asked=(
     'xargs -E \; git push origin'
     "printf 'push;origin;v1' | xargs -d \\; git"
     "printf 'merge;3' | xargs -d \\; gh pr"
+    'echo "-X PUT" | xargs gh api repos/o/r/pulls/3/merge'
+    'echo "--method PUT" | xargs gh api repos/o/r/pulls/3/merge'
+    'printf %s\\n -X PUT repos/o/r/pulls/3/merge | xargs gh api'
+    'echo "-f title=x" | parallel gh api repos/o/r/issues'
+    'echo "-X POST -f body=x" | xargs gh api repos/o/r/issues/3/comments'
+    'echo "-X PUT" | xargs gh api -X GET repos/o/r/pulls/3/merge'
+    'echo -XPUT | xargs -I{} gh api {}'
+    'echo 3 | parallel gh api repos/o/r/pulls/{.}/comments'
+    "echo 3 | xargs -I{} gh api graphql -f query='query { a(n: {}) }'"
     'ls | parallel --tag git push origin {}'
     'ls | parallel --tagstring x git push origin'
     'ls | parallel --pipe git push origin'
@@ -2258,6 +2273,11 @@ write_guard_allowed=(
     'env MODE=test /usr/bin/xargs -0 -n 1 timeout 5 git show'
     'xargs -I{} sh -c "git status; git log --oneline {}"'
     "printf 'v1;v2' | xargs -d \\; git status"
+    'echo 3 | xargs gh pr view'
+    'parallel gh pr view ::: 1 2 3'
+    'echo 3 | xargs -I{} gh api repos/o/r/pulls/{}/comments'
+    'echo 3 | xargs -I{} gh api -X GET repos/o/r/pulls/{} --jq .title'
+    'echo 3 | parallel gh api repos/o/r/pulls/{}/comments'
     'ls | parallel --tag git log -1 -- {}'
     'ls | parallel --tagstring x gh pr view {}'
     'ls | parallel --pipe git status'
