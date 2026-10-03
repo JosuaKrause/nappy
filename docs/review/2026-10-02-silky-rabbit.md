@@ -9,7 +9,8 @@ If stepping remains the default, retain this review. If it remains behind a
 default-off debug dev flag, retain this review for the optional enabled path and
 its comparison with the default atomic path. A useful comparison uses the same
 route and settings in atomic and stepped builds, or both positions of the dev
-flag. This is a controlled comparison that the existing mobile observation does
+flag, switched on the phone through `?debug=1` on the released page
+([choose-runtime](../todo/2026-10-02-breezy-walrus/choose-runtime.md) says how the flag gets there). This is a controlled comparison that the existing mobile observation does
 not supply; it does not repeat the already answered unpaired perception question.
 
 For either retained-stepping option, use the same ordinary run as M159 in the browser and on

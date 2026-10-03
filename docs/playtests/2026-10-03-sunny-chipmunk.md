@@ -329,8 +329,24 @@ After the review identifies phone profiling as unavailable, the player adds:
 
 ## Phone profiling is optional
 
-In response to the proposal to retain USB Android Chrome remote debugging as an
-optional method, and the finding that the older baseline still required phone timings,
-the player says:
+Said in conversation, 2026-10-03, not in a PR comment. The proposal it answers: keep USB
+remote debugging of the phone's Chrome tab from a computer as an optional way to profile on
+the phone; and a review finding that the baked-pages baseline item still required phone
+timings. The player says:
 
 > phone profiling would be a nice to have but honestly a quick eye test is good enough. although it doesn't actually tell us how we could improve things and what the exact bottlenecks are -- let's record the ideas here -- maybe we will do them
+
+## The live readout as a phone method, and the dev flag on a release page
+
+Said in conversation, 2026-10-03, while the orchestrating session fixed this PR against the
+player's review. It had asked whether the released page's own readout (`?debug=1` for fps, draw
+calls and process and physics milliseconds; `&skip=<word>` to subtract one system), with which M124
+and M139 measured the phone, should join the recorded phone methods. The player says:
+
+> add the screenshot way as alternative for phone testing but it's not a complete benchmark it's a hack
+
+It had also said that a dev flag cannot be switched on the phone's released page, and asked
+whether the stepping flag should say it works in debug builds only or join what `?debug=1` opens
+on a release page. The player says:
+
+> no debug already works on real release builds -- I can do debug=1&day=7 and start at day 7

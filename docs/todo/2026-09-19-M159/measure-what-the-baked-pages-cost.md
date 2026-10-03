@@ -11,6 +11,8 @@ predates every atlas path, and the native-host evidence supports neither worker 
 larger pages.
 
 The phone check is a quick eye test; phone timing collection is optional and does not
-block this baseline or subsequent attribution work. The possible profiling methods in
+block this baseline or subsequent attribution work
+([sunny-chipmunk](../../playtests/2026-10-03-sunny-chipmunk.md): "phone profiling would be a
+nice to have but honestly a quick eye test is good enough"). The possible methods in
 [the stutter investigation](profile-the-current-phone-build-only.md) are retained ideas,
 not required device setup. An eye test judges perceived smoothness, not exact bottlenecks.
