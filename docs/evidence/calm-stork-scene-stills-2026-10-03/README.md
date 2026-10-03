@@ -11,7 +11,8 @@ false; the separate headless manifest proves that the complete scripted action p
 |---|---|---|
 | `power-station-hall`, `power-station-yard` | `8941448c` | Real adjoining dead-end walls: the hall covers the facade, the fenced yard keeps it. |
 | `trailer-choice` | `acbbe1b8` | A populated alternate street after the mother's wrong-way approach and backtrack. |
-| `trailer-blower`, `trailer-dog`, `trailer-title`, `trailer-gatehouse` | `90632de9` | Ordinary day activity around the father and blower, mother and charging dog, title, and father approaching a horizontal gate. |
+| `trailer-blower` | `177191c8` | The father and selected leaf blower beside an industrial facade with manually placed existing duct, HVAC and vent fixtures. |
+| `trailer-dog`, `trailer-title`, `trailer-gatehouse` | `90632de9` | Ordinary day activity around the mother and charging dog, title, and father approaching a horizontal gate. |
 | `trailer-trucks`, `trailer-chase` | `b148986e` | Three army trucks beside the south-facing mother with varied posters on both buildings; a visible carrying stride beside a pursuing guard. |
 | `trailer-city` | `a23858a4` | The complete active city after zooming out from the mother's doorstep. |
 
@@ -20,6 +21,13 @@ Sources are reachable through PR #457. Godot 4.7.2 stable, macOS Apple M2, Compa
 `tools/scene-recipes.sh --recipe scene-recipes/NAME.json --screenshots --output /tmp/new-scene`.
 The command uses `--player-view`, `--no-save`, scripted playback and the saved `capture_at`.
 Fetch `refs/pull/457/head` when a source revision is absent locally. No video is made.
+
+The blower preview selects its event explicitly, with no normal scheduler or additional seals.
+Its full ordinary crowd records 32 visible walkers (24 left, 8 right), four visible cars and
+the single selected leaf blower at capture tick 15. The source checkout has only unrelated
+queue/playtest documentation edits during capture; runtime and recipe sources match the named
+revision. The capture uses no invincibility. The industrial roof and north-side approach are
+composition choices for review.
 
 The close ordinary-day scenes use the production day's crowd counts, catalogue budget and
 director. Pinned recurring events reserve their ordinary budget before other events are placed.

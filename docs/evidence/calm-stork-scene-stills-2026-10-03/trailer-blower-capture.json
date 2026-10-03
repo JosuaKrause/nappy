@@ -1,12 +1,12 @@
 {
 	"anchors": {
 		"blower": [
-			2096.0,
-			1936.0
+			2160.0,
+			1360.0
 		],
 		"start": [
-			1950.0,
-			1936.0
+			2048.0,
+			1360.0
 		]
 	},
 	"authored_posters": [],
@@ -17,19 +17,20 @@
 		160
 	],
 	"capture_activity": {
-		"moving_crowd": 37,
-		"visible_cars": 6,
+		"moving_crowd": 36,
+		"visible_cars": 4,
 		"visible_events": {
-			"cafe_tables": 2,
 			"leaf_blower": 1
 		},
-		"visible_walkers": 33
+		"visible_walkers": 32,
+		"walkers_left": 24,
+		"walkers_right": 8
 	},
 	"capture_actors": {
 		"blower": {
 			"position": [
-				2096.0,
-				1952.0
+				2160.0,
+				1376.0
 			],
 			"pursuing": false,
 			"row": "leaf_blower",
@@ -39,51 +40,51 @@
 			"carrying": false,
 			"gait_frame": 2,
 			"position": [
-				1990.6953,
-				1942.2195
+				2089.4666,
+				1364.5001
 			],
 			"speed": 92.0
 		}
 	},
 	"capture_camera": {
 		"position": [
-			1990.6953125,
-			1942.21948242188
+			2089.46655273438,
+			1364.50012207031
 		],
 		"zoom": 2.0
 	},
 	"capture_crowd": {
 		"cars": 34,
-		"moving": 231,
+		"moving": 233,
 		"moving_cars": 33,
 		"quadrants": {
 			"ne": {
-				"cars": 2,
-				"moving": 17,
-				"moving_cars": 2,
-				"total": 17,
-				"walkers": 15
+				"cars": 3,
+				"moving": 33,
+				"moving_cars": 3,
+				"total": 33,
+				"walkers": 30
 			},
 			"nw": {
-				"cars": 23,
-				"moving": 177,
-				"moving_cars": 22,
-				"total": 180,
-				"walkers": 157
+				"cars": 31,
+				"moving": 199,
+				"moving_cars": 30,
+				"total": 200,
+				"walkers": 169
 			},
 			"se": {
-				"cars": 1,
-				"moving": 6,
-				"moving_cars": 1,
-				"total": 6,
-				"walkers": 5
+				"cars": 0,
+				"moving": 1,
+				"moving_cars": 0,
+				"total": 1,
+				"walkers": 1
 			},
 			"sw": {
-				"cars": 8,
-				"moving": 31,
-				"moving_cars": 8,
-				"total": 31,
-				"walkers": 23
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
 			}
 		},
 		"scope": "local",
@@ -105,19 +106,18 @@
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"initial_activity": {
-		"moving_crowd": 11,
-		"visible_cars": 2,
-		"visible_events": {
-			"scaffolding": 1,
-			"skip": 1
-		},
-		"visible_walkers": 9
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 0,
+		"walkers_left": 0,
+		"walkers_right": 0
 	},
 	"initial_actors": {
 		"blower": {
 			"position": [
-				2096.0,
-				1952.0
+				2160.0,
+				1376.0
 			],
 			"pursuing": false,
 			"row": "leaf_blower",
@@ -127,8 +127,8 @@
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				1950.0,
-				1936.0
+				2048.0,
+				1360.0
 			],
 			"speed": 0.0
 		}
@@ -139,38 +139,51 @@
 		"moving_cars": 34,
 		"quadrants": {
 			"ne": {
-				"cars": 2,
-				"moving": 16,
-				"moving_cars": 2,
-				"total": 16,
-				"walkers": 14
+				"cars": 5,
+				"moving": 30,
+				"moving_cars": 5,
+				"total": 30,
+				"walkers": 25
 			},
 			"nw": {
-				"cars": 26,
-				"moving": 186,
-				"moving_cars": 26,
-				"total": 186,
-				"walkers": 160
+				"cars": 29,
+				"moving": 204,
+				"moving_cars": 29,
+				"total": 204,
+				"walkers": 175
 			},
 			"se": {
-				"cars": 1,
-				"moving": 4,
-				"moving_cars": 1,
-				"total": 4,
-				"walkers": 3
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
 			},
 			"sw": {
-				"cars": 5,
-				"moving": 28,
-				"moving_cars": 5,
-				"total": 28,
-				"walkers": 23
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
 			}
 		},
 		"scope": "local",
 		"total": 234,
 		"walkers": 200
 	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				2160.0,
+				1360.0
+			],
+			"row": "leaf_blower"
+		}
+	],
 	"observations": [
 		{
 			"condition": "moving",
@@ -179,8 +192,8 @@
 				"carrying": false,
 				"gait_frame": 0,
 				"position": [
-					1963.0955,
-					1942.2195
+					2061.8667,
+					1364.5001
 				],
 				"speed": 92.0
 			},
@@ -194,8 +207,8 @@
 				"carrying": false,
 				"gait_frame": 2,
 				"position": [
-					1990.6953,
-					1942.2195
+					2089.4666,
+					1364.5001
 				],
 				"speed": 92.0
 			},
@@ -206,13 +219,12 @@
 	"physics_ticks_per_second": 30,
 	"playback_complete": false,
 	"recipe": "An early danger on the father's walk",
-	"recipe_sha256": "720ba31963622bd86a6cda1dc42feaf027fd2004540b6de3e16d7e13eefd8b2b",
+	"recipe_sha256": "38060921b84b67e5961003471b0a89a18da3b986349f61941307b0b110ceea57",
 	"scope": "full",
 	"seed": 11,
 	"setup": {
 		"background": {
-			"crowd": true,
-			"events": true
+			"crowd": true
 		},
 		"day": 1.0,
 		"events": [
@@ -228,6 +240,46 @@
 			"at": "start",
 			"facing": "east"
 		},
+		"roof_fixtures": [
+			{
+				"fixtures": [
+					{
+						"cell": [
+							1.0,
+							2.0
+						],
+						"kind": "duct_straight"
+					},
+					{
+						"cell": [
+							2.0,
+							3.0
+						],
+						"kind": "duct_corner"
+					},
+					{
+						"cell": [
+							5.0,
+							2.0
+						],
+						"kind": "hvac_b"
+					},
+					{
+						"cell": [
+							5.0,
+							4.0
+						],
+						"kind": "vent"
+					}
+				],
+				"lot": [
+					62.0,
+					34.0,
+					8.0,
+					8.0
+				]
+			}
+		],
 		"tutorial_complete": true
 	},
 	"violations": []
