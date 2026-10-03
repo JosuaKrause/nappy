@@ -164,12 +164,16 @@ _rig_flag_table() {
 # the keyboard -- what decides whether run.sh adds --disable-vsync and wraps the launch in the
 # external kill below; shot.sh is always a rig and never has to ask.
 rig_flag_present() {
-    local tok
+    local tok recipe="" mode="free" previous=""
     for tok in "$@"; do
+        [[ "$previous" == --recipe ]] && recipe="$tok"
+        [[ "$previous" == --recipe-mode ]] && mode="$tok"
         if grep -qxF -e "$tok" <(_rig_flag_table); then
             return 0
         fi
+        previous="$tok"
     done
+    [[ -n "$recipe" && "$mode" == scripted ]] && return 0
     return 1
 }
 

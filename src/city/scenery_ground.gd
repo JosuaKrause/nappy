@@ -45,7 +45,7 @@ func keys_in(view: Rect2) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	var extent := Rect2(Vector2.ZERO, _city.map.world_size()).grow(
 			City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)
-	var clipped := view.intersection(extent)
+	var clipped := view if _city.map.recipe_exterior else view.intersection(extent)
 	if not clipped.has_area():
 		return result
 	var lo := Vector2i((clipped.position / CHUNK_PX).floor())

@@ -1,0 +1,408 @@
+{
+	"anchors": {
+		"blower": [
+			2096.0,
+			1936.0
+		],
+		"start": [
+			1952.0,
+			1936.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 36,
+		"visible_cars": 1,
+		"visible_events": {
+			"leaf_blower": 1
+		},
+		"visible_walkers": 36,
+		"walker_streets": {
+			"h4": {
+				"moving": 21,
+				"walkers": 21
+			},
+			"v4": {
+				"moving": 5,
+				"walkers": 5
+			},
+			"v5": {
+				"moving": 10,
+				"walkers": 10
+			}
+		},
+		"walkers_left": 14,
+		"walkers_right": 22
+	},
+	"final_actors": {
+		"obstacle": {
+			"position": [
+				2096.0,
+				1952.0
+			],
+			"pursuing": false,
+			"row": "leaf_blower",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2195.7202,
+				1812.9341
+			],
+			"speed": 62.0
+		}
+	},
+	"final_crowd": {
+		"cars": 34,
+		"moving": 427,
+		"moving_cars": 27,
+		"quadrants": {
+			"ne": {
+				"cars": 3,
+				"moving": 86,
+				"moving_cars": 3,
+				"total": 86,
+				"walkers": 83
+			},
+			"nw": {
+				"cars": 26,
+				"moving": 287,
+				"moving_cars": 19,
+				"total": 294,
+				"walkers": 268
+			},
+			"se": {
+				"cars": 1,
+				"moving": 20,
+				"moving_cars": 1,
+				"total": 20,
+				"walkers": 19
+			},
+			"sw": {
+				"cars": 4,
+				"moving": 34,
+				"moving_cars": 4,
+				"total": 34,
+				"walkers": 30
+			}
+		},
+		"scope": "local",
+		"total": 434,
+		"walkers": 400
+	},
+	"initial_activity": {
+		"moving_crowd": 25,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 25,
+		"walker_streets": {
+			"h6": {
+				"moving": 11,
+				"walkers": 11
+			},
+			"v5": {
+				"moving": 8,
+				"walkers": 8
+			},
+			"v6": {
+				"moving": 6,
+				"walkers": 6
+			}
+		},
+		"walkers_left": 13,
+		"walkers_right": 12
+	},
+	"initial_actors": {
+		"obstacle": {
+			"position": [
+				2096.0,
+				1952.0
+			],
+			"pursuing": false,
+			"row": "leaf_blower",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				1952.0,
+				1936.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 34,
+		"moving": 434,
+		"moving_cars": 34,
+		"quadrants": {
+			"ne": {
+				"cars": 3,
+				"moving": 63,
+				"moving_cars": 3,
+				"total": 63,
+				"walkers": 60
+			},
+			"nw": {
+				"cars": 28,
+				"moving": 299,
+				"moving_cars": 28,
+				"total": 299,
+				"walkers": 271
+			},
+			"se": {
+				"cars": 0,
+				"moving": 10,
+				"moving_cars": 0,
+				"total": 10,
+				"walkers": 10
+			},
+			"sw": {
+				"cars": 3,
+				"moving": 62,
+				"moving_cars": 3,
+				"total": 62,
+				"walkers": 59
+			}
+		},
+		"scope": "local",
+		"total": 434,
+		"walkers": 400
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				2576.0,
+				1840.0
+			],
+			"row": "cafe_tables"
+		},
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				2576.0,
+				1936.0
+			],
+			"row": "cafe_tables"
+		},
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				2096.0,
+				1936.0
+			],
+			"row": "leaf_blower"
+		}
+	],
+	"observations": [
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					1975.0667,
+					1936.0
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 9.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					2039.4663,
+					1936.0
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 30.0
+		},
+		{
+			"at": [
+				2040.0,
+				1936.0
+			],
+			"condition": "near",
+			"distance": 30.0,
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					2039.4663,
+					1936.0
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 30.0
+		},
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"position": [
+					2096.0,
+					1952.0
+				],
+				"pursuing": false,
+				"row": "leaf_blower",
+				"telegraphing": false
+			},
+			"subject": "obstacle",
+			"tick": 60.0
+		},
+		{
+			"at": [
+				1952.0,
+				1936.0
+			],
+			"condition": "near",
+			"distance": 45.0,
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 2,
+				"position": [
+					1968.6223,
+					1936.0
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 66.0
+		},
+		{
+			"at": [
+				2160.0,
+				1812.0
+			],
+			"condition": "near",
+			"distance": 30.0,
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					2162.9871,
+					1810.2673
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 175.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "A wrong path, a turn, and the other sidewalk",
+	"recipe_sha256": "ab71b1e92b04f6bfd4a80c4a72e4cf4a0005ca1cb177d2efa8fc73ba62b7d75b",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"background": {
+			"crowd": true,
+			"uniform_walkers": true,
+			"walker_multiplier": 2.0
+		},
+		"day": 1.0,
+		"events": [
+			{
+				"age": 1.8,
+				"at": "blower",
+				"name": "obstacle",
+				"row": "leaf_blower"
+			}
+		],
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "east"
+		},
+		"roof_fixtures": [
+			{
+				"fixtures": [
+					{
+						"cell": [
+							1.0,
+							3.0
+						],
+						"kind": "water_tank"
+					},
+					{
+						"cell": [
+							5.0,
+							3.0
+						],
+						"kind": "water_tank"
+					},
+					{
+						"cell": [
+							3.0,
+							1.0
+						],
+						"kind": "vent"
+					}
+				],
+				"lot": [
+					62.0,
+					48.0,
+					8.0,
+					8.0
+				]
+			}
+		],
+		"seals": [
+			{
+				"candidate": "cafe_pair",
+				"segment": [
+					5.0,
+					4.0,
+					0.0
+				]
+			}
+		],
+		"tutorial_complete": true
+	},
+	"violations": []
+}

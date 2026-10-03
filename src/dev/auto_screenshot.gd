@@ -107,6 +107,9 @@ const _OPPOSITE := {
 var _path := ""
 var _seconds_to_wait := DEFAULT_SECONDS
 var _elapsed := 0.0
+## A recipe's movement and screenshot share physics time; ordinary rigs retain their own clock.
+var simulation_clock: Callable
+var before_capture: Callable
 var _holding := ""
 ## The script's own currently-pressed direction, or `Vector2.ZERO` when no script step is
 ## holding anything — see `_hold_direction()` / `_release_direction()`. A separate field from
@@ -351,7 +354,10 @@ func _on_telegraphed(instance: EventInstance) -> void:
 	_flee_at = _elapsed + _dither
 
 func _process(delta: float) -> void:
-	_elapsed += delta
+	if simulation_clock.is_valid():
+		_elapsed = float(simulation_clock.call())
+	else:
+		_elapsed += delta
 	_advance_script()
 	if not _fled and _elapsed >= _flee_at:
 		_fled = true
@@ -452,6 +458,8 @@ func _turn_and_run() -> void:
 ## A window that exists but is not being drawn is the other half, and `drawn_frame()` below is what
 ## answers it.
 func _capture() -> void:
+	if before_capture.is_valid():
+		before_capture.call()
 	if not can_photograph(DisplayServer.get_name()):
 		printerr("[AutoScreenshot] nothing to photograph: this run is headless, so no frame is " +
 				"ever drawn and %s cannot be written. tools/shot.sh needs a display." % _path)

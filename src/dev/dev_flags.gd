@@ -74,6 +74,10 @@ extends RefCounted
 ##   --zoom-out      1?
 ##   --caption       1
 ##   --title-card    1
+##   --recipe        1
+##   --recipe-mode   1
+##   --recipe-validate 0
+##   --recipe-manifest 1
 ## END_DEV_FLAG_TABLE
 ##
 ## Which of the flags above mark a run as a **rig** rather than a person at the keyboard — the
@@ -320,6 +324,8 @@ static func active_args() -> PackedStringArray:
 ## the way `_validate_skip_words()` refuses an unknown `--skip` word. `0` is both that sentinel
 ## and the game's own behaviour of a fresh seed per run, so nothing is lost by sharing it.
 static func seed_override() -> int:
+	if not recipe_data.is_empty():
+		return int(recipe_data.get("seed", 1))
 	var args := _args()
 	var index := args.find("--seed")
 	if index != -1 and index + 1 < args.size():
@@ -353,6 +359,8 @@ static func _seed_from_query(query: String) -> int:
 ## flags"). `?day=N` with no `?debug=1` in the same query answers the ordinary "not given" default
 ## of `1` on a release page, the way every other flag in this bundle does.
 static func day_override() -> int:
+	if not recipe_data.is_empty():
+		return int(recipe_data.get("setup", {}).get("day", 1))
 	var args := _args()
 	var index := args.find("--day")
 	if index != -1 and index + 1 < args.size():
@@ -521,6 +529,8 @@ static func _blackout_from_query(query: String) -> bool:
 ## reaches the scene's third-floor default start the same way a debug build's `--start-escape`
 ## bare does, with no events, no crowd and no day clock either way.
 static func start_escape() -> bool:
+	if not recipe_data.is_empty():
+		return recipe_data.get("kind", "city") == "escape"
 	if "--start-escape" in _args():
 		return true
 	if not live_debug_requested():
@@ -551,6 +561,8 @@ static func _escape_from_query(query: String) -> bool:
 ## value — there is no other flag this could be confused with, since every value here is a fixed
 ## word rather than a number.
 static func start_escape_at() -> String:
+	if not recipe_data.is_empty():
+		return str(recipe_data.get("setup", {}).get("progression", {}).get("escape_part", "city"))
 	var args := _args()
 	var index := args.find("--start-escape")
 	if index == -1 or index + 1 >= args.size():
@@ -851,6 +863,8 @@ static func player_view_requested() -> bool:
 ## the reasoning `_validate_skip_words()` gives — a shot of the wrong parent that said nothing
 ## about it would be the one failure the shot list exists to rule out.
 static func parent_override() -> String:
+	if not recipe_data.is_empty():
+		return str(recipe_data.get("setup", {}).get("parent", "mother"))
 	var args := _args()
 	var index := args.find("--parent")
 	if index == -1 or index + 1 >= args.size():
@@ -926,7 +940,21 @@ const _RIG_FLAGS := ["--screenshot", "--walk", "--flee", "--press", "--tap", "--
 ## asks the same question for telemetry's sake and must never disagree with this: both read
 ## `active_args()`/`_args()` against the identical set of flags (this file's one list, above).
 static func is_rig() -> bool:
-	return _is_rig_from_args(_args()) or recording()
+	return _is_rig_from_args(_args()) or recording() or recipe_scripted()
+
+## The validated recipe is installed before either boot path makes a run. It never changes argv,
+## so a free-play recipe still has real controls and no recording deadline.
+static var recipe_data: Dictionary = {}
+
+static func recipe_path() -> String:
+	return _word_after("--recipe")
+
+static func recipe_mode() -> String:
+	var mode := _word_after("--recipe-mode")
+	return "free" if mode.is_empty() else mode
+
+static func recipe_scripted() -> bool:
+	return not recipe_path().is_empty() and recipe_mode() == "scripted"
 
 static func _is_rig_from_args(args: PackedStringArray) -> bool:
 	for flag in _RIG_FLAGS:

@@ -95,6 +95,10 @@ assert_exit "ci-costs.sh --help"   zero ./tools/ci-costs.sh --help
 assert_exit "ci-costs.sh -h"       zero ./tools/ci-costs.sh -h
 assert_exit "check.sh --help"      zero ./tools/check.sh --help
 assert_exit "check.sh -h"          zero ./tools/check.sh -h
+assert_exit "scene-recipes.sh --help" zero ./tools/scene-recipes.sh --help
+assert_exit "scene-recipes.sh -h" zero ./tools/scene-recipes.sh -h
+assert_exit "scene-recipes.sh unknown" nonzero ./tools/scene-recipes.sh --not-a-flag
+assert_exit "scene-recipes.sh missing value" nonzero ./tools/scene-recipes.sh --recipe
 assert_exit "measure-ground-frames.sh --help" zero ./tools/measure-ground-frames.sh --help
 assert_exit "measure-ground-frames.sh -h" zero ./tools/measure-ground-frames.sh -h
 assert_exit "measure-ground-frames.sh unknown" nonzero ./tools/measure-ground-frames.sh --not-a-flag
@@ -236,11 +240,16 @@ assert_exit "run.sh --bogus"          nonzero ./tools/run.sh --bogus
 assert_exit "shot.sh --bogus"         nonzero ./tools/shot.sh "$work_dir/shot-out.png" 1 --bogus
 assert_exit "trailer.sh --bogus"      nonzero ./tools/trailer.sh --bogus
 assert_exit "trailer.sh --shot (missing name)" nonzero ./tools/trailer.sh --shot
+assert_exit "trailer.sh --check-load (missing name)" nonzero ./tools/trailer.sh --check-load
+assert_exit "trailer.sh --validate --shot (combined)" nonzero ./tools/trailer.sh --validate --shot choice
 assert_exit "trailer.sh --list --shot (combined)" nonzero ./tools/trailer.sh --list --shot choice
 assert_exit "record.sh --bogus"       nonzero ./tools/record.sh --bogus
 assert_exit "record.sh (no flags)"    nonzero ./tools/record.sh
 assert_exit "record.sh --this-is-not-a-dev-flag" nonzero ./tools/record.sh --this-is-not-a-dev-flag
 assert_exit "record.sh --out (missing name)" nonzero ./tools/record.sh --out
+assert_exit "record.sh --out --recipe (missing name)" nonzero ./tools/record.sh --out --recipe scene.json
+assert_exit "record.sh --recipe-validate (owned)" nonzero ./tools/record.sh --recipe-validate
+assert_exit "record.sh refuses free recipe before launch" nonzero env GODOT=/missing/godot ./tools/record.sh --recipe scene.json --recipe-mode free
 assert_exit "stats.sh --bogus"        nonzero ./tools/stats.sh --bogus
 assert_exit "telemetry.sh --bogus"    nonzero ./tools/telemetry.sh --bogus
 assert_exit "clip.sh --bogus"         nonzero ./tools/clip.sh --bogus
@@ -460,6 +469,35 @@ while read -r flag; do
 done < <(dev_flag_names)
 
 # --------------------- tools/trailer.sh's kill deadline follows the shot's length, not the day's ---
+checks=$(( checks + 1 ))
+if rig_flag_present --recipe scene.json --recipe-mode scripted \
+    && ! rig_flag_present --recipe scene.json \
+    && ! rig_flag_present --recipe-mode free --recipe scene.json; then
+    echo "ok   scripted recipes are supervised while free recipes keep physical input"
+else
+    echo "FAIL recipe rig detection disagrees with the game" >&2
+    failures=$(( failures + 1 ))
+fi
+
+checks=$(( checks + 1 ))
+free_record_output="$(GODOT=/missing/godot ./tools/record.sh --recipe scene.json --recipe-mode free 2>&1)"
+if [[ "$free_record_output" == *"requires --recipe-mode scripted"* ]]; then
+    echo "ok   free recipe recording is refused before checking Godot"
+else
+    echo "FAIL free recipe recording lacks its specific mode diagnostic" >&2
+    failures=$(( failures + 1 ))
+fi
+
+checks=$(( checks + 1 ))
+cp scene-recipes/trailer-birds.json "$work_dir/relative.json"
+relative_output="$(cd "$work_dir" && GODOT="$GODOT_STUB" "$root/tools/scene-recipes.sh" --recipe relative.json --output captures 2>&1)"
+if [[ "$relative_output" == *"scene assertions failed:"*"relative.json"*"log:"* ]] \
+    && grep -qF "$work_dir/relative.json" "$GODOT_ARGS"; then
+    echo "ok   caller-relative recipes are resolved and failed assertions name their log"
+else
+    echo "FAIL caller-relative recipe or failure diagnostic: $relative_output" >&2
+    failures=$(( failures + 1 ))
+fi
 # rig_kill_after_movie_seconds only reads --after/--day-length out of the argv it is given --
 # passing it a bare number (tools/trailer.sh once did: `rig_kill_after_movie_seconds "$after"`)
 # silently falls back to the day's own length times RIG_MOVIE_SLOWDOWN, killing a hung Godot after

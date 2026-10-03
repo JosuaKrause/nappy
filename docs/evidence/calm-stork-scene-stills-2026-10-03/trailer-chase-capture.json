@@ -1,0 +1,264 @@
+{
+	"anchors": {
+		"guards": [
+			2000.0,
+			560.0
+		],
+		"start": [
+			1760.0,
+			560.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"capture_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {
+			"roadblock": 1
+		},
+		"visible_walkers": 0,
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"capture_actors": {
+		"guards": {
+			"position": [
+				1891.7717,
+				560.0
+			],
+			"pursuing": true,
+			"row": "roadblock",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": true,
+			"gait_frame": 2,
+			"position": [
+				1824.2664,
+				560.0
+			],
+			"speed": 168.0
+		}
+	},
+	"capture_camera": {
+		"position": [
+			1824.26635742188,
+			560.0
+		],
+		"zoom": 2.70000004768372
+	},
+	"capture_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"capture_tick": 42,
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"initial_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {
+			"roadblock": 1
+		},
+		"visible_walkers": 0,
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"initial_actors": {
+		"guards": {
+			"position": [
+				2000.0,
+				560.0
+			],
+			"pursuing": false,
+			"row": "roadblock",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": true,
+			"gait_frame": 1,
+			"position": [
+				1760.0,
+				560.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				2000.0,
+				560.0
+			],
+			"row": "roadblock"
+		}
+	],
+	"observations": [
+		{
+			"condition": "carrying",
+			"passed": true,
+			"state": {
+				"carrying": true,
+				"gait_frame": 2,
+				"position": [
+					1824.2664,
+					560.0
+				],
+				"speed": 168.0
+			},
+			"subject": "player",
+			"tick": 42.0
+		},
+		{
+			"condition": "pursuing",
+			"passed": true,
+			"state": {
+				"position": [
+					1891.7717,
+					560.0
+				],
+				"pursuing": true,
+				"row": "roadblock",
+				"telegraphing": false
+			},
+			"subject": "guards",
+			"tick": 42.0
+		},
+		{
+			"condition": "running",
+			"passed": true,
+			"state": {
+				"carrying": true,
+				"gait_frame": 2,
+				"position": [
+					1824.2664,
+					560.0
+				],
+				"speed": 168.0
+			},
+			"subject": "player",
+			"tick": 42.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": false,
+	"recipe": "Mother carrying her baby and running from the guards",
+	"recipe_sha256": "305f8ba8ee950508c115cd7fec39d172dc408098f1a0f8e9bcbb9c54d4605490",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"day": 14.0,
+		"events": [
+			{
+				"at": "guards",
+				"name": "guards",
+				"row": "roadblock"
+			}
+		],
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "east",
+			"sleep": 100.0
+		},
+		"progression": {
+			"blackout": true,
+			"escape_part": "city"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}
