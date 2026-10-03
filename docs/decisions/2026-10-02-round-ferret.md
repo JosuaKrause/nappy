@@ -17,7 +17,7 @@ failures; malformed data, broken references and invalid placements remain errors
 Both hall and yard recipes pass existing checks without fixture allowances. The hall
 covers the adjoining facade only where a real roof extension covers it; the yard
 retains the facade. This supplies a concrete checked yard case without asserting that
-M203's unsuccessful seed sampling proved impossibility. The [join stills](../evidence/round-ferret-scene-joins-2026-10-03/README.md)
+M203's unsuccessful seed sampling proved impossibility. The [join stills](../evidence/calm-stork-scene-stills-2026-10-03/README.md)
 show composition, with capture source identified separately from the extracted slice.
 
 The minimal real-Main runtime provides scripted input, setup, initial/final manifests,
@@ -40,3 +40,13 @@ Merge reconciliation: builder b4a77e0d and main 746e7b3f shared base b5dbf6cb.
 Main added the same 14 design/source files already present through the stacked branch;
 the no-commit merge changed no tree content. Code, docs and evidence remained intact,
 and the queue closure below was applied after reconciliation to avoid resurrecting work.
+
+The player clarified that the three-way split is queue entries, not PRs. The complete
+implementation is consolidated into #457. Reconciling integrated head 8a6fdb4c with
+main 746e7b3f (base b5dbf6cb) exposed seven add/add documentation conflicts: three source
+framings and four builder item files. The merged source text and narrower existing-check
+contract were retained; later framing corrections remain in pebbly-bison. Duplicate
+trailer/free-play files in the former combined entry were removed in favor of the
+three linked entries. Code was unchanged by this merge; lint, whitespace and boot passed.
+The check counts above describe the extracted builder verification; the consolidated
+runtime's lifecycle and scene checks are recorded with their respective entries.
