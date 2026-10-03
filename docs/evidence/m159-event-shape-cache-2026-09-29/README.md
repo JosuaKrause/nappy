@@ -38,13 +38,15 @@ and interpolation behavior are unchanged.
 
 ## Controlled active-play comparison
 
-The runner first requires `./tools/check.sh` to pass in both checkouts, then asserts byte-identical
-collector scene, collector scripts and analyzer. It launches one measured process at a time in
-three alternating before/after profiled pairs followed by three alternating profiler-disabled
-pairs. A second series reverses the order for three more profiler-disabled pairs, running the
-cached revision before the baseline each time. Every launch uses seed 4242, day 1, the arterial
-spawn, a held northward route, a five-second warmup and a six-second active window. A 60-second
-external deadline applies to each launch, and the runner stops at the first rejected capture.
+The current runner rejects invalid or dirty tracked checkouts, an existing or invalid output path,
+and mismatched collector files or analyzer before it creates output or launches a check. It
+requires `./tools/check.sh` to pass in both checkouts, then revalidates both revisions and every
+input hash after boot and before each capture. It launches one measured process at a time in three
+alternating before/after profiled pairs followed by three alternating profiler-disabled pairs. A
+second series reverses the order for three more profiler-disabled pairs, running the cached
+revision before the baseline each time. Every launch uses seed 4242, day 1, the arterial spawn, a
+held northward route, a five-second warmup and a six-second active window. A 60-second external
+deadline applies to each launch, and the runner stops at the first rejected capture.
 
 ```sh
 runner_root=$(git rev-parse --show-toplevel)
@@ -82,10 +84,12 @@ git -C "$runner_root" worktree remove "$scratch_root/after-reversed"
 ```
 
 The runner is read from the caller's current checkout, separately from the three revisions being
-measured. It resolves one Godot executable from `--godot`, then `GODOT`, then `godot` on `PATH`,
-with the macOS application path as a final fallback, and uses that same executable for checkout
-boot checks and collection. Pass `--godot /path/to/godot` when none of those defaults applies.
-Repeated runs preserve the protocol but produce new timing values rather than the historical ones.
+measured. It resolves relative checkout paths before validation and one Godot executable from
+`--godot`, then `GODOT`, then `godot` on `PATH`, with the macOS application path as a final fallback.
+That same executable runs checkout boot checks and collection. Pass `--godot /path/to/godot` when
+none of those defaults applies. Repeated runs preserve the protocol but produce new timing values
+rather than the historical ones. The retained historical provenance predates the current clean-tree
+preflight and does not store clean status as a field.
 
 Before is `41fd54a1cf5fee1a722dc7fcfb4cb30e95610b1e`. The original series' after revision is
 `ea7147fff56eae004bcbe751130e1c35082d3c3b`; the reversed series' after revision is

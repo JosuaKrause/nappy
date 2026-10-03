@@ -10,9 +10,11 @@ this folder holds what the two are worth once built, on the same walk.
   rather than one for the whole of it, so the renderer's own rect culling can drop the off-screen
   ones.
 
-Each subfolder is one walk's own telemetry run folder, copied whole: `run.log` with a `frame` entry
-every second, the day's `maps/` pictures beside it, and for the two bursts the numbered PNGs, their
-`burst.json` timing record and the MP4.
+Each subfolder retains the walk's `run.log` with a `frame` entry every second. The two
+animation bursts retain their numbered PNGs, `burst.json` timing record and MP4: the cafe's
+slow idle swap needs its observation window, and the walker's sequence shows both bodies
+remaining in step. The automatically generated plan maps do not establish frame cost,
+pixel identity or animation and are omitted. Every measurement trial remains available.
 
 ## The walk
 

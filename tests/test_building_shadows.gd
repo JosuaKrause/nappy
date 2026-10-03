@@ -9,6 +9,24 @@ func run(t) -> void:
 	_test_a_disjoint_building_is_unaffected_by_a_neighbour(t)
 	_test_the_chunks_are_a_partition_of_the_tile_sets(t)
 	_test_a_chunk_holds_only_its_own_tiles(t)
+	_test_resident_geometry_matches_the_complete_union(t)
+
+func _test_resident_geometry_matches_the_complete_union(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var expected := BuildingShadows.split(BuildingShadows.compute(map.building_rects))
+	var shadows := BuildingShadows.new()
+	shadows.streamed = true
+	shadows.set_buildings(map.building_rects)
+	for key: Vector2i in expected:
+		var actual := shadows._tiles_for_chunk(key)
+		var whole: BuildingShadows.Tiles = expected[key]
+		t.check(_to_set(actual.full) == _to_set(whole.full),
+				"streamed full shadows match the complete footprint union across chunk seams")
+		t.check(_to_set(actual.triangles) == _to_set(whole.triangles),
+				"streamed corner shadows match the complete footprint union across chunk seams")
+	t.check(shadows._tiles.full.is_empty() and shadows.get_child_count() == 0,
+			"streaming keeps footprint facts without preparing distant shadow drawing")
+	shadows.free()
 
 ## The exact reading of the shape the entry gives: a band along the bottom edge one tile past the
 ## western corner, a band up the western edge stopping one tile short of the top, and a triangle

@@ -212,13 +212,25 @@ something bounded", the rig is not slow, it is wrong.
 **Keep experimental evidence compact by default.** Check in the question, conclusion and limits;
 the runnable probe or reused collector/analyzer and exact rerun commands; source revisions,
 collector identity, environment, settings, seed, warmup/window lengths, actual run order and
-acceptance criteria; and compact results for every retained trial, including rejected trials'
-reasons. Preserve the per-run distributions, counts and workload checks that support the claims,
-rather than only a pooled average or the best pair. Put the conclusion in the decision record
-and its evidence under `docs/evidence/`.
+acceptance criteria; and compact results for every trial relevant to the claim, including failed,
+rejected and contradictory trials and their reasons. Preserve the per-run distributions, counts
+and workload checks that support the claims, rather than only a pooled average or the best pair.
+Relevance follows the question the run or rig was meant to answer: unrelated automatic captures,
+generic boot output, irrelevant logs and redundant copies stay in scratch space. Put the conclusion
+in the decision record and its evidence under `docs/evidence/`.
 
 Rerun instructions create the required revision checkouts and use caller-relative paths, fresh
 scratch directories and a configurable engine executable instead of the author's local paths.
+Every named capture revision must also be fetchable from a fresh clone. When it exists only on a
+pull request branch that will be squash-merged and deleted, fetch the durable ref first
+(`git fetch origin refs/pull/<PR>/head`), then check out the full commit ID it makes reachable;
+never assume the reproducer already has the branch's objects locally.
+
+Timed comparisons use clean tracked checkouts: a commit ID alone does not identify dirty
+runtime sources. Record hashes of source files an audit can rewrite, and revalidate source and
+collector identity after setup and before captures. Run source-rewriting demand audits in
+separate disposable checkouts. Historical source-state gaps are disclosed, not filled with
+hashes computed after the capture.
 
 **Full profiler streams, expanded analyzer output, build/test stdout and duplicate generated
 reports stay in scratch space unless the conclusion needs their original detail.** Retain a

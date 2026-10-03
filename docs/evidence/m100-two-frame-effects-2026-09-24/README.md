@@ -12,7 +12,9 @@ better".
   `burst-basement-steam-frames.png` — the same crop out of every few frames of each gameplay
   burst, enlarged, made by `compose-burst-strip.py`. They show the frames alternating in play at
   the normal camera scale; what a frame proves is limited to the build and moment it records.
-- The three `rig-*` folders are the whole runs, each with its burst and the burst's MP4:
+- The three `rig-*` folders retain ordered logs, bursts and their MP4s. The bursts keep the
+  alternating phases and the steam's interval between blows; the logs retain capture context.
+  The automatic city-plan maps do not show these animations and are omitted:
   - `rig-084807-seed4242-…` — `tools/shot.sh … 6 --seed 4242 --spawn event:car_accident
     --invincible --no-save --press snapshot_burst 2`
   - `rig-084844-seed4242-…` — the same with `--spawn event:burst_water_main`

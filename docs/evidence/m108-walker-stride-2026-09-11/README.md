@@ -16,7 +16,8 @@ the mother's own gait-b frames carry.
 
 ## Gameplay burst
 
-`run/rig-220957-seed4242-v0.8.2-624-gc5860ee-dirty/` is the whole telemetry run folder from:
+`run/rig-220957-seed4242-v0.8.2-624-gc5860ee-dirty/` retains the stride burst, timing and
+ordered log from:
 
     tools/shot.sh /tmp/m108-walker-burst/final.png 6 --seed 4242 --spawn arterial --press snapshot_burst 1.5
 
@@ -31,6 +32,11 @@ whole run also lets the meter run away — `run.log` shows the burst completing 
 ending at 9.9s ("lost_crying … She started crying. There is no settling her now."), which is the
 arterial's own noise floor doing exactly what its doc comment says it does, not a stride defect,
 and it happens well after every walker frame below was already captured.
+
+The automatic loss-screen still and plan maps are omitted: they do not show the stride.
+The log retains the delayed loss and the full burst retains the slow-walker limitation and
+the faster walkers' displacement, so selecting evidence does not imply every walker visibly
+alternates within this window.
 
 **Frames where the feet visibly pass:** open `frame-0001.png` through `frame-0006.png` and look
 at the screen region roughly `(790,150)`–`(860,310)` (1280×720 capture) — a front-facing walker

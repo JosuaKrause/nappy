@@ -623,6 +623,7 @@ func _rig_player(t, at: Vector2) -> Stroller:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	player.add_child(camera)
 	t.add_child(player)
 	player.set_physics_process(false)

@@ -7,8 +7,8 @@
 #                                # this way and serves the result
 #
 # Uses the tracked "Web" preset in export_presets.cfg — gl_compatibility, threads off, so the
-# templates Godot resolves are web_nothreads_debug.zip / web_nothreads_release.zip rather than
-# the threaded pair, and GitHub Pages needs no cross-origin-isolation headers to serve the result.
+# debug uses stock web_nothreads_debug.zip and release uses build/web-template/template.zip.
+# GitHub Pages needs no cross-origin-isolation headers to serve the result.
 #
 # RELEASE_TAG=<tag> tools/export-web.sh   # names build/web/<tag>/, default "dev", and is the
 #                                         # version baked into the export
@@ -33,6 +33,7 @@ usage: tools/export-web.sh [--help|-h] [release|debug]
 Headless Web export into build/web/ (gitignored). "release" is the default -- what
 .github/workflows/deploy.yml publishes. "debug" makes OS.is_debug_build() true in the result,
 so ?telemetry=1 answers; tools/serve-web.sh exports this way and serves the result.
+Release requires tools/build-web-template.sh first; debug uses the stock template.
 
   tools/export-web.sh
   tools/export-web.sh debug
@@ -62,6 +63,15 @@ esac
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT (override with GODOT=...)" >&2
     exit 127
+fi
+
+if [[ "$MODE" == release ]]; then
+    "$PROJECT_DIR/tools/build-web-template.sh" --verify || exit 1
+    source "$PROJECT_DIR/tools/web-template/pins.env"
+    if [[ "$("$GODOT" --version)" != "$GODOT_VERSION.stable."* ]]; then
+        echo "FAILED: the custom template requires the matching Godot $GODOT_VERSION editor." >&2
+        exit 1
+    fi
 fi
 
 # What the export says it is. `application/config/version` and `application/config/source_commit`
@@ -224,19 +234,22 @@ if [[ $status -ne 0 ]]; then
     exit 1
 fi
 
-# What the pack carries that should not be in it: a baked constituent -- a member picture, its
-# .import sidecar or the imported .ctex -- or a page no group in the pack's own regions.json
-# names. --fatal, so either fails the export rather than being reported into a log nobody reads.
+# What the pack carries that should not be in it: anything under tests/, a reference to that
+# excluded tree retained by the class cache or another plain packed resource, a baked constituent
+# -- a member picture, its .import sidecar or the imported .ctex -- or a page no group in the
+# pack's own regions.json names. --fatal, so any fails the export rather than being reported into
+# a log nobody reads.
 # It is the last gate rather than the first because it can only be asked of the artefact: the
 # question is what the export actually wrote, not what the tree says it should have.
 echo
 echo "== package audit =="
 if ! "$PROJECT_DIR/tools/audit-pck.sh" --fatal "$VERSIONED_DIR/index.pck"; then
     echo >&2
-    echo "FAILED: the export carries pictures that should have ceased to exist in the build." >&2
-    echo "The authoring sources live under art/, which carries a .gdignore; a constituent in" >&2
-    echo "the pack means something under assets/ still names one, or a page outlived its" >&2
-    echo "group -- run tools/bake-atlases.sh --check." >&2
+    echo "FAILED: the export carries development-only tests or pictures that should have" >&2
+    echo "ceased to exist in the build. A test path or reference means the Web preset's" >&2
+    echo "exclusion left a direct resource or literal reference behind. An atlas constituent means" >&2
+    echo "something under assets/ still names one, or a page outlived its group -- run" >&2
+    echo "tools/bake-atlases.sh --check." >&2
     exit 1
 fi
 

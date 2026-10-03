@@ -15,26 +15,24 @@ extends Node2D
 ##
 ## Placed between `Ground` and `Buildings` in `city.tscn`, so it never sorts against anything and
 ## always lies flat under the crowd, the player and every event, the way a seal's own body shadow
-## does — see `EventInstance._draw_body_shadow()`. Computed once by `City.build()`, since building
-## footprints are fixed for the run (`docs/DECISIONS.md`, M61); nothing here changes per day or
-## per frame.
+## does — see `EventInstance._draw_body_shadow()`. Building footprints are fixed for the run
+## (`docs/DECISIONS.md`, M61), while each nearby chunk's shadow geometry is prepared on demand and
+## freed beyond the scenery retention boundary. Returning chunks are reconstructed from the same
+## footprints.
 ##
 ## **Drawn in chunks, because a `CanvasItem`'s draw list is culled as one item by its own rect.**
-## The whole city's shadow set is nearly two thousand commands, and the visible world holds a
-## couple of hundred tiles — so one item covering the map submits every off-screen command of it,
-## every frame, and no per-command culling reaches inside. This node draws nothing itself; it holds
-## one child `CanvasItem` per `CHUNK_TILES`-square patch of city that has any shadow in it, and the
-## renderer's own rect culling drops the ones that are not on screen. The picture is identical
-## because the drawing is: each chunk runs the same `draw_rect`/`draw_colored_polygon` pair over
-## its own share of the same tile sets, in world coordinates.
+## A `CanvasItem`'s draw list is culled as one item by its own rect, with no per-command culling
+## inside it. This node prepares a child `CanvasItem` for each nearby `CHUNK_TILES`-square area,
+## including areas with no shadow tiles; renderer rect culling drops the ones outside the view.
+## Distant children are freed and rebuilt from the fixed footprints when their areas return. Each
+## child draws its share of the same tile geometry in world coordinates.
 
 const TILE := float(Tuning.TILE_SIZE)
 
-## How many tiles square one chunk is. 512px against a 640x360 visible world at zoom 2 means a
-## handful of chunks are on screen at once, which is the number that matters: smaller chunks cull
-## tighter but add items for the renderer to walk over the whole map, larger ones drag more
-## off-screen commands on screen with them. The city is about 160 tiles square, so this is a
-## hundred chunks of which a hundred minus a handful cost nothing per frame.
+## Side length, in tiles, for a shadow chunk. At 16 tiles (512px), this sets the area prepared and
+## culled as one item, while scenery residency determines how many such items exist nearby.
+## Smaller chunks tighten culling but add renderer items; larger chunks include more off-screen
+## shadow commands.
 const CHUNK_TILES := 16
 
 ## One shadow tile set: tiles fully covered, and tiles cut on the diagonal from their north-east
@@ -44,20 +42,67 @@ class Tiles extends RefCounted:
 	var triangles: Array[Vector2i] = []
 
 var _tiles := Tiles.new()
+var streamed := false
+var _by_chunk: Dictionary = {}
+var _resident: Dictionary = {}
+var _rects: Array[Rect2i] = []
 
-## `DevFlags.skip_shadows()`, read once when this node is built — the same "read once" shape
-## `main._debug` and `main._readout_requested` are: `BuildingShadows` is computed once by
-## `City.build()` and never changes per day or per frame, so re-parsing `--skip`'s comma list on
-## every chunk's own `_draw_chunk()` would be silly work repeated for an answer that was already
-## settled before the first frame, and a test can set this directly to check the skip without a
-## real `--skip` flag behind it.
+## `DevFlags.skip_shadows()`, read once when this node is built. The flag controls drawing, while
+## shadow geometry is prepared per nearby chunk and reconstructed when a chunk returns. Reading
+## the flag once avoids reparsing `--skip`'s comma list in each chunk's `_draw_chunk()`, and a test
+## can set this directly to check the skip without a real `--skip` flag behind it.
 var _skip_draw := DevFlags.skip_shadows()
 
-## Builds the shadow tile sets from `rects` — a city's building footprints, in tile coordinates
-## (`CityMap.building_rects`) — and rebuilds the chunks that draw them.
+## Stores `rects` — a city's building footprints, in tile coordinates
+## (`CityMap.building_rects`) — as the source for shadow geometry. Non-streamed use also computes
+## and builds all drawing chunks here; streamed use prepares nearby chunks on demand.
 func set_buildings(rects: Array[Rect2i]) -> void:
+	_rects = rects
+	if streamed:
+		return
 	_tiles = compute(rects)
-	_rebuild_chunks()
+	_by_chunk = split(_tiles)
+	if not streamed:
+		_rebuild_chunks()
+
+func update_view(load_view: Rect2, retained: Rect2, enqueue := Callable()) -> void:
+	for key: Vector2i in _resident.keys():
+		if not retained.intersects(_chunk_bounds(key)):
+			(_resident[key] as Node2D).free()
+			_resident.erase(key)
+	var width := CHUNK_TILES * TILE
+	var lo := Vector2i((load_view.position / width).floor())
+	var hi := Vector2i((load_view.end / width).ceil())
+	for y in range(lo.y, hi.y):
+		for x in range(lo.x, hi.x):
+			var key := Vector2i(x, y)
+			if _resident.has(key):
+				continue
+			if enqueue.is_valid():
+				enqueue.call(_chunk_bounds(key), _prepare_chunk.bind(key))
+			else:
+				_prepare_chunk(key)
+
+func _prepare_chunk(key: Vector2i) -> void:
+	var tiles := _tiles_for_chunk(key)
+	var chunk := Node2D.new()
+	chunk.draw.connect(_draw_chunk.bind(chunk, tiles))
+	add_child(chunk)
+	_resident[key] = chunk
+
+func _tiles_for_chunk(key: Vector2i) -> Tiles:
+	var area := Rect2i(key * CHUNK_TILES, Vector2i.ONE * CHUNK_TILES)
+	var nearby: Array[Rect2i] = []
+	for rect in _rects:
+		if rect.intersects(area.grow(1)):
+			nearby.append(rect.intersection(area.grow(1)))
+	var tiles := compute(nearby)
+	tiles.full = tiles.full.filter(func(tile: Vector2i): return area.has_point(tile))
+	tiles.triangles = tiles.triangles.filter(func(tile: Vector2i): return area.has_point(tile))
+	return tiles
+
+func _chunk_bounds(key: Vector2i) -> Rect2:
+	return Rect2(Vector2(key) * CHUNK_TILES * TILE, Vector2.ONE * CHUNK_TILES * TILE)
 
 ## The one `CanvasItem` per occupied chunk that the culling works on. Freed and rebuilt whole rather
 ## than updated, since `set_buildings()` is called once per run with a fixed footprint set and the

@@ -61,7 +61,10 @@ registration and source composition; runtime bursts establish animation and sort
 event orientations. `waterfront.gif` shows the actual south shore, fixed bulkhead and bridge
 (seed 4242, day 1, `--spawn edge:s --walk 0.1s7p --invincible --no-save`). Both retain 36 frames
 and their real timestamps; `burst-gif.py` quantizes timestamp boundaries to GIF centiseconds.
-The whole waterfront run retains its original directory name. These are visual review artifacts,
+The waterfront burst retains its original run directory name; its command, source and settings
+are recorded here, and its frames and timing metadata establish the water's continuous motion.
+The automatic plan map and routine run log do not add to that visual claim and are omitted.
+These are visual review artifacts,
 not timing benchmarks. The player approves the water ripple.
 
 The [rendered warmup run](rendered-warmup-2026-09-26/README.md) retains ordinary and escape boot
@@ -74,7 +77,10 @@ draw callbacks during capture, two rotor callbacks, 72 pipe-motion callbacks and
 callbacks across both axes. All animation clocks hold while paused and advance after resuming.
 Its two rejected launches establish no visual or timing result: the first fails script parsing
 on an untyped diagnostic bool before capture; the second fails a no-vent precondition and its
-partial frames/log remain in `rejected-fixture-no-vent`. Full headless fixture construction passes
+error log remains in `rejected-fixture-no-vent.log`, with one representative image in
+`rejected-fixture-no-vent/frame-000.png`. All 36 images from that failed launch are byte-identical;
+one image preserves its failed visual state without suggesting a working animation. The failure
+has no completed timing sidecar. Full headless fixture construction passes
 before the final retry. Captures use code checkpoint 224e1022 plus the fixture source; the static
 water-source cleanup is not part of the waterfront launch's loaded source.
 
