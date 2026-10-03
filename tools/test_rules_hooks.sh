@@ -1381,6 +1381,8 @@ assert_write_guard "wrapped PATCH repos/\$R/pulls/5 -> allow, not an issue" allo
     "$orch gh api -X PATCH \"repos/\$R/pulls/5\" -f body=x"
 assert_write_guard "wrapped repos/\$(...)/issues/423 with -X PATCH after the endpoint -> deny" deny \
     "$orch gh api \"repos/\$(gh repo view --json nameWithOwner -q .nameWithOwner)/issues/423\" -X PATCH -f state=closed"
+assert_write_guard "wrapped PATCH repos/\`echo o/r\`/issues/5, a bare backtick -> deny" deny \
+    "$orch gh api -X PATCH repos/\`echo o/r\`/issues/5 -f state=closed"
 assert_write_guard "wrapped comment POST to repos/\$(...)/issues/429/comments -> allow" allow \
     "$orch gh api \"repos/\$(gh repo view --json nameWithOwner -q .nameWithOwner)/issues/429/comments\" -F body=@c.md"
 assert_write_guard "wrapped GraphQL closeIssue -> deny" deny \

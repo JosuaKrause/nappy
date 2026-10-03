@@ -900,10 +900,11 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
         else
           (if (.endpoint == null) and (.cont | not) then
              # A substitution inside the endpoint's own shell word (`"repos/$(...)/issues/5"`), or
-             # one written bare right after it (`repos/$(...)`), splits the path: the scan reads on
-             # past the substitution's own command, for at most 64 words, to the path's rest.
+             # one written bare right after it (`repos/$(...)`, ``repos/`...` ``), splits the path:
+             # the scan reads on past the substitution's own command, for at most 64 words, to the
+             # path's rest.
              .endpoint = $x
-             | .sub_left = (if $nx == "\u0001" and (($x | endswith("$")) or (($t.lv // [])[$s.i + 1] // 0) > 0)
+             | .sub_left = (if $nx == "\u0001" and (($x | test("[$/]$")) or (($t.lv // [])[$s.i + 1] // 0) > 0)
                             then 64 else 0 end)
            elif .sub_left > 0 and .cont and ($x | startswith("/")) then
              # The rest of an endpoint a substitution split: read it joined to the start.
