@@ -23,9 +23,11 @@ the player on its own say-so instead.)*
 for the purposes of github what matters is what they do. that is independent who actually
 triggered it".)* In Claude Code:
 
-- **`claude-orchestrator`** makes every issue write — capturing a note into the inbox, commenting
-  on one, labelling it, closing a filed batch and reopening it, each through `tools/inbox.py`
-  (**inbox**), never a direct `gh issue` command — and every write on a pull request
+- **`claude-orchestrator`** makes every issue write — capturing a note into the inbox with its
+  labels, asking a question on one, closing a filed batch and reopening it, each through
+  `tools/inbox.py` (**inbox**), never a direct `gh issue` or `gh api` command; the script changes
+  no label on a note once it is open, and a label to change is asked about on the note instead —
+  and every write on a pull request
   with no code changes: its commits, its push, the pull request itself, its comments, merging
   `main` into it, its merge once the player has said go, and retiring its branch.
 - **`claude-coder`** makes every write on a pull request that changes code — a queue move or a
