@@ -832,6 +832,7 @@
         "art/ui/pause.svg",
         "art/ui/restart.svg",
         "art/ui/save.svg",
+        "art/ui/save_unavailable.svg",
         "art/ui/tap.svg"
       ]
     }

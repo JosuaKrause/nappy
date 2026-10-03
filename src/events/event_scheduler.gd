@@ -1649,7 +1649,7 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 	# placement, pavement side and spread shape, or the reverse.
 	var by_cost := _is_a_wall_by_cost(def)
 	var key := "%s|%d|%d|%s|%s|%s|%s" % [def.placement, def.pavement_side, role, site,
-			def.hard_fail, EventInstance.has_a_spread(def), by_cost]
+			def.hard_fail, def.has_a_spread, by_cost]
 	if ground.has(key):
 		return ground[key]
 	var aimed: Array[Vector2i] = []
@@ -1785,7 +1785,7 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 					for _extra in Tuning.EVENT_PRECINCT_WEIGHT - 1:
 						open.append(candidate)
 		ground[key] = open
-	if not EventInstance.has_a_spread(def):
+	if not def.has_a_spread:
 		return ground[key]
 	var corner_free_key := key + "|no corner"
 	if not ground.has(corner_free_key):

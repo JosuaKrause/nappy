@@ -19,6 +19,8 @@ var rail_offset := 0.0
 var sign_offset := Vector2.ZERO
 
 func _draw() -> void:
+	if not scenery_resident:
+		return
 	if piece == Piece.POST:
 		Sprites.draw_standing(self, AtlasLibrary.region(JOINT), Vector2.ZERO)
 	elif piece == Piece.SIGN:

@@ -1,0 +1,57 @@
+{
+  "coverage": [
+    {
+      "completed_across_frames": 85,
+      "direction": "(1.0, 0.0)",
+      "end_distance_from_start": 0.000244140625,
+      "frames": 1800,
+      "guard_catchups": 0,
+      "look_ahead_reversal_px": 92,
+      "missing_regions": 0,
+      "modeled_hz": 60,
+      "pending_frame_observations": 255,
+      "prepared_regions": 85,
+      "through_draw_usec": {
+        "count": 1800,
+        "max": 33259,
+        "median": 1164,
+        "p95": 3310,
+        "sum": 2521319
+      },
+      "update_usec": {
+        "count": 1800,
+        "max": 888,
+        "median": 4,
+        "p95": 282,
+        "sum": 99036
+      },
+      "worst_ground_step_usec": 133
+    }
+  ],
+  "display": "macOS",
+  "elapsed_ms": 5252,
+  "engine": {
+    "build": "official",
+    "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+    "hex": 263938,
+    "major": 4,
+    "minor": 7,
+    "patch": 2,
+    "status": "stable",
+    "string": "4.7.2-stable (official)",
+    "timestamp": 0
+  },
+  "failures": [],
+  "forced_draws": 0,
+  "processor": "Apple M2",
+  "renderer": "opengl3",
+  "source_sha256": {
+    "src/city/city.gd": "343ee22c32b7db19199dd02fbfee23107ce106a88071d9402470f9ab6d390bab",
+    "src/city/scenery_ground.gd": "76c89b2b3a82b942b7ec2afcfa9f137390e3f85d3119a3d927b958a0d6d1253c",
+    "src/city/scenery_residency.gd": "af25085ad2861e170c95fb9d812a91f04076156354442af8ee56ff8b64a729eb",
+    "src/city/scenery_water.gd": "a00cb5538712717974b67753134937bad92aace2524cf7b5423f18cabead7fc7",
+    "tests/probes/ground_frames.gd": "779d817207795c1aa6a31f04a564fadfc80518308f1e7fcb9cebf8dfd7f0c662"
+  },
+  "trials": [],
+  "viewport_size": "(1280.0, 720.0)"
+}

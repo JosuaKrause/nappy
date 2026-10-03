@@ -35,7 +35,14 @@ class CodexHooksTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.base = Path(self.temp.name).resolve()
         self.root = self.make_repo("repo")
-        self.env = dict(os.environ, TMPDIR=str(self.base / "state"))
+        # Pinned to a machine with identities set up, so the write guard's own deny is what every
+        # test below sees wherever the suite runs: a Claude Code cloud session, or a CI runner with
+        # no identity directory, would otherwise turn an ordinary write into an ask (see
+        # test_github_write_guard_ask_reaches_codex_as_a_deny for that path).
+        (self.base / "agents").mkdir()
+        self.env = dict(os.environ, TMPDIR=str(self.base / "state"), NAPPY_AGENTS_DIR=str(self.base / "agents"))
+        self.env.pop("CLAUDE_CODE_REMOTE", None)
+        self.env.pop("NAPPY_ASK_FOR_PLAYER_WRITES", None)
 
     def make_repo(self, name: str) -> Path:
         root = self.base / name
@@ -139,6 +146,10 @@ class CodexHooksTest(unittest.TestCase):
         text = self.call(command="*** Update File: notes.txt\n*** Move to: src/ui/panel.gd\n")
         self.assertIn("RULE_CONTENT_cues", text)
         self.assertIn("RULE_CONTENT_godot", text)
+
+    def test_evidence_edit_loads_verify_through_the_adapter(self) -> None:
+        text = self.call(command="*** Update File: docs/evidence/experiment/README.md\n")
+        self.assertEqual(text.count("RULE_CONTENT_verify"), 1)
 
     def test_compaction_reloads_session_and_path_rules(self) -> None:
         self.assertIn("RULE_CONTENT_orchestrating", self.call(kind="SessionStart", source="startup"))
@@ -364,6 +375,45 @@ class CodexHooksTest(unittest.TestCase):
         self.assertEqual(specific["hookEventName"], "PreToolUse")
         self.assertEqual(specific["permissionDecision"], "deny")
         self.assertIn("agent-identity.py run", specific["permissionDecisionReason"])
+
+    def test_github_write_guard_ask_reaches_codex_as_a_deny(self) -> None:
+        # Where no identity can work the guard asks Claude Code's player about an ordinary write;
+        # Codex always refuses one instead (2026-10-02: "make the codex version always refuse").
+        # The player's switch is on in both, or the guard would deny outright rather than ask.
+        for env in (
+            dict(self.env, CLAUDE_CODE_REMOTE="true", NAPPY_ASK_FOR_PLAYER_WRITES="1"),
+            dict(self.env, NAPPY_AGENTS_DIR=str(self.base / "no-such-dir"), NAPPY_ASK_FOR_PLAYER_WRITES="1"),
+        ):
+            with self.subTest(remote=env.get("CLAUDE_CODE_REMOTE"), agents=env["NAPPY_AGENTS_DIR"]):
+                self.env = env
+                output = self.call_raw(command="git push origin feature/x")
+                assert output is not None
+                specific = output["hookSpecificOutput"]
+                self.assertEqual(specific["permissionDecision"], "deny")
+                # A refusal naming what the guard flagged, never the prompt text meant for the player.
+                reason = specific["permissionDecisionReason"]
+                self.assertTrue(reason.startswith("This command writes to GitHub (git push) outside"), reason)
+                self.assertIn("Codex never runs such a write as the player", reason)
+                self.assertIn("stop and tell the player", reason)
+                self.assertNotIn("Approve", reason)
+                self.assertNotIn("NAPPY_ASK_FOR_PLAYER_WRITES", reason)
+
+    def test_an_explicit_allow_from_a_guard_reaches_codex_as_a_deny(self) -> None:
+        # Neither guard ever answers an explicit allow (each allows by printing nothing), so the
+        # adapter reads one the fail-safe way, as a deny; silence still lets the call on.
+        guard = self.root / ".claude/hooks/github-write-guard.sh"
+        guard.write_text(
+            "#!/usr/bin/env bash\n"
+            'echo \'{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}\'\n'
+        )
+        output = self.call_raw(command="git status")
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertTrue(specific["permissionDecisionReason"].startswith("This command writes to GitHub outside"))
+        guard.write_text("#!/usr/bin/env bash\nexit 0\n")
+        output = self.call_raw(command="git status")
+        self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
 
     def test_github_write_guard_denies_an_unwrapped_gh_pr_comment(self) -> None:
         output = self.call_raw(command='gh pr comment 391 --body "hi"')

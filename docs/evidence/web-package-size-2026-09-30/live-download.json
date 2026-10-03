@@ -1,0 +1,73 @@
+{
+  "captured_utc_date": "2026-10-01",
+  "local_date": "2026-09-30",
+  "release": "v0.21.2",
+  "page_sha256": "3e498671404a8ef4d542ec85bb459d3dfda2bb1a0ed802bb6b5811f9c9c32555",
+  "godot_config": {
+    "args": [],
+    "canvasResizePolicy": 2,
+    "emscriptenPoolSize": 8,
+    "ensureCrossOriginIsolationHeaders": false,
+    "executable": "v0.21.2/index",
+    "experimentalVK": false,
+    "fileSizes": {
+      "v0.21.2/index.pck": 3574448,
+      "v0.21.2/index.wasm": 39514754
+    },
+    "focusCanvas": true,
+    "gdextensionLibs": [],
+    "godotPoolSize": 4
+  },
+  "files": [
+    {
+      "url": "https://nappy.josuakrause.com/v0.21.2/index.wasm",
+      "decoded_bytes": 39514754,
+      "transferred_body_bytes": 10248949,
+      "sha256": "fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0",
+      "headers": {
+        "content-type": "application/wasm",
+        "last-modified": "Wed, 30 Sep 2026 08:30:58 GMT",
+        "etag": "W/\"6abcc8c2-25af282\"",
+        "cache-control": "max-age=600",
+        "content-encoding": "gzip",
+        "date": "Thu, 01 Oct 2026 00:54:08 GMT",
+        "vary": "Accept-Encoding",
+        "content-length": "10248949"
+      }
+    },
+    {
+      "url": "https://nappy.josuakrause.com/v0.21.2/index.pck",
+      "decoded_bytes": 3574448,
+      "transferred_body_bytes": 3395992,
+      "sha256": "323d6a8f5a9765e55f788c346d18f6db5eb7d93ade5f851273e321e309fef28b",
+      "headers": {
+        "content-type": "application/octet-stream",
+        "last-modified": "Wed, 30 Sep 2026 08:30:58 GMT",
+        "etag": "W/\"6abcc8c2-368ab0\"",
+        "cache-control": "max-age=600",
+        "content-encoding": "gzip",
+        "date": "Thu, 01 Oct 2026 00:54:07 GMT",
+        "vary": "Accept-Encoding",
+        "content-length": "3395992"
+      }
+    },
+    {
+      "url": "https://nappy.josuakrause.com/v0.21.2/index.js",
+      "decoded_bytes": 279815,
+      "transferred_body_bytes": 69442,
+      "sha256": "33c94cb3175f3333b82e2a3be5e8e86f77986f0aa2042b1631f6367a4e5bb6ba",
+      "headers": {
+        "content-type": "application/javascript; charset=utf-8",
+        "last-modified": "Wed, 30 Sep 2026 08:30:58 GMT",
+        "etag": "W/\"6abcc8c2-44507\"",
+        "cache-control": "max-age=600",
+        "content-encoding": "gzip",
+        "date": "Thu, 01 Oct 2026 00:54:08 GMT",
+        "vary": "Accept-Encoding",
+        "content-length": "69442"
+      }
+    }
+  ],
+  "three_file_decoded_bytes": 43369017,
+  "three_file_transfer_bytes": 13714383
+}

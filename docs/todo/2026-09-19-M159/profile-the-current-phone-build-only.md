@@ -7,3 +7,4 @@ measured. Measure the conservative contribution rejection on that device, includ
 effect on the baby and halo callers, before considering caching or lower tick rates. The player's phone is
 Chrome on a Pixel 8 Pro, where the stutter is steady rather than at particular moments
 ([PLAYTEST-140](../../playtests/PLAYTEST-140.md)).
+Native median improvements do not establish phone performance or uniformly better frame tails.

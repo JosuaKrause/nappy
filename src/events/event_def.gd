@@ -144,11 +144,31 @@ enum SpawnMode {
 @export var id := ""
 @export var display_name := ""
 @export var kind := GameEnums.EventKind.RECURRING
+## Whether this row's drawing needs one street axis to lay its body out on. Derived eagerly from
+## `look`, because placement, collision and drawing ask it repeatedly per frame while the
+## authored look changes only when a definition is constructed or deliberately mutated.
+##
+## This stays a plain field rather than exported data: it is not a second authored decision. The
+## `look` setter below is the one source of the answer, including for duplicated resources.
+var has_a_spread := false
+
 ## No default worth having: it was `OBJECT` — a category, so a row that never chose was drawn as
 ## roadworks and looked deliberate. Every visible row states its own picture, and
 ## `tests/test_events.gd` names the three that are legitimately invisible.
-@export var look := Look.NONE
+@export var look := Look.NONE:
+	set(value):
+		look = value
+		has_a_spread = _look_has_a_spread(value)
 @export var ambient_source := AmbientSource.NONE
+
+static func _look_has_a_spread(value: Look) -> bool:
+	match value:
+		Look.ROADWORKS, Look.BURNT_SHELL, Look.STALL, Look.ROADBLOCK, Look.BARRICADE, \
+				Look.CAFE, Look.FALLEN_TREE, Look.CAR_ACCIDENT, Look.BURST_MAIN, \
+				Look.SCAFFOLDING, Look.COLLAPSED_FRONTAGE:
+			return true
+		_:
+			return false
 
 ## This row's own ground shape — the datum its shadow and its solid body (when it has one) are
 ## both derived from. A plain `var` rather than `@export`: `GroundShape` is a `RefCounted`, not a

@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_catalogue_is_fair(t)
 	_test_a_warning_first_is_owed_a_flat_minimum(t)
 	_test_as_warned_first_carries_solid_parts_too(t)
+	_test_spread_classification_follows_every_look_and_copy(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_spread_rotates_with_the_street(t)
@@ -48,6 +49,65 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN,
 	EventDef.Look.SCAFFOLDING, EventDef.Look.COLLAPSED_FRONTAGE,
 ]
+
+## Classification is authored solely by `look`, including when that exported property is changed
+## after construction or restored by `Resource.duplicate()`. Those look and copy checks establish
+## the classification contract. The geometry, phase and finish checks only guard against a future
+## unrelated cache writer; they do not establish geometry or phase correctness. `_SPREAD_LOOKS` is
+## the catalogue geometry contract's independent expected set; PROTEST and FIREFIGHT are removed
+## here because their body axes are handled separately rather than by spread drawing.
+func _test_spread_classification_follows_every_look_and_copy(t) -> void:
+	var def := EventDef.new()
+	t.check(not def.has_a_spread and not EventInstance.has_a_spread(def),
+			"a default invisible definition has no spread")
+
+	var checked := 0
+	for look: int in EventDef.Look.values():
+		def.look = look as EventDef.Look
+		var expected := _SPREAD_LOOKS.has(def.look) \
+				and def.look != EventDef.Look.PROTEST and def.look != EventDef.Look.FIREFIGHT
+		t.check(def.has_a_spread == expected and EventInstance.has_a_spread(def) == expected,
+				"look %d retains the independent spread answer (%s)" % [look, expected])
+		checked += 1
+	t.check(checked == EventDef.Look.size(),
+			"every look was classified (%d of %d)" % [checked, EventDef.Look.size()])
+
+	for source in EventCatalogue.all():
+		var expected := _SPREAD_LOOKS.has(source.look) \
+				and source.look != EventDef.Look.PROTEST and source.look != EventDef.Look.FIREFIGHT
+		t.check(source.has_a_spread == expected,
+				"catalogue row '%s' retains its spread answer" % source.id)
+
+	def.look = EventDef.Look.ROADWORKS
+	t.check(def.has_a_spread, "mutating from an ordinary look to a spread recomputes true")
+	def.look = EventDef.Look.CAT
+	t.check(not def.has_a_spread, "mutating from a spread to an ordinary look recomputes false")
+	def.look = EventDef.Look.CAFE
+	def.solid(GroundShape.band(22.0))
+	def.inner_radius = 15.0
+	def.outer_radius = 90.0
+	t.check(def.has_a_spread,
+			"changing body and field geometry leaves a café's look-derived answer true")
+
+	var instance := EventInstance.new()
+	def.telegraph_time = STEP
+	instance.setup(def, Vector2.ZERO)
+	instance._process(STEP * 2.0)
+	t.check(not instance.is_telegraphing() and def.has_a_spread,
+			"crossing an instance phase leaves its definition's classification true")
+	instance._be_done()
+	t.check(instance.is_finished and def.has_a_spread,
+			"finishing the instance leaves the classification true")
+	instance.free()
+
+	for deep in [false, true]:
+		def.look = EventDef.Look.ROADWORKS
+		var copied := def.duplicate(deep) as EventDef
+		t.check(copied.look == def.look and copied.has_a_spread,
+				"Resource.duplicate(%s) runs the exported look setter for a spread" % deep)
+		copied.look = EventDef.Look.CAT
+		t.check(not copied.has_a_spread and def.has_a_spread,
+				"a duplicate(%s) recomputes independently when its look changes" % deep)
 
 ## A `SIDEWALK` tile is one lane of a two-lane pavement, `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide
 ## in total, and it is one piece of walkable ground rather than two lanes a body has to fit inside

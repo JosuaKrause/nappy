@@ -547,7 +547,7 @@ static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
 ## The ground-plane direction a sited body's spine lies along — `EventInstance._solid_axis()` for a
 ## body that does not exist yet, off the same two statics that instance would read.
 static func _body_axis(map: CityMap, def: EventDef, placed: Vector2, facing: Vector2) -> Vector2:
-	if EventInstance.has_a_spread(def) or def.look == EventDef.Look.PROTEST \
+	if def.has_a_spread or def.look == EventDef.Look.PROTEST \
 			or def.look == EventDef.Look.FIREFIGHT:
 		return Vector2.DOWN if EventInstance._spread_is_vertical(map, placed) else Vector2.RIGHT
 	return Vector2.RIGHT if EventInstance._stationary_vehicle_uses_side(def.look, map, placed,

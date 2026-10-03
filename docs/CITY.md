@@ -2017,7 +2017,7 @@ never count as a route to a calm area.
 
 Top-down camera with a fake vertical extrusion:
 
-- Ground is a `TileMapLayer` over `assets/ground_tileset.tres`. Kerbs, centre lines and
+- Ground is freeable nearby `TileMapLayer` chunks over `assets/ground_tileset.tres`. Kerbs, centre lines and
   zebra crossings are authored tiles chosen per cell by `GroundTiles`, not geometry
   recomputed on every redraw.
   `GroundLayers` builds their illustrated textures from shared bases and transparent details
@@ -2028,6 +2028,12 @@ Top-down camera with a fake vertical extrusion:
   illustrated components and carries whole tiles only for the twelve sources it composes nothing
   for, and a `tools/bake-atlases.sh --svg` bake carries the authored vector tiles whole and no
   components at all.
+- Scenery residency follows the full camera view plus an offscreen preparation margin. A wider
+  retention margin preserves loaded chunks on reversals; absent chunks in that band stay absent.
+  Ground, shadows, decals and water release their distant drawing nodes. Building identities,
+  collisions, frontage facts, the complete map and offscreen gameplay remain live; window and
+  roof preparation returns from fixed seeds and current day, poster and blackout state. Camera
+  relocation prepares the destination synchronously before it is revealed.
 - Buildings fill exactly their lot: the front wall takes the southern `height` px and the
   roof takes the rest. Fitting the mass inside the lot is what keeps extrusions off the
   street. (It does *not* by itself keep an extrusion off the player: the mass is inside the lot and

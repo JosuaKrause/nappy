@@ -1,0 +1,65 @@
+nappy rig log  2026-10-02T19:25:39  version v0.21.4-8-ga5495e7e-dirty
+   0.0  texture  atlas page 'ui' loaded in the startup: 1.0 ms, 262 x 429
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.5 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 2.4 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 2.0 ms, 392 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.6 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.9 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.8 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 11.2 ms, 810 x 982
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.6 ms, 168 x 242
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.9 ms
+
+day 8  act 3  run seed 4242  city seed 4242  length 180.0s  invincible
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 21.9 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, west along her street
+   0.0  contact  step 5 on offer at (153,94)
+   0.0  roll     chalk mark guarded (far end): robber 212px away
+   0.0  plan     closed: accident v(2,4), cordoned off v(4,1), cordoned off v(2,5)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: abduction x4, alley_mouse x4, alley_robbery x4, burnt_out_car x76, burst_water_main x16, busker x4, cafe_tables x43, car_accident x22, cat_dash x7, charging_dog x3, chatting_mother x2, collapsed_frontage x15, construction x45, cyclist x8, delivery_van x36, dog_walker x23, homeless_yeller x7, ice_cream_van x5, leaf_blower x15, loose_dog x18, loudspeaker x5, market_stall x31, moving_van x30, pigeon_flock x5, playground x2, police_patrol x10, poster_crew x12, reversing_lorry x3, roadblock x6, scaffolding x20, skip x20
+   0.0  start    doorstep (113,80), facing 180°
+   0.0  contact  step 5 moved to (118,79): never seen at (153,94)
+   0.0  roll     chalk mark guarded (far end): robber 217px away
+   0.0  near     abduction (telegraph) at (118,85), 215px, exc 0, in 0.0/s (crowd 4.2, events 1.0), sleep 0
+   0.0  near     delivery_van (telegraph) at (116,82), 115px, exc 0, in 0.0/s (crowd 4.2, events 1.0), sleep 0
+   0.0  cue      the mark over her head: soon for 0.0s (0.0s of it on the road) | abduction 234px
+   0.0  frame    fps 2, worst frame 256.8ms, draws 290, objects 1563, primitives 3464, process 2186.57ms, physics 1.84ms
+   0.0  path     onto the corridor at (113,75), after 0.0s off it
+   0.0  path     off the corridor at (113,73), after 0.0s on it
+   0.0  cross    stepped into the road at (113,73), at a zebra
+   0.0  frame    fps 90, worst frame 10.4ms, draws 299, objects 1702, primitives 3841, process 13.62ms, physics 1.13ms
+   0.0  contact  step 5 moved to (118,78): never seen at (118,79)
+   0.0  roll     chalk mark guarded (far end): robber 178px away
+   0.0  taken    'abduction' takes a bystander
+   0.0  frame    fps 157, worst frame 10.4ms, draws 263, objects 1594, primitives 3721, process 10.37ms, physics 1.06ms
+   0.0  shot     burst started: asked for an animation burst at (113,65) | exc 0, sleep 0 | playing | asked/burst-7003597-001
+   0.0  near     construction at (108,61), 197px, exc 0, in 0.0/s (crowd 4.3, events 0.0), sleep 0
+   0.0  near     dog_walker at (113,60), 104px, exc 0, in 0.0/s (crowd 4.5, events 1.7), sleep 0
+   0.0  near     dog_walker at (113,61), 57px, exc 0, in 0.0/s (crowd 4.0, events 7.3), sleep 0
+   0.0  near     delivery_van at (109,60), 148px, exc 0, in 0.0/s (crowd 4.0, events 7.3), sleep 0
+   0.0  near     dog_walker at (113,61), 24px, exc 0, in 0.0/s (crowd 2.3, events 9.3), sleep 0
+   0.0  near     construction at (108,57), 197px, exc 0, in 0.0/s (crowd 4.2, events 12.7), sleep 0
+   0.0  frame    fps 141, worst frame 60.9ms, draws 338, objects 1785, primitives 4199, process 9.97ms, physics 1.05ms
+   0.0  contact  step 5 moved to (111,67): never seen at (118,78)
+   0.0  roll     chalk mark guarded (far end): robber 181px away
+   0.0  cross    stepped into the road at (113,59), at a zebra
+   0.0  near     construction at (111,53), 197px, exc 0, in 0.0/s (crowd 0.0, events 1.2), sleep 0
+   0.0  near     construction at (111,53), 107px, exc 0, in 0.0/s (crowd 0.9, events 0.0), sleep 0
+   0.0  frame    fps 46, worst frame 67.4ms, draws 310, objects 1583, primitives 3953, process 60.17ms, physics 0.99ms
+   0.0  contact  step 5 moved to (111,66): never seen at (111,67)
+   0.0  roll     chalk mark guarded (far end): robber 194px away
+   0.0  turn     doubled back 180°
+   0.0  near     construction at (108,61), 198px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.0  cross    stepped into the road at (113,58), at a zebra
+   0.0  near     delivery_van at (109,60), 147px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.0  shot     burst complete: 36 frames | frame_cap
+   0.0  frame    fps 44, worst frame 61.7ms, draws 300, objects 1653, primitives 4145, process 67.36ms, physics 0.99ms
+   0.0  near     dog_walker at (113,63), 101px, exc 0, in 0.0/s (crowd 6.5, events 0.0), sleep 0
+   0.0  cue      edge badge: alley_mouse at 313px, closing 56px/s
+   0.0  near     dog_walker at (113,64), 51px, exc 0, in 0.0/s (crowd 2.2, events 7.5), sleep 0
+   0.0  contact  walked within 126px of the chalk mark at (111,66)
+   0.0  frame    fps 48, worst frame 10.4ms, draws 358, objects 1735, primitives 4204, process 61.39ms, physics 1.12ms
+   0.0  near     dog_walker at (113,64), 24px, exc 0, in 0.0/s (crowd 4.3, events 8.3), sleep 0
+   0.0  contact  step 5 seen at (111,66) after 1.0s within 150px

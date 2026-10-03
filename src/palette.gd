@@ -107,7 +107,11 @@ const HALO_MID := Color("e8791a")
 ## The three lamps of a signal head. **Not** the mark colours, deliberately: a caret says how bad
 ## a thing is and a lamp says whether you may go, and borrowing `MARK_LETHAL` for a red light
 ## would make the one instruction in the game that is about permission look like a threat. These
-## are lamp colours — saturated, self-lit, and readable against the asphalt at dusk.
+## are lamp colours — saturated, self-lit, and readable against the asphalt at dusk. The one
+## other place `SIGNAL_RED`'s red is drawn is the strike on the save symbol
+## (`art/ui/save_unavailable.svg`), which keeps the lamp's red rather than a red of its own
+## because the player chose "Keep signal red" for it (cozy-pelican, 2026-10-02) — a decided
+## exception, not a licence for other pictures to borrow it.
 const SIGNAL_RED := Color("e04a3f")
 const SIGNAL_AMBER := Color("f0a92e")
 const SIGNAL_GREEN := Color("5fc46a")

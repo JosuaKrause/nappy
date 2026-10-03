@@ -146,8 +146,10 @@ entry_names() {
     done | sed 's/\.md$//'
 }
 
+# Not `grep -q`: under pipefail it exits at the first match, the listing still writing into the pipe
+# dies of SIGPIPE, and the pipeline's status then reads as "not taken" -- a used pair drawn again.
 pair_taken() {
-    existing_names | grep -Eq "^[0-9]{4}-[0-9]{2}-[0-9]{2}-$1(-[0-9]+)?$"
+    existing_names | grep -E "^[0-9]{4}-[0-9]{2}-[0-9]{2}-$1(-[0-9]+)?$" >/dev/null
 }
 
 # The first free <base>, <base>-2, <base>-3 ... in $1 (a folder), as a file <x>.md.

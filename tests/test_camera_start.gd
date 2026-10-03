@@ -57,6 +57,17 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 	t.check(main._player.camera_screen_center().distance_to(main._player.global_position)
 				< Tuning.TILE_SIZE,
 			"and the same holds on the first frame after the title's disc is pressed")
+	# A dawn after finishing far away must prepare home before the next process callback.
+	var city: City = main._city
+	var far := Rect2(Vector2(64, 64), Tuning.VIEW_HALF_EXTENT * 2)
+	city.scenery.update(far, true)
+	main._player.reset_at(far.get_center())
+	main._first_day = false
+	main._start_day()
+	var home_view := city._home_scenery_view()
+	for key in city._ground.keys_in(home_view):
+		t.check(city._ground.chunks.has(key),
+				"real day reset prepares the home viewport before its first frame")
 
 	t.get_tree().paused = false
 	Telemetry.end_run()
