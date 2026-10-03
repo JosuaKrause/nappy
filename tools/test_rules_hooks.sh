@@ -1855,8 +1855,13 @@ write_guard_asked=(
     'git push --thin origin feature/x'
     'git -c remote.origin.push=HEAD:refs/heads/feature/x push origin'
     'git -c user.name=x push origin feature/x'
+    'git -c push.default=simple push origin'
+    'git -cpush.default=current push origin'
+    'git -c user.name=push.default=matching push origin feature/x'
     'git -c "user.email=$E" push origin feature/x'
     'git -C "$(pwd)" push origin feature/x'
+    "sh -c 'git -C \"\$(pwd)\" push origin feature/x'"
+    'git -C "`pwd`" push origin feature/x'
     'git commit -m "a; b" && git push origin feature/x'
     'git push origin feature/x && git commit -m "c|d"'
     'bash -c "git push origin feature/x; git status"'
@@ -1918,6 +1923,12 @@ write_guard_never_asked=(
     'git push origin main:v2'
     'git push origin +v1'
     'git -c push.followTags=true push origin x'
+    'git -c push.default=matching push origin'
+    'git -cpush.default=matching push origin'
+    'git -c Push.Default=MATCHING push origin'
+    'git -c "push.default=matching" push origin'
+    'git -c push.default=matching push origin feature/x'
+    'git -c push.default=matching -c push.default=simple push origin'
     'git push --ta origin'
     'git push --t origin'
     'git push --fol origin x'
@@ -1984,6 +1995,13 @@ write_guard_never_asked=(
     'git -C $(pwd) push origin feature/x'
     'git -c remote.origin.push=`echo v1` push origin'
     'gh -R $(cat r) pr merge 3'
+    'bash -c "git -C $(pwd) push origin v1.0.0"'
+    'bash -c "git -C `pwd` push origin v1.0.0"'
+    "sh -c 'git -C \$(pwd) push origin v1.0.0'"
+    'bash -c "gh -R $(cat r) pr merge 3"'
+    'bash -c "gh pr -R $(cat r) merge 3"'
+    'bash -c "gh -R `cat r` pr merge 3"'
+    'bash -c "gh pr -R `cat r` merge 3"'
 )
 # A read, and `git tag` itself, which changes only the local repository, stay allowed.
 write_guard_allowed=(
@@ -1991,7 +2009,20 @@ write_guard_allowed=(
     'git tag v1'
     'git tag -a v1 -m x'
     'git -C $(pwd) status'
+    'bash -c "git -C $(pwd) status"'
+    "sh -c 'git -C \$(pwd) status'"
+    'gh -R "$(cat r)" pr view 3'
+    'gh -R "`cat r`" pr view 3'
+    'gh pr -R "$(cat r)" view 3'
+    "sh -c 'gh -R \"\$(cat r)\" pr view 3'"
 )
+# The same denial cases on a machine with identities, even when asking is switched on: a
+# quoted-script expansion must not disappear before environment policy ever sees the write.
+write_guard_switch=1
+for write_guard_cmd in "${write_guard_never_asked[@]}"; do
+    assert_write_guard "local identities: $write_guard_cmd -> deny" deny "$write_guard_cmd"
+done
+write_guard_switch=""
 for write_guard_mode in remote unconfigured; do
     if [ "$write_guard_mode" = remote ]; then
         write_guard_remote=true

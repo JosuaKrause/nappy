@@ -61,8 +61,11 @@
 # end the option run or are taken for the subcommand, and so can a subcommand that is itself an
 # expansion (`git $(echo push) origin v1`): that `git` is a write when a commit-making or
 # pushing subcommand's name (`push`, `commit`, `merge`, `rebase`, `pull`, `cherry-pick`, `revert`,
-# `am`) appears anywhere after it in the command, and that `gh` always is. Written inside quotes
-# (`git -C "$(pwd)" push`) the substitution is one argument and the subcommand is read as usual.
+# `am`) appears anywhere after it in the command, and that `gh` always is. A separator where the
+# subcommand belongs inside a quoted script is unreadable too (`bash -c 'git -C $(pwd) push'`):
+# quoting the script hides the substitution's opener, not the write that follows it. When the
+# option's own argument is quoted (`git -C "$(pwd)" push`), the substitution is one argument and
+# the subcommand is read as usual.
 # Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
 # issue/release list/view`, `gh run watch/download`, `gh repo clone`, `gh auth token`, `gh
 # search`, `gh browse`, a GET `gh api` with or without fields, an inline GraphQL query with no
@@ -528,7 +531,8 @@ def segment_scan($w; $start; $n; $flags):
 # well, and one naming `mirror` (`git -c remote.origin.mirror=true push origin`) makes it a forced
 # one. A push refspec set that way is read with the refspec tests themselves (`config_push_scan`,
 # below), so `git -c remote.origin.push=HEAD:v1 push origin` is a tag push and `git -c
-# remote.origin.push=:main push origin` a deleting one.
+# remote.origin.push=:main push origin` a deleting one. `push.default=matching` makes it a push
+# of every matching branch; that inline setting is denied even beside an explicit refspec.
 #
 # An option word (`-` first) is checked against the option lists; any other word, a refspec or a
 # remote, costs one regex, so a long push is no dearer to read than any other command. The regexes
@@ -538,6 +542,7 @@ def long_option_prefix($full; $min):
   (split("=") | .[0]) as $o | ($o | length) >= $min and ($full | startswith($o));
 def tag_config_re: "refs/tags/|[Ff][Oo][Ll][Ll][Oo][Ww][Tt][Aa][Gg][Ss]|\\*";
 def forced_config_re: "[Mm][Ii][Rr][Rr][Oo][Rr]";
+def matching_push_config: test("^(-c)?push\\.default=matching$"; "i");
 def forced_push_option:
   test("^-[A-Za-z]*[fd][A-Za-z]*$") or startswith("--force")
   or long_option_prefix("--force-with-lease"; 4) or long_option_prefix("--force-if-includes"; 4)
@@ -616,6 +621,14 @@ def opener_at($w0; $p):
   ($w0[$p] // "") as $s
   | $s == "`" or ($s == "(" and $p > 0 and ($w0[$p - 1] | endswith("$")));
 def expansion_opener($t; $p): opener_at($t.w0; $p);
+# Inside a quoted script an opener is a soft marker. `$(` leaves it at the subcommand
+# position; with backticks, an option can consume it as its argument, leaving the first word
+# inside the substitution there instead. A marker deeper than the command's option words
+# belongs to a fully quoted argument (`git -C "$(pwd)" push`, `gh -R "$(cat r)" pr view`),
+# whose subcommand remains readable even when the plain fallback splits that argument apart.
+def soft_subcommand_opener($t; $p; $level):
+  ($t.w0[$p] == "\u0001" and ($t.lv[$p] // 0) <= $level)
+  or ($p > 0 and $t.w0[$p - 1] == "\u0001" and ($t.lv[$p - 1] // 0) <= $level);
 def opener_counts($w0):
   [0] + [foreach range(0; $w0 | length) as $k (0; . + (if opener_at($w0; $k) then 1 else 0 end))];
 def openers_between($t; $a; $b):
@@ -626,7 +639,9 @@ def detect_git($w; $t; $i; $n):
   else
     (after_options($t; $i + 1)) as $sub
     | if $t.lw > $i
-         and (openers_between($t; $i + 1; [$sub + 1, $n] | min) or (($w[$sub] // "") | contains("$")))
+         and (openers_between($t; $i + 1; [$sub + 1, $n] | min)
+              or (($w[$sub] // "") | contains("$"))
+              or ($t.lw > $sub and soft_subcommand_opener($t; $sub; $t.lv[$i + 1] // 0)))
       then
         {next: ([$sub, $i + 1] | max), reason: "git with a shell expansion before its subcommand"}
       elif ($sub >= $n) or ($w[$sub] | is_sep) then null
@@ -635,7 +650,8 @@ def detect_git($w; $t; $i; $n):
         | if $subcmd == "push" then
             (push_scan($w; $t; $sub + 1; $n)) as $sc
             | (config_push_scan($w; $t; $i + 1; $sub)) as $cf
-            | ($sc.tags or $cf.tags or any(range($i + 1; $sub) | $w[.]; test(tag_config_re))) as $tags
+            | ($sc.tags or $cf.tags
+               or any(range($i + 1; $sub) | $w[.]; test(tag_config_re) or matching_push_config)) as $tags
             | ($sc.forced or $cf.forced or any(range($i + 1; $sub) | $w[.]; test(forced_config_re)))
               as $forced
             | {next: $sc.end,
@@ -845,14 +861,16 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
 # the shared list) are read nouns whole, with no verb of their own to check; `gh api` is
 # `detect_gh_api`'s. A noun or verb position that lands on a separator or the end of the command
 # (`gh status | head`, `gh --version && gh auth status`) has no noun/verb there at all, not the
-# separator itself, so it never becomes part of a denial reason.
+# separator itself, so it never becomes part of a denial reason. A soft separator there is
+# unreadable: inside a quoted script it can be a substitution whose following write is hidden.
 def generic_reads: ["view", "list", "status", "diff", "checks", "checkout", "watch", "download", "clone", "token"];
 def read_only_nouns: ["browse", "search"];
 def detect_gh($w; $t; $i; $n; $lm; $bounded):
   if ($w[$i] | named("gh")) | not then null
   else
     (after_options($t; $i + 1)) as $noun_i
-    | if ($noun_i < $n) and expansion_opener($t; $noun_i) then
+    | if ($noun_i < $n) and (expansion_opener($t; $noun_i)
+         or soft_subcommand_opener($t; $noun_i; $t.lv[$i + 1] // 0)) then
         {next: $noun_i, reason: "gh with a shell expansion before its noun or verb"}
       elif ($noun_i >= $n) or ($w[$noun_i] | is_sep) then null
       else
@@ -861,7 +879,8 @@ def detect_gh($w; $t; $i; $n; $lm; $bounded):
           elif $noun == "api" then detect_gh_api($w; $t; $noun_i + 1; $n; $lm; $bounded)
           else
             (after_options($t; $noun_i + 1)) as $verb_i
-            | if ($verb_i < $n) and expansion_opener($t; $verb_i) then
+            | if ($verb_i < $n) and (expansion_opener($t; $verb_i)
+                 or soft_subcommand_opener($t; $verb_i; $t.lv[$noun_i + 1] // 0)) then
                 {next: $verb_i, reason: "gh with a shell expansion before its noun or verb"}
               elif ($verb_i >= $n) or ($w[$verb_i] | is_sep) then null
               else
