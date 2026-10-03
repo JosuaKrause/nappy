@@ -25,6 +25,13 @@ func run(t) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
 	city.crowd.start_day(1, rng, Vector2(1952, 1936), true, false, true, 2)
+	var existing: CrowdAgent = city.crowd.agents()[0]
+	var population := city.crowd.agent_count()
+	var duplicate := city.crowd.add_recipe_actor("overlap", CrowdAgent.Kind.WALKER,
+			existing.position, existing.heading(), -1, 1)
+	t.check(str(duplicate.error).contains("overlaps an existing walker")
+			and city.crowd.agent_count() == population,
+			"authored walker overlapping background crowd is rejected without losing population")
 	var counts := {}
 	var before := {}
 	var cars := 0

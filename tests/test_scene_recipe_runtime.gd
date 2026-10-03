@@ -97,6 +97,14 @@ func _test_schema(t) -> void:
 	var valid := {"setup": {"day": 1, "parent": "mother"},
 			"playback": {"duration": 2, "walk": "0.5s0.5E1p"}}
 	t.check(SceneRecipeRuntime.validate_runtime(valid).is_empty(), "valid optional runtime defaults are accepted")
+	var mixed := {"setup": {"background": {"crowd": true, "uniform_walkers": true},
+			"actors": [{"name": "walker", "kind": "walker", "at": [0, 0], "direction": "north"}]}}
+	t.check(SceneRecipeRuntime.validate_runtime(mixed).is_empty(), "uniform background admits explicit walkers")
+	mixed.setup.actors[0].kind = "car"
+	t.check(not SceneRecipeRuntime.validate_runtime(mixed).is_empty(), "background still refuses pinned cars")
+	mixed.setup.actors[0].kind = "walker"
+	mixed.setup.background.uniform_walkers = false
+	t.check(not SceneRecipeRuntime.validate_runtime(mixed).is_empty(), "random background still refuses pinned actors")
 	var invalid: Array[Dictionary] = [
 		{"setup": {"day": 1.5}},
 		{"setup": {"day": 13, "seals": [{"segment": [3, 5, 0], "candidate": "cafe_pair"}],

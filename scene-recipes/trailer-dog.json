@@ -5,6 +5,14 @@
   "anchors": {"start": {"world": [1536, 2384]}, "dog": {"world": [1967, 2384]}},
   "setup": {"tutorial_complete": true, "day": 3, "parent": "mother", "player": {"at": "start", "facing": "east"},
     "background": {"crowd": true, "uniform_walkers": true, "walker_multiplier": 2},
+    "actors": [
+      {"name": "left_walk_1", "kind": "walker", "at": [1352, 2240], "direction": "south"},
+      {"name": "left_walk_2", "kind": "walker", "at": [1352, 2400], "direction": "north"},
+      {"name": "left_walk_3", "kind": "walker", "at": [1400, 2368], "direction": "north"},
+      {"name": "left_walk_4", "kind": "walker", "at": [1400, 2176], "direction": "south"},
+      {"name": "left_walk_5", "kind": "walker", "at": [1480, 2304], "direction": "south"},
+      {"name": "left_walk_6", "kind": "walker", "at": [1480, 2464], "direction": "north"},
+      {"name": "left_walk_7", "kind": "walker", "at": [1528, 2240], "direction": "south"}],
     "roof_fixtures": [{"lot": [48, 76, 8, 8], "fixtures": [
       {"cell": [1, 2], "kind": "skylight_a"}, {"cell": [3, 2], "kind": "skylight_b"},
       {"cell": [5, 2], "kind": "skylight_a"}]}],
@@ -13,5 +21,12 @@
     "observations": [{"tick": 6, "subject": "player", "condition": "moving"},
       {"tick": 50, "subject": "dog", "condition": "visible"},
       {"tick": 56, "subject": "dog", "condition": "pursuing"},
-      {"tick": 56, "subject": "player", "condition": "running"}]}
+      {"tick": 56, "subject": "player", "condition": "running"},
+      {"tick": 56, "subject": "left_walk_1", "condition": "moving"},
+      {"tick": 56, "subject": "left_walk_2", "condition": "moving"},
+      {"tick": 56, "subject": "left_walk_3", "condition": "moving"},
+      {"tick": 56, "subject": "left_walk_4", "condition": "moving"},
+      {"tick": 56, "subject": "left_walk_5", "condition": "moving"},
+      {"tick": 56, "subject": "left_walk_6", "condition": "moving"},
+      {"tick": 56, "subject": "left_walk_7", "condition": "moving"}]}
 }

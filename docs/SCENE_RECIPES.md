@@ -55,7 +55,9 @@ population from the ordinary act count (1–4, default 1). Cars retain their nor
 street weighting. Both require `crowd: true`; an ordinary day restores the default distribution.
 Walker directions remain varied within each sidewalk lane. A uniform population that exceeds
 the available valid sidewalk positions is rejected explicitly.
-Random crowd cannot accompany pinned crowd actors.
+Uniform background crowd can accompany explicitly placed walkers; their ordinary lane, body
+clearance and speed checks apply, and overlap with another walker is rejected. Other combinations
+of background crowd and pinned actors are rejected.
 Random background activity requires full extent; bounded scenes use authored activity so their
 plain exterior does not acquire context-city actors or collisions.
 

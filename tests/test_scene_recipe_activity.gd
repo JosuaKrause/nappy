@@ -12,9 +12,16 @@ func _ready() -> void:
 		return
 	var act := Tuning.act_for_day(GameState.day)
 	var multiplier: float = runtime.data.setup.get("background", {}).get("walker_multiplier", 1)
-	if city.crowd.agent_count() != roundi(Tuning.crowd_pedestrians(act) * multiplier) + Tuning.crowd_cars(act):
+	var pins: Array = runtime.data.setup.get("actors", [])
+	if city.crowd.agent_count() != roundi(Tuning.crowd_pedestrians(act) * multiplier) + Tuning.crowd_cars(act) + pins.size():
 		fail("background population differs from ordinary day density")
 		return
+	for pin: Dictionary in pins:
+		var errors: Array[String] = []
+		var actor: CrowdAgent = runtime.named.get(pin.name)
+		if not actor or not actor.position.is_equal_approx(runtime.position_of(pin.at, errors)):
+			fail("background population dropped or moved an explicit walker")
+			return
 	if not city.events._recipe_plan:
 		fail("authored scene enables ordinary event filling or director")
 		return

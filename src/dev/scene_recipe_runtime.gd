@@ -231,7 +231,9 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	if setup.has("column") and not setup.get("events", []).is_empty():
 		errors.append("setup.column cannot accompany other pinned events")
 	if background.get("crowd", false) and not setup.get("actors", []).is_empty():
-		errors.append("setup.background.crowd cannot be combined with pinned actors")
+		for actor: Dictionary in setup.actors:
+			if not background.get("uniform_walkers", false) or actor.kind != "walker":
+				errors.append("background crowd accepts only pinned walkers with uniform_walkers enabled")
 	_keys(playback, ["walk", "duration", "capture_at", "camera", "caption", "title", "observations"],
 			"playback", errors)
 	_number(playback.get("duration", 5), "playback.duration", 1.0 / 60.0, 240, errors)
