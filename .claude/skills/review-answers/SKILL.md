@@ -14,12 +14,12 @@ files are authoritative for what must be asked. Read their local references, rel
 records (fetched with `tools/decisions.sh <noun>`), playtests or code only where needed to explain a question; use judgment to summarize the
 context rather than copying whole records or applying an automated sentence-stripping scheme.
 
-Write to `build/review-answers.md` in the **main checkout** (`/Users/krause/workspace/nappy-claude/build/`)
-by default, never in an agent's worktree: a worktree's `build/` is deleted by `git worktree remove`,
+Write to `build/review-answers.md` in the **main checkout** (the first entry `git worktree list`
+prints) by default, never in an agent's worktree: a worktree's `build/` is deleted by `git worktree remove`,
 and the player's answers with it. Report the absolute path. The worksheet is local and Git-ignored.
 If that path already exists, inspect it for player-written answers and choose a fresh sibling filename instead
-of overwriting it. Overwrite an existing worksheet only when the player explicitly asks. Never
-lose existing answer text while regenerating a worksheet.
+of overwriting it. Overwrite an existing worksheet only when the player explicitly asks, and even then carry every
+answer already written in it over to the new one: no regeneration loses answer text.
 
 Give each review source, in order:
 
