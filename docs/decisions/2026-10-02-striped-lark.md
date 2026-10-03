@@ -70,6 +70,33 @@ shell syntax, lint and whitespace. Test payloads were never executed as shell wr
 Main reconciliation ed3acd0 preserved incoming CI costs and the merged recipe design;
 base 6006fa69, prior head cba913ae, incoming main 746e7b3f. Boot checks passed.
 
+The independent final review at 790881cc found two remaining in-scope gaps:
+[arbitrary lowercase replacement markers](https://github.com/JosuaKrause/nappy/pull/453#discussion_r4171808745)
+can replace a command spelled like a literal read, and
+[ordinary parallel option values](https://github.com/JosuaKrause/nappy/pull/453#discussion_r4171808747)
+can hide a publishing script's command position. The player's incorporation request
+includes fixing these findings in this PR.
+
+The wrapper context now carries a stack of active replacement tokens. Attached and
+separate replacement forms, including aliases, make a git/gh noun or verb containing
+the token unreadable even when its spelling is lowercase or matches a known read.
+Nested wrappers retain the enclosing context; readable command boundaries end it.
+The argument tables cover the reviewed parallel value-taking options and aliases,
+including maximum arguments/processes, job logs, delay and halt behavior, plus BSD
+xargs value options. No adapter contract changes.
+
+Optional replacement syntax retains both command-position interpretations: the
+generic table keeps the default-marker reading and the wrapper table can consume
+a following marker. This conservative choice, open to correction, avoids allowing
+an unreadable command merely because one interpretation resembles a read.
+
+The expanded regression matrix produces 209 failures against the preceding hook.
+With the correction, all 3,152 hook checks and 57 adapter tests pass; shell syntax,
+lint, whitespace and headless boot pass. The tests cover the exact review cases,
+replacement aliases, read-shaped markers, nested context, punctuation-only values,
+reads, command boundaries and identity exemptions/refusals. All candidate commands
+remain JSON inputs to the hook and are never executed as publishing payloads.
+
 **Limits.** This remains a bounded development guardrail, with the existing
 accepted shell-parser gaps. It is not a shell interpreter or a security boundary.
 The supplied review's obsolete `$[...]` arithmetic observation explicitly asks
