@@ -2,7 +2,7 @@
   "version": 1, "name": "Army trucks driving beside the mother", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
   "anchors": {"start": {"world": [1824, 2160]}},
-  "setup": {"day": 13, "parent": "mother", "player": {"at": "start", "facing": "north"},
+  "setup": {"tutorial_complete": true, "day": 13, "parent": "mother", "player": {"at": "start", "facing": "north"},
     "column": {"at": [1904, 2064], "direction": "north"}},
   "playback": {"walk": "1.5n", "duration": 1.5, "capture_at": 0.75,
     "observations": [{"tick": 23, "subject": "truck_1", "condition": "visible"},

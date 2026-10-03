@@ -698,6 +698,7 @@ func _ready_escape() -> void:
 			return
 		_prepare_city_scenery()
 		_summary.dismiss()
+		_apply_recipe_teaching()
 		_finale_brief_open = false
 		get_tree().paused = false
 		_finale.start_section()
@@ -921,6 +922,16 @@ func _on_escape_exit_requested() -> void:
 ## the brief; it is said on the continue instead, on a first entry only — *"like normal tutorial
 ## hints"*, so a retry is not lectured about what it is already doing.
 func _on_finale_section_started(section: int, restarted: bool) -> void:
+	if _recipe and restarted:
+		if _recipe.scripted:
+			_recipe.manifest["playback_error"] = "the authored escape attempt was lost"
+			_recipe.write_manifest()
+			_recipe._active = false
+			get_tree().quit(1)
+		else:
+			# Reload every authored actor and progression field, not the ordinary service exit.
+			_reload_the_scene()
+		return
 	# The run's own record of where it is, which is what the save carries and what the next boot
 	# reads: written here, the one place both sections and both boots pass through.
 	GameState.escape_section = section
@@ -1872,7 +1883,18 @@ func _start_recipe_day() -> void:
 		_recipe_failed(errors)
 		return
 	_prepare_city_scenery()
+	_apply_recipe_teaching()
 	_first_day = false
+
+## Authored mid-game scenes may start after the ordinary control lessons have been learned.
+## Danger warnings and the rest of the normal HUD remain active.
+func _apply_recipe_teaching() -> void:
+	if not _recipe.data.get("setup", {}).get("tutorial_complete", false):
+		return
+	_hud._teach_left = 0
+	_hud._teach.text = ""
+	_hud._taught_pause = true
+	_hud._taught_run = true
 
 func _recipe_failed(errors: Array) -> void:
 	for problem: Variant in errors:

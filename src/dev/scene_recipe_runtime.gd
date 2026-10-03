@@ -23,6 +23,7 @@ var _observations: Array = []
 var _duration_ticks := 0
 var _active := false
 var _capture_tick := -1
+var _zoom: ZoomOutCamera
 var _last_positions: Dictionary = {}
 
 static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
@@ -55,7 +56,9 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	var setup: Dictionary = recipe.get("setup", {})
 	var playback: Dictionary = recipe.get("playback", {})
 	_keys(setup, ["day", "parent", "player", "background", "progression", "events", "actors",
-			"signal_time", "column"], "setup", errors)
+			"signal_time", "column", "tutorial_complete"], "setup", errors)
+	if not setup.get("tutorial_complete", false) is bool:
+		errors.append("setup.tutorial_complete must be boolean")
 	_number(setup.get("day", 1), "setup.day", 1, 14, errors, true)
 	if not setup.get("parent", "mother") in ["mother", "father"]:
 		errors.append("setup.parent must be mother or father")
@@ -456,6 +459,8 @@ func begin() -> void:
 	DevRig.apply_zoom(get_viewport().get_camera_2d(), float(camera.get("zoom", 1)))
 	if camera.has("zoom_out"):
 		var zoom := ZoomOutCamera.new()
+		_zoom = zoom
+		zoom.simulation_clock = elapsed
 		add_child(zoom)
 		zoom.setup(get_viewport().get_camera_2d(), _city.map.tile_rect_to_world(
 				Rect2i(Vector2i.ZERO, _city.map.size)), get_viewport().get_visible_rect().size,
@@ -520,6 +525,14 @@ func elapsed() -> float:
 func prepare_capture() -> void:
 	if manifest.has("capture_tick"):
 		return
+	if _zoom:
+		_zoom._process(0)
+		_zoom.set_process(false)
+	var camera := get_viewport().get_camera_2d()
+	if camera:
+		camera.force_update_scroll()
+		manifest["capture_camera"] = {"position": [camera.global_position.x, camera.global_position.y],
+				"zoom": camera.zoom.x}
 	manifest["capture_tick"] = tick
 	manifest["capture_actors"] = snapshot()
 	write_manifest()

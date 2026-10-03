@@ -2,7 +2,7 @@
   "version": 1, "name": "An early danger on the father's walk", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
   "anchors": {"start": {"world": [1950, 1936]}, "blower": {"tile": [65, 60]}},
-  "setup": {"day": 1, "parent": "father", "player": {"at": "start", "facing": "east"},
+  "setup": {"tutorial_complete": true, "day": 1, "parent": "father", "player": {"at": "start", "facing": "east"},
     "events": [{"name": "blower", "row": "leaf_blower", "at": "blower", "age": 1.8}]},
   "playback": {"walk": "0.6e1.4p", "duration": 2, "capture_at": 0.5,
     "observations": [{"tick": 15, "subject": "player", "condition": "moving"},

@@ -21,6 +21,8 @@ extends Node
 var _seconds := 1.0
 var _delay := 0.0
 var _elapsed := 0.0
+## Saved recipes supply physics time so a held screenshot cannot advance the camera in idle time.
+var simulation_clock: Callable
 ## The camera the move starts from — hers — read at the moment it starts.
 var _from: Camera2D
 var _end_position := Vector2.ZERO
@@ -44,7 +46,10 @@ static func overview_zoom(bounds: Rect2, viewport_size: Vector2) -> float:
 	return minf(viewport_size.x / bounds.size.x, viewport_size.y / bounds.size.y)
 
 func _process(delta: float) -> void:
-	_elapsed += delta
+	if simulation_clock.is_valid():
+		_elapsed = float(simulation_clock.call())
+	else:
+		_elapsed += delta
 	if _elapsed < _delay:
 		return
 	if not _camera:
