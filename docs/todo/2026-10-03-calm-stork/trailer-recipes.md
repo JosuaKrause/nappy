@@ -5,6 +5,12 @@ Each scene has an individually runnable saved recipe using production components
 the existing explicit creation checks. Do not copy the first attempted trailer's
 seeded composition as the storyboard.
 
+[rosy-lark, trailer still feedback](../../playtests/2026-10-03-rosy-lark.md)
+requires the choice, blower, dog and title scenes to bustle with people and events.
+The trucks scene needs activity appropriate to its day, the mother facing down, and
+varied posters on both buildings. The gate is horizontal. The chase still must show
+a readable running pose; action telemetry alone does not answer its visual feedback.
+
 Show going down the wrong path, turning around and going another way. The player
 does not require an obstacle as the reason. No fixed opening position in the final
 edit is decided here. Show mostly early dangers through the charging dog with its
