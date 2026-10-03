@@ -97,9 +97,16 @@ captured note count as the player's.
 
 ## Asking about a note
 
-**A question about a note is asked on its issue, before it is filed** *(2026-09-27: "if you need
-more info you can also ask in the github issue. so by the time we queue a task most questions are
-already resolved")*:
+**An ingestion never waits on a question.** *(2026-10-03: "If there is an open question in an
+issue stays open until the task gets picked up. Most of the time there needs to be some exploration
+etc done. The whole point of the issue ingestion is to get things in to the codebase fast. The
+questions come later after the ingestion is merged")* Every note is filed as it stands, and a
+question it leaves open is written into its queue entry, marked open, for whoever picks the task up.
+
+**A question about a note can still be asked on its issue** *(2026-09-27: "if you need more info you
+can also ask in the github issue. so by the time we queue a task most questions are already
+resolved")*, when the filer has one before the batch is filed; the answer is filed with the note,
+and the batch does not wait for it:
 
 ```sh
 uv run python tools/inbox.py --role claude-orchestrator ask N --body-file /tmp/question.md

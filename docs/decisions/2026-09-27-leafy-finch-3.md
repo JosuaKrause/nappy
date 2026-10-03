@@ -39,21 +39,19 @@ request's conversation comments share them, and so does a GraphQL query read fro
 identity can work and the guard asks the player about a write instead of denying it, an issue write
 is still denied, never asked about.
 
-The guard also stops reading a write command's words as a command when they are only text: a
-quoted argument of a text-only command, or a heredoc body such a command reads — when the
-delimiter is quoted, or the body holds no `$(`, backtick or `${`, since the shell runs those inside
-an unquoted body. A heredoc inside `$(…)` whose body holds a `)` it could close, a heredoc fed to a
-shell, an interpreter or `sed`, anything after a wrapper word, anything piped on (`|&` included),
-and a command that may run a file it writes are read as before. A delimiter is the shell's whole
-word (`<<EOF-1` is not `<<EOF`), and an unquoted body with a backslash-newline is read as commands.
+**A write's words are text in exactly three shapes, each the whole command** — the player chose
+this narrow form after three reviews each found shapes a general rule read as text while main
+denied them ([plaid-tapir](../playtests/2026-10-03-plaid-tapir.md), statement 4: "B"): a `cat`
+writing a file from a heredoc with a quoted delimiter; a `git commit -F -` reading such a heredoc,
+wrapped as a coder or orchestrator identity; and a lone `rg` or `grep` with one quoted pattern.
+Every other command is read exactly as main's guard reads it, so a heredoc commit message passed
+any other way, two heredocs in one command, or a quoted `echo` naming a write is denied as on main.
 
-**Accepted gaps, named in the guard's header:** a wrapped GraphQL call whose query comes from a
-file or `--input`, or from a variable an earlier separate command set (denying it would deny a
-reviewer's `resolveReviewThread` from a file); a file run by a later, separate command; a file run
-under a name an expansion builds from different pieces (`bash $(echo x).sh`); and a bare assignment
-run as a command (`c="…"; $c`), which main allows too. **Accepted false denies**, the safe
-direction: a second heredoc after a line that opens a group; text after any group, closed or not;
-and a written file named again by a read (`wc -l brief.md`).
+**Accepted gaps, named in the guard's header**, each allowed on main too: a wrapped issue write
+whose endpoint is built by an expansion or supplied by `xargs`, whose GraphQL query is built by an
+expansion or read from a file or pipe whose text the command does not hold, or that runs through a
+gh alias; and a script a shape-(a) heredoc writes that a later, separate command runs (a shell
+startup file, a git hook).
 
 **Issues were weighed as the queue itself and rejected** (statement 1: "items get reviewed when
 they enter the queue which in theory can reduce miscommunication or misinterpreted statements …
