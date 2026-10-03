@@ -4,6 +4,14 @@ extends RefCounted
 
 const EXAMPLE := "res://scene-recipes/power-station-hall.json"
 const PROBE := """extends Node
+class World extends Node2D:
+	var frames := 0
+	func _physics_process(_delta: float) -> void:
+		frames += 1
+		if Input.is_action_pressed("move_right"):
+			position.x += 1
+		if frames == 2 and position.x == 1:
+			print("ONE_TICK_INPUT_COMPLETED")
 func _ready() -> void:
 	var scripted := DevFlags.recipe_mode() == "scripted"
 	if DevFlags.is_rig() != scripted:
@@ -15,6 +23,22 @@ func _ready() -> void:
 		return
 	if GameSave.uses_save():
 		get_tree().quit(14)
+		return
+	if "--probe-boundary" in OS.get_cmdline_user_args():
+		var runtime := SceneRecipeRuntime.new()
+		var seconds := 1.0 / Engine.physics_ticks_per_second
+		var data := {"name": "one tick input", "playback": {"duration": seconds * 2,
+			"walk": str(seconds) + "e1p", "observations": [
+			{"tick": 1, "subject": "world", "condition": "near", "at": [1, 0], "distance": 0},
+			{"tick": 2, "subject": "world", "condition": "near", "at": [1, 0], "distance": 0}]}}
+		runtime.configure({"data": data, "anchors": {}, "manifest": {}}, true)
+		var world := World.new()
+		add_child(world)
+		add_child(runtime)
+		runtime.named.world = world
+		runtime._active = true
+		runtime._observe()
+		runtime._apply_input()
 		return
 	if "--probe-observation" not in OS.get_cmdline_user_args():
 		print("RECIPE_FLAGS_OK")
@@ -82,6 +106,10 @@ func _test_arguments(t) -> void:
 		PackedStringArray(["--seed", "3"]),
 		PackedStringArray(["--day", "3"]),
 		PackedStringArray(["--walk", "1s"]),
+		PackedStringArray(["--press", "pause", "0.1"]),
+		PackedStringArray(["--tap", "1", "1"]),
+		PackedStringArray(["--recipe-mode"]),
+		PackedStringArray(["--screenshot", "out.png"]),
 		PackedStringArray(["--recipe-mode", "free", "--after", "1"]),
 	]:
 		var loaded := SceneRecipeRuntime.load_recipe(EXAMPLE, args)
@@ -101,11 +129,11 @@ func _test_inputs(t) -> void:
 	runtime._apply_input()
 	t.check(Input.is_action_pressed("move_right") and not Input.is_action_pressed("run"),
 			"walking script presses the real right input without running")
-	runtime.tick = 60
+	runtime.tick = Engine.physics_ticks_per_second
 	runtime._apply_input()
 	t.check(Input.is_action_pressed("move_up") and Input.is_action_pressed("run")
 			and not Input.is_action_pressed("move_right"), "turning releases the previous direction and presses real run input")
-	runtime.tick = 120
+	runtime.tick = Engine.physics_ticks_per_second * 2
 	runtime._apply_input()
 	t.check(Input.get_vector("move_left", "move_right", "move_up", "move_down") == Vector2.ZERO
 			and not Input.is_action_pressed("run"), "script pause releases movement and running")
@@ -125,12 +153,14 @@ func _test_real_argv_and_failure(t) -> void:
 	var scene := FileAccess.open(scene_path, FileAccess.WRITE)
 	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % script_path)
 	scene.close()
-	for mode in ["free", "scripted", "failure"]:
+	for mode in ["free", "scripted", "failure", "boundary"]:
 		var args := PackedStringArray(["--headless", "--path", ProjectSettings.globalize_path("res://"),
 				"--quit-after", "120", scene_path, "--", "--recipe", EXAMPLE,
 				"--recipe-mode", "free" if mode == "free" else "scripted"])
 		if mode == "failure":
 			args.append("--probe-observation")
+		elif mode == "boundary":
+			args.append("--probe-boundary")
 		var output: Array = []
 		var status := OS.execute(OS.get_executable_path(), args, output, true)
 		var text_output := "\n".join(output)
@@ -139,6 +169,9 @@ func _test_real_argv_and_failure(t) -> void:
 		if mode == "failure":
 			t.check(status == 1 and text_output.contains("OBSERVATION_STOPPED_BEFORE_SUCCESS"),
 					"a failed observation at the final tick stops with failure instead of reporting playback success")
+		elif mode == "boundary":
+			t.check(status == 0 and text_output.contains("ONE_TICK_INPUT_COMPLETED"),
+					"one-tick input moves once, observes after the world, and completes the final tick")
 		else:
 			t.check(status == 0 and text_output.contains("RECIPE_FLAGS_OK"),
 					"%s recipe reads real argv, keeps the intended input mode and disables saves" % mode)

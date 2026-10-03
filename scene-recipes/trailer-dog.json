@@ -4,8 +4,8 @@
   "anchors": {"start": {"world": [1856, 1936]}, "dog": {"world": [2287, 1936]}},
   "setup": {"day": 3, "parent": "mother", "player": {"at": "start", "facing": "east"},
     "events": [{"name": "dog", "row": "charging_dog", "at": "dog"}]},
-  "playback": {"walk": "2e2p2.5W", "duration": 6.5,
-    "observations": [{"tick": 240, "subject": "dog", "condition": "visible"},
-      {"tick": 285, "subject": "dog", "condition": "pursuing"},
-      {"tick": 285, "subject": "player", "condition": "running"}]}
+  "playback": {"walk": "1.55e1.45W", "duration": 3, "capture_at": 1.85,
+    "observations": [{"tick": 50, "subject": "dog", "condition": "visible"},
+      {"tick": 56, "subject": "dog", "condition": "pursuing"},
+      {"tick": 56, "subject": "player", "condition": "running"}]}
 }

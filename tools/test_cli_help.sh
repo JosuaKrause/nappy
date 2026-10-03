@@ -95,6 +95,10 @@ assert_exit "ci-costs.sh --help"   zero ./tools/ci-costs.sh --help
 assert_exit "ci-costs.sh -h"       zero ./tools/ci-costs.sh -h
 assert_exit "check.sh --help"      zero ./tools/check.sh --help
 assert_exit "check.sh -h"          zero ./tools/check.sh -h
+assert_exit "scene-recipes.sh --help" zero ./tools/scene-recipes.sh --help
+assert_exit "scene-recipes.sh -h" zero ./tools/scene-recipes.sh -h
+assert_exit "scene-recipes.sh unknown" nonzero ./tools/scene-recipes.sh --not-a-flag
+assert_exit "scene-recipes.sh missing value" nonzero ./tools/scene-recipes.sh --recipe
 assert_exit "measure-ground-frames.sh --help" zero ./tools/measure-ground-frames.sh --help
 assert_exit "measure-ground-frames.sh -h" zero ./tools/measure-ground-frames.sh -h
 assert_exit "measure-ground-frames.sh unknown" nonzero ./tools/measure-ground-frames.sh --not-a-flag

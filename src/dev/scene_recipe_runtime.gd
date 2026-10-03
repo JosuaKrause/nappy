@@ -1,13 +1,14 @@
 class_name SceneRecipeRuntime
 extends Node
 ## One saved setup feeds free play, headless assertions and frame-locked recording. Playback
-## starts only after construction and scenery preparation; its clock is physics ticks at 60 Hz.
+## starts only after construction and scenery preparation; observations use the game's physics ticks.
 
 const DIRECTIONS := {"north": Vector2.UP, "south": Vector2.DOWN,
 		"east": Vector2.RIGHT, "west": Vector2.LEFT}
 const OWNED_FLAGS := ["--seed", "--day", "--spawn", "--parent", "--meters", "--walk",
 		"--flee", "--route", "--force", "--follow", "--zoom", "--zoom-out", "--caption",
-		"--title-card", "--start-escape", "--blackout", "--overview", "--day-length"]
+		"--title-card", "--start-escape", "--blackout", "--overview", "--day-length",
+		"--press", "--tap", "--ending", "--quit-when-still", "--skip"]
 
 var data: Dictionary = {}
 var built: Dictionary = {}
@@ -21,6 +22,7 @@ var _steps: Array[Dictionary] = []
 var _observations: Array = []
 var _duration_ticks := 0
 var _active := false
+var _capture_tick := -1
 var _last_positions: Dictionary = {}
 
 static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
@@ -34,11 +36,13 @@ static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
 			errors.append("arguments: %s conflicts with recipe-owned setup/playback" % flag)
 	var mode := "free"
 	var index := args.find("--recipe-mode")
+	if index >= 0 and (index + 1 >= args.size() or args[index + 1].begins_with("--")):
+		errors.append("--recipe-mode requires free or scripted")
 	if index >= 0 and index + 1 < args.size():
 		mode = args[index + 1]
 	if not mode in ["free", "scripted"]:
 		errors.append("--recipe-mode must be free or scripted")
-	if mode == "free" and ("--walk" in args or "--after" in args):
+	if mode == "free" and ("--walk" in args or "--after" in args or "--screenshot" in args):
 		errors.append("free play cannot have scripted input or a capture deadline")
 	if not errors.is_empty():
 		return {"data": recipe, "errors": errors}
@@ -51,7 +55,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	var setup: Dictionary = recipe.get("setup", {})
 	var playback: Dictionary = recipe.get("playback", {})
 	_keys(setup, ["day", "parent", "player", "background", "progression", "events", "actors",
-			"signal_time"], "setup", errors)
+			"signal_time", "column"], "setup", errors)
 	_number(setup.get("day", 1), "setup.day", 1, 14, errors, true)
 	if not setup.get("parent", "mother") in ["mother", "father"]:
 		errors.append("setup.parent must be mother or father")
@@ -85,6 +89,20 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 		errors.append("setup.progression.escape_part requires kind escape")
 	_number(setup.get("signal_time", 0), "setup.signal_time", 0, 86400, errors)
 	var names := {"player": true}
+	if setup.has("column"):
+		if not setup.column is Dictionary:
+			errors.append("setup.column must be an object")
+		else:
+			_keys(setup.column, ["at", "direction"], "setup.column", errors)
+			_position(setup.column.get("at"), "setup.column.at", errors)
+			if not setup.column.get("direction") in ["north", "south"]:
+				errors.append("setup.column.direction must be north or south")
+			if int(setup.get("day", 1)) != ResistanceHappenings.COLUMN_DAY \
+					or recipe.get("kind", "city") != "city" \
+					or recipe.get("extent", {}).get("scope", "") != "full":
+				errors.append("setup.column requires day 13 and a full city scene")
+		for i in Tuning.COLUMN_TRUCKS:
+			names["truck_%d" % (i + 1)] = true
 	for collection in ["events", "actors"]:
 		if not setup.get(collection, []) is Array:
 			errors.append("setup.%s must be an array" % collection)
@@ -123,13 +141,17 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 		return errors
 	if background.get("events", false) and not setup.get("events", []).is_empty():
 		errors.append("setup.background.events cannot be combined with pinned events")
+	if setup.has("column") and (background.get("events", false) or not setup.get("events", []).is_empty()):
+		errors.append("setup.column owns the scene's event activity")
 	if background.get("crowd", false) and not setup.get("actors", []).is_empty():
 		errors.append("setup.background.crowd cannot be combined with pinned actors")
-	_keys(playback, ["walk", "duration", "camera", "caption", "title", "observations"],
+	_keys(playback, ["walk", "duration", "capture_at", "camera", "caption", "title", "observations"],
 			"playback", errors)
 	_number(playback.get("duration", 5), "playback.duration", 1.0 / 60.0, 240, errors)
 	if not errors.is_empty():
 		return errors
+	_number(playback.get("capture_at", 0.5), "playback.capture_at", 0,
+			float(playback.get("duration", 5)) - 1.0 / 60.0, errors)
 	var walk: Variant = playback.get("walk", "")
 	if not walk is String or (not str(walk).is_empty() and AutoScreenshot._parse_script(walk).is_empty()):
 		errors.append("playback.walk is not a valid timed movement script")
@@ -153,7 +175,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 				continue
 			_keys(check, ["tick", "subject", "condition", "at", "distance"], "observation", errors)
 			_number(check.get("tick"), "observation.tick", 0,
-					float(playback.get("duration", 5)) * 60, errors, true)
+					float(playback.get("duration", 5)) * Engine.physics_ticks_per_second, errors, true)
 			if not names.has(check.get("subject")):
 				errors.append("observation.subject is not a named actor")
 			if not check.get("condition") in ["visible", "moving", "running", "carrying", "pursuing", "near"]:
@@ -193,7 +215,7 @@ func configure(result: Dictionary, scripted_mode: bool) -> void:
 	manifest["recipe"] = data.get("name", "")
 	manifest["recipe_sha256"] = JSON.stringify(data, "", true).sha256_text()
 	manifest["engine"] = Engine.get_version_info().string
-	manifest["physics_ticks_per_second"] = 60
+	manifest["physics_ticks_per_second"] = Engine.physics_ticks_per_second
 	manifest["playback_complete"] = false
 	manifest["observations"] = []
 	manifest["setup"] = data.get("setup", {}).duplicate(true)
@@ -203,9 +225,14 @@ func configure(result: Dictionary, scripted_mode: bool) -> void:
 		manifest.anchors[label] = [at.x, at.y]
 	_steps = AutoScreenshot._parse_script(str(data.get("playback", {}).get("walk", "")))
 	_observations = data.get("playback", {}).get("observations", [])
-	_duration_ticks = roundi(float(data.get("playback", {}).get("duration", 5)) * 60)
-	process_physics_priority = -100
-	process_mode = Node.PROCESS_MODE_PAUSABLE
+	_duration_ticks = roundi(float(data.get("playback", {}).get("duration", 5)) * Engine.physics_ticks_per_second)
+	if "--screenshot" in DevFlags.active_args():
+		_capture_tick = ceili(DevFlags._word_after("--after").to_float() * Engine.physics_ticks_per_second - 0.00001)
+	# begin() supplies the first input; subsequent inputs are queued after the world's tick.
+	# Observations and completion therefore see the tick they name, including the final one.
+	process_physics_priority = 100
+	# The observer must report a gameplay stop rather than hang with the paused world.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 
 func position_of(value: Variant, errors: Array[String]) -> Vector2:
 	if value is Array:
@@ -282,8 +309,33 @@ func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
 	baby.sleepiness = float(initial.get("sleep", 0))
 	if data.get("kind", "city") == "escape" or baby.sleepiness >= Tuning.METER_MAX:
 		baby.force_sleep()
+	if setup.has("column"):
+		_install_column(setup.column, at, errors)
 	manifest["initial_actors"] = snapshot()
 	return errors
+
+## The army column is a production happening, whose close-spaced trucks deliberately do not use
+## unrelated catalogue-event spacing. Start its real formation at the authored main-road point.
+func _install_column(column: Dictionary, player_at: Vector2, errors: Array[String]) -> void:
+	var map := _city.map
+	var at := position_of(column.at, errors)
+	if not errors.is_empty():
+		return
+	var going := -1.0 if column.direction == "north" else 1.0
+	var lane := CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, going))
+	var top := Tuning.TILE_SIZE * 0.5
+	var bottom := map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
+	var back := at.y - going * Tuning.COLUMN_SPACING * (Tuning.COLUMN_TRUCKS - 1)
+	if not is_equal_approx(at.x, lane) or at.y < top or at.y > bottom or back < top or back > bottom:
+		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
+		return
+	var happening := ResistanceHappenings.new()
+	happening.setup(_city, map)
+	happening.start_day(GameState.day)
+	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, player_at,
+			lane, going, top, bottom)
+	for i in happening.column.size():
+		named["truck_%d" % (i + 1)] = happening.column[i]
 
 func _inside_extent(at: Vector2) -> bool:
 	var map: CityMap = built.map
@@ -296,11 +348,21 @@ func _event_plans(player_at: Vector2, errors: Array[String]) -> Array[EventSched
 	var tree := _city.route_tree()
 	var corridor: Corridor = Corridor.of(tree) if tree else null
 	var doors := PackedVector2Array()
-	if _city.region_plan():
-		plans.append_array(_city.region_plan().wall_bodies)
-		plans.append_array(_city.region_plan().door_bodies)
+	var finale: FinalePlanner.Plan
+	if data.get("kind", "city") == "escape":
+		finale = FinalePlanner.plan(map, GameState.day_rng(GameState.day, "finale"), false)
+		for chain in finale.chains:
+			if not chain.complete:
+				errors.append("escape route construction could not complete its ordinary chains")
+		plans.append_array(finale.placements)
+	elif _city.region_plan():
+		for body in _city.region_plan().wall_bodies:
+			if _inside_extent(body.position):
+				plans.append(body)
 		for body in _city.region_plan().door_bodies:
 			doors.append(body.position)
+			if _inside_extent(body.position):
+				plans.append(body)
 	for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 		map.hold_segment(segment.key())
 	var counts := {}
@@ -313,7 +375,10 @@ func _event_plans(player_at: Vector2, errors: Array[String]) -> Array[EventSched
 			continue
 		var def := EventCatalogue.by_id(entry.row)
 		var plan: EventScheduler.Planned
-		if def.spawn_mode_on(GameState.day) != EventDef.SpawnMode.MAP:
+		if finale:
+			plan = _finale_placement(def, at, player_at, finale, plans,
+					int(entry.get("route_seed", 1)))
+		elif def.spawn_mode_on(GameState.day) != EventDef.SpawnMode.MAP:
 			var director := EventDirector.new(map)
 			var heading: Vector2 = DIRECTIONS[setup.get("player", {}).get("facing", "south")]
 			var route := director._crossing_ahead_of(player_at, heading, def)
@@ -347,6 +412,36 @@ func _event_plans(player_at: Vector2, errors: Array[String]) -> Array[EventSched
 		plans.append(plan)
 	return plans
 
+## The escape's exact actors use its own row variants, open streets, tree exclusion, spawn
+## clearance and body spacing. No ordinary-day corridor or offscreen director stands in for it.
+func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
+		finale: FinalePlanner.Plan, prior: Array[EventScheduler.Planned],
+		route_seed: int) -> EventScheduler.Planned:
+	if not def.id in ["military_convoy", "abduction", "roadblock", "finale_explosion"]:
+		return null
+	if def.id == "roadblock":
+		def = EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL)
+	elif def.id == "military_convoy":
+		def = EventScheduler._without_its_aftermath(def)
+	var map := _city.map
+	var tile := map.world_to_tile(at)
+	if not map.tile_to_world(tile).is_equal_approx(at):
+		return null
+	var ground_ok := false
+	var trees := StreetTrees.footprint_tiles(map)
+	for segment in finale.open_streets:
+		if tile in EventScheduler._finale_ground(map, segment, def, trees, player_at):
+			ground_ok = true
+			break
+	if not ground_ok:
+		return null
+	var rng := RandomNumberGenerator.new()
+	rng.seed = route_seed
+	var candidate := EventScheduler._build_placement(def, map, tile, rng)
+	if not candidate or EventScheduler._room_around(candidate, prior) == -INF:
+		return null
+	return candidate
+
 func begin() -> void:
 	manifest["initial_actors"] = snapshot()
 	print("[SceneRecipe] manifest " + JSON.stringify(manifest, "", true))
@@ -375,9 +470,21 @@ func begin() -> void:
 func _physics_process(_delta: float) -> void:
 	if not _active:
 		return
+	if get_tree().paused:
+		manifest["playback_error"] = "gameplay paused before the authored action completed"
+		manifest["stopped_tick"] = tick
+		manifest["final_actors"] = snapshot()
+		print("[SceneRecipe] playback stopped: " + JSON.stringify(manifest))
+		write_manifest()
+		_active = false
+		get_tree().quit(1)
+		return
 	tick += 1
 	_observe()
 	if not _active:
+		return
+	if _capture_tick >= 0 and tick >= _capture_tick:
+		prepare_capture()
 		return
 	if tick >= _duration_ticks:
 		_active = false
@@ -390,7 +497,7 @@ func _physics_process(_delta: float) -> void:
 	_apply_input()
 
 func _apply_input() -> void:
-	var remaining := float(tick) / 60.0
+	var remaining := float(tick) / Engine.physics_ticks_per_second
 	var direction := Vector2.ZERO
 	var running := false
 	for step in _steps:
@@ -406,6 +513,19 @@ func _apply_input() -> void:
 	else:
 		Input.action_release("run")
 
+func elapsed() -> float:
+	return float(tick) / Engine.physics_ticks_per_second
+
+## Hold the exact simulated moment while the screenshot draws, even with a covered window.
+func prepare_capture() -> void:
+	if manifest.has("capture_tick"):
+		return
+	manifest["capture_tick"] = tick
+	manifest["capture_actors"] = snapshot()
+	write_manifest()
+	_active = false
+	get_tree().paused = true
+
 func _release_input() -> void:
 	TouchControls._set_axis(&"move_left", &"move_right", 0)
 	TouchControls._set_axis(&"move_up", &"move_down", 0)
@@ -418,26 +538,29 @@ func _exit_tree() -> void:
 func snapshot() -> Dictionary:
 	var result := {}
 	for label: String in named:
-		var actor: Node2D = named[label]
-		if not is_instance_valid(actor):
+		if not is_instance_valid(named[label]):
 			result[label] = {"retired": true}
 			continue
+		var actor: Node2D = named[label]
 		var at := actor.global_position
 		result[label] = {"position": [snappedf(at.x, 0.0001), snappedf(at.y, 0.0001)]}
 		if actor is Stroller:
 			result[label]["carrying"] = actor.carrying
 			result[label]["speed"] = snappedf(actor.current_speed(), 0.0001)
+			result[label]["gait_frame"] = actor._mother_gait_frame(actor.current_speed() / Tuning.WALK_SPEED)
 		elif actor is EventInstance:
 			result[label]["row"] = actor.def.id
 			result[label]["telegraphing"] = actor.is_telegraphing()
+			result[label]["pursuing"] = actor.def.pursues and not actor.is_waiting() \
+					and not actor.is_telegraphing() and not actor.is_finished and not actor.is_leaving
 	return result
 
 func _observe() -> void:
 	for check: Dictionary in _observations:
 		if int(check.tick) != tick:
 			continue
-		var actor: Node2D = named.get(check.subject)
-		var passed := is_instance_valid(actor)
+		var passed := is_instance_valid(named.get(check.subject))
+		var actor: Node2D = named[check.subject] if passed else null
 		if passed:
 			match check.condition:
 				"visible":
@@ -452,7 +575,8 @@ func _observe() -> void:
 					passed = actor is Stroller and actor.carrying
 				"pursuing":
 					passed = actor is EventInstance and actor.def.pursues \
-							and not actor.is_telegraphing() and not actor.is_waiting()
+							and not actor.is_telegraphing() and not actor.is_waiting() \
+							and not actor.is_finished and not actor.is_leaving
 				"near":
 					var errors: Array[String] = []
 					var target := position_of(check.at, errors)
@@ -467,9 +591,8 @@ func _observe() -> void:
 			_active = false
 			get_tree().quit(1)
 	for label: String in named:
-		var actor: Node2D = named[label]
-		if is_instance_valid(actor):
-			_last_positions[label] = actor.global_position
+		if is_instance_valid(named[label]):
+			_last_positions[label] = (named[label] as Node2D).global_position
 
 func write_manifest() -> void:
 	var path := DevFlags._word_after("--recipe-manifest")

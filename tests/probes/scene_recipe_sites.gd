@@ -8,6 +8,7 @@ func run(_t) -> void:
 	var built := RecipeCityBuilder.build(data)
 	var map: CityMap = built.map
 	print("HOME ", map.doorstep_world_position())
+	print("MAIN_ROAD ", map.main_road, " north lane=", CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, -1)))
 	for day: int in [1, 13]:
 		GameState.start_run(11)
 		GameState.day = day

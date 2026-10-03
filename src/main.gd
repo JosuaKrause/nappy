@@ -500,6 +500,9 @@ func _ready() -> void:
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
+		if _recipe and _recipe.scripted:
+			screenshot.simulation_clock = _recipe.elapsed
+			screenshot.before_capture = _recipe.prepare_capture
 		add_child(screenshot)
 
 	# Apart from the boot-order block above and below: `StillWatch` only reads `_city`, `_player`
@@ -703,6 +706,9 @@ func _ready_escape() -> void:
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
+		if _recipe and _recipe.scripted:
+			screenshot.simulation_clock = _recipe.elapsed
+			screenshot.before_capture = _recipe.prepare_capture
 		add_child(screenshot)
 
 ## `--parent mother|father` over the roll `GameState.start_run()` just made from the seed, so a

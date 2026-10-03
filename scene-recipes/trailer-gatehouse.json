@@ -3,7 +3,7 @@
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
   "anchors": {"start": {"world": [3168, 1424]}, "gate": {"world": [3168, 1552]}},
   "setup": {"day": 13, "parent": "father", "player": {"at": "start", "facing": "south"}},
-  "playback": {"walk": "1s", "duration": 1,
-    "observations": [{"tick": 30, "subject": "player", "condition": "moving"},
-      {"tick": 55, "subject": "player", "condition": "near", "at": "gate", "distance": 90}]}
+  "playback": {"walk": "1.4s", "duration": 1.4, "capture_at": 0.85,
+    "observations": [{"tick": 15, "subject": "player", "condition": "moving"},
+      {"tick": 28, "subject": "player", "condition": "near", "at": "gate", "distance": 90}]}
 }

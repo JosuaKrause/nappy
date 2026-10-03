@@ -5,8 +5,8 @@
   "setup": {"day": 1, "parent": "mother", "player": {"at": "start", "facing": "east"},
     "background": {"events": false, "crowd": false},
     "events": [{"name": "obstacle", "row": "leaf_blower", "at": "blower", "age": 1.8}]},
-  "playback": {"walk": "1.3e2.3w1.35n2.6e", "duration": 7.6,
-    "observations": [{"tick": 60, "subject": "player", "condition": "moving"},
-      {"tick": 120, "subject": "obstacle", "condition": "visible"},
-      {"tick": 430, "subject": "player", "condition": "near", "at": [1970, 1812], "distance": 55}]}
+  "playback": {"walk": "1.3e2.3w1.35n2.6e", "duration": 7.6, "capture_at": 6.4,
+    "observations": [{"tick": 30, "subject": "player", "condition": "moving"},
+      {"tick": 60, "subject": "obstacle", "condition": "visible"},
+      {"tick": 215, "subject": "player", "condition": "near", "at": [1970, 1812], "distance": 55}]}
 }

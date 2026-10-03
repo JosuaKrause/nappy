@@ -14,6 +14,56 @@ The checked-in `scene-recipes/power-station-hall.json` and `power-station-yard.j
 an actual dead-end wall adjoining the station. The first lets the hall cover its facade; the
 second keeps the facade beside the fenced yard. Both pass the production placement checks.
 
+## Running and photographing a scene
+
+`tools/run.sh --recipe scene-recipes/trailer-choice.json` starts normal interactive play.
+Add `--recipe-mode scripted` to replay the recipe's movement and camera. Both start from the
+same setup; free play keeps physical input, the ordinary camera and no recipe deadline. Recipes
+disable saves. A normal restart reloads the saved setup.
+
+`tools/scene-recipes.sh` runs every scene's scripted assertions headlessly and retains logs and
+JSON manifests. `--recipe FILE` selects one; `--output DIR` chooses their folder.
+`--screenshots` also photographs each scene at its `playback.capture_at` time. This is elapsed
+simulation time after the full world and movement start: events, traffic, animation and the
+camera advance together during this pre-roll. It is adjustable independently for every scene.
+The default is 0.5 seconds. A still shows composition; the headless observations check action.
+
+The trailer shot list's existing `in` is a separate adjustable recording cut-in: the recording
+simulates from setup, then trims the picture and audio to that time. `capture_at` chooses a
+screenshot moment, not a recording duration or a reset of the movement clock.
+
+## Activity and playback
+
+`setup` accepts `day`, `parent` (`mother` or `father`), `player` (`at`, cardinal `facing`,
+initial `excitement` and `sleep`), `background` booleans `events`/`crowd`, `signal_time`,
+`progression`, named `events`, named `actors`, and the day-13 `column` formation.
+Positions name an anchor or give `[world_x,world_y]`. Background activity defaults off;
+random events cannot accompany pinned events, and random crowd cannot accompany pinned actors.
+
+An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path` and `age`.
+The ordinary scheduler's ground, route, spacing, protected-door and corridor checks accept
+its site. An authored path must equal that production route. Director pursuers use the real
+ahead-of-player siting. `age` may advance through the initial warning only; active movement is
+simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direction` and optional
+`speed`; production lane, ground, speed and car-gap checks apply.
+
+`column: {"at":[1904,2064],"direction":"north"}` starts the real three-truck army formation
+in its actual main-road lane. Its ordinary formation spacing and rear-truck stopping logic
+come from `ResistanceHappenings`; unrelated catalogue spacing does not apply to that formation.
+Its observation names are `truck_1`, `truck_2` and `truck_3`. It requires a full day-13 city.
+`kind: "escape"`, day 14 and `progression.escape_part: "city"` use the actual escape controller,
+carrying pose, two escape routes, seals and heated guard variants. `progression.blackout` turns
+off the street signals. Supported escape pins are trucks, abduction, roadblocks and explosions.
+
+`playback` accepts a timed `walk` script (the same syntax as `--walk`), `duration` in seconds,
+`capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`), `caption`, `title` and
+`observations`. Each observation has a physics `tick`, named `subject` and `condition`:
+`visible`, `moving`, `running`, `carrying`, `pursuing`, or `near` with `at` and `distance`.
+The manifest records the engine's physics rate (30 Hz in this project); render FPS does not
+change that clock. Failed observations and interrupted gameplay exit unsuccessfully.
+`--recipe-validate` builds and checks the initial live setup, then exits;
+`--recipe-manifest FILE` retains initial actors, context, classification and observation results.
+
 ## Construction schema
 
 The root has `version: 1`, a nonempty `name`, integer `seed`, `extent`, `city`, and optional
@@ -89,4 +139,4 @@ Only generator guarantee diagnostics are fixture-capable in this schema.
 
 Run `tools/test.sh scene_recipe` for construction, parser rejection, ordinary eligibility,
 independent seeds, actual City roof coverage and bounded fallback checks. Use the runtime's
-focused suite for activity, observations, restart and scripted/free-play behavior.
+focused suite for argument rejection, input, save isolation and observation failure behavior.

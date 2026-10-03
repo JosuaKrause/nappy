@@ -1,12 +1,14 @@
 {
   "version": 1, "name": "Army trucks driving beside the mother", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
-  "anchors": {"start": {"world": [1824, 2096]}, "truck": {"tile": [59, 64]}},
+  "anchors": {"start": {"world": [1824, 2160]}},
   "setup": {"day": 13, "parent": "mother", "player": {"at": "start", "facing": "north"},
-    "events": [{"name": "truck", "row": "military_convoy", "at": "truck", "age": 4.43,
-      "path": [[1904, 2064], [1904, 464]]}]},
-  "playback": {"walk": "1n", "duration": 1,
-    "observations": [{"tick": 30, "subject": "truck", "condition": "visible"},
-      {"tick": 30, "subject": "truck", "condition": "moving"},
-      {"tick": 30, "subject": "player", "condition": "moving"}]}
+    "column": {"at": [1904, 2064], "direction": "north"}},
+  "playback": {"walk": "1.5n", "duration": 1.5, "capture_at": 0.75,
+    "observations": [{"tick": 23, "subject": "truck_1", "condition": "visible"},
+      {"tick": 23, "subject": "truck_1", "condition": "moving"},
+      {"tick": 23, "subject": "truck_2", "condition": "visible"},
+      {"tick": 23, "subject": "truck_2", "condition": "moving"},
+      {"tick": 23, "subject": "truck_3", "condition": "visible"},
+      {"tick": 23, "subject": "player", "condition": "moving"}]}
 }

@@ -6,21 +6,21 @@
     {
       "name": "choice",
       "recipe": "scene-recipes/trailer-choice.json",
-      "in": 0,
+      "in": 0.3,
       "length": 7
     },
     {
       "name": "blower",
       "recipe": "scene-recipes/trailer-blower.json",
-      "in": 0,
-      "length": 2,
+      "in": 0.2,
+      "length": 1.8,
       "gap": 0.3
     },
     {
       "name": "dog",
       "recipe": "scene-recipes/trailer-dog.json",
-      "in": 0,
-      "length": 3.5,
+      "in": 0.2,
+      "length": 2.8,
       "gap": 0.3
     },
     {
@@ -33,21 +33,21 @@
     {
       "name": "trucks",
       "recipe": "scene-recipes/trailer-trucks.json",
-      "in": 0,
+      "in": 0.3,
       "length": 1,
       "gap": 0.3
     },
     {
       "name": "gatehouse",
       "recipe": "scene-recipes/trailer-gatehouse.json",
-      "in": 0,
+      "in": 0.3,
       "length": 1,
       "gap": 0.3
     },
     {
       "name": "chase",
       "recipe": "scene-recipes/trailer-chase.json",
-      "in": 0,
+      "in": 1.2,
       "length": 1,
       "gap": 0.3
     },
