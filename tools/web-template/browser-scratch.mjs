@@ -17,24 +17,41 @@
 // existed before the run is never examined further.
 import { execFile } from 'node:child_process';
 import { lstat, readdir, realpath, rm } from 'node:fs/promises';
-import { basename, dirname, join, sep } from 'node:path';
+import { basename, dirname, join, relative, sep } from 'node:path';
 
-const run = (command, args) => new Promise(resolveRun => {
-  execFile(command, args, { maxBuffer: 64 * 1024 * 1024 }, (error, stdout) => {
+// A command's output, with a time limit: a system-wide `lsof` can block on a stale mount, and this
+// runs inside browser-check.mjs's own cleanup, which must end.
+const run = (command, args, timeout = 60000) => new Promise(resolveRun => {
+  execFile(command, args, { maxBuffer: 64 * 1024 * 1024, timeout, killSignal: 'SIGKILL' }, (error, stdout) => {
     resolveRun({ error, stdout: stdout || '' });
   });
 });
 
-// The per-user directory the clones live under: `NAPPY_BROWSER_CLONE_DIR` when set (the tests
-// point it at a fixture), else the sibling `X` of the Darwin user temp dir, which is where Chrome
-// puts them. Elsewhere there is none.
-export const cloneRoot = async (env = process.env, platform = process.platform) => {
-  if (env.NAPPY_BROWSER_CLONE_DIR) return env.NAPPY_BROWSER_CLONE_DIR;
+// The path as the kernel names it (macOS's /var is /private/var, and lsof reports the latter),
+// whether or not it exists yet: the nearest existing ancestor resolved, the rest joined on.
+export const canonical = async path => {
+  let existing = path;
+  while (true) {
+    try { return join(await realpath(existing), relative(existing, path)); } catch {
+      const parent = dirname(existing);
+      if (parent === existing) return path;
+      existing = parent;
+    }
+  }
+};
+
+// The per-user directory the clones live under on macOS: the sibling `X` of the Darwin user temp
+// dir, which is where Chrome puts them. Elsewhere there is none. `temp` is given only by the test.
+export const cloneRoot = async ({ platform = process.platform, temp } = {}) => {
   if (platform !== 'darwin') return null;
-  const { error, stdout } = await run('getconf', ['DARWIN_USER_TEMP_DIR']);
-  const temp = stdout.trim().replace(/\/+$/, '');
-  if (error || basename(temp) !== 'T') return null;
-  return join(dirname(temp), 'X');
+  if (temp === undefined) {
+    const { error, stdout } = await run('getconf', ['DARWIN_USER_TEMP_DIR']);
+    if (error) return null;
+    temp = stdout;
+  }
+  temp = temp.trim().replace(/\/+$/, '');
+  if (basename(temp) !== 'T') return null;
+  return canonical(join(dirname(temp), 'X'));
 };
 
 // Every clone directory present now: `<root>/<anything>.code_sign_clone/<entry>`, real paths.
@@ -78,11 +95,13 @@ export const processTree = async pid => {
   return tree;
 };
 
-// `lsof -F pn` output as [pid, path] pairs; null when lsof could not run at all.
+// `lsof -F pn` output as [pid, path] pairs; null when its answer is not known to be complete.
 const openFiles = async (lsof, args) => {
   const { error, stdout } = await run(lsof, ['-n', '-P', '-w', '-F', 'pn', ...args]);
-  // lsof exits 1 when one of several pids has nothing open; only a missing command is fatal.
-  if (error && (error.code === 'ENOENT' || typeof error.code === 'string')) return null;
+  // Exit 1 is lsof's ordinary "something asked for had nothing open". Anything else -- a missing
+  // command, a timeout or another signal (code null), an overlong listing, another exit status --
+  // leaves the answer unknown, and unknown keeps the clone.
+  if (error && error.code !== 1) return null;
   const pairs = [];
   let pid = 0;
   for (const line of stdout.split('\n')) {
@@ -116,9 +135,7 @@ export class BrowserScratch {
   }
 
   async begin() {
-    if (this.root) {
-      try { this.root = await realpath(this.root); } catch { /* not created yet */ }
-    }
+    if (this.root) this.root = await canonical(this.root);
     this.before = new Set(await listClones(this.root));
   }
 
@@ -129,7 +146,7 @@ export class BrowserScratch {
     if (!tree.length) return;
     for (const pid of tree) this.pids.add(pid);
     const pairs = await openFiles(this.lsof, ['-p', tree.join(',')]);
-    if (pairs === null) { this.attribution = 'unavailable: lsof could not run'; return; }
+    if (pairs === null) { this.attribution = 'unavailable: lsof gave no complete answer'; return; }
     this.attribution = 'lsof';
     for (const [pid, path] of pairs) {
       const clone = cloneOf(path, this.root);
@@ -156,7 +173,7 @@ export class BrowserScratch {
       const live = [...this.pids].filter(alive);
       if (live.length) { report.retained.push({ ...entry, reason: `run process still alive: ${live.join(', ')}` }); continue; }
       const holders = await openFiles(this.lsof, []);
-      if (holders === null) { report.retained.push({ ...entry, reason: 'lsof could not confirm nothing still holds it' }); continue; }
+      if (holders === null) { report.retained.push({ ...entry, reason: 'lsof gave no complete answer, so it may still be held' }); continue; }
       const holding = [...new Set(holders.filter(([, path]) => path.startsWith(clone + sep) || path === clone).map(([holder]) => holder))];
       if (holding.length) { report.retained.push({ ...entry, reason: `still open by process ${holding.join(', ')}` }); continue; }
       try {

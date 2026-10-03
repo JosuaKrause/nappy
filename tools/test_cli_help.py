@@ -72,7 +72,7 @@ class CliHelpTests(unittest.TestCase):
         (root / "tools" / "trailer").mkdir(parents=True)
         (root / "src" / "dev").mkdir(parents=True)
         (root / "scene-recipes").mkdir()
-        for name in ("trailer.sh", "record.sh", "lib_dev_flags.sh", "lib_movie_evidence.sh"):
+        for name in ("trailer.sh", "record.sh", "lib_dev_flags.sh", "lib_movie_evidence.sh", "lib_disk_headroom.sh"):
             shutil.copy2(TOOLS / name, root / "tools" / name)
         shutil.copy2(TOOLS / "trailer" / "shots.json", root / "tools" / "trailer" / "shots.json")
         shutil.copy2(PROJECT_ROOT / "project.godot", root / "project.godot")

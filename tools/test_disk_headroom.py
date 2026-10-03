@@ -212,8 +212,9 @@ class ToolRefusalTests(HeadroomFixture):
         result = self.run_tool("tools/record.sh", "--after", "2", "--seed", "1")
         self.assert_refused(result, "tools/record.sh")
         if atlases_current:
-            # --after 2 lasts at most 2 seconds plus the rig's margin and grace: 32 seconds.
-            self.assertIn("record-second 31 MiB x 32", result.stderr)
+            # --after 2 records at most 2 game seconds plus the rig's 15-second margin; the outside
+            # kill's grace is wall time after the game has quit, and is not charged.
+            self.assertIn("record-second 31 MiB x 17", result.stderr)
             self.assertIn("record a shorter run", result.stderr)
         else:
             # Stale pages mean an import repair first, which is refused before check.sh runs.
@@ -246,17 +247,24 @@ class ToolRefusalTests(HeadroomFixture):
         self.assertFalse((repo / "build").exists())
 
     def test_help_and_rejection_never_ask_for_space(self) -> None:
-        for command in (
-            ("tools/bake-atlases.sh", "--bogus"),
-            ("tools/scene-recipes.sh", "--bogus"),
-            ("tools/shot.sh", "--help"),
-            ("tools/record.sh", "--bogus"),
-            ("tools/run.sh", "--bogus"),
-            ("tools/export-web.sh", "--help"),
-            ("tools/build-web-template.sh", "--bogus"),
-        ):
-            self.run_tool(*command)
-            self.assertFalse(self.df_args.exists(), " ".join(command))
+        tools = (
+            "tools/bake-atlases.sh",
+            "tools/scene-recipes.sh",
+            "tools/shot.sh",
+            "tools/record.sh",
+            "tools/run.sh",
+            "tools/export-web.sh",
+            "tools/build-web-template.sh",
+        )
+        for tool in tools:
+            for flag, expect_zero in (("--help", True), ("-h", True), ("--bogus", False)):
+                with self.subTest(tool=tool, flag=flag):
+                    self.df_args.unlink(missing_ok=True)
+                    self.launches.unlink(missing_ok=True)
+                    result = self.run_tool(tool, flag)
+                    self.assertEqual(result.returncode == 0, expect_zero, result.stdout + result.stderr)
+                    self.assertFalse(self.df_args.exists())
+                    self.assertFalse(self.launches.exists())
 
 
 if __name__ == "__main__":

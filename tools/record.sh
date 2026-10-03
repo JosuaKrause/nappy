@@ -20,6 +20,12 @@
 # `--day-length`), and this waits for that with the same outside kill tools/trailer.sh uses
 # (`rig_kill_after_movie_seconds`) rather than a fixed timer of its own. Frames are deleted once
 # the video is encoded; the video is never written anywhere git tracks.
+#
+# Every frame stays on disk under ${TMPDIR:-/tmp} until the video is encoded, so before the movie
+# writer starts this checks that volume through tools/lib_disk_headroom.sh: the measured
+# `record-second` estimate (31 MiB) for every game second the rig may record, plus the reserve
+# (3,072 MiB by default). The first example above records up to 225 game seconds (the 210-second
+# day and the rig's 15-second margin), so it needs about 6,975 + 3,072 = 10,047 MiB, 9.8 GiB, free.
 set -euo pipefail
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
@@ -29,8 +35,33 @@ OUT_DIR="$PROJECT_DIR/build/records"
 source "$PROJECT_DIR/tools/lib_dev_flags.sh"
 # shellcheck source=tools/lib_movie_evidence.sh
 source "$PROJECT_DIR/tools/lib_movie_evidence.sh"
+# shellcheck source=tools/lib_disk_headroom.sh
+source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
+
+# The game seconds the movie writer may record for these flags: the rig's own deadline, which is
+# its outside kill less the kill's wall-clock grace. The grace is time the outside kill waits after
+# the game has already quit, so no frame is written in it.
+recorded_game_seconds() {
+    local kill grace
+    kill="$(rig_kill_after_seconds "$@")"
+    grace="$(_rig_quit_constant kill_grace)"
+    awk -v k="$kill" -v g="$grace" 'BEGIN { s = k - g; printf "%d\n", (s == int(s)) ? s : int(s) + 1 }'
+}
 
 usage() {
+    # Read live, so the figures follow the estimate and the reserve; help still prints in full if
+    # the day length cannot be read.
+    local per_second day_seconds disk
+    per_second="$(headroom_measured_peak_mib record-second)"
+    day_seconds="$(recorded_game_seconds --route home 2>/dev/null)" || day_seconds=""
+    disk="Disk: frames stay on disk until the video is encoded, so this refuses to start unless the
+volume holding \$TMPDIR has ${per_second} MiB free per game second the rig may record, plus the
+${HEADROOM_DEFAULT_RESERVE_MIB} MiB reserve (tools/lib_disk_headroom.sh)."
+    if [[ "$day_seconds" =~ ^[1-9][0-9]*$ ]]; then
+        disk="$disk A route day records up to ${day_seconds}
+game seconds, so it needs about $(( per_second * day_seconds + HEADROOM_DEFAULT_RESERVE_MIB )) MiB free."
+    fi
+
     cat <<EOF
 usage: tools/record.sh [--help|-h] [--out NAME.mp4] [--] <dev flags for the game>
 
@@ -49,6 +80,8 @@ frames are deleted once it is encoded.
 
 Recipe runs require scripted mode (the default) and are validated before the window opens.
 Compact frame hashes, the resolved manifest and recording settings accompany the output video.
+
+$disk
 
 Opens a window. Needs jq and ffmpeg on PATH, and Godot 4.7 at \$GODOT.
 EOF
@@ -144,8 +177,6 @@ fi
 # The baked atlas pages, repaired the way tools/shot.sh and tools/trailer.sh repair them.
 if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
     "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
-    # shellcheck source=tools/lib_disk_headroom.sh
-    source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
     headroom_preflight tools/record.sh "$PROJECT_DIR/.godot" "" import || exit 1
     echo "rebuilding with tools/check.sh -- this takes a few seconds" >&2
     if ! "$PROJECT_DIR/tools/check.sh" >/dev/null; then
@@ -169,14 +200,10 @@ if [[ -n "$RECIPE" ]]; then
     FULL_FLAGS+=(--recipe-manifest "$WORK/manifest.json")
 fi
 
-# Every frame stays on disk under ${TMPDIR:-/tmp} until the video is encoded, so the batch is the
-# whole recording, checked before the movie writer starts: one record-second per second the rig may
-# last (its outside kill, an upper bound on the game time it records).
-# shellcheck source=tools/lib_disk_headroom.sh
-source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
+# The whole recording is the batch, checked before the movie writer starts (see the header).
 headroom_preflight tools/record.sh "$WORK" \
     "record a shorter run: an earlier --after SECONDS or a shorter --day-length ends it sooner" \
-    "record-second:$(rig_kill_after_seconds "${FULL_FLAGS[@]}")" || exit 1
+    "record-second:$(recorded_game_seconds "${FULL_FLAGS[@]}")" || exit 1
 
 kill_after="$(rig_kill_after_movie_seconds "${FULL_FLAGS[@]}")"
 echo "recording (rig's own wall-clock limit ${kill_after}s)..." >&2

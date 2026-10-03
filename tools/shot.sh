@@ -54,6 +54,14 @@ if [[ $# -lt 1 ]]; then
     exit 1
 fi
 
+# An unknown flag in the output's place is a rejected argument, not a file named after it.
+if [[ "$1" == -* ]]; then
+    echo "shot.sh: expected the output PNG first, got '$1'" >&2
+    echo >&2
+    usage >&2
+    exit 1
+fi
+
 OUT="$1"
 shift
 # The seconds-to-wait positional is optional, so a caller who skips it and goes straight to dev
@@ -100,11 +108,14 @@ fi
 # Relative paths would resolve against the project dir inside Godot, not the caller's cwd.
 case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 
-# The still, and the import below when the pages are stale, checked against the volume the still
-# goes to before either is written.
-headroom_jobs=(shot)
-"$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1 || headroom_jobs+=(import)
-headroom_preflight tools/shot.sh "$(dirname "$OUT")" "" "${headroom_jobs[@]}" || exit 1
+# The still, against the volume it goes to, and the import below when the pages are stale, against
+# the volume .godot/ is on, both before either is written.
+atlases_stale=""
+"$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1 || atlases_stale=yes
+headroom_preflight tools/shot.sh "$(dirname "$OUT")" "" shot || exit 1
+if [[ -n "$atlases_stale" ]]; then
+    headroom_preflight tools/shot.sh "$PROJECT_DIR/.godot" "" import || exit 1
+fi
 
 # The baked atlas pages, in the same shape tools/run.sh checks its import cache in: a picture
 # that has changed since the last bake leaves the pages standing for the tree before it, and a
@@ -117,7 +128,7 @@ headroom_preflight tools/shot.sh "$(dirname "$OUT")" "" "${headroom_jobs[@]}" ||
 # is a file the engine has not imported yet, and a windowed run does no import pass of its own —
 # check.sh bakes, imports, and puts back the project.godot and docs/ARCHITECTURE.md rewrites the
 # import pass causes, which a bare `--import` here would leave in the working tree.
-if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
+if [[ -n "$atlases_stale" ]]; then
     # `--check` exits non-zero by design; this reprint is the reason, not a failure.
     "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
     echo "rebuilding with tools/check.sh -- this takes a few seconds" >&2

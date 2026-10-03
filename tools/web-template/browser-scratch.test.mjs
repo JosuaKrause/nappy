@@ -5,11 +5,11 @@
 //   node --test tools/web-template/browser-scratch.test.mjs
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdir, mkdtemp, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
-import { BrowserScratch, cloneRoot, listClones } from './browser-scratch.mjs';
+import { BrowserScratch, canonical, cloneRoot, listClones } from './browser-scratch.mjs';
 
 let scratchDir;
 before(async () => { scratchDir = await realpath(await mkdtemp(join(tmpdir(), 'browser-scratch-test-'))); });
@@ -49,9 +49,69 @@ const stop = async child => {
 const exists = async path => { try { await stat(path); return true; } catch { return false; } };
 const pause = ms => new Promise(r => setTimeout(r, ms));
 
-test('the clone root is the override, and none off macOS', async () => {
-  assert.equal(await cloneRoot({ NAPPY_BROWSER_CLONE_DIR: '/fixture/X' }, 'darwin'), '/fixture/X');
-  assert.equal(await cloneRoot({}, 'linux'), null);
+test('the clone root is the temp dir\'s sibling X on macOS, and none elsewhere', async () => {
+  assert.equal(await cloneRoot({ platform: 'darwin', temp: '/fixture/missing/T/\n' }), '/fixture/missing/X');
+  assert.equal(await cloneRoot({ platform: 'darwin', temp: '/fixture/missing/C/' }), null);
+  assert.equal(await cloneRoot({ platform: 'linux' }), null);
+});
+
+test('a root that does not exist yet is named as the kernel will name it', async () => {
+  // The fixture is reached through a symlink, as /var is on macOS; lsof reports the real path.
+  const real = join(scratchDir, 'real-parent');
+  await mkdir(real);
+  const link = join(scratchDir, 'linked-parent');
+  await symlink(real, link);
+  assert.equal(await canonical(join(link, 'X', 'later')), join(real, 'X', 'later'));
+  const root = join(link, 'X');
+  const scratch = new BrowserScratch({ root });
+  await scratch.begin();
+  assert.equal(scratch.root, join(real, 'X'));
+  await mkdir(join(real, 'X', 'com.example.Fixture.code_sign_clone'), { recursive: true });
+  const owned = await clone(join(real, 'X'), 'code_sign_clone.LATE');
+  const browser = holder(owned);
+  await pause(300);
+  await scratch.observe(browser.pid);
+  assert.deepEqual([...scratch.owned.keys()], [owned]);
+  await stop(browser);
+});
+
+test('an lsof that dies or exits otherwise is unknown, so nothing is attributed or removed', async () => {
+  const root = await fixture('dying-lsof');
+  for (const [name, body] of [['killed-lsof', 'kill -9 $$'], ['failing-lsof', 'exit 2']]) {
+    const fake = join(scratchDir, name);
+    await writeFile(fake, `#!/bin/sh\n${body}\n`);
+    await chmod(fake, 0o755);
+    const scratch = new BrowserScratch({ root, lsof: fake });
+    await scratch.begin();
+    const owned = await clone(root, `code_sign_clone.${name}`);
+    const browser = holder(owned);
+    await pause(300);
+    await scratch.observe(browser.pid);
+    await stop(browser);
+    assert.match(scratch.attribution, /unavailable/);
+    const report = await scratch.settle({ waitMs: 0 });
+    assert.deepEqual(report.removed, []);
+    assert.equal(await exists(owned), true);
+  }
+});
+
+test('an attributed clone is kept when the final lsof gives no complete answer', async () => {
+  const root = await fixture('settle-lsof');
+  const fake = join(scratchDir, 'settle-failing-lsof');
+  await writeFile(fake, '#!/bin/sh\nkill -9 $$\n');
+  await chmod(fake, 0o755);
+  const scratch = new BrowserScratch({ root });
+  await scratch.begin();
+  const owned = await clone(root, 'code_sign_clone.UNCONFIRMED');
+  const browser = holder(owned);
+  await pause(300);
+  await scratch.observe(browser.pid);
+  await stop(browser);
+  scratch.lsof = fake;
+  const report = await scratch.settle({ waitMs: 0 });
+  assert.deepEqual(report.removed, []);
+  assert.match(report.retained[0].reason, /no complete answer/);
+  assert.equal(await exists(owned), true);
 });
 
 test('an attributed clone is removed once its process is gone; others are reported or ignored', async () => {
@@ -144,7 +204,7 @@ test('without lsof nothing is attributed, so nothing is removed and new clones a
   const report = await scratch.settle({ waitMs: 0 });
   assert.deepEqual(report.removed, []);
   assert.deepEqual(report.candidates.map(entry => entry.path), [owned]);
-  assert.match(report.candidates[0].missing, /lsof could not run/);
+  assert.match(report.candidates[0].missing, /lsof gave no complete answer/);
   assert.equal(await exists(owned), true);
 });
 

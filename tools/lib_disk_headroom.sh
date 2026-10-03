@@ -13,60 +13,70 @@
 #
 # **Every estimate is a measured peak, never a guessed threshold.** The table in
 # `headroom_measured_peak_mib` holds the peak additional allocation `tools/measure-disk-peak.sh`
-# recorded for one unit of each job, rounded up with the margin its comment states; the method,
-# the environment and the raw results are under docs/evidence/teal-ibis-headroom-2026-10-03/.
+# recorded for one unit of each job, and an estimate at or above it; each row's comment states
+# both and how far apart they are. The large jobs carry 27-65% over their measured peaks; the
+# small ones are rounded up to a few MiB, several times what was measured, since a few MiB is
+# nothing beside the reserve. The method, the environment and the raw results are under
+# docs/evidence/teal-ibis-headroom-2026-10-03/.
 # A job missing from the table has no estimate, and the preflight refuses it rather than guessing
 # one: measure it, then add the row or set its variable below. The figures are allocated sizes
 # (`du`), which on APFS can count shared clone blocks, so they are upper bounds on what a job
 # takes rather than space its removal is promised to return.
 #
 # **The reserve is the free space the batch must leave behind.** The player's disk warnings were
-# reported with about 2.5 GiB free (docs/decisions/2026-10-03-teal-ibis.md), so the default
-# reserve keeps a batch from ending below that: NAPPY_HEADROOM_RESERVE_MIB, default 3072.
+# reported with about 2.5 GiB free (docs/decisions/2026-10-03-teal-ibis.md), so the default,
+# HEADROOM_DEFAULT_RESERVE_MIB below, keeps a batch from ending below that. It is the same for
+# every job, the one fixed amount in this file, and the one line to change to rescale it.
 #
 # Configuration, all from the environment:
 #   NAPPY_HEADROOM_PEAK_MIB_<JOB>  replaces one job's measured MiB per unit, the job's name
 #                                  upper-cased with '-' as '_' (NAPPY_HEADROOM_PEAK_MIB_SHOT=8)
-#   NAPPY_HEADROOM_RESERVE_MIB     the reserve in MiB (default 3072)
+#   NAPPY_HEADROOM_RESERVE_MIB     the reserve in MiB (default HEADROOM_DEFAULT_RESERVE_MIB)
 #   NAPPY_HEADROOM_CHECK=off       skips the check, saying so on stderr
 # Each value is a whole number of MiB; anything else is refused, never read as zero.
 
 HEADROOM_DEFAULT_RESERVE_MIB=3072
 
 # The measured peak, in MiB, of one unit of JOB; nothing and status 1 for a job never measured.
-# The measured figure is in each comment; the estimate is that figure with the stated margin.
+# Each comment gives the measured figure and how far the estimate is above it.
 headroom_measured_peak_mib() {
     case "$1" in
         # `git worktree add` of every tracked file: 1,130,972 KiB (checkout 1,128,768 plus its
-        # admin directory), about 1.08 GiB. +25%.
+        # admin directory), about 1,104 MiB. Estimate +27%.
         worktree-full) echo 1400 ;;
         # The same with docs/evidence, docs/reference and docs/style-references left out:
-        # 24,416 KiB. +25%, rounded up.
+        # 24,416 KiB, about 24 MiB. Estimate +34%.
         worktree-sparse) echo 32 ;;
         # tools/check.sh on a fresh checkout -- the atlas bake, the import into .godot/ and the
-        # boot: 2,152 KiB. The repair run.sh, shot.sh and record.sh start when the cache is stale.
+        # boot: 2,152 KiB. Estimate about 7.6 times that. The repair run.sh, shot.sh and record.sh
+        # start when the cache is stale.
         import) echo 16 ;;
-        # tools/bake-atlases.sh on a tree with no pages: 1,148 KiB.
+        # tools/bake-atlases.sh on a tree with no pages: 1,148 KiB. Estimate about 3.6 times that.
         atlas-bake) echo 4 ;;
         # tools/export-web.sh into an empty build/: 39,624 KiB for the debug export, and 33,076 KiB
-        # for the release one on a fresh checkout, its bake and import included. +60%.
+        # for the release one on a fresh checkout, its bake and import included. Estimate +65% over
+        # the larger.
         web-export) echo 64 ;;
         # tools/build-web-template.sh on a cache miss: the downloads, the Emscripten SDK, the engine
         # source and its objects under build/web-template-work/, which the build removes once it
-        # succeeds: 2,832,532 KiB at the largest of samples five seconds apart. +48%, since a
+        # succeeds: 2,832,532 KiB at the largest of samples five seconds apart. Estimate +48%, since a
         # sample can miss a peak between two and the link's own temporary files are not counted.
         web-template-build) echo 4096 ;;
-        # tools/scene-recipes.sh, per recipe, without screenshots: 112 KiB for ten recipes.
+        # tools/scene-recipes.sh, per recipe, without screenshots: 112 KiB for ten recipes, about
+        # 11 KiB each. Estimate the smallest whole MiB, about 90 times that.
         scene-recipe) echo 1 ;;
         # The same, per recipe, with --screenshots: 436 KiB for one, the still most of it.
+        # Estimate about 4.7 times that.
         scene-capture) echo 2 ;;
-        # One tools/shot.sh still at the default 1280x720 with its logs: about 430 KiB measured. The
-        # estimate is the frame's raw RGBA size, 3.5 MiB, which its PNG does not meaningfully
-        # exceed whatever is on screen; a larger RESOLUTION scales it.
+        # One tools/shot.sh still at the default 1280x720 with its logs: about 430 KiB measured.
+        # The estimate, about 9.5 times that, is the frame's raw RGBA size, 3.5 MiB, rounded up:
+        # its PNG does not meaningfully exceed that whatever is on screen. A larger RESOLUTION
+        # scales it.
         shot) echo 4 ;;
         # One second of game time recorded by tools/record.sh, at 60 frames: the first four seconds
-        # of day 1, 242 frames and their WAV, held 38,816 KiB (160 KiB a frame), and a busy city
-        # still is 410 KiB. 512 KiB a frame plus the WAV.
+        # of day 1, 242 frames and their WAV, held 38,816 KiB (160 KiB a frame, about 9.5 MiB a
+        # second), and a busy city still is 410 KiB. The estimate is 512 KiB a frame plus the WAV,
+        # about 3.3 times the quiet frames measured and 25% over the busy still.
         record-second) echo 31 ;;
         *) return 1 ;;
     esac
