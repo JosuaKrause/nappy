@@ -30,14 +30,28 @@
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"final_activity": {
-		"moving_crowd": 22,
+		"moving_crowd": 29,
 		"visible_cars": 0,
 		"visible_events": {
 			"leaf_blower": 1
 		},
-		"visible_walkers": 22,
-		"walkers_left": 16,
-		"walkers_right": 6
+		"visible_walkers": 31,
+		"walker_streets": {
+			"h4": {
+				"moving": 13,
+				"walkers": 13
+			},
+			"v4": {
+				"moving": 2,
+				"walkers": 3
+			},
+			"v5": {
+				"moving": 14,
+				"walkers": 15
+			}
+		},
+		"walkers_left": 11,
+		"walkers_right": 20
 	},
 	"final_actors": {
 		"obstacle": {
@@ -53,57 +67,71 @@
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2195.7451,
-				1815.6006
+				2193.9875,
+				1834.9788
 			],
 			"speed": 62.0
 		}
 	},
 	"final_crowd": {
 		"cars": 34,
-		"moving": 228,
-		"moving_cars": 28,
+		"moving": 424,
+		"moving_cars": 26,
 		"quadrants": {
 			"ne": {
-				"cars": 3,
-				"moving": 29,
-				"moving_cars": 3,
-				"total": 29,
-				"walkers": 26
+				"cars": 5,
+				"moving": 77,
+				"moving_cars": 5,
+				"total": 77,
+				"walkers": 72
 			},
 			"nw": {
-				"cars": 26,
-				"moving": 180,
-				"moving_cars": 22,
-				"total": 184,
-				"walkers": 158
+				"cars": 24,
+				"moving": 290,
+				"moving_cars": 18,
+				"total": 298,
+				"walkers": 274
 			},
 			"se": {
 				"cars": 0,
-				"moving": 1,
+				"moving": 11,
 				"moving_cars": 0,
-				"total": 1,
-				"walkers": 1
+				"total": 11,
+				"walkers": 11
 			},
 			"sw": {
 				"cars": 5,
-				"moving": 18,
+				"moving": 46,
 				"moving_cars": 3,
-				"total": 20,
-				"walkers": 15
+				"total": 48,
+				"walkers": 43
 			}
 		},
 		"scope": "local",
-		"total": 234,
-		"walkers": 200
+		"total": 434,
+		"walkers": 400
 	},
 	"initial_activity": {
-		"moving_crowd": 11,
+		"moving_crowd": 21,
 		"visible_cars": 2,
 		"visible_events": {},
-		"visible_walkers": 9,
-		"walkers_left": 5,
-		"walkers_right": 4
+		"visible_walkers": 19,
+		"walker_streets": {
+			"h6": {
+				"moving": 10,
+				"walkers": 10
+			},
+			"v5": {
+				"moving": 2,
+				"walkers": 2
+			},
+			"v6": {
+				"moving": 7,
+				"walkers": 7
+			}
+		},
+		"walkers_left": 9,
+		"walkers_right": 10
 	},
 	"initial_actors": {
 		"obstacle": {
@@ -127,41 +155,41 @@
 	},
 	"initial_crowd": {
 		"cars": 34,
-		"moving": 234,
+		"moving": 434,
 		"moving_cars": 34,
 		"quadrants": {
 			"ne": {
-				"cars": 2,
-				"moving": 18,
-				"moving_cars": 2,
-				"total": 18,
-				"walkers": 16
+				"cars": 3,
+				"moving": 63,
+				"moving_cars": 3,
+				"total": 63,
+				"walkers": 60
 			},
 			"nw": {
-				"cars": 26,
-				"moving": 184,
-				"moving_cars": 26,
-				"total": 184,
-				"walkers": 158
+				"cars": 22,
+				"moving": 295,
+				"moving_cars": 22,
+				"total": 295,
+				"walkers": 273
 			},
 			"se": {
 				"cars": 1,
-				"moving": 4,
+				"moving": 10,
 				"moving_cars": 1,
-				"total": 4,
-				"walkers": 3
+				"total": 10,
+				"walkers": 9
 			},
 			"sw": {
-				"cars": 5,
-				"moving": 28,
-				"moving_cars": 5,
-				"total": 28,
-				"walkers": 23
+				"cars": 8,
+				"moving": 66,
+				"moving_cars": 8,
+				"total": 66,
+				"walkers": 58
 			}
 		},
 		"scope": "local",
-		"total": 234,
-		"walkers": 200
+		"total": 434,
+		"walkers": 400
 	},
 	"installed_events": [
 		{
@@ -276,8 +304,8 @@
 				"carrying": false,
 				"gait_frame": 2,
 				"position": [
-					1968.6223,
-					1936.0
+					1967.879,
+					1940.3944
 				],
 				"speed": 92.0
 			},
@@ -296,8 +324,8 @@
 				"carrying": false,
 				"gait_frame": 1,
 				"position": [
-					2163.012,
-					1815.6006
+					2161.2544,
+					1834.9788
 				],
 				"speed": 92.0
 			},
@@ -308,12 +336,14 @@
 	"physics_ticks_per_second": 30,
 	"playback_complete": true,
 	"recipe": "A wrong path, a turn, and the other sidewalk",
-	"recipe_sha256": "0e92c663bcb12bffde6e15c042be979452d7fecfdc8ecd109dd554308c81b2c6",
+	"recipe_sha256": "ab71b1e92b04f6bfd4a80c4a72e4cf4a0005ca1cb177d2efa8fc73ba62b7d75b",
 	"scope": "full",
 	"seed": 11,
 	"setup": {
 		"background": {
-			"crowd": true
+			"crowd": true,
+			"uniform_walkers": true,
+			"walker_multiplier": 2.0
 		},
 		"day": 1.0,
 		"events": [

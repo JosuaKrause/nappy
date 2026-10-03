@@ -10,7 +10,7 @@ false; the separate headless manifest proves that the complete scripted action p
 | Stills | Source revision | What the still establishes |
 |---|---|---|
 | `power-station-hall`, `power-station-yard` | `8941448c` | Real adjoining dead-end walls: the hall covers the facade, the fenced yard keeps it. |
-| `trailer-choice` | `052fb4c1` | A populated alternate street after the mother's wrong-way approach and backtrack; selected restaurant guests are one block east. |
+| `trailer-choice` | `d7a56707` | A uniformly busy alternate street after the mother's wrong-way approach and backtrack; selected restaurant guests are one block east. |
 | `trailer-blower` | `177191c8` | The father and selected leaf blower beside an industrial facade with manually placed existing duct, HVAC and vent fixtures. |
 | `trailer-dog`, `trailer-title`, `trailer-gatehouse` | `052fb4c1` | Charging dog beside a skylight roof, park-side title, and father approaching horizontally toward the existing vertical gate. |
 | `trailer-trucks` | `9768f6de` | Three army trucks beside the south-facing mother, varied posters, and the existing vertical roadblock at the left street mouth. |
@@ -22,6 +22,12 @@ Sources are reachable through PR #457. Godot 4.7.2 stable, macOS Apple M2, Compa
 `tools/scene-recipes.sh --recipe scene-recipes/NAME.json --screenshots --output /tmp/new-scene`.
 The command uses `--player-view`, `--no-save`, scripted playback and the saved `capture_at`.
 Fetch `refs/pull/457/head` when a source revision is absent locally. No video is made.
+
+The choice capture uses equal pedestrian corridor weights and 400 production walkers in its
+moving field, twice the ordinary day-1 count, with the ordinary car population. Its picture
+contains 35 walkers: 12 on the horizontal side street (10 moving), 9 on the main road
+(8 moving), and 14 on the other vertical side street (all moving). There are 15 walkers in
+the left half and 20 in the right. These are authored-scene controls, not ordinary balance changes.
 
 The blower preview selects its event explicitly, with no normal scheduler or additional seals.
 Its full ordinary crowd records 32 visible walkers (24 left, 8 right), four visible cars and
