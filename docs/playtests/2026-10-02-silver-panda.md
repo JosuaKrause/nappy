@@ -3,10 +3,12 @@
 2026-10-02.
 
 The player authorizes PR448 follow-ups in the session: "okay, you implement the 448
-follow-ups on the side". They subsequently request fixing review issues and another review.
+follow-ups on the side". The assistant's session summary also attributes a subsequent
+request to fix review issues and obtain another review to the player; the exact text of
+that subsequent message is not available in this source record and is not quoted.
 The new cloud delta review is posted by the player on PR448, attributed to an independent
 Claude Code reviewer. It approves the existing correction but finds a new unreadable xargs
-push. The player merges448 while this session is landing452, so the correction belongs in
+push. The player merges 448 while this session is landing 452, so the correction belongs in
 a focused follow-up PR from main, not a change to the merged PR. No game runtime is affected.
 
 The review is https://github.com/JosuaKrause/nappy/pull/448#issuecomment-5963732139.
