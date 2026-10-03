@@ -183,7 +183,7 @@ func has_a_sent_patrol() -> bool:
 ## `focus` is where the player will be standing when the day starts, so the events already
 ## around the doorstep are in the world on the first frame rather than appearing during it.
 func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[String],
-		focus := Vector2.ZERO, recipe_planner: Callable = Callable()) -> Array[String]:
+		focus := Vector2.ZERO) -> void:
 	_recipe_plan = false
 	clear()
 	_hard_failed = false
@@ -281,27 +281,9 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	var standing: Array[EventScheduler.Planned] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
-	var authored: Array[EventScheduler.Planned] = []
-	if recipe_planner.is_valid():
-		# The recipe sees the same holds and standing bodies as the catalogue. Its accepted
-		# subjects reserve their ground before ambient placement, never displacing finished work.
-		var result: Dictionary = recipe_planner.call(standing)
-		if not result.errors.is_empty():
-			return result.errors
-		authored.assign(result.plans)
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
 			GameState.settled_this_act(), tree, GameState.resistance_progress, doors,
-			ResistanceDirector.target_ground(_map, day, region_plan), standing, authored)
-	for plan in authored:
-		if plan not in _plans:
-			return ["ordinary day checks could not preserve the authored event or reservation"]
-		if plan.has_meta("recipe_reservation"):
-			# A real production happening creates these actors after planning. Their placeholders
-			# reserve space only; installing them here would create duplicate trucks.
-			_plans.erase(plan)
-	if recipe_planner.is_valid():
-		for plan in _plans:
-			plan.set_meta("recipe_catalogue", true)
+			ResistanceDirector.target_ground(_map, day, region_plan), standing)
 	_plans.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
@@ -342,7 +324,6 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 			_siting.prepare(plan.def, _everything_but(plan))
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"), _siting)
 	stream_around(focus)
-	return []
 
 ## Clears whatever was here and takes the escape's whole plan as given.
 ##

@@ -4,6 +4,7 @@
   "anchors": {"start": {"world": [1376, 1712]}},
   "setup": {"tutorial_complete": true, "day": 1, "parent": "father", "player": {"at": "start", "facing": "south"},
     "background": {"crowd": true},
+    "events": [{"name": "dog_walker", "row": "dog_walker", "at": [1488, 1680], "age": 1.4}],
     "roof_fixtures": [{"lot": [48, 48, 8, 8], "fixtures": [
       {"cell": [2, 4], "kind": "water_tank"}, {"cell": [5, 2], "kind": "vent"}]}]},
   "playback": {"walk": "2.5p", "duration": 2.5, "capture_at": 1.5, "title": "Nappy",

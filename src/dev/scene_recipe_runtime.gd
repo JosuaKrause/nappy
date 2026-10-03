@@ -395,6 +395,10 @@ func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
 		_install_column(setup.column, at, errors)
 	_install_posters(setup.get("posters", []), errors)
 	manifest["initial_actors"] = snapshot()
+	manifest["installed_events"] = []
+	for plan in city.events._plans:
+		manifest.installed_events.append({"row": plan.def.id,
+				"position": [plan.position.x, plan.position.y], "facing": [plan.facing.x, plan.facing.y]})
 	return errors
 
 ## The army column is a production happening, whose close-spaced trucks deliberately do not use
@@ -455,6 +459,9 @@ func _select_structures(errors: Array[String]) -> void:
 	for entry: Dictionary in setup.get("gates", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
 		var segment := StreetNetwork.by_key(key)
+		if GameState.day < Tuning.REGION_WALL_FIRST_DAY:
+			errors.append("setup.gates: checkpoints are not available on this day")
+			continue
 		if not region.doors.any(func(door): return door.key() == key):
 			errors.append("setup.gates: the selected street is not an eligible production checkpoint; eligible streets: %s" %
 					[region.doors.map(func(door): return door.key())])
@@ -721,6 +728,7 @@ func _record_crowd(key: String) -> void:
 ## still checks occlusion and legibility; whole-field totals alone cannot establish a busy view.
 func activity_snapshot() -> Dictionary:
 	var result := {"visible_walkers": 0, "visible_cars": 0, "moving_crowd": 0,
+			"walkers_left": 0, "walkers_right": 0,
 			"visible_events": {}}
 	var view := get_viewport().get_visible_rect()
 	var transform := get_viewport().get_canvas_transform()
@@ -729,6 +737,9 @@ func activity_snapshot() -> Dictionary:
 			continue
 		var key := "visible_cars" if agent.kind == CrowdAgent.Kind.CAR else "visible_walkers"
 		result[key] += 1
+		if agent.kind == CrowdAgent.Kind.WALKER:
+			result["walkers_left" if (transform * agent.global_position).x < view.size.x * 0.5
+					else "walkers_right"] += 1
 		if not agent.velocity().is_zero_approx():
 			result.moving_crowd += 1
 	for event in _city.events.instances():

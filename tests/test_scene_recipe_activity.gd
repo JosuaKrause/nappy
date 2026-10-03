@@ -1,5 +1,5 @@
 extends RefCounted
-## Real Main planning keeps authored subjects inside an ordinary day's population and budget.
+## Real Main installs only authored subjects while keeping production crowd simulation.
 
 const PROBE := """extends Node
 func _ready() -> void:
@@ -14,31 +14,45 @@ func _ready() -> void:
 	if city.crowd.agent_count() != Tuning.crowd_pedestrians(act) + Tuning.crowd_cars(act):
 		fail("background population differs from ordinary day density")
 		return
-	if city.events._recipe_plan or city.events._plans.size() < 20:
-		fail("ordinary event planning or director is absent")
+	if not city.events._recipe_plan:
+		fail("authored scene enables ordinary event filling or director")
 		return
-	for plan in city.events._plans:
-		if plan.has_meta("recipe_reservation"):
-			fail("a reservation was installed as a duplicate actor")
-			return
-	if runtime.named.has("blower"):
-		var counts := {}
-		var cost := 0
-		for plan in city.events._plans:
-			if plan.has_meta("recipe_catalogue") and plan.def.kind == GameEnums.EventKind.RECURRING:
-				counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
-				cost += plan.def.cost
-		if cost > EventScheduler.budget_for(GameState.day) \
-				or counts.get("leaf_blower", 0) > EventCatalogue.by_id("leaf_blower").max_per_day:
-			fail("pinned recurring event was added beyond the ordinary budget or cap")
-			return
+	var expected: int = runtime.data.setup.get("events", []).size()
+	expected += runtime.data.setup.get("seals", []).size() * 2
+	expected += runtime.data.setup.get("gates", []).size() * 3
+	expected += runtime.data.setup.get("barriers", []).size() * 3
+	if city.events._plans.size() != expected:
+		fail("an unselected event, seal or region body is installed")
+		return
+	for entry: Dictionary in runtime.data.setup.get("events", []):
 		var matched := false
 		for plan in city.events._plans:
-			if plan.get_meta("recipe_name", "") == "blower":
-				matched = plan.position.is_equal_approx(runtime.built.anchors.blower)
+			if plan.get_meta("recipe_name", "") == entry.name:
+				var errors: Array[String] = []
+				matched = plan.position.is_equal_approx(runtime.position_of(entry.at, errors))
 		if not matched:
-			fail("ordinary planning moved the pinned subject")
+			fail("construction moved the pinned subject")
 			return
+	for roof: Dictionary in runtime.data.setup.get("roof_fixtures", []):
+		var matched := false
+		for building in city.buildings():
+			if building.lot == SceneRecipe.rect(roof.lot):
+				matched = building.recipe_roof_furniture != null \
+						and building.recipe_roof_furniture.size() == roof.fixtures.size()
+		if not matched:
+			fail("authored fixtures did not reach the real production building")
+			return
+	if runtime.data.setup.has("seals"):
+		for plan in city.events._plans:
+			if plan.def.id == "cafe_tables" and not is_equal_approx(plan.position.x, 2576):
+				fail("restaurant guests did not move exactly one block east")
+				return
+	if runtime.data.setup.has("barriers"):
+		for plan in city.events._plans:
+			if plan.def.id == "roadblock" and (not is_equal_approx(plan.position.x, 1776)
+					or plan.position.y < 2240 or plan.position.y > 2432):
+				fail("truck barrier is not a vertical band across the left street")
+				return
 	if runtime.data.setup.has("posters"):
 		for entry: Dictionary in runtime.data.setup.posters:
 			var tile := city.map.world_to_tile(Vector2(entry.at[0], entry.at[1]))
@@ -50,10 +64,10 @@ func _ready() -> void:
 		var found := false
 		for body in city.region_plan().door_bodies:
 			if body.def.id == "checkpoint_gate" and body.position.is_equal_approx(
-					runtime.built.anchors.gate + Vector2(64, 0)):
-				found = EventInstance.gate_runs_north_south(body.facing)
+					runtime.built.anchors.gate + Vector2(0, 64)):
+				found = not EventInstance.gate_runs_north_south(body.facing)
 		if not found:
-			fail("the approached production gate does not have a horizontal boom")
+			fail("the father's horizontal approach does not meet the standard vertical gate")
 			return
 	print("RECIPE_ACTIVITY_OK")
 func fail(message: String) -> void:
@@ -72,7 +86,7 @@ func run(t) -> void:
 	for name in ["choice", "blower", "dog", "trucks", "gatehouse", "title"]:
 		var output: Array = []
 		var status := OS.execute(OS.get_executable_path(), PackedStringArray([
-			"--headless", "--path", ProjectSettings.globalize_path("res://"),
+			"--headless", "--quit-after", "120", "--path", ProjectSettings.globalize_path("res://"),
 			stem + ".tscn", "--", "--recipe", "res://scene-recipes/trailer-%s.json" % name,
 			"--recipe-mode", "scripted", "--recipe-validate", "--no-telemetry"
 		]), output, true)

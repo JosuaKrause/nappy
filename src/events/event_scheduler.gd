@@ -167,10 +167,8 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary] = [],
 		used_calm: Array[Vector2i] = [], tree: RouteTree = null,
 		heat: int = 0, doors := PackedVector2Array(), target: Array[Vector2i] = [],
-		standing: Array[Planned] = [], initial: Array[Planned] = []) -> Array[Planned]:
-	# Explicit scene subjects enter before the ordinary catalogue considers its candidates.
-	# They participate in spacing and reachability; ordinary callers supply no initial subjects.
-	var planned: Array[Planned] = initial.duplicate()
+		standing: Array[Planned] = []) -> Array[Planned]:
+	var planned: Array[Planned] = []
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
@@ -1444,10 +1442,6 @@ static func _fill_with_recurring(day: int, base: int, map: CityMap,
 
 	var budget := budget_for(day)
 	var counts := {}
-	for plan in planned:
-		if plan.has_meta("recipe_name") and plan.def.kind == GameEnums.EventKind.RECURRING:
-			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
-			budget -= plan.def.cost
 	# Bounded rather than while-true: a catalogue where nothing affordable remains would
 	# otherwise spin forever.
 	for attempt in budget * 4:
