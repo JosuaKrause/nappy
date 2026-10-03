@@ -141,7 +141,10 @@ request carries the whole batch:
   nothing. From then on the playtest file is the record, and a later thought is a new note.
 - **A filing pull request that is abandoned reopens its notes**:
   `uv run python tools/inbox.py --role claude-orchestrator reopen --pr P`, once the pull request is
-  closed without merging.
+  closed without merging. It reopens only what `close --pr P` closed: a note still closed whose
+  last close came from an inbox identity after P was opened and whose last `Filed in #N.` note
+  names P. A note the player closed, or one a later filing closed again, is left closed with a line
+  saying why.
 
 ## Every write goes out as an agent identity
 

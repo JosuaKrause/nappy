@@ -26,7 +26,9 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
                              note's body and the player's comments on it are word for word in
                              one playtest file P adds (a note with no body is refused, as CI
                              refuses it)
-    reopen --pr P            reopens them when P was closed without merging
+    reopen --pr P            when P was closed without merging, reopens the notes `close --pr P`
+                             closed: each one still closed whose last close came from an inbox
+                             identity after P was opened and whose last filing note names P
 
 **Only the player's notes count** (statements 19 and 23): an issue the player (`PLAYER`) opened,
 or one the capture script opened as one of `CAPTURE_BOTS` with its tag, the label `captured`. The
@@ -408,6 +410,7 @@ class Batch:
     state: str
     merged: bool
     notes: list[Note]
+    created: str = ""
 
 
 def read_batch(github: GitHub, pr: int) -> Batch:
@@ -427,7 +430,13 @@ def read_batch(github: GitHub, pr: int) -> Batch:
     failures = [f"#{note.number}: {reason}" for note in notes if (reason := skip_reason(note)) is not None]
     if failures:
         raise InboxError("not every note the description names is the player's: " + "; ".join(failures))
-    return Batch(pr=pr, state=str(data.get("state", "")), merged=bool(data.get("merged")), notes=notes)
+    return Batch(
+        pr=pr,
+        state=str(data.get("state", "")),
+        merged=bool(data.get("merged")),
+        notes=notes,
+        created=str(data.get("created_at", "")),
+    )
 
 
 def added_playtests(github: GitHub, pr: int) -> dict[str, str]:
@@ -504,6 +513,39 @@ def cmd_close(github: GitHub, role: str | None, pr: int, dry_run: bool) -> int:
     return 0
 
 
+FILED_IN = re.compile(r"^Filed in #(\d+)\.")
+
+
+def not_closed_by(github: GitHub, number: int, batch: Batch) -> str | None:
+    """Why closed note `number` was not last closed by `close --pr` for this batch, or None when it was.
+
+    It was when its last close came from an inbox identity (`WRITE_ROLES`) at or after the filing
+    pull request was opened, and the last `Filed in #N.` comment such an identity left on it names
+    this pull request. A note the player closed, or one a later filing closed again, is left alone.
+    """
+    closes = [
+        event
+        for event in github.get_all(f"repos/{github.repo}/issues/{number}/events")
+        if event.get("event") == "closed"
+    ]
+    if not closes:
+        return "it has no close event to read"
+    last = closes[-1]
+    actor = login({"user": last.get("actor")})
+    if actor not in WRITE_ROLES.values():
+        return f"it was last closed by {actor or 'an unknown account'}, not by the inbox"
+    if str(last.get("created_at", "")) < batch.created:
+        return f"it was last closed before #{batch.pr} was opened"
+    filings = [
+        match.group(1)
+        for comment in github.comments(number)
+        if comment.author in WRITE_ROLES.values() and (match := FILED_IN.match(comment.body))
+    ]
+    if not filings or filings[-1] != str(batch.pr):
+        return f"its last filing note names {'#' + filings[-1] if filings else 'no pull request'}, not #{batch.pr}"
+    return None
+
+
 def cmd_reopen(github: GitHub, role: str | None, pr: int, dry_run: bool) -> int:
     batch = read_batch(github, pr)
     if batch.merged or batch.state != "closed":
@@ -515,6 +557,10 @@ def cmd_reopen(github: GitHub, role: str | None, pr: int, dry_run: bool) -> int:
     for note in batch.notes:
         if note.state == "open":
             print(f"#{note.number} is already open")
+            continue
+        reason = not_closed_by(github, note.number, batch)
+        if reason is not None:
+            print(f"left #{note.number} closed: {reason}")
         elif dry_run:
             print(f"would reopen #{note.number} ({note.title})")
         else:

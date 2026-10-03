@@ -82,7 +82,29 @@ def run(fake: FakeGh, *argv: str, stdin: str = "") -> tuple[int, str, str]:
 
 
 def filing_pr(number: int, description: str, *, state: str = "open", merged: bool = False) -> dict[str, Any]:
-    return {"number": number, "body": description, "state": state, "merged": merged, "head": {"sha": "abc"}}
+    return {
+        "number": number,
+        "body": description,
+        "state": state,
+        "merged": merged,
+        "head": {"sha": "abc"},
+        "created_at": "2026-10-01T10:00:00Z",
+    }
+
+
+def closed_by(number: int, actor: str, when: str, filed_in: int | None) -> dict[str, Any]:
+    """The reads that say who last closed note `number`, when, and which pull request its filing note names."""
+    bot = "nappy-claude-orchestrator[bot]"
+    comments = (
+        [] if filed_in is None else [{"user": {"login": bot}, "created_at": when, "body": f"Filed in #{filed_in}. x"}]
+    )
+    return {
+        f"repos/{REPO}/issues/{number}/events": [
+            {"event": "labeled", "actor": {"login": "JosuaKrause"}, "created_at": "2026-09-30T00:00:00Z"},
+            {"event": "closed", "actor": {"login": actor}, "created_at": when},
+        ],
+        f"repos/{REPO}/issues/{number}/comments": comments,
+    }
 
 
 def playtest_reads(pr: int, text: str) -> dict[str, Any]:
@@ -386,10 +408,37 @@ class WriteTests(unittest.TestCase):
         fake = self.batch("Filed from #423\nFiled from #424", BODY)
         self.assertIn("is open", run(fake, "--role", "claude-orchestrator", "reopen", "--pr", "430")[2])
         fake = self.batch("Filed from #423\nFiled from #424", BODY, state="closed")
+        fake.reads.update(closed_by(424, "nappy-claude-orchestrator[bot]", "2026-10-01T11:00:00Z", 430))
         code, out, _ = run(fake, "--role", "claude-orchestrator", "reopen", "--pr", "430")
         self.assertEqual(code, 0)
         self.assertIn("#423 is already open", out)
         self.assertEqual([args[6:9] for args, _ in fake.writes], [["issue", "reopen", "424"]])
+
+    def test_reopen_leaves_a_note_that_this_close_did_not_close(self) -> None:
+        # Only what `close --pr 430` closed comes back: not a note the player closed, one closed
+        # before #430 was opened, or one a later filing (#431) closed again.
+        cases = [
+            ("the player closed it", closed_by(424, "JosuaKrause", "2026-10-01T11:00:00Z", 430), "not by the inbox"),
+            (
+                "closed before the PR",
+                closed_by(424, "nappy-claude-orchestrator[bot]", "2026-09-30T11:00:00Z", 430),
+                "before #430 was opened",
+            ),
+            (
+                "re-filed by #431",
+                closed_by(424, "nappy-claude-orchestrator[bot]", "2026-10-02T11:00:00Z", 431),
+                "names #431, not #430",
+            ),
+        ]
+        for label, reads, reason in cases:
+            with self.subTest(label):
+                fake = self.batch("Filed from #424", BODY, state="closed")
+                fake.reads.update(reads)
+                code, out, _ = run(fake, "--role", "claude-orchestrator", "reopen", "--pr", "430")
+                self.assertEqual(code, 0)
+                self.assertIn("left #424 closed", out)
+                self.assertIn(reason, out)
+                self.assertEqual(fake.writes, [])
 
 
 class AgreementTests(unittest.TestCase):
