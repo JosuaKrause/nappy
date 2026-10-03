@@ -1,4 +1,6 @@
 // Bounded CDP verification of the actual release Wasm, in a disposable Chrome profile.
+// The browser is closed through CDP and waited for, so it removes its own scratch; what it still
+// leaves is settled by browser-scratch.mjs and reported in scratch.json beside the results.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
@@ -7,10 +9,13 @@ import { access, mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import { resolve, join, extname, sep } from 'node:path';
 import { parseArgs } from 'node:util';
+import { BrowserScratch, cloneRoot } from './browser-scratch.mjs';
 
 const usage = `usage: node tools/web-template/browser-check.mjs --export DIR --output DIR --browser FILE [--help|-h]
 Requires Node 22 and Chrome/Chromium. Exercises title/play, save/reload, later days and escape.
 The output directory must not exist; logs/screenshots/results go there, never into the game.
+The browser runs in a temporary profile that is removed afterwards; it is closed through CDP
+and waited for, and scratch.json reports any browser scratch it removed, kept or could not attribute.
 Example: node tools/web-template/browser-check.mjs --export build/web --output /tmp/web-check --browser /usr/bin/google-chrome
 `;
 let options;
@@ -28,6 +33,10 @@ const output = resolve(options.output);
 await mkdir(output);
 let profile;
 let browser;
+let browserExit;
+let exited = false;
+const scratch = new BrowserScratch({ root: await cloneRoot() });
+await scratch.begin();
 const logs = [];
 const errors = [];
 const results = [];
@@ -100,22 +109,51 @@ const load = async (name, query, expected) => {
 };
 let success = false;
 let failure = null;
+let observer;
+let observing = null;
+const waitExit = milliseconds => Promise.race([browserExit.then(() => true), pause(milliseconds).then(() => false)]);
+// Closing through CDP lets the browser remove its own scratch; a signal is the fallback.
+const stopBrowser = async () => {
+  if (!browser?.pid || exited) return browser ? 'exited' : 'not started';
+  await observing;
+  await scratch.observe(browser.pid);
+  if (socket?.readyState === WebSocket.OPEN) {
+    await Promise.race([call('Browser.close').catch(() => {}), pause(3000)]);
+    if (await waitExit(10000)) return 'closed';
+  }
+  browser.kill('SIGTERM');
+  if (await waitExit(5000)) return 'terminated';
+  browser.kill('SIGKILL');
+  await waitExit(5000);
+  return exited ? 'killed' : 'still running after SIGKILL';
+};
 try {
   await access(options.browser, constants.X_OK);
   profile = await mkdtemp(join(tmpdir(), 'nappy-web-check-'));
   await new Promise((r, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', r); });
   url = `http://127.0.0.1:${server.address().port}`;
   await new Promise((r, reject) => {
+    // MacAppCodeSignClone is macOS Chrome's copy of its own bundle, about 2 GiB allocated per
+    // launch; disabled, none is made. Other platforms ignore the unknown feature name.
     browser = spawn(options.browser, [
       '--headless=new', '--no-sandbox', '--disable-dev-shm-usage', '--enable-unsafe-swiftshader',
       '--use-angle=swiftshader', '--disable-background-timer-throttling',
       '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
+      '--disable-features=MacAppCodeSignClone',
       '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', 'about:blank',
     ], { stdio: ['ignore', 'ignore', 'pipe'] });
+    browserExit = new Promise(r => {
+      browser.once('exit', () => { exited = true; r(); });
+      browser.once('error', () => { if (!browser.pid) { exited = true; r(); } });
+    });
     browser.once('error', reject);
     browser.once('spawn', r);
     browser.stderr.on('data', data => { browserLog += data; });
   });
+  observer = setInterval(() => {
+    if (observing || exited) return;
+    observing = scratch.observe(browser.pid).finally(() => { observing = null; });
+  }, 2000);
   const port = await until(async () => {
     assert(browser.exitCode === null && browser.signalCode === null, 'Chrome exited before CDP startup');
     try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0]; } catch { return false; }
@@ -191,20 +229,29 @@ try {
   throw error;
 } finally {
   // Stop processes even if the output filesystem refuses an artifact write.
+  clearInterval(observer);
+  let shutdown;
+  try { shutdown = await stopBrowser(); } catch (error) { shutdown = `failed: ${error.message}`; }
   try { socket?.close(); } catch {}
-  browser?.kill('SIGKILL');
   for (const waiter of pending.values()) clearTimeout(waiter.timer);
   server.closeAllConnections(); server.close();
+  let scratchReport = { shutdown, settled: 'browser never started' };
   try {
     if (profile) {
       await pause(300);
       await rm(profile, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
     }
   } finally {
+    if (browser?.pid && exited) scratchReport = { shutdown, ...await scratch.settle() };
+    else if (browser?.pid) scratchReport = { shutdown, settled: 'browser still running; nothing touched' };
+    for (const { path, reason } of scratchReport.retained || []) process.stderr.write(`Browser scratch kept: ${path} (${reason})\n`);
+    for (const { path, missing } of scratchReport.candidates || []) process.stderr.write(`Browser scratch not attributed: ${path} (${missing})\n`);
+    for (const { path } of scratchReport.removed || []) process.stderr.write(`Browser scratch removed: ${path}\n`);
     const writes = await Promise.allSettled([
       writeFile(join(output, 'result.json'), JSON.stringify({ success, results, errors, failure }, null, 2) + '\n'),
       writeFile(join(output, 'console.log'), logs.join('\n')),
       writeFile(join(output, 'browser.log'), browserLog),
+      writeFile(join(output, 'scratch.json'), JSON.stringify(scratchReport, null, 2) + '\n'),
     ]);
     for (const result of writes) if (result.status === 'rejected') {
       process.stderr.write(`Cannot write browser evidence: ${result.reason}\n`);

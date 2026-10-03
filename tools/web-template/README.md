@@ -89,7 +89,8 @@ node tools/web-template/browser-check.mjs --export build/web \
 
 The harness requires Node 22 and a Chrome/Chromium executable. It serves the export locally,
 uses a fresh temporary browser profile, blocks external analytics, bounds each wait and records
-engine errors, screenshots and results in a new output directory. It checks title startup,
+engine errors, screenshots and results in a new output directory, which is the caller's and is
+never removed; the harness downloads and extracts nothing. It checks title startup,
 keyboard input, an IndexedDB save and its reload with the same run seed and one nerve spent,
 the ordinary summary-to-day-2 transition, days 8/14, and the escape interior. Query-driven later days are separate boots, not a claim of
 playing through all days. Inspect the images for rendering and baked version metadata too.
@@ -108,3 +109,29 @@ The official [size guide](https://docs.godotengine.org/en/stable/engine_details/
 [Web compilation guide](https://docs.godotengine.org/en/stable/engine_details/development/compiling/compiling_for_web.html)
 and [build-profile guide](https://docs.godotengine.org/en/stable/tutorials/editor/using_engine_compilation_configuration_editor.html)
 describe the mechanisms; the pinned engine source decides which options exist.
+
+## Browser scratch
+
+The profile is not the only thing a browser run leaves. On macOS, Chrome copies its own
+application bundle into `<user temp root>/X/<bundle id>.code_sign_clone/code_sign_clone.XXXXXX/`
+at launch, so an update installed while it runs cannot break its signature. The copy is about
+2 GiB allocated (copy-on-write, so removing it returns less than that); Chrome removes it after a
+graceful close and leaves it behind when it is stopped with a signal. So the harness:
+
+- launches Chrome with `--disable-features=MacAppCodeSignClone`, which makes no copy at all
+  (other platforms ignore the unknown feature name);
+- closes the browser through the protocol's `Browser.close` and waits for it to exit, falling back
+  to `SIGTERM` and then `SIGKILL` only when it does not, and removes the profile after the exit;
+- records, every two seconds while the browser runs and once more before closing it, every clone
+  `lsof` shows a process of its own browser holding a file inside, with that process and path as
+  the evidence (`browser-scratch.mjs`);
+- after the exit, waits briefly for Chrome's own removal, then removes a recorded clone only when
+  every recorded process has exited and `lsof` finds nothing on the system still holding it;
+- reports, and leaves, a clone that appeared during the run without that evidence, and never looks
+  further at a clone that existed before it started.
+
+`scratch.json` in the output directory says how the browser was stopped and lists what was
+removed, kept (with the reason) or not attributed (with the evidence missing). A name or a date
+alone never makes a directory the run's. `browser-scratch.test.mjs` checks these rules against
+fixture directories held open by a stand-in process, never against a real browser or system
+directory; the `web-template` workflow runs it with `node --test`.

@@ -134,6 +134,11 @@ locations outside `/tmp`. Stop the owning processes and check exact paths before
 A browser's installed application, the player's regular profile and arbitrary OS/application
 caches are not job-owned scratch. A one-time request to remove identified directories does not
 authorize future blanket deletion of the application's temporary area.
+`tools/web-template/browser-check.mjs` follows this for macOS Chrome's code-sign clone, a copy of
+the browser's own bundle that Chrome removes after a graceful close and leaves behind when it is
+killed: it launches Chrome with the clone disabled, closes it through the debugging protocol and
+waits for it, removes only a clone `lsof` showed its own browser holding once nothing holds it,
+and writes what it removed, kept or could not attribute to `scratch.json` in its output.
 
 **Check actual free space before and after.** `du` gives allocated sizes that may overlap shared
 copy-on-write blocks; it does not promise exclusive reclaimable bytes. `df` on each destination
