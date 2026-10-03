@@ -13,7 +13,97 @@ They are excluded from resident queries until complete. Live ground edits, route
 and resets discard stale partial state. Guard and destination preparation finish synchronously.
 Water has one surface per populated quadrant, sharing the city's pausable phase.
 
-## Native comparison
+## Matched before/after runtime experiment
+
+[matched/results.json](matched/results.json) retains all nine trials: three each of the actual
+atomic runtime, the global one-section-per-frame candidate, and the final per-region runtime.
+[matched/order.tsv](matched/order.tsv) includes the three preceding warmups and the rotated
+trial order: atomic/global/per-region, global/per-region/atomic, per-region/atomic/global.
+There are no rejected trials or omitted outliers in this matched experiment. The collector is
+`tests/probes/ground_frames_matched.gd` at
+`6fbd8bfe3a9f5cfb1465cd6e3811c4fc9a1f4c5b`; its SHA-256 is
+`3510730648614f351e5faa599c20adbeb4dc7196c5168e0964fb139e580ec8eb`.
+
+The three clean tracked runtime revisions are atomic
+`aae5c189bfe3a7d23530c6f06d17712c7d043807`, global
+`59b5e6baee8300a6478e4e481c4de4dc7e996496`, and per-region
+`a64abc1cf6f022cbb57e1a5e04edd7602f6f1adf`. The runner copies identical untracked collector
+files into each detached checkout, imports it, checks tracked cleanliness and hashes tracked
+`src/`, `scenes/`, `assets/` and `project.godot` after setup and before and after every launch.
+The retained [atomic](matched/atomic.runtime.sha256), [global](matched/global.runtime.sha256)
+and [per-region](matched/per-region.runtime.sha256) manifests differ only in the two ground
+preparation/residency scripts. Every trial records its manifest digest and collector revision.
+
+Each launch uses the same Godot 4.7.2 official debug executable on Apple M2/macOS, OpenGL
+compatibility, VSync disabled, seed 4242, 1280×720 viewport and 640×360 world camera view.
+No other engine or test suite runs during the timed captures. The production City and scenery
+objects remain active; the collector supplies the production movement/pending-work update
+cadence after moving a noninterpolated Camera2D. It asserts actual camera geometry against
+coverage geometry every sampled frame. Ground/water and roof animation receive identical
+modeled delta; normal wall-time animation cannot select different roof frames between trials.
+
+Each south-60Hz, south-15Hz and diagonal-15Hz case builds a fresh city, settles for 120 rendered
+frames, and traverses 30 modeled seconds at 168px/s: 15 seconds out from the doorstep and 15
+back. These are actual Engine process frames with modeled movement increments, rendered
+uncapped; they are not native wall-clock 15/60fps limits or playable survival routes. Long
+legs enter the outside band. A separate shoreline relocation settles for 120 frames before
+240 steady samples. Safety completion stays enabled and all production scenery guard calls
+are counted. All 24,300 traversal frames have complete visible ground, and every launch has
+zero forced draws. All 27 settled windows have identical cell and pixel hashes.
+
+The common span starts at `SceneTree.process_frame` before modeled animation callbacks and
+ends immediately at `RenderingServer.frame_post_draw`. It includes camera movement, scenery
+queue work, deferred TileMap preparation, rendering callbacks and submission/waits encountered
+there. Thus atomic's deferred renderer work remains inside the same span as the final
+runtime's explicit `update_internals()`. It excludes physics before that signal, post-draw
+coverage/identity observation, CSV output and image readback. Observer p99 is 41–56µs across
+traversal trials, reported separately. Common fixture callback overhead remains in every span.
+Queue-only distributions are diagnostic: atomic defers renderer work beyond that timer.
+
+Ranges below are the minimum and maximum of three per-trial statistics, not pooled samples;
+the maximum column keeps the single worst sample. Full median/p95/p99/max, sums and frame-budget
+counts for traversal, queue and steady windows remain in the JSON.
+
+| Itinerary | Runtime | Median range ms | p99 range ms | Worst ms | Guard catches per trial |
+| --- | --- | ---: | ---: | ---: | ---: |
+| South 60Hz | Atomic | 1.190–1.202 | 4.627–5.274 | 8.710 | 0 |
+| South 60Hz | Global section cap | 1.088–1.091 | 4.310–4.532 | 7.332 | 0 |
+| South 60Hz | Per-region | 1.067–1.070 | 4.292–4.441 | 7.414 | 0 |
+| South 15Hz | Atomic | 1.263–1.291 | 4.534–5.756 | 6.416 | 0 |
+| South 15Hz | Global section cap | 1.287–1.292 | 4.610–5.349 | 5.749 | 16 |
+| South 15Hz | Per-region | 1.125–1.141 | 4.445–5.756 | 6.833 | 0 |
+| Diagonal 15Hz | Atomic | 1.433–1.444 | 5.173–5.601 | 7.201 | 0 |
+| Diagonal 15Hz | Global section cap | 1.406–1.429 | 4.764–5.647 | 6.407 | 31 |
+| Diagonal 15Hz | Per-region | 1.329–1.339 | 4.765–5.266 | 7.667 | 0 |
+
+Ordinary south-60Hz median spans are about 11% lower for per-region preparation than atomic;
+p95 is 2.849–3.073ms versus 3.519–4.021ms. The 15Hz tails overlap and maxima are mixed, so
+these samples do not establish a universal frame-time improvement. No traversal or steady
+sample exceeds 16.667ms, 33.333ms or 66.667ms in this controlled native workload. The stricter
+global rule gives no consistent advantage over per-region preparation and repeatedly reaches
+the safety guard at 15Hz. This supports the per-region choice over the stricter rule for
+ordinary preparation throughput; it does not establish perceptible whole-game improvement.
+
+Completed-region counts per trial are 102/102/130 for atomic, 99/96/95 for global and
+102/96/130 for per-region over south60/south15/diagonal15. Early completion and retention make
+these totals differ even with identical camera paths. `observed_sections` derives progress
+from before/after pending steps and newly published owners, including guard-drained steps:
+atomic counts whole-region units; stepped runtimes count quadrants. It is not an instrumented
+count of every transient internal operation. The global diagonal route discards two partial
+jobs per trial. Per-region routes discard none and retain at most 6/6/10 pending owners.
+
+The settled shoreline has 18 regions, 976 populated cells including 336 water cells, and the
+same pixels for every runtime. Atomic has 6 water surfaces and 38 draw calls; both stepped
+runtimes have 24 water surfaces and 46 draw calls. Clearing ground releases 482,528–482,552
+tracked static bytes for atomic versus 776,624–776,720 for stepped preparation, about 61% more.
+This is a ground-release Godot allocation delta, not RSS or GPU memory. Steady median spans
+are 0.792–0.814ms atomic, 0.818–0.838ms global and 0.818–0.842ms per-region; the extra quadrants
+and water objects have a measurable steady cost. These are controlled rendered-city scenery
+results, excluding Main, crowds and events, browser/iPhone/Safari, GPU duration and physical
+presentation. The bounded-preparation choice carries this overhead; the experiment does not
+justify claiming that every platform or active-game frame becomes faster.
+
+## Isolated preparation comparison
 
 The collector is `tests/probes/ground_frames.gd` at clean revision
 `a64abc1cf6f022cbb57e1a5e04edd7602f6f1adf`, with source and collector SHA-256 values in
@@ -91,7 +181,7 @@ Every final completion crosses distinct process frames. Faster completion retain
 before a turn, so candidate and final counts need not match. Native frame callback spans and
 all per-case distributions remain in the JSON; the final maximum is 5.900ms. These spans include
 frame scheduling, are neither GPU duration nor physical presentation latency, and have no
-whole-game atomic baseline. The comparison is against the rejected global-cap candidate;
+atomic runtime baseline within that rate sweep. The comparison is against the rejected global-cap candidate;
 the atomic strategy above is only the isolated preparation control. No forced draw is needed
 in either retained rate-sweep launch.
 
@@ -126,6 +216,25 @@ these native results. The old synchronous `scenery_residency_acceptance.gd` prob
 documented historical revision; it cannot advance the current process-frame-gated scheduler.
 
 ## Reproduction
+
+For the matched runtime experiment, use the committed runner; it creates and removes its own
+three clean detached runtime checkouts, uses a configurable executable and a fresh caller-relative
+scratch directory, and retains full logs and per-frame CSVs outside the repository:
+
+```sh
+git fetch origin refs/pull/452/head
+task_root=$(mktemp -d)
+git worktree add --detach "$task_root/collector" 6fbd8bfe3a9f5cfb1465cd6e3811c4fc9a1f4c5b
+cd "$task_root/collector"
+./tools/measure-ground-frames.sh --godot "$GODOT" --output ./matched-results
+```
+
+The runner rejects unknown/missing arguments before creating files, validates clean source
+identity for every launch, stops on errors or coverage failures, and requires cross-strategy
+settled cell/pixel equality before accepting the comparison. Its collector has a two-minute
+deadline and each native launch has an external 150-second kill. Headless boot/parse, doc lint,
+CLI help/error checks and whitespace checks pass for this collector; no runtime source changes
+or additional gameplay captures are part of this experiment.
 
 Run from a clone with a configured `GODOT` executable. Fetch the durable PR reference before
 checking out either branch-only revision, and use new scratch output paths:
