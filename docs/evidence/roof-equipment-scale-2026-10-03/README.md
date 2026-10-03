@@ -49,14 +49,16 @@ this new source sheet into a fresh directory, then compare them byte-for-byte:
 
 ```sh
 uv run python docs/evidence/roof-obstruction-pngs-2026-09-30/register_roofs.py all /private/tmp/roof-scale-rebuild
+uv run python docs/evidence/roof-obstruction-pngs-2026-09-30/register_roofs.py verify /private/tmp/roof-scale-rebuild
 ```
 
 This uses Python 3.14.7 and Pillow 12.3.0. It checks the preserved raw input hashes before writing.
 
 ## Engine reproduction
 
-Fetch `refs/pull/441/head` before checking out the evidence revision from a fresh clone. Use a
-fresh checkout so its output cannot overwrite retained evidence. Run `./tools/check.sh`, then:
+Fetch `refs/pull/441/head` before checking out evidence revision
+`d3277791d02e55d7885b276cc67e8aa73e9479e1` from a fresh clone. Use a fresh checkout so its output
+cannot overwrite retained evidence. Run `./tools/check.sh`, then:
 
 ```sh
 "${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}" --path . --resolution 1280x720 \
