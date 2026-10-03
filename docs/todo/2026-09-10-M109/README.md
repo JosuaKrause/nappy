@@ -21,3 +21,6 @@ all directions, animation frames and state variants. In particular, the mother c
 must read as the same woman pushing the stroller. Choose the generation method by visual results;
 a shared direction/state grid is a suggested strategy. Update the illustrated-PNG skill with
 findings supported by the conversion and review.
+
+[Bouncy-squirrel's roof review](roof-network-review.md) requires connected vent
+networks and removal of rejected obstruction transfers inside the existing roof PR.
