@@ -113,19 +113,33 @@ capture() {
         --disable-vsync --resolution 1280x720 res://tests/probes/ground_frames_matched.tscn \
         -- --no-save --no-telemetry --ground-mode "${modes[$index]}" > "$output/$label.log" 2>&1 &
     child=$!
-    # The watchdog also samples, once a second, for any other Godot process that starts mid-capture.
-    (for _ in $(seq 150); do
-        kill -0 "$child" 2>/dev/null || exit 0
-        pgrep -x Godot | grep -vx "$child" >> "$output/competition.tmp" || true
-        sleep 1
-    done; kill "$child" 2>/dev/null) &
+    # The watchdog kills the capture after 150 seconds and samples, once a second, for any other
+    # Godot process that starts mid-capture. It waits on a timed `read` of a FIFO rather than a
+    # `sleep`: a forked `sleep` outlives a kill of its subshell and holds this script's output
+    # open, the defect tools/lib_dev_flags.sh's `wait_or_kill` avoids the same way. The caller
+    # releases it with one line once the capture has exited, and holds the FIFO open (fd 8) until
+    # the watchdog is reaped, so neither side can block on the other.
+    local fifo
+    fifo="$output/watchdog.fifo"
+    rm -f "$fifo"
+    mkfifo "$fifo"
+    exec 8<>"$fifo"
+    (
+        for _ in $(seq 150); do
+            if read -r -t 1 <&8; then exit 0; fi
+            pgrep -x Godot | grep -vx "$child" >> "$output/competition.tmp" || true
+        done
+        kill "$child" 2>/dev/null
+    ) &
     watchdog=$!
     status=0
     wait "$child" || status=$?
     child=""
-    kill "$watchdog" 2>/dev/null || true
+    echo >&8
     wait "$watchdog" 2>/dev/null || true
     watchdog=""
+    exec 8>&-
+    rm -f "$fifo"
     if [[ -s "$output/competition.tmp" ]]; then
         printf '%s\t%s\n' "$label" "another Godot process ran during the capture" >> "$output/rejected.tsv"
         fail "capture rejected: another Godot process ran during $label"
