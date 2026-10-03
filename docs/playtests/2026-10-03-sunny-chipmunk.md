@@ -326,3 +326,11 @@ Source: [PR #455 comment](https://github.com/JosuaKrause/nappy/pull/455#issuecom
 After the review identifies phone profiling as unavailable, the player adds:
 
 > unless you can come up with a way to profile on a phone
+
+## Phone profiling is optional
+
+In response to the proposal to retain USB Android Chrome remote debugging as an
+optional method, and the finding that the older baseline still required phone timings,
+the player says:
+
+> phone profiling would be a nice to have but honestly a quick eye test is good enough. although it doesn't actually tell us how we could improve things and what the exact bottlenecks are -- let's record the ideas here -- maybe we will do them

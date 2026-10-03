@@ -3,9 +3,11 @@
 The player says "we *cannot* profile on the phone", then qualifies that with
 "unless you can come up with a way to profile on a phone";
 [sunny-chipmunk, mobile-ground review clarifications](../../playtests/2026-10-03-sunny-chipmunk.md)
-records both statements and their context. Do not require on-phone measurements.
-The phone remains where the player judges perceived stutter. The entry moves to
-`now`; that band change does not reorder its existing baseline work.
+records both statements and their context. The player further says a quick eye test
+is good enough and asks to retain profiling ideas for possible future work. Do not
+require on-phone measurements, including for the prerequisite baseline. The phone
+remains where the player judges perceived stutter; that eye test does not identify
+exact bottlenecks. M159 is in `now`; the existing baseline precedes attribution work.
 
 **Proposed, not asked for:** after that baseline, attribute costs using the native
 profiling and raw-frame traces already available, plus the web build in desktop
@@ -22,7 +24,8 @@ contribution rejection on the accessible target, including both callers, before
 considering caching or lower tick rates. Retain median and tail distributions and
 verify unchanged gameplay.
 
-**Proposed optional phone method, not an available measurement claim:** Chrome
+**Proposed, not asked for:** the following optional phone method is a retained idea,
+not an available measurement claim or scheduled implementation. Chrome
 supports [remote debugging an Android tab from a computer](https://developer.chrome.com/docs/devtools/remote-debugging/).
 With a USB-connected Android phone, developer options/USB debugging enabled and
 the phone's authorization accepted, desktop Chrome's `chrome://inspect/#devices`
