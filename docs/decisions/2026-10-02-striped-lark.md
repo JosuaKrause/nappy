@@ -133,7 +133,7 @@ The 48 new focused hook-JSON cases expose 31 failures at 9b57ce74 and all pass w
 the shared parser. Shell syntax, lint, whitespace and headless boot pass. The first
 full matrix printed 3,582 successful checks and no failed assertion, but exited in its
 footer after the author edited header comments while Bash was reading the file. A
-frozen-copy rerun establishes the complete matrix exit separately. The adapter run's
+frozen-copy rerun passes all 3,582 checks with zero failures and exit 0. The adapter run's
 56 other tests pass; its dense-option-chain test had five timing subcase failures while
 the matrix ran concurrently, then passed all six subcases in isolation (10.08 seconds
 for that test). These are recorded as verification conditions, not guard behavior
