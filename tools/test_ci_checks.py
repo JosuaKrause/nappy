@@ -391,6 +391,18 @@ class TranscriptionTests(unittest.TestCase):
         self.assertIn("a pull request", ci_transcription.check([pull], FILED_PLAYTEST)[0])
         self.assertIn("no body", ci_transcription.check([note(body=" \r\n")], FILED_PLAYTEST)[0])
 
+    def test_only_a_playtest_file_the_pull_request_adds_is_read(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "docs" / "playtests").mkdir(parents=True)
+            (root / "docs" / "playtests" / "old.md").write_text("an old playtest", encoding="utf-8")
+            (root / "docs" / "playtests" / "new.md").write_text("a new playtest", encoding="utf-8")
+            (root / "docs" / "other.md").write_text("not a playtest", encoding="utf-8")
+            changes = [modified("docs/playtests/old.md"), added("docs/playtests/new.md"), added("docs/other.md")]
+            self.assertEqual(
+                ci_transcription.added_playtests(changes, root), {"docs/playtests/new.md": "a new playtest"}
+            )
+
     def test_the_api_shape_is_read_whatever_the_state(self) -> None:
         data: dict[str, object] = {
             "user": {"login": "JosuaKrause", "type": "User"},
