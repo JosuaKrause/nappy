@@ -19,3 +19,15 @@ open to overturn. The player answered:
 > "if an issue has no inbox label it shouldn't get filed"
 
 2. **An issue without the `inbox` label is never filed**, whoever opened it. → leafy-finch.
+
+A review of PR #429 found that issue #431 had been opened as a captured note by the orchestrator's
+identity before the capture script existed, its body the session's write-up ("Written by the
+orchestrating Claude Code session at the player's request; the player's own words are only the
+request above"), so the script would show it as the player's words. The assistant offered to file
+it with the body marked as the agent's write-up, or to close it and capture it again with only the
+player's words. The player answered:
+
+> "file it as is"
+
+3. **Issue #431 is filed as it stands, its body marked as the agent's write-up and the player's
+   words in it "add it as issue".** → leafy-finch.

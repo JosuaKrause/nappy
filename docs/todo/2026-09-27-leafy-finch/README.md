@@ -22,5 +22,6 @@ itself, its skill, capture and write guard
 ([leafy-finch-3](../../decisions/2026-09-27-leafy-finch-3.md)), are built. What is left is the
 inbox's first real filing, issue #423, when the player triggers it (`first-filing.md`).
 
-The band is `now` by the player's word ([plaid-tapir](../../playtests/2026-10-03-plaid-tapir.md),
-statement 1: "once this is merged we will do the first issue ingestion using its new script").
+**Proposed, not asked for:** the band `now`, the filer's reading of
+[plaid-tapir](../../playtests/2026-10-03-plaid-tapir.md), statement 1: "once this is merged we will
+do the first issue ingestion using its new script".
