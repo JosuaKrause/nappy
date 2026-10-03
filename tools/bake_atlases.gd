@@ -8,7 +8,8 @@ extends SceneTree
 ##
 ## **The presentation mode is the bake's, and there is no other.** By default a member with an
 ## illustrated PNG beside it is baked from that PNG and everything else from its SVG's raster;
-## `--svg` bakes the SVG rasters alone and is the custom local build, never the release. Nothing
+## `--svg` bakes every paired picture from its SVG raster, and a PNG-only family (the roof
+## equipment) from its PNG; it is the custom local build, never the release. Nothing
 ## in the running game chooses between them — the pixels on the page are the ones the build
 ## chose.
 ##
@@ -162,7 +163,7 @@ func _parse_arguments() -> bool:
 				_svg_mode = true
 			"--help", "-h":
 				print("usage: godot --headless --path . --script tools/bake_atlases.gd -- [--svg]")
-				print("  --svg   bake the authored SVG rasters alone, never the illustrated PNGs")
+				print("  --svg   bake paired pictures from their SVG rasters; a PNG-only family from its PNG")
 				return false
 			_:
 				printerr("bake_atlases: unknown argument '%s'" % argument)

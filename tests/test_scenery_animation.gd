@@ -13,31 +13,37 @@ func _test_roof_rotors(t) -> void:
 	building.height = 64
 	building.district = GameEnums.BlockPurpose.INDUSTRIAL
 	t.add_child(building)
+	for variant in 200:
+		if not building._rotor_layers.is_empty():
+			break
+		building.variant = variant + 1
 	t.check(not building._rotor_layers.is_empty(), "the roof fixture actually has moving vents")
 	var furniture := building._roof_furniture.duplicate(true)
 	var collision: Shape2D = building._collision.shape
-	var layers := building._roof_layers.duplicate()
+	var objects := building._roof_objects.duplicate()
+	var rotors := building._rotor_layers.duplicate()
 	building._process(Building.VENT_FRAME_INTERVAL - 0.01)
 	for rotor in building._rotor_layers:
 		t.check(not rotor.frame_b, "rotor holds its first phase until the existing interval")
 	building._process(0.02)
-	for layer: SceneryLayer in layers:
-		if building._rotor_layers.has(layer):
-			t.check(layer.frame_b, "the small rotor advances independently")
-			t.check(layer._alternates[0] != null, "the moving rotor owns its alternate texture")
-		else:
-			for alternate in layer._alternates:
-				t.check(alternate == null, "stationary furniture has no alternate texture to swap")
+	for layer: SceneryLayer in rotors:
+		t.check(layer.frame_b, "the small rotor advances independently")
+		t.check(layer._alternates[0] != null, "the moving rotor owns its alternate texture")
+	for object: Building.RoofObject in objects:
+		if object.texture_key != Building.VENT_HOUSING:
+			t.check(object.get_child_count() == 0,
+					"stationary roof objects own no independently redrawn child")
 	t.check(building._roof_furniture == furniture, "animation does not reroll furniture")
 	t.check(building._collision.shape == collision, "animation does not rebuild collision")
 	building._rebuild()
-	for layer in layers:
-		t.check(not is_instance_valid(layer), "rebuild releases every superseded roof layer")
+	for object in objects:
+		t.check(not is_instance_valid(object), "rebuild releases every superseded roof object")
 	for rotor in building._rotor_layers:
 		t.check(rotor.frame_b, "rebuilding the roof preserves the current phase")
 	var old_rotor: WeakRef = weakref(building._rotor_layers[0]._textures[0])
 	t.remove_child(building)
-	t.check(building._roof_layers.is_empty(), "tree exit releases every cached roof region")
+	t.check(building._roof_objects.is_empty() and building._rotor_layers.is_empty(),
+			"tree exit releases every roof object and moving child")
 	if not AtlasLibrary.is_acquired(&"buildings"):
 		t.check(old_rotor.get_ref() == null, "the last building retains no atlas texture after exit")
 	t.add_child(building)
@@ -67,8 +73,10 @@ func _test_rotor_registration_matches_authored_crops(t) -> void:
 	t.check(authored.size() == 2 and authored[0] == authored[1],
 			"both rotor phases share one registration in the housing canvas")
 	if authored.size() == 2:
-		t.check(Building.VENT_ROTOR_RECT == authored[0],
-				"the runtime rotor rectangle matches the authored crop registration")
+		t.check(Building.VENT_ROTOR_SOURCE_RECT == authored[0],
+				"the runtime names the authored source crop shared by both rotor phases")
+		t.check(Building.VENT_ROTOR_RECT.get_center().distance_to(Vector2(29, 22)) < 0.01,
+				"the rotor display is centered in the generated housing's circular opening")
 
 func _test_event_parts(t) -> void:
 	AtlasLibrary.acquire(&"events")

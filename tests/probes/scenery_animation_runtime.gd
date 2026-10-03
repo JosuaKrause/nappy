@@ -30,14 +30,16 @@ func _ready() -> void:
 	_building.position = Vector2(205, 438)
 	_building.scale = Vector2.ONE * 1.7
 	_fixtures.add_child(_building)
-	for variant in 30:
+	for variant in 200:
 		if not _building._rotor_layers.is_empty():
 			break
 		_building.variant = variant + 1
 	assert(not _building._rotor_layers.is_empty())
 	_watch(_building, "building_static")
-	for layer in _building._roof_layers:
-		_watch(layer, "roof_rotor" if _building._rotor_layers.has(layer) else "roof_static")
+	for object in _building._roof_objects:
+		_watch(object, "roof_static")
+	for layer in _building._rotor_layers:
+		_watch(layer, "roof_rotor")
 	_event("burst_water_main", false, Vector2(670, 235), 2.0)
 	_event("car_accident", false, Vector2(670, 410), 2.0)
 	_event("burst_water_main", true, Vector2(1000, 380), 1.6)

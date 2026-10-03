@@ -8,6 +8,10 @@ are retained.
 Generation need not reproduce identical pixels; extraction must be reproducible from the saved
 output.
 
+For a direct-PNG family explicitly authorized under illustrated-png, preserve the reviewed
+generated source, exact prompt and references, hashes, native dimensions and registration
+recipe in place of an SVG source. The exception is scoped to the authorized family.
+
 Each family's generation, registration and rebuild commands are in its own evidence folder's
 `GENERATION.md` or `README.md`. Run Python recipes with `uv run`, and choose a
 fresh output directory each time. Inspect retained highlights and transparent gaps; registration
@@ -17,6 +21,8 @@ alone does not establish faithful interior geometry or sufficient gameplay detai
 
 Place reviewed derivatives at `art/illustrated/svg-transfer/<family>/<name>.png` for the
 corresponding `art/<family>/<name>.svg`. Keep the native canvas dimensions and placement.
+Authorized direct PNGs use a named `art/illustrated/<family>/` folder and direct atlas membership;
+their reviewed dimensions and anchors define registration without a placeholder SVG.
 Do not change draw offsets, camera scale or animation to compensate for a misregistered transfer.
 `art/` has a `.gdignore`: no `.import` sidecars, the bake reads the files (VISUALS.md, "Where the
 pictures live"). Do not copy a worktree's `.godot/` cache.
