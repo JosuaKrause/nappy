@@ -193,6 +193,120 @@ class RetirementTests(unittest.TestCase):
         self.assertFalse(sentinel.exists())
         self.assertTrue(self.tree.exists())
 
+    def prepare_update(self, mode: str, *, existing: bool = False) -> None:
+        """Use the real updater/merges with cheap verification scripts and a local remote."""
+        scripts = self.tree / "tools"
+        scripts.mkdir()
+        lint = scripts / "lint.sh"
+        lint.write_text("#!/bin/sh\nexit 0\n")
+        lint.chmod(0o755)
+        check = scripts / "check.sh"
+        check.write_text(
+            '#!/bin/sh\ncase "$FIXTURE_UPDATE_MODE" in\n'
+            "  fail-clean) exit 1;;\n"
+            "  fail-dirty) echo diagnostic > unfinished; exit 1;;\n"
+            "  success-dirty) echo useful > unfinished;;\n"
+            '  success-locked) git worktree lock "$PWD";;\n'
+            "esac\nexit 0\n"
+        )
+        check.chmod(0o755)
+        self.run_git("add", "tools", cwd=self.tree)
+        self.run_git("commit", "-qm", "verification fixtures", cwd=self.tree)
+        self.run_git("push", "-q", "origin", "feature/probe", cwd=self.repo)
+        tools_dir = self.repo / "tools"
+        tools_dir.mkdir()
+        for name in ("update-pr.sh", "lib_agent_role.sh", "lib_old_queue.sh"):
+            shutil.copy2(ROOT / "tools" / name, tools_dir / name)
+        (self.repo / "upstream").write_text("new main work\n")
+        self.run_git("add", "upstream", cwd=self.repo)
+        self.run_git("commit", "-qm", "main advance", cwd=self.repo)
+        self.run_git("push", "-q", "origin", "main", cwd=self.repo)
+        if not existing:
+            self.run_git("worktree", "remove", str(self.tree), cwd=self.repo)
+        scratch = self.root / "scratch"
+        scratch.mkdir()
+        self.env.update(TMPDIR=str(scratch), FIXTURE_UPDATE_MODE=mode)
+
+    def update(self) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [str(self.repo / "tools/update-pr.sh"), "feature/probe"],
+            env=self.env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    def test_update_success_removes_its_clean_scratch(self) -> None:
+        self.prepare_update("success")
+        result = self.update()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(list((self.root / "scratch").glob("update-pr.*")), [])
+        self.assertNotIn("update-pr.", self.run_git("worktree", "list", cwd=self.repo))
+        self.assertEqual(
+            self.run_git("rev-parse", "feature/probe", cwd=self.repo),
+            self.run_git("rev-parse", "feature/probe", cwd=self.remote),
+        )
+
+    def test_update_failed_verification_retains_even_clean_scratch(self) -> None:
+        self.prepare_update("fail-clean")
+        result = self.update()
+        self.assertNotEqual(result.returncode, 0)
+        trees = list((self.root / "scratch").glob("update-pr.*"))
+        self.assertEqual(len(trees), 1)
+        self.assertIn(str(trees[0]), result.stderr)
+        self.assertIn("retained after failed run", result.stderr)
+        self.assertEqual(self.run_git("status", "--porcelain", cwd=trees[0]), "")
+
+    def test_update_failed_verification_retains_untracked_diagnostics(self) -> None:
+        self.prepare_update("fail-dirty")
+        result = self.update()
+        self.assertNotEqual(result.returncode, 0)
+        trees = list((self.root / "scratch").glob("update-pr.*"))
+        self.assertEqual(len(trees), 1)
+        self.assertEqual((trees[0] / "unfinished").read_text(), "diagnostic\n")
+
+    def test_update_success_keeps_untracked_work(self) -> None:
+        self.prepare_update("success-dirty")
+        result = self.update()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        trees = list((self.root / "scratch").glob("update-pr.*"))
+        self.assertEqual(len(trees), 1)
+        self.assertEqual((trees[0] / "unfinished").read_text(), "useful\n")
+        self.assertIn("normal removal refused", result.stderr)
+
+    def test_update_success_keeps_locked_worktree(self) -> None:
+        self.prepare_update("success-locked")
+        result = self.update()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(len(list((self.root / "scratch").glob("update-pr.*"))), 1)
+        self.assertIn("locked", self.run_git("worktree", "list", "--porcelain", cwd=self.repo))
+
+    def test_update_keeps_existing_checkout(self) -> None:
+        self.prepare_update("success", existing=True)
+        result = self.update()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue(self.tree.is_dir())
+        self.assertEqual(list((self.root / "scratch").glob("update-pr.*")), [])
+
+    def test_update_failed_creation_removes_only_empty_unregistered_directory(self) -> None:
+        self.prepare_update("success")
+        self.env["REAL_GIT"] = self.git
+        self.write_executable(
+            "git",
+            '#!/bin/sh\nif [ "$1" = worktree ] && [ "$2" = add ]; then\n'
+            '  [ "${FIXTURE_NONEMPTY:-0}" = 0 ] || echo valuable > "$4/keep"\n'
+            '  exit 1\nfi\nexec "$REAL_GIT" "$@"\n',
+        )
+        self.assertNotEqual(self.update().returncode, 0)
+        self.assertEqual(list((self.root / "scratch").glob("update-pr.*")), [])
+        self.env["FIXTURE_NONEMPTY"] = "1"
+        result = self.update()
+        self.assertNotEqual(result.returncode, 0)
+        trees = list((self.root / "scratch").glob("update-pr.*"))
+        self.assertEqual(len(trees), 1)
+        self.assertEqual((trees[0] / "keep").read_text(), "valuable\n")
+        self.assertIn("creation failed; directory is not empty", result.stderr)
+
 
 class BuildScratchTests(unittest.TestCase):
     def setUp(self) -> None:
