@@ -45,7 +45,9 @@ question for the player.
 
 Generating the worksheet changes only the chosen local file under `build/`. Do not alter review
 sources, queue entries, decision records, playtests, game files, commits or pull requests. Turning
-filled answers into repository changes is a separate task.
+filled answers into repository changes is a separate task: the filled answers are filed as a
+playtest under **playtest-feedback**, each keyed by its `Source item:`, because until then they
+exist only in a git-ignored file.
 
 Before reporting completion, compare the worksheet with the live source set and verify:
 
