@@ -14,6 +14,14 @@ the default authoring rule; the player permits roof equipment, fallen trees and 
 mains to be authored directly as PNGs. Direct PNGs have their own atlas membership and retained
 generation and registration sources.
 
+Standalone roof vent stacks, industrial fans, exhaust fans and pipe manifolds draw uniformly at
+two-thirds of their registered canvas size. The access room draws at four-thirds so its door
+matches a regular building doorway. The housing transform also scales its separate rotor about
+the roof foot, and placement reserves the displayed width. Water tanks, skylights, HVAC units,
+condensers and connected ducts retain their scale. The
+[native equipment comparison](evidence/roof-equipment-scale-2026-10-03/README.md) records these
+proportions and the complete source outlines restored to the long skylight and pipe manifold.
+
 Fallen trees and broken water mains currently render their SVGs. Their rejected PNG candidates
 and provenance remain in [the obstruction generation record](evidence/obstruction-pngs-2026-09-30/GENERATION.md)
 and rejected archive. They do not count as accepted catalogue conversions.

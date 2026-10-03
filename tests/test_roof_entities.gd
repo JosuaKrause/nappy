@@ -103,8 +103,9 @@ func _test_reserved_cells_hold_native_base_widths(t) -> void:
 		for cell: Vector2i in cells:
 			t.check(not used.has(cell), "roof equipment reservations never share a cell")
 			used[cell] = true
-		var width := 32 if entry.has("links") else AtlasLibrary.native_size(
-				building._furniture_texture(entry["kind"])).x
+		var key := building._furniture_texture(entry["kind"])
+		var width := 32.0 if entry.has("links") else AtlasLibrary.native_size(key).x \
+				* Building.roof_equipment_scale(key)
 		var horizontal_cells: int = entry["span"]
 		t.check(cells.size() >= horizontal_cells,
 				"a roof object's foot is centered in every reserved horizontal cell")

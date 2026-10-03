@@ -171,8 +171,9 @@ uv run python docs/evidence/roof-obstruction-pngs-2026-09-30/register_roofs.py v
 ```
 
 The output root contains the eleven assets below their repository-relative
-`art/illustrated/roof-equipment/` path and the review sheet below its repository-relative
-`docs/evidence/roof-obstruction-pngs-2026-09-30/review/` path. The recipe never installs them.
+`art/illustrated/roof-equipment/` path and the corrected source-crop sheet at
+`docs/evidence/roof-equipment-scale-2026-10-03/source-crops-4x.png`. The original human-reviewed
+sheet at `review/roof-family-native-4x.png` remains unchanged. The recipe never installs them.
 Before creating the output root, it rejects an existing path and verifies both selected source
 hashes. Repeating the `all` command above exits nonzero with `refusing existing output directory`.
 An isolated-copy check with one byte appended to the copied cardinal-family source exits nonzero
@@ -194,5 +195,13 @@ The installed files were registered with Python 3.14.7 and Pillow 12.3.0. Pillow
 LANCZOS downsampling and optimized PNG write; these are the exact versions that produced the
 committed bytes.
 
-The [in-engine context frame](../m109-roof-context-2026-09-30/README.md) places all eleven runtime
-regions on the game's roof, facade, sidewalk and street at native scale.
+The long skylight and pipe-manifold crops start at source x=1105 so their complete left outlines
+are included. The extractor rejects a silhouette touching either side of its crop. The skylight
+remains limited by the same 22px content height over a 160px source height, so its scale stays
+unchanged while its complete width fits the existing canvas. The
+[equipment scale recipe](../roof-equipment-scale-2026-10-03/README.md) records runtime factors,
+door reference and the corrected crops; the source sheet depicts registered canvases before
+those runtime factors, not the final displayed sizes.
+
+The [September 30 context frame](../m109-roof-context-2026-09-30/README.md) records the initial
+roof-family placement. The current scale comparison is linked above.

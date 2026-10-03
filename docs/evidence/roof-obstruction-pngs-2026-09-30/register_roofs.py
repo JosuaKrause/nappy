@@ -14,9 +14,9 @@ ROOT = Path(__file__).resolve().parents[3]
 EVIDENCE = Path(__file__).resolve().parent
 RAW = EVIDENCE / "raw"
 INSTALLED = ROOT / "art/illustrated/roof-equipment"
-COMMITTED_REVIEW = EVIDENCE / "review/roof-family-native-4x.png"
 ASSET_RELATIVE = Path("art/illustrated/roof-equipment")
-REVIEW_RELATIVE = Path("docs/evidence/roof-obstruction-pngs-2026-09-30/review/roof-family-native-4x.png")
+REVIEW_RELATIVE = Path("docs/evidence/roof-equipment-scale-2026-10-03/source-crops-4x.png")
+COMMITTED_REVIEW = ROOT / REVIEW_RELATIVE
 
 FAMILY = RAW / "roof-family-cardinal-v2.png"
 DUCT = RAW / "roof-duct-run-cardinal-v2.png"
@@ -39,13 +39,13 @@ ASSETS = (
     Asset("water_tank", FAMILY, (0, 0, 384, 455), (40, 72), (38, 70)),
     Asset("hvac_large", FAMILY, (384, 0, 768, 455), (48, 40), (46, 38)),
     Asset("condenser", FAMILY, (768, 0, 1110, 455), (32, 40), (30, 38)),
-    Asset("skylight_long", FAMILY, (1152, 0, 1536, 455), (56, 24), (54, 22)),
+    Asset("skylight_long", FAMILY, (1105, 0, 1536, 455), (56, 24), (54, 22)),
     Asset("skylight_pyramid", FAMILY, (0, 455, 384, 720), (32, 28), (30, 26)),
     Asset("vent_stack", FAMILY, (384, 455, 720, 720), (40, 48), (38, 46)),
     Asset("industrial_vent", FAMILY, (0, 720, 384, 1024), (44, 44), (42, 42)),
     Asset("service_bulkhead", FAMILY, (384, 720, 768, 1024), (48, 52), (46, 50)),
     Asset("exhaust_fan", FAMILY, (768, 720, 1100, 1024), (32, 36), (30, 34)),
-    Asset("pipe_manifold", FAMILY, (1152, 720, 1536, 1024), (52, 40), (50, 38)),
+    Asset("pipe_manifold", FAMILY, (1105, 720, 1536, 1024), (52, 40), (50, 38)),
     Asset("duct_run", DUCT, (0, 0, 1536, 1024), (64, 64), (62, 62)),
 )
 
@@ -66,6 +66,8 @@ def cleaned_crop(asset: Asset) -> Image.Image:
     bbox = image.getchannel("A").getbbox()
     if bbox is None:
         raise RuntimeError(f"{asset.name}: empty alpha after cleanup")
+    if bbox[0] == 0 or bbox[2] == image.width:
+        raise RuntimeError(f"{asset.name}: extraction cuts through the silhouette's side ({bbox})")
     return image.crop(bbox)
 
 

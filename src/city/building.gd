@@ -221,6 +221,10 @@ const WATER_TANK := &"illustrated/roof-equipment/water_tank"
 const SERVICE_BULKHEAD := &"illustrated/roof-equipment/service_bulkhead"
 const EXHAUST_FAN := &"illustrated/roof-equipment/exhaust_fan"
 const PIPE_MANIFOLD := &"illustrated/roof-equipment/pipe_manifold"
+## Relative equipment proportions: standalone pipes and fans are smaller than HVAC cabinets;
+## the access room's door reads at the same height as a regular building doorway.
+const STANDALONE_EQUIPMENT_SCALE := 2.0 / 3.0
+const ACCESS_ROOM_SCALE := 4.0 / 3.0
 
 ## What stands on a roof. Existing values stay fixed because they are part of the seeded roof
 ## layout: removing the old separate corner may not reroll every water tank and skylight.
@@ -1369,10 +1373,18 @@ func _build_roof_furniture() -> void:
 	# re-sorting on every redraw.
 	_roof_furniture.sort_custom(func(a, b): return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
 
-## Native bases up to one tile stand on one cell. Wider equipment is centered across two reserved
+## Displayed bases up to one tile stand on one cell. Wider equipment is centered across two reserved
 ## cells; height is deliberately unrelated to this footprint and may extend several tiles north.
 func _furniture_span(kind: int) -> int:
-	return 1 if kind in [_Furniture.HVAC_B, _Furniture.SKYLIGHT_B, _Furniture.EXHAUST_FAN] else 2
+	var key := _furniture_texture(kind)
+	return ceili(AtlasLibrary.native_size(key).x * roof_equipment_scale(key) / TILE)
+
+static func roof_equipment_scale(key: StringName) -> float:
+	if key in [VENT_STACK, VENT_HOUSING, EXHAUST_FAN, PIPE_MANIFOLD]:
+		return STANDALONE_EQUIPMENT_SCALE
+	if key == SERVICE_BULKHEAD:
+		return ACCESS_ROOM_SCALE
+	return 1.0
 
 ## The cells a roof unit may stand on, in the fixed order `_build_roof_furniture()` shuffles:
 ## row by row from row 1, each row west to east over the interior columns, keeping a cell only
@@ -1523,6 +1535,8 @@ class RoofObject extends Node2D:
 
 	func _enter_tree() -> void:
 		AtlasLibrary.acquire(&"buildings")
+		# Uniform scale about the foot also scales any rotor child and preserves depth sorting.
+		scale = Vector2.ONE * Building.roof_equipment_scale(texture_key)
 
 	func _exit_tree() -> void:
 		AtlasLibrary.release(&"buildings")
