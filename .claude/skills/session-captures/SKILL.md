@@ -18,14 +18,26 @@ New evidence goes in `docs/evidence/<words>-<slug>-<date>/`, where `<words>` are
 the queue entry or playtest it belongs to (`busy-otter-roof-cases-2026-09-27/`), and an entry or
 playtest from before names gives its number instead (`m203-roof-cases-2026-09-26/`,
 `playtest-144-phone-v0.18.0-2026-09-26/`) *(PLAYTEST-144, the table the player accepted:
-"`docs/evidence/busy-badger-slug-date/`, taking the entry's name")*. It holds the whole run folder
-under its original name (playtest-feedback, "Evidence lives in the repo"), and the slug says what
-it shows, so two folders for one entry differ by their slugs. `archive/session-captures/<date>/`
-holds earlier captures. *(2026-09-23: the player chose this over copying a single named PNG into
-the dated archive folder, which had drifted from playtest-feedback's "copy the whole `<run>/`
-folder" and from how every current evidence folder is actually named.)* Update every in-repo
-link when moving one. If capture aborts or the display is headless, report it instead of
-fabricating a frame.
+"`docs/evidence/busy-badger-slug-date/`, taking the entry's name")*. The slug says what it shows,
+so two folders for one entry differ by their slugs. When selected artifacts come from a telemetry
+run, keep them under that run folder's original name. `archive/session-captures/<date>/` holds
+earlier captures. Update every in-repo link when moving one. If capture aborts or the display is
+headless, report it instead of fabricating a frame.
+
+**Retain what the run or rig was meant to show, not everything it happened to write.** Keep the
+stills, burst frames, timing sidecars, maps or log excerpts that support the intended claim and its
+limits. Keep relevant primary player evidence, contradictory results and failed trials; selection
+must not turn mixed evidence into a clean success. Leave unrelated automatic screenshots, generic
+boot output, irrelevant logs and redundant copies in scratch space. A complete `run.log` belongs
+only when its ordered behavior, non-replayable player input, diagnostics or otherwise unrecorded
+provenance supports the claim.
+
+A new evidence folder carries a README or manifest that names the claim and its limits and records
+the source revision, command and settings, plus the seed and timing when they matter. It also says
+which run artifacts were retained and why, so a selected still has enough ancestry to interpret
+without requiring unrelated neighbors from the same run. Many older folders have neither; what
+was written about one is in the decision records — under the entry, milestone or playtest its
+name starts with (`tools/decisions.sh M180`), or found by searching `docs/decisions/` for its name.
 
 ## Animation sequences
 

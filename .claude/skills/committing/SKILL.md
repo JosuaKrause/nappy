@@ -359,30 +359,32 @@ accumulate one per work item, and the cost is not clutter — it is that `git br
 able to answer the only question it is good for: **is there work that is not on `main`?**
 
 **Git cannot see a squash as a merge, so the PR's state is the check, not `git branch -d`.**
-`-d` refuses every squash-merged branch, which makes its refusal say nothing. Ask GitHub, and
-delete only on its answer:
-
-```sh
-[ "$(gh pr view <branch> --json state -q .state)" = MERGED ] \
-  && [ "$(gh pr view <branch> --json headRefOid -q .headRefOid)" = "$(git rev-parse <branch>)" ] \
-  && git branch -D <branch>
-```
-
-The second test is what keeps `-D` from losing work: a local branch whose tip is not the commit
-the PR merged has commits nobody pushed, and that is the branch worth looking at. A harness
+`-d` refuses every squash-merged branch, which makes its refusal say nothing. Use the retirement
+script below: GitHub must confirm MERGED and git must prove the local tip equals or is an
+ancestor of the merged head. A different tip alone does not prove unpushed work; a stale ancestor
+contains no work outside that PR. Missing commit objects are kept for explicit inspection and
+fetching, never fetched by the dry run. A harness
 `worktree-agent-*` branch has no PR and points at its worktree's base, so `-d` still answers
 for it.
 
 **`tools/prune-merged.sh <branch>...` is that check, executable, and the way a merged branch is
-retired.** It refuses unless the pull request is MERGED and the local tip is its merged head, then
-removes the branch's worktree (never with `--force`, so git refuses a dirty one), the local branch
-and the remote branch if GitHub left it, and sweeps the harness's `worktree-agent-*` branches
-whose worktree is gone. Run it from the main checkout, through `uv run python
+retired.** `--all` inventories candidates and allocated KiB without mutations; `--all --apply`
+retires eligible candidates, and `--dry-run <branch>...` previews named branches. Applying checks
+state again before removal. An open PR, remote tip outside the merged head, dirty/untracked work,
+an ignored file outside the regenerable caches (the script's own `REGENERABLE_IGNORED` list,
+which `--help` prints), worktree lock or unreleased agent brief keeps the branch. After confirming the agent has stopped
+and useful ignored artifacts are retained, its owner adds `cleanup: ready` to the brief's opening
+header in the main and target checkout wherever a copy exists. A lock still vetoes removal and
+is never cleared automatically. The script deletes the remote with an exact-tip lease, removes
+the clean worktree without force, then compares and deletes the local ref. A failed stage keeps
+remaining local work and reports the incomplete cleanup. It also sweeps the harness's
+`worktree-agent-*` branches whose worktree is gone. Run it from the main checkout, through `uv run python
 tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>...` for a pull request
 that changed code and `uv run python tools/agent-identity.py run claude-orchestrator --
 tools/prune-merged.sh <branch>...` for a docs-only one ("Who a commit and a pull request are
-from") — its own remote delete is a write, so `github-write-guard.sh` denies it bare (Codex runs
-the same line with `codex-coder` for both). **Use it rather than the bare commands**: Claude
+from") — its own remote delete is a write, so `github-write-guard.sh` denies it bare in every
+shape, and the read-only `--all` inventory and `--dry-run` run through the same wrapped line as
+the apply (Codex runs the same line with `codex-coder` for both). **Use it rather than the bare commands**: Claude
 Code's auto-mode classifier refuses `git worktree remove` and `git branch -D` as destructive
 however the check came out, and `.claude/settings.json` allows exactly those two wrapped lines, one
 per role, because the script cannot delete anything the check did not clear. The allow rules are a
