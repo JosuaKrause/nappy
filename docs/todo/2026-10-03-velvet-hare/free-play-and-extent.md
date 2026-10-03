@@ -21,6 +21,8 @@ scope and cannot satisfy an authored route guarantee.
 `City.camera_bounds()` to the painted band, reserving camera look-ahead. Recipes
 need a separate camera-bound behavior for the permitted exterior; retain the normal
 city clamp and ensure default ground fills the view during walking and look-ahead.
+`City._spawn_boundary()` also creates physical walls outside an ordinary map; bounded
+recipes must omit those walls as well as relax the camera clamp.
 Required actor paths and the whole-city zoom view stay inside constructed content.
 
 Test both uses for the power-station joins and all trailer recipes. Compare initial

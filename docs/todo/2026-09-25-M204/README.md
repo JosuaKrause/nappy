@@ -7,6 +7,11 @@ priority: later
 
 [PLAYTEST-139](../../playtests/PLAYTEST-139.md) holds the whole design, statements 1–10.
 
+**Proposed, not asked for:** source the shots from
+[calm-stork's authored recipes](../2026-10-03-calm-stork/README.md) once built. The
+first attempt's missing-truck seed workflow remains bug context, not the only source
+of scenes for the cut.
+
 The rendering and recording tools are built (`DECISIONS.md`, M204 and M214, the trailer and its
 recording tools). "the trailer needs some work. I will give more details later"
 ([PLAYTEST-139](../../playtests/PLAYTEST-139.md), statement 12).
