@@ -199,19 +199,24 @@ REPO=""
 CHECK_STATE=""
 CHECK_ERROR=""
 
+# One scratch file holds each read's stderr. The EXIT trap removes it on every way out, and Ctrl-C
+# and a TERM exit with the shell's usual codes so the same trap runs for them.
+ERR_FILE="$(mktemp)"
+trap 'rm -f "$ERR_FILE"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
 # One GitHub read per poll once the repository is resolved. A failed read is `unavailable` with
 # the first lines of gh's own stderr kept in CHECK_ERROR; it is never a pass.
 check_state() {
-    local out err_file
+    local out
     CHECK_ERROR=""
-    err_file="$(mktemp)"
     if [[ -z "$REPO" ]]; then
-        if ! out="$(agent_run gh repo view --json nameWithOwner --jq .nameWithOwner 2>"$err_file")" \
+        if ! out="$(agent_run gh repo view --json nameWithOwner --jq .nameWithOwner 2>"$ERR_FILE")" \
             || [[ -z "$out" ]]; then
             CHECK_STATE=unavailable
-            CHECK_ERROR="$(head -n 2 "$err_file" | paste -sd' ' -)"
+            CHECK_ERROR="$(head -n 2 "$ERR_FILE" | paste -sd' ' -)"
             [[ -n "$CHECK_ERROR" ]] || CHECK_ERROR="gh repo view returned nothing"
-            rm -f "$err_file"
             return
         fi
         REPO="$out"
@@ -223,14 +228,12 @@ check_state() {
                 ((.conclusion == "success" or .conclusion == "neutral"
                   or .conclusion == "skipped") | not))) then "failure"
           elif ($t | all(.status == "completed")) then "success"
-          else "pending" end' 2>"$err_file")" || [[ -z "$out" ]]; then
+          else "pending" end' 2>"$ERR_FILE")" || [[ -z "$out" ]]; then
         CHECK_STATE=unavailable
-        CHECK_ERROR="$(head -n 2 "$err_file" | paste -sd' ' -)"
+        CHECK_ERROR="$(head -n 2 "$ERR_FILE" | paste -sd' ' -)"
         [[ -n "$CHECK_ERROR" ]] || CHECK_ERROR="gh api returned nothing"
-        rm -f "$err_file"
         return
     fi
-    rm -f "$err_file"
     CHECK_STATE="$out"
 }
 

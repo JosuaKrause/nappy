@@ -5,8 +5,10 @@
 On 2026-10-03 the player ran `./tools/release.sh minor push` right after a merge to `main`. For
 three minutes the script printed `checks: none ... -- waiting`, which is normal: CI's `test` job
 `needs` the classify, gates, cost-table, game and shards jobs, so its check-run registers only
-once those finish (about seven minutes on `main`). Then one poll's GitHub read failed — the API
-was hanging for other calls in the same minutes — and `check_state` mapped "could not read" to
+once those finish (the last ten push runs of `ci` on `main`, measured 2026-10-03, took 7–8
+minutes). Then one poll's GitHub read failed. The CLI's error was discarded, so the cause is
+unknown; in the same minutes a separate `gh api` call from the orchestrating session hung for over
+two minutes. `check_state` mapped "could not read" to
 `unavailable`, which the push loop treated as "push anyway; the ruleset refuses the tag if main is
 not ready". The ruleset did refuse (`Required status check "test" is expected`), leaving a local
 `v0.22.0` and nothing published; a rerun after CI went green published fine. The `gh` CLI was
