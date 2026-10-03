@@ -92,8 +92,10 @@ call with a non-GET method or a field outside `-X GET`, or a GraphQL call whose 
 mutation or is not written inline; or one of the `tools/` scripts that pushes
 or posts internally (`tools/release.sh`, `tools/prune-merged.sh`, `tools/land-prs.sh`,
 `tools/update-pr.sh`), only in command position — unless the same command is wrapped in
-`tools/agent-identity.py run <role> -- <command>`; see **committing**'s "Who a commit and a pull
-request are from" for why that is mandatory now, and the hook's own header comment for the exact,
+`tools/agent-identity.py run <role> -- <command>`, or, in Claude Code where no identity can work
+and the player has switched the asking on, it is an ordinary write the guard asks the player about
+instead; see **committing**'s "Who a commit and a pull request are from" for why the wrapper is
+mandatory and which writes are asked about when, and the hook's own header comment for the exact,
 current list of what it denies rather than a second copy of it here. A read (`git status`, `gh pr
 view/list/checks`, ...) is unguarded, and a reviewer identity is refused a merge-type write too,
 not only a push.

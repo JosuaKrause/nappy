@@ -215,11 +215,17 @@ var _touch_layer: CanvasLayer
 var _summary: CanvasLayer
 var _pause: PauseScreen
 var _title: TitleScreen
-## The small corner symbol a write flashes — see `SaveIndicator`'s own doc. Built once in
-## `_ready()`, and in `_ready_escape()` only for a run's own escape: a dev-flagged boot writes
-## nothing at all (`GameSave.uses_save()` refuses every one of them), so a symbol there could only
-## ever stay dark.
+## The small corner symbol a change in the save state shows — see `SaveIndicator`'s own doc. Raised
+## by `_raise_save_indicator()`: in `_ready()`, ahead of the charge that can end a resumed run, and
+## in `_ready_escape()` only for a run's own escape — a dev-flagged boot touches the save not at all
+## (`GameSave.uses_save()` refuses every one of them), so a symbol there could only ever stay dark.
+## It may be the one a reloading `main` handed to the tree's root, not a child of this node.
 var _save_indicator: SaveIndicator
+
+## The seam `_reload_the_scene()` calls instead of reloading, set only by a test — see there. An
+## empty `Callable`, the default, reloads normally.
+var _reload_override := Callable()
+
 ## Owns the `--follow` camera and the event id it tracks between frames — the one piece of
 ## `DevRig` (`src/dev/dev_rig.gd`) that has to survive across calls, so it is the one piece kept
 ## on an instance rather than called as a `static`. The `--spawn`/`--overview`/`--meters`/
@@ -362,6 +368,11 @@ func _ready() -> void:
 	# been charged yet. `_run_over` mirrors `_on_day_finished()`'s own variable, so the tail of
 	# this function shows the same ending screen a run that ends there does; `_on_title_start()` is
 	# what actually shows either screen, once the title itself has been dismissed.
+	#
+	# **The symbol exists before this charge**, because the charge can end the run and the run's
+	# end deletes the save, a change the symbol shows (`GameSave.clear()` announces it on
+	# `EventBus`, which only an indicator already built hears).
+	_raise_save_indicator()
 	if _resume.get("day_under_way", false):
 		_run_over = not GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 
@@ -392,11 +403,6 @@ func _ready() -> void:
 	_add_debug_layers()
 	_add_route_lines()
 	_add_touch_controls()
-	# Above every screen this boot goes on to build — see `SaveIndicator`'s own doc for why it is
-	# its own layer rather than a node on the pause screen, the day summary or the HUD.
-	_save_indicator = SaveIndicator.new()
-	_save_indicator.name = "SaveIndicator"
-	add_child(_save_indicator)
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
 
@@ -602,13 +608,11 @@ func _ready_escape() -> void:
 	_connect_pause_signals()
 	# Built only for a run's own escape, and for the same reason the ordinary boot builds it: a
 	# section's brief writes the save, and a write nobody can see is a write nobody trusts. The
-	# flag's boot writes nothing at all (`GameSave.uses_save()` refuses every dev-flagged run), so
-	# a symbol there would only ever have stayed dark. Above every screen below it — see
+	# flag's boot touches the save not at all (`GameSave.uses_save()` refuses every dev-flagged
+	# run), so a symbol there would only ever have stayed dark. Above every screen below it — see
 	# `SaveIndicator`.
 	if _escape_from_a_run:
-		_save_indicator = SaveIndicator.new()
-		_save_indicator.name = "SaveIndicator"
-		add_child(_save_indicator)
+		_raise_save_indicator()
 	_summary = DAY_SUMMARY.instantiate()
 	add_child(_summary)
 	_summary.continued.connect(_on_finale_summary_continued)
@@ -1081,8 +1085,7 @@ func _on_escape_title_start(mode: ControlsMode.Mode, _by_key := false) -> void:
 		_title.close()
 		_show_the_finale_brief(_finale.section)
 		return
-	get_tree().paused = false
-	get_tree().call_deferred("reload_current_scene")
+	_reload_the_scene()
 
 ## Both screens' own restart reaches the one thing that means it, and both screens' own way out
 ## reaches the same quit — pulled into its own function, called once `_summary` and `_pause` both
@@ -1813,12 +1816,21 @@ func _start_day() -> void:
 ## that call returns — pulled out of `_ready()` on its own so a test can drive the decision
 ## directly without paying for the world `_start_day()` builds around it.
 ##
-## **A resumed run writes `false` here**, before the title — and, on the way to the day brief,
-## that screen too — is ever shown, so whatever `GameState.finish_day()` already charged earlier
-## in `_ready()` is on disk the instant either gate appears rather than only once she presses past
-## one. This is what the kill-at-any-instant argument in docs/MECHANICS.md, "Saving and resuming",
-## rests on: nothing between this write and `_engage_the_day()`'s own `true` ever depends on a
-## notification catching anything.
+## **A resumed run whose save had a day under way writes `false` here**, before the title — and, on
+## the way to the day brief, that screen too — is ever shown, so the nerve `_ready()` just charged
+## through `GameState.finish_day()` is on disk, with no day under way, the instant either gate
+## appears rather than only once she presses past one. *(cozy-pelican, 2026-10-02, on what opening
+## a saved game writes: "either it saves with one less nerve and a cleared "during active game"
+## flag. or you defer saving to the actual day start".)* This is what the kill-at-any-instant
+## argument in docs/MECHANICS.md, "Saving and resuming", rests on: nothing between this write and
+## `_engage_the_day()`'s own `true` ever depends on a notification catching anything. When the
+## charge ended the run, `GameState._end_run()` has already deleted the save and `GameSave.write()`
+## refuses an ended run, so nothing is written there.
+##
+## **A resumed run whose save was written between days writes nothing**: it charged nothing, and
+## the file on disk already says `day_under_way: false`, so a rewrite would change no fact it holds
+## — only draw the symbol over a title nobody has played past. The next write is
+## `_engage_the_day()`'s `true`, the instant she starts the day.
 ##
 ## **A fresh run (`_resume.is_empty()`) writes nothing at all.** Merely opening the game to look at
 ## the title is not playing it, and there is no earlier save to protect a charge on — the first
@@ -1827,7 +1839,7 @@ func _start_day() -> void:
 ## `GameSave.try_resume()` nothing to find on the reload that follows, so `_resume` is empty there
 ## too and the reloaded boot writes nothing until its own title is dismissed.
 func _write_dawn_for_a_resumed_run() -> void:
-	if not _resume.is_empty():
+	if _resume.get("day_under_way", false):
 		_save_now(false)
 
 ## Lifecycle relocations prepare the destination before play/brief reveal, including dev spawns
@@ -2061,10 +2073,12 @@ func _on_summary_continued() -> void:
 	# day, resistance and observer down by hand and building a building over them — the same
 	# reasoning `_restart_run()` gives for the same call, and the escape's own boot
 	# (`_ready_escape()`) then reads `GameState.escape_section` off the autoload that survived it.
+	# Day 14's own save, written as its summary appeared, may still be waiting for the browser:
+	# `_reload_the_scene()` carries its symbol over, so the escape's boot adopts it and the answer
+	# settles it there.
 	if GameState.escape_section != FinaleController.Section.NONE:
 		_summary.dismiss()
-		get_tree().paused = false
-		get_tree().call_deferred("reload_current_scene")
+		_reload_the_scene()
 		return
 	if _resume_gate_open:
 		_resume_gate_open = false
@@ -2114,19 +2128,44 @@ func _restart_run() -> void:
 	# `EventBus.run_ended` and is not a held restart of anything.
 	if GameState.ending == GameEnums.Ending.NONE:
 		EventBus.run_restarted.emit(GameState.day)
-	Telemetry.end_run()
 	# The held restart clears the save — the pause screen's and the day summary's own button both
-	# reach this one function, so nothing new has to be drawn for it. A no-op when a finished run
-	# already cleared it in `GameState._end_run()`.
+	# reach this one function, so no new control is drawn for it. A deletion is a change in the save
+	# state, which the symbol shows (`GameSave.clear()` announces it on `EventBus`); a restart after
+	# `GameState._end_run()` already deleted the save finds none and changes nothing, so it shows
+	# nothing. **Before `Telemetry.end_run()`, which closes the run log**: the "deleted the save"
+	# line, and the "deletion was not kept" line when a deletion fails at once, belong to this run's
+	# log. A web deletion's later answer is logged only if a log is open when it arrives, so it
+	# may land in the next run's log after the reload.
 	GameSave.clear()
+	Telemetry.end_run()
 	# And with it the run's record of being in the escape, which outlives the scene reload below
 	# because it lives on an autoload. Left set, the fresh boot would skip its own `start_run()` and
 	# open the escape again over a run that was just thrown away. A no-op for a restart from an
 	# ordinary day and for a finished run, which `GameState._end_run()` has already cleared.
 	GameState.escape_section = FinaleController.Section.NONE
 	TitleScreen.note_restart_requested()
-	get_tree().paused = false
-	get_tree().call_deferred("reload_current_scene")
+	_reload_the_scene()
+
+## **Every scene reload goes through here**: the held restart (`_restart_run()`), the day-14
+## hand-over to the escape (`_on_summary_continued()`) and the flag's escape played again
+## (`_on_escape_title_start()`). A reload frees this node and the symbol under it, and a change in
+## the save state may still be waiting for the browser — the restart's deletion, or day 14's own
+## save at the hand-over — so the symbol is carried over first (`_carry_the_save_symbol_over()`)
+## and the next boot adopts it. One place, so a reload added later cannot forget the symbol.
+##
+## The tree is unpaused first: `reload_current_scene` builds the new scene into the same tree, and
+## a paused one would open the next screen over a game that could never start. Read through
+## `Engine.get_main_loop()` rather than `get_tree()`, so a test can drive the paths that reach this
+## with a `main` that is not parented, and the reload itself goes to `_reload_override` when a test
+## has set one: a real reload would throw away the test runner's own scene.
+func _reload_the_scene() -> void:
+	_carry_the_save_symbol_over()
+	var tree := Engine.get_main_loop() as SceneTree
+	tree.paused = false
+	if _reload_override.is_valid():
+		_reload_override.call()
+		return
+	tree.call_deferred("reload_current_scene")
 
 ## The scene tree's own pause flag, read through `Engine.get_main_loop()` rather than `get_tree()`
 ## so this can be asked whether or not `main` itself is parented. `get_tree()` logs an
@@ -2560,11 +2599,34 @@ func _pause_on_focus_lost() -> void:
 		return
 	_pause.open()
 
-## Every write goes through here so the symbol only ever flashes for one that actually happened —
-## see `GameSave.write()`'s own doc for the runs and moments that draw nothing.
+## A reload (`_reload_the_scene()`) frees this node and its children, including any symbol still
+## parented here. A save change may still be waiting for IndexedDB: the held restart's deletion,
+## or day 14's own save at the hand-over to the escape. Handed to the tree's root, the symbol shows
+## across the reload and settles on whatever the reload builds, the title or the escape, with its
+## minimums running the whole time — see `SaveIndicator`'s own doc. Only a symbol that is up needs
+## moving; an idle child is freed with this node. A symbol already at the root stays there, even
+## when idle, and the next boot adopts it again.
+func _carry_the_save_symbol_over() -> void:
+	if _save_indicator and _save_indicator.is_showing():
+		_save_indicator.outlive_the_scene()
+
+## Takes the symbol the reloading `main` handed to the tree's root, or builds one as this node's own
+## child. Above every screen this boot goes on to build — see `SaveIndicator`'s own doc
+## for why it is its own layer rather than a node on the pause screen, the day summary or the HUD.
+func _raise_save_indicator() -> void:
+	_save_indicator = SaveIndicator.carried(get_tree())
+	if _save_indicator:
+		return
+	_save_indicator = SaveIndicator.new()
+	add_child(_save_indicator)
+
+## Every write goes through here. **It tells the symbol nothing**: `GameSave.write()` announces the
+## save on `EventBus` and the `SaveIndicator` listens, so the symbol shows for exactly the saves that
+## were meant to be kept (see `GameSave.write()`'s own doc for the runs and moments that draw
+## nothing), and the browser's later answer reaches it even when a scene reload has freed this node
+## first — a callback bound here would be dropped and leave the symbol shown for good.
 func _save_now(day_under_way: bool) -> void:
-	if GameSave.write(day_under_way) and _save_indicator:
-		_save_indicator.flash()
+	GameSave.write(day_under_way)
 
 ## Resolves the two developer capture controls before input dispatch. Key echoes do not make a
 ## second capture: a held shortcut is one request, not a sequence of separate user decisions.
