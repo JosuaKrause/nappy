@@ -56,12 +56,12 @@ deferred renderer work and encountered submission/waits. Atomic's deferred prepa
 therefore remains in the common measurement. Queue-only timing is diagnostic, not comparable
 full cost. Observation and CSV output are outside that span.
 
-| Ordinary south 60Hz | Atomic | Per-region |
-| --- | ---: | ---: |
-| Median range across trials | 1.190–1.202ms | 1.067–1.070ms |
-| p95 range | 3.519–4.021ms | 2.849–3.073ms |
-| p99 range | 4.627–5.274ms | 4.292–4.441ms |
-| Worst retained sample | 8.710ms | 7.414ms |
+| Ordinary south 60Hz | Atomic | Global one-section cap | Per-region |
+| --- | ---: | ---: | ---: |
+| Median range across trials | 1.190–1.202ms | 1.088–1.091ms | 1.067–1.070ms |
+| p95 range | 3.519–4.021ms | 2.859–3.041ms | 2.849–3.073ms |
+| p99 range | 4.627–5.274ms | 4.310–4.532ms | 4.292–4.441ms |
+| Worst retained sample | 8.710ms | 7.332ms | 7.414ms |
 
 The ordinary-route median improves about 11%. At modeled 15Hz the tails overlap and maxima
 are mixed: per-region diagonal's worst is 7.667ms versus atomic's 7.201ms. No traversal or
