@@ -817,14 +817,36 @@ static func _fire_truck() -> EventDef:
 ## chose that day)"*. A set piece sited anywhere in the city is a day-3 that can pass without a
 ## fire in it and without an engine, which is the one authored beat of act I spent on nothing.
 ##
-## **The telegraph is no longer an arrival's warning; it is how long she has once it is in
-## view.** A fire that was already burning when she turned the corner has no approach to
-## telegraph — what would be damped is a thing that has already started — so the 2.2s below
-## buys the same escape the ordinary contract always has
-## (`(outer_radius - inner_radius) / WALK_SPEED` = 2.17s, `Tuning.validate_event()`), read now as
-## the moment she notices rather than the moment it arrives. The pulse, the obstruction (30px,
-## five flames) and the `burnt_shell` scar are unchanged: a place she finds still burns and still
-## blocks the way through, whichever way she came upon it.
+## **The fire itself has no field and costs nothing to stand beside or walk through: "the fire
+## goes on the building. the challenge is the fire truck not the fire" (PLAYTEST-144, statement
+## 12).** `intensity` is 0.0, and it carries no `obstructs_radius` either — a shape with none is the
+## established way to say "a look that does not obstruct" (`EventDef.solid()`'s own doc) — so
+## `EventInstance._draw_fire()` paints the flames (and the smoke above them) on the facade of the
+## building it stands against rather than leaving a body on the sidewalk, and `draws_body_shadow`
+## is off so nothing casts a shadow at the ground point nobody is standing on either: the sidewalk
+## in front of the fire stays clear. `inner_radius`/`outer_radius` (60/260) and the 2.2s telegraph
+## keep the row's geometry inside the fairness contract (`Tuning.validate_event()`), which checks
+## every row the same way whether or not the field behind it emits anything
+## (`(outer_radius - inner_radius) / WALK_SPEED` = 2.17s), and `EventScheduler.WalkSiting.
+## _still_leaves_a_park_reachable()` treats the same disc as ground a site has to leave her a way
+## round. The `burnt_shell` scar it leaves is the building it burned, drawn burnt from the next
+## morning on. **The finale's own fire, inside the building on the last night, is a duplicate of
+## this row with a field and a body** (`InteriorEvents._indoor_fire()`,
+## `src/finale/interior_events.gd`), because in there the fire is the hazard and there is no truck
+## to call.
+##
+## **It always catches on a wall the city actually draws, since the building itself has to be shown
+## burnt afterwards** (`City.mark_the_burnt_frontage()`, `Building.Condition.BURNT`) — *"the
+## building is what needs to be burnt, not an object next to the building"*. `AGAINST_THE_BUILDING`
+## only ever sites against an east-or-west wall (`EventScheduler._wants_this_side()`'s default
+## branch), which is real ground but never a wall `building.gd` draws a facade on — every building
+## is extruded south, from its own lot's south edge (`Building`'s own class doc). `AT_THE_FRONT`,
+## "the one face of a building the city draws" (`EventDef.Pavement`'s own doc), is a placement
+## choice for this row rather than the crew-pasting convention it usually serves: nothing else about
+## it asks for `pastes_a_front`. A proposal, open to overturn if a fire that can also catch on the
+## un-drawn walls turns out to matter more than a burnt shell with a real facade behind it. **Never
+## on the power station's front** (`EventScheduler._burns_its_front()`): its facade does not draw
+## burnt, and its transformer yard has no wall to burn.
 static func _burning_building() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burning_building"
@@ -834,35 +856,40 @@ static func _burning_building() -> EventDef:
 	def.first_day = 3
 	def.last_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
-	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
+	def.pavement_side = EventDef.Pavement.AT_THE_FRONT
 	def.sited_on_her_way = true
-	def.intensity = 18.0
+	def.intensity = 0.0
 	def.inner_radius = 60.0
 	def.outer_radius = 260.0
 	def.telegraph_time = 2.2
-	def.pulse_period = 3.0
-	# Five flames spanning ±31px, and you do not walk through a burning building. Not lethal by
-	# decision — what ends a day is in act III — so the body is simply the fire.
-	def.solid(GroundShape.point(30.0))
+	# A shape with no `obstructs_radius`: `EventDef.validate()` requires a shape wherever there is a
+	# look to draw, but nothing stands here for it to be solid at the width of, and no shadow to
+	# draw either — see `draws_body_shadow` below.
+	def.shape = GroundShape.point(30.0)
+	def.draws_body_shadow = false
 	def.scar_id = "burnt_shell"
 	def.spawns_on_sight = "fire_truck"
 	def.cost = 4
 	return def
 
-## What is left the next morning, and every morning after. Cordoned off, never repaired.
-## Almost silent — it is a reminder rather than a hazard, and it is on the same corner on
-## day 12 as it was on day 4.
+## What is left the next morning, and every morning after, never repaired: the building the fire
+## caught on, drawn burnt. The building carries it, not an object of its own on the sidewalk in
+## front of it — `City.mark_the_burnt_frontage()` turns the one `Building` behind the scar
+## `Building.Condition.BURNT`, and `EventInstance` draws nothing for this row — *"the building is
+## what needs to be burnt, not an object next to the building"*. Almost silent — it is a reminder
+## rather than a hazard, and it is on the same corner on day 12 as it was on day 4.
 ##
-## **Silent and solid are not the same claim**, and reading "not an obstacle" as "no body" is how a
-## burnt-out building becomes a thing you can stand inside. What it costs the meter is 2.5/s and
-## what it costs the route is a corner. `_draw_spread` draws the cordon at exactly the width of the
-## body, so this number is also how wide it looks: at 36 it is a shell, where a person's 11 would
-## draw a two-barrier sliver.
+## **So it has no body.** A body is half a silhouette (`docs/EVENTS.md`, "Solid things are solid":
+## *"a body that disagrees with the picture is a lie about where she can walk, whichever way it
+## lies"*), and there is no silhouette on the sidewalk here to be half of: the burnt shell is the
+## lot, which the building's own collision already closes. The shape stays, with no
+## `obstructs_radius` (`EventDef.solid()`'s own doc: a look that does not obstruct sets `shape`
+## alone), because it is what the 2.5/s field is measured from: a band along the frontage rather
+## than a point, so the smell of smoke runs the length of the burnt front.
 ##
-## **Radii derived from the body.** Both lose the segment's own `half_length` (12, from `band(36)`)
-## so the along-axis reach is unchanged: `inner_radius` 30 → 18, `outer_radius` 90 → 78. 18 falls
-## under the body's own 24px rounding, so it is clamped there — a field cannot start inside ground
-## that is already solid.
+## **Radii from the band.** Both lose the segment's own `half_length` (12, from `band(36)`) so the
+## along-axis reach is the 30/90 the row was first priced at: `inner_radius` 30 → 18, clamped to
+## 24, `outer_radius` 90 → 78.
 static func _burnt_shell() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burnt_shell"
@@ -874,7 +901,8 @@ static func _burnt_shell() -> EventDef:
 	def.inner_radius = 24.0
 	def.outer_radius = 78.0
 	def.telegraph_time = 0.7
-	def.solid(GroundShape.band(36.0))
+	def.shape = GroundShape.band(36.0)
+	def.draws_body_shadow = false
 	return def
 
 # ----------------------------------------- Act I: variety, and two with teeth ---
@@ -2220,7 +2248,8 @@ static func _firefight() -> EventDef:
 	# hard_fail: (374-84)/92 * 2 = 6.3s.
 	def.telegraph_time = 6.5
 	def.pulse_period = 2.5
-	# The same five flames as a burning building, and far inside the 84 that ends the day.
+	# The 30px band the two gunmen are drawn across (`EventInstance._draw_firefight()` stands
+	# them at 0.62 of it either side), and far inside the 84 that ends the day.
 	def.solid(GroundShape.band(30.0))
 	def.hard_fail = true
 	def.cost = 5

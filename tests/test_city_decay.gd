@@ -19,6 +19,7 @@ func run(t) -> void:
 	_test_sacks_wait_for_the_curve_then_alleys_before_fronts(t)
 	_test_the_mouse_prefers_a_pile(t)
 	_test_boarded_storefronts_and_windows_shutter(t)
+	_test_a_burnt_building_shows_nothing_intact(t)
 	_test_ambient_shuttering_waits_for_the_curve(t)
 	_test_storefront_variants_use_seeded_bags(t)
 
@@ -192,6 +193,53 @@ func _test_boarded_storefronts_and_windows_shutter(t) -> void:
 		t.check(texture == Building.WINDOW_SHUTTERED_DARK,
 				"a boarded building's windows are shuttered and dark, never lit")
 	building.free()
+
+## **A burnt building is drawn burnt, not only dark**: *"the *building* is what needs to be burnt"*
+## (olive-koala, statement 4). On a burnt front of any district, no window, door, storefront or
+## front parapet is one of the pictures an intact front draws.
+func _test_a_burnt_building_shows_nothing_intact(t) -> void:
+	var intact: Array[StringName] = [
+		Building.WINDOW_DARK, Building.WINDOW_LIT, Building.WINDOW_TALL_DARK,
+		Building.WINDOW_TALL_LIT, Building.WINDOW_SHUTTERED_DARK, Building.WINDOW_SHUTTERED_LIT,
+		Building.ENTRANCE_DOOR, Building.ENTRANCE_DOOR_INDUSTRIAL, Building.ROOF_EDGE_S,
+	]
+	intact.append_array(Building.STOREFRONT_TEXTURES)
+	intact.append_array(Building.STOREFRONT_AWNING_TEXTURES)
+	intact.append_array(Building.STOREFRONT_SHUTTERED_TEXTURES)
+	var shops := 0
+	var doors := 0
+	var windows := 0
+	for i in 12:
+		var building := Building.new()
+		building.district = [GameEnums.BlockPurpose.COMMERCIAL, GameEnums.BlockPurpose.RESIDENTIAL,
+				GameEnums.BlockPurpose.INDUSTRIAL][i % 3]
+		building.footprint = Vector2(128.0, 128.0)
+		building.height = 96.0
+		building.position = Vector2(9000.0 + i * 173.0, 9100.0 + i * 61.0)
+		t.add_child(building)
+		building.condition = Building.Condition.BURNT
+		building.day = Tuning.RUN_LENGTH_DAYS
+		var shown: Array[StringName] = []
+		for index in building.columns() * building.wall_tiles():
+			if building._draws_window_at(index / building.columns()):
+				shown.append(building._window_texture(index))
+				windows += 1
+		for col in building.columns():
+			var ground := building._ground_floor_texture(col)
+			shown.append(ground)
+			if ground == Building.STOREFRONT_BURNT:
+				shops += 1
+			shown.append(building._front_parapet_texture(col))
+		if building.entrance_door_col() >= 0:
+			shown.append(building._entrance_door_texture())
+			doors += 1
+		for texture in shown:
+			t.check(not intact.has(texture),
+					"a burnt %s front draws nothing intact (%s)"
+					% [GameEnums.BlockPurpose.keys()[building.district], texture])
+		building.free()
+	t.check(windows > 0 and shops > 0 and doors > 0,
+			"there were windows, shops and doors to ask about (%d, %d, %d)" % [windows, shops, doors])
 
 func _test_ambient_shuttering_waits_for_the_curve(t) -> void:
 	var any_shuttered_late := false

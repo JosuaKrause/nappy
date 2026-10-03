@@ -62,6 +62,9 @@ func _test_every_building_region_is_baked_on_its_group(t) -> void:
 	names.append_array(Building.STOREFRONT_TEXTURES)
 	names.append_array(Building.STOREFRONT_AWNING_TEXTURES)
 	names.append_array(Building.STOREFRONT_SHUTTERED_TEXTURES)
+	names.append_array([Building.WINDOW_BURNT, Building.ENTRANCE_DOOR_BURNT,
+			Building.STOREFRONT_BURNT])
+	names.append_array(Building.ROOF_EDGE_S_BURNT)
 	names.append_array(PosterArt.region_names())
 	_check_regions(t, names, &"buildings", "Building")
 

@@ -1666,6 +1666,22 @@ arrives at a block whose arc is not waiting for it does nothing at all, which is
 the city coherent — a fire in a park leaves a burnt shell and does not turn the park into a
 burnt-out block.
 
+**The one building the fire actually touched is shown burnt regardless of its block's own
+purpose or arc.** `City.mark_the_burnt_frontage()` reads the `burnt_shell` scar's position, finds
+the single `Building` whose facade it stands against, and sets that one building's own
+`Building.Condition` to `BURNT` — the look `BURNT_OUT` gives every building of a block (windows
+black and broken under soot, the door boarded, the parapet charred, the wall drained to ash),
+here for one frontage a scar names rather than for a block purpose an arc reached. It runs at
+every dawn, after the block dressing, so the building is burnt from the morning after the fire
+for the rest of the run. Day 8's task calls it once more, live, on a run with no such scar: the
+task records one at a front the fire could have caught on and has that building burnt there and
+then (`ResistanceDirector._burn_a_front_for_the_task()`), so the building it sends her to is
+burnt. `burning_building` only ever catches on a wall `building.gd` actually
+draws (`EventDef.Pavement.AT_THE_FRONT`, the frontage lane of a north sidewalk, and only where the
+tile behind it is on the map), so there is always a real facade behind the scar to burn. Never the
+power station's: its facade is drawn whole whatever its condition says, and its transformer yard
+has no wall at all (`EventScheduler._open_ground_for()` refuses that front to a row that burns).
+
 Causes fire during the day; the city presents the result the **next morning**.
 `CityMap.repaint()` runs at the start of a day, so the fire burns today and the street is
 ashes tomorrow.
@@ -1680,7 +1696,7 @@ requisitioned park are the same walkable ground, so neither half moves a walkabl
 `CityState.advance_now()` takes the step a block's arc is waiting on today, and only if it becomes
 the purpose asked for — when moves, never what. Day 11's market is a commercial block whose arc is
 waiting to board up, boarded ahead of her and out of her sight, its buildings shuttered there and
-then (`City.present_block()`). Day 12's park is taken the instant she reaches its swing, and its
+then (`City.present_block()`), except a building day 3's fire burned, which stays burnt. Day 12's park is taken the instant she reaches its swing, and its
 ground goes to `SPOILED` a ring at a time from the edges in over `Tuning.PARK_CLOSING_SECONDS`
 (`City.close_ground()`), so the calm under her shrinks while she watches; mud is walkable, so she
 is never shut in. `docs/NARRATIVE.md` says what each is; `ResistanceHappenings` is where they

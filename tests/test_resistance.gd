@@ -72,6 +72,8 @@ func run(t) -> void:
 	_test_the_sabotage_silences_the_city(t)
 	_test_the_burnt_shell_task_rides_the_recorded_scar(t)
 	_test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t)
+	_test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t)
+	_test_day_eights_guard_band_is_measured_from_the_door_reach(t)
 	_test_the_door_task_sits_at_a_region_door(t)
 	_test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t)
 	_test_a_read_mark_does_not_pile_up_across_several_ordinary_days(t)
@@ -2565,63 +2567,296 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 
 func _test_the_burnt_shell_task_rides_the_recorded_scar(t) -> void:
 	_build_city(t)
+	# On ground day 3's fire can actually catch on (`AT_THE_FRONT`, a building behind it), since a
+	# real scar is only ever recorded there and the arrow ends on that building.
+	var doorstep := _city.map.doorstep_world_position()
+	var near_fronts: Array[Vector2i] = []
+	var far_fronts: Array[Vector2i] = []
+	for tile in EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+			_city.map, {}):
+		var distance := _city.map.tile_to_world(tile).distance_to(doorstep)
+		if distance < Tuning.EVENT_STREAM_RADIUS:
+			near_fronts.append(tile)
+		elif distance > Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS:
+			far_fronts.append(tile)
+	t.check(not near_fronts.is_empty(), "home has fronts within streaming range")
+	t.check(not far_fronts.is_empty(), "and fronts beyond it")
+	if near_fronts.is_empty() or far_fronts.is_empty():
+		return
+	_ride_a_recorded_scar(t, near_fronts[near_fronts.size() / 2], "a scar near home")
+	# The case a real run makes most: a dusk fire is sited at least `EVENT_STREAM_RADIUS` from
+	# where she finished day 3, so its shell is not in the world when she reads day 8's mark.
+	_ride_a_recorded_scar(t, far_fronts[far_fronts.size() / 2], "a scar beyond streaming range")
+
+## Records a day-3 scar at `site`, plans day 8 around the doorstep, reads day 8's mark there, and
+## checks the task rides that scar: the one shell at it, put in the world even when the scar is
+## farther than the streaming radius, kept there when she walks away, no second scar recorded, and
+## the arrow and the contact on the door of the building behind it.
+func _ride_a_recorded_scar(t, site: Vector2i, label: String) -> void:
 	_with_clean_run(func() -> void:
 		var saved_scars := GameState.scars.duplicate()
 		var doorstep := _city.map.doorstep_world_position()
-		# Within `EVENT_STREAM_RADIUS` (900px) of the focus `_city.events.start_day()` is given
-		# below — `EventManager.stream_around()` only materialises a live instance for a planned
-		# event that close, scars included, so a scar recorded further out would never become the
-		# live instance `_find_scar_instance()` is looking for and this test would be exercising
-		# the no-recorded-scar fallback by accident. A flat "the middle sidewalk tile" picked
-		# whichever one that landed to be past 900px from home on a station-reshaped city, which
-		# is what turned this into the fallback path rather than the recorded-scar one it names.
-		var near_sidewalks: Array[Vector2i] = []
-		for tile in _city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-			if _city.map.tile_to_world(tile).distance_to(doorstep) < Tuning.EVENT_STREAM_RADIUS:
-				near_sidewalks.append(tile)
-		t.check(not near_sidewalks.is_empty(), "home has sidewalks within streaming range")
-		var scar_at := _city.map.tile_to_world(near_sidewalks[near_sidewalks.size() / 2])
+		var scar_at := _city.map.tile_to_world(site)
 		GameState.scars = [{"id": "burnt_shell", "position": scar_at, "since_day": 3}]
-		# `_find_scar_instance()` reads live instances off `_city.events`, which only exist once
-		# the day's own events have actually been built — `_place_scars()` is what turns the
-		# recorded scar into a live `burnt_shell` instance at `scar_at`.
+		# `_place_scars()` plans a `burnt_shell` at `scar_at` for the day; it is in the world only
+		# if `scar_at` is inside the streaming radius of the doorstep.
 		_city.events.start_day(8, _rng(8, "events"), [], doorstep)
 
 		var director := _director(t)
 		director.start_day(8, _rng(8, "resistance"), 300.0)
 		director._on_contact_completed(5)
 		t.check(director.current_step() != null and director.current_step().index == 6,
-				"touching day 8's mark activates the burnt-shell perform")
+				"%s: touching day 8's mark activates the burnt-shell perform" % label)
 		t.check(director._rider != null and director._rider.def.id == "burnt_shell",
-				"riding a burnt_shell instance")
-		# Under a tile's own width, not exactly 0 — `_find_scar_instance()`'s own doc says why:
-		# the scheduler's own placement of the solid shape can nudge it a few pixels off the
-		# coordinate the scar was recorded at.
-		t.check(director._rider.global_position.distance_to(scar_at) < Tuning.TILE_SIZE,
-				"the one standing at the run's own recorded scar")
+				"%s: riding a burnt_shell instance" % label)
+		if director._rider == null:
+			director.free()
+			GameState.scars = saved_scars
+			return
+		t.check(director._rider.global_position.distance_to(scar_at) < 1.0,
+				"%s: the one standing at the run's own recorded scar" % label)
+		t.check(GameState.scars.size() == 1,
+				"%s: and no second scar is recorded for the task (%s)" % [label, GameState.scars])
+		_check_the_task_is_at_the_burnt_buildings_door(t, director)
+
+		# She walks off across the city: the shell stays under its contact.
+		_city.events.stream_around(scar_at + Vector2(1.0, 1.0) * 4.0
+				* (Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS))
+		# `instances()` rather than `rider_alive()` alone: a streamed-out instance is only queued
+		# for deletion, and still valid until the frame ends.
+		t.check(director._contact.rider_alive()
+				and _city.events.instances().has(director._rider),
+				"%s: the shell stays in the world when she walks far away from it" % label)
+		# And back: still one shell there, so its field is counted once.
+		_city.events.stream_around(scar_at)
+		var shells := 0
+		for instance in _city.events.instances():
+			if instance.def.id == "burnt_shell" \
+					and instance.global_position.distance_to(scar_at) < 1.0:
+				shells += 1
+		t.check(shells == 1, "%s: one shell at the scar, not two (%d)" % [label, shells])
+		_check_a_touch_from_the_near_half_of_the_sidewalk(t, director)
 
 		director.free()
 		GameState.scars = saved_scars)
 
-## The smallest honest fallback named in `ResistanceSteps._build()`'s own comment: a run with no
-## recorded `burnt_shell` scar still offers day 8's task, on an ordinary placement of the same
-## row rather than a step with nowhere to go.
+## Day 8's red arrow ends on the burnt building's door, and the task's contact stands there too:
+## *"or better to the door but the acceptance radius centered at the door should have a large
+## enough radius for half the sidewalk to be covered"* (sandy-egret). The shell has no body and
+## draws nothing, so its own position is bare sidewalk. The door is read off the building behind the
+## shell (the lot `City` draws burnt) independently of `Building.way_in_local_x()`: its entrance
+## door's column centre when it has one, half a tile up its ground floor.
+func _check_the_task_is_at_the_burnt_buildings_door(t, director: ResistanceDirector) -> void:
+	var tip := director.red_arrow_target()
+	t.check(tip != Vector2.INF, "day 8's task earns the red arrow")
+	if tip == Vector2.INF or director._rider == null:
+		return
+	t.check(tip == director.contact_position(),
+			"the arrow's tip %s is where the task's contact stands %s"
+			% [tip, director.contact_position()])
+	var shell_tile := _city.map.world_to_tile(director._rider.global_position)
+	var behind: Building = null
+	for building in _city._buildings:
+		if building.lot.has_point(shell_tile + Vector2i.UP):
+			behind = building
+	t.check(behind != null, "the shell at %s has a building behind it" % shell_tile)
+	if behind == null:
+		return
+	var lot := _city.map.tile_rect_to_world(behind.lot)
+	var size := float(Tuning.TILE_SIZE)
+	t.close_to(tip.y, lot.end.y - size * 0.5,
+			"the tip is half a tile up that building's ground floor", 0.01)
+	var door_col := behind.entrance_door_col()
+	if door_col >= 0:
+		t.close_to(tip.x, lot.position.x + (door_col + 0.5) * size,
+				"and on its entrance door, column %d of %s" % [door_col, behind.lot], 0.01)
+	else:
+		t.check(tip.x >= lot.position.x and tip.x <= lot.end.x,
+				"and on its own front, which has no entrance door (%s)" % behind.lot)
+
+## The contact at the door completes from the near half of the sidewalk in front of it — the whole
+## tile below the door, out to its bottom corners — and not from its far half or past it. Called
+## last, since the touch that completes it hands the task over; the two corner touches are asked of
+## copies of the contact, with its own position and reach, so they hand nothing over.
+func _check_a_touch_from_the_near_half_of_the_sidewalk(t, director: ResistanceDirector) -> void:
+	var contact := director._contact
+	var door := director.contact_position()
+	if contact == null or door == Vector2.INF:
+		t.check(false, "day 8's task has a contact to touch")
+		return
+	var foot := door + Vector2.DOWN * Tuning.TILE_SIZE * 0.5
+	var sidewalk := float(Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
+	var near := foot + Vector2.DOWN * (sidewalk * 0.5 - 4.0)
+	var far := foot + Vector2.DOWN * (sidewalk * 0.5 + 4.0)
+	var past := foot + Vector2.DOWN * (sidewalk + Tuning.TILE_SIZE * 0.5)
+	t.check(_city.map.tile_at(_city.map.world_to_tile(near)) == GameEnums.TileType.SIDEWALK
+			and _city.map.tile_at(_city.map.world_to_tile(far)) == GameEnums.TileType.SIDEWALK,
+			"the two halves in front of the door at %s are sidewalk" % door)
+	var player := _rig_player(t, past)
+	contact._player = player
+	contact._physics_process(STEP)
+	t.check(not contact.is_done, "a touch from past the sidewalk, %.0fpx from the door, does not"
+			% door.distance_to(past))
+	player.global_position = far
+	contact._physics_process(STEP)
+	t.check(not contact.is_done, "nor one from the far half, %.0fpx from the door"
+			% door.distance_to(far))
+	for side in [-1.0, 1.0]:
+		var corner := foot + Vector2(side * (Tuning.TILE_SIZE * 0.5 - 1.0),
+				sidewalk * 0.5 - 1.0)
+		var copy := ContactPoint.new()
+		copy.ride(contact.step, contact._rider, contact._rider_offset)
+		copy.reach = contact.reach
+		t.add_child(copy)
+		copy.set_physics_process(false)
+		copy._player = player
+		player.global_position = corner
+		copy._physics_process(STEP)
+		t.check(copy.is_done,
+				("a touch from a bottom corner of the tile below the door, %.1fpx from it, " +
+				"completes it") % door.distance_to(corner))
+		copy.free()
+	player.global_position = near
+	contact._physics_process(STEP)
+	t.check(contact.is_done, "a touch from the near half, %.0fpx from the door, completes it"
+			% door.distance_to(near))
+	player.free()
+
+## Every front day 3's fire can catch on, and so every place day 8's task can end, has a way in on
+## the building behind it (`City.way_in_behind()`): its entrance door's column when it has one, and
+## always ground the touch is measured over — a sidewalk tile straight below it, the near half
+## `ResistanceDirector.DOOR_REACH` is sized to.
+func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t) -> void:
+	_build_city(t)
+	var size := float(Tuning.TILE_SIZE)
+	var fronts := EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+			_city.map, {})
+	var on_a_door := 0
+	var wrong: Array[Vector2i] = []
+	for tile in fronts:
+		var way := _city.way_in_behind(_city.map.tile_to_world(tile))
+		var behind: Building = null
+		for building in _city._buildings:
+			if building.lot.has_point(tile + Vector2i.UP):
+				behind = building
+		if behind == null or way == Vector2.INF:
+			wrong.append(tile)
+			continue
+		var lot := _city.map.tile_rect_to_world(behind.lot)
+		var below := _city.map.world_to_tile(way) + Vector2i.DOWN
+		var ok := absf(way.y - (lot.end.y - size * 0.5)) < 0.01 \
+				and _city.map.tile_at(below) == GameEnums.TileType.SIDEWALK
+		var door_col := behind.entrance_door_col()
+		if door_col >= 0:
+			on_a_door += 1
+			ok = ok and absf(way.x - (lot.position.x + (door_col + 0.5) * size)) < 0.01
+		if not ok:
+			wrong.append(tile)
+	t.check(on_a_door > fronts.size() / 2,
+			"most fronts have an entrance door behind them (%d of %d)" % [on_a_door, fronts.size()])
+	t.check(wrong.is_empty(),
+			"every front's way in is on its building's door, over a sidewalk (%d are not, first %s)"
+			% [wrong.size(), wrong.slice(0, 3)])
+
+## Day 8's guard stands in the band M55 works out from the reach, measured from the door's own
+## `ResistanceDirector.DOOR_REACH` rather than the 36px every other contact keeps: at least
+## `inner_radius + DOOR_REACH` from the door, so no touch from the edge of the reach lands her in
+## his catch, and at most `pursues_within + DOOR_REACH`. Swept over many days' draws, since one
+## guard drawn from the narrower band can land outside the wider one's inner edge by luck.
+func _test_day_eights_guard_band_is_measured_from_the_door_reach(t) -> void:
+	_build_city(t)
+	var robbery := EventCatalogue.by_id("alley_robbery")
+	var low := robbery.inner_radius + ResistanceDirector.DOOR_REACH
+	var high := robbery.pursues_within + ResistanceDirector.DOOR_REACH
+	var saved_scars := GameState.scars.duplicate()
+	var conditions: Array[int] = []
+	for building in _city._buildings:
+		conditions.append(building.condition)
+	# An array, not an int: a lambda captures a local by value, so a counter it adds to never moves.
+	var guarded: Array[float] = []
+	var outside: Array[String] = []
+	for i in 40:
+		_with_clean_run(func() -> void:
+			GameState.scars.clear()
+			var director := _director(t)
+			director.start_day(8, _rng(8, "resistance:%d" % i), 300.0)
+			director._on_contact_completed(5)
+			var guard: EventInstance = director._task_guard
+			if guard != null and is_instance_valid(guard):
+				var distance := guard.global_position.distance_to(director.contact_position())
+				guarded.append(distance)
+				if distance < low - 0.01 or distance > high + 0.01:
+					outside.append("%.0f" % distance)
+			director.free())
+	for i in _city._buildings.size():
+		_city._buildings[i].condition = conditions[i] as Building.Condition
+	GameState.scars = saved_scars
+	t.check(guarded.size() > 20, "day 8's task is guarded on most draws (%d of 40)" % guarded.size())
+	t.check(outside.is_empty(),
+			("its guard stands %.0f-%.0fpx from the door, inner_radius and pursues_within " +
+			"plus the door's reach (%d do not: %s)") % [low, high, outside.size(), outside])
+
+## A run with no recorded `burnt_shell` scar (a `--day 8` start, or a day 3 that never burned)
+## still sends her to a burnt building: the shell stands on a front day 3's fire could have caught
+## on, the scar is recorded there, and the building behind it is burnt at once — *"Take what's in
+## the stroller to the burnt building"* never leads to bare sidewalk.
 func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var saved_scars := GameState.scars.duplicate()
 		GameState.scars.clear()
+		var burnt_before := 0
+		var conditions: Array[int] = []
+		for building in _city._buildings:
+			conditions.append(building.condition)
+			if building.condition == Building.Condition.BURNT:
+				burnt_before += 1
 
 		var director := _director(t)
 		director.start_day(8, _rng(8, "resistance"), 300.0)
+		t.check(GameState.scars.is_empty(), "nothing is burnt for the task before her mark is read")
 		director._on_contact_completed(5)
 		t.check(director.current_step() != null and director.current_step().index == 6,
 				"touching day 8's mark still activates the burnt-shell perform")
 		t.check(director._rider != null and director._rider.def.id == "burnt_shell",
-				"riding a burnt_shell instance placed the ordinary way")
+				"riding a burnt_shell instance placed for the task")
 		t.check(director.contact_position() != Vector2.INF, "somewhere reachable")
+		if director._rider == null:
+			director.free()
+			GameState.scars = saved_scars
+			return
+
+		var shell := director._rider.global_position
+		var shell_tile := _city.map.world_to_tile(shell)
+		var fronts := EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+				_city.map, {})
+		t.check(shell_tile in fronts,
+				"the shell stands at %s, a front day 3's fire could have caught on" % shell_tile)
+		var recorded := 0
+		for scar: Dictionary in GameState.scars:
+			if String(scar["id"]) == "burnt_shell" \
+					and (scar["position"] as Vector2).distance_to(shell) < 1.0:
+				recorded += 1
+		t.check(GameState.scars.size() == 1 and recorded == 1,
+				"the scar is recorded where the shell stands, and nothing else (%s)"
+				% [GameState.scars])
+		var behind: Building = null
+		var burnt_now := 0
+		for building in _city._buildings:
+			if building.lot.has_point(shell_tile + Vector2i.UP):
+				behind = building
+			if building.condition == Building.Condition.BURNT:
+				burnt_now += 1
+		t.check(behind != null and behind.condition == Building.Condition.BURNT,
+				"the building behind the shell is burnt the moment the task is on offer")
+		t.check(burnt_now == burnt_before + 1,
+				"and no other building is (%d burnt, %d before)" % [burnt_now, burnt_before])
+		_check_the_task_is_at_the_burnt_buildings_door(t, director)
+		_check_a_touch_from_the_near_half_of_the_sidewalk(t, director)
 
 		director.free()
+		for i in _city._buildings.size():
+			_city._buildings[i].condition = conditions[i] as Building.Condition
 		GameState.scars = saved_scars)
 
 ## Mirrors the real day order (`main._start_day()`: city, events, resistance) rather than
@@ -3585,7 +3820,8 @@ func _day_reachability(city: City) -> Array:
 	var blocked := EventScheduler.blocked_by(city.map, blockers)
 	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
 
-## Every mark and every contact a task activates stands on walkable, unobstructed ground — swept
+## Every mark and every contact a task activates stands on walkable, unobstructed ground — day 8's,
+## which stands on the burnt building's door, is touched from the ground in front of it — swept
 ## over days 6-13 and the seeds the route rig timed, through the real day order (`City.start_day()`,
 ## then `EventManager.start_day()`, then `ResistanceDirector.start_day()`, then one `_process()`
 ## tick with her standing at the doorstep) so `CityMap.obstructed_tiles` is the day's real record
@@ -3627,6 +3863,7 @@ func _day_reachability(city: City) -> Array:
 func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> void:
 	_with_clean_run(func() -> void:
 		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+		var saved_scars := GameState.scars.duplicate()
 		var checked := 0
 		for seed_value in REACHABILITY_SWEEP_SEEDS:
 			var city: City = CITY_SCENE.instantiate()
@@ -3636,6 +3873,9 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 				GameState.completed_resistance_steps = []
 				GameState.failed_resistance_steps = []
 				GameState.completed_resistance_alley_tiles.clear()
+				# No history, like `--day N`: day 8 with no recorded scar records one for its
+				# task, and a scar from another seed's city must not stand in this one's.
+				GameState.scars = []
 				var closure_state := CityState.new()
 				closure_state.begin_day(city.map.block_plans, day)
 				city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
@@ -3674,6 +3914,10 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 					if task_step != null:
 						checked += 1
 						var task_tile := city.map.world_to_tile(director.contact_position())
+						# Day 8's contact stands on the burnt building's door, on its wall, and is
+						# touched from the frontage tile in front of it (`_ride_to_the_door()`).
+						if task_step.target_kind == ResistanceSteps.TargetKind.SCAR:
+							task_tile += Vector2i.DOWN
 						var allow_held := ResistanceSteps.stands_on_held_ground(task_step)
 						t.check(_stands_on_legal_ground(city.map, task_tile, walled_alleys,
 								allow_held, grid, blocked, reached),
@@ -3684,6 +3928,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 				director.free()
 			city.free()
 		GameState.completed_resistance_alley_tiles = saved_tiles
+		GameState.scars = saved_scars
 		t.check(checked > 0, "the sweep actually checked something (%d)" % checked))
 
 ## downy-otter, "a mark should never be placed in an alley that is not reachable (ie sealed off)"
