@@ -196,16 +196,20 @@ const TAP_STOP_CENTRE_LIFT := Stroller.FIGURE_HEIGHT / 2.0
 const FOCUS_LEFT := Vector2(240.0, 480.0)
 const FOCUS_RIGHT := Vector2(1040.0, 480.0)
 
-## The run buttons' size and where each stands: 110px outward from its own focal point, on the same
-## row, so the left one sits at (130, 480) and the right one at (1150, 480) in the 1280x720 design
-## box. *Outward* is the side away from the stop band down the middle, where the other hand is not
-## steering: the ring reaches 48px (`STOP_RADIUS`) and a button's catch circle starts 64px out, so
-## a heading pressed at the ring's rim cannot land on a button, the right
-## spot is the player's to choose, since it gives up some part of the screen either way. Both are authored in
+## The run buttons' size and where each stands: 110px *inward* from its own focal point, toward the
+## middle of the screen, on the same row — the left one at (350, 480) and the right one at (930, 480)
+## in the 1280x720 design box. *(2026-10-03, the player, inbox #477, asked which of four spots —
+## outward, inward, below, above — the buttons should take: "Inward".)* **What the spot takes away:**
+## a press 64-156px out of a ring toward the middle (a +/-25 degree wedge, due east of the left ring
+## and due west of the right one) is a run hold, not the heading "walk toward the middle". **What it
+## is clear of:** the `DangerEdge` badge strips (x=104 and x=1176), the home/task arrow strips (x=96
+## and x=1184), the touch HUD meters column and the pause button, and it ends 196px short of the stop
+## band. The ring reaches 48px (`STOP_RADIUS`) and a button's catch circle starts 64px out, so a
+## heading pressed at the ring's rim cannot land on a button. Both are authored in
 ## design space like the foci.
 const RUN_OFFSET := 110.0
-const RUN_CENTRE_LEFT := Vector2(FOCUS_LEFT.x - RUN_OFFSET, FOCUS_LEFT.y)
-const RUN_CENTRE_RIGHT := Vector2(FOCUS_RIGHT.x + RUN_OFFSET, FOCUS_RIGHT.y)
+const RUN_CENTRE_LEFT := Vector2(FOCUS_LEFT.x + RUN_OFFSET, FOCUS_LEFT.y)
+const RUN_CENTRE_RIGHT := Vector2(FOCUS_RIGHT.x - RUN_OFFSET, FOCUS_RIGHT.y)
 const RUN_RADIUS := 34.0
 ## Generous for the reason `PAUSE_CATCH_RADIUS` is: a thumb does not land on a button to the pixel.
 ## Below `RUN_OFFSET - STOP_RADIUS` (62px) so the catch never reaches the focal ring.
@@ -996,10 +1000,10 @@ func _draw_run_buttons() -> void:
 	for centre in [RUN_CENTRE_LEFT, RUN_CENTRE_RIGHT]:
 		if held:
 			draw_circle(centre, RUN_RADIUS, Palette.BUTTON_PRESSED)
-		# The chevrons point outward, away from the ring they stand beside: the left button is the
-		# right one mirrored about its own centre. (Open to overturn: a glyph with no direction.)
-		var flip := Vector2(-1.0 if centre == RUN_CENTRE_LEFT else 1.0, 1.0)
-		draw_set_transform(centre, 0.0, flip)
+		# The chevrons point up on both buttons: a chevron pointing sideways, now that the buttons sit
+		# toward the middle, would read as "walk that way". (Open to overturn: a glyph with no
+		# direction at all.)
+		draw_set_transform(centre, -PI / 2.0, Vector2.ONE)
 		draw_texture_rect(AtlasLibrary.region(_RUN_ICON), Rect2(-size * 0.5, size), false,
 				Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

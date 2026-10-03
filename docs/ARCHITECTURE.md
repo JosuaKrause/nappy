@@ -352,7 +352,7 @@ currently-held direction — and is stopped by a press on either focus or in a b
 of the screen (`is_in_stop_band()`) rather than by a press near her own position, which does not
 stop her in this mode at all. Either way the direction locked in is walked with nothing held down
 until the next press changes it, and a double press holds `run` until the next press changes or
-releases it. `Mode.JOYSTICK` also draws a run button 110px outward of each focus
+releases it. `Mode.JOYSTICK` also draws a run button 110px inward of each focus
 (`RUN_CENTRE_LEFT`, `RUN_CENTRE_RIGHT`, caught within `RUN_CATCH_RADIUS`, below the distance to the
 ring): `_on_pointer()` grabs one only for a press that begins on it, tracks that finger in
 `_run_touch`, and holds `run` (`_run_held`) until it lifts, without making the press a heading, so a

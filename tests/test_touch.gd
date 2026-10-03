@@ -1073,8 +1073,10 @@ func _test_the_run_buttons_sit_clear_of_the_focal_rings(t) -> void:
 			"a focal point is not on a run button")
 	t.check(TouchControls.RUN_OFFSET - TouchControls.RUN_CATCH_RADIUS > TouchControls.STOP_RADIUS,
 			"no catch circle reaches a focal ring")
-	t.check(TouchControls.run_button_at(TouchControls.FOCUS_LEFT + Vector2(-TouchControls.STOP_RADIUS, 0.0))
+	t.check(TouchControls.run_button_at(TouchControls.FOCUS_LEFT + Vector2(TouchControls.STOP_RADIUS, 0.0))
 			== Vector2.INF, "a press at the ring's rim facing the button is a heading, not a run")
+	t.check(TouchControls.run_button_at(TouchControls.FOCUS_RIGHT + Vector2(-200.0, 0.0)) == Vector2.INF,
+			"and a press 200px toward the middle, past the button, is a heading")
 
 ## **A press that begins on a button holds `run` for as long as that finger is down**, and is never also a
 ## heading: it neither walks her nor starts the double-tap clock. *(2026-10-03, note #434.)*
@@ -1138,8 +1140,8 @@ func _test_a_steering_finger_sliding_onto_a_run_button_does_not_press_it(t) -> v
 	controls._input(_drag_event(0, TouchControls.RUN_CENTRE_LEFT))
 	t.check(not Input.is_action_pressed("run") and controls._run_touches.is_empty(),
 			"sliding onto the left button does not run")
-	t.check(controls._walking and Input.is_action_pressed("move_left"),
-			"and keeps steering by where the finger is")
+	t.check(controls._walking and Input.is_action_pressed("move_right"),
+			"and keeps steering by where the finger is (east of the left ring)")
 	controls._input(_touch_event(0, TouchControls.RUN_CENTRE_LEFT, false))
 	t.check(not Input.is_action_pressed("run"), "and lifting there does not run either")
 

@@ -399,8 +399,9 @@ standing, the way a mouse always has, and a press within a generous radius of he
 as a ring — and is stopped by a press on either point or in a band down the screen's own middle
 instead. Neither scheme is tied to a touchscreen or a mouse: either can be picked on either device.
 
-**Joystick also has a run button beside each ring**, 110px outward from it, on the far side from the
-band down the middle. *(2026-10-03, note #434: "for joystick mode a dedicated run button (one on each
+**Joystick also has a run button beside each ring**, 110px inward from it, toward the middle of the
+screen (the player chose the spot: "Inward"), which takes away the "walk toward the middle" press
+64-156px out of the ring in a 25-degree wedge either side of due east or west. *(2026-10-03, note #434: "for joystick mode a dedicated run button (one on each
 side next to the joystick) would make running much more precise and easier.")* A press that begins
 on a button holds **run** for as long as that finger stays down, so one thumb steers while the other
 holds it; a finger already steering that slides over a button does not press it, since only a press
