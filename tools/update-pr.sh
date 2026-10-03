@@ -18,7 +18,9 @@
 # Any unresolved file aborts the merge
 # (`git merge --abort`) and names it; nothing is left half-merged. The queue, the records and the
 # review list are one file per thing, so two pull requests adding to them no longer meet in one
-# file; a branch still on the old single files is converted with tools/convert-queue-edits.py. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
+# file; a branch still on the old single files is converted with tools/convert-queue-edits.py. On a clean result it runs `git diff --cached --check "$main_tip"` (the
+# staged result against main's tip as merged, so it judges only what the branch itself brings and a
+# whitespace error main already has never fails a branch), `./tools/lint.sh` and
 # `./tools/check.sh` (every one of the three has to pass), commits a message naming the three
 # revisions and the resolution, and pushes to the branch's own remote — attempted first over
 # `origin`'s own configured transport (HTTPS too, under `run`'s own token, once `insteadOf`
@@ -59,7 +61,9 @@ usage: tools/update-pr.sh [--help|-h] [--dry-run] <pr-number | branch>
 
 Merges origin/main into a pull request's branch: fetches, finds the branch's worktree (or adds a
 scratch one under $TMPDIR), merges with --no-ff --no-commit, and aborts naming the files on any
-conflict. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
+conflict. On a clean result it runs `git diff --cached --check <main tip>` (the staged result
+against main's tip as merged, so only the branch's own changes are judged, never whitespace main
+already has), `./tools/lint.sh` and
 `./tools/check.sh`, commits a message naming the branch tip, main tip, merge base and the
 resolution, and pushes it: first over origin's own configured transport (HTTPS with the bot's
 token under tools/agent-identity.py run, whatever origin uses -- SSH, say -- with your own login
@@ -80,7 +84,7 @@ Refuses, with a reason on stderr and a non-zero exit, and does no work when: the
 would operate in is dirty; the branch's local tip is behind its own remote; the branch edited the
 old single-file docs/DECISIONS.md, TODO.md or REVIEW.md that main has as files (convert it with
 tools/convert-queue-edits.py; --dry-run refuses it too); the merge conflicts;
-or git diff --check, ./tools/lint.sh or
+or git diff --check against main's tip, ./tools/lint.sh or
 ./tools/check.sh fails (the merge is aborted first).
 
 UPDATE_PR_CLAUDE=1 appends "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
@@ -309,7 +313,9 @@ run_check() {
     fi
     rm -f /tmp/update-pr-check.$$
 }
-run_check "git diff --cached --check" git diff --cached --check
+# Against main's tip, not the branch's own: the staged merge result minus main is what the branch
+# brings (plus any resolution), so whitespace main already carries is not blamed on the branch.
+run_check "git diff --cached --check $main_tip" git diff --cached --check "$main_tip"
 run_check "./tools/lint.sh" ./tools/lint.sh
 run_check "./tools/check.sh" ./tools/check.sh
 

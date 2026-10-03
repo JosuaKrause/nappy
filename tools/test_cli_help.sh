@@ -805,6 +805,46 @@ check_that "the check says nothing while main still has the old queue" '[[ -z "$
 found="$(cd "$guard_repo" && source tools/lib_old_queue.sh && old_queue_edits pr-old main)"
 check_that "the check land-prs.sh runs names the old queue file a branch edited" '[[ "$found" == docs/REVIEW.md ]]'
 
+# ------------------------- update-pr.sh's whitespace check judges the branch, not main ---
+# main carries a trailing-whitespace line in main.txt that the branch never touched: the update
+# must go through. A second branch adds its own trailing whitespace: that one must be refused.
+# lint.sh and check.sh are stubbed to pass so only the whitespace check can decide.
+ws_origin="$work_dir/ws-origin.git"
+ws_repo="$work_dir/ws-repo"
+git init -q --bare -b main "$ws_origin"
+git init -q -b main "$ws_repo"
+ws_git() { git -C "$ws_repo" -c user.name=t -c user.email=t@example.com "$@"; }
+mkdir -p "$ws_repo/tools"
+cp "$root/tools/update-pr.sh" "$root/tools/lib_old_queue.sh" "$root/tools/lib_agent_role.sh" "$ws_repo/tools/"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$ws_repo/tools/lint.sh"
+cp "$ws_repo/tools/lint.sh" "$ws_repo/tools/check.sh"
+chmod +x "$ws_repo/tools/lint.sh" "$ws_repo/tools/check.sh"
+printf 'clean\n' > "$ws_repo/main.txt"
+printf 'clean\n' > "$ws_repo/branch.txt"
+ws_git add -A && ws_git commit -q -m base
+ws_git remote add origin "$ws_origin"
+ws_git branch pr-clean && ws_git branch pr-dirty
+ws_git checkout -q pr-clean
+printf 'fine\n' >> "$ws_repo/branch.txt"
+ws_git commit -q -am "clean branch work"
+ws_git checkout -q pr-dirty
+printf 'trailing   \n' >> "$ws_repo/branch.txt"
+ws_git commit -q -am "branch with its own whitespace error"
+ws_git checkout -q main
+printf 'main brings this   \n' >> "$ws_repo/main.txt"
+ws_git commit -q -am "main with its own whitespace error"
+ws_git push -q origin main pr-clean pr-dirty 2>/dev/null
+ws_git checkout -q pr-clean
+out="$(cd "$ws_repo" && GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.com GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.com ./tools/update-pr.sh pr-clean 2>&1)"
+status=$?
+check_that "update-pr.sh does not blame a branch for whitespace main already carries" \
+    '[[ $status -eq 0 && "$out" == *"committed"* ]]'
+ws_git checkout -q pr-dirty
+out="$(cd "$ws_repo" && GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.com GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.com ./tools/update-pr.sh pr-dirty 2>&1)"
+status=$?
+check_that "update-pr.sh refuses a branch that adds its own whitespace error" \
+    '[[ $status -ne 0 && "$out" == *"branch.txt"* && "$out" == *"git diff --cached --check"* ]]'
+
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is
 # undocumented the way audit-pck.sh, export-web.sh, release.sh, serve-web.sh and stats.sh used to
