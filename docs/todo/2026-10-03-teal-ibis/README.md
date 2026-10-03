@@ -11,6 +11,7 @@ safeguards.
 
 The measured disk-space preflights and the browser scratch cleanup are built
 ([their record](../../decisions/2026-10-03-teal-ibis-2.md)). This entry holds what is left:
-`tools/trailer.sh` checks its headroom like the other capture tools (`headroom.md`).
+`tools/trailer.sh` checks its headroom like the other capture tools (`headroom.md`), and the
+Web-template build's scratch outside its work directory is found (`browser-build-scratch.md`).
 
-**Proposed, not asked for:** retain the urgent band for this remaining safeguard.
+**Proposed, not asked for:** retain the urgent band for these remaining safeguards.
