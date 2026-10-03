@@ -995,8 +995,14 @@ write_guard_decision() {
 }
 
 # $1 label  $2 expected ("deny" or "allow")  $3 command  $4 tool name (Bash when omitted)
+# More than four arguments is a broken case, not extra ones to ignore: a missing newline after a
+# command's closing quote runs the next case's words into this one, and the next case never runs.
 assert_write_guard() {
     checks=$((checks + 1))
+    if [ "$#" -gt 4 ]; then
+        fail "$1: $# arguments, at most 4 (a missing line break after the command?)"
+        return
+    fi
     local got
     got="$(write_guard_decision "$3" "${4:-Bash}")"
     if [ "$got" = "$2" ]; then
@@ -1376,7 +1382,8 @@ assert_write_guard "wrapped PATCH repos/\$R/pulls/5 -> allow, not an issue" allo
 assert_write_guard "wrapped repos/\$(...)/issues/423 with -X PATCH after the endpoint -> deny" deny \
     "$orch gh api \"repos/\$(gh repo view --json nameWithOwner -q .nameWithOwner)/issues/423\" -X PATCH -f state=closed"
 assert_write_guard "wrapped comment POST to repos/\$(...)/issues/429/comments -> allow" allow \
-    "$orch gh api \"repos/\$(gh repo view --json nameWithOwner -q .nameWithOwner)/issues/429/comments\" -F body=@c.md"assert_write_guard "wrapped GraphQL closeIssue -> deny" deny \
+    "$orch gh api \"repos/\$(gh repo view --json nameWithOwner -q .nameWithOwner)/issues/429/comments\" -F body=@c.md"
+assert_write_guard "wrapped GraphQL closeIssue -> deny" deny \
     "$orch gh api graphql -f query='mutation { closeIssue(input: {issueId: \"x\"}) { clientMutationId } }'"
 assert_write_guard "wrapped GraphQL addLabelsToLabelable -> deny" deny \
     "$orch gh api graphql -f query='mutation { addLabelsToLabelable(input: {labelableId: \"x\", labelIds: [\"y\"]}) { clientMutationId } }'"
