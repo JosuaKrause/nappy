@@ -1,5 +1,14 @@
 # Saved scene screenshots
 
+The accepted whole-city view is `recipe-city-active/trailer-city.png`, source `a23858a4`.
+At captured physics tick 150, the population manifest reports 2,396 production agents,
+348 cars, and 274 moving cars: NW 85, NE 47, SW 87, SE 55. Each quadrant also has moving
+walkers. This recipe explicitly expands the simulation field to the complete map at the
+ordinary field's area density. Its headless assertions pass; the corresponding population
+test independently checks actual displacement in every quadrant. The complete original
+telemetry run is retained inside that output folder. This still establishes whole-city
+framing and distributed subjects; the runtime checks establish their movement.
+
 The `recipe-reviewed-stills/` captures use source `8941448c`, Godot 4.7.2 and the same
 1280×720 Compatibility renderer. Their complete original telemetry runs are retained below
 `telemetry/`. They show the father approaching the gatehouse from its visible front and the
