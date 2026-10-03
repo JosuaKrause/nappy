@@ -1,7 +1,6 @@
 priority: next
 
 # quiet-tapir — Guard remaining dynamic command writes · filed 2026-10-03
-# Guard remaining dynamic command writes
 
 [cozy-alpaca](../../playtests/2026-10-03-cozy-alpaca.md) records the #453 review's
 explicitly separate findings: Python f-string shell commands fuse `f` with `git` in

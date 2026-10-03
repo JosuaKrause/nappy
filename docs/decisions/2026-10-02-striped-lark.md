@@ -57,21 +57,18 @@ tool-name or event change because this change is internal guard classification.
 executed. The two source cases ask against the pre-fix guard and deny against
 the implementation. Regression cases cover xargs argument/file options, nested
 environment and timeout wrappers, quoted scripts, separators, readable commands
-and identity wrappers. The three parallel reproductions each ask in both opt-in
-cloud and unconfigured environments before the correction, producing six failures
-in the expanded suite; all deny afterward. `tools/test_rules_hooks.sh` passes with 2,330 checks and
-zero failures; `tools/test_codex_hooks.py` passes all 57 tests. `tools/check.sh`,
-`tools/lint.sh` and whitespace checks pass. No local full game suite or windowed
+and identity wrappers. The three parallel reproductions ask in both opt-in cloud
+and unconfigured environments before the correction and deny after it.
+`tools/test_rules_hooks.sh`, `tools/test_codex_hooks.py`, `tools/check.sh`,
+`tools/lint.sh` and the whitespace check pass. No local full game suite or windowed
 capture was needed for a development guard change.
 
-The latest expanded regression suite found 238 failures across 2,771 checks against
-the prior implementation, including all six missing-subcommand examples. After the
-fix and punctuation-read regression, all 2,793 checks pass, as do all 57 adapter tests,
-shell syntax, lint and whitespace. Test payloads were never executed as shell writes.
-Main reconciliation ed3acd0 preserved incoming CI costs and the merged recipe design;
-base 6006fa69, prior head cba913ae, incoming main 746e7b3f. Boot checks passed.
+The missing-subcommand cases, all six of the review's examples among them, fail against
+the implementation before them and pass after it, together with the punctuation-read case.
+Test payloads were never executed as shell writes. A merge of `main` into the branch kept
+main's incoming CI costs and saved-scene recipe design.
 
-The independent final review at 790881cc found two remaining in-scope gaps:
+The next independent review found two remaining in-scope gaps:
 [arbitrary lowercase replacement markers](https://github.com/JosuaKrause/nappy/pull/453#discussion_r4171808745)
 can replace a command spelled like a literal read, and
 [ordinary parallel option values](https://github.com/JosuaKrause/nappy/pull/453#discussion_r4171808747)
@@ -91,9 +88,8 @@ generic table keeps the default-marker reading and the wrapper table can consume
 a following marker. This conservative choice, open to correction, avoids allowing
 an unreadable command merely because one interpretation resembles a read.
 
-The expanded regression matrix produces 209 failures against the preceding hook.
-With the correction, all 3,152 hook checks and 57 adapter tests pass; shell syntax,
-lint, whitespace and headless boot pass. The tests cover the exact review cases,
+The expanded regression cases fail against the preceding hook and pass with the
+correction, as do the adapter tests, shell syntax, lint, whitespace and headless boot. The tests cover the exact review cases,
 replacement aliases, read-shaped markers, nested context, punctuation-only values,
 reads, command boundaries and identity exemptions/refusals. All candidate commands
 remain JSON inputs to the hook and are never executed as publishing payloads.
@@ -107,9 +103,14 @@ The review's Python f-string command, dynamically found executable and stdin-loo
 refspec gaps are filed separately as quiet-tapir, remaining dynamic command writes;
 they are pre-existing gaps outside this correction, not claims of covered syntax.
 
+A replacement token inside a quoted script the wrapper runs (`xargs -I{} sh -c 'gh api
+repos/o/r/pulls/{}'`) puts input into shell text, where it can supply a whole command; that is
+the same accepted gap as a command kept in a file the shell runs (`parallel < cmds.txt`), and
+the guard reads such a script's own written words only.
+
 ## Shared option consumption · 2026-10-03
 
-The independent review at 9b57ce74 found that the two option scans still disagreed:
+The independent review after that found that the two option scans still disagreed:
 `xargs -rIstatus` did not mark the read-shaped replacement token, and a consumed
 `-E -Iother` value could be misread as a new replacement option. Parallel options
 `--timeout`, `--retries` and `--results` could also conceal a publishing script's
@@ -130,22 +131,20 @@ optional values are attached-only, while a following non-option remains conserva
 tracked as a possible replacement marker without being consumed. Parallel consumes a
 following optional value. Malformed or ambiguous attached forms remain unreadable.
 
-The 48 new focused hook-JSON cases expose 31 failures at 9b57ce74 and all pass with
-the shared parser. Shell syntax, lint, whitespace and headless boot pass. The first
-full matrix printed 3,582 successful checks and no failed assertion, but exited in its
-footer after the author edited header comments while Bash was reading the file. A
-frozen-copy rerun passes all 3,582 checks with zero failures and exit 0. The adapter run's
-56 other tests pass; its dense-option-chain test had five timing subcase failures while
-the matrix ran concurrently, then passed all six subcases in isolation (10.08 seconds
-for that test). These are recorded as verification conditions, not guard behavior
-failures or a claim that the first whole run exited successfully. The Codex adapter's
-tool names, payloads and decision contract remain unchanged. No publishing payload
-was executed; all examples were JSON inputs to the hooks.
+The new focused hook-JSON cases fail against the preceding hook and pass with the
+shared parser; the full suite, the adapter tests, shell syntax, lint, whitespace and
+headless boot pass. The adapter's dense-option-chain timing test can fail while another
+heavy run shares the machine and passes alone, a condition of the machine rather than of
+the guard. A suite run reads its own file and the hooks as it goes, so it is run on a frozen
+copy when the files may change under it. The Codex adapter's tool names, payloads and
+decision contract remain unchanged. No publishing payload was executed; all examples were
+JSON inputs to the hooks.
 
-## The review at 8aa2e1b8 · 2026-10-03
+## The last reviews · 2026-10-03
 
-claude-reviewer's review of that head and the player's own review comment left findings that
-the same PR fixes.
+[claude-reviewer's review](https://github.com/JosuaKrause/nappy/pull/453#pullrequestreview-5400403480)
+and [the player's own review comment](https://github.com/JosuaKrause/nappy/pull/453#issuecomment-5967903793)
+left findings that the same PR fixes.
 
 **Input can supply a release's own `push`.** `tools/release.sh` tags and publishes only with a
 second `push` argument, and input appends arguments: `echo push | xargs tools/release.sh patch`

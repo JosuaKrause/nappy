@@ -1,10 +1,13 @@
 # Playtest cozy-alpaca — Input-supplied subcommands and parallel wrappers
 
 2026-10-03.
-# Review source
 
-The player asked to revisit #453's comments. The following is the latest review,
-from https://github.com/JosuaKrause/nappy/pull/453#issuecomment-5965444653.
+## Review source
+
+The player posted the following review on #453, at
+https://github.com/JosuaKrause/nappy/pull/453#issuecomment-5965444653. The exact words with
+which the player then asked for it to be addressed are not available in this source record and
+are not quoted.
 
 > ## Review of PR 453 — Deny unreadable pushes supplied through xargs and GNU parallel
 > Head: cba913ae7c5518efe2c01923fdccc29b3c36483e
