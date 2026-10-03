@@ -507,8 +507,8 @@ kept strictly out of anything that touches the meters.
   placement facts and release renderer commands. Shared atlas pages and ground composition stay
   at loading moments. Each off-screen ground region advances at most one renderer quadrant per
   process frame, with distinct regions sharing the soft CPU budget. Each step explicitly
-  flushes TileMap internals; incomplete regions
-  remain separately owned until complete and pause between the load and retention boundaries.
+  flushes TileMap internals; incomplete regions remain separately owned until complete and
+  pause between the load and retention boundaries.
   State edits and leaving retention cancel them, while the safety guard completes them
   synchronously. The camera's transformed viewport determines coverage, including rotation
   and overview; lifecycle relocations prepare their destination before play. A city clock keeps

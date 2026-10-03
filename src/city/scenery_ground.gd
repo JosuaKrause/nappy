@@ -15,6 +15,7 @@ var pending: Dictionary = {}
 var _city: City
 var prepared := 0
 var evicted := 0
+## Synchronous prepare() completion time; ordinary quadrant steps use worst_step_usec.
 var worst_prepare_usec := 0
 var worst_step_usec := 0
 ## One pausable city clock keeps adjacent water chunks in phase, including newly entered ones.

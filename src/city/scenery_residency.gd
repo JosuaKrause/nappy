@@ -8,7 +8,7 @@ extends Node
 ## The 96px emergency guard covers a full 92px facing reversal plus a physics step;
 ## the remaining 160px normally gives about 0.95s to drain bounded preparation work.
 ## The wider retention boundary gives another 1.52s of reversal tolerance. These are visual
-## scheduling distances, not gameplay reach. Native acceptance measures every entered batch.
+## scheduling distances, not gameplay reach.
 const LOAD_MARGIN := 256.0
 const RETAIN_MARGIN := 512.0
 const GUARD_MARGIN := 96.0

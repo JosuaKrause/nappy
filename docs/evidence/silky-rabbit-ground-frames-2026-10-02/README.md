@@ -212,8 +212,11 @@ camera's physics interpolation. Neither contributes to the accepted timing table
 development runs check behavior only. The first optional reversal-mode launch at `2f659122`
 fails on a typed-array assignment before taking measurements and is excluded. Browser/phone
 perception, GPU timing and performance with the complete game's competing work remain outside
-these native results. The old synchronous `scenery_residency_acceptance.gd` probe requires its
-documented historical revision; it cannot advance the current process-frame-gated scheduler.
+these native results. The current tree contains no synchronous
+`scenery_residency_acceptance.gd` probe: its archived original must run at the revision
+documented in [M159 implementation acceptance](../m159-lazy-scenery-implementation-2026-09-30/README.md).
+That synchronous loop cannot advance the process-frame-gated scheduler. Current validation
+uses the real-process-frame `ground_frames.gd` and `ground_frames_matched.gd` probes.
 
 ## Reproduction
 
