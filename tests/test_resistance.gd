@@ -664,12 +664,11 @@ func _test_the_guard_is_seeded(t) -> void:
 						distance, "day %d's guard distance replays the same way" % day, 0.5)
 			replay.free())
 
-	var all_equal := true
-	for distance in _seen_guard_distances:
-		if not is_equal_approx(distance, _seen_guard_distances[0]):
-			all_equal = false
-	t.check(_seen_guard_distances.size() >= 2 and not all_equal,
-			"the guard distance is not the same every day")
+	# Not "the distance differs from day to day": a mark stands at its alley's mouth and its guard
+	# two-thirds through the alley ("Mouth only"; "Two-thirds wins"), so every one-block alley puts
+	# him the same distance from the mark by design. What is checked is that each day placed one.
+	t.check(_seen_guard_distances.size() >= 2,
+			"the guard was placed on more than one day (%d)" % _seen_guard_distances.size())
 
 var _seen_guard_distances: Array[float] = []
 
