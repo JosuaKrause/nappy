@@ -133,9 +133,9 @@
 # body of a heredoc with a quoted delimiter such a command reads (`cat > brief.md <<'EOF'`), or
 # with an unquoted one whose body holds no `$(`, backtick or `${` and no line ending in a
 # backslash, since the shell runs a command substitution in an unquoted heredoc's body, after
-# joining each backslash-newline in it -- in either case only where nothing before that command
-# opens a group (`{`, `(`, `$(`, `do`, `then`, `case`, `coproc`, ...) that could close after the
-# body and hand its output to a shell (`} | bash`). Each word
+# joining each backslash-newline in it. Both hold only where nothing before that command opens a
+# group (`{`, `(`, `$(`, `do`, `then`, `case`, `coproc`, ...) that could close after the text and
+# hand its output to a shell (`{ true; echo "..."; } | bash`). Each word
 # still remembers which shell word it came from, and which quoted word inside a quoted script, so
 # an option's argument is skipped whole however it is quoted, escaped or joined by a comma: `git
 # -C "/x y" push`, `git -c 'a=b c' push`, `FOO="a b" tools/release.sh patch push` and `bash -c 'git
@@ -1333,9 +1333,15 @@ def strip_heredocs:
 # command. Such a word never starts a git, gh, wrapper or pushing-script reading. Read only when
 # the reading is sure, since only then are the quotes where the pass says they are. A command
 # followed by a `(` is not text-only here either, since `tee >(bash)` hands what it writes to a
-# shell.
+# shell. Nor is any command after the first unquoted word that opens a group (`(`, a backtick,
+# `{`, `do`, `then`, `else`, `elif`, `case`, `coproc`, `alias`, `function`): the group may close
+# after it and hand its output to a shell (`{ true; echo "..."; } | bash`, `do` then `done | sh`),
+# which this table, reading one command at a time, cannot see; the same rule as a heredoc's
+# (`opens_a_group`).
+def group_word: IN("(", "`", "{", "do", "then", "else", "elif", "case", "coproc", "alias", "function");
 def inert_table($w; $quoted):
   ($w | length) as $n
+  | (first(range(0; $n) | select(($quoted[.] | not) and ($w[.] | group_word))) // $n) as $opened
   | ([range(0; $n) | select($w[.] | is_hard_sep)]) as $hs
   | ([-1] + $hs) as $before
   | ($hs + [$n]) as $ends
@@ -1344,7 +1350,7 @@ def inert_table($w; $quoted):
         before: (if $before[$k] < 0 then null else $w[$before[$k]] end),
         after: (if $ends[$k] >= $n then null else $w[$ends[$k]] end)}
      | .empty = (.s >= .e)
-     | .base = ((.before | IN(null, ";", "&", "|", "\n", ")")) and .after != "("
+     | .base = ((.before | IN(null, ";", "&", "|", "\n", ")")) and .after != "(" and .s <= $opened
                 and text_only_at($w; .s; .e))] as $segs
   | ([foreach range(($segs | length) - 1; -1; -1) as $k ({next_ok: true, me: false};
        ($segs[$k]) as $sg

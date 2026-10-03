@@ -1444,6 +1444,36 @@ assert_write_guard "grep with a quoted pattern holding ; git push, then an unquo
     'grep x "a; git push"; git push'
 assert_write_guard "echo of a quoted git push piped into bash -> deny, the text is handed to a shell" deny \
     'echo "git push" | bash'
+# A quoted argument inside a group opened before it -- on an earlier line or on its own -- reaches
+# wherever the group's output goes, which is read only after it: such a word is never text.
+assert_write_guard "{ then echo of a quoted forced push, then } | bash -> deny" deny '{
+echo "git push --force origin main"
+} | bash'
+assert_write_guard "( then echo of a quoted forced push, then ) | bash -> deny" deny '(
+echo "git push --force origin main"
+) | bash'
+assert_write_guard "a for loop's do, echo of a quoted forced push, done | bash -> deny" deny 'for x in 1; do
+echo "git push --force origin main"
+done | bash'
+assert_write_guard "bash <( then echo of a quoted forced push, then ) -> deny" deny 'bash <(
+echo "git push --force origin main"
+)'
+assert_write_guard "a function echoing a quoted issue close, piped into bash -> deny" deny 'f() {
+echo "gh issue close 423"
+}
+f | bash'
+assert_write_guard "coproc bash, then echo of a quoted forced push >&p (zsh) -> deny" deny 'coproc bash
+echo "git push --force origin main" >&p'
+assert_write_guard "{ true; echo of a quoted forced push; } | bash -> deny" deny \
+    '{ true; echo "git push --force origin main"; } | bash'
+assert_write_guard "(true; echo of a quoted forced push) | bash -> deny" deny \
+    '(true; echo "git push --force origin main") | bash'
+assert_write_guard "case x in x) echo of a quoted forced push;; esac | bash -> deny" deny \
+    'case x in x) echo "git push --force origin main";; esac | bash'
+assert_write_guard "two lines of echo naming git push and gh issue close -> allow" allow 'echo "never git push by hand"
+echo "and never gh issue close"'
+assert_write_guard "a \"{\" in a quoted argument before an rg for gh issue close -> allow, no group" allow \
+    'echo "{ and do then" && rg -n "gh issue close" .claude/'
 assert_write_guard "echo of a quoted gh issue close piped into sh with |& -> deny, |& is a pipe" deny \
     'echo "gh issue close 423" |& sh'
 assert_write_guard "echo of a quoted forced push piped into bash with |& -> deny" deny \
