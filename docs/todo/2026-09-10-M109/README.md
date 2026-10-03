@@ -25,3 +25,7 @@ findings supported by the conversion and review.
 The [roof and obstruction correction record](../../decisions/2026-09-10-M109-4.md)
 documents connected vent networks and the restored obstruction SVGs. The remaining
 conversion items include water mains and fallen trees, which still need accepted PNGs.
+
+[Standalone equipment proportions](roof-equipment-scale.md) need a smaller pipe,
+vent and fan scale, a larger access room matched to a regular door, and an unchanged
+water tank.
