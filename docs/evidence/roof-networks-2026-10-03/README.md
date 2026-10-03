@@ -1,0 +1,47 @@
+# Connected vent networks in engine context
+
+`roof-networks.png` is an early Godot 4.7.2 engine still, 1280×720 at native 1× scale.
+The six building lots are manually arranged, as the visible caption says. Their roof furniture
+and networks use ordinary seeded Building placement, variants 0 through 5, without seed search.
+Runtime roof, facade, sidewalk and road textures supply context. This demonstrates appearance
+and topology variation, not ordinary city distribution, motion, collision or player occlusion.
+No invincibility is used; the review scene carries `--no-save` and has no gameplay save owner.
+
+## Sources and assembly
+
+No new raster art is painted or generated. The accepted source is
+`art/illustrated/roof-equipment/duct_run.png`, SHA-256
+`fbee2fcb5032e2f1be394bd3ac85c407348634676105ea2b052c397441f067af`.
+Its exact generator prompt, raw output and deterministic native registration remain in
+[the roof-family recipe](../roof-obstruction-pngs-2026-09-30/GENERATION.md).
+
+`Building.RoofObject._draw_duct()` reads two rectangles from that native 64×64 texture:
+horizontal mounted span `(18,44,24,20)` and vertical span `(53,26,10,16)`.
+They retain the approved galvanized material, ink and attached horizontal supports. The existing
+rectangles are cropped and scaled along each occupied cell's connected axes; vertical spans draw
+first and horizontal spans cover their junction. No rotation introduces visible away-facing mouths.
+The same source remains in both atlas bake modes. The joined appearance remains open to review.
+
+The topology grows a seeded tree inside `roof_interior_cells()`, including eligible extensions.
+Each added cell touches exactly one prior cell. Its size is drawn from three cells up to one less
+than the existing roof furniture budget; a smaller budget retains ordinary compact furniture.
+Reservations exclude all other equipment. These length and branching choices are implementation
+choices open to correction, not a separate player-approved topology rule.
+
+## Reproduce
+
+Fetch `refs/pull/441/head` before checking out the evidence commit if working from a fresh clone.
+Use a fresh checkout so the output cannot overwrite retained evidence. Run `./tools/check.sh`, then:
+
+```sh
+"${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}" --path . --resolution 1280x720 \
+  --disable-vsync scenes/dev/roof_network_preview.tscn -- --no-save
+```
+
+The scene exits after writing this still. The original capture uses the identical layout through
+the roof-family preview scene; the network rig is split into its own file to preserve that older
+family scene's reproduction command. Only unused family constants and comments differ.
+
+Still SHA-256: `24739d13336f5a67a928df4413860ab234989b79c1770f7afcad44e1e1345e8e`.
+Capture Building source SHA-256:
+`e1a018490a6a7e52b8617cedb229d6877b1c628b1691be2a1d71e26813102821`.
