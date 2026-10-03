@@ -287,6 +287,12 @@ rig_kill_after_movie_seconds() {
 WAIT_OR_KILL_STATUS=0
 wait_or_kill() {
     local pid="$1" limit="$2"
+    # `read -t` takes whole seconds only (bash 3.2 rejects `1.5`, and a rejected read would kill a
+    # healthy process at once), so anything else is refused here.
+    if [[ ! "$limit" =~ ^[0-9]+$ ]]; then
+        echo "wait_or_kill: limit must be whole seconds, got '$limit'" >&2
+        return 2
+    fi
     local marker
     # `-u`: print a unique name without creating the file. `mktemp` alone *creates* it as part of
     # naming it, which would make the `-f` check below true from this line on regardless of
@@ -304,25 +310,30 @@ wait_or_kill() {
     # only when the read timed out. The caller holds the FIFO open read-write (fd 9) until the
     # watchdog has been reaped, so a line written before the watchdog opened it is not lost, and a
     # watchdog that already timed out leaves no writer blocked.
+    # A call interrupted inside `wait` leaves its FIFO in $TMPDIR: a trap to remove it would have to
+    # replace the caller's own INT/TERM/EXIT traps from inside a sourced function, so there is none.
     local fifo
     fifo="$(mktemp -u)"
     mkfifo "$fifo"
-    exec 9<>"$fifo"
-    (
-        # A timed-out `read` returns above 128; a released one returns 0.
-        if ! read -r -t "$limit" <>"$fifo" && kill -0 "$pid" 2>/dev/null; then
-            kill -9 "$pid" 2>/dev/null
-            : > "$marker"
-        fi
-    ) &
-    local watchdog=$!
-    wait "$pid" 2>/dev/null
-    WAIT_OR_KILL_STATUS=$?
-    # Release the watchdog: the process exited on its own (or this already is the second half of a
-    # race it has won, and the line is simply never read).
-    echo >&9
-    wait "$watchdog" 2>/dev/null
-    exec 9>&-
+    # The brace group's `9<>` is scoped to it: the caller's own fd 9, if it has one, is back as it
+    # was afterwards.
+    {
+        (
+            # Any failed `read` kills: a timeout (1 on bash 3.2, above 128 on bash 4+) or an error
+            # such as an unusable FIFO. A released one returns 0.
+            if ! read -r -t "$limit" <&9 && kill -0 "$pid" 2>/dev/null; then
+                kill -9 "$pid" 2>/dev/null
+                : > "$marker"
+            fi
+        ) &
+        local watchdog=$!
+        wait "$pid" 2>/dev/null
+        WAIT_OR_KILL_STATUS=$?
+        # Release the watchdog: the process exited on its own (or this already is the second half
+        # of a race it has won, and the line is simply never read).
+        echo >&9
+        wait "$watchdog" 2>/dev/null
+    } 9<>"$fifo"
     rm -f "$fifo"
     if [[ -f "$marker" ]]; then
         rm -f "$marker"

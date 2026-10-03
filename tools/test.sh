@@ -176,17 +176,28 @@ run_one_process() {
 		# TERM first, then KILL after a short grace period for a process that is not merely slow
 		# but genuinely will not respond -- SIGTERM's default disposition ends a hung process too
 		# in every case that matters here, but the escalation costs nothing when it is not needed.
-		(
-			sleep "$RUN_TIMEOUT_S"
-			kill -TERM "$godot_pid" 2>/dev/null
-			sleep 5
-			kill -KILL "$godot_pid" 2>/dev/null
-		) &
-		local watchdog_pid=$!
-		wait "$godot_pid"
-		status=$?
-		kill "$watchdog_pid" 2>/dev/null
-		wait "$watchdog_pid" 2>/dev/null
+		#
+		# **The watchdog is a timed `read` on a FIFO, not a `sleep`**, for the reason that
+		# `wait_or_kill` in tools/lib_dev_flags.sh gives: a `sleep` outlives a `kill` of the
+		# watchdog's subshell and keeps the caller's stdout/stderr open for the whole timeout. A
+		# line written to the FIFO releases the watchdog, in either of its two waits.
+		local fifo
+		fifo="$(mktemp -u)"
+		mkfifo "$fifo"
+		{
+			(
+				if ! read -r -t "$RUN_TIMEOUT_S" <&9; then
+					kill -TERM "$godot_pid" 2>/dev/null
+					read -r -t 5 <&9 || kill -KILL "$godot_pid" 2>/dev/null
+				fi
+			) &
+			local watchdog_pid=$!
+			wait "$godot_pid"
+			status=$?
+			echo >&9
+			wait "$watchdog_pid" 2>/dev/null
+		} 9<>"$fifo"
+		rm -f "$fifo"
 		# Godot's own exit closes the pipe the process substitution reads, so the `tee` on the
 		# other end of it is already finishing -- this just lets it actually finish flushing
 		# before the grep below reads the file it was writing.

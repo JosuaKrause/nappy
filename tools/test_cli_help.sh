@@ -563,6 +563,24 @@ wok_elapsed=$(( SECONDS - wok_started ))
 check_that "wait_or_kill returns at once for a process that exited, with no watchdog holding the pipe" \
     '[[ "$wok_out" == "returned 0 status 0" && $wok_elapsed -lt 5 ]]'
 
+# A limit that is not whole seconds is refused, never turned into an instant kill, and the
+# caller's own fd 9 is the same file after a call as before it.
+wok_fd_file="$work_dir/wok-fd9"
+wok_out="$(
+    # shellcheck source=tools/lib_dev_flags.sh
+    source "$root/tools/lib_dev_flags.sh"
+    exec 9>"$wok_fd_file"
+    sleep 0.2 &
+    wait_or_kill "$!" 1.5 2>&1
+    echo "rc $?"
+    sleep 0.2 &
+    wait_or_kill "$!" 5
+    echo "after" >&9
+    echo "fd9 ok"
+)"
+check_that "wait_or_kill refuses a limit that is not whole seconds and leaves the caller's fd 9 alone" \
+    '[[ "$wok_out" == *"limit must be whole seconds"*"rc 2"*"fd9 ok" && "$(cat "$wok_fd_file")" == "after" ]]'
+
 # ------------------------------------------------ audit-pck.sh reads the artefact, not the tree ---
 # A minimal format-4 pack keeps this regression independent of Godot and export templates while
 # exercising the same directory and file bytes a real export exposes. The dirty fixture carries
