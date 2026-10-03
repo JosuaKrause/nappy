@@ -13,7 +13,7 @@ false; the separate headless manifest proves that the complete scripted action p
 | `trailer-choice` | `052fb4c1` | A populated alternate street after the mother's wrong-way approach and backtrack; selected restaurant guests are one block east. |
 | `trailer-blower` | `177191c8` | The father and selected leaf blower beside an industrial facade with manually placed existing duct, HVAC and vent fixtures. |
 | `trailer-dog`, `trailer-title`, `trailer-gatehouse` | `052fb4c1` | Charging dog beside a skylight roof, park-side title, and father approaching horizontally toward the existing vertical gate. |
-| `trailer-trucks` | `b148986e` | Three army trucks beside the south-facing mother with varied posters on both buildings; barrier revision pending. |
+| `trailer-trucks` | `9768f6de` | Three army trucks beside the south-facing mother, varied posters, and the existing vertical roadblock at the left street mouth. |
 | `trailer-chase` | `052fb4c1` | A visible carrying stride beside a pursuing guard. |
 | `trailer-city` | `052fb4c1` | The complete active city after zooming out from the mother's doorstep. |
 
@@ -29,6 +29,10 @@ the single selected leaf blower at capture tick 15. The source checkout has only
 queue/playtest documentation edits during capture; runtime and recipe sources match the named
 revision. The capture uses no invincibility. The industrial roof and north-side approach are
 composition choices for review.
+
+The truck capture uses the runtime and west-mouth recipe committed in `9768f6de`; that edit
+was uncommitted during capture. Its recipe hash and full action are retained in the manifests.
+All revised captures use ordinary vulnerability and no invincibility flag.
 
 The revised scenes use production crowd counts and only explicitly selected events and structures.
 The normal event scheduler and seal selection do not add unrequested objects.

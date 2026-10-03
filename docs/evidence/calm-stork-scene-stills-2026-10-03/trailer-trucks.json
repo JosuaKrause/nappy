@@ -69,17 +69,15 @@
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"final_activity": {
-		"moving_crowd": 11,
+		"moving_crowd": 13,
 		"visible_cars": 2,
 		"visible_events": {
-			"barricade": 2,
-			"construction": 1,
-			"delivery_van": 3,
-			"leaf_blower": 1,
 			"military_convoy": 2,
 			"roadblock": 3
 		},
-		"visible_walkers": 9
+		"visible_walkers": 11,
+		"walkers_left": 3,
+		"walkers_right": 8
 	},
 	"final_actors": {
 		"player": {
@@ -133,10 +131,10 @@
 			},
 			"nw": {
 				"cars": 12,
-				"moving": 54,
+				"moving": 56,
 				"moving_cars": 7,
-				"total": 59,
-				"walkers": 47
+				"total": 61,
+				"walkers": 49
 			},
 			"se": {
 				"cars": 0,
@@ -147,10 +145,10 @@
 			},
 			"sw": {
 				"cars": 4,
-				"moving": 26,
+				"moving": 24,
 				"moving_cars": 4,
-				"total": 26,
-				"walkers": 22
+				"total": 24,
+				"walkers": 20
 			}
 		},
 		"scope": "local",
@@ -161,7 +159,9 @@
 		"moving_crowd": 0,
 		"visible_cars": 0,
 		"visible_events": {},
-		"visible_walkers": 0
+		"visible_walkers": 0,
+		"walkers_left": 0,
+		"walkers_right": 0
 	},
 	"initial_actors": {
 		"player": {
@@ -215,10 +215,10 @@
 			},
 			"nw": {
 				"cars": 13,
-				"moving": 60,
+				"moving": 61,
 				"moving_cars": 13,
-				"total": 60,
-				"walkers": 47
+				"total": 61,
+				"walkers": 48
 			},
 			"se": {
 				"cars": 0,
@@ -229,16 +229,51 @@
 			},
 			"sw": {
 				"cars": 3,
-				"moving": 26,
+				"moving": 25,
 				"moving_cars": 3,
-				"total": 26,
-				"walkers": 23
+				"total": 25,
+				"walkers": 22
 			}
 		},
 		"scope": "local",
 		"total": 86,
 		"walkers": 70
 	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				1552.0,
+				2272.0
+			],
+			"row": "roadblock"
+		},
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				1552.0,
+				2336.0
+			],
+			"row": "roadblock"
+		},
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				1552.0,
+				2400.0
+			],
+			"row": "roadblock"
+		}
+	],
 	"observations": [
 		{
 			"condition": "moving",
@@ -394,14 +429,23 @@
 	"physics_ticks_per_second": 30,
 	"playback_complete": true,
 	"recipe": "Army trucks driving beside the mother",
-	"recipe_sha256": "88ff00cd13e292588e903059536f7bf454e4b15adb08473d883291a353d8077a",
+	"recipe_sha256": "a49cfce8de542d850bf06c481bb6a2923a33bd6d8bdde29641141e1dce622069",
 	"scope": "full",
 	"seed": 11,
 	"setup": {
 		"background": {
-			"crowd": true,
-			"events": true
+			"crowd": true
 		},
+		"barriers": [
+			{
+				"end": "a",
+				"segment": [
+					3.0,
+					5.0,
+					0.0
+				]
+			}
+		],
 		"column": {
 			"at": [
 				1904.0,
