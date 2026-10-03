@@ -1,0 +1,29 @@
+{
+  "baseline_commit": "6006fa6999a786640851f867b08e8e5d82876d8a",
+  "worktree": "/private/tmp/nappy-ci-baseline-6006fa69",
+  "procedure": {
+    "setup": "Run tools/check.sh once in the clean detached worktree to complete atlas generation and Godot import before capturing plans.",
+    "capture": "For each N from 4 through 8, run TEST_SHARDS=N ./tools/test.sh --plan and capture stdout and stderr.",
+    "validation": "Reject ERROR:, SCRIPT ERROR, Parse Error, and Failed to open output; compare the planned suite names with all tests/test_*.gd files; reject missing or duplicate suites."
+  },
+  "rejected_initial_capture": {
+    "reason": "The first plan capture also performed initial atlas and Godot setup, so its output contained log-file failures and class-registry parse errors before the import completed. It is not accepted as clean verification evidence.",
+    "assignment_only_sha256": "38fc8c85a14f2e9c858f205f653e0ca035569b1c676ae4c941f17abfa8e58e2d"
+  },
+  "clean_plans": [
+    {"shards": 4, "sha256": "1444cfaa480be74c2a91469d8e1d53aa302aad72e430f5b2bec325e893d91b1a", "suite_count": 102, "each_suite_once": true, "engine_errors": false},
+    {"shards": 5, "sha256": "699536a81433360fef3ede4fc9fa43f526ab076853e1d79d334781f4448d3f40", "suite_count": 102, "each_suite_once": true, "engine_errors": false},
+    {"shards": 6, "sha256": "abd03e80328bf14927b1b8171782a05358c8f68ffd1e455c9ed4349ddbc9ef37", "suite_count": 102, "each_suite_once": true, "engine_errors": false},
+    {"shards": 7, "sha256": "6dcac85b50a75bf1e6d67442b6ac9f89b870fe585bd5922b18d2d79e452dd562", "suite_count": 102, "each_suite_once": true, "engine_errors": false},
+    {"shards": 8, "sha256": "18cc20b6b9c51bb183d1be15b6caea4a6328f6e980a5672a11ff19ef1687c2c4", "suite_count": 102, "each_suite_once": true, "engine_errors": false}
+  ],
+  "assignment_comparison": {
+    "clean_baseline_assignment_only_sha256": "38fc8c85a14f2e9c858f205f653e0ca035569b1c676ae4c941f17abfa8e58e2d",
+    "same_as_rejected_capture_assignment": true,
+    "result_changed": false,
+    "old_reweighted_maximum_milliseconds": 381967,
+    "refreshed_maximum_milliseconds": 312057,
+    "critical_path_reduction_milliseconds": 69910,
+    "critical_path_reduction_percent": 18.3
+  }
+}
