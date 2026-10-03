@@ -184,6 +184,9 @@ var _reach_blocked: Dictionary
 ## `_reach_grid.flood()`'s own answer for `_reach_blocked`, from the home block — kept so
 ## `reaches()` never has to recompute the dirty-cell set flood() already built.
 var _reach_reached: Dictionary
+## Every alley mouth of `_mouths_of` (`_alley_mouths()`), built the first time a mark asks.
+var _mouths: Array[Vector2i] = []
+var _mouths_of: CityMap
 
 func setup(city: City, map: CityMap) -> void:
 	# The same self-registration `WorldContext` and `Stroller` use, so anything that needs to ask
@@ -855,16 +858,14 @@ func _through_alley_span(at: Vector2) -> Array[Vector2]:
 ## `at` (`THROUGH_THE_ALLEY`), so he is inside the alley rather than at its edge, the player's own
 ## reason. Where that point is `pursues_within + ContactPoint.REACH` (176px) or more from the mark,
 ## a touch of the mark from its own end never wakes him; in an alley too short for both — every
-## one-block alley, whose two-thirds point is at most about 155px past a mark on its end tile — he
-## still stands two-thirds in, and reading the mark may wake him: *"Two-thirds wins"* (inbox #471),
-## which overturns M213's floor of 176px for those alleys.
+## one-block alley: a mark stands on its end tile (`_alley_mouths()`), 16px in, so he stands about
+## 155px from it — he still stands two-thirds in, and reading the mark may wake him: *"Two-thirds
+## wins"* (inbox #471), which overturns M213's floor of 176px for those alleys.
 ##
 ## **Never within `min_distance` of the mark** — `inner_radius`, his catch, plus
-## `ContactPoint.REACH`, 66px: a mark near the middle of a one-block alley has the two-thirds point
-## as little as 37px past it, where a touch would land her inside his catch with no warning at
-## all, so there he stands `min_distance` past the mark instead. That keeps the one floor the
-## player's answer did not take up — waking him, not being caught by reading the mark. Open to
-## overturn.
+## `ContactPoint.REACH`, 66px — kept as a floor that a mark at a mouth never reaches (two-thirds of
+## any alley is far past 66px from its end tile), so it changes nothing for a mark; it holds for any
+## other point a caller asks about.
 ##
 ## Refused, as every guard is, on ground he may not stand on, within `her_refuse_within` of `her`
 ## or on screen: then the nearest acceptable point along the alley's axis, a quarter tile at a time,
@@ -1192,12 +1193,47 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 		return _place_at_a_mast(rng, mark)
 	if step.target_kind == ResistanceSteps.TargetKind.SCAR:
 		return _pick_near(_fronts_a_fire_catches_on(), rng, mark)
+	if step.is_pickup:
+		return _pick_reachable(_alley_mouths(), rng)
 	var candidates: Array[Vector2i] = []
 	for type in step.placement:
 		candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))
-	if step.is_pickup:
-		return _pick_reachable(candidates, rng)
 	return _pick_near(candidates, rng, mark)
+
+## **A chalk mark only ever sits at an alley's mouth**: every tile the dawn draw (`_place()`) and
+## every relocation (`_nearest_alley_within()`) may put a mark on. *(2026-10-04, the player, asked
+## whether a mark may sit in the middle of its alley: "Mouth only".)* A through-alley's mouths are
+## its end tiles along its long axis, both of them across its two-tile width
+## (`CityMap.alley_rects`), so four to an alley; a courtyard passage's is its tile that opens onto
+## ground that is neither alley nor courtyard — the street end. In `CityMap.tiles_of_type()`'s own
+## order, so a seeded draw over them is the same every time. Built once per map and kept.
+func _alley_mouths() -> Array[Vector2i]:
+	if _mouths_of == _map and not _mouths.is_empty():
+		return _mouths
+	_mouths = []
+	_mouths_of = _map
+	for tile in _map.tiles_of_type(GameEnums.TileType.ALLEY):
+		if is_alley_mouth(_map, tile):
+			_mouths.append(tile)
+	return _mouths
+
+## Whether `tile` is an alley's mouth — see `_alley_mouths()`.
+static func is_alley_mouth(map: CityMap, tile: Vector2i) -> bool:
+	if map.tile_at(tile) != GameEnums.TileType.ALLEY:
+		return false
+	for rect in map.alley_rects:
+		if not rect.has_point(tile):
+			continue
+		if rect.size.y >= rect.size.x:
+			return tile.y == rect.position.y or tile.y == rect.end.y - 1
+		return tile.x == rect.position.x or tile.x == rect.end.x - 1
+	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var next := tile + step
+		var type := map.tile_at(next)
+		if type != GameEnums.TileType.ALLEY and type != GameEnums.TileType.COURTYARD \
+				and map.is_walkable(next):
+			return true
+	return false
 
 ## How far from the mark she read a task may be placed: **the mark's own block or the next one**,
 ## measured as a straight line from the mark — one block and the street beside it
@@ -1911,8 +1947,8 @@ func _track_sight_and_reposition(delta: float) -> void:
 		return
 	_move_the_mark(nearest)
 
-## The nearest `ALLEY` tile to `here` — a through-alley's or a courtyard passage's — that is not
-## closed, is walkable, and is not held, on the home block, inside a walled-off crossing alley,
+## The nearest alley mouth to `here` (`_alley_mouths()`), a through-alley's or a courtyard
+## passage's, that is not closed, is walkable, and is not held, on the home block, inside a walled-off crossing alley,
 ## standing on a solid event body, or sealed off from home by the day's whole obstruction (see
 ## `_pick_reachable`'s own doc — the relocation is the same placement question as the initial
 ## roll, asked again, and the same refusal has to hold or a mark could relocate into a sealed
@@ -1958,7 +1994,7 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 	var nearest_distance := NOTICE_RADIUS
 	var nearest_any := Vector2.INF
 	var nearest_any_distance := NOTICE_RADIUS
-	for tile in _map.tiles_of_type(GameEnums.TileType.ALLEY):
+	for tile in _alley_mouths():
 		var world := _map.tile_to_world(tile)
 		var distance := here.distance_to(world)
 		var unused := tile not in used

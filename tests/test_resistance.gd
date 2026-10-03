@@ -42,6 +42,7 @@ func run(t) -> void:
 	_test_a_relocation_never_retires_a_guard_in_view_or_awake(t)
 	_test_the_guard_never_lands_inside_a_building(t)
 	_test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t)
+	_test_a_mark_only_ever_sits_at_an_alley_mouth(t)
 	_test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t)
 	_test_a_long_alleys_robber_stands_two_thirds_in_past_his_trigger(t)
 	_test_reading_a_mark_never_lands_her_in_his_catch(t)
@@ -1193,6 +1194,69 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 	t.check(guard_at == Vector2.INF,
 			"a band with no walkable ground anywhere in it draws no guard at all")
 	director.free()
+
+## feathery-marmot, "a mark only ever sits at an alley's mouth" — *"Mouth only"* (the player,
+## 2026-10-04, asked whether a mark may sit in the middle of its alley). Over six cities, forty dawn
+## draws each (`_place()`, the call `start_day()` makes) and a relocation asked from every
+## twentieth alley tile and from a point 300px off it in four directions (`_nearest_alley_within()`,
+## the call every move makes): every mark lands on a mouth, found here independently of the
+## director — a through-alley's end tile along its long axis, or a passage tile beside ground that
+## is neither alley nor courtyard. Before, the dawn draw was uniform over every alley tile, an end
+## tile one draw in four, and a relocation took the nearest alley tile of any kind.
+func _test_a_mark_only_ever_sits_at_an_alley_mouth(t) -> void:
+	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+	GameState.completed_resistance_alley_tiles = []
+	var mark_step := ResistanceSteps.by_index(1)
+	var drawn := 0
+	var drawn_at_a_mouth := 0
+	var moved := 0
+	var moved_to_a_mouth := 0
+	for seed_value in [4242, 90210, 2295276695, 314159, 271828, 555555]:
+		var map := CityGenerator.generate(seed_value)
+		var director := ResistanceDirector.new()
+		director.setup(null, map)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("mark-mouth:%d" % seed_value)
+		for _draw in 40:
+			var at := director._place(mark_step, rng)
+			if at == Vector2.INF:
+				continue
+			drawn += 1
+			if _is_a_mouth(map, map.world_to_tile(at)):
+				drawn_at_a_mouth += 1
+		var alleys := map.tiles_of_type(GameEnums.TileType.ALLEY)
+		for i in range(0, alleys.size(), 20):
+			var origin := map.tile_to_world(alleys[i])
+			for offset: Vector2 in [Vector2.ZERO, Vector2(300, 0), Vector2(-300, 0),
+					Vector2(0, 300), Vector2(0, -300)]:
+				var to := director._nearest_alley_within(origin + offset)
+				if to == Vector2.INF:
+					continue
+				moved += 1
+				if _is_a_mouth(map, map.world_to_tile(to)):
+					moved_to_a_mouth += 1
+		director.free()
+	GameState.completed_resistance_alley_tiles = saved_tiles
+	t.check(drawn > 0 and drawn_at_a_mouth == drawn,
+			"every dawn mark is drawn at an alley's mouth (%d of %d)" % [drawn_at_a_mouth, drawn])
+	t.check(moved > 0 and moved_to_a_mouth == moved,
+			"and every relocation lands on one (%d of %d)" % [moved_to_a_mouth, moved])
+
+## An alley's mouth, worked out from the map alone: the end tile of a through-alley along its long
+## axis, or a courtyard passage's tile beside walkable ground that is neither alley nor courtyard.
+static func _is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
+	for rect in map.alley_rects:
+		if rect.has_point(tile):
+			var vertical := rect.size.y >= rect.size.x
+			var along := tile.y - rect.position.y if vertical else tile.x - rect.position.x
+			var length := rect.size.y if vertical else rect.size.x
+			return along == 0 or along == length - 1
+	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var type := map.tile_at(tile + step)
+		if map.is_walkable(tile + step) and type != GameEnums.TileType.ALLEY \
+				and type != GameEnums.TileType.COURTYARD:
+			return true
+	return false
 
 ## feathery-marmot, "the robber stands two-thirds through the alley" — *"the robber should be
 ## 2/3rds through the alley not pressed against the edge of it"* (minty-hedgehog, statement 3) and,
