@@ -1060,8 +1060,9 @@ def is_issue_write($reason):
 # with any noun but `alias` or `extension`, whose arguments can be shell commands, and a Python
 # launcher (`uv run python`, `python3`, `.venv/bin/python`) only running `tools/inbox.py`, which
 # posts its standard input as an issue's text. None of them counts with an option that names a
-# program to run (`rg --pre`, `sort --compress-program`). The rest of the command is read as
-# before, so a write after the quoted argument's own `;`, `&&` or newline still denies.
+# program to run (`rg --pre`, `sort --compress-program`), and `printf` does not with `-v`, which
+# stores its text in a variable the shell may then run (`printf -v c "..."; $c`). The rest of the
+# command is read as before, so a write after the quoted argument's own `;`, `&&` or newline still denies.
 def text_only_words: ["echo", "printf", "grep", "egrep", "fgrep", "rg", "cat", "head", "tail", "wc", "sort",
                       "uniq", "tee", "jq", "cut", "tr"];
 def git_text_subcommands: ["commit", "log", "show", "tag", "notes", "diff", "status", "blame", "shortlog"];
@@ -1093,6 +1094,8 @@ def text_only_at($w; $i; $end):
       elif names_a_program($w; $j; $end) then false
       elif $c == "git" then $j + 1 < $end and ((git_text_subcommands | index($w[$j + 1])) != null)
       elif $c == "gh" then $j + 1 < $end and (($w[$j + 1] | IN("alias", "extension", "ext")) | not)
+      # `printf -v name` stores its text in a variable the shell may then run (`$name`).
+      elif $c == "printf" then all(range($j + 1; $end); $w[.] | startswith("-v") | not)
       else (text_only_words | index($c)) != null
       end
     end;

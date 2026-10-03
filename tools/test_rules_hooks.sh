@@ -1470,6 +1470,10 @@ assert_write_guard "(true; echo of a quoted forced push) | bash -> deny" deny \
     '(true; echo "git push --force origin main") | bash'
 assert_write_guard "case x in x) echo of a quoted forced push;; esac | bash -> deny" deny \
     'case x in x) echo "git push --force origin main";; esac | bash'
+assert_write_guard "printf -v c of a quoted forced push, then \$c -> deny, the variable is run" deny \
+    'printf -v c "git push --force origin main"; $c'
+assert_write_guard "printf of a quoted forced push to the terminal -> allow" allow \
+    'printf "%s\n" "never git push --force origin main"'
 assert_write_guard "two lines of echo naming git push and gh issue close -> allow" allow 'echo "never git push by hand"
 echo "and never gh issue close"'
 assert_write_guard "a \"{\" in a quoted argument before an rg for gh issue close -> allow, no group" allow \
