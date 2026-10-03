@@ -140,3 +140,15 @@ for that test). These are recorded as verification conditions, not guard behavio
 failures or a claim that the first whole run exited successfully. The Codex adapter's
 tool names, payloads and decision contract remain unchanged. No publishing payload
 was executed; all examples were JSON inputs to the hooks.
+
+## The review at 8aa2e1b8 · 2026-10-03
+
+claude-reviewer's review of that head and the player's own review comment left findings that
+the same PR fixes.
+
+**Input can supply a release's own `push`.** `tools/release.sh` tags and publishes only with a
+second `push` argument, and input appends arguments: `echo push | xargs tools/release.sh patch`
+runs `tools/release.sh patch push`. Under an active xargs or GNU parallel context the script is
+therefore a write whether or not `push` is written, and it is denied, never asked about. Input can
+only add words, never remove one, so `land-prs.sh` and `update-pr.sh` with a written `--dry-run`
+stay reads.

@@ -70,7 +70,10 @@
 # A push under xargs/gxargs or GNU parallel/env_parallel cannot be read to its end: input can
 # append or replace refspecs, even when the written words name only a branch. A missing git
 # subcommand or gh noun/verb, one not spelled as a plain lowercase word, or one containing the
-# wrapper's active replacement token is unreadable too: input can supply the write itself. These
+# wrapper's active replacement token is unreadable too: input can supply the write itself. So is
+# `tools/release.sh` run by such a wrapper with no written `push` (`echo push | xargs
+# tools/release.sh patch`): input can append the `push` that tags and publishes a release. Input
+# only ever adds words, so `land-prs.sh`/`update-pr.sh` with a written `--dry-run` stay reads. These
 # are denied rather than asked about; the coder identity
 # wrapper's exemption still applies. An unreadable gh noun/verb can merge, so reviewer wrappers
 # cannot exempt it, just as they cannot exempt an unreadable git push.
@@ -1078,6 +1081,8 @@ def detect_tool($w; $t; $i; $cmd_pos):
     ($w[$i] | last_part) as $base
     | if (write_tool_names | index($base)) == null then null
       elif ($t.xargs[$i].unreadable // false) or script_is_write($t; $base; $i + 1)
+           # Input can append release.sh's own `push`; it can never take a `--dry-run` away.
+           or ($base == "release.sh" and ($t.xargs[$i].active // false))
       then {next: ($i + 1), reason: ("tools/" + $base)}
       else null
       end

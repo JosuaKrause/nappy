@@ -106,6 +106,7 @@
 #     of those writes denies
 #   - xargs/gxargs and parallel/env_parallel input makes an unwrapped push or missing/nonliteral
 #     git subcommand or gh noun/verb unreadable; pushing scripts behind their options are guarded;
+#     input can append tools/release.sh's own push, so release.sh under one is a write without it;
 #     a custom replacement token remains unreadable even when it is lowercase or spells a known
 #     read; the wrappers' documented value-taking options do not hide a pushing script; reads,
 #     later separate branch pushes and coder identity wrappers keep their existing behavior
@@ -2034,6 +2035,11 @@ write_guard_never_asked=(
     'gxargs git'
     'env_parallel gh pr'
     'ls | parallel tools/release.sh patch push'
+    'echo push | xargs tools/release.sh patch'
+    'echo "patch push" | xargs tools/release.sh'
+    'echo push | xargs -I{} tools/release.sh patch {}'
+    'echo push | parallel tools/release.sh patch'
+    'parallel tools/release.sh patch'
     'parallel tools/land-prs.sh 3'
     'parallel tools/update-pr.sh 3'
     'parallel tools/prune-merged.sh feature/x'
@@ -2227,7 +2233,6 @@ write_guard_allowed=(
     'gxargs -I REF cat tools/release.sh'
     'parallel --jobs 2 tools/update-pr.sh --dry-run 3'
     'env_parallel -j 2 tools/land-prs.sh --dry-run 3'
-    'parallel tools/release.sh patch'
     'xargs git status; git'
     'env_parallel git status; gh pr'
     'parallel git status'
