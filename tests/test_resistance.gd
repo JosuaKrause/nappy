@@ -2575,12 +2575,15 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t) -> void:
 		# the no-recorded-scar fallback by accident. A flat "the middle sidewalk tile" picked
 		# whichever one that landed to be past 900px from home on a station-reshaped city, which
 		# is what turned this into the fallback path rather than the recorded-scar one it names.
-		var near_sidewalks: Array[Vector2i] = []
-		for tile in _city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		# And on ground day 3's fire can actually catch on (`AT_THE_FRONT`, a building behind it),
+		# since a real scar is only ever recorded there and the arrow below ends on that building.
+		var near_fronts: Array[Vector2i] = []
+		for tile in EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+				_city.map, {}):
 			if _city.map.tile_to_world(tile).distance_to(doorstep) < Tuning.EVENT_STREAM_RADIUS:
-				near_sidewalks.append(tile)
-		t.check(not near_sidewalks.is_empty(), "home has sidewalks within streaming range")
-		var scar_at := _city.map.tile_to_world(near_sidewalks[near_sidewalks.size() / 2])
+				near_fronts.append(tile)
+		t.check(not near_fronts.is_empty(), "home has fronts within streaming range")
+		var scar_at := _city.map.tile_to_world(near_fronts[near_fronts.size() / 2])
 		GameState.scars = [{"id": "burnt_shell", "position": scar_at, "since_day": 3}]
 		# `_find_scar_instance()` reads live instances off `_city.events`, which only exist once
 		# the day's own events have actually been built — `_place_scars()` is what turns the
@@ -2599,9 +2602,30 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t) -> void:
 		# coordinate the scar was recorded at.
 		t.check(director._rider.global_position.distance_to(scar_at) < Tuning.TILE_SIZE,
 				"the one standing at the run's own recorded scar")
+		_check_the_arrow_ends_on_the_burnt_building(t, director)
 
 		director.free()
 		GameState.scars = saved_scars)
+
+## Day 8's red arrow ends on the building the scar burned, not on the shell at the scar: the shell
+## has no body and draws nothing, so its own position is bare sidewalk. *"the building is what
+## needs to be burnt, not an object next to the building"*. The tip's tile is in the lot directly
+## north of the shell (the one `City` draws burnt) and in that lot's bottom row, the front wall.
+func _check_the_arrow_ends_on_the_burnt_building(t, director: ResistanceDirector) -> void:
+	var tip := director.red_arrow_target()
+	t.check(tip != Vector2.INF, "day 8's task earns the red arrow")
+	if tip == Vector2.INF or director._rider == null:
+		return
+	var shell_tile := _city.map.world_to_tile(director._rider.global_position)
+	var tip_tile := _city.map.world_to_tile(tip)
+	var lot := Rect2i()
+	for rect in _city.map.building_rects:
+		if rect.has_point(shell_tile + Vector2i.UP):
+			lot = rect
+	t.check(lot.has_area(), "the shell at %s has a building behind it" % shell_tile)
+	t.check(lot.has_point(tip_tile) and tip_tile.y == lot.end.y - 1,
+			"the arrow's tip %s is on that building's front wall %s, not the sidewalk at %s"
+			% [tip_tile, lot, shell_tile])
 
 ## The smallest honest fallback named in `ResistanceSteps._build()`'s own comment: a run with no
 ## recorded `burnt_shell` scar still offers day 8's task, on an ordinary placement of the same

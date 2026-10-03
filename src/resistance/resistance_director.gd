@@ -1802,13 +1802,28 @@ func pointable_objective() -> Vector2:
 ## (M222, "the red arrow for the van does not end on the van"): a task performed at an event sits
 ## its contact at `_reachable_offset()`'s clearance from the rider, on purpose, so the touch point
 ## stays where she can actually reach it — but that offset is not where the task *is*. Reads
-## `_rider.global_position` when this step has one (the van's drop, the burnt shell) and falls
-## back to `contact_position()` for a bare-point task (a door, a mast's foot, a swing, the last
-## night's front door) or the neighbor, whose own offset is zero and so already agrees with it.
+## `_rider.global_position` when this step has one (the van's drop) and falls back to
+## `contact_position()` for a bare-point task (a door, a mast's foot, a swing, the last night's
+## front door) or the neighbor, whose own offset is zero and so already agrees with it.
+##
+## **Day 8's tip ends on the burnt building, not on its shell** (`_burnt_facade_point()`): the
+## shell has no body and draws nothing, so its own position is bare sidewalk, and *"the building
+## is what needs to be burnt, not an object next to the building"*.
 func red_arrow_target() -> Vector2:
 	var step := current_step()
 	if step == null or step.is_pickup or not step.is_one_place or _contact.is_done:
 		return Vector2.INF
 	if _rider and is_instance_valid(_rider):
+		if step.target_kind == ResistanceSteps.TargetKind.SCAR:
+			return _burnt_facade_point(_rider.global_position)
 		return _rider.global_position
 	return contact_position()
+
+## The point on the burnt building's facade straight behind a `burnt_shell` standing at `shell`:
+## one tile north, which is half a tile to the foot of the wall (the shell stands at the centre of
+## the frontage lane, `EventDef.Pavement.AT_THE_FRONT`) and half a tile up its ground floor. North
+## because that is the building `City._mark_the_burnt_frontage()` turns `BURNT`, the lot holding the
+## tile directly north of the scar; every building's facade faces south, so the tile above the
+## wall's foot is always wall and never roof.
+static func _burnt_facade_point(shell: Vector2) -> Vector2:
+	return shell + Vector2.UP * Tuning.TILE_SIZE
