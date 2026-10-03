@@ -78,15 +78,18 @@
 # the read list is denied even inside `run <role> --`, with a message that points at the script
 # (leafy-finch; bouncy-heron, statement 14: "if it goes through a script it's safe we just need to
 # get it working once -- an agent shouldn't use gh issue directly"). The same goes for an issue
-# written through `gh api`, wrapped or not: a write to `repos/o/r/issues` (a new issue), to
-# `issues/N` (its state, title or body), or to anything under them (its labels, assignees, lock,
-# reactions, `issues/comments/N`), and a GraphQL mutation naming an issue mutation (`createIssue`,
-# `closeIssue`, `updateIssue`, `addLabelsToLabelable`, ...; `issue_endpoint` and
-# `issue_mutation_re`, below). What stays open, wrapped, is a comment: a POST to
-# `issues/N/comments` and GraphQL's `addComment`, which a pull request's own conversation comments
-# share, so neither can tell a comment on a note from one on a pull request. A wrapped GraphQL call
-# whose query is not written inline (`-F query=@file`, `--input`) stays open too, since its
-# mutation cannot be read -- an accepted gap.
+# written through `gh api`, wrapped or not: a write to `repos/o/r/issues` (a new issue, the owner
+# and repository read as anything, `repos/$R/issues` included), to `issues/N` (its state, title
+# or body), or to anything under them (its labels, assignees, lock, reactions,
+# `issues/comments/N`), and a GraphQL mutation naming an issue mutation (`createIssue`,
+# `closeIssue`, `updateIssue`, `addLabelsToLabelable`, ..., written compactly or not, or in a
+# variable the same command sets; `issue_endpoint` and `issue_mutation_re`, below). What stays
+# open, wrapped, is a comment: a POST to `issues/N/comments` and GraphQL's `addComment`, which a
+# pull request's own conversation comments share, so neither can tell a comment on a note from one
+# on a pull request. A wrapped GraphQL call whose query is not on the command line -- read from a
+# file (`-F query=@file`, `--input`) or from a variable an earlier, separate command set -- stays
+# open too, since its mutation cannot be read -- an accepted gap; denying every such call would
+# deny a reviewer's `resolveReviewThread` from a file as well.
 #
 # **A reviewer identity (`claude-reviewer`, `codex-reviewer`) is refused the named push and merge
 # routes, wrapped or not.** Its GitHub App has `contents: write` (a reviewer's own APPROVE needs it to satisfy a
@@ -790,13 +793,18 @@ def detect_git($w; $t; $i; $n):
 # merely names such a path is a false deny, answered by sending it from a file. A GraphQL mutation
 # is one when a word in it names an issue mutation (`issue_mutation_re`): a verb then `Issue`,
 # `Labelable`, `Assignable` or `Lockable` (`createIssue`, `closeIssue`, `updateIssue`,
-# `updateIssueComment`, `addLabelsToLabelable`, `lockLockable`, ...); `addComment`, which comments
-# on a pull request as readily as on an issue, is the GraphQL form of the one REST exception.
+# `updateIssueComment`, `addLabelsToLabelable`, `lockLockable`, ...), wherever it starts inside a
+# word, so a query written with no spaces (`mutation{closeIssue(...)}`) names it too; `addComment`,
+# which comments on a pull request as readily as on an issue, is the GraphQL form of the one REST
+# exception. A query held in a shell expansion (`-f query="$Q"`) is an issue mutation when the
+# same command names one anywhere, which is where such a variable is set
+# (`Q='mutation { closeIssue(...) }'; ... -f query="$Q"`); one set by an earlier, separate command,
+# and one read from a file (`-F query=@file`) or `--input`, cannot be read.
 def issue_endpoint:
   test("(?i)(^|/)repos/.*/issues(/|\\?|$)")
   and (test("(?i)/issues/[^/?]+/comments/?(\\?.*)?$") | not);
 def issue_mutation_re:
-  "^(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert)[A-Za-z]*(Issue|Labelable|Assignable|Lockable)[A-Za-z]*$";
+  "(^|[^A-Za-z])(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert)[A-Za-z]*(Issue|Labelable|Assignable|Lockable)";
 def gh_api_field_flag: IN("-f", "-F", "--raw-field", "--field");
 def gh_api_value_flag: IN("-H", "--header", "--hostname", "-p", "--preview", "-q", "--jq", "-t",
   "--template", "--cache");
@@ -910,6 +918,7 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
   | (($r.method != null) and (($r.method | ascii_downcase) == "get")) as $is_get
   | if ($r.endpoint // "") | test("(?i)(^|/)graphql$") then
       (if $lm >= $start and ($t.li // -1) >= $start then {next: $r.resume, reason: "gh api graphql issue mutation"}
+       elif $r.query_hidden and ($t.li // -1) >= 0 then {next: $r.resume, reason: "gh api graphql issue mutation"}
        elif $lm >= $start then {next: $r.resume, reason: "gh api graphql mutation"}
        elif $r.query_hidden or ($r.query_visible | not)
        then {next: $r.resume, reason: "gh api graphql with a query not written inline"}

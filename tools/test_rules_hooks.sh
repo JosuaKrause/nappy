@@ -1382,6 +1382,26 @@ assert_write_guard "wrapped GraphQL addLabelsToLabelable -> deny" deny \
     "$orch gh api graphql -f query='mutation { addLabelsToLabelable(input: {labelableId: \"x\", labelIds: [\"y\"]}) { clientMutationId } }'"
 assert_write_guard "wrapped GraphQL createIssue under an alias -> deny" deny \
     "$orch gh api graphql -f query='mutation { made: createIssue(input: {repositoryId: \"r\", title: \"t\"}) { issue { number } } }'"
+# A query written with no spaces still names its mutation inside a longer word, and a query held
+# in a variable set in the same command is read where it is set.
+assert_write_guard "wrapped compact GraphQL mutation{closeIssue(...)} -> deny" deny \
+    "$orch gh api graphql -f query='mutation{closeIssue(input:{issueId:\"x\"}){clientMutationId}}'"
+assert_write_guard "wrapped compact GraphQL mutation{deleteIssue(...)} -> deny" deny \
+    "$orch gh api graphql -f query='mutation{deleteIssue(input:{issueId:\"x\"}){clientMutationId}}'"
+assert_write_guard "wrapped compact named mutation Close{closeIssue(...)} -> deny" deny \
+    "$orch gh api graphql -f query='mutation Close{closeIssue(input:{issueId:\"x\"}){clientMutationId}}'"
+assert_write_guard "wrapped compact alias mutation{a:closeIssue(...)} -> deny" deny \
+    "$orch gh api graphql -f query='mutation{a:closeIssue(input:{issueId:\"x\"}){clientMutationId}}'"
+assert_write_guard "Q='mutation { closeIssue ... }', then a wrapped -f query=\"\$Q\" -> deny" deny \
+    "Q='mutation { closeIssue(input: {issueId: \"x\"}) { clientMutationId } }'; $orch gh api graphql -f query=\"\$Q\""
+assert_write_guard "the same with -F query=\"\$Q\" -> deny" deny \
+    "Q='mutation{closeIssue(input:{issueId:\"x\"}){clientMutationId}}'; $orch gh api graphql -F query=\"\$Q\""
+assert_write_guard "wrapped compact GraphQL addComment -> allow, the comment route" allow \
+    "$orch gh api graphql -f query='mutation{addComment(input:{subjectId:\"x\",body:\"y\"}){clientMutationId}}'"
+assert_write_guard "a reviewer's wrapped compact resolveReviewThread -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-reviewer -- gh api graphql -f query='mutation{resolveReviewThread(input:{threadId:\"x\"}){thread{id}}}'"
+assert_write_guard "a reviewer's wrapped resolveReviewThread from a file -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-reviewer -- gh api graphql -F query=@resolve.graphql -F id=PRRT_x"
 assert_write_guard "wrapped gh api comment POST to issues/N/comments -> allow, PR comments share it" allow \
     "$orch gh api repos/JosuaKrause/nappy/issues/429/comments -F body=@/tmp/b.md"
 assert_write_guard "wrapped GraphQL addComment -> allow, the same route" allow \
