@@ -16,6 +16,10 @@ ambiguous". Day 8's brief is "A van took someone from the next street before it 
 mark is "A van is waiting on the sidewalk. Don't come home light." (`src/resistance/resistance_steps.gd`),
 whose "light" can be read as daylight or as carrying nothing.
 
-**Proposed, not asked for:** the new wording, the filer's, offered in the PR for the player to
-change: day 8, "A van took someone from the next street before dawn."; day 7, "A van is waiting on
-the sidewalk. Come home with the parcel."
+**Proposed, not asked for:** day 8's new line, "A van took someone from the next street before
+dawn."
+
+**Open question, for whoever picks this up:** day 7's line. Its task is to collect a package from
+the van and carry it home for the neighbor, so "light" means empty-handed. Proposals, the filer's:
+"A van is waiting on the sidewalk. It has something for you to bring home." or "A van is waiting on
+the sidewalk. Don't come home empty-handed." Ask the player which, or for their own.

@@ -184,3 +184,12 @@ the player's own or an agent's draft the player posted. The player answered:
 > the hook approval that we created doesn't properly tell me what the command is that you're trying to execute. it shows me the hook's code instead
 
 15. **Note #459, "Write guard's approval prompt names the kind of write but not the command", as written above.** → rosy-marmot.
+
+## How an ingestion treats open questions
+
+Said in conversation, after the assistant had held this batch for the wording of day 7's line:
+
+> "If there is an open question in an issue stays open until the task gets picked up. Most of the time there needs to be some exploration etc done. The whole point of the issue ingestion is to get things in to the codebase fast. The questions come later after the ingestion is merged"
+
+**An ingestion files every note as it stands and merges fast; a question a note leaves open is
+written into its queue entry and stays open there until the task is picked up.** → the inbox skill.
