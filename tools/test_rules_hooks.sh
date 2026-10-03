@@ -1464,6 +1464,64 @@ cat <<EOF
 "
 git push
 EOF'
+# The shell's delimiter is the whole word after <<, so a word that goes on past a name (EOF-1,
+# EOF., EOF"X", 'EOF'x) is no operator the guard can read, and a later bare EOF line must not end
+# a body the shell already ended: the command is read as before. So is every line after a << the
+# guard cannot read, an operator or a delimiter split by a backslash-newline, and an operator
+# line that a backslash continues onto the next.
+assert_write_guard "cat <<EOF-1 ended at EOF-1, a forced push, then a bare EOF -> deny" deny 'cat <<EOF-1
+text
+EOF-1
+git push --force origin main
+EOF'
+assert_write_guard "cat <<\\EOF-1 ended at EOF-1, gh issue close, then a bare EOF -> deny" deny 'cat <<\EOF-1
+text
+EOF-1
+gh issue close 423
+EOF'
+assert_write_guard "cat <<EOF\"X\" ended at EOFX, a forced push, then a bare EOF -> deny" deny 'cat <<EOF"X"
+text
+EOFX
+git push --force origin main
+EOF'
+assert_write_guard "cat > note.md <<EOF. ended at EOF., gh issue close, then a bare EOF -> deny" deny 'cat > note.md <<EOF.
+text
+EOF.
+gh issue close 423
+EOF'
+assert_write_guard "cat <<'EOF'x ended at EOFx, a forced push, then a bare EOF -> deny" deny "cat <<'EOF'x
+text
+EOFx
+git push --force origin main
+EOF"
+assert_write_guard "cat <<EOF} ended at EOF}, a forced push, then a bare EOF -> deny" deny 'cat <<EOF}
+text
+EOF}
+git push --force origin main
+EOF'
+assert_write_guard "an unreadable <<EOF-1 whose body holds a readable cat <<'Y' -> deny" deny "cat <<EOF-1
+cat <<'Y'
+EOF-1
+git push --force origin main
+Y"
+assert_write_guard "an operator split by a backslash-newline, then a readable cat <<'Y' -> deny" deny "cat <\\
+<EOF
+cat <<'Y'
+EOF
+git push --force origin main
+Y"
+assert_write_guard "cat <<'EOF' continued by a backslash onto | bash -> deny, the body is piped" deny "cat <<'EOF' \\
+| bash
+git push --force origin main
+EOF"
+assert_write_guard "cat <<EOF>note.md, the word ended by >, prose naming git push -> allow" allow 'cat <<EOF>note.md
+run git push only wrapped
+EOF'
+assert_write_guard "a backslash-continued mkdir, then cat > x.md <<'EOF' naming git push -> allow" allow "mkdir -p /tmp/a \\
+  /tmp/b
+cat > /tmp/a/x.md <<'EOF'
+run git push only wrapped
+EOF"
 assert_write_guard "a wrapped heredoc commit naming git push -> allow, cat only prints it" allow \
     "uv run python tools/agent-identity.py run claude-coder -- git commit -m \"\$(cat <<'EOF'
 Fix the \"can't push\" error; run git push after

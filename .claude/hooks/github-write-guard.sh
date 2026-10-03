@@ -1127,9 +1127,16 @@ def names_run_file($danger):
 
 # The operator's captures: the `-` of `<<-`, then the delimiter in single quotes, in double quotes,
 # the backslash of `\EOF`, and the delimiter itself when it is not in quotes. Any of the three
-# quotings makes the body literal: the shell expands nothing in it.
+# quotings makes the body literal: the shell expands nothing in it. The shell's delimiter is the
+# whole word after `<<`, up to a blank or an operator character, so the pattern matches only where
+# that word ends right after the name: `<<EOF-1`, `<<EOF.`, `<<EOF"X"` and `<<'EOF'x` (whose
+# terminators are `EOF-1`, `EOF.`, `EOFX` and `EOFx`) are no operator it can read.
 def heredoc_op_regex:
-  "(?<!<)<<(?!<)(-?)[ \t]*(?:'([A-Za-z_][A-Za-z0-9_]*)'|\"([A-Za-z_][A-Za-z0-9_]*)\"|(\\\\)?([A-Za-z_][A-Za-z0-9_]*))";
+  "(?<!<)<<(?!<)(-?)[ \t]*(?:'([A-Za-z_][A-Za-z0-9_]*)'|\"([A-Za-z_][A-Za-z0-9_]*)\"|(\\\\)?([A-Za-z_][A-Za-z0-9_]*))(?=[ \t;&|<>()]|$)";
+# Every `<<` that is not part of a `<<<` here-string, readable or not.
+def heredoc_any_regex: "(?<!<)<<(?!<)";
+# Whether a line ends in a backslash that is not itself escaped, which joins the next line to it.
+def ends_continued: test("(^|[^\\\\])(\\\\\\\\)*\\\\$");
 # What the shell runs inside the body of a heredoc whose delimiter is not quoted: a command
 # substitution, `$(...)` or a backtick, and a `${...}` expansion, whose word can hold one.
 def expands_in_body: test("\\$\\(|`|\\$\\{");
@@ -1196,7 +1203,10 @@ def heredoc_check($q; $line; $op):
 # command sees a byte, so `cat <<EOF` around `$(git push)` is a push. Such a body is kept, its
 # operator line put back, and read as before. A heredoc that is kept (fed to `bash`, `python3`,
 # `ssh`, ...) keeps its body and is read as before, unsure; a line with two operators keeps both
-# and ends all stripping after it. Anything unexpected -- a body with no terminator, a `$(...)`
+# and ends all stripping after it, and so does a line holding a `<<` the operator pattern cannot
+# read (`<<EOF-1`, `$((1<<2))`), an operator line a backslash continues onto the next, and a line
+# a backslash continues from the one before when it holds a `<` (`cat <\` then `<EOF`), since the
+# shell's body then starts or ends where this reading cannot follow. Anything unexpected -- a body with no terminator, a `$(...)`
 # that does not close right after its body, a body inside a `$(...)` that bash 3.2 could close
 # early (`may_close_substitution`) -- returns the command unchanged, so the guard reads it exactly
 # as it would have without this.
@@ -1206,7 +1216,7 @@ def strip_heredocs($danger):
     else
       (reduce (split("\n")[]) as $line (
          {out: [], mode: 0, delim: "", dash: false, q: 0, giveup: false, bad: false, close_check: false,
-          sub: false, quoted: false, held: [], op_line: "", op_q: 0};
+          sub: false, quoted: false, held: [], op_line: "", op_q: 0, cont: false};
          if .mode == 2 then
            .out += [$line]
            | (if ((if .dash then ($line | sub("^\t+"; "")) else $line end) == .delim) then .mode = 0 else . end)
@@ -1226,8 +1236,16 @@ def strip_heredocs($danger):
             else . end)
            | .q as $q
            | ([$line | match(heredoc_op_regex; "g")]) as $ops
-           | if ($ops | length) == 0 or .giveup then
+           | ([$line | match(heredoc_any_regex; "g")] | length) as $any
+           | .cont as $joined
+           | .cont = ($line | ends_continued)
+           | if .giveup or ($any == 0 and (($joined and ($line | contains("<"))) | not)) then
                .out += [$line] | .q = ($line | quote_after($q))
+             elif ($ops | length) != $any or $joined or .cont then
+               # A `<<` the pattern cannot read, or one a backslash-newline splits or continues: the
+               # shell's body starts or ends where this reading cannot follow, so nothing from here on
+               # is taken out.
+               .out += [$line] | .giveup = true | .q = ($line | quote_after($q))
              else
                ($ops[0]) as $op
                | ($op.captures | map(.string)) as $caps
