@@ -420,9 +420,9 @@ func _test_every_task_line_fits_on_one_line(t) -> void:
 	var width: float = hud._resistance_label.get_parent().get_combined_minimum_size().x
 	t.check(width >= 280.0, "the Meters column gives the task line at least 280px")
 	for step in ResistanceSteps.all():
-		if step.header == "":
-			continue
-		var line: String = hud._task_text(step.header)
+		# A pickup has no header and shows its title, exactly as `_refresh_resistance()` names it.
+		var named: String = step.header if step.header != "" else step.title
+		var line: String = hud._task_text(named)
 		var w := ThemeDB.fallback_font.get_string_size(
 				line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 		t.check(w <= 280.0, "step %d's task line '%s' fits one line (%d px)"
