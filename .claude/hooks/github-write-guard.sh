@@ -5,10 +5,12 @@
 # changes code goes out as a coder identity (`claude-coder`/`codex-coder`), Claude Code's issue
 # writes and writes on a pull request with no code changes as `claude-orchestrator` (Codex's stay
 # `codex-coder`'s), a review as a reviewer identity (`claude-reviewer`/`codex-reviewer`), and
-# when `tools/agent-identity.py status <role>` says a role is not usable, the session stops and
-# tells the player rather than falling back to a direct call under the player's own account. A
-# rule that is only ever obeyed by remembering it is not a rule -- this is the mechanical half,
-# denying the direct call so the wrapped one is the only one that works.
+# when `tools/agent-identity.py status <role>` says a role is not usable, the session never falls
+# back to a direct call under the player's own account on its own say-so. A rule that is only ever
+# obeyed by remembering it is not a rule -- this is the mechanical half, denying the direct call so
+# the wrapped one is the only one that works. Where no identity can work at all and the player has
+# switched it on, an ordinary write is asked about instead of denied, so the player approves that
+# one command (see the end of this script).
 #
 # **The bar this holds itself to: a guardrail, not a security boundary.** It stops an agent's
 # ordinary GitHub writes from going out as the player by mistake -- every shape an agent would
@@ -54,6 +56,16 @@
 # never where its name is merely a read's argument
 # (`cat`, `sed`, `git log --`/`diff --`/`show`, `rg`)), and, for `release.sh`, only with its own
 # `push` argument, for `land-prs.sh`/`update-pr.sh`, only without their own `--dry-run`.
+# A `git` or `gh` whose own options hold a command substitution written outside quotes (`git -C
+# $(pwd) push`, `gh -R $(cat r) pr merge 3`) cannot be read past it, since the substitution's words
+# end the option run or are taken for the subcommand, and so can a subcommand that is itself an
+# expansion (`git $(echo push) origin v1`): that `git` is a write when a commit-making or
+# pushing subcommand's name (`push`, `commit`, `merge`, `rebase`, `pull`, `cherry-pick`, `revert`,
+# `am`) appears anywhere after it in the command, and that `gh` always is. A separator where the
+# subcommand belongs inside a quoted script is unreadable too (`bash -c 'git -C $(pwd) push'`):
+# quoting the script hides the substitution's opener, not the write that follows it. When the
+# option's own argument is quoted (`git -C "$(pwd)" push`), the substitution is one argument and
+# the subcommand is read as usual.
 # Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
 # issue/release list/view`, `gh run watch/download`, `gh repo clone`, `gh auth token`, `gh
 # search`, `gh browse`, a GET `gh api` with or without fields, an inline GraphQL query with no
@@ -479,14 +491,198 @@ def segment_scan($w; $start; $n; $flags):
       . as $s | .found = (.found or (($flags | index($w[$s.j])) != null)) | .j += 1)
   | {"end": .j, found: .found};
 
+# The same scan as `segment_scan`, over a `git push`'s own words, for the four kinds of push that
+# are never asked about, only denied (see `askable_reasons`):
+#
+# - one that rewrites or deletes what is on the remote rather than adds to it (`forced` below):
+#   `-f` or a short-flag cluster holding `f` or `d`, `--force`, `--force-with-lease`,
+#   `--force-if-includes`, `--delete`, `--mirror` and `--prune`, a `+refspec` or a `:refspec`;
+# - one that publishes a tag or every branch at once (`tags` below): `--tags`, `--follow-tags`,
+#   `--all` (and `--branches`, should a git accept it as a spelling of `--all`), any word holding a
+#   `*` (a pattern refspec: `'refs/*:refs/*'` pushes every tag, `'refs/heads/*:refs/heads/*'` is
+#   `--all` spelled out, and pushing a pattern is never an ordinary push of one branch), a refspec
+#   naming `refs/tags/` or `tags/`, `git push <remote> tag <name>`, or a ref whose name starts with
+#   `v` on either side of a refspec's `:` (`vnext`, `HEAD:v1.2.0`). A tag push is how a release
+#   reaches the site: `.github/workflows/deploy.yml` builds and publishes the game on every pushed
+#   `v*` tag, whatever follows the `v`, and a bare name does not say whether it is a tag or a
+#   branch. The cost is a branch whose name starts with `v`, pushed by that bare name, being denied
+#   rather than asked about; this repository's branches are named `claude/...`, `feature/...` and
+#   `work/...`, and an explicit `refs/heads/` side (`HEAD:refs/heads/v1`) is a branch and stays an
+#   ordinary push. `git tag` itself stays unguarded, like `git branch`: it changes only the local
+#   repository, and every way a tag then reaches GitHub is a push this reads;
+# - one with a shell expansion among its words (`expansion` below): any word after `push` holding a
+#   `$` (`"$TAG"`, `${B}`, `"$(git describe --tags)"`, whose `$` is a word of its own), or a scan
+#   that ends at a backtick written outside quotes (`` `echo v1` ``). The guard cannot know what
+#   such a word becomes, and `"$TAG"` can be a `v*` tag. An option's own value is no exception
+#   (`-o "$X"`): the quotes are gone by the time the words are read, so a quoted `"$X"` cannot be
+#   told from an unquoted `$X`, which the shell splits into words that land in refspec position
+#   (`X='ci.skip v1'`). A push inside backticks (`` `git push origin x` ``) ends at its closing
+#   backtick and is denied too, the safe direction;
+# - one whose words cannot be read to their end (`unreadable` below): a scan that stops at a
+#   separator inside one of the push's own quoted or escaped words (`-o 'a;b'`, `'x;y'`, `\;`),
+#   where every word after it, a refspec among them, would go unread. The separator is the push's
+#   own when the push stands outside quotes (its `push` word is at level 0), or when it sits deeper
+#   in quotes than the push's own words do (`bash -c "git push -o 'a;b' origin v1"`). A separator at
+#   the push's own level inside a quoted script is that script's own (`bash -c "git push origin x;
+#   git status"`, an ordinary push), and so is every separator outside quotes (`git commit -m "a;
+#   b" && git push origin x`, whose quoted `;` is the commit's). A separator escaped with a
+#   backslash inside a quoted script (`bash -c "git push origin \; v1"`) is at the script's level
+#   and is not told apart from the script's own, an accepted gap.
+#
+# The name tests (`v`, `tags/`, `refs/tags/`) read only the refspecs, never the remote or an
+# option's own value, so `git push vendor HEAD` and `git push -o vfoo origin x` are ordinary pushes.
+# The remote is the first word after `push` that is neither an option nor an option's value, or the
+# first word after a `--`, as git's own option parser reads it (options may stand anywhere). The
+# options that take the next word as their value are `-o`/`--push-option`, `--repo`,
+# `--receive-pack`, `--exec` and `--recurse-submodules`, spelled in full, and a short cluster whose
+# first `o` is its last letter (`-uo ci.skip`); a value after `=` takes no word, and `--signed` and
+# `--force-with-lease` take theirs only after `=`. Reading the remote too late would exempt a real
+# refspec, so the reading only ever errs early: an option not on that list, a prefix of one
+# (`--rep x`) among them, is read as taking no value, and a quoted value with a space in it splits
+# into more words, and each of those puts the word taken for the remote at or before the real one,
+# so every word after it is still read as a refspec. The other tests (`+`, `:`, `*`, the word `tag`,
+# a `$`) read every word, the remote included.
+#
+# Git takes any unambiguous prefix of a long option (`--del` is `--delete`, `--mir` is `--mirror`),
+# so each long option matches from the shortest prefix git acts on, and from the shorter, ambiguous
+# ones too where they exist (`--fo` for the `--force` family, which `--follow-tags` shares; `--d`,
+# `--p`, `--t`, `--a`), since reading a prefix git refuses as the stricter push is the safe
+# direction. A value after `=` (`--force-with-lease=main:abc`) does not change the option. A word
+# that only looks like one of these reads as one, the safe direction too. Before `push`, a
+# git option naming `followTags` or `refs/tags/`, or holding a `*` (`git -c push.followTags=true
+# push ...`, `git -c 'remote.origin.push=refs/*:refs/*' push origin`), makes the push a tag push as
+# well, and one naming `mirror` (`git -c remote.origin.mirror=true push origin`) makes it a forced
+# one. A push refspec set that way is read with the refspec tests themselves (`config_push_scan`,
+# below), so `git -c remote.origin.push=HEAD:v1 push origin` is a tag push and `git -c
+# remote.origin.push=:main push origin` a deleting one. `push.default=matching` makes it a push
+# of every matching branch; that inline setting is denied even beside an explicit refspec.
+#
+# An option word (`-` first) is checked against the option lists; any other word, a refspec or a
+# remote, costs one regex, so a long push is no dearer to read than any other command. The regexes
+# spell a letter's two cases out (`[Ff]`) rather than use `(?i)`, which costs several times as much
+# per word in jq. Config keys are case-insensitive (`followTags`, `followtags`); a ref is not.
+def long_option_prefix($full; $min):
+  (split("=") | .[0]) as $o | ($o | length) >= $min and ($full | startswith($o));
+def tag_config_re: "refs/tags/|[Ff][Oo][Ll][Ll][Oo][Ww][Tt][Aa][Gg][Ss]|\\*";
+def forced_config_re: "[Mm][Ii][Rr][Rr][Oo][Rr]";
+def matching_push_config: test("^(-c)?push\\.default=matching$"; "i");
+def forced_push_option:
+  test("^-[A-Za-z]*[fd][A-Za-z]*$") or startswith("--force")
+  or long_option_prefix("--force-with-lease"; 4) or long_option_prefix("--force-if-includes"; 4)
+  or long_option_prefix("--delete"; 3) or long_option_prefix("--mirror"; 3)
+  or long_option_prefix("--prune"; 3);
+def tag_push_option:
+  long_option_prefix("--tags"; 3) or long_option_prefix("--follow-tags"; 5)
+  or long_option_prefix("--all"; 3) or long_option_prefix("--branches"; 3)
+  or test(tag_config_re);
+def push_value_option:
+  IN("-o", "--push-option", "--repo", "--receive-pack", "--exec", "--recurse-submodules")
+  or test("^-[A-Za-np-z0-9]*o$");
+# The name tests a refspec's own text is read with, wherever the refspec is written.
+def refspec_names_tag: test("refs/tags/|(^|:)\\+?([vV]|tags/)");
+# `value`: this word is the previous option's value; `remote`: the remote has been read; `rest`: a
+# `--` has been read, so every later word is a positional one.
+def push_scan($w; $t; $start; $n):
+  {j: $start, forced: false, tags: false, expansion: false, value: false, remote: false,
+   rest: false}
+  | until(.j >= $n or ($w[.j] | is_sep);
+      ($w[.j]) as $x
+      | .value as $is_value
+      | (($x | startswith("-")) and (.rest | not)) as $is_option
+      | .expansion = (.expansion or ($x | contains("$")))
+      | (if $is_option then
+           .forced = (.forced or ($x | forced_push_option))
+           | .tags = (.tags or ($x | tag_push_option))
+         else
+           .forced = (.forced or ($x | startswith("+") or startswith(":")))
+           | .tags = (.tags or $x == "tag" or ($x | contains("*")))
+         end)
+      | (if $is_value then .value = false
+         elif $is_option then
+           .value = ($x | push_value_option) | .rest = ($x | IN("--", "--\u0002"))
+         elif .remote | not then .remote = true
+         else .tags = (.tags or ($x | refspec_names_tag))
+         end)
+      | .j += 1)
+  | .j as $end
+  | ($t.w0[$end] // "") as $stop
+  | ($t.lv[$start - 1] // 0) as $own
+  | {"end": $end, forced, tags,
+     expansion: (.expansion or $stop == "`"),
+     unreadable: ($stop == "\u0001" and ($own == 0 or ($t.lv[$end] // 0) > $own))};
+
+# The push refspecs a git option before `push` sets (`git -c remote.origin.push=HEAD:v1 push
+# origin`), read with the same tests as a refspec written after it. The keys are `remote.<name>.push`
+# and `branch.<name>.merge`, the destination a push goes to under `push.default=upstream`. A value
+# holding a `$`, a key whose value comes from the environment (`--config-env`), and a `-c` whose own
+# key holds a `$` (`git -c "$CFG" push`) are expansions; a value that goes on past one plain word
+# (`-c 'remote.origin.push=a b'`, a quoted separator or a comma) cannot be read.
+def refspec_config_key_re: "^(remote\\..+\\.push|branch\\..+\\.merge)(=|$)";
+def config_push_scan($w; $t; $from; $to):
+  reduce range($from; $to) as $k ({forced: false, tags: false, expansion: false, unreadable: false};
+    ($w[$k]) as $x
+    | ($w[$k - 1] // "") as $p
+    | if ($x | startswith("--config-env=")) and ($x | ltrimstr("--config-env=") | test(refspec_config_key_re; "i"))
+      then .expansion = true
+      elif $p == "--config-env" and ($x | test(refspec_config_key_re; "i")) then .expansion = true
+      elif $x | test(refspec_config_key_re; "i") then
+        ($x | sub("^[^=]*=?"; "")) as $v
+        | .expansion = (.expansion or ($v | contains("$")))
+        | .unreadable = (.unreadable or ($k + 1 < $to and ($t.lv[$k + 1] // 0) > ($t.lv[$k] // 0)))
+        | .forced = (.forced or ($v | startswith("+") or startswith(":")))
+        | .tags = (.tags or ($v | contains("*")) or ($v | refspec_names_tag))
+      elif $p == "-c" and ($x | split("=") | .[0] | contains("$")) then .expansion = true
+      else . end);
+
+# Whether the separator at `$p` opens a command substitution written outside quotes (a backtick, or
+# the `(` of `$(`): an option's argument written that way (`git -C $(pwd) push`, `gh -R $(cat r) pr
+# merge 3`) splits into words that end the option run, or are taken for the subcommand, before the
+# real subcommand is reached. `opener_counts` is the number of openers before each index, built once
+# per unsure command (only an unsure command holds one), so whether a run of words holds one is a
+# subtraction rather than a walk from every `git` (`git -c git -c ...` would make that quadratic).
+def opener_at($w0; $p):
+  ($w0[$p] // "") as $s
+  | $s == "`" or ($s == "(" and $p > 0 and ($w0[$p - 1] | endswith("$")));
+def expansion_opener($t; $p): opener_at($t.w0; $p);
+# Inside a quoted script an opener is a soft marker. `$(` leaves it at the subcommand
+# position; with backticks, an option can consume it as its argument, leaving the first word
+# inside the substitution there instead. A marker deeper than the command's option words
+# belongs to a fully quoted argument (`git -C "$(pwd)" push`, `gh -R "$(cat r)" pr view`),
+# whose subcommand remains readable even when the plain fallback splits that argument apart.
+def soft_subcommand_opener($t; $p; $level):
+  ($t.w0[$p] == "\u0001" and ($t.lv[$p] // 0) <= $level)
+  or ($p > 0 and $t.w0[$p - 1] == "\u0001" and ($t.lv[$p - 1] // 0) <= $level);
+def opener_counts($w0):
+  [0] + [foreach range(0; $w0 | length) as $k (0; . + (if opener_at($w0; $k) then 1 else 0 end))];
+def openers_between($t; $a; $b):
+  $t.oc != null and ($t.oc[$b] - $t.oc[$a]) > 0;
+
 def detect_git($w; $t; $i; $n):
   if ($w[$i] | named("git")) | not then null
   else
     (after_options($t; $i + 1)) as $sub
-    | if ($sub >= $n) or ($w[$sub] | is_sep) then null
+    | if $t.lw > $i
+         and (openers_between($t; $i + 1; [$sub + 1, $n] | min)
+              or (($w[$sub] // "") | contains("$"))
+              or ($t.lw > $sub and soft_subcommand_opener($t; $sub; $t.lv[$i + 1] // 0)))
+      then
+        {next: ([$sub, $i + 1] | max), reason: "git with a shell expansion before its subcommand"}
+      elif ($sub >= $n) or ($w[$sub] | is_sep) then null
       else
         ($w[$sub]) as $subcmd
-        | if $subcmd == "push" then {next: ($sub + 1), reason: "git push"}
+        | if $subcmd == "push" then
+            (push_scan($w; $t; $sub + 1; $n)) as $sc
+            | (config_push_scan($w; $t; $i + 1; $sub)) as $cf
+            | ($sc.tags or $cf.tags
+               or any(range($i + 1; $sub) | $w[.]; test(tag_config_re) or matching_push_config)) as $tags
+            | ($sc.forced or $cf.forced or any(range($i + 1; $sub) | $w[.]; test(forced_config_re)))
+              as $forced
+            | {next: $sc.end,
+               reason: (if $forced then "git push --force"
+                        elif $tags then "git push of a tag or every branch"
+                        elif $sc.expansion or $cf.expansion then "git push with a shell expansion"
+                        elif $sc.unreadable or $cf.unreadable then "git push that cannot be read"
+                        else "git push" end)}
           elif $subcmd == "commit" then {next: ($sub + 1), reason: "git commit"}
           elif $subcmd | IN("cherry-pick", "revert", "am") then
             (segment_scan($w; $sub + 1; $n; ["--abort", "--quit"])) as $sc
@@ -688,21 +884,28 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
 # the shared list) are read nouns whole, with no verb of their own to check; `gh api` is
 # `detect_gh_api`'s. A noun or verb position that lands on a separator or the end of the command
 # (`gh status | head`, `gh --version && gh auth status`) has no noun/verb there at all, not the
-# separator itself, so it never becomes part of a denial reason.
+# separator itself, so it never becomes part of a denial reason. A soft separator there is
+# unreadable: inside a quoted script it can be a substitution whose following write is hidden.
 def generic_reads: ["view", "list", "status", "diff", "checks", "checkout", "watch", "download", "clone", "token"];
 def read_only_nouns: ["browse", "search"];
 def detect_gh($w; $t; $i; $n; $lm; $bounded):
   if ($w[$i] | named("gh")) | not then null
   else
     (after_options($t; $i + 1)) as $noun_i
-    | if ($noun_i >= $n) or ($w[$noun_i] | is_sep) then null
+    | if ($noun_i < $n) and (expansion_opener($t; $noun_i)
+         or soft_subcommand_opener($t; $noun_i; $t.lv[$i + 1] // 0)) then
+        {next: $noun_i, reason: "gh with a shell expansion before its noun or verb"}
+      elif ($noun_i >= $n) or ($w[$noun_i] | is_sep) then null
       else
         ($w[$noun_i]) as $noun
         | if read_only_nouns | index($noun) then null
           elif $noun == "api" then detect_gh_api($w; $t; $noun_i + 1; $n; $lm; $bounded)
           else
             (after_options($t; $noun_i + 1)) as $verb_i
-            | if ($verb_i >= $n) or ($w[$verb_i] | is_sep) then null
+            | if ($verb_i < $n) and (expansion_opener($t; $verb_i)
+                 or soft_subcommand_opener($t; $verb_i; $t.lv[$noun_i + 1] // 0)) then
+                {next: $verb_i, reason: "gh with a shell expansion before its noun or verb"}
+              elif ($verb_i >= $n) or ($w[$verb_i] | is_sep) then null
               else
                 ($w[$verb_i]) as $verb
                 | if $verb | ascii_downcase | IN(generic_reads[]) then null
@@ -772,7 +975,7 @@ def detect_wrapper($w; $t; $i; $n):
 # for a name outside its own ROLE_NAMES, which is the actual enforcement for an unknown role, not
 # this check.
 def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
-def is_push_like($reason): ($reason == "git push") or ($reason | startswith("tools/"));
+def is_push_like($reason): ($reason | startswith("git push")) or ($reason | startswith("tools/"));
 def is_merge_like($reason):
   ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type");
 
@@ -993,18 +1196,25 @@ def command_words($t; $tp; $i):
   + (if $t.cw2 == null then [] else [$t.cw2[$i] // $i] end)
   + (if $tp == null then []
      else [command_word($tp; $i)] + (if $tp.cw2 == null then [] else [$tp.cw2[$i] // $i] end) end);
-def findings($w; $levels; $unsure; $inert):
+def findings($w; $w0; $levels; $unsure; $inert):
   # Levels that are all 0 group nothing, and the plain reading would be the same one again.
   (if $levels | any(. > 0) then $levels else null end) as $lv
   | ($w | length) as $n
   | ([range(0; $n) | select($w[.] | test("(?i)mutation"))] | last // -1) as $lm
+  # The last word that names a commit-making or pushing git subcommand: a git whose option run
+  # holds a command substitution, or whose subcommand is an expansion, is a write only when one
+  # follows (`detect_git`).
+  | ([range(0; $n)
+      | select($w[.] | IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am"))]
+     | last // -1) as $lw
   # A command with no wrapper word needs no table of wrapper options.
   | (if any($w[]; is_wrapper_word(.)) then $w | wrapper_owners else null end) as $owners
   | (if $lv == null then null else {lv: $lv, ends: word_ends($lv)} end) as $g
   | ($w | options_table($g; null)) as $ao
   | {ao: $ao, cw: ($w | command_table($ao; $g)),
      cw2: (if $owners == null then null else $w | command_table($w | options_table($g; $owners); $g) end),
-     sw: ($w | script_table)} as $t
+     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw,
+     oc: (if $unsure then opener_counts($w0) else null end)} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
        | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null))
@@ -1111,14 +1321,18 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
       | (($marked | contains("\u0003"))
          or ($bare | drop("\\\n") | test("\\$\\(|`|<<|\\$\\{|\\$\\$'"))) as $unsure
       | ($marked | drop("\u0003") | split_words | leveled_parts) as $parts
-      | ($parts | map(.w) | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w0
+      | ($parts | map(.w)) as $w0
+      | ($w0 | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $ws
       # Text a text-only command only prints or searches (`inert_table`) starts no reading, and a
-      # separator inside it is text too, so it ends no `gh api` call's flags either.
-      | (if $unsure or (any($parts[]; .q) | not) then null else inert_table($w0; $parts | map(.q)) end) as $inert
-      | (if $inert == null then $w0
-         else [range(0; $w0 | length) as $i | if $inert[$i] and $w0[$i] == "\u0001" then "\u0007" else $w0[$i] end]
+      # separator inside it is text too, so it ends no `gh api` call's flags either. Only a sure
+      # reading has a table, so `$w0`, which `detect_git` and `push_scan` read for a substitution's
+      # opener and a push's own quoted separator, is `$ws` there, less the inert separators; a
+      # push's own words are never inert, since no push is a text-only command.
+      | (if $unsure or (any($parts[]; .q) | not) then null else inert_table($ws; $parts | map(.q)) end) as $inert
+      | (if $inert == null then $ws
+         else [range(0; $ws | length) as $i | if $inert[$i] and $ws[$i] == "\u0001" then "\u0007" else $ws[$i] end]
          end) as $w
-      | (findings($w; $parts | map(.c); $unsure; $inert)) as $result
+      | (findings($w; $w0; $parts | map(.c); $unsure; $inert)) as $result
       | if ($result.out | length) == 0 then empty else $result end
     end
 end
@@ -1188,10 +1402,63 @@ unwrapped. $file_hint"
 	fi
 fi
 
-jq -n --arg reason "$reason" '{
+# **Where no identity can work, an ordinary write can be asked about rather than denied.** *(2026-10-02,
+# offered "the guard asks you instead of refusing" for a session with no usable identity: "Let's
+# do A and make the codex version always refuse".)* A Claude Code cloud session can never use an
+# identity (`tools/agent-identity.py`'s own docstring says why), and a machine with no identity
+# directory has none set up yet; there the deny above would leave even a local commit impossible.
+# So the same command goes to the player as a permission prompt instead: one command, approved or
+# refused by the player, never remembered, and never something the agent can answer for itself.
+# Only a command whose every write is on `askable_reasons` is asked about -- a local commit or
+# history step (`git commit`, `merge`, `rebase`, `pull`, `cherry-pick`, `revert`, `am`), an
+# ordinary push of a branch, and `gh pr create|comment|edit|ready`, the pull-request writes a
+# session's own work needs. A forced, deleting, mirroring or pruning push, a push of a tag, of
+# every branch or of a `*` pattern (a `v*` tag publishes the site), a push with a shell expansion
+# among its words (`"$TAG"` can be a `v*` tag) or one the guard cannot read to its end, a `git`
+# whose options hold an unquoted command substitution, a `gh pr merge`, any `gh issue` write,
+# any other `gh` write, any `gh api` write, a pushing `tools/` script, a reviewer's push, a command
+# too long to read and one the guard could not parse stay denied: merging and releasing already need the player's go-ahead
+# in conversation, and a prompt is too easy to click through for any of them -- on the mobile app
+# it shows only the command, not this reason. A direct `gh issue` write is never asked about because
+# the player wants an agent's issue writes to go through a script rather than a direct command
+# *(2026-09-27, bouncy-heron statement 14: "if it goes through a script it's safe we just need to
+# get it working once -- an agent shouldn't use gh issue directly")*: that script is
+# `tools/inbox.py`, a direct `gh issue` write is denied wrapped or not (above), and the script runs
+# its own writes through an identity and never as the player, so where no identity can work an
+# issue write is not made at all and the session tells the player. Codex never asks
+# (`tools/codex-hooks.py` turns an ask into a deny), since Codex has its own approval sandbox and
+# keeps "stop and tell the player".
+#
+# **It is off unless the player switches it on with `NAPPY_ASK_FOR_PLAYER_WRITES=1`**; unset, or
+# any other value, and every unwrapped write is denied, exactly as on a machine with identities.
+# *(2026-10-02: "Make it so it can be easily turned off and refuse again later. So I can turn it
+# on/off without approval hacks"; then "Yes default to refusing".)* It is read from the environment
+# the session was started with --
+# a cloud environment's own variables (its settings, then Edit; a new session picks a change up),
+# or the shell that launched Claude Code -- which is what keeps it the player's: a command an agent
+# runs cannot change the environment this hook is started in.
+askable_reasons='["git commit","git push","git cherry-pick","git revert","git am","git merge",
+"git rebase","git pull","gh pr create","gh pr comment","gh pr edit","gh pr ready"]'
+decision="deny"
+if [ "${NAPPY_ASK_FOR_PLAYER_WRITES:-}" = "1" ] \
+		&& [ "$too_long" != "true" ] && [ "$reviewer_push" != "true" ] && [ -n "${result:-}" ] \
+		&& { [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] \
+			|| [ ! -d "${NAPPY_AGENTS_DIR:-$HOME/.config/nappy-agents}" ]; } \
+		&& printf '%s' "$result" | jq -e --argjson ok "$askable_reasons" \
+			'(.out | length) > 0 and all(.out[]; . as $r | $ok | index($r) != null)' >/dev/null 2>&1
+then
+	decision="ask"
+	reason="This command ($flagged) would go out under the player's own GitHub account: no agent \
+identity can work here (a Claude Code cloud session, or no identities set up on this machine). \
+Approve it only if you want this one command run as you; the next one is asked about again. To have \
+such writes refused instead, remove NAPPY_ASK_FOR_PLAYER_WRITES=1 from the environment the session \
+starts with."
+fi
+
+jq -n --arg reason "$reason" --arg decision "$decision" '{
   hookSpecificOutput: {
     hookEventName: "PreToolUse",
-    permissionDecision: "deny",
+    permissionDecision: $decision,
     permissionDecisionReason: $reason
   }
 }'

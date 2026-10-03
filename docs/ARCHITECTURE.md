@@ -41,6 +41,9 @@ src/
 	city_state.gd         run-scoped: how far along each arc the run has got
 	building.gd           one lot, assembled from 32px facade and roof tiles
 	scenery_layer.gd      retained static furniture or small alternating scenery parts
+	scenery_ground.gd     freeable ground chunks prepared across frames in renderer quadrants
+	scenery_residency.gd  camera view, preparation budget, and wider visual eviction boundary
+	scenery_sprite.gd     persistent placements with independently releasable drawing commands
 	scenery_water.gd      separate south-water surface; pausable shader clock, no ground redraw
 	ground_tiles.gd       which ground tile a cell gets
 	tile.gd               TileType enum + per-tile metadata
@@ -105,7 +108,8 @@ src/
 	release_latch.gd      "she has just come through this, leave her alone until she has left it":
 	                      the flag a door arms on the way out, cleared by her walking out of its
 	                      own reach. The region doors and the building's doors share it
-  interior/               the escape scene's building, behind --start-escape
+  interior/               the escape scene's building, built by the escape's boot — the run's
+	                      own ending, or --start-escape
 	interior_tile.gd      the tile-kind enum and which kinds are walkable
 	interior_map_plan.gd  the whole building's plan: tiles, walls, doors, decals, waypoints
 	interior_map.gd       lays all seven parts (three hallways, two stairwells, the lobby, the
@@ -135,8 +139,10 @@ src/
 	title_screen.gd       the screen a run opens on and goes back to; asks which control scheme
 	day_summary.gd        the screen between days, and the one at the end of a run
 	pause_screen.gd       the pause
-	save_indicator.gd     the small corner symbol that fades in and out after a write GameSave
-	                      actually makes
+	save_indicator.gd     the small corner symbol: shown from the moment a save or a deletion starts,
+	                      fully shown while the change is unanswered and for its minimum, struck
+	                      through when it was not kept, then faded; it listens to GameSave's
+	                      announcements on EventBus
 	mode_button.gd        a circular icon-only button, drawn from a StyleBox and an icon
 	touch_controls.gd     the pointer scheme in its two modes, and the pause button
 	controls_mode.gd      which aiming origin a press is measured from
@@ -430,7 +436,7 @@ with `?debug=1` unasked and `window.goatcounter.count` actually present — `Vis
 `Baby` never learns what a tile or an event is. It asks a `WorldContext` three questions —
 `is_calm_zone()`, `is_alley()`, `total_excitement_at()` — and that is the entire surface
 between the meters and the world. The debug world answers with hand-placed test data; the generated
-city and the event manager answer for real. `InteriorScene` (`--start-escape`) is a third
+city and the event manager answer for real. `InteriorScene` (the escape's building) is a third
 implementor that overrides nothing at all: the base class's own defaults (1.0 recovery everywhere,
 no excitement sources) are exactly the "meters idle" the escape scene wants, since it has no
 events and no crowd. Adding an event type therefore never touches the meter code, and the meters
@@ -485,7 +491,8 @@ kept strictly out of anything that touches the meters.
   stands on the ground goes in the second. **Buildings never sort against entities** — a
   building's mass extends a block north of the origin y-sort compares, and nothing walkable is
   ever inside a lot, so the comparison could only ever be wrong. See docs/CITY.md, "Rendering".
-- Ground: a `TileMapLayer` fed by `GroundTiles`, which is the only place that decides which
+- Ground: freeable `TileMapLayer` children of `SceneryGround`, fed by `GroundTiles`,
+  which is the only place that decides which
   tile a cell gets. Source ids in `assets/ground_tileset.tres` are positional and
   `ground_tiles.gd` mirrors them by hand — adding a tile means appending to both, in order.
   Each source names its picture's region on the baked `ground` page instead of holding a texture,
@@ -496,6 +503,19 @@ kept strictly out of anything that touches the meters.
   naming what was missing; an `--svg` bake's carries the 58 whole tiles and no layer. Grass atlas
   coordinates vary deterministically by seed and cell; the selected source and gameplay geometry
   remain the map's own.
+- `SceneryResidency` prepares the view plus an offscreen margin and frees distant ground,
+  water, shadow and decal chunks beyond a wider boundary. Buildings keep their identity,
+  collision and poster-frontage facts; window patterns, roof layers and retained drawing are
+  reconstructed from fixed seeds and current state on return. Props and closure markers retain
+  placement facts and release renderer commands. Shared atlas pages and ground composition stay
+  at loading moments. Each off-screen ground region advances at most one renderer quadrant per
+  process frame, with distinct regions sharing the soft CPU budget. Each step explicitly
+  flushes TileMap internals; incomplete regions remain separately owned until complete and
+  pause between the load and retention boundaries.
+  State edits and leaving retention cancel them, while the safety guard completes them
+  synchronously. The camera's transformed viewport determines coverage, including rotation
+  and overview; lifecycle relocations prepare their destination before play. A city clock keeps
+  resident water surfaces in phase and restores returning roof animation phases.
 - Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that
   assembles that same lot out of 32px tiles — a front wall (the southern `height` px) and a
   roof (the remainder). Fitting the mass inside the lot keeps extrusions off the *ground* she

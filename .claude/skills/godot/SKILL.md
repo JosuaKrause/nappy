@@ -49,6 +49,11 @@ Side but is StreetNetwork.Side"*. Widen the parameter to `int` and say why in a 
 
 ## Capabilities
 
+The release Web engine omits 3D, navigation, Godot networking peers and the mbedTLS backend,
+streamed-media codecs, alternate texture loaders, procedural noise and ZIP support; before using
+one of those feature families, follow
+[Turning a module back on](../../../tools/web-template/README.md#turning-a-module-back-on).
+
 **Never tie a feature straight to the environment. Tie it to a flag the environment *informs*, and
 leave the override.** *(2026-09-05: "in general don't tie features directly to an environment — tie
 it to a feature flag which might be informed by the environment but lets you override ... that way

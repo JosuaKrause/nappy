@@ -625,6 +625,9 @@ func _capture(path: String) -> void:
 ## `tools/export-web.sh` bakes into an export, is what a deployed build shows instead — see
 ## `TitleScreen`.
 static func source_version() -> String:
+	# A browser cannot launch git; TitleScreen uses the export's baked metadata instead.
+	if OS.has_feature("web"):
+		return "unknown"
 	var repository := ProjectSettings.globalize_path("res://")
 	var describe_out: Array = []
 	if OS.execute("git", ["-C", repository, "describe", "--tags", "--always"], describe_out) != 0:
@@ -644,6 +647,8 @@ static func source_version() -> String:
 ## `application/config/source_commit`, baked by `tools/export-web.sh` beside `config/version` —
 ## see `TitleScreen.commit_text()`.
 static func source_commit() -> String:
+	if OS.has_feature("web"):
+		return "unknown"
 	var repository := ProjectSettings.globalize_path("res://")
 	var out: Array = []
 	if OS.execute("git", ["-C", repository, "rev-parse", "--short", "HEAD"], out) != 0:

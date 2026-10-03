@@ -1,0 +1,12 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+EVENT_SHAPE_CACHE pair=1 legacy_usec=1060868 cached_usec=47216 reads=1060000
+EVENT_SHAPE_CACHE pair=2 legacy_usec=1063927 cached_usec=47755 reads=1060000
+EVENT_SHAPE_CACHE pair=3 legacy_usec=1061621 cached_usec=47782 reads=1060000
+EVENT_SHAPE_CACHE pair=4 legacy_usec=1061395 cached_usec=47409 reads=1060000
+EVENT_SHAPE_CACHE pair=5 legacy_usec=1063207 cached_usec=47373 reads=1060000
+-- m159_event_shape_cache.gd     6671 ms
+
+6 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m159_event_shape_cache.gd. Not a green build.

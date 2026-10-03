@@ -95,9 +95,91 @@ assert_exit "ci-costs.sh --help"   zero ./tools/ci-costs.sh --help
 assert_exit "ci-costs.sh -h"       zero ./tools/ci-costs.sh -h
 assert_exit "check.sh --help"      zero ./tools/check.sh --help
 assert_exit "check.sh -h"          zero ./tools/check.sh -h
+assert_exit "measure-ground-frames.sh --help" zero ./tools/measure-ground-frames.sh --help
+assert_exit "measure-ground-frames.sh -h" zero ./tools/measure-ground-frames.sh -h
+assert_exit "measure-ground-frames.sh unknown" nonzero ./tools/measure-ground-frames.sh --not-a-flag
+assert_exit "measure-ground-frames.sh missing engine" nonzero ./tools/measure-ground-frames.sh --godot
+assert_exit "measure-ground-frames.sh missing output" nonzero ./tools/measure-ground-frames.sh --output
+assert_exit "measure-ground-frames.sh stray" nonzero ./tools/measure-ground-frames.sh stray
+assert_exit "measure-ground-frames.sh validates before mkdir" nonzero ./tools/measure-ground-frames.sh --output "$work_dir/unwanted-measurement" --not-a-flag
+if [[ -e "$work_dir/unwanted-measurement" ]]; then
+    echo "FAIL measure-ground-frames.sh created output on invalid arguments" >&2
+    failures=$((failures + 1))
+fi
 assert_exit "lint.sh --help"       zero ./tools/lint.sh --help
 assert_exit "pycheck.sh --help"    zero ./tools/pycheck.sh --help
 assert_exit "export-web.sh --help" zero ./tools/export-web.sh --help
+assert_exit "build-web-template.sh --help" zero ./tools/build-web-template.sh --help
+assert_exit "build-web-template.sh -h" zero ./tools/build-web-template.sh -h
+assert_exit "build-web-template.sh unknown" nonzero ./tools/build-web-template.sh --not-a-flag
+assert_exit "build-web-template.sh missing jobs" nonzero ./tools/build-web-template.sh --jobs
+assert_exit "build-web-template.sh invalid jobs" nonzero ./tools/build-web-template.sh --jobs 0
+assert_exit "build-web-template.sh stray word" nonzero ./tools/build-web-template.sh stray
+assert_exit "browser-check.mjs help" zero node ./tools/web-template/browser-check.mjs --help
+assert_exit "browser-check.mjs unknown" nonzero node ./tools/web-template/browser-check.mjs --not-a-flag
+assert_exit "browser-check.mjs missing value" nonzero node ./tools/web-template/browser-check.mjs --export
+assert_exit "compare.mjs help" zero node ./tools/web-template/compare.mjs --help
+assert_exit "compare.mjs unknown" nonzero node ./tools/web-template/compare.mjs --not-a-flag
+assert_exit "compare.mjs missing value" nonzero node ./tools/web-template/compare.mjs --export
+
+if [[ "$(node -p 'Number(process.versions.node.split(".")[0])')" -ge 22 ]]; then
+    browser_fixture="$work_dir/browser-startup"
+    mkdir -p "$browser_fixture"
+    printf '#!/bin/sh\nexit 0\n' > "$browser_fixture/not-executable"
+    for browser_case in missing not-executable; do
+        checks=$(( checks + 1 ))
+        TMPDIR="$browser_fixture" node tools/web-template/browser-check.mjs \
+            --export "$browser_fixture" --output "$browser_fixture/$browser_case-result" \
+            --browser "$browser_fixture/$browser_case" > "$browser_fixture/$browser_case.log" 2>&1
+        browser_status=$?
+        browser_result="$browser_fixture/$browser_case-result/result.json"
+        if [[ "$browser_status" -eq 0 ]] || ! grep -q '"success": false' "$browser_result" \
+                || ! grep -Eq 'ENOENT|EACCES' "$browser_result" \
+                || [[ -n "$(find "$browser_fixture" -maxdepth 1 -name 'nappy-web-check-*' -print)" ]]; then
+            echo "FAIL browser startup $browser_case did not report failure and clean its profile" >&2
+            failures=$(( failures + 1 ))
+        else
+            echo "ok   browser startup $browser_case reports failure and cleans its profile"
+        fi
+    done
+else
+    echo "skip browser startup lifecycle checks (requires Node 22; web-template CI runs them)"
+fi
+
+# A cached template must belong to these exact build inputs and its bytes must still match.
+# The fake archive is deliberate: this checks invalidation without compiling an engine.
+template_repo="$work_dir/template-repo"
+mkdir -p "$template_repo/tools/web-template"
+cp tools/build-web-template.sh "$template_repo/tools/"
+cp tools/web-template/profile.args tools/web-template/pins.env "$template_repo/tools/web-template/"
+template_key="$("$template_repo/tools/build-web-template.sh" --key)"
+checks=$(( checks + 1 ))
+if [[ -e "$template_repo/build" ]] || "$template_repo/tools/build-web-template.sh" --verify >/dev/null 2>&1; then
+    echo "FAIL template lookup writes or accepts a missing artifact" >&2
+    failures=$(( failures + 1 ))
+fi
+mkdir -p "$template_repo/build/web-template"
+printf 'fixture template\n' > "$template_repo/build/web-template/template.zip"
+template_hash="$(shasum -a 256 "$template_repo/build/web-template/template.zip" | awk '{print $1}')"
+printf '%s %s\n' "$template_key" "$template_hash" > "$template_repo/build/web-template/receipt"
+checks=$(( checks + 1 ))
+if ! "$template_repo/tools/build-web-template.sh" --verify >/dev/null; then
+    echo "FAIL matching template receipt rejected" >&2
+    failures=$(( failures + 1 ))
+fi
+printf 'corruption\n' >> "$template_repo/build/web-template/template.zip"
+checks=$(( checks + 1 ))
+if "$template_repo/tools/build-web-template.sh" --verify >/dev/null 2>&1; then
+    echo "FAIL corrupted template accepted" >&2
+    failures=$(( failures + 1 ))
+fi
+printf 'fixture template\n' > "$template_repo/build/web-template/template.zip"
+printf '\n# changed input\n' >> "$template_repo/tools/web-template/profile.args"
+checks=$(( checks + 1 ))
+if "$template_repo/tools/build-web-template.sh" --verify >/dev/null 2>&1; then
+    echo "FAIL stale profile template accepted" >&2
+    failures=$(( failures + 1 ))
+fi
 assert_exit "serve-web.sh --help"  zero ./tools/serve-web.sh --help
 assert_exit "sound-lab.sh --help"  zero ./tools/sound-lab.sh --help
 assert_exit "sound-lab.sh -h"      zero ./tools/sound-lab.sh -h
@@ -426,6 +508,73 @@ check_that() {
         failures=$(( failures + 1 ))
     fi
 }
+
+# ------------------------------------------------ audit-pck.sh reads the artefact, not the tree ---
+# A minimal format-4 pack keeps this regression independent of Godot and export templates while
+# exercising the same directory and file bytes a real export exposes. The dirty fixture carries
+# each shape the Web export must lose: a compiled test remap under tests/, a probe resource and a
+# global class cache outside tests/ that still points back into that tree. The clean companion is
+# what stops a parser failure or an unconditional rejection from satisfying the case vacuously.
+clean_pack="$work_dir/audit-clean.pck"
+dirty_pack="$work_dir/audit-tests.pck"
+python3 - "$clean_pack" "$dirty_pack" <<'PY'
+import hashlib
+import struct
+import sys
+
+
+def write_pack(path, entries):
+    data = bytearray()
+    records = []
+    for name, contents in entries:
+        offset = len(data)
+        data.extend(contents)
+        encoded = name.encode("utf-8") + b"\0"
+        encoded += b"\0" * (-len(encoded) % 4)
+        records.append((encoded, offset, len(contents), hashlib.md5(contents).digest()))
+
+    base = struct.calcsize("<6I2Q")
+    directory = base + len(data)
+    blob = bytearray(struct.pack("<6I2Q", 0x43504447, 4, 4, 7, 2, 0, base, directory))
+    blob.extend(data)
+    blob.extend(struct.pack("<I", len(records)))
+    for name, offset, size, digest in records:
+        blob.extend(struct.pack("<I", len(name)))
+        blob.extend(name)
+        blob.extend(struct.pack("<QQ", offset, size))
+        blob.extend(digest)
+        blob.extend(struct.pack("<I", 0))
+    with open(path, "wb") as handle:
+        handle.write(blob)
+
+
+production = [
+    ("src/main.gd.remap", b'path="res://src/main.gdc"\n'),
+    (".godot/global_script_class_cache.cfg", b'path="res://src/main.gd"\n'),
+]
+write_pack(sys.argv[1], production)
+write_pack(
+    sys.argv[2],
+    production[:1]
+    + [
+        ("tests/test_export.gd.remap", b'path="res://tests/test_export.gdc"\n'),
+        ("tests/probes/export_probe.tscn", b'[gd_scene format=3]\n'),
+        (
+            ".godot/global_script_class_cache.cfg",
+            b'path="res://src/main.gd"\npath="res://tests/probes/export_probe.gd"\n',
+        ),
+    ],
+)
+PY
+
+out="$(./tools/audit-pck.sh --fatal "$clean_pack" 2>&1)"
+status=$?
+check_that "audit-pck.sh accepts a pack with only production paths and class-cache entries" \
+    '[[ $status -eq 0 && "$out" == *"0 test paths, 0 other files referring to tests"* ]]'
+out="$(./tools/audit-pck.sh --fatal "$dirty_pack" 2>&1)"
+status=$?
+check_that "audit-pck.sh rejects test remaps, probes and a class-cache reference in the pack" \
+    '[[ $status -ne 0 && "$out" == *"2 test paths, 1 other files referring to tests"* && "$out" == *"test path: tests/probes/export_probe.tscn"* && "$out" == *"test reference: .godot/global_script_class_cache.cfg"* ]]'
 
 made="$(cd "$names_repo" && ./tools/new-name.sh --date 2026-09-27 todo "Stars for nerves" 2>/dev/null)"
 check_that "new-name.sh takes the one pair not already used, in any folder, whatever its date" \

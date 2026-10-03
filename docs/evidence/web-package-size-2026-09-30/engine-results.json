@@ -1,0 +1,33 @@
+{
+  "compression": "gzip -9 -n",
+  "revision": "48e41ab705617ba5a29bb03c0fffa2f30c59e96a",
+  "release_tag": "engine-measurement",
+  "host": "Darwin arm64",
+  "source_revision": "ed1daf0bf001b61586d9930840f2f1394092c079",
+  "emscripten": "4.0.20",
+  "scons": "4.9.1",
+  "template_key": "2b264aab9fe6c28589e6e70ddcb4aeb0af7bb47b6e27c8ec0e5bc05ad4a2ca0c",
+  "template_sha256": "266603a149575d370e8fece3c19a373b36bde90cdea5ba9ff2066976914b57fa",
+  "stock_template_sha256": "d3ee2f08cef0cf3cf6678a6355a92a8db48ccdd35cbd2e8bfd5f0e8a0b4032a0",
+  "collectors": {
+    "tools/build-web-template.sh": "7775596de1521f59c317c2592b9db40e6d5f79914f8b7e96a7895930bf03e61d",
+    "tools/web-template/pins.env": "f16a347b8aab47b3c1f46a471daa140e65f4a23fab4936791808e74d9b76754a",
+    "tools/web-template/profile.args": "76593e57abc87ee54637b9f619e7bb4e385a388365799e1bcfa134f9177eb564",
+    "tools/web-template/browser-check.mjs": "c87a03db0895d08e8a2605e1c830d8f046ea8521c081d2d98f3881d17f29e970",
+    "tools/web-template/compare.mjs": "6a796413537ec6ba7f5e0014beb0ea7aa1bfef4b497c2f628089b9db3c6d947d"
+  },
+  "files": {
+    "stock_wasm": {"bytes": 39514754, "gzip_bytes": 10054758, "sha256": "fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0"},
+    "trimmed_wasm": {"bytes": 29130361, "gzip_bytes": 7159098, "sha256": "18b82d38b7a12f1b55021ac7df5e7234068208085b4fb12d064c47d0d0024f6b"},
+    "stock_js": {"bytes": 279815, "gzip_bytes": 68471, "sha256": "33c94cb3175f3333b82e2a3be5e8e86f77986f0aa2042b1631f6367a4e5bb6ba"},
+    "trimmed_js": {"bytes": 251073, "gzip_bytes": 62334, "sha256": "78b3d27f6f9d79ed782c298c0a350ef67c3ff01af73ba504032c1041dc0c4a2d"},
+    "identical_pck": {"bytes": 1935816, "gzip_bytes": 1803160, "sha256": "c5a071a420cafc0076eb2247ff6a4ca8e992493cbe58b46a12e390675ad84eaa"}
+  },
+  "texture_encodings": {"WEBP": 12},
+  "browser": {
+    "runtime": "Chrome/154.0.8037.59, headless, ANGLE SwiftShader, WebGL 2.0",
+    "cases": ["title", "keyboard play", "save and resume", "summary to day 2", "day 8 boot", "day 14 boot", "escape interior boot"],
+    "stock": {"success": true, "errors": [], "save_seed": 4116461727, "resumed_seed": 4116461727, "nerves_before": 5, "nerves_after": 4, "saved_build": "engine-measurement (48e41ab7)", "syncfs_overlap_warnings": 4, "console_sha256": "254919c595a786d0992775feac9dbebdbb13b9df19c2c3e98b2238c134d147e9"},
+    "trimmed": {"success": true, "errors": [], "save_seed": 1450903313, "resumed_seed": 1450903313, "nerves_before": 5, "nerves_after": 4, "saved_build": "engine-measurement (48e41ab7)", "syncfs_overlap_warnings": 4, "console_sha256": "1d5e53b7755ce446584df62976d72e921624e3856e0340cc7fe948c45214b399"}
+  }
+}

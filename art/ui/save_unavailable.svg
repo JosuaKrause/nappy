@@ -1,0 +1,23 @@
+<!-- The save symbol struck through: what `SaveIndicator` shows in place of save.svg when a save
+     could not be kept — the page's storage was refused, the file could not be written, or the
+     browser's copy failed on its retry or never answered (see docs/MECHANICS.md, "Saving and
+     resuming"). (cozy-pelican, 2026-10-02: "if saving is unavailable it should show up with a
+     strike through".)
+     The disk is save.svg's own, shape for shape and colour for colour, so the two read as one
+     symbol in two states; a change to one owes the same change to the other. Over it, a single
+     diagonal from top-left to bottom-right, the direction a crossed-out symbol is read in. It runs
+     past the case (24 to 104 on this grid) at both ends, so it crosses out the whole object
+     rather than marking its label. A red core (#e04a3f, the same red as `Palette.SIGNAL_RED`, the
+     lamp that says she may not go, and no danger red: a save that was not kept is not a danger)
+     in a casing of the dark the rest of the art is outlined in (#221f28, `Palette.OUTLINE`), so it
+     holds against the blue case, the pale label and whatever screen is behind. Square caps on
+     both strokes, so the casing edges the core by the same 4 units along its sides and at its
+     ends. Authored on the same 128 grid as the rest of this set, with antialiasing left on. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <path d="M24 24 L92 24 L104 36 L104 104 L24 104 Z" fill="#5f7a99"/>
+  <rect x="40" y="24" width="36" height="24" fill="#a8adb3"/>
+  <rect x="58" y="30" width="8" height="12" fill="#4a4e54"/>
+  <rect x="36" y="62" width="56" height="30" fill="#ede8de"/>
+  <line x1="18" y1="18" x2="110" y2="110" stroke="#221f28" stroke-width="18" stroke-linecap="square"/>
+  <line x1="18" y1="18" x2="110" y2="110" stroke="#e04a3f" stroke-width="10" stroke-linecap="square"/>
+</svg>

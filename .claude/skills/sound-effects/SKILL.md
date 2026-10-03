@@ -68,3 +68,7 @@ bit-identical audio without measuring it; standard-library floating-point math c
 Installing an approved sound is a later game change. Audio may reinforce a warning, but the visual
 cue must remain sufficient by itself: a player with sound off must be able to make the same route
 decision.
+
+The release Web engine plays WAV without a profile change, but omits Ogg/Vorbis and MP3 decoders;
+before adding either compressed format, follow
+[Turning a module back on](../../../tools/web-template/README.md#turning-a-module-back-on).

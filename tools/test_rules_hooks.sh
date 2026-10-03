@@ -100,6 +100,19 @@
 #     unsure command), a wrapper option's argument (sudo -u, nice -n, timeout -s, xargs -n) is
 #     skipped before the command word, and the script after bash -c is a command of its own; the
 #     wrapped forms and the reads through the same wrappers still allow.
+#   - where no identity can work (a cloud session, or no identity directory) and the player's
+#     NAPPY_ASK_FOR_PLAYER_WRITES=1 is set, github-write-guard.sh asks about a commit or local
+#     history step, a branch push (to a remote whose name starts with v too, past an option's own
+#     value or a --, a quoted separator that belongs to another command or to the push's own
+#     quoted script) and gh pr create/comment/edit/ready, and still denies a push of a tag, of
+#     every branch or of a * pattern (in a refspec, a git -c before push or a push refspec set by
+#     one), a forced, deleting, mirroring or pruning push in any prefix of its long option or
+#     through a git -c, a push with a $ or a backtick among its words or in a git -c push refspec,
+#     a push whose own quoted word holds a separator, a git or gh whose options hold an unquoted
+#     command substitution, a gh issue write bare or wrapped, a merge, a release, a gh api write
+#     and a pushing script, while git tag, a read, a search for a write's words and a
+#     tools/inbox.py call allow, and a commit whose quoted message names an issue write is asked
+#     about as the commit it is; with the switch unset, 0 or yes, every one of those writes denies
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -298,9 +311,15 @@ assert_eq "src/autoload/telemetry.gd -> telemetry" \
 assert_eq "tools/synthesize-sfx.py -> cli + Python + sound-effects" \
     "cli-tools,python-tooling,sound-effects," \
     "$(project_rules_skills sound-recipe-session "" "tools/synthesize-sfx.py")"
-assert_eq "a generated WAV -> sound-effects" \
-    "sound-effects," \
+assert_eq "a generated WAV under docs/evidence -> sound-effects + verify" \
+    "sound-effects,verify," \
     "$(project_rules_skills sound-asset-session "" "docs/evidence/sound-lab/example.wav")"
+assert_eq "docs/evidence/** -> verify" \
+    "verify," \
+    "$(project_rules_skills evidence-session "" "docs/evidence/experiment/README.md")"
+assert_eq "primary captures keep their specific rule alongside verify" \
+    "session-captures,verify," \
+    "$(project_rules_skills capture-session "" "docs/evidence/archive/session-captures/frame.png")"
 
 # src/visuals/ holds loader code, not pictures: it gets the GDScript rules and never the
 # PNG-drawing ones, which govern art/illustrated/ alone.
@@ -947,12 +966,22 @@ assert_guard_timed "1 MB of backslash-newlines, naming neither word -> allow, de
     "echo ${near_cap_lines}" 2
 
 # ---------------------------------------------------------------- github-write-guard.sh ---------
-# Prints "deny" or "allow" for one synthetic command through github-write-guard.sh, as the tool
-# named by $2 (Bash when omitted). Same shape as guard_decision above, for the other hook.
+# Prints "deny", "ask" or "allow" for one synthetic command through github-write-guard.sh, as the
+# tool named by $2 (Bash when omitted). Same shape as guard_decision above, for the other hook.
+# Every case below runs as a machine with identities set up, so the guard's own deny is what it
+# sees wherever the suite runs; a cloud session or a runner with no identity directory would turn
+# an ordinary write into an ask. `write_guard_remote` and `write_guard_agents` switch that for the
+# ask cases further down.
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
+mkdir -p "$write_guard_agents"
+write_guard_remote=""
+write_guard_switch=""
 write_guard_decision() {
     local cmd="$1" tool="${2:-Bash}" raw
     raw=$(printf '%s' "$cmd" | jq -Rs --arg t "$tool" '{tool_name:$t, tool_input:{command:.}}' \
-        | "$root/.claude/hooks/github-write-guard.sh")
+        | env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES \
+            ${write_guard_remote:+CLAUDE_CODE_REMOTE=true} ${write_guard_switch:+NAPPY_ASK_FOR_PLAYER_WRITES=$write_guard_switch} \
+            NAPPY_AGENTS_DIR="$write_guard_agents" "$root/.claude/hooks/github-write-guard.sh")
     if [ -z "$raw" ]; then
         printf 'allow'
     else
@@ -1527,7 +1556,8 @@ assert_write_guard_reason() {
     checks=$((checks + 1))
     local raw
     raw=$(printf '%s' "$2" | jq -Rs '{tool_name:"Bash", tool_input:{command:.}}' \
-        | "$root/.claude/hooks/github-write-guard.sh" | jq -r '.hookSpecificOutput.permissionDecisionReason // ""')
+        | env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES NAPPY_AGENTS_DIR="$write_guard_agents" \
+            "$root/.claude/hooks/github-write-guard.sh" | jq -r '.hookSpecificOutput.permissionDecisionReason // ""')
     case "$raw" in
         *"$3"*) echo "ok   $1" ;;
         *) fail "$1: the deny reason lacks '$3': $raw" ;;
@@ -1893,6 +1923,289 @@ assert_write_guard "wrapped reply whose body comes from a file, as claude-review
     'uv run python tools/agent-identity.py run claude-reviewer -- gh api repos/o/r/pulls/1/comments/5/replies -F body=@reply.md'
 assert_write_guard "wrapped gh api PUT .../merge as claude-coder still allows" allow \
     'uv run python tools/agent-identity.py run claude-coder -- gh api -X PUT repos/o/r/pulls/1/merge'
+# A tag push is a push like any other to the wrapper: the coder that cuts a release pushes its tag,
+# and a reviewer never pushes one.
+assert_write_guard "a tag push, unwrapped -> deny" deny 'git push origin v1.2.0'
+assert_write_guard "a tag push wrapped as claude-coder -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git push origin v1.2.0'
+assert_write_guard "git push --tags wrapped as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git push origin --tags'
+assert_write_guard "an abbreviated delete wrapped as claude-coder -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git push --del origin feature/x'
+# A push whose refspec is a shell expansion is a push like any other to the wrapper, and a reviewer
+# never makes one. A git or gh option whose argument is an unquoted command substitution ends the
+# option run at the substitution, so the subcommand behind it is never reached, and a subcommand
+# that is itself an expansion is not read either: a write subcommand's name after it denies, a read
+# allows, and gh denies either way.
+assert_write_guard "a push of \$(...) wrapped as claude-coder -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git push origin "$(git branch --show-current)"'
+assert_write_guard "a push of \$(...) wrapped as claude-reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git push origin "$(git branch --show-current)"'
+assert_write_guard "git -C \$(pwd) push, unwrapped -> deny" deny 'git -C $(pwd) push origin main'
+assert_write_guard "git -C \`pwd\` commit, unwrapped -> deny" deny 'git -C `pwd` commit -m x'
+assert_write_guard "git -C \$(pwd) status -> allow" allow 'git -C $(pwd) status'
+assert_write_guard "a subcommand that is itself a substitution, before a write's name -> deny" deny \
+    'git $(echo push) origin v1'
+assert_write_guard "a subcommand that is a variable, with no write's name after -> allow" allow \
+    'git $GITFLAGS status'
+assert_write_guard "git -C \$(pwd) push wrapped as claude-coder -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git -C $(pwd) push origin main'
+assert_write_guard "gh -R \$(cat r) pr merge, unwrapped -> deny" deny 'gh -R $(cat r) pr merge 3'
+assert_write_guard_reason "an unquoted substitution before a subcommand is named in the deny" \
+    'git -C $(pwd) push origin main' "git with a shell expansion before its subcommand"
+
+# Where no identity can work -- a Claude Code cloud session, or no identity directory -- and the
+# player has switched the asking on (NAPPY_ASK_FOR_PLAYER_WRITES=1), an ordinary write is asked
+# about rather than denied (2026-10-02, "Let's do A"); everything a prompt is too easy to click
+# through for stays denied. Unset, the switch is off and every write is denied (2026-10-02, "Yes
+# default to refusing").
+#
+# Asked about with the switch on: a local commit or history step, a push of a branch (an explicit
+# refs/heads/ destination is a branch even when its name starts with v), and gh pr
+# create/comment/edit/ready. The name test reads only refspecs, so a remote whose name starts with
+# v (the first word after push that is neither an option nor an option's value, or the first after
+# a --) and an option's own value (-o vfoo) are not read as tags; a lone word after push is the
+# remote, as git reads it. A git -c before push that sets a branch push refspec, or no refspec at
+# all (a $ in another key's value included), leaves an ordinary push; a quoted substitution as an
+# option's argument is one word; and a quoted separator is not the push's own when it belongs to
+# another command (a commit message) or sits at the push's own level in a quoted script.
+write_guard_asked=(
+    'git commit -m "x"'
+    'git merge feature/x'
+    'git rebase main'
+    'git pull origin main'
+    'git cherry-pick abc123'
+    'git revert abc123'
+    'git am fix.patch'
+    'git push vendor HEAD'
+    'git push vendor feature/x'
+    'git push -u vendor feature/x'
+    'git push vendor HEAD:refs/heads/vnext'
+    'git push -o ci.skip vendor HEAD'
+    'git push -o vfoo origin feature/x'
+    'git push --push-option vfoo origin feature/x'
+    'git push -uo ci.skip vendor HEAD'
+    'git push --repo vendor HEAD'
+    'git push --recurse-submodules check vendor HEAD'
+    'git push -- vendor HEAD'
+    'git push git@github.com:o/v.git HEAD'
+    'git push vnext'
+    'git push -u origin feature/x'
+    'git push origin feature/x'
+    'git push origin work/v2-cleanup'
+    'git commit -m x && git push origin feature/x'
+    'git push origin HEAD:refs/heads/v1'
+    'git push origin HEAD:refs/heads/vnext'
+    'git push --dry-run origin feature/x'
+    'git push --no-tags origin feature/x'
+    'git push --thin origin feature/x'
+    'git -c remote.origin.push=HEAD:refs/heads/feature/x push origin'
+    'git -c user.name=x push origin feature/x'
+    'git -c push.default=simple push origin'
+    'git -cpush.default=current push origin'
+    'git -c user.name=push.default=matching push origin feature/x'
+    'git -c "user.email=$E" push origin feature/x'
+    'git -C "$(pwd)" push origin feature/x'
+    "sh -c 'git -C \"\$(pwd)\" push origin feature/x'"
+    'git -C "`pwd`" push origin feature/x'
+    'git commit -m "a; b" && git push origin feature/x'
+    'git push origin feature/x && git commit -m "c|d"'
+    'bash -c "git push origin feature/x; git status"'
+    "bash -c 'git push origin feature/x && echo done'"
+    'git push origin feature/x 2>&1 | tail -3'
+    'git commit -m "x; gh issue comment 5 --body hi"'
+    'gh pr create --title x --body y'
+    'gh pr comment 5 --body hi'
+    'gh pr edit 5 --title x'
+    'gh pr ready 5'
+)
+# Denied whatever the switch says. A push of a tag or of every branch (a pushed v* tag deploys the
+# site, so any ref whose name starts with v reads as a tag, and a branch named v-something pushed
+# by that bare name is denied too, to a remote whose own name starts with v as well); any word of
+# a push holding a * (refs/*:refs/* pushes every tag, refs/heads/*:refs/heads/* is --all), and a
+# git -c before push holding one; where the remote cannot be told for certain (a prefix of a value
+# option, -oo, whose value is the second o, a -- that is -o's value), the word after is read as a
+# refspec; a forced, deleting, mirroring or pruning push, with each long option also spelled as
+# any prefix git accepts, and as the shorter ambiguous ones, or through a git -c naming mirror or a
+# + push refspec; a push refspec set by a git -c read like a written one (a v name, a : delete);
+# a push with a shell expansion among its words, the remote or an option's value included, or in a
+# git -c push refspec, its key, or a --config-env one; a push whose own quoted word holds a
+# separator, so the words after it go unread; a git or gh whose options hold an unquoted command
+# substitution; a gh issue write, bare or wrapped in an identity, since only tools/inbox.py writes
+# an issue (bouncy-heron statement 14: "an agent shouldn't use gh issue directly"); a merge, a
+# release, a gh api write and a pushing tools/ script.
+write_guard_never_asked=(
+    "git push origin 'refs/*:refs/*'"
+    "git push origin 'refs/heads/*:refs/heads/*'"
+    "git push origin 'refs/tags/*'"
+    "git push origin 'feature/*'"
+    "git push origin '+refs/*:refs/*'"
+    "git push vendor 'refs/heads/*:refs/heads/*'"
+    "git -c 'remote.origin.push=refs/*:refs/*' push origin"
+    'git -c remote.origin.mirror=true push origin'
+    'git -c remote.origin.push=+refs/heads/x:refs/heads/x push origin'
+    'git push vendor vnext'
+    'git push vendor HEAD:v1'
+    'git push vendor tag v1'
+    'git push -u vendor vnext'
+    'git push -o ci.skip vendor vnext'
+    'git push --repo vendor origin vnext'
+    'git push -- vendor vnext'
+    'git push --rep vendor vnext'
+    'git push -oo vendor vnext'
+    'git push -o -- vendor vnext'
+    'git push origin v1'
+    'git push origin vnext'
+    'git push origin HEAD:vnext'
+    'git push origin version-two'
+    'git push origin +vnext'
+    'git tag v1 && git push origin v1'
+    'git push origin --tags'
+    'git push --follow-tags origin x'
+    'git push --all origin'
+    'git push --branches origin'
+    'git push origin refs/tags/v1'
+    'git push origin HEAD:refs/tags/v1.2.0'
+    'git push origin tag v1'
+    'git push origin tags/v1'
+    'git push origin main:v2'
+    'git push origin +v1'
+    'git -c push.followTags=true push origin x'
+    'git -c push.default=matching push origin'
+    'git -cpush.default=matching push origin'
+    'git -c Push.Default=MATCHING push origin'
+    'git -c "push.default=matching" push origin'
+    'git -c push.default=matching push origin feature/x'
+    'git -c push.default=matching -c push.default=simple push origin'
+    'git push --ta origin'
+    'git push --t origin'
+    'git push --fol origin x'
+    'git push --al origin'
+    'git push --a origin'
+    'git push --force origin feature/x'
+    'git push -f origin feature/x'
+    'git push -uf origin feature/x'
+    'git push --force-with-lease origin feature/x'
+    'git push --force-with-lease=feature/x:abc origin feature/x'
+    'git push --force-w origin feature/x'
+    'git push --force-if origin feature/x'
+    'git push --forc origin feature/x'
+    'git push --for origin feature/x'
+    'git push --fo origin feature/x'
+    'git push origin --delete feature/x'
+    'git push --del origin feature/x'
+    'git push --dele origin feature/x'
+    'git push --de origin feature/x'
+    'git push --d origin feature/x'
+    'git push --mirror origin'
+    'git push --mir origin'
+    'git push --m origin'
+    'git push --prune origin'
+    'git push --pru origin'
+    'git push --pr origin'
+    'git push --p origin'
+    'git push origin :feature/x'
+    'git push origin +feature/x'
+    'gh issue create --title x --body y'
+    'gh issue comment 5 --body hi'
+    'gh issue edit 5 --title x'
+    'gh issue close 5'
+    'uv run python tools/agent-identity.py run claude-orchestrator -- gh issue comment 5 --body hi'
+    'gh pr merge 391 --squash'
+    'gh release create v1.0'
+    'gh api repos/o/r/issues -X POST'
+    'tools/release.sh patch push'
+    'git commit -m x && gh pr merge 3'
+    'git commit -m x && git push origin v1'
+    'git push origin feature/x && gh issue comment 5 --body hi'
+    'git -c remote.origin.push=v1.2.0 push origin'
+    'git -c remote.origin.push=HEAD:v1.0.0 push origin'
+    'git -c remote.origin.push=:feature/x push origin'
+    'git -c remote.origin.push=:main push origin'
+    'git -c Remote.Origin.Push=vnext push origin'
+    'git -c branch.main.merge=v1 push origin'
+    'git -c "remote.origin.push=$R" push origin'
+    'git -c "$CFG" push origin feature/x'
+    'git --config-env=remote.origin.push=R push origin'
+    'git --config-env remote.origin.push=R push origin'
+    "git -c 'remote.origin.push=a b' push origin"
+    'TAG=v1.0.0; git push origin "$TAG"'
+    'git push origin "$(git describe --tags)"'
+    'git push origin `echo v1.0.0`'
+    'git push origin ${TAG}'
+    'git push "$REMOTE" feature/x'
+    'git push -o "$X" origin feature/x'
+    'git push origin HEAD:"$B"'
+    "git push -o 'a;b' origin v1"
+    "git push origin 'x;y' v1"
+    'git push origin \; v1'
+    'git push -o "ci(skip)" origin feature/x'
+    "bash -c \"git push -o 'a;b' origin v1\""
+    'git -C $(pwd) push origin feature/x'
+    'git -c remote.origin.push=`echo v1` push origin'
+    'gh -R $(cat r) pr merge 3'
+    'bash -c "git -C $(pwd) push origin v1.0.0"'
+    'bash -c "git -C `pwd` push origin v1.0.0"'
+    "sh -c 'git -C \$(pwd) push origin v1.0.0'"
+    'bash -c "gh -R $(cat r) pr merge 3"'
+    'bash -c "gh pr -R $(cat r) merge 3"'
+    'bash -c "gh -R `cat r` pr merge 3"'
+    'bash -c "gh pr -R `cat r` merge 3"'
+)
+# A read, and `git tag` itself, which changes only the local repository, stay allowed.
+write_guard_allowed=(
+    'git status'
+    'git tag v1'
+    'git tag -a v1 -m x'
+    'git -C $(pwd) status'
+    'bash -c "git -C $(pwd) status"'
+    "sh -c 'git -C \$(pwd) status'"
+    'gh -R "$(cat r)" pr view 3'
+    'gh -R "`cat r`" pr view 3'
+    'gh pr -R "$(cat r)" view 3'
+    "sh -c 'gh -R \"\$(cat r)\" pr view 3'"
+    "rg -n 'gh issue comment' .claude/"
+    'uv run python tools/inbox.py --role claude-orchestrator close --pr 5'
+)
+# The same denial cases on a machine with identities, even when asking is switched on: a
+# quoted-script expansion must not disappear before environment policy ever sees the write.
+write_guard_switch=1
+for write_guard_cmd in "${write_guard_never_asked[@]}"; do
+    assert_write_guard "local identities: $write_guard_cmd -> deny" deny "$write_guard_cmd"
+done
+write_guard_switch=""
+for write_guard_mode in remote unconfigured; do
+    if [ "$write_guard_mode" = remote ]; then
+        write_guard_remote=true
+    else
+        write_guard_remote=""
+        write_guard_agents="${TMPDIR:-/tmp}/write-guard-no-agents"
+        rm -rf "$write_guard_agents"
+    fi
+    write_guard_switch=1
+    for write_guard_cmd in "${write_guard_asked[@]}"; do
+        assert_write_guard "$write_guard_mode: $write_guard_cmd -> ask" ask "$write_guard_cmd"
+    done
+    for write_guard_cmd in "${write_guard_never_asked[@]}"; do
+        assert_write_guard "$write_guard_mode: $write_guard_cmd -> deny" deny "$write_guard_cmd"
+    done
+    for write_guard_cmd in "${write_guard_allowed[@]}"; do
+        assert_write_guard "$write_guard_mode: $write_guard_cmd -> allow" allow "$write_guard_cmd"
+    done
+    # The player's switch, unset or anything but 1: the asking is off and every write is denied.
+    for write_guard_switch in "" 0 yes; do
+        for write_guard_cmd in "${write_guard_asked[@]}" "${write_guard_never_asked[@]}"; do
+            assert_write_guard "$write_guard_mode, switch '$write_guard_switch': $write_guard_cmd -> deny" deny \
+                "$write_guard_cmd"
+        done
+        for write_guard_cmd in "${write_guard_allowed[@]}"; do
+            assert_write_guard "$write_guard_mode, switch '$write_guard_switch': $write_guard_cmd -> allow" allow \
+                "$write_guard_cmd"
+        done
+    done
+    write_guard_switch=""
+done
+write_guard_remote=""
 
 echo
 echo "$checks checks, $failures failures"

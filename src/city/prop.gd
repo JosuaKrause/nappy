@@ -1,5 +1,5 @@
 class_name Prop
-extends Node2D
+extends ScenerySprite
 ## Small scenery. Feet-anchored like everything else, so it y-sorts against the player:
 ## she passes behind a tree's canopy and in front of its trunk.
 
@@ -54,6 +54,8 @@ func _compute_shape() -> GroundShape:
 			return GroundShape.point(0.0)
 
 func _draw() -> void:
+	if not scenery_resident:
+		return
 	match kind:
 		Kind.TREE:
 			_draw_tree()

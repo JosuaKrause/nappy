@@ -1,0 +1,13 @@
+order	strategy	trial	warmup	source_revision
+0	atomic	warmup	true	aae5c189bfe3a7d23530c6f06d17712c7d043807
+1	global	warmup	true	59b5e6baee8300a6478e4e481c4de4dc7e996496
+2	per-region	warmup	true	a64abc1cf6f022cbb57e1a5e04edd7602f6f1adf
+3	atomic	0	false	aae5c189bfe3a7d23530c6f06d17712c7d043807
+4	global	0	false	59b5e6baee8300a6478e4e481c4de4dc7e996496
+5	per-region	0	false	a64abc1cf6f022cbb57e1a5e04edd7602f6f1adf
+6	global	1	false	59b5e6baee8300a6478e4e481c4de4dc7e996496
+7	per-region	1	false	a64abc1cf6f022cbb57e1a5e04edd7602f6f1adf
+8	atomic	1	false	aae5c189bfe3a7d23530c6f06d17712c7d043807
+9	per-region	2	false	a64abc1cf6f022cbb57e1a5e04edd7602f6f1adf
+10	atomic	2	false	aae5c189bfe3a7d23530c6f06d17712c7d043807
+11	global	2	false	59b5e6baee8300a6478e4e481c4de4dc7e996496
