@@ -7,11 +7,18 @@ needed region's ground graphic is scheduled changes:
 
 1. **The default:** every region needed in a frame is prepared whole, in that frame — the atomic
    preparation silky-rabbit replaced.
-2. **At most one region is prepared in a frame**, whole; the rest wait for following frames.
+2. **At most one region is prepared in a frame**, whole.
 3. **One region's preparation is spread across frames** — silky-rabbit's stepping
    ([its record](../../decisions/2026-10-02-silky-rabbit.md)), unchanged.
 
-Each mode keeps silky-rabbit's guarantee that no half-built region is drawn: the 96px synchronous
+"Graphic" in the player's words is read as one nearby ground region's graphic, the filer's
+reading of the exchange it answered ("the entire graphic is prepared in one frame", said of a
+region). So mode 2 is not the "global one-section cap" silky-rabbit measured and rejected (a section
+is a quarter of a region; "no consistent timing advantage over per-region"): it prepares one whole
+region per frame, and silky-rabbit's matched results do not cover it. **Proposed, not asked for:**
+the regions mode 2 does not reach in a frame wait for the following frames.
+
+**Proposed, not asked for:** each mode keeps silky-rabbit's guarantee that no half-built region is drawn: the 96px synchronous
 guard and a relocation finishing the destination's ground hold in modes 2 and 3 alike. The
 comparisons, the measurement tools and their pinned sources are kept, and each mode is tested
 (mode 2 never prepares two regions in one frame outside the guard; mode 3's existing tests stand).
