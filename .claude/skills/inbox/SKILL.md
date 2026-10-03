@@ -20,7 +20,8 @@ and the options weighed against them).
 `tools/inbox.py` is the tool, and **the one way an agent writes an issue** *(2026-09-27: "if it
 goes through a script it's safe we just need to get it working once -- an agent shouldn't use gh
 issue directly")*. `.claude/hooks/github-write-guard.sh` denies a direct `gh issue` write, wrapped
-in an identity or not.
+in an identity or not, and an issue write through `gh api` the same way, all but a comment POST to
+`issues/N/comments`, which a pull request's own conversation comments share.
 
 ## Where it is found
 

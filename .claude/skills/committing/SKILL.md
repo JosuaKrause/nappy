@@ -83,8 +83,9 @@ except a direct `gh issue` write, which is made again through `tools/inbox.py` i
 `git push`, a commit-making git verb, a GitHub-writing `gh` call, or one of the `tools/` scripts
 that pushes or posts internally, in command position, unless the same command is wrapped in `run
 <role> --`, so the rule holds even when a session forgets it. **A `gh issue` write it denies
-wrapped or not**, since an agent writes an issue only through `tools/inbox.py`, whose own writes
-run in a process of their own that the hook never sees. A read stays unguarded — the hook's
+wrapped or not, and an issue write through `gh api` the same way** (all but a comment, which a
+pull request's own conversation shares), since an agent writes an issue only through
+`tools/inbox.py`, whose own writes run in a process of their own that the hook never sees. A read stays unguarded — the hook's
 own header comment carries the current, exact list, rather than a second copy of it here that can
 drift from it. **An admin action no bot identity can perform** — changing a repository ruleset, a
 GitHub App's own permissions — **is the player's to do directly, in GitHub's own settings, never

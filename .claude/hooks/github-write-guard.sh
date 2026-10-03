@@ -77,9 +77,16 @@
 # which this hook never sees, and refuses to write with no role at all. So every `gh issue` verb off
 # the read list is denied even inside `run <role> --`, with a message that points at the script
 # (leafy-finch; bouncy-heron, statement 14: "if it goes through a script it's safe we just need to
-# get it working once -- an agent shouldn't use gh issue directly"). An issue written through `gh
-# api` (`repos/o/r/issues/N/comments`) is not refused as one: the same endpoint carries a pull
-# request's own conversation comments, which a review posts, so its path cannot tell the two apart.
+# get it working once -- an agent shouldn't use gh issue directly"). The same goes for an issue
+# written through `gh api`, wrapped or not: a write to `repos/o/r/issues` (a new issue), to
+# `issues/N` (its state, title or body), or to anything under them (its labels, assignees, lock,
+# reactions, `issues/comments/N`), and a GraphQL mutation naming an issue mutation (`createIssue`,
+# `closeIssue`, `updateIssue`, `addLabelsToLabelable`, ...; `issue_endpoint` and
+# `issue_mutation_re`, below). What stays open, wrapped, is a comment: a POST to
+# `issues/N/comments` and GraphQL's `addComment`, which a pull request's own conversation comments
+# share, so neither can tell a comment on a note from one on a pull request. A wrapped GraphQL call
+# whose query is not written inline (`-F query=@file`, `--input`) stays open too, since its
+# mutation cannot be read -- an accepted gap.
 #
 # **A reviewer identity (`claude-reviewer`, `codex-reviewer`) is refused the named push and merge
 # routes, wrapped or not.** Its GitHub App has `contents: write` (a reviewer's own APPROVE needs it to satisfy a
@@ -767,6 +774,24 @@ def detect_git($w; $t; $i; $n):
 # What the bound costs is a mention's flags past its own next separator (`echo gh api --jq '.a |
 # .b' -f x=y` inside a script whose first call is a GraphQL read) counting only toward the call
 # whose scan they fall in.
+# A write to an issue through the API is an issue write (`gh api issue write`, denied wrapped or
+# not, like `gh issue`): any non-GET call, or one with a field, naming `repos/<o>/<r>/issues` --
+# the collection (a new issue), `issues/<n>` (its state, title or body), and everything under them
+# (`issues/<n>/labels`, `/assignees`, `/lock`, `/reactions`, `issues/comments/<id>`, a comment's
+# edit or deletion) -- with one exception, `issues/<n>/comments` (an optional trailing `/` or
+# `?query` included), which a pull request's own conversation comments share, so its path cannot
+# tell a comment on a note from one on a pull request. As with the merge-type paths, every
+# non-option word of the call is read, so a header value cannot hide the endpoint, and a body that
+# merely names such a path is a false deny, answered by sending it from a file. A GraphQL mutation
+# is one when a word in it names an issue mutation (`issue_mutation_re`): a verb then `Issue`,
+# `Labelable`, `Assignable` or `Lockable` (`createIssue`, `closeIssue`, `updateIssue`,
+# `updateIssueComment`, `addLabelsToLabelable`, `lockLockable`, ...); `addComment`, which comments
+# on a pull request as readily as on an issue, is the GraphQL form of the one REST exception.
+def issue_endpoint:
+  test("(?i)(^|/)repos/[^/]+/[^/]+/issues(/|\\?|$)")
+  and (test("(?i)(^|/)repos/[^/]+/[^/]+/issues/[^/?]+/comments/?(\\?.*)?$") | not);
+def issue_mutation_re:
+  "^(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert)[A-Za-z]*(Issue|Labelable|Assignable|Lockable)[A-Za-z]*$";
 def gh_api_field_flag: IN("-f", "-F", "--raw-field", "--field");
 def gh_api_value_flag: IN("-H", "--header", "--hostname", "-p", "--preview", "-q", "--jq", "-t",
   "--template", "--cache");
@@ -819,7 +844,7 @@ def gh_api_method($m):
 def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
   {i: $start, method: null, field: false, late_field: false, other_call: false,
    endpoint: null,
-   merge_type: false,
+   merge_type: false, issue_endpoint: false,
    query_visible: false, query_hidden: false, crossed_at: null, cont: false}
   | (until(.i >= $n or ($w[.i] | is_hard_sep)
           or ($bounded and ($w[.i] | is_sep))
@@ -861,19 +886,23 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
                 and (($x | test("(?i)/(merges?|update-branch)/?(\\?.*)?$")) or ($x | test("(?i)/contents/"))
                      or ($x | test("(?i)/git/refs(/|$)")))
              then .merge_type = true else . end)
+          | (if ($x | contains("/")) and ($x | issue_endpoint) then .issue_endpoint = true else . end)
           | .i += 1
         end)
   | .resume = (.crossed_at // .i)) as $r
   | (($r.method != null) and (($r.method | ascii_downcase) == "get")) as $is_get
   | if ($r.endpoint // "") | test("(?i)(^|/)graphql$") then
-      (if $lm >= $start then {next: $r.resume, reason: "gh api graphql mutation"}
+      (if $lm >= $start and ($t.li // -1) >= $start then {next: $r.resume, reason: "gh api graphql issue mutation"}
+       elif $lm >= $start then {next: $r.resume, reason: "gh api graphql mutation"}
        elif $r.query_hidden or ($r.query_visible | not)
        then {next: $r.resume, reason: "gh api graphql with a query not written inline"}
        elif $r.late_field then {next: $r.resume, reason: "gh api"}
        else {next: $r.resume, reason: null} end)
     elif $is_get and ($r.late_field | not) then {next: $r.resume, reason: null}
     elif ($r.method != null) or $r.field then
-      {next: $r.resume, reason: (if $r.merge_type then "gh api merge-type" else "gh api" end)}
+      {next: $r.resume,
+       reason: (if $r.issue_endpoint then "gh api issue write" elif $r.merge_type then "gh api merge-type"
+                else "gh api" end)}
     else {next: $r.resume, reason: null}
     end
   | .scan_end = (if $r.crossed_at == null then null else $r.i end);
@@ -981,6 +1010,9 @@ def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
 def is_push_like($reason): ($reason | startswith("git push")) or ($reason | startswith("tools/"));
 def is_merge_like($reason):
   ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type");
+# A direct issue write, denied wrapped or not: `gh issue`'s own write verbs, and the API's.
+def is_issue_write($reason):
+  ($reason | startswith("gh issue ")) or ($reason | IN("gh api issue write", "gh api graphql issue mutation"));
 
 # **Text that is not run.** A write command's words inside a quoted argument of a command that only
 # prints, searches or stores its arguments (`rg -n "gh issue comment" .claude/`, `echo "run git
@@ -1238,6 +1270,11 @@ def findings($w; $w0; $levels; $unsure; $inert):
   (if $levels | any(. > 0) then $levels else null end) as $lv
   | ($w | length) as $n
   | ([range(0; $n) | select($w[.] | test("(?i)mutation"))] | last // -1) as $lm
+  # The last word naming an issue mutation, read only once a mutation is there at all.
+  | (if $lm < 0 then -1
+     else [range(0; $n)
+           | select($w[.] | (contains("Issue") or contains("able")) and test(issue_mutation_re))]
+          | last // -1 end) as $li
   # The last word that names a commit-making or pushing git subcommand: a git whose option run
   # holds a command substitution, or whose subcommand is an expansion, is a write only when one
   # follows (`detect_git`).
@@ -1250,7 +1287,7 @@ def findings($w; $w0; $levels; $unsure; $inert):
   | ($w | options_table($g; null)) as $ao
   | {ao: $ao, cw: ($w | command_table($ao; $g)),
      cw2: (if $owners == null then null else $w | command_table($w | options_table($g; $owners); $g) end),
-     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw,
+     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li,
      oc: (if $unsure then opener_counts($w0) else null end)} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
@@ -1298,10 +1335,10 @@ def findings($w; $w0; $levels; $unsure; $inert):
                    (if (is_push_like($hit.reason) or is_merge_like($hit.reason))
                        and ((reviewer_roles | index($state.wrap_role)) != null)
                     then .out += [$hit.reason] | .reviewer_push = true
-                    elif $hit.reason | startswith("gh issue ") then .out += [$hit.reason] | .issue_write = true
+                    elif is_issue_write($hit.reason) then .out += [$hit.reason] | .issue_write = true
                     else . end)
                  else .out += [$hit.reason]
-                   | (if $hit.reason | startswith("gh issue ") then .issue_write = true else . end) end
+                   | (if is_issue_write($hit.reason) then .issue_write = true else . end) end
                | .i = $hit.next)
             end
         end
@@ -1407,10 +1444,14 @@ $file_hint See .claude/hooks/github-write-guard.sh."
 elif [ "$issue_write" = "true" ]; then
 	reason="This command writes an issue directly ($flagged). An agent writes an issue only through \
 tools/inbox.py -- capture, ask, close --pr, reopen --pr, each running its own write as \
-claude-orchestrator (Codex: codex-coder) -- never with gh issue, wrapped in an identity or not. \
-Run 'uv run python tools/inbox.py --help', and see the inbox skill. If the command only mentions \
-gh issue in text (a message, a heredoc body), put the text in a file (git commit -F file, \
---body-file file) or quote it as the argument of a command that only prints or searches it."
+claude-orchestrator (Codex: codex-coder) -- never with gh issue, nor with gh api on an issue \
+endpoint (a new issue, issues/N, its labels, assignees or lock, an issue comment's edit) or a \
+GraphQL issue mutation, wrapped in an identity or not; the one API route left open is a POST to \
+issues/N/comments, which a pull request's own conversation comments share. Run \
+'uv run python tools/inbox.py --help', and see the inbox skill. If the command only mentions \
+such a write in text (a message, a heredoc body, a comment body naming an issue path), put the \
+text in a file (git commit -F file, --body-file file, gh api -F body=@file) or quote it as the \
+argument of a command that only prints or searches it."
 elif [ "$reviewer_push" = "true" ]; then
 	reason="This command ($flagged) runs as a reviewer identity (claude-reviewer or codex-reviewer), \
 but reviewers never push or merge. Wrap it in \

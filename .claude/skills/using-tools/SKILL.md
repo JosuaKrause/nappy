@@ -100,8 +100,11 @@ instead; see **committing**'s "Who a commit and a pull request are from" for why
 mandatory and which writes are asked about when, and the hook's own header comment for the exact,
 current list of what it denies rather than a second copy of it here. A read (`git status`, `gh pr
 view/list/checks`, ...) is unguarded, and a reviewer identity is refused a merge-type write too,
-not only a push. **A `gh issue` write is denied wrapped or not**: an agent writes an issue only
-through `tools/inbox.py` (**inbox**), which wraps its own writes. A write's words inside a quoted
+not only a push. **A `gh issue` write is denied wrapped or not, and so is one through `gh api`**
+(a new issue, `issues/N`, its labels, assignees or lock, an issue comment's edit, a GraphQL issue
+mutation; a comment POST to `issues/N/comments`, which a pull request's conversation comments
+share, stays open): an agent writes an issue only through `tools/inbox.py` (**inbox**), which
+wraps its own writes. A write's words inside a quoted
 argument of a command that only prints, searches or stores it (`rg -n "gh issue comment"`,
 `git commit -m "..."`), or in the body of a heredoc with a quoted delimiter such a command reads
 (`cat > brief.md <<'EOF'`), are text and do not count; the same words piped into a shell, in a

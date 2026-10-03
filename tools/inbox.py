@@ -8,7 +8,8 @@ file and files the queue from it in one pull request whose description names eac
 of its own, `Filed from #N`. The inbox skill (`.claude/skills/inbox/SKILL.md`) is the workflow;
 this is its tool, and the one sanctioned way an agent writes an issue (statement 14: "if it goes
 through a script it's safe ... an agent shouldn't use gh issue directly"), so
-`.claude/hooks/github-write-guard.sh` denies a direct `gh issue` write, wrapped or not.
+`.claude/hooks/github-write-guard.sh` denies a direct `gh issue` write, wrapped or not, and an
+issue write through `gh api` (all but a comment, which pull requests share) the same way.
 
     capture                  opens a note holding the player's words verbatim, from --body-file or
                              standard input, labelled `inbox` and `captured` and, with --band, its

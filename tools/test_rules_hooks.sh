@@ -79,8 +79,11 @@
 #     claude-orchestrator, a wrapping role like the coders, gets every write through (push, commit,
 #     gh pr create/merge, gh label create, gh run rerun, a pushing tools/ script); unwrapped, each
 #     of those still denies, and both deny messages name it. A gh issue write verb (create, close,
-#     reopen, comment, edit) denies wrapped or not, since tools/inbox.py is the one way an agent
-#     writes an issue, and its message names the script. A write's words inside a quoted argument
+#     reopen, comment, edit) denies wrapped or not, and so does a gh api write to an issue
+#     endpoint (issues, issues/N, its labels/assignees/lock, issues/comments/N) or a GraphQL issue
+#     mutation (closeIssue, addLabelsToLabelable, ...), since tools/inbox.py is the one way an agent
+#     writes an issue, and its message names the script; a comment POST to issues/N/comments and
+#     GraphQL's addComment, which pull requests share, stay allowed. A write's words inside a quoted argument
 #     of a text-only command (rg, grep, echo, git commit -m, gh pr create --body, tools/inbox.py)
 #     or in a heredoc body such a command reads (cat > file <<'EOF', "$(cat <<'EOF' ...)" as a
 #     git commit or gh message, tools/inbox.py capture <<'NOTE') no longer count, while the same
@@ -1329,6 +1332,48 @@ assert_write_guard "wrapped gh issue edit --add-label as claude-orchestrator -> 
 assert_write_guard "wrapped gh -R O/R issue close as claude-coder -> deny" deny \
     'uv run python tools/agent-identity.py run claude-coder -- gh -R o/r issue close 12'
 assert_write_guard "wrapped gh issue view -> allow, a read" allow "$orch gh issue view 12"
+# The API's issue writes are issue writes too, wrapped or not; a comment POST to issues/N/comments
+# (and GraphQL's addComment) is the one route left, since a pull request's own conversation
+# comments share it.
+assert_write_guard "wrapped gh api issue create -> deny" deny \
+    "$orch gh api repos/JosuaKrause/nappy/issues -f title=x -f body=y"
+assert_write_guard "wrapped gh api issue create to issues/ from --input -> deny" deny \
+    "$orch gh api repos/o/r/issues/ --input body.json"
+assert_write_guard "wrapped gh api issue create to issues?query -> deny" deny "$orch gh api 'repos/o/r/issues?x=1' -f title=t"
+assert_write_guard "wrapped gh api -X PATCH issues/N state=closed -> deny" deny \
+    "$orch gh api -X PATCH repos/JosuaKrause/nappy/issues/423 -f state=closed"
+assert_write_guard "the same as claude-coder, with a leading slash -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-coder -- gh api -X PATCH /repos/o/r/issues/423 -f state=closed'
+assert_write_guard "wrapped gh api label add -> deny" deny \
+    "$orch gh api repos/JosuaKrause/nappy/issues/423/labels -f 'labels[]=queue_now'"
+assert_write_guard "wrapped gh api -X DELETE of a label -> deny" deny \
+    "$orch gh api -X DELETE repos/JosuaKrause/nappy/issues/423/labels/inbox"
+assert_write_guard "wrapped gh api assignees -> deny" deny "$orch gh api repos/o/r/issues/5/assignees -f 'assignees[]=x'"
+assert_write_guard "wrapped gh api -X PUT lock -> deny" deny "$orch gh api -X PUT repos/o/r/issues/5/lock"
+assert_write_guard "wrapped gh api -X PATCH issues/comments/N -> deny" deny \
+    "$orch gh api -X PATCH repos/JosuaKrause/nappy/issues/comments/123 -f body=hi"
+assert_write_guard "wrapped gh api -X DELETE issues/comments/N -> deny" deny "$orch gh api -X DELETE repos/o/r/issues/comments/9"
+assert_write_guard "a header value before the issue endpoint does not hide it -> deny" deny \
+    "$orch gh api -H 'Accept: application/vnd.github+json' -X PATCH repos/o/r/issues/5 -f state=closed"
+assert_write_guard "wrapped GraphQL closeIssue -> deny" deny \
+    "$orch gh api graphql -f query='mutation { closeIssue(input: {issueId: \"x\"}) { clientMutationId } }'"
+assert_write_guard "wrapped GraphQL addLabelsToLabelable -> deny" deny \
+    "$orch gh api graphql -f query='mutation { addLabelsToLabelable(input: {labelableId: \"x\", labelIds: [\"y\"]}) { clientMutationId } }'"
+assert_write_guard "wrapped GraphQL createIssue under an alias -> deny" deny \
+    "$orch gh api graphql -f query='mutation { made: createIssue(input: {repositoryId: \"r\", title: \"t\"}) { issue { number } } }'"
+assert_write_guard "wrapped gh api comment POST to issues/N/comments -> allow, PR comments share it" allow \
+    "$orch gh api repos/JosuaKrause/nappy/issues/429/comments -F body=@/tmp/b.md"
+assert_write_guard "wrapped GraphQL addComment -> allow, the same route" allow \
+    "$orch gh api graphql -f query='mutation { addComment(input: {subjectId: \"x\", body: \"y\"}) { clientMutationId } }'"
+assert_write_guard "a reviewer's wrapped GraphQL resolveReviewThread -> allow, not an issue mutation" allow \
+    "uv run python tools/agent-identity.py run claude-reviewer -- gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: \"x\"}) { thread { id } } }'"
+assert_write_guard "a GraphQL read naming an issue -> allow" allow \
+    "gh api graphql -f query='query { repository(owner: \"o\", name: \"r\") { issue(number: 5) { title } } }'"
+assert_write_guard "gh api GET of an issue and its comments -> allow" allow \
+    "gh api repos/o/r/issues/423 && gh api repos/o/r/issues/423/comments --jq '.[].body'"
+assert_write_guard "gh api -X GET issues with a field -> allow, a read" allow "gh api -X GET repos/o/r/issues -f labels=inbox"
+assert_write_guard "wrapped gh api -X PATCH pulls/N -> allow, a pull request's own write" allow \
+    "$orch gh api -X PATCH repos/o/r/pulls/5 -f body=x"
 assert_write_guard "tools/inbox.py list, a read -> allow" allow 'uv run python tools/inbox.py list'
 assert_write_guard "tools/inbox.py close with its own role -> allow" allow \
     'uv run python tools/inbox.py --role claude-orchestrator close --pr 430'
@@ -1577,6 +1622,8 @@ assert_write_guard "bash -lc, a wrapper inside the script, then a newline and gi
 assert_write_guard "bash -c, the whole script one wrapped git push -> allow" allow \
     'bash -c "uv run python tools/agent-identity.py run claude-coder -- git push"'
 assert_write_guard "bash -c, a wrapped gh api write whose quoted body holds a ; -> allow" allow \
+    "bash -c \"uv run python tools/agent-identity.py run claude-coder -- gh api -X POST repos/o/r/issues/1/comments -f body='x; y'\""
+assert_write_guard "bash -c, the same posted to the issue collection -> deny, an issue write" deny \
     "bash -c \"uv run python tools/agent-identity.py run claude-coder -- gh api -X POST repos/o/r/issues -f body='x; y'\""
 assert_write_guard "bash -c, a reviewer's wrapper inside the script, then ; git push -> deny" deny \
     'bash -c "uv run python tools/agent-identity.py run claude-reviewer -- gh pr view 1; git push"'
@@ -1658,6 +1705,9 @@ assert_write_guard_reason "the unwrapped deny names claude-orchestrator" \
 assert_write_guard_reason "a direct issue write's deny points at tools/inbox.py" \
     'uv run python tools/agent-identity.py run claude-orchestrator -- gh issue close 5' "only through tools/inbox.py"
 assert_write_guard_reason "and says wrapping does not help" 'gh issue comment 5 --body x' "wrapped in an identity or not"
+assert_write_guard_reason "a gh api issue write's deny points at tools/inbox.py too" \
+    'uv run python tools/agent-identity.py run claude-orchestrator -- gh api -X PATCH repos/o/r/issues/5 -f state=closed' \
+    "only through tools/inbox.py"
 assert_write_guard_reason "the reviewer deny names claude-orchestrator too" \
     'uv run python tools/agent-identity.py run claude-reviewer -- gh pr merge 1' \
     "or claude-orchestrator when the pull request has no code changes"
@@ -2198,6 +2248,7 @@ write_guard_never_asked=(
     'gh issue edit 5 --title x'
     'gh issue close 5'
     'uv run python tools/agent-identity.py run claude-orchestrator -- gh issue comment 5 --body hi'
+    'uv run python tools/agent-identity.py run claude-orchestrator -- gh api -X PATCH repos/o/r/issues/5 -f state=closed'
     'gh pr merge 391 --squash'
     'gh release create v1.0'
     'gh api repos/o/r/issues -X POST'
