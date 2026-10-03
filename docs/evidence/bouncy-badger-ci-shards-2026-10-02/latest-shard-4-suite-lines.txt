@@ -1,0 +1,13 @@
+shards (4)	Shard 4/8	2026-10-03T00:43:37.5196328Z -- test_atlas_library.gd          152 ms
+shards (4)	Shard 4/8	2026-10-03T00:43:42.1976858Z -- test_atlas_loading.gd         4677 ms
+shards (4)	Shard 4/8	2026-10-03T00:44:36.1414081Z -- test_crowd_bodies.gd         53943 ms
+shards (4)	Shard 4/8	2026-10-03T00:46:33.8155723Z -- test_crowd_closures.gd      117673 ms
+shards (4)	Shard 4/8	2026-10-03T00:46:47.6770798Z -- test_danger.gd               13861 ms
+shards (4)	Shard 4/8	2026-10-03T00:46:47.7443765Z -- test_event_views.gd             68 ms
+shards (4)	Shard 4/8	2026-10-03T00:46:48.0162006Z -- test_ground_layers.gd          271 ms
+shards (4)	Shard 4/8	2026-10-03T00:46:48.5132016Z -- test_pause.gd                  496 ms
+shards (4)	Shard 4/8	2026-10-03T00:46:48.5357413Z -- test_presentation_mode.gd       20 ms
+shards (4)	Shard 4/8	2026-10-03T00:46:50.5915010Z -- test_return_patrols.gd        2059 ms
+shards (4)	Shard 4/8	2026-10-03T00:47:08.6148477Z -- test_route_lines.gd          18023 ms
+shards (4)	Shard 4/8	2026-10-03T00:47:49.4146108Z -- test_route_rig.gd            40798 ms
+shards (4)	Shard 4/8	2026-10-03T00:49:43.8466049Z -- test_spent_park.gd          114430 ms
