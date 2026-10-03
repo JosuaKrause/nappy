@@ -1868,7 +1868,7 @@ func _start_day() -> void:
 		_route_rig.start_day()
 
 ## The ordinary game's components start from the authored setup before any actor is allowed to
-## tick. The random scheduler is called only when the recipe explicitly requests background.
+## tick. The recipe selects every event; the random scheduler does not fill authored scenes.
 func _start_recipe_day() -> void:
 	GameState.begin_day()
 	EventBus.day_started.emit(GameState.day)
