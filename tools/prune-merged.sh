@@ -60,8 +60,9 @@ Never unlocks or force-removes worktrees. Protects the main checkout and caller'
   --help, -h  Print help without doing work.
 
 Allocated KiB are not a promise of exclusive reclaimable bytes on copy-on-write disks.
-Applying also sweeps worktree-agent-* branches that git branch -d accepts once their worktree
-is gone. Run from the main checkout through the PR's own agent identity.
+Applying also clears the registration of every unlocked worktree whose directory is gone
+(git worktree prune), then sweeps worktree-agent-* branches that git branch -d accepts once
+their worktree is gone. Run from the main checkout through the PR's own agent identity.
 
   tools/prune-merged.sh feature/fire-on-her-way
   tools/prune-merged.sh --all
@@ -161,7 +162,10 @@ inspect() {
         || { refuse "remote tip is not the merged head"; return 1; }
     path="$(worktree_of "$branch")"
     if [[ -n "$path" ]]; then
-        [[ -d "$path" ]] || { refuse "missing worktree; inspect registration manually"; return 1; }
+        [[ -d "$path" ]] || {
+            refuse "worktree directory is gone; an applying run unregisters it, then retire again"
+            return 1
+        }
         path="$(cd "$path" && pwd -P)"
         [[ "$path" != "$main_checkout" ]] || { refuse "checked out in main checkout"; return 1; }
         case "$here/" in "$path"/*) refuse "caller is in this worktree"; return 1 ;; esac
@@ -241,8 +245,12 @@ done
 
 # A `worktree-agent-<id>` branch belongs to the worktree `.../agent-<id>`, which usually has a
 # feature branch checked out rather than this one — so "is it checked out" says nothing, and the
-# test is whether that worktree still exists. A live agent's is kept.
+# test is whether that worktree still exists. A live agent's is kept. First drop the registration
+# of every worktree whose directory is gone (`git worktree prune` leaves locked ones alone), or a
+# hand-deleted worktree would stay registered for good: its branch refused above and its harness
+# branch counted as live below.
 if [[ $dry -eq 0 ]]; then
+git worktree prune
 live_worktrees="$(git worktree list --porcelain | awk '/^worktree /{print substr($0, 10)}')"
 for agent_branch in $(git for-each-ref --format='%(refname:short)' 'refs/heads/worktree-agent-*'); do
     if printf '%s\n' "$live_worktrees" | grep -q "/${agent_branch#worktree-}\$"; then

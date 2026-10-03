@@ -102,6 +102,20 @@ class RetirementTests(unittest.TestCase):
         self.assertFalse(self.tree.exists())
         self.assertTrue(self.repo.exists())
 
+    def test_apply_unregisters_a_deleted_worktree_and_inventory_does_not(self) -> None:
+        gone = self.root / "gone"
+        self.run_git("worktree", "add", "-q", "-b", "feature/gone", str(gone), cwd=self.repo)
+        shutil.rmtree(gone)
+        inventory = self.prune("--all")
+        self.assertIn("keep feature/gone: worktree directory is gone", inventory.stdout)
+        self.assertIn(str(gone), self.run_git("worktree", "list", "--porcelain", cwd=self.repo))
+        result = self.prune("--all", "--apply")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn(str(gone), self.run_git("worktree", "list", "--porcelain", cwd=self.repo))
+        again = self.prune("feature/gone")
+        self.assertEqual(again.returncode, 0, again.stdout + again.stderr)
+        self.assertEqual(self.run_git("branch", "--list", "feature/gone", cwd=self.repo), "")
+
     def test_dirty_untracked_locked_and_active_work_stays(self) -> None:
         (self.tree / "tracked").write_text("unfinished\n")
         self.kept(self.prune("feature/probe"), "dirty or untracked")
