@@ -164,9 +164,10 @@ def check(notes: list[Note], added_playtests: dict[str, str]) -> list[str]:
     return failures
 
 
-def added_playtests(changes: list[Change], root: Path = lib_ci.ROOT) -> dict[str, str]:
+def added_playtests(changes: list[Change], cwd: Path = lib_ci.ROOT) -> dict[str, str]:
+    """The text of each playtest file the pull request adds, read from its blob at the head."""
     return {
-        change.path: (root / change.path).read_text(encoding="utf-8")
+        change.path: lib_ci.read_blob(change.new_blob, cwd)
         for change in changes
         if change.status == "A" and lib_ci.under(change.path, PLAYTESTS)
     }

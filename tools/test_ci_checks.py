@@ -402,17 +402,45 @@ class TranscriptionTests(unittest.TestCase):
         self.assertIn("a pull request", ci_transcription.check([pull], FILED_PLAYTEST)[0])
         self.assertIn("no body", ci_transcription.check([note(body=" \r\n")], FILED_PLAYTEST)[0])
 
-    def test_only_a_playtest_file_the_pull_request_adds_is_read(self) -> None:
+    def test_only_a_playtest_file_the_pull_request_adds_is_read_from_the_head_not_the_checkout(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            (root / "docs" / "playtests").mkdir(parents=True)
-            (root / "docs" / "playtests" / "old.md").write_text("an old playtest", encoding="utf-8")
-            (root / "docs" / "playtests" / "new.md").write_text("a new playtest", encoding="utf-8")
-            (root / "docs" / "other.md").write_text("not a playtest", encoding="utf-8")
-            changes = [modified("docs/playtests/old.md"), added("docs/playtests/new.md"), added("docs/other.md")]
+            repo = Path(folder)
+            git(repo, "init", "-q", "-b", "main")
+            (repo / "docs" / "playtests").mkdir(parents=True)
+            (repo / "docs" / "playtests" / "old.md").write_text("an old playtest", encoding="utf-8")
+            git(repo, "add", "-A")
+            git(repo, "commit", "-q", "-m", "base")
+            git(repo, "checkout", "-q", "-b", "branch")
+            (repo / "docs" / "playtests" / "old.md").write_text("an old playtest, appended to", encoding="utf-8")
+            (repo / "docs" / "playtests" / "new.md").write_text("a new playtest", encoding="utf-8")
+            (repo / "docs" / "other.md").write_text("not a playtest", encoding="utf-8")
+            git(repo, "add", "-A")
+            git(repo, "commit", "-q", "-m", "branch")
+            git(repo, "checkout", "-q", "main")  # the checkout is the base: the head's files are not on disk
+            changes = lib_ci.changed_files("main", "branch", cwd=repo)
             self.assertEqual(
-                ci_transcription.added_playtests(changes, root), {"docs/playtests/new.md": "a new playtest"}
+                ci_transcription.added_playtests(changes, repo), {"docs/playtests/new.md": "a new playtest"}
             )
+
+    def test_the_playtests_are_read_at_the_head_whatever_is_checked_out(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            repo = Path(folder)
+            git(repo, "init", "-q", "-b", "main")
+            (repo / "docs" / "playtests").mkdir(parents=True)
+            (repo / "docs" / "playtests" / "old.md").write_text("an old playtest", encoding="utf-8")
+            (repo / "docs" / "playtests" / "notes.txt").write_text("not markdown", encoding="utf-8")
+            git(repo, "add", "-A")
+            git(repo, "commit", "-q", "-m", "base")
+            git(repo, "checkout", "-q", "-b", "branch")
+            (repo / "docs" / "playtests" / "new.md").write_text("a new playtest", encoding="utf-8")
+            git(repo, "add", "-A")
+            git(repo, "commit", "-q", "-m", "branch")
+            git(repo, "checkout", "-q", "main")
+            self.assertEqual(
+                lib_ci.playtest_texts("branch", cwd=repo),
+                {"docs/playtests/new.md": "a new playtest", "docs/playtests/old.md": "an old playtest"},
+            )
+            self.assertEqual(lib_ci.playtest_texts("HEAD", cwd=repo), {"docs/playtests/old.md": "an old playtest"})
 
     def test_the_api_shape_is_read_whatever_the_state(self) -> None:
         data: dict[str, object] = {
