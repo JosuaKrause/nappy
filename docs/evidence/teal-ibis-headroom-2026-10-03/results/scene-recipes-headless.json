@@ -1,0 +1,15 @@
+{
+  "command": ["./tools/scene-recipes.sh", "--output", "/tmp/teal-ibis-measure/recipes-headless"],
+  "exit_status": 0,
+  "elapsed_seconds": 162,
+  "interval_seconds": 0.5,
+  "samples": 296,
+  "paths": [
+    {"path": "/tmp/teal-ibis-measure/recipes-headless", "baseline_kib": 0, "peak_kib": 112, "final_kib": 112}
+  ],
+  "peak_additional_kib": 112,
+  "retained_kib": 112,
+  "available_start_kib": 71515500,
+  "available_min_kib": 71422528,
+  "available_end_kib": 71422528
+}

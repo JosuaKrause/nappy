@@ -140,8 +140,11 @@ copy-on-write blocks; it does not promise exclusive reclaimable bytes. `df` on e
 volume measures the available headroom. Before multiplying worktrees or producing large imports,
 builds or capture batches, compare estimated peak use with free space and a stated reserve.
 When the peak is unknown, start with a bounded measurement or reuse an existing checkout rather
-than claiming an arbitrary fixed threshold makes the job safe. Keep unrelated tracked archives
-out of new worktrees through sparse checkout (**orchestrating**).
+than claiming an arbitrary fixed threshold makes the job safe. The tools that allocate a batch
+make that comparison themselves through `tools/lib_disk_headroom.sh` (**using-tools** lists them),
+whose per-job estimates are peaks measured with `tools/measure-disk-peak.sh`, and refuse an
+unmeasured job; a worktree made by hand compares the same file's worktree estimate with `df`.
+Keep unrelated tracked archives out of new worktrees through sparse checkout (**orchestrating**).
 
 ### 7. There is no checked-in handoff
 

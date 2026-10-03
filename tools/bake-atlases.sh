@@ -51,6 +51,8 @@ set -uo pipefail
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MANIFEST="$PROJECT_DIR/assets/atlases/baked/bake_manifest.json"
+# shellcheck source=tools/lib_disk_headroom.sh
+source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 
 usage() {
     cat <<'EOF'
@@ -225,6 +227,10 @@ if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT (override with GODOT=...)" >&2
     exit 127
 fi
+
+# Checked only on the path that writes pages: --check, an up-to-date tree and a rejected argument
+# allocate nothing.
+headroom_preflight tools/bake-atlases.sh "$PROJECT_DIR/assets/atlases/baked" "" atlas-bake || exit 1
 
 echo "atlases: baking ($mode mode) -- $reason"
 bake_args=()

@@ -144,6 +144,9 @@ fi
 # The baked atlas pages, repaired the way tools/shot.sh and tools/trailer.sh repair them.
 if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
     "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
+    # shellcheck source=tools/lib_disk_headroom.sh
+    source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
+    headroom_preflight tools/record.sh "$PROJECT_DIR/.godot" "" import || exit 1
     echo "rebuilding with tools/check.sh -- this takes a few seconds" >&2
     if ! "$PROJECT_DIR/tools/check.sh" >/dev/null; then
         echo "tools/check.sh failed; run it directly to see why" >&2
@@ -165,6 +168,15 @@ if [[ -n "$RECIPE" ]]; then
     movie_recipe_preflight "$RECIPE" "$WORK/preflight.json" false "$RECIPE_MODE" "${FULL_FLAGS[@]}"
     FULL_FLAGS+=(--recipe-manifest "$WORK/manifest.json")
 fi
+
+# Every frame stays on disk under ${TMPDIR:-/tmp} until the video is encoded, so the batch is the
+# whole recording, checked before the movie writer starts: one record-second per second the rig may
+# last (its outside kill, an upper bound on the game time it records).
+# shellcheck source=tools/lib_disk_headroom.sh
+source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
+headroom_preflight tools/record.sh "$WORK" \
+    "record a shorter run: an earlier --after SECONDS or a shorter --day-length ends it sooner" \
+    "record-second:$(rig_kill_after_seconds "${FULL_FLAGS[@]}")" || exit 1
 
 kill_after="$(rig_kill_after_movie_seconds "${FULL_FLAGS[@]}")"
 echo "recording (rig's own wall-clock limit ${kill_after}s)..." >&2

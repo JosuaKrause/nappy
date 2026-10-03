@@ -49,6 +49,10 @@ if [[ "$mode" == verify ]]; then
     echo 'Custom Web template missing, stale or corrupt; run tools/build-web-template.sh.' >&2
     exit 1
 fi
+# A cache miss holds the downloads, the Emscripten SDK and the engine's objects at once before
+# any of it is removed, so the volume must have room for all of them before the first download.
+source "$root/tools/lib_disk_headroom.sh"
+headroom_preflight tools/build-web-template.sh "$root/build" "" web-template-build || exit 1
 command -v uv >/dev/null || { echo 'uv is required to run pinned SCons.' >&2; exit 1; }
 mkdir -p "$out"
 build_lock="$out/.build-lock"

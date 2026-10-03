@@ -23,6 +23,8 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RESOLUTION="${RESOLUTION:-1280x720}"
 # shellcheck source=tools/lib_dev_flags.sh
 source "$PROJECT_DIR/tools/lib_dev_flags.sh"
+# shellcheck source=tools/lib_disk_headroom.sh
+source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 
 usage() {
     cat <<EOF
@@ -95,6 +97,15 @@ if [[ ! -x "$GODOT" ]]; then
     exit 127
 fi
 
+# Relative paths would resolve against the project dir inside Godot, not the caller's cwd.
+case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
+
+# The still, and the import below when the pages are stale, checked against the volume the still
+# goes to before either is written.
+headroom_jobs=(shot)
+"$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1 || headroom_jobs+=(import)
+headroom_preflight tools/shot.sh "$(dirname "$OUT")" "" "${headroom_jobs[@]}" || exit 1
+
 # The baked atlas pages, in the same shape tools/run.sh checks its import cache in: a picture
 # that has changed since the last bake leaves the pages standing for the tree before it, and a
 # capture is the one thing that would then be photographing yesterday's artwork with nothing on
@@ -122,9 +133,6 @@ if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
     fi
     echo "atlases rebuilt" >&2
 fi
-
-# Relative paths would resolve against the project dir inside Godot, not the caller's cwd.
-case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 
 # M195: every shot.sh run is a rig by definition, so both halves of the lockdown apply
 # unconditionally, no flag needed. `--disable-vsync` is Godot's own engine flag (before the `--`),

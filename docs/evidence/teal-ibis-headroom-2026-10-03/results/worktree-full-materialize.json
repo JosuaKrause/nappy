@@ -1,0 +1,16 @@
+{
+  "command": ["git", "sparse-checkout", "disable"],
+  "exit_status": 0,
+  "elapsed_seconds": 9,
+  "interval_seconds": 0.5,
+  "samples": 16,
+  "paths": [
+    {"path": "/tmp/teal-ibis-measure/wt-full", "baseline_kib": 22880, "peak_kib": 1128768, "final_kib": 1128768},
+    {"path": "/Users/krause/workspace/nappy-claude/.git/worktrees/wt-full", "baseline_kib": 1536, "peak_kib": 2204, "final_kib": 2204}
+  ],
+  "peak_additional_kib": 1106556,
+  "retained_kib": 1106556,
+  "available_start_kib": 75269268,
+  "available_min_kib": 73764820,
+  "available_end_kib": 73764452
+}

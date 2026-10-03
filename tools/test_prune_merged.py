@@ -377,9 +377,17 @@ class BuildScratchTests(unittest.TestCase):
         config.mkdir(parents=True)
         self.script = self.repo / "tools/build-web-template.sh"
         shutil.copy2(ROOT / "tools/build-web-template.sh", self.script)
+        shutil.copy2(ROOT / "tools/lib_disk_headroom.sh", self.repo / "tools/lib_disk_headroom.sh")
         self.bin = self.root / "bin"
         self.bin.mkdir()
-        self.env = dict(os.environ, PATH=f"{self.bin}:{os.environ['PATH']}")
+        # The disk preflight still runs, against an estimate and a reserve of nothing, so these
+        # cases never depend on the free space of the machine running them.
+        self.env = dict(
+            os.environ,
+            PATH=f"{self.bin}:{os.environ['PATH']}",
+            NAPPY_HEADROOM_PEAK_MIB_WEB_TEMPLATE_BUILD="0",
+            NAPPY_HEADROOM_RESERVE_MIB="0",
+        )
         hashes = {}
         for name in ("godot", "emsdk"):
             source = self.root / name

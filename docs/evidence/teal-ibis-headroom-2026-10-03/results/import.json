@@ -1,0 +1,16 @@
+{
+  "command": ["./tools/check.sh"],
+  "exit_status": 0,
+  "elapsed_seconds": 17,
+  "interval_seconds": 0.5,
+  "samples": 32,
+  "paths": [
+    {"path": "/tmp/teal-ibis-measure/wt-full/.godot", "baseline_kib": 0, "peak_kib": 1004, "final_kib": 1004},
+    {"path": "/tmp/teal-ibis-measure/wt-full/assets/atlases/baked", "baseline_kib": 1148, "peak_kib": 1148, "final_kib": 1148}
+  ],
+  "peak_additional_kib": 1004,
+  "retained_kib": 1004,
+  "available_start_kib": 71394292,
+  "available_min_kib": 71269800,
+  "available_end_kib": 71569652
+}

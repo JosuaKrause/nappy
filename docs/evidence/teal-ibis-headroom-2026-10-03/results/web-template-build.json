@@ -1,0 +1,16 @@
+{
+  "command": ["nice", "-n", "15", "./tools/build-web-template.sh", "--jobs", "3"],
+  "exit_status": 0,
+  "elapsed_seconds": 900,
+  "interval_seconds": 5,
+  "samples": 157,
+  "paths": [
+    {"path": "/Users/krause/workspace/nappy-claude/.claude/worktrees/teal-ibis-headroom/build/web-template-work", "baseline_kib": 0, "peak_kib": 2832528, "final_kib": 0},
+    {"path": "/Users/krause/workspace/nappy-claude/.claude/worktrees/teal-ibis-headroom/build/web-template", "baseline_kib": 0, "peak_kib": 7112, "final_kib": 7108}
+  ],
+  "peak_additional_kib": 2832532,
+  "retained_kib": 7108,
+  "available_start_kib": 76271956,
+  "available_min_kib": 69695304,
+  "available_end_kib": 72544964
+}
