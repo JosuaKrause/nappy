@@ -102,8 +102,13 @@ capture() {
         "$(uptime | sed 's/.*load averages*: //')" >> "$output/order.tsv"
     echo "Capture $label (warmup=$warmup)"
     # Another engine (a test run from another checkout, say) competes for the same cores and
-    # GPU, so the comparison stops rather than recording its timings as a mode's.
-    others="$(pgrep -x Godot || true)"
+    # GPU, so a capture waits up to five minutes for it to end and the comparison stops rather
+    # than recording its timings as a mode's.
+    for _ in $(seq 300); do
+        others="$(pgrep -x Godot || true)"
+        [[ -n "$others" ]] || break
+        sleep 1
+    done
     [[ -z "$others" ]] || fail "another Godot process is running ($others); retry once it ends"
     rm -f "$output/competition.tmp"
     GROUND_MATCH_OUTPUT="$output/$label.json" GROUND_MATCH_STRATEGY="${names[$index]}" \
