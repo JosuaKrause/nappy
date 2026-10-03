@@ -13,6 +13,13 @@ join needs special handling to avoid blank tiles. [minty-wombat, valid component
 records their clarification that edge cases need not include invalid states. Reproducing
 unusual valid combinations of standard components is the test use to build first.
 
+The player also accepts invalid-state fixtures if they cannot accidentally produce an
+invalid scene, while emphasizing "I want to be able to make sure something could actually
+appear". [frosty-finch, possible gameplay and explicit fixtures](../../playtests/2026-10-02-frosty-finch.md)
+records this qualification. A normal recipe must establish that its arrangement is
+possible under actual game generation and placement rules. A deliberately invalid test
+fixture is explicitly distinguished from that guarantee.
+
 [M203, roofs covering adjoining facades](../../decisions/2026-09-26-M203-a-front-nobody-can-stand-at-is-covered-by-the-roof-in-front-of-it.md)
 records the relevant power-station hall/yard distinction: "a front column draws no facade
 only where a roof extension actually covers it." The builder must make these joins

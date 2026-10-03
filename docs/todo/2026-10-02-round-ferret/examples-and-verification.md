@@ -21,6 +21,14 @@ background seed changes, and that the builder does not enumerate whole-city seed
 find those requirements. Verify relevant navigation and collision metadata agree with
 the rendered components.
 
+Prove the possible-gameplay guarantee, not just the drawing: a configuration that uses
+real components but violates a normal generator or planner rule is refused by default.
+The building/power-station examples pass those same rules. Exercise explicit invalid
+fixtures separately: only named expected violations are accepted, additional violations
+fail, a missing expected violation fails, and the result is never classified as a normal
+scene. Verify that the trailer entry point refuses a test-only or partially validated
+fixture. These checks enforce the player's condition on supporting invalid fixtures.
+
 Repeat a headless scripted scene and compare the required state at named ticks. Exercise
 the live startup path as well: prove the ordinary scheduler cannot replace required actors,
 recipe errors exit unsuccessfully, and recipe runs do not write player progress. Cover the

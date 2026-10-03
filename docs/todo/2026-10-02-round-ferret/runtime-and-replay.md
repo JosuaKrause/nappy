@@ -7,6 +7,12 @@ how recipe values interact with command-line flags. Reject conflicting ownership
 setting rather than silently ignoring one of its values. Keep the flag list in its
 existing shared declaration and keep recipe runs away from the player's save.
 
+The recipe's normal-scene or test-fixture classification remains explicit through each
+entry point and in its output manifest. The trailer tool accepts only scenes validated
+as possible gameplay. A test fixture cannot become a normal scene through a missing flag,
+a default value, a successful render, or a reused cached setup. An isolated fixture's
+limited validation result likewise cannot substitute for full-scene validation.
+
 Recipes control the initial day and relevant progression state; player position, facing,
 parent and meter state; named events and traffic/pedestrian actors, their placement and
 routes; and the presence or absence of generated background activity. An omitted ambient

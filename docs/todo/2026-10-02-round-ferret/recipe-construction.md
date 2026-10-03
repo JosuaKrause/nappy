@@ -29,12 +29,33 @@ must construct the requested arrangement directly; looping through whole-city se
 one happens to fit does not fulfill this request. A conflicting or unsupported requirement
 fails clearly, without relaxing it or returning the last unsuccessful candidate.
 
-Validate geometry and scene requirements before exposing the completed scene. Preserve
-the standard city's reachability and placement checks, and report which requirement
-cannot coexist with them. The test cases are unusual valid combinations of standard
-components, including a building adjoining the power station. This work needs no
-invalid-state mode or bypass of gameplay guarantees. A smaller isolated fixture must
-declare its validation scope rather than accidentally passing full-city checks.
+Validate geometry and scene requirements before exposing the completed scene. A normal
+scene must be an arrangement that could actually occur under the game's current
+generation and placement rules. Sharing assets, rendering successfully, and satisfying
+reachability alone do not establish that. Forced choices must be accepted where the
+ordinary generator or planner would make those choices: permitted lot combinations,
+special-building adjacency, day/progression eligibility, event placement and actor state
+all matter. Reuse those predicates and construction stages so the builder cannot drift
+into a second, more permissive definition of a possible city. Report the checks and
+accepted choices that establish this claim; do not claim that a seed producing the exact
+whole scene has been found when none has. Requested temporal moments also need the
+ordinary simulation checks described in runtime-and-replay.md.
+
+The player's primary test cases are unusual valid combinations of standard components,
+including a building adjoining the power station. Preserve the standard city's
+reachability and placement checks and report which requirement cannot coexist with
+them. A smaller isolated fixture must declare its validation scope; checking a component
+join alone must not certify that the fixture is a complete possible gameplay scene.
+
+**Proposed, not asked for:** distinguish normal scenes, the default, from explicit
+test-only fixtures. A fixture that deliberately violates a gameplay rule names each
+permitted violation and its expected diagnostic. There is no blanket "skip validation"
+switch: malformed recipes, broken references, and every undeclared violation still fail.
+An expected violation that does not occur also fails, so the test cannot silently stop
+exercising its intended case. Return a distinct fixture classification and the violations
+with its result; it must never receive the normal-scene validity result. The player allows
+this capability conditionally on preventing accidental invalid scenes; these mechanics
+are the proposed way to meet that condition. Trailer recipes require the normal result.
 
 Guarantees describe inspectable facts, such as an open crossing, a specified actor at a
 specified location, or a required route. They are not a claim that arbitrary combinations
