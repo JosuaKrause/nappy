@@ -50,6 +50,10 @@ class Planned extends RefCounted:
 	## True for something the *run* left here rather than something today rolled — a burnt-out
 	## shell, a barricade. It is world history and the day may not tidy it away.
 	var permanent := false
+	## True once something that rides this plan's instance asked for it to stay in the world for
+	## the rest of the day wherever she walks (`EventManager.keep_live()`), so streaming never takes
+	## it away from under what rides it.
+	var kept_live := false
 	## What the day placed this **for**, against today's corridor. See `GameEnums.BlockerRole` and
 	## `EventScheduler._role_for`.
 	##

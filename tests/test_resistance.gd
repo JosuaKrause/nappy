@@ -2565,42 +2565,74 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 
 func _test_the_burnt_shell_task_rides_the_recorded_scar(t) -> void:
 	_build_city(t)
+	# On ground day 3's fire can actually catch on (`AT_THE_FRONT`, a building behind it), since a
+	# real scar is only ever recorded there and the arrow ends on that building.
+	var doorstep := _city.map.doorstep_world_position()
+	var near_fronts: Array[Vector2i] = []
+	var far_fronts: Array[Vector2i] = []
+	for tile in EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+			_city.map, {}):
+		var distance := _city.map.tile_to_world(tile).distance_to(doorstep)
+		if distance < Tuning.EVENT_STREAM_RADIUS:
+			near_fronts.append(tile)
+		elif distance > Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS:
+			far_fronts.append(tile)
+	t.check(not near_fronts.is_empty(), "home has fronts within streaming range")
+	t.check(not far_fronts.is_empty(), "and fronts beyond it")
+	if near_fronts.is_empty() or far_fronts.is_empty():
+		return
+	_ride_a_recorded_scar(t, near_fronts[near_fronts.size() / 2], "a scar near home")
+	# The case a real run makes most: a dusk fire is sited at least `EVENT_STREAM_RADIUS` from
+	# where she finished day 3, so its shell is not in the world when she reads day 8's mark.
+	_ride_a_recorded_scar(t, far_fronts[far_fronts.size() / 2], "a scar beyond streaming range")
+
+## Records a day-3 scar at `site`, plans day 8 around the doorstep, reads day 8's mark there, and
+## checks the task rides that scar: the one shell at it, put in the world even when the scar is
+## farther than the streaming radius, kept there when she walks away, no second scar recorded, and
+## the arrow on the building behind it.
+func _ride_a_recorded_scar(t, site: Vector2i, label: String) -> void:
 	_with_clean_run(func() -> void:
 		var saved_scars := GameState.scars.duplicate()
 		var doorstep := _city.map.doorstep_world_position()
-		# Within `EVENT_STREAM_RADIUS` (900px) of the focus `_city.events.start_day()` is given
-		# below — `EventManager.stream_around()` only materialises a live instance for a planned
-		# event that close, scars included, so a scar recorded further out would never become the
-		# live instance `_find_scar_instance()` is looking for and this test would be exercising
-		# the no-recorded-scar fallback by accident. A flat "the middle sidewalk tile" picked
-		# whichever one that landed to be past 900px from home on a station-reshaped city, which
-		# is what turned this into the fallback path rather than the recorded-scar one it names.
-		# And on ground day 3's fire can actually catch on (`AT_THE_FRONT`, a building behind it),
-		# since a real scar is only ever recorded there and the arrow below ends on that building.
-		var near_fronts: Array[Vector2i] = []
-		for tile in EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
-				_city.map, {}):
-			if _city.map.tile_to_world(tile).distance_to(doorstep) < Tuning.EVENT_STREAM_RADIUS:
-				near_fronts.append(tile)
-		t.check(not near_fronts.is_empty(), "home has fronts within streaming range")
-		var scar_at := _city.map.tile_to_world(near_fronts[near_fronts.size() / 2])
+		var scar_at := _city.map.tile_to_world(site)
 		GameState.scars = [{"id": "burnt_shell", "position": scar_at, "since_day": 3}]
-		# `_find_scar_instance()` reads live instances off `_city.events`, which only exist once
-		# the day's own events have actually been built — `_place_scars()` is what turns the
-		# recorded scar into a live `burnt_shell` instance at `scar_at`.
+		# `_place_scars()` plans a `burnt_shell` at `scar_at` for the day; it is in the world only
+		# if `scar_at` is inside the streaming radius of the doorstep.
 		_city.events.start_day(8, _rng(8, "events"), [], doorstep)
 
 		var director := _director(t)
 		director.start_day(8, _rng(8, "resistance"), 300.0)
 		director._on_contact_completed(5)
 		t.check(director.current_step() != null and director.current_step().index == 6,
-				"touching day 8's mark activates the burnt-shell perform")
+				"%s: touching day 8's mark activates the burnt-shell perform" % label)
 		t.check(director._rider != null and director._rider.def.id == "burnt_shell",
-				"riding a burnt_shell instance")
-		# Under a tile's own width, the same tolerance `_find_scar_instance()` finds it by.
-		t.check(director._rider.global_position.distance_to(scar_at) < Tuning.TILE_SIZE,
-				"the one standing at the run's own recorded scar")
+				"%s: riding a burnt_shell instance" % label)
+		if director._rider == null:
+			director.free()
+			GameState.scars = saved_scars
+			return
+		t.check(director._rider.global_position.distance_to(scar_at) < 1.0,
+				"%s: the one standing at the run's own recorded scar" % label)
+		t.check(GameState.scars.size() == 1,
+				"%s: and no second scar is recorded for the task (%s)" % [label, GameState.scars])
 		_check_the_arrow_ends_on_the_burnt_building(t, director)
+
+		# She walks off across the city: the shell stays under its contact.
+		_city.events.stream_around(scar_at + Vector2(1.0, 1.0) * 4.0
+				* (Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS))
+		# `instances()` rather than `rider_alive()` alone: a streamed-out instance is only queued
+		# for deletion, and still valid until the frame ends.
+		t.check(director._contact.rider_alive()
+				and _city.events.instances().has(director._rider),
+				"%s: the shell stays in the world when she walks far away from it" % label)
+		# And back: still one shell there, so its field is counted once.
+		_city.events.stream_around(scar_at)
+		var shells := 0
+		for instance in _city.events.instances():
+			if instance.def.id == "burnt_shell" \
+					and instance.global_position.distance_to(scar_at) < 1.0:
+				shells += 1
+		t.check(shells == 1, "%s: one shell at the scar, not two (%d)" % [label, shells])
 
 		director.free()
 		GameState.scars = saved_scars)
@@ -3690,6 +3722,7 @@ func _day_reachability(city: City) -> Array:
 func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> void:
 	_with_clean_run(func() -> void:
 		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+		var saved_scars := GameState.scars.duplicate()
 		var checked := 0
 		for seed_value in REACHABILITY_SWEEP_SEEDS:
 			var city: City = CITY_SCENE.instantiate()
@@ -3699,6 +3732,9 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 				GameState.completed_resistance_steps = []
 				GameState.failed_resistance_steps = []
 				GameState.completed_resistance_alley_tiles.clear()
+				# No history, like `--day N`: day 8 with no recorded scar records one for its
+				# task, and a scar from another seed's city must not stand in this one's.
+				GameState.scars = []
 				var closure_state := CityState.new()
 				closure_state.begin_day(city.map.block_plans, day)
 				city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
@@ -3747,6 +3783,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 				director.free()
 			city.free()
 		GameState.completed_resistance_alley_tiles = saved_tiles
+		GameState.scars = saved_scars
 		t.check(checked > 0, "the sweep actually checked something (%d)" % checked))
 
 ## downy-otter, "a mark should never be placed in an alley that is not reachable (ie sealed off)"

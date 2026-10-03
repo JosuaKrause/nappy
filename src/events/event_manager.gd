@@ -11,7 +11,8 @@ extends Node
 ## **A day's plan and a day's live events are different things.** The scheduler plans the whole
 ## city at dawn, which is what keeps every invariant that is stated over a day (one usable park, a
 ## walkable route to it, determinism); a plan becomes an `EventInstance` only when the player comes
-## within `EVENT_STREAM_RADIUS` of it, and goes away again when she leaves.
+## within `EVENT_STREAM_RADIUS` of it, and goes away again when she leaves — except a plan a task
+## rides, which `keep_live()` puts in the world at once and keeps there.
 ##
 ## The gameplay half of that is bigger than the frames it saves. Loading the day upfront gives days
 ## in which **zero** events ever come within reach: a twenty-second event planted across the city
@@ -388,8 +389,25 @@ func stream_around(at: Vector2) -> void:
 		if plan.live == null:
 			if distance <= stream_radius:
 				_stream_in(plan)
-		elif distance > stream_radius + Tuning.EVENT_STREAM_HYSTERESIS:
+		elif not plan.kept_live and distance > stream_radius + Tuning.EVENT_STREAM_HYSTERESIS:
 			_stream_out(plan)
+
+## The planned instance of the row `id` standing within a tile of `at`, put in the world now
+## wherever she is and kept there for the rest of the day — never streamed out — or null when today
+## plans none there. For a task that rides a planned place: day 8's burnt shell, whose mark she may
+## read from the far side of the city, and which must not be streamed away from under its contact
+## when she walks off again. The plan's own instance rather than a second one beside it, so its
+## field is counted once.
+func keep_live(id: String, at: Vector2) -> EventInstance:
+	for plan in _plans:
+		if plan.def.id != id or plan.spent or not plan.is_placed() \
+				or plan.position.distance_to(at) >= Tuning.TILE_SIZE:
+			continue
+		if plan.live == null:
+			_stream_in(plan)
+		plan.kept_live = true
+		return plan.live
+	return null
 
 func _stream_in(plan: EventScheduler.Planned) -> void:
 	var first_time := not plan.was_live

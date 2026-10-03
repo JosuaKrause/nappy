@@ -248,9 +248,14 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		return
 
 	var scar_instance: EventInstance = null
+	var no_recorded_scar := false
 	if _step.target_kind == ResistanceSteps.TargetKind.SCAR:
-		scar_instance = _find_scar_instance(_step.task_event_id)
-		if not scar_instance:
+		# Decided from the run's own record, never from what happens to be streamed in: a scar
+		# farther than `EVENT_STREAM_RADIUS` from wherever she reads the mark is not in the world
+		# yet, and a dusk fire is always sited at least that far from where she finished day 3.
+		no_recorded_scar = _recorded_scar(_step.task_event_id) == Vector2.INF
+		scar_instance = _ride_the_recorded_scar(_step.task_event_id)
+		if no_recorded_scar:
 			# A run with no recorded scar still has a burnt building to go to: `_place()` picks
 			# a front day 3's fire could have caught on, and `_burn_a_front_for_the_task()`
 			# below records the scar there and burns the building behind it — never a step with
@@ -306,7 +311,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			_contact = null
 			return
 		_rider = _city.events.spawn_extra(task_def, at)
-		if _step.target_kind == ResistanceSteps.TargetKind.SCAR:
+		if no_recorded_scar:
 			_burn_a_front_for_the_task(_rider)
 		var offset := _reachable_offset(_rider, _rng)
 		_contact.ride(_step, _rider, offset)
@@ -339,29 +344,32 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		else:
 			_maybe_set_a_trap(_day, _rng, at, _step.is_pickup, _player_position(), true)
 
-## The live instance standing at the run's own recorded scar for `scar_id`, or null when the run
-## never recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no
-## site even at dusk. `GameState.scars` names the position the scar was recorded at; the scheduler
-## re-places the same def there every day after `since_day` (`EventScheduler._place_scars()`), so
-## the live instance is found by position rather than tracked by reference across days.
-func _find_scar_instance(scar_id: String) -> EventInstance:
-	if not _city or not _city.events:
-		return null
-	var at := Vector2.INF
+## Where the run recorded its scar `scar_id` (`GameState.scars`), or `Vector2.INF` when it never
+## recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no site
+## even at dusk.
+static func _recorded_scar(scar_id: String) -> Vector2:
 	for scar: Dictionary in GameState.scars:
 		if String(scar["id"]) == scar_id:
-			at = scar["position"]
-			break
-	if at == Vector2.INF:
+			return scar["position"]
+	return Vector2.INF
+
+## The instance standing at the run's own recorded scar for `scar_id`, put in the world now and kept
+## there for the rest of the day wherever she walks, or null when the run never recorded one
+## (`_recorded_scar()`). The scheduler re-places the same def at the scar every day after
+## `since_day` (`EventScheduler._place_scars()`), and that plan is what this rides
+## (`EventManager.keep_live()`): she may read the mark from anywhere in the city, far outside the
+## streaming radius, and walk away from the shell again afterwards, and neither may leave the
+## contact riding nothing. A scar today has no plan for (one recorded on this same day) gets an
+## instance of its own at the recorded position instead.
+func _ride_the_recorded_scar(scar_id: String) -> EventInstance:
+	var at := _recorded_scar(scar_id)
+	if at == Vector2.INF or not _city or not _city.events:
 		return null
-	# Under a tile's own width rather than an exact float match, which costs nothing: `burnt_shell`
-	# is `SCRIPTED` and only ever placed at its scars, so the one instance of it near the recorded
-	# position is the scar's. It has no body, so `EventInstance.setup()` (which centres only a body
-	# on its pavement band) leaves it exactly where the scar was recorded.
-	for instance in _city.events.instances():
-		if instance.def.id == scar_id and instance.global_position.distance_to(at) < Tuning.TILE_SIZE:
-			return instance
-	return null
+	var shell := _city.events.keep_live(scar_id, at)
+	if shell:
+		return shell
+	var def := EventCatalogue.by_id(scar_id)
+	return _city.events.spawn_extra(def, at) if def else null
 
 ## Day 8's task on a run with no recorded scar, once its `burnt_shell` stands at a front
 ## (`_fronts_a_fire_catches_on()`): records the scar there, exactly as day 3's fire would have, and

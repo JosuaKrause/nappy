@@ -74,7 +74,9 @@ entire excitement model a pure query with nothing pushing values at the baby.
 and `EventManager` puts it in the world when the player comes within `EVENT_STREAM_RADIUS` of it
 — of the nearest point of its *route*, for a mobile one, so a dog walker is in the world before
 it sets off down the street she is on. It goes away again when she leaves, and once it has run
-its course its plan is **spent**: walking back past it does not start it over.
+its course its plan is **spent**: walking back past it does not start it over. The one plan put in
+the world early and kept there is the one a task rides (`EventManager.keep_live()`): day 8's burnt
+shell, whose mark she may read from across the city and walk away from again.
 
 An event that is somewhere is half of what makes a route a decision. It can be routed around,
 and finding out it is there is what walking a street is for.

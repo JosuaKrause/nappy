@@ -1150,7 +1150,8 @@ func _dress_blocks(state: CityState) -> void:
 ## Idempotent, like every other per-day override here: `Building.condition`'s own setter is a no-op
 ## once it already says `BURNT`, so calling this from every `_dress_blocks()` pass — the ordinary
 ## day and the finale's own dressing alike — costs nothing once the frontage is found, and finds
-## nothing before day 4, when the scar does not exist yet.
+## nothing before day 4, when the scar does not exist yet. A run records one `burnt_shell` scar,
+## and every one the list holds burns its own building all the same.
 ##
 ## **Also called live, once, by day 8's task on a run with no recorded scar**
 ## (`ResistanceDirector._burn_a_front_for_the_task()`): it records a scar at a front the fire could
@@ -1164,8 +1165,7 @@ func mark_the_burnt_frontage() -> void:
 		for building in _buildings:
 			if building.lot.has_point(wall_tile):
 				building.condition = Building.Condition.BURNT
-				return
-		return
+				break
 
 ## **One block's buildings, shown as what the block is now**, during the day rather than at dawn —
 ## day 11's market, boarded up ahead of her while she cannot see it (`ResistanceHappenings`). The
