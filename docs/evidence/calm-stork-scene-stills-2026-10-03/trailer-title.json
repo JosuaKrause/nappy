@@ -1,7 +1,7 @@
 {
 	"anchors": {
 		"start": [
-			1376.0,
+			1296.0,
 			1712.0
 		]
 	},
@@ -26,14 +26,22 @@
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"final_activity": {
-		"moving_crowd": 15,
-		"visible_cars": 2,
-		"visible_events": {
-			"dog_walker": 1
+		"moving_crowd": 16,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 16,
+		"walker_streets": {
+			"h4": {
+				"moving": 10,
+				"walkers": 10
+			},
+			"v3": {
+				"moving": 6,
+				"walkers": 6
+			}
 		},
-		"visible_walkers": 13,
-		"walkers_left": 3,
-		"walkers_right": 10
+		"walkers_left": 0,
+		"walkers_right": 16
 	},
 	"final_actors": {
 		"dog_walker": {
@@ -47,12 +55,12 @@
 		},
 		"player": {
 			"carrying": false,
-			"gait_frame": 1,
+			"gait_frame": 0,
 			"position": [
-				1376.0,
-				1712.0
+				1296.0,
+				1937.4656
 			],
-			"speed": 0.0
+			"speed": 92.0
 		}
 	},
 	"final_crowd": {
@@ -68,11 +76,11 @@
 				"walkers": 0
 			},
 			"nw": {
-				"cars": 34,
-				"moving": 225,
-				"moving_cars": 27,
-				"total": 232,
-				"walkers": 198
+				"cars": 31,
+				"moving": 214,
+				"moving_cars": 24,
+				"total": 221,
+				"walkers": 190
 			},
 			"se": {
 				"cars": 0,
@@ -82,11 +90,11 @@
 				"walkers": 0
 			},
 			"sw": {
-				"cars": 0,
-				"moving": 2,
-				"moving_cars": 0,
-				"total": 2,
-				"walkers": 2
+				"cars": 3,
+				"moving": 13,
+				"moving_cars": 3,
+				"total": 13,
+				"walkers": 10
 			}
 		},
 		"scope": "local",
@@ -98,6 +106,7 @@
 		"visible_cars": 0,
 		"visible_events": {},
 		"visible_walkers": 0,
+		"walker_streets": {},
 		"walkers_left": 0,
 		"walkers_right": 0
 	},
@@ -115,7 +124,7 @@
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				1376.0,
+				1296.0,
 				1712.0
 			],
 			"speed": 0.0
@@ -180,19 +189,34 @@
 				"carrying": false,
 				"gait_frame": 1,
 				"position": [
-					1376.0,
-					1712.0
+					1296.0,
+					1799.4663
 				],
-				"speed": 0.0
+				"speed": 92.0
 			},
 			"subject": "player",
 			"tick": 30.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					1296.0,
+					1845.4661
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 45.0
 		}
 	],
 	"physics_ticks_per_second": 30,
 	"playback_complete": true,
-	"recipe": "Title transition on a living street",
-	"recipe_sha256": "bde8ba4756a5ce2d1acf09b94d1ccd792ad6a7386b1c482026020d0994614ec7",
+	"recipe": "Title transition walking inside the park beside a street",
+	"recipe_sha256": "0a058be5023ff8382d931cb95b175005c68347ad056121be804f0b5e312683a2",
 	"scope": "full",
 	"seed": 11,
 	"setup": {

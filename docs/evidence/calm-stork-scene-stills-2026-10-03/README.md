@@ -12,7 +12,8 @@ false; the separate headless manifest proves that the complete scripted action p
 | `power-station-hall`, `power-station-yard` | `8941448c` | Real adjoining dead-end walls: the hall covers the facade, the fenced yard keeps it. |
 | `trailer-choice` | `d7a56707` | A uniformly busy alternate street after the mother's wrong-way approach and backtrack; selected restaurant guests are one block east. |
 | `trailer-blower` | `177191c8` | The father and selected leaf blower beside an industrial facade with manually placed existing duct, HVAC and vent fixtures. |
-| `trailer-dog`, `trailer-title`, `trailer-gatehouse` | `052fb4c1` | Charging dog beside a skylight roof, park-side title, and father approaching horizontally toward the existing vertical gate. |
+| `trailer-dog`, `trailer-gatehouse` | `052fb4c1` | Charging dog beside a skylight roof and father approaching horizontally toward the existing vertical gate. |
+| `trailer-title` | `d7a56707` | The father walking inside the park, with the adjacent road visible. |
 | `trailer-trucks` | `9768f6de` | Three army trucks beside the south-facing mother, varied posters, and the existing vertical roadblock at the left street mouth. |
 | `trailer-chase` | `052fb4c1` | A visible carrying stride beside a pursuing guard. |
 | `trailer-city` | `052fb4c1` | The complete active city after zooming out from the mother's doorstep. |
