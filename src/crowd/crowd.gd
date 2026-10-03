@@ -143,8 +143,10 @@ func setup(city: City, map: CityMap) -> void:
 ## somewhere: leaving the field wherever the last caller put it makes a day's crowd depend on
 ## the order the tests before it ran in, and a field parked off the map builds the whole
 ## population on one pixel.
+## `city_view` is the recipe-only overview: the field stays over the map and population scales
+## by covered area at the existing field density. Ordinary calls retain their moving field.
 func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
-		populate := true) -> void:
+		populate := true, city_view := false) -> void:
 	clear()
 	# Taken on the first day only — see `_atlas_held`'s own doc for why a day's own end keeps
 	# holding this rather than releasing it, and `_exit_tree()` for where it finally does.
@@ -159,6 +161,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	# A day is reproducible or it is not, and this is not the place to spend that.
 	if _signals:
 		_signals.elapsed = 0.0
+	_field.city_view = city_view
 	_field.centre = focus if focus != Vector2.INF else _map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, _map.size)).get_center()
 	# Before either `_populate` call: a walker's own `setup()` re-rolls off `_stands_on_a_street()`,
@@ -194,8 +197,12 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	_pockets.refresh(_map, _crossable_segments)
 	var act := Tuning.act_for_day(day)
 	if populate:
-		_populate(CrowdAgent.Kind.WALKER, Tuning.crowd_pedestrians(act), rng)
-		_populate(CrowdAgent.Kind.CAR, Tuning.crowd_cars(act), rng)
+		# The recipe overview covers more ground at the existing field's density. Ordinary
+		# play keeps its local population and pays for no actors beyond the moving field.
+		var area_scale := _map.world_size().x * _map.world_size().y \
+				/ pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) if city_view else 1.0
+		_populate(CrowdAgent.Kind.WALKER, roundi(Tuning.crowd_pedestrians(act) * area_scale), rng)
+		_populate(CrowdAgent.Kind.CAR, roundi(Tuning.crowd_cars(act) * area_scale), rng)
 	# **The unpack the first frame would do anyway, done before the first frame is drawn.** The
 	# morning places every car without consulting the ones already placed, so some of them start
 	# inside each other and the first `space_out_the_traffic()` pulls them apart — a correction of up
@@ -249,6 +256,33 @@ func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vecto
 
 func field() -> CrowdField:
 	return _field
+
+## A capture can report what is actually present across its city view. Effective velocities
+## include traffic braking, checkpoint holds and pockets; the sample does not invent motion.
+func recipe_coverage() -> Dictionary:
+	var counts := {"total": 0, "walkers": 0, "cars": 0, "moving": 0, "moving_cars": 0}
+	var result: Dictionary = counts.duplicate()
+	result["scope"] = "city" if _field.city_view else "local"
+	result["quadrants"] = {}
+	for quadrant in ["nw", "ne", "sw", "se"]:
+		result.quadrants[quadrant] = counts.duplicate()
+	var middle := _map.world_size() * 0.5
+	for agent in _agents:
+		var at := agent.global_position
+		var quadrant := ("n" if at.y < middle.y else "s") + ("w" if at.x < middle.x else "e")
+		var local: Dictionary = result.quadrants[quadrant]
+		var kind := "cars" if agent.kind == CrowdAgent.Kind.CAR else "walkers"
+		result.total += 1
+		result[kind] += 1
+		local.total += 1
+		local[kind] += 1
+		if not _skip_motion and not agent.velocity().is_zero_approx():
+			result.moving += 1
+			local.moving += 1
+			if agent.kind == CrowdAgent.Kind.CAR:
+				result.moving_cars += 1
+				local.moving_cars += 1
+	return result
 
 func traffic() -> TrafficIndex:
 	return _traffic
