@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "name": "Power-station yard leaves an adjoining dead-end facade visible",
+  "seed": 11,
+  "extent": {"scope": "bounded", "bounds": [112, 0, 34, 56]},
+  "city": {
+    "context_seed": 1917501,
+    "dead_ends": [{"segment": [9, 1, 0], "end": "a"}],
+    "power_station": {"blocks": [8, 1, 2, 1], "door_block": [8, 1]}
+  },
+  "anchors": {"start": {"tile": [131, 18]}, "door": "power_station_door"},
+  "setup": {
+    "day": 1,
+    "parent": "father",
+    "player": {"at": "start", "facing": "east", "excitement": 0, "sleep": 0},
+    "background": {"events": false, "crowd": false}
+  },
+  "playback": {"walk": "2p", "duration": 2, "camera": {"zoom": 0.7}}
+}
