@@ -68,6 +68,7 @@ func run(t) -> void:
 	_test_a_run_button_does_not_cancel_a_double_press_latch(t)
 	_test_a_run_button_exists_only_in_joystick_mode(t)
 	_test_a_pause_lets_go_of_a_held_run_button(t)
+	_test_handing_the_run_button_to_the_other_thumb_keeps_running(t)
 	t.get_tree().paused = was_paused
 	_release_actions()
 
@@ -1090,7 +1091,7 @@ func _test_a_press_on_a_run_button_holds_run_until_it_lifts(t) -> void:
 	t.check(controls._last_tap_at == -INF, "and never starts the double-tap clock")
 	controls._input(_touch_event(3, TouchControls.RUN_CENTRE_RIGHT + Vector2(200.0, 0.0), false))
 	t.check(not Input.is_action_pressed("run"), "lifting, even off the button, lets go of run")
-	t.check(controls._run_touch == -1 and not controls._run_held, "and forgets the finger")
+	t.check(controls._run_touches.is_empty() and not controls._run_held, "and forgets the finger")
 
 	controls.queue_free()
 	rig.free()
@@ -1135,7 +1136,7 @@ func _test_a_steering_finger_sliding_onto_a_run_button_does_not_press_it(t) -> v
 
 	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-60.0, -60.0), true))
 	controls._input(_drag_event(0, TouchControls.RUN_CENTRE_LEFT))
-	t.check(not Input.is_action_pressed("run") and controls._run_touch == -1,
+	t.check(not Input.is_action_pressed("run") and controls._run_touches.is_empty(),
 			"sliding onto the left button does not run")
 	t.check(controls._walking and Input.is_action_pressed("move_left"),
 			"and keeps steering by where the finger is")
@@ -1154,15 +1155,39 @@ func _test_a_run_button_does_not_cancel_a_double_press_latch(t) -> void:
 	controls.visible = true
 	controls._mode = ControlsMode.Mode.JOYSTICK
 
-	var press := TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0)
-	controls._on_tap(press, 0.0)
-	controls._on_tap(press, 0.1)
-	t.check(controls._run_active and Input.is_action_pressed("run"), "the double press still runs")
+	# Two left clicks through `_input()`, the mouse-only play note #434 says must keep working: the
+	# path `_on_pointer()`'s new button branch sits on.
+	var press := TouchControls.FOCUS_LEFT + Vector2(0.0, -150.0)
+	for _i in 2:
+		controls._input(_click_event(press, true))
+		controls._input(_click_event(press, false))
+	t.check(controls._run_active and Input.is_action_pressed("run"),
+			"a mouse double click still latches run")
 	controls._input(_touch_event(2, TouchControls.RUN_CENTRE_RIGHT, true))
 	controls._input(_touch_event(2, TouchControls.RUN_CENTRE_RIGHT, false))
 	t.check(Input.is_action_pressed("run"), "lifting a button leaves a latched run running")
-	controls._on_tap(TouchControls.FOCUS_LEFT + Vector2(0.0, -150.0), 5.0)
+	controls._last_tap_at = -INF # a fresh single press, whatever the real clock says
+	controls._input(_click_event(TouchControls.FOCUS_LEFT + Vector2(150.0, -150.0), true))
 	t.check(not Input.is_action_pressed("run"), "and the next single press ends the latch as it always did")
+
+	controls.queue_free()
+	rig.free()
+	_release_actions()
+
+## **Switching hands keeps the run.** The second thumb lands on the other button before the first lifts;
+## run lasts while any finger holds a button and ends with the last. Through the real input path.
+func _test_handing_the_run_button_to_the_other_thumb_keeps_running(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	var controls := _controls(t)
+	controls.visible = true
+	controls._mode = ControlsMode.Mode.JOYSTICK
+
+	controls._input(_touch_event(0, TouchControls.RUN_CENTRE_LEFT, true))
+	controls._input(_touch_event(1, TouchControls.RUN_CENTRE_RIGHT, true))
+	controls._input(_touch_event(0, TouchControls.RUN_CENTRE_LEFT, false))
+	t.check(Input.is_action_pressed("run"), "run lasts while the second thumb still holds a button")
+	controls._input(_touch_event(1, TouchControls.RUN_CENTRE_RIGHT, false))
+	t.check(not Input.is_action_pressed("run"), "and ends with the last finger")
 
 	controls.queue_free()
 	rig.free()
@@ -1177,7 +1202,7 @@ func _test_a_run_button_exists_only_in_joystick_mode(t) -> void:
 	controls._mode = ControlsMode.Mode.TAP
 
 	controls._input(_touch_event(0, TouchControls.RUN_CENTRE_RIGHT, true))
-	t.check(not Input.is_action_pressed("run") and controls._run_touch == -1,
+	t.check(not Input.is_action_pressed("run") and controls._run_touches.is_empty(),
 			"in tap mode the spot is not a button")
 	controls._input(_touch_event(0, TouchControls.RUN_CENTRE_RIGHT, false))
 
@@ -1191,7 +1216,7 @@ func _test_a_run_button_exists_only_in_joystick_mode(t) -> void:
 	rig.free()
 	_release_actions()
 
-## A pause or a day ending releases a finger's hold with everything else.
+## A real pause, seen by `_process()`, releases a finger's hold with everything else.
 func _test_a_pause_lets_go_of_a_held_run_button(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
@@ -1199,13 +1224,23 @@ func _test_a_pause_lets_go_of_a_held_run_button(t) -> void:
 	controls._mode = ControlsMode.Mode.JOYSTICK
 
 	controls._input(_touch_event(1, TouchControls.RUN_CENTRE_LEFT, true))
-	controls._release_all()
-	t.check(not Input.is_action_pressed("run") and controls._run_touch == -1 and not controls._run_held,
+	t.check(Input.is_action_pressed("run"), "the hold is down before the pause")
+	t.get_tree().paused = true
+	controls._process(0.0) # the tree pausing is what `_process()` hangs `_release_all()` on
+	t.get_tree().paused = false
+	t.check(not Input.is_action_pressed("run") and controls._run_touches.is_empty() and not controls._run_held,
 			"a pause lets go of the run button")
 
 	controls.queue_free()
 	rig.free()
 	_release_actions()
+
+func _click_event(position: Vector2, pressed: bool) -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.position = position
+	event.pressed = pressed
+	return event
 
 func _touch_event(index: int, position: Vector2, pressed: bool) -> InputEventScreenTouch:
 	var event := InputEventScreenTouch.new()

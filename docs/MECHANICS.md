@@ -393,7 +393,7 @@ a second via running)".)* Every pursuit's speed band and lead time is stated aga
 destination**: a tap that walked her to a point would pathfind, and a tap that pathfinds hands the
 route decision to the game.
 
-The two schemes differ only in where that press is measured from. **Tap** aims from wherever she is
+The two schemes differ in where that press is measured from, and joystick adds run buttons (below). **Tap** aims from wherever she is
 standing, the way a mouse always has, and a press within a generous radius of her stops her.
 **Joystick** aims from whichever of two fixed points on the screen is nearer the press — both drawn
 as a ring — and is stopped by a press on either point or in a band down the screen's own middle
@@ -405,7 +405,7 @@ side next to the joystick) would make running much more precise and easier.")* A
 on a button holds **run** for as long as that finger stays down, so one thumb steers while the other
 holds it; a finger already steering that slides over a button does not press it, since only a press
 that begins there counts; and the double press still latches run, for a pointer with only one
-finger's worth of reach. Either keeps run down on its own. Running lasting only while the button is
+finger's worth of reach. Either keeps run down on its own, and run lasts while any finger holds a button, so handing it from one thumb to the other does not stutter it. Running lasting only while the button is
 held is the filer's proposal, not their words, and is open to overturn.
 
 Where a heading is measured from, and what stops her, are the one place a mouse and a real finger

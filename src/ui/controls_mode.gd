@@ -3,11 +3,12 @@ extends RefCounted
 ## Which of the two aiming origins `TouchControls` measures a press from — not two mechanisms any
 ## more, since the drag stick and the destination-walking tap are both gone (see `docs/DECISIONS.md`
 ## under M82). Both modes share everything else: one press sets a direction, held until the next
-## press changes it; a double press runs; a held pointer re-aims. They differ only in **where** a
-## press is measured from:
+## press changes it; a double press runs; a held pointer re-aims. They differ in **where** a press is
+## measured from, and `JOYSTICK` also draws run buttons:
 ##
 ## - `JOYSTICK` aims from the nearer of `TouchControls.FOCUS_LEFT`/`FOCUS_RIGHT`, draws both focal
-##   circles, and is stopped by a press on a focus or in the stop band down the middle of the screen.
+##   circles and a run button beside each (a press that begins on one holds run until it lifts), and
+##   is stopped by a press on a focus or in the stop band down the middle of the screen.
 ## - `TAP` aims from her own world position, draws nothing, and is stopped by a press within
 ##   `TouchControls.STOP_RADIUS` of her.
 ##

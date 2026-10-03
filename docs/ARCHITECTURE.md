@@ -380,8 +380,8 @@ band, are asked in **design space** instead, through `ScreenOrientation.to_desig
 that is where "half the screen" and "the middle of the screen" mean what they say — the chosen
 focus then makes the same design→presented→world trip a raw touch's own position already takes, in
 reverse, before it can be subtracted from or used as the heading's own origin. **The pause button's
-own corner is the other place this remap is needed**: a touch there is subtracted from the aiming
-surface, but only while the button is actually showing, against the fixed `PAUSE_CENTRE` — a mouse
+own corner and the run buttons are the other places this remap is needed**: a touch there is subtracted from the aiming
+surface, but only while the button is actually showing, against the fixed `PAUSE_CENTRE` (or, in joystick mode, `RUN_CENTRE_LEFT` and `RUN_CENTRE_RIGHT`) — a mouse
 click never needs the remap for anything else, since the button (and so the corner) is drawn for it
 too now that every device shows the same pair of controls.
 

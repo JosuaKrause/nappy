@@ -70,9 +70,8 @@ const _ICON_BY_SYMBOL := {
 	Symbol.TAP: _TAP_ICON,
 }
 
-## `TouchControls.PAUSE_CATCH_RADIUS` (46px) is the one catch radius left in the game, now that the
-## drag stick and the `RUN` button are gone — a thumb is never asked to land inside anything
-## smaller during a run. This button is opened on the same phone, so its own radius matches it
+## `TouchControls.PAUSE_CATCH_RADIUS` and `TouchControls.RUN_CATCH_RADIUS` (both 46px) are the only
+## catch radii in the game — a thumb is never asked to land inside anything smaller during a run. This button is opened on the same phone, so its own radius matches it
 ## rather than a value chosen for a mouse: nothing on this screen may be harder to hit than the
 ## one control already in the game.
 const _RADIUS := 46.0
