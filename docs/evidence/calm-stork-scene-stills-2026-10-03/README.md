@@ -10,9 +10,9 @@ false; the separate headless manifest proves that the complete scripted action p
 | Stills | Source revision | What the still establishes |
 |---|---|---|
 | `power-station-hall`, `power-station-yard` | `8941448c` | Real adjoining dead-end walls: the hall covers the facade, the fenced yard keeps it. |
-| `trailer-choice` | `b04c386e` | A uniformly busy alternate street after the mother's wrong-way approach and backtrack; selected restaurant guests are one block east. |
-| `trailer-birds` | `b04c386e` | The father and existing pigeon flock on an industrial side-street block, with ordinary roads throughout the frame. |
-| `trailer-dog` | `b04c386e` | Charging dog beside a skylight roof, moving pedestrians on every pictured street, and the foreground tree moved across the road. |
+| `trailer-choice` | `1f0823ed` | A uniformly populated alternate street after the mother's wrong-way approach and backtrack; selected restaurant guests are one block east. |
+| `trailer-birds` | `1f0823ed` | The father and existing pigeon flock on an industrial side-street block, with ordinary roads throughout the frame. |
+| `trailer-dog` | `1f0823ed` | Charging dog beside a skylight roof, moving pedestrians on every pictured street, and the foreground tree moved across the road. |
 | `trailer-gatehouse` | `052fb4c1` | The father approaching horizontally toward the existing vertical gate. |
 | `trailer-title` | `d7a56707` | The father walking inside the park, with the adjacent road visible. |
 | `trailer-trucks` | `9768f6de` | Three army trucks beside the south-facing mother, varied posters, and the existing vertical roadblock at the left street mouth. |
@@ -27,15 +27,16 @@ Fetch `refs/pull/457/head` when a source revision is absent locally. No video is
 
 Scenes 3–5 each use 400 production walkers in their moving field, twice the ordinary act-1
 count, and the ordinary 34 cars. Initial walkers are sampled evenly along eligible sidewalk
-lanes; recycling gives pedestrian corridors equal weight. Movement, body clearance, turns,
+lanes with varied seeded walking directions; recycling gives pedestrian corridors equal weight.
+An overcapacity request is rejected. Movement, body clearance, turns,
 collisions and traffic use production behavior. Ordinary gameplay keeps its own population
 and street hierarchy. Each pictured street is measured separately at the frozen capture tick:
 
 | Scene | Horizontal street walkers (moving) | Left vertical street walkers (moving) | Right vertical street walkers (moving) | Left/right picture halves |
 |---|---|---|---|---|
-| Choice | h4: 18 (16) | v4 main road: 8 (8) | v5 side street: 8 (8) | 17 / 17 |
-| Birds | h3: 14 (14) | v5 side street: 9 (9) | v6 side street: 9 (9) | 15 / 17 |
-| Dog | h5: 20 (20) | v3 side street: 5 (5) | v4 main road: 7 (7) | 16 / 16 |
+| Choice | h4: 17 (16) | v4 main road: 10 (10) | v5 side street: 13 (13) | 15 / 25 |
+| Birds | h3: 15 (15) | v5 side street: 11 (11) | v6 side street: 10 (10) | 17 / 19 |
+| Dog | h5: 13 (13) | v3 side street: 7 (7) | v4 main road: 14 (14) | 14 / 20 |
 
 The bird block is explicitly industrial and one block east of the first bird preview; its
 two existing building footprints and shallow roof make a different side-street composition.

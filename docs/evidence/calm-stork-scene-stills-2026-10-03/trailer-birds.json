@@ -41,28 +41,28 @@
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"final_activity": {
-		"moving_crowd": 36,
-		"visible_cars": 3,
+		"moving_crowd": 37,
+		"visible_cars": 1,
 		"visible_events": {
 			"pigeon_flock": 1
 		},
-		"visible_walkers": 33,
+		"visible_walkers": 36,
 		"walker_streets": {
 			"h3": {
-				"moving": 13,
-				"walkers": 13
+				"moving": 20,
+				"walkers": 20
 			},
 			"v5": {
-				"moving": 9,
-				"walkers": 9
+				"moving": 6,
+				"walkers": 6
 			},
 			"v6": {
-				"moving": 11,
-				"walkers": 11
+				"moving": 10,
+				"walkers": 10
 			}
 		},
-		"walkers_left": 14,
-		"walkers_right": 19
+		"walkers_left": 16,
+		"walkers_right": 20
 	},
 	"final_actors": {
 		"birds": {
@@ -78,30 +78,30 @@
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2549.8665,
-				1360.0
+				2548.2793,
+				1366.9237
 			],
 			"speed": 0.0
 		}
 	},
 	"final_crowd": {
 		"cars": 34,
-		"moving": 430,
-		"moving_cars": 30,
+		"moving": 427,
+		"moving_cars": 27,
 		"quadrants": {
 			"ne": {
-				"cars": 17,
-				"moving": 213,
-				"moving_cars": 16,
-				"total": 214,
-				"walkers": 197
+				"cars": 7,
+				"moving": 193,
+				"moving_cars": 7,
+				"total": 193,
+				"walkers": 186
 			},
 			"nw": {
-				"cars": 17,
-				"moving": 217,
-				"moving_cars": 14,
-				"total": 220,
-				"walkers": 203
+				"cars": 27,
+				"moving": 234,
+				"moving_cars": 20,
+				"total": 241,
+				"walkers": 214
 			},
 			"se": {
 				"cars": 0,
@@ -157,17 +157,17 @@
 		"moving_cars": 34,
 		"quadrants": {
 			"ne": {
-				"cars": 16,
-				"moving": 191,
-				"moving_cars": 16,
-				"total": 191,
+				"cars": 4,
+				"moving": 179,
+				"moving_cars": 4,
+				"total": 179,
 				"walkers": 175
 			},
 			"nw": {
-				"cars": 18,
-				"moving": 243,
-				"moving_cars": 18,
-				"total": 243,
+				"cars": 30,
+				"moving": 255,
+				"moving_cars": 30,
+				"total": 255,
 				"walkers": 225
 			},
 			"se": {
@@ -210,8 +210,8 @@
 				"carrying": false,
 				"gait_frame": 0,
 				"position": [
-					2509.8667,
-					1360.0
+					2509.1262,
+					1364.3951
 				],
 				"speed": 92.0
 			},
@@ -225,8 +225,8 @@
 				"carrying": false,
 				"gait_frame": 2,
 				"position": [
-					2537.4666,
-					1360.0
+					2536.7261,
+					1364.3951
 				],
 				"speed": 92.0
 			},

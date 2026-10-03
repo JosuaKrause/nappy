@@ -17,34 +17,34 @@
 		160
 	],
 	"capture_activity": {
-		"moving_crowd": 34,
-		"visible_cars": 2,
+		"moving_crowd": 36,
+		"visible_cars": 3,
 		"visible_events": {
 			"charging_dog": 1
 		},
-		"visible_walkers": 32,
+		"visible_walkers": 34,
 		"walker_streets": {
 			"h5": {
-				"moving": 20,
-				"walkers": 20
+				"moving": 13,
+				"walkers": 13
 			},
 			"v3": {
-				"moving": 5,
-				"walkers": 5
-			},
-			"v4": {
 				"moving": 7,
 				"walkers": 7
+			},
+			"v4": {
+				"moving": 14,
+				"walkers": 14
 			}
 		},
-		"walkers_left": 16,
-		"walkers_right": 16
+		"walkers_left": 14,
+		"walkers_right": 20
 	},
 	"capture_actors": {
 		"dog": {
 			"position": [
-				1727.8683,
-				2384.0
+				1728.4744,
+				2385.9409
 			],
 			"pursuing": true,
 			"row": "charging_dog",
@@ -54,23 +54,23 @@
 			"carrying": false,
 			"gait_frame": 0,
 			"position": [
-				1668.1993,
-				2384.0
+				1666.4918,
+				2388.1479
 			],
 			"speed": 118.0
 		}
 	},
 	"capture_camera": {
 		"position": [
-			1668.19934082031,
-			2384.0
+			1666.49182128906,
+			2388.14794921875
 		],
 		"zoom": 2.0
 	},
 	"capture_crowd": {
 		"cars": 34,
-		"moving": 431,
-		"moving_cars": 31,
+		"moving": 430,
+		"moving_cars": 30,
 		"quadrants": {
 			"ne": {
 				"cars": 0,
@@ -80,25 +80,25 @@
 				"walkers": 11
 			},
 			"nw": {
-				"cars": 20,
-				"moving": 211,
-				"moving_cars": 18,
-				"total": 213,
-				"walkers": 193
+				"cars": 21,
+				"moving": 226,
+				"moving_cars": 17,
+				"total": 230,
+				"walkers": 209
 			},
 			"se": {
 				"cars": 0,
-				"moving": 3,
+				"moving": 1,
 				"moving_cars": 0,
-				"total": 3,
-				"walkers": 3
+				"total": 1,
+				"walkers": 1
 			},
 			"sw": {
-				"cars": 14,
-				"moving": 206,
+				"cars": 13,
+				"moving": 192,
 				"moving_cars": 13,
-				"total": 207,
-				"walkers": 193
+				"total": 192,
+				"walkers": 179
 			}
 		},
 		"scope": "local",
@@ -132,8 +132,8 @@
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"initial_activity": {
-		"moving_crowd": 7,
-		"visible_cars": 0,
+		"moving_crowd": 8,
+		"visible_cars": 1,
 		"visible_events": {},
 		"visible_walkers": 7,
 		"walker_streets": {
@@ -178,10 +178,10 @@
 				"walkers": 0
 			},
 			"nw": {
-				"cars": 17,
-				"moving": 239,
-				"moving_cars": 17,
-				"total": 239,
+				"cars": 19,
+				"moving": 241,
+				"moving_cars": 19,
+				"total": 241,
 				"walkers": 222
 			},
 			"se": {
@@ -192,10 +192,10 @@
 				"walkers": 0
 			},
 			"sw": {
-				"cars": 17,
-				"moving": 195,
-				"moving_cars": 17,
-				"total": 195,
+				"cars": 15,
+				"moving": 193,
+				"moving_cars": 15,
+				"total": 193,
 				"walkers": 178
 			}
 		},
@@ -237,8 +237,8 @@
 			"passed": true,
 			"state": {
 				"position": [
-					1751.717,
-					2384.0
+					1755.0662,
+					2384.8372
 				],
 				"pursuing": true,
 				"row": "charging_dog",
@@ -252,8 +252,8 @@
 			"passed": true,
 			"state": {
 				"position": [
-					1727.8683,
-					2384.0
+					1728.4744,
+					2385.9409
 				],
 				"pursuing": true,
 				"row": "charging_dog",
@@ -269,8 +269,8 @@
 				"carrying": false,
 				"gait_frame": 0,
 				"position": [
-					1668.1993,
-					2384.0
+					1666.4918,
+					2388.1479
 				],
 				"speed": 118.0
 			},

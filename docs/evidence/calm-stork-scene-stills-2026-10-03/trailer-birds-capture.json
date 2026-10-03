@@ -17,28 +17,28 @@
 		160
 	],
 	"capture_activity": {
-		"moving_crowd": 35,
-		"visible_cars": 3,
+		"moving_crowd": 38,
+		"visible_cars": 2,
 		"visible_events": {
 			"pigeon_flock": 1
 		},
-		"visible_walkers": 32,
+		"visible_walkers": 36,
 		"walker_streets": {
 			"h3": {
-				"moving": 14,
-				"walkers": 14
+				"moving": 15,
+				"walkers": 15
 			},
 			"v5": {
-				"moving": 9,
-				"walkers": 9
+				"moving": 11,
+				"walkers": 11
 			},
 			"v6": {
-				"moving": 9,
-				"walkers": 9
+				"moving": 10,
+				"walkers": 10
 			}
 		},
-		"walkers_left": 15,
-		"walkers_right": 17
+		"walkers_left": 17,
+		"walkers_right": 19
 	},
 	"capture_actors": {
 		"birds": {
@@ -48,7 +48,7 @@
 			],
 			"pursuing": false,
 			"row": "pigeon_flock",
-			"telegraphing": false
+			"telegraphing": true
 		},
 		"player": {
 			"carrying": false,
@@ -73,25 +73,25 @@
 		"moving_cars": 34,
 		"quadrants": {
 			"ne": {
-				"cars": 16,
-				"moving": 212,
-				"moving_cars": 16,
-				"total": 212,
-				"walkers": 196
+				"cars": 5,
+				"moving": 184,
+				"moving_cars": 5,
+				"total": 184,
+				"walkers": 179
 			},
 			"nw": {
-				"cars": 18,
-				"moving": 221,
-				"moving_cars": 18,
-				"total": 221,
-				"walkers": 203
+				"cars": 29,
+				"moving": 250,
+				"moving_cars": 29,
+				"total": 250,
+				"walkers": 221
 			},
 			"se": {
 				"cars": 0,
-				"moving": 1,
+				"moving": 0,
 				"moving_cars": 0,
-				"total": 1,
-				"walkers": 1
+				"total": 0,
+				"walkers": 0
 			},
 			"sw": {
 				"cars": 0,
@@ -165,17 +165,17 @@
 		"moving_cars": 34,
 		"quadrants": {
 			"ne": {
-				"cars": 16,
-				"moving": 191,
-				"moving_cars": 16,
-				"total": 191,
+				"cars": 4,
+				"moving": 179,
+				"moving_cars": 4,
+				"total": 179,
 				"walkers": 175
 			},
 			"nw": {
-				"cars": 18,
-				"moving": 243,
-				"moving_cars": 18,
-				"total": 243,
+				"cars": 30,
+				"moving": 255,
+				"moving_cars": 30,
+				"total": 255,
 				"walkers": 225
 			},
 			"se": {

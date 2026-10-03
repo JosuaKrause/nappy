@@ -30,28 +30,28 @@
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"final_activity": {
-		"moving_crowd": 31,
-		"visible_cars": 2,
+		"moving_crowd": 36,
+		"visible_cars": 1,
 		"visible_events": {
 			"leaf_blower": 1
 		},
-		"visible_walkers": 29,
+		"visible_walkers": 36,
 		"walker_streets": {
 			"h4": {
-				"moving": 17,
-				"walkers": 17
+				"moving": 21,
+				"walkers": 21
 			},
 			"v4": {
-				"moving": 6,
-				"walkers": 6
+				"moving": 5,
+				"walkers": 5
 			},
 			"v5": {
-				"moving": 6,
-				"walkers": 6
+				"moving": 10,
+				"walkers": 10
 			}
 		},
-		"walkers_left": 18,
-		"walkers_right": 11
+		"walkers_left": 14,
+		"walkers_right": 22
 	},
 	"final_actors": {
 		"obstacle": {
@@ -67,44 +67,44 @@
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2195.011,
-				1812.838
+				2195.7202,
+				1812.9341
 			],
 			"speed": 62.0
 		}
 	},
 	"final_crowd": {
 		"cars": 34,
-		"moving": 429,
-		"moving_cars": 29,
+		"moving": 427,
+		"moving_cars": 27,
 		"quadrants": {
 			"ne": {
-				"cars": 9,
-				"moving": 93,
-				"moving_cars": 8,
-				"total": 94,
-				"walkers": 85
+				"cars": 3,
+				"moving": 86,
+				"moving_cars": 3,
+				"total": 86,
+				"walkers": 83
 			},
 			"nw": {
-				"cars": 22,
+				"cars": 26,
 				"moving": 287,
-				"moving_cars": 18,
-				"total": 291,
-				"walkers": 269
+				"moving_cars": 19,
+				"total": 294,
+				"walkers": 268
 			},
 			"se": {
-				"cars": 2,
-				"moving": 12,
-				"moving_cars": 2,
-				"total": 12,
-				"walkers": 10
+				"cars": 1,
+				"moving": 20,
+				"moving_cars": 1,
+				"total": 20,
+				"walkers": 19
 			},
 			"sw": {
-				"cars": 1,
-				"moving": 37,
-				"moving_cars": 1,
-				"total": 37,
-				"walkers": 36
+				"cars": 4,
+				"moving": 34,
+				"moving_cars": 4,
+				"total": 34,
+				"walkers": 30
 			}
 		},
 		"scope": "local",
@@ -112,8 +112,8 @@
 		"walkers": 400
 	},
 	"initial_activity": {
-		"moving_crowd": 26,
-		"visible_cars": 1,
+		"moving_crowd": 25,
+		"visible_cars": 0,
 		"visible_events": {},
 		"visible_walkers": 25,
 		"walker_streets": {
@@ -166,10 +166,10 @@
 				"walkers": 60
 			},
 			"nw": {
-				"cars": 30,
-				"moving": 301,
-				"moving_cars": 30,
-				"total": 301,
+				"cars": 28,
+				"moving": 299,
+				"moving_cars": 28,
+				"total": 299,
 				"walkers": 271
 			},
 			"se": {
@@ -180,10 +180,10 @@
 				"walkers": 10
 			},
 			"sw": {
-				"cars": 1,
-				"moving": 60,
-				"moving_cars": 1,
-				"total": 60,
+				"cars": 3,
+				"moving": 62,
+				"moving_cars": 3,
+				"total": 62,
 				"walkers": 59
 			}
 		},
@@ -324,8 +324,8 @@
 				"carrying": false,
 				"gait_frame": 1,
 				"position": [
-					2162.2778,
-					1812.838
+					2162.9871,
+					1810.2673
 				],
 				"speed": 92.0
 			},
