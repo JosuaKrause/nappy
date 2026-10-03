@@ -7,10 +7,16 @@ priority: later
 
 [PLAYTEST-139](../../playtests/PLAYTEST-139.md) holds the whole design, statements 1–10.
 
-**Proposed, not asked for:** source the shots from
-[calm-stork's authored recipes](../2026-10-03-calm-stork/README.md) once built. The
-first attempt's missing-truck seed workflow remains bug context, not the only source
-of scenes for the cut.
+`tools/trailer/shots.json` sources its shots from the
+[saved scene recipes](../../SCENE_RECIPES.md). Scene construction and still review
+are separate from the final movie edit.
+
+**Proposed, not asked for:** the current recipe-based cut splits early danger into
+blower and dog shots, chooses draft shot lengths and leaves the earlier drafted
+captions out of recipe playback. These are provisional editorial choices for this
+entry's review, not accepted replacements for the player's trailer requirements.
+[The cut's remaining work](cut-under-30s.md) retains the drafted caption words,
+final ordering and loaded-render verification.
 
 The rendering and recording tools are built (`DECISIONS.md`, M204 and M214, the trailer and its
 recording tools). "the trailer needs some work. I will give more details later"
