@@ -1,8 +1,9 @@
 class_name CrowdField
 extends RefCounted
-## The patch of city the crowd is actually simulated in: a box that travels with the player.
+## The patch of city the crowd is actually simulated in: normally a box that travels with the
+## player. An explicit recipe overview fixes it to the whole map and scales the population.
 ##
-## Nothing is loaded upfront: the crowd exists in the few blocks around the player and nowhere
+## In normal play the crowd exists in the few blocks around the player and nowhere
 ## else. **Consistency off screen does not matter, because nobody can run after a car to check it
 ## is still there.**
 ##
@@ -23,12 +24,16 @@ extends RefCounted
 ## is the whole of `_grown_for` below.
 var centre := Vector2.ZERO:
 	set(at):
-		centre = at
-		radius = _grown_for(at)
+		centre = map.world_size() * 0.5 if city_view and map else at
+		radius = maxf(map.world_size().x, map.world_size().y) * 0.5 \
+				if city_view and map else _grown_for(at)
 ## Half-extent of the box. Read by everything that places or recycles an agent; never set from
 ## outside, because it is a function of where the centre is.
 var radius := Tuning.CROWD_FIELD_RADIUS
 var map: CityMap
+## A recipe's city overview simulates every visible street at the ordinary field density.
+## The normal moving field remains the default, including after another day is started.
+var city_view := false
 
 func _init(city_map: CityMap, at := Vector2.ZERO) -> void:
 	map = city_map
@@ -76,6 +81,8 @@ func _city_area(at: Vector2, half: float) -> float:
 ## little way past the edge before it is recycled — otherwise one that recycles onto the
 ## boundary can qualify to be recycled again on the next frame.
 func contains(at: Vector2, slack := 0.0) -> bool:
+	if city_view:
+		return Rect2(Vector2.ZERO, map.world_size()).grow(slack).has_point(at)
 	return absf(at.x - centre.x) <= radius + slack \
 			and absf(at.y - centre.y) <= radius + slack
 
