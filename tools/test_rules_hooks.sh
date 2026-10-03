@@ -88,7 +88,8 @@
 #     or in a heredoc body such a command reads (cat > file <<'EOF', "$(cat <<'EOF' ...)" as a
 #     git commit or gh message, tools/inbox.py capture <<'NOTE') no longer count, while the same
 #     words in an unquoted delimiter's body holding a $(...), a backtick or a ${...} (cat <<EOF),
-#     piped into a shell, fed to bash/python3/sed, after a wrapper word (bash -c, xargs), in
+#     written to a file the same command then runs (cat > x.sh <<'EOF'; bash x.sh, but not a
+#     --body-file or -F body=@file), piped into a shell, fed to bash/python3/sed, after a wrapper word (bash -c, xargs), in
 #     a process substitution, after rg --pre, or in a heredoc with no terminator or two on a line
 #     still deny, and a write after the quoted argument's own separator or after the heredoc
 #     still denies. Every
@@ -1518,6 +1519,49 @@ assert_write_guard "cat <<EOF > note.md, prose and a \$HOME naming git push -> a
     "cat <<EOF > note.md
 run git push in \$HOME, never gh issue close
 EOF"
+# A file a text-only command writes and the same command then runs is a script, not text: its
+# heredoc body or quoted words are kept and read. Handing the file over as a body to post or
+# commit (--body-file, -F, -F body=@file) is not running it.
+assert_write_guard "cat > /tmp/x.sh <<'EOF' then bash /tmp/x.sh -> deny, the body runs" deny \
+    "cat > /tmp/x.sh <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/x.sh"
+assert_write_guard "cat > /tmp/x.sh <<'EOF' then chmod +x and run it -> deny" deny \
+    "cat > /tmp/x.sh <<'EOF'
+gh issue close 423
+EOF
+chmod +x /tmp/x.sh && /tmp/x.sh"
+assert_write_guard "cat > x.sh <<'EOF' then ./x.sh -> deny" deny \
+    "cat > x.sh <<'EOF'
+git push origin main
+EOF
+./x.sh"
+assert_write_guard "tee /tmp/z.sh <<'EOF' then source it -> deny" deny \
+    "tee /tmp/z.sh <<'EOF'
+git push origin main
+EOF
+source /tmp/z.sh"
+assert_write_guard "echo \"gh issue close 423\" > /tmp/y.sh; sh /tmp/y.sh -> deny" deny \
+    'echo "gh issue close 423" > /tmp/y.sh; sh /tmp/y.sh'
+assert_write_guard "echo of a quoted git push appended to y.sh, then . ./y.sh -> deny" deny \
+    'echo "git push origin main" >> y.sh && . ./y.sh'
+assert_write_guard "printf of a quoted git push into ./x.sh, then bash x.sh -> deny" deny \
+    "printf '%s\\n' 'git push origin main' > ./x.sh; bash x.sh"
+assert_write_guard "cat > brief <<'EOF' then a wrapped gh pr create --body-file brief -> allow" allow \
+    "cat > /tmp/brief.md <<'EOF'
+run gh issue comment only through tools/inbox.py, and git push only wrapped
+EOF
+uv run python tools/agent-identity.py run claude-coder -- gh pr create --title t --body-file /tmp/brief.md"
+assert_write_guard "cat > msg <<'EOF' then a wrapped git commit -F msg -> allow" allow \
+    "cat > /tmp/msg.txt <<'EOF'
+the guard denies gh issue close now
+EOF
+uv run python tools/agent-identity.py run claude-coder -- git commit -F /tmp/msg.txt"
+assert_write_guard "echo of quoted prose > b.md, then a wrapped gh api -F body=@b.md -> allow" allow \
+    'echo "never gh issue close" > /tmp/b.md && uv run python tools/agent-identity.py run claude-coder -- gh api repos/o/r/issues/5/comments -F body=@/tmp/b.md'
+assert_write_guard "echo of quoted prose 2>/dev/null, then rg 2>/dev/null -> allow, /dev/null is no script" allow \
+    'echo "gh issue close" 2>/dev/null; rg "gh issue close" x 2>/dev/null'
 # bash 3.2 finds a \$(...)'s closing ) by reading the heredoc body inside it as shell text, so a
 # body line EOF) (or EOF ), or any ) the body did not open) ends the substitution there and the
 # lines after it run, while the delimiter-exact reading would take them for body: such a body

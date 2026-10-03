@@ -189,9 +189,10 @@
 # script, like a real wrapped call) -- an accepted hole, the same kind `git-grep-guard.sh` accepts
 # for an encoded command or one kept in a file the shell then runs. The text-only reading adds the
 # same kind of hole and no other: it trusts its list of text-only commands (a shell function or
-# alias named `echo` is not the `echo` it means), and text a text-only command writes to a file the
-# shell then runs (`cat > x.sh <<'EOF'` and then `bash x.sh`) is that file, which no reading here
-# sees.
+# alias named `echo` is not the `echo` it means), and text a text-only command writes to a file
+# that a later, separate command runs is that file, which no reading here sees. Within one
+# command it is read: a written file the same command names again (`cat > x.sh <<'EOF'` and then
+# `bash x.sh`) keeps the text that wrote it (`run_files`, below).
 #
 # Guards both of Claude Code's tools that run a shell command (`Bash`, `Monitor`) the same way
 # `git-grep-guard.sh` does, and reads the same hook JSON shape on stdin. Needs bash 3.2 and jq only.
@@ -1084,6 +1085,46 @@ def quote_after($q0):
     end)
   | .q;
 
+# **A file written and then run in the same command is not text.** `cat > /tmp/x.sh <<'EOF'` then
+# `bash /tmp/x.sh`, or `echo "..." > y.sh; sh y.sh`, runs what the text-only command wrote, so its
+# words are a script, not prose. `run_files` reads the raw command once: every file a redirect
+# (`>`, `>>`, `&>`) or a `tee` writes to, and every later word naming the same file by its last
+# path component (`./x.sh`, `bash x.sh`, `chmod +x x.sh && ./x.sh`, `bash < x.sh`, `cat x.sh |
+# sh`), and gives back each written file's name that is named again after the write. A later
+# naming does not count where it only hands the file over as a body to post or commit -- the value
+# of `-F`, `--body-file`, `--file`, `--input` or `--context-file`, a `--body-file=`-style option,
+# or a `field=@file` -- nor where it is another write to it (after a `>`), so a brief written with
+# `cat > b.md <<'EOF'` and posted with `--body-file b.md` stays text. Every other later naming
+# counts, a mere read (`wc -l b.md`) included, a false deny the safe direction; a numbered file
+# descriptor (`2>&1`) and a `/dev/` path are never files here. A heredoc whose operator line, or a
+# text-only command whose words, name such a file keeps its text and is read as before
+# (`strip_heredocs`, `inert_table`). A file run by a later, separate command is that file, which
+# no reading of this one sees (the header's accepted gap).
+def file_token_regex: "([ \t\n;&|()<>'\"`]*)([^ \t\n;&|()<>'\"`]+)";
+def file_key: split("/") | (last // "") | ascii_downcase;
+def hands_file_over($prev):
+  ($prev | IN("-F", "--body-file", "--file", "--input", "--context-file"))
+  or test("=@|^@|^--(body-file|file|input|context-file)=");
+def run_files:
+  [match(file_token_regex; "g") | {o: .offset, g: .captures[0].string, t: .captures[1].string}] as $tok
+  | [foreach range(0; $tok | length) as $k ({tee: false, out: null};
+       ($tok[$k]) as $x
+       | (if $k > 0 then $tok[$k - 1].t else "" end) as $prev
+       | (if $x.g | test("[;&|()\n]") then .tee = false else . end)
+       | (($x.g | contains(">")) or (.tee and ($x.t | startswith("-") | not))) as $written
+       | .out = {o: $x.o, key: ($x.t | file_key), written: $written,
+                 file: ($written and ($x.t | test("^[0-9]+$|^/dev/") | not)),
+                 use: (($written | not) and (($x.t | hands_file_over($prev)) | not))}
+       | .tee = (.tee or ($x.t | file_key) == "tee");
+       .out)] as $words
+  | (reduce ($words[] | select(.use)) as $u ({}; .[$u.key] = $u.o)) as $last_use
+  | reduce ($words[] | select(.file and .key != "" and ($last_use[.key] // -1) > .o)) as $f
+      ({}; .[$f.key] = true);
+# Whether any word of `$text` names one of those files.
+def names_run_file($danger):
+  ($danger | length) > 0
+  and any(match(file_token_regex; "g") | .captures[1].string | file_key; $danger[.] == true);
+
 # The operator's captures: the `-` of `<<-`, then the delimiter in single quotes, in double quotes,
 # the backslash of `\EOF`, and the delimiter itself when it is not in quotes. Any of the three
 # quotings makes the body literal: the shell expands nothing in it.
@@ -1159,7 +1200,7 @@ def heredoc_check($q; $line; $op):
 # that does not close right after its body, a body inside a `$(...)` that bash 3.2 could close
 # early (`may_close_substitution`) -- returns the command unchanged, so the guard reads it exactly
 # as it would have without this.
-def strip_heredocs:
+def strip_heredocs($danger):
   . as $orig
   | if (contains("<<") | not) then .
     else
@@ -1193,7 +1234,7 @@ def strip_heredocs:
                | ($caps[1] // $caps[2] // $caps[4]) as $delim
                | (if ($ops | length) == 1 then heredoc_check($q; $line; $op) else {ok: false, sub: false} end) as $check
                | .delim = $delim | .dash = ($caps[0] == "-")
-               | if $check.ok then
+               | if $check.ok and (($line | names_run_file($danger)) | not) then
                    ($line[0:$op.offset] + " " + $line[$op.offset + $op.length:]) as $kept
                    | .out += [$kept] | .mode = 1 | .sub = $check.sub | .q = ($kept | quote_after($q))
                    | .quoted = ($caps[1] != null or $caps[2] != null or $caps[3] != null)
@@ -1215,7 +1256,7 @@ def strip_heredocs:
 # the reading is sure, since only then are the quotes where the pass says they are. A command
 # followed by a `(` is not text-only here either, since `tee >(bash)` hands what it writes to a
 # shell.
-def inert_table($w; $quoted):
+def inert_table($w; $quoted; $danger):
   ($w | length) as $n
   | ([range(0; $n) | select($w[.] | is_hard_sep)]) as $hs
   | ([-1] + $hs) as $before
@@ -1226,6 +1267,8 @@ def inert_table($w; $quoted):
         after: (if $ends[$k] >= $n then null else $w[$ends[$k]] end)}
      | .empty = (.s >= .e)
      | .base = ((.before | IN(null, ";", "&", "|", "\n", ")")) and .after != "("
+                and (($danger | length) == 0
+                     or all(range(.s; .e) as $j | $w[$j] | sub("^[0-9]*>+"; "") | file_key; $danger[.] != true))
                 and text_only_at($w; .s; .e))] as $segs
   | ([foreach range(($segs | length) - 1; -1; -1) as $k ({next_ok: true, me: false};
        ($segs[$k]) as $sg
@@ -1384,7 +1427,8 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
             reviewer_push: false, wrapped: false, issue_write: false, too_long: true}
       else empty end
     else
-      strip_heredocs
+      (if test(">|tee") then run_files else {} end) as $danger
+      | strip_heredocs($danger)
       # `|&` is a pipe of stdout and stderr both (bash, zsh): read as `|`, never as a `|` and then
       # a `&` that would make the next command one of its own, handed nothing.
       | (swap("|&"; "|") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
@@ -1404,7 +1448,7 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
       # reading has a table, so `$w0`, which `detect_git` and `push_scan` read for a substitution's
       # opener and a push's own quoted separator, is `$ws` there, less the inert separators; a
       # push's own words are never inert, since no push is a text-only command.
-      | (if $unsure or (any($parts[]; .q) | not) then null else inert_table($ws; $parts | map(.q)) end) as $inert
+      | (if $unsure or (any($parts[]; .q) | not) then null else inert_table($ws; $parts | map(.q); $danger) end) as $inert
       | (if $inert == null then $ws
          else [range(0; $ws | length) as $i | if $inert[$i] and $ws[$i] == "\u0001" then "\u0007" else $ws[$i] end]
          end) as $w
