@@ -1702,6 +1702,80 @@ assert_write_guard "echo of quoted prose > b.md, then a wrapped gh api -F body=@
     'echo "never gh issue close" > /tmp/b.md && uv run python tools/agent-identity.py run claude-coder -- gh api repos/o/r/issues/5/comments -F body=@/tmp/b.md'
 assert_write_guard "echo of quoted prose 2>/dev/null, then rg 2>/dev/null -> allow, /dev/null is no script" allow \
     'echo "gh issue close" 2>/dev/null; rg "gh issue close" x 2>/dev/null'
+# A written file named again in any form -- quoted, escaped, by a glob or a brace expansion, before
+# the write as well as after -- and a file a numbered descriptor, an exec redirect or a git hook
+# path writes, make the whole command read as before: nothing in it is text.
+assert_write_guard "cat > /tmp/x.sh <<'EOF' then bash /tmp/x''.sh -> deny, a quoted name" deny \
+    "cat > /tmp/x.sh <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/x''.sh"
+assert_write_guard "cat > /tmp/x.sh <<'EOF' then bash /tmp/x\\.sh -> deny, an escaped name" deny \
+    "cat > /tmp/x.sh <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/x\\.sh"
+assert_write_guard "cat > /tmp/zz.sh <<'EOF' then bash /tmp/zz\".sh\" -> deny, a half-quoted name" deny \
+    "cat > /tmp/zz.sh <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/zz\".sh\""
+assert_write_guard "cat > /tmp/zz.sh <<'EOF' then bash /tmp/zz.s? -> deny, a glob" deny \
+    "cat > /tmp/zz.sh <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/zz.s?"
+assert_write_guard "cat > /tmp/d/zz.sh <<'EOF' then a for loop over /tmp/d/* -> deny" deny \
+    "cat > /tmp/d/zz.sh <<'EOF'
+git push --force origin main
+EOF
+for f in /tmp/d/*; do bash \$f; done"
+assert_write_guard "cat > /tmp/zz.sh <<'EOF' then bash /tmp/zz.{sh,x} -> deny, a brace expansion" deny \
+    "cat > /tmp/zz.sh <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/zz.{sh,x}"
+assert_write_guard "exec 3>/tmp/z.sh; echo \"gh issue close 423\" >&3; sh /tmp/z.sh -> deny" deny \
+    'exec 3>/tmp/z.sh; echo "gh issue close 423" >&3; sh /tmp/z.sh'
+assert_write_guard "exec 3<>/tmp/z.sh; echo of a quoted issue close >&3; then sh -> deny" deny \
+    'exec 3<>/tmp/z.sh; echo "gh issue close 423" >&3; sh /tmp/z.sh'
+assert_write_guard "exec 3>/tmp/z.sh; echo of a quoted issue close >&3, the file run later -> deny" deny \
+    'exec 3>/tmp/z.sh; echo "gh issue close 423" >&3'
+assert_write_guard "exec > /tmp/x.sh, then cat <<'EOF', then bash /tmp/x.sh -> deny" deny \
+    "exec > /tmp/x.sh
+cat <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/x.sh"
+assert_write_guard "a fifo read by bash before cat > fifo <<'EOF' writes to it -> deny" deny \
+    "mkfifo /tmp/p; bash < /tmp/p &
+cat > /tmp/p <<'EOF'
+git push --force origin main
+EOF"
+assert_write_guard "cat > .git/hooks/pre-push <<'EOF' then a wrapped git push -> deny, the hook runs" deny \
+    "cat > .git/hooks/pre-push <<'EOF'
+gh issue close 423
+EOF
+uv run python tools/agent-identity.py run claude-coder -- git push"
+assert_write_guard "a brief with **bold** prose naming git push, then a wrapped --body-file -> allow" allow \
+    "cat > /tmp/brief.md <<'EOF'
+**Never** run git push or gh issue close by hand; see *.md and [the record](x)
+EOF
+uv run python tools/agent-identity.py run claude-coder -- gh pr create --title t --body-file /tmp/brief.md"
+assert_write_guard "a GraphQL closeIssue written to q.graphql, then a wrapped -F query=@q.graphql -> deny" deny \
+    "cat > /tmp/q.graphql <<'EOF'
+mutation { closeIssue(input: {issueId: \"x\"}) { clientMutationId } }
+EOF
+$orch gh api graphql -F query=@/tmp/q.graphql"
+assert_write_guard "a resolveReviewThread written to q.graphql, then a reviewer's -F query=@q.graphql -> allow" allow \
+    "cat > /tmp/q.graphql <<'EOF'
+mutation { resolveReviewThread(input: {threadId: \"x\"}) { thread { id } } }
+EOF
+uv run python tools/agent-identity.py run claude-reviewer -- gh api graphql -F query=@/tmp/q.graphql"
+assert_write_guard "cat > brief.md <<'EOF' whose body names brief.md -> allow, a body is not a run" allow \
+    "cat > /tmp/brief.md <<'EOF'
+brief.md says: run git push only wrapped
+EOF"
 # bash 3.2 finds a \$(...)'s closing ) by reading the heredoc body inside it as shell text, so a
 # body line EOF) (or EOF ), or any ) the body did not open) ends the substitution there and the
 # lines after it run, while the delimiter-exact reading would take them for body: such a body

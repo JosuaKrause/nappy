@@ -114,9 +114,10 @@ argument of a command that only prints, searches or stores it (`rg -n "gh issue 
 `git commit -m "..."`), or in the body of a heredoc with a quoted delimiter such a command reads
 (`cat > brief.md <<'EOF'`), are text and do not count; the same words piped into a shell, in a
 heredoc fed to one, in the body of a heredoc whose unquoted delimiter lets the shell run a
-`$(...)`, a backtick or a `${...}` in it (`cat <<EOF`, a backslash-newline in it included), or written to a file the same command
-names again other than as a body to post or commit (`cat > x.sh <<'EOF'` then `bash x.sh`; not
-`--body-file x.md`), still deny.
+`$(...)`, a backtick or a `${...}` in it (`cat <<EOF`, a backslash-newline in it included), or
+in a command that names a file it writes again in any form other than as a body to post or commit
+(`cat > x.sh <<'EOF'` then `bash x.sh`, `bash x''.sh` or a glob; not `--body-file x.md`), or that
+opens one on a numbered descriptor, an `exec` redirect or a git hook's path, still deny.
 
 ## A manual sequence done a second time becomes a script
 
