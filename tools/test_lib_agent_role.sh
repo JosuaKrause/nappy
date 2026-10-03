@@ -242,6 +242,10 @@ if [ "\$1" = pr ] && [ "\$2" = view ]; then
     echo "MERGED $merged_head 999"
     exit 0
 fi
+if [ "\$1" = pr ] && [ "\$2" = list ]; then
+    echo 0
+    exit 0
+fi
 echo "unexpected gh call: \$*" >&2
 exit 1
 STUB

@@ -108,6 +108,38 @@ The items under `docs/review/` hold what waits on a person: **committing** says 
 playtest deletes one; close every item a playtest this session covered, and check both happened
 for this session's work.
 
+### 6b. Finish the job's storage cleanup
+
+**A completed job cleans up its own scratch immediately, and the session verifies that it did.**
+Temporary placement is not proof that a directory is disposable. Record exact scratch paths,
+their owner and retained outputs when starting a worktree, build, capture or browser run. Scripts
+use a scoped `EXIT` trap or `finally`, stop and wait for their child processes, retain diagnostic
+logs/results and requested evidence, then remove only their own intermediate files. On failure,
+preserve the evidence needed to diagnose it and name any retained directory and its next cleanup
+step; do not silently leave a complete checkout or compiler tree behind as "temporary".
+
+**Review worktrees with `tools/prune-merged.sh --all`.** It is a read-only candidate inventory;
+`--all --apply` applies its safety checks again. Finished agents explicitly release their brief
+with `cleanup: ready` after stopping and preserving useful ignored artifacts. Locked, dirty,
+unpushed or actively owned work stays. An unmerged but finished job may remove its own clean
+scratch checkout only after confirming pushed recovery and retained evidence; retain the branch.
+Never force-remove or unlock another job's checkout to make cleanup succeed.
+
+**Browser runs own more than a profile.** Track downloaded/extracted browser copies, build trees,
+profiles and signing-clone leftovers attributable to the run, including operating-system temp
+locations outside `/tmp`. Stop the owning processes and check exact paths before removing them.
+A browser's installed application, the player's regular profile and arbitrary OS/application
+caches are not job-owned scratch. A one-time request to remove identified directories does not
+authorize future blanket deletion of the application's temporary area.
+
+**Check actual free space before and after.** `du` gives allocated sizes that may overlap shared
+copy-on-write blocks; it does not promise exclusive reclaimable bytes. `df` on each destination
+volume measures the available headroom. Before multiplying worktrees or producing large imports,
+builds or capture batches, compare estimated peak use with free space and a stated reserve.
+When the peak is unknown, start with a bounded measurement or reuse an existing checkout rather
+than claiming an arbitrary fixed threshold makes the job safe. Keep unrelated tracked archives
+out of new worktrees through sparse checkout (**orchestrating**).
+
 ### 7. There is no checked-in handoff
 
 **Nothing in the repository says where a session stopped.** *(2026-09-26: "we don't need session
