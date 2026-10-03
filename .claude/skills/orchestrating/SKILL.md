@@ -248,9 +248,12 @@ merging is what collides — so parallelism is planned at the file level, before
   harness resolves `HEAD` in the shell's current directory before it creates an agent's
   worktree, so a shell still standing in a deleted worktree fails every spawn; `cd` back to
   the repository's own folder after removing one.
-- **A push that starts no CI run is re-triggered, not waited on.** `gh pr checks` answering
-  "no checks reported" minutes after a push means no run exists, and auto-merge then waits
-  forever on a check nobody is running; an empty commit on the branch starts one.
+- **A push that starts no CI run is diagnosed, not waited on.** When `gh pr checks` answers
+  "no checks reported" minutes after a push, inspect the workflow runs and the PR's mergeability.
+  GitHub cannot run a pull-request merge check while the branch conflicts with main: fetch
+  current main, reconcile it under **merging-main**, and review the result before proceeding.
+  If the PR is mergeable but no run exists, an empty commit on the branch re-triggers CI.
+  Waiting or repeatedly pushing empty commits does not resolve a merge conflict.
 - **Tell each agent who else is alive** and which files those agents own, so a scope fence is a
   sentence in the prompt rather than a discovery in the diff.
 
