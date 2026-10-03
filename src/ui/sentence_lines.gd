@@ -1,8 +1,8 @@
 class_name SentenceLines
 extends RefCounted
-## One helper that breaks a screen's prose onto more than one line, used by every label listed in
-## `docs/todo/2026-09-27-sunny-wombat/break-after-each-sentence.md` rather than a `\n` typed into
-## each string, so a new text gets the same rule automatically.
+## One helper that breaks a screen's prose onto more than one line, used by every label the
+## `SentenceLines` paragraph in `docs/MECHANICS.md` lists rather than a `\n` typed into each
+## string, so a new text gets the same rule automatically.
 ##
 ## **Breaks only where the text has to wrap, and only between sentences.** *(2026-09-27, the
 ## player: "if a text has multiple sentences like \"She started crying after 0:10. There is no
