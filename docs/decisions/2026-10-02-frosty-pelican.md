@@ -45,7 +45,8 @@ shows only the command:
   ref whose name starts with `v` on either side of a refspec's `:` (`vnext`, `HEAD:v1.2.0`), and a
   git option before `push` naming `followTags` or `refs/tags/` or holding a `*` (`git -c
   push.followTags=true push`), and a push refspec set by a git option before `push` that the same
-  tests read as a tag (`git -c remote.origin.push=HEAD:v1.0.0 push origin`). `git tag` itself
+  tests read as a tag (`git -c remote.origin.push=HEAD:v1.0.0 push origin`). Inline
+  `push.default=matching` is also denied as a push of every matching branch. `git tag` itself
   stays unguarded, since it changes only the local repository and every way a tag then reaches
   GitHub is a push the guard reads;
 - a push with a shell expansion among its words, its own reason `git push with a shell
@@ -68,7 +69,8 @@ shows only the command:
   b" && git push origin x`), so both of those are still asked about;
 - a `git` whose options hold a command substitution written outside quotes, or whose subcommand
   is itself an expansion, its own reason `git with a shell expansion before its subcommand`
-  (`git -C $(pwd) push origin main`, `git $(echo push) origin v1`), when the name of a
+  (`git -C $(pwd) push origin main`, `git $(echo push) origin v1`), including those forms
+  inside a quoted `bash -c` or `sh -c` script, when the name of a
   commit-making or pushing subcommand appears anywhere after it in the command. The
   substitution's words end the option run or are taken for the subcommand, so the push behind
   them was never read at all: unwrapped, this shape was allowed outright, on a machine with
@@ -99,14 +101,19 @@ options that take the next word (`-o`, `--repo`, `--receive-pack`, `--exec`,
 `--recurse-submodules`, spelled in full). The reading only ever errs towards taking an earlier word
 for the remote, which leaves every real refspec read: a prefix of one of those options (`git push
 --rep vendor vnext`) reads as taking no value, so `vendor` is taken for the remote and `vnext` is
-denied, where git would push to a remote named `vnext`. A `push.followTags`, mirror or push
+denied, where git would push to a remote named `vnext`. An inline `push.default=matching`
+is conservatively denied even with an explicit branch refspec or a later override, as the
+other inline publishing settings are; separate/attached `-c` and quoted settings are covered.
+A `push.followTags`, mirror, `push.default=matching` or push
 refspec setting made earlier by a separate `git config` command, or passed through the
 environment (`GIT_CONFIG_COUNT` with `GIT_CONFIG_KEY_0`/`GIT_CONFIG_VALUE_0`,
 `GIT_CONFIG_PARAMETERS`), is not visible to the guard, so a plain push after it is asked about.
 
 The expansion and unreadable rules deny some ordinary pushes, the safe direction: any push whose
 words hold a `$` for any reason (`git push origin "$(git branch --show-current)"`, an output
-redirect to `"$LOG"`, a trailing comment that mentions `$5`), a push inside backticks (it ends at
+redirect to `"$LOG"`, a trailing comment that mentions `$5`), an output redirect to a filename
+starting with `v` (`git push origin claude/x > v.log`, because the scan reads the filename
+as a refspec), a push inside backticks (it ends at
 the closing backtick), and a quoted separator in a push's own option value (`-o "ci(skip)"`). A
 read is denied too where an unquoted substitution sits in `gh`'s options (`gh -R $(cat r) pr view
 3`), or in `git`'s when a write subcommand's name appears later in the command (`git -C $(pwd)
@@ -156,3 +163,21 @@ it each brought up a permission prompt the player saw and approved. In the Claud
 prompt shows the guard's own text, that the command "would go out under the player's own GitHub
 account"; in the mobile app it shows only the command, so a player approving from a phone sees
 the command and not the reason.
+
+**Cloud-review corrections.** The player's supplied review is preserved in
+[plush-ibis, cloud review follow-ups for PR 448](../playtests/2026-10-02-plush-ibis.md).
+Its four quoted-script substitutions returned no decision in cloud-on, cloud-default and
+identity-present contexts. The tokenized opening parenthesis or backtick is a soft marker
+inside a quoted script. A marker at the apparent subcommand must be denied, and a backtick
+consumed as an option value leaves the marker immediately before that position. The helper
+checks both at the option word's quote depth. A genuinely quoted option argument remains
+readable, including `git -C "$(pwd)" push` and `gh -R "$(cat r)" pr view`.
+
+Rejected: treating every soft marker as a substitution opener throughout an option span.
+That conservative reading also denies ordinary quoted GH reads; regression controls and
+independent probes catch it. The final helper preserves those reads and normal opt-in
+branch-push asks while denying the supplied bypasses, including GH noun/verb substitutions.
+The inline matching setting is denied rather than accepted as a publishing gap. The existing
+redirect false denial is documented rather than expanding this correction into redirection
+parsing. `tools/test_rules_hooks.sh`, the focused Codex adapter tests, headless boot, doc lint
+and whitespace checks pass; independent hook-only replays confirm the old/new behavior.

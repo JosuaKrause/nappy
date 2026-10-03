@@ -170,8 +170,9 @@ What is built:
   `Telemetry.end_run()`, which closes the run log: the "deleted the save" line, and the "deletion
   was not kept" line for a deletion that fails at once, land in the run that was abandoned. Nothing
   in `end_run()` reads the save, and `clear()` reads nothing the log's closing changes. A web
-  deletion's own answer ("the browser dropped the deleted save") arrives after the log is closed and
-  is not logged; `docs/TELEMETRY.md` says so.
+  deletion's own answer ("the browser dropped the deleted save") arrives after that log closes.
+  It is unlogged while no log is open, but can land in the next run's log if the reload opens
+  one first, including a debug web page with `?telemetry=1`; `docs/TELEMETRY.md` says so.
 - **Also fixed on the way.** A flush whose page JavaScript is unreachable used to settle before its
   caller had begun the symbol, which dropped the answer and left the symbol up for good; it now
   settles on the next idle frame.
@@ -204,7 +205,29 @@ by `main` put back, respectively. On a debug web export in headless Chromium,
 succeeds, that a connection failing once is reopened and the save kept, that one failing every time
 reports the failure, that a flush that never answers keeps the plain symbol up and then shows the
 struck one, and that storage refused at boot shows the struck symbol at once; that probe ran
-before the operation ids and the hand-over carry were added and was not repeated. Not verified: the
-release web export (it needs the custom runtime built with emsdk), that the custom runtime keeps the
-same unminified names (its build passes no closure-compiler option, but the pinned source's
-default was not read), and anything on a real iPhone.
+before the operation ids and the hand-over carry were added and was not repeated.
+The pinned Godot 4.7.2 source's `platform/web/detect.py` defaults `use_closure_compiler` to
+false, and `tools/build-web-template.sh` does not enable it. The pinned archive hash and
+the source default are independently checked; this supports the expected unminified
+`FS`/`IDBFS` names. Not verified: the release web export itself (it needs the custom runtime
+built with emsdk), and anything on a real iPhone.
+
+The [plain and struck symbol sheet](../evidence/rosy-chipmunk-save-symbols-2026-10-02/save-symbols.png)
+shows both symbols at 48px and 128px over light and dark grounds. Its retained
+[render-sheet.gd collector](../evidence/rosy-chipmunk-save-symbols-2026-10-02/render-sheet.gd)
+recreates the picture from the two SVG sources. From the project root with `GODOT` set to
+the engine executable, write a new scratch output rather than replacing the evidence:
+
+```sh
+task_output=$(mktemp -d)
+"$GODOT" --headless --path . \
+  --script res://docs/evidence/rosy-chipmunk-save-symbols-2026-10-02/render-sheet.gd -- \
+  res://art/ui/save.svg res://art/ui/save_unavailable.svg "$task_output/save-symbols.png"
+```
+
+The player's supplied cloud review and its corrections are recorded in
+[plush-ibis, cloud review follow-ups for PR 448](../playtests/2026-10-02-plush-ibis.md).
+Save runtime behavior is unchanged by these corrections. The comment describing an idle
+symbol's lifetime now distinguishes a scene-owned symbol from a once-carried root symbol:
+the latter stays at the root and is adopted again, even when idle. The deletion-log wording
+and source-verification limits above reflect the actual lifecycle and checked source.
