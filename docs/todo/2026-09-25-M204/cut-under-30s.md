@@ -10,10 +10,10 @@ caption words remain available for that review: "Every walk is a choice.",
 "Not every street is safe.", and "One family. A whole city." The title is "Nappy".
 Neither their removal nor replacement is an accepted editorial decision.
 
-**Proposed, not asked for:** `tools/trailer/shots.json` currently uses separate blower
-and dog recipes, revised shot lengths and no recipe caption overlays. Reconcile that
-draft with the player's final editorial choices before the finished render. Still
-capture for scene composition does not decide caption timing or the final cut.
+`tools/trailer/shots.json` uses the requested bird-flock and dog scene recipes.
+**Proposed, not asked for:** its draft shot lengths and omitted recipe caption overlays
+remain editorial choices to reconcile with the player before the finished render.
+Still capture for scene composition does not decide caption timing or the final cut.
 
 Verify the actual trucks and the visibly running, carrying mother in the final movie.
 The sources are saved recipes, so the acceptance test is the requested on-screen

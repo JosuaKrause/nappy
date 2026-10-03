@@ -11,10 +11,12 @@ priority: later
 [saved scene recipes](../../SCENE_RECIPES.md). Scene construction and still review
 are separate from the final movie edit.
 
-**Proposed, not asked for:** the current recipe-based cut splits early danger into
-blower and dog shots, chooses draft shot lengths and leaves the earlier drafted
-captions out of recipe playback. These are provisional editorial choices for this
-entry's review, not accepted replacements for the player's trailer requirements.
+The scene sources include the bird flock and charging dog requested in
+[lilac-beaver](../../playtests/2026-10-03-lilac-beaver.md).
+**Proposed, not asked for:** the current recipe-based cut chooses draft shot lengths
+and leaves the earlier drafted captions out of recipe playback. These are provisional
+editorial choices for this entry's review, not accepted replacements for the player's
+trailer requirements.
 [The cut's remaining work](cut-under-30s.md) retains the drafted caption words,
 final ordering and loaded-render verification.
 

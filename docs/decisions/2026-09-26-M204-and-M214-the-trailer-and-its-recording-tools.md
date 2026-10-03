@@ -32,10 +32,14 @@ matched when rerun on a quieter machine. The original standalone escape screensh
 hang remained separate from the movie-writer path.
 
 PR #457 replaces the shot sources with authored recipes and supplies stills plus
-action checks. Its current cut splits early danger into blower and dog, revises shot
-lengths and omits recipe caption overlays. Review identified that these editorial
-changes were unmarked. They are now explicitly proposals in M204's queue, with all
+action checks. Its first authored cut split early danger into blower and dog, revised
+shot lengths and omitted recipe caption overlays. Review identified that these editorial
+changes were unmarked. M204's queue retains the editorial choices explicitly, with all
 three drafted caption phrases retained for the player's choice. No final editorial
 approval or loaded-render reproducibility is inferred from scene acceptance. The
 queue describes the current recipe source; the earlier seed workflow stays in this
 record as failure context rather than as the procedure to reproduce a new scene.
+
+[Lilac-beaver](../playtests/2026-10-03-lilac-beaver.md) then replaces the blower scene
+with a bird flock and accepts the trucks, gate, chase and whole-city compositions.
+Those scene decisions do not select final movie durations, captions or ordering.

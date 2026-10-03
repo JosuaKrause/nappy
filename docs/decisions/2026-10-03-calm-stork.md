@@ -61,11 +61,11 @@ automatic pictures are excluded under the player's
 [compact-evidence instruction](https://github.com/JosuaKrause/nappy/blob/336970864090bfcb7b360a2486c5f85e1788924e/docs/playtests/2026-10-03-busy-wombat.md).
 No video is rendered, and still/action verification makes no pixel-reproducibility claim.
 
-**Choices open to overturn.** The blower as an early encounter, the four early
+**Initial presentation choices.** The blower as an early encounter, the four early
 building/roof arrangements, the preview parent assignments outside the three prescribed
-glimpses, and the whole-city population at ordinary area density are presentation choices
-for review. The current trailer cut splits early danger into blower and dog, changes
-durations and omits draft caption overlays; those are proposals, not editorial approval.
+glimpses, and the whole-city population at ordinary area density were presented for
+review. The first authored cut split early danger into blower and dog, changed durations
+and omitted draft caption overlays; those proposals did not constitute editorial approval.
 [M204, the trailer cut](../todo/2026-09-25-M204/README.md) retains the three drafted
 caption phrases, final ordering, title/fades, thirty-second limit, resolution/audio,
 movie action checks and loaded-render reproducibility. It also retains the separate
@@ -82,3 +82,63 @@ through seed hunting. Roof-coverage assertions require actual nonempty covered c
 Caller-relative recipe paths are normalized before changing directory, and malformed
 JSON/capture failures identify their recipe or diagnostic log. Full-game verification
 remains CI's; no local full-game or movie-render campaign is used.
+
+## Bird flock, park walk and evenly busy streets · 2026-10-03
+
+[Lilac-beaver](../playtests/2026-10-03-lilac-beaver.md) accepts scenes 7–10 and requests
+four changes: a bird flock in scene 4, the tree across the road in scene 5, walking
+inside the park near a visible road in scene 6, and equally high pedestrian density
+away from the main road in scenes 3–5. [Tiny-dolphin](../playtests/2026-10-03-tiny-dolphin.md)
+clarifies that the compositions need not all contain a main road, particularly when
+side streets help balance the pedestrians.
+
+`trailer-birds.json` replaces `trailer-blower.json` and selects the existing
+`pigeon_flock`; shot and CLI references follow the rename. Scene 5 moves the real
+tree and its pit from tile [50,74] to [50,71], across the same road by 96 world pixels.
+The construction-stage `city.tree_moves` pins feed the shared tree placement data
+used by planning, props and collision. Invalid sources, occupied or invalid opposite
+curbs, home-door conflicts and duplicate destinations fail. Scene 6 starts inside
+the park at [1296,1712] and walks south near its east edge, with the road in view.
+
+The original pedestrian distribution uses the main-road busyness weight 5 against
+ordinary corridor weights 0.5–1.7. Scenes 3–5 opt into equal corridor weights and a
+2× pedestrian multiplier: 400 walkers over the moving field instead of the ordinary
+act-1 count of 200. These values are scene presentation choices open to correction,
+not changes to ordinary game density. The override applies on recycling as well as
+initial placement and resets when an ordinary day starts. Cars retain their counts
+and weighting, and pedestrians retain production movement and collision behavior.
+
+The first revised choice capture measures 35 visible walkers: 12 on the horizontal
+street, 9 on the main road and 14 on the other vertical street; 20 are right of the
+player and 15 left. Its scripted wrong-turn/backtrack still passes, with the higher
+crowd's real excitement cost retained. These are capture measurements, not a claim
+that exact counts remain constant during play.
+
+Uniform random corridor weights alone left the dog's first revised capture with only
+two walkers on one side street against thirteen on the main road. Recipe-only initial
+placement therefore samples eligible production sidewalk lanes evenly, validating each
+position with the existing `setup_at` path, while walkers keep moving and recycle with
+the uniform distribution. The bird composition moves one block east onto ordinary side
+streets using an explicit industrial lot and its actual production roof footprint;
+the map's main road is not reclassified or removed.
+
+Review found that fixed lane-direction parity imposed a new walking convention and
+that an oversized population request could be silently truncated. The final source,
+`1f0823ed`, uses varied seeded headings and refuses an overcapacity request before
+play begins. Neither change alters ordinary population or pedestrian behavior.
+
+The revised captures contain 40 visible walkers in choice (17 horizontal, 10 main road,
+13 side street), 36 in birds (15 horizontal, 11 and 10 on the vertical side streets),
+and 34 in dog (13 horizontal, 7 side street, 14 main road). All but one choice walker
+are moving at the capture tick. Street lengths and visible portions differ, so these
+measurements alone do not establish equally high density. Review measured essentially
+equal visible lengths and sidewalk widths in the dog scene and found its left street
+still too sparse; that composition remains open for correction.
+The accepted recipes and images for scenes 1–2 and 7–10 remain byte-identical.
+
+The affected headless run passed 25,081 checks before the final heading/capacity
+correction; its 14 focused checks then passed, as did all three final scripted action
+manifests. The 289-check CLI suite, boot check, lint and whitespace checks passed.
+The final evidence commit is `e9c24e07`; the README identifies each capture's runtime
+source rather than treating the evidence commit as its source. M204 retains the
+separate movie/editorial work.
