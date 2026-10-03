@@ -564,12 +564,12 @@ diverting, because a door is a crossing the day's own structure means to keep op
 halfway down a street. One in four (`Tuning.WALKER_DOOR_TURN_BACK_FRACTION`) turns back at the last
 junction exactly the way it would at a wall — it gets no carve-out, so the door reads to it as the
 wall either side of it does. One in eight (`Tuning.WALKER_DOOR_PASS_FRACTION`) walks straight
-through. Everybody else is **held at the hut on their own sidewalk**, the way she is held at it,
+through. Everybody else is **held at the gatehouse on their own sidewalk**, the way she is held at it,
 in four states: *walking* up to it, *waiting* stopped beside it in their last facing while whoever
-is inside is seen to, *inspection* inside the hut and not drawn for
+is inside is seen to, *inspection* inside the gatehouse and not drawn for
 `Tuning.WALKER_DOOR_HOLD_SECONDS` (1s, under her own two), and *emerging* on the far side on the
-same lane, carrying a cooldown that keeps that hut from taking them again until they have left its
-area. One walker inside a hut at a time, and the line behind it never grows past
+same lane, carrying a cooldown that keeps that gatehouse from taking them again until they have left its
+area. One walker inside a gatehouse at a time, and the line behind it never grows past
 `Tuning.WALKER_DOOR_QUEUE_MAX`: a walker whose lookahead first sees a door that is already that
 busy turns back at the last junction instead of joining it, so a busy door never grows a queue down
 the sidewalk.
@@ -1601,7 +1601,7 @@ door gets a `checkpoint_hut` on each pavement lane and a `checkpoint_gate` over 
 them, at the wall's own three positions (`SealPlanner.positions_across` at `Tuning.TILE_SIZE`,
 which comes out at three across `STREET_WIDTH`); an alley door gets a single `checkpoint_post` at
 each of its two mouths. `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` build them
-alongside the wall's own bodies, in `RegionPlan.door_bodies`. The toll is paid at a hut or a post —
+alongside the wall's own bodies, in `RegionPlan.door_bodies`. The toll is paid at a gatehouse or a post —
 see docs/EVENTS.md, "Checkpoints" — and the gate never inspects her: lowered it is a wall across the
 carriageway, and raised for a car it is ground she may walk under.
 
@@ -1856,9 +1856,9 @@ is loud, and the reason a park is quiet.
   door is carved out of the held check for everybody the door means to let through — a car brakes
   and queues for the gate the way it does at a light, and so does a walker unless its own answer at
   a door is to turn back, in which case it gets no carve-out and the door reads to it exactly like
-  the wall either side of it. A walker that does cross is held at the hut on its own sidewalk,
+  the wall either side of it. A walker that does cross is held at the gatehouse on its own sidewalk,
   which is `Crowd._hold_walkers_at_doors()` and `WalkerDoorHold` rather than anything the tile map
-  says: the hut's own ground point, one body inside at a time, and the line waiting behind it.
+  says: the gatehouse's own ground point, one body inside at a time, and the line waiting behind it.
 
 - **And an about-face commits to its new heading for a stride.** The decision to turn round is
   re-taken from scratch on the very next frame, so a body with a seal at each end of the ground it
