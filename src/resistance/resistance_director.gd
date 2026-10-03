@@ -1248,8 +1248,10 @@ const NEAR_THE_MARK := (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH + Tuning.BLOCK_S
 ## stands on: three tiles either side and four up and down — more than a roadblock's 60px band and
 ## its guards, a van, or the burnt building the day-8 fallback burns behind its front, whose wall
 ## rises above the tile. She reads the mark standing on it, so a task placed near it could
-## otherwise be put in the world, or a building burnt, in front of her (`docs/EVENTS.md`, "Nothing
-## may be seen to appear").
+## otherwise be put in the world, or a building burnt, in front of her. `docs/EVENTS.md`'s rule,
+## "Nothing may be seen to appear", and the player's own choice for a task placed near its mark:
+## asked whether to keep it, at the cost of most tasks landing at the far edge of `NEAR_THE_MARK`
+## rather than nearer, "Keep off-screen" (2026-10-04).
 const TASK_HALF_EXTENT := Vector2(3.0, 4.0) * Tuning.TILE_SIZE
 
 ## A tile from `candidates` near `mark` — within `NEAR_THE_MARK` of it and off her screen

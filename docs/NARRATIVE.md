@@ -165,7 +165,9 @@ the resistance*, narrowed to a task with exactly one place to be.
 **A task is near its mark.** The man shouting the task puts in the street, the van, a roadblock,
 day 11's mast and the building burnt for a run with no day-3 fire all stand within
 `ResistanceDirector.NEAR_THE_MARK` (576px, 18 tiles: the mark's own block or the next one) of where
-she read the mark, and out of her view when they are put there; when nothing that near qualifies,
+she read the mark, and out of her view when they are put there (*"Nothing may be seen to
+appear"*, `docs/EVENTS.md`; the player, asked whether to keep that at the cost of most tasks
+landing near the edge of that reach: "Keep off-screen"); when nothing that near qualifies,
 the nearest place that does. The places that are fixed keep them: day 9's district door, day 12's
 swing park, the neighbor on the walk home, the last night's station door, and the building a run's
 own day-3 fire burned. *(2026-10-03, minty-hedgehog, statement 3: "the van should spawn close to the
