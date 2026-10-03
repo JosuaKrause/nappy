@@ -42,6 +42,8 @@ while retaining gameplay warnings. Trailer scenes use this state so the lesson t
 cover their subjects. Free play uses the same authored teaching state.
 Positions name an anchor or give `[world_x,world_y]`. Background activity defaults off;
 random events cannot accompany pinned events, and random crowd cannot accompany pinned actors.
+Random background activity requires full extent; bounded scenes use authored activity so their
+plain exterior does not acquire context-city actors or collisions.
 
 An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path` and `age`.
 The ordinary scheduler's ground, route, spacing, protected-door and corridor checks accept
@@ -73,6 +75,12 @@ The root has `version: 1`, a nonempty `name`, integer `seed`, `extent`, `city`, 
 `anchors`, `setup`, `playback`, `kind` (`city` or `escape`), `classification` (`normal` or
 `fixture`), and `expected_violations`. Unknown construction fields fail. Unsupported requests
 are errors, never nearest-position substitutions.
+
+For the whole-city view, `background.crowd_scope: "city"` populates production walkers and cars
+across the full map at the ordinary crowd field's area density. It requires `crowd: true` and
+full extent; the default `"player"` keeps the ordinary moving field. Recipe manifests report
+initial, final and captured population and moving-car counts in each city quadrant. This is an
+authored presentation choice for the bustling-city scene; ordinary game density is unchanged.
 
 `seed` belongs to the runtime and background activity. The required `city.context_seed` fixes
 the independent construction witness. The generator makes exactly one attempt with that

@@ -75,10 +75,18 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	for key in ["excitement", "sleep"]:
 		_number(player.get(key, 0), "setup.player." + key, 0, 100, errors)
 	var background: Dictionary = setup.get("background", {})
-	_keys(background, ["events", "crowd"], "setup.background", errors)
-	for key in background:
-		if not background[key] is bool:
+	_keys(background, ["events", "crowd", "crowd_scope"], "setup.background", errors)
+	for key in ["events", "crowd"]:
+		if not background.get(key, false) is bool:
 			errors.append("setup.background.%s must be boolean" % key)
+	if not background.get("crowd_scope", "player") in ["player", "city"]:
+		errors.append("setup.background.crowd_scope must be player or city")
+	if background.get("crowd_scope", "player") == "city" and (
+			not background.get("crowd", false) or recipe.get("extent", {}).get("scope", "") != "full"):
+		errors.append("setup.background.crowd_scope city requires crowd and full extent")
+	if recipe.get("extent", {}).get("scope", "") == "bounded" and (
+			background.get("events", false) or background.get("crowd", false)):
+		errors.append("bounded scenes require authored actors/events; random background activity needs full extent")
 	var progression: Dictionary = setup.get("progression", {})
 	_keys(progression, ["blackout", "escape_part"], "setup.progression", errors)
 	if not progression.get("blackout", false) is bool:
@@ -284,7 +292,7 @@ func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
 				else:
 					named[entry.name] = plan.live
 	city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), at,
-			bool(background.get("crowd", false)))
+			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city")
 	if city.region_plan():
 		city.crowd.set_gates(city.region_plan().gates)
 	for entry: Dictionary in setup.get("actors", []):
@@ -447,6 +455,7 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 
 func begin() -> void:
 	manifest["initial_actors"] = snapshot()
+	_record_crowd("initial_crowd")
 	print("[SceneRecipe] manifest " + JSON.stringify(manifest, "", true))
 	write_manifest()
 	if "--recipe-validate" in DevFlags.active_args():
@@ -496,6 +505,7 @@ func _physics_process(_delta: float) -> void:
 		_release_input()
 		manifest["playback_complete"] = true
 		manifest["final_actors"] = snapshot()
+		_record_crowd("final_crowd")
 		write_manifest()
 		get_tree().quit(0)
 		return
@@ -535,9 +545,14 @@ func prepare_capture() -> void:
 				"zoom": camera.zoom.x}
 	manifest["capture_tick"] = tick
 	manifest["capture_actors"] = snapshot()
+	_record_crowd("capture_crowd")
 	write_manifest()
 	_active = false
 	get_tree().paused = true
+
+func _record_crowd(key: String) -> void:
+	if _city and _city.crowd:
+		manifest[key] = _city.crowd.recipe_coverage()
 
 func _release_input() -> void:
 	TouchControls._set_axis(&"move_left", &"move_right", 0)

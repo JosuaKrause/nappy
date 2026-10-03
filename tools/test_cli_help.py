@@ -92,7 +92,7 @@ class CliHelpTests(unittest.TestCase):
         (root / "src" / "dev" / "dev_flags.gd").write_text(flag_source.replace(marker, additions + marker))
         shots = json.loads((root / "tools" / "trailer" / "shots.json").read_text())
         for shot in shots["shots"]:
-            (root / shot["recipe"]).write_text("{}\n")
+            (root / shot["recipe"]).write_text('{"playback":{"duration":10}}\n')
         bake = root / "tools" / "bake-atlases.sh"
         bake.write_text("#!/bin/sh\nexit 0\n")
         bake.chmod(0o755)
@@ -126,6 +126,16 @@ class CliHelpTests(unittest.TestCase):
             manifest = json.loads((root / "build" / "trailer" / "validation" / "choice.json").read_text())
             self.assertEqual(manifest["scope"], "bounded")
             self.assertEqual(manifest["bounds"], [0, 0, 12, 12])
+
+    def test_trailer_playback_reaches_recipe_end_before_cutting(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script, env = self.recipe_trailer_fixture(root)
+            # The stub refuses the windowed call; its argv still proves the requested deadline.
+            result = subprocess.run([str(script), "--shot", "choice"], env=env, capture_output=True, timeout=20)
+            self.assertNotEqual(result.returncode, 0)
+            calls = (root / "calls").read_text().splitlines()
+            self.assertTrue(any("--write-movie" in call and "--after 10.000" in call for call in calls))
 
     def test_trailer_refuses_fixture_and_preflight_failure_before_recording(self) -> None:
         for failure in ("fixture", "engine", "missing_scope"):

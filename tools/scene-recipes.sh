@@ -9,7 +9,8 @@ usage: tools/scene-recipes.sh [--help|-h] [--recipe FILE] [--output DIR] [--scre
 Run every saved scene (or --recipe FILE) through its headless scripted assertions.
 Write logs and manifests to --output DIR (default build/scene-recipes).
 --screenshots also uses shot.sh at playback.capture_at seconds after the full simulation
-and movement begin. Produces stills only. Example: tools/scene-recipes.sh --screenshots
+and movement begin, retaining the complete original telemetry run. Produces stills only.
+Example: tools/scene-recipes.sh --screenshots
 EOF
 }
 for arg in "$@"; do
@@ -55,5 +56,15 @@ for file in "${recipes[@]}"; do
         "$root/tools/shot.sh" "$output/$name.png" "$after" \
             --recipe "$file" --recipe-mode scripted --player-view --no-save \
             --recipe-manifest "$output/$name-capture.json" >"$output/$name-capture.log" 2>&1
+        run_log="$(sed -n 's/^\[Telemetry\] //p' "$output/$name-capture.log")"
+        if [[ -z "$run_log" || ! -f "$run_log" ]]; then
+            echo "scene capture has no complete telemetry provenance: $file" >&2
+            exit 1
+        fi
+        run_dir="$(dirname "$run_log")"
+        mkdir -p "$output/telemetry"
+        retained="$output/telemetry/$(basename "$run_dir")"
+        [[ ! -e "$retained" ]] || { echo "refusing to overwrite $retained" >&2; exit 1; }
+        cp -R "$run_dir" "$retained"
     fi
 done

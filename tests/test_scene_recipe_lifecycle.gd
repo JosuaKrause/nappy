@@ -59,6 +59,10 @@ func _ready() -> void:
 		return
 	print("RECIPE_MOVEMENT_OK")
 	if DevFlags.recipe_path().ends_with("power-station-hall.json"):
+		for plan: EventScheduler.Planned in (main.get("_city") as City).events._plans:
+			if not map.recipe_bounds.has_point(map.world_to_tile(plan.position)):
+				fail("bounded region installs event bodies outside authored ground")
+				return
 		var return_at := player.global_position
 		var path := exterior_path(map, map.world_to_tile(return_at))
 		if path.is_empty():
@@ -185,6 +189,16 @@ func run(t) -> void:
 					"%s actual escape loss reloads authored player and actors" % filename)
 		tested += 1
 	t.check(tested > 0, "lifecycle discovery exercises saved recipes")
+	var later_day_path := stem + "_later_power-station-hall.json"
+	var later_day: Dictionary = SceneRecipe.load_file("res://scene-recipes/power-station-hall.json").data
+	later_day.setup.day = 13
+	var later_day_file := FileAccess.open(later_day_path, FileAccess.WRITE)
+	later_day_file.store_string(JSON.stringify(later_day))
+	later_day_file.close()
+	var later_day_run := _boot(scene_path, later_day_path, "free")
+	t.check(later_day_run.status == 0 and later_day_run.output.contains("RECIPE_BOUNDARY_RETURN_OK"),
+			"later-day bounded region bodies stay inside extent and real player exits and returns: %s" % later_day_run.output)
+	DirAccess.remove_absolute(later_day_path)
 	DirAccess.remove_absolute(scene_path)
 	DirAccess.remove_absolute(script_path)
 	DirAccess.remove_absolute(script_path + ".uid")

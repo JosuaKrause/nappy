@@ -24,6 +24,31 @@ func _ready() -> void:
 	if GameSave.uses_save():
 		get_tree().quit(14)
 		return
+	if "--probe-camera" in OS.get_cmdline_user_args():
+		var runtime := SceneRecipeRuntime.new()
+		runtime.configure({"data": {}, "manifest": {}, "anchors": {}}, true)
+		add_child(runtime)
+		var from := Camera2D.new()
+		from.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+		add_child(from)
+		from.make_current()
+		var zoom := ZoomOutCamera.new()
+		runtime.add_child(zoom)
+		runtime._zoom = zoom
+		zoom.simulation_clock = runtime.elapsed
+		zoom.setup(from, Rect2(0, 0, 4000, 4000), Vector2(1280, 720), 4, 0)
+		runtime.tick = Engine.physics_ticks_per_second
+		runtime.prepare_capture()
+		var position_before := zoom._camera.position
+		var zoom_before := zoom._camera.zoom
+		zoom._process(100)
+		if zoom.is_processing() or not get_tree().paused or zoom._elapsed != 1 \
+				or zoom._camera.position != position_before or zoom._camera.zoom != zoom_before:
+			get_tree().quit(17)
+			return
+		print("CAPTURE_CAMERA_FROZEN")
+		get_tree().quit(0)
+		return
 	if "--probe-boundary" in OS.get_cmdline_user_args():
 		var runtime := SceneRecipeRuntime.new()
 		var seconds := 1.0 / Engine.physics_ticks_per_second
@@ -80,6 +105,11 @@ func _test_schema(t) -> void:
 		{"setup": {"player": {"at": [0]}}},
 		{"setup": {"player": {"excitement": INF}}},
 		{"setup": {"background": {"crowd": "false"}}},
+		{"setup": {"background": {"crowd": true, "crowd_scope": "unknown"}}},
+		{"setup": {"background": {"crowd": true, "crowd_scope": "city"}}, "extent": {"scope": "bounded"}},
+		{"setup": {"background": {"crowd_scope": "city"}}, "extent": {"scope": "full"}},
+		{"setup": {"background": {"events": true}}, "extent": {"scope": "bounded"}},
+		{"setup": {"background": {"crowd": true}}, "extent": {"scope": "bounded"}},
 		{"setup": {"progression": {"escape_part": "city"}}},
 		{"setup": {"events": "not an array"}},
 		{"setup": {"events": [{"name": "event", "row": "unknown", "at": [0, 0]}]}},
@@ -153,7 +183,7 @@ func _test_real_argv_and_failure(t) -> void:
 	var scene := FileAccess.open(scene_path, FileAccess.WRITE)
 	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % script_path)
 	scene.close()
-	for mode in ["free", "scripted", "failure", "boundary"]:
+	for mode in ["free", "scripted", "failure", "boundary", "camera"]:
 		var args := PackedStringArray(["--headless", "--path", ProjectSettings.globalize_path("res://"),
 				"--quit-after", "120", scene_path, "--", "--recipe", EXAMPLE,
 				"--recipe-mode", "free" if mode == "free" else "scripted"])
@@ -161,6 +191,8 @@ func _test_real_argv_and_failure(t) -> void:
 			args.append("--probe-observation")
 		elif mode == "boundary":
 			args.append("--probe-boundary")
+		elif mode == "camera":
+			args.append("--probe-camera")
 		var output: Array = []
 		var status := OS.execute(OS.get_executable_path(), args, output, true)
 		var text_output := "\n".join(output)
@@ -172,6 +204,9 @@ func _test_real_argv_and_failure(t) -> void:
 		elif mode == "boundary":
 			t.check(status == 0 and text_output.contains("ONE_TICK_INPUT_COMPLETED"),
 					"one-tick input moves once, observes after the world, and completes the final tick")
+		elif mode == "camera":
+			t.check(status == 0 and text_output.contains("CAPTURE_CAMERA_FROZEN"),
+					"capture freezes camera at the shared physics tick even when idle time advances")
 		else:
 			t.check(status == 0 and text_output.contains("RECIPE_FLAGS_OK"),
 					"%s recipe reads real argv, keeps the intended input mode and disables saves" % mode)

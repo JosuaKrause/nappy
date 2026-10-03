@@ -158,7 +158,7 @@ shot_render_seconds() {
     local duration
     duration="$(jq -r '.playback.duration // 5' "$PROJECT_DIR/$(shot_field "$1" recipe)")"
     awk -v a="$(shot_field "$1" in 0.5)" -v b="$(shot_field "$1" length)" \
-        -v duration="$duration" 'BEGIN { end=a+b; printf "%.3f\n", end>duration ? end : duration }'
+        -v duration="$duration" 'BEGIN { end=a+b; printf "%.3f\n", (end>duration ? end : duration) }'
 }
 
 total_seconds="$(jq -r '[.shots[] | (.gap // 0) + .length] | add' "$SHOTS_FILE")"
