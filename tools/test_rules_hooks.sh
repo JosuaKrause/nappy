@@ -115,6 +115,30 @@
 #     command substitution, a gh issue write bare or wrapped, a merge, a release, a gh api write
 #     and a pushing script, while git tag, a read, a search for a write's words and a
 #     tools/inbox.py call allow; with the switch unset, 0 or yes, every one of those writes denies
+#   - xargs/gxargs and parallel/env_parallel input makes an unwrapped push or missing/nonliteral
+#     git subcommand or gh noun/verb unreadable; pushing scripts behind their options are guarded;
+#     input can append tools/release.sh's own push, so release.sh under one is a write without it;
+#     a custom replacement token remains unreadable even when it is lowercase or spells a known
+#     read; the wrappers' documented value-taking options do not hide a pushing script; reads,
+#     later separate branch pushes and coder identity wrappers keep their existing behavior
+#   - a backslash-escaped separator given as an input-wrapper option's value (xargs -d \;,
+#     parallel --colsep \|) is that value, not the end of the wrapper's command
+#   - an input-supplied git subcommand or gh noun/verb is unreadable only for a git or gh the
+#     wrapper runs in command position, never one that is an argument (xargs grep -l git, rg
+#     'xargs git') or that carries --version/--help; git p4 is a plain subcommand
+#   - GNU parallel with no command of its own (parallel ::: cmd) runs its arguments as commands,
+#     so a pushing script or git/gh among them is unreadable
+#   - a gh api call under xargs or parallel is a write unless its every flag is written: input
+#     placed only at a replacement token inside a word of the call; a GraphQL call there writes
+#   - input that reaches an issue write (a verb input supplies to gh issue, a noun input supplies
+#     to gh, flags input adds to a written issue endpoint, a written gh issue under unreadable
+#     wrapper options) is denied wrapped or not, like a written gh issue write; a gh issue read
+#     and the shared issues/N/comments path under input keep their behavior
+#   - common no-value options (parallel --tag, --pipe, -X, -m, --xargs; xargs -o) and value options
+#     (parallel --tagstring, xargs --process-slot-var) leave a read under them a read
+#   - input-wrapper clusters and values share one parser: flag-shaped values never select a new
+#     replacement token, unknown option arity fails closed, and a long chain of consumed values
+#     named xargs stays bounded; the corresponding known reads and identity controls still pass
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -1162,6 +1186,133 @@ assert_write_guard "wrapped git push as claude-coder still allows" allow \
     'uv run python tools/agent-identity.py run claude-coder -- git push origin main'
 assert_write_guard "wrapped git push as codex-coder still allows" allow \
     'uv run python tools/agent-identity.py run codex-coder -- git push origin main'
+assert_write_guard "coder-wrapped xargs push still allows" allow \
+    'uv run python tools/agent-identity.py run codex-coder -- xargs git push origin < tags.txt'
+assert_write_guard "xargs invoking the coder wrapper still allows" allow \
+    'xargs -I{} uv run python tools/agent-identity.py run codex-coder -- git push origin {}'
+assert_write_guard "reviewer-wrapped xargs push still denies" deny \
+    'uv run python tools/agent-identity.py run codex-reviewer -- xargs git push origin < tags.txt'
+assert_write_guard "coder-wrapped parallel push still allows" allow \
+    'uv run python tools/agent-identity.py run codex-coder -- parallel git push origin < tags.txt'
+assert_write_guard "parallel invoking the coder wrapper still allows" allow \
+    'parallel uv run python tools/agent-identity.py run codex-coder -- git push origin {}'
+assert_write_guard "reviewer-wrapped parallel push still denies" deny \
+    'uv run python tools/agent-identity.py run codex-reviewer -- parallel git push origin < tags.txt'
+assert_write_guard "coder-wrapped input-supplied git subcommand allows" allow \
+    'uv run python tools/agent-identity.py run codex-coder -- gxargs git'
+assert_write_guard "coder-wrapped input-supplied gh verb allows" allow \
+    'uv run python tools/agent-identity.py run codex-coder -- env_parallel gh pr'
+assert_write_guard "input wrapper invoking coder-wrapped gh with no noun denies: input can name issue" deny \
+    'parallel uv run python tools/agent-identity.py run codex-coder -- gh'
+assert_write_guard "reviewer-wrapped input-supplied git subcommand denies" deny \
+    'uv run python tools/agent-identity.py run codex-reviewer -- gxargs git'
+assert_write_guard "reviewer-wrapped input-supplied gh verb can merge and denies" deny \
+    'uv run python tools/agent-identity.py run codex-reviewer -- env_parallel gh pr'
+assert_write_guard "input wrapper invoking reviewer-wrapped incomplete gh denies" deny \
+    'parallel uv run python tools/agent-identity.py run codex-reviewer -- gh'
+assert_write_guard "coder-wrapped lowercase xargs replacement subcommand allows" allow \
+    'uv run python tools/agent-identity.py run codex-coder -- xargs -Icmd git cmd origin v1'
+assert_write_guard "input wrapper replacement invoking the coder wrapper allows" allow \
+    'parallel -Icmd uv run python tools/agent-identity.py run codex-coder -- git cmd origin v1'
+assert_write_guard "reviewer-wrapped lowercase parallel replacement subcommand denies" deny \
+    'uv run python tools/agent-identity.py run codex-reviewer -- parallel -Icmd git cmd origin v1'
+assert_write_guard "input wrapper replacement invoking the reviewer wrapper denies" deny \
+    'xargs -Icmd uv run python tools/agent-identity.py run codex-reviewer -- gh pr cmd 3'
+assert_write_guard "coder-wrapped gh api with input-supplied arguments allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- xargs gh api repos/o/r/pulls/3'
+assert_write_guard "reviewer-wrapped gh api with input-supplied arguments can merge and denies" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- xargs gh api repos/o/r/pulls/3'
+
+# GNU parallel's -l takes an optional number, clustered too: -kl reads as -k then -l, so a word
+# after it that is no number (or a cluster's rest that is none, -kli) leaves command position
+# unknown, while a numeric -l and a no-value cluster stay reads.
+for clustered_optional in \
+    'ls | parallel -kl tools/release.sh patch push' \
+    'parallel -kl tools/update-pr.sh' \
+    'parallel -kli status git status origin v1'; do
+    assert_write_guard "clustered optional -l with no number denies: $clustered_optional" deny "$clustered_optional"
+done
+assert_write_guard "reviewer-wrapped clustered optional -l denies" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- parallel -kl tools/update-pr.sh'
+assert_write_guard "coder-wrapped clustered optional -l allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- parallel -kl tools/update-pr.sh'
+assert_write_guard "orchestrator-wrapped clustered -kli before gh issue denies as an issue write" deny \
+    'uv run python tools/agent-identity.py run claude-orchestrator -- parallel -kli status gh issue status 5'
+for clustered_read in \
+    'parallel -kl2 git status' \
+    'parallel -kl1 gh pr view {}' \
+    'parallel -k git log'; do
+    assert_write_guard "clustered read stays a read: $clustered_read" allow "$clustered_read"
+done
+
+# Input placed at a replacement token replaces the word holding it, so a read flag holding the
+# token is no read flag: the dry run, --version and the abort-like flags fall to input.
+for input_replaced_flag in \
+    'ls | xargs -I--dry-run tools/update-pr.sh --dry-run' \
+    'parallel -I--dry-run tools/land-prs.sh --dry-run' \
+    'xargs -Idry tools/update-pr.sh --dry-run' \
+    'xargs -I--version git --version' \
+    'xargs -I--ff-only git merge --ff-only' \
+    'xargs -I--abort git rebase --abort' \
+    'parallel -I--ff-only git pull --ff-only' \
+    'xargs -I--quit git cherry-pick --quit'; do
+    assert_write_guard "a read flag input replaces denies: $input_replaced_flag" deny "$input_replaced_flag"
+done
+for input_fixed_flag in \
+    'xargs tools/update-pr.sh --dry-run' \
+    'xargs -I{} tools/update-pr.sh --dry-run {}' \
+    'xargs git --version' \
+    'xargs -I{} git merge --ff-only {}' \
+    'xargs git rebase --abort'; do
+    assert_write_guard "a read flag input cannot reach still allows: $input_fixed_flag" allow "$input_fixed_flag"
+done
+assert_write_guard "coder-wrapped replaced dry run still allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- xargs -I--dry-run tools/update-pr.sh --dry-run'
+assert_write_guard "reviewer-wrapped replaced dry run denies" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- xargs -I--dry-run tools/update-pr.sh --dry-run'
+
+# Input that reaches a gh issue write is an issue write, denied wrapped or not like a written one
+# (the inbox rule): a verb input supplies to a written gh issue, a noun input supplies (it can be
+# issue), flags input adds to a written issue endpoint, and a written gh issue whose wrapper's
+# options cannot be read. A read verb, a non-issue endpoint and the comments path stay as before.
+for input_issue_write in \
+    "sh -c 'echo comment 5 --body x | xargs gh issue'" \
+    'xargs -I{} gh issue {} 5' \
+    "sh -c 'ls | xargs --foo gh issue close 5'" \
+    "sh -c 'echo issue close 5 | xargs gh'" \
+    'xargs gh api repos/o/r/issues' \
+    'parallel gh api repos/o/r/issues/5'; do
+    assert_write_guard "orchestrator-wrapped input issue write denies: $input_issue_write" deny \
+        "uv run python tools/agent-identity.py run claude-orchestrator -- $input_issue_write"
+    assert_write_guard "coder-wrapped input issue write denies: $input_issue_write" deny \
+        "uv run python tools/agent-identity.py run claude-coder -- $input_issue_write"
+done
+assert_write_guard "unwrapped input-supplied gh issue verb denies" deny \
+    'echo comment 5 --body x | xargs gh issue'
+assert_write_guard "orchestrator-wrapped gh issue read under xargs allows" allow \
+    'uv run python tools/agent-identity.py run claude-orchestrator -- xargs gh issue view'
+assert_write_guard "unwrapped gh issue read under xargs allows" allow \
+    'echo 5 | xargs gh issue view'
+assert_write_guard "coder-wrapped input to the shared comments path allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- xargs gh api repos/o/r/issues/5/comments'
+
+# The shared input option parser keeps role policy after consuming clusters/values and when an
+# unknown option makes command position unreadable. The synthetic commands are only hook JSON.
+for input_option_command in \
+    'xargs -rIstatus git status origin v1' \
+    'xargs -Istatus -E -Iother git status origin v1' \
+    'parallel --timeout 5 tools/update-pr.sh' \
+    'parallel --new-option 5 tools/update-pr.sh' \
+    'parallel --new-option 5 gh pr view'; do
+    assert_write_guard "coder retains exemption: $input_option_command" allow \
+        "uv run python tools/agent-identity.py run codex-coder -- $input_option_command"
+    assert_write_guard "reviewer cannot exempt unreadable publishing: $input_option_command" deny \
+        "uv run python tools/agent-identity.py run codex-reviewer -- $input_option_command"
+done
+assert_write_guard "unknown input options still find an invoked coder identity" allow \
+    'parallel --new-option 5 uv run python tools/agent-identity.py run codex-coder -- tools/update-pr.sh'
+assert_write_guard "unknown input options still refuse an invoked reviewer identity" deny \
+    'parallel --new-option 5 uv run python tools/agent-identity.py run codex-reviewer -- tools/update-pr.sh'
 
 # A write before the wrapper, or on a different command joined only by a separator, is not
 # covered by it: the wrapper's own exemption starts at its literal -- and ends at the next
@@ -1893,6 +2044,8 @@ for heredoc_body in "Fix the \"can't push\" error" 'the "x" thing' "\"can't\" an
     assert_write_guard "a wrapped heredoc commit ($heredoc_body), then ; git push -> deny" \
         deny "$(heredoc_commit "$heredoc_body")"'; git push'
 done
+assert_write_guard "a wrapped heredoc commit whose line ends in 'xargs git' -> allow" allow \
+    "$(heredoc_commit $'Names passed through xargs git\nare read.')"
 assert_write_guard "a wrapped heredoc commit, then a wrapped push -> allow" allow \
     "$(heredoc_commit "Fix the \"can't push\" error")"$'\nuv run python tools/agent-identity.py run claude-coder -- git push'
 assert_write_guard "a wrapped commit with \"\$(printf ... \"it's\")\", then ; git push -> deny" deny \
@@ -2181,6 +2334,9 @@ EOF"
 # of 64 KB split into its parts.
 w_chain_quoted_64k="$(printf 'git -C "a b" %.0s' $(seq 1 5027))"
 w_quoted_words_64k="$(printf 'a %.0s' $(seq 1 32650))"
+w_input_options_64k="$(printf -- '-E xargs %.0s' $(seq 1 7200))"
+assert_write_guard_timed "64 KB of xargs-named option values are consumed once -> allow" allow \
+    "xargs ${w_input_options_64k}git status"
 assert_write_guard_timed "64 KB of bash -c 'git -C \"a b\" ...' -> allow" allow \
     "bash -c '${w_chain_quoted_64k}'"
 assert_write_guard_timed "a 64 KB quoted string of short words, then git push -> deny" deny \
@@ -2297,6 +2453,8 @@ assert_write_guard "git -C \$(pwd) push wrapped as claude-coder -> allow" allow 
 assert_write_guard "gh -R \$(cat r) pr merge, unwrapped -> deny" deny 'gh -R $(cat r) pr merge 3'
 assert_write_guard_reason "an unquoted substitution before a subcommand is named in the deny" \
     'git -C $(pwd) push origin main' "git with a shell expansion before its subcommand"
+assert_write_guard_reason "xargs input makes push refspecs unreadable" \
+    'echo v1 | xargs -I{} git push origin {}' 'git push that cannot be read'
 
 # Where no identity can work -- a Claude Code cloud session, or no identity directory -- and the
 # player has switched the asking on (NAPPY_ASK_FOR_PLAYER_WRITES=1), an ordinary write is asked
@@ -2314,6 +2472,16 @@ assert_write_guard_reason "an unquoted substitution before a subcommand is named
 # option's argument is one word; and a quoted separator is not the push's own when it belongs to
 # another command (a commit message) or sits at the push's own level in a quoted script.
 write_guard_asked=(
+    $'git commit -m "$(cat <<\'EOF\'\nNames passed through xargs git\nare read.\nEOF\n)"'
+    'gxargs git status; git push origin feature/x'
+    'env_parallel gh pr view && git push origin feature/x'
+    'parallel git status | git push origin feature/x'
+    'sh -c "env_parallel git status; git push origin feature/x"'
+    'parallel git status < paths.txt; git push origin feature/x'
+    'xargs git status < paths.txt; git push origin feature/x'
+    'echo xargs && git push origin feature/x'
+    'sh -c "xargs git status; git push origin feature/x"'
+    'git push origin xargs'
     'git commit -m "x"'
     'git merge feature/x'
     'git rebase main'
@@ -2378,6 +2546,143 @@ write_guard_asked=(
 # an issue (bouncy-heron statement 14: "an agent shouldn't use gh issue directly"); a merge, a
 # release, a gh api write and a pushing tools/ script.
 write_guard_never_asked=(
+    'echo push | xargs -rIstatus git status origin v1'
+    'echo merge | xargs -rIview gh pr view 3'
+    'echo push | xargs -rI status git status origin v1'
+    'echo push | gxargs -0rtIstatus git status origin v1'
+    'echo push | xargs -ri status git status origin v1'
+    'echo push | xargs -rtistatus git status origin v1'
+    'echo push | xargs -Istatus -E -Iother git status origin v1'
+    'echo merge | xargs -Iview -E -Iother gh pr view 3'
+    'echo push | xargs -Istatus -d -Iother git status origin v1'
+    'echo push | xargs -Istatus -a -Iother git status origin v1'
+    'echo push | xargs -Istatus -E parallel git status origin v1'
+    'echo push | xargs -Iother -E -Iignored -rIstatus git status origin v1'
+    'xargs -rIstatus sh -c "git status origin v1"'
+    'xargs -rIstatus sh -c "parallel -Iother git status origin v1"'
+    'parallel -Istatus --joblog -Iother git status origin v1'
+    'parallel --timeout 5 tools/update-pr.sh'
+    'parallel --retries 2 tools/update-pr.sh'
+    'parallel --results out tools/update-pr.sh'
+    'env_parallel --results "out dir" --timeout=5 tools/update-pr.sh'
+    'xargs -rI{} env_parallel --retries 2 tools/update-pr.sh'
+    'sh -c "parallel --timeout 5 tools/update-pr.sh"'
+    'parallel -kj2 tools/update-pr.sh'
+    'gxargs -rn1 tools/update-pr.sh'
+    'parallel --new-option 5 tools/update-pr.sh'
+    'parallel --new-option=5 cat tools/update-pr.sh'
+    'parallel --new-option 5 tools/update-pr.sh --dry-run'
+    'parallel --new-option 5 tools/release.sh patch'
+    'xargs -rZstatus git status origin v1'
+    'xargs --rep=status git status origin v1'
+    'parallel --new-option status git status'
+    'parallel --new-option view gh pr view'
+    'xargs --new-option sh -c "git status; tools/update-pr.sh"'
+    'echo push | xargs -Icmd git cmd origin v1'
+    'echo push | parallel -Icmd git cmd origin v1'
+    'echo push | xargs -Istatus git status origin v1'
+    'echo merge | xargs -Iview gh pr view 3'
+    'echo push | parallel -I status git status origin v1'
+    'echo merge | parallel -Iview gh pr view 3'
+    'echo push | xargs --replace=cmd git cmd origin v1'
+    'echo push | xargs --replace cmd git cmd origin v1'
+    'echo push | xargs -icmd git cmd origin v1'
+    'echo push | xargs -i cmd git cmd origin v1'
+    'echo push | gxargs -Jcmd git cmd origin v1'
+    'echo push | gxargs -J cmd git cmd origin v1'
+    'echo push | parallel --replace=cmd git cmd origin v1'
+    'echo push | parallel --replace cmd git cmd origin v1'
+    'echo push | parallel -icmd git cmd origin v1'
+    'echo push | parallel -i cmd git cmd origin v1'
+    'echo push | parallel -lcmd git cmd origin v1'
+    'echo push | parallel -l cmd git cmd origin v1'
+    'echo push origin v1 | xargs git'
+    'echo push origin v1 | parallel git'
+    'echo push | xargs -I{} git {} origin v1'
+    'echo commit -m x | xargs git'
+    'echo merge 3 | xargs gh pr'
+    'echo pr merge 3 | xargs gh'
+    'xargs git; git status'
+    'parallel gh pr && git status'
+    'parallel gh | head'
+    'xargs -I REF git REF origin v1'
+    'xargs -I % git % origin v1'
+    'parallel gh {} merge 3'
+    'xargs -I REF gh REF merge 3'
+    'xargs -I % gh pr % 3'
+    'parallel -I REF gh pr REF 3'
+    'xargs git -C repo'
+    'parallel gh -R o/r'
+    'xargs gh pr -R o/r'
+    'xargs -I{} sh -c "git status; git {} origin v1"'
+    'parallel sh -c "gh pr view; gh pr {} 3"'
+    'echo v1 | gxargs -I{} git push origin {}'
+    'echo v1 | env_parallel git push origin'
+    'gxargs git'
+    'env_parallel gh pr'
+    'ls | parallel tools/release.sh patch push'
+    'echo push | xargs tools/release.sh patch'
+    'echo "patch push" | xargs tools/release.sh'
+    'echo push | xargs -I{} tools/release.sh patch {}'
+    'echo push | parallel tools/release.sh patch'
+    'parallel tools/release.sh patch'
+    'parallel tools/land-prs.sh 3'
+    'parallel tools/update-pr.sh 3'
+    'parallel tools/prune-merged.sh feature/x'
+    'echo feature/x | parallel --max-args 1 tools/prune-merged.sh'
+    'echo feature/x | parallel --max-replace-args 1 tools/prune-merged.sh'
+    'echo feature/x | parallel --max-procs 2 tools/prune-merged.sh'
+    'echo feature/x | parallel -P 2 tools/prune-merged.sh'
+    'echo 3 | parallel --joblog jobs.log tools/update-pr.sh'
+    'echo 3 | env_parallel --jl jobs.log tools/update-pr.sh'
+    'echo 3 | parallel --delay 0.1 tools/update-pr.sh'
+    'echo 3 | parallel --halt soon,fail=1 tools/update-pr.sh'
+    'echo 3 | env_parallel --halt-on-error 2 tools/update-pr.sh'
+    'parallel -j 2 --jobs 2 -a inputs --arg-file inputs -I REF -n 1 -N 1 -L 1 -S host --sshlogin host -d , --colsep , tools/land-prs.sh 3'
+    'env_parallel -j 2 --jobs 2 -a inputs --arg-file inputs -I REF -n 1 -N 1 -L 1 -S host --sshlogin host -d , --colsep , tools/update-pr.sh 3'
+    'gxargs -n 1 -I REF -a inputs tools/prune-merged.sh feature/x'
+    '/usr/local/bin/env_parallel --jobs=2 tools/release.sh patch push'
+    '/opt/homebrew/bin/gxargs --max-args=1 tools/release.sh patch push'
+    'echo v1 | parallel git push origin'
+    'parallel git push origin {} < t'
+    'ls | parallel -j1 git push origin {}'
+    'echo v1 | xargs -I{} git push origin {}'
+    'xargs git push origin < tags.txt'
+    'xargs -n 1 git push origin < tags.txt'
+    'xargs -I REF git push origin REF < tags.txt'
+    'xargs --max-args=1 -- git -C repo push origin < tags.txt'
+    'xargs --arg-file tags.txt git push origin'
+    'env MODE=test /usr/bin/xargs -0 -n 1 timeout 5 git push origin'
+    'xargs -n 1 env MODE=test git push origin feature/x'
+    'sh -c "xargs -n 1 git push origin"'
+    'xargs -I{} sh -c "git status; git push origin {}"'
+    'xargs -I{} sh -c "git status && git push origin {}"'
+    'xargs -I{} sh -c "echo ${MODE}; git push origin {}"'
+    "printf 'v1;v2' | xargs -d \\; git push origin"
+    'parallel --colsep \| git push origin {2}'
+    'parallel -d \& git push origin'
+    'xargs -E \; git push origin'
+    "printf 'push;origin;v1' | xargs -d \\; git"
+    "printf 'merge;3' | xargs -d \\; gh pr"
+    'parallel ::: tools/update-pr.sh'
+    'parallel ::: "tools/release.sh patch push"'
+    'parallel -j2 ::: tools/prune-merged.sh'
+    'echo "-X PUT" | xargs gh api repos/o/r/pulls/3/merge'
+    'echo "--method PUT" | xargs gh api repos/o/r/pulls/3/merge'
+    'printf %s\\n -X PUT repos/o/r/pulls/3/merge | xargs gh api'
+    'echo "-f title=x" | parallel gh api repos/o/r/issues'
+    'echo "-X POST -f body=x" | xargs gh api repos/o/r/issues/3/comments'
+    'echo "-X PUT" | xargs gh api -X GET repos/o/r/pulls/3/merge'
+    'echo -XPUT | xargs -I{} gh api {}'
+    'echo 3 | parallel gh api repos/o/r/pulls/{.}/comments'
+    "echo 3 | xargs -I{} gh api graphql -f query='query { a(n: {}) }'"
+    'ls | parallel --tag git push origin {}'
+    'ls | parallel --tagstring x git push origin'
+    'ls | parallel --pipe git push origin'
+    'ls | parallel -X git push origin'
+    'ls | xargs -o git push origin'
+    'ls | xargs --process-slot-var=SLOT git push origin'
+    'ls | parallel --tagstring x tools/update-pr.sh'
     "git push origin 'refs/*:refs/*'"
     "git push origin 'refs/heads/*:refs/heads/*'"
     "git push origin 'refs/tags/*'"
@@ -2498,6 +2803,86 @@ write_guard_never_asked=(
 )
 # A read, and `git tag` itself, which changes only the local repository, stay allowed.
 write_guard_allowed=(
+    'xargs -rIother -E -Istatus git status'
+    'xargs -rIother -E -Iview gh pr view'
+    'xargs -rIother -E xargs git status'
+    'xargs -rIstatus -Iother git status'
+    'xargs -rIother -n1 git status'
+    'xargs -rIother -E -Istatus cat tools/update-pr.sh'
+    'xargs -rn1 cat tools/update-pr.sh'
+    'parallel -kj2 cat tools/update-pr.sh'
+    'parallel --timeout 5 cat tools/update-pr.sh'
+    'parallel --retries 2 cat tools/update-pr.sh'
+    'parallel --results out cat tools/update-pr.sh'
+    'env_parallel --results "out dir" --timeout=5 cat tools/update-pr.sh'
+    'parallel --timeout 5 tools/update-pr.sh --dry-run 3'
+    'parallel -Iother --joblog -Istatus git status'
+    'parallel --new-option 5 echo hello; cat tools/update-pr.sh'
+    'xargs --new-option 5 echo hello; git status'
+    'xargs -Icmd git status'
+    'parallel -Icmd gh pr view'
+    'xargs -Istatus printf status'
+    'xargs -i git status'
+    'parallel --replace git status'
+    'gxargs -n 1 git status'
+    'env_parallel --jobs 2 git log'
+    'parallel gh pr view'
+    'xargs gh issue list'
+    'env_parallel gh browse'
+    'gxargs gh search prs'
+    'parallel -j 2 cat tools/land-prs.sh'
+    'parallel --max-args 1 cat tools/prune-merged.sh'
+    'parallel --max-replace-args 1 cat tools/prune-merged.sh'
+    'parallel --max-procs 2 cat tools/prune-merged.sh'
+    'parallel -P 2 cat tools/prune-merged.sh'
+    'parallel --joblog jobs.log cat tools/update-pr.sh'
+    'env_parallel --jl jobs.log cat tools/update-pr.sh'
+    'parallel --delay 0.1 tools/update-pr.sh --dry-run 3'
+    'parallel --halt soon,fail=1 cat tools/release.sh'
+    'env_parallel --halt-on-error 2 cat tools/release.sh'
+    'env_parallel --colsep , cat tools/update-pr.sh'
+    'parallel -d , cat tools/release.sh'
+    'gxargs -d , cat tools/prune-merged.sh'
+    'gxargs -I REF cat tools/release.sh'
+    'parallel --jobs 2 tools/update-pr.sh --dry-run 3'
+    'env_parallel -j 2 tools/land-prs.sh --dry-run 3'
+    'xargs git status; git'
+    'env_parallel git status; gh pr'
+    'parallel git status'
+    'xargs git status < paths.txt'
+    'echo main | xargs -I{} git log --oneline {}'
+    'env MODE=test /usr/bin/xargs -0 -n 1 timeout 5 git show'
+    'xargs -I{} sh -c "git status; git log --oneline {}"'
+    "printf 'v1;v2' | xargs -d \\; git status"
+    'ls | xargs grep -l git'
+    'ls | xargs grep -n "git"'
+    'git ls-files | xargs grep -w gh'
+    'git ls-files | xargs grep -c "gh pr"'
+    'ls | xargs echo Git LFS'
+    'ls | xargs git p4'
+    "rg -n 'xargs git' tools/"
+    'grep -rn "parallel gh" docs/'
+    'echo "jobs run in parallel, git 2.40 needed" > notes.txt'
+    'ls | xargs git --version'
+    'seq 3 | parallel echo gh {}'
+    'ls | xargs gh --help'
+    'parallel cat ::: tools/update-pr.sh'
+    'parallel tools/update-pr.sh --dry-run ::: 1 2'
+    'parallel -j2 ::: "echo a" "echo b"'
+    'echo 3 | xargs gh pr view'
+    'parallel gh pr view ::: 1 2 3'
+    'echo 3 | xargs -I{} gh api repos/o/r/pulls/{}/comments'
+    'echo 3 | xargs -I{} gh api -X GET repos/o/r/pulls/{} --jq .title'
+    'echo 3 | parallel gh api repos/o/r/pulls/{}/comments'
+    'ls | parallel --tag git log -1 -- {}'
+    'ls | parallel --tagstring x gh pr view {}'
+    'ls | parallel --pipe git status'
+    'ls | parallel -X git log -1 --'
+    'ls | parallel -m --xargs git log -1 --'
+    'ls | xargs -o git status'
+    'ls | xargs --open-tty git status'
+    'ls | xargs --process-slot-var=SLOT git status'
+    'ls | parallel --tag tools/land-prs.sh --dry-run {}'
     'git status'
     'git tag v1'
     'git tag -a v1 -m x'

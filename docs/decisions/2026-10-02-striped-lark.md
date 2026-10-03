@@ -1,0 +1,229 @@
+# striped-lark — Deny unreadable xargs and GNU parallel pushes · 2026-10-02
+
+**Source.** [silver-panda, the merged save PR review finds an unreadable xargs
+push](../playtests/2026-10-02-silver-panda.md) records the supplied independent
+delta review and the player's earlier authorization for PR448 follow-ups. The player merged
+PR448 while that review was being handled, so this correction has its own PR.
+It preserves [frosty-pelican, identity-less write prompts](2026-10-02-frosty-pelican.md)'s
+contract that a publishing push or a push unreadable to its end is refused.
+
+[grassy-yak, input-driven push review corrections](../playtests/2026-10-03-grassy-yak.md)
+records the next review and the player's instruction: "let's do parallel the fix is
+reasonably sized". GNU parallel receives the same input-context handling as xargs.
+
+[cozy-alpaca, input-supplied subcommands and wrappers](../playtests/2026-10-03-cozy-alpaca.md)
+records the subsequent review. Input can supply the subcommand too: missing,
+separator or nonplain lowercase git subcommands and gh nouns/verbs now fail closed.
+The same policy covers `gxargs` and `env_parallel`. GNU parallel forwards command
+position through the options the guard's table lists, `--colsep` among them, and an option
+outside the table makes command position unreadable; a
+punctuation-only delimiter retains its token position so a later `cat` stays a read.
+
+**Built.** `echo v1 | xargs -I{} git push origin {}` and `xargs git push origin
+< tags.txt` no longer reach an ordinary branch-push prompt. Input can append or
+replace arguments with release refspecs absent from the hook JSON, so an
+unwrapped push invoked through xargs or GNU parallel is classified as unreadable and denied.
+This includes `echo v1 | parallel git push origin`, `parallel git push origin {} < t`
+and `ls | parallel -j1 git push origin {}`.
+The hook header names this behavior and its identity-wrapper exemption.
+
+A single forward pass records xargs/GNU parallel context for the existing token and quote
+tables. Its command context ends at the enclosing command's separator, while a
+separator inside the script xargs invokes keeps that context. This catches a
+later push inside `xargs sh -c 'git status; git push origin'` without treating a
+separate push after `xargs git status;` as input-driven. The table is built only
+when an xargs or parallel word occurs. It adds linear work, not a backward scan per git word.
+
+**Choices open to overturn.** All unwrapped xargs/GNU parallel pushes are conservatively
+denied, including an ordinary branch named in the written command, because input
+can add refspecs. Literal mentions of xargs or parallel count, matching the guard's existing
+conservative treatment of git mentions. In an uncertain quote reading, soft
+separators retain context; a later unrelated push in that script can therefore
+also be denied. The alternative of prompting despite unreadable input was
+rejected because it permits publishing under the player's identity.
+
+An unreadable input-driven gh command is also treated as potentially merging a PR,
+so a reviewer wrapper refuses it; a coder wrapper remains exempt, except where input could supply an
+issue write (below, "Merged with the inbox's guard"). This conservative
+choice is open to overturn. The alternative would allow input to hide `pr merge`.
+
+**Preserved.** Readable xargs/GNU parallel reads remain allowed; direct opt-in branch pushes
+and pushes after a separate xargs/parallel read still ask where the existing policy allows
+it. Coder identity wrappers remain exempt, including either input wrapper outside or inside the
+wrapper, for everything but an issue write; reviewer wrappers cannot push. Default-off, configured-identity and
+Codex refusal behavior remain unchanged. The Codex adapter needs no payload,
+tool-name or event change because this change is internal guard classification.
+
+**Verified.** All candidate commands were submitted as hook JSON and never
+executed. The two source cases ask against the pre-fix guard and deny against
+the implementation. Regression cases cover xargs argument/file options, nested
+environment and timeout wrappers, quoted scripts, separators, readable commands
+and identity wrappers. The three parallel reproductions ask in both opt-in cloud
+and unconfigured environments before the correction and deny after it.
+`tools/test_rules_hooks.sh`, `tools/test_codex_hooks.py`, `tools/check.sh`,
+`tools/lint.sh` and the whitespace check pass. No local full game suite or windowed
+capture was needed for a development guard change.
+
+The missing-subcommand cases, all six of the review's examples among them, fail against
+the implementation before them and pass after it, together with the punctuation-read case.
+Test payloads were never executed as shell writes. A merge of `main` into the branch kept
+main's incoming CI costs and saved-scene recipe design.
+
+The next independent review found two remaining in-scope gaps:
+[arbitrary lowercase replacement markers](https://github.com/JosuaKrause/nappy/pull/453#discussion_r4171808745)
+can replace a command spelled like a literal read, and
+[ordinary parallel option values](https://github.com/JosuaKrause/nappy/pull/453#discussion_r4171808747)
+can hide a publishing script's command position. The player's incorporation request
+includes fixing these findings in this PR.
+
+The wrapper context now carries a stack of active replacement tokens. Attached and
+separate replacement forms, including aliases, make a git/gh noun or verb containing
+the token unreadable even when its spelling is lowercase or matches a known read.
+Nested wrappers retain the enclosing context; readable command boundaries end it.
+The argument tables cover the reviewed parallel value-taking options and aliases,
+including maximum arguments/processes, job logs, delay and halt behavior, plus BSD
+xargs value options. No adapter contract changes.
+
+Optional replacement syntax retains both command-position interpretations: the
+generic table keeps the default-marker reading and the wrapper table can consume
+a following marker. This conservative choice, open to correction, avoids allowing
+an unreadable command merely because one interpretation resembles a read.
+
+The expanded regression cases fail against the preceding hook and pass with the
+correction, as do the adapter tests, shell syntax, lint, whitespace and headless boot. The tests cover the exact review cases,
+replacement aliases, read-shaped markers, nested context, punctuation-only values,
+reads, command boundaries and identity exemptions/refusals. All candidate commands
+remain JSON inputs to the hook and are never executed as publishing payloads.
+
+**Limits.** This remains a bounded development guardrail, with the existing
+accepted shell-parser gaps. It is not a shell interpreter or a security boundary.
+The supplied review's obsolete `$[...]` arithmetic observation explicitly asks
+for no change; this item does not change that syntax or gameplay/save code.
+
+The review's Python f-string command, dynamically found executable and stdin-loop
+refspec gaps are filed separately as quiet-tapir, remaining dynamic command writes;
+they are pre-existing gaps outside this correction, not claims of covered syntax.
+
+A replacement token inside a quoted script the wrapper runs (`xargs -I{} sh -c 'gh api
+repos/o/r/pulls/{}'`) puts input into shell text, where it can supply a whole command; that is
+the same accepted gap as a command kept in a file the shell runs (`parallel < cmds.txt`), and
+the guard reads such a script's own written words only.
+
+## Shared option consumption · 2026-10-03
+
+The independent review after that found that the two option scans still disagreed:
+`xargs -rIstatus` did not mark the read-shaped replacement token, and a consumed
+`-E -Iother` value could be misread as a new replacement option. Parallel options
+`--timeout`, `--retries` and `--results` could also conceal a publishing script's
+command position. Those findings are fixed inside the same PR.
+
+One bounded parser now supplies command position and replacement context. It handles
+clustered short options and consumes known option values exactly once. Unknown flags
+or abbreviations mark the wrapper unreadable, conservatively denying git/gh and
+publishing-script mentions, including apparent reads or dry runs, until the wrapper
+boundary. This deliberate false-denial choice is open to correction; guessing unknown
+arity would retain the write bypass. Known reads, enclosing command boundaries, coder
+exemptions and reviewer refusals retain their existing policy.
+
+GNU Parallel `-l`/`--max-lines` are optional numeric line counts, not replacement
+aliases; the preceding implementation's alias interpretation was wrong. Parallel `-I`
+requires a replacement argument and `-i`/`--replace` accept an optional one. GNU xargs
+optional values are attached-only, while a following non-option remains conservatively
+tracked as a possible replacement marker without being consumed. Parallel consumes a
+following optional value. Malformed or ambiguous attached forms remain unreadable.
+
+The new focused hook-JSON cases fail against the preceding hook and pass with the
+shared parser; the full suite, the adapter tests, shell syntax, lint, whitespace and
+headless boot pass. The adapter's dense-option-chain timing test can fail while another
+heavy run shares the machine and passes alone, a condition of the machine rather than of
+the guard. A suite run reads its own file and the hooks as it goes, so it is run on a frozen
+copy when the files may change under it. The Codex adapter's tool names, payloads and
+decision contract remain unchanged. No publishing payload was executed; all examples were
+JSON inputs to the hooks.
+
+## The last reviews · 2026-10-03
+
+[claude-reviewer's review](https://github.com/JosuaKrause/nappy/pull/453#pullrequestreview-5400403480)
+and [the player's own review comment](https://github.com/JosuaKrause/nappy/pull/453#issuecomment-5967903793)
+left findings that the same PR fixes.
+
+**Input can supply a release's own `push`.** `tools/release.sh` tags and publishes only with a
+second `push` argument, and input appends arguments: `echo push | xargs tools/release.sh patch`
+runs `tools/release.sh patch push`. Under an active xargs or GNU parallel context the script is
+therefore a write whether or not `push` is written, and it is denied, never asked about. Appended
+input cannot remove a written word, so `land-prs.sh` and `update-pr.sh` with a written `--dry-run`
+stay reads; input placed at a replacement token replaces the word that holds it, so a `--dry-run`,
+`--version`, `--help`, `--abort`, `--quit`, `--no-commit` or `--ff-only` holding the wrapper's
+token (`ls | xargs -I--dry-run tools/update-pr.sh --dry-run`, `xargs -Idry tools/update-pr.sh
+--dry-run`, `xargs -I--ff-only git merge --ff-only`) is read as not written, and the command as a
+write.
+
+**An escaped separator is an option's value, not a command boundary.** A backslash-escaped `\;`,
+`\|` or `\&` written as a word of its own outside quotes is an argument to the shell, so `xargs
+-d \; git push origin` delimits input with `;` and pushes whatever it reads. The guard read that
+word as a soft separator: the input context ended there, the push after it was asked about, and
+`printf 'push;origin;v1' | xargs -d \; git` was allowed. A soft separator now ends an input
+wrapper's context only inside a quoted script, deeper than the wrapper's own words, and only a
+hard separator leaves an option without its value. `xargs -d \; git status` stays a read, and a
+push in a separate command after `xargs git status;` is still asked about.
+
+**Common options are read, not guessed.** An option missing from the table makes command
+position unreadable, which is right for a push and denied ordinary reads: `ls | parallel --tag
+git log -1 -- {}` was refused as an unreadable push. The table now holds parallel's `--tag`,
+`--pipe` (`--spreadstdin`), `-X`, `-m`, `--xargs` and `--tagstring`, and xargs's `-o`
+(`--open-tty`) and `--process-slot-var`. A read under an option still missing is a false deny,
+fixed by adding the option; rerunning it under the coder identity would put a read under a
+write identity.
+
+**Input can supply a `gh api` write.** `gh api` chooses its method from its flags, and input
+appended after the written words can add `-X PUT`, `-f title=x` or `--input`: `echo "-X PUT" |
+xargs gh api repos/o/r/pulls/3/merge` merges PR 3. A written `-X GET` does not settle it, since
+gh takes the last `-X`. Under an input wrapper a call the guard would read as a read is therefore
+a write, "gh api with input-supplied arguments", unless input cannot add a flag: every active
+wrapper places its input at a replacement token (xargs `-I`/`-i`/`-J`, parallel's `{}` or its `-I`
+token), a word of the call holds that token, and no word starts with it, since `-I{} gh api {}` can
+receive `-XPUT` as one whole argument. So `xargs -I{} gh api repos/o/r/pulls/{}/comments` stays a
+read. A GraphQL call under input is always a write, because input placed in its query can add a
+mutation. The denial can merge, so a reviewer wrapper cannot exempt it. Denying every `gh api`
+under input was the simpler fix and was not taken: it would also deny the replacement-token reads
+an agent writes to walk a list of pull requests. A call that uses only parallel's other
+replacement strings (`{.}`, `{/}`) counts as appending input, a false deny open to correction.
+
+**GNU parallel's command-less form.** With no command of its own, parallel runs each `:::`
+argument, or each line of a `::::` file, as a command, so `parallel ::: tools/update-pr.sh` and
+`parallel ::: "tools/release.sh patch push"` run a pushing script while the guard took `:::` for
+the command word. Such a wrapper's command position is now unreadable, so a pushing script, git
+or gh among its arguments is denied. Reads written that way (`parallel ::: "git status"`) are a
+false deny open to correction; reading each argument as a command of its own was the alternative,
+and it would need every command table to start a command at each argument.
+
+**An input-supplied subcommand needs a git or gh the wrapper runs.** The rule that a missing or
+nonliteral git subcommand or gh noun/verb is unreadable fired for any git or gh word after an
+xargs or parallel mention, so `ls | xargs grep -l git`, `rg -n 'xargs git' tools/`, prose naming
+parallel and git, `seq 3 | parallel echo gh {}` and a wrapped heredoc commit whose line ends in
+"xargs git" were refused as unreadable pushes. It now applies to a git or gh in command position,
+which the command tables carry through xargs, parallel, the other wrapper words and a `sh -c`
+script, or to any git or gh when the wrapper's own options cannot be read. Where GNU xargs's
+optional replacement value is followed by a separate word (`xargs -i status git status origin
+v1`), that word may be the marker, and the git after it counts as run by the wrapper too. A
+`--version` or `--help` among git's or gh's own options makes it a read (`xargs git --version`),
+a subcommand may hold digits (`git p4`), and the denial is named "git with an input-supplied
+subcommand", push-like, so a reviewer wrapper cannot exempt it. An explicit `push` after an
+xargs or parallel mention still denies, as every mention of a push does.
+
+A git or gh run through a wrapper word the tables do not know (`xargs strace git`) is not in
+command position, so input supplying its subcommand is not caught; an explicit push there still
+is. That is the guard's existing gap for unknown wrapper words.
+
+**Merged with the inbox's guard (PR #429).** #429 denies an issue write under every identity, so
+under xargs or GNU parallel an issue write input could complete is denied the same way: a `gh issue`
+whose verb comes from input, or one written under xargs options the guard cannot read, is "gh issue
+with an input-supplied verb"; a `gh` whose noun comes from input is "gh with an input-supplied noun",
+since the noun could be `issue`; and flags input adds to a written issue endpoint make it "gh api
+issue write". All three are issue writes, which no wrapper exempts. A written noun other than
+`issue` keeps the coder exemption above, `xargs gh issue view` and the shared `issues/<n>/comments`
+path stay allowed, and an endpoint or GraphQL query input supplies whole stays the accepted gap the
+guard's header names for a wrapped command. A wrapped `parallel … gh` with no written noun is now
+denied, the safe direction, open to overturn. Run before the merge was resolved, the same plain
+merge of both sides let `run claude-orchestrator -- sh -c 'ls | xargs --foo gh issue close 5'`
+through, which main denies.

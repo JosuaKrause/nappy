@@ -46,12 +46,13 @@
 # issue |gh release|gh api` over `tools/*.sh`; a script that only reads, such as
 # `tools/agent-status.sh`'s `gh pr view`, is not on this list), and only when its name is in
 # command position (the first word of a command, past any `NAME=value` assignment or a wrapper
-# word's own options -- `bash`/`sh`/`env`/`timeout`/`xargs`/`nice`/`nohup`/`sudo`/`command`/`watch`/
+# word's own options -- `bash`/`sh`/`env`/`timeout`/`xargs`/`gxargs`/`parallel`/`env_parallel`/
+# `nice`/`nohup`/`sudo`/`command`/`watch`/
 # `stdbuf`/`caffeinate`/`time`/`exec`/`eval`, as a bare word or a path (`/usr/bin/env`), and the
 # shell's reserved words `do`/`then`/`else`/`elif`/`if`/`while`/`until`/
 # `{`/`!`, `timeout` alone also taking one bare duration, and the argument of a wrapper option
 # that takes one (`sudo -u root`, `sudo -iu root`, `nice -n 10`, `timeout -s KILL`, `xargs -n 1`,
-# `exec -a name`) skipped with it; the script after `bash -c`/`sh -c` is a command of its own, so
+# `parallel --jobs 2`, `parallel --joblog log`, `exec -a name`) skipped with it; the script after `bash -c`/`sh -c` is a command of its own, so
 # its first word is in command position too --
 # never where its name is merely a read's argument
 # (`cat`, `sed`, `git log --`/`diff --`/`show`, `rg`)), and, for `release.sh`, only with its own
@@ -66,6 +67,43 @@
 # quoting the script hides the substitution's opener, not the write that follows it. When the
 # option's own argument is quoted (`git -C "$(pwd)" push`), the substitution is one argument and
 # the subcommand is read as usual.
+# A push under xargs/gxargs or GNU parallel/env_parallel cannot be read to its end: input can
+# append or replace refspecs, even when the written words name only a branch. For a git or gh the
+# wrapper runs (in command position, or anywhere when the wrapper's options cannot be read), a
+# missing subcommand or gh noun/verb, one not spelled as a plain lowercase word, or one containing
+# the wrapper's active replacement token is unreadable too: input can supply the write itself. A
+# git or gh that is only an argument (`xargs grep -l git`, `rg 'xargs git'`) or carries `--version`
+# or `--help` among its own options is not. `tools/release.sh` run by such a wrapper is a write
+# with no written `push` (`echo push | xargs tools/release.sh patch`): input can append the `push`
+# that tags and publishes a release. Appended input cannot take a written word away, so
+# `land-prs.sh`/`update-pr.sh` with a written `--dry-run` stay reads; but input placed at a
+# replacement token replaces the word holding it, so a read flag holding the wrapper's token
+# (`xargs -I--dry-run tools/update-pr.sh --dry-run`, `xargs -Idry ...`, `xargs -I--version git
+# --version`, `xargs -I--ff-only git merge --ff-only`, `xargs -I--abort git rebase --abort`) is
+# not counted as written (`fixed_flags`), and the command is read as if it were missing. These
+# are denied rather than asked about; the coder identity
+# wrapper's exemption still applies, except where input reaches an issue write, which is denied
+# wrapped or not like a written one (below): a verb input supplies to a written `gh issue` (`echo
+# comment 5 --body x | xargs gh issue`), a noun input supplies (`echo issue close 5 | xargs gh`),
+# and flags input adds to a written issue endpoint (`xargs gh api repos/o/r/issues/5`).
+# An unreadable gh noun/verb can merge, so reviewer wrappers
+# cannot exempt it, just as they cannot exempt an unreadable git push. A `gh api` call such a
+# wrapper runs is a write unless input cannot add a flag to it (`input_supplies_gh_api`): `echo
+# "-X PUT" | xargs gh api repos/o/r/pulls/3/merge` merges, and a written `-X GET` is overridden by a
+# later one. It reads only when input lands at a replacement token inside a word of the call
+# (`xargs -I{} gh api repos/o/r/pulls/{}/comments`); a GraphQL call there always writes. That
+# denial can merge too, so reviewer wrappers cannot exempt it either. GNU parallel with no command
+# of its own (`parallel ::: tools/update-pr.sh`) runs each argument as a command, so its command
+# position is unreadable too.
+# A backslash-escaped separator outside quotes (`xargs -d \; git push origin`) is an argument the
+# shell hands to the wrapper, so it neither ends the wrapper's command nor leaves an option
+# without its value; inside a quoted script a soft separator still ends the script's own command.
+# Input-wrapper options share one bounded parser for command position and replacement tokens.
+# An option missing from that parser's table (`input_option`) makes git/gh and any named pushing
+# script unreadable, including an apparent read or dry run: guessing its arity could take its value
+# for the command. Such a denied read is fixed by adding the option to the table, which lists the
+# common ones (parallel's `--tag`, `--pipe`, `-X`, `--tagstring`; xargs's `-o`). Consumed option values
+# never supply replacement flags or nested input wrappers. Known reads retain their exemption.
 # Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
 # issue/release list/view`, `gh run watch/download`, `gh repo clone`, `gh auth token`, `gh
 # search`, `gh browse`, a GET `gh api` with or without fields, an inline GraphQL query with no
@@ -91,8 +129,9 @@
 # as an issue (the REST `issues/N/reactions` is under an issue's path, and denied). **The issue writes that still go
 # through when wrapped, an accepted gap** (main allows every one of them too, as it allows any
 # wrapped write): an endpoint an expansion builds past `repos/` or hands in (`"$E"`, `"$(printf
-# ...)"`, a backtick in place of `issues`, `${E:-...}`, an endpoint `xargs` supplies); a GraphQL
-# query an expansion or `$'...'` builds (`-f query="$(printf ...)"`, `$'close\x49ssue'`), or one
+# ...)"`, a backtick in place of `issues`, `${E:-...}`, an endpoint `xargs` or GNU parallel
+# supplies whole, `xargs gh api` or `xargs -I{} gh api {}`); a GraphQL query input supplies, an
+# expansion or `$'...'` builds (`-f query="$(printf ...)"`, `$'close\x49ssue'`), or one
 # read by `-F query=@file`, `-F query=@-` or `--input` from a file an earlier, separate command
 # wrote, or piped in from such a file (`cat q.graphql | ... -F query=@-`), since denying every
 # query not on the command line would deny a reviewer's `resolveReviewThread` from a file too --
@@ -355,7 +394,9 @@ def split_words:
 
 # Splits every word at its glue into parts, each with a level: 0 for the first part of a shell
 # word, 1 for a later part of it, 2 for a later part inside a second level of quotes. The parts,
-# in order, are exactly the words a split at every glue would give.
+# in order, are exactly the words a split at every glue would give. A word made entirely of
+# punctuation still occupies an argument: `parallel --colsep , cat tools/update-pr.sh` must
+# consume the comma, not `cat`. Keep the same placeholder used for an empty quoted argument.
 def placeholder_or_word:
   if contains("\u0006") then (drop("\u0006") | if . == "" then "\u0006" else . end) else . end;
 def leveled_parts:
@@ -365,7 +406,8 @@ def leveled_parts:
        [split("\u0004") | to_entries[] | .key as $j
         | [.value | split("\u0005")[] | placeholder_or_word | select(length > 0)]
         | to_entries[]
-        | {w: .value, c: (if .key > 0 then 2 elif $j > 0 then 1 else 0 end)}]
+       | {w: .value, c: (if .key > 0 then 2 elif $j > 0 then 1 else 0 end)}]
+       | (if length == 0 then [{w: "\u0006", c: 0}] else . end)
        | (if length > 0 then .[0].c = 0 else . end)
        | .[]
      end];
@@ -391,11 +433,11 @@ def takes_argument:
 # every start runs to the end of the chain, a cost quadratic in its length.
 def resolve: until(. as $p | all(range(length); $p[$p[.]] == $p[.]); . as $p | map($p[.]));
 
-# The options each wrapper word takes with a separate argument, so the word after `sudo -u`,
-# `nice -n`, `timeout -s` or `xargs -n` is skipped as that argument rather than taken for the
+# Non-input wrapper options taking a separate argument, so the word after `sudo -u`,
+# `nice -n` or `timeout -s` is skipped as that argument rather than taken for the
 # command; `bash -c`/`sh -c` is not among them, since the word after `-c` is the script, whose
 # own first word is in command position (`bash -c 'tools/prune-merged.sh x'`), and neither is
-# `env -S`, whose argument is the command line itself.
+# `env -S`, whose argument is the command line itself. Input wrappers use input_option below.
 def wrapper_argument_options:
   {sudo: ["-u", "-g", "-h", "-p", "-C", "-D", "-R", "-r", "-t", "-T", "-U", "--user", "--group",
           "--host", "--prompt", "--close-from", "--chdir", "--chroot", "--role", "--type",
@@ -403,8 +445,6 @@ def wrapper_argument_options:
    env: ["-u", "-C", "-P", "--unset", "--chdir"],
    nice: ["-n", "--adjustment"],
    timeout: ["-s", "-k", "--signal", "--kill-after"],
-   xargs: ["-n", "-I", "-L", "-P", "-s", "-d", "-E", "-a", "--max-args", "--max-lines",
-           "--max-procs", "--max-chars", "--delimiter", "--eof", "--arg-file"],
    watch: ["-n", "--interval"],
    bash: ["-o", "-O", "--rcfile", "--init-file"],
    sh: ["-o", "-O"],
@@ -465,7 +505,8 @@ def after_options($t; $i): $t.ao[$i] // $i;
 def is_assignment: test("^[A-Za-z_][A-Za-z0-9_]*=");
 
 # Words that hand a command to something else to run, carrying "command position" forward past
-# themselves and their own options: `bash`/`sh` run a script file, `env`/`timeout`/`xargs`/`nice`/
+# themselves and their own options: `bash`/`sh` run a script file, `env`/`timeout`/`xargs`/`gxargs`/
+# `parallel`/`env_parallel`/`nice`/
 # `nohup`/`sudo`/`command`/`watch`/`stdbuf`/`caffeinate`/`time`/`exec`/`eval` run the word after
 # their own options, whether written bare or as a path (`/usr/bin/env`), and
 # after the shell's reserved words `do`, `then`, `else`, `elif`, `if`, `while`, `until`, `{` and `!`
@@ -473,7 +514,8 @@ def is_assignment: test("^[A-Za-z_][A-Za-z0-9_]*=");
 # its command, which `after_options` does not skip on its own since it is not `-`-prefixed. A
 # command word matches in any case, as a path's last part (this Mac's disk is case-insensitive, so
 # `ENV` runs env); a reserved word matches only as the shell spells it, since `If` is not `if`.
-def wrapper_words: ["bash", "sh", "env", "timeout", "xargs", "nice", "nohup", "sudo", "command", "watch",
+def wrapper_words: ["bash", "sh", "env", "timeout", "xargs", "gxargs", "parallel", "env_parallel",
+                     "nice", "nohup", "sudo", "command", "watch",
                      "stdbuf", "caffeinate", "time", "exec", "eval"];
 def reserved_words: ["do", "then", "else", "elif", "if", "while", "until", "{", "!"];
 def is_wrapper_word($x):
@@ -482,7 +524,11 @@ def is_wrapper_word($x):
 # For every word, the wrapper word it follows within its command (null before any), which owns
 # the options read after it. One pass.
 def wrapper_owners:
-  [foreach .[] as $x (null; if $x | is_sep then null elif is_wrapper_word($x) then $x | last_part else . end)];
+  [foreach .[] as $x (null;
+     if $x | is_sep then null
+     elif is_wrapper_word($x) then
+       $x | last_part | if . == "gxargs" then "xargs" elif . == "env_parallel" then "parallel" else . end
+     else . end)];
 
 # For every index (already known to be in command position), the index of the real command word:
 # skips any run of assignments and wrapper words (with the wrapper's own options, and `timeout`'s
@@ -490,7 +536,7 @@ def wrapper_owners:
 # 60 tools/land-prs.sh` and `bash -x tools/prune-merged.sh` all land on the script name, not on the
 # assignment, the option or the duration. A table, like `options_table`, and with levels each
 # of those is skipped as a whole shell word (`FOO="a b"`, `timeout "1 m"`).
-def command_table($ao; $g):
+def command_table($ao; $g; $inputs):
   . as $w
   | length as $n
   | ($g.lv) as $lv
@@ -503,6 +549,7 @@ def command_table($ao; $g):
     [range($n) as $i
      | $w[$i] as $x
      | if ($x | contains("=")) and ($x | is_assignment) then word_end($i)
+       elif $inputs[$i] != null then $inputs[$i].command
        elif is_wrapper_word($x) then
          ($ao[word_end($i)] // $n) as $after
          | (if ($x | last_part) == "timeout" and $after < $n then word_end($after) else $after end)
@@ -511,6 +558,151 @@ def command_table($ao; $g):
     + [$n]
   | resolve;
 def command_word($t; $i): $t.cw[$i] // $i;
+
+# Input wrappers have one bounded option grammar for BOTH command position and replacement
+# tracking. Required values are consumed whole, even when they look like another option. Short
+# clusters stop at the first value-taking letter; the remaining characters are its attached value.
+# Unknown options (including unlisted abbreviations) make command position unreadable, never a
+# guess that the following word is the executable. That state denies git/gh and potential pushing
+# script invocations in this wrapper, including apparent reads; coder exemptions still apply.
+# Sources: GNU findutils xargs options; GNU Parallel src/parallel options_hash/GetOptions.
+# This is deliberately not their entire option surface: options that load configuration or
+# change replacement syntax beyond -I/-i/--replace remain unreadable too.
+def is_input_wrapper: last_part | IN("xargs", "gxargs", "parallel", "env_parallel");
+def input_option($owner; $flag):
+  if $flag == "-I" or ($owner == "xargs" and $flag == "-J") then
+    {arity: "required", replacement: true}
+  elif $flag | IN("-i", "--replace") then {arity: "optional", replacement: true}
+  elif $flag | IN("-a", "--arg-file", "-n", "--max-args", "-L", "-P", "--max-procs",
+                  "-s", "--max-chars", "-d", "--delimiter", "-E") then {arity: "required"}
+  elif $owner == "xargs" and ($flag | IN("-R", "-S", "--process-slot-var")) then {arity: "required"}
+  elif $owner == "parallel" and ($flag | IN("-j", "--jobs", "-N", "--max-replace-args",
+       "-S", "--sshlogin", "--sshloginfile", "--slf", "--colsep", "--col-sep", "-C",
+       "--joblog", "--jl", "--delay", "--halt", "--halt-on-error", "--timeout", "--retries",
+       "--results", "--result", "--res", "--tagstring")) then {arity: "required"}
+  elif $flag | IN("-e", "--eof", "-l", "--max-lines") then {arity: "optional"}
+  elif $flag | IN("-0", "--null", "-r", "--no-run-if-empty", "-t", "--verbose", "-p",
+                  "--interactive", "-x", "--exit", "--help", "--version", "--show-limits")
+    then {arity: "none"}
+  elif $owner == "xargs" and ($flag | IN("-o", "--open-tty")) then {arity: "none"}
+  elif $owner == "parallel" and ($flag | IN("-k", "--keep-order", "-u", "--ungroup", "--group",
+       "-v", "-q", "--quote", "--line-buffer", "--linebuffer", "--will-cite", "--plain",
+       "--progress", "--eta", "--bar", "--dry-run", "--dryrun", "--tag", "--pipe",
+       "--spreadstdin", "-X", "-m", "--xargs")) then {arity: "none"}
+  else {arity: "unknown"} end;
+
+def input_option_word($owner; $x):
+  if $x | startswith("--") then
+    ($x | split("=")[0]) as $flag
+    | input_option($owner; $flag)
+    | .flag = $flag
+    | .value = (if $x | contains("=") then $x[($flag | length) + 1:] else null end)
+  else
+    # `.flag` is the option that stopped the cluster (or its last letter), so a test on which option
+    # it was reads `-kl` as `-l`, never as the word's own first letter.
+    {k: 1, arity: "none", value: null, flag: null}
+    | until(.k >= ($x | length) or .arity != "none";
+        .k as $k | input_option($owner; "-" + $x[$k:$k + 1])
+        | .flag = ("-" + $x[$k:$k + 1])
+        | .k = ($k + 1)
+        | .value = (if .arity != "none" and .k < ($x | length) then $x[.k:] else null end))
+  end;
+
+def input_scan($w; $g; $i):
+  ($w | length) as $n
+  | ($w[$i] | last_part | if . == "gxargs" then "xargs"
+     elif . == "env_parallel" then "parallel" else . end) as $owner
+  # A quoted script starts at level 0, but its following words have level 1.
+  | ([($g.lv[$i] // 0), ($g.lv[$i + 1] // 0)] | max) as $level
+  | def word_end($p):
+      if $g == null or $p >= $n then $p + 1
+      elif $level == 0 then $g.ends[$p].z elif $level == 1 then $g.ends[$p].o else $p + 1 end;
+    # GNU parallel replaces `{}` unless `-I` renames it, and appends input only to a command
+    # holding no replacement string.
+    {command: ($i + 1), replacements: (if $owner == "parallel" then ["{}"] else [] end),
+     unreadable: false, done: false, alt: null}
+  | until(.done or .command >= $n or ($w[.command] | is_sep)
+          or ($w[.command] | startswith("-") | not);
+      .command as $p | $w[$p] as $x | word_end($p) as $e
+      | if $x | IN("--", "--\u0002") then .command = $e | .done = true
+        else input_option_word($owner; $x) as $opt
+          | if $opt.arity == "unknown" or ($opt.arity == "none" and $opt.value != null) then
+              .unreadable = true | .done = true
+            else
+              # An escaped separator (`-d \;`) is an argument to the shell, so only a hard one
+              # leaves the option without its value.
+              ($e < $n and ($w[$e] | is_hard_sep | not)) as $has_next
+              | ($opt.value == null and ($opt.arity == "required"
+                 or ($opt.arity == "optional" and $owner == "parallel" and $has_next
+                     and ($w[$e] | startswith("-") | not)))) as $consume
+              | (if $opt.value != null then $opt.value
+                 elif $consume and $has_next then $w[$e] else null end) as $value
+              | .unreadable = (.unreadable or ($consume and ($has_next | not))
+                  or ($opt.replacement == true and
+                      (($e > $p + 1) or ($consume and word_end($e) > $e + 1))))
+              | (if $opt.replacement then
+                   .replacements = (if $value != null then [$value]
+                     # GNU xargs optional values attach to the flag. Also retain the following
+                     # non-option as a conservative marker for implementations accepting it
+                     # separately, without consuming or reinterpreting it as an option.
+                     else ["{}"] + (if $owner == "xargs" and $has_next
+                                        and ($w[$e] | startswith("-") | not)
+                                      then [$w[$e]] else [] end) end)
+                   # Read that way, the command is the word after the marker: `xargs -i status
+                   # git status origin v1` may run git with `status` replaced.
+                   | (if $value == null and $owner == "xargs" and $has_next
+                         and ($w[$e] | startswith("-") | not)
+                      then .alt = word_end($e) else . end)
+                 # GNU parallel's `-l` takes an optional number: a value that is not one, attached
+                 # (`-kli`) or consumed (`-kl tools/update-pr.sh`), leaves command position unknown.
+                 elif $opt.arity == "optional" and $value != null
+                      and ($opt.flag | IN("-l", "--max-lines")) and ($value | test("^[0-9]+$") | not)
+                 then .unreadable = true
+                 else . end)
+              | .command = (if $consume and $has_next then word_end($e) else $e end)
+            end
+        end)
+  # GNU parallel with no command of its own (`parallel ::: tools/update-pr.sh`) runs each `:::`
+  # argument, or each line of a `::::` file, as a command, so no command position is readable.
+  | (if $owner == "parallel" and .command < $n and ($w[.command] | startswith(":::"))
+     then .unreadable = true else . end)
+  | del(.done);
+
+# Skip consumed option runs when looking for another input wrapper. An argument literally named
+# xargs/parallel is data, not a nested invocation; this also bounds the total work to one scan
+# per option word rather than repeatedly rescanning a chain of `xargs -E xargs -E ...`.
+def input_wrappers($w; $g):
+  [foreach range(0; $w | length) as $i ({skip: 0, out: null};
+     .out = null
+     | if $i >= .skip and ($w[$i] | is_input_wrapper) then
+         .out = input_scan($w; $g; $i) | .skip = .out.command
+       else . end;
+     .out)];
+
+# The active input wrappers before each word. Input may supply push refspecs absent from the hook
+# JSON. Keep each wrapper across separators inside a quoted script it runs (`xargs sh -c 'git
+# status; git push origin'`), but end it at its own command's separator. A stack keeps an outer
+# wrapper active when a nested wrapper ends, and retains both replacement tokens while both apply.
+# As with the git detector, mentions count too. One forward pass, never a backward scan from each
+# git; the shared option parse supplies each wrapper and its replacement tokens.
+def xargs_context($w; $lv; $unsure; $inputs):
+  [foreach range(0; $w | length) as $i ([];
+     if $w[$i] | is_sep then
+       if $w[$i] | is_hard_sep then []
+       elif $unsure then .
+       # A soft separator ends a command only inside a quoted script: at level 0 it is an
+       # escaped argument (`xargs -d \; git push`), which the shell hands to the wrapper.
+       else ($lv[$i] // 0) as $level | map(select(.level == 0 or .level < $level)) end
+     elif $inputs[$i] != null then
+       # A script's first word has level 0; its next word carries the script's own level.
+       ([($lv[$i] // 0), ($lv[$i + 1] // 0)] | max) as $level
+       | . + [($inputs[$i] + {level: $level})]
+     else . end;
+     {active: (length > 0), unreadable: any(.[]; .unreadable),
+      replacements: [.[].replacements[] | select(. != "")],
+      # Every active wrapper places its input at a replacement token rather than appending it.
+      replacing: (length > 0 and all(.[]; any(.replacements[]; . != ""))),
+      alts: [.[].alt | select(. != null)]})];
 
 # `git <subcommand>`: push, and every subcommand that can create a commit under the invoking
 # user's own name -- commit always; cherry-pick/revert/am/merge/rebase/pull unless they carry an
@@ -695,11 +887,49 @@ def opener_counts($w0):
 def openers_between($t; $a; $b):
   $t.oc != null and ($t.oc[$b] - $t.oc[$a]) > 0;
 
-def detect_git($w; $t; $i; $n):
+# A read exception rests on a written flag (`--dry-run`, `--version`, `--help`, `--abort`,
+# `--ff-only`, ...), and input placed at a replacement token inside that flag replaces it: `ls |
+# xargs -I--dry-run tools/update-pr.sh --dry-run` runs `tools/update-pr.sh 3`. So under an active
+# input wrapper a flag holding one of its replacement tokens is not counted as written. The flags
+# are matched as whole words, so whether a token is inside one is a test on the flag's own text.
+def input_tokens($t; $i):
+  ($t.xargs[$i] // null) | if . == null or (.active | not) then [] else .replacements end;
+def fixed_flags($tokens):
+  map(select(. as $f | any($tokens[]; . as $tok | $f | contains($tok)) | not));
+
+# The input can provide the command itself, not only its arguments. A missing word (including
+# a separator) or a replacement marker such as {}, % or REF cannot establish a readable verb.
+# That holds only for a git or gh the wrapper runs, in command position: one that is an argument
+# (`xargs grep -l git`, `rg 'xargs git'`) has no verb to supply. A `--version` or `--help` among
+# its own options makes it a read whatever follows (`xargs git --version`). An input wrapper whose
+# options cannot be read leaves command position unknown, so there any git or gh is unreadable.
+def unreadable_input_word($w; $t; $i; $p; $n; $cmd_pos):
+  ($t.xargs[$i] // {active: false, replacements: []}) as $input
+  | ($w[$p] // "") as $word
+  | $input.active
+    and ($input.unreadable
+         or (($cmd_pos or any($input.alts[]?; . == $i))
+             and (any(range($i + 1; [$p, $n] | min) | $w[.];
+                      IN(["--version", "--help"] | fixed_flags($input.replacements // [])[])) | not)
+             and ($p >= $n or ($word | test("^[a-z][a-z0-9-]*$") | not)
+                  or any($input.replacements[]; . as $replacement | $word | contains($replacement)))));
+
+# Whether the word at `$p` is written plainly enough that input cannot be it: present, a plain
+# lowercase word, and holding no replacement token. Under an input wrapper whose options cannot be
+# read, such a word is still unreadable as a verb, but it is not one input supplies.
+def input_word_readable($w; $t; $i; $p; $n):
+  ($t.xargs[$i] // {replacements: []}) as $input
+  | ($w[$p] // "") as $word
+  | $p < $n and ($word | test("^[a-z][a-z0-9-]*$"))
+    and (any($input.replacements[]; . as $replacement | $word | contains($replacement)) | not);
+
+def detect_git($w; $t; $i; $n; $cmd_pos):
   if ($w[$i] | named("git")) | not then null
   else
     (after_options($t; $i + 1)) as $sub
-    | if $t.lw > $i
+    | if unreadable_input_word($w; $t; $i; $sub; $n; $cmd_pos) then
+        {next: ([$sub, $i + 1] | max), reason: "git with an input-supplied subcommand"}
+      elif $t.lw > $i
          and (openers_between($t; $i + 1; [$sub + 1, $n] | min)
               or (($w[$sub] // "") | contains("$"))
               or ($t.lw > $sub and soft_subcommand_opener($t; $sub; $t.lv[$i + 1] // 0)))
@@ -719,20 +949,22 @@ def detect_git($w; $t; $i; $n):
                reason: (if $forced then "git push --force"
                         elif $tags then "git push of a tag or every branch"
                         elif $sc.expansion or $cf.expansion then "git push with a shell expansion"
-                        elif $sc.unreadable or $cf.unreadable then "git push that cannot be read"
+                        elif $sc.unreadable or $cf.unreadable or ($t.xargs[$i].active // false)
+                        then "git push that cannot be read"
                         else "git push" end)}
           elif $subcmd == "commit" then {next: ($sub + 1), reason: "git commit"}
           elif $subcmd | IN("cherry-pick", "revert", "am") then
-            (segment_scan($w; $sub + 1; $n; ["--abort", "--quit"])) as $sc
+            (segment_scan($w; $sub + 1; $n; ["--abort", "--quit"] | fixed_flags(input_tokens($t; $i)))) as $sc
             | {next: $sc.end, reason: (if $sc.found then null else ("git " + $subcmd) end)}
           elif $subcmd == "merge" then
-            (segment_scan($w; $sub + 1; $n; ["--abort", "--no-commit", "--ff-only"])) as $sc
+            (segment_scan($w; $sub + 1; $n; ["--abort", "--no-commit", "--ff-only"] | fixed_flags(input_tokens($t; $i))))
+              as $sc
             | {next: $sc.end, reason: (if $sc.found then null else "git merge" end)}
           elif $subcmd == "rebase" then
-            (segment_scan($w; $sub + 1; $n; ["--abort"])) as $sc
+            (segment_scan($w; $sub + 1; $n; ["--abort"] | fixed_flags(input_tokens($t; $i)))) as $sc
             | {next: $sc.end, reason: (if $sc.found then null else "git rebase" end)}
           elif $subcmd == "pull" then
-            (segment_scan($w; $sub + 1; $n; ["--ff-only"])) as $sc
+            (segment_scan($w; $sub + 1; $n; ["--ff-only"] | fixed_flags(input_tokens($t; $i)))) as $sc
             | {next: $sc.end, reason: (if $sc.found then null else "git pull" end)}
           else null
           end
@@ -967,7 +1199,10 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
                 else "gh api" end)}
     else {next: $r.resume, reason: null}
     end
-  | .scan_end = (if $r.crossed_at == null then null else $r.i end);
+  | .scan_end = (if $r.crossed_at == null then null else $r.i end)
+  | .end = $r.i
+  | .issue_endpoint = $r.issue_endpoint
+  | .graphql = (($r.endpoint // "") | test("(?i)(^|/)graphql$"));
 
 # Every `gh` noun writes unless its verb is on one shared list of reads (`view`, `list`, `status`,
 # `diff`, `checks`, `checkout` -- `gh pr`'s own local-only checkout -- `watch`, `download`,
@@ -980,23 +1215,59 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
 # (`gh status | head`, `gh --version && gh auth status`) has no noun/verb there at all, not the
 # separator itself, so it never becomes part of a denial reason. A soft separator there is
 # unreadable: inside a quoted script it can be a substitution whose following write is hidden.
+# A `gh api` call that xargs or GNU parallel runs reads only when every flag it gets is written:
+# input appended to the call can add `-X PUT` or `-f k=v` after the written words, and a later
+# `-X` overrides a written `-X GET`. So the call is a write unless every active wrapper places its
+# input at a replacement token (xargs `-I`/`-i`/`-J`, parallel's `{}` or its `-I` token), a word of
+# the call holds that token, and no word starts with it (`-I{} gh api {}` can receive `-XPUT` as a
+# whole argument). A GraphQL call under input is always a write: input placed inside its query can
+# add a mutation.
+def input_supplies_gh_api($w; $t; $i; $from; $api):
+  ($t.xargs[$i] // {active: false, replacements: []}) as $input
+  | if ($input.active | not) then false
+    elif $api.graphql or ($input.replacing | not) then true
+    else
+      ($input.replacements) as $tokens
+      | [range($from; [$api.end, $from] | max) | $w[.]] as $words
+      | (any($words[]; . as $x | any($tokens[]; . as $tok | $x | contains($tok))) | not)
+        or any($words[]; . as $x | any($tokens[]; . as $tok | $x | startswith($tok)))
+    end;
+
 def generic_reads: ["view", "list", "status", "diff", "checks", "checkout", "watch", "download", "clone", "token"];
 def read_only_nouns: ["browse", "search"];
-def detect_gh($w; $t; $i; $n; $lm; $bounded):
+def detect_gh($w; $t; $i; $n; $lm; $bounded; $cmd_pos):
   if ($w[$i] | named("gh")) | not then null
   else
     (after_options($t; $i + 1)) as $noun_i
-    | if ($noun_i < $n) and (expansion_opener($t; $noun_i)
+    | if unreadable_input_word($w; $t; $i; $noun_i; $n; $cmd_pos) then
+        # A written `issue` noun keeps its issue rule (`ls | xargs --foo gh issue close 5`), and a
+        # noun input supplies can be `issue` itself: both deny wrapped or not.
+        {next: $noun_i,
+         reason: (if ($w[$noun_i] // "") == "issue" then "gh issue with an input-supplied verb"
+                  elif input_word_readable($w; $t; $i; $noun_i; $n) then "gh with an input-supplied noun or verb"
+                  else "gh with an input-supplied noun" end)}
+      elif ($noun_i < $n) and (expansion_opener($t; $noun_i)
          or soft_subcommand_opener($t; $noun_i; $t.lv[$i + 1] // 0)) then
         {next: $noun_i, reason: "gh with a shell expansion before its noun or verb"}
       elif ($noun_i >= $n) or ($w[$noun_i] | is_sep) then null
       else
         ($w[$noun_i]) as $noun
         | if read_only_nouns | index($noun) then null
-          elif $noun == "api" then detect_gh_api($w; $t; $noun_i + 1; $n; $lm; $bounded)
+          elif $noun == "api" then
+            detect_gh_api($w; $t; $noun_i + 1; $n; $lm; $bounded) as $api
+            # Input that can add `-X PATCH -f state=closed` to a written issue endpoint makes an
+            # issue write, denied wrapped or not like a written one.
+            | if $api.reason == null and input_supplies_gh_api($w; $t; $i; $noun_i + 1; $api)
+              then $api | .reason = (if $api.issue_endpoint then "gh api issue write"
+                                     else "gh api with input-supplied arguments" end)
+              else $api end
           else
             (after_options($t; $noun_i + 1)) as $verb_i
-            | if ($verb_i < $n) and (expansion_opener($t; $verb_i)
+            | if unreadable_input_word($w; $t; $i; $verb_i; $n; $cmd_pos) then
+                {next: $verb_i,
+                 reason: (if $noun == "issue" then "gh issue with an input-supplied verb"
+                          else "gh with an input-supplied noun or verb" end)}
+              elif ($verb_i < $n) and (expansion_opener($t; $verb_i)
                  or soft_subcommand_opener($t; $verb_i; $t.lv[$noun_i + 1] // 0)) then
                 {next: $verb_i, reason: "gh with a shell expansion before its noun or verb"}
               elif ($verb_i >= $n) or ($w[$verb_i] | is_sep) then null
@@ -1036,11 +1307,18 @@ def script_is_write($t; $base; $start):
     else true
     end;
 def detect_tool($w; $t; $i; $cmd_pos):
-  if $cmd_pos | not then null
+  if ($cmd_pos or ($t.xargs[$i].unreadable // false)) | not then null
   else
     ($w[$i] | last_part) as $base
     | if (write_tool_names | index($base)) == null then null
-      elif script_is_write($t; $base; $i + 1) then {next: ($i + 1), reason: ("tools/" + $base)}
+      elif ($t.xargs[$i].unreadable // false) or script_is_write($t; $base; $i + 1)
+           # Input can append release.sh's own `push`, and input placed at a replacement token
+           # inside a written `--dry-run` replaces it (`xargs -I--dry-run tools/update-pr.sh
+           # --dry-run`); appended input cannot take a written `--dry-run` away.
+           or ($base == "release.sh" and ($t.xargs[$i].active // false))
+           or (($base | IN("land-prs.sh", "update-pr.sh"))
+               and (["--dry-run"] | fixed_flags(input_tokens($t; $i)) | length) == 0)
+      then {next: ($i + 1), reason: ("tools/" + $base)}
       else null
       end
   end;
@@ -1069,12 +1347,19 @@ def detect_wrapper($w; $t; $i; $n):
 # for a name outside its own ROLE_NAMES, which is the actual enforcement for an unknown role, not
 # this check.
 def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
-def is_push_like($reason): ($reason | startswith("git push")) or ($reason | startswith("tools/"));
+def is_push_like($reason):
+  ($reason | startswith("git push")) or ($reason | startswith("tools/"))
+  or ($reason == "git with an input-supplied subcommand");
 def is_merge_like($reason):
-  ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type");
-# A direct issue write, denied wrapped or not: `gh issue`'s own write verbs, and the API's.
+  ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type")
+  or ($reason == "gh with an input-supplied noun or verb")
+  or ($reason == "gh api with input-supplied arguments");
+# A direct issue write, denied wrapped or not: `gh issue`'s own write verbs, and the API's. The
+# input-wrapper forms count too (`detect_gh`): `gh issue` whose verb input supplies starts with
+# `gh issue `, and a `gh` whose noun input supplies may be handed `issue close 5`.
 def is_issue_write($reason):
-  ($reason | startswith("gh issue ")) or ($reason | IN("gh api issue write", "gh api graphql issue mutation"));
+  ($reason | startswith("gh issue ")) or ($reason | IN("gh api issue write", "gh api graphql issue mutation",
+                                                       "gh with an input-supplied noun"));
 
 # One pass over the word array: a hard separator resets the current command's exemption, and so
 # does a soft one when the wrapper stood inside quotes (`inner`) or the reading is `$unsure` (every
@@ -1096,9 +1381,10 @@ def either(a; b):
   | if $x != null and $x.reason != null then $x
     else (b as $y | if $y != null and $y.reason != null then $y else $x end) end;
 #
-# Command position is where any of up to four tables puts it: past a wrapper, its options read
+# Command position is where any of up to four tables puts it: past a non-input wrapper, its options read
 # as git's and gh's (`cw`) and as the wrapper's own (`cw2`), each grouped by shell word (`$t`)
-# and, when the reading is unsure, also word by word (`$tp`).
+# and, when the reading is unsure, also word by word (`$tp`). Every table takes an input
+# wrapper's command position from the same bounded option parse.
 def command_words($t; $tp; $i):
   [command_word($t; $i)]
   + (if $t.cw2 == null then [] else [$t.cw2[$i] // $i] end)
@@ -1123,16 +1409,21 @@ def findings($w; $w0; $levels; $unsure):
   # A command with no wrapper word needs no table of wrapper options.
   | (if any($w[]; is_wrapper_word(.)) then $w | wrapper_owners else null end) as $owners
   | (if $lv == null then null else {lv: $lv, ends: word_ends($lv)} end) as $g
+  | (if any($w[]; is_input_wrapper) then input_wrappers($w0; $g) else null end) as $inputs
   | ($w | options_table($g; null)) as $ao
-  | {ao: $ao, cw: ($w | command_table($ao; $g)),
-     cw2: (if $owners == null then null else $w | command_table($w | options_table($g; $owners); $g) end),
+  | (if $owners == null then null else $w | options_table($g; $owners) end) as $wo
+  | (if $wo == null then null else $w | command_table($wo; $g; $inputs) end) as $cw2
+  | {ao: $ao, cw: ($w | command_table($ao; $g; $inputs)),
+     cw2: $cw2,
      sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li,
+     xargs: (if $inputs != null
+             then xargs_context($w0; $lv; $unsure; $inputs) else null end),
      oc: (if $unsure then opener_counts($w0) else null end)} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
-       | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null))
+       | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null; $inputs))
        | .cw2 = (if $owners == null then null
-                 else $w | command_table($w | options_table(null; $owners); null) end)
+                 else $w | command_table($w | options_table(null; $owners); null; $inputs) end)
      else null end) as $tp
   | ($t | .tp = $tp) as $t
   | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false, wrapped: false,
@@ -1157,12 +1448,12 @@ def findings($w; $w0; $levels; $unsure):
         else
           ($state.i < $state.scanned_to) as $bounded
           | ($t.ao[$state.i + 1]) as $a1
-          | (either(detect_git($w; $t; $state.i; $n);
+          | (either(detect_git($w; $t; $state.i; $n; $cmd_pos);
                     if $tp == null or $tp.ao[$state.i + 1] == $a1 then null
-                    else detect_git($w; $tp; $state.i; $n) end)
-             // either(detect_gh($w; $t; $state.i; $n; $lm; $bounded);
+                    else detect_git($w; $tp; $state.i; $n; $cmd_pos) end)
+             // either(detect_gh($w; $t; $state.i; $n; $lm; $bounded; $cmd_pos);
                        if $tp == null or ($tp.ao[$state.i + 1] == $a1 and $w[$a1] == "api") then null
-                       else detect_gh($w; $tp; $state.i; $n; $lm; $bounded) end)
+                       else detect_gh($w; $tp; $state.i; $n; $lm; $bounded; $cmd_pos) end)
              // detect_tool($w; $t; $state.i; $cmd_pos)) as $hit
           | if $hit == null then $state | .i += 1
             elif $hit.reason == null then $state | .i = $hit.next | .scanned_to = ($hit.scan_end // .scanned_to)

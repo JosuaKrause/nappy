@@ -3,8 +3,9 @@
 further").
 
 - `git -C $(git rev-parse --show-toplevel) log --oneline | grep merge` was allowed before #448 and is
-  denied after it, only because `merge` appears later as a grep pattern. Once #429 (a quoted
-  argument of a text-only command is not a command) and #453 are on `main`, check it again: if it
+  denied after it, only because `merge` appears later as a grep pattern. #429 landed only three
+  exact text shapes (a lone `rg`/`grep` with one quoted pattern among them), so a piped `grep` is read
+  as before; once #453 is on `main`, check it again: if it
   is still denied, count only write words in command position, or add it to the frosty-pelican
   record's accepted false denies as an example.
 - With the switch on, `git push --dry-run`, `git commit --dry-run` and `git rebase
