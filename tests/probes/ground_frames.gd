@@ -1,6 +1,8 @@
 extends Node
 ## Bounded quadrant/row/atomic comparison and real-process-frame residency coverage.
 ## Run its scene with --no-save --no-telemetry; GROUND_FRAMES_OUTPUT is a fresh JSON path.
+## Coverage runs in the ground mode --ground-mode names (1 when absent): mode 2 fails on any frame
+## that prepares a second region outside the guard, and mode 3 on stepping that never spans frames.
 
 const CITY: PackedScene = preload("res://scenes/world/city.tscn")
 var _city: City
@@ -183,6 +185,8 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 	var frames: Array[int] = []
 	var pending_owners := {}
 	var completed_across_frames := 0
+	var most_ordinary_in_a_frame := 0
+	var ordinary_beside_guard := 0
 	# Two running-speed legs with a facing reversal. This is a camera stress itinerary, not
 	# a playable/survival route. Engine frames really advance, unlike synchronous test models.
 	var total_frames := rate * 30
@@ -192,6 +196,10 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		var view := Rect2(at - extent / 2, extent)
 		if reverse_look_ahead and frame >= total_frames / 2:
 			view.position -= direction * 92
+		# Taken outside the timed span, like the classification after the draw below.
+		var resident_before := ground.chunks.duplicate()
+		var relocating := _city.scenery.view.get_center().distance_to(view.get_center()) \
+				> SceneryResidency.GUARD_MARGIN
 		var tick := Time.get_ticks_usec()
 		camera.position = view.get_center()
 		camera.force_update_scroll()
@@ -215,15 +223,36 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 			misses += int(not ground.chunks.has(key))
 		await _draw_frame()
 		frames.append(Time.get_ticks_usec() - tick)
-	if misses or completed_across_frames == 0:
-		_failures.append("coverage gaps or no real-frame stepped completions")
+		# The guard's own regions are the new ones its rectangle reaches; the guard counter
+		# also counts buildings and decals, so it cannot tell ground apart. A relocation
+		# prepares its whole destination at once in every mode, so it is not counted.
+		var guarded := 0
+		var ordinary := 0
+		var guard := _city.scenery.view.grow(SceneryResidency.GUARD_MARGIN)
+		for key: Vector2i in ground.chunks:
+			if not relocating and not resident_before.has(key):
+				if guard.intersects(SceneryGround.bounds(key)):
+					guarded += 1
+				else:
+					ordinary += 1
+		most_ordinary_in_a_frame = maxi(most_ordinary_in_a_frame, ordinary)
+		ordinary_beside_guard += int(guarded > 0 and ordinary > 0)
+	if misses:
+		_failures.append("coverage gaps")
+	if ground.mode == SceneryGround.Mode.STEPPED and completed_across_frames == 0:
+		_failures.append("no real-frame stepped completions")
+	if ground.mode == SceneryGround.Mode.ONE \
+			and (most_ordinary_in_a_frame > 1 or ordinary_beside_guard > 0):
+		_failures.append("mode 2 prepared a second region in one frame outside the guard")
 	camera.free()
-	return {"modeled_hz": rate, "direction": str(direction),
+	return {"ground_mode": ground.mode, "modeled_hz": rate, "direction": str(direction),
 		"look_ahead_reversal_px": 92 if reverse_look_ahead else 0,
 		"frames": frames.size(), "missing_regions": misses,
 		"pending_frame_observations": pending_frames, "completed_across_frames": completed_across_frames,
 		"prepared_regions": ground.prepared - started,
 		"guard_catchups": _city.scenery.ordinary_guard_preparations - catchups,
+		"most_ordinary_regions_in_a_frame": most_ordinary_in_a_frame,
+		"frames_with_ordinary_beside_guard": ordinary_beside_guard,
 		"end_distance_from_start": at.distance_to(initial),
 		"update_usec": _distribution(updates), "through_draw_usec": _distribution(frames),
 		"worst_ground_step_usec": ground.worst_step_usec}

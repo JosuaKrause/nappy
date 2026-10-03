@@ -346,15 +346,21 @@ pairings, exact prompts, raw outputs and repeated-tile comparisons.
 
 Map-specific scenery is prepared around the camera and released beyond a wider retention
 boundary. Ground chunks share the loading-time composed sheet; unloading cells does not unload
-shared atlas pages. Ordinary approach prepares at most one four-by-four-cell renderer quadrant
-per region per process frame, under the shared scenery queue's soft CPU budget. Distinct
-approaching regions can advance together within that budget. Each step flushes TileMap internals;
-the in-tree layer stays visible at its off-screen position because hiding it discards renderer
-commands. Pending regions have a separate owner until all quadrants are complete. They pause
-outside the loading boundary and retain their allocation until the wider unloading boundary.
-Live ground edits and repaints discard unfinished state; the safety guard, camera relocation
-and day destination preparation complete it synchronously before it enters view. Water uses
-separate quadrant surfaces sharing one pausable city clock. Returning buildings reconstruct
+shared atlas pages. A needed region's preparation has three modes, chosen by the
+`--ground-mode` dev flag (README.md, "Dev flags"); all three draw the same picture and run inside
+the scenery queue's soft CPU budget. Mode 1, the default, prepares every region needed in a
+frame whole in that frame, as one layer whose renderer work Godot defers to the frame's end, with
+one water surface per region. Mode 2 prepares the same whole region, at most one a frame; the
+other needed regions wait for the following frames. Mode 3 prepares at most one
+four-by-four-cell renderer quadrant per region per process frame, distinct approaching regions
+advancing together. Each of its steps flushes TileMap internals; the in-tree layer stays visible
+at its off-screen position because hiding it discards renderer commands. Its pending regions
+have a separate owner until all quadrants are complete, pause outside the loading boundary and
+retain their allocation until the wider unloading boundary; live ground edits and repaints
+discard that unfinished state, and its water uses separate quadrant surfaces. In every mode the
+safety guard, camera relocation and day destination preparation finish a region synchronously
+before it enters view, so no half-built region is drawn, and all water shares one pausable city
+clock. Returning buildings reconstruct
 their fixed seeded artwork and current day, condition, posters and power state, with moving
 roof detail kept separate from stationary surfaces.
 
