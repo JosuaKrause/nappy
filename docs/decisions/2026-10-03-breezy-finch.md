@@ -41,4 +41,5 @@ have to replace the caller's own INT, TERM or EXIT trap (`tools/trailer.sh` has 
 own), so an interrupted call leaves one empty FIFO in `$TMPDIR`, as it already left its marker file.
 
 **One instance remains: `tools/measure-ground-frames.sh`**, whose `(sleep 150; kill "$child") &` has
-the same shape. It belongs to another piece of work and is to be pointed at `wait_or_kill` there.
+the same shape: its `sleep` outlives the kill of its subshell and holds the caller's stdout and
+stderr for the limit. It is the one watchdog of this kind that is not a timed read.

@@ -571,15 +571,20 @@ wok_out="$(
     source "$root/tools/lib_dev_flags.sh"
     exec 9>"$wok_fd_file"
     sleep 0.2 &
-    wait_or_kill "$!" 1.5 2>&1
+    sleep 30 &
+    wok_bad=$!
+    wait_or_kill "$wok_bad" 1.5 2>&1
     echo "rc $?"
+    kill -0 "$wok_bad" 2>/dev/null && echo "bad-limit process still running"
     sleep 0.2 &
     wait_or_kill "$!" 5
     echo "after" >&9
     echo "fd9 ok"
 )"
 check_that "wait_or_kill refuses a limit that is not whole seconds and leaves the caller's fd 9 alone" \
-    '[[ "$wok_out" == *"limit must be whole seconds"*"rc 2"*"fd9 ok" && "$(cat "$wok_fd_file")" == "after" ]]'
+    '[[ "$wok_out" == *"limit must be whole seconds"*"rc 2"*"fd9 ok" && "$wok_out" != *"still running"* && "$(cat "$wok_fd_file")" == "after" ]]'
+check_that "test.sh refuses a TEST_SHARD_TIMEOUT_S that is not whole seconds before any work" \
+    '[[ "$(GODOT=/nonexistent TEST_SHARD_TIMEOUT_S=1.5 ./tools/test.sh 2>&1; echo "rc $?")" == *"must be whole seconds"*"rc 2" ]]'
 
 # ------------------------------------------------ audit-pck.sh reads the artefact, not the tree ---
 # A minimal format-4 pack keeps this regression independent of Godot and export templates while

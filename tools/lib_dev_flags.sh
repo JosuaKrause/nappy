@@ -291,6 +291,11 @@ wait_or_kill() {
     # healthy process at once), so anything else is refused here.
     if [[ ! "$limit" =~ ^[0-9]+$ ]]; then
         echo "wait_or_kill: limit must be whole seconds, got '$limit'" >&2
+        # The process was launched for this wait and has no watchdog: it is killed and reaped,
+        # not left running for a caller that reports it as killed anyway.
+        kill -9 "$pid" 2>/dev/null
+        wait "$pid" 2>/dev/null
+        WAIT_OR_KILL_STATUS=$?
         return 2
     fi
     local marker
