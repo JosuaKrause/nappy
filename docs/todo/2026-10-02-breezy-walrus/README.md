@@ -3,7 +3,8 @@ priority: now
 # breezy-walrus — Choose ground preparation after the mobile test · filed 2026-10-02
 
 The player cannot say that spreading ground preparation removed mobile stutter.
-They ask whether to retain the code, revert it while preserving findings, or
+They ask whether to retain the code "(it does improve a little bit on paper)",
+revert it while preserving findings, or
 keep the stepped-loading code off by default, switchable through a debug dev flag.
 Their full words and context are in
 [snowy-ibis, mobile ground stepping does not visibly remove stutter](../../playtests/2026-10-02-snowy-ibis.md).
@@ -32,7 +33,10 @@ at 60Hz moves from 1.190–1.202ms median to 1.067–1.070ms, p95 from
 3.519–4.021ms to 2.849–3.073ms, p99 from 4.627–5.274ms to 4.292–4.441ms,
 and worst sample from 8.710ms to 7.414ms. The 15Hz tails are mixed. These fixture
 results do not establish a whole-game or perceptible phone improvement. The
-assistant weighs those gains against the added drawing/allocation costs and pending-job
-lifecycle. Keeping a debug flag retains both runtime paths for development and their
+assistant weighs those gains against the settled-shoreline fixture's costs: draw
+calls increase from 38 to 46, water surfaces from 6 to 24, tracked Godot allocation
+by about 61% (not RSS or GPU memory), and steady median spans from 0.792–0.814ms to
+0.818–0.842ms. Pending-job lifecycle adds complexity as well. Keeping a debug flag
+retains both runtime paths for development and their
 testing obligations. That is a maintenance tradeoff, not a player-facing setting.
 Retaining stepping or the debug flag remain alternatives for the player to choose.

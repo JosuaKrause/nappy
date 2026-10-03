@@ -5,9 +5,8 @@
 Context clarification by the assistant: "smeared loading" in snowy-ibis names
 silky-rabbit's per-region ground-preparation stepping shipped in v0.21.5. Its
 unquoted statements about unspecified device details and routing to M159 are the
-assistant's analysis, not additional player observations. The current queue holds
-that analysis and the player's clarification below. The earlier primary source
-is preserved as requested; the player confirms its title and quoted words.
+assistant's analysis, not additional player observations. The player confirms
+the earlier primary source's title and quoted words.
 
 ## Mobile-ground review posted by the player
 
@@ -127,7 +126,7 @@ player as firsthand gameplay observations.
 >
 > Me: The quotes came from me in conversation and should be recorded properly
 
-## Mobile-ground review posted by the player
+## The player's answers to the mobile-ground review
 
 Source: [PR #455 comment](https://github.com/JosuaKrause/nappy/pull/455#issuecomment-5964967556). The player posts the following review and answers;
 quoted reviewer analysis is identified by its own headings, rather than attributed to the
@@ -164,3 +163,166 @@ player as firsthand gameplay observations.
 > Still open: finding 1 (blocking — revert the edits to the merged silky-rabbit record), findings 4, 5 (without the title), 6 and 7.
 >
 > **Verdict: not ready** at a0f4592.
+
+## Further review and phone-profiling constraint
+
+Source: [PR #455 comment](https://github.com/JosuaKrause/nappy/pull/455#issuecomment-5965391649).
+
+Context: the review asks whether M159 can require CPU measurements on the phone.
+It records the player's answer, "we *cannot* profile on the phone", within the full
+review below. This is the available question context; no unrecorded question text is
+invented.
+
+> ## Review of PR 455 — Record mobile ground-loading feedback and the pending runtime choice
+> Head: 8cb9d7b167e78e474417055d3e6828d89724518c · reviewed as a queue update (CI and
+> tools/ci_classify.py call it queue-only: all 8 files are under docs/todo/, docs/review/ or
+> docs/playtests/)
+>
+> Summary
+> The earlier blocking finding is fixed: the merged silky-rabbit decision record ("nearby ground
+> regions prepare across frames") is untouched; `git diff origin/main 8cb9d7b -- docs/decisions`
+> is empty. Most of the player's two PR comments are carried faithfully:
+>   - M159 is in `now`.
+>   - "a different direction" is no longer routed to M159.
+>   - The third option is a debug dev flag.
+>   - The tail figures are given.
+>   - Both comments are copied word for word.
+> One problem blocks the merge. M159's phone item, which this PR moves to `now`, still asks for
+> profiling on the phone, which the player says cannot be done. The PR also adds a sentence that
+> reorders the item against its own heading. A few smaller faithfulness gaps remain.
+>
+> ── BLOCKING ─────────────────────────────────────────────────────────────
+>
+> 1. The M159 phone item asks for profiling on the phone, which the player says cannot be done
+>    docs/todo/2026-09-19-M159/profile-the-current-phone-build-only.md:1-11, 16-17
+>
+>    - The player, 2026-10-03, in reply to this review: "we *cannot* profile on the phone".
+>    - The item, already like this on main, asks for exactly that:
+>        - heading (:1): "Profile the current phone build only after that baseline."
+>        - body: "Divide CPU time between the baby's every-physics-tick crowd contribution
+>          sweep, the halo's rendered-frame contribution sweep, event streaming/director work…"
+>        - body: "Measure the conservative contribution rejection on that device", i.e. the
+>          Pixel 8 Pro running Chrome (PLAYTEST-140).
+>    - This PR moves M159 to `now` and leaves those instructions in place, so an agent briefed
+>      from this file would set out to profile on a phone it cannot profile on.
+>    - The PR adds at :16-17: "The baseline remains a comparison prerequisite, not a reason to
+>      defer identifying candidate costs."
+>        - That contradicts the heading's "only after that baseline".
+>        - The player never reordered the items inside M159. Their answer moved only the entry's
+>          band: "M159 we need to find more things to optimize so yeah it should go to now."
+>        - The sentence is not marked as the filer's proposal.
+>
+>    Fix:
+>    - File the player's sentence verbatim in sunny-chipmunk, the new playtest holding the
+>      player's comments on this PR, after the question it answered.
+>    - Rewrite the item so nothing asks for on-phone measurement. The phone stays the device
+>      where the player judges stutter by eye. CPU attribution is done where it can be measured,
+>      which the item names under "Proposed, not asked for:" (for example the web build profiled
+>      in desktop Chrome with CPU throttling, and/or the native profile M159 already uses),
+>      unless the player names the method.
+>    - Delete the reordering sentence at :16-17, or mark it as a proposal.
+>
+> ── NON-BLOCKING ─────────────────────────────────────────────────────────
+>
+> 2. M159's README paraphrases the player's instruction instead of quoting it, and loses
+>    "orthogonal to when it happens"
+>    docs/todo/2026-09-19-M159/README.md:5-9
+>
+>    - The README says: "The player asks to put M159 in `now` to find more things to optimize,
+>      while 'look in a different direction' means considering other approaches rather than
+>      choosing one here."
+>    - "Rather than choosing one here" is the filer's wording.
+>    - The player's words were: "M159 we need to find more things to optimize so yeah it should
+>      go to now. but 'we will have to look in a different direction' means we have to think
+>      about other ways -- that is orthogonal to when it happens."
+>    - breezy-walrus (choose ground preparation after the mobile test) already quotes this
+>      verbatim at README.md:11-14.
+>
+>    Fix: quote the player's sentence verbatim in M159's README.
+>
+> 3. The silky-rabbit review item has no case for the dev-flag option, and it drops the
+>    atomic-vs-stepped comparison
+>    docs/review/2026-10-02-silky-rabbit.md:3-8
+>
+>    - The item branches two ways: "It lapses if that choice restores atomic preparation" and
+>      "If stepping is retained, …".
+>    - The player's third option ("keep the code around and turn it on and off (eg via debug dev
+>      flag)") restores atomic preparation by default and also keeps stepping. It matches both
+>      branches, so whether the item lapses is unclear.
+>    - The rewrite deletes main's line 14: "A useful comparison uses the same route and settings
+>      in the atomic and stepped builds". That is the comparison a dev flag makes cheap, and
+>      snowy-ibis (mobile ground stepping does not visibly remove stutter) notes there was no
+>      "controlled atomic versus stepped comparison".
+>    - The PR description does not mention dropping it.
+>
+>    Fix: say what happens to the item under the dev-flag option, and restore the comparison
+>    sentence for the branches where stepping survives.
+>
+> 4. The recommendation gives the benefits as figures but the costs only as words
+>    docs/todo/2026-10-02-breezy-walrus/README.md:27-38
+>
+>    - The benefits carry median, p95, p99 and worst-sample ranges.
+>    - The costs say only "the added drawing/allocation costs and pending-job lifecycle".
+>    - The silky-rabbit record (docs/decisions/2026-10-02-silky-rabbit.md:92-95) has the cost
+>      figures:
+>        - draw calls 38 → 46
+>        - water surfaces 6 → 24
+>        - about 61% more allocation
+>        - steady median 0.792–0.814 ms → 0.818–0.842 ms
+>    - The recommendation (revert) rests on those costs, and the player chooses from this text.
+>
+>    Fix: put the four cost figures next to the benefits.
+>
+> ── NITS ─────────────────────────────────────────────────────────────────
+>
+> 5. docs/playtests/2026-10-03-sunny-chipmunk.md:8-9
+>    "The current queue holds that analysis and the player's clarification below" is already
+>    partly false: the player corrected the routing to M159, and the queue no longer holds it.
+>    It is also a status sentence in a primary source, which is never rewritten after merge.
+>    Fix: drop it, or say only that the analysis is the assistant's, not the player's.
+>
+> 6. Small dropped specifics and wording
+>    - docs/todo/2026-10-02-breezy-walrus/README.md:5-7 drops the player's own assessment of the
+>      keep-the-code option, "(it does improve a little bit on paper)". It belongs next to that
+>      option.
+>    - sunny-chipmunk.md:12 and :130 share the heading "Mobile-ground review posted by the
+>      player". The second section is the player's answers, and should say so.
+>
+> ── CHECKED AND CLEAN ────────────────────────────────────────────────────
+>
+> - No decision record changed: the silky-rabbit record is byte-identical to main, snowy-ibis is
+>   unchanged since a0f4592, and no existing playtest was modified.
+> - Both player comments (5964676726, 5964967556) match sunny-chipmunk's blockquotes byte for
+>   byte, nested quotes included.
+> - The player's answers are applied:
+>     - M159 is in `now`.
+>     - breezy-walrus quotes the "different direction" clarification in full.
+>     - Option 3 is off by default behind a debug dev flag declared in src/dev/dev_flags.gd, the
+>       one place dev flags are declared.
+>     - PLAYTEST-140 (Chrome on a Pixel 8 Pro, steady stutter) is cited as context only.
+> - The benefit figures match the record's table (lines 61-64, and "15Hz tails are mixed" at 66).
+> - Restoring atomic preparation is marked "Proposed, not asked for:". No runtime choice is
+>   inferred: "They have not selected one of those options."
+> - Bands (tools/queue.sh): breezy-walrus is at the top of `now` and M159 is in `now`; `--check`
+>   passes.
+> - tools/decisions.sh (atomic, dev flag, different direction, smeared) finds only silky-rabbit
+>   and M159-4 (nearby scenery residency); neither is overturned.
+> - Lint and whitespace: ./tools/lint.sh passes and `git diff --check` is clean.
+> - CI on 8cb9d7b: test, gates, classify and cost-table are green; game and shards are skipped
+>   (docs only); the queue-update gates ran and passed.
+> - Existing reviews:
+>     - nappy-codex-reviewer's APPROVE at 8cb9d7b rests on its full review at 095f902, which
+>       missed finding 1 (its reordering sentence was already in that diff) and findings 2-4.
+>     - The player's CHANGES_REQUESTED at a0f4592 is outdated.
+>     - The one inline thread (whitespace) is resolved.
+>
+> Verdict: NOT READY — 8cb9d7b167e78e474417055d3e6828d89724518c
+> Finding 1 must be fixed before merge; findings 2-4 should go in the same push.
+
+## Qualification about finding a phone-profiling method
+
+Source: [PR #455 comment](https://github.com/JosuaKrause/nappy/pull/455#issuecomment-5965393255).
+
+After the review identifies phone profiling as unavailable, the player adds:
+
+> unless you can come up with a way to profile on a phone
