@@ -782,7 +782,10 @@ def detect_git($w; $t; $i; $n):
 # (`issues/<n>/labels`, `/assignees`, `/lock`, `/reactions`, `issues/comments/<id>`, a comment's
 # edit or deletion) -- with one exception, `issues/<n>/comments` (an optional trailing `/` or
 # `?query` included), which a pull request's own conversation comments share, so its path cannot
-# tell a comment on a note from one on a pull request. As with the merge-type paths, every
+# tell a comment on a note from one on a pull request. Whatever stands between `repos/` and
+# `/issues` counts as the owner and the repository, so a variable (`repos/$R/issues/5`) or a
+# substitution (`"repos/$(gh repo view ...)/issues/5"`, read across the substitution's own words)
+# in their place is an issue endpoint too. As with the merge-type paths, every
 # non-option word of the call is read, so a header value cannot hide the endpoint, and a body that
 # merely names such a path is a false deny, answered by sending it from a file. A GraphQL mutation
 # is one when a word in it names an issue mutation (`issue_mutation_re`): a verb then `Issue`,
@@ -790,8 +793,8 @@ def detect_git($w; $t; $i; $n):
 # `updateIssueComment`, `addLabelsToLabelable`, `lockLockable`, ...); `addComment`, which comments
 # on a pull request as readily as on an issue, is the GraphQL form of the one REST exception.
 def issue_endpoint:
-  test("(?i)(^|/)repos/[^/]+/[^/]+/issues(/|\\?|$)")
-  and (test("(?i)(^|/)repos/[^/]+/[^/]+/issues/[^/?]+/comments/?(\\?.*)?$") | not);
+  test("(?i)(^|/)repos/.*/issues(/|\\?|$)")
+  and (test("(?i)/issues/[^/?]+/comments/?(\\?.*)?$") | not);
 def issue_mutation_re:
   "^(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert)[A-Za-z]*(Issue|Labelable|Assignable|Lockable)[A-Za-z]*$";
 def gh_api_field_flag: IN("-f", "-F", "--raw-field", "--field");
@@ -847,15 +850,16 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
   {i: $start, method: null, field: false, late_field: false, other_call: false,
    endpoint: null,
    merge_type: false, issue_endpoint: false,
-   query_visible: false, query_hidden: false, crossed_at: null, cont: false}
+   query_visible: false, query_hidden: false, crossed_at: null, cont: false, sub_left: 0}
   | (until(.i >= $n or ($w[.i] | is_hard_sep)
           or ($bounded and ($w[.i] | is_sep))
-          or (($w[.i] == "\u0001") and starts_command($w; $t; .i + 1; $n));
+          or (($w[.i] == "\u0001") and .sub_left <= 0 and starts_command($w; $t; .i + 1; $n));
       . as $s
       | ($w[$s.i]) as $x
       | ($w[$s.i + 1] // null) as $nx
       | ($nx != null and (($nx | is_sep) | not)) as $has_value
       | (if $x | startswith("-") then .cont = false else . end)
+      | (if .sub_left > 0 then .sub_left -= 1 else . end)
       | if $x == "\u0001" then
           .crossed_at = (.crossed_at // .i) | .cont = true | .i += 1
         elif $x | IN("-X", "--method") then
@@ -880,7 +884,18 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
         elif $x | gh_api_value_flag then (if $has_value then .i += 2 else .i += 1 end)
         elif $x | startswith("-") then .i += 1
         else
-          (if (.endpoint == null) and (.cont | not) then .endpoint = $x else . end)
+          (if (.endpoint == null) and (.cont | not) then
+             # A substitution inside the endpoint's own shell word (`"repos/$(...)/issues/5"`), or
+             # one written bare right after it (`repos/$(...)`), splits the path: the scan reads on
+             # past the substitution's own command, for at most 64 words, to the path's rest.
+             .endpoint = $x
+             | .sub_left = (if $nx == "\u0001" and (($x | endswith("$")) or (($t.lv // [])[$s.i + 1] // 0) > 0)
+                            then 64 else 0 end)
+           elif .sub_left > 0 and .cont and ($x | startswith("/")) then
+             # The rest of an endpoint a substitution split: read it joined to the start.
+             .sub_left = 0
+             | (if (.endpoint + "X" + $x) | issue_endpoint then .issue_endpoint = true else . end)
+           else . end)
           # Past a crossing, a `gh` or `api` word may start another call's flags.
           | (if .crossed_at != null and ($x | last_part | IN("gh", "api")) then .other_call = true
              else . end)

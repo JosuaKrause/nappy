@@ -1356,7 +1356,27 @@ assert_write_guard "wrapped gh api -X PATCH issues/comments/N -> deny" deny \
 assert_write_guard "wrapped gh api -X DELETE issues/comments/N -> deny" deny "$orch gh api -X DELETE repos/o/r/issues/comments/9"
 assert_write_guard "a header value before the issue endpoint does not hide it -> deny" deny \
     "$orch gh api -H 'Accept: application/vnd.github+json' -X PATCH repos/o/r/issues/5 -f state=closed"
-assert_write_guard "wrapped GraphQL closeIssue -> deny" deny \
+# The owner and the repository need not be literal: a variable or a substitution in their place
+# (the shape tools/release.sh itself uses for gh api) is still an issue endpoint.
+assert_write_guard "wrapped PATCH repos/\$R/issues/423 state=closed -> deny" deny \
+    "R=JosuaKrause/nappy; $orch gh api -X PATCH \"repos/\$R/issues/423\" -f state=closed"
+assert_write_guard "wrapped PATCH repos/\$(gh repo view ...)/issues/423 -> deny" deny \
+    "$orch gh api -X PATCH \"repos/\$(gh repo view --json nameWithOwner -q .nameWithOwner)/issues/423\" -f state=closed"
+assert_write_guard "wrapped PATCH repos/\${R}/issues/423 -> deny" deny \
+    "$orch gh api -X PATCH \"repos/\${R}/issues/423\" -f state=closed"
+assert_write_guard "wrapped issue create at repos/\$R/issues -> deny" deny "$orch gh api \"repos/\$R/issues\" -f title=t"
+assert_write_guard "wrapped label add at repos/\$R/issues/423/labels -> deny" deny \
+    "$orch gh api \"repos/\$R/issues/423/labels\" -f 'labels[]=x'"
+assert_write_guard "wrapped PATCH of a full URL with \$R -> deny" deny \
+    "$orch gh api -X PATCH \"https://api.github.com/repos/\$R/issues/423\" -f state=closed"
+assert_write_guard "wrapped comment POST to repos/\$R/issues/429/comments -> allow, PR comments share it" allow \
+    "$orch gh api \"repos/\$R/issues/429/comments\" -F body=@c.md"
+assert_write_guard "wrapped PATCH repos/\$R/pulls/5 -> allow, not an issue" allow \
+    "$orch gh api -X PATCH \"repos/\$R/pulls/5\" -f body=x"
+assert_write_guard "wrapped repos/\$(...)/issues/423 with -X PATCH after the endpoint -> deny" deny \
+    "$orch gh api \"repos/\$(gh repo view --json nameWithOwner -q .nameWithOwner)/issues/423\" -X PATCH -f state=closed"
+assert_write_guard "wrapped comment POST to repos/\$(...)/issues/429/comments -> allow" allow \
+    "$orch gh api \"repos/\$(gh repo view --json nameWithOwner -q .nameWithOwner)/issues/429/comments\" -F body=@c.md"assert_write_guard "wrapped GraphQL closeIssue -> deny" deny \
     "$orch gh api graphql -f query='mutation { closeIssue(input: {issueId: \"x\"}) { clientMutationId } }'"
 assert_write_guard "wrapped GraphQL addLabelsToLabelable -> deny" deny \
     "$orch gh api graphql -f query='mutation { addLabelsToLabelable(input: {labelableId: \"x\", labelIds: [\"y\"]}) { clientMutationId } }'"
