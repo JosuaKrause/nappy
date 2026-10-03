@@ -177,7 +177,11 @@ Every agent prompt contains, explicitly:
 **Create sparse worktrees before materializing files.** Use `git worktree add --no-checkout`,
 then enable non-cone sparse checkout and exclude `docs/evidence/`, `docs/reference/` and
 `docs/style-references/` unless the task needs them; materialize HEAD only after those exclusions
-are set. A tools-only task may omit runtime art/assets too. *(2026-10-03: "add wording to use
+are set. Keep back in what the repository's own checks read from `docs/evidence/` — the patterns
+the `gates` job's sparse checkout in `.github/workflows/ci.yml` lists after its exclusion (the
+evidence SVGs `lint.sh` validates, and the experiment scripts `tools/pycheck.sh` runs) — or
+`pycheck.sh` fails on files the sparse checkout left out. A tools-only task may omit runtime
+art/assets too. *(2026-10-03: "add wording to use
 sparse worktrees for subagents where applicable (obviously when evidence is needed it needs to be
 included)".)* **Claude Code's own worktree isolation makes a full checkout**, so for a task that
 needs none of those folders the orchestrator creates the sparse worktree itself and starts the
