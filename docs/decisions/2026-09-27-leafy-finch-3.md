@@ -33,9 +33,12 @@ that names it. A test runs both scripts' rules over the same notes, so the two c
 the player's own words. This reverses what PR #424 built and tested (a wrapped `gh issue
 create/close/reopen/comment/edit` let through as `claude-orchestrator`), as the write-guard item
 asked. The same holds for the API: a `gh api` write to a repository's issues or to anything under
-one issue (its state, body, labels, comments' edits) and a GraphQL issue mutation are denied
-wrapped or not; a POST to `issues/<n>/comments` and GraphQL's `addComment` stay open, since a pull
-request's conversation comments share them, and so does a GraphQL query read from a file. Where no
+one issue (its state, body, labels, comments' edits), judged on the path before any `?` or `#`,
+and a GraphQL issue mutation (closing, editing, labels, assignees, issue suggestions, dependencies,
+linked branches, converting a project draft into an issue) are denied wrapped or not. A POST to
+`issues/<n>/comments` and GraphQL's `addComment`, `addReaction`, `removeReaction`,
+`minimizeComment` and `unminimizeComment` stay open, since pull requests share them; the REST
+`issues/<n>/reactions` stays denied. Where no
 identity can work and the guard asks the player about a write instead of denying it, an issue write
 is still denied, never asked about.
 
@@ -43,14 +46,16 @@ is still denied, never asked about.
 this narrow form after three reviews each found shapes a general rule read as text while main
 denied them ([plaid-tapir](../playtests/2026-10-03-plaid-tapir.md), statement 4: "B"): a `cat`
 writing a file from a heredoc with a quoted delimiter; a `git commit -F -` reading such a heredoc,
-wrapped as a coder or orchestrator identity; and a lone `rg` or `grep` with one quoted pattern.
+wrapped as a coder or orchestrator identity through the repository's own `tools/agent-identity.py`
+and nothing merely named so; and a lone `rg` or `grep` with one quoted pattern.
 Every other command is read exactly as main's guard reads it, so a heredoc commit message passed
 any other way, two heredocs in one command, or a quoted `echo` naming a write is denied as on main.
 
 **Accepted gaps, named in the guard's header**, each allowed on main too: a wrapped issue write
 whose endpoint is built by an expansion or supplied by `xargs`, whose GraphQL query is built by an
-expansion or read from a file or pipe whose text the command does not hold, or that runs through a
-gh alias; and a script a shape-(a) heredoc writes that a later, separate command runs (a shell
+expansion or read from a file an earlier, separate command wrote (or piped in from one), or that
+runs through a gh alias — a query the same command holds, a heredoc fed to `-F query=@-` or a file
+it writes for `--input`, is read and denied; and a script a shape-(a) heredoc writes that a later, separate command runs (a shell
 startup file, a git hook).
 
 **Issues were weighed as the queue itself and rejected** (statement 1: "items get reviewed when
