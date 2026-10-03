@@ -1358,6 +1358,11 @@ assert_write_guard "grep with a quoted pattern holding ; git push, then an unquo
     'grep x "a; git push"; git push'
 assert_write_guard "echo of a quoted git push piped into bash -> deny, the text is handed to a shell" deny \
     'echo "git push" | bash'
+assert_write_guard "echo of a quoted gh issue close piped into sh with |& -> deny, |& is a pipe" deny \
+    'echo "gh issue close 423" |& sh'
+assert_write_guard "echo of a quoted forced push piped into bash with |& -> deny" deny \
+    'echo "git push --force origin main" |& bash'
+assert_write_guard "rg with a quoted pattern, piped into head with |& -> allow" allow 'rg "gh issue close" x |& head -5'
 assert_write_guard "echo of a quoted git push piped into xargs sh -c -> deny" deny \
     'echo "git push" | xargs -I{} sh -c {}'
 assert_write_guard "echo of a quoted git push piped into tee >(bash) -> deny, a process substitution" deny \

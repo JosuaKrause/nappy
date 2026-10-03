@@ -1348,7 +1348,9 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
       else empty end
     else
       strip_heredocs
-      | (swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
+      # `|&` is a pipe of stdout and stderr both (bash, zsh): read as `|`, never as a `|` and then
+      # a `&` that would make the next command one of its own, handed nothing.
+      | (swap("|&"; "|") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
       | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ")) as $bare
       # With no quote, backslash or `#` in it, the character pass has nothing to track: only an
       # unquoted comma or bracket becomes glue.
