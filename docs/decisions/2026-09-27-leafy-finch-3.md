@@ -44,7 +44,16 @@ quoted argument of a text-only command, or a heredoc body such a command reads �
 delimiter is quoted, or the body holds no `$(`, backtick or `${`, since the shell runs those inside
 an unquoted body. A heredoc inside `$(…)` whose body holds a `)` it could close, a heredoc fed to a
 shell, an interpreter or `sed`, anything after a wrapper word, anything piped on (`|&` included),
-and a file the command writes and then runs are read as before.
+and a command that may run a file it writes are read as before. A delimiter is the shell's whole
+word (`<<EOF-1` is not `<<EOF`), and an unquoted body with a backslash-newline is read as commands.
+
+**Accepted gaps, named in the guard's header:** a wrapped GraphQL call whose query comes from a
+file or `--input`, or from a variable an earlier separate command set (denying it would deny a
+reviewer's `resolveReviewThread` from a file); a file run by a later, separate command; a file run
+under a name an expansion builds from different pieces (`bash $(echo x).sh`); and a bare assignment
+run as a command (`c="…"; $c`), which main allows too. **Accepted false denies**, the safe
+direction: a second heredoc after a line that opens a group; text after any group, closed or not;
+and a written file named again by a read (`wc -l brief.md`).
 
 **Issues were weighed as the queue itself and rejected** (statement 1: "items get reviewed when
 they enter the queue which in theory can reduce miscommunication or misinterpreted statements …
