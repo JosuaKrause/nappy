@@ -77,6 +77,9 @@
 # are denied rather than asked about; the coder identity
 # wrapper's exemption still applies. An unreadable gh noun/verb can merge, so reviewer wrappers
 # cannot exempt it, just as they cannot exempt an unreadable git push.
+# A backslash-escaped separator outside quotes (`xargs -d \; git push origin`) is an argument the
+# shell hands to the wrapper, so it neither ends the wrapper's command nor leaves an option
+# without its value; inside a quoted script a soft separator still ends the script's own command.
 # Input-wrapper options share one bounded parser for command position and replacement tokens.
 # Unknown option arity makes git/gh and any named pushing script unreadable, including an apparent
 # read or dry run; rerun such a command through the coder identity wrapper. Consumed option values
@@ -535,7 +538,9 @@ def input_scan($w; $g; $i):
           | if $opt.arity == "unknown" or ($opt.arity == "none" and $opt.value != null) then
               .unreadable = true | .done = true
             else
-              ($e < $n and ($w[$e] | is_sep | not)) as $has_next
+              # An escaped separator (`-d \;`) is an argument to the shell, so only a hard one
+              # leaves the option without its value.
+              ($e < $n and ($w[$e] | is_hard_sep | not)) as $has_next
               | ($opt.value == null and ($opt.arity == "required"
                  or ($opt.arity == "optional" and $owner == "parallel" and $has_next
                      and ($w[$e] | startswith("-") | not)))) as $consume
@@ -583,7 +588,9 @@ def xargs_context($w; $lv; $unsure; $inputs):
      if $w[$i] | is_sep then
        if $w[$i] | is_hard_sep then []
        elif $unsure then .
-       else ($lv[$i] // 0) as $level | map(select(.level < $level)) end
+       # A soft separator ends a command only inside a quoted script: at level 0 it is an
+       # escaped argument (`xargs -d \; git push`), which the shell hands to the wrapper.
+       else ($lv[$i] // 0) as $level | map(select(.level == 0 or .level < $level)) end
      elif $inputs[$i] != null then
        # A script's first word has level 0; its next word carries the script's own level.
        ([($lv[$i] // 0), ($lv[$i + 1] // 0)] | max) as $level

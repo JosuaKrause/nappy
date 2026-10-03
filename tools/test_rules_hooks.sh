@@ -110,6 +110,8 @@
 #     a custom replacement token remains unreadable even when it is lowercase or spells a known
 #     read; the wrappers' documented value-taking options do not hide a pushing script; reads,
 #     later separate branch pushes and coder identity wrappers keep their existing behavior
+#   - a backslash-escaped separator given as an input-wrapper option's value (xargs -d \;,
+#     parallel --colsep \|) is that value, not the end of the wrapper's command
 #   - input-wrapper clusters and values share one parser: flag-shaped values never select a new
 #     replacement token, unknown option arity fails closed, and a long chain of consumed values
 #     named xargs stays bounded; the corresponding known reads and identity controls still pass
@@ -2072,6 +2074,12 @@ write_guard_never_asked=(
     'xargs -I{} sh -c "git status; git push origin {}"'
     'xargs -I{} sh -c "git status && git push origin {}"'
     'xargs -I{} sh -c "echo ${MODE}; git push origin {}"'
+    "printf 'v1;v2' | xargs -d \\; git push origin"
+    'parallel --colsep \| git push origin {2}'
+    'parallel -d \& git push origin'
+    'xargs -E \; git push origin'
+    "printf 'push;origin;v1' | xargs -d \\; git"
+    "printf 'merge;3' | xargs -d \\; gh pr"
     "git push origin 'refs/*:refs/*'"
     "git push origin 'refs/heads/*:refs/heads/*'"
     "git push origin 'refs/tags/*'"
@@ -2240,6 +2248,7 @@ write_guard_allowed=(
     'echo main | xargs -I{} git log --oneline {}'
     'env MODE=test /usr/bin/xargs -0 -n 1 timeout 5 git show'
     'xargs -I{} sh -c "git status; git log --oneline {}"'
+    "printf 'v1;v2' | xargs -d \\; git status"
     'git status'
     'git tag v1'
     'git tag -a v1 -m x'

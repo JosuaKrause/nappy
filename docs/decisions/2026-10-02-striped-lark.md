@@ -152,3 +152,12 @@ runs `tools/release.sh patch push`. Under an active xargs or GNU parallel contex
 therefore a write whether or not `push` is written, and it is denied, never asked about. Input can
 only add words, never remove one, so `land-prs.sh` and `update-pr.sh` with a written `--dry-run`
 stay reads.
+
+**An escaped separator is an option's value, not a command boundary.** A backslash-escaped `\;`,
+`\|` or `\&` written as a word of its own outside quotes is an argument to the shell, so `xargs
+-d \; git push origin` delimits input with `;` and pushes whatever it reads. The guard read that
+word as a soft separator: the input context ended there, the push after it was asked about, and
+`printf 'push;origin;v1' | xargs -d \; git` was allowed. A soft separator now ends an input
+wrapper's context only inside a quoted script, deeper than the wrapper's own words, and only a
+hard separator leaves an option without its value. `xargs -d \; git status` stays a read, and a
+push in a separate command after `xargs git status;` is still asked about.
