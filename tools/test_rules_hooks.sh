@@ -84,7 +84,8 @@
 #     of a text-only command (rg, grep, echo, git commit -m, gh pr create --body, tools/inbox.py)
 #     or in a heredoc body such a command reads (cat > file <<'EOF', "$(cat <<'EOF' ...)" as a
 #     git commit or gh message, tools/inbox.py capture <<'NOTE') no longer count, while the same
-#     words piped into a shell, fed to bash/python3/sed, after a wrapper word (bash -c, xargs), in
+#     words in an unquoted delimiter's body holding a $(...), a backtick or a ${...} (cat <<EOF),
+#     piped into a shell, fed to bash/python3/sed, after a wrapper word (bash -c, xargs), in
 #     a process substitution, after rg --pre, or in a heredoc with no terminator or two on a line
 #     still deny, and a write after the quoted argument's own separator or after the heredoc
 #     still denies. Every
@@ -1427,6 +1428,46 @@ assert_write_guard "echo \"\$(cat <<'EOF' ...)\" | bash -> deny, piped into a sh
 git push
 EOF
 )\" | bash"
+# An unquoted delimiter's body is not text: the shell runs every command substitution in it before
+# the reading command sees a byte, so a body holding a \$(...), a backtick or a \${...} is kept and
+# read. The same body under a quoted delimiter is passed on as it stands, and is text.
+assert_write_guard "cat <<EOF around \$(gh issue close 423) -> deny, the shell runs it" deny "cat <<EOF
+\$(gh issue close 423)
+EOF"
+assert_write_guard "cat <<EOF > note.md around a backticked forced push -> deny" deny "cat <<EOF > note.md
+see \`git push --force origin main\`
+EOF"
+assert_write_guard "echo \"\$(cat <<EOF\" around \$(git push --force origin main) -> deny" deny \
+    "echo \"\$(cat <<EOF
+\$(git push --force origin main)
+EOF
+)\""
+assert_write_guard "tee note.md <<EOF around \$(gh issue close 423) -> deny" deny "tee note.md <<EOF
+\$(gh issue close 423)
+EOF"
+assert_write_guard "grep -c x <<EOF around \$(gh issue close 423) -> deny" deny "grep -c x <<EOF
+\$(gh issue close 423)
+EOF"
+assert_write_guard "cat <<EOF around \${X:-\$(gh issue close 423)} -> deny" deny "cat <<EOF
+\${X:-\$(gh issue close 423)}
+EOF"
+assert_write_guard "cat <<-EOF around a tab-indented \$(gh issue close 423) -> deny" deny "cat <<-EOF
+	\$(gh issue close 423)
+	EOF"
+assert_write_guard "cat <<'EOF' around \$(gh issue close 423) -> allow, a quoted delimiter expands nothing" allow \
+    "cat <<'EOF'
+\$(gh issue close 423)
+EOF"
+assert_write_guard "cat <<\"EOF\" > note.md around a backticked forced push -> allow" allow "cat <<\"EOF\" > note.md
+see \`git push --force origin main\`
+EOF"
+assert_write_guard "cat <<\\EOF around \$(gh issue close 423) -> allow" allow "cat <<\\EOF
+\$(gh issue close 423)
+EOF"
+assert_write_guard "cat <<EOF > note.md, prose and a \$HOME naming git push -> allow, nothing runs" allow \
+    "cat <<EOF > note.md
+run git push in \$HOME, never gh issue close
+EOF"
 
 # A GraphQL call reads only when its query is written inline and holds no "mutation": a query from
 # a file, a shell variable, a command substitution, the whole body from --input, or no query field

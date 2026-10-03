@@ -103,8 +103,10 @@ view/list/checks`, ...) is unguarded, and a reviewer identity is refused a merge
 not only a push. **A `gh issue` write is denied wrapped or not**: an agent writes an issue only
 through `tools/inbox.py` (**inbox**), which wraps its own writes. A write's words inside a quoted
 argument of a command that only prints, searches or stores it (`rg -n "gh issue comment"`,
-`git commit -m "..."`), or in a heredoc body such a command reads (`cat > brief.md <<'EOF'`), are
-text and do not count; the same words piped into a shell, or in a heredoc fed to one, still deny.
+`git commit -m "..."`), or in the body of a heredoc with a quoted delimiter such a command reads
+(`cat > brief.md <<'EOF'`), are text and do not count; the same words piped into a shell, in a
+heredoc fed to one, or in the body of a heredoc whose unquoted delimiter lets the shell run a
+`$(...)`, a backtick or a `${...}` in it (`cat <<EOF`), still deny.
 
 ## A manual sequence done a second time becomes a script
 

@@ -119,8 +119,10 @@
 # comment, an unquoted echo argument, a heredoc fed to a shell) denies exactly like a real
 # invocation would. The two exceptions are the places the guard can tell text from a command
 # (`text_only_at`, `strip_heredocs` and `inert_table`, below): a quoted argument of a command that
-# only prints, searches or stores it (`rg -n "gh issue comment"`, `git commit -m "..."`), and a
-# heredoc body such a command reads (`cat > brief.md <<'EOF'`). Each word
+# only prints, searches or stores it (`rg -n "gh issue comment"`, `git commit -m "..."`), and the
+# body of a heredoc with a quoted delimiter such a command reads (`cat > brief.md <<'EOF'`), or
+# with an unquoted one whose body holds no `$(`, backtick or `${`, since the shell runs a
+# command substitution in an unquoted heredoc's body. Each word
 # still remembers which shell word it came from, and which quoted word inside a quoted script, so
 # an option's argument is skipped whole however it is quoted, escaped or joined by a comma: `git
 # -C "/x y" push`, `git -c 'a=b c' push`, `FOO="a b" tools/release.sh patch push` and `bash -c 'git
@@ -159,9 +161,10 @@
 # `|` is still seen). Both are the stricter reading, and both cost false denies in exactly those
 # commands: `run <role> -- bash -c "a; b"` beside a `$(...)` is denied, and so is a `gh api` read
 # with no explicit GET piped into a command that takes `-f`, `-F`, `-X` or `--input` (`| grep -F
-# x`). A heredoc whose body is text a text-only command reads is taken out before any of this
-# (`strip_heredocs`), so its `<<` makes nothing unsure; one that is kept -- fed to anything else,
-# `bash`, `python3`, `sed` -- is read as before. So a line of prose in a kept heredoc that starts
+# x`). A heredoc whose body is text a text-only command reads -- its delimiter quoted, or its body
+# free of `$(`, backticks and `${` -- is taken out before any of this (`strip_heredocs`), so its
+# `<<` makes nothing unsure; one that is kept -- fed to anything else, `bash`, `python3`, `sed`, or
+# expanded by the shell -- is read as before. So a line of prose in a kept heredoc that starts
 # with a reserved word, `time`, `exec` or `eval` and then a pushing script's path (`if
 # tools/land-prs.sh is named, it is read.`) is a false deny: every newline of an unsure command is
 # a separator, and the word after a reserved word is read in command position. So is a wrapped
@@ -981,9 +984,10 @@ def is_merge_like($reason):
 
 # **Text that is not run.** A write command's words inside a quoted argument of a command that only
 # prints, searches or stores its arguments (`rg -n "gh issue comment" .claude/`, `echo "run git
-# push through the wrapper"`, `git commit -m "..."`), or inside a heredoc body such a command
-# reads (`cat > brief.md <<'EOF'`), are text, not a command, and stop counting as a write where
-# the guard can tell. "A text-only command" is the one list below, read the same way for both:
+# push through the wrapper"`, `git commit -m "..."`), or inside the body of a heredoc with a
+# quoted delimiter such a command reads (`cat > brief.md <<'EOF'`; an unquoted delimiter only
+# when the body expands nothing, `strip_heredocs`), are text, not a command, and stop counting as
+# a write where the guard can tell. "A text-only command" is the one list below, read the same way for both:
 # the command word itself, past any `NAME=value` assignment and, for a wrapped command, past
 # `tools/agent-identity.py run <role> --`, never past a wrapper word (`bash`, `env`, `xargs`,
 # `timeout`, ...), which hands its arguments to something else to run. `git` counts only with a
@@ -1048,8 +1052,14 @@ def quote_after($q0):
     end)
   | .q;
 
+# The operator's captures: the `-` of `<<-`, then the delimiter in single quotes, in double quotes,
+# the backslash of `\EOF`, and the delimiter itself when it is not in quotes. Any of the three
+# quotings makes the body literal: the shell expands nothing in it.
 def heredoc_op_regex:
-  "(?<!<)<<(?!<)(-?)[ \t]*(?:'([A-Za-z_][A-Za-z0-9_]*)'|\"([A-Za-z_][A-Za-z0-9_]*)\"|\\\\?([A-Za-z_][A-Za-z0-9_]*))";
+  "(?<!<)<<(?!<)(-?)[ \t]*(?:'([A-Za-z_][A-Za-z0-9_]*)'|\"([A-Za-z_][A-Za-z0-9_]*)\"|(\\\\)?([A-Za-z_][A-Za-z0-9_]*))";
+# What the shell runs inside the body of a heredoc whose delimiter is not quoted: a command
+# substitution, `$(...)` or a backtick, and a `${...}` expansion, whose word can hold one.
+def expands_in_body: test("\\$\\(|`|\\$\\{");
 def heredoc_sep_regex: "\\$\\(|`|;|&|\\||\\(|\\)";
 def balanced_plain: (test("\\\\") | not)
   and ((explode | map(select(. == 39)) | length) % 2 == 0)
@@ -1095,22 +1105,34 @@ def heredoc_check($q; $line; $op):
 # The command with the body of every heredoc nobody runs taken out, and its operator with it, so
 # the text in it is not read as commands and the `<<` no longer makes the reading unsure. A body
 # is found line by line: it starts after the operator's line and ends at the first line that is
-# exactly its delimiter (leading tabs dropped for `<<-`), as the shell reads it. A heredoc that
-# is kept (fed to `bash`, `python3`, `ssh`, ...) keeps its body and is read as before, unsure; a
-# line with two operators keeps both and ends all stripping after it. Anything unexpected -- a
-# body with no terminator, a `$(...)` that does not close right after its body -- returns the
-# command unchanged, so the guard reads it exactly as it would have without this.
+# exactly its delimiter (leading tabs dropped for `<<-`), as the shell reads it. Only a body that
+# is text is taken out: one whose delimiter is quoted (`<<'EOF'`, `<<"EOF"`, `<<\EOF`), which the
+# shell passes on as it stands, or one whose unquoted delimiter's body holds no `$(`, backtick or
+# `${` -- the shell runs a command substitution in an unquoted heredoc's body before the reading
+# command sees a byte, so `cat <<EOF` around `$(git push)` is a push. Such a body is kept, its
+# operator line put back, and read as before. A heredoc that is kept (fed to `bash`, `python3`,
+# `ssh`, ...) keeps its body and is read as before, unsure; a line with two operators keeps both
+# and ends all stripping after it. Anything unexpected -- a body with no terminator, a `$(...)`
+# that does not close right after its body -- returns the command unchanged, so the guard reads it
+# exactly as it would have without this.
 def strip_heredocs:
   . as $orig
   | if (contains("<<") | not) then .
     else
       (reduce (split("\n")[]) as $line (
          {out: [], mode: 0, delim: "", dash: false, q: 0, giveup: false, bad: false, close_check: false,
-          sub: false};
-         if .mode != 0 then
-           ((if .dash then ($line | sub("^\t+"; "")) else $line end) == .delim) as $end
-           | (if .mode == 2 then .out += [$line] else . end)
-           | (if $end then .close_check = (.mode == 1 and .sub) | .mode = 0 else . end)
+          sub: false, quoted: false, held: [], op_line: "", op_q: 0};
+         if .mode == 2 then
+           .out += [$line]
+           | (if ((if .dash then ($line | sub("^\t+"; "")) else $line end) == .delim) then .mode = 0 else . end)
+         elif .mode == 1 then
+           if ((if .dash then ($line | sub("^\t+"; "")) else $line end) == .delim) | not then .held += [$line]
+           elif (.quoted | not) and (.held | join("\n") | expands_in_body) then
+             # The shell expands this body: keep it, with its operator line, as a kept heredoc's.
+             .out = .out[0:-1] + [.op_line] + .held + [$line]
+             | .q = .op_q | .mode = 0 | .sub = false | .held = []
+           else .close_check = .sub | .mode = 0 | .held = []
+           end
          else
            (if .close_check then
               .close_check = false
@@ -1123,12 +1145,14 @@ def strip_heredocs:
              else
                ($ops[0]) as $op
                | ($op.captures | map(.string)) as $caps
-               | ($caps[1] // $caps[2] // $caps[3]) as $delim
+               | ($caps[1] // $caps[2] // $caps[4]) as $delim
                | (if ($ops | length) == 1 then heredoc_check($q; $line; $op) else {ok: false, sub: false} end) as $check
                | .delim = $delim | .dash = ($caps[0] == "-")
                | if $check.ok then
                    ($line[0:$op.offset] + " " + $line[$op.offset + $op.length:]) as $kept
                    | .out += [$kept] | .mode = 1 | .sub = $check.sub | .q = ($kept | quote_after($q))
+                   | .quoted = ($caps[1] != null or $caps[2] != null or $caps[3] != null)
+                   | .held = [] | .op_line = $line | .op_q = ($line | quote_after($q))
                  else
                    .out += [$line] | .mode = 2 | .sub = false
                    | .giveup = (.giveup or ($ops | length) > 1)
