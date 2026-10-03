@@ -6,6 +6,9 @@ agent copies a batch of notes into a playtest file and files the queue from it i
 whose description names each note on a line of its own, `Filed from #N`. This checks, for every
 such line (bouncy-heron, statements 12, 19 and 23):
 
+- **It is an inbox note.** Issue N carries the label `inbox`, as `tools/inbox.py` requires before it
+  closes a filed batch: without the label that script refuses the whole batch after this check
+  passed it.
 - **The note is the player's.** Issue N was opened by the player (`JosuaKrause`), or by the capture
   script as `claude-orchestrator` or `codex-coder` with the script's own tag, the label `captured`,
   on it. An issue anyone else opens is welcome as something to look at and is never filed, whatever
@@ -53,6 +56,9 @@ CAPTURE_BOTS = ("nappy-claude-orchestrator[bot]", "nappy-codex-coder[bot]")
 # The tag only the capture script sets. A label rather than a line in the body, so it cannot be
 # copied into a playtest by accident and the body stays the player's words alone.
 CAPTURE_LABEL = "captured"
+# What makes an issue an inbox note at all (leafy-finch: "the inbox is the open issues carrying an
+# `inbox` label"); `tools/inbox.py` checks it before it closes a note.
+INBOX_LABEL = "inbox"
 
 EPILOG = """\
 examples:
@@ -110,6 +116,8 @@ def note_from_api(number: int, data: dict[str, object]) -> Note:
 def author_failure(note: Note) -> str | None:
     if note.is_pull_request:
         return f"#{note.number}: a pull request, not an inbox note"
+    if INBOX_LABEL not in note.labels:
+        return f"#{note.number}: not labelled `{INBOX_LABEL}`, so it is not an inbox note"
     if note.author.lower() == PLAYER.lower():
         return None
     if note.author in CAPTURE_BOTS:
@@ -169,7 +177,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
         prog="tools/ci_transcription.py",
         description=(
             "For every `Filed from #N` line in the pull request's description, read now through the API: issue N"
-            f" must be opened by {PLAYER}, or by {' or '.join(CAPTURE_BOTS)} with the `{CAPTURE_LABEL}` label, and"
+            f" must carry the `{INBOX_LABEL}` label and be opened by {PLAYER}, or by {' or '.join(CAPTURE_BOTS)}"
+            f" with the `{CAPTURE_LABEL}` label, and"
             " its body must appear word for word (blockquote markers and line wrapping aside) in a playtest file"
             " the branch adds since BASE."
         ),

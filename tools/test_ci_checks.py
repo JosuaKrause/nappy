@@ -386,6 +386,17 @@ class TranscriptionTests(unittest.TestCase):
         )
         self.assertEqual(len(failures), 1)
 
+    def test_a_note_without_the_inbox_label_fails_whoever_opened_it(self) -> None:
+        for author, labels in (
+            ("JosuaKrause", ()),
+            ("JosuaKrause", ("queue_next",)),
+            ("nappy-claude-orchestrator[bot]", ("captured",)),
+        ):
+            with self.subTest(author=author, labels=labels):
+                failures = ci_transcription.check([note(author=author, labels=labels)], FILED_PLAYTEST)
+                self.assertEqual(len(failures), 1)
+                self.assertIn("not labelled `inbox`", failures[0])
+
     def test_a_pull_request_or_an_empty_note_fails(self) -> None:
         pull = ci_transcription.Note(number=5, author="JosuaKrause", labels=(), body="x", is_pull_request=True)
         self.assertIn("a pull request", ci_transcription.check([pull], FILED_PLAYTEST)[0])
