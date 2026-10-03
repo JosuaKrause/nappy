@@ -22,6 +22,10 @@ verify the correctness of those changes anyway. the CI is only a help" (bouncy-h
   puts `tools/queue.sh`'s line for every entry the pull request touched into the job's summary, for
   the reviewer to compare with the band the description names.
 
+Files are read at `--head` through git, never from the working tree. `tools/queue.sh` can only read
+the checkout, so its lines are printed only when `--head` is the checked-out commit; for any other
+head the summary says so rather than print the checkout's bands as the head's.
+
 Every failure names the file and the rule. A `Dropped:` line that does not parse, or that names a
 path the pull request does not delete, fails too, since a drop that points nowhere is a typo that
 would otherwise pass for an account. What a script cannot see -- that the record which exists
@@ -182,7 +186,12 @@ def parse(argv: list[str]) -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--base", default=lib_ci.DEFAULT_BASE, help="where the branch started (default origin/main)")
-    parser.add_argument("--head", default="HEAD", help="the branch's tip (default HEAD)")
+    parser.add_argument(
+        "--head",
+        default="HEAD",
+        help="the branch's tip (default HEAD); files are read at it, but tools/queue.sh reads the checkout"
+        " and is run only when HEAD is the checkout",
+    )
     parser.add_argument(
         "--pr", type=int, default=None, help="the pull request whose description to read (default $PR_NUMBER)"
     )
@@ -201,16 +210,24 @@ def main(argv: list[str]) -> int:
             description = ""
         else:
             description = lib_ci.pr_description(args.repo or lib_ci.default_repo(), number)
+        playtests = lib_ci.playtest_texts(args.head)
+        on_checkout = lib_ci.git("rev-parse", args.head).strip() == lib_ci.git("rev-parse", "HEAD").strip()
     except lib_ci.CiError as error:
         print(f"tools/ci_queue_update.py: {error}", file=sys.stderr)
         return 1
-    queue = subprocess.run(
-        [str(lib_ci.ROOT / "tools" / "queue.sh")], cwd=lib_ci.ROOT, capture_output=True, text=True, check=False
-    )
-    lib_ci.write_summary(queue_summary(touched_entries(changes), queue.stdout.splitlines()))
-    failures = check(changes, records, lib_ci.playtest_texts(), description)
-    if queue.returncode != 0:
-        failures.append(f"tools/queue.sh: the queue does not read: {queue.stderr.strip()}")
+    failures = check(changes, records, playtests, description)
+    if on_checkout:
+        queue = subprocess.run(
+            [str(lib_ci.ROOT / "tools" / "queue.sh")], cwd=lib_ci.ROOT, capture_output=True, text=True, check=False
+        )
+        lib_ci.write_summary(queue_summary(touched_entries(changes), queue.stdout.splitlines()))
+        if queue.returncode != 0:
+            failures.append(f"tools/queue.sh: the queue does not read: {queue.stderr.strip()}")
+    else:
+        lib_ci.write_summary(
+            f"### The queue\n\n`tools/queue.sh` reads the checkout, which is not {args.head}: its lines are"
+            f" not printed. Check {args.head} out to see them.\n"
+        )
     return lib_ci.report("tools/ci_queue_update.py", failures, "every mechanical check of a queue update passed")
 
 
