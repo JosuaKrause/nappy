@@ -2,7 +2,7 @@
 
 2026-10-02.
 
-The assistant proposes separating playable scenes from deliberately invalid test fixtures,
+Assistant framing: the assistant proposes separating playable scenes from deliberately invalid test fixtures,
 with explicit declarations for fixtures that violate normal gameplay guarantees. This
 is an assistant-added proposal, not part of the player's initial request. The player clarifies:
 
