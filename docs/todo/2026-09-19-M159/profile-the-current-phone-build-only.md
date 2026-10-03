@@ -8,3 +8,10 @@ effect on the baby and halo callers, before considering caching or lower tick ra
 Chrome on a Pixel 8 Pro, where the stutter is steady rather than at particular moments
 ([PLAYTEST-140](../../playtests/PLAYTEST-140.md)).
 Native median improvements do not establish phone performance or uniformly better frame tails.
+
+[snowy-ibis, mobile ground-stepping feedback](../../playtests/2026-10-02-snowy-ibis.md)
+reports no visible removal of stutter from per-region stepping.
+[sunny-chipmunk, the player's clarification](../../playtests/2026-10-03-sunny-chipmunk.md)
+asks for more optimization work in `now` and consideration of other approaches.
+The baseline remains a comparison prerequisite, not a reason to defer identifying
+candidate costs. Do not assume the latest report uses the earlier named device.

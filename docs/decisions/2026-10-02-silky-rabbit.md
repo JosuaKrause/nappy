@@ -120,10 +120,8 @@ main/finale/orientation suites, collector parse and CLI help/error checks pass. 
 probes check distinct-frame advancement, complete publication, cancellation, retention,
 relocation, water/source equality and renderer spans. Local suites are partial; full-suite
 CI and independent PR review are separate gates. The matched aggregates and source identities
-are independently recomputed from the scratch traces. These native results do not answer
-browser/phone perception or the full game's competing-work performance. The subsequent
-mobile observation is recorded below; remaining correctness checks are
-[a human review item](../review/2026-10-02-silky-rabbit.md).
+are independently recomputed from the scratch traces. Browser/phone perception and the full
+game's competing-work performance remain [a human review item](../review/2026-10-02-silky-rabbit.md).
 
 **Cloud-review corrections.** The supplied review and the player's request to fix its
 findings are recorded fully in [leafy-hare, cloud review corrections for nearby ground preparation](../playtests/2026-10-02-leafy-hare.md).
@@ -149,20 +147,3 @@ list changes lifecycle bookkeeping for pending, published, canceled and released
 This correction preserves the measured scheduler and its explicit costs for the player's
 chosen phone evaluation. If phone evidence implicates those costs, the proposals return
 for discussion with new measurements; this is not standing authorization to change them.
-
-**Mobile observation and pending choice.** In
-[snowy-ibis, mobile ground stepping does not visibly remove stutter](../playtests/2026-10-02-snowy-ibis.md),
-the player reports: "I can't say that the stuttering really went away" and asks
-whether to revert while retaining findings, keep the runtime, or keep it behind
-a default-off toggle. This phone result does not establish a perceptible benefit
-or identify another bottleneck. Device, browser, route and a controlled atomic
-comparison are unspecified in this report.
-
-The assistant recommends retaining findings and restoring atomic nearby-region
-preparation, because the roughly 0.13ms native fixture improvement has measured
-drawing/allocation costs and additional pending-job lifecycle complexity. A
-default-off runtime fork keeps those maintenance obligations without an established
-player benefit; pinned source revisions remain available for future experiments.
-The player has not selected an option. The runtime stays unchanged, and
-[breezy-walrus, choose ground preparation after the mobile test](../todo/2026-10-02-breezy-walrus/README.md)
-holds that decision. Existing M159 attribution work covers the continuing stutter.

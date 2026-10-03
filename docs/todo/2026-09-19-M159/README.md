@@ -1,6 +1,12 @@
-priority: later
+priority: now
 
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
+
+The player asks to put M159 in `now` to find more things to optimize, while
+"look in a different direction" means considering other approaches rather than
+choosing one here. [sunny-chipmunk, mobile-ground review clarifications](../../playtests/2026-10-03-sunny-chipmunk.md)
+records that instruction; [snowy-ibis, mobile ground-stepping feedback](../../playtests/2026-10-02-snowy-ibis.md)
+records the phone observation. The next optimization remains to be determined.
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
 > numbers and the codebase and think about how we could improve performance and reduce stutter"
