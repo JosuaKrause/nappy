@@ -43,13 +43,14 @@ also be denied. The alternative of prompting despite unreadable input was
 rejected because it permits publishing under the player's identity.
 
 An unreadable input-driven gh command is also treated as potentially merging a PR,
-so a reviewer wrapper refuses it; a coder wrapper remains exempt. This conservative
+so a reviewer wrapper refuses it; a coder wrapper remains exempt, except where input could supply an
+issue write (below, "Merged with the inbox's guard"). This conservative
 choice is open to overturn. The alternative would allow input to hide `pr merge`.
 
 **Preserved.** Readable xargs/GNU parallel reads remain allowed; direct opt-in branch pushes
 and pushes after a separate xargs/parallel read still ask where the existing policy allows
 it. Coder identity wrappers remain exempt, including either input wrapper outside or inside the
-wrapper; reviewer wrappers cannot push. Default-off, configured-identity and
+wrapper, for everything but an issue write; reviewer wrappers cannot push. Default-off, configured-identity and
 Codex refusal behavior remain unchanged. The Codex adapter needs no payload,
 tool-name or event change because this change is internal guard classification.
 
@@ -209,3 +210,16 @@ xargs or parallel mention still denies, as every mention of a push does.
 A git or gh run through a wrapper word the tables do not know (`xargs strace git`) is not in
 command position, so input supplying its subcommand is not caught; an explicit push there still
 is. That is the guard's existing gap for unknown wrapper words.
+
+**Merged with the inbox's guard (PR #429).** #429 denies an issue write under every identity, so
+under xargs or GNU parallel an issue write input could complete is denied the same way: a `gh issue`
+whose verb comes from input, or one written under xargs options the guard cannot read, is "gh issue
+with an input-supplied verb"; a `gh` whose noun comes from input is "gh with an input-supplied noun",
+since the noun could be `issue`; and flags input adds to a written issue endpoint make it "gh api
+issue write". All three are issue writes, which no wrapper exempts. A written noun other than
+`issue` keeps the coder exemption above, `xargs gh issue view` and the shared `issues/<n>/comments`
+path stay allowed, and an endpoint or GraphQL query input supplies whole stays the accepted gap the
+guard's header names for a wrapped command. A wrapped `parallel … gh` with no written noun is now
+denied, the safe direction, open to overturn. Run before the merge was resolved, the same plain
+merge of both sides let `run claude-orchestrator -- sh -c 'ls | xargs --foo gh issue close 5'`
+through, which main denies.
