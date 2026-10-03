@@ -13,8 +13,9 @@ priority: now
    bearing 72px from the van's centre (its `obstructs_radius` 22 + `PLAYER_BODY_RADIUS` 14 +
    `ContactPoint.REACH` 36), completing within 36px of that point, so touching any other side
    fails. Day 8's burnt shell used the same offset; PR #415 changes day 8 to the burnt building's
-   door with a radius covering half the sidewalk (sandy-egret), and this does the same for every task
-   that rides an object with a body: touching it from any reachable side completes it.
+   door with a radius covering half the sidewalk (sandy-egret). **Proposed, not asked for:** the
+   same for every task that rides an object with a body, so touching it from any reachable side
+   completes it; the player confirmed "almost all tasks" only for where a target is placed (ask 2).
 2. **A task's target is placed near its mark, for nearly every task** — the player's "this applies
    to almost all tasks" is read as where a target is drawn, and the player confirmed it ("yes your
    read matches"). `_place()` picks the van, doors, masts, swings and the station door each from a
@@ -25,8 +26,9 @@ priority: now
 3. **The robber stands about two-thirds through the alley, not at its edge**, "so the robber is not
    at the edge of the alley which makes him easier visible and easier to avoid", and keeps M213's
    floor: "touching the mark shouldn't wake him from the correct side and if the alley is long
-   enough" — at least 176px from the mark (his 140px `pursues_within` plus the 36px reach), so in a
-   short alley he stands as far in as that allows. This replaces M213's "on the far end tile, or up
+   enough" — at least 176px from the mark (his 140px `pursues_within` plus the 36px reach).
+   **Open question, for whoever picks this up:** where he stands in an alley too short for both;
+   the filer's proposal is as far in as the floor allows. This replaces M213's "on the far end tile, or up
    to three tiles in" (from PLAYTEST-142's "always place the [robber] at the other end of the
    alley"), which the PR quotes.
 
