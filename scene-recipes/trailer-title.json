@@ -1,0 +1,8 @@
+{
+  "version": 1, "name": "Title transition at the doorstep", "seed": 11,
+  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
+  "anchors": {"start": "doorstep"},
+  "setup": {"day": 1, "parent": "father", "player": {"at": "start", "facing": "south"}},
+  "playback": {"walk": "2.5p", "duration": 2.5, "title": "Nappy",
+    "observations": [{"tick": 60, "subject": "player", "condition": "visible"}]}
+}

@@ -154,7 +154,7 @@ func setup(city: City, map: CityMap) -> void:
 ## `RETURN_PATROLS_PER_ACT[0]` is 0 and nothing would be owed anyway, and from day 14 — the one
 ## `TODO.md` item still open — act IV would owe three.
 func _owe_the_return() -> void:
-	if _walking_the_finale:
+	if _walking_the_finale or _recipe_plan:
 		return
 	_director.owe_the_return(_day, GameState.resistance_progress)
 
@@ -339,6 +339,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 ## own and are untouched: an explosion leaves its crater through exactly the `spawns_on_finish`
 ## mechanism a convoy leaves a barricade through.
 func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -> void:
+	_recipe_plan = false
 	clear()
 	_hard_failed = false
 	_day = GameState.day
@@ -359,7 +360,12 @@ func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -
 ## successors and warnings keep their production behavior; random siting is suppressed.
 func start_recipe(plans: Array[EventScheduler.Planned], day: int, focus: Vector2,
 		finale := false) -> void:
+	var held := _map.held_segments.duplicate()
 	start_finale(plans, focus)
+	_map.held_segments.merge(held)
+	for plan in plans:
+		if plan.is_placed():
+			_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 	_day = day
 	_walking_the_finale = finale
 	_recipe_plan = true

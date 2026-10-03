@@ -153,6 +153,10 @@ demand when the window cannot be drawn, and says so on the `[AutoScreenshot] wro
 
 | Flag | Effect |
 | --- | --- |
+| `--recipe path.json` | Build a saved exact scene and control it normally; see [Scene recipes](docs/SCENE_RECIPES.md) |
+| `--recipe-mode free\|scripted` | Use normal controls (the default), or the recipe's saved movement, camera and assertions |
+| `--recipe-validate` | Build the recipe and validate its live setup headlessly, then quit |
+| `--recipe-manifest path.json` | Write construction context, initial actors and scripted observation results |
 | `--seed N` | Regenerate a specific city (also reachable, for a positive integer only, as a release web build's own `?debug=1&seed=N`) |
 | `--day N` | Start on a later day, to look at a later act (also reachable on a release web build's own `?debug=1&day=N`, clamped the same way) |
 | `--day-length N` | Compress the day, for dusk and the timeout loss (also reachable on a release web build's own `?debug=1&daylength=N`) |

@@ -235,6 +235,12 @@ func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vecto
 	if not problem.is_empty():
 		agent.free()
 		return {"error": problem}
+	for other in _agents:
+		if agent.kind == CrowdAgent.Kind.CAR and other.kind == CrowdAgent.Kind.CAR \
+				and agent.lane_key() == other.lane_key() \
+				and absf(agent.queue_position() - other.queue_position()) < Tuning.CAR_GAP_MIN:
+			agent.free()
+			return {"error": "car placement overlaps an existing traffic queue"}
 	agent.name = actor_name
 	_city.add_entity(agent)
 	_agents.append(agent)

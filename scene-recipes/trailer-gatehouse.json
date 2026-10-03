@@ -1,0 +1,9 @@
+{
+  "version": 1, "name": "The father approaches a gatehouse", "seed": 11,
+  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
+  "anchors": {"start": {"world": [3168, 1424]}, "gate": {"world": [3168, 1552]}},
+  "setup": {"day": 13, "parent": "father", "player": {"at": "start", "facing": "south"}},
+  "playback": {"walk": "1s", "duration": 1,
+    "observations": [{"tick": 30, "subject": "player", "condition": "moving"},
+      {"tick": 55, "subject": "player", "condition": "near", "at": "gate", "distance": 90}]}
+}
