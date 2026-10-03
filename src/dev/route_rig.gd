@@ -355,17 +355,19 @@ func _resolve_target(word: String) -> Vector2:
 ## `task`'s own resolution: the step the mark just unlocked, which is null until the mark is
 ## actually touched (see `ResistanceDirector._on_contact_completed()`) — so this answers `INF`
 ## for exactly as long as `mark` itself would have, on a day with a task still to walk to. **A
-## contact on a wall is walked to from the ground in front of it** (`_reachable_point_near()`):
-## day 8's stands on the burnt building's door (`ResistanceDirector._ride_to_the_door()`), a
-## building tile no plan can end on, and its `DOOR_REACH` (about 50.6px) completes it from the
-## nearest open tile, a tile below the door (32px) or diagonally below it (45px).
+## contact on a wall or on a body is walked to from the open ground nearest it**
+## (`_reachable_point_near()`): every contact stands on its item, so day 8's and the last night's
+## stand on a door on a facade, a building tile no plan can end on, which `DOOR_REACH` (about
+## 50.6px) completes from the tile straight below (32px); the van's and a mast's stand on their own
+## body's tile, which a plan cannot end on either and which their body reach completes from beside.
 func _task_target() -> Vector2:
 	var step := _resistance.current_step()
 	if step == null or step.is_pickup:
 		return Vector2.INF
 	if step.is_one_place:
 		var at := _resistance.contact_position()
-		if at != Vector2.INF and not _city.map.is_walkable(_city.map.world_to_tile(at)):
+		var tile := _city.map.world_to_tile(at) if at != Vector2.INF else Vector2i.ZERO
+		if at != Vector2.INF and (not _city.map.is_walkable(tile) or _city.map.is_obstructed(tile)):
 			return _reachable_point_near(at)
 		return at
 	return _nearest_live_instance(step.task_event_id)

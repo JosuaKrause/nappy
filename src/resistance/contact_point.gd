@@ -27,18 +27,24 @@ const MARK_TOUCHED := &"props/chalk_mark_touched"
 
 var step: ResistanceSteps.Step
 var is_done := false
-## How close she must be for this contact's touch to complete: `REACH` for every contact but day
-## 8's, which stands on the burnt building's door and reaches half the sidewalk in front of it
-## (`ResistanceDirector.DOOR_REACH`).
+## How close she must be for this contact's touch to complete: `REACH` for a bare point with no
+## size of its own (a chalk mark), `ResistanceDirector.DOOR_REACH` for a door on a facade (day 8's,
+## the last night's), the mast's body reach on day 11 — and how far out the guard's band is worked
+## from for all of them (`ResistanceDirector._maybe_set_a_trap()`).
 var reach := REACH
+## Non-zero for a touch that is an area on the ground rather than a circle: the semi-axes of an
+## ellipse centred on this contact, which her body has to overlap — day 12's swing, whose base it
+## is (`ResistanceDirector.SWING_BASE`).
+var touch_ellipse := Vector2.ZERO
+## True for a task completed by doing something rather than by being near a place — day 9's
+## crossing, which `ResistanceDirector` completes (`complete_now()`) the moment she is through the
+## named district door. No distance completes it, however near she stands.
+var by_crossing := false
 
 var _player: Stroller
 var _pulse := 0.0
-## Set only for a perform step: the instance this contact rides on, and the fixed offset
-## from it — drawn once, in a direction the day's own RNG chose, so a contact that has to
-## clear an obstruction stands at a learnable spot rather than a re-rolled one. For a rider with a
-## solid body (the van, a roadblock) that spot is only where she can stand to touch it: the touch
-## itself counts from any side of the body (`touches_the_body()`).
+## Set only for a perform step: the instance this contact rides on. The contact stands on it —
+## where the task is, and where the red arrow ends — and follows it.
 var _rider: EventInstance
 var _rider_offset := Vector2.ZERO
 
@@ -56,8 +62,8 @@ func setup(which: ResistanceSteps.Step, at: Vector2) -> void:
 	# player who is standing on it to read it.
 	z_index = -1
 
-## A perform: the contact follows `instance`, offset so a solid body between them never
-## makes it unreachable.
+## A perform: the contact follows `instance`, standing `offset` from it — zero for every task, so
+## it stands on the thing itself.
 func ride(which: ResistanceSteps.Step, instance: EventInstance, offset: Vector2) -> void:
 	step = which
 	_rider = instance
@@ -81,25 +87,58 @@ func _physics_process(delta: float) -> void:
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 		if not _player:
 			return
-	var distance := global_position.distance_to(_player.global_position)
-	# M205, "the note costs, and the ordinary day": day 6's note (the only step with
-	# `ResistanceSteps.Step.completes_at_inner_radius` set -- see that field's own doc)
-	# completes the instant she is within the rider's own `inner_radius` (45px, his
-	# full-strength field) rather than this contact's own `reach` (`REACH`, 36px, on every
-	# step but day 8's door). `REACH` sits inside a rider's own `inner_radius`, so the generic check always landed
-	# only the last few pixels of an approach; the player, offered a fork that would have
-	# made her stand in this wider circle for a while first, rejected it outright: "the
-	# player should stand for 2.5s? no way. the moment the player touches the inner circle
-	# it counts as delivered."
-	if _rider and step and step.completes_at_inner_radius:
-		if distance <= _rider.def.inner_radius:
-			_complete()
-	elif _rider and has_a_body(_rider):
-		if touches_the_body(_rider, _player.global_position, reach):
-			_complete()
-	elif distance <= reach:
+	if would_complete_at(_player.global_position):
 		_complete()
 	queue_redraw()
+
+## Whether her standing at `her` completes this contact — the one question `_physics_process()`
+## asks, pure, so a test or a sweep can ask it of any point:
+##
+## - **a crossing** (`by_crossing`, day 9) never completes on where she stands;
+## - **day 6's note** (`ResistanceSteps.Step.completes_at_inner_radius`) completes within the man's
+##   own `inner_radius` (45px) — M205: "the moment the player touches the inner circle it counts as
+##   delivered";
+## - **a rider with a body** (the van, a roadblock) completes from any side of it
+##   (`touches_the_body()`);
+## - **an area on the ground** (`touch_ellipse`, the swing's base) completes the moment her body
+##   overlaps it (`overlaps_the_ellipse()`);
+## - anything else within `reach` of this contact.
+func would_complete_at(her: Vector2) -> bool:
+	if by_crossing:
+		return false
+	if _rider and step and step.completes_at_inner_radius:
+		return global_position.distance_to(her) <= _rider.def.inner_radius
+	if _rider and has_a_body(_rider):
+		return touches_the_body(_rider, her, REACH)
+	if touch_ellipse != Vector2.ZERO:
+		return overlaps_the_ellipse(global_position, touch_ellipse, her)
+	return global_position.distance_to(her) <= reach
+
+## Completes a task that is done by an action rather than a place (`by_crossing`) — the director's
+## call the moment she has crossed. Nothing once it is done.
+func complete_now() -> void:
+	if not is_done:
+		_complete()
+
+## Whether her body — a disc of `Tuning.PLAYER_BODY_RADIUS` round `her` — overlaps the ground ellipse
+## round `centre` with semi-axes `semi`: her centre inside it, or within her body of its outline,
+## measured against `ELLIPSE_SAMPLES` points of the outline.
+static func overlaps_the_ellipse(centre: Vector2, semi: Vector2, her: Vector2) -> bool:
+	var local := her - centre
+	if semi.x <= 0.0 or semi.y <= 0.0:
+		return false
+	if (local.x * local.x) / (semi.x * semi.x) + (local.y * local.y) / (semi.y * semi.y) <= 1.0:
+		return true
+	for i in ELLIPSE_SAMPLES:
+		var angle := TAU * float(i) / float(ELLIPSE_SAMPLES)
+		if local.distance_to(Vector2(cos(angle) * semi.x, sin(angle) * semi.y)) \
+				<= Tuning.PLAYER_BODY_RADIUS:
+			return true
+	return false
+
+## How finely `overlaps_the_ellipse()` walks the outline: 96 points round a 22px ellipse are under
+## 1.5px apart, so the overlap it answers is the true one to within a pixel.
+const ELLIPSE_SAMPLES := 96
 
 ## Whether `instance` has a solid body she is stopped by — the van, a roadblock — rather than being
 ## a figure she walks up to (the man shouting, the neighbor) or a bodiless scar.

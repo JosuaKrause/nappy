@@ -96,6 +96,9 @@ func run(t) -> void:
 	_test_the_park_closes_in_front_of_her_and_stays_taken(t)
 	_test_the_column_comes_down_the_main_road(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
+	_test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
+	_test_the_swings_touch_is_the_ellipse_at_its_base(t)
+	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
 	_test_a_task_is_placed_near_its_mark(t)
 	_test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
@@ -3063,12 +3066,11 @@ func _test_the_door_task_sits_at_a_region_door(t) -> void:
 				"the chosen tile's own segment is ground the day already holds — the case " +
 				"`allow_held` exists for")
 		var on_a_door := false
-		for segment in doors:
-			var rect := segment.tile_rect()
-			if rect.position + rect.size / 2 == _city.map.world_to_tile(at):
+		for body in _city.region_plan().door_bodies:
+			if body.def.redetains and body.position.distance_to(at) < 0.5:
 				on_a_door = true
 				break
-		t.check(on_a_door, "exactly at one of today's own region doors")
+		t.check(on_a_door, "exactly on a gatehouse of one of today's own region doors")
 
 		director.free())
 
@@ -3327,8 +3329,8 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 		var mast_id := director._mast_id
 		var foot := _city.events.mast_foot(mast_id)
 		t.check(mast_id != "" and foot != Vector2.INF
-				and director.contact_position().distance_to(foot) <= Tuning.TILE_SIZE + 0.5,
-				"the contact stands beside the foot of a live mast")
+				and director.contact_position().distance_to(foot) < 0.5,
+				"the contact stands on the foot of a live mast")
 		t.check(director.red_arrow_target() == director.contact_position(),
 				"and the red arrow points at it")
 
@@ -3926,20 +3928,223 @@ func _test_the_red_arrow_only_ever_points_at_a_one_place_task(t) -> void:
 		var van := _director(t)
 		van.start_day(7, _rng(7, "resistance"), 300.0)
 		van._on_contact_completed(3)
-		# M222, "the red arrow for the van does not end on the van": the touch point
-		# (`contact_position()`) sits at `_reachable_offset()`'s clearance beside the van's own
-		# body, where she can actually reach it — the arrow's tip is the van's body itself
-		# (`van._rider.global_position`), not that touch point.
+		# M222, "the red arrow for the van does not end on the van", and feathery-marmot, "Never
+		# besides the item!": the contact stands on the van and the arrow's tip is the van itself.
 		t.check(van._rider != null, "the package's van is a rider, not a bare point")
 		t.check(van.red_arrow_target() != Vector2.INF
 				and van.red_arrow_target() == van._rider.global_position
-				and van.red_arrow_target() != van.contact_position(),
+				and van.red_arrow_target() == van.contact_position(),
 				"the package's van is one place, so it earns the arrow, exactly on the van's body")
 		var task := van.current_step()
 		van._contact._complete()
 		t.check(task != null and van.red_arrow_target() == Vector2.INF,
 				"and it goes out once she has reached it")
 		van.free())
+
+## feathery-marmot, "the arrow ends on the item" — *"the red arrows should point to the actual item
+## -- however, the radius of acceptance should be big enough to be possible to do"* · *"No! Never
+## besides the item!"*. On three cities, each one-place task with a bare point or a body is
+## planned in the real day order and put on offer: day 7's van, day 9's district door, day 11's
+## mast, day 12's swing and the last night's station door. Its arrow ends on the item itself — the
+## van's centre, one of the door's two gatehouses, the mast's foot, the swing's base
+## (`CityMap.swing_position()`), the station door's point on its facade — and the task is completed
+## from some standable, reachable tile near it (day 9 is crossed instead, and its own test is
+## below). Before, the arrow ended beside the mast (32px), on the swing's tile centre, on a pavement
+## tile in front of the station door and on the middle of the district door's street.
+func _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t) -> void:
+	var saved_scars := GameState.scars.duplicate()
+	var saved_state := GameState.city_state
+	var saved_progress := GameState.resistance_progress
+	var saved_sabotage := GameState.sabotage_done
+	var checked := [0]
+	for seed_value: int in [SEED, 90210, 1234567]:
+		_build_city(t, seed_value)
+		_with_clean_run(func() -> void:
+			for day: int in [7, 9, 11, 12, Tuning.RUN_LENGTH_DAYS]:
+				GameState.scars = []
+				GameState.resistance_progress = Tuning.RESISTANCE_GOAL \
+						if day == Tuning.RUN_LENGTH_DAYS else 0
+				GameState.sabotage_done = false
+				var read := _read_the_mark_on(t, day, seed_value) if day != Tuning.RUN_LENGTH_DAYS \
+						else _start_the_finale(t, seed_value)
+				var director: ResistanceDirector = read[0]
+				var player: Stroller = read[2]
+				var step := director.current_step()
+				var arrow := director.red_arrow_target()
+				if step == null or step.is_pickup or arrow == Vector2.INF:
+					t.check(false, "seed %d day %d: the task is on offer with its arrow"
+							% [seed_value, day])
+				else:
+					checked[0] += 1
+					var item := _the_item_of(director, step)
+					t.check(item != Vector2.INF and arrow.distance_to(item) < 0.5,
+							"seed %d day %d: the arrow ends on the item itself (%s, item %s)"
+							% [seed_value, day, arrow, item])
+					if step.target_kind != ResistanceSteps.TargetKind.DOOR:
+						t.check(_touched_from_standable_ground(director, item),
+								"seed %d day %d: and the task is touched from ground she can stand on"
+								% [seed_value, day])
+				player.free()
+				director.free())
+	GameState.scars = saved_scars
+	GameState.city_state = saved_state
+	GameState.resistance_progress = saved_progress
+	GameState.sabotage_done = saved_sabotage
+	t.check(checked[0] > 0, "some task was put on offer (%d)" % checked[0])
+
+## The finale on the test city in the real day order, the goal met: `[director, Vector2.INF, her
+## rig]`, the shape `_read_the_mark_on()` answers, the finale having no mark.
+func _start_the_finale(t, seed_value: int) -> Array:
+	var day := Tuning.RUN_LENGTH_DAYS
+	GameState.completed_resistance_steps = _all_but_the_finale()
+	GameState.completed_resistance_alley_tiles = []
+	var state := CityState.new()
+	GameState.city_state = state
+	state.begin_day(_city.map.block_plans, day)
+	_city.start_day(state, day, _rng(day, "closures", seed_value))
+	_city.events.start_day(day, _rng(day, "events", seed_value), [],
+			_city.map.doorstep_world_position())
+	var director := _director(t)
+	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
+	var player := _rig_player(t, _city.map.doorstep_world_position())
+	return [director, Vector2.INF, player]
+
+## Where the item a one-place task is about stands, found from the day itself rather than from the
+## contact: the van's own instance, a gatehouse of today's district doors (the one nearest the
+## contact, so the test asks that the contact is on one of them), the foot of the mast the task
+## named, the swing frame's base, the station's door point on its facade.
+func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> Vector2:
+	match step.target_kind:
+		ResistanceSteps.TargetKind.EVENT:
+			return director._rider.global_position if director._rider else Vector2.INF
+		ResistanceSteps.TargetKind.DOOR:
+			var nearest := Vector2.INF
+			for body in _city.region_plan().door_bodies:
+				if body.def.redetains and (nearest == Vector2.INF or body.position.distance_to(
+						director.contact_position()) < nearest.distance_to(director.contact_position())):
+					nearest = body.position
+			return nearest
+		ResistanceSteps.TargetKind.MAST:
+			return _city.events.mast_foot(director._mast_id)
+		ResistanceSteps.TargetKind.PARK_SWING:
+			var layout: BlockLayout = _city.map.block_layouts.get(CityGenerator.swing_park(_city.map))
+			return _city.map.swing_position(layout.playground) if layout else Vector2.INF
+		ResistanceSteps.TargetKind.STATION_DOOR:
+			var door := _city.map.power_station_door_position()
+			return Vector2(door.x, door.y - Tuning.TILE_SIZE)
+	return Vector2.INF
+
+## Whether some tile within three of `item` is ground she can stand on (walkable, no body,
+## reachable from home) and its centre completes today's contact (`ContactPoint.would_complete_at()`).
+func _touched_from_standable_ground(director: ResistanceDirector, item: Vector2,
+		on: CityMap = null) -> bool:
+	var map := on if on else _city.map
+	var centre := map.world_to_tile(item)
+	for dy in range(-3, 4):
+		for dx in range(-3, 4):
+			var tile := centre + Vector2i(dx, dy)
+			if not map.is_walkable(tile) or map.is_obstructed(tile) \
+					or not director._reachable_from_home(tile):
+				continue
+			if director._contact.would_complete_at(map.tile_to_world(tile)):
+				return true
+	return false
+
+## feathery-marmot, day 12 — *"Not the drawn swing. Place an ellipse at its base. That's the area to
+## touch"*. The swing's contact is touched by her body overlapping `ResistanceDirector.SWING_BASE`
+## round the swing's base: from eight bearings, standing with her edge a pixel inside the ellipse's
+## outline completes it, at each side and each corner, and standing two pixels clear of it does not.
+## Before, a 36px circle round the swing's tile centre counted.
+func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
+	var contact := ContactPoint.new()
+	contact.setup(_perform_on(12), Vector2(500.0, 500.0))
+	contact.touch_ellipse = ResistanceDirector.SWING_BASE
+	t.add_child(contact)
+	contact.set_physics_process(false)
+	var semi := ResistanceDirector.SWING_BASE
+	var touching := 0
+	var clear := 0
+	for i in 8:
+		var angle := TAU * float(i) / 8.0
+		var edge := Vector2(cos(angle) * semi.x, sin(angle) * semi.y)
+		var outward := Vector2(cos(angle) / semi.x, sin(angle) / semi.y).normalized()
+		var inside := contact.global_position + edge + outward * (Tuning.PLAYER_BODY_RADIUS - 1.0)
+		var outside := contact.global_position + edge + outward * (Tuning.PLAYER_BODY_RADIUS + 2.0)
+		if contact.would_complete_at(inside):
+			touching += 1
+		if not contact.would_complete_at(outside):
+			clear += 1
+	t.check(touching == 8, "her body overlapping the swing's base ellipse completes it on every side and corner (%d of 8)" % touching)
+	t.check(clear == 8, "and two pixels clear of it, on every side and corner, does not (%d of 8)" % clear)
+	t.check(semi.x > semi.y and semi.y > 0.0, "the base is wider than it is deep, as the frame stands side-on")
+	contact.free()
+
+## feathery-marmot, day 9 — *"Cross at this district door"* · *"Should trigger on the action not on a
+## proximity test"* · *"No it should choose one"*. On the test city's day 9, its mark read: the
+## arrow ends on one of the named door's gatehouses, the same one every time the day is replayed;
+## standing at that gatehouse, or on the door's line under the boom, completes nothing; walking
+## through the door's line (`EventManager._watch_the_door_lines()`, its `door_crossed`) completes
+## it, in either direction; and walking through another door's line does not.
+func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> void:
+	_build_city(t)
+	var saved_state := GameState.city_state
+	_with_clean_run(func() -> void:
+		var crossings := 0
+		var gatehouse := Vector2.INF
+		for direction: float in [1.0, -1.0]:
+			_city.events.stream_radius = INF
+			var read := _read_the_mark_on(t, 9, SEED)
+			var director: ResistanceDirector = read[0]
+			var player: Stroller = read[2]
+			var step := director.current_step()
+			t.check(step != null and step.target_kind == ResistanceSteps.TargetKind.DOOR,
+					"day 9's mark puts the crossing on offer")
+			if step == null or director._door_at == Vector2.INF:
+				player.free()
+				director.free()
+				continue
+			var house := director.contact_position()
+			t.check(gatehouse == Vector2.INF or house.distance_to(gatehouse) < 0.5,
+					"the arrow ends on the same gatehouse every time the day is played (%s)" % house)
+			gatehouse = house
+			var at_a_house := false
+			for body in _city.region_plan().door_bodies:
+				if body.def.redetains and body.position.distance_to(house) < 0.5:
+					at_a_house = true
+			t.check(at_a_house and director.red_arrow_target() == house,
+					"and on a gatehouse of today's district doors")
+			for here: Vector2 in [house, director._door_at]:
+				player.global_position = here
+				director._contact._physics_process(STEP)
+			t.check(not director._contact.is_done,
+					"standing at the gatehouse or under the boom completes nothing")
+			# Another door's line first: nothing.
+			for body in _city.region_plan().door_bodies:
+				if body.def.lifts_for_traffic and body.position.distance_to(director._door_at) > 200.0:
+					_walk_through(body.position, body.facing, direction, player)
+					break
+			t.check(not director._contact.is_done, "crossing another district door completes nothing")
+			_walk_through(director._door_at, director._door_axis, direction, player)
+			if director._contact.is_done:
+				crossings += 1
+			player.free()
+			director.free()
+		t.check(crossings == 2,
+				"walking through the named door completes the task, in either direction (%d of 2)"
+				% crossings)
+		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
+	GameState.city_state = saved_state
+
+## Walks her across a door's line at `at`, along `axis` in `direction`, in one step the way
+## `EventManager._watch_the_door_lines()` reads a frame: from 40px on one side to 40px on the other.
+func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Stroller) -> void:
+	var events := _city.events
+	events._player = player
+	player.global_position = at - axis * 40.0 * direction
+	events._last_seen_at = Vector2.INF
+	events._watch_the_door_lines()
+	player.global_position = at + axis * 40.0 * direction
+	events._watch_the_door_lines()
 
 # ------------------------------------------------------ M188: reachable targets ---
 # The route rig (M184, a rig walks the route) found a mark and two contacts standing on ground
@@ -4241,16 +4446,22 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 					if task_step != null:
 						checked += 1
 						var task_tile := city.map.world_to_tile(director.contact_position())
-						# Day 8's contact stands on the burnt building's door, on its wall, and is
-						# touched from the frontage tile in front of it (`_ride_to_the_door()`).
-						if task_step.target_kind == ResistanceSteps.TargetKind.SCAR:
-							task_tile += Vector2i.DOWN
-						var allow_held := ResistanceSteps.stands_on_held_ground(task_step)
-						t.check(_stands_on_legal_ground(city.map, task_tile, walled_alleys,
-								allow_held, grid, blocked, reached),
-								("seed %d day %d: step %d's contact stands on walkable, " +
-								"unobstructed, reachable ground at %s") % [seed_value, day,
-								task_step.index, task_tile])
+						# Every contact stands on its item — a door on a wall, a van or a mast on its
+						# own body's tile — so what is asked is that she can touch it from ground
+						# she can stand on. Day 9's is crossed instead: its gatehouse stands on the
+						# door's own held pavement, which is asked as before.
+						if task_step.target_kind == ResistanceSteps.TargetKind.DOOR:
+							t.check(_stands_on_legal_ground(city.map, task_tile, walled_alleys,
+									true, grid, blocked, reached),
+									("seed %d day %d: step %d's gatehouse stands on walkable, " +
+									"reachable ground at %s") % [seed_value, day, task_step.index,
+									task_tile])
+						else:
+							t.check(_touched_from_standable_ground(director,
+									director.contact_position(), city.map),
+									("seed %d day %d: step %d's contact at %s is touched from " +
+									"walkable, unobstructed, reachable ground") % [seed_value, day,
+									task_step.index, task_tile])
 				player.free()
 				director.free()
 			city.free()

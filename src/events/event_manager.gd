@@ -704,6 +704,13 @@ func add_mast(foot: Vector2) -> EventScheduler.Planned:
 	_record_the_body(plan.get_instance_id(), def, foot, plan.facing)
 	return plan
 
+## She has crossed a district door: let out on its far side after the inspection
+## (`_release_finished_door_detentions()`), or walked through its line (`_watch_the_door_lines()`).
+## `at` is the body of the door that saw it and `axis` the street's own axis, which every body of
+## one door shares, so a listener can tell which door it was. Day 9's task is completed on it
+## (`ResistanceDirector._on_door_crossed()`).
+signal door_crossed(at: Vector2, axis: Vector2)
+
 ## Silences one mast by id, for the rest of the day — a mast still stands once silenced, with no
 ## arcs and no field, so this sets `Planned.silenced` and its live instance's own mirror rather
 ## than finishing it: `EventInstance._finish()` is for something that leaves, and a mast never
@@ -1527,6 +1534,7 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 		body.show_after_inspection()
 		body.release_camera_focus()
 		_latch_everything_she_was_let_out_into(released_at)
+		door_crossed.emit(instance.global_position, axis)
 		Telemetry.note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
 			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
 			instance.def.detain_seconds, _compass_of(axis, released_along)])
@@ -1616,6 +1624,7 @@ func _watch_the_door_lines() -> void:
 	if not crossed:
 		return
 	_walked_under += 1
+	door_crossed.emit(crossed.global_position, crossed.facing_now())
 	Telemetry.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
 		crossed.def.id, TelemetryLog.tile(_map.world_to_tile(crossed.global_position)),
 		_heading_name(here - was),
