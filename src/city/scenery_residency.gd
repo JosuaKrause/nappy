@@ -56,6 +56,7 @@ func camera_view() -> Rect2:
 	return rect
 
 func update(next_view: Rect2, immediate := false) -> void:
+	immediate = immediate or city.map.recipe_frame_locked
 	var started := Time.get_ticks_usec()
 	var relocated := not view.has_area() or view.size != next_view.size \
 			or view.get_center().distance_to(next_view.get_center()) > GUARD_MARGIN
@@ -112,10 +113,13 @@ func update(next_view: Rect2, immediate := false) -> void:
 	pending.sort_custom(func(a: Dictionary, b: Dictionary): return a.distance < b.distance)
 	_pending = false
 	for job in pending:
-		if Time.get_ticks_usec() - started >= BUDGET_USEC:
+		if not city.map.recipe_frame_locked and Time.get_ticks_usec() - started >= BUDGET_USEC:
 			_pending = true
 			break
 		if job.has("ground_key"):
+			if city.map.recipe_frame_locked:
+				ground.prepare(job.ground_key)
+				continue
 			# Several regions may approach together. Advance each once within the shared budget;
 			# repeating an explicit update or replacing a canceled job cannot drain one region.
 			var frame := Engine.get_process_frames()
