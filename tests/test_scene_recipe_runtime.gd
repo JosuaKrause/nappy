@@ -1,0 +1,147 @@
+extends RefCounted
+## Exercise the actual runtime and argv readers. A tiny child scene isolates exit-status
+## assertions without booting Main, constructing another city or quitting the suite's tree.
+
+const EXAMPLE := "res://scene-recipes/power-station-hall.json"
+const PROBE := """extends Node
+func _ready() -> void:
+	var scripted := DevFlags.recipe_mode() == "scripted"
+	if DevFlags.is_rig() != scripted:
+		get_tree().quit(12)
+		return
+	# The desktop policy is checked independently of headless's unconditional no-save gate.
+	if GameSave._debug_run_uses_save(DevFlags.active_args(), false):
+		get_tree().quit(13)
+		return
+	if GameSave.uses_save():
+		get_tree().quit(14)
+		return
+	if "--probe-observation" not in OS.get_cmdline_user_args():
+		print("RECIPE_FLAGS_OK")
+		get_tree().quit(0)
+		return
+	var runtime := SceneRecipeRuntime.new()
+	var data := {"name": "failed observation", "playback": {"duration": 1.0 / 60.0,
+		"observations": [{"tick": 1, "subject": "missing", "condition": "moving"}]}}
+	runtime.configure({"data": data, "anchors": {}, "manifest": {}}, true)
+	add_child(runtime)
+	runtime.set_physics_process(false)
+	runtime._active = true
+	runtime._physics_process(1.0 / 60.0)
+	if runtime._active or runtime.manifest.playback_complete:
+		get_tree().quit(15)
+		return
+	if runtime.manifest.observations.size() != 1 or runtime.manifest.observations[0].passed:
+		get_tree().quit(16)
+		return
+	print("OBSERVATION_STOPPED_BEFORE_SUCCESS")
+	# Keep the runtime's own quit(1); this probe must not replace its failure status.
+"""
+
+func run(t) -> void:
+	_test_schema(t)
+	_test_arguments(t)
+	_test_inputs(t)
+	_test_real_argv_and_failure(t)
+
+func _test_schema(t) -> void:
+	var valid := {"setup": {"day": 1, "parent": "mother"},
+			"playback": {"duration": 2, "walk": "0.5s0.5E1p"}}
+	t.check(SceneRecipeRuntime.validate_runtime(valid).is_empty(), "valid optional runtime defaults are accepted")
+	var invalid: Array[Dictionary] = [
+		{"setup": {"day": 1.5}},
+		{"setup": {"parent": "unknown"}},
+		{"setup": {"player": []}},
+		{"setup": {"player": {"facing": "northwest"}}},
+		{"setup": {"player": {"at": [0]}}},
+		{"setup": {"player": {"excitement": INF}}},
+		{"setup": {"background": {"crowd": "false"}}},
+		{"setup": {"progression": {"escape_part": "city"}}},
+		{"setup": {"events": "not an array"}},
+		{"setup": {"events": [{"name": "event", "row": "unknown", "at": [0, 0]}]}},
+		{"setup": {"actors": [{"name": "actor", "kind": "train", "at": [0, 0], "direction": "east"}]}},
+		{"setup": {"actors": [{"name": "player", "kind": "walker", "at": [0, 0], "direction": "east"}]}},
+		{"setup": {"actors": [{"name": "actor", "kind": "walker", "at": [0, 0], "direction": "diagonal"}]}},
+		{"setup": {"unsupported": true}},
+		{"playback": {"walk": "1q"}},
+		{"playback": {"duration": "two"}},
+		{"playback": {"camera": {"zoom": 0}}},
+		{"playback": {"caption": false}},
+		{"playback": {"observations": [{"tick": -1, "subject": "player", "condition": "moving"}]}},
+		{"playback": {"observations": [{"tick": 1, "subject": "unknown", "condition": "moving"}]}},
+		{"playback": {"observations": [{"tick": 1, "subject": "player", "condition": "teleporting"}]}},
+		{"playback": {"unsupported": true}},
+	]
+	for recipe in invalid:
+		t.check(not SceneRecipeRuntime.validate_runtime(recipe).is_empty(),
+				"malformed runtime data is rejected: %s" % [recipe])
+
+func _test_arguments(t) -> void:
+	for args: PackedStringArray in [
+		PackedStringArray(["--recipe-mode", "unknown"]),
+		PackedStringArray(["--seed", "3"]),
+		PackedStringArray(["--day", "3"]),
+		PackedStringArray(["--walk", "1s"]),
+		PackedStringArray(["--recipe-mode", "free", "--after", "1"]),
+	]:
+		var loaded := SceneRecipeRuntime.load_recipe(EXAMPLE, args)
+		t.check(not loaded.errors.is_empty(), "conflicting or unknown recipe arguments fail: %s" % [args])
+	var output: Array = []
+	var status := OS.execute("bash", PackedStringArray([
+		ProjectSettings.globalize_path("res://tools/run.sh"), "--recipe", EXAMPLE,
+		"--unknown-recipe-flag"]), output, true)
+	t.check(status != 0 and str(output).contains("--unknown-recipe-flag"),
+			"run.sh rejects an unknown flag before launching a game")
+
+func _test_inputs(t) -> void:
+	var runtime := SceneRecipeRuntime.new()
+	runtime.configure({"data": {"playback": {"duration": 3, "walk": "1e1N1p"}},
+			"anchors": {}, "manifest": {}}, true)
+	runtime.tick = 0
+	runtime._apply_input()
+	t.check(Input.is_action_pressed("move_right") and not Input.is_action_pressed("run"),
+			"walking script presses the real right input without running")
+	runtime.tick = 60
+	runtime._apply_input()
+	t.check(Input.is_action_pressed("move_up") and Input.is_action_pressed("run")
+			and not Input.is_action_pressed("move_right"), "turning releases the previous direction and presses real run input")
+	runtime.tick = 120
+	runtime._apply_input()
+	t.check(Input.get_vector("move_left", "move_right", "move_up", "move_down") == Vector2.ZERO
+			and not Input.is_action_pressed("run"), "script pause releases movement and running")
+	runtime.tick = 0
+	runtime._apply_input()
+	runtime._release_input()
+	t.check(not Input.is_action_pressed("move_right"), "runtime cleanup releases its held input")
+	runtime.free()
+
+func _test_real_argv_and_failure(t) -> void:
+	var stem := "user://scene_recipe_runtime_probe_%d" % OS.get_process_id()
+	var script_path := stem + ".gd"
+	var scene_path := stem + ".tscn"
+	var script := FileAccess.open(script_path, FileAccess.WRITE)
+	script.store_string(PROBE)
+	script.close()
+	var scene := FileAccess.open(scene_path, FileAccess.WRITE)
+	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % script_path)
+	scene.close()
+	for mode in ["free", "scripted", "failure"]:
+		var args := PackedStringArray(["--headless", "--path", ProjectSettings.globalize_path("res://"),
+				"--quit-after", "120", scene_path, "--", "--recipe", EXAMPLE,
+				"--recipe-mode", "free" if mode == "free" else "scripted"])
+		if mode == "failure":
+			args.append("--probe-observation")
+		var output: Array = []
+		var status := OS.execute(OS.get_executable_path(), args, output, true)
+		var text_output := "\n".join(output)
+		t.check(not text_output.contains("SCRIPT ERROR") and not text_output.contains("ERROR:"),
+				"%s child completes without engine errors: %s" % [mode, text_output])
+		if mode == "failure":
+			t.check(status == 1 and text_output.contains("OBSERVATION_STOPPED_BEFORE_SUCCESS"),
+					"a failed observation at the final tick stops with failure instead of reporting playback success")
+		else:
+			t.check(status == 0 and text_output.contains("RECIPE_FLAGS_OK"),
+					"%s recipe reads real argv, keeps the intended input mode and disables saves" % mode)
+	DirAccess.remove_absolute(scene_path)
+	DirAccess.remove_absolute(script_path)
+	DirAccess.remove_absolute(script_path + ".uid")
