@@ -84,9 +84,9 @@ for k, (dx, dy, col) in CAND.items():
         text(c[0], c[1], k, f_b, fill=(0, 0, 0), anchor="mm")
 
 L = [
-    ("A  outward (the current spot, (130,480) / (1150,480))", (235, 90, 60),
+    ("A  outward (the first spot, (130,480) / (1150,480))", (235, 90, 60),
      "takes the due-away walk heading, 64-156px out of the ring (a +/-25 degree wedge); sits on the badge strip x=104 (y 116-572) and the arrow strip x=96, under the thumb."),
-    ("B  inward ((350,480) / (930,480))", (60, 160, 235),
+    ("B  inward ((350,480) / (930,480)) -- CHOSEN by the player (inbox #477)", (60, 160, 235),
      "takes the due-toward-the-middle heading, 64-156px out of the ring; clear of badges, arrows and the HUD; ends 196px short of the stop band; just above the day hint text."),
     ("C  below the ring ((240,590) / (1040,590))", (180, 120, 235),
      "takes the due-south heading, 64-156px out; clear of the badge strip (x 194-286 vs 80-128) and the HUD; its top 18px sit inside the day hint's label box (y 514-574), not its text."),
