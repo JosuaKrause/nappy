@@ -150,9 +150,13 @@ left findings that the same PR fixes.
 **Input can supply a release's own `push`.** `tools/release.sh` tags and publishes only with a
 second `push` argument, and input appends arguments: `echo push | xargs tools/release.sh patch`
 runs `tools/release.sh patch push`. Under an active xargs or GNU parallel context the script is
-therefore a write whether or not `push` is written, and it is denied, never asked about. Input can
-only add words, never remove one, so `land-prs.sh` and `update-pr.sh` with a written `--dry-run`
-stay reads.
+therefore a write whether or not `push` is written, and it is denied, never asked about. Appended
+input cannot remove a written word, so `land-prs.sh` and `update-pr.sh` with a written `--dry-run`
+stay reads; input placed at a replacement token replaces the word that holds it, so a `--dry-run`,
+`--version`, `--help`, `--abort`, `--quit`, `--no-commit` or `--ff-only` holding the wrapper's
+token (`ls | xargs -I--dry-run tools/update-pr.sh --dry-run`, `xargs -Idry tools/update-pr.sh
+--dry-run`, `xargs -I--ff-only git merge --ff-only`) is read as not written, and the command as a
+write.
 
 **An escaped separator is an option's value, not a command boundary.** A backslash-escaped `\;`,
 `\|` or `\&` written as a word of its own outside quotes is an argument to the shell, so `xargs

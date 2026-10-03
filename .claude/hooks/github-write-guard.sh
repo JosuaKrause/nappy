@@ -75,8 +75,12 @@
 # git or gh that is only an argument (`xargs grep -l git`, `rg 'xargs git'`) or carries `--version`
 # or `--help` among its own options is not. `tools/release.sh` run by such a wrapper is a write
 # with no written `push` (`echo push | xargs tools/release.sh patch`): input can append the `push`
-# that tags and publishes a release. Input
-# only ever adds words, so `land-prs.sh`/`update-pr.sh` with a written `--dry-run` stay reads. These
+# that tags and publishes a release. Appended input cannot take a written word away, so
+# `land-prs.sh`/`update-pr.sh` with a written `--dry-run` stay reads; but input placed at a
+# replacement token replaces the word holding it, so a read flag holding the wrapper's token
+# (`xargs -I--dry-run tools/update-pr.sh --dry-run`, `xargs -Idry ...`, `xargs -I--version git
+# --version`, `xargs -I--ff-only git merge --ff-only`, `xargs -I--abort git rebase --abort`) is
+# not counted as written (`fixed_flags`), and the command is read as if it were missing. These
 # are denied rather than asked about; the coder identity
 # wrapper's exemption still applies, except where input reaches an issue write, which is denied
 # wrapped or not like a written one (below): a verb input supplies to a written `gh issue` (`echo
@@ -877,6 +881,16 @@ def opener_counts($w0):
 def openers_between($t; $a; $b):
   $t.oc != null and ($t.oc[$b] - $t.oc[$a]) > 0;
 
+# A read exception rests on a written flag (`--dry-run`, `--version`, `--help`, `--abort`,
+# `--ff-only`, ...), and input placed at a replacement token inside that flag replaces it: `ls |
+# xargs -I--dry-run tools/update-pr.sh --dry-run` runs `tools/update-pr.sh 3`. So under an active
+# input wrapper a flag holding one of its replacement tokens is not counted as written. The flags
+# are matched as whole words, so whether a token is inside one is a test on the flag's own text.
+def input_tokens($t; $i):
+  ($t.xargs[$i] // null) | if . == null or (.active | not) then [] else .replacements end;
+def fixed_flags($tokens):
+  map(select(. as $f | any($tokens[]; . as $tok | $f | contains($tok)) | not));
+
 # The input can provide the command itself, not only its arguments. A missing word (including
 # a separator) or a replacement marker such as {}, % or REF cannot establish a readable verb.
 # That holds only for a git or gh the wrapper runs, in command position: one that is an argument
@@ -889,7 +903,8 @@ def unreadable_input_word($w; $t; $i; $p; $n; $cmd_pos):
   | $input.active
     and ($input.unreadable
          or (($cmd_pos or any($input.alts[]?; . == $i))
-             and (any(range($i + 1; [$p, $n] | min) | $w[.]; IN("--version", "--help")) | not)
+             and (any(range($i + 1; [$p, $n] | min) | $w[.];
+                      IN(["--version", "--help"] | fixed_flags($input.replacements // [])[])) | not)
              and ($p >= $n or ($word | test("^[a-z][a-z0-9-]*$") | not)
                   or any($input.replacements[]; . as $replacement | $word | contains($replacement)))));
 
@@ -933,16 +948,17 @@ def detect_git($w; $t; $i; $n; $cmd_pos):
                         else "git push" end)}
           elif $subcmd == "commit" then {next: ($sub + 1), reason: "git commit"}
           elif $subcmd | IN("cherry-pick", "revert", "am") then
-            (segment_scan($w; $sub + 1; $n; ["--abort", "--quit"])) as $sc
+            (segment_scan($w; $sub + 1; $n; ["--abort", "--quit"] | fixed_flags(input_tokens($t; $i)))) as $sc
             | {next: $sc.end, reason: (if $sc.found then null else ("git " + $subcmd) end)}
           elif $subcmd == "merge" then
-            (segment_scan($w; $sub + 1; $n; ["--abort", "--no-commit", "--ff-only"])) as $sc
+            (segment_scan($w; $sub + 1; $n; ["--abort", "--no-commit", "--ff-only"] | fixed_flags(input_tokens($t; $i))))
+              as $sc
             | {next: $sc.end, reason: (if $sc.found then null else "git merge" end)}
           elif $subcmd == "rebase" then
-            (segment_scan($w; $sub + 1; $n; ["--abort"])) as $sc
+            (segment_scan($w; $sub + 1; $n; ["--abort"] | fixed_flags(input_tokens($t; $i)))) as $sc
             | {next: $sc.end, reason: (if $sc.found then null else "git rebase" end)}
           elif $subcmd == "pull" then
-            (segment_scan($w; $sub + 1; $n; ["--ff-only"])) as $sc
+            (segment_scan($w; $sub + 1; $n; ["--ff-only"] | fixed_flags(input_tokens($t; $i)))) as $sc
             | {next: $sc.end, reason: (if $sc.found then null else "git pull" end)}
           else null
           end
@@ -1290,8 +1306,12 @@ def detect_tool($w; $t; $i; $cmd_pos):
     ($w[$i] | last_part) as $base
     | if (write_tool_names | index($base)) == null then null
       elif ($t.xargs[$i].unreadable // false) or script_is_write($t; $base; $i + 1)
-           # Input can append release.sh's own `push`; it can never take a `--dry-run` away.
+           # Input can append release.sh's own `push`, and input placed at a replacement token
+           # inside a written `--dry-run` replaces it (`xargs -I--dry-run tools/update-pr.sh
+           # --dry-run`); appended input cannot take a written `--dry-run` away.
            or ($base == "release.sh" and ($t.xargs[$i].active // false))
+           or (($base | IN("land-prs.sh", "update-pr.sh"))
+               and (["--dry-run"] | fixed_flags(input_tokens($t; $i)) | length) == 0)
       then {next: ($i + 1), reason: ("tools/" + $base)}
       else null
       end

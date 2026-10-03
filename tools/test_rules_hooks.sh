@@ -1223,6 +1223,32 @@ assert_write_guard "coder-wrapped gh api with input-supplied arguments allows" a
 assert_write_guard "reviewer-wrapped gh api with input-supplied arguments can merge and denies" deny \
     'uv run python tools/agent-identity.py run claude-reviewer -- xargs gh api repos/o/r/pulls/3'
 
+# Input placed at a replacement token replaces the word holding it, so a read flag holding the
+# token is no read flag: the dry run, --version and the abort-like flags fall to input.
+for input_replaced_flag in \
+    'ls | xargs -I--dry-run tools/update-pr.sh --dry-run' \
+    'parallel -I--dry-run tools/land-prs.sh --dry-run' \
+    'xargs -Idry tools/update-pr.sh --dry-run' \
+    'xargs -I--version git --version' \
+    'xargs -I--ff-only git merge --ff-only' \
+    'xargs -I--abort git rebase --abort' \
+    'parallel -I--ff-only git pull --ff-only' \
+    'xargs -I--quit git cherry-pick --quit'; do
+    assert_write_guard "a read flag input replaces denies: $input_replaced_flag" deny "$input_replaced_flag"
+done
+for input_fixed_flag in \
+    'xargs tools/update-pr.sh --dry-run' \
+    'xargs -I{} tools/update-pr.sh --dry-run {}' \
+    'xargs git --version' \
+    'xargs -I{} git merge --ff-only {}' \
+    'xargs git rebase --abort'; do
+    assert_write_guard "a read flag input cannot reach still allows: $input_fixed_flag" allow "$input_fixed_flag"
+done
+assert_write_guard "coder-wrapped replaced dry run still allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- xargs -I--dry-run tools/update-pr.sh --dry-run'
+assert_write_guard "reviewer-wrapped replaced dry run denies" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- xargs -I--dry-run tools/update-pr.sh --dry-run'
+
 # Input that reaches a gh issue write is an issue write, denied wrapped or not like a written one
 # (the inbox rule): a verb input supplies to a written gh issue, a noun input supplies (it can be
 # issue), flags input adds to a written issue endpoint, and a written gh issue whose wrapper's
