@@ -91,14 +91,21 @@ GODOT="$engine" "$tree/tools/check.sh" > "$output/setup.log" 2>&1
 snapshot "$tree" > "$output/runtime.sha256"
 validate
 digest="$(shasum -a 256 "$output/runtime.sha256" | cut -d ' ' -f 1)"
-printf 'order\tmode\ttrial\twarmup\tsource_revision\n' > "$output/order.tsv"
+printf 'order\tmode\ttrial\twarmup\tsource_revision\tload_average_before\n' > "$output/order.tsv"
 run_order=0
 capture() {
     local index="$1" trial="$2" warmup="$3" label status
     label="$(printf '%02d' "$run_order")-${names[$index]}-$trial"
     validate
-    printf '%s\t%s\t%s\t%s\t%s\n' "$run_order" "${names[$index]}" "$trial" "$warmup" "$revision" >> "$output/order.tsv"
+    # Other work on the machine shows in the load average even when it is not an engine.
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$run_order" "${names[$index]}" "$trial" "$warmup" "$revision" \
+        "$(uptime | sed 's/.*load averages*: //')" >> "$output/order.tsv"
     echo "Capture $label (warmup=$warmup)"
+    # Another engine (a test run from another checkout, say) competes for the same cores and
+    # GPU, so the comparison stops rather than recording its timings as a mode's.
+    others="$(pgrep -x Godot || true)"
+    [[ -z "$others" ]] || fail "another Godot process is running ($others); retry once it ends"
+    rm -f "$output/competition.tmp"
     GROUND_MATCH_OUTPUT="$output/$label.json" GROUND_MATCH_STRATEGY="${names[$index]}" \
         GROUND_MATCH_TRIAL="$trial" GROUND_MATCH_RUN_ORDER="$run_order" \
         GROUND_MATCH_SOURCE_REVISION="$revision" GROUND_MATCH_COLLECTOR_REVISION="$revision" \
@@ -106,7 +113,12 @@ capture() {
         --disable-vsync --resolution 1280x720 res://tests/probes/ground_frames_matched.tscn \
         -- --no-save --no-telemetry --ground-mode "${modes[$index]}" > "$output/$label.log" 2>&1 &
     child=$!
-    (sleep 150; kill "$child" 2>/dev/null) &
+    # The watchdog also samples, once a second, for any other Godot process that starts mid-capture.
+    (for _ in $(seq 150); do
+        kill -0 "$child" 2>/dev/null || exit 0
+        pgrep -x Godot | grep -vx "$child" >> "$output/competition.tmp" || true
+        sleep 1
+    done; kill "$child" 2>/dev/null) &
     watchdog=$!
     status=0
     wait "$child" || status=$?
@@ -114,12 +126,17 @@ capture() {
     kill "$watchdog" 2>/dev/null || true
     wait "$watchdog" 2>/dev/null || true
     watchdog=""
+    if [[ -s "$output/competition.tmp" ]]; then
+        printf '%s\t%s\n' "$label" "another Godot process ran during the capture" >> "$output/rejected.tsv"
+        fail "capture rejected: another Godot process ran during $label"
+    fi
     validate
     # The collector reports the mode the city actually ran, so a flag that did not arrive
     # rejects the capture rather than measuring the default three times.
     if [[ $status -ne 0 || ! -s "$output/$label.json" ]] \
             || grep -qE 'ERROR:|SCRIPT ERROR|WARNING:' "$output/$label.log" \
-            || ! jq -e --argjson mode "${modes[$index]}" '.failures == [] and .ground_mode == $mode' \
+            || ! jq -e --argjson mode "${modes[$index]}" \
+                '.failures == [] and .ground_mode == $mode and .forced_draws == 0' \
                 "$output/$label.json" >/dev/null; then
         printf '%s\t%s\n' "$label" "exit=$status; see retained log/result" >> "$output/rejected.tsv"
         fail "capture rejected: $label"
