@@ -7,7 +7,7 @@
       "name": "choice",
       "recipe": "scene-recipes/trailer-choice.json",
       "in": 0.3,
-      "length": 7
+      "length": 5.9
     },
     {
       "name": "blower",
