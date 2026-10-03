@@ -69,7 +69,7 @@ func run(t) -> void:
 	var scene := FileAccess.open(stem + ".tscn", FileAccess.WRITE)
 	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s.gd\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % stem)
 	scene.close()
-	for name in ["blower", "trucks", "gatehouse", "title"]:
+	for name in ["choice", "blower", "dog", "trucks", "gatehouse", "title"]:
 		var output: Array = []
 		var status := OS.execute(OS.get_executable_path(), PackedStringArray([
 			"--headless", "--path", ProjectSettings.globalize_path("res://"),

@@ -9,7 +9,7 @@
       {"at": [2000, 2256], "kind": "leader"}, {"at": [2064, 2256], "kind": "uniform"},
       {"at": [2096, 2256], "kind": "rules"}],
     "column": {"at": [1904, 2192], "direction": "north"}},
-  "playback": {"walk": "1.5s", "duration": 1.5, "capture_at": 0.75,
+  "playback": {"walk": "1.5s", "duration": 1.5, "capture_at": 0.75, "camera": {"zoom": 0.85},
     "observations": [{"tick": 9, "subject": "player", "condition": "moving"},
       {"tick": 9, "subject": "truck_1", "condition": "moving"},
       {"tick": 9, "subject": "truck_2", "condition": "moving"},
