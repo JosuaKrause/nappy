@@ -123,8 +123,11 @@ class ClassifyTests(unittest.TestCase):
         )
 
     def test_the_files_under_docs_the_game_reads_run_everything(self) -> None:
-        self.assertIn("docs/.gdignore", ci_classify.GAME_READS)
-        for path in ci_classify.GAME_READS:
+        # Listed here, not read back from GAME_READS: a loop over the tuple loses its case when the path leaves it.
+        paths = ("docs/TELEMETRY.md", "docs/COSTS.md", "docs/ARCHITECTURE.md", "docs/.gdignore")
+        for path in paths:
+            self.assertIn(path, ci_classify.GAME_READS)
+        for path in paths:
             with self.subTest(path=path):
                 self.assertEqual(self.flags("docs/CITY.md", path), (False, False, False))
 
@@ -383,10 +386,61 @@ class TranscriptionTests(unittest.TestCase):
         )
         self.assertEqual(len(failures), 1)
 
+    def test_a_note_without_the_inbox_label_fails_whoever_opened_it(self) -> None:
+        for author, labels in (
+            ("JosuaKrause", ()),
+            ("JosuaKrause", ("queue_next",)),
+            ("nappy-claude-orchestrator[bot]", ("captured",)),
+        ):
+            with self.subTest(author=author, labels=labels):
+                failures = ci_transcription.check([note(author=author, labels=labels)], FILED_PLAYTEST)
+                self.assertEqual(len(failures), 1)
+                self.assertIn("not labelled `inbox`", failures[0])
+
     def test_a_pull_request_or_an_empty_note_fails(self) -> None:
         pull = ci_transcription.Note(number=5, author="JosuaKrause", labels=(), body="x", is_pull_request=True)
         self.assertIn("a pull request", ci_transcription.check([pull], FILED_PLAYTEST)[0])
         self.assertIn("no body", ci_transcription.check([note(body=" \r\n")], FILED_PLAYTEST)[0])
+
+    def test_only_a_playtest_file_the_pull_request_adds_is_read_from_the_head_not_the_checkout(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            repo = Path(folder)
+            git(repo, "init", "-q", "-b", "main")
+            (repo / "docs" / "playtests").mkdir(parents=True)
+            (repo / "docs" / "playtests" / "old.md").write_text("an old playtest", encoding="utf-8")
+            git(repo, "add", "-A")
+            git(repo, "commit", "-q", "-m", "base")
+            git(repo, "checkout", "-q", "-b", "branch")
+            (repo / "docs" / "playtests" / "old.md").write_text("an old playtest, appended to", encoding="utf-8")
+            (repo / "docs" / "playtests" / "new.md").write_text("a new playtest", encoding="utf-8")
+            (repo / "docs" / "other.md").write_text("not a playtest", encoding="utf-8")
+            git(repo, "add", "-A")
+            git(repo, "commit", "-q", "-m", "branch")
+            git(repo, "checkout", "-q", "main")  # the checkout is the base: the head's files are not on disk
+            changes = lib_ci.changed_files("main", "branch", cwd=repo)
+            self.assertEqual(
+                ci_transcription.added_playtests(changes, repo), {"docs/playtests/new.md": "a new playtest"}
+            )
+
+    def test_the_playtests_are_read_at_the_head_whatever_is_checked_out(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            repo = Path(folder)
+            git(repo, "init", "-q", "-b", "main")
+            (repo / "docs" / "playtests").mkdir(parents=True)
+            (repo / "docs" / "playtests" / "old.md").write_text("an old playtest", encoding="utf-8")
+            (repo / "docs" / "playtests" / "notes.txt").write_text("not markdown", encoding="utf-8")
+            git(repo, "add", "-A")
+            git(repo, "commit", "-q", "-m", "base")
+            git(repo, "checkout", "-q", "-b", "branch")
+            (repo / "docs" / "playtests" / "new.md").write_text("a new playtest", encoding="utf-8")
+            git(repo, "add", "-A")
+            git(repo, "commit", "-q", "-m", "branch")
+            git(repo, "checkout", "-q", "main")
+            self.assertEqual(
+                lib_ci.playtest_texts("branch", cwd=repo),
+                {"docs/playtests/new.md": "a new playtest", "docs/playtests/old.md": "an old playtest"},
+            )
+            self.assertEqual(lib_ci.playtest_texts("HEAD", cwd=repo), {"docs/playtests/old.md": "an old playtest"})
 
     def test_the_api_shape_is_read_whatever_the_state(self) -> None:
         data: dict[str, object] = {
