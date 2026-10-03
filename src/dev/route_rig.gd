@@ -434,14 +434,36 @@ func _reachable_point_near(centre: Vector2) -> Vector2:
 		return centre
 	for keep_clear: Dictionary in [clear, {}]:
 		for radius in range(1, _NEAREST_OPEN_SEARCH_RADIUS + 1):
-			for dy in range(-radius, radius + 1):
-				for dx in range(-radius, radius + 1):
-					if maxi(absi(dx), absi(dy)) != radius:
-						continue
-					var tile := centre_tile + Vector2i(dx, dy)
-					if _stands_open(tile, keep_clear):
-						return _city.map.tile_to_world(tile)
+			for offset in _ring_nearest_first(radius):
+				var tile := centre_tile + offset
+				if _stands_open(tile, keep_clear):
+					return _city.map.tile_to_world(tile)
 	return centre
+
+## The tiles of the square ring `radius` out from a tile, as offsets, **nearest first**: the four
+## straight across before anything diagonal. Scanned row by row instead, the ring's first open tile
+## below a door was its diagonal (45px from the door's point) rather than the tile straight below it
+## (32px), and arriving within `_ARRIVE_RADIUS` of that could leave her past day 8's `DOOR_REACH`
+## (50.6px), so the leg ended without the touch. Ties keep the row-by-row order, so the search is the
+## same every time.
+static func _ring_nearest_first(radius: int) -> Array[Vector2i]:
+	var ring: Array[Vector2i] = []
+	for dy in range(-radius, radius + 1):
+		for dx in range(-radius, radius + 1):
+			if maxi(absi(dx), absi(dy)) == radius:
+				ring.append(Vector2i(dx, dy))
+	var nearest_first: Array[Vector2i] = []
+	var lengths: Array[int] = []
+	for offset in ring:
+		var length := offset.length_squared()
+		var at := nearest_first.size()
+		for i in nearest_first.size():
+			if lengths[i] > length:
+				at = i
+				break
+		nearest_first.insert(at, offset)
+		lengths.insert(at, length)
+	return nearest_first
 
 func _stands_open(tile: Vector2i, keep_clear: Dictionary) -> bool:
 	return _city.map.is_open(tile) and not _city.map.is_obstructed(tile) and not keep_clear.has(tile)
