@@ -177,7 +177,13 @@ Every agent prompt contains, explicitly:
 **Create sparse worktrees before materializing files.** Use `git worktree add --no-checkout`,
 then enable non-cone sparse checkout and exclude `docs/evidence/`, `docs/reference/` and
 `docs/style-references/` unless the task needs them; materialize HEAD only after those exclusions
-are set. A tools-only task may omit runtime art/assets too. Worktrees share history, so clone
+are set. A tools-only task may omit runtime art/assets too. *(2026-10-03: "add wording to use
+sparse worktrees for subagents where applicable (obviously when evidence is needed it needs to be
+included)".)* **Claude Code's own worktree isolation makes a full checkout**, so for a task that
+needs none of those folders the orchestrator creates the sparse worktree itself and starts the
+agent in it without isolation, its path in the brief's `worktree:` line; a review agent's scratch
+checkout is made sparse the same way. A task whose evidence, references or style references are
+the point keeps the folders it needs. Worktrees share history, so clone
 depth does not avoid repeated working files. Before checkout, import, build or capture batches,
 check free space on the destination volume against the estimated peak working set plus explicit
 headroom; an unknown peak or inadequate room means measure or reduce the batch before starting.
