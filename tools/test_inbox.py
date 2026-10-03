@@ -356,6 +356,16 @@ class WriteTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual([args[6:9] for args, _ in fake.writes], [["issue", "close", "423"]])
 
+    def test_close_refuses_a_note_with_no_body(self) -> None:
+        # An empty body is in every text; CI fails such a note, so closing it would leave the
+        # filing pull request red with the note already closed.
+        fake = self.batch("Filed from #423", "# Playtest\n\n> anything\n")
+        fake.reads[f"repos/{REPO}/issues/423"] = issue(423, body="")
+        code, _, err = run(fake, "--role", "claude-orchestrator", "close", "--pr", "430")
+        self.assertEqual(code, 1)
+        self.assertIn("#423: the note has no body to transcribe", err)
+        self.assertEqual(fake.writes, [])
+
     def test_close_refuses_a_merged_pull_request_and_a_note_that_is_not_the_players(self) -> None:
         fake = self.batch("Filed from #423", BODY, state="closed", merged=True)
         self.assertIn("is merged", run(fake, "--role", "claude-orchestrator", "close", "--pr", "430")[2])
@@ -432,6 +442,27 @@ class AgreementTests(unittest.TestCase):
                 theirs = self.ci.Note(number=7, author=author, labels=labels, body="b", is_pull_request=is_pr)
                 self.assertEqual(inbox.skip_reason(ours) is None, filable)
                 self.assertEqual(self.ci.author_failure(theirs) is None, filable)
+
+    def test_a_note_with_no_body_fails_both_alike(self) -> None:
+        # The same note, the same playtest file: both refuse it, in the same words.
+        text = {"docs/playtests/2026-10-03-x-y.md": "# Playtest\n\n> anything\n"}
+        for body in ("", " \n> \n"):
+            with self.subTest(body=body):
+                ours = inbox.Note(
+                    number=7,
+                    title="t",
+                    author=inbox.PLAYER,
+                    labels=("inbox",),
+                    body=body,
+                    state="open",
+                    url="u",
+                    is_pull_request=False,
+                )
+                theirs = self.ci.Note(
+                    number=7, author=inbox.PLAYER, labels=("inbox",), body=body, is_pull_request=False
+                )
+                normalized = {path: inbox.normalize(t) for path, t in text.items()}
+                self.assertEqual(inbox.unfiled_words(ours, [], normalized), self.ci.check([theirs], text))
 
     def test_a_description_names_the_same_notes(self) -> None:
         for text in ("Filed from #1\n- Filed from #2\n```\nFiled from #3\n```\nfiled from #4", "Closes #5"):

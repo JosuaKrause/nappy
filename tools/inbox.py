@@ -24,7 +24,8 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
     close --pr P             right after filing pull request P is pushed, closes every note its
                              description names, in one call (statement 22), and none unless each
                              note's body and the player's comments on it are word for word in
-                             one playtest file P adds
+                             one playtest file P adds (a note with no body is refused, as CI
+                             refuses it)
     reopen --pr P            reopens them when P was closed without merging
 
 **Only the player's notes count** (statements 19 and 23): an issue the player (`PLAYER`) opened,
@@ -450,9 +451,13 @@ def unfiled_words(note: Note, comments: Sequence[Comment], playtests: dict[str, 
     `playtests` maps each file a filing pull request adds to its `normalize`d text. The note's
     current body and every comment the player wrote on it (the answers the inbox skill copies with
     it) must all be in the same file; a comment by anybody else, the agent's own question
-    included, is not the player's words and is not required.
+    included, is not the player's words and is not required. A note with no body has nothing to
+    transcribe, and fails here with the words `tools/ci_transcription.py` fails it with, since an
+    empty body is in every text and would otherwise be closed for a filing CI then rejects.
     """
     body = normalize(note.body)
+    if not body:
+        return [f"#{note.number}: the note has no body to transcribe"]
     holding = [path for path, text in sorted(playtests.items()) if body in text]
     if not holding:
         return [f"the current text of #{note.number} is not word for word there"]
@@ -483,8 +488,8 @@ def cmd_close(github: GitHub, role: str | None, pr: int, dry_run: bool) -> int:
     if failures:
         where = ", ".join(sorted(playtests)) or f"no file under {PLAYTESTS}"
         raise InboxError(
-            f"not closing anything: {'; '.join(failures)} -- in what #{pr} adds ({where}); the note changed since it"
-            " was copied, or the copy is wrong"
+            f"not closing anything, checked against what #{pr} adds ({where}): {'; '.join(failures)}. A note that"
+            " changed since it was copied is copied again; a wrong copy is fixed"
         )
     comment = f"Filed in #{pr}. From here on the playtest file is the record; a later thought is a new note."
     for note in pending:
