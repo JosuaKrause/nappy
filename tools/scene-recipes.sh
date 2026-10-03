@@ -6,33 +6,37 @@ usage() {
     cat <<'EOF'
 usage: tools/scene-recipes.sh [--help|-h] [--recipe FILE] [--output DIR] [--screenshots]
 
-Run every saved scene (or --recipe FILE) through its headless scripted assertions.
+Run every saved scene (or each repeated --recipe FILE) through its headless scripted assertions.
 Write logs and manifests to --output DIR (default build/scene-recipes).
 --screenshots also uses shot.sh at playback.capture_at seconds after the full simulation
-and movement begin, retaining the complete original telemetry run. Produces stills only.
+and movement begin. Retains the relevant still, action/capture manifests and small logs only.
 Example: tools/scene-recipes.sh --screenshots
 EOF
 }
 for arg in "$@"; do
     case "$arg" in --help|-h) usage; exit 0 ;; esac
 done
-recipe=""
+selected_recipes=()
 output="$root/build/scene-recipes"
 screenshots=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --recipe|--output)
             [[ $# -ge 2 && "$2" != --* ]] || { usage >&2; exit 2; }
-            if [[ "$1" == --recipe ]]; then recipe="$2"; else output="$2"; fi
+            if [[ "$1" == --recipe ]]; then selected_recipes+=("$2"); else output="$2"; fi
             shift 2 ;;
         --screenshots) screenshots=true; shift ;;
         *) usage >&2; exit 2 ;;
     esac
 done
-if [[ -n "$recipe" && ! -f "$recipe" ]]; then usage >&2; exit 2; fi
+if [[ ${#selected_recipes[@]} -gt 0 ]]; then
+    for recipe in "${selected_recipes[@]}"; do
+        if [[ ! -f "$recipe" ]]; then usage >&2; exit 2; fi
+    done
+fi
 cd "$root"
 recipes=(scene-recipes/*.json)
-if [[ -n "$recipe" ]]; then recipes=("$recipe"); fi
+if [[ ${#selected_recipes[@]} -gt 0 ]]; then recipes=("${selected_recipes[@]}"); fi
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 source "$root/tools/lib_dev_flags.sh"
 mkdir -p "$output"
@@ -61,10 +65,5 @@ for file in "${recipes[@]}"; do
             echo "scene capture has no complete telemetry provenance: $file" >&2
             exit 1
         fi
-        run_dir="$(dirname "$run_log")"
-        mkdir -p "$output/telemetry"
-        retained="$output/telemetry/$(basename "$run_dir")"
-        [[ ! -e "$retained" ]] || { echo "refusing to overwrite $retained" >&2; exit 1; }
-        cp -R "$run_dir" "$retained"
     fi
 done

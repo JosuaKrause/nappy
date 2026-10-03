@@ -95,6 +95,8 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	if not progression.get("blackout", false) is bool:
 		errors.append("setup.progression.blackout must be boolean")
 	if recipe.get("kind", "city") == "escape":
+		if not recipe.get("city", {}).get("closures", []).is_empty():
+			errors.append("city.closures is unsupported for escape scenes; select explicit finale events")
 		if progression.get("escape_part", "city") != "city":
 			errors.append("setup.progression.escape_part: recipes currently support the real city escape")
 		if int(setup.get("day", 1)) != Tuning.RUN_LENGTH_DAYS:
@@ -102,10 +104,13 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	elif progression.has("escape_part"):
 		errors.append("setup.progression.escape_part requires kind escape")
 	_number(setup.get("signal_time", 0), "setup.signal_time", 0, 86400, errors)
+	var structure_streets := {}
 	for collection in ["seals", "gates", "barriers"]:
 		if not setup.get(collection, []) is Array:
 			errors.append("setup.%s must be an array" % collection)
 			continue
+		if recipe.get("kind", "city") == "escape" and not setup.get(collection, []).is_empty():
+			errors.append("setup.%s is unsupported for escape scenes; select explicit finale events" % collection)
 		var seen := {}
 		for entry: Variant in setup.get(collection, []):
 			if not entry is Dictionary:
@@ -120,6 +125,9 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if not StreetNetwork.by_key(key) or seen.has(key):
 				errors.append("setup.%s has an unknown or duplicate street" % collection)
 			seen[key] = true
+			if structure_streets.has(key):
+				errors.append("setup structures select the same street in multiple collections")
+			structure_streets[key] = true
 			if collection == "seals":
 				var found := false
 				for candidate in SealPlanner.candidates():
@@ -352,6 +360,7 @@ func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
 	_select_structures(errors)
 	var plans := _event_plans(at, errors)
 	city.events.start_recipe(plans, GameState.day, at, data.get("kind", "city") == "escape")
+	city.refresh_street_trees()
 	map.recipe_exterior = exterior
 	if not errors.is_empty():
 		return errors
@@ -459,6 +468,9 @@ func _select_structures(errors: Array[String]) -> void:
 	for entry: Dictionary in setup.get("gates", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
 		var segment := StreetNetwork.by_key(key)
+		if not _segment_inside_extent(segment):
+			errors.append("setup.gates: selected street leaves the authored extent")
+			continue
 		if GameState.day < Tuning.REGION_WALL_FIRST_DAY:
 			errors.append("setup.gates: checkpoints are not available on this day")
 			continue
@@ -471,6 +483,9 @@ func _select_structures(errors: Array[String]) -> void:
 	for entry: Dictionary in setup.get("barriers", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
 		var segment := StreetNetwork.by_key(key)
+		if not _segment_inside_extent(segment):
+			errors.append("setup.barriers: selected street leaves the authored extent")
+			continue
 		if not _city.map.has_street(key) or _city.route_tree().is_on_the_tree(key) \
 				or GameState.day < Tuning.REGION_WALL_FIRST_DAY:
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
@@ -486,6 +501,10 @@ func _select_structures(errors: Array[String]) -> void:
 	region.alley_doors.clear()
 	region.alley_walls.clear()
 
+func _segment_inside_extent(segment: StreetNetwork.Segment) -> bool:
+	return not _city.map.recipe_bounds.has_area() \
+			or _city.map.recipe_bounds.encloses(segment.tile_rect())
+
 func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 	var plans: Array[EventScheduler.Planned] = []
 	var map := _city.map
@@ -495,6 +514,9 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 	for entry: Dictionary in data.get("setup", {}).get("seals", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
 		var segment := StreetNetwork.by_key(key)
+		if not _segment_inside_extent(segment):
+			errors.append("setup.seals: selected street leaves the authored extent")
+			continue
 		var home := ClosurePlanner.home_street(map)
 		if not map.has_street(key) or _city.route_tree().is_on_the_tree(key) \
 				or (home and key == home.key()) or SealPlanner._is_the_main_road(map, segment):

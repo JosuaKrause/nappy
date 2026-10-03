@@ -18,6 +18,7 @@ func _ready() -> void:
 		fail("real Main did not finish recipe setup")
 		return
 	var initial := {"actors": recipe.snapshot(), "day": GameState.day,
+		"events": recipe.manifest.get("installed_events", []),
 		"seed": GameState.run_seed, "sleep": (main.get("_baby") as Baby).sleepiness,
 		"excitement": (main.get("_baby") as Baby).excitement}
 	if not player.global_position.is_equal_approx(recipe.start_position()):

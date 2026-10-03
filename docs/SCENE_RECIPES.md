@@ -22,7 +22,7 @@ same setup; free play keeps physical input, the ordinary camera and no recipe de
 disable saves. A normal restart reloads the saved setup.
 
 `tools/scene-recipes.sh` runs every scene's scripted assertions headlessly and retains logs and
-JSON manifests. `--recipe FILE` selects one; `--output DIR` chooses their folder.
+JSON manifests. Repeated `--recipe FILE` selects a subset; `--output DIR` chooses their folder.
 `--screenshots` also photographs each scene at its `playback.capture_at` time. This is elapsed
 simulation time after the full world and movement start: events, traffic, animation and the
 camera advance together during this pre-roll. It is adjustable independently for every scene.
@@ -181,6 +181,12 @@ district fixture choices and two-cell straight-duct footprint validate the compl
 Duplicate lots, edge cells, overlapping fixtures and unknown kinds fail. An empty array clears
 that roof's fixtures; omitted roofs keep their seeded furniture. Streaming restores the same
 authored layout. Power-station fixtures retain their specialized production layout.
+
+Escape recipes reject ordinary `seals`, `gates`, `barriers` and `city.closures`; their supported
+explicit objects are the finale `events`. Bounded recipes require every selected structure's
+whole street segment inside the authored extent, so a gate or barrier is never installed only
+in part. Capture collection retains relevant PNGs, manifests and compact logs without copying
+the telemetry run's additional maps or automatic stills.
 
 Run `tools/test.sh scene_recipe` for construction, parser rejection, ordinary eligibility,
 independent seeds, actual City roof coverage and bounded fallback checks. Use the runtime's

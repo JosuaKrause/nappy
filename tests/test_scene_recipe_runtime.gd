@@ -99,6 +99,12 @@ func _test_schema(t) -> void:
 	t.check(SceneRecipeRuntime.validate_runtime(valid).is_empty(), "valid optional runtime defaults are accepted")
 	var invalid: Array[Dictionary] = [
 		{"setup": {"day": 1.5}},
+		{"setup": {"day": 13, "seals": [{"segment": [3, 5, 0], "candidate": "cafe_pair"}],
+			"barriers": [{"segment": [3, 5, 0], "end": "b"}]}},
+		{"kind": "escape", "setup": {"day": 14, "seals": [{"segment": [5, 4, 0], "candidate": "cafe_pair"}]}},
+		{"kind": "escape", "setup": {"day": 14, "gates": [{"segment": [7, 6, 0]}]}},
+		{"kind": "escape", "setup": {"day": 14, "barriers": [{"segment": [3, 5, 0], "end": "b"}]}},
+		{"kind": "escape", "setup": {"day": 14}, "city": {"closures": [{"segment": [3, 5, 0], "kind": "cordon"}]}},
 		{"setup": {"parent": "unknown"}},
 		{"setup": {"player": []}},
 		{"setup": {"player": {"facing": "northwest"}}},
