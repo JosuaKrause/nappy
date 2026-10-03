@@ -8,7 +8,10 @@ description: The player's inbox on GitHub Issues — where it is found at the st
 **GitHub Issues are the player's inbox, and nothing else.** *(2026-09-27: "the important thing is
 that it ends up in a safe queue in issues and I can choose when we want to turn those into a doc
 update PR (so I can even go in and edit the issues after the fact before the get merged)".)* A
-note is an open issue carrying the label `inbox`. The player writes one at any time, edits it
+note is an open issue carrying the label `inbox`, and an issue without it is never filed, whoever
+opened it *(2026-10-03: "if an issue has no inbox label it shouldn't get filed")*: `tools/inbox.py`
+skips it and refuses to close a batch naming it, and CI's `tools/ci_transcription.py` fails a
+filing pull request that names it. The player writes one at any time, edits it
 until it is filed, and says when a batch of notes becomes a filing pull request. The queue, the
 review items, the playtest files and the decision records stay in the repository, because an
 entry is reviewed when it enters the queue (`tools/decisions.sh leafy-finch` has the reasons,

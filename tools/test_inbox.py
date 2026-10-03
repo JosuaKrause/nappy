@@ -375,7 +375,38 @@ class AgreementTests(unittest.TestCase):
         self.assertEqual(self.ci.PLAYER, inbox.PLAYER)
         self.assertEqual(tuple(self.ci.CAPTURE_BOTS), inbox.CAPTURE_BOTS)
         self.assertEqual(self.ci.CAPTURE_LABEL, inbox.CAPTURE_LABEL)
+        self.assertEqual(self.ci.INBOX_LABEL, inbox.INBOX_LABEL)
         self.assertEqual(set(inbox.WRITE_ROLES.values()), set(inbox.CAPTURE_BOTS))
+
+    def test_the_same_notes_are_filable(self) -> None:
+        # Both rules run over the same notes and agree on every one. The label rule is the player's
+        # (2026-10-03: "if an issue has no inbox label it shouldn't get filed"): without `inbox` a
+        # note is not filed, whoever opened it and whatever else it carries.
+        bot = inbox.CAPTURE_BOTS[0]
+        samples = [
+            ("the player, labelled inbox", inbox.PLAYER, ("inbox", "queue_next"), False, True),
+            ("the player, no inbox label", inbox.PLAYER, ("queue_next",), False, False),
+            ("the capture bot, inbox and captured", bot, ("inbox", "captured"), False, True),
+            ("the capture bot, captured but no inbox", bot, ("captured",), False, False),
+            ("the capture bot, inbox but not captured", bot, ("inbox",), False, False),
+            ("somebody else, inbox and captured", "someone", ("inbox", "captured"), False, False),
+            ("a pull request by the player, inbox", inbox.PLAYER, ("inbox",), True, False),
+        ]
+        for label, author, labels, is_pr, filable in samples:
+            with self.subTest(label):
+                ours = inbox.Note(
+                    number=7,
+                    title="t",
+                    author=author,
+                    labels=labels,
+                    body="b",
+                    state="open",
+                    url="u",
+                    is_pull_request=is_pr,
+                )
+                theirs = self.ci.Note(number=7, author=author, labels=labels, body="b", is_pull_request=is_pr)
+                self.assertEqual(inbox.skip_reason(ours) is None, filable)
+                self.assertEqual(self.ci.author_failure(theirs) is None, filable)
 
     def test_a_description_names_the_same_notes(self) -> None:
         for text in ("Filed from #1\n- Filed from #2\n```\nFiled from #3\n```\nfiled from #4", "Closes #5"):
