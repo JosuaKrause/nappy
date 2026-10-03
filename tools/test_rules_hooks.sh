@@ -1836,11 +1836,17 @@ assert_write_guard_timed "64 KB of separators in a heredoc, then git push -> den
 ${dense_under_bound}
 EOF
 git push"
+# A kept heredoc is read whole, so this is the densest command under the bound read the slow way.
+# The cost is the whole reading's, not the text-only reading's: the guard before that reading took
+# the same time on the same kept 64 KB body (measured 2026-10-03, quiet: 2.9 s against 3.0 s on one
+# machine, 4.7 s against 5.0 s on another), and under load the default 8 s bound failed on both.
+# Its budget is the bound that still means something here, just under the hook's own 10-second
+# timeout.
 assert_write_guard_timed "64 KB of separators in a heredoc python3 reads, then git push -> deny" deny \
     "python3 - <<EOF
 ${dense_under_bound}
 EOF
-git push"
+git push" 9.5
 # An option's argument is skipped as one shell word, however it is quoted, escaped or joined by a
 # comma, so a quoted argument with a space in it is skipped whole and the word after it is the
 # subcommand: the push after it is read as the push, and wrapped it still allows. An empty quoted
