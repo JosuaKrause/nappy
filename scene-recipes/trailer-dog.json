@@ -2,7 +2,7 @@
   "version": 1, "name": "The charging dog's warning and the run away", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
   "anchors": {"start": {"world": [1856, 1936]}, "dog": {"world": [2287, 1936]}},
-  "setup": {"day": 3, "parent": "mother", "player": {"at": "start", "facing": "east"},
+  "setup": {"tutorial_complete": true, "day": 3, "parent": "mother", "player": {"at": "start", "facing": "east"},
     "events": [{"name": "dog", "row": "charging_dog", "at": "dog"}]},
   "playback": {"walk": "1.55e1.45W", "duration": 3, "capture_at": 1.85,
     "observations": [{"tick": 50, "subject": "dog", "condition": "visible"},

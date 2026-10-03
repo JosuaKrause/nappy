@@ -153,10 +153,12 @@ shot_game_flags() {
         --after "$(shot_render_seconds "$1")"
 }
 
-# Record through the cut's end on the recipe's simulation clock.
+# Run every authored assertion, even when the selected cut ends before the scene does.
 shot_render_seconds() {
+    local duration
+    duration="$(jq -r '.playback.duration // 5' "$PROJECT_DIR/$(shot_field "$1" recipe)")"
     awk -v a="$(shot_field "$1" in 0.5)" -v b="$(shot_field "$1" length)" \
-        'BEGIN { printf "%.3f\n", a + b }'
+        -v duration="$duration" 'BEGIN { end=a+b; printf "%.3f\n", end>duration ? end : duration }'
 }
 
 total_seconds="$(jq -r '[.shots[] | (.gap // 0) + .length] | add' "$SHOTS_FILE")"

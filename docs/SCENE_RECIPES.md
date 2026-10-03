@@ -37,6 +37,9 @@ screenshot moment, not a recording duration or a reset of the movement clock.
 `setup` accepts `day`, `parent` (`mother` or `father`), `player` (`at`, cardinal `facing`,
 initial `excitement` and `sleep`), `background` booleans `events`/`crowd`, `signal_time`,
 `progression`, named `events`, named `actors`, and the day-13 `column` formation.
+`tutorial_complete: true` starts after the ordinary control lessons, clearing those prompts
+while retaining gameplay warnings. Trailer scenes use this state so the lesson text does not
+cover their subjects. Free play uses the same authored teaching state.
 Positions name an anchor or give `[world_x,world_y]`. Background activity defaults off;
 random events cannot accompany pinned events, and random crowd cannot accompany pinned actors.
 

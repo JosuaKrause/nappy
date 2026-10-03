@@ -2,7 +2,7 @@
   "version": 1, "name": "From the doorstep to the living city", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
   "anchors": {"start": "doorstep"},
-  "setup": {"day": 1, "parent": "mother", "player": {"at": "start", "facing": "south"},
+  "setup": {"tutorial_complete": true, "day": 1, "parent": "mother", "player": {"at": "start", "facing": "south"},
     "background": {"events": true, "crowd": true}},
   "playback": {"walk": "5.3p", "duration": 5.3, "capture_at": 5, "camera": {"zoom_out": 4, "zoom_delay": 0.5},
     "observations": [{"tick": 15, "subject": "player", "condition": "visible"},
