@@ -234,7 +234,7 @@ There is no quest log and no marker beyond the red arrow's own narrow exception 
 world a mark is a chalk mark on an alley wall, drawn *under* everything that stands on it, found
 by walking past it. **The task is announced at the mark and nowhere else**: the instant she
 touches it, its own words flash where the walking and running lessons do, and then the HUD
-carries one terse line, *somewhere out there* and what she is looking for, for as long as the
+carries one terse line, *out there:* and what she is looking for, for as long as the
 task stands. How far in she is belongs between days rather than during one, on the day summary's
 own tally. **That HUD line is silent until the first mark has ever been touched**, and only later
 ones are named. The day brief is a separate channel and says less, not more: its own line for the
