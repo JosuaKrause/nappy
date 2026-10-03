@@ -104,9 +104,9 @@
 #     command substitution, a bare gh issue write, a merge, a release, a gh api write and a
 #     pushing script, while git tag and a read allow; with the switch unset, 0 or yes, every one
 #     of those writes denies
-#   - xargs or parallel input makes an unwrapped push unreadable, including wrapper options and
-#     quoted scripts; their reads, later separate branch pushes and coder identity wrappers keep
-#     their existing behavior
+#   - xargs/gxargs and parallel/env_parallel input makes an unwrapped push or missing/nonliteral
+#     git subcommand or gh noun/verb unreadable; pushing scripts behind their options are guarded;
+#     reads, later separate branch pushes and coder identity wrappers keep their existing behavior
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -1155,6 +1155,18 @@ assert_write_guard "parallel invoking the coder wrapper still allows" allow \
     'parallel uv run python tools/agent-identity.py run codex-coder -- git push origin {}'
 assert_write_guard "reviewer-wrapped parallel push still denies" deny \
     'uv run python tools/agent-identity.py run codex-reviewer -- parallel git push origin < tags.txt'
+assert_write_guard "coder-wrapped input-supplied git subcommand allows" allow \
+    'uv run python tools/agent-identity.py run codex-coder -- gxargs git'
+assert_write_guard "coder-wrapped input-supplied gh verb allows" allow \
+    'uv run python tools/agent-identity.py run codex-coder -- env_parallel gh pr'
+assert_write_guard "input wrapper invoking coder-wrapped incomplete gh allows" allow \
+    'parallel uv run python tools/agent-identity.py run codex-coder -- gh'
+assert_write_guard "reviewer-wrapped input-supplied git subcommand denies" deny \
+    'uv run python tools/agent-identity.py run codex-reviewer -- gxargs git'
+assert_write_guard "reviewer-wrapped input-supplied gh verb can merge and denies" deny \
+    'uv run python tools/agent-identity.py run codex-reviewer -- env_parallel gh pr'
+assert_write_guard "input wrapper invoking reviewer-wrapped incomplete gh denies" deny \
+    'parallel uv run python tools/agent-identity.py run codex-reviewer -- gh'
 
 # A write before the wrapper, or on a different command joined only by a separator, is not
 # covered by it: the wrapper's own exemption starts at its literal -- and ends at the next
@@ -1841,6 +1853,10 @@ assert_write_guard_reason "xargs input makes push refspecs unreadable" \
 # option's argument is one word; and a quoted separator is not the push's own when it belongs to
 # another command (a commit message) or sits at the push's own level in a quoted script.
 write_guard_asked=(
+    'gxargs git status; git push origin feature/x'
+    'env_parallel gh pr view && git push origin feature/x'
+    'parallel git status | git push origin feature/x'
+    'sh -c "env_parallel git status; git push origin feature/x"'
     'parallel git status < paths.txt; git push origin feature/x'
     'xargs git status < paths.txt; git push origin feature/x'
     'echo xargs && git push origin feature/x'
@@ -1909,6 +1925,39 @@ write_guard_asked=(
 # substitution; a bare gh issue write (bouncy-heron statement 14: "an agent shouldn't use gh issue
 # directly"); a merge, a release, a gh api write and a pushing tools/ script.
 write_guard_never_asked=(
+    'echo push origin v1 | xargs git'
+    'echo push origin v1 | parallel git'
+    'echo push | xargs -I{} git {} origin v1'
+    'echo commit -m x | xargs git'
+    'echo merge 3 | xargs gh pr'
+    'echo pr merge 3 | xargs gh'
+    'xargs git; git status'
+    'parallel gh pr && git status'
+    'parallel gh | head'
+    'xargs -I REF git REF origin v1'
+    'xargs -I % git % origin v1'
+    'parallel gh {} merge 3'
+    'xargs -I REF gh REF merge 3'
+    'xargs -I % gh pr % 3'
+    'parallel -I REF gh pr REF 3'
+    'xargs git -C repo'
+    'parallel gh -R o/r'
+    'xargs gh pr -R o/r'
+    'xargs -I{} sh -c "git status; git {} origin v1"'
+    'parallel sh -c "gh pr view; gh pr {} 3"'
+    'echo v1 | gxargs -I{} git push origin {}'
+    'echo v1 | env_parallel git push origin'
+    'gxargs git'
+    'env_parallel gh pr'
+    'ls | parallel tools/release.sh patch push'
+    'parallel tools/land-prs.sh 3'
+    'parallel tools/update-pr.sh 3'
+    'parallel tools/prune-merged.sh feature/x'
+    'parallel -j 2 --jobs 2 -a inputs --arg-file inputs -I REF -n 1 -N 1 -L 1 -S host --sshlogin host -d , --colsep , tools/land-prs.sh 3'
+    'env_parallel -j 2 --jobs 2 -a inputs --arg-file inputs -I REF -n 1 -N 1 -L 1 -S host --sshlogin host -d , --colsep , tools/update-pr.sh 3'
+    'gxargs -n 1 -I REF -a inputs tools/prune-merged.sh feature/x'
+    '/usr/local/bin/env_parallel --jobs=2 tools/release.sh patch push'
+    '/opt/homebrew/bin/gxargs --max-args=1 tools/release.sh patch push'
     'echo v1 | parallel git push origin'
     'parallel git push origin {} < t'
     'ls | parallel -j1 git push origin {}'
@@ -2042,6 +2091,20 @@ write_guard_never_asked=(
 )
 # A read, and `git tag` itself, which changes only the local repository, stay allowed.
 write_guard_allowed=(
+    'gxargs -n 1 git status'
+    'env_parallel --jobs 2 git log'
+    'parallel gh pr view'
+    'xargs gh issue list'
+    'env_parallel gh browse'
+    'gxargs gh search prs'
+    'parallel -j 2 cat tools/land-prs.sh'
+    'env_parallel --colsep , cat tools/update-pr.sh'
+    'gxargs -I REF cat tools/release.sh'
+    'parallel --jobs 2 tools/update-pr.sh --dry-run 3'
+    'env_parallel -j 2 tools/land-prs.sh --dry-run 3'
+    'parallel tools/release.sh patch'
+    'xargs git status; git'
+    'env_parallel git status; gh pr'
     'parallel git status'
     'xargs git status < paths.txt'
     'echo main | xargs -I{} git log --oneline {}'
