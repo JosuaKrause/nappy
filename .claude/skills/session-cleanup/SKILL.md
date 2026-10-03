@@ -108,13 +108,49 @@ The items under `docs/review/` hold what waits on a person: **committing** says 
 playtest deletes one; close every item a playtest this session covered, and check both happened
 for this session's work.
 
+### 6b. Finish the job's storage cleanup
+
+**A completed job cleans up its own scratch immediately, and the session verifies that it did.**
+Temporary placement is not proof that a directory is disposable. Record exact scratch paths,
+their owner and retained outputs when starting a worktree, build, capture or browser run. Scripts
+use a scoped `EXIT` trap or `finally`, stop and wait for their child processes, retain diagnostic
+logs/results and requested evidence, then remove only their own intermediate files. On failure,
+preserve the evidence needed to diagnose it and name any retained directory and its next cleanup
+step; do not silently leave a complete checkout or compiler tree behind as "temporary".
+
+**Review worktrees with `tools/prune-merged.sh --all`.** It is a read-only candidate inventory;
+`--all --apply` applies its safety checks again. Run the inventory through the same `uv run python
+tools/agent-identity.py run <role> --` wrapper as the apply (**committing** names the role and the
+exact line `.claude/settings.json` allows), since `github-write-guard.sh` denies the script bare
+in every shape, its read-only ones included. Finished agents explicitly release their brief
+with `cleanup: ready` after stopping and preserving useful ignored artifacts. Locked, dirty,
+unpushed or actively owned work stays. An unmerged but finished job may remove its own clean
+scratch checkout only after confirming pushed recovery and retained evidence; retain the branch.
+Never force-remove or unlock another job's checkout to make cleanup succeed.
+
+**Browser runs own more than a profile.** Track downloaded/extracted browser copies, build trees,
+profiles and signing-clone leftovers attributable to the run, including operating-system temp
+locations outside `/tmp`. Stop the owning processes and check exact paths before removing them.
+A browser's installed application, the player's regular profile and arbitrary OS/application
+caches are not job-owned scratch. A one-time request to remove identified directories does not
+authorize future blanket deletion of the application's temporary area.
+
+**Check actual free space before and after.** `du` gives allocated sizes that may overlap shared
+copy-on-write blocks; it does not promise exclusive reclaimable bytes. `df` on each destination
+volume measures the available headroom. Before multiplying worktrees or producing large imports,
+builds or capture batches, compare estimated peak use with free space and a stated reserve.
+When the peak is unknown, start with a bounded measurement or reuse an existing checkout rather
+than claiming an arbitrary fixed threshold makes the job safe. Keep unrelated tracked archives
+out of new worktrees through sparse checkout (**orchestrating**).
+
 ### 7. There is no checked-in handoff
 
 **Nothing in the repository says where a session stopped.** *(2026-09-26: "we don't need session
 handover across agents. each have their own threads to work on. let's remove the handoff file from
-github".)* The pick-up state is live — `gh pr list`, `tools/agent-status.sh`, `tools/queue.sh` and
-the items under `docs/review/` answer it at the moment they are asked — and what a document would
-have said about it is stale the moment another thread merges. So the session's end writes nothing
+github".)* The pick-up state is live — `gh pr list`, `tools/agent-status.sh`, `tools/queue.sh`, the
+inbox (`uv run python tools/inbox.py list`, **inbox**) and the items under `docs/review/` answer
+it at the moment they are asked — and what a document would have said about it is stale the
+moment another thread merges. So the session's end writes nothing
 checked in about itself: the durable part of what it learned is already in a skill, a doc, an
 entry, a review item or a record by the steps above, and the rest is the restart prompt below.
 `tools/decisions.sh handoff` has the reasons.
@@ -128,12 +164,15 @@ that git ignores, and never into the chat**: copying long text out of the CLI co
 write it to a local file and don't check it in")*. Each handover overwrites the file, and the
 report in the chat names its path. Do not require the next session to have read this conversation or
 to resume an old agent transcript. The prompt tells it to fetch and inspect live PR state
-(`gh pr list`, `tools/agent-status.sh`), then read `CLAUDE.md` and `docs/TODO.md`, run
-`tools/queue.sh`, and read the named work-item sources before acting.
+(`gh pr list`, `tools/agent-status.sh`) and the inbox (`uv run python tools/inbox.py list`), then
+read `CLAUDE.md` and `docs/TODO.md`, run `tools/queue.sh`, and read the named work-item sources
+before acting.
 
 Name every open thread by PR number and short title, branch or worktree when relevant, current
-checkpoint, exact next action, remaining gate and verification already completed. Restate the
-scope fences that matter. If delegation should continue, say to start fresh agents with
+checkpoint, exact next action, remaining gate and verification already completed. **List the
+open inbox notes** by issue number and title, as `tools/inbox.py list` prints them at the
+handover, so the next session knows what the player has written and nobody has filed yet
+(**inbox**). Restate the scope fences that matter. If delegation should continue, say to start fresh agents with
 self-contained briefs rather than resuming the session's agents. Keep the prompt self-contained and
 current at the moment of handover; the final report may summarize it, but the file must stand on
 its own.

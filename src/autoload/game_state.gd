@@ -58,8 +58,8 @@ var completed_resistance_steps: Array[int] = []
 var failed_resistance_steps: Array[int] = []
 
 ## Permanent marks a one-off event left on the city: `{ id, position, since_day }`.
-## The burnt-out building from day 3 is still on that corner on day 12, cordoned off and
-## never repaired — the city remembers, which is most of how the escalation is told.
+## The building day 3's fire caught is still drawn burnt on that corner on day 12, never
+## repaired — the city remembers, which is most of how the escalation is told.
 var scars: Array[Dictionary] = []
 
 ## Where each block currently is along its arc. Run-scoped, like everything else here: the

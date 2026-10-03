@@ -1,0 +1,855 @@
+{
+  "raw_inputs": {
+    "trees-family-v2-cardinal.png": "1caa7f0fda1849a981c5b63a9327f00a8301721ce3b27ea0e8216fbb9cb52b2e",
+    "water-horizontal-layers-v1.png": "ba470782beee03204c29edde97b9ac2c34385d89940c66e3f3285cab9f83f44f",
+    "water-vertical-layers-v1.png": "86af2b3e2604ebd60b8c760d1680f55b369b7d0946e9f432ea675372fe847807"
+  },
+  "frozen_source_renders": {
+    "closures-fallen_tree.png": "370d710554598febc3f3b8b2cf2415c9ae48a5aed21e562d611d0aed88308c10",
+    "closures-fallen_tree_vertical.png": "977147353fe782f460de158b4a13c7c9d54abc8a1c961f42cfccc0c9143c1413",
+    "events-burst_water_main.png": "64997a39280fc5fc8cf7583cf2f910e8e8a8c109cde7b6705a2dd631be1ea517",
+    "events-burst_water_main_b.png": "b861d25e76475e28d838847363722bea438c657cb21870eaa1c02ef73942bc36",
+    "events-burst_water_main_vertical.png": "88a5285b5b88cfc9c28663ee70eefa71c61fe8bc698548af20fb91bcdc41ba5b",
+    "events-burst_water_main_vertical_b.png": "e2ce5d82dc2528e27fb48bc8bafbe41fc1f1760d0b1b8e4c4aed229164fa8bd5",
+    "events-fallen_tree.png": "8bfdc25175a9bed64fec69a746ee78d4188a8a90b60871cd44469f0d265bb97d",
+    "events-fallen_tree_vertical.png": "70f3bab8475fd167a7ca4305e269f1d84851463776d20ccb43971cdfadc3e561",
+    "water-layers-native/burst_water_main_motion_1.png": "62941584c5391accaf0b140f5675f273e19593ac2cbe653d3e2ab3932a7ff122",
+    "water-layers-native/burst_water_main_motion_1_b.png": "d9050b487a37f42c2a9ea4b98f18f8d8ad8b3d3fce28b51a7962353d8acabd16",
+    "water-layers-native/burst_water_main_motion_3.png": "1328af78f9aaf34e5059e1cba591d7e40bfc1186620c8c6f50ca58b46b70c8a1",
+    "water-layers-native/burst_water_main_motion_3_b.png": "d49860f56b10204c6888a84e2a909c34876f5fd9b76a93c4322827a9ba207a1f",
+    "water-layers-native/burst_water_main_motion_5.png": "10a42ec33f309cdef3aebfdef21ee957a23b2e3cc3157d5af726b436eec2a2a9",
+    "water-layers-native/burst_water_main_motion_5_b.png": "8d956e1873485ef41fd138ba9b76d2fadb9d9e1561bdee34db4ce58ace5ac36e",
+    "water-layers-native/burst_water_main_static_0.png": "9576666189eed1109efd8d15aab9db109033ffc57bbfca958d6e758767fe01dc",
+    "water-layers-native/burst_water_main_static_2.png": "3b57a65210ab5fb21c621e68795533c87e6e6a14898e0681201667310b89c86e",
+    "water-layers-native/burst_water_main_static_4.png": "eafacad9ba5298d5d6e79975fa02470d9ab0c0f7c2ed1de75a073b6893b766e6",
+    "water-layers-native/burst_water_main_static_6.png": "8bb12688fea493fb017144276a9c2af2a4b758f1110c7d53fa91566a0f0fe0cc",
+    "water-layers-native/burst_water_main_vertical_motion_1.png": "419ad7b937b0724109edb5468af751d577ced823cedf70cb2d60245ddb65773d",
+    "water-layers-native/burst_water_main_vertical_motion_1_b.png": "91284242a5d57b011cc3bf0b0d64bbecb1874563a49c3234f30ea89d377ad7fd",
+    "water-layers-native/burst_water_main_vertical_motion_3.png": "7c246661f9728c0e98d0cf768554e79121eb4ee7dce4393546ce8982fb9cb32f",
+    "water-layers-native/burst_water_main_vertical_motion_3_b.png": "489d9f3f4e712f7b25642a908ea877da29fd6ee70378f273a775503f39093e3e",
+    "water-layers-native/burst_water_main_vertical_motion_5.png": "ec031479bba5f70951646ae19b85227686ce4625aa92467e6648d480023fed33",
+    "water-layers-native/burst_water_main_vertical_motion_5_b.png": "975d7d4d92f33629d7cf5ce6c25f282119c87a0f78bce5558d0b6b2d7710f847",
+    "water-layers-native/burst_water_main_vertical_static_0.png": "8af837f3e23c19172e999ec9eaadb28a168113865b89ecc939447b486e35180d",
+    "water-layers-native/burst_water_main_vertical_static_2.png": "7296c379f2be5838f138d4f4793172f2e2e1af981ad5246f63eb41717d9ec49e",
+    "water-layers-native/burst_water_main_vertical_static_4.png": "7b1536679507348a22b25f5b8d83720072caddbae6df7e57460c533c30aad027",
+    "water-layers-native/burst_water_main_vertical_static_6.png": "0d923869495ec60999adb403b6a02fc4f4937573bdbd5a092549b874dc595e08"
+  },
+  "source_inputs": {
+    "docs/style-references/graphics-reference-urban-01.jpeg": "8ae95f917da8dae7abb22508a61efac3dff2ccbef69b80b859bb2a828b10cc5d",
+    "docs/style-references/graphics-reference-cardinal.jpeg": "637712546f9f336eb7bdd58810b8dc5d75935651250f7bea5ab116748116b7a7",
+    "art/events/fallen_tree.svg": "949e7995d40ded43df6360d83b06ee4d7732aa9a5352057943911e4f38294768",
+    "art/events/fallen_tree_vertical.svg": "4ff31bcf87f08d4e41c5655512fdd71b26570634ddf33df4ffcbf4c3d3262ede",
+    "art/closures/fallen_tree.svg": "97c05770cdf8084036ca62c3da54b12a6a90b52bc28c4716f396d250d7131236",
+    "art/closures/fallen_tree_vertical.svg": "694022125d180b3454e8a900882be2e5d83d63f5b988d8fc941a6c007eb6a929",
+    "art/events/burst_water_main.svg": "5ceaaa1c91c1ff69713fe9f64534dcfe00771ebb184a49e95f50d691b21561c9",
+    "art/events/burst_water_main_b.svg": "330549e369a341ad6a281c8cfa4b974015e913c082d438ddd675e07d8d713e79",
+    "art/events/burst_water_main_vertical.svg": "f928771ff60a388ecc8dc0c640f4cdeea3231aebc4dae9740045d41f0861e61c",
+    "art/events/burst_water_main_vertical_b.svg": "3babc5cc7df14225b10fbb70b190babbb49554c8f2c195b02b5755e50f49bf52",
+    "art/events/burst_water_main_static_0.svg": "95f1705386a49a1a04660e7455f291601400830a9a64a6feb9cd50e091ae3522",
+    "art/events/burst_water_main_motion_1.svg": "d3c60cde14f8a2e5d95a86d0efd0b1794072ab74b98e0b6846c18c42fcb06c68",
+    "art/events/burst_water_main_motion_1_b.svg": "b63d16215b5b4d6e3f8c1c869b0548e035c21b141241d37c73a60702676d08ba",
+    "art/events/burst_water_main_static_2.svg": "5dd8a5437229d7fbad38ccf73e0f72baf0eee3bf6841aede08573c12e5f985db",
+    "art/events/burst_water_main_motion_3.svg": "4a708c994fc0833f6ffc5099b2e6ec1c7beaec4b9ea10a65ecaf02311a0943d0",
+    "art/events/burst_water_main_motion_3_b.svg": "6a0f9d04678d9594d4d4ae9e0c68d13fc5ed66031bfa57e8f17e978c0c9b8a34",
+    "art/events/burst_water_main_static_4.svg": "e3830f68d14eca18958a7b456babd76aea47d12bcfcf04f66f5f5a8dd8b334de",
+    "art/events/burst_water_main_motion_5.svg": "2fd8f90363d798fe2b287ca1d2a4a703bd701dabe80a3c4dce16940448f565b7",
+    "art/events/burst_water_main_motion_5_b.svg": "58c1d0e183e0015e4e2fd61d8e5f9a0115aa1bbd5606e8bd5c3fe89d6590e575",
+    "art/events/burst_water_main_static_6.svg": "495a89aeeaf57d60fbca7b20c92a146955ff87e5852b07fcde4674ea59f54846",
+    "art/events/burst_water_main_vertical_static_0.svg": "516da2c8a545193a8cb185285b3772797a43a483a436bfc9257432d04ea2cf85",
+    "art/events/burst_water_main_vertical_motion_1.svg": "71e651525c4d2d652bfe223b4c7cd49327812a6fe50cca066a7f722eca2916de",
+    "art/events/burst_water_main_vertical_motion_1_b.svg": "2c65b16fefa95a84f6b6f9ea62ca49839adc2d5e4d903addf0c6b814668f382e",
+    "art/events/burst_water_main_vertical_static_2.svg": "dd802af1d6d564f48a421fc4c440428cdc52c11b88704c0f7d6c1c0623939f28",
+    "art/events/burst_water_main_vertical_motion_3.svg": "b950282d602715a51214f1db331282587299a275fcf14b4fe4bb9cc2bb8a609e",
+    "art/events/burst_water_main_vertical_motion_3_b.svg": "0c2e0617ac6c66aa261a13940b5559484e8562963a60594e8edc759965db2cae",
+    "art/events/burst_water_main_vertical_static_4.svg": "2518438ccbe42fbf283cb9de9c6589cd70c141164a4c760d11e2bc811612b13b",
+    "art/events/burst_water_main_vertical_motion_5.svg": "f19ebe387736cab9027b1e15b94187a525db853d113c08f6676e3e040f20d182",
+    "art/events/burst_water_main_vertical_motion_5_b.svg": "e664f2659fa25d704fc4b0561175660dd9978f93cc62a2cfc0dd4c025e69378e",
+    "art/events/burst_water_main_vertical_static_6.svg": "5d8294431e653a00af0b8c8cc76125a8ed55a50b4de2219032c0a87f807a3691"
+  },
+  "alpha_cleanup": {
+    "transparent_at_or_below": 8,
+    "opaque_at_or_above": 248
+  },
+  "outputs": [
+    {
+      "path": "art/illustrated/svg-transfer/events/fallen_tree.png",
+      "size": [
+        200,
+        50
+      ],
+      "source_size": [
+        200,
+        50
+      ],
+      "source_alpha_box": [
+        0,
+        0,
+        198,
+        50
+      ],
+      "installed_alpha_box": [
+        0,
+        0,
+        198,
+        50
+      ],
+      "extraction": [
+        0,
+        0,
+        1050,
+        520
+      ],
+      "sha256": "234265ece690f4f5ddfb054dce5ee281ec3ab871ce1589e0eff4d4b1b4824e4e"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/fallen_tree_vertical.png",
+      "size": [
+        50,
+        200
+      ],
+      "source_size": [
+        50,
+        200
+      ],
+      "source_alpha_box": [
+        0,
+        0,
+        50,
+        199
+      ],
+      "installed_alpha_box": [
+        0,
+        0,
+        50,
+        199
+      ],
+      "extraction": [
+        1050,
+        0,
+        1536,
+        600
+      ],
+      "sha256": "9cce9f08c10c8fda76c4779283ebd8660db8c71609e484473e46d73cf2bb9026"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/closures/fallen_tree.png",
+      "size": [
+        98,
+        40
+      ],
+      "source_size": [
+        98,
+        40
+      ],
+      "source_alpha_box": [
+        0,
+        3,
+        96,
+        40
+      ],
+      "installed_alpha_box": [
+        0,
+        3,
+        96,
+        40
+      ],
+      "extraction": [
+        0,
+        500,
+        1000,
+        1024
+      ],
+      "sha256": "a65df2ba27085be02e15ce33df63a80838b577d9407e23087fbe7c8800af7a76"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/closures/fallen_tree_vertical.png",
+      "size": [
+        44,
+        122
+      ],
+      "source_size": [
+        44,
+        122
+      ],
+      "source_alpha_box": [
+        0,
+        0,
+        43,
+        122
+      ],
+      "installed_alpha_box": [
+        0,
+        0,
+        43,
+        122
+      ],
+      "extraction": [
+        1050,
+        600,
+        1536,
+        1024
+      ],
+      "sha256": "a058a3c7e85f5553c7f1d79e3977b126189c63180b3811965ea6a73af8223f7d"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_static_0.png",
+      "size": [
+        148,
+        29
+      ],
+      "source_size": [
+        148,
+        29
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        147,
+        29
+      ],
+      "installed_alpha_box": [
+        28,
+        1,
+        120,
+        29
+      ],
+      "extraction": [
+        0,
+        0
+      ],
+      "sha256": "5ff40cb09a8409f7fa2bfcf0c31eab6be36356be04c743278e113bd1937f36af"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_motion_1.png",
+      "size": [
+        126,
+        19
+      ],
+      "source_size": [
+        126,
+        19
+      ],
+      "source_alpha_box": [
+        3,
+        1,
+        123,
+        17
+      ],
+      "installed_alpha_box": [
+        39,
+        1,
+        86,
+        17
+      ],
+      "extraction": [
+        1,
+        0
+      ],
+      "sha256": "84b0510175ff30a88789c91db1675f1f58e6657644e868723346059b5ed7d809"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_motion_1_b.png",
+      "size": [
+        126,
+        19
+      ],
+      "source_size": [
+        126,
+        19
+      ],
+      "source_alpha_box": [
+        1,
+        2,
+        125,
+        18
+      ],
+      "installed_alpha_box": [
+        39,
+        2,
+        86,
+        18
+      ],
+      "extraction": [
+        2,
+        0
+      ],
+      "sha256": "e44db6ec62e3f0e7de2e64b848de1391c407649b834595e429cb1f569f73156d"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_static_2.png",
+      "size": [
+        76,
+        33
+      ],
+      "source_size": [
+        76,
+        33
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        75,
+        32
+      ],
+      "installed_alpha_box": [
+        2,
+        1,
+        73,
+        32
+      ],
+      "extraction": [
+        3,
+        0
+      ],
+      "sha256": "b3028648e319b3f6d872419187b47b035897fdd3dd04687be675be925cd27fd1"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_motion_3.png",
+      "size": [
+        49,
+        6
+      ],
+      "source_size": [
+        49,
+        6
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        48,
+        4
+      ],
+      "installed_alpha_box": [
+        20,
+        1,
+        28,
+        4
+      ],
+      "extraction": [
+        4,
+        0
+      ],
+      "sha256": "bd1c33ba2fb5a2668bde5a43062c093df865a3b09f7c8752c4bc45d74ddd875e"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_motion_3_b.png",
+      "size": [
+        49,
+        6
+      ],
+      "source_size": [
+        49,
+        6
+      ],
+      "source_alpha_box": [
+        3,
+        2,
+        46,
+        5
+      ],
+      "installed_alpha_box": [
+        20,
+        2,
+        28,
+        5
+      ],
+      "extraction": [
+        0,
+        1
+      ],
+      "sha256": "67a97ac758e12f271c9d84fddfea1fc0a9556ad936cc5d0abd5b5403de3f6af6"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_static_4.png",
+      "size": [
+        98,
+        28
+      ],
+      "source_size": [
+        98,
+        28
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        97,
+        28
+      ],
+      "installed_alpha_box": [
+        19,
+        1,
+        79,
+        28
+      ],
+      "extraction": [
+        1,
+        1
+      ],
+      "sha256": "ceb4742af4779e193e831bdb27de1c501c7fa9b987a018e740f0ba52a1385dd7"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_motion_5.png",
+      "size": [
+        74,
+        40
+      ],
+      "source_size": [
+        74,
+        40
+      ],
+      "source_alpha_box": [
+        9,
+        2,
+        65,
+        38
+      ],
+      "installed_alpha_box": [
+        15,
+        2,
+        59,
+        38
+      ],
+      "extraction": [
+        2,
+        1
+      ],
+      "sha256": "54d1d1601b0ee86a3c49ba55a6784063d9cf57acecb4a6564ff3946100588bce"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_motion_5_b.png",
+      "size": [
+        74,
+        40
+      ],
+      "source_size": [
+        74,
+        40
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        73,
+        39
+      ],
+      "installed_alpha_box": [
+        16,
+        1,
+        58,
+        39
+      ],
+      "extraction": [
+        3,
+        1
+      ],
+      "sha256": "41b00815ee7466ab94bead53a45489516be0880092dd698d2b73fc45f4bedaff"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_static_6.png",
+      "size": [
+        194,
+        42
+      ],
+      "source_size": [
+        194,
+        42
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        193,
+        41
+      ],
+      "installed_alpha_box": [
+        1,
+        5,
+        193,
+        37
+      ],
+      "extraction": [
+        4,
+        1
+      ],
+      "sha256": "6c8a9c98183d0877a4c470adee5f353929ce266d88fb42805b8ab40568c0f7b2"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical_static_0.png",
+      "size": [
+        43,
+        170
+      ],
+      "source_size": [
+        43,
+        170
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        42,
+        169
+      ],
+      "installed_alpha_box": [
+        1,
+        46,
+        42,
+        123
+      ],
+      "extraction": [
+        0,
+        0
+      ],
+      "sha256": "318ef85ea4ed105c90c823d2717f751a4bac32a6339a3fbfd2b3702be52a2308"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical_motion_1.png",
+      "size": [
+        31,
+        117
+      ],
+      "source_size": [
+        31,
+        117
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        30,
+        116
+      ],
+      "installed_alpha_box": [
+        1,
+        51,
+        30,
+        65
+      ],
+      "extraction": [
+        1,
+        0
+      ],
+      "sha256": "c252da2f988b94747337dea5fa92f36799c00104e52cce6a5ce21adfcb2b0057"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical_motion_1_b.png",
+      "size": [
+        31,
+        117
+      ],
+      "source_size": [
+        31,
+        117
+      ],
+      "source_alpha_box": [
+        2,
+        2,
+        30,
+        114
+      ],
+      "installed_alpha_box": [
+        2,
+        50,
+        30,
+        65
+      ],
+      "extraction": [
+        2,
+        0
+      ],
+      "sha256": "fc873eacd8bd162ed6692dbeeda2bfa5a43f64ca661d2547cd984ecaa0386d19"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical_static_2.png",
+      "size": [
+        36,
+        95
+      ],
+      "source_size": [
+        36,
+        95
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        35,
+        94
+      ],
+      "installed_alpha_box": [
+        1,
+        32,
+        35,
+        62
+      ],
+      "extraction": [
+        3,
+        0
+      ],
+      "sha256": "2318f14ddda700584891032390c367f6db83c31ee959259a3204cab2775ad6c7"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical_motion_3.png",
+      "size": [
+        21,
+        15
+      ],
+      "source_size": [
+        21,
+        15
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        20,
+        13
+      ],
+      "installed_alpha_box": [
+        1,
+        4,
+        20,
+        10
+      ],
+      "extraction": [
+        4,
+        0
+      ],
+      "sha256": "1cc856638099f4c908f4cac4655c3250ac9c9b1da9074e5400b59cb8cac809b6"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical_motion_3_b.png",
+      "size": [
+        21,
+        15
+      ],
+      "source_size": [
+        21,
+        15
+      ],
+      "source_alpha_box": [
+        2,
+        1,
+        19,
+        14
+      ],
+      "installed_alpha_box": [
+        2,
+        4,
+        19,
+        10
+      ],
+      "extraction": [
+        0,
+        1
+      ],
+      "sha256": "23b968c2cfc35c39cf703efaf716db1bd7d103cd0d3b363acce8bf62e7f42731"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical_static_4.png",
+      "size": [
+        50,
+        79
+      ],
+      "source_size": [
+        50,
+        79
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        49,
+        78
+      ],
+      "installed_alpha_box": [
+        1,
+        23,
+        49,
+        56
+      ],
+      "extraction": [
+        1,
+        1
+      ],
+      "sha256": "ea8ad8b0eb81f9950ad9c22bc5cf3d20e179eb875569c7aef090ced24c2ea4d2"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical_motion_5.png",
+      "size": [
+        50,
+        40
+      ],
+      "source_size": [
+        50,
+        40
+      ],
+      "source_alpha_box": [
+        2,
+        1,
+        48,
+        39
+      ],
+      "installed_alpha_box": [
+        6,
+        1,
+        44,
+        39
+      ],
+      "extraction": [
+        2,
+        1
+      ],
+      "sha256": "b4cc6c456e25b75769f1179a4ec9a8f2f16c916948cb470130edcb7d5418b281"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical_motion_5_b.png",
+      "size": [
+        50,
+        40
+      ],
+      "source_size": [
+        50,
+        40
+      ],
+      "source_alpha_box": [
+        0,
+        4,
+        50,
+        39
+      ],
+      "installed_alpha_box": [
+        3,
+        4,
+        47,
+        39
+      ],
+      "extraction": [
+        3,
+        1
+      ],
+      "sha256": "3ad4ef6983c7d1f901f21843d1e30d85c22395494fea90dc6b776758c9182f87"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical_static_6.png",
+      "size": [
+        22,
+        33
+      ],
+      "source_size": [
+        22,
+        33
+      ],
+      "source_alpha_box": [
+        1,
+        1,
+        21,
+        32
+      ],
+      "installed_alpha_box": [
+        1,
+        3,
+        21,
+        29
+      ],
+      "extraction": [
+        4,
+        1
+      ],
+      "sha256": "2d551416611aeeff2077f19aa24abf0dbe76048359e8641edec5905548d17caf"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main.png",
+      "size": [
+        200,
+        50
+      ],
+      "source_size": [
+        200,
+        50
+      ],
+      "source_alpha_box": [
+        4,
+        2,
+        196,
+        50
+      ],
+      "installed_alpha_box": [
+        4,
+        3,
+        196,
+        50
+      ],
+      "extraction": "layer composition",
+      "sha256": "fc78015661aff3f551c500317c31a40a0561f103865c247bde8cad0519a791fc"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_b.png",
+      "size": [
+        200,
+        50
+      ],
+      "source_size": [
+        200,
+        50
+      ],
+      "source_alpha_box": [
+        4,
+        2,
+        196,
+        50
+      ],
+      "installed_alpha_box": [
+        4,
+        2,
+        196,
+        50
+      ],
+      "extraction": "layer composition",
+      "sha256": "507df8775f7b530de50bd61664275cfae1d6b6d4f9e327ea6667b6ea3fa7044c"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical.png",
+      "size": [
+        50,
+        200
+      ],
+      "source_size": [
+        50,
+        200
+      ],
+      "source_alpha_box": [
+        1,
+        2,
+        49,
+        198
+      ],
+      "installed_alpha_box": [
+        1,
+        47,
+        49,
+        195
+      ],
+      "extraction": "layer composition",
+      "sha256": "acc0e49b041d5ebbda159cf3f1e6fd97ffb860c6584220f589538d0e0985f7f4"
+    },
+    {
+      "path": "art/illustrated/svg-transfer/events/burst_water_main_vertical_b.png",
+      "size": [
+        50,
+        200
+      ],
+      "source_size": [
+        50,
+        200
+      ],
+      "source_alpha_box": [
+        0,
+        2,
+        50,
+        198
+      ],
+      "installed_alpha_box": [
+        1,
+        47,
+        49,
+        195
+      ],
+      "extraction": "layer composition",
+      "sha256": "917f7f4e9c72868aacd3c1980907ecfacbe2b38c6be4176befcd889f557afcf7"
+    }
+  ]
+}

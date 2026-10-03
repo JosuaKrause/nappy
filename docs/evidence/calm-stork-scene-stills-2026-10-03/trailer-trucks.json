@@ -1,0 +1,509 @@
+{
+	"anchors": {
+		"start": [
+			1824.0,
+			2160.0
+		]
+	},
+	"authored_posters": [
+		{
+			"at": [
+				1712.0,
+				2256.0
+			],
+			"kind": "rules"
+		},
+		{
+			"at": [
+				1744.0,
+				2256.0
+			],
+			"kind": "curfew"
+		},
+		{
+			"at": [
+				1776.0,
+				2256.0
+			],
+			"kind": "wanted"
+		},
+		{
+			"at": [
+				2000.0,
+				2256.0
+			],
+			"kind": "leader"
+		},
+		{
+			"at": [
+				2064.0,
+				2256.0
+			],
+			"kind": "uniform"
+		},
+		{
+			"at": [
+				2096.0,
+				2256.0
+			],
+			"kind": "rules"
+		}
+	],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 13,
+		"visible_cars": 2,
+		"visible_events": {
+			"military_convoy": 2,
+			"roadblock": 3
+		},
+		"visible_walkers": 11,
+		"walkers_left": 3,
+		"walkers_right": 8
+	},
+	"final_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				1824.0,
+				2293.4661
+			],
+			"speed": 92.0
+		},
+		"truck_1": {
+			"position": [
+				1904.0,
+				2014.0
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		},
+		"truck_2": {
+			"position": [
+				1904.0,
+				2142.0
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		},
+		"truck_3": {
+			"position": [
+				1904.0,
+				2270.0
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		}
+	},
+	"final_crowd": {
+		"cars": 16,
+		"moving": 81,
+		"moving_cars": 11,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 1,
+				"moving_cars": 0,
+				"total": 1,
+				"walkers": 1
+			},
+			"nw": {
+				"cars": 12,
+				"moving": 56,
+				"moving_cars": 7,
+				"total": 61,
+				"walkers": 49
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 4,
+				"moving": 24,
+				"moving_cars": 4,
+				"total": 24,
+				"walkers": 20
+			}
+		},
+		"scope": "local",
+		"total": 86,
+		"walkers": 70
+	},
+	"initial_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 0,
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"initial_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				1824.0,
+				2160.0
+			],
+			"speed": 0.0
+		},
+		"truck_1": {
+			"position": [
+				1904.0,
+				2192.0
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		},
+		"truck_2": {
+			"position": [
+				1904.0,
+				2320.0
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		},
+		"truck_3": {
+			"position": [
+				1904.0,
+				2448.0
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		}
+	},
+	"initial_crowd": {
+		"cars": 16,
+		"moving": 86,
+		"moving_cars": 16,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 13,
+				"moving": 61,
+				"moving_cars": 13,
+				"total": 61,
+				"walkers": 48
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 3,
+				"moving": 25,
+				"moving_cars": 3,
+				"total": 25,
+				"walkers": 22
+			}
+		},
+		"scope": "local",
+		"total": 86,
+		"walkers": 70
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				1552.0,
+				2272.0
+			],
+			"row": "roadblock"
+		},
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				1552.0,
+				2336.0
+			],
+			"row": "roadblock"
+		},
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				1552.0,
+				2400.0
+			],
+			"row": "roadblock"
+		}
+	],
+	"observations": [
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					1824.0,
+					2183.0667
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 9.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					2158.0
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_1",
+			"tick": 9.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					2286.0
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_2",
+			"tick": 9.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					2414.0
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_3",
+			"tick": 9.0
+		},
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					2102.0
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_1",
+			"tick": 23.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					2102.0
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_1",
+			"tick": 23.0
+		},
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					2230.0
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_2",
+			"tick": 23.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					2230.0
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_2",
+			"tick": 23.0
+		},
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					2358.0
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_3",
+			"tick": 23.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					1824.0,
+					2225.9998
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 23.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "Army trucks driving beside the mother",
+	"recipe_sha256": "a49cfce8de542d850bf06c481bb6a2923a33bd6d8bdde29641141e1dce622069",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"background": {
+			"crowd": true
+		},
+		"barriers": [
+			{
+				"end": "a",
+				"segment": [
+					3.0,
+					5.0,
+					0.0
+				]
+			}
+		],
+		"column": {
+			"at": [
+				1904.0,
+				2192.0
+			],
+			"direction": "north"
+		},
+		"day": 13.0,
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "south"
+		},
+		"posters": [
+			{
+				"at": [
+					1712.0,
+					2256.0
+				],
+				"kind": "rules"
+			},
+			{
+				"at": [
+					1744.0,
+					2256.0
+				],
+				"kind": "curfew"
+			},
+			{
+				"at": [
+					1776.0,
+					2256.0
+				],
+				"kind": "wanted"
+			},
+			{
+				"at": [
+					2000.0,
+					2256.0
+				],
+				"kind": "leader"
+			},
+			{
+				"at": [
+					2064.0,
+					2256.0
+				],
+				"kind": "uniform"
+			},
+			{
+				"at": [
+					2096.0,
+					2256.0
+				],
+				"kind": "rules"
+			}
+		],
+		"tutorial_complete": true
+	},
+	"violations": []
+}

@@ -74,7 +74,7 @@ class Plan extends RefCounted:
 
 # ------------------------------------------------------------------ the plan ---
 
-static func plan(map: CityMap, rng: RandomNumberGenerator) -> Plan:
+static func plan(map: CityMap, rng: RandomNumberGenerator, populate_events := true) -> Plan:
 	var grid := ReachabilityGrid.build(map)
 	var start := service_exit_tile(map)
 	var areas := calm_areas(map, grid)
@@ -118,8 +118,10 @@ static func plan(map: CityMap, rng: RandomNumberGenerator) -> Plan:
 	var standing_at := map.tile_to_world(start)
 	result.placements.append_array(
 			SealPlanner.plan_finale(map, result.open_cells, rng, standing_at))
-	result.placements.append_array(
-			EventScheduler.build_finale(map, rng, result.open_streets, standing_at))
+	# Recipes keep the real chains and seals, then validate their exact actors on these streets.
+	if populate_events:
+		result.placements.append_array(
+				EventScheduler.build_finale(map, rng, result.open_streets, standing_at))
 	return result
 
 ## One chain: the door, each stop in turn, then the edge. Each leg is a shortest walk on the grid

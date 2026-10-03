@@ -1,0 +1,195 @@
+{
+	"anchors": {
+		"start": [
+			2560.0,
+			2704.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 2327,
+		"visible_cars": 344,
+		"visible_events": {},
+		"visible_walkers": 2048,
+		"walkers_left": 1055,
+		"walkers_right": 993
+	},
+	"final_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2560.0,
+				2704.0
+			],
+			"speed": 0.0
+		}
+	},
+	"final_crowd": {
+		"cars": 348,
+		"moving": 2331,
+		"moving_cars": 283,
+		"quadrants": {
+			"ne": {
+				"cars": 60,
+				"moving": 483,
+				"moving_cars": 50,
+				"total": 493,
+				"walkers": 433
+			},
+			"nw": {
+				"cars": 110,
+				"moving": 564,
+				"moving_cars": 90,
+				"total": 584,
+				"walkers": 474
+			},
+			"se": {
+				"cars": 66,
+				"moving": 615,
+				"moving_cars": 55,
+				"total": 626,
+				"walkers": 560
+			},
+			"sw": {
+				"cars": 112,
+				"moving": 669,
+				"moving_cars": 88,
+				"total": 693,
+				"walkers": 581
+			}
+		},
+		"scope": "city",
+		"total": 2396,
+		"walkers": 2048
+	},
+	"initial_activity": {
+		"moving_crowd": 9,
+		"visible_cars": 4,
+		"visible_events": {},
+		"visible_walkers": 5,
+		"walkers_left": 2,
+		"walkers_right": 3
+	},
+	"initial_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2560.0,
+				2704.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 348,
+		"moving": 2396,
+		"moving_cars": 348,
+		"quadrants": {
+			"ne": {
+				"cars": 60,
+				"moving": 494,
+				"moving_cars": 60,
+				"total": 494,
+				"walkers": 434
+			},
+			"nw": {
+				"cars": 116,
+				"moving": 586,
+				"moving_cars": 116,
+				"total": 586,
+				"walkers": 470
+			},
+			"se": {
+				"cars": 65,
+				"moving": 623,
+				"moving_cars": 65,
+				"total": 623,
+				"walkers": 558
+			},
+			"sw": {
+				"cars": 107,
+				"moving": 693,
+				"moving_cars": 107,
+				"total": 693,
+				"walkers": 586
+			}
+		},
+		"scope": "city",
+		"total": 2396,
+		"walkers": 2048
+	},
+	"installed_events": [],
+	"observations": [
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					2560.0,
+					2704.0
+				],
+				"speed": 0.0
+			},
+			"subject": "player",
+			"tick": 15.0
+		},
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					2560.0,
+					2704.0
+				],
+				"speed": 0.0
+			},
+			"subject": "player",
+			"tick": 150.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "From the doorstep to the living city",
+	"recipe_sha256": "69d3cc4bbb596ca19721809fcd50258b68b2e59f053f1106b9054d65c126ff4f",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"background": {
+			"crowd": true,
+			"crowd_scope": "city"
+		},
+		"day": 1.0,
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "south"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

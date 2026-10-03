@@ -7,6 +7,8 @@ usage: tools/build-web-template.sh [--key | --verify] [--jobs N] [--help|-h]
 
 Build the pinned, threadless release template in build/web-template/template.zip.
 Requires curl, tar, shasum and uv. Downloads Godot and Emscripten on a cache miss.
+Successful builds remove compiler/download scratch and retain the verified template.
+Failed builds retain scratch for diagnosis/retry. Concurrent builds in one checkout are refused.
   --key       Print the cache key without downloading or writing anything.
   --verify    Check the current template receipt and hash, without building.
   --jobs N    Positive compile worker count (default 4; build mode only).
@@ -48,9 +50,30 @@ if [[ "$mode" == verify ]]; then
     exit 1
 fi
 command -v uv >/dev/null || { echo 'uv is required to run pinned SCons.' >&2; exit 1; }
-mkdir -p "$out" "$root/build/web-template-work/$key"
-touch "$root/build/.gdignore"
+mkdir -p "$out"
+build_lock="$out/.build-lock"
+if ! mkdir "$build_lock" 2>/dev/null; then
+    echo "Build already owned (or interrupted): $build_lock; inspect its owner before removing the lock." >&2
+    exit 1
+fi
 work="$root/build/web-template-work/$key"
+cleanup() {
+    local status=$?
+    if [[ $status -eq 0 ]]; then
+        cd "$root" || return 1
+        rm -rf "$work"
+    else
+        echo "Build scratch retained for diagnosis/retry: $work" >&2
+    fi
+    rm -f "$build_lock/pid"
+    rmdir "$build_lock"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+printf '%s\n' "$$" > "$build_lock/pid"
+mkdir -p "$work"
+touch "$root/build/.gdignore"
 fetch() {
     local url="$1" destination="$2" expected="$3"
     if [[ ! -f "$destination" ]] || [[ "$(hash "$destination")" != "$expected" ]]; then

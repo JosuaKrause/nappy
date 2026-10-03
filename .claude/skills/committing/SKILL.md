@@ -23,8 +23,11 @@ the player on its own say-so instead.)*
 for the purposes of github what matters is what they do. that is independent who actually
 triggered it".)* In Claude Code:
 
-- **`claude-orchestrator`** makes every issue write — capturing a note into the inbox, commenting
-  on one, labelling it, closing a filed batch and reopening it — and every write on a pull request
+- **`claude-orchestrator`** makes every issue write — capturing a note into the inbox with its
+  labels, asking a question on one, closing a filed batch and reopening it, each through
+  `tools/inbox.py` (**inbox**), never a direct `gh issue` or `gh api` command; the script changes
+  no label on a note once it is open, and a label to change is asked about on the note instead —
+  and every write on a pull request
   with no code changes: its commits, its push, the pull request itself, its comments, merging
   `main` into it, its merge once the player has said go, and retiring its branch.
 - **`claude-coder`** makes every write on a pull request that changes code — a queue move or a
@@ -50,8 +53,11 @@ and its docs-only pull requests stay `codex-coder`'s, and its reviews `codex-rev
 usable; every command that **writes** to GitHub for that piece of work — a commit, a push, a `gh`
 post — then runs through `uv run python tools/agent-identity.py run <role> -- <command>` instead of
 running it directly, so the commit, the push and the pull request all show as `<role>[bot]` rather
-than as the player talking to themself. A read (`git status`, `gh pr view`, ...) runs unwrapped;
-minting a token for one is wasted work the player never asked for. **When `status` reports the
+than as the player talking to themself. An issue write is the one exception: it runs through
+`tools/inbox.py`, which takes the role from `--role` or `NAPPY_AGENT_ROLE` and runs each of its own
+writes through that wrapper itself, and never as a wrapped `gh issue` command. A read (`git
+status`, `gh pr view`, ...) runs unwrapped; minting a token for one is wasted work the player
+never asked for. **When `status` reports the
 role not usable (not created yet, not installed on the repository, or a cloud session — see
 `tools/agent-identity.py`'s own module docstring), the session never runs the write under the
 player's own account on its own say-so.** Where no identity can work at all — a Claude Code cloud
@@ -63,20 +69,29 @@ command, which only they can approve *(2026-10-02: "Let's do A and make the code
 refuse")*. Every other write is never asked about, only denied — among them a push of a tag, of
 every branch or of a `*` pattern (a pushed `v*` tag publishes the site), a push naming a shell
 expansion (`"$TAG"` can be a `v*` tag) or one the guard cannot read to its end, a forced,
-deleting, mirroring or pruning push, a pull request's merge, a release and a bare `gh issue`
-write — since a prompt is too easy to click through for any of them, and for the last because the
-player wants an agent's issue writes to go through a script rather than a direct `gh issue` command
+deleting, mirroring or pruning push, a pull request's merge, a release and a `gh issue` write —
+since a prompt is too easy to click through for any of them, and for the last because the player
+wants an agent's issue writes to go through a script rather than a direct `gh issue` command
 *(2026-09-27: "if it goes through a script it's safe we just need to get it working once -- an
-agent shouldn't use gh issue directly")*. **That asking is
+agent shouldn't use gh issue directly")*; that script, `tools/inbox.py`, never writes as the
+player, so where no identity can work an issue write is not made at all. **That asking is
 off unless the player switches it on** with `NAPPY_ASK_FOR_PLAYER_WRITES=1` in the environment a
 session starts with (a cloud environment's own variables, or the launching shell); unset, every
 unwrapped write is denied *(2026-10-02: "Make it so it can be easily turned off and refuse again later";
 "Yes default to refusing")*. A session never sets or clears it for itself. Anything the guard
-denies the session stops on and tells the player about, and Codex stops on every one of them. A
+denies the session stops on and tells the player about, and Codex stops on every one of them —
+except a direct `gh issue` write, which is made again through `tools/inbox.py` instead. A
 `PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a
 `git push`, a commit-making git verb, a GitHub-writing `gh` call, or one of the `tools/` scripts
 that pushes or posts internally, in command position, unless the same command is wrapped in `run
-<role> --`, so the rule holds even when a session forgets it; a read stays unguarded — the hook's
+<role> --`, so the rule holds even when a session forgets it. **A `gh issue` write it denies
+wrapped or not, and an issue write through `gh api` the same way** (all but a comment, which a
+pull request's own conversation shares), since an agent writes an issue only through
+`tools/inbox.py`, whose own writes run in a process of their own that the hook never sees. A
+write named in a commit message or a PR body denies like the write itself, so a message is
+written to a file and passed with `-F file` or `--body-file file`, or given to a wrapped `git
+commit -F - <<'EOF'` that is the whole command, one of the three shapes whose text the hook
+reads as text (**using-tools** lists them). A read stays unguarded — the hook's
 own header comment carries the current, exact list, rather than a second copy of it here that can
 drift from it. **An admin action no bot identity can perform** — changing a repository ruleset, a
 GitHub App's own permissions — **is the player's to do directly, in GitHub's own settings, never
@@ -359,30 +374,32 @@ accumulate one per work item, and the cost is not clutter — it is that `git br
 able to answer the only question it is good for: **is there work that is not on `main`?**
 
 **Git cannot see a squash as a merge, so the PR's state is the check, not `git branch -d`.**
-`-d` refuses every squash-merged branch, which makes its refusal say nothing. Ask GitHub, and
-delete only on its answer:
-
-```sh
-[ "$(gh pr view <branch> --json state -q .state)" = MERGED ] \
-  && [ "$(gh pr view <branch> --json headRefOid -q .headRefOid)" = "$(git rev-parse <branch>)" ] \
-  && git branch -D <branch>
-```
-
-The second test is what keeps `-D` from losing work: a local branch whose tip is not the commit
-the PR merged has commits nobody pushed, and that is the branch worth looking at. A harness
+`-d` refuses every squash-merged branch, which makes its refusal say nothing. Use the retirement
+script below: GitHub must confirm MERGED and git must prove the local tip equals or is an
+ancestor of the merged head. A different tip alone does not prove unpushed work; a stale ancestor
+contains no work outside that PR. Missing commit objects are kept for explicit inspection and
+fetching, never fetched by the dry run. A harness
 `worktree-agent-*` branch has no PR and points at its worktree's base, so `-d` still answers
 for it.
 
 **`tools/prune-merged.sh <branch>...` is that check, executable, and the way a merged branch is
-retired.** It refuses unless the pull request is MERGED and the local tip is its merged head, then
-removes the branch's worktree (never with `--force`, so git refuses a dirty one), the local branch
-and the remote branch if GitHub left it, and sweeps the harness's `worktree-agent-*` branches
-whose worktree is gone. Run it from the main checkout, through `uv run python
+retired.** `--all` inventories candidates and allocated KiB without mutations; `--all --apply`
+retires eligible candidates, and `--dry-run <branch>...` previews named branches. Applying checks
+state again before removal. An open PR, remote tip outside the merged head, dirty/untracked work,
+an ignored file outside the regenerable caches (the script's own `REGENERABLE_IGNORED` list,
+which `--help` prints), worktree lock or unreleased agent brief keeps the branch. After confirming the agent has stopped
+and useful ignored artifacts are retained, its owner adds `cleanup: ready` to the brief's opening
+header in the main and target checkout wherever a copy exists. A lock still vetoes removal and
+is never cleared automatically. The script deletes the remote with an exact-tip lease, removes
+the clean worktree without force, then compares and deletes the local ref. A failed stage keeps
+remaining local work and reports the incomplete cleanup. It also sweeps the harness's
+`worktree-agent-*` branches whose worktree is gone. Run it from the main checkout, through `uv run python
 tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>...` for a pull request
 that changed code and `uv run python tools/agent-identity.py run claude-orchestrator --
 tools/prune-merged.sh <branch>...` for a docs-only one ("Who a commit and a pull request are
-from") — its own remote delete is a write, so `github-write-guard.sh` denies it bare (Codex runs
-the same line with `codex-coder` for both). **Use it rather than the bare commands**: Claude
+from") — its own remote delete is a write, so `github-write-guard.sh` denies it bare in every
+shape, and the read-only `--all` inventory and `--dry-run` run through the same wrapped line as
+the apply (Codex runs the same line with `codex-coder` for both). **Use it rather than the bare commands**: Claude
 Code's auto-mode classifier refuses `git worktree remove` and `git branch -D` as destructive
 however the check came out, and `.claude/settings.json` allows exactly those two wrapped lines, one
 per role, because the script cannot delete anything the check did not clear. The allow rules are a

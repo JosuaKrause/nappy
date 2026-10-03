@@ -50,6 +50,10 @@ class Planned extends RefCounted:
 	## True for something the *run* left here rather than something today rolled — a burnt-out
 	## shell, a barricade. It is world history and the day may not tidy it away.
 	var permanent := false
+	## True once something that rides this plan's instance asked for it to stay in the world for
+	## the rest of the day wherever she walks (`EventManager.keep_live()`), so streaming never takes
+	## it away from under what rides it.
+	var kept_live := false
 	## What the day placed this **for**, against today's corridor. See `GameEnums.BlockerRole` and
 	## `EventScheduler._role_for`.
 	##
@@ -1515,6 +1519,28 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	return _best_of(def, rng, map, open_candidates, role, already, ground, leave_alone, corridor,
 			doors, standing)
 
+## Pins the same candidate the normal planner could accept on this tile. A private RNG owns
+## its route roll, so unrelated background actors cannot move a required path.
+static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
+		route_seed: int, already: Array[Planned], corridor: Corridor,
+		doors: PackedVector2Array, standing: Array[Planned] = []) -> Planned:
+	if not def.available_on(day) or def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
+		return null
+	def = _for_day(def, day)
+	var ground := {}
+	var tile := map.world_to_tile(at)
+	if not map.tile_to_world(tile).is_equal_approx(at):
+		return null
+	var role := _role_for(def, day)
+	if not tile in _ground_for(def, map, ground, corridor, role):
+		return null
+	var rng := RandomNumberGenerator.new()
+	rng.seed = route_seed
+	var candidates: Array[Vector2i] = [tile]
+	var used: Array[Vector2i] = []
+	return _best_of(def, rng, map, candidates, role, already, ground,
+			_calm_to_leave_alone(map, used), corridor, doors, standing)
+
 ## The acceptance half of a placement: roll `Tuning.EVENT_PLACEMENT_TRIES` candidates out of
 ## `open_candidates`, refuse the ones that break a rule that cannot bend, and answer with the first
 ## perfect one or the roomiest of the rest.
@@ -1746,13 +1772,23 @@ static func _is_a_corner(tile: Vector2i) -> bool:
 ## one — a yeller or a busker keeps every tile a plain sidewalk scan already found. This is an
 ## exclusion from the candidate pool rather than a repair after the fact, the same shape a barrier
 ## beside a calm area's access street is refused in rather than moved out of afterwards.
+##
+## **A row that burns its front is refused the power station's** (`_burns_its_front()`): the
+## station's facade is drawn whole whatever its `Building.condition` says, its transformer yard
+## has no wall at all for the burnt building's red arrow to end on, and it is the last night's
+## building. Cached under its own key, so a poster crew asking for the same `AT_THE_FRONT` lane
+## keeps the station's front.
 static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 		side: int = -1) -> Array[Vector2i]:
 	var wanted_side := def.pavement_side if side < 0 else side
-	var key := "%s|%d" % [def.placement, wanted_side]
+	var burns := _burns_its_front(def)
+	var key := "%s|%d%s" % [def.placement, wanted_side, "|burns" if burns else ""]
 	if not ground.has(key):
 		var doorstep := _the_street_she_starts_on(map)
 		var trees := _street_tree_tiles(map, ground)
+		# In tiles: `CityMap.power_station` names the station's two blocks.
+		var station := CityMap.blocks_tile_rect(map.power_station) \
+				if burns and map.has_power_station() else Rect2i()
 		var open: Array[Vector2i] = []
 		for type in def.placement:
 			for candidate in map.tiles_of_type(type as GameEnums.TileType):
@@ -1777,6 +1813,7 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 				if map.is_closed(candidate) or doorstep.has_point(candidate) \
 						or map.is_held_at(candidate) or map.is_on_home_block(candidate) \
 						or trees.has(candidate) \
+						or station.has_point(candidate + Vector2i.UP) \
 						or not _wants_this_side(def, map, candidate, wanted_side):
 					continue
 				open.append(candidate)
@@ -1896,6 +1933,11 @@ static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
 	var segment := ClosurePlanner.home_street(map)
 	return segment.tile_rect() if segment else Rect2i()
 
+## Whether `def` leaves the building it stands against burnt (its scar is the one `City` draws as
+## a burnt frontage), so the front it catches on has to be one that can be drawn burnt.
+static func _burns_its_front(def: EventDef) -> bool:
+	return def.scar_id == City.BURNT_FRONTAGE_SCAR
+
 ## Whether a tile is the lane of the pavement this event wants.
 ##
 ## Almost everything says `ANY` and this is a free `true`. The two rows that do not are placement
@@ -1909,10 +1951,13 @@ static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
 ## would have to reverse into sideways is not one it can be drawn reversing into, and half the
 ## pavements in the city are still eligible.
 ##
-## `AT_THE_FRONT` is the south face's own lane, the one side a front is drawn on, and is asked only
-## by `WalkSiting` for a row that `pastes_a_front`, through `side`: the row's own `pavement_side`
-## is what the dawn roll reads. `side` is typed `int` for the cross-script enum reason the **godot**
-## skill names; `-1` means the row's own.
+## `AT_THE_FRONT` is the south face's own lane, the one side a front is drawn on: `burning_building`'s
+## own `pavement_side`, since the building it catches on is drawn burnt afterwards, and what
+## `WalkSiting` asks, through `side`, for a row that `pastes_a_front`. **The tile behind has to be
+## on the map as well as read `BUILDING`**, because `CityMap.tile_at()` reads anything off the map
+## as `BUILDING`: without the bounds check the north sidewalk of the map's northmost street, with
+## nothing behind it but the edge of the world, passes as a front. `side` is typed `int` for the
+## cross-script enum reason the **godot** skill names; `-1` means the row's own.
 static func _wants_this_side(def: EventDef, map: CityMap, tile: Vector2i, side: int = -1) -> bool:
 	var wanted := def.pavement_side if side < 0 else side
 	if wanted == EventDef.Pavement.ANY:
@@ -1921,7 +1966,8 @@ static func _wants_this_side(def: EventDef, map: CityMap, tile: Vector2i, side: 
 	if inward == Vector2i.ZERO:
 		return false
 	if wanted == EventDef.Pavement.AT_THE_FRONT:
-		return inward == Vector2i.UP and map.tile_at(tile + inward) == GameEnums.TileType.BUILDING
+		return inward == Vector2i.UP and map.in_bounds(tile + inward) \
+				and map.tile_at(tile + inward) == GameEnums.TileType.BUILDING
 	if wanted == EventDef.Pavement.AT_THE_KERB:
 		# The kerb lane is the one whose *road* side is actually road: on a two-tile pavement
 		# that is the inner of the two, and asking the tiles rather than the offset keeps it true

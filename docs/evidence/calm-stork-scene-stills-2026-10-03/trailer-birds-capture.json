@@ -1,0 +1,313 @@
+{
+	"anchors": {
+		"birds": [
+			2608.0,
+			1360.0
+		],
+		"start": [
+			2496.0,
+			1360.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"capture_activity": {
+		"moving_crowd": 38,
+		"visible_cars": 2,
+		"visible_events": {
+			"pigeon_flock": 1
+		},
+		"visible_walkers": 36,
+		"walker_streets": {
+			"h3": {
+				"moving": 15,
+				"walkers": 15
+			},
+			"v5": {
+				"moving": 11,
+				"walkers": 11
+			},
+			"v6": {
+				"moving": 10,
+				"walkers": 10
+			}
+		},
+		"walkers_left": 17,
+		"walkers_right": 19
+	},
+	"capture_actors": {
+		"birds": {
+			"position": [
+				2608.0,
+				1360.0
+			],
+			"pursuing": false,
+			"row": "pigeon_flock",
+			"telegraphing": true
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 2,
+			"position": [
+				2536.7078,
+				1366.2233
+			],
+			"speed": 92.0
+		}
+	},
+	"capture_camera": {
+		"position": [
+			2536.70776367188,
+			1366.22326660156
+		],
+		"zoom": 2.0
+	},
+	"capture_crowd": {
+		"cars": 34,
+		"moving": 434,
+		"moving_cars": 34,
+		"quadrants": {
+			"ne": {
+				"cars": 5,
+				"moving": 184,
+				"moving_cars": 5,
+				"total": 184,
+				"walkers": 179
+			},
+			"nw": {
+				"cars": 29,
+				"moving": 250,
+				"moving_cars": 29,
+				"total": 250,
+				"walkers": 221
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 434,
+		"walkers": 400
+	},
+	"capture_tick": 15,
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0,
+		"lots": [
+			{
+				"blocks": [
+					5.0,
+					2.0,
+					1.0,
+					1.0
+				],
+				"purpose": "industrial"
+			}
+		]
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"initial_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"initial_actors": {
+		"birds": {
+			"position": [
+				2608.0,
+				1360.0
+			],
+			"pursuing": false,
+			"row": "pigeon_flock",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2496.0,
+				1360.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 34,
+		"moving": 434,
+		"moving_cars": 34,
+		"quadrants": {
+			"ne": {
+				"cars": 4,
+				"moving": 179,
+				"moving_cars": 4,
+				"total": 179,
+				"walkers": 175
+			},
+			"nw": {
+				"cars": 30,
+				"moving": 255,
+				"moving_cars": 30,
+				"total": 255,
+				"walkers": 225
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 434,
+		"walkers": 400
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				2608.0,
+				1360.0
+			],
+			"row": "pigeon_flock"
+		}
+	],
+	"observations": [
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 0,
+				"position": [
+					2509.345,
+					1365.4243
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 6.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 2,
+				"position": [
+					2536.7078,
+					1366.2233
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 15.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": false,
+	"recipe": "A bird flock on the father's industrial street",
+	"recipe_sha256": "c1cd6b62cdb76bd60d8133a3720d6c04d2ea39673318df728128cdac02e20626",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"background": {
+			"crowd": true,
+			"uniform_walkers": true,
+			"walker_multiplier": 2.0
+		},
+		"day": 1.0,
+		"events": [
+			{
+				"at": "birds",
+				"name": "birds",
+				"row": "pigeon_flock"
+			}
+		],
+		"parent": "father",
+		"player": {
+			"at": "start",
+			"facing": "east"
+		},
+		"roof_fixtures": [
+			{
+				"fixtures": [
+					{
+						"cell": [
+							1.0,
+							1.0
+						],
+						"kind": "duct_straight"
+					},
+					{
+						"cell": [
+							3.0,
+							1.0
+						],
+						"kind": "duct_corner"
+					},
+					{
+						"cell": [
+							5.0,
+							1.0
+						],
+						"kind": "hvac_b"
+					},
+					{
+						"cell": [
+							6.0,
+							1.0
+						],
+						"kind": "vent"
+					}
+				],
+				"lot": [
+					76.0,
+					34.0,
+					8.0,
+					4.0
+				]
+			}
+		],
+		"tutorial_complete": true
+	},
+	"violations": []
+}

@@ -74,7 +74,9 @@ entire excitement model a pure query with nothing pushing values at the baby.
 and `EventManager` puts it in the world when the player comes within `EVENT_STREAM_RADIUS` of it
 — of the nearest point of its *route*, for a mobile one, so a dog walker is in the world before
 it sets off down the street she is on. It goes away again when she leaves, and once it has run
-its course its plan is **spent**: walking back past it does not start it over.
+its course its plan is **spent**: walking back past it does not start it over. The one plan put in
+the world early and kept there is the one a task rides (`EventManager.keep_live()`): day 8's burnt
+shell, whose mark she may read from across the city and walk away from again.
 
 An event that is somewhere is half of what makes a route a decision. It can be routed around,
 and finding out it is there is what walking a street is for.
@@ -425,8 +427,10 @@ player's own *"lethal != noise"*.
 - **Anything mobile.** A moving wall on a two-tile pavement pins her against a building, which is
   a different game from being priced out of a street.
 - **`AHEAD_OF_PLAYER`**, refused outright by `validate()` — see rule 3 above.
-- **Anything with no silhouette**: a playground the park itself draws, or a curfew announcement
-  carried by a mast that is already solid on its own.
+- **Anything with no silhouette**: a playground the park itself draws, a curfew announcement
+  carried by a mast that is already solid on its own, or a row whose picture is on the building
+  it stands against rather than on the sidewalk — `burning_building`'s flames on the facade and
+  the burnt building `burnt_shell` leaves, whose lot the building's own collision already closes.
 - **A flock**, refused outright by `validate()` too. `flock_size` bodies wheeling inside
   `flock_spread` have no one silhouette to be half of — each bird is an 18px picture with pavement
   between it and the next — and being walked into is the whole event, which a body would stop at
@@ -1226,7 +1230,7 @@ All implemented.
 | `delivery_van` | RECURRING | 1 | Parked at the kerb, hazards going. Silent: standing in the way is its entire price, and `obstructs_radius` already charges it — see "Solid things are solid". At the kerb rather than on the carriageway, and solid at `VEHICLE_BODY`: 44px of van across a 64px footway leaves 26px to the frontage, narrower than the pram — a **wall** by physical fit, silent or not, so the street it is on is one she walks the far side of. |
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
-| `burning_building` | ONE_SHOT | 3 | Against a frontage, `AGAINST_THE_BUILDING`, the way `reversing_lorry` is — and **sited from the walk she is taking** (`sited_on_her_way`) rather than from a street chosen at dawn: on the branch of the day's route tree she is walking and never off it, off screen, beyond the streaming band across the block and at most `EventDirector.ON_HER_WAY_SIGHT` seconds of walking further along that route. It may be moved while she has not reached it and never once it is real. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. Burns for the rest of the day, you cannot walk through the fire, and the shell it leaves stands where it actually burned. |
+| `burning_building` | ONE_SHOT | 3 | Against the one face of a building the city actually draws, `AT_THE_FRONT` — never `AGAINST_THE_BUILDING`, the way `reversing_lorry` sites, since that catches only an east-or-west wall `building.gd` never puts a facade on — and never the power station's front, whose facade does not draw burnt and whose transformer yard has no wall. **Sited from the walk she is taking** (`sited_on_her_way`) rather than from a street chosen at dawn: on the branch of the day's route tree she is walking and never off it, off screen, beyond the streaming band across the block and at most `EventDirector.ON_HER_WAY_SIGHT` seconds of walking further along that route. It may be moved while she has not reached it and never once it is real. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. **The fire itself has no field and no obstacle — the truck it calls in is the danger, not the fire** (*"the fire goes on the building. the challenge is the fire truck not the fire"*, PLAYTEST-144, statement 12): `EventInstance._draw_fire()` paints the flames and the smoke above them on the facade of the building it stands against, and the sidewalk in front stays clear. The flames burn along that building's whole facade, every column of it the city draws, and stay inside it: never on a neighbor's tile, and never on a column another building's roof covers (*"the fire should be on the whole building not only the door"*, sandy-egret). Burns for the rest of the day; from the next morning on, the scar it leaves is the building itself drawn burnt (`City.mark_the_burnt_frontage()`, `Building.Condition.BURNT`): windows black and broken under soot, the door boarded, the parapet charred. The `burnt_shell` row at the scar has no body and no picture of its own on the sidewalk, only its faint 2.5/s field — *"the building is what needs to be burnt, not an object next to the building"*. |
 | `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius and a 6.27s telegraph, its whole warning and held to the flat minimum a warning first owes (see "Telegraph contract"), warned of first — its badge goes up the moment the fire is seen, pointing up the fire's own street, and it is created just off screen on that road once the telegraph is over — and driving to the near kerb across from it. **It parks there for the rest of the day** (`stops_where_it_arrives`): a standing 26/s field out to 340px beside a fire she was led to is what makes the pair a street to turn round on — *"a fire engine has a high cost"*, *"you're not supposed to go past it"* (PLAYTEST-119). It has no body, so what it closes is the ground its field covers rather than the road itself. |
 
 **And the rest of act I**, which is where its variety and its danger come from — a
@@ -1297,8 +1301,8 @@ are solid", and `docs/CITY.md`, "A closure is silent".
 | `skip` / `scaffolding` | SCRIPTED | day 1 | A **soft seal**: a skip at the kerb facing scaffolding boards over the far footway — the two-obstacles-facing-each-other reading of a soft seal, drawn as two different pictures rather than one row twice. `skip` is kerb-pinned like `delivery_van`; `scaffolding` fills the whole pavement band like `construction`. |
 | `burst_water_main` | SCRIPTED | day 1 | A **hard seal**: broken asphalt, an exposed pipe and water fountaining and splashing across the carriageway in two alternating frames, with an upright municipal barrier at each kerb. The directional pictures place the damage across the street while retaining the barriers' standing projection. Same single-body geometry as `fallen_tree`, but draws no body shadow (`draws_body_shadow = false`) — the crater is a hole in the ground, not an object standing above it. |
 | `moving_van` | SCRIPTED | day 1 | A **soft seal**: a lorry at the kerb with its ramp down, the same body on each pavement. Its own side and end views show the cab, cargo box, open loading doors and ramp, with the view chosen from the street axis even while the vehicle is stationary. The picture stays distinct from the reversing lorry. |
-| `burnt_out_car` | SCRIPTED | day 4 | A **hard seal**, from act II onward: a damaged car shell in the charred palette of `burnt_shell`. The cars lie perpendicular to the road: the side view serves north–south streets and the authored vertical view serves east–west streets. Vehicle-scale `obstructs_radius` lets `SealPlanner._hard_positions` place the individual wrecks across the street as a pile-up. |
-| `collapsed_frontage` | SCRIPTED | day 4 | A **hard seal**, from act II onward: rubble spilled frontage to frontage, drawn the way `_burnt_shell` draws `rubble.svg` — a small debris segment repeated by `_draw_spread` — but its own picture, styled beside `rubble.svg` rather than sharing it. |
+| `burnt_out_car` | SCRIPTED | day 4 | A **hard seal**, from act II onward: a damaged, charred car shell, its own picture. The cars lie perpendicular to the road: the side view serves north–south streets and the authored vertical view serves east–west streets. Vehicle-scale `obstructs_radius` lets `SealPlanner._hard_positions` place the individual wrecks across the street as a pile-up. |
+| `collapsed_frontage` | SCRIPTED | day 4 | A **hard seal**, from act II onward: rubble spilled frontage to frontage, a small debris segment repeated by `_draw_spread` — its own picture, styled beside `rubble.svg` (the badge silhouette of `burnt_shell`, which draws nothing in the street) rather than sharing it. |
 
 ### The story's own figure — the neighbor
 
@@ -1354,8 +1358,8 @@ the candidate loop, never moved afterwards.
 ## Permanent marks
 
 `scar_id` records an event's position in `GameState.scars`, and the scheduler places that
-event again on every **later day of the run**. The burnt-out shell from the day-3 fire is
-still on that corner on day 12, cordoned off and never repaired; barricades from Act IV
+event again on every **later day of the run**. The building the day-3 fire caught is still
+drawn burnt on that corner on day 12, never repaired; barricades from Act IV
 convoys accumulate. This is most of how the escalation is told — the city remembers, and
 the route you memorised on day 2 stops existing.
 
@@ -1858,7 +1862,7 @@ Three rules underneath the table, in the order they matter:
    telegraphing, swelling, or pulsing fast enough to be timed. Every clause of that is a true
    statement about a thing and **none alone says what it will net a player who keeps doing what
    she is doing**. A fire engine on a course that misses her may carry nothing; a stationary
-   burning building uses its silhouette and active-cost halo, not an approach caret, unless she is
+   market stall uses its silhouette and active-cost halo, not an approach caret, unless she is
    walking straight at it.
 
    **A cue that marks everything says nothing**, so the ordinary crowd at ordinary density is left

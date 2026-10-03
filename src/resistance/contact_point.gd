@@ -27,6 +27,10 @@ const MARK_TOUCHED := &"props/chalk_mark_touched"
 
 var step: ResistanceSteps.Step
 var is_done := false
+## How close she must be for this contact's touch to complete: `REACH` for every contact but day
+## 8's, which stands on the burnt building's door and reaches half the sidewalk in front of it
+## (`ResistanceDirector.DOOR_REACH`).
+var reach := REACH
 
 var _player: Stroller
 var _pulse := 0.0
@@ -79,8 +83,8 @@ func _physics_process(delta: float) -> void:
 	# M205, "the note costs, and the ordinary day": day 6's note (the only step with
 	# `ResistanceSteps.Step.completes_at_inner_radius` set -- see that field's own doc)
 	# completes the instant she is within the rider's own `inner_radius` (45px, his
-	# full-strength field) rather than the generic `REACH` (36px) every other step uses.
-	# `REACH` sits inside a rider's own `inner_radius`, so the generic check always landed
+	# full-strength field) rather than this contact's own `reach` (`REACH`, 36px, on every
+	# step but day 8's door). `REACH` sits inside a rider's own `inner_radius`, so the generic check always landed
 	# only the last few pixels of an approach; the player, offered a fork that would have
 	# made her stand in this wider circle for a while first, rejected it outright: "the
 	# player should stand for 2.5s? no way. the moment the player touches the inner circle
@@ -88,7 +92,7 @@ func _physics_process(delta: float) -> void:
 	if _rider and step and step.completes_at_inner_radius:
 		if distance <= _rider.def.inner_radius:
 			_complete()
-	elif distance <= REACH:
+	elif distance <= reach:
 		_complete()
 	queue_redraw()
 

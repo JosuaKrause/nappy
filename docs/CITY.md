@@ -1666,6 +1666,22 @@ arrives at a block whose arc is not waiting for it does nothing at all, which is
 the city coherent — a fire in a park leaves a burnt shell and does not turn the park into a
 burnt-out block.
 
+**The one building the fire actually touched is shown burnt regardless of its block's own
+purpose or arc.** `City.mark_the_burnt_frontage()` reads the `burnt_shell` scar's position, finds
+the single `Building` whose facade it stands against, and sets that one building's own
+`Building.Condition` to `BURNT` — the look `BURNT_OUT` gives every building of a block (windows
+black and broken under soot, the door boarded, the parapet charred, the wall drained to ash),
+here for one frontage a scar names rather than for a block purpose an arc reached. It runs at
+every dawn, after the block dressing, so the building is burnt from the morning after the fire
+for the rest of the run. Day 8's task calls it once more, live, on a run with no such scar: the
+task records one at a front the fire could have caught on and has that building burnt there and
+then (`ResistanceDirector._burn_a_front_for_the_task()`), so the building it sends her to is
+burnt. `burning_building` only ever catches on a wall `building.gd` actually
+draws (`EventDef.Pavement.AT_THE_FRONT`, the frontage lane of a north sidewalk, and only where the
+tile behind it is on the map), so there is always a real facade behind the scar to burn. Never the
+power station's: its facade is drawn whole whatever its condition says, and its transformer yard
+has no wall at all (`EventScheduler._open_ground_for()` refuses that front to a row that burns).
+
 Causes fire during the day; the city presents the result the **next morning**.
 `CityMap.repaint()` runs at the start of a day, so the fire burns today and the street is
 ashes tomorrow.
@@ -1680,7 +1696,7 @@ requisitioned park are the same walkable ground, so neither half moves a walkabl
 `CityState.advance_now()` takes the step a block's arc is waiting on today, and only if it becomes
 the purpose asked for — when moves, never what. Day 11's market is a commercial block whose arc is
 waiting to board up, boarded ahead of her and out of her sight, its buildings shuttered there and
-then (`City.present_block()`). Day 12's park is taken the instant she reaches its swing, and its
+then (`City.present_block()`), except a building day 3's fire burned, which stays burnt. Day 12's park is taken the instant she reaches its swing, and its
 ground goes to `SPOILED` a ring at a time from the edges in over `Tuning.PARK_CLOSING_SECONDS`
 (`City.close_ground()`), so the calm under her shrinks while she watches; mud is walkable, so she
 is never shut in. `docs/NARRATIVE.md` says what each is; `ResistanceHappenings` is where they
@@ -2046,8 +2062,9 @@ Top-down camera with a fake vertical extrusion:
   top, which is why a corner needs no dedicated corner tile — it takes two edge overlays
   and the parapet turns.
 - **A roof carries furniture, seeded per building from its block's own starting purpose**
-  (`Building.district`) — vents, HVAC boxes and a straight-and-corner duct run on `INDUSTRIAL`,
-  skylights on `CIVIC`, mostly water tanks with the odd vent on `RESIDENTIAL` and `COMMERCIAL`.
+  (`Building.district`) — vents, installed HVAC and connected mounted duct networks on `INDUSTRIAL`,
+  skylights and service bulkheads on `CIVIC`, mostly water tanks with vents and bulkheads on
+  `RESIDENTIAL` and `COMMERCIAL`.
   Every unit sits on an interior cell — never a cell a roof's own edge tiles already draw, which
   is the perimeter row and column and, on a roof extended over a covered front (below), the step
   where an extended column stands beside a shorter one — so nothing overhangs the silhouette, and
@@ -2056,17 +2073,24 @@ Top-down camera with a fake vertical extrusion:
   that column's own top, extension included, so a building whose own roof is too shallow for an
   interior cell carries units once its extension gives it one. A fixed seed gives the same roof
   on every run, and a building providing cover rolls its layout over its larger roof, so it is a
-  different shuffle from the one it would have with nothing to cover. The cells are listed row by
+  different shuffle from the one it would have with nothing to cover. A duct network grows as a
+  connected tree within eligible interior cells, reserving each cell before ordinary equipment.
+  Its seeded length and branches vary with available space; at least one ordinary equipment roll
+  remains, and roofs too small for a network retain compact furniture. The cells are listed row by
   row before the shuffle (`Building.roof_interior_cells()`), which is what keeps a roof with
   nothing to cover on the layout it has without any extension in the city: the shuffle permutes
-  positions, so any other order moves its units. The vent is the one thing on a roof that moves:
-  it swaps between its two rotor frames on a timer of its own, and nothing else up there is
-  animated. Furniture is painted by retained children of `Building`, above its own roof tiles and
-  inside the layer of buildings under the entities — never the y-sorted layer a street prop or
-  the player draws in — so a unit
-  is never compared against anything on the pavement. Static furniture batches interleave with
-  separate six-pixel rotor layers in the original painter order; each 1.4-second tick changes
-  only those rotor layers, leaving the facade, roof tiles and housing draw lists intact.
+  positions, so any other order moves its units. Every unit is a visual-only `Building.RoofObject`
+  in the city's y-sorted `Entities` layer, anchored at its bottom-center roof foot. Full-height art
+  can therefore rise beyond its footprint and into the walkable row north of a lot while sorting
+  against the player and upright scenery at the same depth. The building lot remains the only
+  collision body. A base wider than 32px is centered in two reserved horizontal roof cells so
+  adjacent installed bases cannot interpenetrate; a compact condenser, pyramidal skylight or
+  exhaust fan fits one cell. When a broad roll has no adjoining cell, its district's compact kind
+  fills the same counted slot, so a narrow or shuffled roof keeps its ordinary-unit count. The
+  furniture density remains unchanged, and reserved cells are visual placement facts rather than
+  new obstacles. The industrial vent's
+  housing remains stationary while a separate retained child alternates only its small rotor at
+  the existing 1.4-second cadence; rebuilding or reentering the tree preserves its current phase.
 - **A front is district and block purpose, read the same way a roof's furniture is.** A
   multi-story building's ground floor never shows a window on a column she can stand in front of:
   it is shops or blank wall — the wall texture and its own plinth — with the entrance, the civic
@@ -2246,7 +2270,9 @@ Top-down camera with a fake vertical extrusion:
   own lot, so **nothing can ever legitimately stand behind a building** — and two things that can
   never be on opposite sides of each other have no business being sorted against each other.
 
-  **The power station's two stacks are the one exception, so they are not drawn by the building.**
+  **Roof equipment and the power station's two stacks use entity depth order.** Roof equipment
+  stands at its roof foot as `Building.RoofObject`, so tall art can reach beyond its supporting
+  tile and hide entities north of that foot. The stacks follow the same anchoring rule.
   Each is 192px tall from a foot on the hall's roof and rises well past the lot's north edge into
   the street beyond, where she can stand behind it. *(PLAYTEST-143: "the chimneys of the power
   plant render behind the player. they should be in front.")* So each stands in `Entities` at its
@@ -2269,11 +2295,13 @@ Top-down camera with a fake vertical extrusion:
   what is in the way. **The catalogue states the same rule from the other end**: an event that
   stands still is *solid at the width it is drawn*. See `docs/EVENTS.md`, "Solid things are solid".
 
-Art lives in `art/` as hand-editable SVG, which the engine ignores and the atlas bake reads —
+Editable SVG art lives in `art/`, which the engine ignores and the atlas bake reads —
 ground tiles under `art/tiles/`, building
 tiles under `art/buildings/`, the player under `art/rig/`, scenery under
 `art/props/`, event bodies under `art/events/` — with a per-act palette multiplied
 over the whole canvas. `Palette` holds only the colours the code still chooses at runtime;
 a tree's green lives in the file that draws the tree.
-Illustrated PNG counterparts and ground component pairings are documented in
-[VISUALS.md](VISUALS.md); the runtime selects them by default with SVG fallback.
+Illustrated PNG counterparts, authorized direct-PNG families and ground component pairings are
+documented in [VISUALS.md](VISUALS.md). The default bake selects registered transfers with SVG
+fallback when a paired PNG is missing; direct PNGs have their own atlas membership and no SVG
+fallback. The runtime reads the resulting atlas pages.

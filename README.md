@@ -82,6 +82,22 @@ See `docs/MECHANICS.md`, "Saving and resuming".
 
 ## Dev flags
 
+`tools/trailer.sh` records the saved scenes referenced by `tools/trailer/shots.json` through the
+game's frame-locked movie writer, then trims, fades and joins them with game audio. Run
+`tools/trailer.sh --list` to inspect the cut, `--validate` to check its recipes headlessly,
+or `--shot choice` to record one scene. Each recipe owns its setup and scripted action;
+the shot list owns the cut timing. Only normal scenes enter the trailer, with their authored
+extent and validation scope preserved in the resolved manifest.
+
+`tools/record.sh --recipe scene-recipes/trailer-choice.json` records a recipe in scripted mode.
+It also records ordinary rigs, such as `tools/record.sh --route calm,home --seed 4242`.
+Videos and temporary frames stay under ignored build output. Recordings retain compact frame
+hashes, manifests and settings beside the video. `tools/trailer.sh --check all` compares two
+renders of each shot, including their simulation observations and audio; `--check-load all`
+compares an ordinary render with one under a CPU load worker. Results remain under
+`build/trailer/checks/`. Matching frames establish repeatability for the recorded recipe,
+revision, assets, engine and settings.
+
 Everything after `--` is passed to the game, gated behind a debug build so none of it does
 anything in an exported release:
 
@@ -137,6 +153,10 @@ demand when the window cannot be drawn, and says so on the `[AutoScreenshot] wro
 
 | Flag | Effect |
 | --- | --- |
+| `--recipe path.json` | Build a saved exact scene and control it normally; see [Scene recipes](docs/SCENE_RECIPES.md) |
+| `--recipe-mode free\|scripted` | Use normal controls (the default), or the recipe's saved movement, camera and assertions |
+| `--recipe-validate` | Build the recipe and validate its live setup headlessly, then quit |
+| `--recipe-manifest path.json` | Write construction context, initial actors and scripted observation results |
 | `--seed N` | Regenerate a specific city (also reachable, for a positive integer only, as a release web build's own `?debug=1&seed=N`) |
 | `--day N` | Start on a later day, to look at a later act (also reachable on a release web build's own `?debug=1&day=N`, clamped the same way) |
 | `--day-length N` | Compress the day, for dusk and the timeout loss (also reachable on a release web build's own `?debug=1&daylength=N`) |

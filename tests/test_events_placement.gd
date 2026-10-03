@@ -293,9 +293,9 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 		if def.obstructs_radius <= 0.0:
 			continue
 		# A `ONE_SHOT` is a set piece, not asked the friction-or-wall question at all
-		# (`EventScheduler._role_for` answers it before the cost or physical clause ever runs) —
-		# `burning_building` is `AGAINST_THE_BUILDING` and physically closes its own band exactly
-		# like a wall would, and is still placed at every site of its covering set on purpose.
+		# (`EventScheduler._role_for` answers it before the cost or physical clause ever runs), so a
+		# solid one on a sidewalk is exempt here. `burning_building` carries no body (the fire truck
+		# it calls in is the danger, not the fire), so the check above already passes it over.
 		if def.kind == GameEnums.EventKind.ONE_SHOT:
 			continue
 		solid_on_a_sidewalk += 1

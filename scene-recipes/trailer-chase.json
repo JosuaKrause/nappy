@@ -1,0 +1,16 @@
+{
+  "version": 1, "name": "Mother carrying her baby and running from the guards", "seed": 11,
+  "kind": "escape", "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
+  "anchors": {"start": {"world": [1760, 560]}, "guards": {"world": [2000, 560]}},
+  "setup": {"tutorial_complete": true, "day": 14, "parent": "mother", "player": {"at": "start", "facing": "east", "sleep": 100},
+    "progression": {"escape_part": "city", "blackout": true},
+    "events": [{"name": "guards", "row": "roadblock", "at": "guards"}]},
+  "playback": {"walk": "1e1.4W", "duration": 2.4, "capture_at": 1.4, "camera": {"zoom": 1.35},
+    "observations": [{"tick": 42, "subject": "player", "condition": "carrying"},
+      {"tick": 42, "subject": "guards", "condition": "pursuing"},
+      {"tick": 42, "subject": "player", "condition": "running"},
+      {"tick": 44, "subject": "guards", "condition": "pursuing"},
+      {"tick": 44, "subject": "guards", "condition": "visible"},
+      {"tick": 44, "subject": "player", "condition": "running"},
+      {"tick": 44, "subject": "player", "condition": "carrying"}]}
+}

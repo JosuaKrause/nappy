@@ -95,6 +95,10 @@ assert_exit "ci-costs.sh --help"   zero ./tools/ci-costs.sh --help
 assert_exit "ci-costs.sh -h"       zero ./tools/ci-costs.sh -h
 assert_exit "check.sh --help"      zero ./tools/check.sh --help
 assert_exit "check.sh -h"          zero ./tools/check.sh -h
+assert_exit "scene-recipes.sh --help" zero ./tools/scene-recipes.sh --help
+assert_exit "scene-recipes.sh -h" zero ./tools/scene-recipes.sh -h
+assert_exit "scene-recipes.sh unknown" nonzero ./tools/scene-recipes.sh --not-a-flag
+assert_exit "scene-recipes.sh missing value" nonzero ./tools/scene-recipes.sh --recipe
 assert_exit "measure-ground-frames.sh --help" zero ./tools/measure-ground-frames.sh --help
 assert_exit "measure-ground-frames.sh -h" zero ./tools/measure-ground-frames.sh -h
 assert_exit "measure-ground-frames.sh unknown" nonzero ./tools/measure-ground-frames.sh --not-a-flag
@@ -236,11 +240,16 @@ assert_exit "run.sh --bogus"          nonzero ./tools/run.sh --bogus
 assert_exit "shot.sh --bogus"         nonzero ./tools/shot.sh "$work_dir/shot-out.png" 1 --bogus
 assert_exit "trailer.sh --bogus"      nonzero ./tools/trailer.sh --bogus
 assert_exit "trailer.sh --shot (missing name)" nonzero ./tools/trailer.sh --shot
+assert_exit "trailer.sh --check-load (missing name)" nonzero ./tools/trailer.sh --check-load
+assert_exit "trailer.sh --validate --shot (combined)" nonzero ./tools/trailer.sh --validate --shot choice
 assert_exit "trailer.sh --list --shot (combined)" nonzero ./tools/trailer.sh --list --shot choice
 assert_exit "record.sh --bogus"       nonzero ./tools/record.sh --bogus
 assert_exit "record.sh (no flags)"    nonzero ./tools/record.sh
 assert_exit "record.sh --this-is-not-a-dev-flag" nonzero ./tools/record.sh --this-is-not-a-dev-flag
 assert_exit "record.sh --out (missing name)" nonzero ./tools/record.sh --out
+assert_exit "record.sh --out --recipe (missing name)" nonzero ./tools/record.sh --out --recipe scene.json
+assert_exit "record.sh --recipe-validate (owned)" nonzero ./tools/record.sh --recipe-validate
+assert_exit "record.sh refuses free recipe before launch" nonzero env GODOT=/missing/godot ./tools/record.sh --recipe scene.json --recipe-mode free
 assert_exit "stats.sh --bogus"        nonzero ./tools/stats.sh --bogus
 assert_exit "telemetry.sh --bogus"    nonzero ./tools/telemetry.sh --bogus
 assert_exit "clip.sh --bogus"         nonzero ./tools/clip.sh --bogus
@@ -460,6 +469,35 @@ while read -r flag; do
 done < <(dev_flag_names)
 
 # --------------------- tools/trailer.sh's kill deadline follows the shot's length, not the day's ---
+checks=$(( checks + 1 ))
+if rig_flag_present --recipe scene.json --recipe-mode scripted \
+    && ! rig_flag_present --recipe scene.json \
+    && ! rig_flag_present --recipe-mode free --recipe scene.json; then
+    echo "ok   scripted recipes are supervised while free recipes keep physical input"
+else
+    echo "FAIL recipe rig detection disagrees with the game" >&2
+    failures=$(( failures + 1 ))
+fi
+
+checks=$(( checks + 1 ))
+free_record_output="$(GODOT=/missing/godot ./tools/record.sh --recipe scene.json --recipe-mode free 2>&1)"
+if [[ "$free_record_output" == *"requires --recipe-mode scripted"* ]]; then
+    echo "ok   free recipe recording is refused before checking Godot"
+else
+    echo "FAIL free recipe recording lacks its specific mode diagnostic" >&2
+    failures=$(( failures + 1 ))
+fi
+
+checks=$(( checks + 1 ))
+cp scene-recipes/trailer-birds.json "$work_dir/relative.json"
+relative_output="$(cd "$work_dir" && GODOT="$GODOT_STUB" "$root/tools/scene-recipes.sh" --recipe relative.json --output captures 2>&1)"
+if [[ "$relative_output" == *"scene assertions failed:"*"relative.json"*"log:"* ]] \
+    && grep -qF "$work_dir/relative.json" "$GODOT_ARGS"; then
+    echo "ok   caller-relative recipes are resolved and failed assertions name their log"
+else
+    echo "FAIL caller-relative recipe or failure diagnostic: $relative_output" >&2
+    failures=$(( failures + 1 ))
+fi
 # rig_kill_after_movie_seconds only reads --after/--day-length out of the argv it is given --
 # passing it a bare number (tools/trailer.sh once did: `rig_kill_after_movie_seconds "$after"`)
 # silently falls back to the day's own length times RIG_MOVIE_SLOWDOWN, killing a hung Godot after
@@ -804,6 +842,46 @@ found="$(cd "$guard_repo" && source tools/lib_old_queue.sh && old_queue_edits pr
 check_that "the check says nothing while main still has the old queue" '[[ -z "$found" ]]'
 found="$(cd "$guard_repo" && source tools/lib_old_queue.sh && old_queue_edits pr-old main)"
 check_that "the check land-prs.sh runs names the old queue file a branch edited" '[[ "$found" == docs/REVIEW.md ]]'
+
+# ------------------------- update-pr.sh's whitespace check judges the branch, not main ---
+# main carries a trailing-whitespace line in main.txt that the branch never touched: the update
+# must go through. A second branch adds its own trailing whitespace: that one must be refused.
+# lint.sh and check.sh are stubbed to pass so only the whitespace check can decide.
+ws_origin="$work_dir/ws-origin.git"
+ws_repo="$work_dir/ws-repo"
+git init -q --bare -b main "$ws_origin"
+git init -q -b main "$ws_repo"
+ws_git() { git -C "$ws_repo" -c user.name=t -c user.email=t@example.com "$@"; }
+mkdir -p "$ws_repo/tools"
+cp "$root/tools/update-pr.sh" "$root/tools/lib_old_queue.sh" "$root/tools/lib_agent_role.sh" "$ws_repo/tools/"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$ws_repo/tools/lint.sh"
+cp "$ws_repo/tools/lint.sh" "$ws_repo/tools/check.sh"
+chmod +x "$ws_repo/tools/lint.sh" "$ws_repo/tools/check.sh"
+printf 'clean\n' > "$ws_repo/main.txt"
+printf 'clean\n' > "$ws_repo/branch.txt"
+ws_git add -A && ws_git commit -q -m base
+ws_git remote add origin "$ws_origin"
+ws_git branch pr-clean && ws_git branch pr-dirty
+ws_git checkout -q pr-clean
+printf 'fine\n' >> "$ws_repo/branch.txt"
+ws_git commit -q -am "clean branch work"
+ws_git checkout -q pr-dirty
+printf 'trailing   \n' >> "$ws_repo/branch.txt"
+ws_git commit -q -am "branch with its own whitespace error"
+ws_git checkout -q main
+printf 'main brings this   \n' >> "$ws_repo/main.txt"
+ws_git commit -q -am "main with its own whitespace error"
+ws_git push -q origin main pr-clean pr-dirty 2>/dev/null
+ws_git checkout -q pr-clean
+out="$(cd "$ws_repo" && GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.com GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.com ./tools/update-pr.sh pr-clean 2>&1)"
+status=$?
+check_that "update-pr.sh does not blame a branch for whitespace main already carries" \
+    '[[ $status -eq 0 && "$out" == *"committed"* ]]'
+ws_git checkout -q pr-dirty
+out="$(cd "$ws_repo" && GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.com GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.com ./tools/update-pr.sh pr-dirty 2>&1)"
+status=$?
+check_that "update-pr.sh refuses a branch that adds its own whitespace error" \
+    '[[ $status -ne 0 && "$out" == *"branch.txt"* && "$out" == *"git diff --cached --check"* ]]'
 
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is

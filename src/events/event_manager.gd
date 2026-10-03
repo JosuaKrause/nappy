@@ -11,7 +11,8 @@ extends Node
 ## **A day's plan and a day's live events are different things.** The scheduler plans the whole
 ## city at dawn, which is what keeps every invariant that is stated over a day (one usable park, a
 ## walkable route to it, determinism); a plan becomes an `EventInstance` only when the player comes
-## within `EVENT_STREAM_RADIUS` of it, and goes away again when she leaves.
+## within `EVENT_STREAM_RADIUS` of it, and goes away again when she leaves — except a plan a task
+## rides, which `keep_live()` puts in the world at once and keeps there.
 ##
 ## The gameplay half of that is bigger than the frames it saves. Loading the day upfront gives days
 ## in which **zero** events ever come within reach: a twenty-second event planted across the city
@@ -105,6 +106,8 @@ var _door_release_latches: Dictionary = {}
 ## `tests/test_event_manager.gd` and `tests/test_full_run.gd` are about a day's whole event set
 ## rather than about what one player walked past.
 var stream_radius := Tuning.EVENT_STREAM_RADIUS
+## Authored scenes install a complete event plan; ambient directors cannot replace its actors.
+var _recipe_plan := false
 
 ## Takes the one reference on the baked page every `EventInstance` draws from — the whole
 ## catalogue, the checkpoint kit and the crater on one page (`EventInstance.ATLAS_GROUP`).
@@ -152,7 +155,7 @@ func setup(city: City, map: CityMap) -> void:
 ## `RETURN_PATROLS_PER_ACT[0]` is 0 and nothing would be owed anyway, and from day 14 — the one
 ## `TODO.md` item still open — act IV would owe three.
 func _owe_the_return() -> void:
-	if _walking_the_finale:
+	if _walking_the_finale or _recipe_plan:
 		return
 	_director.owe_the_return(_day, GameState.resistance_progress)
 
@@ -182,6 +185,7 @@ func has_a_sent_patrol() -> bool:
 ## around the doorstep are in the world on the first frame rather than appearing during it.
 func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[String],
 		focus := Vector2.ZERO) -> void:
+	_recipe_plan = false
 	clear()
 	_hard_failed = false
 	_day = day
@@ -336,6 +340,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 ## own and are untouched: an explosion leaves its crater through exactly the `spawns_on_finish`
 ## mechanism a convoy leaves a barricade through.
 func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -> void:
+	_recipe_plan = false
 	clear()
 	_hard_failed = false
 	_day = GameState.day
@@ -351,6 +356,20 @@ func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -
 	# whatever ran before it.
 	_director.start_day(_day, _plans, GameState.day_rng(_day, "finale-ahead"))
 	stream_around(focus)
+
+## Accepts only the builder's validated placements. Streaming, collisions, pursuits, event
+## successors and warnings keep their production behavior; random siting is suppressed.
+func start_recipe(plans: Array[EventScheduler.Planned], day: int, focus: Vector2,
+		finale := false) -> void:
+	var held := _map.held_segments.duplicate()
+	start_finale(plans, focus)
+	_map.held_segments.merge(held)
+	for plan in plans:
+		if plan.is_placed():
+			_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
+	_day = day
+	_walking_the_finale = finale
+	_recipe_plan = true
 
 func clear() -> void:
 	for instance in _instances:
@@ -388,8 +407,25 @@ func stream_around(at: Vector2) -> void:
 		if plan.live == null:
 			if distance <= stream_radius:
 				_stream_in(plan)
-		elif distance > stream_radius + Tuning.EVENT_STREAM_HYSTERESIS:
+		elif not plan.kept_live and distance > stream_radius + Tuning.EVENT_STREAM_HYSTERESIS:
 			_stream_out(plan)
+
+## The planned instance of the row `id` standing within a tile of `at`, put in the world now
+## wherever she is and kept there for the rest of the day — never streamed out — or null when today
+## plans none there. For a task that rides a planned place: day 8's burnt shell, whose mark she may
+## read from the far side of the city, and which must not be streamed away from under its contact
+## when she walks off again. The plan's own instance rather than a second one beside it, so its
+## field is counted once.
+func keep_live(id: String, at: Vector2) -> EventInstance:
+	for plan in _plans:
+		if plan.def.id != id or plan.spent or not plan.is_placed() \
+				or plan.position.distance_to(at) >= Tuning.TILE_SIZE:
+			continue
+		if plan.live == null:
+			_stream_in(plan)
+		plan.kept_live = true
+		return plan.live
+	return null
 
 func _stream_in(plan: EventScheduler.Planned) -> void:
 	var first_time := not plan.was_live
@@ -878,9 +914,11 @@ func _physics_process(delta: float) -> void:
 	if _find_player():
 		# Before the streaming, so a plan sited this frame is in the world on the same frame it
 		# would have been had the day placed it at dawn.
-		_site_what_is_on_her_way(delta)
+		if not _recipe_plan:
+			_site_what_is_on_her_way(delta)
 		stream_around(_player.global_position)
-		_place_what_is_owed_ahead(delta)
+		if not _recipe_plan:
+			_place_what_is_owed_ahead(delta)
 		_summon_what_has_been_sighted()
 		_run_the_warnings(delta, _player.global_position)
 		_tell_them_where_she_is()
@@ -930,7 +968,7 @@ func _is_on_screen(world_position: Vector2) -> bool:
 	return absf(offset.x) <= Tuning.VIEW_HALF_EXTENT.x and absf(offset.y) <= Tuning.VIEW_HALF_EXTENT.y
 
 ## Warns of the row `source.spawns_on_sight` names, coming along `at`'s own street to `at` — `at`
-## is a sidewalk point (`burning_building` is placed `AGAINST_THE_BUILDING`), so the along-street
+## is a sidewalk point (`burning_building` is placed `AT_THE_FRONT`), so the along-street
 ## axis is `CityMap.pavement_inward()` turned a quarter turn, the construction
 ## `EventDirector._onto_her_side()` uses for the same reason: it is the corridor's own axis, not
 ## whichever way she happens to be facing. Which end it comes from is a coin flip on the day's own
@@ -994,9 +1032,9 @@ func _road_left(from: Vector2, heading: Vector2) -> float:
 ## engine parks at, and nothing would ever say so.
 ##
 ## `CityMap.pavement_inward` points away from the carriageway, into the block she is walking beside,
-## so the road is the other way; `AGAINST_THE_BUILDING` puts `at` on the sidewalk tile touching the
-## building, the far tile of the two-tile band (`Tuning.SIDEWALK_WIDTH`) from the kerb, and the near
-## edge of the carriageway is that many tiles further in `-inward`.
+## so the road is the other way; `burning_building`'s `AT_THE_FRONT` puts `at` on the sidewalk tile
+## touching the building's front, the far tile of the two-tile band (`Tuning.SIDEWALK_WIDTH`) from
+## the kerb, and the near edge of the carriageway is that many tiles further in `-inward`.
 static func where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
 	var inward := map.pavement_inward(map.world_to_tile(at))
 	if inward == Vector2i.ZERO:

@@ -42,6 +42,15 @@ reader loses the half with the measurement in it.
 player's own words, and every specific they gave — before a line of code is written.** Then it
 becomes a queue entry, and only then does it get implemented.
 
+**The first place the player's words are written is the inbox.** *(2026-09-27: "the important
+thing is that it ends up in a safe queue in issues and I can choose when we want to turn those into
+a doc update PR".)* When the player says something in a session that should outlive it, the agent
+captures it verbatim into the inbox on GitHub Issues, in one call, before going on with anything
+else, so the words are safe even if the session is cleared; which words to capture is the agent's
+judgment. The notes the player writes there directly are the same. A note becomes a playtest file
+and its queue entries when the player asks for its batch to be filed, exactly as this skill says
+below — **inbox** has the capture, the filing pull request and the closing of the notes.
+
 **Words said in conversation are recorded with what they answered.** *(2026-09-27: "you need to
 also include what (b) meant at the time. if you just record my side then important context is
 lost".)* Before each quote the playtest file states the assistant's side as far as the quote
@@ -167,16 +176,22 @@ prunes it — every `tools/shot.sh` and `tools/check.sh` run adds to it and the 
 it, so emptying it is the player's routine maintenance. A finding whose evidence lived only there
 stops being checkable on a perfectly ordinary Tuesday.
 
-Evidence cannot be recovered by replaying: **a run log is a record of what a player did, so it is
-not a function of the seed.** Regenerating gives a different run with the same city.
+Evidence cannot be recovered by replaying: **a run log that records a player's relevant actions is
+not a function of the seed.** Regenerating gives a different run with the same city, so retain that
+log when the actions or their order support the finding.
 
-**Copy the whole `<run>/` folder under `docs/evidence/`.** A run *is* a folder —
-`user://telemetry/<day>/<run>/`, holding `run.log` and its `maps/`, `auto/` and `asked/`
-pictures — and **the run folder's own name carries the time, the seed and the commit**, since no
-single file inside it does. That name is self-describing on purpose, so the copy does not need its
-`<day>/` ancestor to be identifiable. A lone picture lifted out of it is evidence with its
-ancestry left behind: nothing in the copy says which run it came from or what the code was when it
-was taken.
+**Copy only the run artifacts relevant to what the playtest or rig was meant to show.** Keep every
+artifact needed to support the claim and its limits, including relevant player evidence,
+contradictory results and failed trials. Omit unrelated automatic pictures, routine boot output,
+logs that do not support the claim or its provenance, and redundant copies. A log belongs when it
+proves the actual behavior, preserves non-replayable player input, diagnoses a relevant failure or
+supplies provenance that is not recorded elsewhere.
+
+The evidence folder's README or manifest records enough context to interpret and reproduce the
+selection: the source revision, command and settings, and the seed and timing when they matter,
+plus the claim and its limits. When selected artifacts come from
+`user://telemetry/<day>/<run>/`, keep them under the run folder's original name, which carries its
+time, seed and commit; the README or manifest makes explicit which files were selected and why.
 
 ## A playtest is a scarce resource
 

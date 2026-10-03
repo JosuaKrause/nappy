@@ -1,0 +1,16 @@
+{
+  "version": 1, "name": "A bird flock on the father's industrial street", "seed": 11,
+  "extent": {"scope": "full"}, "city": {"context_seed": 1917501,
+    "lots": [{"blocks": [5, 2, 1, 1], "purpose": "industrial"}]},
+  "anchors": {"start": {"world": [2496, 1360]}, "birds": {"tile": [81, 42]}},
+  "setup": {"tutorial_complete": true, "day": 1, "parent": "father", "player": {"at": "start", "facing": "east"},
+    "background": {"crowd": true, "uniform_walkers": true, "walker_multiplier": 2},
+    "roof_fixtures": [{"lot": [76, 34, 8, 4], "fixtures": [
+      {"cell": [1, 1], "kind": "duct_straight"}, {"cell": [3, 1], "kind": "duct_corner"},
+      {"cell": [5, 1], "kind": "hvac_b"}, {"cell": [6, 1], "kind": "vent"}]}],
+    "events": [{"name": "birds", "row": "pigeon_flock", "at": "birds"}]},
+  "playback": {"walk": "0.6e1.4p", "duration": 2, "capture_at": 0.5,
+    "observations": [{"tick": 6, "subject": "player", "condition": "moving"},
+      {"tick": 15, "subject": "player", "condition": "moving"},
+      {"tick": 45, "subject": "birds", "condition": "visible"}]}
+}

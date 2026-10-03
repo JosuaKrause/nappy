@@ -20,11 +20,11 @@ extends WorldContext
 ## behind one. Two things that can never be on opposite sides of each other have no business
 ## being sorted against each other.
 ##
-## **The power station's two stacks are the exception, so they are not part of the building.**
-## Each rises 192px from a foot on the hall's roof, well past the lot's north edge and into the
-## street beyond it, where she can stand behind it. So each is a `Building.StationStack` in
-## `Entities`, at its foot (`Building.stack_feet()`), and sorts against her like any other entity:
-## drawn over whatever stands north of its foot and under whatever stands south of it.
+## **Roof equipment and the power station's two stacks are the exceptions.** Their pictures may
+## rise north of their roof footprints and into a street where she can stand behind them. Each is
+## therefore a feet-anchored `Building.RoofObject` or `Building.StationStack` in `Entities`, sorting
+## against her like any other entity: drawn over whatever stands north of its foot and under
+## whatever stands south of it.
 
 ## Wall height per district, in whole tiles. Heights are quantised because the facade is
 ## assembled from 32px tiles now; a float height would mean a stretched tile. Clamped
@@ -164,6 +164,10 @@ const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
 ## presence already answers "sealed as of this dawn" for every day after the one it was added on,
 ## and the moment it happens on its own day is `seal_home_door()`'s, called live.
 const SEALED_DOOR_SCAR := "sealed_door"
+## `GameState.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
+## `scar_id`), read by `mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
+## `SEALED_DOOR_SCAR` above.
+const BURNT_FRONTAGE_SCAR := "burnt_shell"
 ## The street door sprite `_spawn_home()` built, kept so `seal_home_door()` can swap its texture
 ## live, the moment day 10's raid actually arrives, instead of waiting for a day that never
 ## rebuilds it — `build()` runs once for the whole run (see the class doc).
@@ -211,11 +215,17 @@ func build(city_map: CityMap) -> void:
 	_posters.setup(self, map)
 	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61); streamed shadow chunks derive
 	# their geometry from this source as they become resident.
-	_building_shadows.set_buildings(map.building_rects)
-	_spawn_home()
+	var shown_rects: Array[Rect2i] = []
+	for footprint in map.building_rects:
+		if not map.recipe_exterior or map.recipe_bounds.encloses(footprint):
+			shown_rects.append(footprint)
+	_building_shadows.set_buildings(shown_rects)
+	if _recipe_contains(map.home_world_position()):
+		_spawn_home()
 	_spawn_street_trees()
 	_spawn_boundary()
-	_spawn_the_edge_of_the_city()
+	if not map.recipe_exterior:
+		_spawn_the_edge_of_the_city()
 	signals = TrafficSignals.new(map)
 	_spawn_signal_heads()
 	events = EventManager.new()
@@ -474,6 +484,8 @@ func _spawn_street_trees() -> void:
 	var planted_trees := StreetTrees.planted(map)
 	_decals.set_street_tree_pits(planted_trees, map)
 	for planted_tree in planted_trees:
+		if not _recipe_contains(planted_tree.position):
+			continue
 		var tree := Prop.new()
 		tree.kind = Prop.Kind.STREET_TREE
 		tree.position = planted_tree.position
@@ -594,6 +606,8 @@ func _spawn_signal_heads() -> void:
 			for heading in arms:
 				var right := Vector2(-heading.y, heading.x)
 				var at := centre - heading * (half + inset) + right * kerb
+				if not _recipe_contains(at):
+					continue
 				if not map.is_walkable(map.world_to_tile(at)):
 					continue
 				var light := TrafficLight.new()
@@ -646,9 +660,16 @@ func _spawn_buildings() -> void:
 	_assign_roof_extensions(buildings, courtyard_of)
 	_share_courtyard_tint(buildings, courtyard_of)
 	for building in buildings:
+		if map.recipe_exterior and not map.recipe_bounds.encloses(building.lot):
+			building.free()
+			continue
 		# Their own layer, under the entities — see the note at the top of this file. They still
 		# y-sort against each other, which costs nothing and keeps two lots that share a block
 		# boundary stacking the way the eye expects.
+		# Roof pictures stand in the y-sorted entity layer at their feet. Tall roof equipment can
+		# reach into the walkable row north of the lot, so it must sort against street actors just
+		# like the power station stacks do.
+		building.roof_object_parent = _entities
 		_buildings_layer.add_child(building)
 		_buildings.append(building)
 		scenery.register(building)
@@ -880,7 +901,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	# lost day 10's scar is already given back by the time this reads `GameState.scars`.
 	_sync_home_door()
 	_paint_ground()
-	_decals.set_placed(Litter.placed(map, day))
+	_decals.set_placed(_recipe_litter(day))
 	_dress_blocks(state)
 	# Last, and after the repaint: which blocks are calm is what the closure invariant is
 	# stated over, and a requisitioned park is not one of them.
@@ -892,6 +913,22 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	# off, and after `_dress_blocks()`, which is what says a front has burnt.
 	_posters.start_day(day, _tree)
 	scenery.update(_home_scenery_view(), true)
+
+## Recipe activity is installed by its runtime after this shared day presentation. The
+## explicit construction witness supplies global route/region context without randomly
+## scheduling new closures over the authored composition.
+func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -> void:
+	start_finale(state, day)
+	var exterior := map.recipe_exterior
+	map.recipe_exterior = false
+	_tree = RouteTree.for_day(map, day)
+	_region_plan = RegionPlanner.plan_day(map, day, _tree)
+	map.recipe_exterior = exterior
+	_closures = map.recipe_closures.duplicate()
+	map.close_streets(_closures)
+	for closure in _closures:
+		_spawn_closure(closure)
+	_posters.start_day(day, _tree)
 
 ## The same city, dressed for the escape: everything `start_day()` does except grow a day's
 ## corridor and close streets off it.
@@ -917,7 +954,7 @@ func start_finale(state: CityState, day: int) -> void:
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
 	_paint_ground()
-	_decals.set_placed(Litter.placed(map, day))
+	_decals.set_placed(_recipe_litter(day))
 	_dress_blocks(state)
 	_posters.show_only()
 	scenery.update(_home_scenery_view(), true)
@@ -1125,15 +1162,68 @@ func _dress_blocks(state: CityState) -> void:
 		building.condition = _condition_for(
 				state.purpose_of(map.block_plans, _block_of(building.lot)))
 		building.day = _day
+	mark_the_burnt_frontage()
+
+## Forces the one `Building` behind day 3's fire to `Building.Condition.BURNT`, overriding
+## whatever its own block's purpose just set above — *"the building is what needs to be burnt, not
+## an object next to the building"*. The block's purpose is unmoved (this building's block may still
+## be ordinary `RESIDENTIAL`, `COMMERCIAL` ground the arc never touches); only the one frontage the
+## fire actually reached shows it, in the look `Building.Condition.BURNT` draws (windows black and
+## broken under soot, the door boarded, the parapet charred) for the scheduled `BURNT_OUT` block
+## purpose above too — the same look for a different, per-building reason.
+##
+## **The lookup is the shape of `board_neighbor_window()`/`_home_door_building()`**: a fixed fact
+## about the run (`GameState.scars`) answers which `Building` it is, once, rather than a field
+## carried on the building itself. `burning_building` only ever catches on a wall this file actually
+## draws (`EventDef.Pavement.AT_THE_FRONT`, `EventCatalogue._burning_building()`'s own doc), so the
+## tile one step north of the scar (`Vector2i.UP`, the same direction `EventScheduler.
+## _wants_this_side()`'s `AT_THE_FRONT` case checks, on the map and `BUILDING`) is always a real
+## lot. `tests/test_acts.gd` checks that over every site the fire can be given.
+##
+## Idempotent, like every other per-day override here: `Building.condition`'s own setter is a no-op
+## once it already says `BURNT`, so calling this from every `_dress_blocks()` pass — the ordinary
+## day and the finale's own dressing alike — costs nothing once the frontage is found, and finds
+## nothing before day 4, when the scar does not exist yet. A run records one `burnt_shell` scar,
+## and every one the list holds burns its own building all the same.
+##
+## **Also called live, once, by day 8's task on a run with no recorded scar**
+## (`ResistanceDirector._burn_a_front_for_the_task()`): it records a scar at a front the fire could
+## have caught on and asks for the building behind it to be burnt there and then, so *"Take what's
+## in the stroller to the burnt building"* leads to a burnt building rather than bare sidewalk.
+func mark_the_burnt_frontage() -> void:
+	for scar in GameState.scars:
+		if String(scar["id"]) != BURNT_FRONTAGE_SCAR:
+			continue
+		var wall_tile := map.world_to_tile(scar["position"] as Vector2) + Vector2i.UP
+		for building in _buildings:
+			if building.lot.has_point(wall_tile):
+				building.condition = Building.Condition.BURNT
+				break
+
+## The way in of the building directly north of the sidewalk point `sidewalk` — the same lot
+## `mark_the_burnt_frontage()` burns behind a scar — as a world point half a tile up its ground
+## floor, on the door (`Building.way_in_local_x()`, the one nearest `sidewalk` on a front with
+## several storefronts). `Vector2.INF` with no building there. Day 8's red arrow and its task's
+## contact end here: *"or better to the door"* (sandy-egret).
+func way_in_behind(sidewalk: Vector2) -> Vector2:
+	var wall_tile := map.world_to_tile(sidewalk) + Vector2i.UP
+	for building in _buildings:
+		if building.lot.has_point(wall_tile):
+			var x := building.way_in_local_x(sidewalk.x - building.position.x)
+			return building.position + Vector2(x, -Tuning.TILE_SIZE * 0.5)
+	return Vector2.INF
 
 ## **One block's buildings, shown as what the block is now**, during the day rather than at dawn —
 ## day 11's market, boarded up ahead of her while she cannot see it (`ResistanceHappenings`). The
-## same `_condition_for()` the dawn dressing reads, for the buildings of `block` alone.
+## same `_condition_for()` the dawn dressing reads, for the buildings of `block` alone, and the
+## same `mark_the_burnt_frontage()` after it, so a block boarded up around the building day 3's
+## fire burned never boards up the burnt building itself.
 func present_block(block: Vector2i, state: CityState) -> void:
 	var condition := _condition_for(state.purpose_of(map.block_plans, block))
 	for building in _buildings:
 		if _block_of(building.lot) == block:
 			building.condition = condition
+	mark_the_burnt_frontage()
 
 ## **Ground taken away in front of her**: `tiles` become `SPOILED` now, in the map and on screen —
 ## day 12's park, closing a ring at a time once she has reached its swing (`ResistanceHappenings`).
@@ -1298,6 +1388,9 @@ static func bollard_positions(map: CityMap) -> Array[Vector2]:
 	return positions
 
 func _add_prop(prop: Node2D) -> void:
+	if not _recipe_contains(prop.position):
+		prop.free()
+		return
 	_props.append(prop)
 	_entities.add_child(prop)
 	if prop is ScenerySprite:
@@ -1323,11 +1416,15 @@ func _add_prop(prop: Node2D) -> void:
 ## instead of only the two that happened to have room for it, which is what leaves every side
 ## reaching exactly as deep as the paint does.
 func camera_bounds() -> Rect2:
+	if map.recipe_exterior:
+		return Rect2(-100000000, -100000000, 200000000, 200000000)
 	var depth := OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE)
 	return Rect2(Vector2.ZERO, map.world_size()).grow(depth - Stroller.CAMERA_LOOK_AHEAD)
 
 ## Walls just outside the map, so the player cannot walk off the edge of the world.
 func _spawn_boundary() -> void:
+	if map.recipe_exterior:
+		return
 	var extent := map.world_size()
 	var t := BOUNDARY_THICKNESS
 	var walls := [
@@ -1373,6 +1470,8 @@ func _home_scenery_view() -> Rect2:
 ## Current source, independent of residency. Border and route paint use this same answer
 ## at boot, on approach, after a closure, and when a distant chunk returns.
 func scenery_ground_source(tile: Vector2i) -> int:
+	if map.recipe_exterior and not map.recipe_bounds.has_point(tile):
+		return GroundTiles.ALLEY
 	var depth := OUTSIDE_DEPTH_TILES
 	if tile.x < -depth or tile.y < -depth or tile.x >= map.size.x + depth \
 			or tile.y >= map.size.y + depth:
@@ -1386,6 +1485,16 @@ func scenery_ground_source(tile: Vector2i) -> int:
 		if twin >= 0 and _ground.tile_set.has_source(twin):
 			return twin
 	return source
+
+func _recipe_contains(at: Vector2) -> bool:
+	return not map.recipe_exterior or map.recipe_bounds.has_point(map.world_to_tile(at))
+
+func _recipe_litter(day: int) -> Array[Litter.Placed]:
+	var shown: Array[Litter.Placed] = []
+	for placed in Litter.placed(map, day):
+		if _recipe_contains(placed.position):
+			shown.append(placed)
+	return shown
 
 ## Starts each repaint from the scene's authored TileSet, so the composition stays stable when a
 ## new day chooses different damage or grass cells — the authored resource names each source's

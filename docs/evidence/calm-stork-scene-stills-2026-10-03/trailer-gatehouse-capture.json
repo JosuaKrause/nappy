@@ -1,0 +1,252 @@
+{
+	"anchors": {
+		"gate": [
+			3568.0,
+			2720.0
+		],
+		"start": [
+			3328.0,
+			2720.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"capture_activity": {
+		"moving_crowd": 8,
+		"visible_cars": 1,
+		"visible_events": {
+			"checkpoint_gate": 1,
+			"checkpoint_hut": 2
+		},
+		"visible_walkers": 7,
+		"walkers_left": 3,
+		"walkers_right": 4
+	},
+	"capture_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				3452.2661,
+				2720.0
+			],
+			"speed": 92.0
+		}
+	},
+	"capture_camera": {
+		"position": [
+			3452.26611328125,
+			2720.0
+		],
+		"zoom": 2.0
+	},
+	"capture_crowd": {
+		"cars": 16,
+		"moving": 86,
+		"moving_cars": 16,
+		"quadrants": {
+			"ne": {
+				"cars": 11,
+				"moving": 37,
+				"moving_cars": 11,
+				"total": 37,
+				"walkers": 26
+			},
+			"nw": {
+				"cars": 1,
+				"moving": 1,
+				"moving_cars": 1,
+				"total": 1,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 4,
+				"moving": 48,
+				"moving_cars": 4,
+				"total": 48,
+				"walkers": 44
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 86,
+		"walkers": 70
+	},
+	"capture_tick": 42,
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"initial_activity": {
+		"moving_crowd": 3,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 3,
+		"walkers_left": 2,
+		"walkers_right": 1
+	},
+	"initial_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				3328.0,
+				2720.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 16,
+		"moving": 86,
+		"moving_cars": 16,
+		"quadrants": {
+			"ne": {
+				"cars": 9,
+				"moving": 31,
+				"moving_cars": 9,
+				"total": 31,
+				"walkers": 22
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 7,
+				"moving_cars": 0,
+				"total": 7,
+				"walkers": 7
+			},
+			"se": {
+				"cars": 5,
+				"moving": 42,
+				"moving_cars": 5,
+				"total": 42,
+				"walkers": 37
+			},
+			"sw": {
+				"cars": 2,
+				"moving": 6,
+				"moving_cars": 2,
+				"total": 6,
+				"walkers": 4
+			}
+		},
+		"scope": "local",
+		"total": 86,
+		"walkers": 70
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				3568.0,
+				2720.0
+			],
+			"row": "checkpoint_hut"
+		},
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				3568.0,
+				2784.0
+			],
+			"row": "checkpoint_gate"
+		},
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				3568.0,
+				2848.0
+			],
+			"row": "checkpoint_hut"
+		}
+	],
+	"observations": [
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					3351.0667,
+					2720.0
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 9.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 2,
+				"position": [
+					3369.4666,
+					2720.0
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 15.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": false,
+	"recipe": "The father approaches a gatehouse",
+	"recipe_sha256": "ae95b3f140ac2c30502477ff688f645e0c8aa92591572873fa7e6d28b2c17b1a",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"background": {
+			"crowd": true
+		},
+		"day": 13.0,
+		"gates": [
+			{
+				"segment": [
+					7.0,
+					6.0,
+					0.0
+				]
+			}
+		],
+		"parent": "father",
+		"player": {
+			"at": "start",
+			"facing": "east"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

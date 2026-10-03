@@ -42,10 +42,12 @@ what was tried and rejected, or what a number used to be, that is the records un
 
 **Where to pick up is read from the live state, not from a checked-in document.** Fetch
 (`git fetch --prune`), then `gh pr list` for the open pull requests, `tools/agent-status.sh` for
-the agent worktrees and their briefs, and `tools/queue.sh` for the queue's order
-([docs/TODO.md](docs/TODO.md) says how an entry's band sets it); the items under `docs/review/`
-are what waits on a person. A local, git-ignored `.claude/restart-prompt.md`, when there is one,
-is the last session's note to the next (**session-cleanup**).
+the agent worktrees and their briefs, `tools/queue.sh` for the queue's order
+([docs/TODO.md](docs/TODO.md) says how an entry's band sets it), and
+`uv run python tools/inbox.py list` for the player's inbox, the notes on GitHub Issues not yet
+filed (**inbox**); the items under `docs/review/` are what waits on a person. A local, git-ignored
+`.claude/restart-prompt.md`, when there is one, is the last session's note to the next
+(**session-cleanup**).
 
 ---
 
@@ -115,6 +117,7 @@ rather than a place:
 | commit, branch, merge, cut a release, or write a commit message | **committing** |
 | review a pull request, brief a review agent, or decide a PR is ready to merge — every PR is reviewed adversarially first | **pr-review** |
 | merge main into a PR or branch | **merging-main** |
+| build a worksheet for the player to answer the review items in | **review-answers** |
 | **end a session** | **session-cleanup** |
 
 **A manual sequence done a second time becomes a script.** *(2026-09-22: "if you find yourself

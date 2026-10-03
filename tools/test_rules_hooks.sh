@@ -63,7 +63,12 @@
 #     own --dry-run, prune-merged.sh always) in command position only -- past an assignment or a
 #     wrapper word's own options/duration, never where its name is merely a read's argument (cat,
 #     sed, git log/diff/show --, rg); each as a real invocation and as a mention (an echo, a commit
-#     message) alike. A flag between a gh noun and its own verb (gh pr -R O/R merge, gh pr --repo
+#     message) alike, outside three whole-command shapes whose text is told apart for certain: cat >
+#     FILE <<'EOF' (the delimiter quoted), a coder's or the orchestrator's wrapped git commit -F -
+#     <<'EOF', and a lone rg or grep with one quoted pattern -- each allows with prose naming gh
+#     issue comment, git push and tools/prune-merged.sh, and each near miss (an unquoted delimiter,
+#     <<-, a second command, a pipe, a reviewer's commit, rg --pre, a $ in the pattern) and every
+#     reproduction from PR #429's three reviews decides as main's guard does. A flag between a gh noun and its own verb (gh pr -R O/R merge, gh pr --repo
 #     O/R comment) does not skip the check, and neither does a noun/verb landing on a separator
 #     (gh status | head) or an endpoint/value merely ending in /gh or /git. A read (git status/
 #     log/fetch/diff, gh pr view/list/checks/diff/status/checkout, gh issue/release list/view, gh
@@ -77,9 +82,15 @@
 #     (claude-reviewer/codex-reviewer), whatever GitHub's own contents:write permission allows --
 #     only a coder identity or claude-orchestrator pushes or merges by those routes, and
 #     claude-orchestrator, a wrapping role like the coders, gets every write through (push, commit,
-#     gh pr create/merge, gh issue create/close/reopen/comment/edit, gh label create, gh run
-#     rerun, a pushing tools/ script); unwrapped, each of those still denies, and both deny
-#     messages name it. Every
+#     gh pr create/merge, gh label create, gh run rerun, a pushing tools/ script); unwrapped, each
+#     of those still denies, and both deny messages name it. A gh issue write verb (create, close,
+#     reopen, comment, edit) denies wrapped or not, and so does a gh api write to an issue
+#     endpoint (repos/o/r/issues or repositories/<id>/issues, issues/N, its labels/assignees/lock,
+#     issues/comments/N, the owner and repository in a variable or a substitution) or a GraphQL
+#     issue mutation (closeIssue, addLabelsToLabelable, ..., compact or in a variable the same
+#     command sets), since tools/inbox.py is the one way an agent writes an issue, and its message
+#     names the script; a comment POST to issues/N/comments and GraphQL's addComment, which pull
+#     requests share, stay allowed. Every
 #     scan (gh api's, a git verb's abort-flag check) runs to the next separator or the end of the
 #     command either way, so many such calls glued with no separator between them stay linear
 #     rather than quadratic, and so do the shapes where a walk from each word would reach the end
@@ -101,9 +112,9 @@
 #     one), a forced, deleting, mirroring or pruning push in any prefix of its long option or
 #     through a git -c, a push with a $ or a backtick among its words or in a git -c push refspec,
 #     a push whose own quoted word holds a separator, a git or gh whose options hold an unquoted
-#     command substitution, a bare gh issue write, a merge, a release, a gh api write and a
-#     pushing script, while git tag and a read allow; with the switch unset, 0 or yes, every one
-#     of those writes denies
+#     command substitution, a gh issue write bare or wrapped, a merge, a release, a gh api write
+#     and a pushing script, while git tag, a read, a search for a write's words and a
+#     tools/inbox.py call allow; with the switch unset, 0 or yes, every one of those writes denies
 #   - xargs/gxargs and parallel/env_parallel input makes an unwrapped push or missing/nonliteral
 #     git subcommand or gh noun/verb unreadable; pushing scripts behind their options are guarded;
 #     input can append tools/release.sh's own push, so release.sh under one is a write without it;
@@ -119,6 +130,10 @@
 #     so a pushing script or git/gh among them is unreadable
 #   - a gh api call under xargs or parallel is a write unless its every flag is written: input
 #     placed only at a replacement token inside a word of the call; a GraphQL call there writes
+#   - input that reaches an issue write (a verb input supplies to gh issue, a noun input supplies
+#     to gh, flags input adds to a written issue endpoint, a written gh issue under unreadable
+#     wrapper options) is denied wrapped or not, like a written gh issue write; a gh issue read
+#     and the shared issues/N/comments path under input keep their behavior
 #   - common no-value options (parallel --tag, --pipe, -X, -m, --xargs; xargs -o) and value options
 #     (parallel --tagstring, xargs --process-slot-var) leave a read under them a read
 #   - input-wrapper clusters and values share one parser: flag-shaped values never select a new
@@ -444,8 +459,14 @@ guard_decision() {
 }
 
 # $1 label  $2 expected ("deny" or "allow")  $3 command  $4 tool name (Bash when omitted)
+# More than four arguments is a broken case, not extra ones to ignore: a missing newline after a
+# command's closing quote runs the next case's words into this one, and the next case never runs.
 assert_guard() {
     checks=$((checks + 1))
+    if [ "$#" -gt 4 ]; then
+        fail "$1: $# arguments, at most 4 (a missing line break after the command?)"
+        return
+    fi
     local got
     got="$(guard_decision "$3" "${4:-Bash}")"
     if [ "$got" = "$2" ]; then
@@ -1001,8 +1022,13 @@ write_guard_decision() {
 }
 
 # $1 label  $2 expected ("deny" or "allow")  $3 command  $4 tool name (Bash when omitted)
+# More than four arguments is a broken case, as for assert_guard above.
 assert_write_guard() {
     checks=$((checks + 1))
+    if [ "$#" -gt 4 ]; then
+        fail "$1: $# arguments, at most 4 (a missing line break after the command?)"
+        return
+    fi
     local got
     got="$(write_guard_decision "$3" "${4:-Bash}")"
     if [ "$got" = "$2" ]; then
@@ -1176,7 +1202,7 @@ assert_write_guard "coder-wrapped input-supplied git subcommand allows" allow \
     'uv run python tools/agent-identity.py run codex-coder -- gxargs git'
 assert_write_guard "coder-wrapped input-supplied gh verb allows" allow \
     'uv run python tools/agent-identity.py run codex-coder -- env_parallel gh pr'
-assert_write_guard "input wrapper invoking coder-wrapped incomplete gh allows" allow \
+assert_write_guard "input wrapper invoking coder-wrapped gh with no noun denies: input can name issue" deny \
     'parallel uv run python tools/agent-identity.py run codex-coder -- gh'
 assert_write_guard "reviewer-wrapped input-supplied git subcommand denies" deny \
     'uv run python tools/agent-identity.py run codex-reviewer -- gxargs git'
@@ -1193,9 +1219,34 @@ assert_write_guard "reviewer-wrapped lowercase parallel replacement subcommand d
 assert_write_guard "input wrapper replacement invoking the reviewer wrapper denies" deny \
     'xargs -Icmd uv run python tools/agent-identity.py run codex-reviewer -- gh pr cmd 3'
 assert_write_guard "coder-wrapped gh api with input-supplied arguments allows" allow \
-    'uv run python tools/agent-identity.py run claude-coder -- xargs gh api repos/o/r/issues'
+    'uv run python tools/agent-identity.py run claude-coder -- xargs gh api repos/o/r/pulls/3'
 assert_write_guard "reviewer-wrapped gh api with input-supplied arguments can merge and denies" deny \
     'uv run python tools/agent-identity.py run claude-reviewer -- xargs gh api repos/o/r/pulls/3'
+
+# Input that reaches a gh issue write is an issue write, denied wrapped or not like a written one
+# (the inbox rule): a verb input supplies to a written gh issue, a noun input supplies (it can be
+# issue), flags input adds to a written issue endpoint, and a written gh issue whose wrapper's
+# options cannot be read. A read verb, a non-issue endpoint and the comments path stay as before.
+for input_issue_write in \
+    "sh -c 'echo comment 5 --body x | xargs gh issue'" \
+    'xargs -I{} gh issue {} 5' \
+    "sh -c 'ls | xargs --foo gh issue close 5'" \
+    "sh -c 'echo issue close 5 | xargs gh'" \
+    'xargs gh api repos/o/r/issues' \
+    'parallel gh api repos/o/r/issues/5'; do
+    assert_write_guard "orchestrator-wrapped input issue write denies: $input_issue_write" deny \
+        "uv run python tools/agent-identity.py run claude-orchestrator -- $input_issue_write"
+    assert_write_guard "coder-wrapped input issue write denies: $input_issue_write" deny \
+        "uv run python tools/agent-identity.py run claude-coder -- $input_issue_write"
+done
+assert_write_guard "unwrapped input-supplied gh issue verb denies" deny \
+    'echo comment 5 --body x | xargs gh issue'
+assert_write_guard "orchestrator-wrapped gh issue read under xargs allows" allow \
+    'uv run python tools/agent-identity.py run claude-orchestrator -- xargs gh issue view'
+assert_write_guard "unwrapped gh issue read under xargs allows" allow \
+    'echo 5 | xargs gh issue view'
+assert_write_guard "coder-wrapped input to the shared comments path allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- xargs gh api repos/o/r/issues/5/comments'
 
 # The shared input option parser keeps role policy after consuming clusters/values and when an
 # unknown option makes command position unreadable. The synthetic commands are only hook JSON.
@@ -1343,9 +1394,10 @@ assert_write_guard "wrapped gh pr comment as claude-reviewer still allows (not m
 assert_write_guard "wrapped gh pr merge as claude-coder still allows" allow \
     'uv run python tools/agent-identity.py run claude-coder -- gh pr merge 1'
 
-# claude-orchestrator is a wrapping role, not a reviewer: it makes every issue write and every
-# write on a pull request with no code changes (committing, "Who a commit and a pull request are
-# from"), pushes and merges included, so each of those is let through wrapped and denied bare.
+# claude-orchestrator is a wrapping role, not a reviewer: it makes every write on a pull request
+# with no code changes (committing, "Who a commit and a pull request are from"), pushes and merges
+# included, so each of those is let through wrapped and denied bare; its issue writes go through
+# tools/inbox.py alone (below).
 orch="uv run python tools/agent-identity.py run claude-orchestrator --"
 assert_write_guard "wrapped git push as claude-orchestrator -> allow, not a reviewer" allow \
     "$orch git push -u origin feature/docs"
@@ -1357,16 +1409,6 @@ assert_write_guard "wrapped gh pr merge as claude-orchestrator -> allow, not a r
     "$orch gh pr merge 1 --squash"
 assert_write_guard "wrapped gh api .../merge as claude-orchestrator -> allow, not a reviewer" allow \
     "$orch gh api -X PUT repos/o/r/pulls/1/merge"
-assert_write_guard "wrapped gh issue create as claude-orchestrator -> allow" allow \
-    "$orch gh issue create --title t --body-file /tmp/note --label inbox"
-assert_write_guard "wrapped gh issue close as claude-orchestrator -> allow" allow \
-    "$orch gh issue close 12 --comment 'Filed in #13'"
-assert_write_guard "wrapped gh issue reopen as claude-orchestrator -> allow" allow \
-    "$orch gh issue reopen 12"
-assert_write_guard "wrapped gh issue comment as claude-orchestrator -> allow" allow \
-    "$orch gh issue comment 12 --body 'Filed in #13'"
-assert_write_guard "wrapped gh issue edit --add-label as claude-orchestrator -> allow" allow \
-    "$orch gh issue edit 12 --add-label 'band: now'"
 assert_write_guard "wrapped gh label create as claude-orchestrator -> allow" allow \
     "$orch gh label create inbox"
 assert_write_guard "wrapped gh run rerun as claude-orchestrator -> allow" allow \
@@ -1382,6 +1424,469 @@ assert_write_guard "bare gh issue comment -> deny, the orchestrator's writes are
     "gh issue comment 12 --body 'Filed in #13'"
 assert_write_guard "a write after the orchestrator's wrapped command, on its own line -> deny" deny \
     "$orch git fetch"$'\n''git push'
+
+# An issue is written through tools/inbox.py alone (leafy-finch; bouncy-heron, statement 14: "an
+# agent shouldn't use gh issue directly"): a direct gh issue write denies wrapped or not, as the
+# orchestrator or any other role, and the script itself, which wraps its own writes, is let through.
+assert_write_guard "wrapped gh issue create as claude-orchestrator -> deny, the script writes issues" deny \
+    "$orch gh issue create --title t --body-file /tmp/note --label inbox"
+assert_write_guard "wrapped gh issue close as claude-orchestrator -> deny" deny \
+    "$orch gh issue close 12 --comment 'Filed in #13'"
+assert_write_guard "wrapped gh issue reopen as claude-orchestrator -> deny" deny "$orch gh issue reopen 12"
+assert_write_guard "wrapped gh issue comment as claude-orchestrator -> deny" deny \
+    "$orch gh issue comment 12 --body 'Filed in #13'"
+assert_write_guard "wrapped gh issue edit --add-label as claude-orchestrator -> deny" deny \
+    "$orch gh issue edit 12 --add-label queue_now"
+assert_write_guard "wrapped gh -R O/R issue close as claude-coder -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-coder -- gh -R o/r issue close 12'
+assert_write_guard "wrapped gh issue view -> allow, a read" allow "$orch gh issue view 12"
+# The API's issue writes are issue writes too, wrapped or not; a comment POST to issues/N/comments
+# (and GraphQL's addComment) is the one route left, since a pull request's own conversation
+# comments share it.
+assert_write_guard "wrapped gh api issue create -> deny" deny \
+    "$orch gh api repos/JosuaKrause/nappy/issues -f title=x -f body=y"
+assert_write_guard "wrapped gh api issue create to issues/ from --input -> deny" deny \
+    "$orch gh api repos/o/r/issues/ --input body.json"
+assert_write_guard "wrapped gh api issue create to issues?query -> deny" deny "$orch gh api 'repos/o/r/issues?x=1' -f title=t"
+assert_write_guard "wrapped gh api -X PATCH issues/N state=closed -> deny" deny \
+    "$orch gh api -X PATCH repos/JosuaKrause/nappy/issues/423 -f state=closed"
+assert_write_guard "the same as claude-coder, with a leading slash -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-coder -- gh api -X PATCH /repos/o/r/issues/423 -f state=closed'
+assert_write_guard "wrapped PATCH repositories/<id>/issues/N -> deny, the same issue by id" deny \
+    "$orch gh api -X PATCH repositories/123/issues/423 -f state=closed"
+assert_write_guard "wrapped gh api label add -> deny" deny \
+    "$orch gh api repos/JosuaKrause/nappy/issues/423/labels -f 'labels[]=queue_now'"
+assert_write_guard "wrapped gh api -X DELETE of a label -> deny" deny \
+    "$orch gh api -X DELETE repos/JosuaKrause/nappy/issues/423/labels/inbox"
+assert_write_guard "wrapped gh api assignees -> deny" deny "$orch gh api repos/o/r/issues/5/assignees -f 'assignees[]=x'"
+assert_write_guard "wrapped gh api -X PUT lock -> deny" deny "$orch gh api -X PUT repos/o/r/issues/5/lock"
+assert_write_guard "wrapped gh api -X PATCH issues/comments/N -> deny" deny \
+    "$orch gh api -X PATCH repos/JosuaKrause/nappy/issues/comments/123 -f body=hi"
+assert_write_guard "wrapped gh api -X DELETE issues/comments/N -> deny" deny "$orch gh api -X DELETE repos/o/r/issues/comments/9"
+assert_write_guard "a header value before the issue endpoint does not hide it -> deny" deny \
+    "$orch gh api -H 'Accept: application/vnd.github+json' -X PATCH repos/o/r/issues/5 -f state=closed"
+# The owner and the repository need not be literal: a variable or a substitution in their place
+# (the shape tools/release.sh itself uses for gh api) is still an issue endpoint.
+assert_write_guard "wrapped PATCH repos/\$R/issues/423 state=closed -> deny" deny \
+    "R=JosuaKrause/nappy; $orch gh api -X PATCH \"repos/\$R/issues/423\" -f state=closed"
+assert_write_guard "wrapped PATCH repos/\$(gh repo view ...)/issues/423 -> deny" deny \
+    "$orch gh api -X PATCH \"repos/\$(gh repo view --json nameWithOwner -q .nameWithOwner)/issues/423\" -f state=closed"
+assert_write_guard "wrapped PATCH repos/\${R}/issues/423 -> deny" deny \
+    "$orch gh api -X PATCH \"repos/\${R}/issues/423\" -f state=closed"
+assert_write_guard "wrapped issue create at repos/\$R/issues -> deny" deny "$orch gh api \"repos/\$R/issues\" -f title=t"
+assert_write_guard "wrapped label add at repos/\$R/issues/423/labels -> deny" deny \
+    "$orch gh api \"repos/\$R/issues/423/labels\" -f 'labels[]=x'"
+assert_write_guard "wrapped PATCH of a full URL with \$R -> deny" deny \
+    "$orch gh api -X PATCH \"https://api.github.com/repos/\$R/issues/423\" -f state=closed"
+assert_write_guard "wrapped comment POST to repos/\$R/issues/429/comments -> allow, PR comments share it" allow \
+    "$orch gh api \"repos/\$R/issues/429/comments\" -F body=@c.md"
+assert_write_guard "wrapped PATCH repos/\$R/pulls/5 -> allow, not an issue" allow \
+    "$orch gh api -X PATCH \"repos/\$R/pulls/5\" -f body=x"
+assert_write_guard "wrapped repos/\$(...)/issues/423 with -X PATCH after the endpoint -> deny" deny \
+    "$orch gh api \"repos/\$(gh repo view --json nameWithOwner -q .nameWithOwner)/issues/423\" -X PATCH -f state=closed"
+assert_write_guard "wrapped PATCH repos/\`echo o/r\`/issues/5, a bare backtick -> deny" deny \
+    "$orch gh api -X PATCH repos/\`echo o/r\`/issues/5 -f state=closed"
+assert_write_guard "wrapped comment POST to repos/\$(...)/issues/429/comments -> allow" allow \
+    "$orch gh api \"repos/\$(gh repo view --json nameWithOwner -q .nameWithOwner)/issues/429/comments\" -F body=@c.md"
+assert_write_guard "wrapped GraphQL closeIssue -> deny" deny \
+    "$orch gh api graphql -f query='mutation { closeIssue(input: {issueId: \"x\"}) { clientMutationId } }'"
+assert_write_guard "wrapped GraphQL addLabelsToLabelable -> deny" deny \
+    "$orch gh api graphql -f query='mutation { addLabelsToLabelable(input: {labelableId: \"x\", labelIds: [\"y\"]}) { clientMutationId } }'"
+assert_write_guard "wrapped GraphQL createIssue under an alias -> deny" deny \
+    "$orch gh api graphql -f query='mutation { made: createIssue(input: {repositoryId: \"r\", title: \"t\"}) { issue { number } } }'"
+# A query written with no spaces still names its mutation inside a longer word, and a query held
+# in a variable, a file or standard input the same command fills is read where it is filled.
+assert_write_guard "wrapped compact GraphQL mutation{closeIssue(...)} -> deny" deny \
+    "$orch gh api graphql -f query='mutation{closeIssue(input:{issueId:\"x\"}){clientMutationId}}'"
+assert_write_guard "wrapped compact GraphQL mutation{deleteIssue(...)} -> deny" deny \
+    "$orch gh api graphql -f query='mutation{deleteIssue(input:{issueId:\"x\"}){clientMutationId}}'"
+assert_write_guard "wrapped compact named mutation Close{closeIssue(...)} -> deny" deny \
+    "$orch gh api graphql -f query='mutation Close{closeIssue(input:{issueId:\"x\"}){clientMutationId}}'"
+assert_write_guard "wrapped compact alias mutation{a:closeIssue(...)} -> deny" deny \
+    "$orch gh api graphql -f query='mutation{a:closeIssue(input:{issueId:\"x\"}){clientMutationId}}'"
+assert_write_guard "Q='mutation { closeIssue ... }', then a wrapped -f query=\"\$Q\" -> deny" deny \
+    "Q='mutation { closeIssue(input: {issueId: \"x\"}) { clientMutationId } }'; $orch gh api graphql -f query=\"\$Q\""
+assert_write_guard "the same with -F query=\"\$Q\" -> deny" deny \
+    "Q='mutation{closeIssue(input:{issueId:\"x\"}){clientMutationId}}'; $orch gh api graphql -F query=\"\$Q\""
+assert_write_guard "a wrapped -F query=@- reading a heredoc closeIssue -> deny" deny \
+    "$orch gh api graphql -F query=@- <<'EOF'
+mutation{closeIssue(input:{issueId:\"x\"}){clientMutationId}}
+EOF"
+assert_write_guard "a closeIssue written to m.json, then a wrapped --input m.json -> deny" deny \
+    "cat > m.json <<'EOF'
+{\"query\":\"mutation{closeIssue(input:{issueId:\\\"x\\\"}){clientMutationId}}\"}
+EOF
+$orch gh api graphql --input m.json"
+# Every issue mutation in GitHub's schema is named: the verbs replace, apply and reject, a middle
+# holding a digit (ProjectV2), and an issue's dependencies and linked branches.
+for issue_mutation in \
+    'replaceActorsForAssignable(input:{assignableId:"x",actorIds:[]})' \
+    'applyPendingIssueSuggestions(input:{issueId:"x"})' \
+    'rejectPendingIssueSuggestions(input:{issueId:"x"})' \
+    'addBlockedBy(input:{issueId:"x",blockingIssueId:"y"})' \
+    'removeBlockedBy(input:{issueId:"x",blockingIssueId:"y"})' \
+    'convertProjectV2DraftIssueItemToIssue(input:{itemId:"x",repositoryId:"r"})' \
+    'createLinkedBranch(input:{issueId:"x",oid:"y"})' \
+    'deleteLinkedBranch(input:{linkedBranchId:"x"})'; do
+    assert_write_guard "wrapped GraphQL ${issue_mutation%%(*} -> deny, an issue mutation" deny \
+        "$orch gh api graphql -f query='mutation{${issue_mutation}{clientMutationId}}'"
+done
+# A reaction and a comment's minimizing serve a pull request as readily as an issue, like
+# addComment, so they stay open, and so does a pull request's own branch update.
+assert_write_guard "wrapped GraphQL addReaction -> allow, it serves pull requests too" allow \
+    "$orch gh api graphql -f query='mutation{addReaction(input:{subjectId:\"x\",content:HOORAY}){clientMutationId}}'"
+assert_write_guard "wrapped GraphQL minimizeComment -> allow, it serves pull requests too" allow \
+    "$orch gh api graphql -f query='mutation{minimizeComment(input:{subjectId:\"x\",classifier:OUTDATED}){clientMutationId}}'"
+assert_write_guard "wrapped GraphQL updatePullRequestBranch -> allow, a pull request's own write" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- gh api graphql -f query='mutation{updatePullRequestBranch(input:{pullRequestId:\"x\"}){clientMutationId}}'"
+assert_write_guard "wrapped compact GraphQL addComment -> allow, the comment route" allow \
+    "$orch gh api graphql -f query='mutation{addComment(input:{subjectId:\"x\",body:\"y\"}){clientMutationId}}'"
+assert_write_guard "a reviewer's wrapped compact resolveReviewThread -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-reviewer -- gh api graphql -f query='mutation{resolveReviewThread(input:{threadId:\"x\"}){thread{id}}}'"
+assert_write_guard "a reviewer's wrapped resolveReviewThread from a file -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-reviewer -- gh api graphql -F query=@resolve.graphql -F id=PRRT_x"
+assert_write_guard "wrapped gh api comment POST to issues/N/comments -> allow, PR comments share it" allow \
+    "$orch gh api repos/JosuaKrause/nappy/issues/429/comments -F body=@/tmp/b.md"
+assert_write_guard "wrapped GraphQL addComment -> allow, the same route" allow \
+    "$orch gh api graphql -f query='mutation { addComment(input: {subjectId: \"x\", body: \"y\"}) { clientMutationId } }'"
+assert_write_guard "a reviewer's wrapped GraphQL resolveReviewThread -> allow, not an issue mutation" allow \
+    "uv run python tools/agent-identity.py run claude-reviewer -- gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: \"x\"}) { thread { id } } }'"
+assert_write_guard "a GraphQL read naming an issue -> allow" allow \
+    "gh api graphql -f query='query { repository(owner: \"o\", name: \"r\") { issue(number: 5) { title } } }'"
+assert_write_guard "gh api GET of an issue and its comments -> allow" allow \
+    "gh api repos/o/r/issues/423 && gh api repos/o/r/issues/423/comments --jq '.[].body'"
+assert_write_guard "gh api -X GET issues with a field -> allow, a read" allow "gh api -X GET repos/o/r/issues -f labels=inbox"
+assert_write_guard "wrapped gh api -X PATCH pulls/N -> allow, a pull request's own write" allow \
+    "$orch gh api -X PATCH repos/o/r/pulls/5 -f body=x"
+# gh sends what follows a ? as the query and drops what follows a #, so the comments exception is
+# read on the path alone: a query string or fragment ending in /issues/N/comments does not make
+# an issue write a comment.
+assert_write_guard "wrapped PATCH issues/5?x=/issues/1/comments -> deny, the query is not the path" deny \
+    "$orch gh api -X PATCH 'repos/o/r/issues/5?x=/issues/1/comments' -f state=closed"
+assert_write_guard "wrapped PATCH issues/5#/issues/1/comments -> deny, the fragment is dropped" deny \
+    "$orch gh api -X PATCH 'repos/o/r/issues/5#/issues/1/comments' -f state=closed"
+assert_write_guard "wrapped issue create through issues?/issues/1/comments -> deny" deny \
+    "$orch gh api 'repos/o/r/issues?/issues/1/comments' -f title=x -f body=y"
+assert_write_guard "wrapped DELETE issues/comments/9?/issues/1/comments -> deny" deny \
+    "$orch gh api -X DELETE 'repos/o/r/issues/comments/9?/issues/1/comments'"
+assert_write_guard "wrapped comment POST to issues/429/comments?per_page=1 -> allow, still the comments path" allow \
+    "$orch gh api 'repos/o/r/issues/429/comments?per_page=1' -F body=@c.md"
+# The accepted gaps the guard's header names, pinned so a change to them is a decision: each is
+# allowed wrapped, as main allows every wrapped write.
+assert_write_guard "a wrapped PATCH of an endpoint held in \$E -> allow (accepted gap)" allow \
+    "E=repos/o/r/issues/5; $orch gh api -X PATCH \"\$E\" -f state=closed"
+assert_write_guard "a wrapped closeIssue built by printf -> allow (accepted gap)" allow \
+    "$orch gh api graphql -f query=\"\$(printf 'mutation{%sIssue(input:{issueId:\"x\"}){clientMutationId}}' close)\""
+assert_write_guard "a wrapped -F query=@- fed by cat of a file -> allow (accepted gap)" allow \
+    "cat q.graphql | $orch gh api graphql -F query=@-"
+assert_write_guard "a wrapped -F query=@q.graphql no command here wrote -> allow (accepted gap)" allow \
+    "$orch gh api graphql -F query=@q.graphql"
+assert_write_guard "a wrapped graphql --input m.json no command here wrote -> allow (accepted gap)" allow \
+    "$orch gh api graphql --input m.json"
+assert_write_guard "a wrapped gh alias for issue close -> allow (accepted gap)" allow \
+    "$orch gh alias set ic 'issue close'; $orch gh ic 423"
+assert_write_guard "tools/inbox.py list, a read -> allow" allow 'uv run python tools/inbox.py list'
+assert_write_guard "tools/inbox.py close with its own role -> allow" allow \
+    'uv run python tools/inbox.py --role claude-orchestrator close --pr 430'
+assert_write_guard "tools/inbox.py ask, wrapped as the orchestrator -> allow" allow \
+    "$orch uv run python tools/inbox.py ask 423 --body-file /tmp/question.md"
+assert_write_guard "tools/inbox.py capture from a heredoc of plain words -> allow" allow \
+    "uv run python tools/inbox.py --role claude-orchestrator capture --band next <<'NOTE'
+shadows are misplaced
+NOTE"
+# A capture whose words name a write is read as main reads any heredoc fed to a program, so the
+# words go to a file first (the first text shape, below) and the capture takes --body-file.
+assert_write_guard "tools/inbox.py capture from a heredoc naming gh issue close -> deny, not a text shape" deny \
+    "uv run python tools/inbox.py --role claude-orchestrator capture --band next <<'NOTE'
+the agent should never use gh issue close directly, and git push only wrapped
+NOTE"
+assert_write_guard "tools/inbox.py capture --body-file -> allow" allow \
+    'uv run python tools/inbox.py --role claude-orchestrator capture --band next --body-file /tmp/note.md'
+
+# **The three text shapes** (the guard's header; plaid-tapir, statement 4: the player's "B"). Each
+# is the whole command, and its text -- here prose naming gh issue comment, git push and
+# tools/prune-merged.sh -- is not read as commands. The two denials the write-guard item named, a
+# heredoc writing a brief and a heredoc commit message, allow in these shapes.
+assert_write_guard "shape 1: cat > brief <<'EOF' naming gh issue comment, git push, prune-merged -> allow" allow \
+    "cat > /tmp/brief.md <<'EOF'
+run gh issue comment only through tools/inbox.py; git push only wrapped; tools/prune-merged.sh after
+EOF"
+assert_write_guard "shape 1: cat <<'EOF' > file, a forced push and an issue close in the body -> allow" allow \
+    "cat <<'EOF' > /tmp/brief.md
+git push --force origin main and gh issue close 423
+EOF"
+assert_write_guard "shape 1: cat >> file <<\"EOF\" -> allow" allow "cat >> /tmp/brief.md <<\"EOF\"
+git push
+EOF"
+assert_write_guard "shape 1: cat >file <<\\EOF -> allow" allow "cat >/tmp/brief.md <<\\EOF
+gh issue close 423
+EOF"
+assert_write_guard "shape 1: a quoted END-OF-BRIEF delimiter, \$(...) and a backtick in the body, a blank line after -> allow" allow \
+    "cat > .claude/briefs/x.md <<'END-OF-BRIEF'
+\$(git push --force origin main) \`gh issue close 1\`
+END-OF-BRIEF
+"
+assert_write_guard "shape 1: prose 'if tools/land-prs.sh is named' -> allow" allow \
+    "cat > m.txt <<'EOF'
+if tools/land-prs.sh is named, it is read.
+EOF"
+assert_write_guard "shape 2: a wrapped git commit -F - <<'EOF' naming writes -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -F - <<'EOF'
+Deny gh issue comment; run tools/prune-merged.sh and git push only wrapped
+
+Co-Authored-By: x
+EOF"
+assert_write_guard "shape 2: .venv python, --repo, the orchestrator, -a and --file=- -> allow" allow \
+    ".venv/bin/python tools/agent-identity.py run --repo o/r claude-orchestrator -- git commit -a --file=- <<'MSG'
+git push
+MSG"
+assert_write_guard "shape 2: codex-coder, -F /dev/stdin -> allow" allow \
+    "uv run python tools/agent-identity.py run codex-coder -- git commit --amend -F /dev/stdin <<'EOF'
+gh issue close 423
+EOF"
+assert_write_guard "shape 3: rg -n with a quoted pattern naming gh issue comment -> allow" allow \
+    'rg -n "gh issue comment" .claude/'
+assert_write_guard "shape 3: grep -c with a quoted pattern naming git push -> allow" allow "grep -c 'git push' tools/land-prs.sh"
+assert_write_guard "shape 3: rg for tools/prune-merged.sh or gh issue close -> allow" allow \
+    "rg -n 'tools/prune-merged.sh|gh issue close' .claude/skills tools"
+# A near miss of a shape is read as main's guard reads it, so each of these denies.
+assert_write_guard "near shape 1: an unquoted delimiter -> deny" deny "cat > /tmp/b.md <<EOF
+git push
+EOF"
+assert_write_guard "near shape 1: <<- -> deny" deny "cat > /tmp/b.md <<-'EOF'
+	git push
+	EOF"
+assert_write_guard "near shape 1: a second command after the terminator -> deny" deny "cat > /tmp/b.md <<'EOF'
+prose
+EOF
+git push"
+assert_write_guard "near shape 1: no terminator -> deny" deny "cat > /tmp/b.md <<'EOF'
+git push"
+assert_write_guard "near shape 1: mkdir -p && cat > ... <<'EOF' -> deny" deny "mkdir -p /tmp/a && cat > /tmp/a/b.md <<'EOF'
+git push
+EOF"
+assert_write_guard "near shape 1: cat with no file -> deny" deny "cat <<'EOF'
+git push
+EOF"
+assert_write_guard "near shape 1: cat > \"\$f\" -> deny" deny "cat > \"\$f\" <<'EOF'
+git push
+EOF"
+assert_write_guard "near shape 1: cat > \$(...) -> deny" deny "cat > \$(git push) <<'EOF'
+x
+EOF"
+assert_write_guard "near shape 1: a glob for the file -> deny" deny "cat > a*.md <<'EOF'
+git push
+EOF"
+assert_write_guard "near shape 1: tee instead of cat -> deny" deny "tee /tmp/b.md <<'EOF'
+git push
+EOF"
+assert_write_guard "near shape 1: two heredocs one after the other -> deny" deny "cat > /tmp/a.md <<'EOF'
+run git push only wrapped
+EOF
+cat > /tmp/b.md <<'EOF'
+never gh issue close by hand
+EOF"
+assert_write_guard "near shape 2: a reviewer's commit -> deny" deny \
+    "uv run python tools/agent-identity.py run claude-reviewer -- git commit -F - <<'EOF'
+git push
+EOF"
+assert_write_guard "near shape 2: an unwrapped git commit -F - -> deny" deny "git commit -F - <<'EOF'
+msg
+EOF"
+assert_write_guard "near shape 2: a wrapped git commit -m \"\$(cat <<'EOF' ...)\" -> deny" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -m \"\$(cat <<'EOF'
+git push
+EOF
+)\""
+assert_write_guard "near shape 2: a push after the commit's terminator -> deny" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -F - <<'EOF'
+x
+EOF
+git push"
+assert_write_guard "shape 2: ./tools/agent-identity.py, no python in front -> allow" allow \
+    "./tools/agent-identity.py run claude-coder -- git commit -F - <<'EOF'
+git push
+EOF"
+assert_write_guard "shape 2: python3 tools/agent-identity.py -> allow" allow \
+    "python3 tools/agent-identity.py run claude-coder -- git commit -F - <<'EOF'
+git push
+EOF"
+# The shape trusts the repository's own wrapper and a python it can name, never any program that
+# is merely called agent-identity.py or python: a planted one could run the body as shell.
+assert_write_guard "near shape 2: a planted /tmp/x/agent-identity.py -> deny" deny \
+    "/tmp/x/agent-identity.py run claude-coder -- git commit -F - <<'EOF'
+git push --force origin main
+EOF"
+assert_write_guard "near shape 2: a planted /tmp/x/python -> deny" deny \
+    "/tmp/x/python tools/agent-identity.py run claude-coder -- git commit -F - <<'EOF'
+git push --force origin main
+EOF"
+assert_write_guard "near shape 2: --author=x, an option with a value -> deny" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit --author=x -F - <<'EOF'
+git push
+EOF"
+assert_write_guard "near shape 3: rg piped into sh -> deny" deny 'rg -o "git push --force origin main" x.md | sh'
+assert_write_guard "near shape 3: rg, then ; git push -> deny" deny 'rg "x" y; git push'
+assert_write_guard "near shape 3: rg --pre sh -> deny, --pre runs a program" deny 'rg --pre sh "git push" x'
+assert_write_guard "near shape 3: rg --pre=sh -> deny" deny 'rg --pre=sh "git push" x'
+assert_write_guard "near shape 3: a \$(...) in a double-quoted pattern -> deny" deny 'rg "$(git push)" x'
+assert_write_guard "near shape 3: two quoted words -> deny" deny "rg -g '*.md' \"gh issue close\" ."
+assert_write_guard "near shape 3: paths naming gh issue close -> deny" deny 'rg "x" gh issue close'
+assert_write_guard "near shape 3: an assignment prefix -> deny" deny 'LC_ALL=C grep "git push" x'
+assert_write_guard "near shape 3: a glob path -> deny" deny 'rg "git push" *.md'
+assert_write_guard "near shape 3: a redirection -> deny" deny 'rg "git push" x > /tmp/out'
+assert_write_guard "near shape 3: egrep -> deny, only rg and grep" deny 'egrep "git push" x'
+assert_write_guard "an echo of a quoted forced push -> deny, no text shape" deny 'echo "git push --force origin main"'
+
+# Every reproduction from PR #429's three reviews, each denied by main's guard: none is a text
+# shape, so each is read as main reads it and denies here too.
+assert_write_guard "review 1: cat <<EOF around \$(gh issue close 423) -> deny" deny "cat <<EOF
+\$(gh issue close 423)
+EOF"
+assert_write_guard "review 1: cat <<EOF > note.md around a backticked forced push -> deny" deny "cat <<EOF > note.md
+see \`git push --force origin main\`
+EOF"
+assert_write_guard "review 1: echo \"\$(cat <<EOF\" around \$(git push --force origin main) -> deny" deny \
+    "echo \"\$(cat <<EOF
+\$(git push --force origin main)
+EOF
+)\""
+assert_write_guard "review 1: tee note.md <<EOF around \$(gh issue close 423) -> deny" deny "tee note.md <<EOF
+\$(gh issue close 423)
+EOF"
+assert_write_guard "review 1: grep -c x <<EOF around \$(gh issue close 423) -> deny" deny "grep -c x <<EOF
+\$(gh issue close 423)
+EOF"
+assert_write_guard "review 1: a heredoc in \$(...) ended by EOF), hiding a forced push -> deny" deny \
+    "echo \"\$(cat <<'EOF'
+x
+EOF)\"
+git push --force origin main
+echo \"\$(cat <<'EOF'
+y
+EOF
+)\""
+assert_write_guard "review 1: the same hiding gh issue close -> deny" deny \
+    "echo \"\$(cat <<'EOF'
+x
+EOF)\"
+gh issue close 423
+echo \"\$(cat <<'EOF'
+y
+EOF
+)\""
+assert_write_guard "review 1: echo of a quoted gh issue close |& sh -> deny" deny 'echo "gh issue close 423" |& sh'
+assert_write_guard "review 1: echo of a quoted forced push |& bash -> deny" deny 'echo "git push --force origin main" |& bash'
+assert_write_guard "review 1: cat > /tmp/x.sh <<'EOF' then bash /tmp/x.sh -> deny" deny \
+    "cat > /tmp/x.sh <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/x.sh"
+assert_write_guard "review 1: cat > /tmp/x.sh <<'EOF' then chmod +x and run it -> deny" deny \
+    "cat > /tmp/x.sh <<'EOF'
+gh issue close 423
+EOF
+chmod +x /tmp/x.sh && /tmp/x.sh"
+assert_write_guard "review 1: echo > /tmp/y.sh; sh /tmp/y.sh -> deny" deny \
+    'echo "gh issue close 423" > /tmp/y.sh; sh /tmp/y.sh'
+assert_write_guard "review 2: cat <<EOF-1 ended at EOF-1, a forced push, then a bare EOF -> deny" deny 'cat <<EOF-1
+text
+EOF-1
+git push --force origin main
+EOF'
+assert_write_guard "review 2: cat <<\\EOF-1 ended at EOF-1, gh issue close, then a bare EOF -> deny" deny 'cat <<\EOF-1
+text
+EOF-1
+gh issue close 423
+EOF'
+assert_write_guard "review 2: cat <<EOF\"X\" ended at EOFX, a forced push, then a bare EOF -> deny" deny 'cat <<EOF"X"
+text
+EOFX
+git push --force origin main
+EOF'
+assert_write_guard "review 2: cat > note.md <<EOF. ended at EOF., gh issue close, then a bare EOF -> deny" deny 'cat > note.md <<EOF.
+text
+EOF.
+gh issue close 423
+EOF'
+assert_write_guard "review 2: cat <<EOF around \$\\ and (git push --force) on the next line -> deny" deny 'cat <<EOF
+$\
+(git push --force origin main)
+EOF'
+assert_write_guard "review 2: cat > note.md <<EOF around \$\\ and (gh issue close 423) -> deny" deny 'cat > note.md <<EOF
+$\
+(gh issue close 423)
+EOF'
+assert_write_guard "review 2: cat > /tmp/x.sh <<'EOF' then bash /tmp/x''.sh -> deny" deny \
+    "cat > /tmp/x.sh <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/x''.sh"
+assert_write_guard "review 2: cat > /tmp/x.sh <<'EOF' then bash /tmp/x\\.sh -> deny" deny \
+    "cat > /tmp/x.sh <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/x\\.sh"
+assert_write_guard "review 2: cat > /tmp/zz.sh <<'EOF' then bash /tmp/zz.s? -> deny" deny \
+    "cat > /tmp/zz.sh <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/zz.s?"
+assert_write_guard "review 2: exec 3>/tmp/z.sh; echo of a quoted issue close >&3; sh /tmp/z.sh -> deny" deny \
+    'exec 3>/tmp/z.sh; echo "gh issue close 423" >&3; sh /tmp/z.sh'
+assert_write_guard "review 3: a pipe at a line's end, then bash -> deny" deny 'echo "git push --force origin main" |
+bash'
+assert_write_guard "review 3: a pipe at a line's end, then sh -> deny" deny 'echo "gh issue close 423" |
+sh'
+assert_write_guard "review 3: a pipe at a line's end, a blank line, then bash -> deny" deny 'echo "git push --force origin main" |
+
+bash'
+assert_write_guard "review 3: |& at a line's end, then bash -> deny" deny 'echo "git push --force origin main" |&
+bash'
+assert_write_guard "review 3: | cat | at a line's end, then bash -> deny" deny 'echo "git push --force origin main" | cat |
+bash'
+assert_write_guard "review 3: rg -o at a line's end |, then sh -> deny" deny 'rg -o "git push --force origin main" x.md |
+sh'
+assert_write_guard "review 3: printf at a line's end |, then xargs sh -c -> deny" deny "printf '%s\\n' \"git push --force origin main\" |
+xargs -I{} sh -c '{}'"
+assert_write_guard "review 3: sort -o /tmp/x.sh <<'EOF' then bash -> deny" deny "sort -o /tmp/x.sh <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/x.sh"
+assert_write_guard "review 3: printf | sort -o x.sh; sh x.sh -> deny" deny \
+    'printf "git push --force origin main\n" | sort -o x.sh; sh x.sh'
+assert_write_guard "review 3: uniq - /tmp/u.sh <<'EOF' then sh -> deny" deny "uniq - /tmp/u.sh <<'EOF'
+gh issue close 423
+EOF
+sh /tmp/u.sh"
+assert_write_guard "review 3: cat > \"\$f\" then the literal name run -> deny" deny "f=/tmp/x.sh; cat > \"\$f\" <<'EOF'
+git push --force origin main
+EOF
+bash /tmp/x.sh"
+assert_write_guard "review 3: a Makefile then make -> deny" deny "cat > Makefile <<'EOF'
+all:
+	git push --force origin main
+EOF
+make"
+assert_write_guard "review 3: >> ~/.zshrc then zsh -i -> deny" deny \
+    'echo "git push --force origin main" >> ~/.zshrc; zsh -i -c true'
+assert_write_guard "review 3: a .githooks file then a wrapped commit -> deny" deny \
+    'echo "git push" > .githooks/pre-commit; uv run python tools/agent-identity.py run claude-coder -- git commit -m x'
+assert_write_guard "review 3: { then echo of a quoted forced push, then } | bash -> deny" deny '{
+echo "git push --force origin main"
+} | bash'
+assert_write_guard "review 3: { true; echo of a quoted forced push; } | bash -> deny" deny \
+    '{ true; echo "git push --force origin main"; } | bash'
+assert_write_guard "review 3: a for loop's do, echo, done | bash -> deny" deny 'for x in 1; do
+echo "git push --force origin main"
+done | bash'
+assert_write_guard "review 3: a heredoc inside { ... } | bash -> deny" deny "{
+cat <<'EOF'
+git push --force origin main
+EOF
+} | bash"
+assert_write_guard "review 3: printf -v c of a quoted forced push, then \$c -> deny" deny \
+    'printf -v c "git push --force origin main"; $c'
 
 # A GraphQL call reads only when its query is written inline and holds no "mutation": a query from
 # a file, a shell variable, a command substitution, the whole body from --input, or no query field
@@ -1443,6 +1948,8 @@ assert_write_guard "bash -lc, a wrapper inside the script, then a newline and gi
 assert_write_guard "bash -c, the whole script one wrapped git push -> allow" allow \
     'bash -c "uv run python tools/agent-identity.py run claude-coder -- git push"'
 assert_write_guard "bash -c, a wrapped gh api write whose quoted body holds a ; -> allow" allow \
+    "bash -c \"uv run python tools/agent-identity.py run claude-coder -- gh api -X POST repos/o/r/issues/1/comments -f body='x; y'\""
+assert_write_guard "bash -c, the same posted to the issue collection -> deny, an issue write" deny \
     "bash -c \"uv run python tools/agent-identity.py run claude-coder -- gh api -X POST repos/o/r/issues -f body='x; y'\""
 assert_write_guard "bash -c, a reviewer's wrapper inside the script, then ; git push -> deny" deny \
     'bash -c "uv run python tools/agent-identity.py run claude-reviewer -- gh pr view 1; git push"'
@@ -1506,9 +2013,14 @@ assert_write_guard "a wrapped bash -c \"a; git push\" beside a \$(...) -> deny (
 assert_write_guard "a gh api read in \$(...), no write flag -> allow" allow \
     'N=$(gh api repos/o/r/issues --jq length); echo $N'
 
-# $1 label  $2 command  $3 text the deny reason must contain
+# $1 label  $2 command  $3 text the deny reason must contain; more than three arguments is a
+# broken case, as for assert_guard above.
 assert_write_guard_reason() {
     checks=$((checks + 1))
+    if [ "$#" -gt 3 ]; then
+        fail "$1: $# arguments, at most 3 (a missing line break after the command?)"
+        return
+    fi
     local raw
     raw=$(printf '%s' "$2" | jq -Rs '{tool_name:"Bash", tool_input:{command:.}}' \
         | env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES NAPPY_AGENTS_DIR="$write_guard_agents" \
@@ -1522,7 +2034,13 @@ assert_write_guard_reason() {
 # Both deny messages name the orchestrator identity, so an agent told "no" learns which role a
 # docs-only pull request's or an issue's write goes out as.
 assert_write_guard_reason "the unwrapped deny names claude-orchestrator" \
-    'gh issue create --title t --body x' "claude-orchestrator for an issue or a pull request with no code changes"
+    'gh pr create --title t --body x' "claude-orchestrator for an issue or a pull request with no code changes"
+assert_write_guard_reason "a direct issue write's deny points at tools/inbox.py" \
+    'uv run python tools/agent-identity.py run claude-orchestrator -- gh issue close 5' "only through tools/inbox.py"
+assert_write_guard_reason "and says wrapping does not help" 'gh issue comment 5 --body x' "wrapped in an identity or not"
+assert_write_guard_reason "a gh api issue write's deny points at tools/inbox.py too" \
+    'uv run python tools/agent-identity.py run claude-orchestrator -- gh api -X PATCH repos/o/r/issues/5 -f state=closed' \
+    "only through tools/inbox.py"
 assert_write_guard_reason "the reviewer deny names claude-orchestrator too" \
     'uv run python tools/agent-identity.py run claude-reviewer -- gh pr merge 1' \
     "or claude-orchestrator when the pull request has no code changes"
@@ -1664,14 +2182,15 @@ assert_write_guard "gh api --method GET with a field after a quoted --jq pipe ->
     "gh api --method GET repos/o/r/issues --jq 'map(.number) | length' -f state=open"
 # An accepted false deny: in an unsure command every newline is a separator, so a line of heredoc
 # prose that starts with a reserved word and then a pushing script's path reads as that script
-# in command position.
+# in command position, in any heredoc that is not one of the text shapes (sed reads this one; the
+# same prose under cat > m.txt is the first shape and allows, above).
 assert_write_guard "heredoc prose: 'if tools/land-prs.sh is named' -> deny (accepted false deny)" deny \
-    "cat > m.txt <<'EOF'
+    "sed s/a/b/ > m.txt <<'EOF'
 if tools/land-prs.sh is named, it is read.
 EOF"
 # A reserved word matches only as the shell spells it, so capitalised prose is not one.
 assert_write_guard "heredoc prose: 'If tools/land-prs.sh fails, rerun it.' -> allow" allow \
-    "cat > m.txt <<'EOF'
+    "sed s/a/b/ > m.txt <<'EOF'
 If tools/land-prs.sh fails, rerun it.
 EOF"
 assert_write_guard "heredoc prose: 'Then tools/prune-merged.sh cleans up.' -> allow" allow \
@@ -1975,8 +2494,9 @@ write_guard_asked=(
 # a push with a shell expansion among its words, the remote or an option's value included, or in a
 # git -c push refspec, its key, or a --config-env one; a push whose own quoted word holds a
 # separator, so the words after it go unread; a git or gh whose options hold an unquoted command
-# substitution; a bare gh issue write (bouncy-heron statement 14: "an agent shouldn't use gh issue
-# directly"); a merge, a release, a gh api write and a pushing tools/ script.
+# substitution; a gh issue write, bare or wrapped in an identity, since only tools/inbox.py writes
+# an issue (bouncy-heron statement 14: "an agent shouldn't use gh issue directly"); a merge, a
+# release, a gh api write and a pushing tools/ script.
 write_guard_never_asked=(
     'echo push | xargs -rIstatus git status origin v1'
     'echo merge | xargs -rIview gh pr view 3'
@@ -2190,6 +2710,8 @@ write_guard_never_asked=(
     'gh issue comment 5 --body hi'
     'gh issue edit 5 --title x'
     'gh issue close 5'
+    'uv run python tools/agent-identity.py run claude-orchestrator -- gh issue comment 5 --body hi'
+    'uv run python tools/agent-identity.py run claude-orchestrator -- gh api -X PATCH repos/o/r/issues/5 -f state=closed'
     'gh pr merge 391 --squash'
     'gh release create v1.0'
     'gh api repos/o/r/issues -X POST'
@@ -2323,6 +2845,8 @@ write_guard_allowed=(
     'gh -R "`cat r`" pr view 3'
     'gh pr -R "$(cat r)" view 3'
     "sh -c 'gh -R \"\$(cat r)\" pr view 3'"
+    "rg -n 'gh issue comment' .claude/"
+    'uv run python tools/inbox.py --role claude-orchestrator close --pr 5'
 )
 # The same denial cases on a machine with identities, even when asking is switched on: a
 # quoted-script expansion must not disappear before environment policy ever sees the write.
