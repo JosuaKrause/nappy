@@ -205,11 +205,12 @@
 #   stands, and `cat` only copies it to the file, so the body is text and the command reads as
 #   `cat > FILE`.
 # - `tools/agent-identity.py run <role> -- git commit -F - <<'DELIM'` (or `-F /dev/stdin`,
-#   `--file=-`, `--file=/dev/stdin`, with `uv run python` or a python path in front, `run`'s own
-#   `--repo`, and `git commit` options that are a dash and letters alone, `-a` or `--amend`), the
-#   role a coder's or the orchestrator's,
-#   the body as above. Git takes its standard input as the message and runs none of it, so the
-#   body is text and the command reads as the wrapped commit it is.
+#   `--file=-`, `--file=/dev/stdin`; the wrapper as `tools/agent-identity.py` or
+#   `./tools/agent-identity.py`, with `uv run python`, a bare `python3` or `.venv/bin/python` in
+#   front or none, never a program elsewhere that is merely named so; `run`'s own `--repo`; and
+#   `git commit` options that are a dash and letters alone, `-a` or `--amend`), the role a coder's
+#   or the orchestrator's, the body as above. Git takes its standard input as the message and runs
+#   none of it, so the body is text and the command reads as the wrapped commit it is.
 # - `rg` or `grep` with plain options and paths and one pattern in single quotes, or in double
 #   quotes holding no `$`, backtick or backslash, and neither `--pre` nor `--hostname-bin` (the two
 #   `rg` options that run a program). A search runs nothing it is given, so the pattern is text and
@@ -1196,8 +1197,11 @@ def shape_cat_lines:
    "^cat[ \t]+" + shape_delim + "[ \t]+" + shape_file + "[ \t]*$"];
 def shape_commit_line:
   "(?:-[A-Za-z]+|--[a-z][a-z-]*)" as $flag
-  | "^(?:(?:uv[ \t]+run[ \t]+)?(?:[A-Za-z0-9_./-]*/)?python[0-9.]*[ \t]+)?"
-    + "(?:[A-Za-z0-9_./-]*/)?agent-identity\\.py[ \t]+run(?:[ \t]+--repo[ \t]+" + shape_plain + ")?"
+  # The repository's own wrapper, run by name or by a python the shape can name (`uv run python`,
+  # `python3`, `.venv/bin/python`), never any program merely called `agent-identity.py` or
+  # `python`, which a planted file could be.
+  | "^(?:(?:uv[ \t]+run[ \t]+)?(?:\\./)?(?:\\.venv/bin/)?python[0-9.]*[ \t]+)?"
+    + "(?:\\./)?tools/agent-identity\\.py[ \t]+run(?:[ \t]+--repo[ \t]+" + shape_plain + ")?"
     + "[ \t]+(?:claude-coder|codex-coder|claude-orchestrator)[ \t]+--[ \t]+git[ \t]+commit"
     + "(?:[ \t]+" + $flag + ")*[ \t]+(?:-F[ \t]+(?:-|/dev/stdin)|--file=(?:-|/dev/stdin))"
     + "(?:[ \t]+" + $flag + ")*[ \t]+" + shape_delim + "[ \t]*$";

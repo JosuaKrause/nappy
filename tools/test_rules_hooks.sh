@@ -1600,6 +1600,24 @@ assert_write_guard "near shape 2: a push after the commit's terminator -> deny" 
 x
 EOF
 git push"
+assert_write_guard "shape 2: ./tools/agent-identity.py, no python in front -> allow" allow \
+    "./tools/agent-identity.py run claude-coder -- git commit -F - <<'EOF'
+git push
+EOF"
+assert_write_guard "shape 2: python3 tools/agent-identity.py -> allow" allow \
+    "python3 tools/agent-identity.py run claude-coder -- git commit -F - <<'EOF'
+git push
+EOF"
+# The shape trusts the repository's own wrapper and a python it can name, never any program that
+# is merely called agent-identity.py or python: a planted one could run the body as shell.
+assert_write_guard "near shape 2: a planted /tmp/x/agent-identity.py -> deny" deny \
+    "/tmp/x/agent-identity.py run claude-coder -- git commit -F - <<'EOF'
+git push --force origin main
+EOF"
+assert_write_guard "near shape 2: a planted /tmp/x/python -> deny" deny \
+    "/tmp/x/python tools/agent-identity.py run claude-coder -- git commit -F - <<'EOF'
+git push --force origin main
+EOF"
 assert_write_guard "near shape 2: --author=x, an option with a value -> deny" deny \
     "uv run python tools/agent-identity.py run claude-coder -- git commit --author=x -F - <<'EOF'
 git push
