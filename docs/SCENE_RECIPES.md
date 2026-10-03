@@ -31,6 +31,8 @@ The default is 0.5 seconds. A still shows composition; the headless observations
 The trailer shot list's existing `in` is a separate adjustable recording cut-in: the recording
 simulates from setup, then trims the picture and audio to that time. `capture_at` chooses a
 screenshot moment, not a recording duration or a reset of the movement clock.
+The action scenes check movement at their configured cut-in ticks; the title and initial
+doorstep framing deliberately start at time zero.
 
 ## Activity and playback
 
