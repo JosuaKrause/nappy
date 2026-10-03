@@ -6,8 +6,8 @@
   "setup": {"tutorial_complete": true, "day": 3, "parent": "mother", "player": {"at": "start", "facing": "east"},
     "background": {"crowd": true, "uniform_walkers": true, "walker_multiplier": 2},
     "actors": [
-      {"name": "left_walk_1", "kind": "walker", "at": [1352, 2240], "direction": "south"},
-      {"name": "left_walk_2", "kind": "walker", "at": [1352, 2400], "direction": "north"},
+      {"name": "left_walk_1", "kind": "walker", "at": [1400, 2240], "direction": "south"},
+      {"name": "left_walk_2", "kind": "walker", "at": [1480, 2400], "direction": "north"},
       {"name": "left_walk_3", "kind": "walker", "at": [1400, 2368], "direction": "north"},
       {"name": "left_walk_4", "kind": "walker", "at": [1400, 2176], "direction": "south"},
       {"name": "left_walk_5", "kind": "walker", "at": [1480, 2304], "direction": "south"},
