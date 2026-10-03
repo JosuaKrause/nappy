@@ -174,6 +174,17 @@ Every agent prompt contains, explicitly:
 
 ## Running agents in parallel
 
+**Create sparse worktrees before materializing files.** Use `git worktree add --no-checkout`,
+then enable non-cone sparse checkout and exclude `docs/evidence/`, `docs/reference/` and
+`docs/style-references/` unless the task needs them; materialize HEAD only after those exclusions
+are set. A tools-only task may omit runtime art/assets too. Worktrees share history, so clone
+depth does not avoid repeated working files. Before checkout, import, build or capture batches,
+check free space on the destination volume against the estimated peak working set plus explicit
+headroom; an unknown peak or inadequate room means measure or reduce the batch before starting.
+Record scratch paths and cleanup ownership in the brief, and follow **session-cleanup**'s
+job-owned storage rules. Release a finished agent's brief with `cleanup: ready` only after its
+processes stop and useful artifacts are retained; retirement refuses an unreleased brief.
+
 **One repo takes several agents at once when each works in its own git worktree** (spawn with
 worktree isolation; each gets a full checkout under `.claude/worktrees/` and its own branch, and
 the path-triggered rules hook works there unchanged). What makes it safe is not the worktrees —
