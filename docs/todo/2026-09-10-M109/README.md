@@ -22,9 +22,4 @@ must read as the same woman pushing the stroller. Choose the generation method b
 a shared direction/state grid is a suggested strategy. Update the illustrated-PNG skill with
 findings supported by the conversion and review.
 
-The [roof and obstruction correction record](../../decisions/2026-09-10-M109-4.md)
-documents connected vent networks and the restored obstruction SVGs. The remaining
-conversion items include water mains and fallen trees, which still need accepted PNGs.
-
-The same record documents equipment proportions referenced to the ordinary door,
-the unchanged water tank and skylight scales, and complete skylight extraction.
+The remaining conversion items include water mains and fallen trees, which still need accepted PNGs.

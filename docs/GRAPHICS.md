@@ -319,7 +319,8 @@ named by an `EventInstance` constant that nothing draws.
 ## Other unbound SVGs
 
 `art/props/roof_{water_tank,hvac_unit,hvac_unit_b,skylight,skylight_b,vent_stack,duct_straight,duct_corner}.svg`
-and `art/props/industrial_vent_housing.svg` remain editable source art without runtime bindings.
+`art/props/industrial_vent_housing.svg` and `art/props/industrial_vent{,_b}.svg` remain editable
+source art without runtime bindings.
 Both bake modes use the direct PNG roof family instead. The separate industrial rotor SVGs
 remain live and animate inside that PNG housing.
 
