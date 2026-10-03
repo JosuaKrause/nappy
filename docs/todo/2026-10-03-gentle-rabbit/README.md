@@ -1,13 +1,14 @@
 priority: parked
 
-# gentle-rabbit — Shrink the repository's history once no PR is open · filed 2026-10-03
+# gentle-rabbit — Shrink the repository's history when few PRs are open · filed 2026-10-03
 
 > "10% is nice but we need to choose a good point for this since it will require a force push and
 > there are too many PRs for that open right now; let's table it"
 
 [busy-ibis](../../playtests/2026-10-03-busy-ibis.md), statements 4 and 5; busy-wombat's "we might do
-a git filter later on but not yet". Parked until the player picks a moment with few open PRs and
-no agent at work, since every way of shrinking the history rewrites it and needs a force push.
+a git filter later on but not yet". Parked until the player picks a moment with few open PRs, since every way of shrinking the history
+rewrites it and needs a force push. **Proposed, not asked for:** that no agent is at work then
+either, since an agent's branch is rewritten under it.
 
 **What was measured on 2026-10-03** (the git history, `.git`, is about 1.1 GB, shared once by every
 local worktree; GitHub reported the repository at about 1 GB):

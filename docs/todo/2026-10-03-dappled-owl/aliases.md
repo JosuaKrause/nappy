@@ -6,7 +6,8 @@ a release tag as the player; so are the player's own global aliases, `git ci -m 
 `commit`) and `git m <branch>` (`m` is `merge`). The guard reads `-c` settings given before
 `push` since #448 but not `alias.*`, and no record lists aliases as an accepted gap.
 
-Option A, as chosen: the guard denies any `-c alias.*` setting on a git command, the way it denies
+Option A, as chosen: the guard denies any `-c alias.*` or `--config-env=alias.*` setting on a git
+command, the way it denies
 an inline `push.default=matching`; and for a subcommand it does not recognise, it asks git what the
 alias stands for (`git config --get alias.<sub>`) and judges that command instead, so `git ci`
 counts as the commit it is. Tests for both.

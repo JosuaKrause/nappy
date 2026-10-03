@@ -39,7 +39,7 @@ without requiring unrelated neighbors from the same run. Many older folders have
 was written about one is in the decision records — under the entry, milestone or playtest its
 name starts with (`tools/decisions.sh M180`), found by searching `docs/decisions/` for its name, or
 through the commit that added it (`git log --diff-filter=A -- docs/evidence/<folder>/` names the
-pull request and its entry) when no record names the folder at all.
+pull request) when no record names the folder at all.
 
 ## Animation sequences
 
