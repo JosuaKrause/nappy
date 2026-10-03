@@ -8,12 +8,12 @@ extends Node
 ## The 96px emergency guard covers a full 92px facing reversal plus a physics step;
 ## the remaining 160px normally gives about 0.95s to drain bounded preparation work.
 ## The wider retention boundary gives another 1.52s of reversal tolerance. These are visual
-## scheduling distances, not gameplay reach. Native acceptance measures every entered batch.
+## scheduling distances, not gameplay reach.
 const LOAD_MARGIN := 256.0
 const RETAIN_MARGIN := 512.0
 const GUARD_MARGIN := 96.0
-## Soft CPU preparation limit: finish the current atomic batch. Draw-command submission is
-## deferred by Godot and measured separately; relocations and emergency coverage are synchronous.
+## Soft CPU preparation limit: finish the current job or ground quadrant, including its
+## TileMap renderer preparation. GPU drawing and water redraw are separate; guards are synchronous.
 const BUDGET_USEC := 2000
 var city: City
 var view := Rect2()
@@ -21,6 +21,9 @@ var _items: Array[Node2D] = []
 var worst_update_usec := 0
 var ordinary_guard_preparations := 0
 var _pending := false
+var _ground_step_frame := -1
+## Keep the frame fence outside jobs: cancellation must not allow a second step for that key.
+var _ground_stepped: Dictionary = {}
 
 func _ready() -> void:
 	# Camera and rig callbacks finish before residency reads their final transform. This node
@@ -64,6 +67,11 @@ func update(next_view: Rect2, immediate := false) -> void:
 	for key: Vector2i in ground.chunks.keys():
 		if not retained.intersects(SceneryGround.bounds(key)):
 			ground.release(key)
+	# Keep unfinished allocations through the wider retention ring too. They pause outside
+	# the load boundary, so reversing there resumes the same work without allocation churn.
+	for key: Vector2i in ground.pending.keys():
+		if not retained.intersects(SceneryGround.bounds(key)):
+			ground.cancel(key)
 	var pending: Array[Dictionary] = []
 	for key in ground.keys_in(load_view):
 		if ground.chunks.has(key):
@@ -75,7 +83,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 			ground.prepare(key)
 		else:
 			pending.append({"distance": bounds.get_center().distance_squared_to(view.get_center()),
-					"prepare": ground.prepare.bind(key)})
+					"ground_key": key})
 	for item in _items.duplicate():
 		if not is_instance_valid(item) or item.is_queued_for_deletion():
 			_items.erase(item)
@@ -107,5 +115,19 @@ func update(next_view: Rect2, immediate := false) -> void:
 		if Time.get_ticks_usec() - started >= BUDGET_USEC:
 			_pending = true
 			break
-		(job.prepare as Callable).call()
+		if job.has("ground_key"):
+			# Several regions may approach together. Advance each once within the shared budget;
+			# repeating an explicit update or replacing a canceled job cannot drain one region.
+			var frame := Engine.get_process_frames()
+			if _ground_step_frame != frame:
+				_ground_step_frame = frame
+				_ground_stepped.clear()
+			if _ground_stepped.has(job.ground_key):
+				_pending = true
+				continue
+			_ground_stepped[job.ground_key] = true
+			if not ground.prepare_step(job.ground_key):
+				_pending = true
+		else:
+			(job.prepare as Callable).call()
 	worst_update_usec = maxi(worst_update_usec, Time.get_ticks_usec() - started)
