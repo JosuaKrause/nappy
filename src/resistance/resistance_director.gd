@@ -1350,9 +1350,14 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 ## day draws the same mast every time.
 ##
 ## **Near the mark she read** (`mark`; `_place()` says why): only the masts whose foot is within
-## `NEAR_THE_MARK` of it are drawn among, and when none is — six masts stand across a whole city —
-## the offered mast nearest the mark is the one. `Vector2.INF` for `mark` (a rig placing the task
-## without a mark) draws among them all.
+## `NEAR_THE_MARK` of it are drawn among. **When none is, the day adds one** near the mark
+## (`_add_a_mast_near()`, `EventManager.add_mast()`) — the city's six fixed sites (M180's "the same
+## sites every day") leave most marks with no mast near, and the player chose a new mast over a far
+## one: *"The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
+## harder to encounter masts. We need to discuss this again but not now. Now just add a new mast
+## close by"* (2026-10-04). Only where no ground near the mark can take one is the offered mast
+## nearest the mark the one. `Vector2.INF` for `mark` (a rig placing the task without a mark) draws
+## among them all.
 func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector2:
 	_mast_id = ""
 	if not _city or not _city.events:
@@ -1388,6 +1393,10 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 				near_plans.append(offered[i])
 				near_beside.append(beside[i])
 		if near_plans.is_empty():
+			var added := _add_a_mast_near(mark, rng)
+			if not added.is_empty():
+				_mast_id = EventScheduler.added_mast_id(_map.tile_to_world(added[0]))
+				return _map.tile_to_world(added[1])
 			near_plans.append(offered[nearest])
 			near_beside.append(beside[nearest])
 		offered = near_plans
@@ -1395,6 +1404,65 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 	var index := _weighted_mast_index(beside, rng)
 	_mast_id = offered[index].mast_id
 	return _map.tile_to_world(beside[index])
+
+## Puts one more mast near `mark` for day 11's task, when no live mast stands within
+## `NEAR_THE_MARK` of it (`_place_at_a_mast()`), and answers `[its foot, the tile beside it she
+## touches it from]`, or `[]` when no ground near the mark can take one. The foot is a sidewalk or
+## square tile, the ground `MastSites` stands every mast on, drawn by the day's RNG among those
+## that:
+##
+## - are within `NEAR_THE_MARK` of the mark, beside tile included, and out of her view
+##   (`TASK_HALF_EXTENT`), so it is never seen to appear;
+## - pass every refusal a contact's ground passes (`is_legal_ground()`, no body on it, reachable
+##   from home), with a tile beside the foot that does too;
+## - a site would be offered on (`MastSites._is_eligible()`: off the home street, its field off a
+##   calm interior and off every place a region door could stand) and keep today's own doors clear
+##   (`EventScheduler._clear_of_the_doors()`), the two checks every mast's ground already passes.
+func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector2i]:
+	var added: Array[Vector2i] = []
+	if not _city or not _city.events:
+		return added
+	var walled_alleys := _walled_alleys()
+	var doors := PackedVector2Array()
+	var region_plan := _region_plan()
+	if region_plan:
+		for body in region_plan.door_bodies:
+			doors.append(body.position)
+	var reach := EventCatalogue.by_id("loudspeaker").field_reach()
+	var feet: Array[Vector2i] = []
+	var besides: Array[Vector2i] = []
+	for type: GameEnums.TileType in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]:
+		for tile in _map.tiles_of_type(type):
+			var world := _map.tile_to_world(tile)
+			if world.distance_to(mark) > NEAR_THE_MARK - Tuning.TILE_SIZE \
+					or _box_shows(world, TASK_HALF_EXTENT):
+				continue
+			if not is_legal_ground(_map, tile, walled_alleys) or _map.is_obstructed(tile) \
+					or not _reachable_from_home(tile):
+				continue
+			if not MastSites._is_eligible(world, _map) \
+					or not EventScheduler._clear_of_the_doors(world, PackedVector2Array(), doors,
+					reach):
+				continue
+			for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				var next := tile + side
+				if is_legal_ground(_map, next, walled_alleys) and not _map.is_obstructed(next) \
+						and _reachable_from_home(next):
+					feet.append(tile)
+					besides.append(next)
+					break
+	if feet.is_empty():
+		Telemetry.note("contact", "no ground within %.0fpx of the mark can take a mast"
+				% NEAR_THE_MARK)
+		return added
+	var index := rng.randi_range(0, feet.size() - 1)
+	_city.events.add_mast(_map.tile_to_world(feet[index]))
+	Telemetry.note("contact", "a mast is put up at %s for the task, %.0fpx from the mark"
+			% [TelemetryLog.tile(feet[index]),
+			_map.tile_to_world(feet[index]).distance_to(mark)])
+	added.append(feet[index])
+	added.append(besides[index])
+	return added
 
 ## The near mast's edge over the far one: index `i`'s weight is `1.0 / d^2`, `d` the straight-line
 ## distance from where she is when the task is placed (`_player_position()`, or the doorstep with

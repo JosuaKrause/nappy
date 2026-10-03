@@ -685,6 +685,25 @@ func mast_foot(mast_id: String) -> Vector2:
 			return plan.position
 	return Vector2.INF
 
+## **One more mast, for day 11's task**, when no live mast stands near the mark she read
+## (`ResistanceDirector._place_at_a_mast()`): a `loudspeaker` plan at `foot`, heated like the day's
+## own (`GameState.resistance_progress`, the heat `start_day()` hands the scheduler), under
+## `EventScheduler.added_mast_id(foot)`, appended to the day's plan and its body recorded like any
+## other's. The director has already kept `foot` out of her view, so it streams in off screen like
+## any planned row; it broadcasts on the one clock, is silenced by `silence_mast()` like the others,
+## counts for `silence_all_masts()`, and once silenced stands silenced on every later day from its
+## scar (`EventScheduler._place_masts()`). *(2026-10-04, the player: "The 6 masts rule is stupid
+## anyway. It doesn't come from me. And it actually makes it harder to encounter masts. We need to
+## discuss this again but not now. Now just add a new mast close by".)*
+func add_mast(foot: Vector2) -> EventScheduler.Planned:
+	var def := EventCatalogue.heated(EventCatalogue.by_id("loudspeaker"),
+			GameState.resistance_progress)
+	var plan := EventScheduler.Planned.new(def, foot)
+	plan.mast_id = EventScheduler.added_mast_id(foot)
+	_plans.append(plan)
+	_record_the_body(plan.get_instance_id(), def, foot, plan.facing)
+	return plan
+
 ## Silences one mast by id, for the rest of the day — a mast still stands once silenced, with no
 ## arcs and no field, so this sets `Planned.silenced` and its live instance's own mirror rather
 ## than finishing it: `EventInstance._finish()` is for something that leaves, and a mast never

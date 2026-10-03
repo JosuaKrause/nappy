@@ -785,6 +785,11 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 ## entry at its foot (`ResistanceDirector._silence_the_mast()`), and its plans are made with
 ## `Planned.silenced` already set — the pole and horns are there, the lamp is out and there is no
 ## field, for the rest of the run.
+##
+## **So does a mast day 11 added for her task** (`EventManager.add_mast()`): a `SILENCED_MAST` scar
+## no site's foot is within a tile of is that mast, and it is planned again at its own foot, silenced,
+## under `added_mast_id()`, on every later day whose holds and closures leave the tile alone. One
+## that was never silenced left no scar and is not planned again.
 static func _place_masts(day: int, map: CityMap, heat: int = 0,
 		doors := PackedVector2Array(), scars: Array[Dictionary] = []) -> Array[Planned]:
 	var planned: Array[Planned] = []
@@ -793,7 +798,24 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0,
 	var loudspeaker := EventCatalogue.heated(EventCatalogue.by_id("loudspeaker"), heat)
 	var curfew := EventCatalogue.heated(EventCatalogue.by_id("curfew_announce"), heat) \
 			if day == Tuning.CURFEW_ANNOUNCE_DAY else null
-	for site in MastSites.compute(map):
+	var sites := MastSites.compute(map)
+	for scar in scars:
+		if String(scar["id"]) != SILENCED_MAST or int(scar["since_day"]) >= day:
+			continue
+		var foot: Vector2 = scar["position"]
+		var at_a_site := false
+		for site in sites:
+			if site.foot.distance_to(foot) < Tuning.TILE_SIZE:
+				at_a_site = true
+				break
+		var tile := map.world_to_tile(foot)
+		if at_a_site or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
+			continue
+		var added := Planned.new(loudspeaker, foot)
+		added.mast_id = added_mast_id(foot)
+		added.silenced = true
+		planned.append(added)
+	for site in sites:
 		var tile := map.world_to_tile(site.foot)
 		if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 			continue
@@ -811,6 +833,11 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0,
 			announcement.silenced = quiet
 			planned.append(announcement)
 	return planned
+
+## The id of a mast day 11 added for her task at `foot` (`EventManager.add_mast()`), the same
+## every day it is planned again from its scar, and never a `MastSites` site's own id.
+static func added_mast_id(foot: Vector2) -> String:
+	return "added-%d-%d" % [roundi(foot.x), roundi(foot.y)]
 
 ## The scar id a mast she silenced leaves at its foot. No catalogue row answers it, so
 ## `_place_scars` places nothing for it; `_place_masts` is its only reader.

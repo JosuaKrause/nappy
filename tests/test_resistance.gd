@@ -97,6 +97,7 @@ func run(t) -> void:
 	_test_the_column_comes_down_the_main_road(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
 	_test_a_task_is_placed_near_its_mark(t)
+	_test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
 	_test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t)
 	_test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t)
@@ -3999,6 +4000,69 @@ func _test_a_task_is_placed_near_its_mark(t) -> void:
 	GameState.scars = saved_scars
 	GameState.city_state = saved_state
 	t.check(checked[0] > 0, "some task was actually placed (%d)" % checked[0])
+
+## feathery-marmot, day 11 — *"Now just add a new mast close by"* (the player, 2026-10-04, on a
+## mark with no live mast near it). On three cities, day 11 is planned the way a played day is and
+## its mark read standing on it: where no planned mast stands within `NEAR_THE_MARK` of the mark,
+## the task goes to a mast the day has just put up — a `loudspeaker` plan under
+## `EventScheduler.added_mast_id()`, its foot within reach of the mark and out of her view. Reaching
+## it silences it and records its scar; `silence_all_masts()` (day 14) counts it; and the next day's
+## masts, planned from the scars, stand it again at its own foot, silenced. Before, the task went to
+## the nearest of the city's six masts, 1,377px and 3,948px away on two of these cities.
+func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
+	var saved_scars := GameState.scars.duplicate()
+	var saved_state := GameState.city_state
+	var added := [0]
+	for seed_value: int in [SEED, 90210, 1234567]:
+		_build_city(t, seed_value)
+		_with_clean_run(func() -> void:
+			GameState.scars = []
+			var read := _read_the_mark_on(t, 11, seed_value)
+			var director: ResistanceDirector = read[0]
+			var mark: Vector2 = read[1]
+			var player: Stroller = read[2]
+			var site_near := false
+			for plan in _city.events.plans():
+				if plan.def.id == "loudspeaker" and not plan.mast_id.begins_with("added-") \
+						and plan.position.distance_to(mark) <= ResistanceDirector.NEAR_THE_MARK:
+					site_near = true
+			if not site_near and director._mast_id.begins_with("added-"):
+				added[0] += 1
+				var foot := _city.events.mast_foot(director._mast_id)
+				t.check(foot != Vector2.INF and foot.distance_to(mark) <= ResistanceDirector.NEAR_THE_MARK,
+						"seed %d: the mast put up for the task stands %.0fpx from the mark"
+						% [seed_value, foot.distance_to(mark)])
+				t.check(not director._box_shows(foot, ResistanceDirector.TASK_HALF_EXTENT),
+						"seed %d: and out of her view" % seed_value)
+				var masts_before := _city.events.plans().filter(
+						func(plan: EventScheduler.Planned) -> bool: return plan.mast_id != "").size()
+				director._on_contact_completed(12)
+				var scarred := false
+				for scar: Dictionary in GameState.scars:
+					if String(scar["id"]) == EventScheduler.SILENCED_MAST \
+							and (scar["position"] as Vector2).distance_to(foot) < 1.0:
+						scarred = true
+				t.check(scarred, "seed %d: reaching it silences it and records its scar" % seed_value)
+				t.check(_city.events.silence_all_masts() >= 1 and masts_before > 0,
+						"seed %d: day 14's sabotage reaches it with the others" % seed_value)
+				var day_12 := EventScheduler._place_masts(12, _city.map, 0, PackedVector2Array(),
+						GameState.scars)
+				var stands_again := false
+				for plan in day_12:
+					if plan.mast_id == director._mast_id and plan.silenced \
+							and plan.position.distance_to(foot) < 1.0:
+						stands_again = true
+				t.check(stands_again, "seed %d: and the next day stands it again, silenced"
+						% seed_value)
+			elif not site_near:
+				t.check(false, "seed %d: no mast near the mark and none put up (task at %s)"
+						% [seed_value, director._mast_id])
+			player.free()
+			director.free())
+	GameState.scars = saved_scars
+	GameState.city_state = saved_state
+	t.check(added[0] > 0, "some city had no mast near its day-11 mark, so one was put up (%d)"
+			% added[0])
 
 ## Plans `day` on the test city in the real day order (closures, events, resistance) for
 ## `seed_value`, and reads the day's mark standing on it with her screen the view around her:
