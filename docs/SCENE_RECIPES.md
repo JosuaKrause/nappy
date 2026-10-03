@@ -38,12 +38,15 @@ doorstep framing deliberately start at time zero.
 
 `setup` accepts `day`, `parent` (`mother` or `father`), `player` (`at`, cardinal `facing`,
 initial `excitement` and `sleep`), `background` booleans `events`/`crowd`, `signal_time`,
-`progression`, named `events`, named `actors`, and the day-13 `column` formation.
+`progression`, named `events`, named `actors`, `posters`, and the day-13 `column` formation.
 `tutorial_complete: true` starts after the ordinary control lessons, clearing those prompts
 while retaining gameplay warnings. Trailer scenes use this state so the lesson text does not
 cover their subjects. Free play uses the same authored teaching state.
-Positions name an anchor or give `[world_x,world_y]`. Background activity defaults off;
-random events cannot accompany pinned events, and random crowd cannot accompany pinned actors.
+Positions name an anchor or give `[world_x,world_y]`. Background activity defaults off.
+With `background.events`, exact event subjects enter ordinary day planning before the other
+catalogue candidates. Recurring subjects count against that day's budget and per-row cap.
+Normal planning must preserve them or setup fails. The ordinary director remains active.
+Random crowd cannot accompany pinned crowd actors.
 Random background activity requires full extent; bounded scenes use authored activity so their
 plain exterior does not acquire context-city actors or collisions.
 
@@ -58,6 +61,13 @@ simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direc
 in its actual main-road lane. Its ordinary formation spacing and rear-truck stopping logic
 come from `ResistanceHappenings`; unrelated catalogue spacing does not apply to that formation.
 Its observation names are `truck_1`, `truck_2` and `truck_3`. It requires a full day-13 city.
+When ordinary background events are enabled, temporary formation reservations participate in
+their placement; only the real happening installs the trucks. Their count stays outside the
+catalogue budget, as it does in ordinary play.
+
+`posters` gives exact existing wall cells, each with `at` and a day-eligible `kind` (`leader`,
+`rules`, `curfew`, `uniform`, `wanted`). The runtime uses production wall eligibility and
+`PosterState.paste`; duplicate cells, non-wall ground and kinds unavailable that day fail.
 `kind: "escape"`, day 14 and `progression.escape_part: "city"` use the actual escape controller,
 carrying pose, two escape routes, seals and heated guard variants. `progression.blackout` turns
 off the street signals. Supported escape pins are trucks, abduction, roadblocks and explosions.

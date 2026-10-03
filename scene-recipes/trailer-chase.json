@@ -5,7 +5,7 @@
   "setup": {"tutorial_complete": true, "day": 14, "parent": "mother", "player": {"at": "start", "facing": "east", "sleep": 100},
     "progression": {"escape_part": "city", "blackout": true},
     "events": [{"name": "guards", "row": "roadblock", "at": "guards"}]},
-  "playback": {"walk": "1e1.4W", "duration": 2.4, "capture_at": 1.4,
+  "playback": {"walk": "1e1.4W", "duration": 2.4, "capture_at": 1.5, "camera": {"zoom": 1.35},
     "observations": [{"tick": 42, "subject": "player", "condition": "carrying"},
       {"tick": 42, "subject": "guards", "condition": "pursuing"},
       {"tick": 42, "subject": "player", "condition": "running"},

@@ -56,7 +56,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	var setup: Dictionary = recipe.get("setup", {})
 	var playback: Dictionary = recipe.get("playback", {})
 	_keys(setup, ["day", "parent", "player", "background", "progression", "events", "actors",
-			"signal_time", "column", "tutorial_complete"], "setup", errors)
+			"signal_time", "column", "tutorial_complete", "posters"], "setup", errors)
 	if not setup.get("tutorial_complete", false) is bool:
 		errors.append("setup.tutorial_complete must be boolean")
 	_number(setup.get("day", 1), "setup.day", 1, 14, errors, true)
@@ -99,6 +99,20 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	elif progression.has("escape_part"):
 		errors.append("setup.progression.escape_part requires kind escape")
 	_number(setup.get("signal_time", 0), "setup.signal_time", 0, 86400, errors)
+	if not setup.get("posters", []) is Array:
+		errors.append("setup.posters must be an array")
+	else:
+		for entry: Variant in setup.get("posters", []):
+			if not entry is Dictionary:
+				errors.append("setup.posters entries must be objects")
+				continue
+			_keys(entry, ["at", "kind"], "setup.posters", errors)
+			_position(entry.get("at"), "setup.posters.at", errors)
+			var key := str(entry.get("kind", "")).to_upper()
+			if not PosterArt.Kind.has(key):
+				errors.append("setup.posters.kind is unknown")
+			elif int(setup.get("day", 1)) < int(PosterWalls.KIND_FIRST_DAY[PosterArt.Kind[key]]):
+				errors.append("setup.posters.kind is not available on the authored day")
 	var names := {"player": true}
 	if setup.has("column"):
 		if not setup.column is Dictionary:
@@ -150,10 +164,10 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 					_number(entry.speed, where + ".speed", 0, 1000, errors)
 	if not errors.is_empty():
 		return errors
-	if background.get("events", false) and not setup.get("events", []).is_empty():
-		errors.append("setup.background.events cannot be combined with pinned events")
-	if setup.has("column") and (background.get("events", false) or not setup.get("events", []).is_empty()):
-		errors.append("setup.column owns the scene's event activity")
+	if background.get("events", false) and recipe.get("kind", "city") == "escape":
+		errors.append("escape scenes use authored finale events, not ordinary-day background events")
+	if setup.has("column") and not setup.get("events", []).is_empty():
+		errors.append("setup.column cannot accompany other pinned events")
 	if background.get("crowd", false) and not setup.get("actors", []).is_empty():
 		errors.append("setup.background.crowd cannot be combined with pinned actors")
 	_keys(playback, ["walk", "duration", "capture_at", "camera", "caption", "title", "observations"],
@@ -275,17 +289,18 @@ func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
 	map.recipe_exterior = false
 	if not map.is_open(map.world_to_tile(at)) or not _inside_extent(at):
 		errors.append("setup.player.at must be open ground inside the authored extent")
-	var plans := _event_plans(at, errors)
+	var background: Dictionary = setup.get("background", {})
+	if background.get("events", false):
+		errors.append_array(city.events.start_day(GameState.day, GameState.day_rng(),
+				GameState.consumed_one_shots, at, _background_plans.bind(at)))
+	else:
+		var plans := _event_plans(at, errors)
+		city.events.start_recipe(plans, GameState.day, at, data.get("kind", "city") == "escape")
 	map.recipe_exterior = exterior
 	if not errors.is_empty():
 		return errors
-	var background: Dictionary = setup.get("background", {})
-	if background.get("events", false):
-		city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots, at)
-	else:
-		city.events.start_recipe(plans, GameState.day, at, data.get("kind", "city") == "escape")
 	for entry: Dictionary in setup.get("events", []):
-		for plan in plans:
+		for plan in city.events._plans:
 			if plan.get_meta("recipe_name", "") == entry.name:
 				if not plan.live:
 					errors.append("event %s is not live at its required initial position" % entry.name)
@@ -322,6 +337,7 @@ func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
 		baby.force_sleep()
 	if setup.has("column"):
 		_install_column(setup.column, at, errors)
+	_install_posters(setup.get("posters", []), errors)
 	manifest["initial_actors"] = snapshot()
 	return errors
 
@@ -348,11 +364,49 @@ func _install_column(column: Dictionary, player_at: Vector2, errors: Array[Strin
 	for i in happening.column.size():
 		named["truck_%d" % (i + 1)] = happening.column[i]
 
+func _install_posters(entries: Array, errors: Array[String]) -> void:
+	var fronts := _city.poster_walls().fronts()
+	var used := {}
+	var recorded: Array[Dictionary] = []
+	for entry: Dictionary in entries:
+		var at := position_of(entry.at, errors)
+		if not errors.is_empty():
+			return
+		var tile := _city.map.world_to_tile(at)
+		if not fronts.has(tile) or not _inside_extent(at) \
+				or not _city.map.tile_to_world(tile).is_equal_approx(at) or used.has(tile):
+			errors.append("poster must name a distinct production wall cell inside the scene")
+			continue
+		used[tile] = true
+		var kind: int = PosterArt.Kind[str(entry.kind).to_upper()]
+		GameState.posters.paste(tile, kind, false, 1)
+		recorded.append({"at": [at.x, at.y], "kind": entry.kind})
+	_city.poster_walls().refresh()
+	manifest["authored_posters"] = recorded
+
 func _inside_extent(at: Vector2) -> bool:
 	var map: CityMap = built.map
 	return not map.recipe_bounds.has_area() or map.recipe_bounds.has_point(map.world_to_tile(at))
 
-func _event_plans(player_at: Vector2, errors: Array[String]) -> Array[EventScheduler.Planned]:
+func _background_plans(standing: Array[EventScheduler.Planned], player_at: Vector2) -> Dictionary:
+	var errors: Array[String] = []
+	var authored: Array[EventScheduler.Planned] = []
+	for plan in _event_plans(player_at, errors, standing):
+		if plan.has_meta("recipe_name"):
+			authored.append(plan)
+	var column: Dictionary = data.get("setup", {}).get("column", {})
+	if not column.is_empty():
+		var at := position_of(column.at, errors)
+		var direction: Vector2 = DIRECTIONS[column.direction]
+		for i in Tuning.COLUMN_TRUCKS:
+			var reserved := EventScheduler.Planned.new(EventCatalogue.by_id("military_convoy"),
+					at - direction * Tuning.COLUMN_SPACING * i)
+			reserved.set_meta("recipe_reservation", true)
+			authored.append(reserved)
+	return {"plans": authored, "errors": errors}
+
+func _event_plans(player_at: Vector2, errors: Array[String],
+		standing: Array[EventScheduler.Planned] = []) -> Array[EventScheduler.Planned]:
 	var setup: Dictionary = data.get("setup", {})
 	var plans: Array[EventScheduler.Planned] = []
 	var map := _city.map
@@ -401,7 +455,7 @@ func _event_plans(player_at: Vector2, errors: Array[String]) -> Array[EventSched
 			plan = EventScheduler.Planned.new(def, at, route)
 		else:
 			plan = EventScheduler.recipe_placement(def, GameState.day, map, at,
-					int(entry.get("route_seed", 1)), plans, corridor, doors)
+					int(entry.get("route_seed", 1)), plans, corridor, doors, standing)
 		if not plan:
 			errors.append("event %s fails ordinary day/ground/route/spacing placement" % entry.name)
 			continue
@@ -553,6 +607,26 @@ func prepare_capture() -> void:
 func _record_crowd(key: String) -> void:
 	if _city and _city.crowd:
 		manifest[key] = _city.crowd.recipe_coverage()
+		manifest[key.trim_suffix("_crowd") + "_activity"] = activity_snapshot()
+
+## Counts only live subjects whose ground positions are in the current picture. A visual review
+## still checks occlusion and legibility; whole-field totals alone cannot establish a busy view.
+func activity_snapshot() -> Dictionary:
+	var result := {"visible_walkers": 0, "visible_cars": 0, "moving_crowd": 0,
+			"visible_events": {}}
+	var view := get_viewport().get_visible_rect()
+	var transform := get_viewport().get_canvas_transform()
+	for agent in _city.crowd.agents():
+		if not view.has_point(transform * agent.global_position):
+			continue
+		var key := "visible_cars" if agent.kind == CrowdAgent.Kind.CAR else "visible_walkers"
+		result[key] += 1
+		if not agent.velocity().is_zero_approx():
+			result.moving_crowd += 1
+	for event in _city.events.instances():
+		if view.has_point(transform * event.global_position):
+			result.visible_events[event.def.id] = int(result.visible_events.get(event.def.id, 0)) + 1
+	return result
 
 func _release_input() -> void:
 	TouchControls._set_axis(&"move_left", &"move_right", 0)

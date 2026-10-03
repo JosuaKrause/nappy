@@ -3,6 +3,7 @@
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
   "anchors": {"start": {"world": [1856, 1936]}, "blower": {"tile": [65, 60]}},
   "setup": {"tutorial_complete": true, "day": 1, "parent": "mother", "player": {"at": "start", "facing": "east"},
+    "background": {"events": true, "crowd": true},
     "background": {"events": false, "crowd": false},
     "events": [{"name": "obstacle", "row": "leaf_blower", "at": "blower", "age": 1.8}]},
   "playback": {"walk": "1.3e2.3w1.35n2.6e", "duration": 7.6, "capture_at": 6.4,
