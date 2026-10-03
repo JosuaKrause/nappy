@@ -2248,7 +2248,8 @@ static func _firefight() -> EventDef:
 	# hard_fail: (374-84)/92 * 2 = 6.3s.
 	def.telegraph_time = 6.5
 	def.pulse_period = 2.5
-	# The same five flames as a burning building, and far inside the 84 that ends the day.
+	# The 30px band the two gunmen are drawn across (`EventInstance._draw_firefight()` stands
+	# them at 0.62 of it either side), and far inside the 84 that ends the day.
 	def.solid(GroundShape.band(30.0))
 	def.hard_fail = true
 	def.cost = 5
