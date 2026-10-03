@@ -1223,6 +1223,28 @@ assert_write_guard "coder-wrapped gh api with input-supplied arguments allows" a
 assert_write_guard "reviewer-wrapped gh api with input-supplied arguments can merge and denies" deny \
     'uv run python tools/agent-identity.py run claude-reviewer -- xargs gh api repos/o/r/pulls/3'
 
+# GNU parallel's -l takes an optional number, clustered too: -kl reads as -k then -l, so a word
+# after it that is no number (or a cluster's rest that is none, -kli) leaves command position
+# unknown, while a numeric -l and a no-value cluster stay reads.
+for clustered_optional in \
+    'ls | parallel -kl tools/release.sh patch push' \
+    'parallel -kl tools/update-pr.sh' \
+    'parallel -kli status git status origin v1'; do
+    assert_write_guard "clustered optional -l with no number denies: $clustered_optional" deny "$clustered_optional"
+done
+assert_write_guard "reviewer-wrapped clustered optional -l denies" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- parallel -kl tools/update-pr.sh'
+assert_write_guard "coder-wrapped clustered optional -l allows" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- parallel -kl tools/update-pr.sh'
+assert_write_guard "orchestrator-wrapped clustered -kli before gh issue denies as an issue write" deny \
+    'uv run python tools/agent-identity.py run claude-orchestrator -- parallel -kli status gh issue status 5'
+for clustered_read in \
+    'parallel -kl2 git status' \
+    'parallel -kl1 gh pr view {}' \
+    'parallel -k git log'; do
+    assert_write_guard "clustered read stays a read: $clustered_read" allow "$clustered_read"
+done
+
 # Input placed at a replacement token replaces the word holding it, so a read flag holding the
 # token is no read flag: the dry run, --version and the abort-like flags fall to input.
 for input_replaced_flag in \

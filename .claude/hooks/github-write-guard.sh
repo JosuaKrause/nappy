@@ -595,11 +595,15 @@ def input_option_word($owner; $x):
   if $x | startswith("--") then
     ($x | split("=")[0]) as $flag
     | input_option($owner; $flag)
+    | .flag = $flag
     | .value = (if $x | contains("=") then $x[($flag | length) + 1:] else null end)
   else
-    {k: 1, arity: "none", value: null}
+    # `.flag` is the option that stopped the cluster (or its last letter), so a test on which option
+    # it was reads `-kl` as `-l`, never as the word's own first letter.
+    {k: 1, arity: "none", value: null, flag: null}
     | until(.k >= ($x | length) or .arity != "none";
         .k as $k | input_option($owner; "-" + $x[$k:$k + 1])
+        | .flag = ("-" + $x[$k:$k + 1])
         | .k = ($k + 1)
         | .value = (if .arity != "none" and .k < ($x | length) then $x[.k:] else null end))
   end;
@@ -649,8 +653,10 @@ def input_scan($w; $g; $i):
                    | (if $value == null and $owner == "xargs" and $has_next
                          and ($w[$e] | startswith("-") | not)
                       then .alt = word_end($e) else . end)
+                 # GNU parallel's `-l` takes an optional number: a value that is not one, attached
+                 # (`-kli`) or consumed (`-kl tools/update-pr.sh`), leaves command position unknown.
                  elif $opt.arity == "optional" and $value != null
-                      and ($x | test("^(-l|--max-lines)")) and ($value | test("^[0-9]+$") | not)
+                      and ($opt.flag | IN("-l", "--max-lines")) and ($value | test("^[0-9]+$") | not)
                  then .unreadable = true
                  else . end)
               | .command = (if $consume and $has_next then word_end($e) else $e end)
