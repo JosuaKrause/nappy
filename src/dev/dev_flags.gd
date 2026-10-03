@@ -529,6 +529,8 @@ static func _blackout_from_query(query: String) -> bool:
 ## reaches the scene's third-floor default start the same way a debug build's `--start-escape`
 ## bare does, with no events, no crowd and no day clock either way.
 static func start_escape() -> bool:
+	if not recipe_data.is_empty():
+		return recipe_data.get("kind", "city") == "escape"
 	if "--start-escape" in _args():
 		return true
 	if not live_debug_requested():
@@ -559,6 +561,8 @@ static func _escape_from_query(query: String) -> bool:
 ## value — there is no other flag this could be confused with, since every value here is a fixed
 ## word rather than a number.
 static func start_escape_at() -> String:
+	if not recipe_data.is_empty():
+		return str(recipe_data.get("setup", {}).get("progression", {}).get("escape_part", "city"))
 	var args := _args()
 	var index := args.find("--start-escape")
 	if index == -1 or index + 1 >= args.size():
@@ -938,7 +942,8 @@ const _RIG_FLAGS := ["--screenshot", "--walk", "--flee", "--press", "--tap", "--
 static func is_rig() -> bool:
 	return _is_rig_from_args(_args()) or recording() or recipe_scripted()
 
-## The validated recipe is installed before the city boot makes its run; argv stays unchanged.
+## The validated recipe is installed before either boot path makes a run. It never changes argv,
+## and the scripted scene uses the same development-input protection as ordinary rigs.
 static var recipe_data: Dictionary = {}
 
 static func recipe_path() -> String:

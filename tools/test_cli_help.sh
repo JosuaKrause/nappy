@@ -95,6 +95,10 @@ assert_exit "ci-costs.sh --help"   zero ./tools/ci-costs.sh --help
 assert_exit "ci-costs.sh -h"       zero ./tools/ci-costs.sh -h
 assert_exit "check.sh --help"      zero ./tools/check.sh --help
 assert_exit "check.sh -h"          zero ./tools/check.sh -h
+assert_exit "scene-recipes.sh --help" zero ./tools/scene-recipes.sh --help
+assert_exit "scene-recipes.sh -h" zero ./tools/scene-recipes.sh -h
+assert_exit "scene-recipes.sh unknown" nonzero ./tools/scene-recipes.sh --not-a-flag
+assert_exit "scene-recipes.sh missing value" nonzero ./tools/scene-recipes.sh --recipe
 assert_exit "measure-ground-frames.sh --help" zero ./tools/measure-ground-frames.sh --help
 assert_exit "measure-ground-frames.sh -h" zero ./tools/measure-ground-frames.sh -h
 assert_exit "measure-ground-frames.sh unknown" nonzero ./tools/measure-ground-frames.sh --not-a-flag
@@ -236,11 +240,15 @@ assert_exit "run.sh --bogus"          nonzero ./tools/run.sh --bogus
 assert_exit "shot.sh --bogus"         nonzero ./tools/shot.sh "$work_dir/shot-out.png" 1 --bogus
 assert_exit "trailer.sh --bogus"      nonzero ./tools/trailer.sh --bogus
 assert_exit "trailer.sh --shot (missing name)" nonzero ./tools/trailer.sh --shot
+assert_exit "trailer.sh --check-load (missing name)" nonzero ./tools/trailer.sh --check-load
+assert_exit "trailer.sh --validate --shot (combined)" nonzero ./tools/trailer.sh --validate --shot choice
 assert_exit "trailer.sh --list --shot (combined)" nonzero ./tools/trailer.sh --list --shot choice
 assert_exit "record.sh --bogus"       nonzero ./tools/record.sh --bogus
 assert_exit "record.sh (no flags)"    nonzero ./tools/record.sh
 assert_exit "record.sh --this-is-not-a-dev-flag" nonzero ./tools/record.sh --this-is-not-a-dev-flag
 assert_exit "record.sh --out (missing name)" nonzero ./tools/record.sh --out
+assert_exit "record.sh --out --recipe (missing name)" nonzero ./tools/record.sh --out --recipe scene.json
+assert_exit "record.sh --recipe-validate (owned)" nonzero ./tools/record.sh --recipe-validate
 assert_exit "stats.sh --bogus"        nonzero ./tools/stats.sh --bogus
 assert_exit "telemetry.sh --bogus"    nonzero ./tools/telemetry.sh --bogus
 assert_exit "clip.sh --bogus"         nonzero ./tools/clip.sh --bogus

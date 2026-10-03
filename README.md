@@ -82,10 +82,21 @@ See `docs/MECHANICS.md`, "Saving and resuming".
 
 ## Dev flags
 
-Saved city recipes construct exact supported choices before the real city is built. The
-[recipe schema](docs/SCENE_RECIPES.md) documents scripted launch and the power-station join
-examples. Run `tools/run.sh --recipe scene-recipes/power-station-hall.json`; interactive
-recipe play and trailer actor setup are separate slices.
+`tools/trailer.sh` records the saved scenes referenced by `tools/trailer/shots.json` through the
+game's frame-locked movie writer, then trims, fades and joins them with game audio. Run
+`tools/trailer.sh --list` to inspect the cut, `--validate` to check its recipes headlessly,
+or `--shot choice` to record one scene. Each recipe owns its setup and scripted action;
+the shot list owns the cut timing. Only normal scenes enter the trailer, with their authored
+extent and validation scope preserved in the resolved manifest.
+
+`tools/record.sh --recipe scene-recipes/trailer-choice.json` records a recipe in scripted mode.
+It also records ordinary rigs, such as `tools/record.sh --route calm,home --seed 4242`.
+Videos and temporary frames stay under ignored build output. Recordings retain compact frame
+hashes, manifests and settings beside the video. `tools/trailer.sh --check all` compares two
+renders of each shot, including their simulation observations and audio; `--check-load all`
+compares an ordinary render with one under a CPU load worker. Results remain under
+`build/trailer/checks/`. Matching frames establish repeatability for the recorded recipe,
+revision, assets, engine and settings.
 
 Everything after `--` is passed to the game, gated behind a debug build so none of it does
 anything in an exported release:
@@ -142,6 +153,10 @@ demand when the window cannot be drawn, and says so on the `[AutoScreenshot] wro
 
 | Flag | Effect |
 | --- | --- |
+| `--recipe path.json` | Build and replay a saved exact scene; see [Scene recipes](docs/SCENE_RECIPES.md) |
+| `--recipe-mode scripted` | Use the recipe's saved movement, camera and assertions (the default) |
+| `--recipe-validate` | Build the recipe and validate its live setup headlessly, then quit |
+| `--recipe-manifest path.json` | Write construction context, initial actors and scripted observation results |
 | `--seed N` | Regenerate a specific city (also reachable, for a positive integer only, as a release web build's own `?debug=1&seed=N`) |
 | `--day N` | Start on a later day, to look at a later act (also reachable on a release web build's own `?debug=1&day=N`, clamped the same way) |
 | `--day-length N` | Compress the day, for dusk and the timeout loss (also reachable on a release web build's own `?debug=1&daylength=N`) |
@@ -153,10 +168,6 @@ demand when the window cannot be drawn, and says so on the `[AutoScreenshot] wro
 | `--route mark,task,calm,home` | Walk her to each named target in turn along a real path's edges, through the ordinary input path, so the meter, the events, the crowd, the closures, the doors and the clock all run as they do for a player — `mark` (the day's chalk mark), `task` (the red arrow's point, or the nearest live instance of an any-instance task, kept until it finishes), `calm` (the nearest calm area still counted as calm, and she stays until the baby settles, looking again if the ground goes from under her — day 12's park once the swing is reached), `calm:home` (the calm area scored by her walk to it plus its own walk home, rather than by her walk alone — for a day whose nearest calm area sits off the way home), `home`, or `spawn:<name>` for whatever `--spawn` itself knows. A target it cannot resolve or reach is logged and skipped. It keeps to the sidewalk and off bodies' sides and doors' reach at a price per tile rather than at any price, so it takes the carriageway or brushes a body only where going round is longer still. It crosses a region door at a hut or an alley post and never through the boom over the road, and never straight back through a hut that has just let her out. With `--invincible`, which stands the day's clock still, the run ends once the rig's own clock passes the day's length |
 | `--force <event id> [seconds]` | Hand out **only** that row, over and over, every `seconds` (default 6) of walking — for looking at one encounter rather than one city. Bypasses `first_day` and the day's budget; `--seed` and `--day` still decide everything around it |
 | `--overview` | Frame the whole city at once |
-| `--recipe <file>` | Construct a saved city recipe and run its scripted player setup, without touching the player's save |
-| `--recipe-mode scripted` | Select the supported scripted mode explicitly; this is also the recipe default |
-| `--recipe-validate` | Build and validate the recipe's live initial setup, then exit |
-| `--recipe-manifest <file>` | Write recipe inputs, validation scope and scripted player state |
 | `--zoom <factor>` | Scale the camera's zoom by `factor` (`0.5` shows twice as much each way) with everything else as a player sees it; anything but a positive number is ignored with a warning |
 | `--screenshot out.png --after N` | Render for N **seconds**, save a PNG, quit |
 | `--walk north\|south\|east\|west\|<script>` | Hold a direction down for the whole run, or walk a script of timed steps — `1s5e` is one second south then five east, `3@45@2e` is three seconds at a bearing of 45° then two east, and `1.7w0.6p2S` is 1.7 seconds west, 0.6 seconds standing still, then two seconds south at a run. A bearing is degrees clockwise from north, delimited by a pair of `@`s so its digits do not run into the next step's; a duration may carry a decimal point; `p` stands still for its duration, pressing nothing; and an uppercase letter is that direction at a run instead of a walk |

@@ -280,6 +280,7 @@ func _ready() -> void:
 			_recipe_failed(result.errors)
 			return
 		DevFlags.recipe_data = result.data
+		_escape_scene_requested = DevFlags.start_escape()
 		_recipe = SceneRecipeRuntime.new()
 		_recipe.configure(result, DevFlags.recipe_scripted())
 		(result.map as CityMap).recipe_frame_locked = DevFlags.recipe_scripted()
@@ -574,6 +575,8 @@ func _ready_escape() -> void:
 	if not _escape_from_a_run:
 		GameState.start_run(DevFlags.seed_override())
 		_apply_the_parent_flag()
+		if _recipe:
+			GameState.day = DevFlags.day_override()
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
 	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
 	# both need an active log to write anything at all — see `Telemetry.start_burst()`'s own
@@ -607,7 +610,8 @@ func _ready_escape() -> void:
 	# origin is as good as any other point, since nothing is in the tree yet to show a wrong
 	# corner of.
 	var boot_camera := _new_boot_camera(Vector2.ZERO)
-	await _warm_the_canvas_shaders(boot_camera.global_position)
+	if not _recipe:
+		await _warm_the_canvas_shaders(boot_camera.global_position)
 
 	_hud = HUD.instantiate()
 	_release_shaped_hud()
@@ -687,9 +691,25 @@ func _ready_escape() -> void:
 	if DevFlags.overview_requested() and _city:
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
 	_add_trailer_rigs()
+	if _recipe:
+		var problems := _recipe.install(_city, _player, _baby)
+		if not problems.is_empty():
+			_recipe_failed(problems)
+			return
+		_prepare_city_scenery()
+		_summary.dismiss()
+		_apply_recipe_teaching()
+		_finale_brief_open = false
+		get_tree().paused = false
+		_finale.start_section()
+		_hud.visible = true
+		_recipe.begin()
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
+		if _recipe and _recipe.scripted:
+			screenshot.simulation_clock = _recipe.elapsed
+			screenshot.before_capture = _recipe.prepare_capture
 		add_child(screenshot)
 
 ## `--parent mother|father` over the roll `GameState.start_run()` just made from the seed, so a
@@ -775,7 +795,7 @@ func _build_the_finale_city() -> void:
 	_city = CITY.instantiate()
 	add_child(_city)
 	_pauses_with_the_game(_city)
-	_city.build(CityGenerator.generate(GameState.run_seed))
+	_city.build(_recipe.built.map if _recipe else CityGenerator.generate(GameState.run_seed))
 	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
 	_city.start_finale(GameState.city_state, GameState.day)
 	_city.set_act(GameState.current_act())
@@ -824,6 +844,8 @@ func _build_the_finale_city() -> void:
 ## section is the same city rather than a thinner one: a plan that had been half spent would
 ## quietly reward losing.
 func _plan_the_finale_city() -> void:
+	if _recipe:
+		return
 	var elapsed := Time.get_ticks_msec()
 	var plan := FinalePlanner.plan(_city.map, GameState.day_rng(GameState.day, "finale"))
 	_city.events.start_finale(plan.placements, _finale_start_position())
@@ -900,6 +922,12 @@ func _on_escape_exit_requested() -> void:
 ## the brief; it is said on the continue instead, on a first entry only — *"like normal tutorial
 ## hints"*, so a retry is not lectured about what it is already doing.
 func _on_finale_section_started(section: int, restarted: bool) -> void:
+	if _recipe and restarted:
+		_recipe.manifest["playback_error"] = "the authored escape attempt was lost"
+		_recipe.write_manifest()
+		_recipe._active = false
+		get_tree().quit(1)
+		return
 	# The run's own record of where it is, which is what the save carries and what the next boot
 	# reads: written here, the one place both sections and both boots pass through.
 	GameState.escape_section = section
@@ -1836,7 +1864,7 @@ func _start_day() -> void:
 		_route_rig.start_day()
 
 ## The ordinary game's components start from the authored setup before any actor is allowed to
-## tick. This builder seam leaves ambient events and crowd empty.
+## tick. The random scheduler is called only when the recipe explicitly requests background.
 func _start_recipe_day() -> void:
 	GameState.begin_day()
 	EventBus.day_started.emit(GameState.day)

@@ -1,0 +1,124 @@
+{
+	"anchors": {
+		"guards": [
+			2000.0,
+			560.0
+		],
+		"start": [
+			1760.0,
+			560.0
+		]
+	},
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"capture_actors": {
+		"guards": {
+			"position": [
+				1891.72,
+				560.0
+			],
+			"pursuing": true,
+			"row": "roadblock",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": true,
+			"gait_frame": 2,
+			"position": [
+				1824.2664,
+				560.0
+			],
+			"speed": 168.0
+		}
+	},
+	"capture_camera": {
+		"position": [
+			1824.26635742188,
+			560.0
+		],
+		"zoom": 2.0
+	},
+	"capture_tick": 42,
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"initial_actors": {
+		"guards": {
+			"position": [
+				2000.0,
+				560.0
+			],
+			"pursuing": false,
+			"row": "roadblock",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": true,
+			"gait_frame": 1,
+			"position": [
+				1760.0,
+				560.0
+			],
+			"speed": 0.0
+		}
+	},
+	"observations": [
+		{
+			"condition": "running",
+			"passed": true,
+			"state": {
+				"carrying": true,
+				"gait_frame": 2,
+				"position": [
+					1824.2664,
+					560.0
+				],
+				"speed": 168.0
+			},
+			"subject": "player",
+			"tick": 42.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": false,
+	"recipe": "Mother carrying her baby and running from the guards",
+	"recipe_sha256": "0290266b9bf0222538e06e8c99a45cf9ac33701a44e884641986724038a9a284",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"day": 14.0,
+		"events": [
+			{
+				"at": "guards",
+				"name": "guards",
+				"row": "roadblock"
+			}
+		],
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "east",
+			"sleep": 100.0
+		},
+		"progression": {
+			"blackout": true,
+			"escape_part": "city"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

@@ -27,8 +27,8 @@ static func validate(data: Dictionary) -> Array[String]:
 		errors.append("recipe.name: expected a nonempty string")
 	if not integer(data.get("seed")):
 		errors.append("recipe.seed: expected an integer")
-	if data.get("kind", "city") != "city":
-		errors.append("recipe.kind: this builder supports city scenes")
+	if data.get("kind", "city") not in ["city", "escape"]:
+		errors.append("recipe.kind: expected city or escape")
 	if data.get("classification", "normal") not in ["normal", "fixture"]:
 		errors.append("recipe.classification: expected normal or fixture")
 	var expected: Variant = data.get("expected_violations", [])

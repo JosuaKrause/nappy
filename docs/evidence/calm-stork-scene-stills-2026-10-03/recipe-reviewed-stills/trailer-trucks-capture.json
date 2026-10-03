@@ -1,0 +1,226 @@
+{
+	"anchors": {
+		"start": [
+			1824.0,
+			2160.0
+		]
+	},
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"capture_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				1824.0,
+				2094.0002
+			],
+			"speed": 92.0
+		},
+		"truck_1": {
+			"position": [
+				1904.0,
+				1972.0349
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		},
+		"truck_2": {
+			"position": [
+				1904.0,
+				2100.0349
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		},
+		"truck_3": {
+			"position": [
+				1904.0,
+				2228.0349
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		}
+	},
+	"capture_camera": {
+		"position": [
+			1824.0,
+			2094.00024414062
+		],
+		"zoom": 2.0
+	},
+	"capture_tick": 23,
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"initial_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				1824.0,
+				2160.0
+			],
+			"speed": 0.0
+		},
+		"truck_1": {
+			"position": [
+				1904.0,
+				2064.0
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		},
+		"truck_2": {
+			"position": [
+				1904.0,
+				2192.0
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		},
+		"truck_3": {
+			"position": [
+				1904.0,
+				2320.0
+			],
+			"pursuing": false,
+			"row": "military_convoy",
+			"telegraphing": false
+		}
+	},
+	"observations": [
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					1972.0349
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_1",
+			"tick": 23.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					1972.0349
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_1",
+			"tick": 23.0
+		},
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					2100.0349
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_2",
+			"tick": 23.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					2100.0349
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_2",
+			"tick": 23.0
+		},
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"position": [
+					1904.0,
+					2228.0349
+				],
+				"pursuing": false,
+				"row": "military_convoy",
+				"telegraphing": false
+			},
+			"subject": "truck_3",
+			"tick": 23.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					1824.0,
+					2094.0002
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 23.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": false,
+	"recipe": "Army trucks driving beside the mother",
+	"recipe_sha256": "595d67824a1f25aa5ce880802bc5ae930b9d5381bbd52c44e57300227fe3dca1",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"column": {
+			"at": [
+				1904.0,
+				2064.0
+			],
+			"direction": "north"
+		},
+		"day": 13.0,
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "north"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

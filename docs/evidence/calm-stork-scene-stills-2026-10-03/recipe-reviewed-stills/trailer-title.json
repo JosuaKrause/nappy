@@ -1,0 +1,82 @@
+{
+	"anchors": {
+		"start": [
+			2560.0,
+			2704.0
+		]
+	},
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2560.0,
+				2704.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2560.0,
+				2704.0
+			],
+			"speed": 0.0
+		}
+	},
+	"observations": [
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					2560.0,
+					2704.0
+				],
+				"speed": 0.0
+			},
+			"subject": "player",
+			"tick": 30.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "Title transition at the doorstep",
+	"recipe_sha256": "8dc8c2fa83fd2e372dc0ae1f63d97d0d3d846fcc9bd6591f3e947fda89bb19af",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"day": 1.0,
+		"parent": "father",
+		"player": {
+			"at": "start",
+			"facing": "south"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

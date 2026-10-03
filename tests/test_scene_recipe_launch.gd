@@ -17,7 +17,7 @@ func run(t) -> void:
 			"recipe launch cannot use the player's desktop save")
 	var loaded := SceneRecipe.load_file("res://scene-recipes/power-station-hall.json")
 	loaded.data.setup.tutorial_complete = true
-	loaded.data.playback = {"walk": "0.5s", "duration": 0.5}
+	loaded.data.playback = {"walk": "0.5s", "duration": 0.5, "capture_at": 0.1}
 	var path := "user://builder-scripted-input.json"
 	var output := "user://builder-scripted-input-manifest.json"
 	var file := FileAccess.open(path, FileAccess.WRITE)
@@ -36,9 +36,6 @@ func run(t) -> void:
 				"the real player moves south through the shared input script")
 	DirAccess.remove_absolute(path)
 	DirAccess.remove_absolute(output)
-	for unsupported in [{"events": []}, {"actors": []}, {"background": {"crowd": true}}]:
-		t.check(not SceneRecipeRuntime.validate_runtime({"setup": unsupported}).is_empty(),
-				"later scene fields are explicitly unsupported in the builder slice")
 
 func _launch(args: PackedStringArray) -> Dictionary:
 	var output: Array = []

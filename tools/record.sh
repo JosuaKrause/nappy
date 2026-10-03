@@ -27,6 +27,8 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="$PROJECT_DIR/build/records"
 # shellcheck source=tools/lib_dev_flags.sh
 source "$PROJECT_DIR/tools/lib_dev_flags.sh"
+# shellcheck source=tools/lib_movie_evidence.sh
+source "$PROJECT_DIR/tools/lib_movie_evidence.sh"
 
 usage() {
     cat <<EOF
@@ -45,7 +47,10 @@ frames are deleted once it is encoded.
   tools/record.sh --route mark,task,calm,home --seed 4242
   tools/record.sh --out review.mp4 -- --route calm,home --seed 1 --day 6
 
-Opens a window. Needs ffmpeg on PATH, and Godot 4.7 at \$GODOT.
+Recipe runs default to scripted mode and are headlessly validated before the window opens.
+Compact frame hashes, the resolved manifest and recording settings accompany the output video.
+
+Opens a window. Needs jq and ffmpeg on PATH, and Godot 4.7 at \$GODOT.
 EOF
 }
 
@@ -55,7 +60,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --help|-h) usage; exit 0 ;;
         --out)
-            [[ $# -ge 2 ]] || { echo "--out is missing its file name" >&2; echo >&2; usage >&2; exit 1; }
+            [[ $# -ge 2 && "$2" != -* ]] || { echo "--out is missing its file name" >&2; echo >&2; usage >&2; exit 1; }
             OUT_NAME="$2"; shift 2 ;;
         --) shift; GAME_FLAGS+=("$@"); break ;;
         *) GAME_FLAGS+=("$1"); shift ;;
@@ -77,6 +82,21 @@ fi
 # recording off the player's own save the same way every other dev flag already does, for a run
 # that would otherwise carry none of its own (a bare --route).
 FULL_FLAGS=(--player-view --no-focus-pause --no-save "${GAME_FLAGS[@]}")
+RECIPE=""
+RECIPE_MODE="scripted"
+RECIPE_MODE_GIVEN=false
+for ((i=0; i<${#GAME_FLAGS[@]}; i++)); do
+    case "${GAME_FLAGS[$i]}" in
+        --recipe) RECIPE="${GAME_FLAGS[$((i+1))]:-}" ;;
+        --recipe-mode) RECIPE_MODE="${GAME_FLAGS[$((i+1))]:-}"; RECIPE_MODE_GIVEN=true ;;
+        --recipe-manifest|--recipe-validate)
+            echo "record.sh: ${GAME_FLAGS[$i]} is owned by recording; launch validation with tools/run.sh" >&2
+            usage >&2; exit 1 ;;
+    esac
+done
+if [[ -n "$RECIPE" && "$RECIPE_MODE_GIVEN" == false ]]; then
+    FULL_FLAGS+=(--recipe-mode scripted)
+fi
 if ! validate_dev_flags "${FULL_FLAGS[@]}"; then
     echo "record.sh: the game does not know one of those flags (see above)" >&2
     echo >&2
@@ -92,10 +112,11 @@ if [[ ! -x "$GODOT" ]]; then
     echo "  GODOT=/path/to/Godot tools/record.sh ..." >&2
     exit 127
 fi
-if ! command -v ffmpeg >/dev/null 2>&1; then
-    echo "record.sh: ffmpeg not found on PATH" >&2
-    exit 127
-fi
+for tool in jq ffmpeg; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "record.sh: $tool not found on PATH" >&2; exit 127
+    fi
+done
 
 if [[ -n "$OUT_NAME" ]]; then
     case "$OUT_NAME" in
@@ -135,6 +156,11 @@ trap cleanup EXIT
 
 TREE_BEFORE="$(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null || true)"
 
+if [[ -n "$RECIPE" ]]; then
+    movie_recipe_preflight "$RECIPE" "$WORK/preflight.json" false "$RECIPE_MODE" "${FULL_FLAGS[@]}"
+    FULL_FLAGS+=(--recipe-manifest "$WORK/manifest.json")
+fi
+
 kill_after="$(rig_kill_after_movie_seconds "${FULL_FLAGS[@]}")"
 echo "recording (rig's own wall-clock limit ${kill_after}s)..." >&2
 noted="$(rig_focus_note)"
@@ -164,6 +190,10 @@ if [[ ! -f "$WORK/frame00000000.png" ]]; then
     echo "record.sh: no frames were written -- the rig quit before the first one saved" >&2
     exit 1
 fi
+if [[ -n "$RECIPE" ]]; then
+    movie_manifest_check "$WORK/manifest.json" false
+    [[ "$RECIPE_MODE" != scripted ]] || movie_playback_check "$WORK/manifest.json" false
+fi
 
 mkdir -p "$OUT_DIR"
 audio=(-f lavfi -i "anullsrc=r=48000:cl=stereo")
@@ -172,6 +202,7 @@ ffmpeg -hide_banner -loglevel error -y \
     -framerate 60 -i "$WORK/frame%08d.png" "${audio[@]}" \
     -shortest -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
     -c:a aac -b:a 192k -movflags +faststart "$OUTPUT"
+movie_evidence "$WORK" "${OUTPUT%.mp4}.evidence" 60 recording
 # Frames are deleted here by the `cleanup` trap's `rm -rf "$WORK"` on exit -- not by name here,
 # which used to be `rm -rf "$WORK/frame"*.png`: a route day can write over 12,000 frames (a full
 # 210s day at 60fps), and a glob that long overflows the argument list, failing with "Argument
