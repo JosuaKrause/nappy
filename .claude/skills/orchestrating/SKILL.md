@@ -174,9 +174,35 @@ Every agent prompt contains, explicitly:
 
 ## Running agents in parallel
 
-**One repo takes several agents at once when each works in its own git worktree** (spawn with
-worktree isolation; each gets a full checkout under `.claude/worktrees/` and its own branch, and
-the path-triggered rules hook works there unchanged). What makes it safe is not the worktrees —
+**Create sparse worktrees before materializing files.** Use `git worktree add --no-checkout`,
+then enable non-cone sparse checkout and exclude `docs/evidence/`, `docs/reference/` and
+`docs/style-references/` unless the task needs them; materialize HEAD only after those exclusions
+are set. Keep back in what the repository's own checks read from `docs/evidence/` — the patterns
+the `gates` job's sparse checkout in `.github/workflows/ci.yml` lists after its exclusion (the
+evidence SVGs `lint.sh` validates, and the experiment scripts `tools/pycheck.sh` runs) — or
+`pycheck.sh` fails on files the sparse checkout left out. A tools-only task may omit runtime
+art/assets too. *(2026-10-03: "add wording to use
+sparse worktrees for subagents where applicable (obviously when evidence is needed it needs to be
+included)".)* **Claude Code's worktree isolation makes a full checkout here**, since
+`.claude/settings.json` sets neither its `worktree.sparsePaths` (which can only include whole
+folders) nor a `WorktreeCreate` hook. So for a task that needs none of those folders the
+orchestrator creates the sparse worktree itself, under `.claude/worktrees/<name>` (the
+path-triggered rules hook loads only for paths inside the project, so a worktree under `$TMPDIR`
+gets no rules), and starts the agent in it without isolation; the brief carries the `worktree:`
+line and the agent's `agent:` line the moment its id is known, as for any agent started into an
+existing worktree. A review agent's scratch checkout is made sparse the same way. A task whose evidence, references or style references are
+the point keeps the folders it needs. Worktrees share history, so clone
+depth does not avoid repeated working files. Before checkout, import, build or capture batches,
+check free space on the destination volume against the estimated peak working set plus explicit
+headroom; an unknown peak or inadequate room means measure or reduce the batch before starting.
+Record scratch paths and cleanup ownership in the brief, and follow **session-cleanup**'s
+job-owned storage rules. Release a finished agent's brief with `cleanup: ready` only after its
+processes stop and useful artifacts are retained; retirement refuses an unreleased brief.
+
+**One repo takes several agents at once when each works in its own git worktree** (each gets a
+checkout under `.claude/worktrees/` and its own branch: a sparse one the orchestrator made, as
+above, or the harness's full one through worktree isolation when the task needs the excluded
+folders; the path-triggered rules hook works in either unchanged). What makes it safe is not the worktrees —
 merging is what collides — so parallelism is planned at the file level, before spawning:
 
 - **Partition by files, not by topic.** List what each milestone will touch and spawn together

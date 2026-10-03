@@ -4,8 +4,10 @@ The desktop half of *the game on a phone, measured and then made cheaper*, again
 2026-09-13: *"I played a few sessions on mobile. It is a bit laggy now. Are we using proper texture
 atlases or is everything an individual loaded texture? Maybe we can optimize the game a bit more."*
 
-Each subfolder is one measurement walk's own telemetry run folder, copied whole — `run.log` with a
-`frame` entry every second, and the day's `maps/` pictures beside it.
+Each subfolder retains the measurement walk's `run.log`, including a `frame` entry every
+second, source identity and ordered workload. The automatically generated plan maps do not
+measure rendering cost and are omitted. All trials, including the instrumented resolver
+trial whose timings are invalid, remain available.
 
 ## The walk
 

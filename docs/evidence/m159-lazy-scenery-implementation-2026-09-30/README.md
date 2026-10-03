@@ -52,8 +52,10 @@ not browser, phone or GPU results.
 
 ## Rendered acceptance
 
-Two real gameplay runs retain their complete original telemetry folders, including maps,
-ordered logs, burst metadata and all 36 frames. The short
+Two real gameplay runs retain ordered logs, burst metadata and all 36 frames under their
+original run names. The complete reversal windows show outbound travel, the reversal and
+return coverage; the logs preserve the obstacle-limited travel that bounds the timing claim.
+Automatic plan maps do not show rendered residency and are omitted. The short
 [arterial reversal](walking-reversal.mp4) and [shore reversal](shore-reversal.mp4) clips use
 the burst timestamps. Sampled frames at the start, reversal and return show populated ground,
 buildings, shadows, street furniture and continuous water; this is bounded visual evidence,

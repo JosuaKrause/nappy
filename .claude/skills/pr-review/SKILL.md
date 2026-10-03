@@ -82,7 +82,8 @@ touches (the path table in `CLAUDE.md`). Look for:
 - anything the description claims that the diff does not do.
 
 The reviewer does not edit the branch, check it out in a worktree an agent is using, or merge. It
-may run a suite from a checkout of its own, and never runs `git grep`
+may run a suite from a checkout of its own, sparse unless the PR's evidence or references are what
+it is checking (**orchestrating**, "Create sparse worktrees"), and never runs `git grep`
 over a folder that holds images (see **using-tools**).
 
 ## The findings go on the PR

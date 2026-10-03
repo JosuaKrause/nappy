@@ -142,3 +142,12 @@ manifests. The 289-check CLI suite, boot check, lint and whitespace checks passe
 The final evidence commit is `e9c24e07`; the README identifies each capture's runtime
 source rather than treating the evidence commit as its source. M204 retains the
 separate movie/editorial work.
+
+**Main integration.** Before the final dog correction, the branch at `8b0e2fbe`
+integrates main `8a5228ee`, with base `746e7b3f`. Main adds storage cleanup,
+compact-evidence rules, CI helpers and independently named review records; it changes
+no gameplay source, test or recipe from that base. The only shared edited file is the
+tool catalogue: its scene runner entry remains beside main's sparse-validation and
+cleanup entries. Main's evidence removals do not touch these scene captures. All
+independent queue, playtest and decision files retain their identities. The merge
+needs no textual resolution; boot, lint and whitespace checks verify the result.
