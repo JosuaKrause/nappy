@@ -37,7 +37,9 @@ the source revision, command and settings, plus the seed and timing when they ma
 which run artifacts were retained and why, so a selected still has enough ancestry to interpret
 without requiring unrelated neighbors from the same run. Many older folders have neither; what
 was written about one is in the decision records — under the entry, milestone or playtest its
-name starts with (`tools/decisions.sh M180`), or found by searching `docs/decisions/` for its name.
+name starts with (`tools/decisions.sh M180`), found by searching `docs/decisions/` for its name, or
+through the commit that added it (`git log --diff-filter=A -- docs/evidence/<folder>/` names the
+pull request) when no record names the folder at all.
 
 ## Animation sequences
 
