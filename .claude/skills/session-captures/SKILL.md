@@ -32,10 +32,12 @@ boot output, irrelevant logs and redundant copies in scratch space. A complete `
 only when its ordered behavior, non-replayable player input, diagnostics or otherwise unrecorded
 provenance supports the claim.
 
-Every evidence folder has a README or manifest that names the claim and its limits and records the
-source revision, command and settings, plus the seed and timing when they matter. It also says
+A new evidence folder carries a README or manifest that names the claim and its limits and records
+the source revision, command and settings, plus the seed and timing when they matter. It also says
 which run artifacts were retained and why, so a selected still has enough ancestry to interpret
-without requiring unrelated neighbors from the same run.
+without requiring unrelated neighbors from the same run. Many older folders have neither; what
+was written about one is in the decision records — under the entry, milestone or playtest its
+name starts with (`tools/decisions.sh M180`), or found by searching `docs/decisions/` for its name.
 
 ## Animation sequences
 
