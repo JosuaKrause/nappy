@@ -1,0 +1,187 @@
+atlases: baking (png mode) -- no bake manifest: nothing has been baked yet
+ERROR: Failed to open 'user://logs/godot2026-10-02T20.56.29.log'.
+   at: copy (core/io/dir_access.cpp:429)
+ERROR: Failed to open log file for writing: user://logs/godot.log
+   at: rotate_file (core/io/logger.cpp:169)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+bake_atlases: buildings          66 members  332x576  extrude padding  93% fill
+bake_atlases: crowd              35 members  194x250  transparent padding  92% fill
+bake_atlases: decoration         15 members  144x196  transparent padding  69% fill
+bake_atlases: events            369 members  810x982  transparent padding  91% fill
+bake_atlases: father             30 members  168x242  transparent padding  96% fill
+bake_atlases: ground             43 members  172x308  extrude padding  94% fill
+bake_atlases: interior           41 members  466x326  extrude padding  94% fill
+bake_atlases: mother             30 members  168x242  transparent padding  96% fill
+bake_atlases: street_kit         21 members  392x454  transparent padding  87% fill
+bake_atlases: stroller            5 members  104x66  transparent padding  83% fill
+bake_atlases: ui                 12 members  392x392  transparent padding  80% fill
+bake_atlases: 667 regions over 11 pages in png mode, 4210 ms
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:731)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:734)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:735)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:736)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:739)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:740)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:741)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:742)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:747)
+SCRIPT ERROR: Parse Error: Assigned value for constant "ALLEY_CHANCE" isn't a constant expression.
+          at: GDScript::reload (res://src/autoload/tuning.gd:730)
+SCRIPT ERROR: Parse Error: Identifier "CrowdLanes" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2162)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "lane_gap" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2162)
+SCRIPT ERROR: Parse Error: Identifier "CrowdAgent" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2163)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "crossing_run" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2163)
+ERROR: Failed to load script "res://src/autoload/tuning.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/tuning.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/event_bus.gd:11)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/event_bus.gd:30)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/event_bus.gd:35)
+ERROR: Failed to load script "res://src/autoload/event_bus.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/event_bus.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "TelemetryLog" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:37)
+SCRIPT ERROR: Parse Error: Could not find type "TelemetryLog" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:296)
+SCRIPT ERROR: Parse Error: Could not find type "CityMap" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:578)
+SCRIPT ERROR: Parse Error: Could not find type "RoadClosure" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:578)
+SCRIPT ERROR: Parse Error: Could not find type "RouteTree" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:579)
+SCRIPT ERROR: Parse Error: Could not find type "EventScheduler" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:579)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:103)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryLog" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:157)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryLog" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:179)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:208)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:236)
+SCRIPT ERROR: Parse Error: Identifier "AutoScreenshot" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:462)
+SCRIPT ERROR: Parse Error: Identifier "RouteTree" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:585)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "drawn" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:585)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryMap" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:586)
+SCRIPT ERROR: Parse Error: Identifier "AutoScreenshot" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:596)
+ERROR: Failed to load script "res://src/autoload/telemetry.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/telemetry.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:13)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:13)
+SCRIPT ERROR: Parse Error: Identifier "CityState" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:68)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "city_state" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/game_state.gd:68)
+SCRIPT ERROR: Parse Error: Identifier "PosterState" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:74)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "posters" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/game_state.gd:74)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:271)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:321)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryLog" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:192)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:203)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:272)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:289)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:304)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:304)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:331)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "run_ended".
+          at: GDScript::reload (res://src/autoload/game_state.gd:334)
+SCRIPT ERROR: Parse Error: Identifier "GameSave" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:341)
+SCRIPT ERROR: Parse Error: Identifier "ResistanceHappenings" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:371)
+SCRIPT ERROR: Parse Error: Identifier "ResistanceSteps" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:373)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "warning" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/game_state.gd:373)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:602)
+ERROR: Failed to load script "res://src/autoload/game_state.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/game_state.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:199)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:210)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:359)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:362)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "day_ended".
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:70)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "run_ended".
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:72)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:97)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:146)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:200)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:214)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:214)
+SCRIPT ERROR: Parse Error: Identifier "ControlsMode" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:226)
+SCRIPT ERROR: Parse Error: Identifier "ResistanceSteps" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:242)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "data" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:242)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:360)
+ERROR: Failed to load script "res://src/autoload/visit_counter.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/visit_counter.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+ERROR: Condition "ret != noErr" is true. Returning: ""
+   at: get_system_ca_certificates (platform/macos/os_macos.mm:1035)
+shard 0  ~256s  test_resistance.gd test_events_solid.gd test_events_pursuit.gd test_sentence_lines.gd test_ground_floor.gd test_main.gd test_events_emission.gd test_meters.gd test_touch.gd test_orientation.gd test_crowd_contributions.gd test_frame_graph.gd test_quit_option.gd
+shard 1  ~256s  test_full_run.gd test_telemetry.gd test_route_tree.gd test_events_catalogue.gd test_routes_lattice.gd test_prediction_reuse.gd test_camera_start.gd test_atlas_stroller_crowd.gd test_auto_screenshot.gd test_visit_counter.gd
+shard 2  ~256s  test_routes_closures.gd test_finale.gd test_events_placement.gd test_masts.gd test_interior.gd test_day_lost_to.gd test_day_loop.gd test_save.gd test_invincible.gd test_events_chat.gd test_player_presentation.gd test_day_controller.gd
+shard 3  ~256s  test_crowd_closures.gd test_crowd_bodies.gd test_route_rig.gd test_route_lines.gd test_danger.gd test_spent_park.gd test_atlas_loading.gd test_return_patrols.gd test_pause.gd test_ground_layers.gd test_atlas_library.gd test_event_views.gd test_presentation_mode.gd
+shard 4  ~256s  test_events_scheduler.gd test_balance.gd test_home_block.gd test_acts.gd test_blackout.gd test_scenery_residency.gd test_atlas_events.gd test_debug_layers.gd test_protest.gd test_visuals.gd test_stroller.gd test_still_watch.gd test_event_spacing.gd
+shard 5  ~256s  test_crowd.gd test_tutorial_dog.gd test_event_manager.gd test_posters.gd test_blocks.gd test_trailer_flags.gd test_scenery_animation.gd test_turns.gd test_stroller_gait.gd test_atlas_leaf_consumers.gd test_halo.gd test_car_views.gd test_walker_views.gd test_building_shadows.gd
+shard 6  ~256s  test_generator.gd test_regions.gd test_checkpoints.gd test_heat.gd test_power_station.gd test_city_decay.gd test_held_restart.gd test_routes_kerb_tint.gd test_shapes.gd test_burst_capture.gd test_event_redraw.gd test_atlas_packer.gd test_hud.gd test_performance.gd
+shard 7  ~256s  test_routes_fallen_trees.gd test_events_costs.gd test_seals.gd test_events_fire.gd test_events_scenery.gd test_reachability_grid.gd test_rig_press.gd test_dev_rig.gd test_atlas_decoration.gd test_frame_trace.gd test_atlas_ground.gd test_event_strides.gd test_closure_marker.gd

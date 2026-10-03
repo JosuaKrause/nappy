@@ -1,0 +1,24 @@
+Generated costs: ./tools/ci-costs.sh --runs 3
+Source runs: 37083176322, 37083163561, 36812212526
+Each plan command: TEST_SHARDS=N ./tools/test.sh --plan
+
+stale table before refresh
+4 shards: 513s projected maximum
+5 shards: 411s projected maximum
+6 shards: 342s projected maximum
+7 shards: 293s projected maximum
+8 shards: 256s projected maximum
+
+refreshed table
+4 shards: 581s projected maximum
+5 shards: 465s projected maximum
+6 shards: 387s projected maximum
+7 shards: 332s projected maximum
+8 shards: 312s projected maximum
+9 shards: 312s projected maximum
+10 shards: 312s projected maximum
+
+The before/after difference is cost-table calibration across different source revisions and
+runner loads, not a runtime speed comparison. Every retained plan contains all 102 discovered
+suites exactly once. At eight or more shards, test_resistance.gd's measured 312057ms mean sets
+the floor by itself.

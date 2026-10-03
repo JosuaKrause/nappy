@@ -1,0 +1,13 @@
+shards (1)	Shard 1/8	2026-10-03T00:42:49.5476440Z -- test_crowd_contributions.gd      48 ms
+shards (1)	Shard 1/8	2026-10-03T00:42:50.7524568Z -- test_events_emission.gd       1205 ms
+shards (1)	Shard 1/8	2026-10-03T00:43:07.9243661Z -- test_events_pursuit.gd       17172 ms
+shards (1)	Shard 1/8	2026-10-03T00:43:59.3314223Z -- test_events_solid.gd         51407 ms
+shards (1)	Shard 1/8	2026-10-03T00:43:59.3522624Z -- test_frame_graph.gd             19 ms
+shards (1)	Shard 1/8	2026-10-03T00:44:16.5141261Z -- test_ground_floor.gd         17163 ms
+shards (1)	Shard 1/8	2026-10-03T00:44:19.4853860Z -- test_main.gd                  2971 ms
+shards (1)	Shard 1/8	2026-10-03T00:44:19.7315316Z -- test_meters.gd                 246 ms
+shards (1)	Shard 1/8	2026-10-03T00:44:19.7771887Z -- test_orientation.gd             46 ms
+shards (1)	Shard 1/8	2026-10-03T00:44:19.7788646Z -- test_quit_option.gd              1 ms
+shards (1)	Shard 1/8	2026-10-03T00:50:57.2903012Z -- test_resistance.gd          397509 ms
+shards (1)	Shard 1/8	2026-10-03T00:50:57.3084858Z -- test_sentence_lines.gd          17 ms
+shards (1)	Shard 1/8	2026-10-03T00:50:57.3459641Z -- test_touch.gd                   37 ms
