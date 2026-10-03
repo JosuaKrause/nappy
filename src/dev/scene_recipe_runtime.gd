@@ -161,7 +161,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 					continue
 				_keys(fixture, ["cell", "kind"], "roof fixture", errors)
 				if not SceneRecipe.tuple(fixture.get("cell"), 2, true) \
-						or not Building._Furniture.has(str(fixture.get("kind", "")).to_upper()):
+						or not Building.RECIPE_FURNITURE_KINDS.has(str(fixture.get("kind", "")).to_upper()):
 					errors.append("roof fixture requires integer cell [column,row] and an existing kind")
 	if not setup.get("posters", []) is Array:
 		errors.append("setup.posters must be an array")

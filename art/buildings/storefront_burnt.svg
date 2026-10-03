@@ -1,0 +1,44 @@
+<!-- A gutted shopfront, burnt out: the fascia charred and its paint blistered away, the awning
+     burnt off to two bent, blackened arms, the display window's glass gone with shards caught in
+     the frame, the shop behind black, and the entrance at left boarded with charred planks.
+     64x36, drawn in place of the plinth across two facade columns, its fill opaque over the wall;
+     the same canvas, entrance (x 2..28) and display bay (x 30..62) as the four storefront
+     pictures, on the shared ground line at y 36. Building.Condition.BURNT draws it in place of
+     whichever storefront the pair rolled, awning or shutters alike. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="36" viewBox="0 0 64 36" shape-rendering="geometricPrecision" stroke="#1c1718" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <!-- The front's own frame, charred. -->
+  <rect width="64" height="36" fill="#2f2826" stroke="none"/>
+  <path d="M0 0.6 H64" fill="none" stroke="#141112" stroke-width="1.2"/>
+  <path d="M0 1 H2 V34 H0 Z M28 1 H30 V34 H28 Z M62 1 H64 V34 H62 Z" fill="#3d3431" stroke="none"/>
+  <path d="M2 1 V34 M28 1 V34 M30 1 V34 M62 1 V34" fill="none" stroke="#141112" stroke-width="0.6"/>
+  <!-- The entrance, black, boarded. -->
+  <path d="M3.5 2.5 H26.5 V34 H3.5 Z" fill="#1f1a19" stroke-width="0.8"/>
+  <path d="M5 4 H25 V34 H5 Z" fill="#0f0d0e" stroke-width="0.6"/>
+  <path d="M5 27 C9 26 13 27.6 17 26.6 C20 26 23 27 25 26.4 V34 H5 Z" fill="#231d1c" stroke="none"/>
+  <path d="M3.8 12.2 L26.2 11.2 L26.2 12.2 L3.8 13.2 Z M3.8 22.6 L26.2 23.2 L26.2 24.2 L3.8 23.6 Z" fill="#000000" fill-opacity="0.45" stroke="none"/>
+  <path d="M3.2 8.4 L26.8 7.4 L26.8 11.2 L3.2 12.2 Z" fill="#6b5a48"/>
+  <path d="M3.2 18.8 L26.8 19.4 L26.8 23.2 L3.2 22.6 Z" fill="#5f4f3f"/>
+  <path d="M3.2 8.4 L6.4 8.3 L7 10.2 L6.2 12.1 L3.2 12.2 Z M23.2 19.3 L26.8 19.4 L26.8 23.2 L22.6 23.1 L23.6 21.2 Z" fill="#2c2321" stroke="none"/>
+  <path d="M7.4 9.8 L25.6 9.1 M4.6 21 L21.6 21.4" fill="none" stroke="#4a3d31" stroke-width="0.4" stroke-opacity="0.9"/>
+  <path d="M4.4 10.2 h0.1 M25.6 9.3 h0.1 M4.4 20.8 h0.1 M25.6 21.4 h0.1" fill="none" stroke="#1c1718" stroke-width="1.1"/>
+  <path d="M3 33.6 H27 L27.6 35.2 H2.4 Z" fill="#5c5550" stroke-width="0.5"/>
+  <!-- The fascia, charred, the sign's paint blistered off, and the awning burnt to its arms. -->
+  <path d="M30.8 1.6 H61.2 V9 H30.8 Z" fill="#3a3130" stroke-width="0.8"/>
+  <path d="M33 3.2 C36 2.6 39 4.2 42 3.4 M45 6.8 C48 6 51 7.6 55 6.6 M36 7.2 C38 6.6 40 7.4 41 7" fill="none" stroke="#5b4d45" stroke-width="0.7"/>
+  <path d="M30.8 1.6 H40 C42 4 38 6 41 9 H30.8 Z" fill="#0d0b0c" fill-opacity="0.5" stroke="none"/>
+  <path d="M32 9 L30.2 12.6 L28.8 13.4 M60 9 L61.6 11.8 L63.4 12.8" fill="none" stroke="#141112" stroke-width="1.2"/>
+  <!-- The display window: frame charred, glass gone, black inside, shards at the corners. -->
+  <path d="M30.8 9.9 H61.2 V30.4 H30.8 Z" fill="#2c2321" stroke-width="0.8"/>
+  <path d="M32 11.2 H60 V29.4 H32 Z" fill="#0f0d0e" stroke="none"/>
+  <path d="M32 23.4 C37 22.4 41 24.2 46 23.2 C51 22.2 55 23.8 60 22.8 V29.4 H32 Z" fill="#231d1c" stroke="none"/>
+  <path d="M34.4 25 L37 22.2 L39.4 24.6 L41.2 23.2 L42.6 25.4 Z M50 24.2 L52.6 21.8 L54.4 23.8 L57 22.6 L58.4 24.8 Z" fill="#1b1618" stroke="none"/>
+  <path d="M45.4 11.2 H46.6 V15.8 L46 17.2 L45.4 15.4 Z" fill="#2c2321" stroke-width="0.5"/>
+  <path d="M32 11.2 L36.6 11.2 L34.4 13.2 L33.4 15.6 L32 16.4 Z" fill="#8c9aa0" fill-opacity="0.85" stroke-width="0.4"/>
+  <path d="M60 11.2 L60 15.4 L58.6 13.2 L57.4 14 L56.6 11.2 Z" fill="#8c9aa0" fill-opacity="0.85" stroke-width="0.4"/>
+  <path d="M32 29.4 L32 26.8 L33.4 28.2 L34.8 27.2 L35.4 29.4 Z M60 29.4 L60 27.6 L58.8 29.4 Z" fill="#8c9aa0" fill-opacity="0.75" stroke-width="0.4"/>
+  <path d="M33 13.2 L34 12" fill="none" stroke="#c9d3d6" stroke-width="0.4" stroke-opacity="0.8"/>
+  <path d="M32 11.2 H60 V29.4 H32 Z" fill="none" stroke-width="0.7"/>
+  <path d="M31.4 30.4 H60.6 V33.6 H31.4 Z" fill="#3a3130" stroke-width="0.6"/>
+  <path d="M32.4 32.8 V31.2 H44 M49 31.2 H59.6" fill="none" stroke="#5b4d45" stroke-width="0.5"/>
+  <path d="M0 35.2 H64 V36 H0 Z" fill="#2a2222" stroke="none"/>
+</svg>

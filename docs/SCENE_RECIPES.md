@@ -185,9 +185,14 @@ Only generator guarantee diagnostics are fixture-capable in this schema.
 `setup.roof_fixtures` replaces the fixtures on individually named production roofs. Each entry
 has `lot: [tile_x,tile_y,width,height]` and a `fixtures` array; each fixture has `cell: [column,row]`
 and an existing `kind`: `vent`, `hvac_a`, `hvac_b`, `duct_straight`, `duct_corner`, `skylight_a`,
-`skylight_b`, `vent_stack`, or `water_tank`. Columns count from the west; row zero is the south
+`skylight_b`, `vent_stack`, `water_tank`, `service_bulkhead`, `exhaust_fan`, or `pipe_manifold`.
+Columns count from the west; row zero is the south
 roof lip above the facade. The production interior-cell pool, including roof extensions,
-district fixture choices and two-cell straight-duct footprint validate the complete replacement.
+district fixture choices and displayed equipment widths validate the complete replacement.
+The public `duct_straight` reserves two horizontal cells and `duct_corner` one west/north elbow
+cell; both use the mounted duct components. Their public names are independent of the internal
+network enum. Water tanks, long skylights, access rooms and pipe manifolds reserve two columns;
+scaled standalone fans fit one. Height rises north from the roof foot without changing collision.
 Duplicate lots, edge cells, overlapping fixtures and unknown kinds fail. An empty array clears
 that roof's fixtures; omitted roofs keep their seeded furniture. Streaming restores the same
 authored layout. Power-station fixtures retain their specialized production layout.

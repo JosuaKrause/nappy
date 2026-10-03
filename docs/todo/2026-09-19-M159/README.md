@@ -1,6 +1,15 @@
-priority: later
+priority: now
 
 ## M159 — A slow frame names the frame that was slow · asked for 2026-09-19
+
+The player says:
+
+> M159 we need to find more things to optimize so yeah it should go to now. but "we will have to look in a different direction" means we have to think about other ways -- that is orthogonal to when it happens.
+
+[sunny-chipmunk, mobile-ground review clarifications](../../playtests/2026-10-03-sunny-chipmunk.md)
+records that instruction and the constraint on phone profiling;
+[snowy-ibis, mobile ground-stepping feedback](../../playtests/2026-10-02-snowy-ibis.md)
+records the phone observation. The next optimization remains to be determined.
 
 > "we did some analysis of performance and lag frames / stutter. have astra look at the recorded
 > numbers and the codebase and think about how we could improve performance and reduce stutter"

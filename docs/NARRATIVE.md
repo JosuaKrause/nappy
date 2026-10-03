@@ -38,9 +38,9 @@ The colour cast is the quietest part of the telling: the same corner, four times
 colder. Warm afternoon → drained → cold and overcast → smoke.
 
 The loudest part is that **the city remembers**. `scar_id` makes a one-off event permanent
-for the rest of the run: the building that burned on day 3 is still a cordoned-off shell on
-day 12, and every barricade an Act IV convoy drops stays dropped. The route you memorised
-on day 2 stops existing, one closure at a time.
+for the rest of the run: the building that burned on day 3 still stands burnt on day 12,
+its windows black under soot, and every barricade an Act IV convoy drops stays dropped. The
+route you memorised on day 2 stops existing, one closure at a time.
 
 ### Act I — "It's a nice neighbourhood" (days 1–3)
 
@@ -62,7 +62,7 @@ Palette desaturates slightly. Posters go up. Loudspeaker masts are installed on 
 switch on with a test tone. Police patrols appear. On day 6 a curfew is announced and the
 day gets shorter.
 
-The burnt building from day 3 is still there, cordoned off, never repaired. Same tile,
+The building that burned on day 3 is still there, burnt, never repaired. Same building,
 every day, for the rest of the run.
 
 **Day 6, the day of the curfew:** the first `resistance_contact` appears in an alley. No prompt,
@@ -148,7 +148,7 @@ that through the day before the last night:
 | --- | --- | --- | --- |
 | 6 | A note for a stranger | Hand it to whichever `homeless_yeller` she walks up to — several are live at once and look alike, and coming near one and walking on commits her to nothing, so there is no wrong one to single out first. | any instance |
 | 7 | The package | The delivery van's own drop. Picking it up makes the pram heavier for the rest of the day. | red |
-| 8 | The burnt shell | Wherever this run's own day-3 fire left its scar. | red |
+| 8 | The burnt shell | The building this run's own day-3 fire burned, wherever in the city it stands, the arrow ending on its door, and the drawing left from the near half of the sidewalk in front of it. Only a run that recorded no day-3 scar at all has one burnt for the task, on a front the fire could have caught on, the moment her mark is read. | red |
 | 9 | The crossing | One of that day's own region doors, the first day the wall stands at all. | red |
 | 10 | Warn the neighbor | The neighbor, out in the city and walking home, by the red arrow that follows them: about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk from her door when the mark is touched. Reached first, the neighbor runs; reaching the door first, they are taken, and from the next morning the wanted notice crosses their face out. | red, with a deadline |
 | 11 | Silence a mast | The foot of one live loudspeaker mast, drawn among those she can reach. Its field makes the approach cost while it broadcasts, so the skill is reaching it between broadcasts; reaching it puts its lamp out, and it stays quiet for the rest of the run. | red |
@@ -291,7 +291,7 @@ act.
 | --- | --- | --- |
 | The note for the man shouting | He is the group's lookout: everybody walks around him, so he sees everything and nobody sees him. The note is her answer, yes; walking up to noise with the baby is the test. He leaves because his corner has done its job. Whichever look-alike she hands it to is him — which one exactly is decided by how she plays. | Somebody else answers. |
 | The package at the van's drop | From the group to the neighbor. The driver is a sympathizer; the package is tools and a lamp. She carries it home, which is where the neighbor lives. | Somebody else risks the building. |
-| The burnt shell | From the neighbor to the group: a drawing of the station, which door and which shift. A cordoned ruin is where nobody goes, so it is the dead drop. Whether the fire was an accident is never answered. | The drawing goes out another way. |
+| The burnt shell | From the neighbor to the group: a drawing of the station, which door and which shift. A burnt-out ruin is where nobody goes, so it is the dead drop. Whether the fire was an accident is never answered. | The drawing goes out another way. |
 | Cross a named door | The districts closed that morning and the station is across one. She finds out whether a stroller gets through. | Somebody else finds out. |
 | Warn the neighbor before the raid | The regime has found the worker. She reaches the neighbor out in the city before they walk home into the vans, which are at her own building when she gets back. Warned, the neighbor runs; not warned, the neighbor is taken, and theirs is the face crossed out on the wanted notice. The door is sealed the next morning either way, and the drawing already left at the burnt shell. | The same sealed door, for the worse reason. |
 | Silence a mast | The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own, so a blackout silences them. | Somebody else answers. |

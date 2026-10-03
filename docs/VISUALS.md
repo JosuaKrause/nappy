@@ -1,8 +1,11 @@
 # Visual presentation
 
-**Every PNG asset has a corresponding SVG asset. The SVG is always authored and reviewed first.**
-SVG-first authoring followed by style transfer is the approved graphics workflow. Keep source SVGs
-editable and record each SVG/PNG pair; generated source sheets are generation evidence.
+**PNG assets normally have a corresponding SVG asset authored and reviewed first.** SVG-first
+authoring followed by style transfer is the default graphics workflow. A player-authorized
+PNG-first family instead keeps its reviewed generated source, prompt, hashes and deterministic
+registration as evidence. Rooftop equipment, fallen trees and burst water mains are the current
+bounded exceptions. Keep source SVGs editable for ordinary transfers and record every source pair;
+generated source sheets remain generation evidence.
 
 The game draws whichever raster the bake chose: a registered PNG where one exists, the authored
 SVG's own raster everywhere else. **The choice is made before the game runs and nothing at
@@ -12,8 +15,9 @@ five authored views, supplying eight directions through explicit east/west mirro
 sack, sack pile and five litter decals also use registered PNGs. The outdoor ground catalogue
 under `art/tiles/` uses registered PNG materials and components. Shared ground bases and transparent damage, markings
 and grass features are composed in the engine through `GroundLayers`.
-Trees, the overhead bollard cap, the ground tree bed and the rooftop water tank, HVAC units,
-skylights, vent stack and ducts also have comic replacements. Other families use SVGs.
+Trees, the overhead bollard cap and the ground tree bed have comic transfers. The rooftop water
+tank, HVAC units, skylights, vents, service bulkhead, pipe manifold and mounted duct run are a
+direct PNG family. Other families use SVGs unless their catalogue row says otherwise.
 The logo, social card and exported stroller icon sizes use the comic identity mark, documented
 with their SVG source mappings in the
 [identity generation record](evidence/comic-identity-2026-09-12/GENERATION.md).
@@ -44,8 +48,9 @@ creation-reference family for high-fidelity generation and its linked recipes fo
 ## Where the pictures live
 
 **The authoring sources are not in the game.** `art/` holds every picture the bake reads —
-`art/<family>/<name>.svg` and the illustrated transfer beside it at
-`art/illustrated/svg-transfer/<family>/<name>.png` — and carries a `.gdignore`, so the engine
+`art/<family>/<name>.svg`, the illustrated transfer beside it at
+`art/illustrated/svg-transfer/<family>/<name>.png`, and an authorized direct PNG below
+`art/illustrated/<family>/` — and carries a `.gdignore`, so the engine
 imports nothing there, keeps no `.import` sidecar there and exports nothing from it. *"they
 should cease existing in the build once they get baked into an atlas."* Nothing in `src/` names
 one: a consumer holds the region name its picture is baked under, `<family>/<name>`.
@@ -75,8 +80,9 @@ and opaque tile families an extruded one, so a filtered sample at a region's edg
 picture rather than its neighbour.
 
 **The presentation mode is the bake's, and there is no other.** The default bake takes the
-illustrated PNG wherever one exists beside the SVG and agrees with it on size, and the authored
-SVG's raster everywhere else; `tools/bake-atlases.sh --svg` bakes the authored rasters alone.
+illustrated PNG wherever one exists beside the SVG and agrees with it on size, the authored SVG's
+raster everywhere else, and direct PNG members in both modes. `tools/bake-atlases.sh --svg`
+selects authored rasters for paired assets while retaining direct PNGs, which have no vector fallback.
 That is a custom local build, and `tools/export-web.sh` refuses to export one. A run cannot ask
 for the other mode, because the pixels on the page are the ones the build chose;
 `AtlasLibrary.bake_mode()` is how the ground compositor finds out which it got.

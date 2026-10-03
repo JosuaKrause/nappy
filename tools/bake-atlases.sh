@@ -60,7 +60,8 @@ Bakes assets/atlases/baked/ -- one PNG page per group in assets/atlases/membersh
 regions.json and bake_manifest.json -- when the tree has moved since the last bake. With no
 flags it compares the recorded source hashes and prints one line saying whether it baked.
 
-  --svg     bake the authored SVG rasters alone, ignoring the illustrated PNGs. The custom
+  --svg     bake every paired picture from its authored SVG raster, ignoring its illustrated
+            PNG; a family that exists only as PNG (the roof equipment) is baked from it. The custom
             local build; the release is always the default PNG bake, and a tree baked this way
             counts as stale for every tool that wants a release build. A group's page also
             holds what its mode draws: "members" is what both bake, "members_png" and

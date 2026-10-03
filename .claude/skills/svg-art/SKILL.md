@@ -5,10 +5,13 @@ description: Create, revise and visually review the repository's SVG game graphi
 
 # SVG artwork
 
-**Every PNG asset has a corresponding SVG asset, and the SVG always comes first.** Author and
+**SVG-first is the default for PNG assets.** Author and
 review the SVG as the editable source of subject, geometry, pose and placement before applying
 the illustrated-png workflow. Preserve it alongside the registered PNG derivative. This applies
-to new directional/state variants, UI and identity assets as well as standing game entities.
+to new directional/state variants, UI and identity assets as well as standing game entities,
+outside the player's bounded direct-PNG exceptions documented in
+[illustrated-png](../illustrated-png/SKILL.md). That skill governs raster generation and those
+authorized families without base SVGs.
 
 SVG is the editable source for game graphics. Author vectors directly with patches; use the existing
 family as the style reference. Read `docs/GRAPHICS.md` for the asset's actual binding and the
