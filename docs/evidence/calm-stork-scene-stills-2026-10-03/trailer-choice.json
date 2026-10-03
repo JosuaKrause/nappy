@@ -30,28 +30,28 @@
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"final_activity": {
-		"moving_crowd": 29,
-		"visible_cars": 0,
+		"moving_crowd": 31,
+		"visible_cars": 2,
 		"visible_events": {
 			"leaf_blower": 1
 		},
-		"visible_walkers": 31,
+		"visible_walkers": 29,
 		"walker_streets": {
 			"h4": {
-				"moving": 13,
-				"walkers": 13
+				"moving": 17,
+				"walkers": 17
 			},
 			"v4": {
-				"moving": 2,
-				"walkers": 3
+				"moving": 6,
+				"walkers": 6
 			},
 			"v5": {
-				"moving": 14,
-				"walkers": 15
+				"moving": 6,
+				"walkers": 6
 			}
 		},
-		"walkers_left": 11,
-		"walkers_right": 20
+		"walkers_left": 18,
+		"walkers_right": 11
 	},
 	"final_actors": {
 		"obstacle": {
@@ -67,44 +67,44 @@
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2193.9875,
-				1834.9788
+				2195.011,
+				1812.838
 			],
 			"speed": 62.0
 		}
 	},
 	"final_crowd": {
 		"cars": 34,
-		"moving": 424,
-		"moving_cars": 26,
+		"moving": 429,
+		"moving_cars": 29,
 		"quadrants": {
 			"ne": {
-				"cars": 5,
-				"moving": 77,
-				"moving_cars": 5,
-				"total": 77,
-				"walkers": 72
+				"cars": 9,
+				"moving": 93,
+				"moving_cars": 8,
+				"total": 94,
+				"walkers": 85
 			},
 			"nw": {
-				"cars": 24,
-				"moving": 290,
+				"cars": 22,
+				"moving": 287,
 				"moving_cars": 18,
-				"total": 298,
-				"walkers": 274
+				"total": 291,
+				"walkers": 269
 			},
 			"se": {
-				"cars": 0,
-				"moving": 11,
-				"moving_cars": 0,
-				"total": 11,
-				"walkers": 11
+				"cars": 2,
+				"moving": 12,
+				"moving_cars": 2,
+				"total": 12,
+				"walkers": 10
 			},
 			"sw": {
-				"cars": 5,
-				"moving": 46,
-				"moving_cars": 3,
-				"total": 48,
-				"walkers": 43
+				"cars": 1,
+				"moving": 37,
+				"moving_cars": 1,
+				"total": 37,
+				"walkers": 36
 			}
 		},
 		"scope": "local",
@@ -112,26 +112,26 @@
 		"walkers": 400
 	},
 	"initial_activity": {
-		"moving_crowd": 21,
-		"visible_cars": 2,
+		"moving_crowd": 26,
+		"visible_cars": 1,
 		"visible_events": {},
-		"visible_walkers": 19,
+		"visible_walkers": 25,
 		"walker_streets": {
 			"h6": {
-				"moving": 10,
-				"walkers": 10
+				"moving": 11,
+				"walkers": 11
 			},
 			"v5": {
-				"moving": 2,
-				"walkers": 2
+				"moving": 8,
+				"walkers": 8
 			},
 			"v6": {
-				"moving": 7,
-				"walkers": 7
+				"moving": 6,
+				"walkers": 6
 			}
 		},
-		"walkers_left": 9,
-		"walkers_right": 10
+		"walkers_left": 13,
+		"walkers_right": 12
 	},
 	"initial_actors": {
 		"obstacle": {
@@ -166,25 +166,25 @@
 				"walkers": 60
 			},
 			"nw": {
-				"cars": 22,
-				"moving": 295,
-				"moving_cars": 22,
-				"total": 295,
-				"walkers": 273
+				"cars": 30,
+				"moving": 301,
+				"moving_cars": 30,
+				"total": 301,
+				"walkers": 271
 			},
 			"se": {
-				"cars": 1,
+				"cars": 0,
 				"moving": 10,
-				"moving_cars": 1,
+				"moving_cars": 0,
 				"total": 10,
-				"walkers": 9
+				"walkers": 10
 			},
 			"sw": {
-				"cars": 8,
-				"moving": 66,
-				"moving_cars": 8,
-				"total": 66,
-				"walkers": 58
+				"cars": 1,
+				"moving": 60,
+				"moving_cars": 1,
+				"total": 60,
+				"walkers": 59
 			}
 		},
 		"scope": "local",
@@ -304,8 +304,8 @@
 				"carrying": false,
 				"gait_frame": 2,
 				"position": [
-					1967.879,
-					1940.3944
+					1968.6223,
+					1936.0
 				],
 				"speed": 92.0
 			},
@@ -324,8 +324,8 @@
 				"carrying": false,
 				"gait_frame": 1,
 				"position": [
-					2161.2544,
-					1834.9788
+					2162.2778,
+					1812.838
 				],
 				"speed": 92.0
 			},

@@ -10,9 +10,10 @@ false; the separate headless manifest proves that the complete scripted action p
 | Stills | Source revision | What the still establishes |
 |---|---|---|
 | `power-station-hall`, `power-station-yard` | `8941448c` | Real adjoining dead-end walls: the hall covers the facade, the fenced yard keeps it. |
-| `trailer-choice` | `d7a56707` | A uniformly busy alternate street after the mother's wrong-way approach and backtrack; selected restaurant guests are one block east. |
-| `trailer-blower` | `177191c8` | The father and selected leaf blower beside an industrial facade with manually placed existing duct, HVAC and vent fixtures. |
-| `trailer-dog`, `trailer-gatehouse` | `052fb4c1` | Charging dog beside a skylight roof and father approaching horizontally toward the existing vertical gate. |
+| `trailer-choice` | `b04c386e` | A uniformly busy alternate street after the mother's wrong-way approach and backtrack; selected restaurant guests are one block east. |
+| `trailer-birds` | `b04c386e` | The father and existing pigeon flock on an industrial side-street block, with ordinary roads throughout the frame. |
+| `trailer-dog` | `b04c386e` | Charging dog beside a skylight roof, moving pedestrians on every pictured street, and the foreground tree moved across the road. |
+| `trailer-gatehouse` | `052fb4c1` | The father approaching horizontally toward the existing vertical gate. |
 | `trailer-title` | `d7a56707` | The father walking inside the park, with the adjacent road visible. |
 | `trailer-trucks` | `9768f6de` | Three army trucks beside the south-facing mother, varied posters, and the existing vertical roadblock at the left street mouth. |
 | `trailer-chase` | `052fb4c1` | A visible carrying stride beside a pursuing guard. |
@@ -24,24 +25,29 @@ Sources are reachable through PR #457. Godot 4.7.2 stable, macOS Apple M2, Compa
 The command uses `--player-view`, `--no-save`, scripted playback and the saved `capture_at`.
 Fetch `refs/pull/457/head` when a source revision is absent locally. No video is made.
 
-The choice capture uses equal pedestrian corridor weights and 400 production walkers in its
-moving field, twice the ordinary day-1 count, with the ordinary car population. Its picture
-contains 35 walkers: 12 on the horizontal side street (10 moving), 9 on the main road
-(8 moving), and 14 on the other vertical side street (all moving). There are 15 walkers in
-the left half and 20 in the right. These are authored-scene controls, not ordinary balance changes.
+Scenes 3–5 each use 400 production walkers in their moving field, twice the ordinary act-1
+count, and the ordinary 34 cars. Initial walkers are sampled evenly along eligible sidewalk
+lanes; recycling gives pedestrian corridors equal weight. Movement, body clearance, turns,
+collisions and traffic use production behavior. Ordinary gameplay keeps its own population
+and street hierarchy. Each pictured street is measured separately at the frozen capture tick:
 
-The blower preview selects its event explicitly, with no normal scheduler or additional seals.
-Its full ordinary crowd records 32 visible walkers (24 left, 8 right), four visible cars and
-the single selected leaf blower at capture tick 15. The source checkout has only unrelated
-queue/playtest documentation edits during capture; runtime and recipe sources match the named
-revision. The capture uses no invincibility. The industrial roof and north-side approach are
-composition choices for review.
+| Scene | Horizontal street walkers (moving) | Left vertical street walkers (moving) | Right vertical street walkers (moving) | Left/right picture halves |
+|---|---|---|---|---|
+| Choice | h4: 18 (16) | v4 main road: 8 (8) | v5 side street: 8 (8) | 17 / 17 |
+| Birds | h3: 14 (14) | v5 side street: 9 (9) | v6 side street: 9 (9) | 15 / 17 |
+| Dog | h5: 20 (20) | v3 side street: 5 (5) | v4 main road: 7 (7) | 16 / 16 |
+
+The bird block is explicitly industrial and one block east of the first bird preview; its
+two existing building footprints and shallow roof make a different side-street composition.
+The dog scene moves the actual street tree, its pit and its planning footprint from tile
+[50,74] to [50,71], the opposite curb of the same street. The title walks south on park ground
+from [1296,1712], with the road visible at the right. No new graphics or gameplay objects are used.
 
 The truck capture uses the runtime and west-mouth recipe committed in `9768f6de`; that edit
 was uncommitted during capture. Its recipe hash and full action are retained in the manifests.
 All revised captures use ordinary vulnerability and no invincibility flag.
 
-The revised scenes use production crowd counts and only explicitly selected events and structures.
+The revised scenes use production crowd simulation and only explicitly selected events and structures.
 The normal event scheduler and seal selection do not add unrequested objects.
 The truck formation is the actual day-13 happening; its spacing is not a trio of lookalikes.
 The gate is a real region checkpoint. The choice scene's leaf blower is a composition choice;

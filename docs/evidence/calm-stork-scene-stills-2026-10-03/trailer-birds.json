@@ -1,11 +1,11 @@
 {
 	"anchors": {
-		"blower": [
-			2160.0,
+		"birds": [
+			2608.0,
 			1360.0
 		],
 		"start": [
-			2048.0,
+			2496.0,
 			1360.0
 		]
 	},
@@ -23,7 +23,18 @@
 		"full_context_guarantees"
 	],
 	"choices": {
-		"context_seed": 1917501.0
+		"context_seed": 1917501.0,
+		"lots": [
+			{
+				"blocks": [
+					5.0,
+					2.0,
+					1.0,
+					1.0
+				],
+				"purpose": "industrial"
+			}
+		]
 	},
 	"classification": "normal",
 	"context_seed": 1917501,
@@ -31,52 +42,66 @@
 	"expected_violations": [],
 	"final_activity": {
 		"moving_crowd": 36,
-		"visible_cars": 5,
+		"visible_cars": 3,
 		"visible_events": {
-			"leaf_blower": 1
+			"pigeon_flock": 1
 		},
-		"visible_walkers": 32,
-		"walkers_left": 22,
-		"walkers_right": 10
+		"visible_walkers": 33,
+		"walker_streets": {
+			"h3": {
+				"moving": 13,
+				"walkers": 13
+			},
+			"v5": {
+				"moving": 9,
+				"walkers": 9
+			},
+			"v6": {
+				"moving": 11,
+				"walkers": 11
+			}
+		},
+		"walkers_left": 14,
+		"walkers_right": 19
 	},
 	"final_actors": {
-		"blower": {
+		"birds": {
 			"position": [
-				2160.0,
-				1376.0
+				2608.0,
+				1360.0
 			],
 			"pursuing": false,
-			"row": "leaf_blower",
+			"row": "pigeon_flock",
 			"telegraphing": false
 		},
 		"player": {
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2102.6399,
-				1367.8855
+				2549.8665,
+				1360.0
 			],
 			"speed": 0.0
 		}
 	},
 	"final_crowd": {
 		"cars": 34,
-		"moving": 228,
-		"moving_cars": 28,
+		"moving": 430,
+		"moving_cars": 30,
 		"quadrants": {
 			"ne": {
-				"cars": 5,
-				"moving": 35,
-				"moving_cars": 5,
-				"total": 35,
-				"walkers": 30
+				"cars": 17,
+				"moving": 213,
+				"moving_cars": 16,
+				"total": 214,
+				"walkers": 197
 			},
 			"nw": {
-				"cars": 29,
-				"moving": 193,
-				"moving_cars": 23,
-				"total": 199,
-				"walkers": 170
+				"cars": 17,
+				"moving": 217,
+				"moving_cars": 14,
+				"total": 220,
+				"walkers": 203
 			},
 			"se": {
 				"cars": 0,
@@ -94,32 +119,33 @@
 			}
 		},
 		"scope": "local",
-		"total": 234,
-		"walkers": 200
+		"total": 434,
+		"walkers": 400
 	},
 	"initial_activity": {
 		"moving_crowd": 0,
 		"visible_cars": 0,
 		"visible_events": {},
 		"visible_walkers": 0,
+		"walker_streets": {},
 		"walkers_left": 0,
 		"walkers_right": 0
 	},
 	"initial_actors": {
-		"blower": {
+		"birds": {
 			"position": [
-				2160.0,
-				1376.0
+				2608.0,
+				1360.0
 			],
 			"pursuing": false,
-			"row": "leaf_blower",
+			"row": "pigeon_flock",
 			"telegraphing": false
 		},
 		"player": {
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2048.0,
+				2496.0,
 				1360.0
 			],
 			"speed": 0.0
@@ -127,22 +153,22 @@
 	},
 	"initial_crowd": {
 		"cars": 34,
-		"moving": 234,
+		"moving": 434,
 		"moving_cars": 34,
 		"quadrants": {
 			"ne": {
-				"cars": 5,
-				"moving": 30,
-				"moving_cars": 5,
-				"total": 30,
-				"walkers": 25
+				"cars": 16,
+				"moving": 191,
+				"moving_cars": 16,
+				"total": 191,
+				"walkers": 175
 			},
 			"nw": {
-				"cars": 29,
-				"moving": 204,
-				"moving_cars": 29,
-				"total": 204,
-				"walkers": 175
+				"cars": 18,
+				"moving": 243,
+				"moving_cars": 18,
+				"total": 243,
+				"walkers": 225
 			},
 			"se": {
 				"cars": 0,
@@ -160,8 +186,8 @@
 			}
 		},
 		"scope": "local",
-		"total": 234,
-		"walkers": 200
+		"total": 434,
+		"walkers": 400
 	},
 	"installed_events": [
 		{
@@ -170,10 +196,10 @@
 				0.0
 			],
 			"position": [
-				2160.0,
+				2608.0,
 				1360.0
 			],
-			"row": "leaf_blower"
+			"row": "pigeon_flock"
 		}
 	],
 	"observations": [
@@ -184,8 +210,8 @@
 				"carrying": false,
 				"gait_frame": 0,
 				"position": [
-					2061.8667,
-					1362.6667
+					2509.8667,
+					1360.0
 				],
 				"speed": 92.0
 			},
@@ -199,8 +225,8 @@
 				"carrying": false,
 				"gait_frame": 2,
 				"position": [
-					2089.4666,
-					1362.6667
+					2537.4666,
+					1360.0
 				],
 				"speed": 92.0
 			},
@@ -212,34 +238,35 @@
 			"passed": true,
 			"state": {
 				"position": [
-					2160.0,
-					1376.0
+					2608.0,
+					1360.0
 				],
 				"pursuing": false,
-				"row": "leaf_blower",
+				"row": "pigeon_flock",
 				"telegraphing": false
 			},
-			"subject": "blower",
+			"subject": "birds",
 			"tick": 45.0
 		}
 	],
 	"physics_ticks_per_second": 30,
 	"playback_complete": true,
-	"recipe": "An early danger on the father's walk",
-	"recipe_sha256": "38060921b84b67e5961003471b0a89a18da3b986349f61941307b0b110ceea57",
+	"recipe": "A bird flock on the father's industrial street",
+	"recipe_sha256": "c1cd6b62cdb76bd60d8133a3720d6c04d2ea39673318df728128cdac02e20626",
 	"scope": "full",
 	"seed": 11,
 	"setup": {
 		"background": {
-			"crowd": true
+			"crowd": true,
+			"uniform_walkers": true,
+			"walker_multiplier": 2.0
 		},
 		"day": 1.0,
 		"events": [
 			{
-				"age": 1.8,
-				"at": "blower",
-				"name": "blower",
-				"row": "leaf_blower"
+				"at": "birds",
+				"name": "birds",
+				"row": "pigeon_flock"
 			}
 		],
 		"parent": "father",
@@ -253,37 +280,37 @@
 					{
 						"cell": [
 							1.0,
-							2.0
+							1.0
 						],
 						"kind": "duct_straight"
 					},
 					{
 						"cell": [
-							2.0,
-							3.0
+							3.0,
+							1.0
 						],
 						"kind": "duct_corner"
 					},
 					{
 						"cell": [
 							5.0,
-							2.0
+							1.0
 						],
 						"kind": "hvac_b"
 					},
 					{
 						"cell": [
-							5.0,
-							4.0
+							6.0,
+							1.0
 						],
 						"kind": "vent"
 					}
 				],
 				"lot": [
-					62.0,
+					76.0,
 					34.0,
 					8.0,
-					8.0
+					4.0
 				]
 			}
 		],
