@@ -1167,6 +1167,19 @@ func mark_the_burnt_frontage() -> void:
 				building.condition = Building.Condition.BURNT
 				break
 
+## The way in of the building directly north of the sidewalk point `sidewalk` — the same lot
+## `mark_the_burnt_frontage()` burns behind a scar — as a world point half a tile up its ground
+## floor, on the door (`Building.way_in_local_x()`, the one nearest `sidewalk` on a front with
+## several storefronts). `Vector2.INF` with no building there. Day 8's red arrow and its task's
+## contact end here: *"or better to the door"* (sandy-egret).
+func way_in_behind(sidewalk: Vector2) -> Vector2:
+	var wall_tile := map.world_to_tile(sidewalk) + Vector2i.UP
+	for building in _buildings:
+		if building.lot.has_point(wall_tile):
+			var x := building.way_in_local_x(sidewalk.x - building.position.x)
+			return building.position + Vector2(x, -Tuning.TILE_SIZE * 0.5)
+	return Vector2.INF
+
 ## **One block's buildings, shown as what the block is now**, during the day rather than at dawn —
 ## day 11's market, boarded up ahead of her while she cannot see it (`ResistanceHappenings`). The
 ## same `_condition_for()` the dawn dressing reads, for the buildings of `block` alone, and the

@@ -296,10 +296,9 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		_rider = neighbor
 		_contact.ride(_step, neighbor, Vector2.ZERO)
 	elif scar_instance:
-		var offset := _reachable_offset(scar_instance, _rng)
 		_rider = scar_instance
-		_contact.ride(_step, scar_instance, offset)
-		at = scar_instance.global_position + offset
+		_ride_to_the_door(scar_instance)
+		at = _contact.global_position
 	elif _step.is_pickup or ResistanceSteps.sits_on_a_bare_point(_step):
 		_contact.setup(_step, at)
 	else:
@@ -313,9 +312,11 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		_rider = _city.events.spawn_extra(task_def, at)
 		if no_recorded_scar:
 			_burn_a_front_for_the_task(_rider)
-		var offset := _reachable_offset(_rider, _rng)
-		_contact.ride(_step, _rider, offset)
-		at = _rider.global_position + offset
+		if _step.target_kind == ResistanceSteps.TargetKind.SCAR:
+			_ride_to_the_door(_rider)
+		else:
+			_contact.ride(_step, _rider, _reachable_offset(_rider, _rng))
+		at = _contact.global_position
 	_contact.completed.connect(_on_contact_completed)
 	_city.add_entity(_contact)
 	EventBus.resistance_contact_available.emit(_step.index)
@@ -386,6 +387,39 @@ func _ride_the_recorded_scar(scar_id: String) -> EventInstance:
 func _burn_a_front_for_the_task(shell: EventInstance) -> void:
 	GameState.add_scar(_step.task_event_id, shell.global_position)
 	_city.mark_the_burnt_frontage()
+
+## How far day 8's touch reaches from the burnt building's door: half a tile from the door's point
+## (`City.way_in_behind()`, half a tile up its ground floor) down to the wall's foot, plus half the
+## sidewalk (`Tuning.SIDEWALK_WIDTH`, two tiles) — 48px, so straight in front of the door she
+## completes it from the near half of the sidewalk, its frontage lane, and not from the kerb lane
+## or the street. *(sandy-egret: "or better to the door but the acceptance radius centered at the
+## door should have a large enough radius for half the sidewalk to be covered".)*
+const DOOR_REACH := Tuning.TILE_SIZE * 0.5 + Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
+
+## Day 8's contact: it rides the burnt shell `shell` (so `rider_alive()` keeps answering for it) but
+## stands on the door of the building behind it (`City.way_in_behind()`) and reaches `DOOR_REACH`
+## from there. The shell has no body and draws nothing, so the door is where the task *is* — *"the
+## building is what needs to be burnt, not an object next to the building"*. **The door's own
+## frontage tile must be ground she can stand on**, the same refusals every contact here keeps
+## (`is_legal_ground()`, unobstructed, reachable from home): a door whose frontage something solid
+## stands on today gives way to the facade point straight behind the shell, one tile north of it,
+## which `DOOR_REACH` covers from the shell's own frontage-lane tile the same way. Draws nothing
+## from `_rng`, as `_reachable_offset()` draws nothing for a bodiless rider, so the day's later
+## draws are unmoved.
+func _ride_to_the_door(shell: EventInstance) -> void:
+	var door := _city.way_in_behind(shell.global_position) if _city else Vector2.INF
+	if door != Vector2.INF:
+		var frontage := _map.world_to_tile(door) + Vector2i.DOWN
+		if not is_legal_ground(_map, frontage, _walled_alleys()) or _map.is_obstructed(frontage) \
+				or not _reachable_from_home(frontage):
+			Telemetry.note("contact", ("step %d: the burnt building's door at %s has no ground " +
+					"in front of it today — the facade behind the shell stands in")
+					% [_step.index, TelemetryLog.tile(_map.world_to_tile(door))])
+			door = Vector2.INF
+	if door == Vector2.INF:
+		door = shell.global_position + Vector2.UP * Tuning.TILE_SIZE
+	_contact.ride(_step, shell, door - shell.global_position)
+	_contact.reach = DOOR_REACH
 
 ## Day 3's fire, whose own siting rules `_fronts_a_fire_catches_on()` reuses.
 const FIRE_ROW := "burning_building"
@@ -1849,24 +1883,16 @@ func pointable_objective() -> Vector2:
 ## `contact_position()` for a bare-point task (a door, a mast's foot, a swing, the last night's
 ## front door) or the neighbor, whose own offset is zero and so already agrees with it.
 ##
-## **Day 8's tip ends on the burnt building, not on its shell** (`_burnt_facade_point()`): the
-## shell has no body and draws nothing, so its own position is bare sidewalk, and *"the building
-## is what needs to be burnt, not an object next to the building"*.
+## **Day 8's tip ends on the burnt building's door, where its contact stands, not on its shell**
+## (`_ride_to_the_door()`): the shell has no body and draws nothing, so its own position is bare
+## sidewalk. *(sandy-egret: "the red arrow should point to the sidewalk *in front* of the door of
+## the burnt building" · "or better to the door".)*
 func red_arrow_target() -> Vector2:
 	var step := current_step()
 	if step == null or step.is_pickup or not step.is_one_place or _contact.is_done:
 		return Vector2.INF
+	if step.target_kind == ResistanceSteps.TargetKind.SCAR:
+		return contact_position()
 	if _rider and is_instance_valid(_rider):
-		if step.target_kind == ResistanceSteps.TargetKind.SCAR:
-			return _burnt_facade_point(_rider.global_position)
 		return _rider.global_position
 	return contact_position()
-
-## The point on the burnt building's facade straight behind a `burnt_shell` standing at `shell`:
-## one tile north, which is half a tile to the foot of the wall (the shell stands at the centre of
-## the frontage lane, `EventDef.Pavement.AT_THE_FRONT`) and half a tile up its ground floor. North
-## because that is the building `City.mark_the_burnt_frontage()` turns `BURNT`, the lot holding the
-## tile directly north of the scar; every building's facade faces south, so the tile above the
-## wall's foot is always wall and never roof.
-static func _burnt_facade_point(shell: Vector2) -> Vector2:
-	return shell + Vector2.UP * Tuning.TILE_SIZE

@@ -426,7 +426,7 @@ func set_home_guidance(showing: bool, home: Vector2) -> void:
 ## The red arrow: shown from the moment a one-place task's own mark is touched until the task is
 ## done, at whatever `ResistanceDirector.red_arrow_target()` answers — the task's own rider when it
 ## has one (the van's body, not the touch point beside it), the bare contact point when it does
-## not, and for day 8 the burnt building's front wall, one tile north of the shell it rides. That
+## not, and for day 8 the burnt building's door, where that task's contact stands. That
 ## function is the one place that decides where it points and whether today's task earns it at all.
 func set_task_guidance(showing: bool, at: Vector2) -> void:
 	if showing:

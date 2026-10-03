@@ -76,11 +76,12 @@ class Step extends RefCounted:
 	var applies_package_weight := false
 	## True only for day 6's note (M205, "the note costs, and the ordinary day"). `ContactPoint`
 	## completes this step the instant she is within the rider's own `inner_radius` (45px, his
-	## full-strength field) rather than the generic `ContactPoint.REACH` (36px) every other step
-	## uses — still instant, not a dwell: a fork proposed making her stand there for a couple of
-	## seconds first, and the player rejected it outright: "the player should stand for 2.5s? no
-	## way. the moment the player touches the inner circle it counts as delivered." False for
-	## every other step, which always uses `REACH` regardless of the rider's own geometry.
+	## full-strength field) rather than the contact's own `ContactPoint.reach` (`REACH`, 36px, on
+	## every step but day 8's, whose door reaches half the sidewalk) — still instant, not a
+	## dwell: a fork proposed making her stand there for a couple of seconds first, and the player
+	## rejected it outright: "the player should stand for 2.5s? no way. the moment the player
+	## touches the inner circle it counts as delivered." False for every other step, whose
+	## contact's own `reach` decides regardless of the rider's geometry.
 	var completes_at_inner_radius := false
 
 static var _all: Array[Step] = []
@@ -282,9 +283,10 @@ static func _build() -> Array[Step]:
 		# carries is the neighbor's drawing, left in the stroller overnight, so the words say where
 		# it is, the stroller, rather than naming an "it" nothing showed, in one short sentence. The
 		# contact rides the run's own recorded `burnt_shell` scar (`EventDef.scar_id` on
-		# `burning_building`); a run with no such scar stands the row on a reachable front the
-		# fire could have caught on, records the scar there and burns the building behind it, so
-		# the words still lead to a burnt building — see `ResistanceDirector._begin_step()`.
+		# `burning_building`) and stands on the door of the building behind it; a run with no such
+		# scar stands the row on a reachable front the fire could have caught on, records the scar
+		# there and burns the building behind it, so the words still lead to a burnt building — see
+		# `ResistanceDirector._begin_step()`.
 		_mark(5, "Another mark", 8,
 				"Take what's in the stroller to the burnt building."),
 		_perform(6, "The burnt shell", 8, "burnt_shell", [GameEnums.TileType.SIDEWALK], true,

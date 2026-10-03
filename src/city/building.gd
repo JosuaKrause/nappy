@@ -876,6 +876,28 @@ func entrance_door_col() -> int:
 		return -1
 	return _door_col
 
+## Where this front's way in stands, as a local x on its ground line: the entrance door's column
+## (`entrance_door_col()`), else the civic portico, centred on the facade (`_draw_front_overlay()`),
+## else the drawn storefront pair nearest `near` — and `near` itself on a front with none of them,
+## a one-row facade, which keeps its windows and has no door. Day 8's task ends at the burnt
+## building's door (`City.way_in_behind()`): *"or better to the door"* (sandy-egret).
+func way_in_local_x(near: float) -> float:
+	var door := entrance_door_col()
+	if door >= 0:
+		return _cell(door, 0).x + TILE * 0.5
+	if _portico_is_drawn():
+		return 0.0
+	var best_x := near
+	var best := INF
+	for store in _storefront_variant.size():
+		if not _pair_is_storefront(store * 2):
+			continue
+		var x := _cell(store * 2, 0).x + TILE
+		if absf(x - near) < best:
+			best = absf(x - near)
+			best_x = x
+	return best_x
+
 ## The door picture for this front's district: steel on an `INDUSTRIAL` block, the plain one on
 ## every other — and on a burnt building, whatever its district, the burnt doorway boarded shut.
 func _entrance_door_texture() -> StringName:
