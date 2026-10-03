@@ -1169,12 +1169,15 @@ func mark_the_burnt_frontage() -> void:
 
 ## **One block's buildings, shown as what the block is now**, during the day rather than at dawn —
 ## day 11's market, boarded up ahead of her while she cannot see it (`ResistanceHappenings`). The
-## same `_condition_for()` the dawn dressing reads, for the buildings of `block` alone.
+## same `_condition_for()` the dawn dressing reads, for the buildings of `block` alone, and the
+## same `mark_the_burnt_frontage()` after it, so a block boarded up around the building day 3's
+## fire burned never boards up the burnt building itself.
 func present_block(block: Vector2i, state: CityState) -> void:
 	var condition := _condition_for(state.purpose_of(map.block_plans, block))
 	for building in _buildings:
 		if _block_of(building.lot) == block:
 			building.condition = condition
+	mark_the_burnt_frontage()
 
 ## **Ground taken away in front of her**: `tiles` become `SPOILED` now, in the map and on screen —
 ## day 12's park, closing a ring at a time once she has reached its swing (`ResistanceHappenings`).

@@ -1696,7 +1696,7 @@ requisitioned park are the same walkable ground, so neither half moves a walkabl
 `CityState.advance_now()` takes the step a block's arc is waiting on today, and only if it becomes
 the purpose asked for — when moves, never what. Day 11's market is a commercial block whose arc is
 waiting to board up, boarded ahead of her and out of her sight, its buildings shuttered there and
-then (`City.present_block()`). Day 12's park is taken the instant she reaches its swing, and its
+then (`City.present_block()`), except a building day 3's fire burned, which stays burnt. Day 12's park is taken the instant she reaches its swing, and its
 ground goes to `SPOILED` a ring at a time from the edges in over `Tuning.PARK_CLOSING_SECONDS`
 (`City.close_ground()`), so the calm under her shrinks while she watches; mud is walkable, so she
 is never shut in. `docs/NARRATIVE.md` says what each is; `ResistanceHappenings` is where they

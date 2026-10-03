@@ -197,6 +197,11 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 	city.start_day(CityState.new(), 5, rng)
 	t.check(scarred.condition == Building.Condition.BURNT and _burnt_count(city) == 1,
 			"and every dawn after that, the same one")
+	# Day 11's market boards its block up during the day (`present_block()`), and the burnt
+	# building is never boarded up with it.
+	city.present_block(city._block_of(scarred.lot), CityState.new())
+	t.check(scarred.condition == Building.Condition.BURNT,
+			"its block shown anew during the day leaves the burnt building burnt")
 
 	city.free()
 	GameState.scars = saved
