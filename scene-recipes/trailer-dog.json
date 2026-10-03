@@ -1,9 +1,12 @@
 {
   "version": 1, "name": "The charging dog's warning and the run away", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
-  "anchors": {"start": {"world": [1952, 1936]}, "dog": {"world": [2383, 1936]}},
+  "anchors": {"start": {"world": [1536, 2384]}, "dog": {"world": [1967, 2384]}},
   "setup": {"tutorial_complete": true, "day": 3, "parent": "mother", "player": {"at": "start", "facing": "east"},
-    "background": {"events": true, "crowd": true},
+    "background": {"crowd": true},
+    "roof_fixtures": [{"lot": [48, 76, 8, 8], "fixtures": [
+      {"cell": [1, 2], "kind": "skylight_a"}, {"cell": [3, 2], "kind": "skylight_b"},
+      {"cell": [5, 2], "kind": "skylight_a"}]}],
     "events": [{"name": "dog", "row": "charging_dog", "at": "dog"}]},
   "playback": {"walk": "1.55e1.05W", "duration": 2.6, "capture_at": 1.85,
     "observations": [{"tick": 6, "subject": "player", "condition": "moving"},

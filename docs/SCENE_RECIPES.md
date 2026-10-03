@@ -37,15 +37,17 @@ doorstep framing deliberately start at time zero.
 ## Activity and playback
 
 `setup` accepts `day`, `parent` (`mother` or `father`), `player` (`at`, cardinal `facing`,
-initial `excitement` and `sleep`), `background` booleans `events`/`crowd`, `signal_time`,
-`progression`, named `events`, named `actors`, `posters`, and the day-13 `column` formation.
+initial `excitement` and `sleep`), `background.crowd`, `signal_time`,
+`progression`, named `events`, named `actors`, `posters`, `roof_fixtures`, `seals`,
+`gates`, `barriers`, and the day-13 `column` formation.
 `tutorial_complete: true` starts after the ordinary control lessons, clearing those prompts
 while retaining gameplay warnings. Trailer scenes use this state so the lesson text does not
 cover their subjects. Free play uses the same authored teaching state.
 Positions name an anchor or give `[world_x,world_y]`. Background activity defaults off.
-With `background.events`, exact event subjects enter ordinary day planning before the other
-catalogue candidates. Recurring subjects count against that day's budget and per-row cap.
-Normal planning must preserve them or setup fails. The ordinary director remains active.
+Only explicit selections install events. The normal event scheduler and director do not fill
+authored scenes, in either free or scripted mode. `background.events: true` is rejected;
+an omitted or false value selects no automatic events. Pedestrians and cars keep their normal
+simulation independently of event selection. Unselected seals and region bodies remain absent.
 Random crowd cannot accompany pinned crowd actors.
 Random background activity requires full extent; bounded scenes use authored activity so their
 plain exterior does not acquire context-city actors or collisions.
@@ -61,15 +63,25 @@ simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direc
 in its actual main-road lane. Its ordinary formation spacing and rear-truck stopping logic
 come from `ResistanceHappenings`; unrelated catalogue spacing does not apply to that formation.
 Its observation names are `truck_1`, `truck_2` and `truck_3`. It requires a full day-13 city.
-When ordinary background events are enabled, temporary formation reservations participate in
-their placement; only the real happening installs the trucks. Their count stays outside the
-catalogue budget, as it does in ordinary play.
+Only the real happening installs the trucks. Their count stays outside the catalogue budget,
+as it does in ordinary play.
+
+`seals: [{"segment":[5,4,0],"candidate":"cafe_pair"}]` selects an existing production
+seal picture and its exact street. Ordinary day eligibility, off-route street, home and spine
+exclusions and tree placement apply. The existing placement supplies both sides of a soft pair.
+There is no automatic seal fill or thinning of these explicitly selected pairs.
+`gates: [{"segment":[5,5,0]}]` selects an existing checkpoint from the context's eligible
+region doors, including its two huts and shared traffic-operated boom. A horizontal street
+uses the standard vertical gate. `barriers: [{"segment":[3,5,0],"end":"b"}]` places the
+existing roadblock band at that mouth of an off-route street, on an eligible later day.
+These fields place production components; they introduce no new scenery or event types.
 
 `posters` gives exact existing wall cells, each with `at` and a day-eligible `kind` (`leader`,
 `rules`, `curfew`, `uniform`, `wanted`). The runtime uses production wall eligibility and
 `PosterState.paste`; duplicate cells, non-wall ground and kinds unavailable that day fail.
 `kind: "escape"`, day 14 and `progression.escape_part: "city"` use the actual escape controller,
-carrying pose, two escape routes, seals and heated guard variants. `progression.blackout` turns
+carrying pose, two escape routes and heated guard variants. Generated finale seals are not
+installed: the recipe selects its own events. `progression.blackout` turns
 off the street signals. Supported escape pins are trucks, abduction, roadblocks and explosions.
 
 `playback` accepts a timed `walk` script (the same syntax as `--walk`), `duration` in seconds,
@@ -159,6 +171,16 @@ that does not occur fails. Syntax errors, unsupported fields, broken references,
 placement pins and closure refusals cannot be waived. The fixture classification remains in
 the manifest even when its expected diagnostics match; it never becomes normal gameplay.
 Only generator guarantee diagnostics are fixture-capable in this schema.
+
+`setup.roof_fixtures` replaces the fixtures on individually named production roofs. Each entry
+has `lot: [tile_x,tile_y,width,height]` and a `fixtures` array; each fixture has `cell: [column,row]`
+and an existing `kind`: `vent`, `hvac_a`, `hvac_b`, `duct_straight`, `duct_corner`, `skylight_a`,
+`skylight_b`, `vent_stack`, or `water_tank`. Columns count from the west; row zero is the south
+roof lip above the facade. The production interior-cell pool, including roof extensions,
+district fixture choices and two-cell straight-duct footprint validate the complete replacement.
+Duplicate lots, edge cells, overlapping fixtures and unknown kinds fail. An empty array clears
+that roof's fixtures; omitted roofs keep their seeded furniture. Streaming restores the same
+authored layout. Power-station fixtures retain their specialized production layout.
 
 Run `tools/test.sh scene_recipe` for construction, parser rejection, ordinary eligibility,
 independent seeds, actual City roof coverage and bounded fallback checks. Use the runtime's

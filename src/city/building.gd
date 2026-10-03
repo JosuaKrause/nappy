@@ -544,6 +544,8 @@ var _door_col := 0
 ## before near ones without re-sorting every frame — the same back-to-front order a unit taller
 ## than one tile (the water tank) needs to lie correctly over whatever is in the row behind it.
 var _roof_furniture: Array[Dictionary] = []
+## Null uses the ordinary seeded layout; an authored array replaces this roof's units.
+var recipe_roof_furniture: Variant = null
 ## Only the small rotor layers redraw on the vent timer. Static batches between rotors keep
 ## the back-to-front furniture order, including a taller unit overlapping a vent behind it.
 var _has_vent := false
@@ -1308,6 +1310,12 @@ func _draw_fire_escape() -> void:
 func _build_roof_furniture() -> void:
 	_roof_furniture.clear()
 	_has_vent = false
+	if recipe_roof_furniture != null:
+		_roof_furniture.assign(recipe_roof_furniture)
+		for entry: Dictionary in _roof_furniture:
+			_has_vent = _has_vent or entry.kind == _Furniture.VENT
+		_roof_furniture.sort_custom(func(a, b): return (a.cell as Vector2i).y > (b.cell as Vector2i).y)
+		return
 	var roof_rows := roof_tiles()
 	var cols := columns()
 	var kinds: Array = _KINDS_BY_DISTRICT.get(district, [])
@@ -1338,6 +1346,33 @@ func _build_roof_furniture() -> void:
 	# Farthest (highest row) first, so the roof layers paint back to front without
 	# re-sorting on every redraw.
 	_roof_furniture.sort_custom(func(a, b): return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
+
+## Exact recipe fixtures use the production interior, district and two-cell duct footprint.
+## Validate the entire replacement before changing the resident or streamed description.
+func author_roof_furniture(entries: Array) -> Array[String]:
+	var errors: Array[String] = []
+	var placed: Array[Dictionary] = []
+	var used := {}
+	var interior := roof_interior_cells()
+	var kinds: Array = _KINDS_BY_DISTRICT.get(district, []).duplicate()
+	if district == GameEnums.BlockPurpose.INDUSTRIAL:
+		kinds.append_array([_Furniture.DUCT_STRAIGHT, _Furniture.DUCT_CORNER])
+	for entry: Dictionary in entries:
+		var kind: int = _Furniture[str(entry.kind).to_upper()]
+		var cell := Vector2i(int(entry.cell[0]), int(entry.cell[1]))
+		var span := 2 if kind == _Furniture.DUCT_STRAIGHT else 1
+		if power_station or not kinds.has(kind):
+			errors.append("roof_fixtures.kind: fixture is not available on this production roof")
+		for offset in span:
+			var occupied := cell + Vector2i(offset, 0)
+			if not interior.has(occupied) or used.has(occupied):
+				errors.append("roof_fixtures.cell: outside the roof interior or overlapping another fixture")
+			used[occupied] = true
+		placed.append({"cell": cell, "kind": kind, "span": span})
+	if errors.is_empty():
+		recipe_roof_furniture = placed
+		_rebuild()
+	return errors
 
 ## The cells a roof unit may stand on, in the fixed order `_build_roof_furniture()` shuffles:
 ## row by row from row 1, each row west to east over the interior columns, keeping a cell only

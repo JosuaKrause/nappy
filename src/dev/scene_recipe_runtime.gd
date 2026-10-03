@@ -56,7 +56,8 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	var setup: Dictionary = recipe.get("setup", {})
 	var playback: Dictionary = recipe.get("playback", {})
 	_keys(setup, ["day", "parent", "player", "background", "progression", "events", "actors",
-			"signal_time", "column", "tutorial_complete", "posters"], "setup", errors)
+			"signal_time", "column", "tutorial_complete", "posters", "roof_fixtures",
+			"seals", "gates", "barriers"], "setup", errors)
 	if not setup.get("tutorial_complete", false) is bool:
 		errors.append("setup.tutorial_complete must be boolean")
 	_number(setup.get("day", 1), "setup.day", 1, 14, errors, true)
@@ -76,7 +77,9 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 		_number(player.get(key, 0), "setup.player." + key, 0, 100, errors)
 	var background: Dictionary = setup.get("background", {})
 	_keys(background, ["events", "crowd", "crowd_scope"], "setup.background", errors)
-	for key in ["events", "crowd"]:
+	if background.get("events", false) != false:
+		errors.append("setup.background.events: authored scenes require explicit event selections")
+	for key in ["crowd"]:
 		if not background.get(key, false) is bool:
 			errors.append("setup.background.%s must be boolean" % key)
 	if not background.get("crowd_scope", "player") in ["player", "city"]:
@@ -85,7 +88,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			not background.get("crowd", false) or recipe.get("extent", {}).get("scope", "") != "full"):
 		errors.append("setup.background.crowd_scope city requires crowd and full extent")
 	if recipe.get("extent", {}).get("scope", "") == "bounded" and (
-			background.get("events", false) or background.get("crowd", false)):
+			background.get("crowd", false)):
 		errors.append("bounded scenes require authored actors/events; random background activity needs full extent")
 	var progression: Dictionary = setup.get("progression", {})
 	_keys(progression, ["blackout", "escape_part"], "setup.progression", errors)
@@ -99,6 +102,56 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	elif progression.has("escape_part"):
 		errors.append("setup.progression.escape_part requires kind escape")
 	_number(setup.get("signal_time", 0), "setup.signal_time", 0, 86400, errors)
+	for collection in ["seals", "gates", "barriers"]:
+		if not setup.get(collection, []) is Array:
+			errors.append("setup.%s must be an array" % collection)
+			continue
+		var seen := {}
+		for entry: Variant in setup.get(collection, []):
+			if not entry is Dictionary:
+				errors.append("setup.%s entries must be objects" % collection)
+				continue
+			_keys(entry, ["segment", "candidate"] if collection == "seals" else
+					(["segment", "end"] if collection == "barriers" else ["segment"]), collection, errors)
+			if not SceneRecipe.tuple(entry.get("segment"), 3, true):
+				errors.append("setup.%s requires segment [x,y,axis]" % collection)
+				continue
+			var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
+			if not StreetNetwork.by_key(key) or seen.has(key):
+				errors.append("setup.%s has an unknown or duplicate street" % collection)
+			seen[key] = true
+			if collection == "seals":
+				var found := false
+				for candidate in SealPlanner.candidates():
+					found = found or candidate.id == entry.get("candidate", "")
+				if not found:
+					errors.append("setup.seals requires an existing production candidate")
+			elif collection == "barriers" and entry.get("end") not in ["a", "b"]:
+				errors.append("setup.barriers requires end a or b")
+	if not setup.get("roof_fixtures", []) is Array:
+		errors.append("setup.roof_fixtures must be an array")
+	else:
+		var roof_lots := {}
+		for roof: Variant in setup.get("roof_fixtures", []):
+			if not roof is Dictionary:
+				errors.append("setup.roof_fixtures entries must be objects")
+				continue
+			_keys(roof, ["lot", "fixtures"], "setup.roof_fixtures", errors)
+			if not SceneRecipe.tuple(roof.get("lot"), 4, true) or not roof.get("fixtures") is Array:
+				errors.append("setup.roof_fixtures requires a tile lot [x,y,w,h] and fixtures array")
+				continue
+			var lot := SceneRecipe.rect(roof.lot)
+			if roof_lots.has(lot):
+				errors.append("setup.roof_fixtures duplicates a lot")
+			roof_lots[lot] = true
+			for fixture: Variant in roof.fixtures:
+				if not fixture is Dictionary:
+					errors.append("setup.roof_fixtures.fixtures entries must be objects")
+					continue
+				_keys(fixture, ["cell", "kind"], "roof fixture", errors)
+				if not SceneRecipe.tuple(fixture.get("cell"), 2, true) \
+						or not Building._Furniture.has(str(fixture.get("kind", "")).to_upper()):
+					errors.append("roof fixture requires integer cell [column,row] and an existing kind")
 	if not setup.get("posters", []) is Array:
 		errors.append("setup.posters must be an array")
 	else:
@@ -164,8 +217,6 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 					_number(entry.speed, where + ".speed", 0, 1000, errors)
 	if not errors.is_empty():
 		return errors
-	if background.get("events", false) and recipe.get("kind", "city") == "escape":
-		errors.append("escape scenes use authored finale events, not ordinary-day background events")
 	if setup.has("column") and not setup.get("events", []).is_empty():
 		errors.append("setup.column cannot accompany other pinned events")
 	if background.get("crowd", false) and not setup.get("actors", []).is_empty():
@@ -282,6 +333,14 @@ func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
 	var errors: Array[String] = []
 	var setup: Dictionary = data.get("setup", {})
 	var map := city.map
+	for roof: Dictionary in setup.get("roof_fixtures", []):
+		var found := false
+		for building in city.buildings():
+			if building.lot == SceneRecipe.rect(roof.lot):
+				found = true
+				errors.append_array(building.author_roof_furniture(roof.fixtures))
+		if not found:
+			errors.append("roof_fixtures.lot: no complete production building at the authored footprint")
 	var at := position_of(setup.get("player", {}).get("at", "doorstep"), errors)
 	if not errors.is_empty():
 		return errors
@@ -290,12 +349,9 @@ func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
 	if not map.is_open(map.world_to_tile(at)) or not _inside_extent(at):
 		errors.append("setup.player.at must be open ground inside the authored extent")
 	var background: Dictionary = setup.get("background", {})
-	if background.get("events", false):
-		errors.append_array(city.events.start_day(GameState.day, GameState.day_rng(),
-				GameState.consumed_one_shots, at, _background_plans.bind(at)))
-	else:
-		var plans := _event_plans(at, errors)
-		city.events.start_recipe(plans, GameState.day, at, data.get("kind", "city") == "escape")
+	_select_structures(errors)
+	var plans := _event_plans(at, errors)
+	city.events.start_recipe(plans, GameState.day, at, data.get("kind", "city") == "escape")
 	map.recipe_exterior = exterior
 	if not errors.is_empty():
 		return errors
@@ -388,22 +444,71 @@ func _inside_extent(at: Vector2) -> bool:
 	var map: CityMap = built.map
 	return not map.recipe_bounds.has_area() or map.recipe_bounds.has_point(map.world_to_tile(at))
 
-func _background_plans(standing: Array[EventScheduler.Planned], player_at: Vector2) -> Dictionary:
-	var errors: Array[String] = []
-	var authored: Array[EventScheduler.Planned] = []
-	for plan in _event_plans(player_at, errors, standing):
-		if plan.has_meta("recipe_name"):
-			authored.append(plan)
-	var column: Dictionary = data.get("setup", {}).get("column", {})
-	if not column.is_empty():
-		var at := position_of(column.at, errors)
-		var direction: Vector2 = DIRECTIONS[column.direction]
-		for i in Tuning.COLUMN_TRUCKS:
-			var reserved := EventScheduler.Planned.new(EventCatalogue.by_id("military_convoy"),
-					at - direction * Tuning.COLUMN_SPACING * i)
-			reserved.set_meta("recipe_reservation", true)
-			authored.append(reserved)
-	return {"plans": authored, "errors": errors}
+## Keep only named production structures. The context plan supplies eligibility and geometry,
+## never permission to install unrelated walls or checkpoint actors throughout the scene.
+func _select_structures(errors: Array[String]) -> void:
+	var region := _city.region_plan()
+	if not region:
+		return
+	var setup: Dictionary = data.get("setup", {})
+	var selected := RegionPlanner.RegionPlan.new()
+	for entry: Dictionary in setup.get("gates", []):
+		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
+		var segment := StreetNetwork.by_key(key)
+		if not region.doors.any(func(door): return door.key() == key):
+			errors.append("setup.gates: the selected street is not an eligible production checkpoint; eligible streets: %s" %
+					[region.doors.map(func(door): return door.key())])
+			continue
+		selected.doors.append(segment)
+		RegionPlanner._add_door_bodies(_city.map, segment, selected)
+	for entry: Dictionary in setup.get("barriers", []):
+		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
+		var segment := StreetNetwork.by_key(key)
+		if not _city.map.has_street(key) or _city.route_tree().is_on_the_tree(key) \
+				or GameState.day < Tuning.REGION_WALL_FIRST_DAY:
+			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
+			continue
+		selected.walls.append(segment)
+		selected.wall_bodies.append_array(SealPlanner.place_hard_on(_city.map, segment,
+				"roadblock", entry.end == "a"))
+	region.doors = selected.doors
+	region.door_bodies = selected.door_bodies
+	region.gates = selected.gates
+	region.walls = selected.walls
+	region.wall_bodies = selected.wall_bodies
+	region.alley_doors.clear()
+	region.alley_walls.clear()
+
+func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
+	var plans: Array[EventScheduler.Planned] = []
+	var map := _city.map
+	var trees := StreetTrees.footprint_tiles(map)
+	var lined := StreetTrees.segment_keys_with_trees(map)
+	var emptied: Array[Vector2i] = []
+	for entry: Dictionary in data.get("setup", {}).get("seals", []):
+		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
+		var segment := StreetNetwork.by_key(key)
+		var home := ClosurePlanner.home_street(map)
+		if not map.has_street(key) or _city.route_tree().is_on_the_tree(key) \
+				or (home and key == home.key()) or SealPlanner._is_the_main_road(map, segment):
+			errors.append("setup.seals: requires a production off-route, non-home, non-spine street")
+			continue
+		for candidate in SealPlanner.candidates():
+			if candidate.id != entry.candidate:
+				continue
+			if not SealPlanner._eligible(candidate, GameState.day) \
+					or (candidate.id == SealPlanner.FALLEN_TREE_SEAL_ID and not lined.has(key)):
+				errors.append("setup.seals: candidate is unavailable on this day or street")
+				continue
+			var along := SealPlanner._seal_along_tile(map, segment, candidate, trees, emptied)
+			plans.append_array(SealPlanner._place(map, segment, candidate, along))
+			if candidate.strength == SealPlanner.Strength.HARD:
+				map.hold_segment(key)
+			else:
+				for side in [true, false]:
+					SealPlanner._mark_soft_sealed(map, SealPlanner._sidewalk_band_tiles(segment, side, along))
+	map.set_seal_tree_pits(emptied)
+	return plans
 
 func _event_plans(player_at: Vector2, errors: Array[String],
 		standing: Array[EventScheduler.Planned] = []) -> Array[EventScheduler.Planned]:
@@ -419,7 +524,8 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		for chain in finale.chains:
 			if not chain.complete:
 				errors.append("escape route construction could not complete its ordinary chains")
-		plans.append_array(finale.placements)
+		# The finale plan validates the real escape routes. Its randomly chosen scenery is
+		# not an authored scene's event list.
 	elif _city.region_plan():
 		for body in _city.region_plan().wall_bodies:
 			if _inside_extent(body.position):
@@ -428,6 +534,8 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 			doors.append(body.position)
 			if _inside_extent(body.position):
 				plans.append(body)
+	if not finale:
+		plans.append_array(_authored_seals(errors))
 	for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 		map.hold_segment(segment.key())
 	var counts := {}

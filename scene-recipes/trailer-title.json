@@ -1,9 +1,11 @@
 {
   "version": 1, "name": "Title transition on a living street", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
-  "anchors": {"start": {"world": [2080, 1936]}},
+  "anchors": {"start": {"world": [1376, 1712]}},
   "setup": {"tutorial_complete": true, "day": 1, "parent": "father", "player": {"at": "start", "facing": "south"},
-    "background": {"events": true, "crowd": true}},
+    "background": {"crowd": true},
+    "roof_fixtures": [{"lot": [48, 48, 8, 8], "fixtures": [
+      {"cell": [2, 4], "kind": "water_tank"}, {"cell": [5, 2], "kind": "vent"}]}]},
   "playback": {"walk": "2.5p", "duration": 2.5, "capture_at": 1.5, "title": "Nappy",
     "observations": [{"tick": 30, "subject": "player", "condition": "visible"}]}
 }

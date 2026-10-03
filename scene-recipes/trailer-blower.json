@@ -1,9 +1,12 @@
 {
   "version": 1, "name": "An early danger on the father's walk", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
-  "anchors": {"start": {"world": [1950, 1936]}, "blower": {"tile": [65, 60]}},
+  "anchors": {"start": {"world": [2048, 1360]}, "blower": {"tile": [67, 42]}},
   "setup": {"tutorial_complete": true, "day": 1, "parent": "father", "player": {"at": "start", "facing": "east"},
-    "background": {"events": true, "crowd": true},
+    "background": {"crowd": true},
+    "roof_fixtures": [{"lot": [62, 34, 8, 8], "fixtures": [
+      {"cell": [1, 2], "kind": "duct_straight"}, {"cell": [2, 3], "kind": "duct_corner"},
+      {"cell": [5, 2], "kind": "hvac_b"}, {"cell": [5, 4], "kind": "vent"}]}],
     "events": [{"name": "blower", "row": "leaf_blower", "at": "blower", "age": 1.8}]},
   "playback": {"walk": "0.6e1.4p", "duration": 2, "capture_at": 0.5,
     "observations": [{"tick": 6, "subject": "player", "condition": "moving"},
