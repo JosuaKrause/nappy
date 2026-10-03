@@ -113,7 +113,8 @@ wraps its own writes. A write's words inside a quoted
 argument of a command that only prints, searches or stores it (`rg -n "gh issue comment"`,
 `git commit -m "..."`), or in the body of a heredoc with a quoted delimiter such a command reads
 (`cat > brief.md <<'EOF'`), are text and do not count; the same words piped into a shell, in a
-heredoc fed to one, in the body of a heredoc whose unquoted delimiter lets the shell run a
+heredoc fed to one, in a heredoc inside a group opened before it (`{` or `(` on an earlier line,
+then `} | bash`), in the body of a heredoc whose unquoted delimiter lets the shell run a
 `$(...)`, a backtick or a `${...}` in it (`cat <<EOF`, a backslash-newline in it included), or
 in a command that names a file it writes again in any form other than as a body to post or commit
 (`cat > x.sh <<'EOF'` then `bash x.sh`, `bash x''.sh` or a glob; not `--body-file x.md`), or that

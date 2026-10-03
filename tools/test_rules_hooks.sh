@@ -1577,6 +1577,77 @@ assert_write_guard "echo \"\$(cat <<'EOF' ...)\" | bash -> deny, piped into a sh
 git push
 EOF
 )\" | bash"
+# A heredoc inside a group opened before it -- on an earlier line or earlier on its own line, a
+# subshell, a brace group, a loop, an if, a case, a function, a process substitution, a \$(...), a
+# coprocess -- hands its output to wherever the group's goes, which the guard reads only after the
+# body: its body is kept.
+assert_write_guard "{ on its own line, cat <<'EOF', then } | bash -> deny" deny "{
+cat <<'EOF'
+git push --force origin main
+EOF
+} | bash"
+assert_write_guard "( on its own line, cat <<'EOF', then ) | bash -> deny" deny "(
+cat <<'EOF'
+git push --force origin main
+EOF
+) | bash"
+assert_write_guard "a for loop's do, cat <<'EOF', then done | sh -> deny" deny "for x in 1; do
+cat <<'EOF'
+git push --force origin main
+EOF
+done | sh"
+assert_write_guard "an if's then, cat <<'EOF', then fi | bash -> deny" deny "if true; then
+cat <<'EOF'
+git push --force origin main
+EOF
+fi | bash"
+assert_write_guard "case x in x), cat <<'EOF', then esac | bash -> deny" deny "case x in x)
+cat <<'EOF'
+git push --force origin main
+EOF
+;; esac | bash"
+assert_write_guard "a function body holding cat <<'EOF', then f | bash -> deny" deny "f() {
+cat <<'EOF'
+gh issue close 423
+EOF
+}
+f | bash"
+assert_write_guard "bash <( on its own line, cat <<'EOF', then ) -> deny" deny "bash <(
+cat <<'EOF'
+git push --force origin main
+EOF
+)"
+assert_write_guard "x=\$( on its own line, cat <<'EOF', then eval \"\$x\" -> deny" deny "x=\$(
+cat <<'EOF'
+git push --force origin main
+EOF
+); eval \"\$x\""
+assert_write_guard "bash <( true; cat <<'EOF' on one line -> deny" deny "bash <( true; cat <<'EOF'
+git push --force origin main
+EOF
+)"
+assert_write_guard "{ true; cat <<'EOF' on one line, then } | bash -> deny" deny "{ true; cat <<'EOF'
+git push --force origin main
+EOF
+} | bash"
+assert_write_guard "(true; cat <<'EOF' on one line, then ) | bash -> deny" deny "(true; cat <<'EOF'
+git push --force origin main
+EOF
+) | bash"
+assert_write_guard "x=\$(true; cat <<'EOF' on one line, then eval \"\$x\" -> deny" deny "x=\$(true; cat <<'EOF'
+gh issue close 423
+EOF
+); eval \"\$x\""
+assert_write_guard "coproc bash, then cat <<'EOF' >&p (zsh) -> deny, the coprocess runs it" deny "coproc bash
+cat <<'EOF' >&p
+git push --force origin main
+EOF"
+assert_write_guard "two cat > file <<'EOF' heredocs one after the other -> allow" allow "cat > /tmp/a.md <<'EOF'
+run git push only wrapped
+EOF
+cat > /tmp/b.md <<'EOF'
+never gh issue close by hand
+EOF"
 # An unquoted delimiter's body is not text: the shell runs every command substitution in it before
 # the reading command sees a byte, so a body holding a \$(...), a backtick or a \${...} is kept and
 # read. The same body under a quoted delimiter is passed on as it stands, and is text.

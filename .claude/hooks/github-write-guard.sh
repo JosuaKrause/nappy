@@ -133,7 +133,9 @@
 # body of a heredoc with a quoted delimiter such a command reads (`cat > brief.md <<'EOF'`), or
 # with an unquoted one whose body holds no `$(`, backtick or `${` and no line ending in a
 # backslash, since the shell runs a command substitution in an unquoted heredoc's body, after
-# joining each backslash-newline in it. Each word
+# joining each backslash-newline in it -- in either case only where nothing before that command
+# opens a group (`{`, `(`, `$(`, `do`, `then`, `case`, `coproc`, ...) that could close after the
+# body and hand its output to a shell (`} | bash`). Each word
 # still remembers which shell word it came from, and which quoted word inside a quoted script, so
 # an option's argument is skipped whole however it is quoted, escaped or joined by a comma: `git
 # -C "/x y" push`, `git -c 'a=b c' push`, `FOO="a b" tools/release.sh patch push` and `bash -c 'git
@@ -1213,13 +1215,20 @@ def last_segment:
 # argument of has to be text-only too, with no second `$(` or backtick before it, so `bash -c
 # "$(cat <<EOF ...` keeps its body; and after the body the substitution has to close on the next
 # line, with nothing but `;`, `&` or the line's end after it, since a pipe there could hand its
-# output to a shell (`strip_heredocs` checks that line).
-def heredoc_check($q; $line; $op):
+# output to a shell (`strip_heredocs` checks that line). And nothing before its command -- on an
+# earlier line (`$grouped`) or earlier on its own -- may open a group that could close after the
+# body and hand the group's output on (`opens_a_group`): `{` then `} | bash`, `(` then `) | bash`,
+# `do` then `done | sh`, `bash <(`, `x=$(` then `eval "$x"`, zsh's `coproc bash` then `>&p`.
+def opens_a_group:
+  test("[({`]")
+  or test("(^|[^A-Za-z0-9_])(do|then|else|elif|case|coproc|alias|function)([^A-Za-z0-9_]|$)");
+def heredoc_check($q; $line; $op; $grouped):
   ($line[0:$op.offset]) as $p
   | ($line[$op.offset + $op.length:]) as $r
   | ($p | last_segment) as $seg
   | ($seg.sep.string // "") as $s
-  | (($p | contains("#")) | not)
+  | ($grouped | not)
+    and (($p | contains("#")) | not)
     and (($r | test("[|(`]")) | not)
     and ($s | IN("", ";", "&", "|", "$(", ")"))
     and ($seg.text | balanced_plain)
@@ -1231,8 +1240,9 @@ def heredoc_check($q; $line; $op):
              and (($outer.sep.string // "") | IN("", ";", "&", "|"))
              and ($outer.text | rtrimstr("\"") | balanced_plain and text_only_text)
              and (($e[0:$outer.start] | quote_after($q)) == 0)
+             and (($e[0:$outer.start] | opens_a_group) | not)
              and (($e | quote_after($q)) | IN(0, 2))
-         else ($p[0:$seg.start] | quote_after($q)) == 0 end)
+         else (($p[0:$seg.start] | quote_after($q)) == 0) and (($p[0:$seg.start] | opens_a_group) | not) end)
   | {ok: ., sub: ($s == "$(")};
 
 # The command with the body of every heredoc nobody runs taken out, and its operator with it, so
@@ -1261,7 +1271,7 @@ def strip_heredocs:
     else
       (reduce (split("\n")[]) as $line (
          {out: [], mode: 0, delim: "", dash: false, q: 0, giveup: false, bad: false, close_check: false,
-          sub: false, quoted: false, held: [], op_line: "", op_q: 0, cont: false};
+          sub: false, quoted: false, held: [], op_line: "", op_q: 0, cont: false, grouped: false};
          if .mode == 2 then
            .out += [$line]
            | (if ((if .dash then ($line | sub("^\t+"; "")) else $line end) == .delim) then .mode = 0 else . end)
@@ -1288,7 +1298,7 @@ def strip_heredocs:
            | .cont as $joined
            | .cont = ($line | ends_continued)
            | if .giveup or ($any == 0 and (($joined and ($line | contains("<"))) | not)) then
-               .out += [$line] | .q = ($line | quote_after($q))
+               .out += [$line] | .q = ($line | quote_after($q)) | .grouped = (.grouped or ($line | opens_a_group))
              elif ($ops | length) != $any or $joined or .cont then
                # A `<<` the pattern cannot read, or one a backslash-newline splits or continues: the
                # shell's body starts or ends where this reading cannot follow, so nothing from here on
@@ -1298,11 +1308,12 @@ def strip_heredocs:
                ($ops[0]) as $op
                | ($op.captures | map(.string)) as $caps
                | ($caps[1] // $caps[2] // $caps[4]) as $delim
-               | (if ($ops | length) == 1 then heredoc_check($q; $line; $op) else {ok: false, sub: false} end) as $check
+               | (if ($ops | length) == 1 then heredoc_check($q; $line; $op; .grouped) else {ok: false, sub: false} end) as $check
                | .delim = $delim | .dash = ($caps[0] == "-")
                | if $check.ok then
                    ($line[0:$op.offset] + " " + $line[$op.offset + $op.length:]) as $kept
                    | .out += [$kept] | .mode = 1 | .sub = $check.sub | .q = ($kept | quote_after($q))
+                   | .grouped = ($kept | opens_a_group)
                    | .quoted = ($caps[1] != null or $caps[2] != null or $caps[3] != null)
                    | .held = [] | .op_line = $line | .op_q = ($line | quote_after($q))
                  else
