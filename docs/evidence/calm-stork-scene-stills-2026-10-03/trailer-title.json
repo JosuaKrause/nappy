@@ -1,0 +1,180 @@
+{
+	"anchors": {
+		"start": [
+			2080.0,
+			1936.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 34,
+		"visible_cars": 4,
+		"visible_events": {
+			"cafe_tables": 2
+		},
+		"visible_walkers": 31
+	},
+	"final_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2078.8923,
+				1940.2592
+			],
+			"speed": 0.0
+		}
+	},
+	"final_crowd": {
+		"cars": 34,
+		"moving": 227,
+		"moving_cars": 27,
+		"quadrants": {
+			"ne": {
+				"cars": 6,
+				"moving": 26,
+				"moving_cars": 6,
+				"total": 26,
+				"walkers": 20
+			},
+			"nw": {
+				"cars": 20,
+				"moving": 160,
+				"moving_cars": 15,
+				"total": 165,
+				"walkers": 145
+			},
+			"se": {
+				"cars": 0,
+				"moving": 5,
+				"moving_cars": 0,
+				"total": 5,
+				"walkers": 5
+			},
+			"sw": {
+				"cars": 8,
+				"moving": 36,
+				"moving_cars": 6,
+				"total": 38,
+				"walkers": 30
+			}
+		},
+		"scope": "local",
+		"total": 234,
+		"walkers": 200
+	},
+	"initial_activity": {
+		"moving_crowd": 13,
+		"visible_cars": 3,
+		"visible_events": {
+			"scaffolding": 1,
+			"skip": 1
+		},
+		"visible_walkers": 10
+	},
+	"initial_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2080.0,
+				1936.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 34,
+		"moving": 234,
+		"moving_cars": 34,
+		"quadrants": {
+			"ne": {
+				"cars": 4,
+				"moving": 26,
+				"moving_cars": 4,
+				"total": 26,
+				"walkers": 22
+			},
+			"nw": {
+				"cars": 24,
+				"moving": 176,
+				"moving_cars": 24,
+				"total": 176,
+				"walkers": 152
+			},
+			"se": {
+				"cars": 1,
+				"moving": 6,
+				"moving_cars": 1,
+				"total": 6,
+				"walkers": 5
+			},
+			"sw": {
+				"cars": 5,
+				"moving": 26,
+				"moving_cars": 5,
+				"total": 26,
+				"walkers": 21
+			}
+		},
+		"scope": "local",
+		"total": 234,
+		"walkers": 200
+	},
+	"observations": [
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					2078.8923,
+					1940.2592
+				],
+				"speed": 0.0
+			},
+			"subject": "player",
+			"tick": 30.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "Title transition on a living street",
+	"recipe_sha256": "a53a50f34fec9179809b2e4727d62ffc4c5f133d4d90db55b01e2aa46a15f5ff",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"background": {
+			"crowd": true,
+			"events": true
+		},
+		"day": 1.0,
+		"parent": "father",
+		"player": {
+			"at": "start",
+			"facing": "south"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

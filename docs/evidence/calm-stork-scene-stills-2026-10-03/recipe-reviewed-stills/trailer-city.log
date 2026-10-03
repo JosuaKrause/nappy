@@ -1,7 +1,0 @@
-Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
-
-[GameState] run started, seed=11
-[Main] 9 atlas pages held from startup in 18 ms
-[Main] city generated in 42 ms (seed 1917501)
-[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
-[SceneRecipe] manifest {"anchors":{"start":[2560.0,2704.0]},"bounds":[0,0,160,160],"checks":["construction_schema","production_choice_predicates","whole_visible_footprints","full_context_guarantees"],"choices":{"context_seed":1917501.0},"classification":"normal","context_seed":1917501,"engine":"4.7.2-stable (official)","expected_violations":[],"initial_actors":{"player":{"carrying":false,"gait_frame":1,"position":[2560.0,2704.0],"speed":0.0}},"observations":[],"physics_ticks_per_second":30,"playback_complete":false,"recipe":"From the doorstep to the living city","recipe_sha256":"3cf42b613eab844355cd2395c0b90ce1bb4d0750c14de9b035b606f5dba12330","scope":"full","seed":11,"setup":{"background":{"crowd":true,"events":true},"day":1.0,"parent":"mother","player":{"at":"start","facing":"south"},"tutorial_complete":true},"violations":[]}

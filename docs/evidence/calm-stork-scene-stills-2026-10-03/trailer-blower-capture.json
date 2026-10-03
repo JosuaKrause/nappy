@@ -1,0 +1,234 @@
+{
+	"anchors": {
+		"blower": [
+			2096.0,
+			1936.0
+		],
+		"start": [
+			1950.0,
+			1936.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"capture_activity": {
+		"moving_crowd": 37,
+		"visible_cars": 6,
+		"visible_events": {
+			"cafe_tables": 2,
+			"leaf_blower": 1
+		},
+		"visible_walkers": 33
+	},
+	"capture_actors": {
+		"blower": {
+			"position": [
+				2096.0,
+				1952.0
+			],
+			"pursuing": false,
+			"row": "leaf_blower",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 2,
+			"position": [
+				1990.6953,
+				1942.2195
+			],
+			"speed": 92.0
+		}
+	},
+	"capture_camera": {
+		"position": [
+			1990.6953125,
+			1942.21948242188
+		],
+		"zoom": 2.0
+	},
+	"capture_crowd": {
+		"cars": 34,
+		"moving": 231,
+		"moving_cars": 33,
+		"quadrants": {
+			"ne": {
+				"cars": 2,
+				"moving": 17,
+				"moving_cars": 2,
+				"total": 17,
+				"walkers": 15
+			},
+			"nw": {
+				"cars": 23,
+				"moving": 177,
+				"moving_cars": 22,
+				"total": 180,
+				"walkers": 157
+			},
+			"se": {
+				"cars": 1,
+				"moving": 6,
+				"moving_cars": 1,
+				"total": 6,
+				"walkers": 5
+			},
+			"sw": {
+				"cars": 8,
+				"moving": 31,
+				"moving_cars": 8,
+				"total": 31,
+				"walkers": 23
+			}
+		},
+		"scope": "local",
+		"total": 234,
+		"walkers": 200
+	},
+	"capture_tick": 15,
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"initial_activity": {
+		"moving_crowd": 11,
+		"visible_cars": 2,
+		"visible_events": {
+			"scaffolding": 1,
+			"skip": 1
+		},
+		"visible_walkers": 9
+	},
+	"initial_actors": {
+		"blower": {
+			"position": [
+				2096.0,
+				1952.0
+			],
+			"pursuing": false,
+			"row": "leaf_blower",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				1950.0,
+				1936.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 34,
+		"moving": 234,
+		"moving_cars": 34,
+		"quadrants": {
+			"ne": {
+				"cars": 2,
+				"moving": 16,
+				"moving_cars": 2,
+				"total": 16,
+				"walkers": 14
+			},
+			"nw": {
+				"cars": 26,
+				"moving": 186,
+				"moving_cars": 26,
+				"total": 186,
+				"walkers": 160
+			},
+			"se": {
+				"cars": 1,
+				"moving": 4,
+				"moving_cars": 1,
+				"total": 4,
+				"walkers": 3
+			},
+			"sw": {
+				"cars": 5,
+				"moving": 28,
+				"moving_cars": 5,
+				"total": 28,
+				"walkers": 23
+			}
+		},
+		"scope": "local",
+		"total": 234,
+		"walkers": 200
+	},
+	"observations": [
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 0,
+				"position": [
+					1963.0955,
+					1942.2195
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 6.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 2,
+				"position": [
+					1990.6953,
+					1942.2195
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 15.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": false,
+	"recipe": "An early danger on the father's walk",
+	"recipe_sha256": "720ba31963622bd86a6cda1dc42feaf027fd2004540b6de3e16d7e13eefd8b2b",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"background": {
+			"crowd": true,
+			"events": true
+		},
+		"day": 1.0,
+		"events": [
+			{
+				"age": 1.8,
+				"at": "blower",
+				"name": "blower",
+				"row": "leaf_blower"
+			}
+		],
+		"parent": "father",
+		"player": {
+			"at": "start",
+			"facing": "east"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

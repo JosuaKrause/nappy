@@ -1,0 +1,256 @@
+{
+	"anchors": {
+		"dog": [
+			2383.0,
+			1936.0
+		],
+		"start": [
+			1952.0,
+			1936.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 26,
+		"visible_cars": 4,
+		"visible_events": {
+			"burst_water_main": 1,
+			"charging_dog": 1,
+			"scaffolding": 1,
+			"skip": 1
+		},
+		"visible_walkers": 23
+	},
+	"final_actors": {
+		"dog": {
+			"position": [
+				2151.6135,
+				1940.5118
+			],
+			"pursuing": false,
+			"row": "charging_dog",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				1951.2109,
+				1943.0269
+			],
+			"speed": 168.0
+		}
+	},
+	"final_crowd": {
+		"cars": 34,
+		"moving": 227,
+		"moving_cars": 27,
+		"quadrants": {
+			"ne": {
+				"cars": 3,
+				"moving": 26,
+				"moving_cars": 3,
+				"total": 26,
+				"walkers": 23
+			},
+			"nw": {
+				"cars": 27,
+				"moving": 166,
+				"moving_cars": 21,
+				"total": 172,
+				"walkers": 145
+			},
+			"se": {
+				"cars": 1,
+				"moving": 6,
+				"moving_cars": 1,
+				"total": 6,
+				"walkers": 5
+			},
+			"sw": {
+				"cars": 3,
+				"moving": 29,
+				"moving_cars": 2,
+				"total": 30,
+				"walkers": 27
+			}
+		},
+		"scope": "local",
+		"total": 234,
+		"walkers": 200
+	},
+	"initial_activity": {
+		"moving_crowd": 11,
+		"visible_cars": 1,
+		"visible_events": {
+			"construction": 2
+		},
+		"visible_walkers": 10
+	},
+	"initial_actors": {
+		"dog": {
+			"position": [
+				2383.0,
+				1936.0
+			],
+			"pursuing": false,
+			"row": "charging_dog",
+			"telegraphing": true
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				1952.0,
+				1936.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 34,
+		"moving": 234,
+		"moving_cars": 34,
+		"quadrants": {
+			"ne": {
+				"cars": 4,
+				"moving": 17,
+				"moving_cars": 4,
+				"total": 17,
+				"walkers": 13
+			},
+			"nw": {
+				"cars": 25,
+				"moving": 181,
+				"moving_cars": 25,
+				"total": 181,
+				"walkers": 156
+			},
+			"se": {
+				"cars": 0,
+				"moving": 6,
+				"moving_cars": 0,
+				"total": 6,
+				"walkers": 6
+			},
+			"sw": {
+				"cars": 5,
+				"moving": 30,
+				"moving_cars": 5,
+				"total": 30,
+				"walkers": 25
+			}
+		},
+		"scope": "local",
+		"total": 234,
+		"walkers": 200
+	},
+	"observations": [
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 0,
+				"position": [
+					1965.8667,
+					1936.0
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 6.0
+		},
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"position": [
+					2170.7468,
+					1939.1439
+				],
+				"pursuing": true,
+				"row": "charging_dog",
+				"telegraphing": false
+			},
+			"subject": "dog",
+			"tick": 50.0
+		},
+		{
+			"condition": "pursuing",
+			"passed": true,
+			"state": {
+				"position": [
+					2144.7712,
+					1940.2831
+				],
+				"pursuing": true,
+				"row": "charging_dog",
+				"telegraphing": false
+			},
+			"subject": "dog",
+			"tick": 56.0
+		},
+		{
+			"condition": "running",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 0,
+				"position": [
+					2073.4106,
+					1943.0269
+				],
+				"speed": 118.0
+			},
+			"subject": "player",
+			"tick": 56.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "The charging dog's warning and the run away",
+	"recipe_sha256": "46742c7655bf08828f51036d461f026c4ed034d799f1686df3f1aee6c1ab882e",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"background": {
+			"crowd": true,
+			"events": true
+		},
+		"day": 3.0,
+		"events": [
+			{
+				"at": "dog",
+				"name": "dog",
+				"row": "charging_dog"
+			}
+		],
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "east"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}
