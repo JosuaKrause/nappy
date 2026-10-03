@@ -1,0 +1,7 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[GameState] run started, seed=11
+[Main] 9 atlas pages held from startup in 20 ms
+[Main] city generated in 30 ms (seed 1917501)
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[SceneRecipe] manifest {"anchors":{"door":[3904.0,912.0],"start":[4208.0,592.0]},"bounds":[112,0,34,56],"checks":["construction_schema","production_choice_predicates","whole_visible_footprints","full_context_guarantees"],"choices":{"context_seed":1917501.0,"dead_ends":[{"end":"a","segment":[9.0,1.0,0.0]}],"power_station":{"blocks":[8.0,1.0,2.0,1.0],"door_block":[8.0,1.0]}},"classification":"normal","context_seed":1917501,"engine":"4.7.2-stable (official)","expected_violations":[],"initial_actors":{"player":{"carrying":false,"gait_frame":1,"position":[4208.0,592.0],"speed":0.0}},"observations":[],"physics_ticks_per_second":30,"playback_complete":false,"recipe":"Power-station yard leaves an adjoining dead-end facade visible","recipe_sha256":"95d6e720fdfe37a61f713c2bef9a88ff3a6a82e0cb0b0a8bf8dfa1c8d9d88377","scope":"bounded","seed":11,"setup":{"background":{"crowd":false,"events":false},"day":1.0,"parent":"father","player":{"at":"start","excitement":0.0,"facing":"east","sleep":0.0}},"violations":[]}

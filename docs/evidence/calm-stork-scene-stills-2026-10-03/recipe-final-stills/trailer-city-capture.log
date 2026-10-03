@@ -1,0 +1,11 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.1 Metal - 90.5 - Compatibility - Using Device: Apple - Apple M2
+
+[GameState] run started, seed=11
+[Telemetry] /Users/krause/Library/Application Support/Godot/app_userdata/Nappy/telemetry/2026-10-02/rig-235156-seed11-v0.21.5-14-g7d92cf16/run.log
+[Main] 9 atlas pages held from startup in 21 ms
+[Main] city generated in 45 ms (seed 1917501)
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[SceneRecipe] manifest {"anchors":{"start":[2560.0,2704.0]},"bounds":[0,0,160,160],"checks":["construction_schema","production_choice_predicates","whole_visible_footprints","full_context_guarantees"],"choices":{"context_seed":1917501.0},"classification":"normal","context_seed":1917501,"engine":"4.7.2-stable (official)","expected_violations":[],"initial_actors":{"player":{"carrying":false,"gait_frame":1,"position":[2560.0,2704.0],"speed":0.0}},"observations":[],"physics_ticks_per_second":30,"playback_complete":false,"recipe":"From the doorstep to the living city","recipe_sha256":"b0ced9839fe051750945b0c32c0186e3a4a8c9b866586273d6a033d12a9541b3","scope":"full","seed":11,"setup":{"background":{"crowd":true,"events":true},"day":1.0,"parent":"mother","player":{"at":"start","facing":"south"}},"violations":[]}
+[AutoScreenshot] wrote /private/tmp/recipe-final-stills/trailer-city.png (1280x720) after 5.0s
+wrote /private/tmp/recipe-final-stills/trailer-city.png

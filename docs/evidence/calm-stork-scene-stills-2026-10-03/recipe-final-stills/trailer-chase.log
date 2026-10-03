@@ -1,0 +1,6 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[GameState] run started, seed=11
+[Main] 10 atlas pages held from escape in 20 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[SceneRecipe] manifest {"anchors":{"guards":[2000.0,560.0],"start":[1760.0,560.0]},"bounds":[0,0,160,160],"checks":["construction_schema","production_choice_predicates","whole_visible_footprints","full_context_guarantees"],"choices":{"context_seed":1917501.0},"classification":"normal","context_seed":1917501,"engine":"4.7.2-stable (official)","expected_violations":[],"initial_actors":{"guards":{"position":[2000.0,560.0],"pursuing":false,"row":"roadblock","telegraphing":false},"player":{"carrying":true,"gait_frame":1,"position":[1760.0,560.0],"speed":0.0}},"observations":[],"physics_ticks_per_second":30,"playback_complete":false,"recipe":"Mother carrying her baby and running from the guards","recipe_sha256":"94d11abd15ee26b9bd25b03d9d361f00b346ec4d0bf74b07c3205d067162e220","scope":"full","seed":11,"setup":{"day":14.0,"events":[{"at":"guards","name":"guards","row":"roadblock"}],"parent":"mother","player":{"at":"start","facing":"east","sleep":100.0},"progression":{"blackout":true,"escape_part":"city"}},"violations":[]}
