@@ -25,6 +25,14 @@ alongside the power-plant test. [brisk-ibis, the described trailer scenes](../..
 records this instruction; [PLAYTEST-139](../../playtests/PLAYTEST-139.md) is their source.
 These are required deliverables, described in [trailer recipes](trailer-recipes.md).
 
+Every scene is playable both with and without scripted movements. The player explicitly
+allows the scene to cover only its planned extent; in free play, walking too far shows
+default texture for the rest. The purpose is experimentation with the same scenes.
+[mossy-swan, bounded scenes and free play](../../playtests/2026-10-02-mossy-swan.md) records
+both statements. A bounded normal scene establishes that its authored arrangement could
+appear in gameplay; its unbuilt surroundings make no claim about a complete city's
+reachability or a whole day's objectives.
+
 [M203, roofs covering adjoining facades](../../decisions/2026-09-26-M203-a-front-nobody-can-stand-at-is-covered-by-the-roof-in-front-of-it.md)
 records the relevant power-station hall/yard distinction: "a front column draws no facade
 only where a roof extension actually covers it." The builder must make these joins
@@ -54,6 +62,6 @@ the builder does not complete the trailer's cut, captions, or visual approval.
 
 The implementation items are [recipe construction](recipe-construction.md),
 [runtime setup and replay](runtime-and-replay.md), [trailer recipes](trailer-recipes.md),
-and [examples and verification](examples-and-verification.md).
+[free play and scene extent](free-play-and-extent.md), and [examples and verification](examples-and-verification.md).
 They form one feature: a saved recipe must run through the actual city, be usable in a
 headless test, and be recordable by the existing tools before this entry is complete.

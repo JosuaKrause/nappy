@@ -11,7 +11,10 @@ The recipe's normal-scene or test-fixture classification remains explicit throug
 entry point and in its output manifest. The trailer tool accepts only scenes validated
 as possible gameplay. A test fixture cannot become a normal scene through a missing flag,
 a default value, a successful render, or a reused cached setup. An isolated fixture's
-limited validation result likewise cannot substitute for full-scene validation.
+limited validation result likewise cannot substitute for full-city validation. A bounded
+normal scene is allowed, including in the trailer, when its authored extent passes the
+relevant normal-generation checks; it is not an invalid fixture merely because the
+surrounding city is unbuilt. The bounds and validation scope accompany that result.
 
 Recipes control the initial day and relevant progression state; player position, facing,
 parent and meter state; named events and traffic/pedestrian actors, their placement and
@@ -27,8 +30,10 @@ setup path and progression state for each scene; a normal-city setup with actors
 to resemble an escape is insufficient. Use the existing escape logic and recorded scene
 contracts when making that recipe authorable.
 
-Reuse the walking/input rig and camera controls for the action and framing portions of a
-recipe. Let action timing and capture start use simulation ticks or a documented fixed
+Reuse the walking/input rig and camera controls for the optional action and framing portions
+of a recipe. Every recipe also launches in free play from the same initial setup, with
+ordinary player controls and camera behavior; see free-play-and-extent.md. Let scripted
+action timing and capture start use simulation ticks or a documented fixed
 simulation clock. Setup completes before that clock and the recording begin: asset or
 ground loading, window focus, wall-clock delays, and background machine load must not
 advance the intended opening of the shot. Declare relevant random seeds and actor state,

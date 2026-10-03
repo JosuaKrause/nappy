@@ -6,7 +6,10 @@ The player explicitly asks for these recipes in addition to the power-plant join
 to this builder. Build all the scenes below with the standard components and actual
 gameplay behavior, using normal-scene validation. Each has an individually runnable
 recipe and is referenced by the existing trailer shot list so the player can render
-one shot or the sequence.
+one shot or the sequence. Each also launches without scripted movement for free-play
+experimentation. Scene extent need only cover the planned setup and action; free play
+shows default texture when the player walks beyond it. The closing zoom needs enough
+constructed city to deliver its explicitly requested whole-city view.
 
 The opening shows a route choice in action: the parent goes down the wrong path,
 turns around and takes another. The obstacle and alternative must be legible in the

@@ -35,17 +35,24 @@ generation and placement rules. Sharing assets, rendering successfully, and sati
 reachability alone do not establish that. Forced choices must be accepted where the
 ordinary generator or planner would make those choices: permitted lot combinations,
 special-building adjacency, day/progression eligibility, event placement and actor state
-all matter. Reuse those predicates and construction stages so the builder cannot drift
+all matter within the authored scope. Reuse those predicates and construction stages so the builder cannot drift
 into a second, more permissive definition of a possible city. Report the checks and
 accepted choices that establish this claim; do not claim that a seed producing the exact
 whole scene has been found when none has. Requested temporal moments also need the
 ordinary simulation checks described in runtime-and-replay.md.
 
 The player's primary test cases are unusual valid combinations of standard components,
-including a building adjoining the power station. Preserve the standard city's
-reachability and placement checks and report which requirement cannot coexist with
-them. A smaller isolated fixture must declare its validation scope; checking a component
-join alone must not certify that the fixture is a complete possible gameplay scene.
+including a building adjoining the power station. A normal scene may be bounded to its
+planned extent, as the player explicitly allows. Validate its authored components and
+relationships against the conditions under which they can occur in ordinary generation.
+Include required context in the recipe or construction data when a local decision depends
+on it; an omitted dependency is not evidence of validity. A bounded scene can receive a
+normal-scene result for that declared extent without constructing the surrounding city.
+The default-texture exterior is an authoring convenience, not a claim about generated
+city ground. Do not apply whole-city reachability or whole-day objective guarantees to
+an intentionally unbuilt exterior. Conversely, a recipe claiming a complete city must
+pass those full-city checks. Record extent and validation scope with the result so local
+validity never silently becomes a claim about an entire run.
 
 **Proposed, not asked for:** distinguish normal scenes, the default, from explicit
 test-only fixtures. A fixture that deliberately violates a gameplay rule names each

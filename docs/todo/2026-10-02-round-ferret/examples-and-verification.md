@@ -28,8 +28,18 @@ real components but violates a normal generator or planner rule is refused by de
 The building/power-station examples pass those same rules. Exercise explicit invalid
 fixtures separately: only named expected violations are accepted, additional violations
 fail, a missing expected violation fails, and the result is never classified as a normal
-scene. Verify that the trailer entry point refuses a test-only or partially validated
-fixture. These checks enforce the player's condition on supporting invalid fixtures.
+scene. Verify that the trailer entry point refuses a deliberately invalid test fixture
+and accepts a bounded normal scene only with the applicable generation checks and
+declared extent. A local result must not claim full-city guarantees. These checks enforce
+the player's condition on supporting invalid fixtures and their bounded-scene allowance.
+
+Launch the power-plant join and every required trailer recipe in both free play and
+scripted modes. Compare their initial authored layout and actor state, prove the script
+does not move the player or camera in free play, and exercise ordinary input instead.
+Walk across the authored bounds and back: the exterior shows the default texture,
+there is no invisible wall or automatic return, and re-entry keeps the ongoing scene
+state. Restarting the recipe resets it to the saved setup. Bounds must not clip actors
+or scenery needed during a scripted shot, particularly the full-city zoom.
 
 Repeat a headless scripted scene and compare the required state at named ticks. Exercise
 the live startup path as well: prove the ordinary scheduler cannot replace required actors,
