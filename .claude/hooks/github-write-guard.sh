@@ -93,11 +93,12 @@
 # wrapped write): an endpoint an expansion builds past `repos/` or hands in (`"$E"`, `"$(printf
 # ...)"`, a backtick in place of `issues`, `${E:-...}`, an endpoint `xargs` supplies); a GraphQL
 # query an expansion or `$'...'` builds (`-f query="$(printf ...)"`, `$'close\x49ssue'`), or one
-# read by `-F query=@file`, `-F query=@-` or `--input` from a file or a pipe whose text the same
-# command does not hold (`cat q.graphql | ... -F query=@-`, a file an earlier, separate command
-# wrote), since denying every query not on the command line would deny a reviewer's
-# `resolveReviewThread` from a file too; and a gh alias (`gh alias set ic 'issue close'`, then `gh
-# ic 5`), which this hook reads as a noun of its own.
+# read by `-F query=@file`, `-F query=@-` or `--input` from a file an earlier, separate command
+# wrote, or piped in from such a file (`cat q.graphql | ... -F query=@-`), since denying every
+# query not on the command line would deny a reviewer's `resolveReviewThread` from a file too --
+# a query whose text the same command holds, in a heredoc fed to `-F query=@-` or a file it writes
+# and then hands to `--input`, is read there and denied; and a gh alias (`gh alias set ic 'issue
+# close'`, then `gh ic 5`), which this hook reads as a noun of its own.
 #
 # **A reviewer identity (`claude-reviewer`, `codex-reviewer`) is refused the named push and merge
 # routes, wrapped or not.** Its GitHub App has `contents: write` (a reviewer's own APPROVE needs it to satisfy a

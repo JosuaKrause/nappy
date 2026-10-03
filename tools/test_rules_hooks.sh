@@ -1476,6 +1476,10 @@ assert_write_guard "a wrapped closeIssue built by printf -> allow (accepted gap)
     "$orch gh api graphql -f query=\"\$(printf 'mutation{%sIssue(input:{issueId:\"x\"}){clientMutationId}}' close)\""
 assert_write_guard "a wrapped -F query=@- fed by cat of a file -> allow (accepted gap)" allow \
     "cat q.graphql | $orch gh api graphql -F query=@-"
+assert_write_guard "a wrapped -F query=@q.graphql no command here wrote -> allow (accepted gap)" allow \
+    "$orch gh api graphql -F query=@q.graphql"
+assert_write_guard "a wrapped graphql --input m.json no command here wrote -> allow (accepted gap)" allow \
+    "$orch gh api graphql --input m.json"
 assert_write_guard "a wrapped gh alias for issue close -> allow (accepted gap)" allow \
     "$orch gh alias set ic 'issue close'; $orch gh ic 423"
 assert_write_guard "tools/inbox.py list, a read -> allow" allow 'uv run python tools/inbox.py list'
