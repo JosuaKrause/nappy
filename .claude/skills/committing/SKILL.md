@@ -200,8 +200,15 @@ without asking, since pushing `main` publishes nothing.
 **Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest version tag
 and prints what it would do. It acts only when given a second literal `push` argument, and it
 refuses a dirty tree, any branch but `main`, a `main` that is not level with `origin/main`, and a
-commit that already carries the newest `v*` tag — every refusal fires in the dry run too, so the
-dry run tells the truth about whether the real thing would work. Semver, and **`major` is reserved
+commit that already carries the newest `v*` tag, and a machine with no `gh` — every refusal fires
+in the dry run too, so the dry run tells the truth about whether the real thing would work. **It
+tags nothing until it has read the `test` check on `main`'s commit as green.** That check is CI's
+last job (it needs the classify, gates, cost-table, game and shards jobs), so it reads `none` for
+the first minutes after a merge and the `push` form waits, polling every 20 seconds. A read that
+fails is retried with `gh`'s own error printed, never taken as a pass; a failed check refuses, and
+so does a check still not green after 30 minutes, a bound that exists so an unattended run cannot
+hang forever and that a normal run never reaches. Ctrl-C while it waits is safe, since nothing is
+tagged yet. Semver, and **`major` is reserved
 for a change that breaks or fundamentally alters the game**. An agent's own `push` run goes through
 `uv run python tools/agent-identity.py run claude-coder -- tools/release.sh <part> push` (Codex the
 same as `codex-coder`) — "Who a commit and a pull request are from" is why, and
