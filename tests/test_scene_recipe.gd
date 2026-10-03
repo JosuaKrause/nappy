@@ -22,6 +22,32 @@ func run(t) -> void:
 	pinned.city.power_station = {"blocks": [8, 1, 2, 1], "door_block": [8, 1]}
 	var yard := RecipeCityBuilder.build(pinned)
 	t.check(yard.errors.is_empty(), "directly pinned yard join passes production checks: %s" % [yard.errors])
+	# A layout pin remains meaningful in both contexts. Structural pins can become
+	# ineligible when unrelated calm/route geometry changes, and must then be refused.
+	var layout_pin := _recipe()
+	layout_pin.city.lots = [{"blocks": [5, 5, 1, 1], "purpose": "residential"}]
+	layout_pin.city.layouts = [{"block": [5, 5], "seed": 123}]
+	var first_context := RecipeCityBuilder.build(layout_pin)
+	layout_pin.city.context_seed = 61400
+	var other_context := RecipeCityBuilder.build(layout_pin)
+	t.check(first_context.errors.is_empty() and other_context.errors.is_empty(),
+			"different construction contexts accept the same explicit lot/layout: %s / %s" % [first_context.errors, other_context.errors])
+	if first_context.errors.is_empty() and other_context.errors.is_empty():
+		var first: Array[Rect2i] = []
+		var other: Array[Rect2i] = []
+		var lot: Rect2i = first_context.map.lot_rect(Vector2i(5, 5))
+		for footprint: Rect2i in first_context.map.building_rects:
+			if lot.encloses(footprint):
+				first.append(footprint)
+		for footprint: Rect2i in other_context.map.building_rects:
+			if lot.encloses(footprint):
+				other.append(footprint)
+		t.check(not first.is_empty() and first == other,
+				"explicit building layout survives changed random construction context")
+		t.check(first_context.map.tiles != other_context.map.tiles, "unpinned construction changes with its context seed")
+	pinned.city.context_seed = 61400
+	t.check(not RecipeCityBuilder.build(pinned).errors.is_empty(),
+			"changed context refuses ineligible station/dead-end pins instead of moving them")
 	input["typo"] = true
 	t.check(not SceneRecipe.validate(input).is_empty(), "unknown top-level data is rejected")
 	input.erase("typo")
@@ -150,6 +176,7 @@ func _test_examples(t) -> void:
 			if building.lot.position != wall_tile:
 				continue
 			found = true
+			t.check(not building.covered_ground_cols.is_empty(), "%s renders adjoining facade columns" % side)
 			for covered: bool in building.covered_ground_cols:
 				t.check(covered == (side == "hall"), "%s adjoining column has a roof or keeps its facade" % side)
 		t.check(found, "%s uses the generator's real adjoining dead-end building" % side)

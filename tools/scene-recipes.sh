@@ -30,17 +30,19 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 if [[ ${#selected_recipes[@]} -gt 0 ]]; then
-    for recipe in "${selected_recipes[@]}"; do
-        if [[ ! -f "$recipe" ]]; then usage >&2; exit 2; fi
+    for ((index=0; index<${#selected_recipes[@]}; index++)); do
+        recipe="${selected_recipes[$index]}"
+        if [[ ! -f "$recipe" ]]; then echo "recipe file not found: $recipe" >&2; usage >&2; exit 2; fi
+        selected_recipes[$index]="$(cd "$(dirname "$recipe")" && pwd)/$(basename "$recipe")"
     done
 fi
+mkdir -p "$output"
+output="$(cd "$output" && pwd)"
 cd "$root"
 recipes=(scene-recipes/*.json)
 if [[ ${#selected_recipes[@]} -gt 0 ]]; then recipes=("${selected_recipes[@]}"); fi
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 source "$root/tools/lib_dev_flags.sh"
-mkdir -p "$output"
-output="$(cd "$output" && pwd)"
 for file in "${recipes[@]}"; do
     name="$(basename "$file" .json)"
     "$GODOT" --headless --path "$root" --fixed-fps 60 -- \
@@ -49,20 +51,29 @@ for file in "${recipes[@]}"; do
     pid=$!
     if ! wait_or_kill "$pid" 90 || [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]]; then
         cat "$output/$name.log" >&2
-        echo "scene failed: $file" >&2
+        echo "scene failed: $file (log: $output/$name.log)" >&2
         exit 1
     fi
-    jq -e '.playback_complete == true and all(.observations[]; .passed == true)' \
-        "$output/$name.json" >/dev/null
+    if ! jq -e '.playback_complete == true and all(.observations[]; .passed == true)' \
+        "$output/$name.json" >/dev/null; then
+        echo "scene assertions failed: $file (manifest: $output/$name.json; log: $output/$name.log)" >&2
+        exit 1
+    fi
     echo "PASS $name"
     if $screenshots; then
-        after="$(jq -r '.playback.capture_at // 0.5' "$file")"
-        "$root/tools/shot.sh" "$output/$name.png" "$after" \
+        if ! after="$(jq -er '.playback.capture_at // 0.5' "$file")"; then
+            echo "invalid capture time: $file (log: $output/$name.log)" >&2
+            exit 1
+        fi
+        if ! "$root/tools/shot.sh" "$output/$name.png" "$after" \
             --recipe "$file" --recipe-mode scripted --player-view --no-save \
-            --recipe-manifest "$output/$name-capture.json" >"$output/$name-capture.log" 2>&1
+            --recipe-manifest "$output/$name-capture.json" >"$output/$name-capture.log" 2>&1; then
+            echo "scene capture failed: $file (log: $output/$name-capture.log)" >&2
+            exit 1
+        fi
         run_log="$(sed -n 's/^\[Telemetry\] //p' "$output/$name-capture.log")"
         if [[ -z "$run_log" || ! -f "$run_log" ]]; then
-            echo "scene capture has no complete telemetry provenance: $file" >&2
+            echo "scene capture has no complete telemetry provenance: $file (log: $output/$name-capture.log)" >&2
             exit 1
         fi
     fi

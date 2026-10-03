@@ -47,7 +47,7 @@ frames are deleted once it is encoded.
   tools/record.sh --route mark,task,calm,home --seed 4242
   tools/record.sh --out review.mp4 -- --route calm,home --seed 1 --day 6
 
-Recipe runs default to scripted mode and are headlessly validated before the window opens.
+Recipe runs require scripted mode (the default) and are validated before the window opens.
 Compact frame hashes, the resolved manifest and recording settings accompany the output video.
 
 Opens a window. Needs jq and ffmpeg on PATH, and Godot 4.7 at \$GODOT.
@@ -96,6 +96,11 @@ for ((i=0; i<${#GAME_FLAGS[@]}; i++)); do
 done
 if [[ -n "$RECIPE" && "$RECIPE_MODE_GIVEN" == false ]]; then
     FULL_FLAGS+=(--recipe-mode scripted)
+fi
+if [[ -n "$RECIPE" && "$RECIPE_MODE" != scripted ]]; then
+    echo "record.sh: recipe recording requires --recipe-mode scripted; free play has no recording deadline" >&2
+    usage >&2
+    exit 2
 fi
 if ! validate_dev_flags "${FULL_FLAGS[@]}"; then
     echo "record.sh: the game does not know one of those flags (see above)" >&2

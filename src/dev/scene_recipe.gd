@@ -100,8 +100,9 @@ static func validate(data: Dictionary) -> Array[String]:
 			for span: Variant in city.precincts:
 				if not tuple(span, 4, true):
 					errors.append("city.precincts: spans are [axis,corridor,start,end]")
-				elif int(span[0]) not in [0, 1] or int(span[1]) < 0 or int(span[1]) > 11 \
-						or int(span[2]) < 0 or int(span[3]) >= 11 \
+				elif int(span[0]) not in [0, 1] or int(span[1]) < 0 \
+						or int(span[1]) >= CrowdLanes.corridor_count(Tuning.CITY_BLOCKS[1 - int(span[0])]) \
+						or int(span[2]) < 0 or int(span[3]) >= Tuning.CITY_BLOCKS[int(span[0])] \
 						or int(span[3]) - int(span[2]) + 1 != Tuning.PRECINCT_BLOCKS:
 					errors.append("city.precincts: invalid precinct span")
 	for field in ["layouts", "dead_ends", "closures"]:
@@ -138,7 +139,7 @@ static func validate(data: Dictionary) -> Array[String]:
 			if not tuple(station.get("blocks"), 4, true) or not tuple(station.get("door_block"), 2, true):
 				errors.append("city.power_station: requires blocks [x,y,2,1] and door_block [x,y]")
 			elif rect(station.blocks).size != Vector2i(2, 1) or int(station.blocks[0]) < 1 \
-					or int(station.blocks[1]) < 1 or not Rect2i(1, 1, 9, 9).encloses(rect(station.blocks)):
+					or int(station.blocks[1]) < 1 or not Rect2i(Vector2i.ONE, Tuning.CITY_BLOCKS - Vector2i(2, 2)).encloses(rect(station.blocks)):
 				errors.append("city.power_station: requires two horizontal interior blocks")
 	for key: Variant in data.get("anchors", {}):
 		var anchor: Variant = data.anchors[key]

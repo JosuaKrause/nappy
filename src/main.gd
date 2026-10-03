@@ -2158,6 +2158,12 @@ func _hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
 ## just earned the escape, or the ordinary end-of-day message every other day reaches here with.
 ## Only the first of those is *engaging* an already-built day rather than starting a new one.
 func _on_summary_continued() -> void:
+	if _recipe:
+		# A recipe describes one authored day. Keep its normal result, then start that
+		# exact setup again instead of interpreting its pins under the next day's rules.
+		_summary.dismiss()
+		_reload_the_scene()
+		return
 	# The last thing the fourteen days do. A scene reload rather than tearing this boot's city,
 	# day, resistance and observer down by hand and building a building over them — the same
 	# reasoning `_restart_run()` gives for the same call, and the escape's own boot

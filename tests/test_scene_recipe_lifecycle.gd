@@ -45,6 +45,13 @@ func _ready() -> void:
 		get_tree().quit()
 		return
 	var start := player.global_position
+	if recipe.get("_active") or main.get("_rig_quit_deadline_msec") != 0 or main.get("_rig_quit_game_seconds") != 0:
+		fail("free play has a scripted capture or rig deadline")
+		return
+	var duration := float(recipe.data.get("playback", {}).get("duration", 0))
+	recipe.set("tick", ceili((duration + 1) * Engine.physics_ticks_per_second))
+	recipe.call("_physics_process", 1.0 / Engine.physics_ticks_per_second)
+	print("RECIPE_NO_CAPTURE_DEADLINE_OK")
 	var direction := Vector2.ZERO
 	var map: CityMap = recipe.built.map
 	for candidate: Vector2 in [Vector2.DOWN, Vector2.LEFT, Vector2.UP, Vector2.RIGHT]:
@@ -59,7 +66,7 @@ func _ready() -> void:
 		fail("physical Input actions did not move the real player")
 		return
 	print("RECIPE_MOVEMENT_OK")
-	if DevFlags.recipe_path().ends_with("power-station-hall.json"):
+	if map.recipe_bounds.has_area():
 		for plan: EventScheduler.Planned in (main.get("_city") as City).events._plans:
 			if not map.recipe_bounds.has_point(map.world_to_tile(plan.position)):
 				fail("bounded region installs event bodies outside authored ground")
@@ -67,13 +74,13 @@ func _ready() -> void:
 		var return_at := player.global_position
 		var path := exterior_path(map, map.world_to_tile(return_at))
 		if path.is_empty():
-			fail("bounded hall has no route to its exterior")
+			fail("bounded scene has no route to its exterior")
 			return
 		for tile in path:
 			if not await walk_to(map.tile_to_world(tile)):
 				return
 		if map.recipe_bounds.has_point(map.world_to_tile(player.global_position)):
-			fail("hall walk never crossed the authored boundary")
+			fail("bounded walk never crossed the authored boundary")
 			return
 		path.reverse()
 		for tile in path:
@@ -102,7 +109,18 @@ func _ready() -> void:
 			await tree.process_frame
 		fail("escape loss did not reload the authored setup")
 		return
-	get_tree().quit()
+	var tree := get_tree()
+	tree.set_meta("recipe_retry_expected", initial)
+	main.call("_on_day_finished", GameEnums.DayResult.WON)
+	if GameState.day != int(initial.day) + 1:
+		fail("winning the recipe day did not apply normal progression")
+		return
+	(main.get("_summary") as Node).emit_signal("continued")
+	for frame in 180:
+		if not is_inside_tree():
+			return
+		await tree.process_frame
+	fail("day summary continuation did not reload the authored setup")
 
 func press(direction: Vector2) -> void:
 	for action in ["move_left", "move_right", "move_up", "move_down", "run"]:
@@ -181,13 +199,13 @@ func run(t) -> void:
 				"%s free and scripted boots start from identical actors, position and meters" % filename)
 		t.check(free.output.contains("RECIPE_MOVEMENT_OK"),
 				"%s physical Input actions move the real player" % filename)
-		if filename == "power-station-hall.json":
-			t.check(free.output.contains("RECIPE_BOUNDARY_RETURN_OK"),
-					"bounded hall permits physical exit and return without resetting")
 		var loaded := SceneRecipe.load_file(path)
-		if loaded.data.get("kind", "city") == "escape":
-			t.check(free.output.contains("RECIPE_RETRY_OK"),
-					"%s actual escape loss reloads authored player and actors" % filename)
+		t.check(free.output.contains("RECIPE_NO_CAPTURE_DEADLINE_OK"), "%s free play has no capture deadline" % filename)
+		if loaded.data.get("extent", {}).get("scope") == "bounded":
+			t.check(free.output.contains("RECIPE_BOUNDARY_RETURN_OK"),
+					"%s permits physical exit and return without resetting" % filename)
+		t.check(free.output.contains("RECIPE_RETRY_OK"),
+				"%s real summary continuation or escape retry restores authored day and actors" % filename)
 		tested += 1
 	t.check(tested > 0, "lifecycle discovery exercises saved recipes")
 	var later_day_path := stem + "_later_power-station-hall.json"

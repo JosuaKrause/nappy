@@ -49,7 +49,7 @@ func _ready() -> void:
 				return
 	if runtime.data.setup.has("barriers"):
 		for plan in city.events._plans:
-			if plan.def.id == "roadblock" and (not is_equal_approx(plan.position.x, 1776)
+			if plan.def.id == "roadblock" and (not is_equal_approx(plan.position.x, 1552)
 					or plan.position.y < 2240 or plan.position.y > 2432):
 				fail("truck barrier is not a vertical band across the left street")
 				return

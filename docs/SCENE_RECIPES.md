@@ -19,7 +19,8 @@ second keeps the facade beside the fenced yard. Both pass the production placeme
 `tools/run.sh --recipe scene-recipes/trailer-choice.json` starts normal interactive play.
 Add `--recipe-mode scripted` to replay the recipe's movement and camera. Both start from the
 same setup; free play keeps physical input, the ordinary camera and no recipe deadline. Recipes
-disable saves. A normal restart reloads the saved setup.
+disable saves. Day results apply normally; continuing the summary reloads the saved setup,
+including its authored day. Escape retry restores that setup too.
 
 `tools/scene-recipes.sh` runs every scene's scripted assertions headlessly and retains logs and
 JSON manifests. Repeated `--recipe FILE` selects a subset; `--output DIR` chooses their folder.
