@@ -119,7 +119,10 @@ preserve the evidence needed to diagnose it and name any retained directory and 
 step; do not silently leave a complete checkout or compiler tree behind as "temporary".
 
 **Review worktrees with `tools/prune-merged.sh --all`.** It is a read-only candidate inventory;
-`--all --apply` applies its safety checks again. Finished agents explicitly release their brief
+`--all --apply` applies its safety checks again. Run the inventory through the same `uv run python
+tools/agent-identity.py run <role> --` wrapper as the apply (**committing** names the role and the
+exact line `.claude/settings.json` allows), since `github-write-guard.sh` denies the script bare
+in every shape, its read-only ones included. Finished agents explicitly release their brief
 with `cleanup: ready` after stopping and preserving useful ignored artifacts. Locked, dirty,
 unpushed or actively owned work stays. An unmerged but finished job may remove its own clean
 scratch checkout only after confirming pushed recovery and retained evidence; retain the branch.
