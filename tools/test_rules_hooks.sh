@@ -112,6 +112,9 @@
 #     later separate branch pushes and coder identity wrappers keep their existing behavior
 #   - a backslash-escaped separator given as an input-wrapper option's value (xargs -d \;,
 #     parallel --colsep \|) is that value, not the end of the wrapper's command
+#   - an input-supplied git subcommand or gh noun/verb is unreadable only for a git or gh the
+#     wrapper runs in command position, never one that is an argument (xargs grep -l git, rg
+#     'xargs git') or that carries --version/--help; git p4 is a plain subcommand
 #   - GNU parallel with no command of its own (parallel ::: cmd) runs its arguments as commands,
 #     so a pushing script or git/gh among them is unreadable
 #   - a gh api call under xargs or parallel is a write unless its every flag is written: input
@@ -1486,6 +1489,8 @@ for heredoc_body in "Fix the \"can't push\" error" 'the "x" thing' "\"can't\" an
     assert_write_guard "a wrapped heredoc commit ($heredoc_body), then ; git push -> deny" \
         deny "$(heredoc_commit "$heredoc_body")"'; git push'
 done
+assert_write_guard "a wrapped heredoc commit whose line ends in 'xargs git' -> allow" allow \
+    "$(heredoc_commit $'Names passed through xargs git\nare read.')"
 assert_write_guard "a wrapped heredoc commit, then a wrapped push -> allow" allow \
     "$(heredoc_commit "Fix the \"can't push\" error")"$'\nuv run python tools/agent-identity.py run claude-coder -- git push'
 assert_write_guard "a wrapped commit with \"\$(printf ... \"it's\")\", then ; git push -> deny" deny \
@@ -1900,6 +1905,7 @@ assert_write_guard_reason "xargs input makes push refspecs unreadable" \
 # option's argument is one word; and a quoted separator is not the push's own when it belongs to
 # another command (a commit message) or sits at the push's own level in a quoted script.
 write_guard_asked=(
+    $'git commit -m "$(cat <<\'EOF\'\nNames passed through xargs git\nare read.\nEOF\n)"'
     'gxargs git status; git push origin feature/x'
     'env_parallel gh pr view && git push origin feature/x'
     'parallel git status | git push origin feature/x'
@@ -2278,6 +2284,18 @@ write_guard_allowed=(
     'env MODE=test /usr/bin/xargs -0 -n 1 timeout 5 git show'
     'xargs -I{} sh -c "git status; git log --oneline {}"'
     "printf 'v1;v2' | xargs -d \\; git status"
+    'ls | xargs grep -l git'
+    'ls | xargs grep -n "git"'
+    'git ls-files | xargs grep -w gh'
+    'git ls-files | xargs grep -c "gh pr"'
+    'ls | xargs echo Git LFS'
+    'ls | xargs git p4'
+    "rg -n 'xargs git' tools/"
+    'grep -rn "parallel gh" docs/'
+    'echo "jobs run in parallel, git 2.40 needed" > notes.txt'
+    'ls | xargs git --version'
+    'seq 3 | parallel echo gh {}'
+    'ls | xargs gh --help'
     'parallel cat ::: tools/update-pr.sh'
     'parallel tools/update-pr.sh --dry-run ::: 1 2'
     'parallel -j2 ::: "echo a" "echo b"'

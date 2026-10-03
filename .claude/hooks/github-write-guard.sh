@@ -68,11 +68,14 @@
 # option's own argument is quoted (`git -C "$(pwd)" push`), the substitution is one argument and
 # the subcommand is read as usual.
 # A push under xargs/gxargs or GNU parallel/env_parallel cannot be read to its end: input can
-# append or replace refspecs, even when the written words name only a branch. A missing git
-# subcommand or gh noun/verb, one not spelled as a plain lowercase word, or one containing the
-# wrapper's active replacement token is unreadable too: input can supply the write itself. So is
-# `tools/release.sh` run by such a wrapper with no written `push` (`echo push | xargs
-# tools/release.sh patch`): input can append the `push` that tags and publishes a release. Input
+# append or replace refspecs, even when the written words name only a branch. For a git or gh the
+# wrapper runs (in command position, or anywhere when the wrapper's options cannot be read), a
+# missing subcommand or gh noun/verb, one not spelled as a plain lowercase word, or one containing
+# the wrapper's active replacement token is unreadable too: input can supply the write itself. A
+# git or gh that is only an argument (`xargs grep -l git`, `rg 'xargs git'`) or carries `--version`
+# or `--help` among its own options is not. `tools/release.sh` run by such a wrapper is a write
+# with no written `push` (`echo push | xargs tools/release.sh patch`): input can append the `push`
+# that tags and publishes a release. Input
 # only ever adds words, so `land-prs.sh`/`update-pr.sh` with a written `--dry-run` stay reads. These
 # are denied rather than asked about; the coder identity
 # wrapper's exemption still applies. An unreadable gh noun/verb can merge, so reviewer wrappers
@@ -543,7 +546,7 @@ def input_scan($w; $g; $i):
     # GNU parallel replaces `{}` unless `-I` renames it, and appends input only to a command
     # holding no replacement string.
     {command: ($i + 1), replacements: (if $owner == "parallel" then ["{}"] else [] end),
-     unreadable: false, done: false}
+     unreadable: false, done: false, alt: null}
   | until(.done or .command >= $n or ($w[.command] | is_sep)
           or ($w[.command] | startswith("-") | not);
       .command as $p | $w[$p] as $x | word_end($p) as $e
@@ -571,6 +574,11 @@ def input_scan($w; $g; $i):
                      else ["{}"] + (if $owner == "xargs" and $has_next
                                         and ($w[$e] | startswith("-") | not)
                                       then [$w[$e]] else [] end) end)
+                   # Read that way, the command is the word after the marker: `xargs -i status
+                   # git status origin v1` may run git with `status` replaced.
+                   | (if $value == null and $owner == "xargs" and $has_next
+                         and ($w[$e] | startswith("-") | not)
+                      then .alt = word_end($e) else . end)
                  elif $opt.arity == "optional" and $value != null
                       and ($x | test("^(-l|--max-lines)")) and ($value | test("^[0-9]+$") | not)
                  then .unreadable = true
@@ -617,7 +625,8 @@ def xargs_context($w; $lv; $unsure; $inputs):
      {active: (length > 0), unreadable: any(.[]; .unreadable),
       replacements: [.[].replacements[] | select(. != "")],
       # Every active wrapper places its input at a replacement token rather than appending it.
-      replacing: (length > 0 and all(.[]; any(.replacements[]; . != "")))})];
+      replacing: (length > 0 and all(.[]; any(.replacements[]; . != ""))),
+      alts: [.[].alt | select(. != null)]})];
 
 # `git <subcommand>`: push, and every subcommand that can create a commit under the invoking
 # user's own name -- commit always; cherry-pick/revert/am/merge/rebase/pull unless they carry an
@@ -804,19 +813,26 @@ def openers_between($t; $a; $b):
 
 # The input can provide the command itself, not only its arguments. A missing word (including
 # a separator) or a replacement marker such as {}, % or REF cannot establish a readable verb.
-def unreadable_input_word($w; $t; $i; $p; $n):
+# That holds only for a git or gh the wrapper runs, in command position: one that is an argument
+# (`xargs grep -l git`, `rg 'xargs git'`) has no verb to supply. A `--version` or `--help` among
+# its own options makes it a read whatever follows (`xargs git --version`). An input wrapper whose
+# options cannot be read leaves command position unknown, so there any git or gh is unreadable.
+def unreadable_input_word($w; $t; $i; $p; $n; $cmd_pos):
   ($t.xargs[$i] // {active: false, replacements: []}) as $input
   | ($w[$p] // "") as $word
   | $input.active
-    and ($input.unreadable or $p >= $n or ($word | test("^[a-z][a-z-]*$") | not)
-         or any($input.replacements[]; . as $replacement | $word | contains($replacement)));
+    and ($input.unreadable
+         or (($cmd_pos or any($input.alts[]?; . == $i))
+             and (any(range($i + 1; [$p, $n] | min) | $w[.]; IN("--version", "--help")) | not)
+             and ($p >= $n or ($word | test("^[a-z][a-z0-9-]*$") | not)
+                  or any($input.replacements[]; . as $replacement | $word | contains($replacement)))));
 
-def detect_git($w; $t; $i; $n):
+def detect_git($w; $t; $i; $n; $cmd_pos):
   if ($w[$i] | named("git")) | not then null
   else
     (after_options($t; $i + 1)) as $sub
-    | if unreadable_input_word($w; $t; $i; $sub; $n) then
-        {next: ([$sub, $i + 1] | max), reason: "git push that cannot be read"}
+    | if unreadable_input_word($w; $t; $i; $sub; $n; $cmd_pos) then
+        {next: ([$sub, $i + 1] | max), reason: "git with an input-supplied subcommand"}
       elif $t.lw > $i
          and (openers_between($t; $i + 1; [$sub + 1, $n] | min)
               or (($w[$sub] // "") | contains("$"))
@@ -1065,11 +1081,11 @@ def input_supplies_gh_api($w; $t; $i; $from; $api):
 
 def generic_reads: ["view", "list", "status", "diff", "checks", "checkout", "watch", "download", "clone", "token"];
 def read_only_nouns: ["browse", "search"];
-def detect_gh($w; $t; $i; $n; $lm; $bounded):
+def detect_gh($w; $t; $i; $n; $lm; $bounded; $cmd_pos):
   if ($w[$i] | named("gh")) | not then null
   else
     (after_options($t; $i + 1)) as $noun_i
-    | if unreadable_input_word($w; $t; $i; $noun_i; $n) then
+    | if unreadable_input_word($w; $t; $i; $noun_i; $n; $cmd_pos) then
         {next: $noun_i, reason: "gh with an input-supplied noun or verb"}
       elif ($noun_i < $n) and (expansion_opener($t; $noun_i)
          or soft_subcommand_opener($t; $noun_i; $t.lv[$i + 1] // 0)) then
@@ -1085,7 +1101,7 @@ def detect_gh($w; $t; $i; $n; $lm; $bounded):
               else $api end
           else
             (after_options($t; $noun_i + 1)) as $verb_i
-            | if unreadable_input_word($w; $t; $i; $verb_i; $n) then
+            | if unreadable_input_word($w; $t; $i; $verb_i; $n; $cmd_pos) then
                 {next: $verb_i, reason: "gh with an input-supplied noun or verb"}
               elif ($verb_i < $n) and (expansion_opener($t; $verb_i)
                  or soft_subcommand_opener($t; $verb_i; $t.lv[$noun_i + 1] // 0)) then
@@ -1163,7 +1179,9 @@ def detect_wrapper($w; $t; $i; $n):
 # for a name outside its own ROLE_NAMES, which is the actual enforcement for an unknown role, not
 # this check.
 def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
-def is_push_like($reason): ($reason | startswith("git push")) or ($reason | startswith("tools/"));
+def is_push_like($reason):
+  ($reason | startswith("git push")) or ($reason | startswith("tools/"))
+  or ($reason == "git with an input-supplied subcommand");
 def is_merge_like($reason):
   ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type")
   or ($reason == "gh with an input-supplied noun or verb")
@@ -1251,12 +1269,12 @@ def findings($w; $w0; $levels; $unsure):
         else
           ($state.i < $state.scanned_to) as $bounded
           | ($t.ao[$state.i + 1]) as $a1
-          | (either(detect_git($w; $t; $state.i; $n);
+          | (either(detect_git($w; $t; $state.i; $n; $cmd_pos);
                     if $tp == null or $tp.ao[$state.i + 1] == $a1 then null
-                    else detect_git($w; $tp; $state.i; $n) end)
-             // either(detect_gh($w; $t; $state.i; $n; $lm; $bounded);
+                    else detect_git($w; $tp; $state.i; $n; $cmd_pos) end)
+             // either(detect_gh($w; $t; $state.i; $n; $lm; $bounded; $cmd_pos);
                        if $tp == null or ($tp.ao[$state.i + 1] == $a1 and $w[$a1] == "api") then null
-                       else detect_gh($w; $tp; $state.i; $n; $lm; $bounded) end)
+                       else detect_gh($w; $tp; $state.i; $n; $lm; $bounded; $cmd_pos) end)
              // detect_tool($w; $t; $state.i; $cmd_pos)) as $hit
           | if $hit == null then $state | .i += 1
             elif $hit.reason == null then $state | .i = $hit.next | .scanned_to = ($hit.scan_end // .scanned_to)

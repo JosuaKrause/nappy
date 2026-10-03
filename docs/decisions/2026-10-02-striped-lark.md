@@ -192,3 +192,21 @@ the command word. Such a wrapper's command position is now unreadable, so a push
 or gh among its arguments is denied. Reads written that way (`parallel ::: "git status"`) are a
 false deny open to correction; reading each argument as a command of its own was the alternative,
 and it would need every command table to start a command at each argument.
+
+**An input-supplied subcommand needs a git or gh the wrapper runs.** The rule that a missing or
+nonliteral git subcommand or gh noun/verb is unreadable fired for any git or gh word after an
+xargs or parallel mention, so `ls | xargs grep -l git`, `rg -n 'xargs git' tools/`, prose naming
+parallel and git, `seq 3 | parallel echo gh {}` and a wrapped heredoc commit whose line ends in
+"xargs git" were refused as unreadable pushes. It now applies to a git or gh in command position,
+which the command tables carry through xargs, parallel, the other wrapper words and a `sh -c`
+script, or to any git or gh when the wrapper's own options cannot be read. Where GNU xargs's
+optional replacement value is followed by a separate word (`xargs -i status git status origin
+v1`), that word may be the marker, and the git after it counts as run by the wrapper too. A
+`--version` or `--help` among git's or gh's own options makes it a read (`xargs git --version`),
+a subcommand may hold digits (`git p4`), and the denial is named "git with an input-supplied
+subcommand", push-like, so a reviewer wrapper cannot exempt it. An explicit `push` after an
+xargs or parallel mention still denies, as every mention of a push does.
+
+A git or gh run through a wrapper word the tables do not know (`xargs strace git`) is not in
+command position, so input supplying its subcommand is not caught; an explicit push there still
+is. That is the guard's existing gap for unknown wrapper words.
