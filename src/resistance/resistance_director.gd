@@ -352,9 +352,9 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	# route she walked decides.
 	#
 	# **A task that rides a body is guarded from the body, not from the point beside it**: she
-	# completes it by touching the body from any side (`ContactPoint.touches_the_body()`), so the
-	# ground she completes from is everything within `_body_touch_reach()` of the body's own centre,
-	# and the guard's band is worked out from that, the way day 8's is from its door's wider reach.
+	# completes it from anywhere within `_body_touch_reach()` of the body's own centre
+	# (`ContactPoint.touches_the_body()`), and the guard's band is worked out from that, the way day
+	# 8's is from its door's wider reach.
 	if not neighbor and not sets_a_trap_on_her(_step):
 		var guarded_at := at
 		var guarded_reach := _contact.reach
@@ -369,12 +369,10 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			_maybe_set_a_trap(_day, _rng, guarded_at, _step.is_pickup, _player_position(), true,
 					guarded_reach)
 
-## How far from a body's own centre a touch of it can be made from: everything she can complete
-## it from (`ContactPoint.touches_the_body()`, her edge within `ContactPoint.REACH` of the body's)
-## lies within the body's furthest reach (`EventDef.solid_reach()`) plus her own body and that
-## reach — 110px for a roadblock (60 + 14 + 36), 72px for the van (22 + 14 + 36).
+## How far from a body's own centre a touch of it counts (`ContactPoint.body_reach()`): 110px for a
+## roadblock (60 + 14 + 36), 72px for the van (22 + 14 + 36).
 static func _body_touch_reach(instance: EventInstance) -> float:
-	return instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH
+	return ContactPoint.body_reach(instance)
 
 ## Where the run recorded its scar `scar_id` (`GameState.scars`), or `Vector2.INF` when it never
 ## recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no site
@@ -1085,11 +1083,11 @@ func _far_alley_mouth(at: Vector2) -> Vector2:
 ## learnable spot. Zero for a rider with no body at all, like the yeller.
 ##
 ## **Where she can stand to touch it, not the only place a touch counts.** A body is touched from
-## any side (`ContactPoint.touches_the_body()`); this is the one point beside it that
-## `contact_position()` answers for anything asking where to walk, and it stands inside that touch
-## on every bearing: the body's narrow half-thickness (`GroundShape.across()`, the rounding beside a
-## segment's spine and the whole radius of a disc) plus her own body and `ContactPoint.REACH` — 72px
-## for the van, 74px for a roadblock — so even beside the long side of a band she completes there.
+## any side, anywhere within `ContactPoint.body_reach()` of its centre
+## (`ContactPoint.touches_the_body()`); this is the one point beside it that `contact_position()`
+## answers for anything asking where to walk. It stands clear of the body on every bearing — its
+## furthest reach (`EventDef.solid_reach()`) plus her own body — and half `ContactPoint.REACH` past
+## that, so it is well inside the touch: 54px from the van's centre, 92px from a roadblock's.
 ##
 ## **Redrawn, up to `REACHABLE_OFFSET_DRAW_LIMIT` times, against the same ground-legality check
 ## every other placement in this file keeps** (`_pick_reachable()`'s five refusals, plus
@@ -1117,8 +1115,7 @@ func _reachable_offset(instance: EventInstance, rng: RandomNumberGenerator) -> V
 	var clearance: float = instance.def.obstructs_radius
 	if clearance <= 0.0:
 		return Vector2.ZERO
-	var beside: float = instance.def.shape.across() if instance.def.shape else clearance
-	var distance := beside + Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH
+	var distance := instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH * 0.5
 	var walled_alleys := _walled_alleys()
 	var last_candidate := instance.global_position
 	for _attempt in REACHABLE_OFFSET_DRAW_LIMIT:

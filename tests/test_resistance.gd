@@ -385,8 +385,9 @@ func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 ## she walks up to the body from sixteen bearings until she is pressed against it, her edge a pixel
 ## off its outline, found from the row's own `GroundShape` along the instance's own axis: every
 ## bearing completes the task. Before, only a touch within `ContactPoint.REACH` of that one offset
-## point counted, so pressing against the far side of the van completed nothing. And a step
-## `ContactPoint.REACH` further out than a touch, on any side, completes nothing either.
+## point counted, so pressing against the far side of the van completed nothing. And standing two
+## pixels past `ContactPoint.REACH` beyond the farthest she can be stopped from its centre (its
+## furthest reach and her own body), on any side, completes nothing.
 func _test_touching_a_tasks_body_from_any_side_completes_it(t) -> void:
 	for id: String in ["delivery_van", "roadblock"]:
 		var step := _perform_on(7 if id == "delivery_van" else 13)
@@ -397,26 +398,28 @@ func _test_touching_a_tasks_body_from_any_side_completes_it(t) -> void:
 		var player := _rig_player(t, Vector2.ZERO)
 		var shape := instance.def.shape
 		var axis := instance.solid_axis()
-		var offset := Vector2.RIGHT * (shape.across() + Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH)
+		var offset := Vector2.RIGHT * (instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS
+				+ ContactPoint.REACH * 0.5)
 		var pressed_done := 0
 		var far_done := 0
 		var bearings := 16
 		for i in bearings:
 			var bearing := Vector2.RIGHT.rotated(TAU * float(i) / float(bearings))
-			for gap: float in [Tuning.PLAYER_BODY_RADIUS + 1.0,
-					Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH + 2.0]:
-				# Out along the bearing until her centre is `gap` off the body's own outline.
-				var r := 0.0
-				while shape.distance_to_spine((bearing * r).rotated(-axis.angle())) - shape.radius \
-						< gap:
-					r += 0.5
+			# Out along the bearing until her centre is a pixel past being stopped by the body.
+			var pressed := 0.0
+			while shape.distance_to_spine((bearing * pressed).rotated(-axis.angle())) \
+					- shape.radius < Tuning.PLAYER_BODY_RADIUS + 1.0:
+				pressed += 0.5
+			var far := instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS \
+					+ ContactPoint.REACH + 2.0
+			for r: float in [pressed, far]:
 				var contact := ContactPoint.new()
 				contact.ride(step, instance, offset)
 				t.add_child(contact)
 				contact.set_physics_process(false)
 				player.global_position = bearing * r
 				contact._physics_process(STEP)
-				if contact.is_done and gap < Tuning.PLAYER_BODY_RADIUS + 2.0:
+				if contact.is_done and r == pressed:
 					pressed_done += 1
 				elif contact.is_done:
 					far_done += 1

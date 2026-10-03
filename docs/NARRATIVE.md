@@ -170,9 +170,11 @@ the nearest place that does. The places that are fixed keep them: day 9's distri
 swing park, the neighbor on the walk home, the last night's station door, and the building a run's
 own day-3 fire burned. *(2026-10-03, minty-hedgehog, statement 3: "the van should spawn close to the
 mark not across the city" · "this applies to almost all tasks".)* **A task with a body is touched
-from any side**: the van, or a roadblock, completes the moment she is within `ContactPoint.REACH`
-(36px) of its body, wherever round it she stands. *("the arrow correctly points to the van but
-touching the van doesn't solve the task".)*
+from any side**: the van, or a roadblock, completes the moment she is within
+`ContactPoint.body_reach()` of its centre — its furthest reach, her own body and
+`ContactPoint.REACH` (36px): 72px for the van, 110px for a roadblock — wherever round it she
+stands, so she cannot press against it anywhere without completing it. *("the arrow correctly
+points to the van but touching the van doesn't solve the task".)*
 
 ### Risk
 

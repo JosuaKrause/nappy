@@ -106,35 +106,24 @@ func _physics_process(delta: float) -> void:
 static func has_a_body(instance: EventInstance) -> bool:
 	return instance != null and instance.def.solid_reach() > 0.0
 
-## How far her centre at `at` stands from the nearest edge of `instance`'s own solid body: the
-## smallest gap to any of its pieces (`EventInstance.solid_part_centres()`/`solid_part_shapes()`),
-## each measured to its own outline along `EventInstance.solid_axis()` the way its collision shape
-## and its field are, from where the body stands (`EventInstance.body_position()`, which a
-## roadblock's guard leaves behind when he sets off). `PLAYER_BODY_RADIUS` (14px) when she is
-## pressed against it; `INF` for an instance with no body.
-static func gap_to_the_body(instance: EventInstance, at: Vector2) -> float:
-	if not has_a_body(instance):
-		return INF
-	var axis := instance.solid_axis()
-	var moved := instance.body_position() - instance.global_position
-	var centres := instance.solid_part_centres()
-	var shapes := instance.solid_part_shapes()
-	var gap := INF
-	for i in centres.size():
-		var shape: GroundShape = shapes[i]
-		var local := (at - (centres[i] + moved)).rotated(-axis.angle())
-		gap = minf(gap, shape.distance_to_spine(local) - shape.radius)
-	return gap
+## How far from `instance`'s own centre a touch of its body counts: its furthest reach
+## (`EventDef.solid_reach()`) plus her own body (`Tuning.PLAYER_BODY_RADIUS`) plus `within` — 72px
+## for the van (22 + 14 + 36), 110px for a roadblock's band (60 + 14 + 36). One circle round the
+## body's centre rather than a band round its outline, so it reaches past the body by at least
+## `within` on every side, its ends included, and is the same circle an any-instance task already
+## retargeted onto a look-alike from (`ResistanceDirector._reach_distance()`).
+static func body_reach(instance: EventInstance, within := REACH) -> float:
+	return instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS + within
 
 ## **Touching a task's body from any side completes it** (feathery-marmot: *"the arrow correctly
-## points to the van but touching the van doesn't solve the task"*): her own edge within `reach` of
-## the body's edge — her centre within `PLAYER_BODY_RADIUS + reach` of its outline — wherever round
-## it she stands, rather than within `reach` of the one point beside it the day's RNG chose. The
-## same `reach` a chalk mark is touched from (`REACH`, 36px), measured from where she is stopped
-## rather than from a point, so she completes the moment before she would press against it, on
-## every side she can reach.
+## points to the van but touching the van doesn't solve the task"*): her centre within
+## `body_reach()` of where the body stands (`EventInstance.body_position()`, which a roadblock's
+## guard leaves behind when he sets off), wherever round it she is, rather than within `reach` of
+## the one point beside it the day's RNG chose. Pressed against the body she is at most its
+## furthest reach plus her own body from its centre, `within` inside the circle, so she completes
+## before she can touch it on every side.
 static func touches_the_body(instance: EventInstance, at: Vector2, within := REACH) -> bool:
-	return gap_to_the_body(instance, at) <= Tuning.PLAYER_BODY_RADIUS + within
+	return at.distance_to(instance.body_position()) <= body_reach(instance, within)
 
 func _complete() -> void:
 	is_done = true
