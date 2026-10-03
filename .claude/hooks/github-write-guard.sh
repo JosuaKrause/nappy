@@ -66,6 +66,9 @@
 # quoting the script hides the substitution's opener, not the write that follows it. When the
 # option's own argument is quoted (`git -C "$(pwd)" push`), the substitution is one argument and
 # the subcommand is read as usual.
+# A push under xargs cannot be read to its end: stdin can append or replace its refspecs, even
+# when the written words name only a branch. It is denied rather than asked about; the identity
+# wrapper's exemption still applies, as it does to other unreadable pushes.
 # Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
 # issue/release list/view`, `gh run watch/download`, `gh repo clone`, `gh auth token`, `gh
 # search`, `gh browse`, a GET `gh api` with or without fields, an inline GraphQL query with no
@@ -451,6 +454,22 @@ def command_table($ao; $g):
   | resolve;
 def command_word($t; $i): $t.cw[$i] // $i;
 
+# Whether xargs precedes each word in its command. Input may supply push refspecs that are absent
+# from the hook JSON. Keep the shallowest xargs across separators inside a quoted script it runs
+# (`xargs sh -c 'git status; git push origin'`), but end it at its own command's separator. As with
+# the git detector, mentions count too. One forward pass, never a backward scan from each git.
+def xargs_context($w; $lv; $unsure):
+  [foreach range(0; $w | length) as $i (null;
+     if $w[$i] | is_sep then
+       if ($w[$i] | is_hard_sep) or ($unsure | not) and (($lv[$i] // 0) <= (. // 0))
+       then null else . end
+     elif $w[$i] | named("xargs") then
+       # A script's first word has level 0; its next word carries the script's own level.
+       ([($lv[$i] // 0), ($lv[$i + 1] // 0)] | max) as $level
+       | if . == null then $level else [., $level] | min end
+     else . end;
+     . != null)];
+
 # `git <subcommand>`: push, and every subcommand that can create a commit under the invoking
 # user's own name -- commit always; cherry-pick/revert/am/merge/rebase/pull unless they carry an
 # abort-like or safe flag (`--abort`/`--quit` for cherry-pick/revert/am, `--abort`/`--no-commit`/
@@ -658,7 +677,7 @@ def detect_git($w; $t; $i; $n):
                reason: (if $forced then "git push --force"
                         elif $tags then "git push of a tag or every branch"
                         elif $sc.expansion or $cf.expansion then "git push with a shell expansion"
-                        elif $sc.unreadable or $cf.unreadable then "git push that cannot be read"
+                        elif $sc.unreadable or $cf.unreadable or $t.xargs[$i] then "git push that cannot be read"
                         else "git push" end)}
           elif $subcmd == "commit" then {next: ($sub + 1), reason: "git commit"}
           elif $subcmd | IN("cherry-pick", "revert", "am") then
@@ -1002,6 +1021,7 @@ def findings($w; $w0; $levels; $unsure):
   | {ao: $ao, cw: ($w | command_table($ao; $g)),
      cw2: (if $owners == null then null else $w | command_table($w | options_table($g; $owners); $g) end),
      sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw,
+     xargs: (if any($w[]; named("xargs")) then xargs_context($w0; $lv; $unsure) else null end),
      oc: (if $unsure then opener_counts($w0) else null end)} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
