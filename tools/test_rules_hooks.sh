@@ -106,7 +106,9 @@
 #     of those writes denies
 #   - xargs/gxargs and parallel/env_parallel input makes an unwrapped push or missing/nonliteral
 #     git subcommand or gh noun/verb unreadable; pushing scripts behind their options are guarded;
-#     reads, later separate branch pushes and coder identity wrappers keep their existing behavior
+#     a custom replacement token remains unreadable even when it is lowercase or spells a known
+#     read; the wrappers' documented value-taking options do not hide a pushing script; reads,
+#     later separate branch pushes and coder identity wrappers keep their existing behavior
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -1167,6 +1169,14 @@ assert_write_guard "reviewer-wrapped input-supplied gh verb can merge and denies
     'uv run python tools/agent-identity.py run codex-reviewer -- env_parallel gh pr'
 assert_write_guard "input wrapper invoking reviewer-wrapped incomplete gh denies" deny \
     'parallel uv run python tools/agent-identity.py run codex-reviewer -- gh'
+assert_write_guard "coder-wrapped lowercase xargs replacement subcommand allows" allow \
+    'uv run python tools/agent-identity.py run codex-coder -- xargs -Icmd git cmd origin v1'
+assert_write_guard "input wrapper replacement invoking the coder wrapper allows" allow \
+    'parallel -Icmd uv run python tools/agent-identity.py run codex-coder -- git cmd origin v1'
+assert_write_guard "reviewer-wrapped lowercase parallel replacement subcommand denies" deny \
+    'uv run python tools/agent-identity.py run codex-reviewer -- parallel -Icmd git cmd origin v1'
+assert_write_guard "input wrapper replacement invoking the reviewer wrapper denies" deny \
+    'xargs -Icmd uv run python tools/agent-identity.py run codex-reviewer -- gh pr cmd 3'
 
 # A write before the wrapper, or on a different command joined only by a separator, is not
 # covered by it: the wrapper's own exemption starts at its literal -- and ends at the next
@@ -1925,6 +1935,24 @@ write_guard_asked=(
 # substitution; a bare gh issue write (bouncy-heron statement 14: "an agent shouldn't use gh issue
 # directly"); a merge, a release, a gh api write and a pushing tools/ script.
 write_guard_never_asked=(
+    'echo push | xargs -Icmd git cmd origin v1'
+    'echo push | parallel -Icmd git cmd origin v1'
+    'echo push | xargs -Istatus git status origin v1'
+    'echo merge | xargs -Iview gh pr view 3'
+    'echo push | parallel -I status git status origin v1'
+    'echo merge | parallel -Iview gh pr view 3'
+    'echo push | xargs --replace=cmd git cmd origin v1'
+    'echo push | xargs --replace cmd git cmd origin v1'
+    'echo push | xargs -icmd git cmd origin v1'
+    'echo push | xargs -i cmd git cmd origin v1'
+    'echo push | gxargs -Jcmd git cmd origin v1'
+    'echo push | gxargs -J cmd git cmd origin v1'
+    'echo push | parallel --replace=cmd git cmd origin v1'
+    'echo push | parallel --replace cmd git cmd origin v1'
+    'echo push | parallel -icmd git cmd origin v1'
+    'echo push | parallel -i cmd git cmd origin v1'
+    'echo push | parallel -lcmd git cmd origin v1'
+    'echo push | parallel -l cmd git cmd origin v1'
     'echo push origin v1 | xargs git'
     'echo push origin v1 | parallel git'
     'echo push | xargs -I{} git {} origin v1'
@@ -1953,6 +1981,15 @@ write_guard_never_asked=(
     'parallel tools/land-prs.sh 3'
     'parallel tools/update-pr.sh 3'
     'parallel tools/prune-merged.sh feature/x'
+    'echo feature/x | parallel --max-args 1 tools/prune-merged.sh'
+    'echo feature/x | parallel --max-replace-args 1 tools/prune-merged.sh'
+    'echo feature/x | parallel --max-procs 2 tools/prune-merged.sh'
+    'echo feature/x | parallel -P 2 tools/prune-merged.sh'
+    'echo 3 | parallel --joblog jobs.log tools/update-pr.sh'
+    'echo 3 | env_parallel --jl jobs.log tools/update-pr.sh'
+    'echo 3 | parallel --delay 0.1 tools/update-pr.sh'
+    'echo 3 | parallel --halt soon,fail=1 tools/update-pr.sh'
+    'echo 3 | env_parallel --halt-on-error 2 tools/update-pr.sh'
     'parallel -j 2 --jobs 2 -a inputs --arg-file inputs -I REF -n 1 -N 1 -L 1 -S host --sshlogin host -d , --colsep , tools/land-prs.sh 3'
     'env_parallel -j 2 --jobs 2 -a inputs --arg-file inputs -I REF -n 1 -N 1 -L 1 -S host --sshlogin host -d , --colsep , tools/update-pr.sh 3'
     'gxargs -n 1 -I REF -a inputs tools/prune-merged.sh feature/x'
@@ -2091,6 +2128,11 @@ write_guard_never_asked=(
 )
 # A read, and `git tag` itself, which changes only the local repository, stay allowed.
 write_guard_allowed=(
+    'xargs -Icmd git status'
+    'parallel -Icmd gh pr view'
+    'xargs -Istatus printf status'
+    'xargs -i git status'
+    'parallel --replace git status'
     'gxargs -n 1 git status'
     'env_parallel --jobs 2 git log'
     'parallel gh pr view'
@@ -2098,6 +2140,15 @@ write_guard_allowed=(
     'env_parallel gh browse'
     'gxargs gh search prs'
     'parallel -j 2 cat tools/land-prs.sh'
+    'parallel --max-args 1 cat tools/prune-merged.sh'
+    'parallel --max-replace-args 1 cat tools/prune-merged.sh'
+    'parallel --max-procs 2 cat tools/prune-merged.sh'
+    'parallel -P 2 cat tools/prune-merged.sh'
+    'parallel --joblog jobs.log cat tools/update-pr.sh'
+    'env_parallel --jl jobs.log cat tools/update-pr.sh'
+    'parallel --delay 0.1 tools/update-pr.sh --dry-run 3'
+    'parallel --halt soon,fail=1 cat tools/release.sh'
+    'env_parallel --halt-on-error 2 cat tools/release.sh'
     'env_parallel --colsep , cat tools/update-pr.sh'
     'parallel -d , cat tools/release.sh'
     'gxargs -d , cat tools/prune-merged.sh'

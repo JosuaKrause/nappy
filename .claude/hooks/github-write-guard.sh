@@ -52,7 +52,7 @@
 # shell's reserved words `do`/`then`/`else`/`elif`/`if`/`while`/`until`/
 # `{`/`!`, `timeout` alone also taking one bare duration, and the argument of a wrapper option
 # that takes one (`sudo -u root`, `sudo -iu root`, `nice -n 10`, `timeout -s KILL`, `xargs -n 1`,
-# `parallel --jobs 2`, `exec -a name`) skipped with it; the script after `bash -c`/`sh -c` is a command of its own, so
+# `parallel --jobs 2`, `parallel --joblog log`, `exec -a name`) skipped with it; the script after `bash -c`/`sh -c` is a command of its own, so
 # its first word is in command position too --
 # never where its name is merely a read's argument
 # (`cat`, `sed`, `git log --`/`diff --`/`show`, `rg`)), and, for `release.sh`, only with its own
@@ -69,8 +69,9 @@
 # the subcommand is read as usual.
 # A push under xargs/gxargs or GNU parallel/env_parallel cannot be read to its end: input can
 # append or replace refspecs, even when the written words name only a branch. A missing git
-# subcommand or gh noun/verb, or one not spelled as a plain lowercase word, is unreadable too:
-# input can supply the write itself. These are denied rather than asked about; the coder identity
+# subcommand or gh noun/verb, one not spelled as a plain lowercase word, or one containing the
+# wrapper's active replacement token is unreadable too: input can supply the write itself. These
+# are denied rather than asked about; the coder identity
 # wrapper's exemption still applies. An unreadable gh noun/verb can merge, so reviewer wrappers
 # cannot exempt it, just as they cannot exempt an unreadable git push.
 # Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
@@ -352,10 +353,13 @@ def wrapper_argument_options:
    env: ["-u", "-C", "-P", "--unset", "--chdir"],
    nice: ["-n", "--adjustment"],
    timeout: ["-s", "-k", "--signal", "--kill-after"],
-   xargs: ["-n", "-I", "-L", "-P", "-s", "-d", "-E", "-a", "--max-args", "--max-lines",
-           "--max-procs", "--max-chars", "--delimiter", "--eof", "--arg-file"],
-   parallel: ["-j", "--jobs", "-a", "--arg-file", "-I", "-n", "-N", "-L", "-S", "--sshlogin",
-              "-d", "--colsep"],
+   xargs: ["-n", "-I", "-J", "-i", "--replace", "-L", "-P", "-R", "-S", "-s", "-d", "-E", "-a",
+           "--max-args", "--max-lines", "--max-procs", "--max-chars", "--delimiter", "--eof",
+           "--arg-file"],
+   parallel: ["-j", "--jobs", "--max-procs", "-P", "-a", "--arg-file", "-I", "-i", "--replace",
+              "-l", "-n", "--max-args", "-N", "--max-replace-args", "-L", "--max-lines", "-S",
+              "--sshlogin", "--sshloginfile", "--slf", "-d", "--delimiter", "--colsep", "--joblog",
+              "--jl", "--delay", "--halt", "--halt-on-error"],
    watch: ["-n", "--interval"],
    bash: ["-o", "-O", "--rcfile", "--init-file"],
    sh: ["-o", "-O"],
@@ -469,22 +473,52 @@ def command_table($ao; $g):
   | resolve;
 def command_word($t; $i): $t.cw[$i] // $i;
 
-# Whether an input wrapper precedes each word in its command. Input may supply push refspecs
-# absent from the hook JSON. Keep the shallowest wrapper across separators inside a quoted script
-# it runs (`xargs sh -c 'git status; git push origin'`), but end it at its own command's separator. As with
-# the git detector, mentions count too. One forward pass, never a backward scan from each git.
+# The replacement token selected by one input wrapper's options. `-I` belongs to all four
+# spellings; xargs/gxargs also have BSD `-J` and GNU `-i`/`--replace`, while GNU
+# parallel/env_parallel have `-i`/`--replace` and `-l`. Walk only the wrapper's option run, whose
+# end the wrapper command table has already found; the last replacement option wins, as it does
+# at execution time. The general and wrapper-specific command tables retain both readings of an
+# optional alias argument, while this stricter reading treats a following word as its token.
 def is_input_wrapper: last_part | IN("xargs", "gxargs", "parallel", "env_parallel");
-def xargs_context($w; $lv; $unsure):
-  [foreach range(0; $w | length) as $i (null;
+def input_replacement($w; $i; $end):
+  ($w[$i] | last_part | if . == "gxargs" then "xargs" elif . == "env_parallel" then "parallel" else . end) as $owner
+  | {j: ($i + 1), token: null}
+  | until(.j >= $end;
+      ($w[.j]) as $x
+      | if $x == "-I" or ($owner == "xargs" and $x == "-J")
+           or ($owner == "parallel" and $x == "-l") then
+          if .j + 1 < $end then .token = $w[.j + 1] | .j += 2 else .j += 1 end
+        elif $x | test("^-I.+") then .token = ($x | ltrimstr("-I")) | .j += 1
+        elif $owner == "xargs" and ($x | test("^-J.+")) then
+          .token = ($x | ltrimstr("-J")) | .j += 1
+        elif $owner == "parallel" and ($x | test("^-l.+")) then
+          .token = ($x | ltrimstr("-l")) | .j += 1
+        elif $x == "-i" or $x == "--replace" then
+          if .j + 1 < $end then .token = $w[.j + 1] | .j += 2
+          else .token = "{}" | .j += 1 end
+        elif $x | test("^-i.+") then .token = ($x | ltrimstr("-i")) | .j += 1
+        elif $x | startswith("--replace=") then .token = ($x | ltrimstr("--replace=")) | .j += 1
+        else .j += 1 end)
+  | .token;
+
+# The active input wrappers before each word. Input may supply push refspecs absent from the hook
+# JSON. Keep each wrapper across separators inside a quoted script it runs (`xargs sh -c 'git
+# status; git push origin'`), but end it at its own command's separator. A stack keeps an outer
+# wrapper active when a nested wrapper ends, and retains both replacement tokens while both apply.
+# As with the git detector, mentions count too. One forward pass, never a backward scan from each
+# git; finding each wrapper's command is a table lookup.
+def xargs_context($w; $lv; $unsure; $cw):
+  [foreach range(0; $w | length) as $i ([];
      if $w[$i] | is_sep then
-       if ($w[$i] | is_hard_sep) or ($unsure | not) and (($lv[$i] // 0) <= (. // 0))
-       then null else . end
+       if $w[$i] | is_hard_sep then []
+       elif $unsure then .
+       else ($lv[$i] // 0) as $level | map(select(.level < $level)) end
      elif $w[$i] | is_input_wrapper then
        # A script's first word has level 0; its next word carries the script's own level.
        ([($lv[$i] // 0), ($lv[$i + 1] // 0)] | max) as $level
-       | if . == null then $level else [., $level] | min end
+       | . + [{level: $level, replacement: input_replacement($w; $i; $cw[$i] // $i)}]
      else . end;
-     . != null)];
+     {active: (length > 0), replacements: [.[].replacement | select(. != null and . != "")]})];
 
 # `git <subcommand>`: push, and every subcommand that can create a commit under the invoking
 # user's own name -- commit always; cherry-pick/revert/am/merge/rebase/pull unless they carry an
@@ -672,7 +706,11 @@ def openers_between($t; $a; $b):
 # The input can provide the command itself, not only its arguments. A missing word (including
 # a separator) or a replacement marker such as {}, % or REF cannot establish a readable verb.
 def unreadable_input_word($w; $t; $i; $p; $n):
-  $t.xargs[$i] and ($p >= $n or (($w[$p] // "") | test("^[a-z][a-z-]*$") | not));
+  ($t.xargs[$i] // {active: false, replacements: []}) as $input
+  | ($w[$p] // "") as $word
+  | $input.active
+    and ($p >= $n or ($word | test("^[a-z][a-z-]*$") | not)
+         or any($input.replacements[]; . as $replacement | $word | contains($replacement)));
 
 def detect_git($w; $t; $i; $n):
   if ($w[$i] | named("git")) | not then null
@@ -700,7 +738,8 @@ def detect_git($w; $t; $i; $n):
                reason: (if $forced then "git push --force"
                         elif $tags then "git push of a tag or every branch"
                         elif $sc.expansion or $cf.expansion then "git push with a shell expansion"
-                        elif $sc.unreadable or $cf.unreadable or $t.xargs[$i] then "git push that cannot be read"
+                        elif $sc.unreadable or $cf.unreadable or ($t.xargs[$i].active // false)
+                        then "git push that cannot be read"
                         else "git push" end)}
           elif $subcmd == "commit" then {next: ($sub + 1), reason: "git commit"}
           elif $subcmd | IN("cherry-pick", "revert", "am") then
@@ -1046,11 +1085,13 @@ def findings($w; $w0; $levels; $unsure):
   | (if any($w[]; is_wrapper_word(.)) then $w | wrapper_owners else null end) as $owners
   | (if $lv == null then null else {lv: $lv, ends: word_ends($lv)} end) as $g
   | ($w | options_table($g; null)) as $ao
+  | (if $owners == null then null else $w | options_table($g; $owners) end) as $wo
+  | (if $wo == null then null else $w | command_table($wo; $g) end) as $cw2
   | {ao: $ao, cw: ($w | command_table($ao; $g)),
-     cw2: (if $owners == null then null else $w | command_table($w | options_table($g; $owners); $g) end),
+     cw2: $cw2,
      sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw,
      xargs: (if any($w[]; is_input_wrapper)
-             then xargs_context($w0; $lv; $unsure) else null end),
+             then xargs_context($w0; $lv; $unsure; $cw2) else null end),
      oc: (if $unsure then opener_counts($w0) else null end)} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
