@@ -1,0 +1,3127 @@
+{
+  "sha256": "323d6a8f5a9765e55f788c346d18f6db5eb7d93ade5f851273e321e309fef28b",
+  "bytes": 3574448,
+  "engine": [
+    4,
+    7,
+    2
+  ],
+  "format": 4,
+  "flags": 2,
+  "files": 596,
+  "payload_bytes": 3525852,
+  "categories": {
+    "other": 179014,
+    "textures": 840374,
+    "scripts": 2506464
+  },
+  "largest": [
+    {
+      "path": ".godot/imported/events.png-84d5e81b35068ba47ccc9c340446d573.ctex",
+      "bytes": 485706,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_resistance.gdc",
+      "bytes": 106260,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/buildings.png-491f76d79143e2b940207b503bdf2fc9.ctex",
+      "bytes": 66272,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/mother.png-4a2f6e54101b9fe5a6fee8be5c5e5fa1.ctex",
+      "bytes": 61028,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_instance.gdc",
+      "bytes": 59622,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/father.png-37b84c4af88993856c49c7f809876bf6.ctex",
+      "bytes": 58328,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/regions.json",
+      "bytes": 57943,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/ground.png-df241b3d58116fb6755d46e62d87de0b.ctex",
+      "bytes": 50046,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_checkpoints.gdc",
+      "bytes": 46590,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_interior.gdc",
+      "bytes": 44964,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_scheduler.gdc",
+      "bytes": 44427,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/crowd_agent.gdc",
+      "bytes": 40407,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_telemetry.gdc",
+      "bytes": 38315,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_crowd.gdc",
+      "bytes": 38085,
+      "flags": 0
+    },
+    {
+      "path": "src/main.gdc",
+      "bytes": 37831,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/street_kit.png-743e0ce45d1c5d35de0089a44bcf9c3b.ctex",
+      "bytes": 37170,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_crowd_closures.gdc",
+      "bytes": 36759,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_ground_floor.gdc",
+      "bytes": 36673,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_route_rig.gdc",
+      "bytes": 36096,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/route_rig.gdc",
+      "bytes": 34380,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_pause.gdc",
+      "bytes": 32384,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city_generator.gdc",
+      "bytes": 29916,
+      "flags": 0
+    },
+    {
+      "path": "src/resistance/resistance_director.gdc",
+      "bytes": 29607,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_finale.gdc",
+      "bytes": 28513,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m129_zero_cost_line.gdc",
+      "bytes": 28326,
+      "flags": 0
+    }
+  ],
+  "entries": [
+    {
+      "path": ".godot/exported/133200997/export-02110ab203d7a91c1728ed250d5f2e47-entity_frame_profile.scn",
+      "bytes": 716,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn",
+      "bytes": 1185,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-3aead94df1f856fe7208f3add5b3eef0-city.scn",
+      "bytes": 1252,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-5c5ddfbd537dc1caa487e861fc0c7514-day_summary.scn",
+      "bytes": 2901,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-5eabcd2865b627a14b0c7b9586988c63-title_screen.scn",
+      "bytes": 3569,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-664ee3f70a697ae8c903b1013a9b6eb1-pause_screen.scn",
+      "bytes": 2845,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-92bdc87485d26ef3afcd4e0b27a28a12-stroller.scn",
+      "bytes": 1433,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-953237b18ab935af73bd3703fc59db90-scenery_animation_runtime.scn",
+      "bytes": 722,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-abe698064cb52cffe82902f69a69e30f-scenery_shader_warmup_runtime.scn",
+      "bytes": 727,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-c4a326dfb38b3cc8448bf4fa84def6cf-ground_tileset.res",
+      "bytes": 9680,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-de6a30fa0e56c2cfd9b3945137e96448-tests.scn",
+      "bytes": 679,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-f26fe175837e58804f1c48b99041ac16-hud.scn",
+      "bytes": 2823,
+      "flags": 0
+    },
+    {
+      "path": ".godot/exported/133200997/export-f5e841e06826140c3bf6142c33379ad9-touch_controls.scn",
+      "bytes": 855,
+      "flags": 0
+    },
+    {
+      "path": ".godot/global_script_class_cache.cfg",
+      "bytes": 19813,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/buildings.png-491f76d79143e2b940207b503bdf2fc9.ctex",
+      "bytes": 66272,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/crowd.png-1ad78b1714b20a86ccff8a9d8b292da0.ctex",
+      "bytes": 19074,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/decoration.png-06250e66f4e0985124cad4c2ecfc2ec8.ctex",
+      "bytes": 17724,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/events.png-84d5e81b35068ba47ccc9c340446d573.ctex",
+      "bytes": 485706,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/father.png-37b84c4af88993856c49c7f809876bf6.ctex",
+      "bytes": 58328,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/ground.png-df241b3d58116fb6755d46e62d87de0b.ctex",
+      "bytes": 50046,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/icon.png-487276ed1e3a0c39cad0279d744ee560.ctex",
+      "bytes": 16908,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/interior.png-cc1924895469cea0b71d5c818bfa5074.ctex",
+      "bytes": 14932,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/mother.png-4a2f6e54101b9fe5a6fee8be5c5e5fa1.ctex",
+      "bytes": 61028,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/street_kit.png-743e0ce45d1c5d35de0089a44bcf9c3b.ctex",
+      "bytes": 37170,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/stroller.png-c5b4ce39d8567239beda0d1473cc2a1e.ctex",
+      "bytes": 6040,
+      "flags": 0
+    },
+    {
+      "path": ".godot/imported/ui.png-18d5dc20277aa038c56621d031a53acd.ctex",
+      "bytes": 7146,
+      "flags": 0
+    },
+    {
+      "path": ".godot/uid_cache.bin",
+      "bytes": 12626,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/buildings.png.import",
+      "bytes": 198,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/crowd.png.import",
+      "bytes": 193,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/decoration.png.import",
+      "bytes": 199,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/events.png.import",
+      "bytes": 194,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/father.png.import",
+      "bytes": 195,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/ground.png.import",
+      "bytes": 195,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/interior.png.import",
+      "bytes": 196,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/mother.png.import",
+      "bytes": 195,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/regions.json",
+      "bytes": 57943,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/street_kit.png.import",
+      "bytes": 198,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/stroller.png.import",
+      "bytes": 197,
+      "flags": 0
+    },
+    {
+      "path": "assets/atlases/baked/ui.png.import",
+      "bytes": 191,
+      "flags": 0
+    },
+    {
+      "path": "assets/ground_layers.json",
+      "bytes": 6501,
+      "flags": 0
+    },
+    {
+      "path": "assets/ground_tileset.tres.remap",
+      "bytes": 107,
+      "flags": 0
+    },
+    {
+      "path": "assets/shaders/excitement_halo.gdshader",
+      "bytes": 2021,
+      "flags": 0
+    },
+    {
+      "path": "assets/shaders/scenery_water.gdshader",
+      "bytes": 605,
+      "flags": 0
+    },
+    {
+      "path": "icon.png",
+      "bytes": 25644,
+      "flags": 0
+    },
+    {
+      "path": "icon.png.import",
+      "bytes": 192,
+      "flags": 0
+    },
+    {
+      "path": "project.binary",
+      "bytes": 7212,
+      "flags": 0
+    },
+    {
+      "path": "scenes/main.tscn.remap",
+      "bytes": 97,
+      "flags": 0
+    },
+    {
+      "path": "scenes/player/stroller.tscn.remap",
+      "bytes": 101,
+      "flags": 0
+    },
+    {
+      "path": "scenes/ui/day_summary.tscn.remap",
+      "bytes": 104,
+      "flags": 0
+    },
+    {
+      "path": "scenes/ui/hud.tscn.remap",
+      "bytes": 96,
+      "flags": 0
+    },
+    {
+      "path": "scenes/ui/pause_screen.tscn.remap",
+      "bytes": 105,
+      "flags": 0
+    },
+    {
+      "path": "scenes/ui/title_screen.tscn.remap",
+      "bytes": 105,
+      "flags": 0
+    },
+    {
+      "path": "scenes/ui/touch_controls.tscn.remap",
+      "bytes": 107,
+      "flags": 0
+    },
+    {
+      "path": "scenes/world/city.tscn.remap",
+      "bytes": 97,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/event_bus.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/event_bus.gdc",
+      "bytes": 1537,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/game_save.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/game_save.gdc",
+      "bytes": 3722,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/game_state.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/game_state.gdc",
+      "bytes": 9914,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/telemetry.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/telemetry.gdc",
+      "bytes": 11441,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/tuning.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/tuning.gdc",
+      "bytes": 17384,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/visit_counter.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "src/autoload/visit_counter.gdc",
+      "bytes": 6071,
+      "flags": 0
+    },
+    {
+      "path": "src/city/blackout.gd.remap",
+      "bytes": 44,
+      "flags": 0
+    },
+    {
+      "path": "src/city/blackout.gdc",
+      "bytes": 1983,
+      "flags": 0
+    },
+    {
+      "path": "src/city/block_layout.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/city/block_layout.gdc",
+      "bytes": 385,
+      "flags": 0
+    },
+    {
+      "path": "src/city/block_plan.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "src/city/block_plan.gdc",
+      "bytes": 1199,
+      "flags": 0
+    },
+    {
+      "path": "src/city/building.gd.remap",
+      "bytes": 44,
+      "flags": 0
+    },
+    {
+      "path": "src/city/building.gdc",
+      "bytes": 24532,
+      "flags": 0
+    },
+    {
+      "path": "src/city/building_shadows.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/city/building_shadows.gdc",
+      "bytes": 2474,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city.gd.remap",
+      "bytes": 40,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city.gdc",
+      "bytes": 28187,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city_decals.gd.remap",
+      "bytes": 47,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city_decals.gdc",
+      "bytes": 1034,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city_edge.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city_edge.gdc",
+      "bytes": 2124,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city_generator.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city_generator.gdc",
+      "bytes": 29916,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city_map.gd.remap",
+      "bytes": 44,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city_map.gdc",
+      "bytes": 16909,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city_state.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "src/city/city_state.gdc",
+      "bytes": 3032,
+      "flags": 0
+    },
+    {
+      "path": "src/city/garbage_sacks.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "src/city/garbage_sacks.gdc",
+      "bytes": 1881,
+      "flags": 0
+    },
+    {
+      "path": "src/city/ground_tiles.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/city/ground_tiles.gdc",
+      "bytes": 5457,
+      "flags": 0
+    },
+    {
+      "path": "src/city/litter.gd.remap",
+      "bytes": 42,
+      "flags": 0
+    },
+    {
+      "path": "src/city/litter.gdc",
+      "bytes": 1510,
+      "flags": 0
+    },
+    {
+      "path": "src/city/marble_bag.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "src/city/marble_bag.gdc",
+      "bytes": 871,
+      "flags": 0
+    },
+    {
+      "path": "src/city/poster_art.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "src/city/poster_art.gdc",
+      "bytes": 2943,
+      "flags": 0
+    },
+    {
+      "path": "src/city/poster_state.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/city/poster_state.gdc",
+      "bytes": 2167,
+      "flags": 0
+    },
+    {
+      "path": "src/city/poster_walls.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/city/poster_walls.gdc",
+      "bytes": 9317,
+      "flags": 0
+    },
+    {
+      "path": "src/city/prop.gd.remap",
+      "bytes": 40,
+      "flags": 0
+    },
+    {
+      "path": "src/city/prop.gdc",
+      "bytes": 1861,
+      "flags": 0
+    },
+    {
+      "path": "src/city/scenery_layer.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "src/city/scenery_layer.gdc",
+      "bytes": 689,
+      "flags": 0
+    },
+    {
+      "path": "src/city/scenery_water.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "src/city/scenery_water.gdc",
+      "bytes": 1696,
+      "flags": 0
+    },
+    {
+      "path": "src/city/street_trees.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/city/street_trees.gdc",
+      "bytes": 6073,
+      "flags": 0
+    },
+    {
+      "path": "src/city/tile.gd.remap",
+      "bytes": 40,
+      "flags": 0
+    },
+    {
+      "path": "src/city/tile.gdc",
+      "bytes": 1205,
+      "flags": 0
+    },
+    {
+      "path": "src/city/traffic_light.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "src/city/traffic_light.gdc",
+      "bytes": 1913,
+      "flags": 0
+    },
+    {
+      "path": "src/city/traffic_signals.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "src/city/traffic_signals.gdc",
+      "bytes": 1420,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/car_turn.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/car_turn.gdc",
+      "bytes": 3223,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/crowd.gd.remap",
+      "bytes": 42,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/crowd.gdc",
+      "bytes": 14717,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/crowd_agent.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/crowd_agent.gdc",
+      "bytes": 40407,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/crowd_field.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/crowd_field.gdc",
+      "bytes": 1695,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/crowd_lanes.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/crowd_lanes.gdc",
+      "bytes": 3127,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/crowd_pockets.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/crowd_pockets.gdc",
+      "bytes": 3053,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/traffic_index.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/traffic_index.gdc",
+      "bytes": 1262,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/walker_door_hold.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "src/crowd/walker_door_hold.gdc",
+      "bytes": 905,
+      "flags": 0
+    },
+    {
+      "path": "src/day/day_controller.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "src/day/day_controller.gdc",
+      "bytes": 3555,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/auto_screenshot.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/auto_screenshot.gdc",
+      "bytes": 8114,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/debug_layers.gd.remap",
+      "bytes": 47,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/debug_layers.gdc",
+      "bytes": 6854,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/debug_mode_note.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/debug_mode_note.gdc",
+      "bytes": 806,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/dev_flags.gd.remap",
+      "bytes": 44,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/dev_flags.gdc",
+      "bytes": 12995,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/dev_rig.gd.remap",
+      "bytes": 42,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/dev_rig.gdc",
+      "bytes": 8115,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/route_lines.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/route_lines.gdc",
+      "bytes": 2444,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/route_rig.gd.remap",
+      "bytes": 44,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/route_rig.gdc",
+      "bytes": 34380,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/still_watch.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/still_watch.gdc",
+      "bytes": 4209,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/trailer_text.gd.remap",
+      "bytes": 47,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/trailer_text.gdc",
+      "bytes": 2240,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/zoom_out_camera.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/dev/zoom_out_camera.gdc",
+      "bytes": 1878,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_catalogue.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_catalogue.gdc",
+      "bytes": 27157,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_def.gd.remap",
+      "bytes": 47,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_def.gdc",
+      "bytes": 15127,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_director.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_director.gdc",
+      "bytes": 10088,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_instance.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_instance.gdc",
+      "bytes": 59622,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_manager.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_manager.gdc",
+      "bytes": 25945,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_scenery.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_scenery.gdc",
+      "bytes": 1764,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_scenery_parts.gd.remap",
+      "bytes": 57,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_scenery_parts.gdc",
+      "bytes": 1077,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_scheduler.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "src/events/event_scheduler.gdc",
+      "bytes": 44427,
+      "flags": 0
+    },
+    {
+      "path": "src/events/mast_sites.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/events/mast_sites.gdc",
+      "bytes": 5139,
+      "flags": 0
+    },
+    {
+      "path": "src/events/pending_warning.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "src/events/pending_warning.gdc",
+      "bytes": 3010,
+      "flags": 0
+    },
+    {
+      "path": "src/finale/finale_controller.gd.remap",
+      "bytes": 55,
+      "flags": 0
+    },
+    {
+      "path": "src/finale/finale_controller.gdc",
+      "bytes": 1835,
+      "flags": 0
+    },
+    {
+      "path": "src/finale/finale_planner.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/finale/finale_planner.gdc",
+      "bytes": 6098,
+      "flags": 0
+    },
+    {
+      "path": "src/finale/interior_events.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "src/finale/interior_events.gdc",
+      "bytes": 7349,
+      "flags": 0
+    },
+    {
+      "path": "src/game_enums.gd.remap",
+      "bytes": 41,
+      "flags": 0
+    },
+    {
+      "path": "src/game_enums.gdc",
+      "bytes": 1692,
+      "flags": 0
+    },
+    {
+      "path": "src/ground_shape.gd.remap",
+      "bytes": 43,
+      "flags": 0
+    },
+    {
+      "path": "src/ground_shape.gdc",
+      "bytes": 6226,
+      "flags": 0
+    },
+    {
+      "path": "src/interior/interior_map.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/interior/interior_map.gdc",
+      "bytes": 7461,
+      "flags": 0
+    },
+    {
+      "path": "src/interior/interior_map_plan.gd.remap",
+      "bytes": 57,
+      "flags": 0
+    },
+    {
+      "path": "src/interior/interior_map_plan.gdc",
+      "bytes": 930,
+      "flags": 0
+    },
+    {
+      "path": "src/interior/interior_scene.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "src/interior/interior_scene.gdc",
+      "bytes": 13751,
+      "flags": 0
+    },
+    {
+      "path": "src/interior/interior_tile.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "src/interior/interior_tile.gdc",
+      "bytes": 1489,
+      "flags": 0
+    },
+    {
+      "path": "src/interior/interior_tileset.gd.remap",
+      "bytes": 56,
+      "flags": 0
+    },
+    {
+      "path": "src/interior/interior_tileset.gdc",
+      "bytes": 1866,
+      "flags": 0
+    },
+    {
+      "path": "src/main.gd.remap",
+      "bytes": 35,
+      "flags": 0
+    },
+    {
+      "path": "src/main.gdc",
+      "bytes": 37831,
+      "flags": 0
+    },
+    {
+      "path": "src/palette.gd.remap",
+      "bytes": 38,
+      "flags": 0
+    },
+    {
+      "path": "src/palette.gdc",
+      "bytes": 2802,
+      "flags": 0
+    },
+    {
+      "path": "src/player/baby.gd.remap",
+      "bytes": 42,
+      "flags": 0
+    },
+    {
+      "path": "src/player/baby.gdc",
+      "bytes": 5752,
+      "flags": 0
+    },
+    {
+      "path": "src/player/stroller.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "src/player/stroller.gdc",
+      "bytes": 15495,
+      "flags": 0
+    },
+    {
+      "path": "src/resistance/contact_point.gd.remap",
+      "bytes": 55,
+      "flags": 0
+    },
+    {
+      "path": "src/resistance/contact_point.gdc",
+      "bytes": 2032,
+      "flags": 0
+    },
+    {
+      "path": "src/resistance/happenings.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/resistance/happenings.gdc",
+      "bytes": 12644,
+      "flags": 0
+    },
+    {
+      "path": "src/resistance/resistance_director.gd.remap",
+      "bytes": 61,
+      "flags": 0
+    },
+    {
+      "path": "src/resistance/resistance_director.gdc",
+      "bytes": 29607,
+      "flags": 0
+    },
+    {
+      "path": "src/resistance/resistance_steps.gd.remap",
+      "bytes": 58,
+      "flags": 0
+    },
+    {
+      "path": "src/resistance/resistance_steps.gdc",
+      "bytes": 5524,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/closure_marker.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/closure_marker.gdc",
+      "bytes": 2308,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/closure_planner.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/closure_planner.gdc",
+      "bytes": 8662,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/corridor.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/corridor.gdc",
+      "bytes": 1584,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/park_closure.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/park_closure.gdc",
+      "bytes": 3990,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/park_fence_marker.gd.remap",
+      "bytes": 55,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/park_fence_marker.gdc",
+      "bytes": 1260,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/reachability_grid.gd.remap",
+      "bytes": 55,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/reachability_grid.gdc",
+      "bytes": 4830,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/region_planner.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/region_planner.gdc",
+      "bytes": 13409,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/road_closure.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/road_closure.gdc",
+      "bytes": 1826,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/route_tree.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/route_tree.gdc",
+      "bytes": 15883,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/seal_planner.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/seal_planner.gdc",
+      "bytes": 12502,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/street_network.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/routes/street_network.gdc",
+      "bytes": 6051,
+      "flags": 0
+    },
+    {
+      "path": "src/sprites.gd.remap",
+      "bytes": 38,
+      "flags": 0
+    },
+    {
+      "path": "src/sprites.gdc",
+      "bytes": 1372,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/frame_cost.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/frame_cost.gdc",
+      "bytes": 1128,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/frame_trace.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/frame_trace.gdc",
+      "bytes": 4352,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/frame_trace_buffer.gd.remap",
+      "bytes": 59,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/frame_trace_buffer.gdc",
+      "bytes": 2456,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/telemetry_log.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/telemetry_log.gdc",
+      "bytes": 1524,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/telemetry_map.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/telemetry_map.gdc",
+      "bytes": 5237,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/telemetry_observer.gd.remap",
+      "bytes": 59,
+      "flags": 0
+    },
+    {
+      "path": "src/telemetry/telemetry_observer.gdc",
+      "bytes": 21545,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/controls_mode.gd.remap",
+      "bytes": 47,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/controls_mode.gdc",
+      "bytes": 1153,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/danger_edge.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/danger_edge.gdc",
+      "bytes": 6460,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/day_summary.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/day_summary.gdc",
+      "bytes": 9021,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/entity_halo.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/entity_halo.gdc",
+      "bytes": 2376,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/excitement_halo.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/excitement_halo.gdc",
+      "bytes": 2705,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/frame_graph.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/frame_graph.gdc",
+      "bytes": 2410,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/home_arrow.gd.remap",
+      "bytes": 44,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/home_arrow.gdc",
+      "bytes": 2549,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/hud.gd.remap",
+      "bytes": 37,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/hud.gdc",
+      "bytes": 7163,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/meter_bar.gd.remap",
+      "bytes": 43,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/meter_bar.gdc",
+      "bytes": 1932,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/mode_button.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/mode_button.gdc",
+      "bytes": 4276,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/nerve_display.gd.remap",
+      "bytes": 47,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/nerve_display.gdc",
+      "bytes": 233,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/pause_screen.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/pause_screen.gdc",
+      "bytes": 4284,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/quit_option.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/quit_option.gdc",
+      "bytes": 456,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/save_indicator.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/save_indicator.gdc",
+      "bytes": 1870,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/screen_orientation.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/screen_orientation.gdc",
+      "bytes": 1258,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/sentence_lines.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/sentence_lines.gdc",
+      "bytes": 1742,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/title_screen.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/title_screen.gdc",
+      "bytes": 4131,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/touch_controls.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/touch_controls.gdc",
+      "bytes": 8917,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/touch_input.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "src/ui/touch_input.gdc",
+      "bytes": 639,
+      "flags": 0
+    },
+    {
+      "path": "src/visuals/atlas_library.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/visuals/atlas_library.gdc",
+      "bytes": 13938,
+      "flags": 0
+    },
+    {
+      "path": "src/visuals/eight_direction.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "src/visuals/eight_direction.gdc",
+      "bytes": 887,
+      "flags": 0
+    },
+    {
+      "path": "src/visuals/ground_layers.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "src/visuals/ground_layers.gdc",
+      "bytes": 12484,
+      "flags": 0
+    },
+    {
+      "path": "src/visuals/wheel_bob.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "src/visuals/wheel_bob.gdc",
+      "bytes": 384,
+      "flags": 0
+    },
+    {
+      "path": "src/world/release_latch.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/world/release_latch.gdc",
+      "bytes": 549,
+      "flags": 0
+    },
+    {
+      "path": "src/world/world_context.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "src/world/world_context.gdc",
+      "bytes": 548,
+      "flags": 0
+    },
+    {
+      "path": "tests/camera_interpolation_spy.gd.remap",
+      "bytes": 57,
+      "flags": 0
+    },
+    {
+      "path": "tests/camera_interpolation_spy.gdc",
+      "bytes": 394,
+      "flags": 0
+    },
+    {
+      "path": "tests/events_shared_city.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/events_shared_city.gdc",
+      "bytes": 720,
+      "flags": 0
+    },
+    {
+      "path": "tests/fixtures/prediction_reference.gd.remap",
+      "bytes": 62,
+      "flags": 0
+    },
+    {
+      "path": "tests/fixtures/prediction_reference.gdc",
+      "bytes": 1522,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/downy_otter_sealed_alley.gd.remap",
+      "bytes": 64,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/downy_otter_sealed_alley.gdc",
+      "bytes": 3574,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/entity_frame_profile.gd.remap",
+      "bytes": 60,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/entity_frame_profile.gdc",
+      "bytes": 2995,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/entity_frame_profile.tscn.remap",
+      "bytes": 113,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/entity_frame_profile_observer.gd.remap",
+      "bytes": 69,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/entity_frame_profile_observer.gdc",
+      "bytes": 3442,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m100_map_edge_entries.gd.remap",
+      "bytes": 61,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m100_map_edge_entries.gdc",
+      "bytes": 3704,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m108_event_people_sheet.gd.remap",
+      "bytes": 63,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m108_event_people_sheet.gdc",
+      "bytes": 4821,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m108_event_strides_sheet.gd.remap",
+      "bytes": 64,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m108_event_strides_sheet.gdc",
+      "bytes": 2801,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m108_event_vehicles_sheet.gd.remap",
+      "bytes": 65,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m108_event_vehicles_sheet.gdc",
+      "bytes": 3856,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m108_walker_stride_sheet.gd.remap",
+      "bytes": 64,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m108_walker_stride_sheet.gdc",
+      "bytes": 2679,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m110_bodies.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m110_bodies.gdc",
+      "bytes": 2824,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m115_tree_rarity.gd.remap",
+      "bytes": 56,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m115_tree_rarity.gdc",
+      "bytes": 1466,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m117_decay.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m117_decay.gdc",
+      "bytes": 7450,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m118_crash_gap.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m118_crash_gap.gdc",
+      "bytes": 3936,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m128_park_beats.gd.remap",
+      "bytes": 55,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m128_park_beats.gdc",
+      "bytes": 9088,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m129_walked_sidewalk_walls.gd.remap",
+      "bytes": 66,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m129_walked_sidewalk_walls.gdc",
+      "bytes": 12870,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m129_zero_cost_line.gd.remap",
+      "bytes": 59,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m129_zero_cost_line.gdc",
+      "bytes": 28326,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m137_trap_arrival.gd.remap",
+      "bytes": 57,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m137_trap_arrival.gdc",
+      "bytes": 2144,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m152_car_jumps.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m152_car_jumps.gdc",
+      "bytes": 14043,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m156_car_turns.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m156_car_turns.gdc",
+      "bytes": 5727,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m159_contribution_cost.gd.remap",
+      "bytes": 62,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m159_contribution_cost.gdc",
+      "bytes": 2549,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m159_event_shape_cache.gd.remap",
+      "bytes": 62,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m159_event_shape_cache.gdc",
+      "bytes": 1869,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m174_pass.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m174_pass.gdc",
+      "bytes": 3513,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m174_walk_beside.gd.remap",
+      "bytes": 56,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m174_walk_beside.gdc",
+      "bytes": 1913,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m178_door_gap.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m178_door_gap.gdc",
+      "bytes": 2503,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m179_fire_on_her_way.gd.remap",
+      "bytes": 60,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m179_fire_on_her_way.gdc",
+      "bytes": 11149,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m180_crews_on_her_way.gd.remap",
+      "bytes": 61,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m180_crews_on_her_way.gdc",
+      "bytes": 6475,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m181_resistance_targets.gd.remap",
+      "bytes": 63,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m181_resistance_targets.gdc",
+      "bytes": 3900,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m184_route_timing.gd.remap",
+      "bytes": 57,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m184_route_timing.gdc",
+      "bytes": 5566,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m191_horn_watch.gd.remap",
+      "bytes": 55,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m191_horn_watch.gdc",
+      "bytes": 2875,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m205_note_handover.gd.remap",
+      "bytes": 58,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m205_note_handover.gdc",
+      "bytes": 4029,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m207_warning_lead.gd.remap",
+      "bytes": 57,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m207_warning_lead.gdc",
+      "bytes": 9618,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m213_far_end.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m213_far_end.gdc",
+      "bytes": 7226,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m64_density.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m64_density.gdc",
+      "bytes": 2767,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m64_measure.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m64_measure.gdc",
+      "bytes": 9060,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m96_crying_at_the_top.gd.remap",
+      "bytes": 61,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m96_crying_at_the_top.gdc",
+      "bytes": 6910,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m96_dog_sprinkle.gd.remap",
+      "bytes": 56,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m96_dog_sprinkle.gdc",
+      "bytes": 2739,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m97_spoilage.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m97_spoilage.gdc",
+      "bytes": 6627,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m98_return_phase.gd.remap",
+      "bytes": 56,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m98_return_phase.gdc",
+      "bytes": 5178,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m99_caps.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/m99_caps.gdc",
+      "bytes": 3736,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/scenery_animation_art.gd.remap",
+      "bytes": 61,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/scenery_animation_art.gdc",
+      "bytes": 2848,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/scenery_animation_runtime.gd.remap",
+      "bytes": 65,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/scenery_animation_runtime.gdc",
+      "bytes": 6129,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/scenery_animation_runtime.tscn.remap",
+      "bytes": 118,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/scenery_shader_warmup_runtime.gd.remap",
+      "bytes": 69,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/scenery_shader_warmup_runtime.gdc",
+      "bytes": 3887,
+      "flags": 0
+    },
+    {
+      "path": "tests/probes/scenery_shader_warmup_runtime.tscn.remap",
+      "bytes": 122,
+      "flags": 0
+    },
+    {
+      "path": "tests/run_tests.gd.remap",
+      "bytes": 42,
+      "flags": 0
+    },
+    {
+      "path": "tests/run_tests.gdc",
+      "bytes": 2196,
+      "flags": 0
+    },
+    {
+      "path": "tests/runner_fixtures/engine_error.gd.remap",
+      "bytes": 61,
+      "flags": 0
+    },
+    {
+      "path": "tests/runner_fixtures/engine_error.gdc",
+      "bytes": 402,
+      "flags": 0
+    },
+    {
+      "path": "tests/stroller_interpolation_spy.gd.remap",
+      "bytes": 59,
+      "flags": 0
+    },
+    {
+      "path": "tests/stroller_interpolation_spy.gdc",
+      "bytes": 373,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_acts.gd.remap",
+      "bytes": 42,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_acts.gdc",
+      "bytes": 4258,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_decoration.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_decoration.gdc",
+      "bytes": 3458,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_events.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_events.gdc",
+      "bytes": 4781,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_ground.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_ground.gdc",
+      "bytes": 12517,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_leaf_consumers.gd.remap",
+      "bytes": 58,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_leaf_consumers.gdc",
+      "bytes": 6654,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_library.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_library.gdc",
+      "bytes": 9212,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_loading.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_loading.gdc",
+      "bytes": 6947,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_packer.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_packer.gdc",
+      "bytes": 3912,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_stroller_crowd.gd.remap",
+      "bytes": 58,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_atlas_stroller_crowd.gdc",
+      "bytes": 3564,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_auto_screenshot.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_auto_screenshot.gdc",
+      "bytes": 10774,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_balance.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_balance.gdc",
+      "bytes": 3854,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_blackout.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_blackout.gdc",
+      "bytes": 9679,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_blocks.gd.remap",
+      "bytes": 44,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_blocks.gdc",
+      "bytes": 12364,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_building_shadows.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_building_shadows.gdc",
+      "bytes": 3668,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_burst_capture.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_burst_capture.gdc",
+      "bytes": 6686,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_camera_start.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_camera_start.gdc",
+      "bytes": 2388,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_car_views.gd.remap",
+      "bytes": 47,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_car_views.gdc",
+      "bytes": 15123,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_checkpoints.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_checkpoints.gdc",
+      "bytes": 46590,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_city_decay.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_city_decay.gdc",
+      "bytes": 9093,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_closure_marker.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_closure_marker.gdc",
+      "bytes": 1601,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_crowd.gd.remap",
+      "bytes": 43,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_crowd.gdc",
+      "bytes": 38085,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_crowd_bodies.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_crowd_bodies.gdc",
+      "bytes": 17671,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_crowd_closures.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_crowd_closures.gdc",
+      "bytes": 36759,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_crowd_contributions.gd.remap",
+      "bytes": 57,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_crowd_contributions.gdc",
+      "bytes": 2394,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_danger.gd.remap",
+      "bytes": 44,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_danger.gdc",
+      "bytes": 23248,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_day_controller.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_day_controller.gdc",
+      "bytes": 1964,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_day_loop.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_day_loop.gdc",
+      "bytes": 20933,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_day_lost_to.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_day_lost_to.gdc",
+      "bytes": 1373,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_debug_layers.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_debug_layers.gdc",
+      "bytes": 12488,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_dev_rig.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_dev_rig.gdc",
+      "bytes": 6579,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_event_manager.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_event_manager.gdc",
+      "bytes": 27543,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_event_redraw.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_event_redraw.gdc",
+      "bytes": 12992,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_event_spacing.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_event_spacing.gdc",
+      "bytes": 2109,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_event_strides.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_event_strides.gdc",
+      "bytes": 10494,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_event_views.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_event_views.gdc",
+      "bytes": 22138,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_catalogue.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_catalogue.gdc",
+      "bytes": 19220,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_chat.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_chat.gdc",
+      "bytes": 8658,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_costs.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_costs.gdc",
+      "bytes": 13123,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_emission.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_emission.gdc",
+      "bytes": 6373,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_fire.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_fire.gdc",
+      "bytes": 14616,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_placement.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_placement.gdc",
+      "bytes": 19057,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_pursuit.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_pursuit.gdc",
+      "bytes": 17672,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_scenery.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_scenery.gdc",
+      "bytes": 7826,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_scheduler.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_scheduler.gdc",
+      "bytes": 13523,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_solid.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_events_solid.gdc",
+      "bytes": 9846,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_finale.gd.remap",
+      "bytes": 44,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_finale.gdc",
+      "bytes": 28513,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_frame_graph.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_frame_graph.gdc",
+      "bytes": 3448,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_frame_trace.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_frame_trace.gdc",
+      "bytes": 2699,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_full_run.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_full_run.gdc",
+      "bytes": 3669,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_generator.gd.remap",
+      "bytes": 47,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_generator.gdc",
+      "bytes": 22729,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_ground_floor.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_ground_floor.gdc",
+      "bytes": 36673,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_ground_layers.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_ground_layers.gdc",
+      "bytes": 14602,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_halo.gd.remap",
+      "bytes": 42,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_halo.gdc",
+      "bytes": 17241,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_heat.gd.remap",
+      "bytes": 42,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_heat.gdc",
+      "bytes": 17510,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_held_restart.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_held_restart.gdc",
+      "bytes": 11050,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_home_block.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_home_block.gdc",
+      "bytes": 6519,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_hud.gd.remap",
+      "bytes": 41,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_hud.gdc",
+      "bytes": 11726,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_interior.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_interior.gdc",
+      "bytes": 44964,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_invincible.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_invincible.gdc",
+      "bytes": 7000,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_main.gd.remap",
+      "bytes": 42,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_main.gdc",
+      "bytes": 23651,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_masts.gd.remap",
+      "bytes": 43,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_masts.gdc",
+      "bytes": 9218,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_meters.gd.remap",
+      "bytes": 44,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_meters.gdc",
+      "bytes": 12251,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_orientation.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_orientation.gdc",
+      "bytes": 7369,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_pause.gd.remap",
+      "bytes": 43,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_pause.gdc",
+      "bytes": 32384,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_performance.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_performance.gdc",
+      "bytes": 2380,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_player_presentation.gd.remap",
+      "bytes": 57,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_player_presentation.gdc",
+      "bytes": 3419,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_posters.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_posters.gdc",
+      "bytes": 13497,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_power_station.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_power_station.gdc",
+      "bytes": 11348,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_prediction_reuse.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_prediction_reuse.gdc",
+      "bytes": 10714,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_presentation_mode.gd.remap",
+      "bytes": 55,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_presentation_mode.gdc",
+      "bytes": 8871,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_protest.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_protest.gdc",
+      "bytes": 3768,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_quit_option.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_quit_option.gdc",
+      "bytes": 934,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_reachability_grid.gd.remap",
+      "bytes": 55,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_reachability_grid.gdc",
+      "bytes": 5385,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_regions.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_regions.gdc",
+      "bytes": 17817,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_resistance.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_resistance.gdc",
+      "bytes": 106260,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_return_patrols.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_return_patrols.gdc",
+      "bytes": 4151,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_rig_press.gd.remap",
+      "bytes": 47,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_rig_press.gdc",
+      "bytes": 3406,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_route_lines.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_route_lines.gdc",
+      "bytes": 5376,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_route_rig.gd.remap",
+      "bytes": 47,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_route_rig.gdc",
+      "bytes": 36096,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_route_tree.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_route_tree.gdc",
+      "bytes": 14648,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_routes_closures.gd.remap",
+      "bytes": 53,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_routes_closures.gdc",
+      "bytes": 9708,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_routes_fallen_trees.gd.remap",
+      "bytes": 57,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_routes_fallen_trees.gdc",
+      "bytes": 3041,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_routes_kerb_tint.gd.remap",
+      "bytes": 54,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_routes_kerb_tint.gdc",
+      "bytes": 4496,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_routes_lattice.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_routes_lattice.gdc",
+      "bytes": 5731,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_save.gd.remap",
+      "bytes": 42,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_save.gdc",
+      "bytes": 24886,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_scenery_animation.gd.remap",
+      "bytes": 55,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_scenery_animation.gdc",
+      "bytes": 7174,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_seals.gd.remap",
+      "bytes": 43,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_seals.gdc",
+      "bytes": 19546,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_sentence_lines.gd.remap",
+      "bytes": 52,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_sentence_lines.gdc",
+      "bytes": 4055,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_shapes.gd.remap",
+      "bytes": 44,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_shapes.gdc",
+      "bytes": 14253,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_spent_park.gd.remap",
+      "bytes": 48,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_spent_park.gdc",
+      "bytes": 18805,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_still_watch.gd.remap",
+      "bytes": 49,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_still_watch.gdc",
+      "bytes": 7579,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_stroller.gd.remap",
+      "bytes": 46,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_stroller.gdc",
+      "bytes": 9895,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_stroller_gait.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_stroller_gait.gdc",
+      "bytes": 3241,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_telemetry.gd.remap",
+      "bytes": 47,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_telemetry.gdc",
+      "bytes": 38315,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_touch.gd.remap",
+      "bytes": 43,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_touch.gdc",
+      "bytes": 24312,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_trailer_flags.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_trailer_flags.gdc",
+      "bytes": 3934,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_turns.gd.remap",
+      "bytes": 43,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_turns.gdc",
+      "bytes": 23360,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_tutorial_dog.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_tutorial_dog.gdc",
+      "bytes": 6714,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_visit_counter.gd.remap",
+      "bytes": 51,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_visit_counter.gdc",
+      "bytes": 13488,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_visuals.gd.remap",
+      "bytes": 45,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_visuals.gdc",
+      "bytes": 6194,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_walker_views.gd.remap",
+      "bytes": 50,
+      "flags": 0
+    },
+    {
+      "path": "tests/test_walker_views.gdc",
+      "bytes": 7375,
+      "flags": 0
+    },
+    {
+      "path": "tests/tests.tscn.remap",
+      "bytes": 98,
+      "flags": 0
+    }
+  ]
+}

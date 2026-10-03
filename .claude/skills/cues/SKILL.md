@@ -140,9 +140,10 @@ gain. basically if I keep doing what I'm doing I very likely get that amount in 
 halo will match roughly the caret if that happens)".)* `expected_impact_at()` moves her too, at
 her own current velocity, and nets what she would gain against what her own current decay gives
 back over the horizon (`Baby.decay_rate()`, `Baby.current_sensitivity()`), floored at zero — the
-forward half of `net_landed()`'s sentence. It is charged against one source at a time rather than
-shared across every source near her; that reads slightly pessimistic when two sources are worth a
-mark at once, and is open to a real multi-source pass if it reads so in play.
+forward half of `net_landed()`'s sentence. `ExcitementHalo` sums every live candidate's projected
+gross once a frame and publishes that total; each source then subtracts its proportional share
+of the horizon's decay through `net_landed()`. A caller that does not supply a shared total
+subtracts the whole horizon's decay from that source alone.
 
 Nothing in `tests/test_danger.gd` can see a moment, which is why the `cue` telemetry entry exists.
 

@@ -10,11 +10,13 @@ the current session** — see "Merging".
 
 ## Who a commit and a pull request are from
 
-**Every GitHub write goes out as an agent identity, and only that identity — never the player's.**
+**Every GitHub write goes out as an agent identity, and only that identity — never as the player
+on an agent's own say-so.** The one exception is a write the player approves themself at the
+guard's prompt, below.
 *(2026-09-26, once the first four identities existed: "I want to make it mandatory for each agent
 to use their respective identity when interacting with github", enforced on writes; asked what an
 agent does when its identity is unusable, the player chose "Stop and tell me" — it never posts as
-the player instead.)*
+the player on its own say-so instead.)*
 
 **Which identity a write goes out as follows what the write does, not which session makes it.**
 *(2026-09-27: "orchestrator/coder session and orchestrator/coder identity are not the same thing.
@@ -51,8 +53,26 @@ running it directly, so the commit, the push and the pull request all show as `<
 than as the player talking to themself. A read (`git status`, `gh pr view`, ...) runs unwrapped;
 minting a token for one is wasted work the player never asked for. **When `status` reports the
 role not usable (not created yet, not installed on the repository, or a cloud session — see
-`tools/agent-identity.py`'s own module docstring), the session stops there and tells the player,
-rather than committing, pushing or opening the pull request under the player's own account.** A
+`tools/agent-identity.py`'s own module docstring), the session never runs the write under the
+player's own account on its own say-so.** Where no identity can work at all — a Claude Code cloud
+session, or a machine with no identity directory — the guard below can ask the player about an
+ordinary write instead of denying it: a local commit or history step (`git commit`, `merge`,
+`rebase`, `pull`, `cherry-pick`, `revert`, `am`), a push of a branch, or a pull-request write
+(`gh pr create`, `comment`, `edit`, `ready`) goes to them as a permission prompt for that one
+command, which only they can approve *(2026-10-02: "Let's do A and make the codex version always
+refuse")*. Every other write is never asked about, only denied — among them a push of a tag, of
+every branch or of a `*` pattern (a pushed `v*` tag publishes the site), a push naming a shell
+expansion (`"$TAG"` can be a `v*` tag) or one the guard cannot read to its end, a forced,
+deleting, mirroring or pruning push, a pull request's merge, a release and a bare `gh issue`
+write — since a prompt is too easy to click through for any of them, and for the last because the
+player wants an agent's issue writes to go through a script rather than a direct `gh issue` command
+*(2026-09-27: "if it goes through a script it's safe we just need to get it working once -- an
+agent shouldn't use gh issue directly")*. **That asking is
+off unless the player switches it on** with `NAPPY_ASK_FOR_PLAYER_WRITES=1` in the environment a
+session starts with (a cloud environment's own variables, or the launching shell); unset, every
+unwrapped write is denied *(2026-10-02: "Make it so it can be easily turned off and refuse again later";
+"Yes default to refusing")*. A session never sets or clears it for itself. Anything the guard
+denies the session stops on and tells the player about, and Codex stops on every one of them. A
 `PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a
 `git push`, a commit-making git verb, a GitHub-writing `gh` call, or one of the `tools/` scripts
 that pushes or posts internally, in command position, unless the same command is wrapped in `run
@@ -339,30 +359,32 @@ accumulate one per work item, and the cost is not clutter — it is that `git br
 able to answer the only question it is good for: **is there work that is not on `main`?**
 
 **Git cannot see a squash as a merge, so the PR's state is the check, not `git branch -d`.**
-`-d` refuses every squash-merged branch, which makes its refusal say nothing. Ask GitHub, and
-delete only on its answer:
-
-```sh
-[ "$(gh pr view <branch> --json state -q .state)" = MERGED ] \
-  && [ "$(gh pr view <branch> --json headRefOid -q .headRefOid)" = "$(git rev-parse <branch>)" ] \
-  && git branch -D <branch>
-```
-
-The second test is what keeps `-D` from losing work: a local branch whose tip is not the commit
-the PR merged has commits nobody pushed, and that is the branch worth looking at. A harness
+`-d` refuses every squash-merged branch, which makes its refusal say nothing. Use the retirement
+script below: GitHub must confirm MERGED and git must prove the local tip equals or is an
+ancestor of the merged head. A different tip alone does not prove unpushed work; a stale ancestor
+contains no work outside that PR. Missing commit objects are kept for explicit inspection and
+fetching, never fetched by the dry run. A harness
 `worktree-agent-*` branch has no PR and points at its worktree's base, so `-d` still answers
 for it.
 
 **`tools/prune-merged.sh <branch>...` is that check, executable, and the way a merged branch is
-retired.** It refuses unless the pull request is MERGED and the local tip is its merged head, then
-removes the branch's worktree (never with `--force`, so git refuses a dirty one), the local branch
-and the remote branch if GitHub left it, and sweeps the harness's `worktree-agent-*` branches
-whose worktree is gone. Run it from the main checkout, through `uv run python
+retired.** `--all` inventories candidates and allocated KiB without mutations; `--all --apply`
+retires eligible candidates, and `--dry-run <branch>...` previews named branches. Applying checks
+state again before removal. An open PR, remote tip outside the merged head, dirty/untracked work,
+an ignored file outside the regenerable caches (the script's own `REGENERABLE_IGNORED` list,
+which `--help` prints), worktree lock or unreleased agent brief keeps the branch. After confirming the agent has stopped
+and useful ignored artifacts are retained, its owner adds `cleanup: ready` to the brief's opening
+header in the main and target checkout wherever a copy exists. A lock still vetoes removal and
+is never cleared automatically. The script deletes the remote with an exact-tip lease, removes
+the clean worktree without force, then compares and deletes the local ref. A failed stage keeps
+remaining local work and reports the incomplete cleanup. It also sweeps the harness's
+`worktree-agent-*` branches whose worktree is gone. Run it from the main checkout, through `uv run python
 tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>...` for a pull request
 that changed code and `uv run python tools/agent-identity.py run claude-orchestrator --
 tools/prune-merged.sh <branch>...` for a docs-only one ("Who a commit and a pull request are
-from") — its own remote delete is a write, so `github-write-guard.sh` denies it bare (Codex runs
-the same line with `codex-coder` for both). **Use it rather than the bare commands**: Claude
+from") — its own remote delete is a write, so `github-write-guard.sh` denies it bare in every
+shape, and the read-only `--all` inventory and `--dry-run` run through the same wrapped line as
+the apply (Codex runs the same line with `codex-coder` for both). **Use it rather than the bare commands**: Claude
 Code's auto-mode classifier refuses `git worktree remove` and `git branch -D` as destructive
 however the check came out, and `.claude/settings.json` allows exactly those two wrapped lines, one
 per role, because the script cannot delete anything the check did not clear. The allow rules are a

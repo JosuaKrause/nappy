@@ -1,0 +1,1258 @@
+{
+  "revision": "25e34fa02a7b7271748f9a19634a879da545b29e",
+  "commands": [
+    [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--headless",
+      "--path",
+      "/Users/krause/workspace/nappy-codex/.claude/worktrees/lazy-scenery-investigation",
+      "res://tests/tests.tscn",
+      "--",
+      "probes/lazy_scenery_routes.gd",
+      "--no-save",
+      "--seed",
+      "4242",
+      "--day",
+      "1"
+    ],
+    [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--headless",
+      "--path",
+      "/Users/krause/workspace/nappy-codex/.claude/worktrees/lazy-scenery-investigation",
+      "res://tests/tests.tscn",
+      "--",
+      "probes/lazy_scenery_routes.gd",
+      "--no-save",
+      "--seed",
+      "4242",
+      "--day",
+      "8"
+    ],
+    [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--headless",
+      "--path",
+      "/Users/krause/workspace/nappy-codex/.claude/worktrees/lazy-scenery-investigation",
+      "res://tests/tests.tscn",
+      "--",
+      "probes/lazy_scenery_routes.gd",
+      "--no-save",
+      "--seed",
+      "4242",
+      "--day",
+      "12"
+    ],
+    [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--headless",
+      "--path",
+      "/Users/krause/workspace/nappy-codex/.claude/worktrees/lazy-scenery-investigation",
+      "res://tests/tests.tscn",
+      "--",
+      "probes/lazy_scenery_routes.gd",
+      "--no-save",
+      "--seed",
+      "3265820891",
+      "--day",
+      "1"
+    ],
+    [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--headless",
+      "--path",
+      "/Users/krause/workspace/nappy-codex/.claude/worktrees/lazy-scenery-investigation",
+      "res://tests/tests.tscn",
+      "--",
+      "probes/lazy_scenery_routes.gd",
+      "--no-save",
+      "--seed",
+      "3265820891",
+      "--day",
+      "8"
+    ],
+    [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--headless",
+      "--path",
+      "/Users/krause/workspace/nappy-codex/.claude/worktrees/lazy-scenery-investigation",
+      "res://tests/tests.tscn",
+      "--",
+      "probes/lazy_scenery_routes.gd",
+      "--no-save",
+      "--seed",
+      "3265820891",
+      "--day",
+      "12"
+    ]
+  ],
+  "hashes": {
+    "src/autoload/event_bus.gd": "06e07dc16efbde438d5202c5c3536735a7d25e88bcf05fa71b7f161d6ea9fc20",
+    "src/autoload/game_save.gd": "13bb223aff277a0fb2d91af7b0c1638e8975c72f94ed29c6060e603b40844d57",
+    "src/autoload/game_state.gd": "fafc97ef0f96806af9a09f323a330c0f715080f2e9a198ca1a648d2a48518a4b",
+    "src/autoload/telemetry.gd": "4ce3261e945d648fc132e82b73f6a3254c8b290a957ec6e108924c609e081753",
+    "src/autoload/tuning.gd": "a4641078afdf8dfff625b00ce5eb8e05e492322f0a2b61addfd5974ff9a126be",
+    "src/autoload/visit_counter.gd": "63bc8c095a37a42dacbaa94177a715ca77360c55c4b2e6d033df1be541e6c6ce",
+    "src/city/blackout.gd": "951dd400b1e80cc5fdad4ef8bf376bf86b0cddae6ba35c8072f88c1cfde46bed",
+    "src/city/block_layout.gd": "4198fdbf9749244db802aa750ef988f4cd369c16daa9185da8f29198ee6dfb96",
+    "src/city/block_plan.gd": "67fce54547ace4942886f19fb694f1675776efa2f9af99fef9b0670ffc8a8f19",
+    "src/city/building.gd": "0315be5c233e4c932872ee859739d882958caabda8cb1bba00d77ac50327f046",
+    "src/city/building_shadows.gd": "2eb94ef81088fa5346390a4f426bd95d7ae56bf96460531c2d36b596ac141677",
+    "src/city/city.gd": "6d82c93fa1c2f6341566061e15eac7ea85aab177cbde321e9f9e2b4fc35405dc",
+    "src/city/city_decals.gd": "58746ec7ec2bb405ec9fe63361d7c2a09e84da96da4f7c2f7edf0b93a97acfa4",
+    "src/city/city_edge.gd": "7943fb72739ff40b937041df375918fd0047823578c615c43223ac02f22d8c10",
+    "src/city/city_generator.gd": "19d60d79bda6e0e83715c5856809bf061ab3d25b3f682f1885f14610eff8b7ae",
+    "src/city/city_map.gd": "bbf45c02ce6e60e255a076f693bf753a5a77b14d58d4a38a3b355e99608ae357",
+    "src/city/city_state.gd": "a3a2b80e12e95d25e00d83289f3b9e5189e37fb8612cd80c770206521674d379",
+    "src/city/garbage_sacks.gd": "81cdd31e7190a107377f0c4cd8cef28895a8593f6aaa24578ce96174c6abfc2d",
+    "src/city/ground_tiles.gd": "45a57a4802517f1bce7c993219efee1e511a41aabfdf6291cc18cade5424cbd0",
+    "src/city/litter.gd": "41bb2d49345e4604bb0a781b455e9ec3481b6c4aba13a3705600e61d40b4acc8",
+    "src/city/marble_bag.gd": "f3af8823b78a1075bcfaca91d5c7d3f3630201267bb7c2ee8d8079368b1532f2",
+    "src/city/poster_art.gd": "143be9d0ea6fd28995c59519b0aff41ebe70f9937d93c0ceb79b61f32836aead",
+    "src/city/poster_state.gd": "0364848959cc3e8fb7338afff0156be0bfca8aefea70fb8005f8ec80ad3baccf",
+    "src/city/poster_walls.gd": "8351bc00b53419487b3ec7a99f580a17bee77657c473bf2323da387f65c70012",
+    "src/city/prop.gd": "a17c66840ef913aac3085eb9684cd6dc73c02550c8fefb655329dd168d447ce6",
+    "src/city/scenery_layer.gd": "68b5d514a0a134b64704cf1a064300ddb9229d3d8a91eaf176aeddfb0f035c82",
+    "src/city/scenery_water.gd": "a00cb5538712717974b67753134937bad92aace2524cf7b5423f18cabead7fc7",
+    "src/city/street_trees.gd": "957985af01e34cada751150a4a6256459d9c9ad2e26c8bd44013c0a122d8c0c7",
+    "src/city/tile.gd": "a7cf1d0d7ab68afc9f8963b2442cf5be690ff96df00a7a29f0c66ba6e55d3241",
+    "src/city/traffic_light.gd": "ab47c7be6678bda11ccf98106dea7637d5b982cefd7dd3365f7590d6a1a3dd4f",
+    "src/city/traffic_signals.gd": "0ee0275f2327689f0eac2e3fbb34512f38cd4160cf38e2d358f4c24c34269e06",
+    "src/crowd/car_turn.gd": "3496a6adea72741a6c988e195824e9af2dcabfcfb5c252e1051dc7483f3a351d",
+    "src/crowd/crowd.gd": "9e86cabd7e1d2093747ce39317992fbee55992cd107398c48f12b8b35fe7631b",
+    "src/crowd/crowd_agent.gd": "40155dd4716538ac5481945d8c3433d70ee79d15151dbf13a73038c5c47fb448",
+    "src/crowd/crowd_field.gd": "8da22be14be311f33c5b181a724516d94c410c142b10a9c95e17779c00623a10",
+    "src/crowd/crowd_lanes.gd": "33c6c35e460625afd1056f9efa4c02d713a566886e0daf556fdb83500093e8b4",
+    "src/crowd/crowd_pockets.gd": "91110640707b1d0ef130e9571264ae5b0e137d2a670e371331ee73cd748fcb2b",
+    "src/crowd/traffic_index.gd": "c94617a7e855c416bdc14ad8101ef842f30b6e66d07e1f2242f3fa5dd3c07e56",
+    "src/crowd/walker_door_hold.gd": "3e593fc44893ed035a6818c8e8b200334bf76104a1dff1057cc140f6226b6d10",
+    "src/day/day_controller.gd": "43fed743c7e6f3e7cf5f4cf70fdd4cf59d8fc2b6d6fc28892e1da0da7ca70bca",
+    "src/dev/auto_screenshot.gd": "b5340e0f14a632956dbb834ca636ba26f0eefb5cb54d16b4d91fd3b880bafe06",
+    "src/dev/debug_layers.gd": "550c9dc6b9ed388f8af9e044ad6caa3b1cd65c0cefb5c4aa8c73bf04f78ecfd9",
+    "src/dev/debug_mode_note.gd": "eea1c6ca8f8652699db4397228e57fcc9fd3c3ac69f6bdc847be6fbb3189cd07",
+    "src/dev/dev_flags.gd": "f2437369163373012b3c7771ab265ea17c320157e626f904a157500b00e2eddb",
+    "src/dev/dev_rig.gd": "ec6497ff503ca1b8957891446f174dcc0d17a6e77b3b251ac0382b5467c197a0",
+    "src/dev/route_lines.gd": "39524bb10f45fc6bb1328d3c16339c4fd5b0e4c6ded49890abf566005292eb4a",
+    "src/dev/route_rig.gd": "65ca9cc1eb530abf1f3bab1dab732fafea6bfda6a813b2901f28f7580582005c",
+    "src/dev/still_watch.gd": "d415e171fda787e5e3247dd63ba7c5c20869e89af31670b68315a5e2b86bda73",
+    "src/dev/trailer_text.gd": "300f29fabab0eafd25afb65840d2f424385762ec20881a0e567705350b00313d",
+    "src/dev/zoom_out_camera.gd": "425b852cd113b2724e4d1bef9024a41e5ac4e728244f1634df9f8da042d0f8e2",
+    "src/events/event_catalogue.gd": "91d655e447ccdab64ff55b0139fa108440df0b8b0fdbfc498025e318e673c2fb",
+    "src/events/event_def.gd": "b4949a21523f5fdb7cd4e61a105bed0d0ff77d55f02c9e673b0a27accfe1ee88",
+    "src/events/event_director.gd": "59c6ec921e0515427edeee85ecccb70b9cee17190faea6febb2a877f0c6f120f",
+    "src/events/event_instance.gd": "3f9d83d2fd27a47c25b38b6ac85a641931b8857924ad64944bbd83be42b6f604",
+    "src/events/event_manager.gd": "49e6fd880178f884eefce0e8943404e9c2c3e719c58f81cb373a5cfd58459415",
+    "src/events/event_scenery.gd": "59dfdcef549a0fd038bc926f2858b458ed25b195cb395264d78fbbdf7e76fe17",
+    "src/events/event_scenery_parts.gd": "e0521b49432e1719e1b12f23cb8e0572fa5ae6e656334bcef6f40fb6d05e0fbd",
+    "src/events/event_scheduler.gd": "e53aab8a237edf3e131ae53d7ff67656c313d08db79dccf6cfa91946b3f4351c",
+    "src/events/mast_sites.gd": "333a2fb8b2c2631a80d6d8612c11908adc7cfed1e2d085d0474aa73f397d3602",
+    "src/events/pending_warning.gd": "2b71d930c5d48a553400ef765a1771ce1d44e83660f300c96646fe433c2d3f17",
+    "src/finale/finale_controller.gd": "31d34c46f3b33710bad7e637f255ffa2795a88b838589ddc81bcb13a0397163c",
+    "src/finale/finale_planner.gd": "d711cd65312bbf2cc03daba712e88448f5d8ef23aa5f617b888ec31eab50bd5b",
+    "src/finale/interior_events.gd": "23c91f546a8529755b6b68c2712187134e5a4e827a20ced029c5e1a403984c88",
+    "src/game_enums.gd": "559e9b3197741008933a677e47f01c11c41709634a43fb0cd59ad9b85479e13e",
+    "src/ground_shape.gd": "f3310ce1197db68902a3dfd00e25b0e45411acffd73b5aeeffc81b55826373eb",
+    "src/interior/interior_map.gd": "06fdb79e62938abbc97ab3f60f883bf2d34728a84c7cb04d7765b6e958a5ca22",
+    "src/interior/interior_map_plan.gd": "bfde83ee030641a5220d5119ed69c4a3785a833febbc6019bbeecf8e6aa6fc0a",
+    "src/interior/interior_scene.gd": "f9578e174bced33c3db5f81d11405c3c3194b755955f147a6a79afd1118fbbe3",
+    "src/interior/interior_tile.gd": "ec29ee9a124020b86bb4126808199299ca3f8ba47a5aed310c98484c49a843d1",
+    "src/interior/interior_tileset.gd": "731865a4e3d4936650a8a07d95668483cfa38c7d1d1b529e6498e47ee132e416",
+    "src/main.gd": "62cf07fa4ae8d19f5a47cac2b64539f961e01b2d190eac800f27f3e6e7ea7605",
+    "src/palette.gd": "d70d9a7d23b32ca14ad366632220970f22ef760201a2a9be173b658358df5edd",
+    "src/player/baby.gd": "c157f4a7c4ecb91a303c9b9d90025694501b9bd27a4c79a42353b3699834c567",
+    "src/player/stroller.gd": "e1992d77a43dbc75ed018db1cd3b9ffcd32345b05c56dbb80f6ac953894301ab",
+    "src/resistance/contact_point.gd": "7859d3989e35af6640a3ddd93155fff5134c8dbfa5bf1aa20b4db8d942e15f42",
+    "src/resistance/happenings.gd": "899048fb203008148633607a72402a9ab1f6197ddc6cd542f8ce7bc11b0945a1",
+    "src/resistance/resistance_director.gd": "ed6d796750479c1c8a3c1f683f5fdcc12563f27bf426f92a6fd2a0f2c51b2529",
+    "src/resistance/resistance_steps.gd": "c196135966e603abefdb5a6f987517fe1ab68c77313a1ac507ef997567688928",
+    "src/routes/closure_marker.gd": "08114c330e23f9d18f5ef3530185e2864259187d48df7249455bc41b6fb6cd3e",
+    "src/routes/closure_planner.gd": "3174399eb620cd275ff137cdee68bca46919fca53edd6eab18d9f22522ca0c55",
+    "src/routes/corridor.gd": "0634fcce8c313f206256a84b0d316195c088166edfbdf42db63f67d295dfc371",
+    "src/routes/park_closure.gd": "bf7dfcb05cd76caa1f7859c7e8c35c6e118a8f9223b0dfeb2ce705b31c1d95f1",
+    "src/routes/park_fence_marker.gd": "2e43f007a67ccdf7df8927f42cf3f0172207b5e29b3d91be890d32c04a44700b",
+    "src/routes/reachability_grid.gd": "4965a7ec3fe2d4155852b9a787a3df3e9debf81d2f836e572e72d8f3fcb5a7d9",
+    "src/routes/region_planner.gd": "b7fb44f2aa09c19cae5366314de58a8f59ca1461a9dcd6177ab29c02a72faf81",
+    "src/routes/road_closure.gd": "daccc0a5a0b35cb968ffe3948cc3a4bc853f14e0110aff35e18fcd9a22246f49",
+    "src/routes/route_tree.gd": "2fcd956ec824ac3d8fc37a8b7c15d651daff5a669cef56f75dd887267a8e654e",
+    "src/routes/seal_planner.gd": "f5d8bdf57b8f2299fa4a3c3692f3c9c85154b3549dbd6a8571776c8913fcd70f",
+    "src/routes/street_network.gd": "9ac8475a3f5ea0488e125875eec2cbe249063c775a66687fe7268f0b4ca92e80",
+    "src/sprites.gd": "0d665a3e0fa3284e6180f84efe0949e09e5337df72883b82c23e1ccd8071b19f",
+    "src/telemetry/frame_cost.gd": "0967c33ae8408f2d84634879f24ab472ac321fc6d24796a2cf2c96be7275e451",
+    "src/telemetry/frame_trace.gd": "32af6b2b35d85ab5edd0a3d935f69898d95aa533dceac7dd4bfdda6c9fe0935e",
+    "src/telemetry/frame_trace_buffer.gd": "2729fdd8ee168fba65934eab0f662e96878641140939ecf45909cd1cc762dac0",
+    "src/telemetry/telemetry_log.gd": "846a2fdbf49c2e93039b7330ae1a6cfcf7decb3a54e05c50bb01b237fdc55118",
+    "src/telemetry/telemetry_map.gd": "dc8d8b6a864e3ac59c34b63c9c8734f3db773904d31d0f54deeb5284c0083c93",
+    "src/telemetry/telemetry_observer.gd": "ab19ac4358ce38c300118fc5df85b70203289efd19c59fe8e5fb3f273ebdb9e0",
+    "src/ui/controls_mode.gd": "bb9343a0d848fa7ced32e9e6d108227c285c321c6dca1eac5e00d1044f4c4baa",
+    "src/ui/danger_edge.gd": "3abd4f303dd269e53add3e10a7728b4d9917a007cc62802779e9474ef88770f2",
+    "src/ui/day_summary.gd": "03c112111ad292e2a2be4828ae1212bfdf7e964b16ade4d4e41973b81619e8e7",
+    "src/ui/entity_halo.gd": "814bb6615c2b5d63df9da719086ee7ae0111dea167aaa7815dd6b306f722f87a",
+    "src/ui/excitement_halo.gd": "4937271968798c7be548c3b133fc18ba7839be086a81ddd20d4722e1b16145e1",
+    "src/ui/frame_graph.gd": "ec1c7dd336c3829633c1c03b812e2ef244dc8bff8b5ac238964ec0cb65cc9830",
+    "src/ui/home_arrow.gd": "cdcb51f145724dd5fefab0131c18a93c00ccf11f9543966a96e30d761995675a",
+    "src/ui/hud.gd": "272712b3d2dc8fd5655c14df6f355d5905b2a9559d0ef54d8f3567ca380fe0ba",
+    "src/ui/meter_bar.gd": "d913d3b221c5a1bcf4ad1fda13536172b5ca7f5c16090a643945c1a379a18fff",
+    "src/ui/mode_button.gd": "0a9eccf6fa7cd251d23a3084b0272e8c5a3899842dddf60f90b2f6837b116dc2",
+    "src/ui/nerve_display.gd": "316da7a1c5f7f98a55b2a1b6aa43822c05d2918555c74d7105833a6b58dcd924",
+    "src/ui/pause_screen.gd": "050f7a9e981e575ee7bd2a2cc5b8a353971a3cf1107b3db7e62f6fd9a767b24e",
+    "src/ui/quit_option.gd": "b19b998efcc98436ae42c35415b83cd4c1a141568faa8e62ca6b1461e90d638c",
+    "src/ui/save_indicator.gd": "089b9843536eb0834e1d79befba56e8546e3103510751396f8c511e9f8d827ea",
+    "src/ui/screen_orientation.gd": "9aaf3774053ae4043d8c1f1292d6cf5153c356496c55fc1d0fad7eb5fe60ba6c",
+    "src/ui/sentence_lines.gd": "27e1d9493666f4b49acf9adbf90102c4bc65924a4f42535a8f4e1c057f1d32b2",
+    "src/ui/title_screen.gd": "c9a371d7dc636da2144f722aae28d8b99f95ae7d01b6dd4746ff521b7e3c218c",
+    "src/ui/touch_controls.gd": "e9753048531c564b2ef059bd72d53a8cbd398074e2e0f7f8ea8e6983b5a42a5c",
+    "src/ui/touch_input.gd": "07e1163fd5600a518db3fda6957096dad7576db4d92358e1aac3dca829124b6a",
+    "src/visuals/atlas_library.gd": "1a700f6592234455bae907bc78249fbf8f605c12f53ae390cbe6642d3db79751",
+    "src/visuals/eight_direction.gd": "330fe60cf69d400d512200b3d326586286f0417ded2ef701f372e2e82a1ee19c",
+    "src/visuals/ground_layers.gd": "2ea623fcb8e721ee4cdd42c177d23fc66817143317a61a47953696fef36d291f",
+    "src/visuals/wheel_bob.gd": "187232481f503e96dfcc4ade98d7dacedd4e8d871ca0d9706fdcb6f8043b3686",
+    "src/world/release_latch.gd": "89f01549e839915e3e97d562e2aea6e4296693617662cf6bb177de1cb59f52a1",
+    "src/world/world_context.gd": "7b3e7bb0169a1abc1bfe8b91335b7266b1bcbbbfca000d54c763826700a33745",
+    "tests/probes/lazy_scenery_routes.gd": "532b9d52cc6ee2d895a77329d0e9f513dd7ef3f4e77c7bc877f064301d23e954",
+    "project.godot": "ba0040671e7661a39138ca6d62acc771fbe36b7fb34a9117558ef8234d7ae2e3",
+    "docs/evidence/m159-lazy-scenery-2026-09-30/measure_routes.py": "111601ad1dbf35b5de4da2e77d6ebf9146445b55f596582753c60fdfdf46715d"
+  },
+  "rows": [
+    {
+      "all_options_and_home_and_calm_entries": {
+        "building_lots": 121,
+        "ground_cells": 11957,
+        "open_camera_centers": 2726
+      },
+      "branches": 9,
+      "buildings_prepared": 158,
+      "closed_generated_tiles": 0,
+      "closed_map_tiles": 48,
+      "closures": 1,
+      "day": 1,
+      "events_planned": 375,
+      "generated_candidate_tiles": 2668,
+      "generated_nodes": 670,
+      "ground_prepared": 22866,
+      "home_candidate_tiles": 48,
+      "network": {
+        "building_lots": 118,
+        "ground_cells": 11867,
+        "open_camera_centers": 2668
+      },
+      "network_and_home": {
+        "building_lots": 120,
+        "ground_cells": 11927,
+        "open_camera_centers": 2716
+      },
+      "network_and_home_lookahead_envelope": {
+        "building_lots": 128,
+        "ground_cells": 12622,
+        "open_camera_centers": 2716
+      },
+      "routes": [
+        {
+          "area": "(2, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 21,
+            "ground_cells": 1536,
+            "open_camera_centers": 236
+          },
+          "generated_cells": 47,
+          "option": 0
+        },
+        {
+          "area": "(2, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 22,
+            "ground_cells": 1410,
+            "open_camera_centers": 233
+          },
+          "generated_cells": 46,
+          "option": 1
+        },
+        {
+          "area": "(9, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 55,
+            "ground_cells": 5130,
+            "open_camera_centers": 925
+          },
+          "generated_cells": 219,
+          "option": 0
+        },
+        {
+          "area": "(9, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 35,
+            "ground_cells": 2529,
+            "open_camera_centers": 385
+          },
+          "generated_cells": 84,
+          "option": 1
+        },
+        {
+          "area": "(1, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 37,
+            "ground_cells": 3820,
+            "open_camera_centers": 744
+          },
+          "generated_cells": 174,
+          "option": 0
+        },
+        {
+          "area": "(1, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 32,
+            "ground_cells": 2290,
+            "open_camera_centers": 353
+          },
+          "generated_cells": 76,
+          "option": 1
+        },
+        {
+          "area": "(9, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 44,
+            "ground_cells": 3677,
+            "open_camera_centers": 691
+          },
+          "generated_cells": 161,
+          "option": 0
+        },
+        {
+          "area": "(9, 4)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 48,
+            "ground_cells": 4246,
+            "open_camera_centers": 760
+          },
+          "generated_cells": 178,
+          "option": 0
+        },
+        {
+          "area": "(9, 4)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 37,
+            "ground_cells": 2838,
+            "open_camera_centers": 421
+          },
+          "generated_cells": 93,
+          "option": 1
+        },
+        {
+          "area": "(4, 8)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 30,
+            "ground_cells": 2298,
+            "open_camera_centers": 397
+          },
+          "generated_cells": 87,
+          "option": 0
+        },
+        {
+          "area": "(4, 8)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 13,
+            "ground_cells": 897,
+            "open_camera_centers": 113
+          },
+          "generated_cells": 16,
+          "option": 1
+        },
+        {
+          "area": "(5, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 16,
+            "ground_cells": 1156,
+            "open_camera_centers": 164
+          },
+          "generated_cells": 29,
+          "option": 0
+        },
+        {
+          "area": "(5, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 17,
+            "ground_cells": 1269,
+            "open_camera_centers": 185
+          },
+          "generated_cells": 34,
+          "option": 1
+        },
+        {
+          "area": "(1, 6)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 31,
+            "ground_cells": 1906,
+            "open_camera_centers": 318
+          },
+          "generated_cells": 69,
+          "option": 0
+        },
+        {
+          "area": "(1, 4)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 27,
+            "ground_cells": 1536,
+            "open_camera_centers": 266
+          },
+          "generated_cells": 55,
+          "option": 0
+        }
+      ],
+      "seed": 4242
+    },
+    {
+      "all_options_and_home_and_calm_entries": {
+        "building_lots": 115,
+        "ground_cells": 11451,
+        "open_camera_centers": 2324
+      },
+      "branches": 9,
+      "buildings_prepared": 158,
+      "closed_generated_tiles": 0,
+      "closed_map_tiles": 108,
+      "closures": 3,
+      "day": 8,
+      "events_planned": 456,
+      "generated_candidate_tiles": 2268,
+      "generated_nodes": 570,
+      "ground_prepared": 22866,
+      "home_candidate_tiles": 48,
+      "network": {
+        "building_lots": 115,
+        "ground_cells": 11430,
+        "open_camera_centers": 2268
+      },
+      "network_and_home": {
+        "building_lots": 115,
+        "ground_cells": 11430,
+        "open_camera_centers": 2316
+      },
+      "network_and_home_lookahead_envelope": {
+        "building_lots": 117,
+        "ground_cells": 12139,
+        "open_camera_centers": 2316
+      },
+      "routes": [
+        {
+          "area": "(1, 4)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 23,
+            "ground_cells": 1132,
+            "open_camera_centers": 186
+          },
+          "generated_cells": 35,
+          "option": 0
+        },
+        {
+          "area": "(1, 6)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 32,
+            "ground_cells": 2583,
+            "open_camera_centers": 430
+          },
+          "generated_cells": 97,
+          "option": 0
+        },
+        {
+          "area": "(9, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 35,
+            "ground_cells": 2817,
+            "open_camera_centers": 487
+          },
+          "generated_cells": 110,
+          "option": 0
+        },
+        {
+          "area": "(9, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 35,
+            "ground_cells": 2772,
+            "open_camera_centers": 496
+          },
+          "generated_cells": 112,
+          "option": 0
+        },
+        {
+          "area": "(9, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 24,
+            "ground_cells": 1757,
+            "open_camera_centers": 273
+          },
+          "generated_cells": 56,
+          "option": 1
+        },
+        {
+          "area": "(5, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 15,
+            "ground_cells": 1033,
+            "open_camera_centers": 141
+          },
+          "generated_cells": 23,
+          "option": 0
+        },
+        {
+          "area": "(5, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 17,
+            "ground_cells": 1057,
+            "open_camera_centers": 157
+          },
+          "generated_cells": 27,
+          "option": 1
+        },
+        {
+          "area": "(4, 8)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 15,
+            "ground_cells": 977,
+            "open_camera_centers": 133
+          },
+          "generated_cells": 21,
+          "option": 0
+        },
+        {
+          "area": "(4, 8)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 36,
+            "ground_cells": 2877,
+            "open_camera_centers": 485
+          },
+          "generated_cells": 109,
+          "option": 1
+        },
+        {
+          "area": "(9, 4)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 28,
+            "ground_cells": 1780,
+            "open_camera_centers": 352
+          },
+          "generated_cells": 76,
+          "option": 0
+        },
+        {
+          "area": "(9, 4)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 27,
+            "ground_cells": 2213,
+            "open_camera_centers": 329
+          },
+          "generated_cells": 70,
+          "option": 1
+        },
+        {
+          "area": "(2, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 35,
+            "ground_cells": 2455,
+            "open_camera_centers": 424
+          },
+          "generated_cells": 94,
+          "option": 0
+        },
+        {
+          "area": "(2, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 24,
+            "ground_cells": 1674,
+            "open_camera_centers": 261
+          },
+          "generated_cells": 53,
+          "option": 1
+        },
+        {
+          "area": "(1, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 29,
+            "ground_cells": 3420,
+            "open_camera_centers": 584
+          },
+          "generated_cells": 134,
+          "option": 0
+        },
+        {
+          "area": "(1, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 26,
+            "ground_cells": 2153,
+            "open_camera_centers": 321
+          },
+          "generated_cells": 68,
+          "option": 1
+        }
+      ],
+      "seed": 4242
+    },
+    {
+      "all_options_and_home_and_calm_entries": {
+        "building_lots": 128,
+        "ground_cells": 13690,
+        "open_camera_centers": 2744
+      },
+      "branches": 9,
+      "buildings_prepared": 158,
+      "closed_generated_tiles": 0,
+      "closed_map_tiles": 156,
+      "closures": 4,
+      "day": 12,
+      "events_planned": 523,
+      "generated_candidate_tiles": 2684,
+      "generated_nodes": 674,
+      "ground_prepared": 22866,
+      "home_candidate_tiles": 48,
+      "network": {
+        "building_lots": 128,
+        "ground_cells": 13674,
+        "open_camera_centers": 2684
+      },
+      "network_and_home": {
+        "building_lots": 128,
+        "ground_cells": 13674,
+        "open_camera_centers": 2732
+      },
+      "network_and_home_lookahead_envelope": {
+        "building_lots": 136,
+        "ground_cells": 14521,
+        "open_camera_centers": 2732
+      },
+      "routes": [
+        {
+          "area": "(9, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 34,
+            "ground_cells": 2424,
+            "open_camera_centers": 397
+          },
+          "generated_cells": 87,
+          "option": 0
+        },
+        {
+          "area": "(9, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 24,
+            "ground_cells": 1677,
+            "open_camera_centers": 253
+          },
+          "generated_cells": 51,
+          "option": 1
+        },
+        {
+          "area": "(1, 6)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 31,
+            "ground_cells": 3121,
+            "open_camera_centers": 526
+          },
+          "generated_cells": 121,
+          "option": 0
+        },
+        {
+          "area": "(1, 4)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 44,
+            "ground_cells": 4339,
+            "open_camera_centers": 770
+          },
+          "generated_cells": 181,
+          "option": 0
+        },
+        {
+          "area": "(9, 4)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 32,
+            "ground_cells": 2380,
+            "open_camera_centers": 456
+          },
+          "generated_cells": 102,
+          "option": 0
+        },
+        {
+          "area": "(9, 4)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 27,
+            "ground_cells": 2133,
+            "open_camera_centers": 309
+          },
+          "generated_cells": 65,
+          "option": 1
+        },
+        {
+          "area": "(5, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 61,
+            "ground_cells": 6814,
+            "open_camera_centers": 1173
+          },
+          "generated_cells": 281,
+          "option": 0
+        },
+        {
+          "area": "(5, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 17,
+            "ground_cells": 1177,
+            "open_camera_centers": 153
+          },
+          "generated_cells": 26,
+          "option": 1
+        },
+        {
+          "area": "(9, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 52,
+            "ground_cells": 3996,
+            "open_camera_centers": 755
+          },
+          "generated_cells": 177,
+          "option": 0
+        },
+        {
+          "area": "(1, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 25,
+            "ground_cells": 2652,
+            "open_camera_centers": 457
+          },
+          "generated_cells": 102,
+          "option": 0
+        },
+        {
+          "area": "(1, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 30,
+            "ground_cells": 1907,
+            "open_camera_centers": 301
+          },
+          "generated_cells": 63,
+          "option": 1
+        },
+        {
+          "area": "(4, 8)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 18,
+            "ground_cells": 1376,
+            "open_camera_centers": 232
+          },
+          "generated_cells": 46,
+          "option": 0
+        },
+        {
+          "area": "(4, 8)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 30,
+            "ground_cells": 1790,
+            "open_camera_centers": 281
+          },
+          "generated_cells": 58,
+          "option": 1
+        },
+        {
+          "area": "(2, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 57,
+            "ground_cells": 6452,
+            "open_camera_centers": 1117
+          },
+          "generated_cells": 267,
+          "option": 0
+        },
+        {
+          "area": "(2, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 22,
+            "ground_cells": 1401,
+            "open_camera_centers": 225
+          },
+          "generated_cells": 44,
+          "option": 1
+        }
+      ],
+      "seed": 4242
+    },
+    {
+      "all_options_and_home_and_calm_entries": {
+        "building_lots": 115,
+        "ground_cells": 12771,
+        "open_camera_centers": 2619
+      },
+      "branches": 8,
+      "buildings_prepared": 150,
+      "closed_generated_tiles": 0,
+      "closed_map_tiles": 48,
+      "closures": 1,
+      "day": 1,
+      "events_planned": 389,
+      "generated_candidate_tiles": 2563,
+      "generated_nodes": 643,
+      "ground_prepared": 23083,
+      "home_candidate_tiles": 48,
+      "network": {
+        "building_lots": 115,
+        "ground_cells": 12771,
+        "open_camera_centers": 2563
+      },
+      "network_and_home": {
+        "building_lots": 115,
+        "ground_cells": 12771,
+        "open_camera_centers": 2611
+      },
+      "network_and_home_lookahead_envelope": {
+        "building_lots": 120,
+        "ground_cells": 13571,
+        "open_camera_centers": 2611
+      },
+      "routes": [
+        {
+          "area": "(9, 1)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 61,
+            "ground_cells": 6768,
+            "open_camera_centers": 1096
+          },
+          "generated_cells": 262,
+          "option": 0
+        },
+        {
+          "area": "(2, 4)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 19,
+            "ground_cells": 1272,
+            "open_camera_centers": 213
+          },
+          "generated_cells": 41,
+          "option": 0
+        },
+        {
+          "area": "(2, 4)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 25,
+            "ground_cells": 1446,
+            "open_camera_centers": 229
+          },
+          "generated_cells": 45,
+          "option": 1
+        },
+        {
+          "area": "(1, 8)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 37,
+            "ground_cells": 3307,
+            "open_camera_centers": 592
+          },
+          "generated_cells": 136,
+          "option": 0
+        },
+        {
+          "area": "(1, 1)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 26,
+            "ground_cells": 2488,
+            "open_camera_centers": 404
+          },
+          "generated_cells": 89,
+          "option": 0
+        },
+        {
+          "area": "(1, 1)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 25,
+            "ground_cells": 1853,
+            "open_camera_centers": 281
+          },
+          "generated_cells": 58,
+          "option": 1
+        },
+        {
+          "area": "(4, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 24,
+            "ground_cells": 1692,
+            "open_camera_centers": 325
+          },
+          "generated_cells": 69,
+          "option": 0
+        },
+        {
+          "area": "(4, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 17,
+            "ground_cells": 1081,
+            "open_camera_centers": 149
+          },
+          "generated_cells": 25,
+          "option": 1
+        },
+        {
+          "area": "(8, 3)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 53,
+            "ground_cells": 5692,
+            "open_camera_centers": 916
+          },
+          "generated_cells": 217,
+          "option": 0
+        },
+        {
+          "area": "(8, 3)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 18,
+            "ground_cells": 1117,
+            "open_camera_centers": 189
+          },
+          "generated_cells": 35,
+          "option": 1
+        },
+        {
+          "area": "(4, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 52,
+            "ground_cells": 5230,
+            "open_camera_centers": 821
+          },
+          "generated_cells": 193,
+          "option": 0
+        },
+        {
+          "area": "(8, 6)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 32,
+            "ground_cells": 1944,
+            "open_camera_centers": 373
+          },
+          "generated_cells": 83,
+          "option": 0
+        }
+      ],
+      "seed": 3265820891
+    },
+    {
+      "all_options_and_home_and_calm_entries": {
+        "building_lots": 123,
+        "ground_cells": 13034,
+        "open_camera_centers": 2630
+      },
+      "branches": 6,
+      "buildings_prepared": 150,
+      "closed_generated_tiles": 0,
+      "closed_map_tiles": 108,
+      "closures": 3,
+      "day": 8,
+      "events_planned": 433,
+      "generated_candidate_tiles": 2575,
+      "generated_nodes": 646,
+      "ground_prepared": 23083,
+      "home_candidate_tiles": 48,
+      "network": {
+        "building_lots": 123,
+        "ground_cells": 13003,
+        "open_camera_centers": 2575
+      },
+      "network_and_home": {
+        "building_lots": 123,
+        "ground_cells": 13003,
+        "open_camera_centers": 2623
+      },
+      "network_and_home_lookahead_envelope": {
+        "building_lots": 125,
+        "ground_cells": 13917,
+        "open_camera_centers": 2623
+      },
+      "routes": [
+        {
+          "area": "(4, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 32,
+            "ground_cells": 2364,
+            "open_camera_centers": 428
+          },
+          "generated_cells": 95,
+          "option": 0
+        },
+        {
+          "area": "(4, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 14,
+            "ground_cells": 1069,
+            "open_camera_centers": 149
+          },
+          "generated_cells": 25,
+          "option": 1
+        },
+        {
+          "area": "(4, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 42,
+            "ground_cells": 3320,
+            "open_camera_centers": 636
+          },
+          "generated_cells": 147,
+          "option": 0
+        },
+        {
+          "area": "(4, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 22,
+            "ground_cells": 1462,
+            "open_camera_centers": 249
+          },
+          "generated_cells": 50,
+          "option": 1
+        },
+        {
+          "area": "(1, 8)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 59,
+            "ground_cells": 5610,
+            "open_camera_centers": 924
+          },
+          "generated_cells": 219,
+          "option": 0
+        },
+        {
+          "area": "(8, 3)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 44,
+            "ground_cells": 4541,
+            "open_camera_centers": 741
+          },
+          "generated_cells": 173,
+          "option": 0
+        },
+        {
+          "area": "(8, 3)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 50,
+            "ground_cells": 3657,
+            "open_camera_centers": 657
+          },
+          "generated_cells": 152,
+          "option": 1
+        },
+        {
+          "area": "(9, 1)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 44,
+            "ground_cells": 4116,
+            "open_camera_centers": 696
+          },
+          "generated_cells": 162,
+          "option": 0
+        },
+        {
+          "area": "(9, 1)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 58,
+            "ground_cells": 4525,
+            "open_camera_centers": 769
+          },
+          "generated_cells": 180,
+          "option": 1
+        },
+        {
+          "area": "(8, 6)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 35,
+            "ground_cells": 2882,
+            "open_camera_centers": 521
+          },
+          "generated_cells": 120,
+          "option": 0
+        }
+      ],
+      "seed": 3265820891
+    },
+    {
+      "all_options_and_home_and_calm_entries": {
+        "building_lots": 86,
+        "ground_cells": 8290,
+        "open_camera_centers": 1690
+      },
+      "branches": 5,
+      "buildings_prepared": 150,
+      "closed_generated_tiles": 0,
+      "closed_map_tiles": 192,
+      "closures": 4,
+      "day": 12,
+      "events_planned": 581,
+      "generated_candidate_tiles": 1635,
+      "generated_nodes": 411,
+      "ground_prepared": 23083,
+      "home_candidate_tiles": 48,
+      "network": {
+        "building_lots": 86,
+        "ground_cells": 8205,
+        "open_camera_centers": 1635
+      },
+      "network_and_home": {
+        "building_lots": 86,
+        "ground_cells": 8285,
+        "open_camera_centers": 1683
+      },
+      "network_and_home_lookahead_envelope": {
+        "building_lots": 89,
+        "ground_cells": 8944,
+        "open_camera_centers": 1683
+      },
+      "routes": [
+        {
+          "area": "(1, 8)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 31,
+            "ground_cells": 1910,
+            "open_camera_centers": 344
+          },
+          "generated_cells": 74,
+          "option": 0
+        },
+        {
+          "area": "(4, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 32,
+            "ground_cells": 3101,
+            "open_camera_centers": 533
+          },
+          "generated_cells": 121,
+          "option": 0
+        },
+        {
+          "area": "(4, 2)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 14,
+            "ground_cells": 1073,
+            "open_camera_centers": 149
+          },
+          "generated_cells": 25,
+          "option": 1
+        },
+        {
+          "area": "(8, 6)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 31,
+            "ground_cells": 1948,
+            "open_camera_centers": 365
+          },
+          "generated_cells": 81,
+          "option": 0
+        },
+        {
+          "area": "(4, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 20,
+            "ground_cells": 1392,
+            "open_camera_centers": 237
+          },
+          "generated_cells": 47,
+          "option": 0
+        },
+        {
+          "area": "(4, 9)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 18,
+            "ground_cells": 1293,
+            "open_camera_centers": 193
+          },
+          "generated_cells": 36,
+          "option": 1
+        },
+        {
+          "area": "(9, 1)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 33,
+            "ground_cells": 3348,
+            "open_camera_centers": 596
+          },
+          "generated_cells": 137,
+          "option": 0
+        },
+        {
+          "area": "(9, 1)",
+          "closed_generated_tiles": 0,
+          "coverage_with_home_and_calm_entry": {
+            "building_lots": 25,
+            "ground_cells": 1825,
+            "open_camera_centers": 281
+          },
+          "generated_cells": 58,
+          "option": 1
+        }
+      ],
+      "seed": 3265820891
+    }
+  ]
+}

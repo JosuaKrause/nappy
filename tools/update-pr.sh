@@ -7,7 +7,8 @@
 #   tools/update-pr.sh --dry-run <pr-number | branch>   # fetch and report only; no worktree touched
 #
 # Finds the branch's own worktree (`git worktree list`) and works there; if none is checked out
-# anywhere, adds a scratch worktree under $TMPDIR for the run and removes it again when done — a
+# anywhere, adds a scratch worktree under $TMPDIR for the run and removes it after success only
+# when normal worktree removal accepts it. Failed runs retain scratch for diagnosis — a
 # branch that already lives in a worktree is never given a second one. Records the branch tip,
 # origin/main's tip and their merge base before merging, merges with `--no-ff --no-commit` so even
 # a clean merge waits for the commit step below. A branch whose merge base still has the old
@@ -17,7 +18,9 @@
 # Any unresolved file aborts the merge
 # (`git merge --abort`) and names it; nothing is left half-merged. The queue, the records and the
 # review list are one file per thing, so two pull requests adding to them no longer meet in one
-# file; a branch still on the old single files is converted with tools/convert-queue-edits.py. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
+# file; a branch still on the old single files is converted with tools/convert-queue-edits.py. On a clean result it runs `git diff --cached --check "$main_tip"` (the
+# staged result against main's tip as merged, so it judges only what the branch itself brings and a
+# whitespace error main already has never fails a branch), `./tools/lint.sh` and
 # `./tools/check.sh` (every one of the three has to pass), commits a message naming the three
 # revisions and the resolution, and pushes to the branch's own remote — attempted first over
 # `origin`'s own configured transport (HTTPS too, under `run`'s own token, once `insteadOf`
@@ -58,7 +61,9 @@ usage: tools/update-pr.sh [--help|-h] [--dry-run] <pr-number | branch>
 
 Merges origin/main into a pull request's branch: fetches, finds the branch's worktree (or adds a
 scratch one under $TMPDIR), merges with --no-ff --no-commit, and aborts naming the files on any
-conflict. On a clean result it runs `git diff --cached --check`, `./tools/lint.sh` and
+conflict. On a clean result it runs `git diff --cached --check <main tip>` (the staged result
+against main's tip as merged, so only the branch's own changes are judged, never whitespace main
+already has), `./tools/lint.sh` and
 `./tools/check.sh`, commits a message naming the branch tip, main tip, merge base and the
 resolution, and pushes it: first over origin's own configured transport (HTTPS with the bot's
 token under tools/agent-identity.py run, whatever origin uses -- SSH, say -- with your own login
@@ -66,6 +71,10 @@ without it), then, if that is refused, once more over HTTPS through gh's credent
 same identity. Never merges the pull request itself and never enables auto-merge; says so in its
 own output, alongside the files main changed since the merge base, since that review is the
 merger's.
+
+Scratch is removed after success only when clean and unlocked. Failed runs retain their
+scratch checkout and print its path; dirty/untracked work is never force-removed. An existing
+checkout is never removed. If scratch creation fails, only an empty unregistered directory goes.
 
   --dry-run    Fetch and report what would conflict (via git merge-tree --write-tree), without
                creating, checking out or otherwise touching any worktree. Exits 0 for a clean
@@ -75,7 +84,7 @@ Refuses, with a reason on stderr and a non-zero exit, and does no work when: the
 would operate in is dirty; the branch's local tip is behind its own remote; the branch edited the
 old single-file docs/DECISIONS.md, TODO.md or REVIEW.md that main has as files (convert it with
 tools/convert-queue-edits.py; --dry-run refuses it too); the merge conflicts;
-or git diff --check, ./tools/lint.sh or
+or git diff --check against main's tip, ./tools/lint.sh or
 ./tools/check.sh fails (the merge is aborted first).
 
 UPDATE_PR_CLAUDE=1 appends "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
@@ -227,12 +236,25 @@ fi
 # ============================================================= real run: find a worktree ===
 scratch_wt=""
 cleanup() {
-    if [[ -n "$scratch_wt" ]]; then
-        git worktree remove --force "$scratch_wt" 2>/dev/null
-        rm -rf "$scratch_wt" 2>/dev/null
+    local status=$? registrations
+    [[ -n "$scratch_wt" ]] || return 0
+    registrations="$(git worktree list --porcelain)" || {
+        echo "scratch retained (cannot verify registration): $scratch_wt" >&2
+        return 0
+    }
+    if ! printf '%s\n' "$registrations" | grep -Fxq "worktree $scratch_wt"; then
+        # A failed add can leave its mktemp directory behind; rmdir cannot erase any contents.
+        rmdir "$scratch_wt" 2>/dev/null \
+            || echo "scratch retained (creation failed; directory is not empty): $scratch_wt" >&2
+    elif [[ $status -ne 0 ]]; then
+        echo "scratch retained after failed run; inspect before cleanup: $scratch_wt" >&2
+    elif ! git worktree remove "$scratch_wt"; then
+        echo "scratch retained (normal removal refused; inspect dirty files or ownership): $scratch_wt" >&2
     fi
 }
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 target_dir="$(worktree_of "$branch")"
 if [[ -z "$target_dir" ]]; then
@@ -250,6 +272,8 @@ if [[ -n "$target_dir" ]]; then
     echo "using existing worktree $target_dir"
 else
     scratch_wt="$(mktemp -d "${TMPDIR:-/tmp}/update-pr.XXXXXX")"
+    [[ -n "$scratch_wt" ]] || refuse "could not create scratch directory"
+    scratch_wt="$(cd "$scratch_wt" && pwd -P)" || refuse "could not resolve scratch directory"
     echo "no worktree has $branch checked out; adding a scratch one at $scratch_wt"
     git worktree add --quiet "$scratch_wt" "$branch" || refuse "git worktree add $scratch_wt $branch failed"
     target_dir="$scratch_wt"
@@ -289,7 +313,9 @@ run_check() {
     fi
     rm -f /tmp/update-pr-check.$$
 }
-run_check "git diff --cached --check" git diff --cached --check
+# Against main's tip, not the branch's own: the staged merge result minus main is what the branch
+# brings (plus any resolution), so whitespace main already carries is not blamed on the branch.
+run_check "git diff --cached --check $main_tip" git diff --cached --check "$main_tip"
 run_check "./tools/lint.sh" ./tools/lint.sh
 run_check "./tools/check.sh" ./tools/check.sh
 

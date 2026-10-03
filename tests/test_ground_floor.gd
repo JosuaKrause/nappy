@@ -881,6 +881,7 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t) -
 					% [map.seed_used, building.lot.position])
 			ordered += 1
 			if map.seed_used == BASE_SEED and main_layouts.has(building.lot.position):
+				building.set_scenery_resident(true)
 				var layout: Array = []
 				for unit: Dictionary in building._roof_furniture:
 					layout.append([unit["cell"], unit["kind"]])
@@ -1203,6 +1204,7 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t) -> void:
 		t.add_child(city)
 		city.build(map)
 		for building: Building in city.buildings():
+			building.set_scenery_resident(true)
 			if building.power_station:
 				continue
 			for unit: Dictionary in building._roof_furniture:

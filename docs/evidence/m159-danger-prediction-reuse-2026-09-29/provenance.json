@@ -1,0 +1,117 @@
+{
+  "command": {
+    "cwd": "/Users/krause/workspace/nappy-codex/.claude/worktrees/danger-prediction-reuse",
+    "argv": [
+      "docs/evidence/m159-danger-prediction-reuse-2026-09-29/measure-native.py",
+      "--baseline",
+      "/private/tmp/nappy-prediction-fresh.n7e05q/before",
+      "--after",
+      "/private/tmp/nappy-prediction-fresh.n7e05q/after",
+      "--output",
+      "/private/tmp/nappy-prediction-fresh.n7e05q/comparison",
+      "--godot",
+      "/Applications/Godot.app/Contents/MacOS/Godot"
+    ]
+  },
+  "godot": "/Applications/Godot.app/Contents/MacOS/Godot",
+  "check_commands": {
+    "before": {
+      "cwd": "/private/tmp/nappy-prediction-fresh.n7e05q/before",
+      "argv": [
+        "./tools/check.sh"
+      ]
+    },
+    "after": {
+      "cwd": "/private/tmp/nappy-prediction-fresh.n7e05q/after",
+      "argv": [
+        "./tools/check.sh"
+      ]
+    }
+  },
+  "collectors_sha256": {
+    "entity_frame_profile.gd": "7e63c40f4b737f7ebf819e25df0aa44aaf8ed3b1cd05029f263f93b8878cae7a",
+    "entity_frame_profile.tscn": "4978dacec41b337f162c653b503fd37cf671b0fcf8bd7835ac21049e6b941eab",
+    "entity_frame_profile_observer.gd": "27edf350152f7a8aa0c005ffa6185d04d3605d11eeb15c670ae5969b03cf0a93"
+  },
+  "analyzer_sha256": "e58491bf568848d507940d8f3a9a25216021bb29adee782435fdb81bf0838391",
+  "source_sha256": {
+    "before": {
+      "src/events/event_instance.gd": "bbd30e0f17647f94cd87d30f598a4e7d30b95a01f4db9f280f948c55cb3ad7ec",
+      "src/crowd/crowd_agent.gd": "e7561297c6a588075ddcc88e818cdf9aa3e0df23948b3308d3faa2edc6407fbb"
+    },
+    "after": {
+      "src/events/event_instance.gd": "7f62a85868c73b9c6781ec810211a73fcc58be75c0385dd643540d524488c4de",
+      "src/crowd/crowd_agent.gd": "40155dd4716538ac5481945d8c3433d70ee79d15151dbf13a73038c5c47fb448"
+    }
+  },
+  "warmup_seconds": 5,
+  "active_seconds": 6,
+  "mode": "both",
+  "order": "alternating",
+  "runs": [
+    {
+      "side": "before",
+      "mode": "profiled",
+      "pair": 1
+    },
+    {
+      "side": "after",
+      "mode": "profiled",
+      "pair": 1
+    },
+    {
+      "side": "after",
+      "mode": "profiled",
+      "pair": 2
+    },
+    {
+      "side": "before",
+      "mode": "profiled",
+      "pair": 2
+    },
+    {
+      "side": "before",
+      "mode": "profiled",
+      "pair": 3
+    },
+    {
+      "side": "after",
+      "mode": "profiled",
+      "pair": 3
+    },
+    {
+      "side": "before",
+      "mode": "disabled",
+      "pair": 1
+    },
+    {
+      "side": "after",
+      "mode": "disabled",
+      "pair": 1
+    },
+    {
+      "side": "after",
+      "mode": "disabled",
+      "pair": 2
+    },
+    {
+      "side": "before",
+      "mode": "disabled",
+      "pair": 2
+    },
+    {
+      "side": "before",
+      "mode": "disabled",
+      "pair": 3
+    },
+    {
+      "side": "after",
+      "mode": "disabled",
+      "pair": 3
+    }
+  ],
+  "revisions": {
+    "before": "a53032535c89ef7b583b231454804b23c0241451",
+    "after": "4e6488e0c60ec342c8ade85b90464d5c6ef1913b"
+  }
+}

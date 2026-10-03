@@ -1,0 +1,13 @@
+shards (1)	UNKNOWN STEP	2026-10-01T03:49:08.2217191Z -- test_crowd_contributions.gd      38 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:49:08.9686395Z -- test_events_emission.gd        747 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:49:21.7158399Z -- test_events_pursuit.gd       12747 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:49:59.9734276Z -- test_events_solid.gd         38256 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:49:59.9905304Z -- test_frame_graph.gd             16 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:50:13.3127093Z -- test_ground_floor.gd         13322 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:50:15.6067806Z -- test_main.gd                  2294 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:50:15.7935136Z -- test_meters.gd                 186 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:50:15.8295655Z -- test_orientation.gd             36 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:50:15.8308239Z -- test_quit_option.gd              2 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:55:15.0473878Z -- test_resistance.gd          299208 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:55:15.0618537Z -- test_sentence_lines.gd          14 ms
+shards (1)	UNKNOWN STEP	2026-10-01T03:55:15.0938881Z -- test_touch.gd                   32 ms

@@ -1,5 +1,5 @@
 class_name TrafficLight
-extends Node2D
+extends ScenerySprite
 ## One signal head, standing on the corner of a junction and facing the arm it controls.
 ##
 ## It is the only thing in the game that tells the player when a main road is safe to cross, so
@@ -52,6 +52,13 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	AtlasLibrary.release(&"street_kit")
 
+func set_scenery_resident(resident: bool) -> void:
+	super.set_scenery_resident(resident)
+	set_process(resident and not _faces_away)
+
+func scenery_bounds() -> Rect2:
+	return Rect2(global_position - Vector2(16, 48), Vector2(32, 64))
+
 ## `_lamp()`'s answer while the power is out: no lamp at all, which is what a dead light looks like
 ## and the whole of how the blackout reaches a signal head.
 const DARK := -2
@@ -93,6 +100,8 @@ func _lamp() -> int:
 	return 0
 
 func _draw() -> void:
+	if not scenery_resident:
+		return
 	# The 5.0 here is the signal head's own shape, a point — small enough that a `GroundShape`
 	# instance bought nothing over the literal `Sprites.draw_shadow` already took.
 	Sprites.draw_shadow(self, Vector2.ZERO, 5.0)

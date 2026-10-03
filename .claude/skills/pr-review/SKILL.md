@@ -82,7 +82,8 @@ touches (the path table in `CLAUDE.md`). Look for:
 - anything the description claims that the diff does not do.
 
 The reviewer does not edit the branch, check it out in a worktree an agent is using, or merge. It
-may run a suite from a checkout of its own, and never runs `git grep`
+may run a suite from a checkout of its own, sparse unless the PR's evidence or references are what
+it is checking (**orchestrating**, "Create sparse worktrees"), and never runs `git grep`
 over a folder that holds images (see **using-tools**).
 
 ## The findings go on the PR
@@ -131,7 +132,9 @@ runs through `uv run python tools/agent-identity.py run claude-reviewer -- <comm
 `claude-reviewer[bot]` or `codex-reviewer[bot]`. **When the role is not usable (not created yet,
 not installed, or a cloud session), the review stops there and is reported to the player instead —
 it is never posted as the player.** *(2026-09-26, asked what an agent does when its identity is
-unusable, the player chose "Stop and tell me".)* The same `PreToolUse` hook that makes committing's
+unusable, the player chose "Stop and tell me".)* That holds where the write guard can ask
+(**committing**, "Who a commit and a pull request are from"): a review's findings are never sent
+as a `gh pr comment` or any other write the guard's prompt would let through as the player. The same `PreToolUse` hook that makes committing's
 rule mechanical (`.claude/hooks/github-write-guard.sh`) covers `gh pr review` too, denying it
 unless it is wrapped in `run <role> --`. **An admin action no bot identity can perform** (a
 repository ruleset, a GitHub App's own permissions) **is the player's to do directly, never

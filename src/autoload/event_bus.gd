@@ -33,6 +33,35 @@ signal day_ended(day: int, result: GameEnums.DayResult)
 ## one early.
 signal run_restarted(day: int)
 signal run_ended(ending: GameEnums.Ending)
+## `GameSave.write()`'s own moment a save was actually written — never a refused write (a dev or
+## headless run, or a run that has already ended), which changes nothing. `result` is a
+## `GameSave.Result` passed as `int`, for the same cross-script-enum reason `save_deleted` below
+## passes its own: `PENDING` on the web while IndexedDB has not yet said whether it kept the save
+## (`save_write_settled` follows), `CONFIRMED` or `FAILED` otherwise. Emitted by `GameSave` itself,
+## which is what lets the save symbol answer a save that outlives the `main` that made it: a
+## callable bound to `main` is dropped once a scene reload frees it, and a symbol never told would
+## stay fully shown for good. Heard by `SaveIndicator`. `operation` is the write's own id from
+## `GameSave._new_operation()`, larger for every change begun later, and carried again on its answer:
+## only the newest change decides what the symbol shows, and an answer is tied to its change by it.
+signal save_written(operation: int, result: int)
+## The browser's answer to a write `save_written` announced as `PENDING`, with that write's
+## `operation`: `kept` is whether IndexedDB kept the save. Emitted once per pending write, and only
+## for those.
+signal save_write_settled(operation: int, kept: bool)
+## `GameSave.clear()`'s own moment a save file was actually deleted — never a refused deletion (a
+## dev or headless run, or no file left to delete), which changes nothing. `result` is a
+## `GameSave.Result` passed as `int`, the same cross-script-enum reason `controls_chosen` below
+## passes its own: `PENDING` on the web while IndexedDB has not yet said whether it dropped the
+## file (`save_deletion_settled` follows), `CONFIRMED` or `FAILED` otherwise. Emitted by `GameSave`
+## itself, so the deletion `GameState._end_run()` makes — an autoload with no way to reach `main`'s
+## indicator — shows the save symbol exactly as the held restart's does. Heard by `SaveIndicator`,
+## which outlives the `main` that raised it when the held restart reloads the scene. `operation` is
+## the deletion's own id, drawn from the same sequence a write's is — see `save_written`.
+signal save_deleted(operation: int, result: int)
+## The browser's answer to a deletion `save_deleted` announced as `PENDING`, with that deletion's
+## `operation`: `kept` is whether IndexedDB dropped the file. Emitted once per pending deletion, and
+## only for those.
+signal save_deletion_settled(operation: int, kept: bool)
 ## `main._on_day_finished()`'s own answer to *what* ended a crying or hard-fail day, fired
 ## immediately before `day_ended` above so `VisitCounter` can fold it into the one event that day's
 ## end sends — `nappy-day-N-lost-crying-<cause>` / `nappy-day-N-lost-hard-fail-<cause>` rather than
