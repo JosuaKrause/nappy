@@ -70,6 +70,12 @@ or perceptible whole-game improvement. All 24,300 traversal frames retain comple
 ground; all 27 settled windows have matching cells and pixels. There are no forced draws,
 rejected matched trials or omitted matched outliers.
 
+On seeing all three short-summary columns, the player assesses "okay and it didn't really
+make things much faster", recorded in [freckled-beaver, the measured ground speedup is small](../playtests/2026-10-02-freckled-beaver.md).
+The ordinary-route difference is about 0.13ms. This evidence verifies smaller work chunks
+and a modest fixture gain, rather than establishing a noticeable stutter fix. Whether its
+cost is worthwhile in real play remains open; this assessment does not select another runtime.
+
 The global cap needs 16 southward and 31 diagonal safety completions in every 15Hz trial;
 atomic and per-region need none. It has no consistent timing advantage over per-region.
 The safety path prevents holes but concentrates deferred work at the last boundary, so the
