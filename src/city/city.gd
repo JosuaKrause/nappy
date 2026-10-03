@@ -165,7 +165,7 @@ const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
 ## and the moment it happens on its own day is `seal_home_door()`'s, called live.
 const SEALED_DOOR_SCAR := "sealed_door"
 ## `GameState.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
-## `scar_id`), read by `_mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
+## `scar_id`), read by `mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
 ## `SEALED_DOOR_SCAR` above.
 const BURNT_FRONTAGE_SCAR := "burnt_shell"
 ## The street door sprite `_spawn_home()` built, kept so `seal_home_door()` can swap its texture
@@ -1129,7 +1129,7 @@ func _dress_blocks(state: CityState) -> void:
 		building.condition = _condition_for(
 				state.purpose_of(map.block_plans, _block_of(building.lot)))
 		building.day = _day
-	_mark_the_burnt_frontage()
+	mark_the_burnt_frontage()
 
 ## Forces the one `Building` behind day 3's fire to `Building.Condition.BURNT`, overriding
 ## whatever its own block's purpose just set above — *"the building is what needs to be burnt, not
@@ -1151,7 +1151,12 @@ func _dress_blocks(state: CityState) -> void:
 ## once it already says `BURNT`, so calling this from every `_dress_blocks()` pass — the ordinary
 ## day and the finale's own dressing alike — costs nothing once the frontage is found, and finds
 ## nothing before day 4, when the scar does not exist yet.
-func _mark_the_burnt_frontage() -> void:
+##
+## **Also called live, once, by day 8's task on a run with no recorded scar**
+## (`ResistanceDirector._burn_a_front_for_the_task()`): it records a scar at a front the fire could
+## have caught on and asks for the building behind it to be burnt there and then, so *"Take what's
+## in the stroller to the burnt building"* leads to a burnt building rather than bare sidewalk.
+func mark_the_burnt_frontage() -> void:
 	for scar in GameState.scars:
 		if String(scar["id"]) != BURNT_FRONTAGE_SCAR:
 			continue

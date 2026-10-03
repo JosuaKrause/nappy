@@ -282,9 +282,9 @@ static func _build() -> Array[Step]:
 		# carries is the neighbor's drawing, left in the stroller overnight, so the words say where
 		# it is, the stroller, rather than naming an "it" nothing showed, in one short sentence. The
 		# contact rides the run's own recorded `burnt_shell` scar (`EventDef.scar_id` on
-		# `burning_building`); a run with no such scar falls back to an ordinary placement of
-		# the same row on a reachable sidewalk, the smallest honest stand-in — see
-		# `ResistanceDirector._begin_step()`.
+		# `burning_building`); a run with no such scar stands the row on a reachable front the
+		# fire could have caught on, records the scar there and burns the building behind it, so
+		# the words still lead to a burnt building — see `ResistanceDirector._begin_step()`.
 		_mark(5, "Another mark", 8,
 				"Take what's in the stroller to the burnt building."),
 		_perform(6, "The burnt shell", 8, "burnt_shell", [GameEnums.TileType.SIDEWALK], true,

@@ -3611,7 +3611,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.BURNING_BUILDING:
 			_draw_fire(canvas)
 		EventDef.Look.BURNT_SHELL:
-			# Drawn on the building it stands against instead (`City._mark_the_burnt_frontage()`,
+			# Drawn on the building it stands against instead (`City.mark_the_burnt_frontage()`,
 			# `Building.Condition.BURNT`): nothing stands on the sidewalk here, so no picture and no
 			# shadow go down for it. The row's shape is only what its field is measured from.
 			pass

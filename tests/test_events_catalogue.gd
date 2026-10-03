@@ -39,7 +39,7 @@ func run(t) -> void:
 
 ## The rows whose picture is drawn on the building they stand against rather than on the sidewalk
 ## they are sited on: the fire on its facade (`EventInstance._draw_fire()`), and the burnt building
-## it leaves (`City._mark_the_burnt_frontage()`).
+## it leaves (`City.mark_the_burnt_frontage()`).
 const _DRAWN_ON_A_BUILDING: Array[String] = ["burning_building", "burnt_shell"]
 
 const _SPREAD_LOOKS: Array[EventDef.Look] = [

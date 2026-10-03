@@ -112,7 +112,7 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 ##
 ## **Then the dawn after it shows that building burnt** — *"the building is what needs to be burnt,
 ## not an object next to the building"* — through `City.start_day()`, the way a real morning
-## reaches `City._mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
+## reaches `City.mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
 func _test_the_scarred_building_shows_burnt(t) -> void:
 	var saved := GameState.scars.duplicate(true)
 	var saved_day := GameState.day

@@ -236,7 +236,8 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 ## moment after being touched (`_on_contact_completed()`), which is what makes a task one day
 ## instead of two. `ResistanceSteps.TargetKind` decides how a non-pickup, non-finale step finds
 ## its own place: a fresh rider (`EVENT`), the run's own recorded scar (`SCAR`, falling back to
-## an ordinary placement of the same row when the run has none), or a bare point this director
+## a front day 3's fire could have caught on, burnt for it, when the run has none —
+## `_burn_a_front_for_the_task()`), or a bare point this director
 ## computes itself (`ResistanceSteps.sits_on_a_bare_point()`).
 ##
 ## `at_dawn` is true from `start_day()` and false for the task a read mark activates, and decides
@@ -250,11 +251,13 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	if _step.target_kind == ResistanceSteps.TargetKind.SCAR:
 		scar_instance = _find_scar_instance(_step.task_event_id)
 		if not scar_instance:
-			# The smallest honest stand-in for a run with no recorded scar: an ordinary
-			# placement of the same row, on ground `_place()` would otherwise have chosen for
-			# it — never a step with nowhere to go.
-			Telemetry.note("contact", ("step %d: no recorded scar for '%s' — an ordinary " +
-					"placement stands in for it") % [_step.index, _step.task_event_id])
+			# A run with no recorded scar still has a burnt building to go to: `_place()` picks
+			# a front day 3's fire could have caught on, and `_burn_a_front_for_the_task()`
+			# below records the scar there and burns the building behind it — never a step with
+			# nowhere to go, and never bare sidewalk.
+			Telemetry.note("contact", ("step %d: no recorded scar for '%s' — a front the " +
+					"fire could have caught on stands in for it") % [_step.index,
+					_step.task_event_id])
 
 	var neighbor: EventInstance = null
 	if _step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR:
@@ -303,6 +306,8 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			_contact = null
 			return
 		_rider = _city.events.spawn_extra(task_def, at)
+		if _step.target_kind == ResistanceSteps.TargetKind.SCAR:
+			_burn_a_front_for_the_task(_rider)
 		var offset := _reachable_offset(_rider, _rng)
 		_contact.ride(_step, _rider, offset)
 		at = _rider.global_position + offset
@@ -359,6 +364,35 @@ func _find_scar_instance(scar_id: String) -> EventInstance:
 		if instance.def.id == scar_id and instance.global_position.distance_to(at) < Tuning.TILE_SIZE:
 			return instance
 	return null
+
+## Day 8's task on a run with no recorded scar, once its `burnt_shell` stands at a front
+## (`_fronts_a_fire_catches_on()`): records the scar there, exactly as day 3's fire would have, and
+## has `City.mark_the_burnt_frontage()` burn the building behind it now, so the building she is
+## sent to is burnt when she gets there. Nothing else a fire does is done: no block moves along its
+## arc, since no fire burned.
+##
+## **Safe on a retry.** A lost day gives the scars back to their dawn copy
+## (`GameState._give_back_what_the_attempt_spent()`), and the retry's dawn dresses every building
+## again before this runs, so a lost attempt leaves neither a scar nor a burnt building behind it.
+## On a won day the scar is kept, stamped with day 8 (`GameState.add_scar()`), so the scheduler
+## stands the shell there again from day 9 on and every later dawn burns the same building, as it
+## would after a real fire.
+func _burn_a_front_for_the_task(shell: EventInstance) -> void:
+	GameState.add_scar(_step.task_event_id, shell.global_position)
+	_city.mark_the_burnt_frontage()
+
+## Day 3's fire, whose own siting rules `_fronts_a_fire_catches_on()` reuses.
+const FIRE_ROW := "burning_building"
+
+## The ground day 8's task stands on when the run never recorded a scar: every front day 3's fire
+## itself could be sited on (`EventScheduler._open_ground_for()` with `burning_building`'s own
+## `AT_THE_FRONT`), each with a building directly north of it to burn. A fresh ground cache, since
+## the scheduler's own is the day's and this asks once.
+func _fronts_a_fire_catches_on() -> Array[Vector2i]:
+	var fire := EventCatalogue.by_id(FIRE_ROW)
+	if not fire:
+		return []
+	return EventScheduler._open_ground_for(fire, _map, {})
 
 ## The guard. From `TRAP_FIRST_DAY` no chalk mark is ever placed without one, nor a task that sits
 ## on a bare point (a door, a mast's foot, a swing, the last night's front door) or rides on a row
@@ -945,8 +979,9 @@ func _nearest_legal_tile(at: Vector2, tile_radius: int) -> Vector2:
 
 ## Where a step's contact — or, for an `EVENT`/`SCAR`-fallback perform step, the event it rides
 ## on — is sited. A pickup and an `EVENT` perform both name tile types in `placement`; `DOOR`,
-## `PARK_SWING` and `STATION_DOOR` compute their own point from today's city, since none is a
-## matter of picking a tile type.
+## `PARK_SWING`, `MAST` and `STATION_DOOR` compute their own point from today's city, since none is
+## a matter of picking a tile type, and a `SCAR` fallback stands on a front day 3's fire could have
+## caught on (`_fronts_a_fire_catches_on()`), since a building has to be behind it to burn.
 func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 	if step.target_kind == ResistanceSteps.TargetKind.STATION_DOOR:
 		# The same pool the day's planning kept a route to (`target_ground()`), so the draw is
@@ -959,6 +994,8 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 		return _place_at_a_swing(rng)
 	if step.target_kind == ResistanceSteps.TargetKind.MAST:
 		return _place_at_a_mast(rng)
+	if step.target_kind == ResistanceSteps.TargetKind.SCAR:
+		return _pick_reachable(_fronts_a_fire_catches_on(), rng)
 	var candidates: Array[Vector2i] = []
 	for type in step.placement:
 		candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))
@@ -1822,7 +1859,7 @@ func red_arrow_target() -> Vector2:
 ## The point on the burnt building's facade straight behind a `burnt_shell` standing at `shell`:
 ## one tile north, which is half a tile to the foot of the wall (the shell stands at the centre of
 ## the frontage lane, `EventDef.Pavement.AT_THE_FRONT`) and half a tile up its ground floor. North
-## because that is the building `City._mark_the_burnt_frontage()` turns `BURNT`, the lot holding the
+## because that is the building `City.mark_the_burnt_frontage()` turns `BURNT`, the lot holding the
 ## tile directly north of the scar; every building's facade faces south, so the tile above the
 ## wall's foot is always wall and never roof.
 static func _burnt_facade_point(shell: Vector2) -> Vector2:

@@ -1667,13 +1667,16 @@ the city coherent — a fire in a park leaves a burnt shell and does not turn th
 burnt-out block.
 
 **The one building the fire actually touched is shown burnt regardless of its block's own
-purpose or arc.** `City._mark_the_burnt_frontage()` reads the `burnt_shell` scar's position, finds
+purpose or arc.** `City.mark_the_burnt_frontage()` reads the `burnt_shell` scar's position, finds
 the single `Building` whose facade it stands against, and sets that one building's own
 `Building.Condition` to `BURNT` — the look `BURNT_OUT` gives every building of a block (windows
 black and broken under soot, the door boarded, the parapet charred, the wall drained to ash),
 here for one frontage a scar names rather than for a block purpose an arc reached. It runs at
 every dawn, after the block dressing, so the building is burnt from the morning after the fire
-for the rest of the run. `burning_building` only ever catches on a wall `building.gd` actually
+for the rest of the run. Day 8's task calls it once more, live, on a run with no such scar: the
+task records one at a front the fire could have caught on and has that building burnt there and
+then (`ResistanceDirector._burn_a_front_for_the_task()`), so the building it sends her to is
+burnt. `burning_building` only ever catches on a wall `building.gd` actually
 draws (`EventDef.Pavement.AT_THE_FRONT`, the frontage lane of a north sidewalk, and only where the
 tile behind it is on the map), so there is always a real facade behind the scar to burn.
 

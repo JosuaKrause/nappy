@@ -2627,25 +2627,66 @@ func _check_the_arrow_ends_on_the_burnt_building(t, director: ResistanceDirector
 			"the arrow's tip %s is on that building's front wall %s, not the sidewalk at %s"
 			% [tip_tile, lot, shell_tile])
 
-## The smallest honest fallback named in `ResistanceSteps._build()`'s own comment: a run with no
-## recorded `burnt_shell` scar still offers day 8's task, on an ordinary placement of the same
-## row rather than a step with nowhere to go.
+## A run with no recorded `burnt_shell` scar (a `--day 8` start, or a day 3 that never burned)
+## still sends her to a burnt building: the shell stands on a front day 3's fire could have caught
+## on, the scar is recorded there, and the building behind it is burnt at once — *"Take what's in
+## the stroller to the burnt building"* never leads to bare sidewalk.
 func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var saved_scars := GameState.scars.duplicate()
 		GameState.scars.clear()
+		var burnt_before := 0
+		var conditions: Array[int] = []
+		for building in _city._buildings:
+			conditions.append(building.condition)
+			if building.condition == Building.Condition.BURNT:
+				burnt_before += 1
 
 		var director := _director(t)
 		director.start_day(8, _rng(8, "resistance"), 300.0)
+		t.check(GameState.scars.is_empty(), "nothing is burnt for the task before her mark is read")
 		director._on_contact_completed(5)
 		t.check(director.current_step() != null and director.current_step().index == 6,
 				"touching day 8's mark still activates the burnt-shell perform")
 		t.check(director._rider != null and director._rider.def.id == "burnt_shell",
-				"riding a burnt_shell instance placed the ordinary way")
+				"riding a burnt_shell instance placed for the task")
 		t.check(director.contact_position() != Vector2.INF, "somewhere reachable")
+		if director._rider == null:
+			director.free()
+			GameState.scars = saved_scars
+			return
+
+		var shell := director._rider.global_position
+		var shell_tile := _city.map.world_to_tile(shell)
+		var fronts := EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+				_city.map, {})
+		t.check(shell_tile in fronts,
+				"the shell stands at %s, a front day 3's fire could have caught on" % shell_tile)
+		var recorded := 0
+		for scar: Dictionary in GameState.scars:
+			if String(scar["id"]) == "burnt_shell" \
+					and (scar["position"] as Vector2).distance_to(shell) < 1.0:
+				recorded += 1
+		t.check(GameState.scars.size() == 1 and recorded == 1,
+				"the scar is recorded where the shell stands, and nothing else (%s)"
+				% [GameState.scars])
+		var behind: Building = null
+		var burnt_now := 0
+		for building in _city._buildings:
+			if building.lot.has_point(shell_tile + Vector2i.UP):
+				behind = building
+			if building.condition == Building.Condition.BURNT:
+				burnt_now += 1
+		t.check(behind != null and behind.condition == Building.Condition.BURNT,
+				"the building behind the shell is burnt the moment the task is on offer")
+		t.check(burnt_now == burnt_before + 1,
+				"and no other building is (%d burnt, %d before)" % [burnt_now, burnt_before])
+		_check_the_arrow_ends_on_the_burnt_building(t, director)
 
 		director.free()
+		for i in _city._buildings.size():
+			_city._buildings[i].condition = conditions[i] as Building.Condition
 		GameState.scars = saved_scars)
 
 ## Mirrors the real day order (`main._start_day()`: city, events, resistance) rather than
