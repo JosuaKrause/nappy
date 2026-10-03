@@ -21,7 +21,10 @@ d = ImageDraw.Draw(img, "RGBA")
 
 
 def F(n):
-    return ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", n * S)
+    try:
+        return ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", n * S)
+    except OSError:  # not macOS: Pillow's bundled default font
+        return ImageFont.load_default(size=n * S)
 
 
 f_s, f_m, f_b = F(11), F(13), F(16)

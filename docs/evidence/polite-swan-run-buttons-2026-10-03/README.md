@@ -10,4 +10,4 @@
 
 ## layout.png
 
-**Claim.** The 1280x720 touch layout with the screen-edge badge track, arrow strips, pause button, touch HUD meters, day-hint label, stop band and both rings, and four candidate run-button spots per side with what each takes away; B (inward) is the one the player chose. **Limits.** A diagram, not a capture: positions come from the constants named in `layout.py`'s docstring, copied by hand, and go stale if those change. Regenerate with `python3 layout.py layout.png` (Pillow, headless).
+**Claim.** The 1280x720 touch layout with the screen-edge badge track, arrow strips, pause button, touch HUD meters, day-hint label, stop band and both rings, and four candidate run-button spots per side with what each takes away; B (inward) is the one the player chose. **Limits.** A diagram, not a capture: positions come from the constants named in `layout.py`'s docstring, copied by hand, and go stale if those change. Regenerate with `uv run python layout.py layout.png` (Pillow, headless).

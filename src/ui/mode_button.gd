@@ -73,7 +73,7 @@ const _ICON_BY_SYMBOL := {
 ## `TouchControls.PAUSE_CATCH_RADIUS` and `TouchControls.RUN_CATCH_RADIUS` (both 46px) are the only
 ## catch radii in the game — a thumb is never asked to land inside anything smaller during a run. This button is opened on the same phone, so its own radius matches it
 ## rather than a value chosen for a mouse: nothing on this screen may be harder to hit than the
-## one control already in the game.
+## two controls already in the game that share this radius.
 const _RADIUS := 46.0
 const _DIAMETER := _RADIUS * 2.0
 ## The glyph reads best at roughly half the disc's own diameter — big enough to read at this

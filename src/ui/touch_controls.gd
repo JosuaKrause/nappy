@@ -1000,13 +1000,11 @@ func _draw_run_buttons() -> void:
 	for centre in [RUN_CENTRE_LEFT, RUN_CENTRE_RIGHT]:
 		if held:
 			draw_circle(centre, RUN_RADIUS, Palette.BUTTON_PRESSED)
-		# The chevrons point up on both buttons: a chevron pointing sideways, now that the buttons sit
-		# toward the middle, would read as "walk that way". (Open to overturn: a glyph with no
-		# direction at all.)
-		draw_set_transform(centre, -PI / 2.0, Vector2.ONE)
-		draw_texture_rect(AtlasLibrary.region(_RUN_ICON), Rect2(-size * 0.5, size), false,
+		# `run.svg`'s chevrons point up on both buttons: a chevron pointing sideways, now that the
+		# buttons sit toward the middle, would read as "walk that way". (Open to overturn: a glyph
+		# with no direction at all.)
+		draw_texture_rect(AtlasLibrary.region(_RUN_ICON), Rect2(centre - size * 0.5, size), false,
 				Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 ## Both focal points, always, in `Mode.JOYSTICK` — M83 drew nothing for them and left *whether they
 ## can be found by feel* as the played question the next report would answer; the answer is no.
