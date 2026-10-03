@@ -133,9 +133,10 @@ request carries the whole batch:
   uv run python tools/inbox.py --role claude-orchestrator close --pr P
   ```
 
-  It closes every note the description names, and closes none when any note's current text is not
-  word for word in a playtest file the pull request adds, so a note the player edited after it was
-  copied stops the close rather than being filed half-read. `--dry-run` checks the same and writes
+  It closes every note the description names, and closes none when any note's current text, or
+  any comment the player wrote on it, is not word for word in one playtest file the pull request
+  adds, so a note the player edited, or answered on, after it was copied stops the close rather
+  than being filed half-read. `--dry-run` checks the same and writes
   nothing. From then on the playtest file is the record, and a later thought is a new note.
 - **A filing pull request that is abandoned reopens its notes**:
   `uv run python tools/inbox.py --role claude-orchestrator reopen --pr P`, once the pull request is

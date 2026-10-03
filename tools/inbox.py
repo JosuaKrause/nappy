@@ -22,7 +22,9 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
     ask N                    posts a question on note N (dotted-quail, statement 1), its text from
                              --body-file or standard input
     close --pr P             right after filing pull request P is pushed, closes every note its
-                             description names, in one call (statement 22)
+                             description names, in one call (statement 22), and none unless each
+                             note's body and the player's comments on it are word for word in
+                             one playtest file P adds
     reopen --pr P            reopens them when P was closed without merging
 
 **Only the player's notes count** (statements 19 and 23): an issue the player (`PLAYER`) opened,
@@ -442,6 +444,29 @@ def added_playtests(github: GitHub, pr: int) -> dict[str, str]:
     return texts
 
 
+def unfiled_words(note: Note, comments: Sequence[Comment], playtests: dict[str, str]) -> list[str]:
+    """What of the player's words on `note` is not yet word for word in one added playtest file.
+
+    `playtests` maps each file a filing pull request adds to its `normalize`d text. The note's
+    current body and every comment the player wrote on it (the answers the inbox skill copies with
+    it) must all be in the same file; a comment by anybody else, the agent's own question
+    included, is not the player's words and is not required.
+    """
+    body = normalize(note.body)
+    holding = [path for path, text in sorted(playtests.items()) if body in text]
+    if not holding:
+        return [f"the current text of #{note.number} is not word for word there"]
+    said = [comment for comment in comments if comment.author.lower() == PLAYER.lower() and normalize(comment.body)]
+    if any(all(normalize(comment.body) in playtests[path] for comment in said) for path in holding):
+        return []
+    in_one = ", ".join(holding)
+    missing = [comment for comment in said if not all(normalize(comment.body) in playtests[path] for path in holding)]
+    return [
+        f"the player's comment on #{note.number} of {comment.created} is not word for word in {in_one}"
+        for comment in missing
+    ]
+
+
 def cmd_close(github: GitHub, role: str | None, pr: int, dry_run: bool) -> int:
     batch = read_batch(github, pr)
     if batch.state != "open":
@@ -454,12 +479,12 @@ def cmd_close(github: GitHub, role: str | None, pr: int, dry_run: bool) -> int:
         if note.state != "open":
             print(f"#{note.number} is already {note.state}")
     playtests = {path: normalize(text) for path, text in added_playtests(github, pr).items()}
-    missing = [note.number for note in pending if not any(normalize(note.body) in text for text in playtests.values())]
-    if missing:
+    failures = [failure for note in pending for failure in unfiled_words(note, github.comments(note.number), playtests)]
+    if failures:
         where = ", ".join(sorted(playtests)) or f"no file under {PLAYTESTS}"
         raise InboxError(
-            f"not closing anything: the current text of {', '.join(f'#{n}' for n in missing)} is not word for word in"
-            f" what #{pr} adds ({where}); the note changed since it was copied, or the copy is wrong"
+            f"not closing anything: {'; '.join(failures)} -- in what #{pr} adds ({where}); the note changed since it"
+            " was copied, or the copy is wrong"
         )
     comment = f"Filed in #{pr}. From here on the playtest file is the record; a later thought is a new note."
     for note in pending:

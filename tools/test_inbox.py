@@ -305,6 +305,7 @@ class WriteTests(unittest.TestCase):
         reads: dict[str, Any] = {
             f"repos/{REPO}/pulls/430": filing_pr(430, description, **pr),
             f"repos/{REPO}/issues/423": issue(423),
+            f"repos/{REPO}/issues/423/comments": [],
             f"repos/{REPO}/issues/424": issue(424, state="closed"),
         }
         reads.update(playtest_reads(430, playtest))
@@ -330,6 +331,30 @@ class WriteTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("not closing anything", err)
         self.assertEqual(fake.writes, [])
+
+    def test_close_closes_nothing_when_a_comment_of_the_players_is_not_copied(self) -> None:
+        # The player's answer on the note is their words too, copied with the body; one missing
+        # from the playtest file stops the close, while the agent's own question need not be there.
+        comments = [
+            {"user": {"login": "nappy-claude-orchestrator[bot]"}, "created_at": "t1", "body": "Which tasks?"},
+            {
+                "user": {"login": "JosuaKrause"},
+                "created_at": "2026-10-02T09:00:00Z",
+                "body": "this applies to almost all tasks",
+            },
+        ]
+        fake = self.batch("Filed from #423", "# Playtest\n\n> " + BODY + "\n")
+        fake.reads[f"repos/{REPO}/issues/423/comments"] = comments
+        code, _, err = run(fake, "--role", "claude-orchestrator", "close", "--pr", "430")
+        self.assertEqual(code, 1)
+        self.assertIn("not closing anything", err)
+        self.assertIn("the player's comment on #423 of 2026-10-02T09:00:00Z", err)
+        self.assertEqual(fake.writes, [])
+        fake = self.batch("Filed from #423", "# Playtest\n\n> " + BODY + "\n\n> this applies to\n> almost all tasks\n")
+        fake.reads[f"repos/{REPO}/issues/423/comments"] = comments
+        code, out, _ = run(fake, "--role", "claude-orchestrator", "close", "--pr", "430")
+        self.assertEqual(code, 0, out)
+        self.assertEqual([args[6:9] for args, _ in fake.writes], [["issue", "close", "423"]])
 
     def test_close_refuses_a_merged_pull_request_and_a_note_that_is_not_the_players(self) -> None:
         fake = self.batch("Filed from #423", BODY, state="closed", merged=True)
