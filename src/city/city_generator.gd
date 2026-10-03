@@ -1254,8 +1254,9 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 		else:
 			map.absent_segments.erase(between.key())
 	if station_pair.has_area():
-		pool.erase(station_pair)
-		pool.push_front(station_pair)
+		# An authored pair is the candidate, not a tie-breaker in industrial ranking.
+		pool.clear()
+		pool.append(station_pair)
 	_place_power_station(map, purposes, block_rects, home, areas, reference, calm, pool, choices)
 	if station_pair.has_area() and map.power_station != station_pair:
 		map.recipe_diagnostics.append("power_station.ineligible")
@@ -1299,12 +1300,21 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 ## the next seed — the failure direction every other guarantee here already has.
 static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
 		home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea], reference: RouteTree,
-		calm: Dictionary, pool: Array[Rect2i], _choices: Dictionary = {}) -> void:
+		calm: Dictionary, pool: Array[Rect2i], choices: Dictionary = {}) -> void:
 	var industrial := _industrial_blocks(purposes)
 	for pair in _power_station_candidates(pool, industrial):
 		if not _the_pair_is_free(map, purposes, pair, home, reference, calm):
 			continue
 		var door_blocks := _door_blocks(map, pair)
+		if choices.has("power_station"):
+			var door: Array = choices.power_station.door_block
+			var requested := Vector2i(int(door[0]), int(door[1]))
+			# Keep the ordinary street/distance filter and the region gate below. A pin
+			# selects among eligible doors; it never permits a fallback to another one.
+			var eligible := door_blocks.has(requested)
+			door_blocks.clear()
+			if eligible:
+				door_blocks.append(requested)
 		if door_blocks.is_empty():
 			continue
 		var between := _street_between(pair)

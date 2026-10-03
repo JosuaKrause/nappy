@@ -15,6 +15,7 @@ func run(t) -> void:
 	if not original.errors.is_empty():
 		return
 	var map: CityMap = original.map
+	_test_station_pins(t)
 	_test_closures(t, map)
 	var pinned := _recipe()
 	pinned.city.dead_ends = [{"segment": [9, 1, 0], "end": "a"}]
@@ -66,6 +67,24 @@ func run(t) -> void:
 			t.check(extended > 0, "actual City construction extends the hall roof over its adjoining wall")
 		city.free()
 	_test_examples(t)
+
+func _test_station_pins(t) -> void:
+	var input := _recipe()
+	input.city.power_station = {"blocks": [8, 1, 2, 1], "door_block": [9, 1]}
+	var accepted := RecipeCityBuilder.build(input)
+	t.check(accepted.errors.is_empty(), "another eligible station door is honored: %s" % [accepted.errors])
+	if accepted.errors.is_empty():
+		t.check(accepted.map.power_station_door_key == Vector3i(9, 2, 0),
+				"requested east door owns the station street before region dependents")
+	input.city.power_station.door_block = [7, 1]
+	t.check(not RecipeCityBuilder.build(input).errors.is_empty(),
+			"a door outside the station pair is refused without choosing another door")
+	input.city.power_station = {"blocks": [2, 1, 2, 1], "door_block": [2, 1]}
+	accepted = RecipeCityBuilder.build(input)
+	t.check(accepted.errors.is_empty(), "eligible authored pair overrides industrial preference: %s" % [accepted.errors])
+	if accepted.errors.is_empty():
+		t.check(accepted.map.power_station == Rect2i(2, 1, 2, 1),
+				"explicit station footprint survives candidate ranking")
 
 func _test_fixture(t) -> void:
 	var input := _recipe()
