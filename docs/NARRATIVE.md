@@ -147,11 +147,11 @@ that through the day before the last night:
 | Day | Task | Reached by | Arrow |
 | --- | --- | --- | --- |
 | 6 | A note for a stranger | Hand it to whichever `homeless_yeller` she walks up to — several are live at once and look alike, and coming near one and walking on commits her to nothing, so there is no wrong one to single out first. | any instance |
-| 7 | The package | The delivery van's own drop. Picking it up makes the pram heavier for the rest of the day. | red |
-| 8 | The burnt shell | The building this run's own day-3 fire burned, wherever in the city it stands, the arrow ending on its door, and the drawing left from the near half of the sidewalk in front of it. Only a run that recorded no day-3 scar at all has one burnt for the task, on a front the fire could have caught on, the moment her mark is read. | red |
+| 7 | The package | The delivery van's own drop, touched from any side of the van. Picking it up makes the pram heavier for the rest of the day. | red |
+| 8 | The burnt shell | The building this run's own day-3 fire burned, wherever in the city it stands, the arrow ending on its door, and the drawing left from the near half of the sidewalk in front of it. Only a run that recorded no day-3 scar at all has one burnt for the task, on a front the fire could have caught on near the mark, the moment her mark is read. | red |
 | 9 | The crossing | One of that day's own region doors, the first day the wall stands at all. | red |
 | 10 | Warn the neighbor | The neighbor, out in the city and walking home, by the red arrow that follows them: about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk from her door when the mark is touched. Reached first, the neighbor runs; reaching the door first, they are taken, and from the next morning the wanted notice crosses their face out. | red, with a deadline |
-| 11 | Silence a mast | The foot of one live loudspeaker mast, drawn among those she can reach. Its field makes the approach cost while it broadcasts, so the skill is reaching it between broadcasts; reaching it puts its lamp out, and it stays quiet for the rest of the run. | red |
+| 11 | Silence a mast | The foot of one live loudspeaker mast near the mark, drawn among those she can reach, or the nearest of them when none is near. Its field makes the approach cost while it broadcasts, so the skill is reaching it between broadcasts; reaching it puts its lamp out, and it stays quiet for the rest of the run. | red |
 | 12 | The swing | The playground of one specific park. | red |
 | 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's hut — rather than round it. | any instance |
 | 14 | The last night | The power station's front door, offered only once the goal is met. Touching it is the sabotage. | red |
@@ -162,16 +162,32 @@ reaches is the right one. The rest are one place, and get the red arrow, `HomeAr
 in a color of its own (`Palette.TASK_ARROW`) — a decided exception to *no quest log or marker for
 the resistance*, narrowed to a task with exactly one place to be.
 
+**A task is near its mark.** The man shouting the task puts in the street, the van, a roadblock,
+day 11's mast and the building burnt for a run with no day-3 fire all stand within
+`ResistanceDirector.NEAR_THE_MARK` (576px, 18 tiles: the mark's own block or the next one) of where
+she read the mark, and out of her view when they are put there; when nothing that near qualifies,
+the nearest place that does. The places that are fixed keep them: day 9's district door, day 12's
+swing park, the neighbor on the walk home, the last night's station door, and the building a run's
+own day-3 fire burned. *(2026-10-03, minty-hedgehog, statement 3: "the van should spawn close to the
+mark not across the city" · "this applies to almost all tasks".)* **A task with a body is touched
+from any side**: the van, or a roadblock, completes the moment she is within `ContactPoint.REACH`
+(36px) of its body, wherever round it she stands. *("the arrow correctly points to the van but
+touching the van doesn't solve the task".)*
+
 ### Risk
 
-- **Every mark is guarded**, from the day the first one can appear. Its own robber stands at the
-  other end of the mark's own alley: past his own trigger range of the mark where the alley is
-  long enough for that, and on its far end where it is not. So walking in from the mark's own end,
-  reading it and walking back out never wakes him; walking on past the mark toward him can.
-  *(2026-09-26: "the rubber in the alley with the mark is too close to the mark. It's impossible to
-  get the mark on most days. Let's always place the river at the other end of the alley" —
-  "rubber"/"river" are dictation for *robber* — and, asked whether he may then never wake at all,
-  "stands at the far end even where he then never wakes".)* A mark in the short passage into a
+- **Every mark is guarded**, from the day the first one can appear. Its own robber stands about
+  two-thirds of the way through the mark's own alley, counted from the end nearer the mark: inside
+  the alley rather than at its edge, where he would be easier to see and to avoid. Where the alley
+  is long enough for that spot to be 176px or more from the mark (his 140px trigger range and the
+  36px touch reach), walking in from the mark's own end, reading it and walking back out never
+  wakes him; in a shorter alley, which every alley one block long is, he still stands two-thirds
+  in, and reading the mark may wake him. He never stands within 66px of the mark (his catch and the
+  touch reach), so reading it never lands her inside his catch. *(2026-10-03, minty-hedgehog,
+  statement 3: "the robber should be 2/3rds through the alley not pressed against the edge of it" ·
+  "the main reason for this is so the robber is not at the edge of the alley which makes him easier
+  visible and easier to avoid"; asked where he stands in an alley too short for both, inbox #471:
+  "Two-thirds wins".)* A mark in the short passage into a
   courtyard has no other end to the alley, so its robber stands at the courtyard's inner end, as far
   from the mark as the courtyard allows and never within his catch of it: he may wake as she reads
   it, and she lures him out. *(2026-09-27: "robber at inner end of the courtyard is fine. I
@@ -181,7 +197,9 @@ the resistance*, narrowed to a task with exactly one place to be.
   behind a guarded passage mark is no place to settle the baby that day until she has lured him
   out. The player approved exactly this spot (2026-09-27, crisp-moose, statement 3). Every other
   guarded contact — a door, a mast's foot, a swing, the burnt shell, a roadblock — keeps a robber
-  somewhere between 66px and 176px of it instead: inside that band touching it is death, always;
+  somewhere between 66px and 176px of it instead, measured from the ground it is touched from, so a
+  roadblock's, touched from any side of its band, stands that far beyond the band's own reach:
+  inside that band touching it is death, always;
   above it he never wakes at all; between them, which side the player approaches from decides
   whether he notices them. Seeded from the run and the day, so the distance or the alley that was
   safe on day 9 of this run is safe on day 9 every time you replay it — the pattern is learnable,

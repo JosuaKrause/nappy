@@ -24,6 +24,7 @@ func run(t) -> void:
 	_test_a_perform_contact_rides_on_its_instance(t)
 	_test_the_notes_handover_completes_at_his_inner_radius_not_reach(t)
 	_test_a_perform_contact_sees_its_rider_finish(t)
+	_test_touching_a_tasks_body_from_any_side_completes_it(t)
 	_test_touching_the_mark_activates_the_same_days_task(t)
 	_test_placement_is_deterministic(t)
 	_test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t)
@@ -37,12 +38,13 @@ func run(t) -> void:
 	_test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t)
 	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t)
-	_test_the_guard_moves_with_the_mark_to_the_alleys_far_end(t)
+	_test_the_guard_moves_with_the_mark_into_its_new_alley(t)
 	_test_a_relocation_never_retires_a_guard_in_view_or_awake(t)
 	_test_the_guard_never_lands_inside_a_building(t)
 	_test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t)
-	_test_the_chalk_mark_guard_stands_at_the_alleys_far_end(t)
-	_test_the_mark_is_reachable_from_its_own_end(t)
+	_test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t)
+	_test_a_long_alleys_robber_stands_two_thirds_in_past_his_trigger(t)
+	_test_reading_a_mark_never_lands_her_in_his_catch(t)
 	_test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t)
 	_test_no_alley_robbery_stands_near_the_doorstep(t)
 	_test_playtest_55_seed_has_no_spawn_kill(t)
@@ -93,6 +95,7 @@ func run(t) -> void:
 	_test_the_park_closes_in_front_of_her_and_stays_taken(t)
 	_test_the_column_comes_down_the_main_road(t)
 	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
+	_test_a_task_is_placed_near_its_mark(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
 	_test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t)
 	_test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t)
@@ -376,6 +379,57 @@ func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 	contact.free()
 	instance.free()
 
+## feathery-marmot, "touching the van completes the task" — *"the arrow correctly points to the van
+## but touching the van doesn't solve the task"* (minty-hedgehog, statement 3). The contact rides
+## the van and a roadblock at one fixed offset to the east, as `_reachable_offset()` leaves it, and
+## she walks up to the body from sixteen bearings until she is pressed against it, her edge a pixel
+## off its outline, found from the row's own `GroundShape` along the instance's own axis: every
+## bearing completes the task. Before, only a touch within `ContactPoint.REACH` of that one offset
+## point counted, so pressing against the far side of the van completed nothing. And a step
+## `ContactPoint.REACH` further out than a touch, on any side, completes nothing either.
+func _test_touching_a_tasks_body_from_any_side_completes_it(t) -> void:
+	for id: String in ["delivery_van", "roadblock"]:
+		var step := _perform_on(7 if id == "delivery_van" else 13)
+		var instance := EventInstance.new()
+		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO)
+		t.add_child(instance)
+		instance.set_process(false)
+		var player := _rig_player(t, Vector2.ZERO)
+		var shape := instance.def.shape
+		var axis := instance.solid_axis()
+		var offset := Vector2.RIGHT * (shape.across() + Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH)
+		var pressed_done := 0
+		var far_done := 0
+		var bearings := 16
+		for i in bearings:
+			var bearing := Vector2.RIGHT.rotated(TAU * float(i) / float(bearings))
+			for gap: float in [Tuning.PLAYER_BODY_RADIUS + 1.0,
+					Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH + 2.0]:
+				# Out along the bearing until her centre is `gap` off the body's own outline.
+				var r := 0.0
+				while shape.distance_to_spine((bearing * r).rotated(-axis.angle())) - shape.radius \
+						< gap:
+					r += 0.5
+				var contact := ContactPoint.new()
+				contact.ride(step, instance, offset)
+				t.add_child(contact)
+				contact.set_physics_process(false)
+				player.global_position = bearing * r
+				contact._physics_process(STEP)
+				if contact.is_done and gap < Tuning.PLAYER_BODY_RADIUS + 2.0:
+					pressed_done += 1
+				elif contact.is_done:
+					far_done += 1
+				contact.free()
+		t.check(pressed_done == bearings,
+				"%s: pressed against its body from any side completes the task (%d of %d bearings)"
+				% [id, pressed_done, bearings])
+		t.check(far_done == 0,
+				"%s: and a step more than a reach off its body completes nothing (%d of %d bearings)"
+				% [id, far_done, bearings])
+		player.free()
+		instance.free()
+
 # ------------------------------------------------------------------ director ---
 
 var _city: City
@@ -560,9 +614,9 @@ func _test_touching_the_mark_activates_the_same_days_task(t) -> void:
 		director.free())
 
 ## *Always guarded* has to mean a survivable placement, not a guaranteed lost day: a robber
-## stands at least 66px (30 + `ContactPoint.REACH`) from every mark, and within 96px of the
-## alley's own far mouth (`_draw_guard_position_near_far_mouth()`'s own reach), seeded so the
-## distance is the same every time this day is replayed.
+## stands at least 66px (30 + `ContactPoint.REACH`) from every mark, in the mark's own alley —
+## within 96px of where `_guard_spot()` says he stands, two-thirds through it or at a courtyard's
+## inner end — and the distance is the same every time this day is replayed.
 func _test_the_guard_is_seeded(t) -> void:
 	_seen_guard_distances = []
 	_with_clean_run(func() -> void:
@@ -591,9 +645,9 @@ func _test_the_guard_is_seeded(t) -> void:
 			if guard:
 				t.check(distance >= min_distance - 0.5,
 						"day %d's guard stands at least 66px from the mark" % day)
-				var far := director._far_alley_mouth(at)
-				t.check(far == Vector2.INF or guard.global_position.distance_to(far) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
-						"day %d's guard stands within reach of the alley's far mouth" % day)
+				var spot := director._guard_spot(at)
+				t.check(spot == Vector2.INF or guard.global_position.distance_to(spot) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
+						"day %d's guard stands two-thirds through the mark's alley, or at its courtyard's inner end" % day)
 				_seen_guard_distances.append(distance)
 			director.free()
 
@@ -733,7 +787,9 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 		var director := _director(t)
 		director.start_day(6, _rng(6, "resistance"), 300.0)
 		var mark_at := director.contact_position()
-		director.set_sight(func(p: Vector2) -> bool: return p.distance_to(mark_at) < 100.0)
+		# The mark's own picture on screen and nothing else: its corners are 23px from its centre,
+		# and its guard stands at least 66px from it, so a relocation is never held back for him.
+		director.set_sight(func(p: Vector2) -> bool: return p.distance_to(mark_at) < 30.0)
 
 		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
 		t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
@@ -990,7 +1046,7 @@ func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 ## a relocated mark's fresh guard follows the same rule as the dawn draw, standing at the far
 ## mouth of whichever alley the mark relocated to, or as near it as the alley allows, rather than
 ## in a band around the mark itself.
-func _test_the_guard_moves_with_the_mark_to_the_alleys_far_end(t) -> void:
+func _test_the_guard_moves_with_the_mark_into_its_new_alley(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var director := _director(t)
@@ -1015,10 +1071,11 @@ func _test_the_guard_moves_with_the_mark_to_the_alleys_far_end(t) -> void:
 				% guards.size())
 
 		var guard: EventInstance = guards[0]
-		var far_mouth := director._far_alley_mouth(new_at)
-		t.check(far_mouth != Vector2.INF, "the relocated mark's own alley is found")
-		t.check(guard.global_position.distance_to(far_mouth) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
-				"the new guard stands at the alley's far mouth, not in a band around the mark")
+		var spot := director._guard_spot(new_at)
+		t.check(spot != Vector2.INF, "the relocated mark's own alley is found")
+		t.check(guard.global_position.distance_to(spot) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
+				"the new guard stands in that alley, two-thirds through it or at its courtyard's " +
+				"inner end, not in a band around the mark")
 
 		player.free()
 		director.free())
@@ -1134,56 +1191,67 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 			"a band with no walkable ground anywhere in it draws no guard at all")
 	director.free()
 
-## M213, "the robber guarding a chalk mark always spawns at the alley's other end from the mark":
-## over every through-alley tile of six cities, `_draw_guard_position_near_far_mouth()` stands him
-## within `FAR_END_REACH_IN` of `_far_alley_mouth()`, never nearer the mark than `max_distance`
-## where the alley has room beyond it, and on the far end itself where it has not — the same sweep
-## `_test_the_guard_never_lands_inside_a_building` runs, checked for position instead of legality.
-## The item's own "a test states the distance from the mark to him over many seeds" is the
-## varies-from-mark-to-mark check at the end.
-func _test_the_chalk_mark_guard_stands_at_the_alleys_far_end(t) -> void:
+## feathery-marmot, "the robber stands two-thirds through the alley" — *"the robber should be
+## 2/3rds through the alley not pressed against the edge of it"* (minty-hedgehog, statement 3) and,
+## for an alley too short for that and 176px from the mark both, *"Two-thirds wins"* (inbox #471).
+## Over every through-alley tile of six cities, the guard `_guard_position()` stands for a mark
+## (the placement `_maybe_set_a_trap()` and every relocation make) is on the alley's own axis,
+## two-thirds of its length from the edge nearer the mark — or, where that point is within 66px of
+## the mark (his catch and the touch reach), 66px past the mark. Every alley here is one block
+## long, so this is the short case on every mark: he stands two-thirds in although that is under
+## 176px from the mark, which the test counts so it is not vacuous. Before, he stood at the far end
+## tile or up to three tiles in from it, at least 176px from the mark where the alley allowed.
+func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
 	var checked := 0
+	var under_the_trigger := 0
 	var distances: Array[float] = []
 	for seed_value in [4242, 90210, 2295276695, 314159, 271828, 555555]:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
 		director.setup(null, map)
 		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("guard-far-end:%d" % seed_value)
+		rng.seed = hash("guard-two-thirds:%d" % seed_value)
 		for tile in _through_alley_tiles(map):
 			if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 				continue
 			var mark := map.tile_to_world(tile)
-			var far := director._far_alley_mouth(mark)
-			t.check(far != Vector2.INF, "seed %d: the mark at %s has a far end" % [seed_value, tile])
-			if far == Vector2.INF:
+			# The alley's two end tiles in the mark's own row or column, nearer first; its edges
+			# are half a tile beyond them.
+			var ends := director._alley_ends(mark)
+			t.check(ends.size() == 2, "seed %d: the mark at %s has its alley's two ends"
+					% [seed_value, tile])
+			if ends.size() != 2:
 				continue
-			for _attempt in 3:
-				var guard_at := director._draw_guard_position_near_far_mouth(rng, mark, far,
-						min_distance, max_distance, [], Vector2.INF, 0.0, false)
-				if guard_at == Vector2.INF:
-					continue
-				checked += 1
-				t.check(guard_at.distance_to(far) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
-						("seed %d: the guard for the mark at %s stands within reach of the " +
-						"alley's far end") % [seed_value, tile])
-				if mark.distance_to(far) >= max_distance:
-					t.check(guard_at.distance_to(mark) >= max_distance - 0.5,
-							("seed %d: the alley past the mark at %s has room, so he stands " +
-							"beyond %.0fpx of it") % [seed_value, tile, max_distance])
-				else:
-					t.check(guard_at.distance_to(far) < 0.5,
-							("seed %d: the alley past the mark at %s is shorter than %.0fpx, so " +
-							"he stands on its far end") % [seed_value, tile, max_distance])
-				t.check(guard_at.distance_to(mark) >= min_distance - 0.5,
-						"seed %d: and never within %.0fpx of the mark at %s"
-						% [seed_value, min_distance, tile])
-				distances.append(mark.distance_to(guard_at))
+			var guard_at := director._guard_position(rng, mark, true, Vector2.INF, false)
+			if guard_at == Vector2.INF:
+				continue
+			checked += 1
+			var axis := (ends[1] - ends[0]).normalized()
+			var near_edge := ends[0] - axis * Tuning.TILE_SIZE * 0.5
+			var length := ends[0].distance_to(ends[1]) + Tuning.TILE_SIZE
+			var two_thirds := near_edge + axis * length * 2.0 / 3.0
+			var catch_floor := mark + axis * min_distance
+			var expected := two_thirds
+			if (two_thirds - near_edge).dot(axis) < (catch_floor - near_edge).dot(axis):
+				expected = catch_floor
+			t.check(guard_at.distance_to(expected) < 0.5,
+					("seed %d: the guard for the mark at %s stands two-thirds through its alley, " +
+					"or 66px past the mark where that is nearer (%s, wanted %s)")
+					% [seed_value, tile, guard_at, expected])
+			t.check(guard_at.distance_to(mark) >= min_distance - 0.5,
+					"seed %d: and never within %.0fpx of the mark at %s"
+					% [seed_value, min_distance, tile])
+			if guard_at.distance_to(mark) < max_distance:
+				under_the_trigger += 1
+			distances.append(mark.distance_to(guard_at))
 		director.free()
-	t.check(checked > 0, "some mark was actually checked (%d draws)" % checked)
+	t.check(checked > 0, "some mark was actually checked (%d)" % checked)
+	t.check(under_the_trigger > 0,
+			("the short case is met: two-thirds wins under %.0fpx of the mark on %d of %d marks")
+			% [max_distance, under_the_trigger, checked])
 	var all_equal := true
 	for distance in distances:
 		if not is_equal_approx(distance, distances[0]):
@@ -1191,68 +1259,95 @@ func _test_the_chalk_mark_guard_stands_at_the_alleys_far_end(t) -> void:
 	t.check(distances.size() >= 2 and not all_equal,
 			"the guard's own distance from the mark still varies from mark to mark")
 
-## M213, "the mark is reachable" — *"It's impossible to get the mark on most days. Let's always
-## place the river at the other end of the alley"* (PLAYTEST-142 statement 5; "river" is dictation
-## for *robber*). Over every through-alley tile of six cities, she walks in from a tile and a half
-## outside the alley's near end, up to `ContactPoint.REACH` less two pixels short of the mark on its
-## near side — close enough to read it — and back out the same way, past a bare `alley_robbery`
-## where `_guard_position()` stands a mark's guard: the call `_maybe_set_a_trap()` and every
-## relocation make, so the walk fails if a mark's guard ever stops going to the far end. The same
-## marks and the same walk are asked of the whole-circle
-## 66-176px band around the mark, which is how a mark's guard stood without the far-end rule, so
-## the test says what the rule buys rather than only that some mark can be reached.
-##
-## **Every mark, not most**: a through-alley's far end is at least four tiles (128px) from any mark
-## in it, so a touch from the near side is past his `pursues_within` (140px) wherever he stands at
-## that end — see `_draw_guard_position_near_far_mouth()`. The band leaves him asleep on well under
-## that share of the same marks, which is what keeps this test from passing without the rule.
-func _test_the_mark_is_reachable_from_its_own_end(t) -> void:
+## The long case of the same rule: where an alley is long enough for its two-thirds point to be
+## 176px or more from the mark (his 140px `pursues_within` and `ContactPoint.REACH`), he stands
+## there, and walking in from the mark's own end to read it and back out never wakes him. No city
+## has an alley that long — every one is a block, 8 tiles — so the test carves one, 16 tiles, into a
+## generated map's own grid and registers it as a through-alley, and reads a mark on its first
+## tile.
+func _test_a_long_alleys_robber_stands_two_thirds_in_past_his_trigger(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+	var map := CityGenerator.generate(13)
+	var rect := Rect2i()
+	for x in range(4, map.size.x - 6):
+		var candidate := Rect2i(Vector2i(x, 4), Vector2i(Tuning.ALLEY_WIDTH_TILES, 16))
+		var clear := true
+		for alley in map.alley_rects:
+			if alley.intersects(candidate.grow(1)):
+				clear = false
+		for tile in map.rect_tiles(candidate.grow(1)):
+			if map.is_on_home_block(tile) or map.is_held_at(tile) or map.is_closed(tile):
+				clear = false
+				break
+		if clear:
+			rect = candidate
+			break
+	t.check(rect.has_area(), "there is ground on the test map to carve a long alley into")
+	if not rect.has_area():
+		return
+	for tile in map.rect_tiles(rect):
+		map.set_tile(tile, GameEnums.TileType.ALLEY)
+	map.alley_rects.append(rect)
+	var director := ResistanceDirector.new()
+	director.setup(null, map)
+	var mark := map.tile_to_world(rect.position)
+	var length := float(rect.size.y * Tuning.TILE_SIZE)
+	var near_edge := mark - Vector2(0.0, Tuning.TILE_SIZE * 0.5)
+	var guard_at := director._guard_position(RandomNumberGenerator.new(), mark, true,
+			Vector2.INF, false)
+	t.check(guard_at.distance_to(near_edge + Vector2.DOWN * length * 2.0 / 3.0) < 0.5,
+			"in a %.0fpx alley he stands two-thirds through it (%s)" % [length, guard_at])
+	t.check(guard_at.distance_to(mark) >= max_distance,
+			"which is %.0fpx from the mark, past his own trigger and the touch reach (%.0fpx)"
+			% [guard_at.distance_to(mark), max_distance])
+	var outside := near_edge + Vector2.UP * Tuning.TILE_SIZE
+	var touch := mark + Vector2.UP * (ContactPoint.REACH - 2.0)
+	t.check(_stays_asleep_walking_in_and_out(robbery, guard_at, outside, touch),
+			"and walking in from the mark's own end to read it and back out never wakes him")
+	director.free()
+
+## The floor the player's "Two-thirds wins" left standing: reading a mark never lands her inside
+## his catch (`EventDef.lethal_reach()`). Over every through-alley tile of six cities, she walks in
+## from a tile and a half outside the alley's near end to `ContactPoint.REACH` less two pixels short
+## of the mark and back out, past a still robber where `_guard_position()` stands him, and is never
+## within his catch of him. Whether he wakes on the way is counted and not held: in a one-block alley
+## reading the mark may wake him, and that is the player's choice.
+func _test_reading_a_mark_never_lands_her_in_his_catch(t) -> void:
+	var robbery := EventCatalogue.by_id("alley_robbery")
 	var checked := 0
-	var band_asleep := 0
-	var far_end_asleep := 0
+	var asleep := 0
 	for seed_value in [4242, 90210, 2295276695, 314159, 271828, 555555]:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
 		director.setup(null, map)
-		var band_rng := RandomNumberGenerator.new()
-		band_rng.seed = hash("mark-reachable-band:%d" % seed_value)
-		var far_end_rng := RandomNumberGenerator.new()
-		far_end_rng.seed = hash("mark-reachable-far-end:%d" % seed_value)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("mark-catch:%d" % seed_value)
 		for tile in _through_alley_tiles(map):
 			if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 				continue
 			var mark := map.tile_to_world(tile)
 			var ends := director._alley_ends(mark)
-			if ends.is_empty():
-				continue
-			var near: Vector2 = ends[0]
-			var far: Vector2 = ends[1]
-			var band_at := director._draw_guard_position(band_rng, mark, Vector2.INF, min_distance,
-					max_distance)
-			var far_end_at := director._guard_position(far_end_rng, mark, true, Vector2.INF, false)
-			if band_at == Vector2.INF or far_end_at == Vector2.INF:
+			var guard_at := director._guard_position(rng, mark, true, Vector2.INF, false)
+			if ends.is_empty() or guard_at == Vector2.INF:
 				continue
 			checked += 1
-			var axis := (far - near).normalized()
-			var outside := near - axis * Tuning.TILE_SIZE * 1.5
+			var axis := (ends[1] - ends[0]).normalized()
+			var outside := ends[0] - axis * Tuning.TILE_SIZE * 1.5
 			var touch := mark - axis * (ContactPoint.REACH - 2.0)
-			if _stays_asleep_walking_in_and_out(robbery, band_at, outside, touch):
-				band_asleep += 1
-			if _stays_asleep_walking_in_and_out(robbery, far_end_at, outside, touch):
-				far_end_asleep += 1
+			var nearest := INF
+			var steps := ceili(outside.distance_to(touch) / 4.0)
+			for s in steps + 1:
+				nearest = minf(nearest, outside.lerp(touch, float(s) / float(steps)).distance_to(guard_at))
+			t.check(nearest > robbery.lethal_reach(),
+					("seed %d: reading the mark at %s from its own end comes no nearer than %.0fpx " +
+					"to him, outside his %.0fpx catch") % [seed_value, tile, nearest,
+					robbery.lethal_reach()])
+			if _stays_asleep_walking_in_and_out(robbery, guard_at, outside, touch):
+				asleep += 1
 		director.free()
-	t.check(checked > 0, "some guarded mark was actually checked (%d)" % checked)
-	var band_rate := float(band_asleep) / float(maxi(checked, 1))
-	t.check(far_end_asleep == checked,
-			("walking in from the mark's own end to read it and back out leaves him asleep on " +
-			"every mark (%d of %d)") % [far_end_asleep, checked])
-	t.check(band_rate < 0.75,
-			("and the whole-circle band around the mark leaves him asleep on only %.0f%% of the " +
-			"same marks (%d of %d), so the walk tells the two apart")
-			% [band_rate * 100.0, band_asleep, checked])
+	t.check(checked > 0, "some guarded mark was actually checked (%d, %d left him asleep)"
+			% [checked, asleep])
 
 ## A mark in a courtyard's passage — the `ALLEY` ground with no far end of its own — has its robber
 ## at the courtyard's inner end. *(2026-09-27, the player: "robber at inner end of the courtyard is
@@ -1424,21 +1519,19 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t) -> void:
 							"seed %d day %d: the guard trap is not within lethal reach of the doorstep"
 							% [seed_value, day])
 				# The real placement a chalk mark's own guard actually uses (`_maybe_set_a_trap()`,
-				# `for_mark`) is `_draw_guard_position_near_far_mouth()`, not the check above —
-				# checked here too, since standing him at the far mouth rather than in a band
-				# around the mark is a different draw with no guarantee it inherits this one's.
-				var far := director._far_alley_mouth(mark_at)
-				if far != Vector2.INF:
-					var far_guard_rng := RandomNumberGenerator.new()
-					far_guard_rng.seed = hash("%d:far-guard:%d" % [seed_value, day])
-					var far_guard_at := director._draw_guard_position_near_far_mouth(
-							far_guard_rng, mark_at, far, min_distance, max_distance, [],
-							Vector2.INF, 0.0, false)
-					if far_guard_at != Vector2.INF:
-						checked += 1
-						t.check(far_guard_at.distance_to(doorstep) > reach,
-								("seed %d day %d: the guard standing at the alley's far mouth is " +
-								"not within lethal reach of the doorstep either") % [seed_value, day])
+				# `for_mark`) is `_guard_position()`'s alley placement — two-thirds through a
+				# through-alley, the courtyard's inner end past a passage — not the check above:
+				# checked here too, since standing him in the alley rather than in a band around
+				# the mark is a different placement with no guarantee it inherits this one's.
+				var mark_guard_rng := RandomNumberGenerator.new()
+				mark_guard_rng.seed = hash("%d:far-guard:%d" % [seed_value, day])
+				var mark_guard_at := director._guard_position(mark_guard_rng, mark_at, true,
+						Vector2.INF, false)
+				if mark_guard_at != Vector2.INF:
+					checked += 1
+					t.check(mark_guard_at.distance_to(doorstep) > reach,
+							("seed %d day %d: the guard standing in the mark's own alley is " +
+							"not within lethal reach of the doorstep either") % [seed_value, day])
 			director.free()
 	t.check(checked > 0, "some (seed, day) actually placed something to check (%d)" % checked)
 
@@ -1607,24 +1700,22 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 							("seed %d day %d step %d trial %d: the guard is not inside a walled " +
 							"alley either") % [seed_value, day, step.index, trial])
 				# The real placement a chalk mark's own guard uses (`_maybe_set_a_trap()`'s
-				# `for_mark`) is `_draw_guard_position_near_far_mouth()` instead — checked here
-				# too, since it draws from a different band with no guarantee it inherits this
-				# one's own walled-alley refusal.
+				# `for_mark`) is `_guard_position()`'s alley placement instead — two-thirds
+				# through a through-alley, the courtyard's inner end past a passage — checked here
+				# too, since it is a different placement with no guarantee it inherits this one's
+				# own walled-alley refusal.
 				if step.is_pickup:
-					var far := director._far_alley_mouth(at)
-					if far != Vector2.INF:
-						var far_guard_rng := RandomNumberGenerator.new()
-						far_guard_rng.seed = hash("%d:far-guard:%d:%d:%d"
+					var mark_guard_rng := RandomNumberGenerator.new()
+					mark_guard_rng.seed = hash("%d:far-guard:%d:%d:%d"
+							% [seed_value, day, step.index, trial])
+					var mark_guard_at := director._guard_position(mark_guard_rng, at, true,
+							Vector2.INF, false)
+					if mark_guard_at != Vector2.INF:
+						var mark_guard_tile := city.map.world_to_tile(mark_guard_at)
+						t.check(not city.map.is_in_walled_alley(mark_guard_tile, walled_alleys),
+								("seed %d day %d step %d trial %d: the guard standing in the " +
+								"mark's own alley is not inside a walled alley either")
 								% [seed_value, day, step.index, trial])
-						var far_guard_at := director._draw_guard_position_near_far_mouth(
-								far_guard_rng, at, far, min_distance, max_distance, walled_alleys,
-								Vector2.INF, 0.0, false)
-						if far_guard_at != Vector2.INF:
-							var far_guard_tile := city.map.world_to_tile(far_guard_at)
-							t.check(not city.map.is_in_walled_alley(far_guard_tile, walled_alleys),
-									("seed %d day %d step %d trial %d: the guard standing at the " +
-									"alley's far mouth is not inside a walled alley either")
-									% [seed_value, day, step.index, trial])
 		t.check(attempts > 0, "some (step, trial) actually placed something to check (%d)" % attempts)
 
 		director.free()
@@ -1824,6 +1915,19 @@ func _test_the_burnt_shell_and_the_roadblock_keep_a_waiting_guard(t) -> void:
 		director._on_contact_completed(15)
 		var step := director.current_step()
 		t.check(step != null and step.index == 16, "the roadblock perform is active")
+		# feathery-marmot: a roadblock is touched from any side of its band, so its guard's band is
+		# measured from the band's own centre with the whole of that touch — never nearer it than his
+		# catch past the furthest point she can touch it from.
+		var robbery := EventCatalogue.by_id("alley_robbery")
+		var rider: EventInstance = director._rider
+		if rider and director._task_guard:
+			var touched_within := rider.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS \
+					+ ContactPoint.REACH
+			var from_body := director._task_guard.global_position.distance_to(rider.body_position())
+			t.check(from_body >= robbery.inner_radius + touched_within - 0.5,
+					("the roadblock's guard stands %.0fpx from its band's centre, outside his catch " +
+					"of everywhere it is touched from (%.0fpx)")
+					% [from_body, robbery.inner_radius + touched_within])
 		t.check(not ResistanceDirector.sets_a_trap_on_her(step),
 				"the roadblock's trap does not come to her")
 		t.check(director._task_guard != null and is_instance_valid(director._task_guard),
@@ -3778,6 +3882,99 @@ func _test_the_red_arrow_only_ever_points_at_a_one_place_task(t) -> void:
 # before `_resistance.start_day()`). Both now refuse obstructed ground.
 
 ## The same three seeds `tests/probes/m184_route_timing.gd` times days 6-13 against.
+## feathery-marmot, "a task's target is near its mark" — *"the van should spawn close to the mark
+## not across the city"* · *"this applies to almost all tasks"* (minty-hedgehog, statement 3). On
+## three cities, each day whose task is placed rather than fixed — day 6's man shouting, day 7's
+## van, day 8's burnt building on a run with no day-3 fire, day 11's mast, day 13's roadblock — is
+## planned the way a played day is and its mark read standing on it, the screen her view around
+## her: the task lands within `ResistanceDirector.NEAR_THE_MARK` of the mark, and a task put in the
+## world is put outside her view. Day 11's mast stands near only where a mast does; where none is
+## near, it is the nearest live mast she can reach. Before, every one was drawn from a pool across
+## the whole city.
+func _test_a_task_is_placed_near_its_mark(t) -> void:
+	var saved_scars := GameState.scars.duplicate()
+	var saved_state := GameState.city_state
+	var checked := [0]
+	for seed_value: int in [SEED, 90210, 1234567]:
+		_build_city(t, seed_value)
+		_with_clean_run(func() -> void:
+			for day: int in [6, 7, 8, 11, 13]:
+				GameState.scars = []
+				var read := _read_the_mark_on(t, day, seed_value)
+				var director: ResistanceDirector = read[0]
+				var mark: Vector2 = read[1]
+				var player: Stroller = read[2]
+				var step := director.current_step()
+				t.check(step != null and not step.is_pickup,
+						"seed %d day %d: reading the mark puts its task on offer" % [seed_value, day])
+				if step != null and not step.is_pickup:
+					checked[0] += 1
+					var mast := step.target_kind == ResistanceSteps.TargetKind.MAST
+					var target := director.contact_position() if mast or director._rider == null \
+							else director._rider.global_position
+					var distance := target.distance_to(mark)
+					if mast and distance > ResistanceDirector.NEAR_THE_MARK:
+						t.check(_no_live_mast_nearer(director, mark, distance),
+								("seed %d day 11: no mast stands near the mark, and the one it " +
+								"sends her to (%.0fpx away) is the nearest live one")
+								% [seed_value, distance])
+					else:
+						t.check(distance <= ResistanceDirector.NEAR_THE_MARK,
+								("seed %d day %d: the task stands %.0fpx from the mark, within " +
+								"%.0fpx") % [seed_value, day, distance,
+								ResistanceDirector.NEAR_THE_MARK])
+					if not mast:
+						t.check(not director._box_shows(target, ResistanceDirector.TASK_HALF_EXTENT),
+								"seed %d day %d: and was put in the world outside her view"
+								% [seed_value, day])
+				player.free()
+				director.free())
+	GameState.scars = saved_scars
+	GameState.city_state = saved_state
+	t.check(checked[0] > 0, "some task was actually placed (%d)" % checked[0])
+
+## Plans `day` on the test city in the real day order (closures, events, resistance) for
+## `seed_value`, and reads the day's mark standing on it with her screen the view around her:
+## `[director with the task active, the mark's position, her rig]`.
+func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
+	GameState.completed_resistance_steps = _completed_through(2 * (day - 6))
+	GameState.completed_resistance_alley_tiles = []
+	var state := CityState.new()
+	GameState.city_state = state
+	state.begin_day(_city.map.block_plans, day)
+	_city.start_day(state, day, _rng(day, "closures", seed_value))
+	_city.events.start_day(day, _rng(day, "events", seed_value), [],
+			_city.map.doorstep_world_position())
+	var director := _director(t)
+	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
+	var mark := director.contact_position()
+	var player := _rig_player(t, mark)
+	director.set_sight(func(p: Vector2) -> bool:
+		return absf(p.x - mark.x) <= Tuning.VIEW_HALF_EXTENT.x \
+				and absf(p.y - mark.y) <= Tuning.VIEW_HALF_EXTENT.y)
+	var step := director.current_step()
+	if step != null and step.is_pickup:
+		director._on_contact_completed(step.index)
+	return [director, mark, player]
+
+## Whether no live, unsilenced mast's foot she could stand beside stands nearer `mark` than the one
+## today's task is at, `distance` from it — a tile's slack, since the task stands beside the foot.
+func _no_live_mast_nearer(director: ResistanceDirector, mark: Vector2, distance: float) -> bool:
+	for plan in _city.events.plans():
+		if plan.mast_id == "" or plan.def.id != "loudspeaker" or plan.silenced \
+				or not plan.is_placed() or plan.mast_id == director._mast_id:
+			continue
+		var foot := _city.map.world_to_tile(plan.position)
+		var standable := false
+		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var tile := foot + side
+			if ResistanceDirector.is_legal_ground(_city.map, tile, director._walled_alleys()) \
+					and not _city.map.is_obstructed(tile) and director._reachable_from_home(tile):
+				standable = true
+		if standable and plan.position.distance_to(mark) + Tuning.TILE_SIZE < distance:
+			return false
+	return true
+
 const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
 const REACHABILITY_SWEEP_DAYS := [6, 7, 8, 9, 10, 11, 12, 13]
 
