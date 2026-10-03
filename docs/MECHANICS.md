@@ -399,6 +399,15 @@ standing, the way a mouse always has, and a press within a generous radius of he
 as a ring — and is stopped by a press on either point or in a band down the screen's own middle
 instead. Neither scheme is tied to a touchscreen or a mouse: either can be picked on either device.
 
+**Joystick also has a run button beside each ring**, 110px outward from it, on the far side from the
+band down the middle. *(2026-10-03, note #434: "for joystick mode a dedicated run button (one on each
+side next to the joystick) would make running much more precise and easier.")* A press that begins
+on a button holds **run** for as long as that finger stays down, so one thumb steers while the other
+holds it; a finger already steering that slides over a button does not press it, since only a press
+that begins there counts; and the double press still latches run, for a pointer with only one
+finger's worth of reach. Either keeps run down on its own. Running lasting only while the button is
+held is the filer's proposal, not their words, and is open to overturn.
+
 Where a heading is measured from, and what stops her, are the one place a mouse and a real finger
 disagree. A mouse aims from her own world position, and a click within a generous radius of that
 position stops her. A real touch instead aims from whichever of two fixed points on the screen is
