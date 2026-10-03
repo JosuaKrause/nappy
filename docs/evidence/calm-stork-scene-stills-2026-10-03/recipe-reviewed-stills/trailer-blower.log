@@ -1,0 +1,7 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[GameState] run started, seed=11
+[Main] 9 atlas pages held from startup in 17 ms
+[Main] city generated in 40 ms (seed 1917501)
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[SceneRecipe] manifest {"anchors":{"blower":[2096.0,1936.0],"start":[1950.0,1936.0]},"bounds":[0,0,160,160],"checks":["construction_schema","production_choice_predicates","whole_visible_footprints","full_context_guarantees"],"choices":{"context_seed":1917501.0},"classification":"normal","context_seed":1917501,"engine":"4.7.2-stable (official)","expected_violations":[],"initial_actors":{"blower":{"position":[2096.0,1952.0],"pursuing":false,"row":"leaf_blower","telegraphing":false},"player":{"carrying":false,"gait_frame":1,"position":[1950.0,1936.0],"speed":0.0}},"observations":[],"physics_ticks_per_second":30,"playback_complete":false,"recipe":"An early danger on the father's walk","recipe_sha256":"31391bcddd31401f58eb9ca22ada2339c30847a46e651b4e91725561b1fe6ee9","scope":"full","seed":11,"setup":{"day":1.0,"events":[{"age":1.8,"at":"blower","name":"blower","row":"leaf_blower"}],"parent":"father","player":{"at":"start","facing":"east"},"tutorial_complete":true},"violations":[]}

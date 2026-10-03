@@ -1,0 +1,151 @@
+{
+	"anchors": {
+		"blower": [
+			2096.0,
+			1936.0
+		],
+		"start": [
+			1856.0,
+			1936.0
+		]
+	},
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_actors": {
+		"obstacle": {
+			"position": [
+				2096.0,
+				1952.0
+			],
+			"pursuing": false,
+			"row": "leaf_blower",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 2,
+			"position": [
+				2007.7206,
+				1810.2673
+			],
+			"speed": 62.0
+		}
+	},
+	"initial_actors": {
+		"obstacle": {
+			"position": [
+				2096.0,
+				1952.0
+			],
+			"pursuing": false,
+			"row": "leaf_blower",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				1856.0,
+				1936.0
+			],
+			"speed": 0.0
+		}
+	},
+	"observations": [
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					1943.4663,
+					1936.0
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 30.0
+		},
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"position": [
+					2096.0,
+					1952.0
+				],
+				"pursuing": false,
+				"row": "leaf_blower",
+				"telegraphing": false
+			},
+			"subject": "obstacle",
+			"tick": 60.0
+		},
+		{
+			"at": [
+				1970.0,
+				1812.0
+			],
+			"condition": "near",
+			"distance": 55.0,
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 0,
+				"position": [
+					1968.8541,
+					1810.2673
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 215.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "A wrong path, a turn, and the other sidewalk",
+	"recipe_sha256": "beb8f5f7e80ae859ace715a5ba031f8b1a64b623ff2743e4f8a8be21cc5cc343",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"background": {
+			"crowd": false,
+			"events": false
+		},
+		"day": 1.0,
+		"events": [
+			{
+				"age": 1.8,
+				"at": "blower",
+				"name": "obstacle",
+				"row": "leaf_blower"
+			}
+		],
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "east"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

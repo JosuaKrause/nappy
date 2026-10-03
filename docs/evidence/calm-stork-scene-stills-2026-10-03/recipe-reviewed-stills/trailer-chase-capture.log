@@ -1,0 +1,10 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.1 Metal - 90.5 - Compatibility - Using Device: Apple - Apple M2
+
+[GameState] run started, seed=11
+[Telemetry] /Users/krause/Library/Application Support/Godot/app_userdata/Nappy/telemetry/2026-10-03/rig-000039-seed11-v0.21.5-16-g8941448c/run.log
+[Main] 10 atlas pages held from escape in 23 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[SceneRecipe] manifest {"anchors":{"guards":[2000.0,560.0],"start":[1760.0,560.0]},"bounds":[0,0,160,160],"checks":["construction_schema","production_choice_predicates","whole_visible_footprints","full_context_guarantees"],"choices":{"context_seed":1917501.0},"classification":"normal","context_seed":1917501,"engine":"4.7.2-stable (official)","expected_violations":[],"initial_actors":{"guards":{"position":[2000.0,560.0],"pursuing":false,"row":"roadblock","telegraphing":false},"player":{"carrying":true,"gait_frame":1,"position":[1760.0,560.0],"speed":0.0}},"observations":[],"physics_ticks_per_second":30,"playback_complete":false,"recipe":"Mother carrying her baby and running from the guards","recipe_sha256":"0290266b9bf0222538e06e8c99a45cf9ac33701a44e884641986724038a9a284","scope":"full","seed":11,"setup":{"day":14.0,"events":[{"at":"guards","name":"guards","row":"roadblock"}],"parent":"mother","player":{"at":"start","facing":"east","sleep":100.0},"progression":{"blackout":true,"escape_part":"city"},"tutorial_complete":true},"violations":[]}
+[AutoScreenshot] wrote /private/tmp/recipe-reviewed-stills/trailer-chase.png (1280x720) after 1.4s (window not visible, so this frame was drawn on demand)
+wrote /private/tmp/recipe-reviewed-stills/trailer-chase.png

@@ -1,0 +1,20 @@
+nappy rig log  2026-10-03T00:01:15  version v0.21.5-16-g8941448c
+   0.0  texture  atlas page 'ui' loaded in the startup: 0.7 ms, 392 x 392
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.3 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 2.0 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 1.5 ms, 392 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.2 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.5 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.5 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 10.3 ms, 810 x 982
+   0.0  texture  atlas page 'father' loaded in the startup: 0.9 ms, 168 x 242
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.0 ms
+   0.0  arc      block (5,2) quiet_square -> requisitioned (scheduled)
+   0.0  arc      block (6,9) quiet_square -> requisitioned (scheduled)
+   0.0  arc      block (8,7) quiet_square -> requisitioned (scheduled)
+   0.0  arc      block (3,8) commercial -> boarded_up (scheduled)
+   0.0  arc      block (5,0) commercial -> boarded_up (scheduled)
+   0.0  arc      block (10,10) commercial -> boarded_up (scheduled)
+   0.0  arc      block (6,5) commercial -> boarded_up (scheduled)
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.2 ms
+   0.0  frame    fps 89, worst frame 277.4ms, draws 154, objects 526, primitives 1345, process 7.66ms, physics 0.60ms

@@ -1,5 +1,12 @@
 # Saved scene screenshots
 
+The `recipe-reviewed-stills/` captures use source `8941448c`, Godot 4.7.2 and the same
+1280×720 Compatibility renderer. Their complete original telemetry runs are retained below
+`telemetry/`. They show the father approaching the gatehouse from its visible front and the
+authored tutorial-complete state, keeping onboarding text out of the composition. The city
+still establishes the clean zoom framing; wider crowd activity is not established by this run.
+The action manifests and capture manifests retain their distinct simulation endpoints.
+
 Source: `7d92cf1666beb4746a8ed389e14e2f3815775080`, reachable through PR #457.
 Godot 4.7.2 stable, macOS Apple M2, Compatibility OpenGL, 1280×720. The capture commands use
 `--player-view`, `--no-save`, the saved scripted recipe and its own `capture_at` time.
