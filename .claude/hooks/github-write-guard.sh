@@ -86,7 +86,9 @@
 # compactly or not, or in a variable or a file the same command writes; `issue_endpoint` and
 # `issue_mutation_re`, below). What stays open, wrapped, on purpose: a POST to `issues/N/comments`
 # and GraphQL's `addComment`, which a pull request's own conversation comments share, so neither
-# can tell a comment on a note from one on a pull request. **The issue writes that still go
+# can tell a comment on a note from one on a pull request, and GraphQL's `addReaction`,
+# `removeReaction`, `minimizeComment` and `unminimizeComment`, which serve a pull request as readily
+# as an issue (the REST `issues/N/reactions` is under an issue's path, and denied). **The issue writes that still go
 # through when wrapped, an accepted gap** (main allows every one of them too, as it allows any
 # wrapped write): an endpoint an expansion builds past `repos/` or hands in (`"$E"`, `"$(printf
 # ...)"`, a backtick in place of `issues`, `${E:-...}`, an endpoint `xargs` supplies); a GraphQL
@@ -813,12 +815,15 @@ def detect_git($w; $t; $i; $n):
 # substitution's own words) in their place is an issue endpoint too. As with the merge-type paths,
 # every non-option word of the call is read, so a header value cannot hide the endpoint, and a
 # body that merely names such a path is a false deny, answered by sending it from a file. A GraphQL
-# mutation is one when a word in it names an issue mutation (`issue_mutation_re`): a verb then
-# `Issue`, `Labelable`, `Assignable` or `Lockable` (`createIssue`, `closeIssue`, `updateIssue`,
-# `updateIssueComment`, `addLabelsToLabelable`, `lockLockable`, ...), wherever it starts inside a
-# word, so a query written with no spaces (`mutation{closeIssue(...)}`) names it too; `addComment`,
+# mutation is one when a word in it names an issue mutation (`issue_mutation_re`): a verb, any
+# letters or digits, then `Issue`, `Labelable`, `Assignable`, `Lockable`, `BlockedBy` or
+# `LinkedBranch` (`createIssue`, `closeIssue`, `updateIssueComment`, `addLabelsToLabelable`,
+# `replaceActorsForAssignable`, `applyPendingIssueSuggestions`, `addBlockedBy`,
+# `convertProjectV2DraftIssueItemToIssue`, `createLinkedBranch`, ...), wherever it starts inside a
+# word, so a query written with no spaces (`mutation{closeIssue(...)}`) names it too. `addComment`,
 # which comments on a pull request as readily as on an issue, is the GraphQL form of the one REST
-# exception. A query the call does not hold inline (`-f query="$Q"`, `-F query=@file`, `--input`)
+# exception, and `addReaction`, `removeReaction`, `minimizeComment` and `unminimizeComment`, which
+# serve a pull request as readily too, stay open beside it. A query the call does not hold inline (`-f query="$Q"`, `-F query=@file`, `--input`)
 # is an issue mutation when the same command names one anywhere, which is where such a variable is
 # set or such a file written; one set or written by an earlier, separate command cannot be read
 # (the header's accepted gap).
@@ -829,7 +834,10 @@ def issue_endpoint:
   | test("(?i)(^|/)(repos/.*|repositories/[^/]+)/issues(/|$)")
     and (test("(?i)/issues/[^/]+/comments/?$") | not);
 def issue_mutation_re:
-  "(^|[^A-Za-z])(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert)[A-Za-z]*(Issue|Labelable|Assignable|Lockable)";
+  "(^|[^A-Za-z])(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert|replace|apply|reject)[A-Za-z0-9]*(Issue|Labelable|Assignable|Lockable|BlockedBy|LinkedBranch)";
+# The words worth testing against it: one naming none of its nouns cannot match.
+def may_name_issue_mutation:
+  contains("Issue") or contains("able") or contains("BlockedBy") or contains("LinkedBranch");
 def gh_api_field_flag: IN("-f", "-F", "--raw-field", "--field");
 def gh_api_value_flag: IN("-H", "--header", "--hostname", "-p", "--preview", "-q", "--jq", "-t",
   "--template", "--cache");
@@ -1102,7 +1110,7 @@ def findings($w; $w0; $levels; $unsure):
   # The last word naming an issue mutation, read only once a mutation is there at all.
   | (if $lm < 0 then -1
      else [range(0; $n)
-           | select($w[.] | (contains("Issue") or contains("able")) and test(issue_mutation_re))]
+           | select($w[.] | may_name_issue_mutation and test(issue_mutation_re))]
           | last // -1 end) as $li
   # The last word that names a commit-making or pushing git subcommand: a git whose option run
   # holds a command substitution, or whose subcommand is an expansion, is a write only when one

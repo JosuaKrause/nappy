@@ -1414,6 +1414,28 @@ assert_write_guard "a closeIssue written to m.json, then a wrapped --input m.jso
 {\"query\":\"mutation{closeIssue(input:{issueId:\\\"x\\\"}){clientMutationId}}\"}
 EOF
 $orch gh api graphql --input m.json"
+# Every issue mutation in GitHub's schema is named: the verbs replace, apply and reject, a middle
+# holding a digit (ProjectV2), and an issue's dependencies and linked branches.
+for issue_mutation in \
+    'replaceActorsForAssignable(input:{assignableId:"x",actorIds:[]})' \
+    'applyPendingIssueSuggestions(input:{issueId:"x"})' \
+    'rejectPendingIssueSuggestions(input:{issueId:"x"})' \
+    'addBlockedBy(input:{issueId:"x",blockingIssueId:"y"})' \
+    'removeBlockedBy(input:{issueId:"x",blockingIssueId:"y"})' \
+    'convertProjectV2DraftIssueItemToIssue(input:{itemId:"x",repositoryId:"r"})' \
+    'createLinkedBranch(input:{issueId:"x",oid:"y"})' \
+    'deleteLinkedBranch(input:{linkedBranchId:"x"})'; do
+    assert_write_guard "wrapped GraphQL ${issue_mutation%%(*} -> deny, an issue mutation" deny \
+        "$orch gh api graphql -f query='mutation{${issue_mutation}{clientMutationId}}'"
+done
+# A reaction and a comment's minimizing serve a pull request as readily as an issue, like
+# addComment, so they stay open, and so does a pull request's own branch update.
+assert_write_guard "wrapped GraphQL addReaction -> allow, it serves pull requests too" allow \
+    "$orch gh api graphql -f query='mutation{addReaction(input:{subjectId:\"x\",content:HOORAY}){clientMutationId}}'"
+assert_write_guard "wrapped GraphQL minimizeComment -> allow, it serves pull requests too" allow \
+    "$orch gh api graphql -f query='mutation{minimizeComment(input:{subjectId:\"x\",classifier:OUTDATED}){clientMutationId}}'"
+assert_write_guard "wrapped GraphQL updatePullRequestBranch -> allow, a pull request's own write" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- gh api graphql -f query='mutation{updatePullRequestBranch(input:{pullRequestId:\"x\"}){clientMutationId}}'"
 assert_write_guard "wrapped compact GraphQL addComment -> allow, the comment route" allow \
     "$orch gh api graphql -f query='mutation{addComment(input:{subjectId:\"x\",body:\"y\"}){clientMutationId}}'"
 assert_write_guard "a reviewer's wrapped compact resolveReviewThread -> allow" allow \
