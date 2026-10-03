@@ -143,7 +143,8 @@ func setup(city: City, map: CityMap) -> void:
 ## somewhere: leaving the field wherever the last caller put it makes a day's crowd depend on
 ## the order the tests before it ran in, and a field parked off the map builds the whole
 ## population on one pixel.
-func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> void:
+func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
+		populate := true) -> void:
 	clear()
 	# Taken on the first day only — see `_atlas_held`'s own doc for why a day's own end keeps
 	# holding this rather than releasing it, and `_exit_tree()` for where it finally does.
@@ -192,8 +193,9 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> vo
 	_rebuild_the_crossable_segments()
 	_pockets.refresh(_map, _crossable_segments)
 	var act := Tuning.act_for_day(day)
-	_populate(CrowdAgent.Kind.WALKER, Tuning.crowd_pedestrians(act), rng)
-	_populate(CrowdAgent.Kind.CAR, Tuning.crowd_cars(act), rng)
+	if populate:
+		_populate(CrowdAgent.Kind.WALKER, Tuning.crowd_pedestrians(act), rng)
+		_populate(CrowdAgent.Kind.CAR, Tuning.crowd_cars(act), rng)
 	# **The unpack the first frame would do anyway, done before the first frame is drawn.** The
 	# morning places every car without consulting the ones already placed, so some of them start
 	# inside each other and the first `space_out_the_traffic()` pulls them apart — a correction of up
@@ -219,6 +221,25 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> vo
 ## exists so `main` can put it on the doorstep before the player is standing there.
 func set_focus(at: Vector2) -> void:
 	_field.centre = at
+
+## Exact authoring shares the live crowd's lane, pocket and junction machinery. A rejected
+## placement is never replaced by a random one.
+func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vector2,
+		speed: float, seed_value: int) -> Dictionary:
+	var agent := CrowdAgent.new()
+	agent.traffic = _traffic
+	agent.door_segments = _door_segments
+	agent.home_segments = _home_segments
+	agent.pockets = _pockets
+	var problem := agent.setup_at(kind, _map, _field, seed_value, at, heading, speed)
+	if not problem.is_empty():
+		agent.free()
+		return {"error": problem}
+	agent.name = actor_name
+	_city.add_entity(agent)
+	_agents.append(agent)
+	_index_the_queues(_resolve_the_queues())
+	return {"actor": agent, "error": ""}
 
 func field() -> CrowdField:
 	return _field
