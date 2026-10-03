@@ -8,10 +8,21 @@ trailer scenes that look as intended. They choose **saved recipes first** when o
 recipes, a visual editor, or both. [gray-otter, scene-builder request](../../playtests/2026-10-02-gray-otter.md)
 records the complete request and the authoring question.
 
+The player's concrete edge case is a building connecting to the power plant, where the
+join needs special handling to avoid blank tiles. [minty-wombat, valid component joins](../../playtests/2026-10-02-minty-wombat.md)
+records their clarification that edge cases need not include invalid states. Reproducing
+unusual valid combinations of standard components is the test use to build first.
+
+[M203, roofs covering adjoining facades](../../decisions/2026-09-26-M203-a-front-nobody-can-stand-at-is-covered-by-the-roof-in-front-of-it.md)
+records the relevant power-station hall/yard distinction: "a front column draws no facade
+only where a roof extension actually covers it." The builder must make these joins
+directly authorable so the renderer's special cases can be exercised without seed hunting.
+
 **Proposed, not asked for:** the `next` band, a versioned JSON recipe format, the staged
-construction and verification contracts in this folder, and the example scenes below are
+construction and verification contracts in this folder, and the additional example scenes are
 the filer's proposals. The player specifies the two uses and the recipe-first authoring
-surface; they do not specify a file format, a constraint language, or the example shots.
+surface and power-plant join example; they do not specify a file format, a constraint
+language, or the trailer example shots.
 The alternative is a set of bespoke test scripts and trailer flags for each setup. A shared
 recipe is proposed because a reproduced bug and a recorded shot need the same scene setup.
 

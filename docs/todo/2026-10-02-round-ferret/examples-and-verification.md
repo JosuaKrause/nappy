@@ -1,10 +1,17 @@
 # Demonstrate edge cases and a composed trailer shot
 
-**Proposed, not asked for:** ship small, documented recipes demonstrating a constrained
-crossing with named traffic actors, a precisely placed pursuit with a scripted player
-path, and a truck passing beside the player in the camera. These are tool examples; they
-do not choose or approve the final trailer cut. Include rerun commands for a headless
-check, interactive exploration, a still or burst, and recording through the existing tools.
+Ship a recipe that directly constructs the player's example: a building adjoining the
+power station so the roof/facade join is exercised without searching seeds. The existing
+M203 rule keeps a facade wherever no roof extension actually covers it. Exercise the
+hall and fenced-yard cases with the real city building components, checking coverage
+and showing that the join leaves no blank tiles. The player names the joined-building
+case; the hall/yard variants are proposed coverage of the recorded special handling.
+
+**Proposed, not asked for:** add recipes demonstrating a constrained crossing with named
+traffic actors, a precisely placed pursuit with a scripted player path, and a truck
+passing beside the player in the camera. These are tool examples; they do not choose or
+approve the final trailer cut. Include rerun commands for a headless check, interactive
+exploration, a still or burst, and recording through the existing tools.
 
 Test the public recipe-loading and construction path against conflicting requirements,
 malformed files, unknown fields and IDs, unresolved anchors, and illegal placements.

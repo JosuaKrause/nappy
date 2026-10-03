@@ -30,12 +30,11 @@ one happens to fit does not fulfill this request. A conflicting or unsupported r
 fails clearly, without relaxing it or returning the last unsuccessful candidate.
 
 Validate geometry and scene requirements before exposing the completed scene. Preserve
-the standard city's reachability and placement checks for playable/trailer recipes, and
-report which requirement cannot coexist with them. Negative fixtures that deliberately
-violate a gameplay guarantee need an explicit test-only declaration of the expected
-violation; they must not silently disable checks for other recipes or ordinary play.
-Specify and test this distinction before exposing a bypass. A smaller isolated fixture
-must declare its validation scope rather than accidentally passing full-city checks.
+the standard city's reachability and placement checks, and report which requirement
+cannot coexist with them. The test cases are unusual valid combinations of standard
+components, including a building adjoining the power station. This work needs no
+invalid-state mode or bypass of gameplay guarantees. A smaller isolated fixture must
+declare its validation scope rather than accidentally passing full-city checks.
 
 Guarantees describe inspectable facts, such as an open crossing, a specified actor at a
 specified location, or a required route. They are not a claim that arbitrary combinations
