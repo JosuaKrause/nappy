@@ -371,7 +371,8 @@ for it.
 retired.** `--all` inventories candidates and allocated KiB without mutations; `--all --apply`
 retires eligible candidates, and `--dry-run <branch>...` previews named branches. Applying checks
 state again before removal. An open PR, remote tip outside the merged head, dirty/untracked work,
-worktree lock or unreleased agent brief keeps the branch. After confirming the agent has stopped
+an ignored file outside the regenerable caches (the script's own `REGENERABLE_IGNORED` list,
+which `--help` prints), worktree lock or unreleased agent brief keeps the branch. After confirming the agent has stopped
 and useful ignored artifacts are retained, its owner adds `cleanup: ready` to the brief's opening
 header in the main and target checkout wherever a copy exists. A lock still vetoes removal and
 is never cleared automatically. The script deletes the remote with an exact-tip lease, removes
@@ -381,8 +382,9 @@ remaining local work and reports the incomplete cleanup. It also sweeps the harn
 tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>...` for a pull request
 that changed code and `uv run python tools/agent-identity.py run claude-orchestrator --
 tools/prune-merged.sh <branch>...` for a docs-only one ("Who a commit and a pull request are
-from") — its own remote delete is a write, so `github-write-guard.sh` denies it bare (Codex runs
-the same line with `codex-coder` for both). **Use it rather than the bare commands**: Claude
+from") — its own remote delete is a write, so `github-write-guard.sh` denies it bare in every
+shape, and the read-only `--all` inventory and `--dry-run` run through the same wrapped line as
+the apply (Codex runs the same line with `codex-coder` for both). **Use it rather than the bare commands**: Claude
 Code's auto-mode classifier refuses `git worktree remove` and `git branch -D` as destructive
 however the check came out, and `.claude/settings.json` allows exactly those two wrapped lines, one
 per role, because the script cannot delete anything the check did not clear. The allow rules are a
