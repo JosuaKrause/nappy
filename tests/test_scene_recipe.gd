@@ -7,12 +7,15 @@ func _recipe() -> Dictionary:
 			"anchors": {"start": "doorstep"}, "setup": {}, "playback": {}}
 
 func run(t) -> void:
+	_test_fixture(t)
+	_test_malformed_file(t)
 	var input := _recipe()
 	var original := RecipeCityBuilder.build(input)
 	t.check(original.errors.is_empty(), "ordinary context constructs: %s" % [original.errors])
 	if not original.errors.is_empty():
 		return
 	var map: CityMap = original.map
+	_test_closures(t, map)
 	var pinned := _recipe()
 	pinned.city.dead_ends = [{"segment": [9, 1, 0], "end": "a"}]
 	pinned.city.power_station = {"blocks": [8, 1, 2, 1], "door_block": [8, 1]}
@@ -63,6 +66,50 @@ func run(t) -> void:
 			t.check(extended > 0, "actual City construction extends the hall roof over its adjoining wall")
 		city.free()
 	_test_examples(t)
+
+func _test_fixture(t) -> void:
+	var input := _recipe()
+	input.city.lots = [
+		{"blocks": [1, 1, 2, 1], "purpose": "park"},
+		{"blocks": [8, 8, 2, 1], "purpose": "park"}]
+	var refused := RecipeCityBuilder.build(input)
+	t.check(not refused.errors.is_empty(), "normal scenes refuse a context without the mandatory square zone")
+	input.classification = "fixture"
+	input.expected_violations = ["city.guarantee:no open calm zone is 2 blocks square"]
+	var allowed := RecipeCityBuilder.build(input)
+	t.check(allowed.errors.is_empty(), "explicit fixture matches the exact violated production guarantee: %s" % [allowed.errors])
+	if allowed.errors.is_empty():
+		t.check(allowed.manifest.classification == "fixture" and not allowed.manifest.checks.has("full_context_guarantees"),
+				"expected failures never receive a normal full-guarantee certificate")
+		input.expected_violations.append("city.guarantee:extra")
+		t.check(not RecipeCityBuilder.build(input).errors.is_empty(), "extra expected failures cannot silently disappear")
+
+func _test_malformed_file(t) -> void:
+	var path := "user://scene-recipe-malformed-test.json"
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	file.store_string("{\"version\":")
+	file.close()
+	t.check(not SceneRecipe.load_file(path).errors.is_empty(), "malformed JSON returns a diagnostic without engine errors")
+	DirAccess.remove_absolute(path)
+	t.check(not SceneRecipe.load_file(path).errors.is_empty(), "missing file returns a diagnostic without engine errors")
+
+func _test_closures(t, map: CityMap) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 23
+	var planned := ClosurePlanner.plan_day(map, 1, rng)
+	t.check(not planned.is_empty(), "closure comparison has a production-selected candidate")
+	if planned.is_empty():
+		return
+	var key := planned[0].segment.key()
+	var input := _recipe()
+	input.setup.day = 1
+	input.city.closures = [{"segment": [key.x, key.y, key.z], "kind": "roadworks"}]
+	var accepted := RecipeCityBuilder.build(input)
+	t.check(accepted.errors.is_empty(), "authored closure uses the production candidate and invariant: %s" % [accepted.errors])
+	input.city.closures[0].kind = "rubble"
+	t.check(not RecipeCityBuilder.build(input).errors.is_empty(), "late-game closure cannot be pinned on day one")
+	input.city.closures[0] = {"segment": [5, 6, 0], "kind": "roadworks"}
+	t.check(not RecipeCityBuilder.build(input).errors.is_empty(), "the home closure exclusion still rejects an exact recipe pin")
 
 func _test_examples(t) -> void:
 	for side in ["hall", "yard"]:

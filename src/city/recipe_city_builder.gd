@@ -9,6 +9,27 @@ static func build(data: Dictionary) -> Dictionary:
 	if not errors.is_empty():
 		return result
 	var choices: Dictionary = data.city
+	var purpose_counts := {}
+	var zones := 0
+	var complexes := 0
+	var courts := 0
+	var calm := 0
+	for pin: Dictionary in choices.get("lots", []):
+		var purpose: int = GameEnums.BlockPurpose[str(pin.purpose).to_upper()]
+		purpose_counts[purpose] = int(purpose_counts.get(purpose, 0)) + 1
+		var multi := SceneRecipe.rect(pin.blocks).size != Vector2i.ONE
+		if CityGenerator._OPEN_CALM.has(purpose):
+			calm += 1
+			zones += int(multi)
+		elif purpose == GameEnums.BlockPurpose.COURTYARD:
+			complexes += int(multi)
+			courts += int(not multi)
+	for purpose: int in CityGenerator._BUILT_TARGETS:
+		if int(purpose_counts.get(purpose, 0)) > int(CityGenerator._BUILT_TARGETS[purpose]):
+			errors.append("lot.count: exceeds the ordinary purpose quota")
+	if zones > Tuning.MAX_CALM_ZONES or complexes > Tuning.MAX_APARTMENT_COMPLEXES \
+			or courts > Tuning.MAX_COURTYARD_BLOCKS or calm > Tuning.MAX_CALM_BLOCKS:
+		errors.append("lot.count: exceeds an ordinary calm-lot quota")
 	if choices.has("precincts"):
 		var shore: Array = choices.precincts[0]
 		var inland: Array = choices.precincts[1]
@@ -29,6 +50,11 @@ static func build(data: Dictionary) -> Dictionary:
 	if not errors.is_empty():
 		return result
 	var map := CityGenerator._attempt(int(choices.context_seed), choices)
+	for pin: Dictionary in choices.get("lots", []):
+		var footprint := SceneRecipe.rect(pin.blocks)
+		var purpose: int = GameEnums.BlockPurpose[str(pin.purpose).to_upper()]
+		if map.lot_blocks(footprint.position) != footprint or map.starting_purpose(footprint.position) != purpose:
+			errors.append("lot.replaced: requested purpose or footprint did not survive construction")
 	if choices.has("precincts"):
 		var inland: Vector4i = map.precinct_spans[1]
 		if inland.x == 1 and absi(inland.y - map.main_road) <= 1:
@@ -41,8 +67,7 @@ static func build(data: Dictionary) -> Dictionary:
 	if not errors.is_empty():
 		return result
 	var violations: Array[String] = []
-	var problem := CityGenerator.validate(map)
-	if not problem.is_empty():
+	for problem in CityGenerator.validation_problems(map):
 		violations.append("city.guarantee:" + problem)
 	var expected: Array = data.get("expected_violations", [])
 	for violation in violations:
@@ -99,9 +124,11 @@ static func build(data: Dictionary) -> Dictionary:
 	result.manifest = {"classification": data.get("classification", "normal"),
 			"scope": data.extent.scope, "bounds": [bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y],
 			"context_seed": int(choices.context_seed), "seed": int(data.seed),
-			"checks": ["construction_schema", "production_choice_predicates", "full_context_guarantees", "whole_visible_footprints"],
+			"checks": ["construction_schema", "production_choice_predicates", "whole_visible_footprints"],
 			"expected_violations": expected, "violations": violations,
 			"choices": choices.duplicate(true), "anchors": anchors.duplicate()}
+	if violations.is_empty():
+		result.manifest.checks.append("full_context_guarantees")
 	return result
 
 static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]) -> void:
