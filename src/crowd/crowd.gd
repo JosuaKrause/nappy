@@ -371,7 +371,7 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 					var cross := CrowdLanes.walker_lane_centre(corridor, lane, offsets)
 					var distance := (tile + 0.5) * Tuning.TILE_SIZE
 					var at := Vector2(cross, distance) if vertical else Vector2(distance, cross)
-					var heading := (Vector2.DOWN if vertical else Vector2.RIGHT) * (1 if lane % 2 == 0 else -1)
+					var heading := (Vector2.DOWN if vertical else Vector2.RIGHT) * (1 if rng.randf() < 0.5 else -1)
 					var agent := CrowdAgent.new()
 					agent.traffic = _traffic
 					agent.door_segments = _door_segments

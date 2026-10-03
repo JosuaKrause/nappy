@@ -377,6 +377,15 @@ func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
 	city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
 			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
+	if background.get("uniform_walkers", false):
+		var area_scale := map.world_size().x * map.world_size().y / pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) \
+				if background.get("crowd_scope", "player") == "city" else 1.0
+		var act := Tuning.act_for_day(GameState.day)
+		var expected := roundi(Tuning.crowd_pedestrians(act) * area_scale * float(background.get("walker_multiplier", 1))) \
+				+ roundi(Tuning.crowd_cars(act) * area_scale)
+		if city.crowd.agent_count() != expected:
+			errors.append("setup.background: too few eligible sidewalk positions for the requested uniform population")
+			return errors
 	if city.region_plan():
 		city.crowd.set_gates(city.region_plan().gates)
 	for entry: Dictionary in setup.get("actors", []):

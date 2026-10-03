@@ -28,13 +28,22 @@ func run(t) -> void:
 	var counts := {}
 	var before := {}
 	var cars := 0
+	var lane_directions := {}
 	for agent in city.crowd.agents():
 		if agent.kind == CrowdAgent.Kind.CAR:
 			cars += 1
 			continue
 		var key := "%s%d" % ["v" if agent.travelling_vertically() else "h", agent.get("_corridor")]
 		counts[key] = int(counts.get(key, 0)) + 1
+		var lane := "%s:%s" % [key, agent.get("_lane")]
+		if not lane_directions.has(lane):
+			lane_directions[lane] = {}
+		lane_directions[lane][int(agent.get("_direction"))] = true
 		before[agent] = agent.position
+	var mixed := 0
+	for directions: Dictionary in lane_directions.values():
+		mixed += int(directions.size() == 2)
+	t.check(mixed > lane_directions.size() / 2, "even density retains varied seeded headings within sidewalk lanes")
 	t.check(cars == Tuning.crowd_cars(1) and before.size() == Tuning.crowd_pedestrians(1) * 2,
 			"recipe increases only walkers while retaining ordinary car population")
 	var main_count := int(counts.get("v%d" % city.map.main_road, 0))
@@ -55,7 +64,30 @@ func run(t) -> void:
 	t.check(not city.crowd.field().uniform_walkers
 			and city.crowd.agent_count() == Tuning.crowd_pedestrians(1) + Tuning.crowd_cars(1),
 			"ordinary day restores its density and street hierarchy")
+	var prior_day := GameState.day
+	var prior_seed := GameState.run_seed
+	GameState.day = 1
+	GameState.run_seed = 11
+	var state := CityState.new()
+	state.begin_day(city.map.block_plans, 1)
+	city.start_recipe_day(state, 1, GameState.day_rng())
+	var oversized: Dictionary = recipe.duplicate(true)
+	oversized.setup = {"day": 1, "background": {"crowd": true, "crowd_scope": "city",
+			"uniform_walkers": true, "walker_multiplier": 4}}
+	built.data = oversized
+	var runtime := SceneRecipeRuntime.new()
+	runtime.configure(built, false)
+	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
+	var player: Stroller = packed.instantiate()
+	t.add_child(player)
+	var errors := runtime.install(city, player, player.get_node("Baby"))
+	t.check("\n".join(errors).contains("too few eligible sidewalk positions"),
+			"oversized city-wide uniform population rejects instead of silently truncating")
+	runtime.free()
+	player.free()
 	city.free()
+	GameState.day = prior_day
+	GameState.run_seed = prior_seed
 	for target in [[50, 73], [51, 71]]:
 		var invalid: Dictionary = recipe.duplicate(true)
 		invalid.city.tree_moves[0].to = target
