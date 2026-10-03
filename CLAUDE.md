@@ -117,6 +117,7 @@ rather than a place:
 | commit, branch, merge, cut a release, or write a commit message | **committing** |
 | review a pull request, brief a review agent, or decide a PR is ready to merge — every PR is reviewed adversarially first | **pr-review** |
 | merge main into a PR or branch | **merging-main** |
+| build a worksheet for the player to answer the review items in | **review-answers** |
 | **end a session** | **session-cleanup** |
 
 **A manual sequence done a second time becomes a script.** *(2026-09-22: "if you find yourself

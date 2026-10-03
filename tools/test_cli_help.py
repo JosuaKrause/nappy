@@ -65,6 +65,136 @@ SOUND_FILES = (
 
 
 class CliHelpTests(unittest.TestCase):
+    def recipe_trailer_fixture(self, root: Path) -> tuple[Path, dict[str, str]]:
+        """A stub engine exercises preflight orchestration without opening a game window."""
+        import shutil
+
+        (root / "tools" / "trailer").mkdir(parents=True)
+        (root / "src" / "dev").mkdir(parents=True)
+        (root / "scene-recipes").mkdir()
+        for name in ("trailer.sh", "record.sh", "lib_dev_flags.sh", "lib_movie_evidence.sh"):
+            shutil.copy2(TOOLS / name, root / "tools" / name)
+        shutil.copy2(TOOLS / "trailer" / "shots.json", root / "tools" / "trailer" / "shots.json")
+        shutil.copy2(PROJECT_ROOT / "project.godot", root / "project.godot")
+        flag_source = (PROJECT_ROOT / "src" / "dev" / "dev_flags.gd").read_text()
+        marker = "## END_DEV_FLAG_TABLE"
+        self.assertIn(marker, flag_source)
+        # Read existing declarations first so these tests also run after the real flags land.
+        additions = "".join(
+            f"## {flag} {arity}\n"
+            for flag, arity in (
+                ("--recipe", 1),
+                ("--recipe-mode", 1),
+                ("--recipe-manifest", 1),
+                ("--recipe-validate", 0),
+            )
+            if f"## {flag} " not in flag_source
+        )
+        (root / "src" / "dev" / "dev_flags.gd").write_text(flag_source.replace(marker, additions + marker))
+        shots = json.loads((root / "tools" / "trailer" / "shots.json").read_text())
+        for shot in shots["shots"]:
+            (root / shot["recipe"]).write_text('{"playback":{"duration":10}}\n')
+        bake = root / "tools" / "bake-atlases.sh"
+        bake.write_text("#!/bin/sh\nexit 0\n")
+        bake.chmod(0o755)
+        stub = root / "godot-stub"
+        stub.write_text(
+            "#!/bin/bash\n"
+            'printf "%s\\n" "$*" >> "$RECIPE_CALLS"\n'
+            '[[ " $* " == *" --headless "* ]] || exit 19\n'
+            '[[ "${RECIPE_STUB_FAIL:-}" != 1 ]] || exit 7\n'
+            "while [[ $# -gt 0 ]]; do\n"
+            '  if [[ "$1" == --recipe-manifest ]]; then printf "%s\\n" "$RECIPE_RESULT" > "$2"; break; fi\n'
+            "  shift\n"
+            "done\n"
+        )
+        stub.chmod(0o755)
+        subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(root), "add", "scene-recipes"], check=True, capture_output=True)
+        env = dict(os.environ, GODOT=str(stub), RECIPE_CALLS=str(root / "calls"))
+        env["RECIPE_RESULT"] = json.dumps({"classification": "normal", "scope": "bounded", "bounds": [0, 0, 12, 12]})
+        return root / "tools" / "trailer.sh", env
+
+    def test_trailer_validates_normal_bounded_recipes_headlessly(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script, env = self.recipe_trailer_fixture(root)
+            result = subprocess.run([str(script), "--validate"], env=env, text=True, capture_output=True, timeout=20)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            calls = (root / "calls").read_text().splitlines()
+            self.assertEqual(len(calls), 8)
+            self.assertTrue(all("--headless" in call and "--write-movie" not in call for call in calls))
+            manifest = json.loads((root / "build" / "trailer" / "validation" / "choice.json").read_text())
+            self.assertEqual(manifest["scope"], "bounded")
+            self.assertEqual(manifest["bounds"], [0, 0, 12, 12])
+
+    def test_trailer_playback_reaches_recipe_end_before_cutting(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script, env = self.recipe_trailer_fixture(root)
+            # The stub refuses the windowed call; its argv still proves the requested deadline.
+            result = subprocess.run([str(script), "--shot", "choice"], env=env, capture_output=True, timeout=20)
+            self.assertNotEqual(result.returncode, 0)
+            calls = (root / "calls").read_text().splitlines()
+            self.assertTrue(any("--write-movie" in call and "--after 10.000" in call for call in calls))
+
+    def test_trailer_refuses_fixture_and_preflight_failure_before_recording(self) -> None:
+        for failure in ("fixture", "engine", "missing_scope"):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                script, env = self.recipe_trailer_fixture(root)
+                if failure == "engine":
+                    env["RECIPE_STUB_FAIL"] = "1"
+                elif failure == "fixture":
+                    env["RECIPE_RESULT"] = json.dumps(
+                        {"classification": "fixture", "scope": "bounded", "bounds": [0, 0, 12, 12]}
+                    )
+                else:
+                    env["RECIPE_RESULT"] = '{"classification":"normal"}'
+                result = subprocess.run([str(script), "--shot", "choice"], env=env, capture_output=True, timeout=20)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("--write-movie", (root / "calls").read_text())
+
+    def test_movie_playback_requires_completed_observations(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest = Path(temporary) / "manifest.json"
+            for payload, succeeds in (
+                ({"playback_complete": True, "observations": [{"passed": True}]}, True),
+                ({"playback_complete": False, "observations": [{"passed": True}]}, False),
+                ({"playback_complete": True, "observations": [{"passed": False}]}, False),
+                ({"playback_complete": True, "observations": []}, False),
+            ):
+                manifest.write_text(json.dumps(payload))
+                result = subprocess.run(
+                    [
+                        "bash",
+                        "-c",
+                        'source "$1"; movie_playback_check "$2"',
+                        "bash",
+                        str(TOOLS / "lib_movie_evidence.sh"),
+                        str(manifest),
+                    ],
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode == 0, succeeds)
+
+    def test_record_recipe_preflight_checks_forwarded_flags_before_recording(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _, env = self.recipe_trailer_fixture(root)
+            env["RECIPE_STUB_FAIL"] = "1"
+            result = subprocess.run(
+                [str(root / "tools" / "record.sh"), "--recipe", "scene-recipes/trailer-choice.json", "--seed", "5"],
+                env=env,
+                capture_output=True,
+                timeout=20,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            calls = (root / "calls").read_text()
+            self.assertIn("--recipe-mode scripted", calls)
+            self.assertIn("--seed 5", calls)
+            self.assertNotIn("--write-movie", calls)
+
     def run_tool(self, name: str, *args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
         # codex-hooks.py is the one entry point Codex runs with the bare host python3 rather than
         # through uv (see the python-tooling skill); sys.executable is close enough for this

@@ -15,12 +15,14 @@ extends Node
 ## from 2 to about 0.1 spends almost all of its time at the wide end and rushes the close one; equal
 ## steps of `log(zoom)` read as a constant pull back. The centre then moves in step with how much
 ## wider the view has become, so while the view is still street-sized she stays in the middle of
-## it and the centre only travels once the city is what fills it. The clock is the frame's own
-## `delta`, which `--fixed-fps` makes the same on every render.
+## it and the centre only travels once the city is what fills it. Ordinary rigs use frame delta;
+## saved recipes supply the shared physics clock, including while a screenshot holds a tick.
 
 var _seconds := 1.0
 var _delay := 0.0
 var _elapsed := 0.0
+## Saved recipes supply physics time so a held screenshot cannot advance the camera in idle time.
+var simulation_clock: Callable
 ## The camera the move starts from — hers — read at the moment it starts.
 var _from: Camera2D
 var _end_position := Vector2.ZERO
@@ -44,7 +46,10 @@ static func overview_zoom(bounds: Rect2, viewport_size: Vector2) -> float:
 	return minf(viewport_size.x / bounds.size.x, viewport_size.y / bounds.size.y)
 
 func _process(delta: float) -> void:
-	_elapsed += delta
+	if simulation_clock.is_valid():
+		_elapsed = float(simulation_clock.call())
+	else:
+		_elapsed += delta
 	if _elapsed < _delay:
 		return
 	if not _camera:
