@@ -9,9 +9,8 @@ completed jobs to clean up their temporary data. The
 contains the measured accumulators and the implemented retirement, build and updater
 safeguards.
 
-This entry holds the remaining automation: measured disk-space preflights and
-attributable browser scratch cleanup. Preserve unfinished work, useful diagnostics,
-requested output and relevant evidence. A temporary path alone proves no ownership.
+The measured disk-space preflights and the browser scratch cleanup are built
+([their record](../../decisions/2026-10-03-teal-ibis-2.md)). This entry holds what is left:
+`tools/trailer.sh` checks its headroom like the other capture tools (`headroom.md`).
 
-**Proposed, not asked for:** retain the urgent band for these remaining safeguards.
-The item files distinguish proposed mechanisms from the player's cleanup request.
+**Proposed, not asked for:** retain the urgent band for this remaining safeguard.
