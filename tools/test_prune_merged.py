@@ -120,6 +120,51 @@ class RetirementTests(unittest.TestCase):
         brief.write_text("agent: finished\ncleanup: ready\n\nTask\n")
         self.assertEqual(self.prune("feature/probe").returncode, 0)
 
+    def ignore(self, *patterns: str) -> None:
+        """Ignore through the shared exclude file, which every worktree of the fixture reads."""
+        exclude = self.repo / ".git/info/exclude"
+        exclude.parent.mkdir(exist_ok=True)
+        exclude.write_text("".join(f"{pattern}\n" for pattern in patterns))
+
+    def test_ignored_work_stays(self) -> None:
+        self.ignore("/build/", ".env", ".venv/")
+        (self.tree / ".venv").mkdir()
+        (self.tree / ".venv/cache").write_text("regenerable\n")
+        for name in ("build/rec.mp4", ".env"):
+            kept = self.tree / name
+            kept.parent.mkdir(exist_ok=True)
+            kept.write_text("valuable\n")
+            self.assertEqual(self.run_git("status", "--porcelain", "--untracked-files=all", cwd=self.tree), "")
+            self.kept(self.prune("feature/probe"), "ignored files present (1, ")
+            inventory = self.prune("--all", "--apply")
+            self.assertRegex(inventory.stdout, rf"keep feature/probe: ignored files present \(1, \d+ KiB\): {name}\n")
+            self.assertEqual(kept.read_text(), "valuable\n")
+            kept.unlink()
+
+    def test_regenerable_ignored_caches_alone_are_retired(self) -> None:
+        self.ignore("/build/", ".venv/", "__pycache__/", ".godot/", "/assets/atlases/baked/", ".DS_Store")
+        caches = [
+            ".venv/lib/module.py",
+            "tools/__pycache__/module.pyc",
+            ".godot/imported/texture.ctex",
+            "assets/atlases/baked/page.png",
+            "build/web-template-work/key/source.c",
+            "build/.gdignore",
+            ".mypy_cache/3.14/module.json",
+            ".DS_Store",
+            ".claude/briefs/feature-probe.md",
+        ]
+        for name in caches:
+            (self.tree / name).parent.mkdir(parents=True, exist_ok=True)
+            (self.tree / name).write_text("cleanup: ready\n\n" if name.startswith(".claude") else "cache\n")
+        (self.tree / ".mypy_cache/.gitignore").write_text("*\n")
+        inventory = self.prune("--all")
+        self.assertEqual(inventory.returncode, 0, inventory.stdout + inventory.stderr)
+        self.assertRegex(inventory.stdout, r"eligible feature/probe: PR #123, \d+ KiB \([1-9]\d* KiB regenerable")
+        result = self.prune("feature/probe")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse(self.tree.exists())
+
     def test_open_and_reused_branch_stay(self) -> None:
         self.env["FIXTURE_STATE"] = "OPEN"
         self.kept(self.prune("feature/probe"), "not MERGED")

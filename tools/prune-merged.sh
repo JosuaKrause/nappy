@@ -26,18 +26,31 @@
 # Bash 3.2-safe, like the rest of tools/ — see tools/lint.sh's own header.
 set -uo pipefail
 
+# The ignored paths a worktree may still hold and be removed, because the repository or the OS
+# regenerates them: Godot's import cache, the Python environment and its caches, Finder metadata,
+# the baked atlas pages (tools/bake-atlases.sh), the Web-template compiler scratch, and the
+# `.gdignore` that export-web.sh and build-web-template.sh drop into `build/`. A non-forced `git
+# worktree remove` deletes ignored files without a word and `git status` never lists them, so
+# anything else ignored (a recording or a capture under `build/`, a `.env` holding a token) keeps
+# the worktree. An entry with a `/` inside it is anchored at the worktree's root; one without
+# matches at any depth.
+REGENERABLE_IGNORED=".godot/ .venv/ __pycache__/ .mypy_cache/ .ruff_cache/ .DS_Store
+  assets/atlases/baked/ build/web-template-work/ build/.gdignore"
+
 # shellcheck source=tools/lib_agent_role.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib_agent_role.sh"
 
 usage() {
-    cat <<'EOF'
+    cat <<EOF
 usage: tools/prune-merged.sh [--dry-run] <branch> [<branch>...]
        tools/prune-merged.sh --all [--apply|--dry-run]
        tools/prune-merged.sh --help|-h
 
 Removes each branch's worktree, local branch and remote branch, only if its pull request is
 MERGED and the local tip equals or is an ancestor of its merged head. Refuses missing commit
-objects, open PRs, advanced remote tips, dirty/untracked work, locks and unreleased agent briefs.
+objects, open PRs, advanced remote tips, dirty/untracked work, locks, unreleased agent briefs,
+and ignored files other than these regenerable caches (an entry with an inner / is anchored):
+  $REGENERABLE_IGNORED
 Brief headers in the main or target checkout must say "cleanup: ready" to release ownership.
 Never unlocks or force-removes worktrees. Protects the main checkout and caller's worktree.
 
@@ -94,10 +107,39 @@ worktree_of() {
 }
 
 refuse() { reason="$*"; return 1; }
+# Sort the ignored files in worktree $1 into regenerable cache roots ("cache<TAB>root") and
+# anything else ("keep<TAB>path"); $2 is the branch's own brief, already gated by its release.
+classify_ignored() {
+    git --no-optional-locks -C "$1" -c core.quotePath=false ls-files --others --ignored \
+        --exclude-standard \
+        | PRUNE_ALLOWED="$REGENERABLE_IGNORED $2" awk '
+            BEGIN { n = split(ENVIRON["PRUNE_ALLOWED"], allow) }
+            {
+                p = $0; root = ""
+                for (i = 1; i <= n && root == ""; i++) {
+                    e = allow[i]; dir = substr(e, length(e)) == "/"
+                    bare = dir ? substr(e, 1, length(e) - 1) : e
+                    if (index(bare, "/")) {
+                        if (dir ? index(p, e) == 1 : p == e) root = e
+                    } else if (dir) {
+                        if (index(p, e) == 1) root = e
+                        else if ((k = index(p, "/" e)) > 0) root = substr(p, 1, k + length(e))
+                    } else if (p == e || substr(p, length(p) - length(e)) == "/" e) {
+                        root = p
+                    }
+                }
+                if (root == "") print "keep\t" p
+                else if (!(root in seen)) { seen[root] = 1; print "cache\t" root }
+            }'
+}
+# Allocated KiB of the worktree-relative paths on stdin, inside worktree $1.
+kib_of() {
+    (cd "$1" && tr '\n' '\0' | xargs -0 du -sk 2>/dev/null) | awk '{s += $1} END {print s + 0}'
+}
 # Produce a candidate snapshot; every destructive stage checks it again.
 inspect() {
-    local branch="$1" pr state open remote status brief owner
-    reason="" path="" size=0
+    local branch="$1" pr state open remote status brief owner ignored kept count
+    reason="" path="" size=0 cache_kib=0
     [[ "$branch" != main && "$branch" != master ]] || { refuse "protected branch"; return 1; }
     tip="$(git rev-parse --verify --quiet "refs/heads/$branch")" || { refuse "no local branch"; return 1; }
     open="$(agent_run gh pr list --head "$branch" --state open --json number -q length)" \
@@ -132,6 +174,16 @@ inspect() {
         status="$(git --no-optional-locks -C "$path" status --porcelain --untracked-files=all)" \
             || { refuse "cannot read worktree status"; return 1; }
         [[ -z "$status" ]] || { refuse "dirty or untracked work"; return 1; }
+        ignored="$(classify_ignored "$path" ".claude/briefs/${branch//\//-}.md")" \
+            || { refuse "cannot list ignored files"; return 1; }
+        kept="$(printf '%s\n' "$ignored" | awk -F'\t' '$1 == "keep" {print $2}')"
+        if [[ -n "$kept" ]]; then
+            count="$(printf '%s\n' "$kept" | wc -l | tr -d ' ')"
+            refuse "ignored files present ($count, $(printf '%s\n' "$kept" | kib_of "$path") KiB):" \
+                "$(printf '%s\n' "$kept" | head -3 | paste -sd ' ' -)$([[ $count -le 3 ]] || echo ' ...')"
+            return 1
+        fi
+        cache_kib="$(printf '%s\n' "$ignored" | awk -F'\t' '$1 == "cache" {print $2}' | kib_of "$path")"
         size="$(du -sk "$path" | awk '{print $1}')" || { refuse "cannot measure worktree"; return 1; }
     fi
     # An agent's brief claims ownership until explicitly released by its owner.
@@ -155,7 +207,8 @@ for branch in "${branches[@]+"${branches[@]}"}"; do
         [[ $all -eq 1 ]] || failed=1
         continue
     fi
-    echo "eligible $branch: PR #$number, ${size} KiB, ${path:-no worktree}"
+    echo "eligible $branch: PR #$number, ${size} KiB (${cache_kib} KiB regenerable ignored caches)," \
+        "${path:-no worktree}"
     [[ $dry -eq 0 ]] || continue
     expected_tip="$tip" expected_head="$merged_head" expected_path="$path" expected_remote="$remote_tip"
     if ! inspect "$branch" || [[ "$tip $merged_head $path $remote_tip" != "$expected_tip $expected_head $expected_path $expected_remote" ]]; then
