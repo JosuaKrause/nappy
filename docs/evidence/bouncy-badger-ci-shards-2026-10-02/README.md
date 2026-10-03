@@ -24,9 +24,16 @@ estimate is not the old assignment's reweighted 381.967-second load.
 fragments preserve the expensive suites behind the reported slow jobs. All suite
 costs are in the PR's generated `tests/suite_costs.txt`; `compare-eight-shards.awk`
 is the collector used to sum them against the two retained assignments. Original
-scratch paths in JSON identify collection inputs; retained files have the same
-basenames and hashes here. Full logs, redundant plans and temporary coverage lists
-remain in scratch space.
+scratch paths in JSON identify collection inputs. The clean input named
+`baseline-6006fa69-8-shards.txt` is retained here as `before-8-shards.txt`, with
+the same hash. Other inputs retain their basenames and hashes. Full logs,
+redundant plans and temporary coverage lists remain in scratch space.
+
+`baseline-verification.json` records a rejected initial capture whose cold
+atlas/Godot setup printed log and class-registry errors. After headless setup,
+clean baseline plans at four through eight contain all suites once and no engine
+errors. Their eight-way assignment is identical to the initial assignment, so
+the projection remains unchanged. Only the clean baseline output is retained.
 
 ## Recalculate the retained comparison
 
@@ -62,6 +69,8 @@ git fetch origin refs/pull/454/head
 shard_rerun=$(mktemp -d)
 git worktree add --detach "$shard_rerun/base" 6006fa6999a786640851f867b08e8e5d82876d8a
 git worktree add --detach "$shard_rerun/refreshed" b98c33d860872ce4f7b5a36aed556412a4e45ea6
+(cd "$shard_rerun/base" && ./tools/check.sh)
+(cd "$shard_rerun/refreshed" && ./tools/check.sh)
 for shard_count in 4 5 6 7 8 9 10; do
   (cd "$shard_rerun/refreshed" && TEST_SHARDS="$shard_count" ./tools/test.sh --plan) \
     > "$shard_rerun/refreshed-$shard_count.txt"
@@ -70,9 +79,9 @@ done
   > "$shard_rerun/base-8.txt"
 ```
 
-The plan command does not execute test suites. Inspect every command's outcome;
-on a fresh checkout an asset prerequisite failure is not an accepted plan. Use
-`tools/check.sh` to complete headless setup if needed, then rerun the failed plan.
+The plan command does not execute test suites. Complete both headless setup
+commands successfully before capturing plans. Inspect every command's outcome;
+an asset prerequisite failure or engine error is not an accepted plan.
 
 `gh run view RUN_ID --json jobs,createdAt,headSha` and
 `gh run view RUN_ID --job JOB_ID --log` retrieve the named scheduling records and

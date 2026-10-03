@@ -54,6 +54,10 @@ cost; no such persistent limit is established by these samples.
 plans at four through eight and refreshed plans at four through ten each contain
 every discovered suite exactly once. Headless import/boot and whitespace checks
 pass; no local full suite runs. CI runs every game suite on the PR merge result.
+Initial baseline plan captures mixed cold atlas setup with engine errors and
+are rejected as clean verification. Fresh baseline captures after successful
+headless setup contain no engine error and preserve the same assignments and
+projected reduction; their verification and hashes are retained.
 The calibration samples differ in revision and runner load, including ground
 runtime changes, so their mean estimates scheduling costs rather than measuring
 an isolated runtime change. No assertion, seed sweep or gameplay behavior is cut.

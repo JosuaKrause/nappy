@@ -1,14 +1,14 @@
 {
   "question": "How much does refreshing the costs improve the eight-shard assignment, independent of cost calibration?",
-  "method": "Keep the exact suite-to-shard assignment printed by the stale-table eight-shard plan, replace every suite's estimate with the refreshed tests/suite_costs.txt value, and compare those loads with the assignment printed by the refreshed eight-shard plan using the same refreshed values.",
+  "method": "At exact baseline commit 6006fa6999a786640851f867b08e8e5d82876d8a, run the headless setup first and then keep the exact suite-to-shard assignment printed by the clean stale-table eight-shard plan. Replace every suite's estimate with the refreshed tests/suite_costs.txt value and compare those loads with the assignment printed by the refreshed eight-shard plan using the same refreshed values.",
   "inputs": {
     "refreshed_costs": {
       "path": "tests/suite_costs.txt",
       "sha256": "2c450a1c1d01636809c24483f0b0258f641fce5dc9cd631a4233889aafcb2e92"
     },
     "old_assignment": {
-      "path": "/private/tmp/bouncy-badger-ci-shards-2026-10-02/before-8-shards.txt",
-      "sha256": "192ae42a59e6162144469f5f1dafc4d67a350cfe910721e9a248fb4b6a273d6b"
+      "path": "/private/tmp/bouncy-badger-ci-shards-2026-10-02/baseline-6006fa69-8-shards.txt",
+      "sha256": "18cc20b6b9c51bb183d1be15b6caea4a6328f6e980a5672a11ff19ef1687c2c4"
     },
     "refreshed_assignment": {
       "path": "/private/tmp/bouncy-badger-ci-shards-2026-10-02/after-8-shards.txt",
@@ -23,7 +23,8 @@
     "suite_count": 102,
     "total_milliseconds": 2327528,
     "old_assignment_each_suite_once": true,
-    "refreshed_assignment_each_suite_once": true
+    "refreshed_assignment_each_suite_once": true,
+    "old_assignment_engine_errors": false
   },
   "old_assignment_reweighted": {
     "shards": [
