@@ -7,7 +7,8 @@
 #   tools/update-pr.sh --dry-run <pr-number | branch>   # fetch and report only; no worktree touched
 #
 # Finds the branch's own worktree (`git worktree list`) and works there; if none is checked out
-# anywhere, adds a scratch worktree under $TMPDIR for the run and removes it again when done — a
+# anywhere, adds a scratch worktree under $TMPDIR for the run and removes it after success only
+# when normal worktree removal accepts it. Failed runs retain scratch for diagnosis — a
 # branch that already lives in a worktree is never given a second one. Records the branch tip,
 # origin/main's tip and their merge base before merging, merges with `--no-ff --no-commit` so even
 # a clean merge waits for the commit step below. A branch whose merge base still has the old
@@ -66,6 +67,10 @@ without it), then, if that is refused, once more over HTTPS through gh's credent
 same identity. Never merges the pull request itself and never enables auto-merge; says so in its
 own output, alongside the files main changed since the merge base, since that review is the
 merger's.
+
+Scratch is removed after success only when clean and unlocked. Failed runs retain their
+scratch checkout and print its path; dirty/untracked work is never force-removed. An existing
+checkout is never removed. If scratch creation fails, only an empty unregistered directory goes.
 
   --dry-run    Fetch and report what would conflict (via git merge-tree --write-tree), without
                creating, checking out or otherwise touching any worktree. Exits 0 for a clean
@@ -227,12 +232,25 @@ fi
 # ============================================================= real run: find a worktree ===
 scratch_wt=""
 cleanup() {
-    if [[ -n "$scratch_wt" ]]; then
-        git worktree remove --force "$scratch_wt" 2>/dev/null
-        rm -rf "$scratch_wt" 2>/dev/null
+    local status=$? registrations
+    [[ -n "$scratch_wt" ]] || return 0
+    registrations="$(git worktree list --porcelain)" || {
+        echo "scratch retained (cannot verify registration): $scratch_wt" >&2
+        return 0
+    }
+    if ! printf '%s\n' "$registrations" | grep -Fxq "worktree $scratch_wt"; then
+        # A failed add can leave its mktemp directory behind; rmdir cannot erase any contents.
+        rmdir "$scratch_wt" 2>/dev/null \
+            || echo "scratch retained (creation failed; directory is not empty): $scratch_wt" >&2
+    elif [[ $status -ne 0 ]]; then
+        echo "scratch retained after failed run; inspect before cleanup: $scratch_wt" >&2
+    elif ! git worktree remove "$scratch_wt"; then
+        echo "scratch retained (normal removal refused; inspect dirty files or ownership): $scratch_wt" >&2
     fi
 }
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 target_dir="$(worktree_of "$branch")"
 if [[ -z "$target_dir" ]]; then
@@ -250,6 +268,8 @@ if [[ -n "$target_dir" ]]; then
     echo "using existing worktree $target_dir"
 else
     scratch_wt="$(mktemp -d "${TMPDIR:-/tmp}/update-pr.XXXXXX")"
+    [[ -n "$scratch_wt" ]] || refuse "could not create scratch directory"
+    scratch_wt="$(cd "$scratch_wt" && pwd -P)" || refuse "could not resolve scratch directory"
     echo "no worktree has $branch checked out; adding a scratch one at $scratch_wt"
     git worktree add --quiet "$scratch_wt" "$branch" || refuse "git worktree add $scratch_wt $branch failed"
     target_dir="$scratch_wt"
