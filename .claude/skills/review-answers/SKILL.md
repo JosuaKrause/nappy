@@ -11,7 +11,7 @@ Create a local Markdown worksheet that the player can understand and answer with
 
 Read `docs/REVIEW.md`, then every current `docs/review/*.md` file in filename order. The review
 files are authoritative for what must be asked. Read their local references, relevant decision
-records, playtests or code only where needed to explain a question; use judgment to summarize the
+records (fetched with `tools/decisions.sh <noun>`), playtests or code only where needed to explain a question; use judgment to summarize the
 context rather than copying whole records or applying an automated sentence-stripping scheme.
 
 Write to `build/review-answers.md` in the **main checkout** (`/Users/krause/workspace/nappy-claude/build/`)
