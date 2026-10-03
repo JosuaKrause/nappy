@@ -76,6 +76,13 @@ The ordinary-route difference is about 0.13ms. This evidence verifies smaller wo
 and a modest fixture gain, rather than establishing a noticeable stutter fix. Whether its
 cost is worthwhile in real play remains open; this assessment does not select another runtime.
 
+Asked for a verdict, the assistant recommends keeping atomic until actual gameplay stutter
+profiling implicates ground. The player instead chooses to try the stepped implementation
+on their phone: "I wanna see it on the phone so we will have to merge it anyway", in
+[gray-stork, try ground preparation on the phone despite the small native gain](../playtests/2026-10-02-gray-stork.md).
+The per-region proposal remains the implementation for that evaluation. This is a choice
+to obtain phone evidence, not a claim that the native comparison proves a perceptible gain.
+
 The global cap needs 16 southward and 31 diagonal safety completions in every 15Hz trial;
 atomic and per-region need none. It has no consistent timing advantage over per-region.
 The safety path prevents holes but concentrates deferred work at the last boundary, so the
