@@ -42,8 +42,10 @@ usage() {
 usage: tools/lint.sh [--help|-h] [file...]
 
 Scans governed docs for volatile-fact sentence shapes (a commit hash, a branch name, a check
-count, a ticked box, a status marker anywhere in the doc) and every tracked SVG for well-formed
-XML. With no arguments, scans the whole governed set (AGENTS.md, CLAUDE.md, README.md, every
+count, a ticked box, a status marker anywhere in the doc) and materialized tracked SVGs for
+well-formed XML. Absent skip-worktree SVGs are explicitly reported as omitted; other missing
+or unreadable SVGs and parser failures fail the command. With no arguments, scans the whole
+governed set (AGENTS.md, CLAUDE.md, README.md, every
 .claude/skills/*/SKILL.md, every docs/*.md except DECISIONS.md, and every file under docs/todo/
 and docs/review/). Also checks the queue's layout: a name used for two things across docs/todo,
 docs/decisions, docs/review and docs/playtests, a checkbox under docs/todo/, a link in
@@ -287,17 +289,16 @@ done
 # every other reader — GitHub refuses to render it. Checked with python3's own parser, which CI
 # and every development machine carry; a missing python3 is reported rather than skipped, since
 # a check that silently does nothing is the failure this whole script exists to prevent. When
-# called with explicit files (the hook's way), only SVGs among them are checked.
+# called with explicit files (the hook's way), only SVGs among them are checked. Default scans
+# report intentionally absent skip-worktree paths separately; ordinary missing files fail.
 lint_svgs() {
-    local svgs=() f
+    local svgs=() f output
     if [[ $# -gt 0 ]]; then
         for f in "$@"; do
             [[ "$f" == *.svg ]] && svgs+=("$f")
         done
     else
-        while IFS= read -r f; do
-            svgs+=("$f")
-        done < <(git ls-files '*.svg')
+        svgs=(--tracked)
     fi
     [[ ${#svgs[@]} -eq 0 ]] && return
     if ! command -v python3 >/dev/null 2>&1; then
@@ -305,20 +306,43 @@ lint_svgs() {
         hits=$((hits + 1))
         return
     fi
-    while IFS= read -r line; do
-        [[ -z "$line" ]] && continue
-        printf '%s\n' "$line"
-        hits=$((hits + 1))
-    done < <(python3 - "${svgs[@]}" <<'PY'
+    if ! output="$(python3 - "${svgs[@]}" <<'PY'
+import os
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
-for path in sys.argv[1:]:
+paths = sys.argv[1:]
+omitted = 0
+if paths == ["--tracked"]:
+    tracked = subprocess.check_output(["git", "ls-files", "-t", "-z", "--", "*.svg"])
+    paths = []
+    for entry in tracked.split(b"\0"):
+        if not entry:
+            continue
+        path = os.fsdecode(entry[2:])
+        if entry[:1] == b"S" and not os.path.lexists(path):
+            omitted += 1
+        else:
+            paths.append(path)
+failed = False
+for path in paths:
     try:
         ET.parse(path)
     except ET.ParseError as error:
         print("%s:%s: not well-formed XML (%s)" % (path, error.position[0], error))
+        failed = True
+    except OSError as error:
+        print("%s: cannot read SVG (%s)" % (path, error))
+        failed = True
+if omitted:
+    print("SVG scope: %d materialized files checked; %d absent skip-worktree files omitted" % (len(paths), omitted))
+sys.exit(1 if failed else 0)
 PY
-)
+)"; then
+        echo "tools/lint.sh: SVG validation failed" >&2
+        hits=$((hits + 1))
+    fi
+    [[ -z "$output" ]] || printf '%s\n' "$output"
 }
 
 lint_svgs "$@"

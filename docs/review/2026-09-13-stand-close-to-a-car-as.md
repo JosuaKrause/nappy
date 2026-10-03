@@ -7,5 +7,6 @@ through a turn? Does a west-facing body's rim read the same as an east-facing on
 phone where it was seen, does an east- or west-bound car that has come round a turn now sit on
 its halo and its shadow for the rest of the street, rather than a few pixels south of them? The
 car's picture is redrawn whenever its heading moves now, not only when its view changes. Records
-are `DECISIONS.md`, M121 and M130; the bursts are `evidence/m121-halo-follows-owner-2026-09-13/`
-and `evidence/m130-car-halo-anchor-2026-09-13/`.
+are `DECISIONS.md`, M121 and M130; the bursts are `evidence/m121-halo-follows-owner-2026-09-13/`,
+and `evidence/m130-car-halo-anchor-2026-09-13/` holds registration stills, frames 12 and 20 of
+each of its three runs.

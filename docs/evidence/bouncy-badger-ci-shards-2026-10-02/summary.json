@@ -1,0 +1,108 @@
+{
+  "question": "Should CI use fewer than eight test shards so every shard starts together?",
+  "recommendation": {
+    "shard_count": 8,
+    "reason": "The delayed starts occurred when two full CI workflows overlapped. Non-overlapping runs and the first of the overlapping runs started all eight shards within one second, while refreshed measured costs project a longer critical path at every lower count.",
+    "open_to_overturn": "Reconsider if account-wide monitoring shows sustained queueing on ordinary non-overlapping runs large enough to exceed the projected 20-second penalty at seven shards or 75-second penalty at six shards."
+  },
+  "cost_generation": {
+    "command": "./tools/ci-costs.sh --runs 3",
+    "source_run_ids": [37083176322, 37083163561, 36812212526],
+    "source_commits": [
+      "6006fa6999a786640851f867b08e8e5d82876d8a",
+      "5b3583553fdad6f941e50bddb4605892031ce8c4",
+      "aae5c189bfe3a7d23530c6f06d17712c7d043807"
+    ],
+    "suite_rows": 102,
+    "shard_logs": 24,
+    "log_fetch_failures": 0,
+    "selection_reason": "The two newest runs overlapped and expose transient account-wide job pressure; the third-newest run is a nearby non-overlapping comparison.",
+    "limit": "These runs differ in source revision and runner load. Their mean is a planning calibration, not a controlled before/after performance measurement."
+  },
+  "projected_plan_max_seconds": {
+    "4": 581,
+    "5": 465,
+    "6": 387,
+    "7": 332,
+    "8": 312,
+    "9": 312,
+    "10": 312
+  },
+  "floor": {
+    "suite": "test_resistance.gd",
+    "mean_milliseconds": 312057,
+    "source_measurements_milliseconds": [239453, 397509, 299208]
+  },
+  "scheduling": [
+    {
+      "run_id": 37083163561,
+      "created_at": "2026-10-03T00:42:13Z",
+      "context": "first of two overlapping main runs",
+      "shard_job_start_span_seconds": 1,
+      "slow_shard": 1,
+      "slow_shard_job_wait_seconds": 13,
+      "slow_shard_setup_seconds": 6,
+      "slow_shard_test_seconds": 505,
+      "slow_suite": "test_resistance.gd",
+      "slow_suite_milliseconds": 397509
+    },
+    {
+      "run_id": 37083176322,
+      "created_at": "2026-10-03T00:42:23Z",
+      "context": "second overlapping main run",
+      "first_six_shard_job_wait_seconds": [10, 10, 11, 11, 11, 11],
+      "late_shard_5_job_wait_seconds": 46,
+      "late_shard_4_job_wait_seconds": 50,
+      "late_shard_4_setup_seconds": 9,
+      "late_shard_4_test_seconds": 381,
+      "late_shard_4_job_seconds": 394,
+      "late_shard_4_key_suites_milliseconds": {
+        "test_crowd_closures.gd": 117673,
+        "test_spent_park.gd": 114430,
+        "test_crowd_bodies.gd": 53943,
+        "test_route_rig.gd": 40798
+      },
+      "observation": "The earlier run's game job ended at 00:42:59Z and cost-table ended at 00:43:11Z; the delayed shard jobs began at 00:43:09Z and 00:43:13Z. The timing is consistent with transient shared concurrency pressure, but it does not expose the account's configured limit."
+    },
+    {
+      "run_id": 36812212526,
+      "created_at": "2026-10-01T03:48:35Z",
+      "context": "nearby non-overlapping main run",
+      "shard_job_start_span_seconds": 1,
+      "slow_shard": 1,
+      "slow_shard_job_wait_seconds": 11,
+      "slow_shard_setup_seconds": 9,
+      "slow_shard_test_seconds": 380,
+      "slow_suite": "test_resistance.gd",
+      "slow_suite_milliseconds": 299208
+    }
+  ],
+  "github_hosted_runner_context": {
+    "repository_visibility": "PUBLIC",
+    "owner_type": "User",
+    "actual_account_plan": null,
+    "account_plan_query": "gh api users/JosuaKrause --jq '{login,plan}' returned plan:null",
+    "repository_actions_permissions": "enabled; allowed_actions=all",
+    "official_limits": "Standard hosted concurrency is plan-dependent: Free 20, Pro 40, Team 60, Enterprise 500.",
+    "limits_url": "https://docs.github.com/en/actions/reference/limits",
+    "runner_url": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
+    "limit": "The repository API does not expose this user's actual Actions plan or concurrency quota to the available identity."
+  },
+  "coverage_verification": {
+    "command": "bash /private/tmp/bouncy-badger-ci-shards-2026-10-02/verify_plans.sh",
+    "result": "Every before plan at counts 4 through 8 and every refreshed plan at counts 4 through 10 contained all 102 discovered suites exactly once."
+  },
+  "source_workload_observations": {
+    "test_resistance.gd": "A 4002-line integration suite with full city and event scheduling sweeps across seed/day grids, including 3 seeds x days 4..14 and additional 3- or 4-seed x days 6..13 reachability sweeps.",
+    "test_crowd_closures.gd": "A 1528-line crowd integration suite with many 60 Hz simulations lasting 3 to 40 simulated seconds, agent scans each frame, and two 400-seed searches.",
+    "test_spent_park.gd": "A 626-line city/route suite that generates six maps and repeatedly repaints and rebuilds routes across all 14 days plus targeted multi-day closure and event-planning sweeps.",
+    "limit": "Source inspection explains why these suites have large workloads; it is not a profile and does not attribute their measured time among functions."
+  },
+  "command_provenance": [
+    "gh run list --workflow ci.yml --branch main --status success --limit 5 --json databaseId,headSha,createdAt,startedAt,updatedAt,event,displayTitle,conclusion,url",
+    "gh run view RUN_ID --json jobs,createdAt,startedAt,updatedAt,headSha,event,conclusion,url",
+    "gh run view RUN_ID --job JOB_ID --log",
+    "./tools/ci-costs.sh --runs 3",
+    "TEST_SHARDS=N ./tools/test.sh --plan"
+  ]
+}

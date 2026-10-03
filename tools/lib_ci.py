@@ -171,10 +171,26 @@ def normalize(text: str) -> str:
     return " ".join(" ".join(lines).split())
 
 
-def playtest_texts(cwd: Path = ROOT) -> dict[str, str]:
-    """Every playtest file in the working tree, by its path relative to the repository."""
-    folder = cwd / "docs" / "playtests"
-    return {f"docs/playtests/{path.name}": path.read_text(encoding="utf-8") for path in sorted(folder.glob("*.md"))}
+def read_blob(blob: str, cwd: Path = ROOT) -> str:
+    """The text of one git blob, whatever is checked out."""
+    return git("cat-file", "blob", blob, cwd=cwd)
+
+
+def playtest_texts(head: str = "HEAD", cwd: Path = ROOT) -> dict[str, str]:
+    """Every playtest file at `head`, by its path relative to the repository.
+
+    Read from git, not from the working tree, so `--head` naming anything but the checkout reads
+    that commit's playtests.
+    """
+    listing = git("ls-tree", "-r", "-z", head, "--", "docs/playtests", cwd=cwd)
+    texts: dict[str, str] = {}
+    for record in listing.split("\0"):
+        if not record:
+            continue
+        meta, _, path = record.partition("\t")
+        if path.endswith(".md"):
+            texts[path] = read_blob(meta.split()[2], cwd)
+    return dict(sorted(texts.items()))
 
 
 def write_summary(markdown: str) -> None:

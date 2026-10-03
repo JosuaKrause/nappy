@@ -1,0 +1,87 @@
+{
+  "question": "How much does refreshing the costs improve the eight-shard assignment, independent of cost calibration?",
+  "method": "At exact baseline commit 6006fa6999a786640851f867b08e8e5d82876d8a, run the headless setup first and then keep the exact suite-to-shard assignment printed by the clean stale-table eight-shard plan. Replace every suite's estimate with the refreshed tests/suite_costs.txt value and compare those loads with the assignment printed by the refreshed eight-shard plan using the same refreshed values.",
+  "inputs": {
+    "refreshed_costs": {
+      "path": "tests/suite_costs.txt",
+      "sha256": "2c450a1c1d01636809c24483f0b0258f641fce5dc9cd631a4233889aafcb2e92"
+    },
+    "old_assignment": {
+      "path": "/private/tmp/bouncy-badger-ci-shards-2026-10-02/baseline-6006fa69-8-shards.txt",
+      "sha256": "18cc20b6b9c51bb183d1be15b6caea4a6328f6e980a5672a11ff19ef1687c2c4"
+    },
+    "refreshed_assignment": {
+      "path": "/private/tmp/bouncy-badger-ci-shards-2026-10-02/after-8-shards.txt",
+      "sha256": "5be220c3293a9be9a994d54512d84a7292c14fab0bd5504b2fc9430d9d4f52b3"
+    },
+    "calculator": {
+      "path": "/private/tmp/bouncy-badger-ci-shards-2026-10-02/compare-eight-shards.awk",
+      "sha256": "ad1d3ac93d5ad1d1be74ed3646057ccbcaade2d98c973b95b1ca627834283e5a"
+    }
+  },
+  "coverage": {
+    "suite_count": 102,
+    "total_milliseconds": 2327528,
+    "old_assignment_each_suite_once": true,
+    "refreshed_assignment_each_suite_once": true,
+    "old_assignment_engine_errors": false
+  },
+  "old_assignment_reweighted": {
+    "shards": [
+      {"shard": 0, "suite_count": 13, "milliseconds": 381967},
+      {"shard": 1, "suite_count": 10, "milliseconds": 294053},
+      {"shard": 2, "suite_count": 12, "milliseconds": 261867},
+      {"shard": 3, "suite_count": 13, "milliseconds": 274484},
+      {"shard": 4, "suite_count": 13, "milliseconds": 265534},
+      {"shard": 5, "suite_count": 14, "milliseconds": 303122},
+      {"shard": 6, "suite_count": 14, "milliseconds": 226549},
+      {"shard": 7, "suite_count": 13, "milliseconds": 319952}
+    ],
+    "mean_milliseconds": 290941,
+    "maximum_milliseconds": 381967,
+    "minimum_milliseconds": 226549,
+    "range_milliseconds": 155418
+  },
+  "refreshed_assignment": {
+    "shards": [
+      {"shard": 0, "suite_count": 1, "milliseconds": 312057},
+      {"shard": 1, "suite_count": 14, "milliseconds": 287921},
+      {"shard": 2, "suite_count": 15, "milliseconds": 287926},
+      {"shard": 3, "suite_count": 10, "milliseconds": 287925},
+      {"shard": 4, "suite_count": 16, "milliseconds": 287926},
+      {"shard": 5, "suite_count": 15, "milliseconds": 287926},
+      {"shard": 6, "suite_count": 17, "milliseconds": 287921},
+      {"shard": 7, "suite_count": 14, "milliseconds": 287926}
+    ],
+    "mean_milliseconds": 290941,
+    "maximum_milliseconds": 312057,
+    "minimum_milliseconds": 287921,
+    "range_milliseconds": 24136,
+    "non_floor_bin_range_milliseconds": 5
+  },
+  "result": {
+    "critical_path_reduction_milliseconds": 69910,
+    "critical_path_reduction_percent": 18.3,
+    "range_reduction_milliseconds": 131282,
+    "optimality": "The refreshed assignment reaches the lower bound set by test_resistance.gd's 312057ms cost, so no assignment at eight shards can project lower with this indivisible suite set."
+  },
+  "concrete_reassignments": [
+    {
+      "change": "Isolate test_resistance.gd on shard 0.",
+      "detail": "Under refreshed costs, the old shard 0 was test_resistance.gd at 312057ms plus twelve suites totaling 69910ms. Moving those companions away reduces the old assignment's 381967ms critical shard exactly to the 312057ms indivisible floor."
+    },
+    {
+      "change": "Split the old shard 3 integration cluster.",
+      "detail": "The old assignment grouped test_spent_park.gd (88230ms), test_crowd_closures.gd (85812ms), test_crowd_bodies.gd (39919ms), test_route_rig.gd (30489ms), test_route_lines.gd (13859ms) and test_danger.gd (10189ms). The refreshed plan sends them to shards 6, 7, 2, 6, 1 and 7 respectively."
+    },
+    {
+      "change": "Separate test_routes_fallen_trees.gd from the seals/events-costs cluster.",
+      "detail": "The old shard 7 totaled 319952ms and grouped test_seals.gd (112050ms), test_routes_fallen_trees.gd (73578ms) and test_events_costs.gd (67005ms). The refreshed plan keeps seals and events costs on shard 4 but moves fallen trees to shard 6, then fills both bins to about 287.9s."
+    },
+    {
+      "change": "Move test_tutorial_dog.gd away from the crowd/event-manager pair.",
+      "detail": "The old shard 5 grouped test_crowd.gd (144701ms), test_event_manager.gd (59767ms) and test_tutorial_dog.gd (57494ms), contributing to a 303122ms bin. The refreshed plan keeps crowd and event manager together on shard 2, moves tutorial dog to shard 7, and fills both to about 287.9s."
+    }
+  ],
+  "interpretation_limit": "Shard numbers are bin labels rather than stable jobs, so the evidence is the changed groupings and loads. These are projections from the same refreshed mean-cost table, not measured end-to-end job durations."
+}
