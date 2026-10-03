@@ -1,19 +1,17 @@
 # silky-rabbit — Nearby ground preparation during real play · 2026-10-02
 
-Hold this stepping-specific review until the player chooses the runtime in
-[breezy-walrus, ground preparation after the mobile test](../todo/2026-10-02-breezy-walrus/README.md).
-It lapses if stepping is removed and atomic preparation restored; the general scenery review
-under [M159, nearby scenery during walking and transitions](2026-09-19-M159.md) remains.
-
-If stepping remains the default, retain this review. If it remains behind a
-default-off debug dev flag, retain this review for the optional enabled path and
-its comparison with the default atomic path. A useful comparison uses the same
-route and settings in atomic and stepped builds, or both positions of the dev
-flag, switched on the phone through `?debug=1` on the released page
+Hold this stepping-specific review until
+[breezy-walrus, three modes of nearby ground preparation](../todo/2026-10-02-breezy-walrus/README.md)
+is built: stepping becomes the third mode, behind a flag set under `?debug=1`, and the default
+prepares each needed region whole in one frame. Then it is the review of the stepped mode and its
+comparison with the other two; the general scenery review under
+[M159, nearby scenery during walking and transitions](2026-09-19-M159.md) remains. A useful comparison uses the same
+route and settings in each of the three modes of the flag, switched on the phone through
+`?debug=1` on the released page
 ([choose-runtime](../todo/2026-10-02-breezy-walrus/choose-runtime.md) says how the flag gets there). This is a controlled comparison that the existing mobile observation does
 not supply; it does not repeat the already answered unpaired perception question.
 
-For either retained-stepping option, use the same ordinary run as M159 in the browser and on
+For the stepped mode, use the same ordinary run as M159 in the browser and on
 the phone, traversing blocks, reversing while nearby ground prepares, changing days
 and changing orientation. Check missing or late ground, water and route-curb seams,
 and the full game's competing-work performance. Desktop-browser perception and
