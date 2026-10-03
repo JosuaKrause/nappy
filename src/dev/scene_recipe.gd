@@ -61,7 +61,17 @@ static func validate(data: Dictionary) -> Array[String]:
 	elif extent.has("bounds"):
 		errors.append("extent.bounds: full scope has implicit complete city bounds")
 	var city: Dictionary = data.get("city", {})
-	_keys(city, ["context_seed", "main_road", "precincts", "lots", "layouts", "dead_ends", "power_station", "closures"], "city", errors)
+	_keys(city, ["context_seed", "main_road", "precincts", "lots", "layouts", "dead_ends", "power_station", "closures", "tree_moves"], "city", errors)
+	if not city.get("tree_moves", []) is Array:
+		errors.append("city.tree_moves: expected an array")
+	else:
+		for move: Variant in city.get("tree_moves", []):
+			if not move is Dictionary:
+				errors.append("city.tree_moves: expected from/to tile objects")
+				continue
+			_keys(move, ["from", "to"], "city.tree_moves", errors)
+			if not tuple(move.get("from"), 2, true) or not tuple(move.get("to"), 2, true):
+				errors.append("city.tree_moves: from/to must be integer tile pairs")
 	if not integer(city.get("context_seed")):
 		errors.append("city.context_seed: explicit construction context is required")
 	if city.has("main_road") and (not integer(city.main_road) or int(city.main_road) < 3

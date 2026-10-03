@@ -11,7 +11,8 @@ func _ready() -> void:
 	if not runtime or not city or runtime.manifest.get("setup_failed", false):
 		return
 	var act := Tuning.act_for_day(GameState.day)
-	if city.crowd.agent_count() != Tuning.crowd_pedestrians(act) + Tuning.crowd_cars(act):
+	var multiplier: float = runtime.data.setup.get("background", {}).get("walker_multiplier", 1)
+	if city.crowd.agent_count() != roundi(Tuning.crowd_pedestrians(act) * multiplier) + Tuning.crowd_cars(act):
 		fail("background population differs from ordinary day density")
 		return
 	if not city.events._recipe_plan:
@@ -83,7 +84,7 @@ func run(t) -> void:
 	var scene := FileAccess.open(stem + ".tscn", FileAccess.WRITE)
 	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s.gd\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % stem)
 	scene.close()
-	for name in ["choice", "blower", "dog", "trucks", "gatehouse", "title"]:
+	for name in ["choice", "birds", "dog", "trucks", "gatehouse", "title"]:
 		var output: Array = []
 		var status := OS.execute(OS.get_executable_path(), PackedStringArray([
 			"--headless", "--quit-after", "120", "--path", ProjectSettings.globalize_path("res://"),

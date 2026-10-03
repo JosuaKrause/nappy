@@ -34,6 +34,8 @@ var map: CityMap
 ## A recipe's city overview simulates every visible street at the ordinary field density.
 ## The normal moving field remains the default, including after another day is started.
 var city_view := false
+## Authored scenes may give every pedestrian corridor equal weight; cars keep the street hierarchy.
+var uniform_walkers := false
 
 func _init(city_map: CityMap, at := Vector2.ZERO) -> void:
 	map = city_map

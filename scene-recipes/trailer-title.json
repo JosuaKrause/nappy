@@ -1,12 +1,13 @@
 {
-  "version": 1, "name": "Title transition on a living street", "seed": 11,
+  "version": 1, "name": "Title transition walking inside the park beside a street", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
-  "anchors": {"start": {"world": [1376, 1712]}},
+  "anchors": {"start": {"world": [1296, 1712]}},
   "setup": {"tutorial_complete": true, "day": 1, "parent": "father", "player": {"at": "start", "facing": "south"},
     "background": {"crowd": true},
     "events": [{"name": "dog_walker", "row": "dog_walker", "at": [1488, 1680], "age": 1.4}],
     "roof_fixtures": [{"lot": [48, 48, 8, 8], "fixtures": [
       {"cell": [2, 4], "kind": "water_tank"}, {"cell": [5, 2], "kind": "vent"}]}]},
-  "playback": {"walk": "2.5p", "duration": 2.5, "capture_at": 1.5, "title": "Nappy",
-    "observations": [{"tick": 30, "subject": "player", "condition": "visible"}]}
+  "playback": {"walk": "2.5s", "duration": 2.5, "capture_at": 1.5, "title": "Nappy",
+    "observations": [{"tick": 30, "subject": "player", "condition": "visible"},
+      {"tick": 45, "subject": "player", "condition": "moving"}]}
 }

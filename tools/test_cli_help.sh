@@ -489,7 +489,7 @@ else
 fi
 
 checks=$(( checks + 1 ))
-cp scene-recipes/trailer-blower.json "$work_dir/relative.json"
+cp scene-recipes/trailer-birds.json "$work_dir/relative.json"
 relative_output="$(cd "$work_dir" && GODOT="$GODOT_STUB" "$root/tools/scene-recipes.sh" --recipe relative.json --output captures 2>&1)"
 if [[ "$relative_output" == *"scene assertions failed:"*"relative.json"*"log:"* ]] \
     && grep -qF "$work_dir/relative.json" "$GODOT_ARGS"; then

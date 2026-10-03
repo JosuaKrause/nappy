@@ -146,7 +146,7 @@ func setup(city: City, map: CityMap) -> void:
 ## `city_view` is the recipe-only overview: the field stays over the map and population scales
 ## by covered area at the existing field density. Ordinary calls retain their moving field.
 func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
-		populate := true, city_view := false) -> void:
+		populate := true, city_view := false, uniform_walkers := false, walker_multiplier := 1.0) -> void:
 	clear()
 	# Taken on the first day only — see `_atlas_held`'s own doc for why a day's own end keeps
 	# holding this rather than releasing it, and `_exit_tree()` for where it finally does.
@@ -162,6 +162,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	if _signals:
 		_signals.elapsed = 0.0
 	_field.city_view = city_view
+	_field.uniform_walkers = uniform_walkers
 	_field.centre = focus if focus != Vector2.INF else _map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, _map.size)).get_center()
 	# Before either `_populate` call: a walker's own `setup()` re-rolls off `_stands_on_a_street()`,
@@ -201,7 +202,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 		# play keeps its local population and pays for no actors beyond the moving field.
 		var area_scale := _map.world_size().x * _map.world_size().y \
 				/ pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) if city_view else 1.0
-		_populate(CrowdAgent.Kind.WALKER, roundi(Tuning.crowd_pedestrians(act) * area_scale), rng)
+		_populate(CrowdAgent.Kind.WALKER, roundi(Tuning.crowd_pedestrians(act) * area_scale * walker_multiplier), rng)
 		_populate(CrowdAgent.Kind.CAR, roundi(Tuning.crowd_cars(act) * area_scale), rng)
 	# **The unpack the first frame would do anyway, done before the first frame is drawn.** The
 	# morning places every car without consulting the ones already placed, so some of them start

@@ -22,6 +22,7 @@ var recipe_exterior := false
 var recipe_frame_locked := false
 var recipe_diagnostics: Array[String] = []
 var recipe_closures: Array[RoadClosure] = []
+var recipe_tree_moves := {}
 ## Block coordinate -> BlockPlan. The arc each block may travel, fixed at generation.
 ##
 ## Keyed by the block that **anchors a lot**, which is not always one block: a four-block calm zone

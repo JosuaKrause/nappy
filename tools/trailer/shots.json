@@ -10,8 +10,8 @@
       "length": 5.9
     },
     {
-      "name": "blower",
-      "recipe": "scene-recipes/trailer-blower.json",
+      "name": "birds",
+      "recipe": "scene-recipes/trailer-birds.json",
       "in": 0.2,
       "length": 1.8,
       "gap": 0.3

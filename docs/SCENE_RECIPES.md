@@ -49,6 +49,10 @@ Only explicit selections install events. The normal event scheduler and director
 authored scenes, in either free or scripted mode. `background.events: true` is rejected;
 an omitted or false value selects no automatic events. Pedestrians and cars keep their normal
 simulation independently of event selection. Unselected seals and region bodies remain absent.
+`background.uniform_walkers: true` gives pedestrian corridors equal selection weight,
+including on recycle. `background.walker_multiplier` scales only the recipe's pedestrian
+population from the ordinary act count (1–4, default 1). Cars retain their normal count and
+street weighting. Both require `crowd: true`; an ordinary day restores the default distribution.
 Random crowd cannot accompany pinned crowd actors.
 Random background activity requires full extent; bounded scenes use authored activity so their
 plain exterior does not acquire context-city actors or collisions.
@@ -123,6 +127,7 @@ keeps its existing sequence and retry behavior.
 | `city.dead_ends` | `[{segment:[x,y,axis],end:"a"}]` pins an eligible segment and its wall end; `b` chooses the other end. The ordinary generator fills remaining quota. |
 | `city.power_station` | `{blocks:[x,y,2,1],door_block:[x,y]}` pins the horizontal landmark and its ordinary eligible door. Industrial ranking, reference-tree exclusion, calm reachability and region separation still apply. |
 | `city.closures` | `[{segment:[x,y,axis],kind:"roadworks"}]` authors the day's closures; other kinds are `fallen_tree`, `crash`, `cordon`, `rubble`. An explicit `setup.day` supplies eligibility context. |
+| `city.tree_moves` | `[{from:[tile_x,tile_y],to:[tile_x,tile_y]}]` moves an existing street tree and its pit to the opposite curb of the same street. Sources must exist and destinations must be open, clear of the home door and other tree footprints. |
 
 A segment is keyed by its lower-numbered junction and axis (0 horizontal, 1 vertical).
 Its `a` end is west or north; `b` is east or south. Positions use the production tile lattice;

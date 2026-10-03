@@ -76,12 +76,15 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	for key in ["excitement", "sleep"]:
 		_number(player.get(key, 0), "setup.player." + key, 0, 100, errors)
 	var background: Dictionary = setup.get("background", {})
-	_keys(background, ["events", "crowd", "crowd_scope"], "setup.background", errors)
+	_keys(background, ["events", "crowd", "crowd_scope", "uniform_walkers", "walker_multiplier"], "setup.background", errors)
 	if background.get("events", false) != false:
 		errors.append("setup.background.events: authored scenes require explicit event selections")
-	for key in ["crowd"]:
+	for key in ["crowd", "uniform_walkers"]:
 		if not background.get(key, false) is bool:
 			errors.append("setup.background.%s must be boolean" % key)
+	_number(background.get("walker_multiplier", 1), "setup.background.walker_multiplier", 1, 4, errors)
+	if (background.has("walker_multiplier") or background.has("uniform_walkers")) and not background.get("crowd", false):
+		errors.append("setup.background: walker controls require crowd")
 	if not background.get("crowd_scope", "player") in ["player", "city"]:
 		errors.append("setup.background.crowd_scope must be player or city")
 	if background.get("crowd_scope", "player") == "city" and (
@@ -372,7 +375,8 @@ func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
 				else:
 					named[entry.name] = plan.live
 	city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), at,
-			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city")
+			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
+			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
 	if city.region_plan():
 		city.crowd.set_gates(city.region_plan().gates)
 	for entry: Dictionary in setup.get("actors", []):
@@ -751,6 +755,7 @@ func _record_crowd(key: String) -> void:
 func activity_snapshot() -> Dictionary:
 	var result := {"visible_walkers": 0, "visible_cars": 0, "moving_crowd": 0,
 			"walkers_left": 0, "walkers_right": 0,
+			"walker_streets": {},
 			"visible_events": {}}
 	var view := get_viewport().get_visible_rect()
 	var transform := get_viewport().get_canvas_transform()
@@ -760,6 +765,11 @@ func activity_snapshot() -> Dictionary:
 		var key := "visible_cars" if agent.kind == CrowdAgent.Kind.CAR else "visible_walkers"
 		result[key] += 1
 		if agent.kind == CrowdAgent.Kind.WALKER:
+			var street := "%s%d" % ["v" if agent.travelling_vertically() else "h", agent.get("_corridor")]
+			if not result.walker_streets.has(street):
+				result.walker_streets[street] = {"walkers": 0, "moving": 0}
+			result.walker_streets[street].walkers += 1
+			result.walker_streets[street].moving += int(not agent.velocity().is_zero_approx())
 			result["walkers_left" if (transform * agent.global_position).x < view.size.x * 0.5
 					else "walkers_right"] += 1
 		if not agent.velocity().is_zero_approx():

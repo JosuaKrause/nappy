@@ -1612,6 +1612,9 @@ func _choose_lane(roll: float) -> void:
 	# falling to a third of what the numbers say.
 	_corridor = CrowdLanes.pick_corridor_in_range(_rng, _map, _vertical,
 			field.corridor_range(_vertical), kind == Kind.CAR)
+	if kind == Kind.WALKER and field.uniform_walkers:
+		var corridors := field.corridor_range(_vertical)
+		_corridor = _rng.randi_range(corridors.x, corridors.y)
 	if kind == Kind.CAR:
 		_lane = CrowdLanes.ROAD_OFFSETS[_rng.randi_range(0, 1)]
 		_direction = CrowdLanes.road_direction(_vertical, _lane)

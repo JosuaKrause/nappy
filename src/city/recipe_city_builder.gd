@@ -50,6 +50,7 @@ static func build(data: Dictionary) -> Dictionary:
 	if not errors.is_empty():
 		return result
 	var map := CityGenerator._attempt(int(choices.context_seed), choices)
+	_move_street_trees(map, choices.get("tree_moves", []), errors)
 	for pin: Dictionary in choices.get("lots", []):
 		var footprint := SceneRecipe.rect(pin.blocks)
 		var purpose: int = GameEnums.BlockPurpose[str(pin.purpose).to_upper()]
@@ -92,6 +93,9 @@ static func build(data: Dictionary) -> Dictionary:
 		for closure in map.recipe_closures:
 			if not bounds.encloses(closure.segment.tile_rect()):
 				errors.append("extent.closure: authored closure must fit inside the bounds")
+		for source: Vector2i in map.recipe_tree_moves:
+			if not bounds.has_point(source) or not bounds.has_point(map.recipe_tree_moves[source]):
+				errors.append("extent.tree_moves: both sides of a selected tree move must fit inside bounds")
 		map.recipe_bounds = bounds
 		map.recipe_exterior = true
 	var anchors := {}
@@ -183,3 +187,45 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 			return
 		map.recipe_closures.append(RoadClosure.new(kind as RoadClosure.Kind, segment))
 	map.set_closure_tree_pits(emptied)
+
+## Move a real pit to the opposite curb of its same street. Planning and scenery read
+## StreetTrees.planted, so the tree, pit, collider and event clearance move together.
+static func _move_street_trees(map: CityMap, moves: Array, errors: Array[String]) -> void:
+	if moves.is_empty():
+		return
+	var trees := StreetTrees.planted(map)
+	var selected := {}
+	var destinations := {}
+	for move: Dictionary in moves:
+		var source := Vector2i(int(move.from[0]), int(move.from[1]))
+		var destination := Vector2i(int(move.to[0]), int(move.to[1]))
+		var original: StreetTrees.Planted = null
+		for tree in trees:
+			if tree.tile == source:
+				original = tree
+		if not original:
+			errors.append("tree_moves.from: no existing street tree at %s" % source)
+			continue
+		var segment := StreetNetwork.by_key(original.segment_key)
+		var opposite := source
+		var axis := 1 if segment.horizontal else 0
+		var offset := CityMap.corridor_offset(source[axis])
+		opposite[axis] += (StreetTrees._CURB_OFFSETS[1] - StreetTrees._CURB_OFFSETS[0]) \
+				* (1 if offset == StreetTrees._CURB_OFFSETS[0] else -1)
+		if destination != opposite or not map.is_open(destination) \
+				or StreetTrees._chebyshev(destination, StreetTrees._door_tile(map)) <= 1:
+			errors.append("tree_moves.to: must be the clear opposite curb of the same street")
+		if selected.has(source) or destinations.has(destination):
+			errors.append("tree_moves: duplicate source or destination")
+		selected[source] = destination
+		destinations[destination] = true
+	for tree in trees:
+		var tile: Vector2i = selected.get(tree.tile, tree.tile)
+		for other in trees:
+			if tree == other:
+				continue
+			var other_tile: Vector2i = selected.get(other.tile, other.tile)
+			if map.tile_to_world(tile).distance_to(map.tile_to_world(other_tile)) < StreetTrees.footprint_radius() * 2:
+				errors.append("tree_moves.to: overlaps an existing street tree")
+	if errors.is_empty():
+		map.recipe_tree_moves = selected
