@@ -71,6 +71,35 @@
 # search`, `gh browse`, a GET `gh api` with or without fields, an inline GraphQL query with no
 # `mutation`) stay unguarded.
 #
+# **An issue write never goes through a direct `gh issue` command, wrapped or not.** `tools/inbox.py`
+# (`capture`, `ask`, `close --pr`, `reopen --pr`) is the one way an agent writes an issue: it runs
+# each of its own writes through `tools/agent-identity.py run <role> --` in a process of its own,
+# which this hook never sees, and refuses to write with no role at all. So every `gh issue` verb off
+# the read list is denied even inside `run <role> --`, with a message that points at the script
+# (leafy-finch; bouncy-heron, statement 14: "if it goes through a script it's safe we just need to
+# get it working once -- an agent shouldn't use gh issue directly"). The same goes for an issue
+# written through `gh api`, wrapped or not: a write to `repos/o/r/issues` or
+# `repositories/<id>/issues` (a new issue; the owner and repository read as anything, so
+# `repos/$R/issues` too), to `issues/N` (its state, title or body), or to anything under them (its
+# labels, assignees, lock, reactions, `issues/comments/N`), and a GraphQL mutation naming an issue
+# mutation (`createIssue`, `closeIssue`, `updateIssue`, `addLabelsToLabelable`, ..., written
+# compactly or not, or in a variable or a file the same command writes; `issue_endpoint` and
+# `issue_mutation_re`, below). What stays open, wrapped, on purpose: a POST to `issues/N/comments`
+# and GraphQL's `addComment`, which a pull request's own conversation comments share, so neither
+# can tell a comment on a note from one on a pull request, and GraphQL's `addReaction`,
+# `removeReaction`, `minimizeComment` and `unminimizeComment`, which serve a pull request as readily
+# as an issue (the REST `issues/N/reactions` is under an issue's path, and denied). **The issue writes that still go
+# through when wrapped, an accepted gap** (main allows every one of them too, as it allows any
+# wrapped write): an endpoint an expansion builds past `repos/` or hands in (`"$E"`, `"$(printf
+# ...)"`, a backtick in place of `issues`, `${E:-...}`, an endpoint `xargs` supplies); a GraphQL
+# query an expansion or `$'...'` builds (`-f query="$(printf ...)"`, `$'close\x49ssue'`), or one
+# read by `-F query=@file`, `-F query=@-` or `--input` from a file an earlier, separate command
+# wrote, or piped in from such a file (`cat q.graphql | ... -F query=@-`), since denying every
+# query not on the command line would deny a reviewer's `resolveReviewThread` from a file too --
+# a query whose text the same command holds, in a heredoc fed to `-F query=@-` or a file it writes
+# and then hands to `--input`, is read there and denied; and a gh alias (`gh alias set ic 'issue
+# close'`, then `gh ic 5`), which this hook reads as a noun of its own.
+#
 # **A reviewer identity (`claude-reviewer`, `codex-reviewer`) is refused the named push and merge
 # routes, wrapped or not.** Its GitHub App has `contents: write` (a reviewer's own APPROVE needs it to satisfy a
 # required-approval ruleset, and so does resolving its own review threads -- see
@@ -85,8 +114,8 @@
 # needs, is one, so `mergePullRequest` or `enablePullRequestAutoMerge` under a reviewer role is an
 # accepted gap. Every other role is a wrapping role that pushes and merges: the coders
 # (`claude-coder`, `codex-coder`) on a pull request that changes code, and `claude-orchestrator` on
-# one with no code changes and on issues. Which of those a write goes out as is committing's
-# convention, never checked here. A role this hook
+# one with no code changes (its issue writes go through `tools/inbox.py`, above). Which of those a
+# write goes out as is committing's convention, never checked here. A role this hook
 # does not recognise as a reviewer is not specially blocked here either way:
 # `tools/agent-identity.py` itself refuses to mint a token for a name outside its own `ROLE_NAMES`,
 # which is the actual enforcement for an unknown or misspelled role.
@@ -106,7 +135,8 @@
 # cheaper than the failure mode of a miss (a post lands under the player's own account again,
 # which is the whole thing this rule exists to stop). So this reads the command's raw text, quotes
 # and backslashes stripped before it is split into words, and a mention (a write's name inside an
-# echo, a commit message, a code comment) denies exactly like a real invocation would. Each word
+# echo, a commit message, a code comment) denies exactly like a real invocation would, outside the
+# three whole-command shapes whose text is told apart for certain (`text_shape`, below). Each word
 # still remembers which shell word it came from, and which quoted word inside a quoted script, so
 # an option's argument is skipped whole however it is quoted, escaped or joined by a comma: `git
 # -C "/x y" push`, `git -c 'a=b c' push`, `FOO="a b" tools/release.sh patch push` and `bash -c 'git
@@ -149,7 +179,8 @@
 # then a pushing script's path (`if tools/land-prs.sh is named, it is read.`): every newline of an
 # unsure command is a separator, and the word after a reserved word is read in command position.
 # So is a wrapped heredoc commit or PR body whose text names a write (a line such as "run `git
-# push` through the wrapper"): the heredoc makes the command unsure, its first newline ends the wrapper's reach, and
+# push` through the wrapper"), outside the one commit shape below (`git commit -F - <<'EOF'`): the
+# heredoc makes the command unsure, its first newline ends the wrapper's reach, and
 # the mention after it reads as an unwrapped write. When the denied command holds a wrapper, the
 # deny message says so and points at a body file (`git commit -F file`, `--body-file file`, `gh api
 # -F body=@file`), which the hook never reads. A command over 64 KB that names git, gh or a
@@ -160,6 +191,36 @@
 # that quotes a full `tools/agent-identity.py run claude-coder -- git push` line reads, to this
 # script, like a real wrapped call) -- an accepted hole, the same kind `git-grep-guard.sh` accepts
 # for an encoded command or one kept in a file the shell then runs.
+#
+# **Three shapes are text, and nothing else is** *(plaid-tapir, statement 4: the player chose "B",
+# the rule narrowed to what can be told for certain, everything else read as before)*. Each is the
+# whole command, one simple command and nothing around it -- no `;`, `&&`, `||`, `|`, `&`, second
+# line, group, subshell, `$(...)`, backtick, process substitution, assignment prefix or other
+# redirection -- made only of plain words (letters, digits and `_./:@,+=-`; a file may start with
+# `~`) besides what is named:
+#
+# - `cat > FILE <<'DELIM'` or `cat <<'DELIM' > FILE` (`>>` too; the delimiter in single or double
+#   quotes or after a backslash), the body running to the first line that is exactly the delimiter
+#   and nothing after that but blank lines. The shell passes a quoted delimiter's body on as it
+#   stands, and `cat` only copies it to the file, so the body is text and the command reads as
+#   `cat > FILE`.
+# - `tools/agent-identity.py run <role> -- git commit -F - <<'DELIM'` (or `-F /dev/stdin`,
+#   `--file=-`, `--file=/dev/stdin`; the wrapper as `tools/agent-identity.py` or
+#   `./tools/agent-identity.py`, with `uv run python`, a bare `python3` or `.venv/bin/python` in
+#   front or none, never a program elsewhere that is merely named so; `run`'s own `--repo`; and
+#   `git commit` options that are a dash and letters alone, `-a` or `--amend`), the role a coder's
+#   or the orchestrator's, the body as above. Git takes its standard input as the message and runs
+#   none of it, so the body is text and the command reads as the wrapped commit it is.
+# - `rg` or `grep` with plain options and paths and one pattern in single quotes, or in double
+#   quotes holding no `$`, backtick or backslash, and neither `--pre` nor `--hostname-bin` (the two
+#   `rg` options that run a program). A search runs nothing it is given, so the pattern is text and
+#   the command reads with it empty.
+#
+# A near miss of any of them -- an unquoted delimiter, `<<-`, a second command, a wrapper word, a
+# glob, a quoted path -- is read exactly as it would be without this. What a shape cannot see is
+# what happens to its file afterwards: a script `cat` writes and a later, separate command runs (a
+# shell's startup file, a git hook) is that file, which no reading of this command sees, and the
+# later command is read on its own, as every command is.
 #
 # Guards both of Claude Code's tools that run a shell command (`Bash`, `Monitor`) the same way
 # `git-grep-guard.sh` does, and reads the same hook JSON shape on stdin. Needs bash 3.2 and jq only.
@@ -741,6 +802,44 @@ def detect_git($w; $t; $i; $n):
 # What the bound costs is a mention's flags past its own next separator (`echo gh api --jq '.a |
 # .b' -f x=y` inside a script whose first call is a GraphQL read) counting only toward the call
 # whose scan they fall in.
+# A write to an issue through the API is an issue write (`gh api issue write`, denied wrapped or
+# not, like `gh issue`): any non-GET call, or one with a field, naming `repos/<o>/<r>/issues` or
+# `repositories/<id>/issues` -- the collection (a new issue), `issues/<n>` (its state, title or
+# body), and everything under them (`issues/<n>/labels`, `/assignees`, `/lock`, `/reactions`,
+# `issues/comments/<id>`, a comment's edit or deletion) -- with one exception, `issues/<n>/comments`
+# (an optional trailing `/` included), which a pull request's own conversation comments share, so
+# its path cannot tell a comment on a note from one on a pull request. Every test reads the path
+# alone, before any `?` or `#`: gh sends the rest as the query or drops it, so
+# `issues/5?x=/issues/1/comments` is issue 5, and `issues/429/comments?per_page=1` is still the
+# comments path. Whatever stands
+# between `repos/` and `/issues` counts as the owner and the repository, so a variable
+# (`repos/$R/issues/5`) or a substitution (`"repos/$(gh repo view ...)/issues/5"`, read across the
+# substitution's own words) in their place is an issue endpoint too. As with the merge-type paths,
+# every non-option word of the call is read, so a header value cannot hide the endpoint, and a
+# body that merely names such a path is a false deny, answered by sending it from a file. A GraphQL
+# mutation is one when a word in it names an issue mutation (`issue_mutation_re`): a verb, any
+# letters or digits, then `Issue`, `Labelable`, `Assignable`, `Lockable`, `BlockedBy` or
+# `LinkedBranch` (`createIssue`, `closeIssue`, `updateIssueComment`, `addLabelsToLabelable`,
+# `replaceActorsForAssignable`, `applyPendingIssueSuggestions`, `addBlockedBy`,
+# `convertProjectV2DraftIssueItemToIssue`, `createLinkedBranch`, ...), wherever it starts inside a
+# word, so a query written with no spaces (`mutation{closeIssue(...)}`) names it too. `addComment`,
+# which comments on a pull request as readily as on an issue, is the GraphQL form of the one REST
+# exception, and `addReaction`, `removeReaction`, `minimizeComment` and `unminimizeComment`, which
+# serve a pull request as readily too, stay open beside it. A query the call does not hold inline (`-f query="$Q"`, `-F query=@file`, `--input`)
+# is an issue mutation when the same command names one anywhere, which is where such a variable is
+# set or such a file written; one set or written by an earlier, separate command cannot be read
+# (the header's accepted gap).
+def issue_endpoint:
+  # gh sends what follows a `?` as the query and drops what follows a `#`, so only the path before
+  # either says where the write goes (`issues/5?x=/issues/1/comments` is issue 5 itself).
+  sub("[?#].*$"; "")
+  | test("(?i)(^|/)(repos/.*|repositories/[^/]+)/issues(/|$)")
+    and (test("(?i)/issues/[^/]+/comments/?$") | not);
+def issue_mutation_re:
+  "(^|[^A-Za-z])(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert|replace|apply|reject)[A-Za-z0-9]*(Issue|Labelable|Assignable|Lockable|BlockedBy|LinkedBranch)";
+# The words worth testing against it: one naming none of its nouns cannot match.
+def may_name_issue_mutation:
+  contains("Issue") or contains("able") or contains("BlockedBy") or contains("LinkedBranch");
 def gh_api_field_flag: IN("-f", "-F", "--raw-field", "--field");
 def gh_api_value_flag: IN("-H", "--header", "--hostname", "-p", "--preview", "-q", "--jq", "-t",
   "--template", "--cache");
@@ -793,16 +892,17 @@ def gh_api_method($m):
 def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
   {i: $start, method: null, field: false, late_field: false, other_call: false,
    endpoint: null,
-   merge_type: false,
-   query_visible: false, query_hidden: false, crossed_at: null, cont: false}
+   merge_type: false, issue_endpoint: false,
+   query_visible: false, query_hidden: false, crossed_at: null, cont: false, sub_left: 0}
   | (until(.i >= $n or ($w[.i] | is_hard_sep)
           or ($bounded and ($w[.i] | is_sep))
-          or (($w[.i] == "\u0001") and starts_command($w; $t; .i + 1; $n));
+          or (($w[.i] == "\u0001") and .sub_left <= 0 and starts_command($w; $t; .i + 1; $n));
       . as $s
       | ($w[$s.i]) as $x
       | ($w[$s.i + 1] // null) as $nx
       | ($nx != null and (($nx | is_sep) | not)) as $has_value
       | (if $x | startswith("-") then .cont = false else . end)
+      | (if .sub_left > 0 then .sub_left -= 1 else . end)
       | if $x == "\u0001" then
           .crossed_at = (.crossed_at // .i) | .cont = true | .i += 1
         elif $x | IN("-X", "--method") then
@@ -827,7 +927,19 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
         elif $x | gh_api_value_flag then (if $has_value then .i += 2 else .i += 1 end)
         elif $x | startswith("-") then .i += 1
         else
-          (if (.endpoint == null) and (.cont | not) then .endpoint = $x else . end)
+          (if (.endpoint == null) and (.cont | not) then
+             # A substitution inside the endpoint's own shell word (`"repos/$(...)/issues/5"`), or
+             # one written bare right after it (`repos/$(...)`, ``repos/`...` ``), splits the path:
+             # the scan reads on past the substitution's own command, for at most 64 words, to the
+             # path's rest.
+             .endpoint = $x
+             | .sub_left = (if $nx == "\u0001" and (($x | test("[$/]$")) or (($t.lv // [])[$s.i + 1] // 0) > 0)
+                            then 64 else 0 end)
+           elif .sub_left > 0 and .cont and ($x | startswith("/")) then
+             # The rest of an endpoint a substitution split: read it joined to the start.
+             .sub_left = 0
+             | (if (.endpoint + "X" + $x) | issue_endpoint then .issue_endpoint = true else . end)
+           else . end)
           # Past a crossing, a `gh` or `api` word may start another call's flags.
           | (if .crossed_at != null and ($x | last_part | IN("gh", "api")) then .other_call = true
              else . end)
@@ -835,19 +947,24 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
                 and (($x | test("(?i)/(merges?|update-branch)/?(\\?.*)?$")) or ($x | test("(?i)/contents/"))
                      or ($x | test("(?i)/git/refs(/|$)")))
              then .merge_type = true else . end)
+          | (if ($x | contains("/")) and ($x | issue_endpoint) then .issue_endpoint = true else . end)
           | .i += 1
         end)
   | .resume = (.crossed_at // .i)) as $r
   | (($r.method != null) and (($r.method | ascii_downcase) == "get")) as $is_get
   | if ($r.endpoint // "") | test("(?i)(^|/)graphql$") then
-      (if $lm >= $start then {next: $r.resume, reason: "gh api graphql mutation"}
+      (if $lm >= $start and ($t.li // -1) >= $start then {next: $r.resume, reason: "gh api graphql issue mutation"}
+       elif $r.query_hidden and ($t.li // -1) >= 0 then {next: $r.resume, reason: "gh api graphql issue mutation"}
+       elif $lm >= $start then {next: $r.resume, reason: "gh api graphql mutation"}
        elif $r.query_hidden or ($r.query_visible | not)
        then {next: $r.resume, reason: "gh api graphql with a query not written inline"}
        elif $r.late_field then {next: $r.resume, reason: "gh api"}
        else {next: $r.resume, reason: null} end)
     elif $is_get and ($r.late_field | not) then {next: $r.resume, reason: null}
     elif ($r.method != null) or $r.field then
-      {next: $r.resume, reason: (if $r.merge_type then "gh api merge-type" else "gh api" end)}
+      {next: $r.resume,
+       reason: (if $r.issue_endpoint then "gh api issue write" elif $r.merge_type then "gh api merge-type"
+                else "gh api" end)}
     else {next: $r.resume, reason: null}
     end
   | .scan_end = (if $r.crossed_at == null then null else $r.i end);
@@ -955,6 +1072,9 @@ def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
 def is_push_like($reason): ($reason | startswith("git push")) or ($reason | startswith("tools/"));
 def is_merge_like($reason):
   ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type");
+# A direct issue write, denied wrapped or not: `gh issue`'s own write verbs, and the API's.
+def is_issue_write($reason):
+  ($reason | startswith("gh issue ")) or ($reason | IN("gh api issue write", "gh api graphql issue mutation"));
 
 # One pass over the word array: a hard separator resets the current command's exemption, and so
 # does a soft one when the wrapper stood inside quotes (`inner`) or the reading is `$unsure` (every
@@ -989,6 +1109,11 @@ def findings($w; $w0; $levels; $unsure):
   (if $levels | any(. > 0) then $levels else null end) as $lv
   | ($w | length) as $n
   | ([range(0; $n) | select($w[.] | test("(?i)mutation"))] | last // -1) as $lm
+  # The last word naming an issue mutation, read only once a mutation is there at all.
+  | (if $lm < 0 then -1
+     else [range(0; $n)
+           | select($w[.] | may_name_issue_mutation and test(issue_mutation_re))]
+          | last // -1 end) as $li
   # The last word that names a commit-making or pushing git subcommand: a git whose option run
   # holds a command substitution, or whose subcommand is an expansion, is a write only when one
   # follows (`detect_git`).
@@ -1001,7 +1126,7 @@ def findings($w; $w0; $levels; $unsure):
   | ($w | options_table($g; null)) as $ao
   | {ao: $ao, cw: ($w | command_table($ao; $g)),
      cw2: (if $owners == null then null else $w | command_table($w | options_table($g; $owners); $g) end),
-     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw,
+     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li,
      oc: (if $unsure then opener_counts($w0) else null end)} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
@@ -1011,7 +1136,7 @@ def findings($w; $w0; $levels; $unsure):
      else null end) as $tp
   | ($t | .tp = $tp) as $t
   | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false, wrapped: false,
-     cmd_words: command_words($t; $tp; 0), out: [], reviewer_push: false, scanned_to: -1}
+     cmd_words: command_words($t; $tp; 0), out: [], reviewer_push: false, issue_write: false, scanned_to: -1}
   | until(.i >= $n;
       . as $state
       | ($w[$state.i]) as $x
@@ -1048,12 +1173,59 @@ def findings($w; $w0; $levels; $unsure):
                    (if (is_push_like($hit.reason) or is_merge_like($hit.reason))
                        and ((reviewer_roles | index($state.wrap_role)) != null)
                     then .out += [$hit.reason] | .reviewer_push = true
+                    elif is_issue_write($hit.reason) then .out += [$hit.reason] | .issue_write = true
                     else . end)
-                 else .out += [$hit.reason] end
+                 else .out += [$hit.reason]
+                   | (if is_issue_write($hit.reason) then .issue_write = true else . end) end
                | .i = $hit.next)
             end
         end)
-  | {out, reviewer_push, wrapped};
+  | {out, reviewer_push, wrapped, issue_write};
+
+# **The three shapes whose text is told apart for certain** (the header's list): the command with
+# that text taken out, or the command unchanged, to be read as it stands. Every shape is matched
+# against the whole command, so a second command, a group, an expansion or a redirection anywhere
+# makes it no shape at all. `shape_plain` is a word the shell neither splits, quotes, expands nor
+# globs; `shape_delim` is a heredoc operator's delimiter that quotes its body (in single or double
+# quotes, or after a backslash, as a whole word), with the delimiter in the capture `d`, `q` or `b`.
+def shape_plain: "[A-Za-z0-9_./:@,+=-]+";
+def shape_delim:
+  "<<[ \t]*(?:'(?<d>[A-Za-z_][A-Za-z0-9_.-]*)'|\"(?<q>[A-Za-z_][A-Za-z0-9_.-]*)\"|\\\\(?<b>[A-Za-z_][A-Za-z0-9_]*))";
+def shape_file: ">>?[ \t]*~?" + shape_plain;
+def shape_cat_lines:
+  ["^cat[ \t]+" + shape_file + "[ \t]+" + shape_delim + "[ \t]*$",
+   "^cat[ \t]+" + shape_delim + "[ \t]+" + shape_file + "[ \t]*$"];
+def shape_commit_line:
+  "(?:-[A-Za-z]+|--[a-z][a-z-]*)" as $flag
+  # The repository's own wrapper, run by name or by a python the shape can name (`uv run python`,
+  # `python3`, `.venv/bin/python`), never any program merely called `agent-identity.py` or
+  # `python`, which a planted file could be.
+  | "^(?:(?:uv[ \t]+run[ \t]+)?(?:\\./)?(?:\\.venv/bin/)?python[0-9.]*[ \t]+)?"
+    + "(?:\\./)?tools/agent-identity\\.py[ \t]+run(?:[ \t]+--repo[ \t]+" + shape_plain + ")?"
+    + "[ \t]+(?:claude-coder|codex-coder|claude-orchestrator)[ \t]+--[ \t]+git[ \t]+commit"
+    + "(?:[ \t]+" + $flag + ")*[ \t]+(?:-F[ \t]+(?:-|/dev/stdin)|--file=(?:-|/dev/stdin))"
+    + "(?:[ \t]+" + $flag + ")*[ \t]+" + shape_delim + "[ \t]*$";
+def shape_search:
+  "^(?<c>rg|grep)(?<a>(?:[ \t]+" + shape_plain + ")*)[ \t]+(?:'[^'\n]*'|\"[^\"$`\\\\\n]*\")"
+  + "(?<z>(?:[ \t]+" + shape_plain + ")*)[ \t]*$";
+def text_shape:
+  . as $c
+  | (split("\n")) as $lines
+  | ($lines[0]) as $l1
+  | (first((shape_cat_lines + [shape_commit_line])[] as $re | $l1 | capture($re))
+     // null) as $op
+  | if $op != null then
+      ($op.d // $op.q // $op.b) as $d
+      | (first(range(1; $lines | length) | select($lines[.] == $d)) // null) as $k
+      | if $k != null and all($lines[$k + 1:][]; test("^[ \t]*$"))
+        then $l1 | sub("[ \t]*" + shape_delim; "")
+        else $c end
+    else
+      (first($c | capture(shape_search)) // null) as $s
+      | if $s != null and (($s.a + " " + $s.z) | test("(^|[ \t])--(pre|hostname-bin)") | not)
+        then $s.c + $s.a + " ''" + $s.z
+        else $c end
+    end;
 
 # A command longer than `too_long` is not read at all: the character pass and the word scans are
 # linear, but a dense 200 KB heredoc commit takes several seconds, and a hook that runs past its
@@ -1094,7 +1266,8 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
             reviewer_push: false, wrapped: false, too_long: true}
       else empty end
     else
-      (swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
+      text_shape
+      | (swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
       | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ")) as $bare
       # With no quote, backslash or `#` in it, the character pass has nothing to track: only an
       # unquoted comma or bracket becomes glue.
@@ -1118,6 +1291,7 @@ if ! result=$(jq -c "$check_program" 2>/dev/null); then
 	flagged="(the guard's own jq program failed on this command, so it could not be checked)"
 	reviewer_push=false
 	wrapped=false
+	issue_write=false
 	too_long=false
 elif [ -z "$result" ]; then
 	exit 0
@@ -1125,6 +1299,7 @@ else
 	flagged=$(printf '%s' "$result" | jq -r '.out | join("; ")')
 	reviewer_push=$(printf '%s' "$result" | jq -r '.reviewer_push')
 	wrapped=$(printf '%s' "$result" | jq -r '.wrapped')
+	issue_write=$(printf '%s' "$result" | jq -r '.issue_write // false')
 	too_long=$(printf '%s' "$result" | jq -r '.too_long // false')
 fi
 
@@ -1137,6 +1312,17 @@ if [ "$too_long" = "true" ]; then
 command that names git, gh or a pushing tools/ script anywhere is denied, and over 1 MB any command \
 is, because a hook that cannot finish inside its timeout would let the command through unchecked. \
 $file_hint See .claude/hooks/github-write-guard.sh."
+elif [ "$issue_write" = "true" ]; then
+	reason="This command writes an issue directly ($flagged). An agent writes an issue only through \
+tools/inbox.py -- capture, ask, close --pr, reopen --pr, each running its own write as \
+claude-orchestrator (Codex: codex-coder) -- never with gh issue, nor with gh api on an issue \
+endpoint (a new issue, issues/N, its labels, assignees or lock, an issue comment's edit) or a \
+GraphQL issue mutation, wrapped in an identity or not; the one API route left open is a POST to \
+issues/N/comments, which a pull request's own conversation comments share. Run \
+'uv run python tools/inbox.py --help', and see the inbox skill. If the command only mentions \
+such a write in text (a message, a heredoc body, a comment body naming an issue path), write the \
+text to a file with cat > file <<'EOF' as a command of its own and pass the file (git commit -F \
+file, --body-file file, gh api -F body=@file)."
 elif [ "$reviewer_push" = "true" ]; then
 	reason="This command ($flagged) runs as a reviewer identity (claude-reviewer or codex-reviewer), \
 but reviewers never push or merge. Wrap it in \
@@ -1163,7 +1349,8 @@ pr-review, and .claude/hooks/github-write-guard.sh for the current list of what 
 		reason="$reason If this command is already wrapped, the write named here is probably a \
 mention in text the hook reads as commands: a heredoc or \$(...) body (a commit message, a PR \
 body) makes every separator end the wrapper's reach, so a later line that names a write reads as \
-unwrapped. $file_hint"
+unwrapped. $file_hint A wrapped git commit -F - <<'EOF' that is the whole command, and a \
+cat > file <<'EOF' that is the whole command, read their bodies as text."
 	fi
 fi
 
@@ -1184,12 +1371,15 @@ fi
 # any other `gh` write, any `gh api` write, a pushing `tools/` script, a reviewer's push, a command
 # too long to read and one the guard could not parse stay denied: merging and releasing already need the player's go-ahead
 # in conversation, and a prompt is too easy to click through for any of them -- on the mobile app
-# it shows only the command, not this reason. A bare `gh issue` write is never asked about because
+# it shows only the command, not this reason. A direct `gh issue` write is never asked about because
 # the player wants an agent's issue writes to go through a script rather than a direct command
 # *(2026-09-27, bouncy-heron statement 14: "if it goes through a script it's safe we just need to
-# get it working once -- an agent shouldn't use gh issue directly")*; that script is open work
-# under `docs/todo/2026-09-27-leafy-finch/`. Codex never asks (`tools/codex-hooks.py` turns an ask
-# into a deny), since Codex has its own approval sandbox and keeps "stop and tell the player".
+# get it working once -- an agent shouldn't use gh issue directly")*: that script is
+# `tools/inbox.py`, a direct `gh issue` write is denied wrapped or not (above), and the script runs
+# its own writes through an identity and never as the player, so where no identity can work an
+# issue write is not made at all and the session tells the player. Codex never asks
+# (`tools/codex-hooks.py` turns an ask into a deny), since Codex has its own approval sandbox and
+# keeps "stop and tell the player".
 #
 # **It is off unless the player switches it on with `NAPPY_ASK_FOR_PLAYER_WRITES=1`**; unset, or
 # any other value, and every unwrapped write is denied, exactly as on a machine with identities.

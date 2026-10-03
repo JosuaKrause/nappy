@@ -1,6 +1,6 @@
 priority: now
 
-# breezy-walrus — Choose ground preparation after the mobile test · filed 2026-10-02
+# breezy-walrus — Three modes of nearby ground preparation, all at once by default · filed 2026-10-02
 
 The player cannot say that spreading ground preparation removed mobile stutter.
 They ask whether to retain the code "(it does improve a little bit on paper)",
@@ -8,7 +8,9 @@ revert it while preserving findings, or
 keep the stepped-loading code off by default, switchable through a debug dev flag.
 Their full words and context are in
 [snowy-ibis, mobile ground stepping does not visibly remove stutter](../../playtests/2026-10-02-snowy-ibis.md).
-They have not selected one of those options.
+The player chose a fourth shape instead: three modes, the first the default, switched on the
+phone under `?debug=1` ([tawny-stork](../../playtests/2026-10-03-tawny-stork.md));
+`choose-runtime.md` holds the build.
 
 The player says "we will have to look in a different direction" and clarifies:
 "M159 we need to find more things to optimize so yeah it should go to now. but
@@ -24,19 +26,13 @@ earlier context, not identification of the latest test's device.
 The merged choice is [silky-rabbit, nearby ground regions prepare across
 frames](../../decisions/2026-10-02-silky-rabbit.md): per-region stepping is the
 implementation for phone evaluation, with modest native gains and measured
-steady costs. This entry does not overturn that runtime before a player choice.
+steady costs; it becomes the third mode, and the default goes back to preparing each
+needed region whole in one frame.
 
-**Proposed, not asked for:** preserve all experimental findings and restore
-atomic preparation of each nearby region, retaining existing loading/unloading.
-The native comparison shows benefits in both median and tails: ordinary south
-at 60Hz moves from 1.190–1.202ms median to 1.067–1.070ms, p95 from
-3.519–4.021ms to 2.849–3.073ms, p99 from 4.627–5.274ms to 4.292–4.441ms,
-and worst sample from 8.710ms to 7.414ms. The 15Hz tails are mixed. These fixture
-results do not establish a whole-game or perceptible phone improvement. The
-assistant weighs those gains against the settled-shoreline fixture's costs: draw
-calls increase from 38 to 46, water surfaces from 6 to 24, tracked Godot allocation
-by about 61% (not RSS or GPU memory), and steady median spans from 0.792–0.814ms to
-0.818–0.842ms. Pending-job lifecycle adds complexity as well. Keeping a debug flag
-retains both runtime paths for development and their
-testing obligations. That is a maintenance tradeoff, not a player-facing setting.
-Retaining stepping or the debug flag remain alternatives for the player to choose.
+The comparison behind the choice, kept for whoever builds and measures the modes: on the
+native fixture, stepping moved ordinary south at 60Hz from 1.190–1.202ms median to 1.067–1.070ms,
+p95 from 3.519–4.021ms to 2.849–3.073ms, p99 from 4.627–5.274ms to 4.292–4.441ms, and the worst
+sample from 8.710ms to 7.414ms, with mixed 15Hz tails; on the settled-shoreline fixture it raised
+draw calls from 38 to 46, water surfaces from 6 to 24, tracked Godot allocation by about 61% (not
+RSS or GPU memory), and steady median spans from 0.792–0.814ms to 0.818–0.842ms. These fixture
+results do not establish a whole-game or perceptible phone improvement.

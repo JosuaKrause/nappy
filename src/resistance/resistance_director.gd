@@ -236,7 +236,8 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 ## moment after being touched (`_on_contact_completed()`), which is what makes a task one day
 ## instead of two. `ResistanceSteps.TargetKind` decides how a non-pickup, non-finale step finds
 ## its own place: a fresh rider (`EVENT`), the run's own recorded scar (`SCAR`, falling back to
-## an ordinary placement of the same row when the run has none), or a bare point this director
+## a front day 3's fire could have caught on, burnt for it, when the run has none —
+## `_burn_a_front_for_the_task()`), or a bare point this director
 ## computes itself (`ResistanceSteps.sits_on_a_bare_point()`).
 ##
 ## `at_dawn` is true from `start_day()` and false for the task a read mark activates, and decides
@@ -247,14 +248,21 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		return
 
 	var scar_instance: EventInstance = null
+	var no_recorded_scar := false
 	if _step.target_kind == ResistanceSteps.TargetKind.SCAR:
-		scar_instance = _find_scar_instance(_step.task_event_id)
-		if not scar_instance:
-			# The smallest honest stand-in for a run with no recorded scar: an ordinary
-			# placement of the same row, on ground `_place()` would otherwise have chosen for
-			# it — never a step with nowhere to go.
-			Telemetry.note("contact", ("step %d: no recorded scar for '%s' — an ordinary " +
-					"placement stands in for it") % [_step.index, _step.task_event_id])
+		# Decided from the run's own record, never from what happens to be streamed in: a scar
+		# farther than `EVENT_STREAM_RADIUS` from wherever she reads the mark is not in the world
+		# yet, and a dusk fire is always sited at least that far from where she finished day 3.
+		no_recorded_scar = _recorded_scar(_step.task_event_id) == Vector2.INF
+		scar_instance = _ride_the_recorded_scar(_step.task_event_id)
+		if no_recorded_scar:
+			# A run with no recorded scar still has a burnt building to go to: `_place()` picks
+			# a front day 3's fire could have caught on, and `_burn_a_front_for_the_task()`
+			# below records the scar there and burns the building behind it — never a step with
+			# nowhere to go, and never bare sidewalk.
+			Telemetry.note("contact", ("step %d: no recorded scar for '%s' — a front the " +
+					"fire could have caught on stands in for it") % [_step.index,
+					_step.task_event_id])
 
 	var neighbor: EventInstance = null
 	if _step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR:
@@ -288,10 +296,9 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		_rider = neighbor
 		_contact.ride(_step, neighbor, Vector2.ZERO)
 	elif scar_instance:
-		var offset := _reachable_offset(scar_instance, _rng)
 		_rider = scar_instance
-		_contact.ride(_step, scar_instance, offset)
-		at = scar_instance.global_position + offset
+		_ride_to_the_door(scar_instance)
+		at = _contact.global_position
 	elif _step.is_pickup or ResistanceSteps.sits_on_a_bare_point(_step):
 		_contact.setup(_step, at)
 	else:
@@ -303,9 +310,13 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			_contact = null
 			return
 		_rider = _city.events.spawn_extra(task_def, at)
-		var offset := _reachable_offset(_rider, _rng)
-		_contact.ride(_step, _rider, offset)
-		at = _rider.global_position + offset
+		if no_recorded_scar:
+			_burn_a_front_for_the_task(_rider)
+		if _step.target_kind == ResistanceSteps.TargetKind.SCAR:
+			_ride_to_the_door(_rider)
+		else:
+			_contact.ride(_step, _rider, _reachable_offset(_rider, _rng))
+		at = _contact.global_position
 	_contact.completed.connect(_on_contact_completed)
 	_city.add_entity(_contact)
 	EventBus.resistance_contact_available.emit(_step.index)
@@ -330,35 +341,104 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	if not neighbor and not sets_a_trap_on_her(_step):
 		if at_dawn:
 			_maybe_set_a_trap(_day, _rng, at, _step.is_pickup, _map.doorstep_world_position(),
-					false)
+					false, _contact.reach)
 		else:
-			_maybe_set_a_trap(_day, _rng, at, _step.is_pickup, _player_position(), true)
+			_maybe_set_a_trap(_day, _rng, at, _step.is_pickup, _player_position(), true,
+					_contact.reach)
 
-## The live instance standing at the run's own recorded scar for `scar_id`, or null when the run
-## never recorded one — a day 3 that never actually burned this run, or a fix for that landing on
-## another branch. `GameState.scars` names the position the scar was recorded at; the scheduler
-## re-places the same def there every day after `since_day` (`EventScheduler._place_scars()`), so
-## the live instance is found by position rather than tracked by reference across days.
-func _find_scar_instance(scar_id: String) -> EventInstance:
-	if not _city or not _city.events:
-		return null
-	var at := Vector2.INF
+## Where the run recorded its scar `scar_id` (`GameState.scars`), or `Vector2.INF` when it never
+## recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no site
+## even at dusk.
+static func _recorded_scar(scar_id: String) -> Vector2:
 	for scar: Dictionary in GameState.scars:
 		if String(scar["id"]) == scar_id:
-			at = scar["position"]
-			break
-	if at == Vector2.INF:
+			return scar["position"]
+	return Vector2.INF
+
+## The instance standing at the run's own recorded scar for `scar_id`, put in the world now and kept
+## there for the rest of the day wherever she walks, or null when the run never recorded one
+## (`_recorded_scar()`). The scheduler re-places the same def at the scar every day after
+## `since_day` (`EventScheduler._place_scars()`), and that plan is what this rides
+## (`EventManager.keep_live()`): she may read the mark from anywhere in the city, far outside the
+## streaming radius, and walk away from the shell again afterwards, and neither may leave the
+## contact riding nothing. A scar today has no plan for (one recorded on this same day) gets an
+## instance of its own at the recorded position instead.
+func _ride_the_recorded_scar(scar_id: String) -> EventInstance:
+	var at := _recorded_scar(scar_id)
+	if at == Vector2.INF or not _city or not _city.events:
 		return null
-	# Under a tile's own width, not an exact match: the scheduler's own placement of a solid
-	# shape can nudge it a few pixels off the recorded position (`EventScheduler._place_scars()`
-	# hands the scar's own coordinate straight to `Planned`, but the def's own centring — see
-	# `EventDef.solid()` — still applies once it becomes an `EventInstance`). Since `burnt_shell`
-	# is `SCRIPTED` and only ever placed this way, the one instance of it a day carries is the
-	# scar, whatever the exact offset.
-	for instance in _city.events.instances():
-		if instance.def.id == scar_id and instance.global_position.distance_to(at) < Tuning.TILE_SIZE:
-			return instance
-	return null
+	var shell := _city.events.keep_live(scar_id, at)
+	if shell:
+		return shell
+	var def := EventCatalogue.by_id(scar_id)
+	return _city.events.spawn_extra(def, at) if def else null
+
+## Day 8's task on a run with no recorded scar, once its `burnt_shell` stands at a front
+## (`_fronts_a_fire_catches_on()`): records the scar there, exactly as day 3's fire would have, and
+## has `City.mark_the_burnt_frontage()` burn the building behind it now, so the building she is
+## sent to is burnt when she gets there. Nothing else a fire does is done: no block moves along its
+## arc, since no fire burned.
+##
+## **Safe on a retry.** A lost day gives the scars back to their dawn copy
+## (`GameState._give_back_what_the_attempt_spent()`), and the retry's dawn dresses every building
+## again before this runs, so a lost attempt leaves neither a scar nor a burnt building behind it.
+## On a won day the scar is kept, stamped with day 8 (`GameState.add_scar()`), so the scheduler
+## stands the shell there again from day 9 on and every later dawn burns the same building, as it
+## would after a real fire.
+func _burn_a_front_for_the_task(shell: EventInstance) -> void:
+	GameState.add_scar(_step.task_event_id, shell.global_position)
+	_city.mark_the_burnt_frontage()
+
+## How far day 8's touch reaches from the burnt building's door: the whole tile of sidewalk in
+## front of the door, its bottom corners included. *(sandy-egret: "or better to the door but the
+## acceptance radius centered at the door should have a large enough radius for half the sidewalk
+## to be covered".)* The sidewalk is two tiles (`Tuning.SIDEWALK_WIDTH`), so its near half is the
+## one frontage-lane tile below the door; the door's point (`City.way_in_behind()`) is the middle
+## of the ground-floor tile above it, so that tile's far corners are half a tile across and a tile
+## and a half down — √(16² + 48²) ≈ 50.6px. Straight in front of the door that reaches 2.6px
+## past the line between the frontage lane and the kerb lane and no further, so the kerb lane's far
+## side and the street never count. A way in on a column line rather than a column's middle (a
+## storefront pair, a portico on an even-width front) covers the frontage lane a tile either side
+## of the line, less those two tiles' outer far corners.
+const DOOR_REACH := Tuning.TILE_SIZE * sqrt(0.5 * 0.5 + 1.5 * 1.5)
+
+## Day 8's contact: it rides the burnt shell `shell` (so `rider_alive()` keeps answering for it) but
+## stands on the door of the building behind it (`City.way_in_behind()`) and reaches `DOOR_REACH`
+## from there. The shell has no body and draws nothing, so the door is where the task *is* — *"the
+## building is what needs to be burnt, not an object next to the building"*. **The door's own
+## frontage tile must be ground she can stand on**, the same refusals every contact here keeps
+## (`is_legal_ground()`, unobstructed, reachable from home): a door whose frontage something solid
+## stands on today gives way to the facade point straight behind the shell, one tile north of it,
+## which `DOOR_REACH` covers from the shell's own frontage-lane tile the same way. Draws nothing
+## from `_rng`, as `_reachable_offset()` draws nothing for a bodiless rider, so the day's later
+## draws are unmoved.
+func _ride_to_the_door(shell: EventInstance) -> void:
+	var door := _city.way_in_behind(shell.global_position) if _city else Vector2.INF
+	if door != Vector2.INF:
+		var frontage := _map.world_to_tile(door) + Vector2i.DOWN
+		if not is_legal_ground(_map, frontage, _walled_alleys()) or _map.is_obstructed(frontage) \
+				or not _reachable_from_home(frontage):
+			Telemetry.note("contact", ("step %d: the burnt building's door at %s has no ground " +
+					"in front of it today — the facade behind the shell stands in")
+					% [_step.index, TelemetryLog.tile(_map.world_to_tile(door))])
+			door = Vector2.INF
+	if door == Vector2.INF:
+		door = shell.global_position + Vector2.UP * Tuning.TILE_SIZE
+	_contact.ride(_step, shell, door - shell.global_position)
+	_contact.reach = DOOR_REACH
+
+## Day 3's fire, whose own siting rules `_fronts_a_fire_catches_on()` reuses.
+const FIRE_ROW := "burning_building"
+
+## The ground day 8's task stands on when the run never recorded a scar: every front day 3's fire
+## itself could be sited on (`EventScheduler._open_ground_for()` with `burning_building`'s own
+## `AT_THE_FRONT`), each with a building directly north of it to burn. A fresh ground cache, since
+## the scheduler's own is the day's and this asks once.
+func _fronts_a_fire_catches_on() -> Array[Vector2i]:
+	var fire := EventCatalogue.by_id(FIRE_ROW)
+	if not fire:
+		return []
+	return EventScheduler._open_ground_for(fire, _map, {})
 
 ## The guard. From `TRAP_FIRST_DAY` no chalk mark is ever placed without one, nor a task that sits
 ## on a bare point (a door, a mast's foot, a swing, the last night's front door) or rides on a row
@@ -373,8 +453,13 @@ func _find_scar_instance(scar_id: String) -> EventInstance:
 ## end of the alley"* (PLAYTEST-142 statement 5, "rubber"/"river" dictation for *robber*), and,
 ## asked whether he may then never wake at all, *"stands at the far end even where he then never
 ## wakes"* (PLAYTEST-144 statement 11). Every other guarded contact (a door, a mast's foot, a
-## swing, the burnt shell, a roadblock) keeps a band between `inner_radius + ContactPoint.REACH`
-## and `pursues_within + ContactPoint.REACH`, drawn from the whole circle around its own contact.
+## swing, the burnt shell, a roadblock) keeps a band between `inner_radius + reach` and
+## `pursues_within + reach`, drawn from the whole circle around its own contact. **`reach` is the
+## contact's own** (`ContactPoint.reach`): `REACH`, 36px, everywhere but day 8's door, whose
+## `DOOR_REACH` moves the band out with it. The band is worked out from the reach — nearer than
+## `inner_radius + reach` a touch from the edge of the reach can land her inside his catch, and
+## past `pursues_within + reach` no touch can wake him — so a wider reach with the old band is a
+## guard standing nearer the ground she completes from than the band means.
 ##
 ## **Retires only the guard of the same kind this replaces.** `_guard` (the mark's own) and
 ## `_task_guard` (the one a guarded task — a door, a mast's foot, a swing, the burnt shell, a
@@ -390,7 +475,7 @@ func _find_scar_instance(scar_id: String) -> EventInstance:
 ## the day, her live position and `true`, for a task's guard placed as she reads its mark and for
 ## `_move_the_mark()`'s relocation.
 func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_mark: bool,
-		her: Vector2, on_screen_matters: bool) -> void:
+		her: Vector2, on_screen_matters: bool, reach := ContactPoint.REACH) -> void:
 	if day < TRAP_FIRST_DAY:
 		return
 	var robbery := EventCatalogue.by_id("alley_robbery")
@@ -403,7 +488,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 		_guard = null
 	else:
 		_task_guard = null
-	var guard_at := _guard_position(rng, at, for_mark, her, on_screen_matters)
+	var guard_at := _guard_position(rng, at, for_mark, her, on_screen_matters, reach)
 	var placement := "far end" if for_mark and _far_alley_mouth(at) != Vector2.INF else "band"
 	var kind := "chalk mark" if for_mark else "task"
 	if guard_at == Vector2.INF:
@@ -425,13 +510,14 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 
 ## Where `_maybe_set_a_trap()` stands a guard for the contact at `at`, without spawning him:
 ## `_draw_guard_position_near_far_mouth()` for a chalk mark, the whole-circle
-## band `_draw_guard_position()` draws for every other guarded contact. `Vector2.INF` when no
-## candidate qualifies. Split out so a rig can ask where he would stand.
+## band `_draw_guard_position()` draws for every other guarded contact, both measured from the
+## contact's own `reach` (see `_maybe_set_a_trap()`). `Vector2.INF` when no candidate qualifies.
+## Split out so a rig can ask where he would stand.
 func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, her: Vector2,
-		on_screen_matters: bool) -> Vector2:
+		on_screen_matters: bool, reach := ContactPoint.REACH) -> Vector2:
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var min_distance := robbery.inner_radius + ContactPoint.REACH
-	var max_distance := robbery.pursues_within + ContactPoint.REACH
+	var min_distance := robbery.inner_radius + reach
+	var max_distance := robbery.pursues_within + reach
 	var walled_alleys := _walled_alleys()
 	var her_refuse_within := robbery.pursues_within if her != Vector2.INF else 0.0
 	var far := _far_alley_mouth(at) if for_mark else Vector2.INF
@@ -945,8 +1031,9 @@ func _nearest_legal_tile(at: Vector2, tile_radius: int) -> Vector2:
 
 ## Where a step's contact — or, for an `EVENT`/`SCAR`-fallback perform step, the event it rides
 ## on — is sited. A pickup and an `EVENT` perform both name tile types in `placement`; `DOOR`,
-## `PARK_SWING` and `STATION_DOOR` compute their own point from today's city, since none is a
-## matter of picking a tile type.
+## `PARK_SWING`, `MAST` and `STATION_DOOR` compute their own point from today's city, since none is
+## a matter of picking a tile type, and a `SCAR` fallback stands on a front day 3's fire could have
+## caught on (`_fronts_a_fire_catches_on()`), since a building has to be behind it to burn.
 func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 	if step.target_kind == ResistanceSteps.TargetKind.STATION_DOOR:
 		# The same pool the day's planning kept a route to (`target_ground()`), so the draw is
@@ -959,6 +1046,8 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator) -> Vector2:
 		return _place_at_a_swing(rng)
 	if step.target_kind == ResistanceSteps.TargetKind.MAST:
 		return _place_at_a_mast(rng)
+	if step.target_kind == ResistanceSteps.TargetKind.SCAR:
+		return _pick_reachable(_fronts_a_fire_catches_on(), rng)
 	var candidates: Array[Vector2i] = []
 	for type in step.placement:
 		candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))
@@ -1802,13 +1891,20 @@ func pointable_objective() -> Vector2:
 ## (M222, "the red arrow for the van does not end on the van"): a task performed at an event sits
 ## its contact at `_reachable_offset()`'s clearance from the rider, on purpose, so the touch point
 ## stays where she can actually reach it — but that offset is not where the task *is*. Reads
-## `_rider.global_position` when this step has one (the van's drop, the burnt shell) and falls
-## back to `contact_position()` for a bare-point task (a door, a mast's foot, a swing, the last
-## night's front door) or the neighbor, whose own offset is zero and so already agrees with it.
+## `_rider.global_position` when this step has one (the van's drop) and falls back to
+## `contact_position()` for a bare-point task (a door, a mast's foot, a swing, the last night's
+## front door) or the neighbor, whose own offset is zero and so already agrees with it.
+##
+## **Day 8's tip ends on the burnt building's door, where its contact stands, not on its shell**
+## (`_ride_to_the_door()`): the shell has no body and draws nothing, so its own position is bare
+## sidewalk. *(sandy-egret: "the red arrow should point to the sidewalk *in front* of the door of
+## the burnt building" · "or better to the door".)*
 func red_arrow_target() -> Vector2:
 	var step := current_step()
 	if step == null or step.is_pickup or not step.is_one_place or _contact.is_done:
 		return Vector2.INF
+	if step.target_kind == ResistanceSteps.TargetKind.SCAR:
+		return contact_position()
 	if _rider and is_instance_valid(_rider):
 		return _rider.global_position
 	return contact_position()

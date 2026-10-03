@@ -48,6 +48,12 @@ func _test_everything_that_stands_still_is_solid(t) -> void:
 		# body would stop at the rim. `EventDef.validate()` refuses one that obstructs.
 		if def.flock_size > 0:
 			continue
+		# The picture is drawn on the building the row stands against rather than on the sidewalk it
+		# is sited on — the fire on its facade, the burnt building it leaves — so there is no
+		# silhouette here for a body to be half of either. `tests/test_events_catalogue.gd` holds
+		# both to having none.
+		if def.id in ["burning_building", "burnt_shell"]:
+			continue
 		checked += 1
 		t.check(def.obstructs_radius > 0.0,
 				"'%s' stands still, so it is solid" % def.id)

@@ -1,0 +1,26 @@
+nappy rig log  2026-09-30T04:38:54  version v0.21.1-2-ga5303253-dirty
+   0.0  texture  atlas page 'ui' loaded in the startup: 1.0 ms, 262 x 429
+   0.0  texture  atlas page 'stroller' loaded in the startup: 0.6 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the startup: 2.5 ms, 332 x 576
+   0.0  texture  atlas page 'street_kit' loaded in the startup: 1.9 ms, 392 x 454
+   0.0  texture  atlas page 'ground' loaded in the startup: 1.7 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the startup: 0.9 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the startup: 0.7 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the startup: 11.1 ms, 810 x 982
+   0.0  texture  atlas page 'mother' loaded in the startup: 1.4 ms, 168 x 242
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.1 ms
+
+day 1  act 1  run seed 4229  city seed 4229  length 210.0s  invincible
+   0.0  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.5 ms
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, east along her street
+   0.0  plan     closed: accident v(7,6)
+   0.0  plan     calm: 1 forest, 2 courtyard, 2 park, 3 quiet_square
+   0.0  plan     events: alley_mouse x4, burst_water_main x26, cafe_tables x54, car_accident x23, cat_dash x8, chatting_mother x2, delivery_van x43, dog_walker x26, fallen_tree, homeless_yeller x8, leaf_blower x15, loose_dog x13, market_stall x66, moving_van x48, pigeon_flock x5, playground x2, scaffolding x26, skip x25
+   0.0  start    doorstep (159,148), facing 180°
+   0.0  near     fallen_tree (telegraph) at (157,148), 80px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.0  frame    fps 4, worst frame 289.8ms, draws 193, objects 1487, primitives 3439, process 17.73ms, physics 3.03ms
+   0.0  frame    fps 119, worst frame 12.9ms, draws 187, objects 1482, primitives 3357, process 12.37ms, physics 1.36ms
+   0.0  crowd    walked into somebody at (159,149) | exc 0, in 0.0/s (crowd 22.2, events 0.0), sleep 0
+   0.0  frame    fps 120, worst frame 11.6ms, draws 192, objects 1513, primitives 3470, process 12.85ms, physics 1.25ms
+   0.0  frame    fps 119, worst frame 14.4ms, draws 191, objects 1490, primitives 3427, process 13.33ms, physics 1.93ms

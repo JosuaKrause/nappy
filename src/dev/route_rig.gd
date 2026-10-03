@@ -354,13 +354,20 @@ func _resolve_target(word: String) -> Vector2:
 
 ## `task`'s own resolution: the step the mark just unlocked, which is null until the mark is
 ## actually touched (see `ResistanceDirector._on_contact_completed()`) — so this answers `INF`
-## for exactly as long as `mark` itself would have, on a day with a task still to walk to.
+## for exactly as long as `mark` itself would have, on a day with a task still to walk to. **A
+## contact on a wall is walked to from the ground in front of it** (`_reachable_point_near()`):
+## day 8's stands on the burnt building's door (`ResistanceDirector._ride_to_the_door()`), a
+## building tile no plan can end on, and its `DOOR_REACH` (about 50.6px) completes it from the
+## nearest open tile, a tile below the door (32px) or diagonally below it (45px).
 func _task_target() -> Vector2:
 	var step := _resistance.current_step()
 	if step == null or step.is_pickup:
 		return Vector2.INF
 	if step.is_one_place:
-		return _resistance.contact_position()
+		var at := _resistance.contact_position()
+		if at != Vector2.INF and not _city.map.is_walkable(_city.map.world_to_tile(at)):
+			return _reachable_point_near(at)
+		return at
 	return _nearest_live_instance(step.task_event_id)
 
 ## The live instance an any-instance `task` is walking to, kept for as long as it lasts — see

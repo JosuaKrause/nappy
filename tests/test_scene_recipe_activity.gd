@@ -45,8 +45,7 @@ func _ready() -> void:
 		var matched := false
 		for building in city.buildings():
 			if building.lot == SceneRecipe.rect(roof.lot):
-				matched = building.recipe_roof_furniture != null \
-						and building.recipe_roof_furniture.size() == roof.fixtures.size()
+				matched = roof_matches(building, roof.fixtures)
 		if not matched:
 			fail("authored fixtures did not reach the real production building")
 			return
@@ -78,6 +77,25 @@ func _ready() -> void:
 			fail("the father's horizontal approach does not meet the standard vertical gate")
 			return
 	print("RECIPE_ACTIVITY_OK")
+func roof_matches(building: Building, fixtures: Array) -> bool:
+	if building.recipe_roof_furniture == null:
+		return false
+	var expected := {}
+	for fixture: Dictionary in fixtures:
+		var cell := Vector2i(fixture.cell[0], fixture.cell[1])
+		var kind := str(fixture.kind).to_upper()
+		if kind in ["DUCT_STRAIGHT", "DUCT_CORNER"]:
+			expected[cell] = Building._Furniture.DUCT_RUN
+			if kind == "DUCT_STRAIGHT":
+				expected[cell + Vector2i.RIGHT] = Building._Furniture.DUCT_RUN
+		else:
+			expected[cell] = Building._Furniture[kind]
+	if expected.size() != building.recipe_roof_furniture.size():
+		return false
+	for entry: Dictionary in building.recipe_roof_furniture:
+		if expected.get(entry.cell, -1) != entry.kind:
+			return false
+	return true
 func fail(message: String) -> void:
 	print("RECIPE_ACTIVITY_FAILED " + message)
 	get_tree().quit(1)
