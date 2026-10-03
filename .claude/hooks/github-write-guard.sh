@@ -81,8 +81,10 @@
 # shell hands to the wrapper, so it neither ends the wrapper's command nor leaves an option
 # without its value; inside a quoted script a soft separator still ends the script's own command.
 # Input-wrapper options share one bounded parser for command position and replacement tokens.
-# Unknown option arity makes git/gh and any named pushing script unreadable, including an apparent
-# read or dry run; rerun such a command through the coder identity wrapper. Consumed option values
+# An option missing from that parser's table (`input_option`) makes git/gh and any named pushing
+# script unreadable, including an apparent read or dry run: guessing its arity could take its value
+# for the command. Such a denied read is fixed by adding the option to the table, which lists the
+# common ones (parallel's `--tag`, `--pipe`, `-X`, `--tagstring`; xargs's `-o`). Consumed option values
 # never supply replacement flags or nested input wrappers. Known reads retain their exemption.
 # Reads (`git status`, `git fetch`, `git log`, `gh pr view/list/diff/checks/checkout`, `gh
 # issue/release list/view`, `gh run watch/download`, `gh repo clone`, `gh auth token`, `gh
@@ -493,18 +495,20 @@ def input_option($owner; $flag):
   elif $flag | IN("-i", "--replace") then {arity: "optional", replacement: true}
   elif $flag | IN("-a", "--arg-file", "-n", "--max-args", "-L", "-P", "--max-procs",
                   "-s", "--max-chars", "-d", "--delimiter", "-E") then {arity: "required"}
-  elif $owner == "xargs" and ($flag | IN("-R", "-S")) then {arity: "required"}
+  elif $owner == "xargs" and ($flag | IN("-R", "-S", "--process-slot-var")) then {arity: "required"}
   elif $owner == "parallel" and ($flag | IN("-j", "--jobs", "-N", "--max-replace-args",
        "-S", "--sshlogin", "--sshloginfile", "--slf", "--colsep", "--col-sep", "-C",
        "--joblog", "--jl", "--delay", "--halt", "--halt-on-error", "--timeout", "--retries",
-       "--results", "--result", "--res")) then {arity: "required"}
+       "--results", "--result", "--res", "--tagstring")) then {arity: "required"}
   elif $flag | IN("-e", "--eof", "-l", "--max-lines") then {arity: "optional"}
   elif $flag | IN("-0", "--null", "-r", "--no-run-if-empty", "-t", "--verbose", "-p",
                   "--interactive", "-x", "--exit", "--help", "--version", "--show-limits")
     then {arity: "none"}
+  elif $owner == "xargs" and ($flag | IN("-o", "--open-tty")) then {arity: "none"}
   elif $owner == "parallel" and ($flag | IN("-k", "--keep-order", "-u", "--ungroup", "--group",
        "-v", "-q", "--quote", "--line-buffer", "--linebuffer", "--will-cite", "--plain",
-       "--progress", "--eta", "--bar", "--dry-run", "--dryrun")) then {arity: "none"}
+       "--progress", "--eta", "--bar", "--dry-run", "--dryrun", "--tag", "--pipe",
+       "--spreadstdin", "-X", "-m", "--xargs")) then {arity: "none"}
   else {arity: "unknown"} end;
 
 def input_option_word($owner; $x):

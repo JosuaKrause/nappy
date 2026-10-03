@@ -15,7 +15,8 @@ reasonably sized". GNU parallel receives the same input-context handling as xarg
 records the subsequent review. Input can supply the subcommand too: missing,
 separator or nonplain lowercase git subcommands and gh nouns/verbs now fail closed.
 The same policy covers `gxargs` and `env_parallel`. GNU parallel forwards command
-position through its documented argument-taking options, including `--colsep`; a
+position through the options the guard's table lists, `--colsep` among them, and an option
+outside the table makes command position unreadable; a
 punctuation-only delimiter retains its token position so a later `cat` stays a read.
 
 **Built.** `echo v1 | xargs -I{} git push origin {}` and `xargs git push origin
@@ -161,3 +162,11 @@ word as a soft separator: the input context ended there, the push after it was a
 wrapper's context only inside a quoted script, deeper than the wrapper's own words, and only a
 hard separator leaves an option without its value. `xargs -d \; git status` stays a read, and a
 push in a separate command after `xargs git status;` is still asked about.
+
+**Common options are read, not guessed.** An option missing from the table makes command
+position unreadable, which is right for a push and denied ordinary reads: `ls | parallel --tag
+git log -1 -- {}` was refused as an unreadable push. The table now holds parallel's `--tag`,
+`--pipe` (`--spreadstdin`), `-X`, `-m`, `--xargs` and `--tagstring`, and xargs's `-o`
+(`--open-tty`) and `--process-slot-var`. A read under an option still missing is a false deny,
+fixed by adding the option; rerunning it under the coder identity would put a read under a
+write identity.

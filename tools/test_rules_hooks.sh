@@ -112,6 +112,8 @@
 #     later separate branch pushes and coder identity wrappers keep their existing behavior
 #   - a backslash-escaped separator given as an input-wrapper option's value (xargs -d \;,
 #     parallel --colsep \|) is that value, not the end of the wrapper's command
+#   - common no-value options (parallel --tag, --pipe, -X, -m, --xargs; xargs -o) and value options
+#     (parallel --tagstring, xargs --process-slot-var) leave a read under them a read
 #   - input-wrapper clusters and values share one parser: flag-shaped values never select a new
 #     replacement token, unknown option arity fails closed, and a long chain of consumed values
 #     named xargs stays bounded; the corresponding known reads and identity controls still pass
@@ -2080,6 +2082,13 @@ write_guard_never_asked=(
     'xargs -E \; git push origin'
     "printf 'push;origin;v1' | xargs -d \\; git"
     "printf 'merge;3' | xargs -d \\; gh pr"
+    'ls | parallel --tag git push origin {}'
+    'ls | parallel --tagstring x git push origin'
+    'ls | parallel --pipe git push origin'
+    'ls | parallel -X git push origin'
+    'ls | xargs -o git push origin'
+    'ls | xargs --process-slot-var=SLOT git push origin'
+    'ls | parallel --tagstring x tools/update-pr.sh'
     "git push origin 'refs/*:refs/*'"
     "git push origin 'refs/heads/*:refs/heads/*'"
     "git push origin 'refs/tags/*'"
@@ -2249,6 +2258,15 @@ write_guard_allowed=(
     'env MODE=test /usr/bin/xargs -0 -n 1 timeout 5 git show'
     'xargs -I{} sh -c "git status; git log --oneline {}"'
     "printf 'v1;v2' | xargs -d \\; git status"
+    'ls | parallel --tag git log -1 -- {}'
+    'ls | parallel --tagstring x gh pr view {}'
+    'ls | parallel --pipe git status'
+    'ls | parallel -X git log -1 --'
+    'ls | parallel -m --xargs git log -1 --'
+    'ls | xargs -o git status'
+    'ls | xargs --open-tty git status'
+    'ls | xargs --process-slot-var=SLOT git status'
+    'ls | parallel --tag tools/land-prs.sh --dry-run {}'
     'git status'
     'git tag v1'
     'git tag -a v1 -m x'
