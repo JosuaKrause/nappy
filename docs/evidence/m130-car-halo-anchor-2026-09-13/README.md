@@ -1,8 +1,11 @@
 # M130 — an eastbound car and its halo read one anchor
 
-Three rig runs on the same seed and the same standing place, so the car, its traced rim, its strike
-box and its shadow capsule can be compared frame for frame. Each folder is a whole run: `run.log`,
-`maps/` and the `asked/burst-*/` sequence with its own `burst.json` timing record.
+Three rig runs on the same seed and standing place supply registration stills of the car,
+its traced rim, strike box and shadow capsule. Each folder retains `run.log` for its source
+identity and capture context, frames 12 and 20 under `asked/burst-*/`, and the cited enlarged
+crops. Each `selection.json` records the original capture metadata and those frames' original
+timestamps. These are selected stills, not a motion sequence. The plan maps and remaining
+frames do not add to the registration comparison and are omitted.
 
 ```sh
 tools/shot.sh out.png 9 --seed 4242 --spawn signal --layers 2,3 --press snapshot_burst 3        # before-signal, after-signal
