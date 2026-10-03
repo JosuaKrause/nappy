@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
 	_test_the_first_mark_is_never_named_but_later_ones_are(t)
+	_test_a_long_task_line_breaks_at_a_sentence_end(t)
 	_test_every_perform_steps_header_names_the_instruction_not_the_title(t)
 	_test_a_completed_step_puts_no_text_on_screen(t)
 	_test_the_task_line_clears_when_the_task_is_done(t)
@@ -409,6 +410,38 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 	GameState.completed_resistance_steps = saved_completed
 	GameState.failed_resistance_steps = saved_failed
 	GameState.resistance_progress = saved_progress
+
+## The task line is broken through `SentenceLines`: a task of two sentences too wide for the
+## label's width breaks after the first one rather than wherever the width runs out.
+func _test_a_long_task_line_breaks_at_a_sentence_end(t) -> void:
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var step := ResistanceSteps.by_index(2)
+	var saved_header := step.header
+	GameState.completed_resistance_steps = [1]
+	step.header = "Walk past the old fountain. Then wait by the gate for her."
+
+	var hud := _hud(t)
+	hud._debug = false
+	hud._on_contact_available(2)
+	var first := "somewhere out there: walk past the old fountain."
+	t.check(hud._resistance_label.text == first + "\nthen wait by the gate for her.",
+			"a task too wide for one line breaks after its first sentence, got '%s'"
+			% hud._resistance_label.text)
+
+	hud._debug = true
+	hud._on_contact_available(2)
+	t.check("\n" + "then wait by the gate for her." in hud._resistance_label.text,
+			"the debug line breaks the same way")
+
+	step.header = "Walk past it. Wait."
+	hud._debug = false
+	hud._on_contact_available(2)
+	t.check(not "\n" in hud._resistance_label.text,
+			"a task that fits one line stays on one line")
+
+	hud.free()
+	step.header = saved_header
+	GameState.completed_resistance_steps = saved_completed
 
 ## The wording rule holds for every task, not only the first: every perform step
 ## names `Step.header` — the associated mark's own words, cut to fit — never `Step.title`, which

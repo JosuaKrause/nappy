@@ -1254,8 +1254,9 @@ on `GameState.format_clock()`'s millisecond form, over the whole run rather than
 own width needs it to**, at whichever sentence end splits the text most evenly and never inside a
 sentence — a short one stays on one line, and a single sentence too long for the width still wraps
 inside itself word by word. `SentenceLines.break_for_label()` (`src/ui/sentence_lines.gd`) is the
-one helper this title, the day briefs, the finale's own body, the endings and the pause screen's
-walking instructions are all broken through, rather than a line break typed into each string.
+one helper this title, the day briefs, the finale's own body, the endings, the pause screen's
+walking instructions and the HUD's bottom-left task line are all broken through, rather than a
+line break typed into each string.
 
 **Everything below that one line is the coming day's, not the day that just ended.** The day
 number, the nerves carried into it and the morning's own line (`_DAY_BRIEF`, below) all read off

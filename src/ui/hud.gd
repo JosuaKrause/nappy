@@ -393,7 +393,7 @@ func _refresh_resistance() -> void:
 		named = step.header if step.header != "" else step.title
 
 	if not _debug:
-		_resistance_label.text = "somewhere out there: %s" % named.to_lower() if step else ""
+		_resistance_label.text = _task_text(named) if step else ""
 		return
 
 	if not GameState.has_joined_resistance() and _contact_step == 0:
@@ -404,8 +404,16 @@ func _refresh_resistance() -> void:
 			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - GameState.resistance_progress))
 	var line := "resistance %s" % marks
 	if step:
-		line += "   somewhere out there: %s" % named.to_lower()
+		line += "   " + _task_text(named)
 	_resistance_label.text = line
+
+## The task line's words, broken between sentences where the label's width makes it wrap
+## (`SentenceLines`), so a task that says more than one sentence never wraps mid-sentence. The
+## debug line's progress marks are not part of what is broken: they end in a "." that would
+## otherwise read as a sentence end.
+func _task_text(named: String) -> String:
+	return SentenceLines.break_for_label("somewhere out there: %s" % named.to_lower(),
+			_resistance_label)
 
 ## Forwarded from `main._apply_orientation()`. `HomeArrow` is the one child here that computes a
 ## screen position from a world one every frame rather than sitting still under `_root`'s own
