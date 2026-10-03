@@ -176,16 +176,22 @@ prunes it — every `tools/shot.sh` and `tools/check.sh` run adds to it and the 
 it, so emptying it is the player's routine maintenance. A finding whose evidence lived only there
 stops being checkable on a perfectly ordinary Tuesday.
 
-Evidence cannot be recovered by replaying: **a run log is a record of what a player did, so it is
-not a function of the seed.** Regenerating gives a different run with the same city.
+Evidence cannot be recovered by replaying: **a run log that records a player's relevant actions is
+not a function of the seed.** Regenerating gives a different run with the same city, so retain that
+log when the actions or their order support the finding.
 
-**Copy the whole `<run>/` folder under `docs/evidence/`.** A run *is* a folder —
-`user://telemetry/<day>/<run>/`, holding `run.log` and its `maps/`, `auto/` and `asked/`
-pictures — and **the run folder's own name carries the time, the seed and the commit**, since no
-single file inside it does. That name is self-describing on purpose, so the copy does not need its
-`<day>/` ancestor to be identifiable. A lone picture lifted out of it is evidence with its
-ancestry left behind: nothing in the copy says which run it came from or what the code was when it
-was taken.
+**Copy only the run artifacts relevant to what the playtest or rig was meant to show.** Keep every
+artifact needed to support the claim and its limits, including relevant player evidence,
+contradictory results and failed trials. Omit unrelated automatic pictures, routine boot output,
+logs that do not support the claim or its provenance, and redundant copies. A log belongs when it
+proves the actual behavior, preserves non-replayable player input, diagnoses a relevant failure or
+supplies provenance that is not recorded elsewhere.
+
+The evidence folder's README or manifest records enough context to interpret and reproduce the
+selection: the source revision, command and settings, and the seed and timing when they matter,
+plus the claim and its limits. When selected artifacts come from
+`user://telemetry/<day>/<run>/`, keep them under the run folder's original name, which carries its
+time, seed and commit; the README or manifest makes explicit which files were selected and why.
 
 ## A playtest is a scarce resource
 

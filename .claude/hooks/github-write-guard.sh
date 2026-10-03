@@ -956,8 +956,8 @@ def detect_gh($w; $t; $i; $n; $lm; $bounded):
 # tools/release.sh`, `git log -- tools/land-prs.sh`, `git show HEAD:tools/release.sh`, `rg ...
 # tools/update-pr.sh`). `release.sh` only tags and pushes when its own second positional argument
 # is literally `push` (see its usage); `land-prs.sh` and `update-pr.sh` both skip every GitHub
-# write under `--dry-run`; `prune-merged.sh` has no dry-run shape and is a write whenever it runs
-# at all.
+# write under `--dry-run`; `prune-merged.sh` is treated as a write in every shape, its read-only
+# `--all` inventory and `--dry-run` included, so those run wrapped like the apply.
 #
 # Whether a `push` or a `--dry-run` follows before the next separator is read from a table built
 # in one pass from the end of the command, rather than scanned again from each script name: a
