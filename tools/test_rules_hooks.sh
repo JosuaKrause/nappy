@@ -2099,6 +2099,8 @@ write_guard_allowed=(
     'gxargs gh search prs'
     'parallel -j 2 cat tools/land-prs.sh'
     'env_parallel --colsep , cat tools/update-pr.sh'
+    'parallel -d , cat tools/release.sh'
+    'gxargs -d , cat tools/prune-merged.sh'
     'gxargs -I REF cat tools/release.sh'
     'parallel --jobs 2 tools/update-pr.sh --dry-run 3'
     'env_parallel -j 2 tools/land-prs.sh --dry-run 3'

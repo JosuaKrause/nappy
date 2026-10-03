@@ -301,7 +301,9 @@ def split_words:
 
 # Splits every word at its glue into parts, each with a level: 0 for the first part of a shell
 # word, 1 for a later part of it, 2 for a later part inside a second level of quotes. The parts,
-# in order, are exactly the words a split at every glue would give.
+# in order, are exactly the words a split at every glue would give. A word made entirely of
+# punctuation still occupies an argument: `parallel --colsep , cat tools/update-pr.sh` must
+# consume the comma, not `cat`. Keep the same placeholder used for an empty quoted argument.
 def placeholder_or_word:
   if contains("\u0006") then (drop("\u0006") | if . == "" then "\u0006" else . end) else . end;
 def leveled_parts:
@@ -311,7 +313,8 @@ def leveled_parts:
        [split("\u0004") | to_entries[] | .key as $j
         | [.value | split("\u0005")[] | placeholder_or_word | select(length > 0)]
         | to_entries[]
-        | {w: .value, c: (if .key > 0 then 2 elif $j > 0 then 1 else 0 end)}]
+       | {w: .value, c: (if .key > 0 then 2 elif $j > 0 then 1 else 0 end)}]
+       | (if length == 0 then [{w: "\u0006", c: 0}] else . end)
        | (if length > 0 then .[0].c = 0 else . end)
        | .[]
      end];
