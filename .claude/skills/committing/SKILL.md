@@ -24,7 +24,8 @@ for the purposes of github what matters is what they do. that is independent who
 triggered it".)* In Claude Code:
 
 - **`claude-orchestrator`** makes every issue write — capturing a note into the inbox, commenting
-  on one, labelling it, closing a filed batch and reopening it — and every write on a pull request
+  on one, labelling it, closing a filed batch and reopening it, each through `tools/inbox.py`
+  (**inbox**), never a direct `gh issue` command — and every write on a pull request
   with no code changes: its commits, its push, the pull request itself, its comments, merging
   `main` into it, its merge once the player has said go, and retiring its branch.
 - **`claude-coder`** makes every write on a pull request that changes code — a queue move or a
@@ -50,8 +51,11 @@ and its docs-only pull requests stay `codex-coder`'s, and its reviews `codex-rev
 usable; every command that **writes** to GitHub for that piece of work — a commit, a push, a `gh`
 post — then runs through `uv run python tools/agent-identity.py run <role> -- <command>` instead of
 running it directly, so the commit, the push and the pull request all show as `<role>[bot]` rather
-than as the player talking to themself. A read (`git status`, `gh pr view`, ...) runs unwrapped;
-minting a token for one is wasted work the player never asked for. **When `status` reports the
+than as the player talking to themself. An issue write is the one exception: it runs through
+`tools/inbox.py`, which takes the role from `--role` or `NAPPY_AGENT_ROLE` and runs each of its own
+writes through that wrapper itself, and never as a wrapped `gh issue` command. A read (`git
+status`, `gh pr view`, ...) runs unwrapped; minting a token for one is wasted work the player
+never asked for. **When `status` reports the
 role not usable (not created yet, not installed on the repository, or a cloud session — see
 `tools/agent-identity.py`'s own module docstring), the session never runs the write under the
 player's own account on its own say-so.** Where no identity can work at all — a Claude Code cloud
@@ -63,20 +67,24 @@ command, which only they can approve *(2026-10-02: "Let's do A and make the code
 refuse")*. Every other write is never asked about, only denied — among them a push of a tag, of
 every branch or of a `*` pattern (a pushed `v*` tag publishes the site), a push naming a shell
 expansion (`"$TAG"` can be a `v*` tag) or one the guard cannot read to its end, a forced,
-deleting, mirroring or pruning push, a pull request's merge, a release and a bare `gh issue`
-write — since a prompt is too easy to click through for any of them, and for the last because the
-player wants an agent's issue writes to go through a script rather than a direct `gh issue` command
+deleting, mirroring or pruning push, a pull request's merge, a release and a `gh issue` write —
+since a prompt is too easy to click through for any of them, and for the last because the player
+wants an agent's issue writes to go through a script rather than a direct `gh issue` command
 *(2026-09-27: "if it goes through a script it's safe we just need to get it working once -- an
-agent shouldn't use gh issue directly")*. **That asking is
+agent shouldn't use gh issue directly")*; that script, `tools/inbox.py`, never writes as the
+player, so where no identity can work an issue write is not made at all. **That asking is
 off unless the player switches it on** with `NAPPY_ASK_FOR_PLAYER_WRITES=1` in the environment a
 session starts with (a cloud environment's own variables, or the launching shell); unset, every
 unwrapped write is denied *(2026-10-02: "Make it so it can be easily turned off and refuse again later";
 "Yes default to refusing")*. A session never sets or clears it for itself. Anything the guard
-denies the session stops on and tells the player about, and Codex stops on every one of them. A
+denies the session stops on and tells the player about, and Codex stops on every one of them —
+except a direct `gh issue` write, which is made again through `tools/inbox.py` instead. A
 `PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a
 `git push`, a commit-making git verb, a GitHub-writing `gh` call, or one of the `tools/` scripts
 that pushes or posts internally, in command position, unless the same command is wrapped in `run
-<role> --`, so the rule holds even when a session forgets it; a read stays unguarded — the hook's
+<role> --`, so the rule holds even when a session forgets it. **A `gh issue` write it denies
+wrapped or not**, since an agent writes an issue only through `tools/inbox.py`, whose own writes
+run in a process of their own that the hook never sees. A read stays unguarded — the hook's
 own header comment carries the current, exact list, rather than a second copy of it here that can
 drift from it. **An admin action no bot identity can perform** — changing a repository ruleset, a
 GitHub App's own permissions — **is the player's to do directly, in GitHub's own settings, never
