@@ -46,6 +46,7 @@ ENTRY_POINTS = (
     "migrate-queue.py",
     "convert-queue-edits.py",
     "release-notes.py",
+    "inbox.py",
     "ci_classify.py",
     "ci_telemetry_kinds.py",
     "ci_no_handoff.py",
