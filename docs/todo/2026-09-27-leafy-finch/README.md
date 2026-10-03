@@ -15,23 +15,12 @@ the review items, the playtest files and the decision records stay in the reposi
 entry is reviewed when it enters the queue and a misread statement is cheaper caught there than
 built (statement 1). **GitHub Issues become the player's inbox and nothing else**: a note there is
 safe the moment it is written, can be edited until its filing PR is opened, and an agent turns a
-batch of notes into one filing PR when the player asks (statements 5, 6, 22). What is left is that
-inbox: the skill and script that read and file it (`inbox-skill.md`), the capture script
-(`capture.md`), and the write guard that lets those scripts, and only them, write an issue
-(`write-guard.md`). The CI that checks a filing
-([leafy-finch-2](../../decisions/2026-09-27-leafy-finch-2.md)) and the `claude-orchestrator`
-identity the scripts write as ([leafy-finch](../../decisions/2026-09-27-leafy-finch.md)) are built.
+batch of notes into one filing PR when the player asks (statements 5, 6, 22). The CI that checks a filing
+([leafy-finch-2](../../decisions/2026-09-27-leafy-finch-2.md)), the `claude-orchestrator` identity
+the scripts write as ([leafy-finch](../../decisions/2026-09-27-leafy-finch.md)) and the inbox
+itself, its skill, capture and write guard
+([leafy-finch-3](../../decisions/2026-09-27-leafy-finch-3.md)), are built. What is left is the
+inbox's first real filing, issue #423, when the player triggers it (`first-filing.md`).
 
-The band `now` is the filer's reading of "once that PR merges you can start implementing"
-(statement 15); the player named no band.
-
-**What this changes that is already written down.** The **playtest-feedback** skill's "write it
-down before doing anything about it" gains the inbox as the first place words are written.
-`.claude/hooks/github-write-guard.sh`, the hook that denies a GitHub write outside an agent
-identity (the tall-egret record, "Each agent posts on GitHub as an app of its own"), changes for
-issue writes (statement 14), and the Codex adapter `tools/codex-hooks.py` and its tests change with
-it if the change needs a new tool name, payload field or hook event, as `CLAUDE.md` requires.
-
-**The PR that closes this entry writes its decision record**, which also records that Issues were
-weighed as the queue itself and rejected — no review when an entry enters, edits with no reviewed
-history, no path-triggered rules — and adopted as the inbox only.
+The band is `now` by the player's word ([plaid-tapir](../../playtests/2026-10-03-plaid-tapir.md),
+statement 1: "once this is merged we will do the first issue ingestion using its new script").
