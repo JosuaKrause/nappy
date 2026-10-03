@@ -453,6 +453,46 @@ var _turn_back_hold := 0.0
 func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 
+## Constructs a pinned actor through the same initial lane eligibility as a rolled morning.
+## The cross coordinate must already be the lane center; authoring never snaps a placement.
+func setup_at(agent_kind: int, map: CityMap, crowd_field: CrowdField, seed_value: int,
+		at: Vector2, direction: Vector2, speed: float) -> String:
+	kind = agent_kind as Kind
+	shape = GroundShape.point(7.0) if kind == Kind.WALKER else _car_shadow_shape()
+	_map = map
+	field = crowd_field
+	_rng.seed = seed_value
+	_draw_the_door_answer()
+	_vertical = direction.x == 0.0
+	_direction = direction.y if _vertical else direction.x
+	position = at
+	_corridor = CrowdLanes.corridor_at(_cross())
+	if _corridor < 0:
+		return "actor is outside a street corridor"
+	_lane = CityMap.corridor_offset(floori(_cross() / Tuning.TILE_SIZE))
+	var offsets := CrowdLanes.ROAD_OFFSETS if kind == Kind.CAR else \
+			CrowdLanes.walkable_offsets(map, _vertical, _corridor,
+			floori(_along() / Tuning.TILE_SIZE))
+	if not _lane in offsets:
+		return "actor lane is not available to its kind"
+	if kind == Kind.CAR and _direction != CrowdLanes.road_direction(_vertical, _lane):
+		return "car direction contradicts right-hand traffic"
+	_lane_centre = _lane_centre_here()
+	if not is_equal_approx(_cross(), _lane_centre):
+		return "actor must start exactly at lane center %.3f" % _lane_centre
+	var range_of_speed := Tuning.CAR_SPEED if kind == Kind.CAR else Tuning.PEDESTRIAN_SPEED
+	_speed = speed if speed >= 0.0 else _rng.randf_range(range_of_speed.x, range_of_speed.y)
+	if _speed < range_of_speed.x or _speed > range_of_speed.y:
+		return "actor speed is outside its ordinary generation range"
+	_cruise = _speed
+	if not _stands_on_a_street() or not _within_the_map_with_room_for_its_picture():
+		return "actor placement fails ordinary street/body clearance"
+	if _is_in_a_pocket():
+		return "car placement is in a closed traffic pocket"
+	_settle_junction()
+	colour = _colour()
+	return ""
+
 func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		axis_roll: float) -> void:
 	kind = agent_kind
@@ -1572,6 +1612,9 @@ func _choose_lane(roll: float) -> void:
 	# falling to a third of what the numbers say.
 	_corridor = CrowdLanes.pick_corridor_in_range(_rng, _map, _vertical,
 			field.corridor_range(_vertical), kind == Kind.CAR)
+	if kind == Kind.WALKER and field.uniform_walkers:
+		var corridors := field.corridor_range(_vertical)
+		_corridor = _rng.randi_range(corridors.x, corridors.y)
 	if kind == Kind.CAR:
 		_lane = CrowdLanes.ROAD_OFFSETS[_rng.randi_range(0, 1)]
 		_direction = CrowdLanes.road_direction(_vertical, _lane)

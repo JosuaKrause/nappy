@@ -105,6 +105,8 @@ var _door_release_latches: Dictionary = {}
 ## `tests/test_event_manager.gd` and `tests/test_full_run.gd` are about a day's whole event set
 ## rather than about what one player walked past.
 var stream_radius := Tuning.EVENT_STREAM_RADIUS
+## Authored scenes install a complete event plan; ambient directors cannot replace its actors.
+var _recipe_plan := false
 
 ## Takes the one reference on the baked page every `EventInstance` draws from — the whole
 ## catalogue, the checkpoint kit and the crater on one page (`EventInstance.ATLAS_GROUP`).
@@ -152,7 +154,7 @@ func setup(city: City, map: CityMap) -> void:
 ## `RETURN_PATROLS_PER_ACT[0]` is 0 and nothing would be owed anyway, and from day 14 — the one
 ## `TODO.md` item still open — act IV would owe three.
 func _owe_the_return() -> void:
-	if _walking_the_finale:
+	if _walking_the_finale or _recipe_plan:
 		return
 	_director.owe_the_return(_day, GameState.resistance_progress)
 
@@ -182,6 +184,7 @@ func has_a_sent_patrol() -> bool:
 ## around the doorstep are in the world on the first frame rather than appearing during it.
 func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[String],
 		focus := Vector2.ZERO) -> void:
+	_recipe_plan = false
 	clear()
 	_hard_failed = false
 	_day = day
@@ -336,6 +339,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 ## own and are untouched: an explosion leaves its crater through exactly the `spawns_on_finish`
 ## mechanism a convoy leaves a barricade through.
 func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -> void:
+	_recipe_plan = false
 	clear()
 	_hard_failed = false
 	_day = GameState.day
@@ -351,6 +355,20 @@ func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -
 	# whatever ran before it.
 	_director.start_day(_day, _plans, GameState.day_rng(_day, "finale-ahead"))
 	stream_around(focus)
+
+## Accepts only the builder's validated placements. Streaming, collisions, pursuits, event
+## successors and warnings keep their production behavior; random siting is suppressed.
+func start_recipe(plans: Array[EventScheduler.Planned], day: int, focus: Vector2,
+		finale := false) -> void:
+	var held := _map.held_segments.duplicate()
+	start_finale(plans, focus)
+	_map.held_segments.merge(held)
+	for plan in plans:
+		if plan.is_placed():
+			_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
+	_day = day
+	_walking_the_finale = finale
+	_recipe_plan = true
 
 func clear() -> void:
 	for instance in _instances:
@@ -878,9 +896,11 @@ func _physics_process(delta: float) -> void:
 	if _find_player():
 		# Before the streaming, so a plan sited this frame is in the world on the same frame it
 		# would have been had the day placed it at dawn.
-		_site_what_is_on_her_way(delta)
+		if not _recipe_plan:
+			_site_what_is_on_her_way(delta)
 		stream_around(_player.global_position)
-		_place_what_is_owed_ahead(delta)
+		if not _recipe_plan:
+			_place_what_is_owed_ahead(delta)
 		_summon_what_has_been_sighted()
 		_run_the_warnings(delta, _player.global_position)
 		_tell_them_where_she_is()

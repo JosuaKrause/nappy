@@ -231,6 +231,10 @@ const ACCESS_ROOM_SCALE := 4.0 / 3.0
 enum _Furniture { VENT = 0, HVAC_A = 1, HVAC_B = 2, DUCT_RUN = 3,
 	_UNUSED_DUCT_CORNER = 4, SKYLIGHT_A = 5, SKYLIGHT_B = 6, VENT_STACK = 7,
 	WATER_TANK = 8, SERVICE_BULKHEAD = 9, EXHAUST_FAN = 10, PIPE_MANIFOLD = 11 }
+## Public recipe names are independent of the internal seeded layout enum.
+const RECIPE_FURNITURE_KINDS := ["VENT", "HVAC_A", "HVAC_B", "DUCT_STRAIGHT", "DUCT_CORNER",
+	"SKYLIGHT_A", "SKYLIGHT_B", "VENT_STACK", "WATER_TANK", "SERVICE_BULKHEAD",
+	"EXHAUST_FAN", "PIPE_MANIFOLD"]
 
 ## Which units a district's roof may roll. Industrial ducts reserve connected interior cells
 ## before the remaining furniture is placed, sharing the same roof budget.
@@ -561,6 +565,8 @@ var _door_col := 0
 ## before near ones without re-sorting every frame — the same back-to-front order a unit taller
 ## than one tile (the water tank) needs to lie correctly over whatever is in the row behind it.
 var _roof_furniture: Array[Dictionary] = []
+## Null uses the ordinary seeded layout; an authored array replaces this roof's units.
+var recipe_roof_furniture: Variant = null
 var _has_vent := false
 var _vent_frame_b := false
 var _vent_timer := 0.0
@@ -1328,6 +1334,12 @@ func _draw_fire_escape() -> void:
 func _build_roof_furniture() -> void:
 	_roof_furniture.clear()
 	_has_vent = false
+	if recipe_roof_furniture != null:
+		_roof_furniture.assign(recipe_roof_furniture)
+		for entry: Dictionary in _roof_furniture:
+			_has_vent = _has_vent or entry.kind == _Furniture.VENT
+		_roof_furniture.sort_custom(func(a, b): return (a.cell as Vector2i).y > (b.cell as Vector2i).y)
+		return
 	var kinds: Array = _KINDS_BY_DISTRICT.get(district, [])
 	var compact_kinds: Array = _COMPACT_KINDS_BY_DISTRICT.get(district, [])
 	var density: float = _FURNITURE_DENSITY.get(district, 0.0)
@@ -1385,6 +1397,49 @@ static func roof_equipment_scale(key: StringName) -> float:
 	if key == SERVICE_BULKHEAD:
 		return ACCESS_ROOM_SCALE
 	return 1.0
+
+## Exact recipe fixtures use the production interior, district and displayed equipment width.
+## Validate the entire replacement before changing the resident or streamed description.
+func author_roof_furniture(entries: Array) -> Array[String]:
+	var errors: Array[String] = []
+	var placed: Array[Dictionary] = []
+	var used := {}
+	var interior := roof_interior_cells()
+	var kinds: Array = _KINDS_BY_DISTRICT.get(district, []).duplicate()
+	if district == GameEnums.BlockPurpose.INDUSTRIAL:
+		kinds.append(_Furniture.DUCT_RUN)
+	for entry: Dictionary in entries:
+		var public_kind := str(entry.kind).to_upper()
+		if not RECIPE_FURNITURE_KINDS.has(public_kind):
+			errors.append("roof_fixtures.kind: unknown fixture kind")
+			continue
+		var duct := public_kind in ["DUCT_STRAIGHT", "DUCT_CORNER"]
+		var kind: int = _Furniture.DUCT_RUN if duct else _Furniture.get(public_kind, -1)
+		var cell := Vector2i(int(entry.cell[0]), int(entry.cell[1]))
+		if power_station or not kinds.has(kind):
+			errors.append("roof_fixtures.kind: fixture is not available on this production roof")
+			continue
+		var span := _furniture_span(kind) if not duct else (2 if public_kind == "DUCT_STRAIGHT" else 1)
+		var cells: Array[Vector2i] = []
+		for offset in span:
+			var occupied := cell + Vector2i(offset, 0)
+			if not interior.has(occupied) or used.has(occupied):
+				errors.append("roof_fixtures.cell: outside the roof interior or overlapping another fixture")
+			used[occupied] = true
+			cells.append(occupied)
+		if duct:
+			# Public recipe shapes retain their reserved cells while sharing the mounted
+			# component renderer: a two-cell east/west span or a west/north elbow.
+			for occupied in cells:
+				var duct_cells: Array[Vector2i] = [occupied]
+				placed.append({"cell": occupied, "kind": kind, "span": 1,
+					"cells": duct_cells, "links": 3 if span == 2 else 9})
+		else:
+			placed.append({"cell": cell, "kind": kind, "span": span, "cells": cells})
+	if errors.is_empty():
+		recipe_roof_furniture = placed
+		_rebuild()
+	return errors
 
 ## The cells a roof unit may stand on, in the fixed order `_build_roof_furniture()` shuffles:
 ## row by row from row 1, each row west to east over the interior columns, keeping a cell only

@@ -143,7 +143,10 @@ func setup(city: City, map: CityMap) -> void:
 ## somewhere: leaving the field wherever the last caller put it makes a day's crowd depend on
 ## the order the tests before it ran in, and a field parked off the map builds the whole
 ## population on one pixel.
-func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> void:
+## `city_view` is the recipe-only overview: the field stays over the map and population scales
+## by covered area at the existing field density. Ordinary calls retain their moving field.
+func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
+		populate := true, city_view := false, uniform_walkers := false, walker_multiplier := 1.0) -> void:
 	clear()
 	# Taken on the first day only — see `_atlas_held`'s own doc for why a day's own end keeps
 	# holding this rather than releasing it, and `_exit_tree()` for where it finally does.
@@ -158,6 +161,8 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> vo
 	# A day is reproducible or it is not, and this is not the place to spend that.
 	if _signals:
 		_signals.elapsed = 0.0
+	_field.city_view = city_view
+	_field.uniform_walkers = uniform_walkers
 	_field.centre = focus if focus != Vector2.INF else _map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, _map.size)).get_center()
 	# Before either `_populate` call: a walker's own `setup()` re-rolls off `_stands_on_a_street()`,
@@ -192,8 +197,17 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> vo
 	_rebuild_the_crossable_segments()
 	_pockets.refresh(_map, _crossable_segments)
 	var act := Tuning.act_for_day(day)
-	_populate(CrowdAgent.Kind.WALKER, Tuning.crowd_pedestrians(act), rng)
-	_populate(CrowdAgent.Kind.CAR, Tuning.crowd_cars(act), rng)
+	if populate:
+		# The recipe overview covers more ground at the existing field's density. Ordinary
+		# play keeps its local population and pays for no actors beyond the moving field.
+		var area_scale := _map.world_size().x * _map.world_size().y \
+				/ pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) if city_view else 1.0
+		var walkers := roundi(Tuning.crowd_pedestrians(act) * area_scale * walker_multiplier)
+		if uniform_walkers:
+			_populate_uniform_walkers(walkers, rng)
+		else:
+			_populate(CrowdAgent.Kind.WALKER, walkers, rng)
+		_populate(CrowdAgent.Kind.CAR, roundi(Tuning.crowd_cars(act) * area_scale), rng)
 	# **The unpack the first frame would do anyway, done before the first frame is drawn.** The
 	# morning places every car without consulting the ones already placed, so some of them start
 	# inside each other and the first `space_out_the_traffic()` pulls them apart — a correction of up
@@ -220,8 +234,64 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF) -> vo
 func set_focus(at: Vector2) -> void:
 	_field.centre = at
 
+## Exact authoring shares the live crowd's lane, pocket and junction machinery. A rejected
+## placement is never replaced by a random one.
+func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vector2,
+		speed: float, seed_value: int) -> Dictionary:
+	var agent := CrowdAgent.new()
+	agent.traffic = _traffic
+	agent.door_segments = _door_segments
+	agent.home_segments = _home_segments
+	agent.pockets = _pockets
+	var problem := agent.setup_at(kind, _map, _field, seed_value, at, heading, speed)
+	if not problem.is_empty():
+		agent.free()
+		return {"error": problem}
+	for other in _agents:
+		if agent.kind == CrowdAgent.Kind.WALKER and other.kind == CrowdAgent.Kind.WALKER \
+				and at.distance_to(other.position) < agent.shape.radius + other.shape.radius:
+			agent.free()
+			return {"error": "walker placement overlaps an existing walker"}
+		if agent.kind == CrowdAgent.Kind.CAR and other.kind == CrowdAgent.Kind.CAR \
+				and agent.lane_key() == other.lane_key() \
+				and absf(agent.queue_position() - other.queue_position()) < Tuning.CAR_GAP_MIN:
+			agent.free()
+			return {"error": "car placement overlaps an existing traffic queue"}
+	agent.name = actor_name
+	_city.add_entity(agent)
+	_agents.append(agent)
+	_index_the_queues(_resolve_the_queues())
+	return {"actor": agent, "error": ""}
+
 func field() -> CrowdField:
 	return _field
+
+## A capture can report what is actually present across its city view. Effective velocities
+## include traffic braking, checkpoint holds and pockets; the sample does not invent motion.
+func recipe_coverage() -> Dictionary:
+	var counts := {"total": 0, "walkers": 0, "cars": 0, "moving": 0, "moving_cars": 0}
+	var result: Dictionary = counts.duplicate()
+	result["scope"] = "city" if _field.city_view else "local"
+	result["quadrants"] = {}
+	for quadrant in ["nw", "ne", "sw", "se"]:
+		result.quadrants[quadrant] = counts.duplicate()
+	var middle := _map.world_size() * 0.5
+	for agent in _agents:
+		var at := agent.global_position
+		var quadrant := ("n" if at.y < middle.y else "s") + ("w" if at.x < middle.x else "e")
+		var local: Dictionary = result.quadrants[quadrant]
+		var kind := "cars" if agent.kind == CrowdAgent.Kind.CAR else "walkers"
+		result.total += 1
+		result[kind] += 1
+		local.total += 1
+		local[kind] += 1
+		if not _skip_motion and not agent.velocity().is_zero_approx():
+			result.moving += 1
+			local.moving += 1
+			if agent.kind == CrowdAgent.Kind.CAR:
+				result.moving_cars += 1
+				local.moving_cars += 1
+	return result
 
 func traffic() -> TrafficIndex:
 	return _traffic
@@ -284,6 +354,47 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 		agent.setup(kind, _map, _field, rng.randi(), 0.0 if i % 2 == 0 else 1.0)
 		_city.add_entity(agent)
 		_agents.append(agent)
+
+## A recipe's even street population is sampled along actual eligible sidewalk lanes.
+## Random corridor weights alone can leave a whole pictured side street empty by chance.
+## Every candidate uses the same setup_at ground/body rules as an explicitly placed walker;
+## after dawn these are ordinary agents, including their turns, collisions and recycling.
+func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
+	var candidates: Array[CrowdAgent] = []
+	for vertical: bool in [false, true]:
+		var corridors := _field.corridor_range(vertical)
+		var along := _field.along_bounds(vertical)
+		for corridor in range(corridors.x, corridors.y + 1):
+			for lane: int in CrowdLanes.SIDEWALK_OFFSETS:
+				for tile in range(ceili(along.x / Tuning.TILE_SIZE), floori(along.y / Tuning.TILE_SIZE)):
+					if CityMap.corridor_offset(tile) >= 0:
+						continue
+					var offsets := CrowdLanes.walkable_offsets(_map, vertical, corridor, tile)
+					if not lane in offsets:
+						continue
+					var cross := CrowdLanes.walker_lane_centre(corridor, lane, offsets)
+					var distance := (tile + 0.5) * Tuning.TILE_SIZE
+					var at := Vector2(cross, distance) if vertical else Vector2(distance, cross)
+					var heading := (Vector2.DOWN if vertical else Vector2.RIGHT) * (1 if rng.randf() < 0.5 else -1)
+					var agent := CrowdAgent.new()
+					agent.traffic = _traffic
+					agent.door_segments = _door_segments
+					agent.home_segments = _home_segments
+					agent.pockets = _pockets
+					var problem := agent.setup_at(CrowdAgent.Kind.WALKER, _map, _field, rng.randi(), at, heading, -1)
+					if problem.is_empty():
+						candidates.append(agent)
+					else:
+						agent.free()
+	var selected := {}
+	for i in mini(count, candidates.size()):
+		var index := floori((i + 0.5) * candidates.size() / mini(count, candidates.size()))
+		selected[index] = true
+		_city.add_entity(candidates[index])
+		_agents.append(candidates[index])
+	for index in candidates.size():
+		if not selected.has(index):
+			candidates[index].free()
 
 # ----------------------------------------------------------------- traffic ---
 # A car that knows about the player and about zebras and about nothing else on the road passes

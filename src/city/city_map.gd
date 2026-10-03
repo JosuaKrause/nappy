@@ -13,6 +13,16 @@ extends RefCounted
 
 var size: Vector2i
 var tiles: PackedByteArray
+## A recipe keeps its construction witness for global placement checks. Only this declared
+## rectangle is presented; the exterior is experimental ground, never a generated street.
+var recipe_bounds := Rect2i()
+var recipe_exterior := false
+## Runtime enables this for scripted playback before building the City. Free play keeps
+## ordinary streaming; movie frames prepare their whole load view synchronously.
+var recipe_frame_locked := false
+var recipe_diagnostics: Array[String] = []
+var recipe_closures: Array[RoadClosure] = []
+var recipe_tree_moves := {}
 ## Block coordinate -> BlockPlan. The arc each block may travel, fixed at generation.
 ##
 ## Keyed by the block that **anchors a lot**, which is not always one block: a four-block calm zone
@@ -559,6 +569,8 @@ func in_bounds(tile: Vector2i) -> bool:
 	return tile.x >= 0 and tile.y >= 0 and tile.x < size.x and tile.y < size.y
 
 func tile_at(tile: Vector2i) -> GameEnums.TileType:
+	if recipe_exterior and not recipe_bounds.has_point(tile):
+		return GameEnums.TileType.ALLEY
 	if not in_bounds(tile):
 		return GameEnums.TileType.BUILDING
 	return tiles[tile.y * size.x + tile.x] as GameEnums.TileType
@@ -580,6 +592,8 @@ func is_walkable(tile: Vector2i) -> bool:
 ## streets between its blocks, and those tiles are park somebody walks on rather than street anybody
 ## drives down. A crowd agent that only checked `is_walkable` would drive across the grass.
 func is_street(tile: Vector2i) -> bool:
+	if recipe_exterior and not recipe_bounds.has_point(tile):
+		return false
 	var type := tile_at(tile)
 	return type == GameEnums.TileType.SIDEWALK or type == GameEnums.TileType.ROAD \
 			or type == GameEnums.TileType.CROSSING

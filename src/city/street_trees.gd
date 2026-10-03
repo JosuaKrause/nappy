@@ -152,6 +152,10 @@ static func planted(map: CityMap) -> Array[Planted]:
 			rng.seed = hash("street_tree:%d:%d:%d:%d:%d" % [map.seed_used,
 					0 if run.horizontal else 1, run.index, run.first, offset])
 			found.append_array(_plant_side(run, offset, rng, door_tile))
+	for tree in found:
+		if map.recipe_tree_moves.has(tree.tile):
+			tree.tile = map.recipe_tree_moves[tree.tile]
+			tree.position = map.tile_to_world(tree.tile)
 	return found
 
 ## Whether `segment` carries a standing street tree — what `ClosurePlanner._pick_kind` and
