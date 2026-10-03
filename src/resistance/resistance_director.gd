@@ -341,9 +341,10 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	if not neighbor and not sets_a_trap_on_her(_step):
 		if at_dawn:
 			_maybe_set_a_trap(_day, _rng, at, _step.is_pickup, _map.doorstep_world_position(),
-					false)
+					false, _contact.reach)
 		else:
-			_maybe_set_a_trap(_day, _rng, at, _step.is_pickup, _player_position(), true)
+			_maybe_set_a_trap(_day, _rng, at, _step.is_pickup, _player_position(), true,
+					_contact.reach)
 
 ## Where the run recorded its scar `scar_id` (`GameState.scars`), or `Vector2.INF` when it never
 ## recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no site
@@ -447,8 +448,13 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ## end of the alley"* (PLAYTEST-142 statement 5, "rubber"/"river" dictation for *robber*), and,
 ## asked whether he may then never wake at all, *"stands at the far end even where he then never
 ## wakes"* (PLAYTEST-144 statement 11). Every other guarded contact (a door, a mast's foot, a
-## swing, the burnt shell, a roadblock) keeps a band between `inner_radius + ContactPoint.REACH`
-## and `pursues_within + ContactPoint.REACH`, drawn from the whole circle around its own contact.
+## swing, the burnt shell, a roadblock) keeps a band between `inner_radius + reach` and
+## `pursues_within + reach`, drawn from the whole circle around its own contact. **`reach` is the
+## contact's own** (`ContactPoint.reach`): `REACH`, 36px, everywhere but day 8's door, whose
+## `DOOR_REACH` moves the band out with it. The band is worked out from the reach — nearer than
+## `inner_radius + reach` a touch from the edge of the reach can land her inside his catch, and
+## past `pursues_within + reach` no touch can wake him — so a wider reach with the old band is a
+## guard standing nearer the ground she completes from than the band means.
 ##
 ## **Retires only the guard of the same kind this replaces.** `_guard` (the mark's own) and
 ## `_task_guard` (the one a guarded task — a door, a mast's foot, a swing, the burnt shell, a
@@ -464,7 +470,7 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ## the day, her live position and `true`, for a task's guard placed as she reads its mark and for
 ## `_move_the_mark()`'s relocation.
 func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_mark: bool,
-		her: Vector2, on_screen_matters: bool) -> void:
+		her: Vector2, on_screen_matters: bool, reach := ContactPoint.REACH) -> void:
 	if day < TRAP_FIRST_DAY:
 		return
 	var robbery := EventCatalogue.by_id("alley_robbery")
@@ -477,7 +483,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 		_guard = null
 	else:
 		_task_guard = null
-	var guard_at := _guard_position(rng, at, for_mark, her, on_screen_matters)
+	var guard_at := _guard_position(rng, at, for_mark, her, on_screen_matters, reach)
 	var placement := "far end" if for_mark and _far_alley_mouth(at) != Vector2.INF else "band"
 	var kind := "chalk mark" if for_mark else "task"
 	if guard_at == Vector2.INF:
@@ -499,13 +505,14 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 
 ## Where `_maybe_set_a_trap()` stands a guard for the contact at `at`, without spawning him:
 ## `_draw_guard_position_near_far_mouth()` for a chalk mark, the whole-circle
-## band `_draw_guard_position()` draws for every other guarded contact. `Vector2.INF` when no
-## candidate qualifies. Split out so a rig can ask where he would stand.
+## band `_draw_guard_position()` draws for every other guarded contact, both measured from the
+## contact's own `reach` (see `_maybe_set_a_trap()`). `Vector2.INF` when no candidate qualifies.
+## Split out so a rig can ask where he would stand.
 func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, her: Vector2,
-		on_screen_matters: bool) -> Vector2:
+		on_screen_matters: bool, reach := ContactPoint.REACH) -> Vector2:
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var min_distance := robbery.inner_radius + ContactPoint.REACH
-	var max_distance := robbery.pursues_within + ContactPoint.REACH
+	var min_distance := robbery.inner_radius + reach
+	var max_distance := robbery.pursues_within + reach
 	var walled_alleys := _walled_alleys()
 	var her_refuse_within := robbery.pursues_within if her != Vector2.INF else 0.0
 	var far := _far_alley_mouth(at) if for_mark else Vector2.INF

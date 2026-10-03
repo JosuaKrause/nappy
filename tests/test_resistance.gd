@@ -73,6 +73,7 @@ func run(t) -> void:
 	_test_the_burnt_shell_task_rides_the_recorded_scar(t)
 	_test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t)
 	_test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t)
+	_test_day_eights_guard_band_is_measured_from_the_door_reach(t)
 	_test_the_door_task_sits_at_a_region_door(t)
 	_test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t)
 	_test_a_read_mark_does_not_pile_up_across_several_ordinary_days(t)
@@ -2740,6 +2741,44 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t) -> void:
 	t.check(wrong.is_empty(),
 			"every front's way in is on its building's door, over a sidewalk (%d are not, first %s)"
 			% [wrong.size(), wrong.slice(0, 3)])
+
+## Day 8's guard stands in the band M55 works out from the reach, measured from the door's own
+## `ResistanceDirector.DOOR_REACH` rather than the 36px every other contact keeps: at least
+## `inner_radius + DOOR_REACH` from the door, so no touch from the edge of the reach lands her in
+## his catch, and at most `pursues_within + DOOR_REACH`. Swept over many days' draws, since one
+## guard drawn from the narrower band can land outside the wider one's inner edge by luck.
+func _test_day_eights_guard_band_is_measured_from_the_door_reach(t) -> void:
+	_build_city(t)
+	var robbery := EventCatalogue.by_id("alley_robbery")
+	var low := robbery.inner_radius + ResistanceDirector.DOOR_REACH
+	var high := robbery.pursues_within + ResistanceDirector.DOOR_REACH
+	var saved_scars := GameState.scars.duplicate()
+	var conditions: Array[int] = []
+	for building in _city._buildings:
+		conditions.append(building.condition)
+	# An array, not an int: a lambda captures a local by value, so a counter it adds to never moves.
+	var guarded: Array[float] = []
+	var outside: Array[String] = []
+	for i in 40:
+		_with_clean_run(func() -> void:
+			GameState.scars.clear()
+			var director := _director(t)
+			director.start_day(8, _rng(8, "resistance:%d" % i), 300.0)
+			director._on_contact_completed(5)
+			var guard: EventInstance = director._task_guard
+			if guard != null and is_instance_valid(guard):
+				var distance := guard.global_position.distance_to(director.contact_position())
+				guarded.append(distance)
+				if distance < low - 0.01 or distance > high + 0.01:
+					outside.append("%.0f" % distance)
+			director.free())
+	for i in _city._buildings.size():
+		_city._buildings[i].condition = conditions[i] as Building.Condition
+	GameState.scars = saved_scars
+	t.check(guarded.size() > 20, "day 8's task is guarded on most draws (%d of 40)" % guarded.size())
+	t.check(outside.is_empty(),
+			("its guard stands %.0f-%.0fpx from the door, inner_radius and pursues_within " +
+			"plus the door's reach (%d do not: %s)") % [low, high, outside.size(), outside])
 
 ## A run with no recorded `burnt_shell` scar (a `--day 8` start, or a day 3 that never burned)
 ## still sends her to a burnt building: the shell stands on a front day 3's fire could have caught
