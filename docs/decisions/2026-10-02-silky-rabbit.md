@@ -111,8 +111,9 @@ The complete gameplay burst and [three-second walking/reversal clip](../evidence
 show continuous ground at a junction; capture overhead prevents using them for normal frame
 timing. Earlier invalid camera fixtures and the failed optional probe launch are named and
 excluded in the evidence README. The historical synchronous residency collector does not
-advance Engine frames and cannot validate the current frame-gated scheduler; its docstring
-names the historical-use limit.
+advance Engine frames and cannot validate the current frame-gated scheduler. Its current
+copy and UID are removed; the pinned historical revision retains its original runnable
+copy and reproduction instructions. Current validation uses the real-process-frame probes.
 
 **Verified.** `tools/check.sh`, `tools/lint.sh`, the ground/atlas/route-tint/residency suites,
 main/finale/orientation suites, collector parse and CLI help/error checks pass. The native
@@ -121,3 +122,28 @@ relocation, water/source equality and renderer spans. Local suites are partial; 
 CI and independent PR review are separate gates. The matched aggregates and source identities
 are independently recomputed from the scratch traces. Browser/phone perception and the full
 game's competing-work performance remain [a human review item](../review/2026-10-02-silky-rabbit.md).
+
+**Cloud-review corrections.** The supplied review and the player's request to fix its
+findings are recorded fully in [leafy-hare, cloud review corrections for nearby ground preparation](../playtests/2026-10-02-leafy-hare.md).
+Its merge-before-phone-check question is answered by gray-stork's explicit choice to obtain
+phone evidence after merging. Its required stale-probe finding is fixed by removing the
+obsolete current probe, rather than retaining a file that knowingly cannot drive the new
+frame fence. No live caller depends on it; archived measurements retain their pinned copy.
+The stale runtime acceptance claim is removed and the architecture paragraph is rewrapped.
+`worst_prepare_usec` records synchronous full-region preparation only; ordinary quadrants
+use `worst_step_usec`. The metric comment and current evidence notice now distinguish them.
+
+The two changed runtime scripts contain exactly the same executable lines as the captured
+implementation. The added/removed comments mean source bytes differ; original recorded
+hashes identify the captured sources, and do not claim byte equality with this correction.
+Headless boot, doc lint, whitespace checks and the live-reference audit pass. The retained
+timing evidence is not regenerated for a comment/probe-removal change.
+
+The optional completed-region water consolidation and cached water-node list remain
+implementation proposals open to overturn. Consolidation moves whole-region water redraw
+work into completion, which is itself part of a preparation step and would need measuring;
+the reviewer suggestion that step timing is unaffected is not established. A cached node
+list changes lifecycle bookkeeping for pending, published, canceled and released surfaces.
+This correction preserves the measured scheduler and its explicit costs for the player's
+chosen phone evaluation. If phone evidence implicates those costs, the proposals return
+for discussion with new measurements; this is not standing authorization to change them.
