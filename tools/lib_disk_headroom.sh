@@ -5,28 +5,34 @@
 #
 # before the first byte of the batch is written. It compares the space the volume holding
 # DESTINATION has available (`df -Pk`, on DESTINATION's nearest existing ancestor, since a build
-# directory need not exist yet) with the batch's estimated peak plus a reserve, and returns 0 when
-# the batch fits. When it does not, it names the shortfall, the measured available space, the
-# smaller-batch step HINT (empty when there is none) and the cleanup action, on stderr, and returns
-# 1, so the caller writes `headroom_preflight ... || exit 1` and refuses before it allocates.
-# Silent on success. Bash 3.2-safe, like the rest of tools/.
+# directory need not exist yet) with the batch's estimated peak, and with that peak plus a reserve.
+# Three bands *(2026-10-04, inbox #496: "Yes tool should warm and only refuse if it's not
+# possible")*:
+#   - below the estimated peak the batch cannot finish, so it refuses: it names the available
+#     space, the shortfall, the smaller-batch step HINT (empty when there is none) and the cleanup
+#     action on stderr and returns 1, and the caller writes `headroom_preflight ... || exit 1`;
+#   - at or above the peak but below peak plus reserve it fits, but would leave the disk in the
+#     range where the player's warnings appear, so it prints a warning naming the same figures and
+#     the cleanup action, and returns 0 so the batch runs;
+#   - at or above peak plus reserve it is silent and returns 0.
+# Bash 3.2-safe, like the rest of tools/.
 #
 # **Every estimate is a measured peak, never a guessed threshold.** The table in
 # `headroom_measured_peak_mib` holds the peak additional allocation `tools/measure-disk-peak.sh`
 # recorded for one unit of each job, and an estimate at or above it; each row's comment states
 # both and how far apart they are. The large jobs carry 27-65% over their measured peaks; the
-# small ones are rounded up to a few MiB, several times what was measured, since a few MiB is
-# nothing beside the reserve. The method, the environment and the raw results are under
+# small ones are rounded up to a few MiB, several times what was measured. The method, the environment and the raw results are under
 # docs/evidence/teal-ibis-headroom-2026-10-03/.
 # A job missing from the table has no estimate, and the preflight refuses it rather than guessing
 # one: measure it, then add the row or set its variable below. The figures are allocated sizes
 # (`du`), which on APFS can count shared clone blocks, so they are upper bounds on what a job
 # takes rather than space its removal is promised to return.
 #
-# **The reserve is the free space the batch must leave behind.** The player's disk warnings were
-# reported with about 2.5 GiB free (docs/decisions/2026-10-03-teal-ibis.md), so the default,
-# HEADROOM_DEFAULT_RESERVE_MIB below, keeps a batch from ending below that. It is the same for
-# every job, the one fixed amount in this file, and the one line to change to rescale it.
+# **The reserve is the free space a batch should leave behind, and only ever warns.** The player's
+# disk warnings were reported with about 2.5 GiB free (docs/decisions/2026-10-03-teal-ibis.md), so
+# the default, HEADROOM_DEFAULT_RESERVE_MIB below, warns before a batch ends below that. The
+# warning is taken seriously but enforced by nobody: the using-tools and orchestrating skills say
+# what to do on seeing it, which is to start no new task and sort out the space first.
 #
 # Configuration, all from the environment:
 #   NAPPY_HEADROOM_PEAK_MIB_<JOB>  replaces one job's measured MiB per unit, the job's name
@@ -165,22 +171,38 @@ headroom_preflight() {
         echo "$tool: refusing to start: could not read the free space on the volume holding $destination (df failed)." >&2
         return 1
     fi
-    local available=$(( available_kib / 1024 )) needed=$(( peak + reserve ))
-    if (( available >= needed )); then
+    local available=$(( available_kib / 1024 )) wanted=$(( peak + reserve ))
+    if (( available >= wanted )); then
         return 0
     fi
+    if (( available < peak )); then
+        {
+            echo "$tool: refusing to start: not enough free disk space for this batch to finish."
+            echo "  volume holding $destination: $available MiB available"
+            echo "  needed: estimated peak $peak MiB ($parts)"
+            echo "  short by: $(( peak - available )) MiB, before the $reserve MiB reserve"
+            [[ -z "$hint" ]] || echo "  smaller batch: $hint"
+            headroom_cleanup_lines
+        } >&2
+        return 1
+    fi
     {
-        echo "$tool: refusing to start: not enough free disk space for this batch."
+        echo "$tool: WARNING: low disk space. Starting anyway, since this batch fits, but it leaves"
+        echo "  less than the $reserve MiB reserve free."
         echo "  volume holding $destination: $available MiB available"
-        echo "  needed: $needed MiB = estimated peak $peak MiB ($parts) + reserve $reserve MiB"
-        echo "  short by: $(( needed - available )) MiB"
-        [[ -z "$hint" ]] || echo "  smaller batch: $hint"
-        echo "  cleanup: tools/prune-merged.sh --all lists retirable worktrees with their sizes (an agent"
-        echo "    runs it through tools/agent-identity.py, see the using-tools skill); the session-cleanup"
-        echo "    skill's \"Finish the job's storage cleanup\" says what else is a job's own to remove."
-        echo "    Then measure again with df rather than counting on du's sizes."
-        echo "  The estimates are measured peaks in tools/lib_disk_headroom.sh; its header names the"
-        echo "    variables that override one, the reserve, or the check."
+        echo "  this batch: estimated peak $peak MiB ($parts); with the reserve $wanted MiB"
+        echo "  below the reserve by: $(( wanted - available )) MiB"
+        echo "  Take this seriously: start no new task or agent, and start sorting out the space now."
+        headroom_cleanup_lines
     } >&2
-    return 1
+    return 0
+}
+
+headroom_cleanup_lines() {
+    echo "  cleanup: tools/prune-merged.sh --all lists retirable worktrees with their sizes (an agent"
+    echo "    runs it through tools/agent-identity.py, see the using-tools skill); the session-cleanup"
+    echo "    skill's \"Finish the job's storage cleanup\" says what else is a job's own to remove."
+    echo "    Then measure again with df rather than counting on du's sizes."
+    echo "  The estimates are measured peaks in tools/lib_disk_headroom.sh; its header names the"
+    echo "    variables that override one, the reserve, or the check."
 }

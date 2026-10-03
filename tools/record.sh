@@ -23,9 +23,10 @@
 #
 # Every frame stays on disk under ${TMPDIR:-/tmp} until the video is encoded, so before the movie
 # writer starts this checks that volume through tools/lib_disk_headroom.sh: the measured
-# `record-second` estimate (31 MiB) for every game second the rig may record, plus the reserve
-# (3,072 MiB by default). The first example above records up to 225 game seconds (the 210-second
-# day and the rig's 15-second margin), so it needs about 6,975 + 3,072 = 10,047 MiB, 9.8 GiB, free.
+# `record-second` estimate (31 MiB) for every game second the rig may record. The first example
+# above records up to 225 game seconds (the 210-second day and the rig's 15-second margin), so it
+# refuses with less than about 6,975 MiB free and warns, then records, with less than that plus the
+# 3,072 MiB default reserve, 10,047 MiB (9.8 GiB).
 set -euo pipefail
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
@@ -55,11 +56,12 @@ usage() {
     per_second="$(headroom_measured_peak_mib record-second)"
     day_seconds="$(recorded_game_seconds --route home 2>/dev/null)" || day_seconds=""
     disk="Disk: frames stay on disk until the video is encoded, so this refuses to start unless the
-volume holding \$TMPDIR has ${per_second} MiB free per game second the rig may record, plus the
-${HEADROOM_DEFAULT_RESERVE_MIB} MiB reserve (tools/lib_disk_headroom.sh)."
+volume holding \$TMPDIR has ${per_second} MiB free per game second the rig may record, and warns
+when that leaves less than the ${HEADROOM_DEFAULT_RESERVE_MIB} MiB reserve
+(tools/lib_disk_headroom.sh)."
     if [[ "$day_seconds" =~ ^[1-9][0-9]*$ ]]; then
-        disk="$disk A route day records up to ${day_seconds}
-game seconds, so it needs about $(( per_second * day_seconds + HEADROOM_DEFAULT_RESERVE_MIB )) MiB free."
+        disk="$disk A route day records up to ${day_seconds} game seconds:
+refused below $(( per_second * day_seconds )) MiB free, warned below $(( per_second * day_seconds + HEADROOM_DEFAULT_RESERVE_MIB )) MiB."
     fi
 
     cat <<EOF

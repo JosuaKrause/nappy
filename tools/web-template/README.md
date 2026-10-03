@@ -19,10 +19,10 @@ There is no fallback cache prefix. Compilation scratch and downloads live under
 archive and receipt. Failed builds retain it and print its path for diagnosis or retry. An owned
 lock under `build/web-template/` refuses concurrent builds in one checkout; an interrupted lock
 needs its recorded process checked before removal. Before a cache miss downloads anything, the
-builder checks that `build/`'s volume has room for the build's measured peak plus the reserve
-`tools/lib_disk_headroom.sh` keeps free, and refuses with the shortfall when it does not. The
-builder writes `build/.gdignore` before extracting any source, so Godot cannot import its
-compiler or exported binaries.
+builder checks `build/`'s volume against the build's measured peak in
+`tools/lib_disk_headroom.sh`: it refuses with the shortfall below the peak, and warns, then builds,
+below the peak plus the library's reserve. The builder writes `build/.gdignore` before extracting
+any source, so Godot cannot import its compiler or exported binaries.
 
 ## Module choices
 

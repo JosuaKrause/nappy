@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """The disk-space preflight, against a stub `df`: no test fills, or needs, a real drive.
 
-`tools/lib_disk_headroom.sh` is exercised directly through `bash -c`, then every tool that
-sources it is run with a stub `df` reporting too little space and a stub Godot, and must refuse
-before it launches anything or writes its output.
+`tools/lib_disk_headroom.sh` is exercised directly through `bash -c` in its three bands (refuse
+below the estimate, warn and run below estimate plus reserve, silent above). Then every tool that
+sources it is run with a stub `df` reporting less than its estimate and a stub Godot, and must
+refuse before it launches anything or writes its output; one tool is run in the warning band and
+must warn and carry on.
 """
 
 from __future__ import annotations
@@ -73,19 +75,36 @@ class PreflightTests(HeadroomFixture):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stderr, "")
 
-    def test_shortfall_names_the_numbers_the_hint_and_the_cleanup(self) -> None:
-        self.available_mib(3072 + 3)
+    def test_below_the_estimate_refuses_naming_the_numbers_the_hint_and_the_cleanup(self) -> None:
+        self.available_mib(3)
         result = self.preflight("tool", str(self.root), "photograph fewer", "shot")
         self.assertEqual(result.returncode, 1)
         for expected in (
             "tool: refusing to start",
-            "3075 MiB available",
-            "needed: 3076 MiB = estimated peak 4 MiB (shot 4 MiB) + reserve 3072 MiB",
+            "3 MiB available",
+            "needed: estimated peak 4 MiB (shot 4 MiB)",
             "short by: 1 MiB",
             "smaller batch: photograph fewer",
             "tools/prune-merged.sh --all",
         ):
             self.assertIn(expected, result.stderr)
+
+    def test_inside_the_reserve_warns_and_runs(self) -> None:
+        for available in (4, 3072 + 3):
+            with self.subTest(available=available):
+                self.available_mib(available)
+                result = self.preflight("tool", str(self.root), "photograph fewer", "shot")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                for expected in (
+                    "tool: WARNING: low disk space",
+                    f"{available} MiB available",
+                    "estimated peak 4 MiB (shot 4 MiB); with the reserve 3076 MiB",
+                    f"below the reserve by: {3076 - available} MiB",
+                    "start no new task or agent",
+                    "tools/prune-merged.sh --all",
+                ):
+                    self.assertIn(expected, result.stderr)
+                self.assertNotIn("refusing", result.stderr)
 
     def test_counts_multiply_and_jobs_add(self) -> None:
         self.available_mib(0)
@@ -106,7 +125,8 @@ class PreflightTests(HeadroomFixture):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         result = self.preflight("tool", str(self.root), "", "shot", NAPPY_HEADROOM_PEAK_MIB_SHOT="11")
-        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("WARNING", result.stderr)
         self.assertIn("shot 11 MiB", result.stderr)
 
     def test_a_malformed_value_is_refused_never_read_as_zero(self) -> None:
@@ -186,6 +206,13 @@ class ToolRefusalTests(HeadroomFixture):
         self.assertIn(f"{tool}: refusing to start", result.stderr)
         if self.launches.exists():
             self.fail(f"{tool} launched {self.launches.read_text()!r}")
+
+    def test_a_tool_in_the_warning_band_warns_and_carries_on(self) -> None:
+        self.available_mib(10)
+        result = self.run_tool("tools/bake-atlases.sh", "--force")
+        self.assertIn("tools/bake-atlases.sh: WARNING: low disk space", result.stderr)
+        self.assertNotIn("refusing", result.stderr)
+        self.assertTrue(self.launches.exists(), "the bake should have started after the warning")
 
     def test_bake_atlases(self) -> None:
         self.assert_refused(self.run_tool("tools/bake-atlases.sh", "--force"), "tools/bake-atlases.sh")
