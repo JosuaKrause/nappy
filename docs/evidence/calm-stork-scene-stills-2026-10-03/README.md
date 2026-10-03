@@ -10,11 +10,12 @@ false; the separate headless manifest proves that the complete scripted action p
 | Stills | Source revision | What the still establishes |
 |---|---|---|
 | `power-station-hall`, `power-station-yard` | `8941448c` | Real adjoining dead-end walls: the hall covers the facade, the fenced yard keeps it. |
-| `trailer-choice` | `acbbe1b8` | A populated alternate street after the mother's wrong-way approach and backtrack. |
+| `trailer-choice` | `052fb4c1` | A populated alternate street after the mother's wrong-way approach and backtrack; selected restaurant guests are one block east. |
 | `trailer-blower` | `177191c8` | The father and selected leaf blower beside an industrial facade with manually placed existing duct, HVAC and vent fixtures. |
-| `trailer-dog`, `trailer-title`, `trailer-gatehouse` | `90632de9` | Ordinary day activity around the mother and charging dog, title, and father approaching a horizontal gate. |
-| `trailer-trucks`, `trailer-chase` | `b148986e` | Three army trucks beside the south-facing mother with varied posters on both buildings; a visible carrying stride beside a pursuing guard. |
-| `trailer-city` | `a23858a4` | The complete active city after zooming out from the mother's doorstep. |
+| `trailer-dog`, `trailer-title`, `trailer-gatehouse` | `052fb4c1` | Charging dog beside a skylight roof, park-side title, and father approaching horizontally toward the existing vertical gate. |
+| `trailer-trucks` | `b148986e` | Three army trucks beside the south-facing mother with varied posters on both buildings; barrier revision pending. |
+| `trailer-chase` | `052fb4c1` | A visible carrying stride beside a pursuing guard. |
+| `trailer-city` | `052fb4c1` | The complete active city after zooming out from the mother's doorstep. |
 
 Sources are reachable through PR #457. Godot 4.7.2 stable, macOS Apple M2, Compatibility OpenGL,
 1280×720, 30 Hz physics. Reproduce at the listed source with
@@ -29,8 +30,8 @@ queue/playtest documentation edits during capture; runtime and recipe sources ma
 revision. The capture uses no invincibility. The industrial roof and north-side approach are
 composition choices for review.
 
-The close ordinary-day scenes use the production day's crowd counts, catalogue budget and
-director. Pinned recurring events reserve their ordinary budget before other events are placed.
+The revised scenes use production crowd counts and only explicitly selected events and structures.
+The normal event scheduler and seal selection do not add unrequested objects.
 The truck formation is the actual day-13 happening; its spacing is not a trio of lookalikes.
 The gate is a real region checkpoint. The choice scene's leaf blower is a composition choice;
 the requested action is the turnaround and other route. The manifests check all three phases.
@@ -41,8 +42,8 @@ same three pictures for walking and running, with faster cadence at running spee
 shows the clearest existing contact pose, not newly drawn running art. Stills establish
 composition; action observations and displacement checks establish movement.
 
-The wide city capture reports 2,396 production agents, 348 cars and 274 moving cars:
-NW 85, NE 47, SW 87, SE 55. Every quadrant also has moving walkers. This recipe explicitly
+The wide city capture reports 2,048 visible walkers and 344 visible cars. The population
+test checks moving walkers and cars in every quadrant. This recipe explicitly
 populates the whole view at the ordinary field's area density; ordinary game density is
 unchanged. Its population test checks actual displacement in every quadrant. Close-scene
 `capture_activity` counts instead cover actors whose ground positions are in that picture;

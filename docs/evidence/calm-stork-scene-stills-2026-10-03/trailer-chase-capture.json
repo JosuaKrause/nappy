@@ -22,12 +22,14 @@
 		"visible_events": {
 			"roadblock": 1
 		},
-		"visible_walkers": 0
+		"visible_walkers": 0,
+		"walkers_left": 0,
+		"walkers_right": 0
 	},
 	"capture_actors": {
 		"guards": {
 			"position": [
-				1890.8496,
+				1891.7717,
 				560.0
 			],
 			"pursuing": true,
@@ -109,7 +111,9 @@
 		"visible_events": {
 			"roadblock": 1
 		},
-		"visible_walkers": 0
+		"visible_walkers": 0,
+		"walkers_left": 0,
+		"walkers_right": 0
 	},
 	"initial_actors": {
 		"guards": {
@@ -169,6 +173,19 @@
 		"total": 0,
 		"walkers": 0
 	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				2000.0,
+				560.0
+			],
+			"row": "roadblock"
+		}
+	],
 	"observations": [
 		{
 			"condition": "carrying",
@@ -190,7 +207,7 @@
 			"passed": true,
 			"state": {
 				"position": [
-					1890.8496,
+					1891.7717,
 					560.0
 				],
 				"pursuing": true,

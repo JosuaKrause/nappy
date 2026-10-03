@@ -30,14 +30,14 @@
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"final_activity": {
-		"moving_crowd": 27,
-		"visible_cars": 5,
+		"moving_crowd": 22,
+		"visible_cars": 0,
 		"visible_events": {
-			"cafe_tables": 2,
-			"homeless_yeller": 1,
 			"leaf_blower": 1
 		},
-		"visible_walkers": 22
+		"visible_walkers": 22,
+		"walkers_left": 16,
+		"walkers_right": 6
 	},
 	"final_actors": {
 		"obstacle": {
@@ -53,42 +53,42 @@
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2087.4722,
-				1806.0007
+				2195.7451,
+				1815.6006
 			],
 			"speed": 62.0
 		}
 	},
 	"final_crowd": {
 		"cars": 34,
-		"moving": 227,
-		"moving_cars": 27,
+		"moving": 228,
+		"moving_cars": 28,
 		"quadrants": {
 			"ne": {
 				"cars": 3,
-				"moving": 32,
+				"moving": 29,
 				"moving_cars": 3,
-				"total": 32,
-				"walkers": 29
+				"total": 29,
+				"walkers": 26
 			},
 			"nw": {
 				"cars": 26,
-				"moving": 173,
-				"moving_cars": 20,
-				"total": 179,
-				"walkers": 153
+				"moving": 180,
+				"moving_cars": 22,
+				"total": 184,
+				"walkers": 158
 			},
 			"se": {
 				"cars": 0,
-				"moving": 3,
+				"moving": 1,
 				"moving_cars": 0,
-				"total": 3,
-				"walkers": 3
+				"total": 1,
+				"walkers": 1
 			},
 			"sw": {
 				"cars": 5,
-				"moving": 19,
-				"moving_cars": 4,
+				"moving": 18,
+				"moving_cars": 3,
 				"total": 20,
 				"walkers": 15
 			}
@@ -100,11 +100,10 @@
 	"initial_activity": {
 		"moving_crowd": 11,
 		"visible_cars": 2,
-		"visible_events": {
-			"scaffolding": 1,
-			"skip": 1
-		},
-		"visible_walkers": 9
+		"visible_events": {},
+		"visible_walkers": 9,
+		"walkers_left": 5,
+		"walkers_right": 4
 	},
 	"initial_actors": {
 		"obstacle": {
@@ -133,17 +132,17 @@
 		"quadrants": {
 			"ne": {
 				"cars": 2,
-				"moving": 16,
+				"moving": 18,
 				"moving_cars": 2,
-				"total": 16,
-				"walkers": 14
+				"total": 18,
+				"walkers": 16
 			},
 			"nw": {
 				"cars": 26,
-				"moving": 186,
+				"moving": 184,
 				"moving_cars": 26,
-				"total": 186,
-				"walkers": 160
+				"total": 184,
+				"walkers": 158
 			},
 			"se": {
 				"cars": 1,
@@ -164,6 +163,41 @@
 		"total": 234,
 		"walkers": 200
 	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				2576.0,
+				1840.0
+			],
+			"row": "cafe_tables"
+		},
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				2576.0,
+				1936.0
+			],
+			"row": "cafe_tables"
+		},
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				2096.0,
+				1936.0
+			],
+			"row": "leaf_blower"
+		}
+	],
 	"observations": [
 		{
 			"condition": "moving",
@@ -243,7 +277,7 @@
 				"gait_frame": 2,
 				"position": [
 					1968.6223,
-					1938.6667
+					1936.0
 				],
 				"speed": 92.0
 			},
@@ -252,18 +286,18 @@
 		},
 		{
 			"at": [
-				2080.0,
+				2160.0,
 				1812.0
 			],
 			"condition": "near",
-			"distance": 40.0,
+			"distance": 30.0,
 			"passed": true,
 			"state": {
 				"carrying": false,
 				"gait_frame": 1,
 				"position": [
-					2087.4717,
-					1806.0021
+					2163.012,
+					1815.6006
 				],
 				"speed": 92.0
 			},
@@ -274,13 +308,12 @@
 	"physics_ticks_per_second": 30,
 	"playback_complete": true,
 	"recipe": "A wrong path, a turn, and the other sidewalk",
-	"recipe_sha256": "631ecd7dfa2cf928732877654a5bad3262873687afe4b8ab1bb2e5fdbf183d8b",
+	"recipe_sha256": "0e92c663bcb12bffde6e15c042be979452d7fecfdc8ecd109dd554308c81b2c6",
 	"scope": "full",
 	"seed": 11,
 	"setup": {
 		"background": {
-			"crowd": true,
-			"events": true
+			"crowd": true
 		},
 		"day": 1.0,
 		"events": [
@@ -296,6 +329,49 @@
 			"at": "start",
 			"facing": "east"
 		},
+		"roof_fixtures": [
+			{
+				"fixtures": [
+					{
+						"cell": [
+							1.0,
+							3.0
+						],
+						"kind": "water_tank"
+					},
+					{
+						"cell": [
+							5.0,
+							3.0
+						],
+						"kind": "water_tank"
+					},
+					{
+						"cell": [
+							3.0,
+							1.0
+						],
+						"kind": "vent"
+					}
+				],
+				"lot": [
+					62.0,
+					48.0,
+					8.0,
+					8.0
+				]
+			}
+		],
+		"seals": [
+			{
+				"candidate": "cafe_pair",
+				"segment": [
+					5.0,
+					4.0,
+					0.0
+				]
+			}
+		],
 		"tutorial_complete": true
 	},
 	"violations": []

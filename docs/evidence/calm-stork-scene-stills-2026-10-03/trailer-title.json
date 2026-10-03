@@ -1,8 +1,8 @@
 {
 	"anchors": {
 		"start": [
-			2080.0,
-			1936.0
+			1376.0,
+			1712.0
 		]
 	},
 	"authored_posters": [],
@@ -26,20 +26,31 @@
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"final_activity": {
-		"moving_crowd": 34,
-		"visible_cars": 4,
+		"moving_crowd": 15,
+		"visible_cars": 2,
 		"visible_events": {
-			"cafe_tables": 2
+			"dog_walker": 1
 		},
-		"visible_walkers": 31
+		"visible_walkers": 13,
+		"walkers_left": 3,
+		"walkers_right": 10
 	},
 	"final_actors": {
+		"dog_walker": {
+			"position": [
+				1488.0,
+				1600.5333
+			],
+			"pursuing": false,
+			"row": "dog_walker",
+			"telegraphing": false
+		},
 		"player": {
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2078.8923,
-				1940.2592
+				1376.0,
+				1712.0
 			],
 			"speed": 0.0
 		}
@@ -50,32 +61,32 @@
 		"moving_cars": 27,
 		"quadrants": {
 			"ne": {
-				"cars": 6,
-				"moving": 26,
-				"moving_cars": 6,
-				"total": 26,
-				"walkers": 20
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
 			},
 			"nw": {
-				"cars": 20,
-				"moving": 160,
-				"moving_cars": 15,
-				"total": 165,
-				"walkers": 145
+				"cars": 34,
+				"moving": 225,
+				"moving_cars": 27,
+				"total": 232,
+				"walkers": 198
 			},
 			"se": {
 				"cars": 0,
-				"moving": 5,
+				"moving": 0,
 				"moving_cars": 0,
-				"total": 5,
-				"walkers": 5
+				"total": 0,
+				"walkers": 0
 			},
 			"sw": {
-				"cars": 8,
-				"moving": 36,
-				"moving_cars": 6,
-				"total": 38,
-				"walkers": 30
+				"cars": 0,
+				"moving": 2,
+				"moving_cars": 0,
+				"total": 2,
+				"walkers": 2
 			}
 		},
 		"scope": "local",
@@ -83,21 +94,29 @@
 		"walkers": 200
 	},
 	"initial_activity": {
-		"moving_crowd": 13,
-		"visible_cars": 3,
-		"visible_events": {
-			"scaffolding": 1,
-			"skip": 1
-		},
-		"visible_walkers": 10
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 0,
+		"walkers_left": 0,
+		"walkers_right": 0
 	},
 	"initial_actors": {
+		"dog_walker": {
+			"position": [
+				1488.0,
+				1680.0
+			],
+			"pursuing": false,
+			"row": "dog_walker",
+			"telegraphing": false
+		},
 		"player": {
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2080.0,
-				1936.0
+				1376.0,
+				1712.0
 			],
 			"speed": 0.0
 		}
@@ -108,38 +127,51 @@
 		"moving_cars": 34,
 		"quadrants": {
 			"ne": {
-				"cars": 4,
-				"moving": 26,
-				"moving_cars": 4,
-				"total": 26,
-				"walkers": 22
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
 			},
 			"nw": {
-				"cars": 24,
-				"moving": 176,
-				"moving_cars": 24,
-				"total": 176,
-				"walkers": 152
+				"cars": 34,
+				"moving": 234,
+				"moving_cars": 34,
+				"total": 234,
+				"walkers": 200
 			},
 			"se": {
-				"cars": 1,
-				"moving": 6,
-				"moving_cars": 1,
-				"total": 6,
-				"walkers": 5
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
 			},
 			"sw": {
-				"cars": 5,
-				"moving": 26,
-				"moving_cars": 5,
-				"total": 26,
-				"walkers": 21
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
 			}
 		},
 		"scope": "local",
 		"total": 234,
 		"walkers": 200
 	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				1488.0,
+				1680.0
+			],
+			"row": "dog_walker"
+		}
+	],
 	"observations": [
 		{
 			"condition": "visible",
@@ -148,8 +180,8 @@
 				"carrying": false,
 				"gait_frame": 1,
 				"position": [
-					2078.8923,
-					1940.2592
+					1376.0,
+					1712.0
 				],
 				"speed": 0.0
 			},
@@ -160,20 +192,56 @@
 	"physics_ticks_per_second": 30,
 	"playback_complete": true,
 	"recipe": "Title transition on a living street",
-	"recipe_sha256": "a53a50f34fec9179809b2e4727d62ffc4c5f133d4d90db55b01e2aa46a15f5ff",
+	"recipe_sha256": "bde8ba4756a5ce2d1acf09b94d1ccd792ad6a7386b1c482026020d0994614ec7",
 	"scope": "full",
 	"seed": 11,
 	"setup": {
 		"background": {
-			"crowd": true,
-			"events": true
+			"crowd": true
 		},
 		"day": 1.0,
+		"events": [
+			{
+				"age": 1.4,
+				"at": [
+					1488.0,
+					1680.0
+				],
+				"name": "dog_walker",
+				"row": "dog_walker"
+			}
+		],
 		"parent": "father",
 		"player": {
 			"at": "start",
 			"facing": "south"
 		},
+		"roof_fixtures": [
+			{
+				"fixtures": [
+					{
+						"cell": [
+							2.0,
+							4.0
+						],
+						"kind": "water_tank"
+					},
+					{
+						"cell": [
+							5.0,
+							2.0
+						],
+						"kind": "vent"
+					}
+				],
+				"lot": [
+					48.0,
+					48.0,
+					8.0,
+					8.0
+				]
+			}
+		],
 		"tutorial_complete": true
 	},
 	"violations": []
