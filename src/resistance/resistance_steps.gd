@@ -275,7 +275,7 @@ static func _build() -> Array[Step]:
 		# Day 7 · the package at a delivery_van's drop — one place, red arrow. From the group
 		# to the neighbor down the hall; carrying it makes the pram heavier for the rest of the
 		# day.
-		_mark(3, "Another mark", 7, "A van is waiting on the sidewalk. Don't come home light."),
+		_mark(3, "Another mark", 7, "A van is waiting on the sidewalk. Don't come home empty-handed."),
 		_perform(4, "The package", 7, "delivery_van", [GameEnums.TileType.SIDEWALK], true,
 				TargetKind.EVENT, true, "a van, waiting"),
 

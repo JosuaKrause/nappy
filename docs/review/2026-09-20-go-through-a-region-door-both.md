@@ -1,6 +1,6 @@
-**Go through a region door, both ways, on day 7 or later** (`--day 7`; the doors are the huts
+**Go through a region door, both ways, on day 7 or later** (`--day 7`; the doors are the gatehouses
 and gates in the region walls). The hold costs 25 points and nothing else lands while she is
-inside; nothing is placed within 176px of a door, and the hut, the post, the gate and the
+inside; nothing is placed within 176px of a door, and the gatehouse, the post, the gate and the
 roadblocks beside them charge as one source, the strongest of them. **Is a crossing still a
 price worth thinking about, or is it cheap now?** At a corner where two doors meet, **is it one
 toll?** One red rim shows on the barrier that is charging her rather than one on each: **does
