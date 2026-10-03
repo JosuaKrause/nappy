@@ -87,7 +87,11 @@ that pushes or posts internally, in command position, unless the same command is
 <role> --`, so the rule holds even when a session forgets it. **A `gh issue` write it denies
 wrapped or not, and an issue write through `gh api` the same way** (all but a comment, which a
 pull request's own conversation shares), since an agent writes an issue only through
-`tools/inbox.py`, whose own writes run in a process of their own that the hook never sees. A read stays unguarded — the hook's
+`tools/inbox.py`, whose own writes run in a process of their own that the hook never sees. A
+write named in a commit message or a PR body denies like the write itself, so a message is
+written to a file and passed with `-F file` or `--body-file file`, or given to a wrapped `git
+commit -F - <<'EOF'` that is the whole command, one of the three shapes whose text the hook
+reads as text (**using-tools** lists them). A read stays unguarded — the hook's
 own header comment carries the current, exact list, rather than a second copy of it here that can
 drift from it. **An admin action no bot identity can perform** — changing a repository ruleset, a
 GitHub App's own permissions — **is the player's to do directly, in GitHub's own settings, never

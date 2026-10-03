@@ -78,18 +78,24 @@
 # the read list is denied even inside `run <role> --`, with a message that points at the script
 # (leafy-finch; bouncy-heron, statement 14: "if it goes through a script it's safe we just need to
 # get it working once -- an agent shouldn't use gh issue directly"). The same goes for an issue
-# written through `gh api`, wrapped or not: a write to `repos/o/r/issues` (a new issue, the owner
-# and repository read as anything, `repos/$R/issues` included), to `issues/N` (its state, title
-# or body), or to anything under them (its labels, assignees, lock, reactions,
-# `issues/comments/N`), and a GraphQL mutation naming an issue mutation (`createIssue`,
-# `closeIssue`, `updateIssue`, `addLabelsToLabelable`, ..., written compactly or not, or in a
-# variable the same command sets; `issue_endpoint` and `issue_mutation_re`, below). What stays
-# open, wrapped, is a comment: a POST to `issues/N/comments` and GraphQL's `addComment`, which a
-# pull request's own conversation comments share, so neither can tell a comment on a note from one
-# on a pull request. A wrapped GraphQL call whose query is not on the command line -- read from a
-# file (`-F query=@file`, `--input`) or from a variable an earlier, separate command set -- stays
-# open too, since its mutation cannot be read -- an accepted gap; denying every such call would
-# deny a reviewer's `resolveReviewThread` from a file as well.
+# written through `gh api`, wrapped or not: a write to `repos/o/r/issues` or
+# `repositories/<id>/issues` (a new issue; the owner and repository read as anything, so
+# `repos/$R/issues` too), to `issues/N` (its state, title or body), or to anything under them (its
+# labels, assignees, lock, reactions, `issues/comments/N`), and a GraphQL mutation naming an issue
+# mutation (`createIssue`, `closeIssue`, `updateIssue`, `addLabelsToLabelable`, ..., written
+# compactly or not, or in a variable or a file the same command writes; `issue_endpoint` and
+# `issue_mutation_re`, below). What stays open, wrapped, on purpose: a POST to `issues/N/comments`
+# and GraphQL's `addComment`, which a pull request's own conversation comments share, so neither
+# can tell a comment on a note from one on a pull request. **The issue writes that still go
+# through when wrapped, an accepted gap** (main allows every one of them too, as it allows any
+# wrapped write): an endpoint an expansion builds past `repos/` or hands in (`"$E"`, `"$(printf
+# ...)"`, a backtick in place of `issues`, `${E:-...}`, an endpoint `xargs` supplies); a GraphQL
+# query an expansion or `$'...'` builds (`-f query="$(printf ...)"`, `$'close\x49ssue'`), or one
+# read by `-F query=@file`, `-F query=@-` or `--input` from a file or a pipe whose text the same
+# command does not hold (`cat q.graphql | ... -F query=@-`, a file an earlier, separate command
+# wrote), since denying every query not on the command line would deny a reviewer's
+# `resolveReviewThread` from a file too; and a gh alias (`gh alias set ic 'issue close'`, then `gh
+# ic 5`), which this hook reads as a noun of its own.
 #
 # **A reviewer identity (`claude-reviewer`, `codex-reviewer`) is refused the named push and merge
 # routes, wrapped or not.** Its GitHub App has `contents: write` (a reviewer's own APPROVE needs it to satisfy a
@@ -125,17 +131,9 @@
 # and the failure mode of an over-eager deny (rerun the command through the wrapper) is far
 # cheaper than the failure mode of a miss (a post lands under the player's own account again,
 # which is the whole thing this rule exists to stop). So this reads the command's raw text, quotes
-# and backslashes stripped before it is split into words, and a mention (a write's name in a code
-# comment, an unquoted echo argument, a heredoc fed to a shell) denies exactly like a real
-# invocation would. The two exceptions are the places the guard can tell text from a command
-# (`text_only_at`, `strip_heredocs` and `inert_table`, below): a quoted argument of a command that
-# only prints, searches or stores it (`rg -n "gh issue comment"`, `git commit -m "..."`), and the
-# body of a heredoc with a quoted delimiter such a command reads (`cat > brief.md <<'EOF'`), or
-# with an unquoted one whose body holds no `$(`, backtick or `${` and no line ending in a
-# backslash, since the shell runs a command substitution in an unquoted heredoc's body, after
-# joining each backslash-newline in it. Both hold only where nothing before that command opens a
-# group (`{`, `(`, `$(`, `do`, `then`, `case`, `coproc`, ...) that could close after the text and
-# hand its output to a shell (`{ true; echo "..."; } | bash`). Each word
+# and backslashes stripped before it is split into words, and a mention (a write's name inside an
+# echo, a commit message, a code comment) denies exactly like a real invocation would, outside the
+# three whole-command shapes whose text is told apart for certain (`text_shape`, below). Each word
 # still remembers which shell word it came from, and which quoted word inside a quoted script, so
 # an option's argument is skipped whole however it is quoted, escaped or joined by a comma: `git
 # -C "/x y" push`, `git -c 'a=b c' push`, `FOO="a b" tools/release.sh patch push` and `bash -c 'git
@@ -174,17 +172,13 @@
 # `|` is still seen). Both are the stricter reading, and both cost false denies in exactly those
 # commands: `run <role> -- bash -c "a; b"` beside a `$(...)` is denied, and so is a `gh api` read
 # with no explicit GET piped into a command that takes `-f`, `-F`, `-X` or `--input` (`| grep -F
-# x`). A heredoc whose body is text a text-only command reads -- its delimiter quoted, or its body
-# free of `$(`, backticks, `${` and a line ending in a backslash -- is taken out before any of this (`strip_heredocs`), so its
-# `<<` makes nothing unsure; one that is kept -- fed to anything else, `bash`, `python3`, `sed`, or
-# expanded by the shell -- is read as before. So a line of prose in a kept heredoc that starts
-# with a reserved word, `time`, `exec` or `eval` and then a pushing script's path (`if
-# tools/land-prs.sh is named, it is read.`) is a false deny: every newline of an unsure command is
-# a separator, and the word after a reserved word is read in command position. So is a wrapped
-# command whose kept heredoc body names a write (`--body "$(sed s/a/b/ <<'EOF'` and a line such as
-# "run `git push` through the wrapper"): the heredoc makes the command unsure, its first newline
-# ends the wrapper's reach, and the mention after it reads as an unwrapped write. When the denied
-# command holds a wrapper, the
+# x`). So is a line of heredoc prose that starts with a reserved word, `time`, `exec` or `eval` and
+# then a pushing script's path (`if tools/land-prs.sh is named, it is read.`): every newline of an
+# unsure command is a separator, and the word after a reserved word is read in command position.
+# So is a wrapped heredoc commit or PR body whose text names a write (a line such as "run `git
+# push` through the wrapper"), outside the one commit shape below (`git commit -F - <<'EOF'`): the
+# heredoc makes the command unsure, its first newline ends the wrapper's reach, and
+# the mention after it reads as an unwrapped write. When the denied command holds a wrapper, the
 # deny message says so and points at a body file (`git commit -F file`, `--body-file file`, `gh api
 # -F body=@file`), which the hook never reads. A command over 64 KB that names git, gh or a
 # pushing script anywhere, even inside another word, is denied without being read, and one over
@@ -193,16 +187,36 @@
 # case this does not close is the wrapper's own shape appearing whole inside a mention (a comment
 # that quotes a full `tools/agent-identity.py run claude-coder -- git push` line reads, to this
 # script, like a real wrapped call) -- an accepted hole, the same kind `git-grep-guard.sh` accepts
-# for an encoded command or one kept in a file the shell then runs. The text-only reading adds the
-# same kind of hole and no other: it trusts its list of text-only commands (a shell function or
-# alias named `echo` is not the `echo` it means), and text a text-only command writes to a file
-# that a later, separate command runs is that file, which no reading here sees, and so is a file
-# the same command runs only under a name an expansion builds from pieces that differ from the
-# written word (`bash $(echo x).sh`). Within one command it is read: a command that names a file
-# it writes again in any other form (`cat > x.sh <<'EOF'` and then `bash x.sh`, `bash x''.sh`,
-# `bash x\.sh`, a glob or a brace expansion, before the write or after it), or opens one on a
-# numbered descriptor, an `exec` redirect or a `.git/` or `hooks/` path, is read whole, as before
-# (`runs_written_file`, below).
+# for an encoded command or one kept in a file the shell then runs.
+#
+# **Three shapes are text, and nothing else is** *(plaid-tapir, statement 4: the player chose "B",
+# the rule narrowed to what can be told for certain, everything else read as before)*. Each is the
+# whole command, one simple command and nothing around it -- no `;`, `&&`, `||`, `|`, `&`, second
+# line, group, subshell, `$(...)`, backtick, process substitution, assignment prefix or other
+# redirection -- made only of plain words (letters, digits and `_./:@,+=-`; a file may start with
+# `~`) besides what is named:
+#
+# - `cat > FILE <<'DELIM'` or `cat <<'DELIM' > FILE` (`>>` too; the delimiter in single or double
+#   quotes or after a backslash), the body running to the first line that is exactly the delimiter
+#   and nothing after that but blank lines. The shell passes a quoted delimiter's body on as it
+#   stands, and `cat` only copies it to the file, so the body is text and the command reads as
+#   `cat > FILE`.
+# - `tools/agent-identity.py run <role> -- git commit -F - <<'DELIM'` (or `-F /dev/stdin`,
+#   `--file=-`, `--file=/dev/stdin`, with `uv run python` or a python path in front, `run`'s own
+#   `--repo`, and `git commit` options that are a dash and letters alone, `-a` or `--amend`), the
+#   role a coder's or the orchestrator's,
+#   the body as above. Git takes its standard input as the message and runs none of it, so the
+#   body is text and the command reads as the wrapped commit it is.
+# - `rg` or `grep` with plain options and paths and one pattern in single quotes, or in double
+#   quotes holding no `$`, backtick or backslash, and neither `--pre` nor `--hostname-bin` (the two
+#   `rg` options that run a program). A search runs nothing it is given, so the pattern is text and
+#   the command reads with it empty.
+#
+# A near miss of any of them -- an unquoted delimiter, `<<-`, a second command, a wrapper word, a
+# glob, a quoted path -- is read exactly as it would be without this. What a shape cannot see is
+# what happens to its file afterwards: a script `cat` writes and a later, separate command runs (a
+# shell's startup file, a git hook) is that file, which no reading of this command sees, and the
+# later command is read on its own, as every command is.
 #
 # Guards both of Claude Code's tools that run a shell command (`Bash`, `Monitor`) the same way
 # `git-grep-guard.sh` does, and reads the same hook JSON shape on stdin. Needs bash 3.2 and jq only.
@@ -342,13 +356,12 @@ def placeholder_or_word:
   if contains("\u0006") then (drop("\u0006") | if . == "" then "\u0006" else . end) else . end;
 def leveled_parts:
   [.[]
-   | if (contains("\u0004") or contains("\u0005") or contains("\u0006")) | not then {w: ., c: 0, q: false}
+   | if (contains("\u0004") or contains("\u0005") or contains("\u0006")) | not then {w: ., c: 0}
      else
-       contains("\u0006") as $q
-       | [split("\u0004") | to_entries[] | .key as $j
+       [split("\u0004") | to_entries[] | .key as $j
         | [.value | split("\u0005")[] | placeholder_or_word | select(length > 0)]
         | to_entries[]
-        | {w: .value, c: (if .key > 0 then 2 elif $j > 0 then 1 else 0 end), q: $q}]
+        | {w: .value, c: (if .key > 0 then 2 elif $j > 0 then 1 else 0 end)}]
        | (if length > 0 then .[0].c = 0 else . end)
        | .[]
      end];
@@ -786,28 +799,28 @@ def detect_git($w; $t; $i; $n):
 # .b' -f x=y` inside a script whose first call is a GraphQL read) counting only toward the call
 # whose scan they fall in.
 # A write to an issue through the API is an issue write (`gh api issue write`, denied wrapped or
-# not, like `gh issue`): any non-GET call, or one with a field, naming `repos/<o>/<r>/issues` --
-# the collection (a new issue), `issues/<n>` (its state, title or body), and everything under them
-# (`issues/<n>/labels`, `/assignees`, `/lock`, `/reactions`, `issues/comments/<id>`, a comment's
-# edit or deletion) -- with one exception, `issues/<n>/comments` (an optional trailing `/` or
-# `?query` included), which a pull request's own conversation comments share, so its path cannot
-# tell a comment on a note from one on a pull request. Whatever stands between `repos/` and
-# `/issues` counts as the owner and the repository, so a variable (`repos/$R/issues/5`) or a
-# substitution (`"repos/$(gh repo view ...)/issues/5"`, read across the substitution's own words)
-# in their place is an issue endpoint too. As with the merge-type paths, every
-# non-option word of the call is read, so a header value cannot hide the endpoint, and a body that
-# merely names such a path is a false deny, answered by sending it from a file. A GraphQL mutation
-# is one when a word in it names an issue mutation (`issue_mutation_re`): a verb then `Issue`,
-# `Labelable`, `Assignable` or `Lockable` (`createIssue`, `closeIssue`, `updateIssue`,
+# not, like `gh issue`): any non-GET call, or one with a field, naming `repos/<o>/<r>/issues` or
+# `repositories/<id>/issues` -- the collection (a new issue), `issues/<n>` (its state, title or
+# body), and everything under them (`issues/<n>/labels`, `/assignees`, `/lock`, `/reactions`,
+# `issues/comments/<id>`, a comment's edit or deletion) -- with one exception, `issues/<n>/comments`
+# (an optional trailing `/` or `?query` included), which a pull request's own conversation comments
+# share, so its path cannot tell a comment on a note from one on a pull request. Whatever stands
+# between `repos/` and `/issues` counts as the owner and the repository, so a variable
+# (`repos/$R/issues/5`) or a substitution (`"repos/$(gh repo view ...)/issues/5"`, read across the
+# substitution's own words) in their place is an issue endpoint too. As with the merge-type paths,
+# every non-option word of the call is read, so a header value cannot hide the endpoint, and a
+# body that merely names such a path is a false deny, answered by sending it from a file. A GraphQL
+# mutation is one when a word in it names an issue mutation (`issue_mutation_re`): a verb then
+# `Issue`, `Labelable`, `Assignable` or `Lockable` (`createIssue`, `closeIssue`, `updateIssue`,
 # `updateIssueComment`, `addLabelsToLabelable`, `lockLockable`, ...), wherever it starts inside a
 # word, so a query written with no spaces (`mutation{closeIssue(...)}`) names it too; `addComment`,
 # which comments on a pull request as readily as on an issue, is the GraphQL form of the one REST
-# exception. A query held in a shell expansion (`-f query="$Q"`) is an issue mutation when the
-# same command names one anywhere, which is where such a variable is set
-# (`Q='mutation { closeIssue(...) }'; ... -f query="$Q"`); one set by an earlier, separate command,
-# and one read from a file (`-F query=@file`) or `--input`, cannot be read.
+# exception. A query the call does not hold inline (`-f query="$Q"`, `-F query=@file`, `--input`)
+# is an issue mutation when the same command names one anywhere, which is where such a variable is
+# set or such a file written; one set or written by an earlier, separate command cannot be read
+# (the header's accepted gap).
 def issue_endpoint:
-  test("(?i)(^|/)repos/.*/issues(/|\\?|$)")
+  test("(?i)(^|/)(repos/.*|repositories/[^/]+)/issues(/|\\?|$)")
   and (test("(?i)/issues/[^/?]+/comments/?(\\?.*)?$") | not);
 def issue_mutation_re:
   "(^|[^A-Za-z])(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert)[A-Za-z]*(Issue|Labelable|Assignable|Lockable)";
@@ -1047,325 +1060,6 @@ def is_merge_like($reason):
 def is_issue_write($reason):
   ($reason | startswith("gh issue ")) or ($reason | IN("gh api issue write", "gh api graphql issue mutation"));
 
-# **Text that is not run.** A write command's words inside a quoted argument of a command that only
-# prints, searches or stores its arguments (`rg -n "gh issue comment" .claude/`, `echo "run git
-# push through the wrapper"`, `git commit -m "..."`), or inside the body of a heredoc with a
-# quoted delimiter such a command reads (`cat > brief.md <<'EOF'`; an unquoted delimiter only
-# when the body expands nothing, `strip_heredocs`), are text, not a command, and stop counting as
-# a write where the guard can tell. "A text-only command" is the one list below, read the same way for both:
-# the command word itself, past any `NAME=value` assignment and, for a wrapped command, past
-# `tools/agent-identity.py run <role> --`, never past a wrapper word (`bash`, `env`, `xargs`,
-# `timeout`, ...), which hands its arguments to something else to run. `git` counts only with a
-# subcommand that never runs an argument (`commit`, `log`, `show`, `tag`, ...: not `rebase
-# --exec`, `bisect run`, `submodule foreach`, or `grep`, whose `-O` opens a pager command), `gh`
-# with any noun but `alias` or `extension`, whose arguments can be shell commands, and a Python
-# launcher (`uv run python`, `python3`, `.venv/bin/python`) only running `tools/inbox.py`, which
-# posts its standard input as an issue's text. None of them counts with an option that names a
-# program to run (`rg --pre`, `sort --compress-program`), and `printf` does not with `-v`, which
-# stores its text in a variable the shell may then run (`printf -v c "..."; $c`). The rest of the
-# command is read as before, so a write after the quoted argument's own `;`, `&&` or newline still denies.
-def text_only_words: ["echo", "printf", "grep", "egrep", "fgrep", "rg", "cat", "head", "tail", "wc", "sort",
-                      "uniq", "tee", "jq", "cut", "tr"];
-def git_text_subcommands: ["commit", "log", "show", "tag", "notes", "diff", "status", "blame", "shortlog"];
-def names_a_program($w; $j; $end): any(range($j; $end); $w[.] | test("^--(pre|compress-program)"));
-def text_only_scripts: ["inbox.py"];
-def is_python_word: last_part | test("^python[0-9.]*$");
-def past_assignments($w; $i; $end):
-  first(range($i; $end) | select(($w[.] | is_assignment) | not)) // $end;
-def past_dash_words($w; $i; $end):
-  first(range($i; $end) | select(($w[.] | startswith("-")) | not)) // $end;
-def runs_text_only_script($w; $s; $end):
-  $s < $end and (($w[$s] | last_part) as $x | (text_only_scripts | index($x)) != null);
-# Whether the command whose words run from $i to $end (exclusive) is text-only, as above.
-def text_only_at($w; $i; $end):
-  past_assignments($w; $i; $end) as $j
-  | if $j >= $end then false
-    else ($w[$j] | last_part) as $c
-    | (if $c == "uv" or ($w[$j] | is_python_word) or $c == "agent-identity.py" then
-         first(range($j; $end) | select(($w[.] | named("agent-identity.py")) and $w[. + 1] == "run")) // null
-       else null end) as $k
-    | if $k != null then
-        (if $w[$k + 2] == "--repo" then $k + 4 else $k + 2 end) as $role_i
-        | if $role_i + 1 < $end and $w[$role_i + 1] == "--" then text_only_at($w; $role_i + 2; $end) else false end
-      elif $c == "uv" then
-        $w[$j + 1] == "run"
-        and (past_dash_words($w; $j + 2; $end) as $p
-             | $p < $end and ($w[$p] | is_python_word) and runs_text_only_script($w; past_dash_words($w; $p + 1; $end); $end))
-      elif $w[$j] | is_python_word then runs_text_only_script($w; past_dash_words($w; $j + 1; $end); $end)
-      elif names_a_program($w; $j; $end) then false
-      elif $c == "git" then $j + 1 < $end and ((git_text_subcommands | index($w[$j + 1])) != null)
-      elif $c == "gh" then $j + 1 < $end and (($w[$j + 1] | IN("alias", "extension", "ext")) | not)
-      # `printf -v name` stores its text in a variable the shell may then run (`$name`).
-      elif $c == "printf" then all(range($j + 1; $end); $w[.] | startswith("-v") | not)
-      else (text_only_words | index($c)) != null
-      end
-    end;
-def text_only_text: [splits("[ \t]+") | select(length > 0)] as $w | text_only_at($w; 0; $w | length);
-
-# The quote state after a line, from the state before it: 0 none, 1 single, 2 double. Only plain
-# quotes, backslashes and a `#` comment are modelled; anything this misreads leaves a quote open,
-# which stops every later heredoc from being stripped (the safe direction).
-def quote_after($q0):
-  reduce explode[] as $c ({q: $q0, esc: false, done: false, prev: 32};
-    if .done then .
-    elif .esc then .esc = false | .prev = $c
-    elif .q == 0 then
-      (if $c == 92 then .esc = true
-       elif $c == 39 then .q = 1
-       elif $c == 34 then .q = 2
-       elif $c == 35 and (.prev | IN(32, 9, 59, 38, 124, 40, 41)) then .done = true
-       else . end) | .prev = $c
-    elif .q == 1 then (if $c == 39 then .q = 0 else . end) | .prev = $c
-    else (if $c == 92 then .esc = true elif $c == 34 then .q = 0 else . end) | .prev = $c
-    end)
-  | .q;
-
-# **A file written and then run in the same command is not text.** `cat > /tmp/x.sh <<'EOF'` then
-# `bash /tmp/x.sh`, or `echo "..." > y.sh; sh y.sh`, runs what the text-only command wrote, so its
-# words are a script, not prose. `runs_written_file` reads the command once its text heredoc
-# bodies are taken out (a body names nothing it runs): every file a redirect (`>`, `>>`, `&>`,
-# `<>`) or a `tee` writes to, and every other word, and says whether the command may run a
-# written file. It may when another word names a written file by its last path component, with
-# quotes and backslashes taken out (`./x.sh`, `bash x.sh`, `bash x''.sh`, `bash x\.sh`, `chmod +x
-# x.sh && ./x.sh`, `bash < x.sh`, `cat x.sh | sh`), before the write as well as after it (`bash <
-# fifo &` then `cat > fifo`); when a word outside quotes holds a glob or a brace expansion (`*`,
-# `?`, `[`, a `{` not after `$`) and any file is written, since it may name that file; and when a
-# file is opened on a numbered descriptor (`exec 3>x.sh`, `3<>x.sh`, `{fd}>x.sh`), by an `exec`
-# redirect, or under a `.git/` or `hooks/` path, whose writes need not name it again (`echo ...
-# >&3`) and whose file a program may run on its own (a git hook). A naming does not count where it
-# only hands the file over as a body to post or commit -- the value of `-F`, `--body-file`,
-# `--file`, `--input` or `--context-file`, a `--body-file=`-style option, or a `field=@file` other
-# than a GraphQL `query=@file`, which is run as a query -- nor where it is another write to it
-# (after a `>`), so a brief written with `cat > b.md <<'EOF'` and posted with `--body-file b.md`
-# stays text. Every other naming counts, a mere read (`wc -l b.md`) included, a false deny the safe
-# direction; a numbered file descriptor (`2>&1`) and a `/dev/` path are never files here. Such a
-# command is read whole, as before: no heredoc in it is taken out and no quoted word is text. A
-# file run by a later, separate command, or one named only through an expansion whose pieces
-# differ from the written word (`bash $(echo x).sh`), is that file, which no reading of this one
-# sees (the header's accepted gap).
-def file_token_regex: "([ \t\n;&|()<>`]*)([^ \t\n;&|()<>`]+)";
-def unquoted_word: gsub("'[^']*'|\"[^\"]*\"|\\\\."; "");
-def file_key: gsub("['\"\\\\]"; "") | split("/") | (last // "") | ascii_downcase;
-def hands_file_over($prev):
-  (($prev | IN("-F", "--body-file", "--file", "--input", "--context-file"))
-   or test("=@|^@|^--(body-file|file|input|context-file)="))
-  and (test("(?i)^[\"']?query=@") | not);
-def runs_written_file:
-  [match(file_token_regex; "g") | {o: .offset, g: .captures[0].string, t: .captures[1].string}] as $tok
-  | [foreach range(0; $tok | length) as $k ({tee: false, out: null};
-       ($tok[$k]) as $x
-       | (if $k > 0 then $tok[$k - 1] else {t: "", g: ""} end) as $prev
-       | (if $x.g | test("[;&|()\n]") then .tee = false else . end)
-       | ($x.t | gsub("['\"\\\\]"; "")) as $bare
-       | (($x.g | contains(">")) or (.tee and ($bare | startswith("-") | not))) as $written
-       | ($written and ($bare | test("^[0-9]+$|^/dev/") | not)) as $file
-       | .out = {key: ($x.t | file_key), file: $file,
-                 opened: ($file and (($x.g | test("^(<>|>)"))
-                                     and ($prev.t | test("^([3-9]|[1-9][0-9]+|\\{[A-Za-z_][A-Za-z0-9_]*\\})$"))
-                                     or ($prev.t == "exec" or ($bare | test("(^|/)(\\.git|hooks)/"))))),
-                 use: (($written | not) and (($x.t | hands_file_over($prev.t)) | not)),
-                 glob: (($written | not) and ($x.t | unquoted_word | test("[*?\\[]|(^|[^$])\\{")))}
-       | .tee = (.tee or ($x.t | file_key) == "tee");
-       .out)] as $words
-  | ([$words[] | select(.file and .key != "") | .key]) as $written
-  | ($written | length) > 0
-    and (any($words[]; .opened or .glob)
-         or ((reduce ($words[] | select(.use)) as $u ({}; .[$u.key] = true)) as $named
-             | any($written[]; $named[.] == true)));
-
-# The operator's captures: the `-` of `<<-`, then the delimiter in single quotes, in double quotes,
-# the backslash of `\EOF`, and the delimiter itself when it is not in quotes. Any of the three
-# quotings makes the body literal: the shell expands nothing in it. The shell's delimiter is the
-# whole word after `<<`, up to a blank or an operator character, so the pattern matches only where
-# that word ends right after the name: `<<EOF-1`, `<<EOF.`, `<<EOF"X"` and `<<'EOF'x` (whose
-# terminators are `EOF-1`, `EOF.`, `EOFX` and `EOFx`) are no operator it can read.
-def heredoc_op_regex:
-  "(?<!<)<<(?!<)(-?)[ \t]*(?:'([A-Za-z_][A-Za-z0-9_]*)'|\"([A-Za-z_][A-Za-z0-9_]*)\"|(\\\\)?([A-Za-z_][A-Za-z0-9_]*))(?=[ \t;&|<>()]|$)";
-# Every `<<` that is not part of a `<<<` here-string, readable or not.
-def heredoc_any_regex: "(?<!<)<<(?!<)";
-# Whether a line ends in a backslash that is not itself escaped, which joins the next line to it.
-def ends_continued: test("(^|[^\\\\])(\\\\\\\\)*\\\\$");
-# What the shell runs inside the body of a heredoc whose delimiter is not quoted: a command
-# substitution, `$(...)` or a backtick, and a `${...}` expansion, whose word can hold one.
-def expands_in_body: test("\\$\\(|`|\\$\\{");
-# Whether a heredoc body inside a `$(...)` may end the substitution before its terminator, in some
-# shell. bash 3.2 (macOS's `/bin/bash`, which `bash -c` and Codex get) finds a `$(`'s closing `)` by
-# reading the text inside it, the heredoc's body included, with quotes, backslashes and comments
-# counted as shell text: a body line `EOF)`, `EOF )` or `x ) " ; git push ; echo "` closes the
-# substitution there, and what follows runs, while zsh reads the same body to its delimiter. So a
-# body with a `)` in it is text only when it holds no quote, backtick, backslash or `#`, which
-# could hide a `(` from that count, and no `)` closes more than the body itself opened.
-def may_close_substitution:
-  contains(")")
-  and (test("['\"`\\\\#]")
-       or any(foreach explode[] as $c (0; if $c == 40 then . + 1 elif $c == 41 then . - 1 else . end); . < 0));
-def heredoc_sep_regex: "\\$\\(|`|;|&|\\||\\(|\\)";
-def balanced_plain: (test("\\\\") | not)
-  and ((explode | map(select(. == 39)) | length) % 2 == 0)
-  and ((explode | map(select(. == 34)) | length) % 2 == 0);
-# The segment of `$text` after its last separator, with where it starts and the separator itself.
-def last_segment:
-  . as $text
-  | ([match(heredoc_sep_regex; "g")] | last) as $sep
-  | {sep: $sep, start: (if $sep == null then 0 else $sep.offset + $sep.length end)}
-  | .text = $text[.start:];
-
-# Whether the heredoc operator `$op` on `$line` feeds a body nobody runs, and whether it sits inside
-# a `$(...)`. Its own command -- from the separator before it to the operator -- has to be a
-# text-only command with its quotes closed, and the separator in front of it has to stand outside
-# any quote the earlier lines left open. A `(` or a backtick in front of it, a `#` before it, and
-# a `|`, `(` or backtick after it on the same line (a pipe or a process substitution could hand
-# the body to a shell) all keep the body. In front of a `$(`, the command the substitution is an
-# argument of has to be text-only too, with no second `$(` or backtick before it, so `bash -c
-# "$(cat <<EOF ...` keeps its body; and after the body the substitution has to close on the next
-# line, with nothing but `;`, `&` or the line's end after it, since a pipe there could hand its
-# output to a shell (`strip_heredocs` checks that line). And nothing before its command -- on an
-# earlier line (`$grouped`) or earlier on its own -- may open a group that could close after the
-# body and hand the group's output on (`opens_a_group`): `{` then `} | bash`, `(` then `) | bash`,
-# `do` then `done | sh`, `bash <(`, `x=$(` then `eval "$x"`, zsh's `coproc bash` then `>&p`.
-def opens_a_group:
-  test("[({`]")
-  or test("(^|[^A-Za-z0-9_])(do|then|else|elif|case|coproc|alias|function)([^A-Za-z0-9_]|$)");
-def heredoc_check($q; $line; $op; $grouped):
-  ($line[0:$op.offset]) as $p
-  | ($line[$op.offset + $op.length:]) as $r
-  | ($p | last_segment) as $seg
-  | ($seg.sep.string // "") as $s
-  | ($grouped | not)
-    and (($p | contains("#")) | not)
-    and (($r | test("[|(`]")) | not)
-    and ($s | IN("", ";", "&", "|", "$(", ")"))
-    and ($seg.text | balanced_plain)
-    and ($seg.text | text_only_text)
-    and (if $s == "$(" then
-           ($p[0:$seg.sep.offset]) as $e
-           | ($e | last_segment) as $outer
-           | (($e | test("\\$\\(|`")) | not)
-             and (($outer.sep.string // "") | IN("", ";", "&", "|"))
-             and ($outer.text | rtrimstr("\"") | balanced_plain and text_only_text)
-             and (($e[0:$outer.start] | quote_after($q)) == 0)
-             and (($e[0:$outer.start] | opens_a_group) | not)
-             and (($e | quote_after($q)) | IN(0, 2))
-         else (($p[0:$seg.start] | quote_after($q)) == 0) and (($p[0:$seg.start] | opens_a_group) | not) end)
-  | {ok: ., sub: ($s == "$(")};
-
-# The command with the body of every heredoc nobody runs taken out, and its operator with it, so
-# the text in it is not read as commands and the `<<` no longer makes the reading unsure. A body
-# is found line by line: it starts after the operator's line and ends at the first line that is
-# exactly its delimiter (leading tabs dropped for `<<-`), as the shell reads it. Only a body that
-# is text is taken out: one whose delimiter is quoted (`<<'EOF'`, `<<"EOF"`, `<<\EOF`), which the
-# shell passes on as it stands, or one whose unquoted delimiter's body holds no `$(`, backtick or
-# `${` -- the shell runs a command substitution in an unquoted heredoc's body before the reading
-# command sees a byte, so `cat <<EOF` around `$(git push)` is a push. Such a body is kept, its
-# operator line put back, and read as before. So does an unquoted body with a line ending in a
-# backslash, which returns the command unchanged: the shell removes each backslash-newline from
-# such a body first, so `$\` then `(` on the next line is a `$(` it runs, and `EO\` then `F` ends
-# the body there. A heredoc that is kept (fed to `bash`, `python3`, `ssh`, ...) keeps its body,
-# is read as before, unsure, and ends all stripping after it, since where its body ends is the
-# shell's to find; a line with two operators keeps both and ends all stripping after it, and so does a line holding a `<<` the operator pattern cannot
-# read (`<<EOF-1`, `$((1<<2))`), an operator line a backslash continues onto the next, and a line
-# a backslash continues from the one before when it holds a `<` (`cat <\` then `<EOF`), since the
-# shell's body then starts or ends where this reading cannot follow. Anything unexpected -- a body with no terminator, a `$(...)`
-# that does not close right after its body, a body inside a `$(...)` that bash 3.2 could close
-# early (`may_close_substitution`) -- returns the command unchanged, so the guard reads it exactly
-# as it would have without this.
-def strip_heredocs:
-  . as $orig
-  | if (contains("<<") | not) then .
-    else
-      (reduce (split("\n")[]) as $line (
-         {out: [], mode: 0, delim: "", dash: false, q: 0, giveup: false, bad: false, close_check: false,
-          sub: false, quoted: false, held: [], op_line: "", op_q: 0, cont: false, grouped: false};
-         if .mode == 2 then
-           .out += [$line]
-           | (if ((if .dash then ($line | sub("^\t+"; "")) else $line end) == .delim) then .mode = 0 else . end)
-         elif .mode == 1 then
-           if ((if .dash then ($line | sub("^\t+"; "")) else $line end) == .delim) | not then .held += [$line]
-           elif .sub and (.held | join("\n") | may_close_substitution) then .bad = true | .mode = 0
-           # An unquoted body's backslash-newlines are removed before the shell reads it, so a line
-           # ending in one may join a `$` to a `(` or end the body at a joined line (`EO\` then `F`).
-           elif (.quoted | not) and any(.held[]; ends_continued) then .bad = true | .mode = 0
-           elif (.quoted | not) and (.held | join("\n") | expands_in_body) then
-             # The shell expands this body: keep it, with its operator line, as a kept heredoc's.
-             .out = .out[0:-1] + [.op_line] + .held + [$line]
-             | .q = .op_q | .mode = 0 | .sub = false | .held = []
-           else .close_check = .sub | .mode = 0 | .held = []
-           end
-         else
-           (if .close_check then
-              .close_check = false
-              | (if $line | test("^[ \t]*\\)\"?[ \t]*($|;|&)") then . else .bad = true end)
-            else . end)
-           | .q as $q
-           | ([$line | match(heredoc_op_regex; "g")]) as $ops
-           | ([$line | match(heredoc_any_regex; "g")] | length) as $any
-           | .cont as $joined
-           | .cont = ($line | ends_continued)
-           | if .giveup or ($any == 0 and (($joined and ($line | contains("<"))) | not)) then
-               .out += [$line] | .q = ($line | quote_after($q)) | .grouped = (.grouped or ($line | opens_a_group))
-             elif ($ops | length) != $any or $joined or .cont then
-               # A `<<` the pattern cannot read, or one a backslash-newline splits or continues: the
-               # shell's body starts or ends where this reading cannot follow, so nothing from here on
-               # is taken out.
-               .out += [$line] | .giveup = true | .q = ($line | quote_after($q))
-             else
-               ($ops[0]) as $op
-               | ($op.captures | map(.string)) as $caps
-               | ($caps[1] // $caps[2] // $caps[4]) as $delim
-               | (if ($ops | length) == 1 then heredoc_check($q; $line; $op; .grouped) else {ok: false, sub: false} end) as $check
-               | .delim = $delim | .dash = ($caps[0] == "-")
-               | if $check.ok then
-                   ($line[0:$op.offset] + " " + $line[$op.offset + $op.length:]) as $kept
-                   | .out += [$kept] | .mode = 1 | .sub = $check.sub | .q = ($kept | quote_after($q))
-                   | .grouped = ($kept | opens_a_group)
-                   | .quoted = ($caps[1] != null or $caps[2] != null or $caps[3] != null)
-                   | .held = [] | .op_line = $line | .op_q = ($line | quote_after($q))
-                 else
-                   # A kept heredoc's end is the shell's to find (bash 3.2 ends one inside `$(...)`
-                   # at `EOF)`, an unquoted one at a joined line), so nothing after it is taken out.
-                   .out += [$line] | .mode = 2 | .sub = false | .giveup = true
-                   | .q = ($line | quote_after($q))
-                 end
-             end
-         end)) as $st
-      | if $st.bad or $st.mode == 1 or $st.close_check then $orig else $st.out | join("\n") end
-    end;
-
-# For every word, whether it is text a text-only command only prints, searches or stores: a word
-# from a quoted shell word, in a command that is text-only (above), that does not start right
-# after a `(` or a backtick, and whose output is not piped into anything but another text-only
-# command. Such a word never starts a git, gh, wrapper or pushing-script reading. Read only when
-# the reading is sure, since only then are the quotes where the pass says they are. A command
-# followed by a `(` is not text-only here either, since `tee >(bash)` hands what it writes to a
-# shell. Nor is any command after the first unquoted word that opens a group (`(`, a backtick,
-# `{`, `do`, `then`, `else`, `elif`, `case`, `coproc`, `alias`, `function`): the group may close
-# after it and hand its output to a shell (`{ true; echo "..."; } | bash`, `do` then `done | sh`),
-# which this table, reading one command at a time, cannot see; the same rule as a heredoc's
-# (`opens_a_group`).
-def group_word: IN("(", "`", "{", "do", "then", "else", "elif", "case", "coproc", "alias", "function");
-def inert_table($w; $quoted):
-  ($w | length) as $n
-  | (first(range(0; $n) | select(($quoted[.] | not) and ($w[.] | group_word))) // $n) as $opened
-  | ([range(0; $n) | select($w[.] | is_hard_sep)]) as $hs
-  | ([-1] + $hs) as $before
-  | ($hs + [$n]) as $ends
-  | [range(0; $ends | length) as $k
-     | {s: ($before[$k] + 1), e: $ends[$k],
-        before: (if $before[$k] < 0 then null else $w[$before[$k]] end),
-        after: (if $ends[$k] >= $n then null else $w[$ends[$k]] end)}
-     | .empty = (.s >= .e)
-     | .base = ((.before | IN(null, ";", "&", "|", "\n", ")")) and .after != "(" and .s <= $opened
-                and text_only_at($w; .s; .e))] as $segs
-  | ([foreach range(($segs | length) - 1; -1; -1) as $k ({next_ok: true, me: false};
-       ($segs[$k]) as $sg
-       | (if $sg.after == "|" then .next_ok else true end) as $down
-       | .me = ($sg.base and $down)
-       | .next_ok = (($sg.base or $sg.empty) and $down);
-       .me)] | reverse) as $seg_ok
-  | [range(0; $segs | length) as $k
-     | ([range($segs[$k].s; $segs[$k].e) | ($quoted[.] and $seg_ok[$k])]
-        + (if $segs[$k].e < $n then [false] else [] end))[]];
-
 # One pass over the word array: a hard separator resets the current command's exemption, and so
 # does a soft one when the wrapper stood inside quotes (`inner`) or the reading is `$unsure` (every
 # separator is soft then, and every one ends the exemption); any separator recomputes
@@ -1394,7 +1088,7 @@ def command_words($t; $tp; $i):
   + (if $t.cw2 == null then [] else [$t.cw2[$i] // $i] end)
   + (if $tp == null then []
      else [command_word($tp; $i)] + (if $tp.cw2 == null then [] else [$tp.cw2[$i] // $i] end) end);
-def findings($w; $w0; $levels; $unsure; $inert):
+def findings($w; $w0; $levels; $unsure):
   # Levels that are all 0 group nothing, and the plain reading would be the same one again.
   (if $levels | any(. > 0) then $levels else null end) as $lv
   | ($w | length) as $n
@@ -1430,7 +1124,6 @@ def findings($w; $w0; $levels; $unsure; $inert):
   | until(.i >= $n;
       . as $state
       | ($w[$state.i]) as $x
-      | if $inert != null and $inert[$state.i] then $state | .i += 1 else .
       | (detect_wrapper($w; $t; $state.i; $n)
          // (if $tp == null then null else detect_wrapper($w; $tp; $state.i; $n) end)) as $wrap
       | (($state.cmd_words | index($state.i)) != null) as $cmd_pos
@@ -1470,9 +1163,50 @@ def findings($w; $w0; $levels; $unsure; $inert):
                    | (if is_issue_write($hit.reason) then .issue_write = true else . end) end
                | .i = $hit.next)
             end
-        end
-      end)
+        end)
   | {out, reviewer_push, wrapped, issue_write};
+
+# **The three shapes whose text is told apart for certain** (the header's list): the command with
+# that text taken out, or the command unchanged, to be read as it stands. Every shape is matched
+# against the whole command, so a second command, a group, an expansion or a redirection anywhere
+# makes it no shape at all. `shape_plain` is a word the shell neither splits, quotes, expands nor
+# globs; `shape_delim` is a heredoc operator's delimiter that quotes its body (in single or double
+# quotes, or after a backslash, as a whole word), with the delimiter in the capture `d`, `q` or `b`.
+def shape_plain: "[A-Za-z0-9_./:@,+=-]+";
+def shape_delim:
+  "<<[ \t]*(?:'(?<d>[A-Za-z_][A-Za-z0-9_.-]*)'|\"(?<q>[A-Za-z_][A-Za-z0-9_.-]*)\"|\\\\(?<b>[A-Za-z_][A-Za-z0-9_]*))";
+def shape_file: ">>?[ \t]*~?" + shape_plain;
+def shape_cat_lines:
+  ["^cat[ \t]+" + shape_file + "[ \t]+" + shape_delim + "[ \t]*$",
+   "^cat[ \t]+" + shape_delim + "[ \t]+" + shape_file + "[ \t]*$"];
+def shape_commit_line:
+  "(?:-[A-Za-z]+|--[a-z][a-z-]*)" as $flag
+  | "^(?:(?:uv[ \t]+run[ \t]+)?(?:[A-Za-z0-9_./-]*/)?python[0-9.]*[ \t]+)?"
+    + "(?:[A-Za-z0-9_./-]*/)?agent-identity\\.py[ \t]+run(?:[ \t]+--repo[ \t]+" + shape_plain + ")?"
+    + "[ \t]+(?:claude-coder|codex-coder|claude-orchestrator)[ \t]+--[ \t]+git[ \t]+commit"
+    + "(?:[ \t]+" + $flag + ")*[ \t]+(?:-F[ \t]+(?:-|/dev/stdin)|--file=(?:-|/dev/stdin))"
+    + "(?:[ \t]+" + $flag + ")*[ \t]+" + shape_delim + "[ \t]*$";
+def shape_search:
+  "^(?<c>rg|grep)(?<a>(?:[ \t]+" + shape_plain + ")*)[ \t]+(?:'[^'\n]*'|\"[^\"$`\\\\\n]*\")"
+  + "(?<z>(?:[ \t]+" + shape_plain + ")*)[ \t]*$";
+def text_shape:
+  . as $c
+  | (split("\n")) as $lines
+  | ($lines[0]) as $l1
+  | (first((shape_cat_lines + [shape_commit_line])[] as $re | $l1 | capture($re))
+     // null) as $op
+  | if $op != null then
+      ($op.d // $op.q // $op.b) as $d
+      | (first(range(1; $lines | length) | select($lines[.] == $d)) // null) as $k
+      | if $k != null and all($lines[$k + 1:][]; test("^[ \t]*$"))
+        then $l1 | sub("[ \t]*" + shape_delim; "")
+        else $c end
+    else
+      (first($c | capture(shape_search)) // null) as $s
+      | if $s != null and (($s.a + " " + $s.z) | test("(^|[ \t])--(pre|hostname-bin)") | not)
+        then $s.c + $s.a + " ''" + $s.z
+        else $c end
+    end;
 
 # A command longer than `too_long` is not read at all: the character pass and the word scans are
 # linear, but a dense 200 KB heredoc commit takes several seconds, and a hook that runs past its
@@ -1506,21 +1240,15 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
   | if length > hard_cap then
       {out: ["the whole command: over 1 MB, not read at all"],
-       reviewer_push: false, wrapped: false, issue_write: false, too_long: true}
+       reviewer_push: false, wrapped: false, too_long: true}
     elif length > too_long then
       if test(names_a_write_tool)
       then {out: ["the whole command: over 64 KB and naming git, gh or a pushing script"],
-            reviewer_push: false, wrapped: false, issue_write: false, too_long: true}
+            reviewer_push: false, wrapped: false, too_long: true}
       else empty end
     else
-      # A command that may run a file it writes is read whole: no heredoc taken out, nothing inert.
-      . as $whole
-      | strip_heredocs as $stripped
-      | (test(">|tee") and ($stripped | runs_written_file)) as $danger
-      | (if $danger then $whole else $stripped end)
-      # `|&` is a pipe of stdout and stderr both (bash, zsh): read as `|`, never as a `|` and then
-      # a `&` that would make the next command one of its own, handed nothing.
-      | (swap("|&"; "|") | swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
+      text_shape
+      | (swap(">&"; ">") | swap("<&"; "<") | swap("&>"; ">")) as $raw
       | ($raw | swap("${IFS}"; " ") | swap("$IFS"; " ")) as $bare
       # With no quote, backslash or `#` in it, the character pass has nothing to track: only an
       # unquoted comma or bracket becomes glue.
@@ -1531,17 +1259,8 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
          or ($bare | drop("\\\n") | test("\\$\\(|`|<<|\\$\\{|\\$\\$'"))) as $unsure
       | ($marked | drop("\u0003") | split_words | leveled_parts) as $parts
       | ($parts | map(.w)) as $w0
-      | ($w0 | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $ws
-      # Text a text-only command only prints or searches (`inert_table`) starts no reading, and a
-      # separator inside it is text too, so it ends no `gh api` call's flags either. Only a sure
-      # reading has a table, so `$w0`, which `detect_git` and `push_scan` read for a substitution's
-      # opener and a push's own quoted separator, is `$ws` there, less the inert separators; a
-      # push's own words are never inert, since no push is a text-only command.
-      | (if $unsure or $danger or (any($parts[]; .q) | not) then null else inert_table($ws; $parts | map(.q)) end) as $inert
-      | (if $inert == null then $ws
-         else [range(0; $ws | length) as $i | if $inert[$i] and $ws[$i] == "\u0001" then "\u0007" else $ws[$i] end]
-         end) as $w
-      | (findings($w; $w0; $parts | map(.c); $unsure; $inert)) as $result
+      | ($w0 | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
+      | (findings($w; $w0; $parts | map(.c); $unsure)) as $result
       | if ($result.out | length) == 0 then empty else $result end
     end
 end
@@ -1582,9 +1301,9 @@ endpoint (a new issue, issues/N, its labels, assignees or lock, an issue comment
 GraphQL issue mutation, wrapped in an identity or not; the one API route left open is a POST to \
 issues/N/comments, which a pull request's own conversation comments share. Run \
 'uv run python tools/inbox.py --help', and see the inbox skill. If the command only mentions \
-such a write in text (a message, a heredoc body, a comment body naming an issue path), put the \
-text in a file (git commit -F file, --body-file file, gh api -F body=@file) or quote it as the \
-argument of a command that only prints or searches it."
+such a write in text (a message, a heredoc body, a comment body naming an issue path), write the \
+text to a file with cat > file <<'EOF' as a command of its own and pass the file (git commit -F \
+file, --body-file file, gh api -F body=@file)."
 elif [ "$reviewer_push" = "true" ]; then
 	reason="This command ($flagged) runs as a reviewer identity (claude-reviewer or codex-reviewer), \
 but reviewers never push or merge. Wrap it in \
@@ -1611,7 +1330,8 @@ pr-review, and .claude/hooks/github-write-guard.sh for the current list of what 
 		reason="$reason If this command is already wrapped, the write named here is probably a \
 mention in text the hook reads as commands: a heredoc or \$(...) body (a commit message, a PR \
 body) makes every separator end the wrapper's reach, so a later line that names a write reads as \
-unwrapped. $file_hint"
+unwrapped. $file_hint A wrapped git commit -F - <<'EOF' that is the whole command, and a \
+cat > file <<'EOF' that is the whole command, read their bodies as text."
 	fi
 fi
 

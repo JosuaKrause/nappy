@@ -74,12 +74,19 @@ then it also shows up as issue -- great -- no need for a hook I don't want my en
 recorded. an agent has better judgement there.")*.
 
 ```sh
-uv run python tools/inbox.py --role claude-orchestrator capture --band next <<'NOTE'
+cat > /tmp/note.md <<'NOTE'
 the player's words, exactly as they were said
 NOTE
 ```
 
-The body is **the player's words verbatim and nothing else**, so it can be copied word for word
+```sh
+uv run python tools/inbox.py --role claude-orchestrator capture --band next --body-file /tmp/note.md
+```
+
+The words go into a file first, as a command of its own, because the write guard reads a heredoc
+fed to the script as commands: words that name a write (`git push`, `gh issue close`) would deny
+the capture, while a `cat > FILE <<'NOTE'` that is the whole command is one of the shapes it reads
+as text (**using-tools**). The body is **the player's words verbatim and nothing else**, so it can be copied word for word
 when it is filed; the title is the agent's (the words' first line when `--title` is not given).
 `--band` goes on only when the player named a band. When the words answer something the agent
 said — a question, an option with a label — `--context-file` posts what they answered as the

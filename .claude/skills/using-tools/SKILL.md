@@ -109,16 +109,18 @@ not only a push. **A `gh issue` write is denied wrapped or not, and so is one th
 (a new issue, `issues/N`, its labels, assignees or lock, an issue comment's edit, a GraphQL issue
 mutation; a comment POST to `issues/N/comments`, which a pull request's conversation comments
 share, stays open): an agent writes an issue only through `tools/inbox.py` (**inbox**), which
-wraps its own writes. A write's words inside a quoted
-argument of a command that only prints, searches or stores it (`rg -n "gh issue comment"`,
-`git commit -m "..."`), or in the body of a heredoc with a quoted delimiter such a command reads
-(`cat > brief.md <<'EOF'`), are text and do not count; the same words piped into a shell, in a
-heredoc fed to one, in a quoted argument or a heredoc inside a group opened before it (`{ true;
-echo "..."; } | bash`, or `{` on an earlier line), in the body of a heredoc whose unquoted delimiter lets the shell run a
-`$(...)`, a backtick or a `${...}` in it (`cat <<EOF`, a backslash-newline in it included), or
-in a command that names a file it writes again in any form other than as a body to post or commit
-(`cat > x.sh <<'EOF'` then `bash x.sh`, `bash x''.sh` or a glob; not `--body-file x.md`), or that
-opens one on a numbered descriptor, an `exec` redirect or a git hook's path, still deny.
+wraps its own writes. **A write's words in text deny like a call** — in an echo, a commit
+message, a PR body, a heredoc, a comment — **except in three shapes, each the whole command and
+nothing else in it**: `cat > FILE <<'EOF'` (or `cat <<'EOF' > FILE`, `>>`, the delimiter quoted
+or after a backslash), whose body is text; a coder's or the orchestrator's wrapped
+`git commit -F - <<'EOF'`, whose body is text and which is judged as the wrapped commit; and `rg` or `grep` with
+one quoted pattern, plain options and paths, whose pattern is text *(plaid-tapir, statement 4:
+"B")*. Anything else — a second command after the body, `mkdir -p … &&` in front, an unquoted
+delimiter, `<<-`, a `$` in a double-quoted pattern, a pipe — is read as the guard reads every
+command, and a body that names a write then denies. So a message, a brief or a note that names a
+write goes into a file with the first shape as a command of its own, and is passed on by name
+(`git commit -F file`, `--body-file file`, `gh api -F body=@file`, `tools/inbox.py capture
+--body-file file`).
 
 ## A manual sequence done a second time becomes a script
 

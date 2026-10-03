@@ -766,14 +766,15 @@ class CodexHooksTest(unittest.TestCase):
         output = self.call_raw(command="gh api -X GET search/issues --jq '.items[] | .number' -f q='repo:a/b is:open'")
         self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
 
-    def test_github_write_guard_reads_a_heredoc_cat_prints_as_text(self) -> None:
-        # A heredoc body a text-only command reads is taken out before the reading, so a pull
-        # request body naming a write is allowed; a write after the heredoc still denies.
+    def test_github_write_guard_reads_a_text_shape_as_text(self) -> None:
+        # A wrapped `git commit -F - <<'EOF'` that is the whole command, and a lone rg with one
+        # quoted pattern, are text shapes: a body or a pattern naming a write is allowed, and the
+        # same body followed by a second command is read as before and denies.
         wrap = "uv run python tools/agent-identity.py run codex-coder --"
-        body = "\"$(cat <<'EOF'\nRun `git push` through the wrapper.\nEOF\n)\""
-        text = self.call(tool="Bash", command=f"{wrap} gh pr create --title t --body {body}")
+        commit = f"{wrap} git commit -F - <<'EOF'\nRun `git push` through the wrapper.\nEOF"
+        text = self.call(tool="Bash", command=commit)
         self.assertIn("committing", text)
-        output = self.call_raw(command=f"{wrap} gh pr create --title t --body {body}\ngit push")
+        output = self.call_raw(command=f"{commit}\ngit push")
         assert output is not None
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
         output = self.call_raw(command="rg -n 'gh issue comment' .claude/")
@@ -790,10 +791,9 @@ class CodexHooksTest(unittest.TestCase):
         self.assertIn("committing", text)
 
     def test_github_write_guard_explains_a_wrapped_heredoc_false_deny(self) -> None:
-        # A heredoc fed to anything but a text-only command (sed can run a command) keeps its body.
         command = (
             "uv run python tools/agent-identity.py run codex-coder -- gh pr create --title t --body "
-            "\"$(sed s/a/b/ <<'EOF'\nRun `git push` through the wrapper.\nEOF\n)\""
+            "\"$(cat <<'EOF'\nRun `git push` through the wrapper.\nEOF\n)\""
         )
         output = self.call_raw(command=command)
         assert output is not None
