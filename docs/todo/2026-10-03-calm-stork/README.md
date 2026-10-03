@@ -11,14 +11,20 @@ screenshots of every scene and no videos for this pass, and configurable time be
 recording starts so everything is already moving; [gentle-marten, review and capture scope](../../playtests/2026-10-03-gentle-marten.md)
 records them.
 
-Use [round-ferret, the shared recipe builder](../2026-10-02-round-ferret/README.md)
+Use [round-ferret, the shared recipe builder](../../decisions/2026-10-02-round-ferret.md)
 to deliver [the described scenes](trailer-recipes.md). Follow with
 [velvet-hare, ordinary controls and bounded ground](../2026-10-03-velvet-hare/README.md)
 for experimentation in every recipe. **Proposed, not asked for:** the `next` band
-and this delivery order, following the review's requested split.
+and this delivery order; [gentle-marten](../../playtests/2026-10-03-gentle-marten.md)
+records the review requesting separate slices.
 
 [M204, the trailer cut](../2026-09-25-M204/README.md) retains movie assembly, final
 ordering/captions/fades, the thirty-second limit, resolution/audio output, and its
 existing missing-truck, nonrunning-mother and loaded-render bugs in the first attempt.
 The scenes here must themselves show the requested truck/run actions. Fixing or
 reproducing that earlier movie is not this slice's acceptance test.
+
+The chase still uses the recipe capture path (`--recipe scene-recipes/trailer-chase.json
+--recipe-mode scripted`), with recipe movement and capture on the same physics clock.
+M204 retains investigation of its older standalone `--start-escape` with `--walk` or
+`--after` screenshot hang; that path is not required for this still.

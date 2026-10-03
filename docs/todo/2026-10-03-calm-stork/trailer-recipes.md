@@ -19,9 +19,11 @@ and [FinalePlanner](../../../src/finale/finale_planner.gd) for the escape route 
 Check real gameplay actions, rather than painting substitutes that resemble them.
 
 Build the final zoom from **her doorstep** to the whole bustling city, retaining
-the active city. Construct enough extent for that view. The other scenes alternate
-parents with a randomized initial choice fixed for repeatability; the three glimpses
-keep their mother/father/mother assignments. Title, fades, one-second glimpse duration,
+the active city. Construct enough extent for that view. PLAYTEST-139 statement 8 says
+the other shots are "chosen at random but fixed". Per-shot parent assignments remain
+open to M204's editorial choice; recipe preview assignments are proposals, not a
+strict alternation rule. The three glimpses keep their mother/father/mother assignments.
+Title, fades, one-second glimpse duration,
 overall maximum thirty seconds, on-screen text, game resolution and audio remain the
 movie editorial requirements in [M204, trailer cut](../2026-09-25-M204/README.md).
 
@@ -29,7 +31,8 @@ When updating the rig, provide an adjustable capture start time after movement b
 Advance the whole scene during this pre-roll: player movement, vehicles, crowds,
 pursuits and any scripted camera track. Everything meant to move is already moving
 when capture starts. Keep a configurable zero offset for deliberate resting openings.
-Reuse the existing per-shot trim/start control where it supplies this behavior, and
+Reuse the `in` field in `tools/trailer/shots.json` where it supplies this behavior:
+it is seconds into a shot's frames where `tools/trailer.sh` starts the cut. Also
 document its units and relationship to the simulation clock. No video render is needed
 for this pass.
 
