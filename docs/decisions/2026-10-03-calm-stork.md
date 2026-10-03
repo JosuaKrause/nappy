@@ -151,3 +151,22 @@ tool catalogue: its scene runner entry remains beside main's sparse-validation a
 cleanup entries. Main's evidence removals do not touch these scene captures. All
 independent queue, playtest and decision files retain their identities. The merge
 needs no textual resolution; boot, lint and whitespace checks verify the result.
+
+The dog correction uses the existing authored-actor path to add seven real moving
+walkers on the sparse sidewalk, alongside its 400 background walkers. Its total is
+407; choice and birds retain 400, and all three retain 34 cars. This is a small
+scene presentation choice, open to correction. Explicit walkers are admitted only
+alongside uniform background pedestrians; incompatible mixed actors remain rejected,
+and pins overlapping existing walkers fail. Their staggered starting positions and
+varied headings preserve ordinary movement, collisions and the player's route.
+The correction changes neither construction/runtime seeds nor the capture time.
+
+At source `fa51c76f`, the final dog capture has 13 walkers on the left street,
+14 on the main road and 15 on the horizontal street, with 21 in each picture half.
+All 42 visible walkers move. The actual scripted dog pursuit and player run pass;
+the seven named walkers' action observations require movement. The focused
+composition/runtime/activity run passes 84 checks, including the new admission,
+overlap and pictured-sidewalk cases. Independent review judged the corrected
+composition busy on both comparable street approaches. No further accepted scene
+or ordinary game behavior changes. This closes the remaining composition queue
+and files revised scenes 3–6 for human review, with movie editing still in M204.
