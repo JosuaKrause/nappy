@@ -66,7 +66,9 @@ func _displayed_reservations(t) -> void:
 		t.check(authored[0].span == 2 and authored[0].cells.has(Vector2i(6, 1)),
 				"displayed fixture reserves its full base including the east cell")
 		var object: Building.RoofObject = building._roof_objects[0]
-		t.check(AtlasLibrary.native_size(object.texture_key).x * object.scale.x <= 64.0,
+		var width := AtlasLibrary.native_size(object.texture_key).x * object.scale.x
+		# Node2D stores the 4/3 room transform in Vector2 float precision.
+		t.check(width <= 64.0 or is_equal_approx(width, 64.0),
 				"rendered width fits the accepted two-cell reservation")
 		for invalid in [[{"cell": [6, 1], "kind": fixture[1]}],
 			[valid[0], {"cell": [6, 1], "kind": fixture[1]}]]:
