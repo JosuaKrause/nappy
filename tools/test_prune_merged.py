@@ -274,5 +274,76 @@ class BuildScratchTests(unittest.TestCase):
         self.assertFalse((self.repo / "build/web-template-work").exists())
 
 
+class SparseLintTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.scratch = tempfile.TemporaryDirectory(prefix="sparse-lint-test-")
+        self.addCleanup(self.scratch.cleanup)
+        self.root = Path(self.scratch.name)
+        (self.root / "tools").mkdir()
+        (self.root / "README.md").write_text("# Fixture\n")
+        (self.root / "docs/todo").mkdir(parents=True)
+        for tool in ("lint.sh", "queue.sh"):
+            shutil.copy2(ROOT / "tools" / tool, self.root / "tools" / tool)
+        (self.root / "art").mkdir()
+        self.svg = self.root / "art/image.svg"
+        self.svg.write_text('<svg xmlns="http://www.w3.org/2000/svg"/>\n')
+        self.git("init", "-q")
+        self.git("add", "art")
+
+    def git(self, *args: str) -> None:
+        subprocess.run(["git", *args], cwd=self.root, check=True, capture_output=True)
+
+    def lint(self, *args: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [str(self.root / "tools/lint.sh"), *args], env=env, capture_output=True, text=True, check=False
+        )
+
+    def test_missing_tracked_svg_fails_instead_of_printing_ok(self) -> None:
+        self.svg.unlink()
+        result = self.lint()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("cannot read SVG", result.stdout)
+        self.assertNotIn("\nOK\n", result.stdout)
+
+    def test_corrupt_svg_fails_and_names_file(self) -> None:
+        self.svg.write_text("<svg><broken></svg>\n")
+        result = self.lint()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("art/image.svg:1: not well-formed XML", result.stdout)
+
+    def test_sparse_omission_is_explicit_and_direct_missing_path_fails(self) -> None:
+        self.git("update-index", "--skip-worktree", "art/image.svg")
+        self.svg.unlink()
+        result = self.lint()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("1 absent skip-worktree files omitted", result.stdout)
+        self.assertNotEqual(self.lint("art/image.svg").returncode, 0)
+
+    def test_materialized_skip_worktree_file_is_still_validated(self) -> None:
+        self.git("update-index", "--skip-worktree", "art/image.svg")
+        self.svg.write_text("invalid xml\n")
+        self.assertNotEqual(self.lint().returncode, 0)
+
+    def test_parser_failure_propagates_even_without_output(self) -> None:
+        executable = self.root / "bin/python3"
+        executable.parent.mkdir()
+        executable.write_text("#!/bin/sh\nexit 42\n")
+        executable.chmod(0o755)
+        env = dict(os.environ, PATH=f"{executable.parent}:{os.environ['PATH']}")
+        result = self.lint("art/image.svg", env=env)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SVG validation failed", result.stderr)
+
+    def test_discovery_failure_propagates(self) -> None:
+        executable = self.root / "bin/git"
+        executable.parent.mkdir()
+        executable.write_text("#!/bin/sh\nexit 42\n")
+        executable.chmod(0o755)
+        env = dict(os.environ, PATH=f"{executable.parent}:{os.environ['PATH']}")
+        result = self.lint(env=env)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SVG validation failed", result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
