@@ -12,7 +12,7 @@ false; the separate headless manifest proves that the complete scripted action p
 | `power-station-hall`, `power-station-yard` | `8941448c` | Real adjoining dead-end walls: the hall covers the facade, the fenced yard keeps it. |
 | `trailer-choice` | `1f0823ed` | A uniformly populated alternate street after the mother's wrong-way approach and backtrack; selected restaurant guests are one block east. |
 | `trailer-birds` | `1f0823ed` | The father and existing pigeon flock on an industrial side-street block, with ordinary roads throughout the frame. |
-| `trailer-dog` | `1f0823ed` | Charging dog beside a skylight roof, moving pedestrians on every pictured street, and the foreground tree moved across the road. |
+| `trailer-dog` | `fa51c76f` | Charging dog beside a skylight roof, explicitly added moving walkers on the left street, and the foreground tree moved across the road. |
 | `trailer-gatehouse` | `052fb4c1` | The father approaching horizontally toward the existing vertical gate. |
 | `trailer-title` | `d7a56707` | The father walking inside the park, with the adjacent road visible. |
 | `trailer-trucks` | `9768f6de` | Three army trucks beside the south-facing mother, varied posters, and the existing vertical roadblock at the left street mouth. |
@@ -25,8 +25,9 @@ Sources are reachable through PR #457. Godot 4.7.2 stable, macOS Apple M2, Compa
 The command uses `--player-view`, `--no-save`, scripted playback and the saved `capture_at`.
 Fetch `refs/pull/457/head` when a source revision is absent locally. No video is made.
 
-Scenes 3–5 each use 400 production walkers in their moving field, twice the ordinary act-1
-count, and the ordinary 34 cars. Initial walkers are sampled evenly along eligible sidewalk
+Scenes 3–5 each use 400 background production walkers in their moving field, twice the ordinary
+act-1 count, and the ordinary 34 cars. The dog scene adds seven explicitly positioned production
+walkers, for 407 in total. Initial background walkers are sampled evenly along eligible sidewalk
 lanes with varied seeded walking directions; recycling gives pedestrian corridors equal weight.
 An overcapacity request is rejected. Movement, body clearance, turns,
 collisions and traffic use production behavior. Ordinary gameplay keeps its own population
@@ -36,7 +37,16 @@ and street hierarchy. Each pictured street is measured separately at the frozen 
 |---|---|---|---|---|
 | Choice | h4: 17 (16) | v4 main road: 10 (10) | v5 side street: 13 (13) | 15 / 25 |
 | Birds | h3: 15 (15) | v5 side street: 11 (11) | v6 side street: 10 (10) | 17 / 19 |
-| Dog | h5: 13 (13) | v3 side street: 7 (7) | v4 main road: 14 (14) | 14 / 20 |
+| Dog | h5: 15 (15) | v3 side street: 13 (13) | v4 main road: 14 (14) | 21 / 21 |
+
+The dog comparison uses the same seed, capture tick 56, player path and tree placement.
+The source `1f0823ed` capture has 7 left-street walkers versus 14 right-street walkers across
+comparable 360px visible lengths; its still and manifests remain in evidence commit `e9c24e07`.
+The first seven-pin check (`fa5cb2fc`) has 11 / 14 street walkers and 19 / 21 picture halves;
+two added walkers sit against the image crop. The final source moves those two starts into
+existing inner sidewalk lanes. All seven named walkers move approximately 68–128px from their initial
+positions by the retained capture, while the complete action manifest passes their movement
+checks and the existing dog pursuit and player-running checks. No seed or timing search is used.
 
 The bird block is explicitly industrial and one block east of the first bird preview; its
 two existing building footprints and shallow roof make a different side-street composition.

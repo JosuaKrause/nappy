@@ -42,28 +42,28 @@
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"final_activity": {
-		"moving_crowd": 36,
+		"moving_crowd": 41,
 		"visible_cars": 2,
 		"visible_events": {
 			"charging_dog": 1
 		},
-		"visible_walkers": 34,
+		"visible_walkers": 40,
 		"walker_streets": {
 			"h5": {
-				"moving": 12,
-				"walkers": 12
+				"moving": 13,
+				"walkers": 13
 			},
 			"v3": {
-				"moving": 12,
-				"walkers": 12
+				"moving": 16,
+				"walkers": 17
 			},
 			"v4": {
 				"moving": 10,
 				"walkers": 10
 			}
 		},
-		"walkers_left": 16,
-		"walkers_right": 18
+		"walkers_left": 21,
+		"walkers_right": 19
 	},
 	"final_actors": {
 		"dog": {
@@ -74,6 +74,48 @@
 			"pursuing": false,
 			"row": "charging_dog",
 			"telegraphing": false
+		},
+		"left_walk_1": {
+			"position": [
+				1400.0,
+				2409.6826
+			]
+		},
+		"left_walk_2": {
+			"position": [
+				1480.0,
+				2272.511
+			]
+		},
+		"left_walk_3": {
+			"position": [
+				1400.0,
+				2190.3706
+			]
+		},
+		"left_walk_4": {
+			"position": [
+				1400.0,
+				2316.3931
+			]
+		},
+		"left_walk_5": {
+			"position": [
+				1480.0,
+				2458.9243
+			]
+		},
+		"left_walk_6": {
+			"position": [
+				1567.8123,
+				2424.0
+			]
+		},
+		"left_walk_7": {
+			"position": [
+				1528.0,
+				2345.1262
+			]
 		},
 		"player": {
 			"carrying": false,
@@ -87,7 +129,7 @@
 	},
 	"final_crowd": {
 		"cars": 34,
-		"moving": 430,
+		"moving": 436,
 		"moving_cars": 30,
 		"quadrants": {
 			"ne": {
@@ -99,10 +141,10 @@
 			},
 			"nw": {
 				"cars": 23,
-				"moving": 234,
+				"moving": 240,
 				"moving_cars": 19,
-				"total": 238,
-				"walkers": 215
+				"total": 245,
+				"walkers": 222
 			},
 			"se": {
 				"cars": 0,
@@ -120,8 +162,8 @@
 			}
 		},
 		"scope": "local",
-		"total": 434,
-		"walkers": 400
+		"total": 441,
+		"walkers": 407
 	},
 	"initial_activity": {
 		"moving_crowd": 8,
@@ -147,6 +189,48 @@
 			"row": "charging_dog",
 			"telegraphing": true
 		},
+		"left_walk_1": {
+			"position": [
+				1400.0,
+				2240.0
+			]
+		},
+		"left_walk_2": {
+			"position": [
+				1480.0,
+				2400.0
+			]
+		},
+		"left_walk_3": {
+			"position": [
+				1400.0,
+				2368.0
+			]
+		},
+		"left_walk_4": {
+			"position": [
+				1400.0,
+				2176.0
+			]
+		},
+		"left_walk_5": {
+			"position": [
+				1480.0,
+				2304.0
+			]
+		},
+		"left_walk_6": {
+			"position": [
+				1480.0,
+				2464.0
+			]
+		},
+		"left_walk_7": {
+			"position": [
+				1528.0,
+				2240.0
+			]
+		},
 		"player": {
 			"carrying": false,
 			"gait_frame": 1,
@@ -159,7 +243,7 @@
 	},
 	"initial_crowd": {
 		"cars": 34,
-		"moving": 434,
+		"moving": 441,
 		"moving_cars": 34,
 		"quadrants": {
 			"ne": {
@@ -171,10 +255,10 @@
 			},
 			"nw": {
 				"cars": 19,
-				"moving": 241,
+				"moving": 248,
 				"moving_cars": 19,
-				"total": 241,
-				"walkers": 222
+				"total": 248,
+				"walkers": 229
 			},
 			"se": {
 				"cars": 0,
@@ -192,8 +276,8 @@
 			}
 		},
 		"scope": "local",
-		"total": 434,
-		"walkers": 400
+		"total": 441,
+		"walkers": 407
 	},
 	"installed_events": [
 		{
@@ -268,15 +352,164 @@
 			},
 			"subject": "player",
 			"tick": 56.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1400.0,
+					2361.5146
+				]
+			},
+			"subject": "left_walk_1",
+			"tick": 56.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1480.0,
+					2308.7014
+				]
+			},
+			"subject": "left_walk_2",
+			"tick": 56.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1400.0,
+					2240.7944
+				]
+			},
+			"subject": "left_walk_3",
+			"tick": 56.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1400.0,
+					2276.5396
+				]
+			},
+			"subject": "left_walk_4",
+			"tick": 56.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1480.0,
+					2414.9458
+				]
+			},
+			"subject": "left_walk_5",
+			"tick": 56.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1533.6199,
+					2424.0
+				]
+			},
+			"subject": "left_walk_6",
+			"tick": 56.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"position": [
+					1528.0,
+					2329.0764
+				]
+			},
+			"subject": "left_walk_7",
+			"tick": 56.0
 		}
 	],
 	"physics_ticks_per_second": 30,
 	"playback_complete": true,
 	"recipe": "The charging dog's warning and the run away",
-	"recipe_sha256": "467697ee640df80230e45adcc70479a98ecba8bede86e4ad194dbf07b461d952",
+	"recipe_sha256": "21bdd2a9bb6595a8ff1df3984ddcf7749e4c1aa902eec4d6ac61bda9281e357a",
 	"scope": "full",
 	"seed": 11,
 	"setup": {
+		"actors": [
+			{
+				"at": [
+					1400.0,
+					2240.0
+				],
+				"direction": "south",
+				"kind": "walker",
+				"name": "left_walk_1"
+			},
+			{
+				"at": [
+					1480.0,
+					2400.0
+				],
+				"direction": "north",
+				"kind": "walker",
+				"name": "left_walk_2"
+			},
+			{
+				"at": [
+					1400.0,
+					2368.0
+				],
+				"direction": "north",
+				"kind": "walker",
+				"name": "left_walk_3"
+			},
+			{
+				"at": [
+					1400.0,
+					2176.0
+				],
+				"direction": "south",
+				"kind": "walker",
+				"name": "left_walk_4"
+			},
+			{
+				"at": [
+					1480.0,
+					2304.0
+				],
+				"direction": "south",
+				"kind": "walker",
+				"name": "left_walk_5"
+			},
+			{
+				"at": [
+					1480.0,
+					2464.0
+				],
+				"direction": "north",
+				"kind": "walker",
+				"name": "left_walk_6"
+			},
+			{
+				"at": [
+					1528.0,
+					2240.0
+				],
+				"direction": "south",
+				"kind": "walker",
+				"name": "left_walk_7"
+			}
+		],
 		"background": {
 			"crowd": true,
 			"uniform_walkers": true,
