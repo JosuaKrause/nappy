@@ -2597,9 +2597,7 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t) -> void:
 				"touching day 8's mark activates the burnt-shell perform")
 		t.check(director._rider != null and director._rider.def.id == "burnt_shell",
 				"riding a burnt_shell instance")
-		# Under a tile's own width, not exactly 0 — `_find_scar_instance()`'s own doc says why:
-		# the scheduler's own placement of the solid shape can nudge it a few pixels off the
-		# coordinate the scar was recorded at.
+		# Under a tile's own width, the same tolerance `_find_scar_instance()` finds it by.
 		t.check(director._rider.global_position.distance_to(scar_at) < Tuning.TILE_SIZE,
 				"the one standing at the run's own recorded scar")
 		_check_the_arrow_ends_on_the_burnt_building(t, director)

@@ -38,9 +38,9 @@ The colour cast is the quietest part of the telling: the same corner, four times
 colder. Warm afternoon → drained → cold and overcast → smoke.
 
 The loudest part is that **the city remembers**. `scar_id` makes a one-off event permanent
-for the rest of the run: the building that burned on day 3 is still a cordoned-off shell on
-day 12, and every barricade an Act IV convoy drops stays dropped. The route you memorised
-on day 2 stops existing, one closure at a time.
+for the rest of the run: the building that burned on day 3 still stands burnt on day 12,
+its windows black under soot, and every barricade an Act IV convoy drops stays dropped. The
+route you memorised on day 2 stops existing, one closure at a time.
 
 ### Act I — "It's a nice neighbourhood" (days 1–3)
 
@@ -62,7 +62,7 @@ Palette desaturates slightly. Posters go up. Loudspeaker masts are installed on 
 switch on with a test tone. Police patrols appear. On day 6 a curfew is announced and the
 day gets shorter.
 
-The burnt building from day 3 is still there, cordoned off, never repaired. Same tile,
+The building that burned on day 3 is still there, burnt, never repaired. Same building,
 every day, for the rest of the run.
 
 **Day 6, the day of the curfew:** the first `resistance_contact` appears in an alley. No prompt,

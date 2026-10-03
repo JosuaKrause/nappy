@@ -1299,7 +1299,7 @@ are solid", and `docs/CITY.md`, "A closure is silent".
 | `skip` / `scaffolding` | SCRIPTED | day 1 | A **soft seal**: a skip at the kerb facing scaffolding boards over the far footway — the two-obstacles-facing-each-other reading of a soft seal, drawn as two different pictures rather than one row twice. `skip` is kerb-pinned like `delivery_van`; `scaffolding` fills the whole pavement band like `construction`. |
 | `burst_water_main` | SCRIPTED | day 1 | A **hard seal**: broken asphalt, an exposed pipe and water fountaining and splashing across the carriageway in two alternating frames, with an upright municipal barrier at each kerb. The directional pictures place the damage across the street while retaining the barriers' standing projection. Same single-body geometry as `fallen_tree`, but draws no body shadow (`draws_body_shadow = false`) — the crater is a hole in the ground, not an object standing above it. |
 | `moving_van` | SCRIPTED | day 1 | A **soft seal**: a lorry at the kerb with its ramp down, the same body on each pavement. Its own side and end views show the cab, cargo box, open loading doors and ramp, with the view chosen from the street axis even while the vehicle is stationary. The picture stays distinct from the reversing lorry. |
-| `burnt_out_car` | SCRIPTED | day 4 | A **hard seal**, from act II onward: a damaged car shell in the charred palette of `burnt_shell`. The cars lie perpendicular to the road: the side view serves north–south streets and the authored vertical view serves east–west streets. Vehicle-scale `obstructs_radius` lets `SealPlanner._hard_positions` place the individual wrecks across the street as a pile-up. |
+| `burnt_out_car` | SCRIPTED | day 4 | A **hard seal**, from act II onward: a damaged, charred car shell, its own picture. The cars lie perpendicular to the road: the side view serves north–south streets and the authored vertical view serves east–west streets. Vehicle-scale `obstructs_radius` lets `SealPlanner._hard_positions` place the individual wrecks across the street as a pile-up. |
 | `collapsed_frontage` | SCRIPTED | day 4 | A **hard seal**, from act II onward: rubble spilled frontage to frontage, a small debris segment repeated by `_draw_spread` — its own picture, styled beside `rubble.svg` (the badge silhouette of `burnt_shell`, which draws nothing in the street) rather than sharing it. |
 
 ### The story's own figure — the neighbor
@@ -1356,8 +1356,8 @@ the candidate loop, never moved afterwards.
 ## Permanent marks
 
 `scar_id` records an event's position in `GameState.scars`, and the scheduler places that
-event again on every **later day of the run**. The burnt-out shell from the day-3 fire is
-still on that corner on day 12, cordoned off and never repaired; barricades from Act IV
+event again on every **later day of the run**. The building the day-3 fire caught is still
+drawn burnt on that corner on day 12, never repaired; barricades from Act IV
 convoys accumulate. This is most of how the escalation is told — the city remembers, and
 the route you memorised on day 2 stops existing.
 

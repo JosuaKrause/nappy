@@ -340,8 +340,8 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			_maybe_set_a_trap(_day, _rng, at, _step.is_pickup, _player_position(), true)
 
 ## The live instance standing at the run's own recorded scar for `scar_id`, or null when the run
-## never recorded one — a day 3 that never actually burned this run, or a fix for that landing on
-## another branch. `GameState.scars` names the position the scar was recorded at; the scheduler
+## never recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no
+## site even at dusk. `GameState.scars` names the position the scar was recorded at; the scheduler
 ## re-places the same def there every day after `since_day` (`EventScheduler._place_scars()`), so
 ## the live instance is found by position rather than tracked by reference across days.
 func _find_scar_instance(scar_id: String) -> EventInstance:
@@ -354,12 +354,10 @@ func _find_scar_instance(scar_id: String) -> EventInstance:
 			break
 	if at == Vector2.INF:
 		return null
-	# Under a tile's own width, not an exact match: the scheduler's own placement of a solid
-	# shape can nudge it a few pixels off the recorded position (`EventScheduler._place_scars()`
-	# hands the scar's own coordinate straight to `Planned`, but the def's own centring — see
-	# `EventDef.solid()` — still applies once it becomes an `EventInstance`). Since `burnt_shell`
-	# is `SCRIPTED` and only ever placed this way, the one instance of it a day carries is the
-	# scar, whatever the exact offset.
+	# Under a tile's own width rather than an exact float match, which costs nothing: `burnt_shell`
+	# is `SCRIPTED` and only ever placed at its scars, so the one instance of it near the recorded
+	# position is the scar's. It has no body, so `EventInstance.setup()` (which centres only a body
+	# on its pavement band) leaves it exactly where the scar was recorded.
 	for instance in _city.events.instances():
 		if instance.def.id == scar_id and instance.global_position.distance_to(at) < Tuning.TILE_SIZE:
 			return instance
