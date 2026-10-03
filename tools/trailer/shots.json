@@ -20,7 +20,7 @@
       "name": "dog",
       "recipe": "scene-recipes/trailer-dog.json",
       "in": 0.2,
-      "length": 2.8,
+      "length": 2.4,
       "gap": 0.3
     },
     {

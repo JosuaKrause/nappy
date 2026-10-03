@@ -167,8 +167,10 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary] = [],
 		used_calm: Array[Vector2i] = [], tree: RouteTree = null,
 		heat: int = 0, doors := PackedVector2Array(), target: Array[Vector2i] = [],
-		standing: Array[Planned] = []) -> Array[Planned]:
-	var planned: Array[Planned] = []
+		standing: Array[Planned] = [], initial: Array[Planned] = []) -> Array[Planned]:
+	# Explicit scene subjects enter before the ordinary catalogue considers its candidates.
+	# They participate in spacing and reachability; ordinary callers supply no initial subjects.
+	var planned: Array[Planned] = initial.duplicate()
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
@@ -1442,6 +1444,10 @@ static func _fill_with_recurring(day: int, base: int, map: CityMap,
 
 	var budget := budget_for(day)
 	var counts := {}
+	for plan in planned:
+		if plan.has_meta("recipe_name") and plan.def.kind == GameEnums.EventKind.RECURRING:
+			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
+			budget -= plan.def.cost
 	# Bounded rather than while-true: a catalogue where nothing affordable remains would
 	# otherwise spin forever.
 	for attempt in budget * 4:
@@ -1544,7 +1550,7 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 ## its route roll, so unrelated background actors cannot move a required path.
 static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 		route_seed: int, already: Array[Planned], corridor: Corridor,
-		doors: PackedVector2Array) -> Planned:
+		doors: PackedVector2Array, standing: Array[Planned] = []) -> Planned:
 	if not def.available_on(day) or def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 		return null
 	def = _for_day(def, day)
@@ -1560,7 +1566,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 	var candidates: Array[Vector2i] = [tile]
 	var used: Array[Vector2i] = []
 	return _best_of(def, rng, map, candidates, role, already, ground,
-			_calm_to_leave_alone(map, used), corridor, doors)
+			_calm_to_leave_alone(map, used), corridor, doors, standing)
 
 static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
