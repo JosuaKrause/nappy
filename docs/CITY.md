@@ -2046,7 +2046,7 @@ Top-down camera with a fake vertical extrusion:
   top, which is why a corner needs no dedicated corner tile — it takes two edge overlays
   and the parapet turns.
 - **A roof carries furniture, seeded per building from its block's own starting purpose**
-  (`Building.district`) — vents, installed HVAC and a continuous mounted L duct run on `INDUSTRIAL`,
+  (`Building.district`) — vents, installed HVAC and connected mounted duct networks on `INDUSTRIAL`,
   skylights and service bulkheads on `CIVIC`, mostly water tanks with vents and bulkheads on
   `RESIDENTIAL` and `COMMERCIAL`.
   Every unit sits on an interior cell — never a cell a roof's own edge tiles already draw, which
@@ -2057,9 +2057,10 @@ Top-down camera with a fake vertical extrusion:
   that column's own top, extension included, so a building whose own roof is too shallow for an
   interior cell carries units once its extension gives it one. A fixed seed gives the same roof
   on every run, and a building providing cover rolls its layout over its larger roof, so it is a
-  different shuffle from the one it would have with nothing to cover. The three-cell duct is one
-  connected object and consumes the same two-cell horizontal arm plus its north-turn cell as its
-  placement footprint. The cells are listed row by
+  different shuffle from the one it would have with nothing to cover. A duct network grows as a
+  connected tree within eligible interior cells, reserving each cell before ordinary equipment.
+  Its seeded length and branches vary with available space; at least one ordinary equipment roll
+  remains, and roofs too small for a network retain compact furniture. The cells are listed row by
   row before the shuffle (`Building.roof_interior_cells()`), which is what keeps a roof with
   nothing to cover on the layout it has without any extension in the city: the shuffle permutes
   positions, so any other order moves its units. Every unit is a visual-only `Building.RoofObject`

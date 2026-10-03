@@ -228,8 +228,8 @@ enum _Furniture { VENT = 0, HVAC_A = 1, HVAC_B = 2, DUCT_RUN = 3,
 	_UNUSED_DUCT_CORNER = 4, SKYLIGHT_A = 5, SKYLIGHT_B = 6, VENT_STACK = 7,
 	WATER_TANK = 8, SERVICE_BULKHEAD = 9, EXHAUST_FAN = 10, PIPE_MANIFOLD = 11 }
 
-## Which units a district's roof may roll. `INDUSTRIAL` also gets one three-cell duct run — see
-## `_place_duct_run()` — on top of whatever this list places.
+## Which units a district's roof may roll. Industrial ducts reserve connected interior cells
+## before the remaining furniture is placed, sharing the same roof budget.
 const _INDUSTRIAL_KINDS: Array = [_Furniture.HVAC_A, _Furniture.HVAC_B, _Furniture.VENT,
 	_Furniture.VENT_STACK, _Furniture.EXHAUST_FAN, _Furniture.PIPE_MANIFOLD]
 const _CIVIC_KINDS: Array = [_Furniture.SKYLIGHT_A, _Furniture.SKYLIGHT_B,
@@ -1324,8 +1324,6 @@ func _draw_fire_escape() -> void:
 func _build_roof_furniture() -> void:
 	_roof_furniture.clear()
 	_has_vent = false
-	var roof_rows := roof_tiles()
-	var cols := columns()
 	var kinds: Array = _KINDS_BY_DISTRICT.get(district, [])
 	var compact_kinds: Array = _COMPACT_KINDS_BY_DISTRICT.get(district, [])
 	var density: float = _FURNITURE_DENSITY.get(district, 0.0)
@@ -1343,7 +1341,7 @@ func _build_roof_furniture() -> void:
 	for candidate in interior:
 		interior_set[candidate] = true
 	if district == GameEnums.BlockPurpose.INDUSTRIAL:
-		wanted -= _place_duct_run(cols, roof_rows, used, rng)
+		wanted -= _place_duct_network(interior, wanted, used, rng)
 	var placed := 0
 	for cell in interior:
 		if placed >= wanted:
@@ -1403,26 +1401,41 @@ func roof_interior_cells() -> Array[Vector2i]:
 			interior.append(Vector2i(col, row))
 	return interior
 
-## `INDUSTRIAL` only: a straight duct run and, where there is a second interior row to turn into,
-## one elbow continuing it — "a duct run laid as a straight-and-corner chain" rather than loose
-## units. Returns how many interior cells it used, which is subtracted from the district's own
-## furniture budget so a duct run is not extra furniture on top of the density table.
-func _place_duct_run(cols: int, roof_rows: int, used: Dictionary, rng: RandomNumberGenerator) -> int:
-	if cols < 4 or roof_rows < 4:
+## Grow one connected tree inside the actual eligible roof, extensions included. A free cell
+## joins only one occupied neighbor, so branches stay readable rather than filling a solid patch.
+## Leave at least one ordinary equipment roll; a tiny roof keeps its compact furniture instead.
+func _place_duct_network(interior: Array[Vector2i], budget: int, used: Dictionary,
+		rng: RandomNumberGenerator) -> int:
+	if budget < 4:
 		return 0
-	var row := rng.randi_range(1, roof_rows - 3)
-	var start_col := rng.randi_range(1, cols - 3)
-	var straight := Vector2i(start_col, row)
-	var straight_far := Vector2i(start_col + 1, row)
-	used[straight] = true
-	used[straight_far] = true
-	_roof_furniture.append({"cell": straight, "kind": _Furniture.DUCT_RUN, "span": 2,
-		"cells": [straight, straight_far, Vector2i(start_col + 1, row + 1)]})
-	var consumed := 2
-	var corner := Vector2i(start_col + 1, row + 1)
-	used[corner] = true
-	consumed += 1
-	return consumed
+	var target := rng.randi_range(3, budget - 1)
+	var network := {interior[0]: true}
+	while network.size() < target:
+		var frontier: Array[Vector2i] = []
+		for cell in interior:
+			if network.has(cell):
+				continue
+			var neighbors := 0
+			for direction: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				neighbors += int(network.has(cell + direction))
+			if neighbors == 1:
+				frontier.append(cell)
+		if frontier.is_empty():
+			break
+		network[frontier[rng.randi_range(0, frontier.size() - 1)]] = true
+	if network.size() < 3:
+		return 0
+	for cell: Vector2i in network:
+		var links := 0
+		for index in 4:
+			var direction: Vector2i = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN][index]
+			if network.has(cell + direction):
+				links |= 1 << index
+		used[cell] = true
+		var cells: Array[Vector2i] = [cell]
+		_roof_furniture.append({"cell": cell, "kind": _Furniture.DUCT_RUN, "span": 1,
+			"cells": cells, "links": links})
+	return network.size()
 
 ## A Fisher-Yates shuffle over `rng` rather than `Array.shuffle()`, which reads the engine's own
 ## global RNG and would make the roll different every launch — every other seeded pick in this
@@ -1449,6 +1462,7 @@ func _build_roof_layers() -> void:
 		var object := RoofObject.new()
 		object.name = "RoofObject_%d_%d" % [cell.x, cell.y]
 		object.texture_key = _furniture_texture(entry["kind"])
+		object.duct_links = entry.get("links", -1)
 		object.position = parent.to_local(to_global(anchor)) if parent != self else anchor
 		parent.add_child(object)
 		_roof_objects.append(object)
@@ -1504,6 +1518,8 @@ func _furniture_texture(kind: int) -> StringName:
 ## depth origin at its roof foot.
 class RoofObject extends Node2D:
 	var texture_key: StringName
+	## West, east, south and north neighbors in roof-cell coordinates; -1 draws the whole asset.
+	var duct_links := -1
 
 	func _enter_tree() -> void:
 		AtlasLibrary.acquire(&"buildings")
@@ -1513,7 +1529,28 @@ class RoofObject extends Node2D:
 
 	func _draw() -> void:
 		var texture := AtlasLibrary.region(texture_key)
+		if duct_links >= 0:
+			_draw_duct(texture)
+			return
 		Sprites.draw_standing(self, texture, Vector2.ZERO)
+
+	## Reuse the approved mounted duct's straight spans as joined sections. Source rectangles
+	## exclude its elbow and away-facing mouth: no rotation can expose a false west/north opening.
+	func _draw_duct(texture: Texture2D) -> void:
+		var west := (duct_links & 1) != 0
+		var east := (duct_links & 2) != 0
+		var south := (duct_links & 4) != 0
+		var north := (duct_links & 8) != 0
+		if north or south:
+			var top := -40.0 if north else -24.0
+			var bottom := -8.0 if south else -16.0
+			draw_texture_rect_region(texture, Rect2(-5, top, 10, bottom - top),
+					Rect2(53, 26, 10, 16))
+		if west or east:
+			var left := -16.0 if west else -5.0
+			var right := 16.0 if east else 5.0
+			draw_texture_rect_region(texture, Rect2(left, -20, right - left, 20),
+					Rect2(18, 44, 24, 20))
 
 	## Adds the independently redrawn rotor over the stationary generated housing. The building
 	## owns phase and timing, so rebuilding this child never resets the motion.

@@ -5,7 +5,7 @@ func run(t) -> void:
 	_test_roof_objects_use_entities_and_have_no_body(t)
 	_test_reserved_cells_hold_native_base_widths(t)
 	_test_narrow_and_fragmented_roofs_keep_their_unit_count(t)
-	_test_industrial_duct_is_one_three_cell_unit(t)
+	_test_industrial_networks_fit_and_connect(t)
 	_test_rebuild_releases_external_roof_objects(t)
 
 func _new_fixture(t, district: int) -> Dictionary:
@@ -46,19 +46,50 @@ func _test_roof_objects_use_entities_and_have_no_body(t) -> void:
 	building.free()
 	fixture["root"].free()
 
-func _test_industrial_duct_is_one_three_cell_unit(t) -> void:
+func _test_industrial_networks_fit_and_connect(t) -> void:
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL)
 	var building: Building = fixture["building"]
-	var found := false
-	for entry: Dictionary in building._roof_furniture:
-		if entry["kind"] != Building._Furniture.DUCT_RUN:
+	var signatures := {}
+	var branched := false
+	for variant in 40:
+		building.variant = variant
+		building.roof_extension_rows = [0, 0, 1, 3, 3, 1, 0, 0]
+		var eligible := building.roof_interior_cells()
+		var network := {}
+		var used := {}
+		var signature := ""
+		for entry: Dictionary in building._roof_furniture:
+			for cell: Vector2i in entry["cells"]:
+				t.check(eligible.has(cell) and not used.has(cell),
+						"every duct and equipment foot fits free interior roof, extensions included")
+				used[cell] = true
+			if entry.has("links"):
+				network[entry["cell"]] = entry["links"]
+				signature += str(entry["links"]) + ","
+		t.check(not network.is_empty(), "the industrial fixture has a connected network")
+		if network.is_empty():
 			continue
-		found = true
-		var cells: Array = entry["cells"]
-		t.check(cells.size() == 3, "the duct run consumes exactly three cells")
-		t.check(cells[0] != cells[1] and cells[1] != cells[2] and cells[0] != cells[2],
-			"the duct run footprint uses three distinct cells")
-	t.check(found, "the industrial fixture carries a duct run")
+		signatures[signature] = true
+		var reached := {network.keys()[0]: true}
+		var pending: Array = reached.keys()
+		while not pending.is_empty():
+			var cell: Vector2i = pending.pop_back()
+			var degree := 0
+			for index in 4:
+				var direction: Vector2i = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN][index]
+				var neighbor := cell + direction
+				var linked: bool = (network[cell] & (1 << index)) != 0
+				t.check(linked == network.has(neighbor), "rendered duct links match actual adjacent cells")
+				if linked:
+					degree += 1
+					if not reached.has(neighbor):
+						reached[neighbor] = true
+						pending.append(neighbor)
+			branched = branched or degree >= 3
+		t.check(reached.size() == network.size(), "all duct cells belong to one traversable network")
+		t.check(building._roof_furniture.size() > network.size(),
+				"the network leaves room for ordinary roof equipment")
+	t.check(signatures.size() > 2 and branched, "roof layouts vary in topology and include junctions")
 	building.free()
 	fixture["root"].free()
 
@@ -71,7 +102,8 @@ func _test_reserved_cells_hold_native_base_widths(t) -> void:
 		for cell: Vector2i in cells:
 			t.check(not used.has(cell), "roof equipment reservations never share a cell")
 			used[cell] = true
-		var width := AtlasLibrary.native_size(building._furniture_texture(entry["kind"])).x
+		var width := 32 if entry.has("links") else AtlasLibrary.native_size(
+				building._furniture_texture(entry["kind"])).x
 		var horizontal_cells: int = entry["span"]
 		t.check(cells.size() >= horizontal_cells,
 				"a roof object's foot is centered in every reserved horizontal cell")
