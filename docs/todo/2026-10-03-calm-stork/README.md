@@ -1,5 +1,4 @@
-priority: next
-after: 2026-10-02-round-ferret
+priority: now
 
 # calm-stork — Construct the described trailer scenes and screenshots · filed 2026-10-03
 
@@ -14,9 +13,11 @@ records them.
 Use [round-ferret, the shared recipe builder](../../decisions/2026-10-02-round-ferret.md)
 to deliver [the described scenes](trailer-recipes.md). Follow with
 [velvet-hare, ordinary controls and bounded ground](../2026-10-03-velvet-hare/README.md)
-for experimentation in every recipe. **Proposed, not asked for:** the `next` band
-and this delivery order; [gentle-marten](../../playtests/2026-10-03-gentle-marten.md)
-records the review requesting separate slices.
+for experimentation in every recipe. The entry includes the
+[scene composition corrections](scene-composition.md) from
+[downy-egret, the numbered scene review](../../playtests/2026-10-03-downy-egret.md).
+The urgent band follows the playtest-feedback rule. The separate queue entries preserve
+the builder, scenes and free-play requirements within the same implementation PR.
 
 [M204, the trailer cut](../2026-09-25-M204/README.md) retains movie assembly, final
 ordering/captions/fades, the thirty-second limit, resolution/audio output, and its
