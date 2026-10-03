@@ -7,11 +7,13 @@ hall and fenced-yard cases with the real city building components, checking cove
 and showing that the join leaves no blank tiles. The player names the joined-building
 case; the hall/yard variants are proposed coverage of the recorded special handling.
 
-**Proposed, not asked for:** add recipes demonstrating a constrained crossing with named
-traffic actors, a precisely placed pursuit with a scripted player path, and a truck
-passing beside the player in the camera. These are tool examples; they do not choose or
-approve the final trailer cut. Include rerun commands for a headless check, interactive
+Ship the scenes in [trailer recipes](trailer-recipes.md) as required by the player's
+additional instruction. Those shots supplement the power-plant join test and are not
+optional generic examples. Include rerun commands for a headless check, interactive
 exploration, a still or burst, and recording through the existing tools.
+
+**Proposed, not asked for:** a constrained crossing with named traffic actors can provide
+an additional compact traffic fixture. It does not replace a required trailer scene.
 
 Test the public recipe-loading and construction path against conflicting requirements,
 malformed files, unknown fields and IDs, unresolved anchors, and illegal placements.
@@ -35,7 +37,7 @@ recipe errors exit unsuccessfully, and recipe runs do not write player progress.
 no-recipe path with the affected existing city, event, crowd, and rig suites so adding
 control inputs does not silently change normal generation.
 
-Render the trailer example twice through the recording tool under matched settings and
+Render every required trailer scene twice through the recording tool under matched settings and
 check the frames using the existing repeated-render machinery. Check the scene with
 background load as well as in an otherwise idle run: the trailer's open reproducibility
 problem includes load. Keep compact hashes, setup manifests, rerun instructions and results

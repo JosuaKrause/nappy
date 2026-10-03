@@ -21,6 +21,12 @@ actors, collision, traffic signals, and gameplay updates so a test exercises the
 player runs and a trailer shows gameplay. An exact arrangement must not be overwritten
 by the ordinary day's later scheduling or population pass.
 
+The required trailer recipes include the actual escape with the baby carried and guards
+pursuing. The shared recipe runner must support the game's appropriate city or escape
+setup path and progression state for each scene; a normal-city setup with actors painted
+to resemble an escape is insufficient. Use the existing escape logic and recorded scene
+contracts when making that recipe authorable.
+
 Reuse the walking/input rig and camera controls for the action and framing portions of a
 recipe. Let action timing and capture start use simulation ticks or a documented fixed
 simulation clock. Setup completes before that clock and the recording begin: asset or
