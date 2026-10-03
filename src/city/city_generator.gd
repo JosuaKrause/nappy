@@ -62,17 +62,17 @@ static func generate(seed_value: int) -> CityMap:
 			% [seed_value, validate(last)])
 	return last
 
-static func _attempt(seed_value: int) -> CityMap:
+static func _attempt(seed_value: int, choices: Dictionary = {}) -> CityMap:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var map := CityMap.new()
 	map.seed_used = seed_value
 
-	_assign_street_kinds(map)
+	_assign_street_kinds(map, choices)
 	_lay_streets(map)
 	_seal_border_stubs(map)
 	var purposes := _assign_purposes(map, rng)
-	var block_rects := _build_blocks(map, purposes, rng)
+	var block_rects := _build_blocks(map, purposes, rng, choices)
 	_place_home(map, block_rects)
 	_plan_arcs(map, purposes, rng)
 	_plan_the_swing_park(map)
@@ -84,7 +84,7 @@ static func _attempt(seed_value: int) -> CityMap:
 	# where the calm is, which is what `repaint` works out, and they close street ground — which
 	# `repaint` never touches, so no later day can undo one. A big building also *replaces* a
 	# block's carved rects, which is why the buildings are collected afterwards rather than before.
-	_place_hard_blockers(map, purposes, block_rects, rng)
+	_place_hard_blockers(map, purposes, block_rects, rng, choices)
 	# **After the hard blockers, and for the same reason they run after the repaint.** A region may
 	# never grow across a street a dead end or a big building just built over, and `absent_segments`
 	# only carries that once the blockers are placed — growing regions any earlier would let a
@@ -135,12 +135,18 @@ static func _assign_regions(map: CityMap) -> void:
 ## map is built from, and **asking it which corridor is the main road is a fact about a city
 ## answered from a constant** — it answers for both axes, which is how a phantom east-west arterial
 ## gets into a busyness curve.
-static func _assign_street_kinds(map: CityMap) -> void:
+static func _assign_street_kinds(map: CityMap, choices: Dictionary = {}) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("street:%d" % map.seed_used)
 	var corridors := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x)
 	map.main_road = rng.randi_range(3, corridors - 4)
+	if choices.has("main_road"):
+		map.main_road = int(choices.main_road)
 	_place_precincts(map, rng)
+	if choices.has("precincts"):
+		map.precinct_spans.clear()
+		for span: Array in choices.precincts:
+			map.precinct_spans.append(Vector4i(int(span[0]), int(span[1]), int(span[2]), int(span[3])))
 
 ## The two precincts, three blocks each: one at the shore, like a seaside promenade, and one inland.
 ## Three blocks and no more, because a precinct has to be a **place** rather than a kind of street.
@@ -803,7 +809,7 @@ static func _shuffle(array: Array, rng: RandomNumberGenerator) -> void:
 ## redone every day from the block's current purpose and must not re-roll anything. The
 ## tiles this lays down are day 1's; `CityMap.repaint()` owns every day after that.
 static func _build_blocks(map: CityMap, purposes: Dictionary,
-		rng: RandomNumberGenerator) -> Dictionary:
+		rng: RandomNumberGenerator, choices: Dictionary = {}) -> Dictionary:
 	var block_rects := {}
 	# Iterate in a fixed order; `purposes` is keyed by an unordered shuffle. Blocks a calm zone
 	# absorbed are not in it at all — their ground belongs to the anchor and is built with it.
@@ -811,7 +817,12 @@ static func _build_blocks(map: CityMap, purposes: Dictionary,
 		for x in Tuning.CITY_BLOCKS.x:
 			var block := Vector2i(x, y)
 			if purposes.has(block):
-				block_rects[block] = _build_block(map, block, purposes[block], rng)
+				var layout_rng := rng
+				for pin: Dictionary in choices.get("layouts", []):
+					if block == Vector2i(int(pin.block[0]), int(pin.block[1])):
+						layout_rng = RandomNumberGenerator.new()
+						layout_rng.seed = int(pin.seed)
+				block_rects[block] = _build_block(map, block, purposes[block], layout_rng)
 	return block_rects
 
 static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.BlockPurpose,
@@ -1043,7 +1054,7 @@ static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
 ## makes "every calm area the run will ever use" a thing this function can hold in its hand: arcs
 ## only ever take calm ground away (`REQUISITIONED`), never add it, so the set only shrinks.
 static func _place_hard_blockers(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
-		rng: RandomNumberGenerator) -> void:
+		rng: RandomNumberGenerator, choices: Dictionary = {}) -> void:
 	var home := ClosurePlanner.home_street(map)
 	var areas := ClosurePlanner.calm_areas(map)
 	if not home or areas.is_empty():
@@ -1052,8 +1063,8 @@ static func _place_hard_blockers(map: CityMap, purposes: Dictionary, block_rects
 	# which is the whole idea: a witness taken before anything was taken away.
 	var reference := RouteTree.for_the_run(map)
 	var calm := _calm_blocks_set(map)
-	_place_dead_ends(map, home, areas, reference, calm, rng)
-	_place_big_buildings(map, purposes, block_rects, home, areas, reference, calm, rng)
+	_place_dead_ends(map, home, areas, reference, calm, rng, choices)
+	_place_big_buildings(map, purposes, block_rects, home, areas, reference, calm, rng, choices)
 
 ## Every block of every calm lot, as a set. A four-block zone is four entries: what the rules
 ## below are about is *ground you could step onto*, not which block anchors a lot.
@@ -1067,19 +1078,40 @@ static func _calm_blocks_set(map: CityMap) -> Dictionary:
 ## Streets that stop. One segment out of the lattice, one end of it built over.
 static func _place_dead_ends(map: CityMap, home: StreetNetwork.Segment,
 		areas: Array[ClosurePlanner.CalmArea], reference: RouteTree, calm: Dictionary,
-		rng: RandomNumberGenerator) -> void:
+		rng: RandomNumberGenerator, choices: Dictionary = {}) -> void:
 	var wanted := rng.randi_range(Tuning.MIN_CUL_DE_SACS, Tuning.MAX_CUL_DE_SACS)
 	var made := 0
-	for segment in _dead_end_candidates(map, home, reference, calm, rng):
+	var candidates := _dead_end_candidates(map, home, reference, calm, rng)
+	var ends := {}
+	if choices.has("dead_ends"):
+		var pinned: Array[StreetNetwork.Segment] = []
+		for pin: Dictionary in choices.dead_ends:
+			var key := Vector3i(int(pin.segment[0]), int(pin.segment[1]), int(pin.segment[2]))
+			var found := false
+			for candidate in candidates:
+				if candidate.key() == key:
+					pinned.append(candidate)
+					found = true
+			if not found:
+				map.recipe_diagnostics.append("dead_end.ineligible:%s" % [key])
+			ends[key] = 1 if pin.end == "a" else 0
+		for candidate in candidates:
+			if not pinned.has(candidate):
+				pinned.append(candidate)
+		candidates = pinned
+		wanted = maxi(wanted, ends.size())
+	for segment in candidates:
 		if made >= wanted:
 			break
 		map.absent_segments[segment.key()] = true
 		if _the_calm_survives(map, home, areas):
-			map.built_over[segment.key()] = _wall_off_one_end(map, segment, rng)
+			map.built_over[segment.key()] = _wall_off_one_end(map, segment, rng, ends.get(segment.key(), -1))
 			map.dead_ends[segment.key()] = true
 			made += 1
 		else:
 			map.absent_segments.erase(segment.key())
+			if ends.has(segment.key()):
+				map.recipe_diagnostics.append("dead_end.calm_unreachable:%s" % [segment.key()])
 
 ## Every street a dead end could be made of, in the order this city will try them.
 ##
@@ -1158,13 +1190,19 @@ static func _runs_beside_calm(segment: StreetNetwork.Segment, calm: Dictionary) 
 ## has been decided.
 static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
 		home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea], reference: RouteTree,
-		calm: Dictionary, rng: RandomNumberGenerator) -> void:
+		calm: Dictionary, rng: RandomNumberGenerator, choices: Dictionary = {}) -> void:
 	var wanted := rng.randi_range(Tuning.MIN_BIG_BUILDINGS, Tuning.MAX_BIG_BUILDINGS)
 	var pool := _big_building_candidates(map, purposes, home, reference, calm, rng)
 	var made := 0
+	var station_pair := Rect2i()
+	if choices.has("power_station"):
+		var p: Array = choices.power_station.blocks
+		station_pair = Rect2i(int(p[0]), int(p[1]), int(p[2]), int(p[3]))
 	for pair in pool:
 		if made >= wanted - 1:
 			break
+		if station_pair.has_area() and pair.intersects(station_pair):
+			continue
 		# Asked **again**, here, and not only when the pool was built. The pool is enumerated
 		# before anything is placed, so the first big building's blocks are news to the second
 		# one's check — which is how two of them ended up sharing a street and drawing two
@@ -1178,7 +1216,16 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 			made += 1
 		else:
 			map.absent_segments.erase(between.key())
-	_place_power_station(map, purposes, block_rects, home, areas, reference, calm, pool)
+	if station_pair.has_area():
+		pool.erase(station_pair)
+		pool.push_front(station_pair)
+	_place_power_station(map, purposes, block_rects, home, areas, reference, calm, pool, choices)
+	if station_pair.has_area() and map.power_station != station_pair:
+		map.recipe_diagnostics.append("power_station.ineligible")
+	elif station_pair.has_area():
+		var door: Array = choices.power_station.door_block
+		if map.power_station_door != _door_rect(Vector2i(int(door[0]), int(door[1]))):
+			map.recipe_diagnostics.append("power_station.door_ineligible")
 
 # ------------------------------------------------------------- power station ---
 
@@ -1215,7 +1262,7 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 ## the next seed — the failure direction every other guarantee here already has.
 static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
 		home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea], reference: RouteTree,
-		calm: Dictionary, pool: Array[Rect2i]) -> void:
+		calm: Dictionary, pool: Array[Rect2i], _choices: Dictionary = {}) -> void:
 	var industrial := _industrial_blocks(purposes)
 	for pair in _power_station_candidates(pool, industrial):
 		if not _the_pair_is_free(map, purposes, pair, home, reference, calm):
@@ -1487,8 +1534,10 @@ static func _the_calm_survives(map: CityMap, home: StreetNetwork.Segment,
 ## Which end is rolled. A dead end that always faced the same way would be a rule the player
 ## learns once instead of a city they learn.
 static func _wall_off_one_end(map: CityMap, segment: StreetNetwork.Segment,
-		rng: RandomNumberGenerator) -> Rect2i:
+		rng: RandomNumberGenerator, pinned_end: int = -1) -> Rect2i:
 	var at_a := rng.randf() < 0.5
+	if pinned_end >= 0:
+		at_a = pinned_end == 1
 	var wall := segment.mouth_rect(at_a)
 	# Grown *into* the street, never into the junction: the crossroads keeps its zebras and its
 	# lights, and what is walled is the road beyond it. A wall inside the junction would take the
