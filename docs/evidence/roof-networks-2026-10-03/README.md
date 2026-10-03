@@ -45,6 +45,8 @@ choices open to correction, not a separate player-approved topology rule.
 ## Reproduce
 
 Fetch `refs/pull/441/head` before checking out the evidence commit if working from a fresh clone.
+The supported still's runtime and rig source is
+`473dd99e1c680b9f3cbb67d895dab26c1f4f5fb7`; check out that revision to reproduce it.
 Use a fresh checkout so the output cannot overwrite retained evidence. Run `./tools/check.sh`, then:
 
 ```sh
