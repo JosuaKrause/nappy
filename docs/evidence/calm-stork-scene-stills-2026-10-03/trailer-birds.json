@@ -1,0 +1,320 @@
+{
+	"anchors": {
+		"birds": [
+			2608.0,
+			1360.0
+		],
+		"start": [
+			2496.0,
+			1360.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0,
+		"lots": [
+			{
+				"blocks": [
+					5.0,
+					2.0,
+					1.0,
+					1.0
+				],
+				"purpose": "industrial"
+			}
+		]
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 37,
+		"visible_cars": 1,
+		"visible_events": {
+			"pigeon_flock": 1
+		},
+		"visible_walkers": 36,
+		"walker_streets": {
+			"h3": {
+				"moving": 20,
+				"walkers": 20
+			},
+			"v5": {
+				"moving": 6,
+				"walkers": 6
+			},
+			"v6": {
+				"moving": 10,
+				"walkers": 10
+			}
+		},
+		"walkers_left": 16,
+		"walkers_right": 20
+	},
+	"final_actors": {
+		"birds": {
+			"position": [
+				2608.0,
+				1360.0
+			],
+			"pursuing": false,
+			"row": "pigeon_flock",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2548.2793,
+				1366.9237
+			],
+			"speed": 0.0
+		}
+	},
+	"final_crowd": {
+		"cars": 34,
+		"moving": 427,
+		"moving_cars": 27,
+		"quadrants": {
+			"ne": {
+				"cars": 7,
+				"moving": 193,
+				"moving_cars": 7,
+				"total": 193,
+				"walkers": 186
+			},
+			"nw": {
+				"cars": 27,
+				"moving": 234,
+				"moving_cars": 20,
+				"total": 241,
+				"walkers": 214
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 434,
+		"walkers": 400
+	},
+	"initial_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"initial_actors": {
+		"birds": {
+			"position": [
+				2608.0,
+				1360.0
+			],
+			"pursuing": false,
+			"row": "pigeon_flock",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2496.0,
+				1360.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 34,
+		"moving": 434,
+		"moving_cars": 34,
+		"quadrants": {
+			"ne": {
+				"cars": 4,
+				"moving": 179,
+				"moving_cars": 4,
+				"total": 179,
+				"walkers": 175
+			},
+			"nw": {
+				"cars": 30,
+				"moving": 255,
+				"moving_cars": 30,
+				"total": 255,
+				"walkers": 225
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 434,
+		"walkers": 400
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				2608.0,
+				1360.0
+			],
+			"row": "pigeon_flock"
+		}
+	],
+	"observations": [
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 0,
+				"position": [
+					2509.1262,
+					1364.3951
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 6.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 2,
+				"position": [
+					2536.7261,
+					1364.3951
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 15.0
+		},
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"position": [
+					2608.0,
+					1360.0
+				],
+				"pursuing": false,
+				"row": "pigeon_flock",
+				"telegraphing": false
+			},
+			"subject": "birds",
+			"tick": 45.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "A bird flock on the father's industrial street",
+	"recipe_sha256": "c1cd6b62cdb76bd60d8133a3720d6c04d2ea39673318df728128cdac02e20626",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"background": {
+			"crowd": true,
+			"uniform_walkers": true,
+			"walker_multiplier": 2.0
+		},
+		"day": 1.0,
+		"events": [
+			{
+				"at": "birds",
+				"name": "birds",
+				"row": "pigeon_flock"
+			}
+		],
+		"parent": "father",
+		"player": {
+			"at": "start",
+			"facing": "east"
+		},
+		"roof_fixtures": [
+			{
+				"fixtures": [
+					{
+						"cell": [
+							1.0,
+							1.0
+						],
+						"kind": "duct_straight"
+					},
+					{
+						"cell": [
+							3.0,
+							1.0
+						],
+						"kind": "duct_corner"
+					},
+					{
+						"cell": [
+							5.0,
+							1.0
+						],
+						"kind": "hvac_b"
+					},
+					{
+						"cell": [
+							6.0,
+							1.0
+						],
+						"kind": "vent"
+					}
+				],
+				"lot": [
+					76.0,
+					34.0,
+					8.0,
+					4.0
+				]
+			}
+		],
+		"tutorial_complete": true
+	},
+	"violations": []
+}

@@ -232,6 +232,7 @@ var _reload_override := Callable()
 ## `--day-length` lookups against the live city need no instance and are called on `DevRig`
 ## itself.
 var _dev_rig := DevRig.new()
+var _recipe: SceneRecipeRuntime
 ## `--route`'s own walker, `null` outside a debug build or with no `--route` given — see
 ## `src/dev/route_rig.gd`. Unlike `_dev_rig`, this owns a whole target queue that has to survive
 ## across a day's frames, so it is a child node rather than a bag of static lookups.
@@ -273,6 +274,17 @@ var _touch_available := TouchInput.available()
 ## alone is not enough.
 var _rotated := false
 func _ready() -> void:
+	if not DevFlags.recipe_path().is_empty():
+		var result := SceneRecipeRuntime.load_recipe(DevFlags.recipe_path(), DevFlags.active_args())
+		if not result.errors.is_empty():
+			_recipe_failed(result.errors)
+			return
+		DevFlags.recipe_data = result.data
+		_escape_scene_requested = DevFlags.start_escape()
+		_recipe = SceneRecipeRuntime.new()
+		_recipe.configure(result, DevFlags.recipe_scripted())
+		(result.map as CityMap).recipe_frame_locked = DevFlags.recipe_scripted()
+		add_child(_recipe)
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
 	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT inherits
@@ -380,7 +392,7 @@ func _ready() -> void:
 	add_child(_city)
 	_pauses_with_the_game(_city)
 	var elapsed := Time.get_ticks_msec()
-	_city.build(CityGenerator.generate(GameState.run_seed))
+	_city.build(_recipe.built.map if _recipe else CityGenerator.generate(GameState.run_seed))
 	print("[Main] city generated in %d ms (seed %d)" % [
 		Time.get_ticks_msec() - elapsed, _city.map.seed_used])
 	# On the doorstep before her own `Camera2D` exists, so the two frames `_warm_the_canvas_shaders()`
@@ -388,7 +400,8 @@ func _ready() -> void:
 	# world's default identity transform — see `_new_boot_camera()`'s own doc. Freed once
 	# `_start_day()` has put her camera in the same place for real.
 	var boot_camera := _new_boot_camera(_city.map.doorstep_world_position())
-	await _warm_the_canvas_shaders(boot_camera.global_position)
+	if not _recipe:
+		await _warm_the_canvas_shaders(boot_camera.global_position)
 
 	_player = _make_player()
 	_city.add_entity(_player)
@@ -469,6 +482,9 @@ func _ready() -> void:
 		_route_rig.setup(_city, _player, _baby, _resistance, _day)
 
 	_start_day()
+	if _recipe and _recipe.manifest.get("setup_failed", false):
+		boot_camera.free()
+		return
 	_write_dawn_for_a_resumed_run()
 	# `_player.reset_at()` inside `_start_day()` above has just put her own camera exactly where
 	# the boot camera was standing in for it, so freeing it now hands the viewport's current camera
@@ -479,9 +495,14 @@ func _ready() -> void:
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
 	_dev_rig.setup_follow_camera(self)
 	_add_trailer_rigs()
+	if _recipe:
+		_recipe.begin()
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
+		if _recipe and _recipe.scripted:
+			screenshot.simulation_clock = _recipe.elapsed
+			screenshot.before_capture = _recipe.prepare_capture
 		add_child(screenshot)
 
 	# Apart from the boot-order block above and below: `StillWatch` only reads `_city`, `_player`
@@ -507,7 +528,7 @@ func _ready() -> void:
 	var args := DevFlags.active_args()
 	if _show_an_ending_for_a_rig():
 		return
-	if (screenshot or "--no-title" in args) and not "--title" in args:
+	if _recipe or ((screenshot or "--no-title" in args) and not "--title" in args):
 		return
 	_open_the_title()
 
@@ -554,6 +575,8 @@ func _ready_escape() -> void:
 	if not _escape_from_a_run:
 		GameState.start_run(DevFlags.seed_override())
 		_apply_the_parent_flag()
+		if _recipe:
+			GameState.day = DevFlags.day_override()
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
 	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
 	# both need an active log to write anything at all — see `Telemetry.start_burst()`'s own
@@ -587,7 +610,8 @@ func _ready_escape() -> void:
 	# origin is as good as any other point, since nothing is in the tree yet to show a wrong
 	# corner of.
 	var boot_camera := _new_boot_camera(Vector2.ZERO)
-	await _warm_the_canvas_shaders(boot_camera.global_position)
+	if not _recipe:
+		await _warm_the_canvas_shaders(boot_camera.global_position)
 
 	_hud = HUD.instantiate()
 	_release_shaped_hud()
@@ -667,9 +691,25 @@ func _ready_escape() -> void:
 	if DevFlags.overview_requested() and _city:
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
 	_add_trailer_rigs()
+	if _recipe:
+		var problems := _recipe.install(_city, _player, _baby)
+		if not problems.is_empty():
+			_recipe_failed(problems)
+			return
+		_prepare_city_scenery()
+		_summary.dismiss()
+		_apply_recipe_teaching()
+		_finale_brief_open = false
+		get_tree().paused = false
+		_finale.start_section()
+		_hud.visible = true
+		_recipe.begin()
 
 	var screenshot := AutoScreenshot.from_command_line()
 	if screenshot:
+		if _recipe and _recipe.scripted:
+			screenshot.simulation_clock = _recipe.elapsed
+			screenshot.before_capture = _recipe.prepare_capture
 		add_child(screenshot)
 
 ## `--parent mother|father` over the roll `GameState.start_run()` just made from the seed, so a
@@ -755,7 +795,7 @@ func _build_the_finale_city() -> void:
 	_city = CITY.instantiate()
 	add_child(_city)
 	_pauses_with_the_game(_city)
-	_city.build(CityGenerator.generate(GameState.run_seed))
+	_city.build(_recipe.built.map if _recipe else CityGenerator.generate(GameState.run_seed))
 	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
 	_city.start_finale(GameState.city_state, GameState.day)
 	_city.set_act(GameState.current_act())
@@ -804,6 +844,8 @@ func _build_the_finale_city() -> void:
 ## section is the same city rather than a thinner one: a plan that had been half spent would
 ## quietly reward losing.
 func _plan_the_finale_city() -> void:
+	if _recipe:
+		return
 	var elapsed := Time.get_ticks_msec()
 	var plan := FinalePlanner.plan(_city.map, GameState.day_rng(GameState.day, "finale"))
 	_city.events.start_finale(plan.placements, _finale_start_position())
@@ -880,6 +922,16 @@ func _on_escape_exit_requested() -> void:
 ## the brief; it is said on the continue instead, on a first entry only — *"like normal tutorial
 ## hints"*, so a retry is not lectured about what it is already doing.
 func _on_finale_section_started(section: int, restarted: bool) -> void:
+	if _recipe and restarted:
+		if _recipe.scripted:
+			_recipe.manifest["playback_error"] = "the authored escape attempt was lost"
+			_recipe.write_manifest()
+			_recipe._active = false
+			get_tree().quit(1)
+		else:
+			# Reload every authored actor and progression field, not the ordinary service exit.
+			_reload_the_scene()
+		return
 	# The run's own record of where it is, which is what the save carries and what the next boot
 	# reads: written here, the one place both sections and both boots pass through.
 	GameState.escape_section = section
@@ -1709,6 +1761,9 @@ func _pauses_with_the_game(node: Node) -> void:
 ## run, `false` for a resumed one) and `_on_summary_continued()`'s (`true`, since nothing gates an
 ## ordinary continue into the next day at all).
 func _start_day() -> void:
+	if _recipe:
+		_start_recipe_day()
+		return
 	# Timed for the same reason `_ready()` times `CityGenerator.generate()`: playtest 27 named
 	# this path — planning the day's closures, placing every event, streaming the world around
 	# the doorstep — as one of the candidates for the wait after a summary's continue button,
@@ -1811,6 +1866,40 @@ func _start_day() -> void:
 		_observer.start_day()
 	if _route_rig:
 		_route_rig.start_day()
+
+## The ordinary game's components start from the authored setup before any actor is allowed to
+## tick. The recipe selects every event; the random scheduler does not fill authored scenes.
+func _start_recipe_day() -> void:
+	GameState.begin_day()
+	EventBus.day_started.emit(GameState.day)
+	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
+	_city.start_recipe_day(GameState.city_state, GameState.day,
+			GameState.day_rng(GameState.day, "closures"))
+	_city.set_act(GameState.current_act())
+	_day.start(DevRig.day_length(GameState.day))
+	var errors := _recipe.install(_city, _player, _baby)
+	if not errors.is_empty():
+		_recipe.manifest["setup_failed"] = true
+		_recipe_failed(errors)
+		return
+	_prepare_city_scenery()
+	_apply_recipe_teaching()
+	_first_day = false
+
+## Authored mid-game scenes may start after the ordinary control lessons have been learned.
+## Danger warnings and the rest of the normal HUD remain active.
+func _apply_recipe_teaching() -> void:
+	if not _recipe.data.get("setup", {}).get("tutorial_complete", false):
+		return
+	_hud._teach_left = 0
+	_hud._teach.text = ""
+	_hud._taught_pause = true
+	_hud._taught_run = true
+
+func _recipe_failed(errors: Array) -> void:
+	for problem: Variant in errors:
+		print("[SceneRecipe] " + str(problem))
+	get_tree().quit(1)
 
 ## Whatever `_start_day()`'s own dawn should say about the day it just built, said right after
 ## that call returns — pulled out of `_ready()` on its own so a test can drive the decision
@@ -2069,6 +2158,12 @@ func _hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
 ## just earned the escape, or the ordinary end-of-day message every other day reaches here with.
 ## Only the first of those is *engaging* an already-built day rather than starting a new one.
 func _on_summary_continued() -> void:
+	if _recipe:
+		# A recipe describes one authored day. Keep its normal result, then start that
+		# exact setup again instead of interpreting its pins under the next day's rules.
+		_summary.dismiss()
+		_reload_the_scene()
+		return
 	# The last thing the fourteen days do. A scene reload rather than tearing this boot's city,
 	# day, resistance and observer down by hand and building a building over them — the same
 	# reasoning `_restart_run()` gives for the same call, and the escape's own boot
@@ -2420,7 +2515,7 @@ func _tile_name(type: GameEnums.TileType) -> String:
 ## where none of the five rig flags below can do anything anyway — never misreads an ordinary
 ## player for one.
 func _somebody_is_playing() -> bool:
-	if DisplayServer.get_name() == "headless" or DevFlags.recording():
+	if DisplayServer.get_name() == "headless" or DevFlags.is_rig():
 		return false
 	var args := DevFlags.active_args()
 	for rig in ["--screenshot", "--walk", "--flee", "--press", "--route"]:

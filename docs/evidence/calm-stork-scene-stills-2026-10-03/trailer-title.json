@@ -1,0 +1,272 @@
+{
+	"anchors": {
+		"start": [
+			1296.0,
+			1712.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 1917501.0
+	},
+	"classification": "normal",
+	"context_seed": 1917501,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 16,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 16,
+		"walker_streets": {
+			"h4": {
+				"moving": 10,
+				"walkers": 10
+			},
+			"v3": {
+				"moving": 6,
+				"walkers": 6
+			}
+		},
+		"walkers_left": 0,
+		"walkers_right": 16
+	},
+	"final_actors": {
+		"dog_walker": {
+			"position": [
+				1488.0,
+				1600.5333
+			],
+			"pursuing": false,
+			"row": "dog_walker",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 0,
+			"position": [
+				1296.0,
+				1937.4656
+			],
+			"speed": 92.0
+		}
+	},
+	"final_crowd": {
+		"cars": 34,
+		"moving": 227,
+		"moving_cars": 27,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 31,
+				"moving": 214,
+				"moving_cars": 24,
+				"total": 221,
+				"walkers": 190
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 3,
+				"moving": 13,
+				"moving_cars": 3,
+				"total": 13,
+				"walkers": 10
+			}
+		},
+		"scope": "local",
+		"total": 234,
+		"walkers": 200
+	},
+	"initial_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"initial_actors": {
+		"dog_walker": {
+			"position": [
+				1488.0,
+				1680.0
+			],
+			"pursuing": false,
+			"row": "dog_walker",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				1296.0,
+				1712.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 34,
+		"moving": 234,
+		"moving_cars": 34,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 34,
+				"moving": 234,
+				"moving_cars": 34,
+				"total": 234,
+				"walkers": 200
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 234,
+		"walkers": 200
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				1488.0,
+				1680.0
+			],
+			"row": "dog_walker"
+		}
+	],
+	"observations": [
+		{
+			"condition": "visible",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					1296.0,
+					1799.4663
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 30.0
+		},
+		{
+			"condition": "moving",
+			"passed": true,
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					1296.0,
+					1845.4661
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 45.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "Title transition walking inside the park beside a street",
+	"recipe_sha256": "0a058be5023ff8382d931cb95b175005c68347ad056121be804f0b5e312683a2",
+	"scope": "full",
+	"seed": 11,
+	"setup": {
+		"background": {
+			"crowd": true
+		},
+		"day": 1.0,
+		"events": [
+			{
+				"age": 1.4,
+				"at": [
+					1488.0,
+					1680.0
+				],
+				"name": "dog_walker",
+				"row": "dog_walker"
+			}
+		],
+		"parent": "father",
+		"player": {
+			"at": "start",
+			"facing": "south"
+		},
+		"roof_fixtures": [
+			{
+				"fixtures": [
+					{
+						"cell": [
+							2.0,
+							4.0
+						],
+						"kind": "water_tank"
+					},
+					{
+						"cell": [
+							5.0,
+							2.0
+						],
+						"kind": "vent"
+					}
+				],
+				"lot": [
+					48.0,
+					48.0,
+					8.0,
+					8.0
+				]
+			}
+		],
+		"tutorial_complete": true
+	},
+	"violations": []
+}

@@ -1515,6 +1515,28 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	return _best_of(def, rng, map, open_candidates, role, already, ground, leave_alone, corridor,
 			doors, standing)
 
+## Pins the same candidate the normal planner could accept on this tile. A private RNG owns
+## its route roll, so unrelated background actors cannot move a required path.
+static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
+		route_seed: int, already: Array[Planned], corridor: Corridor,
+		doors: PackedVector2Array, standing: Array[Planned] = []) -> Planned:
+	if not def.available_on(day) or def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
+		return null
+	def = _for_day(def, day)
+	var ground := {}
+	var tile := map.world_to_tile(at)
+	if not map.tile_to_world(tile).is_equal_approx(at):
+		return null
+	var role := _role_for(def, day)
+	if not tile in _ground_for(def, map, ground, corridor, role):
+		return null
+	var rng := RandomNumberGenerator.new()
+	rng.seed = route_seed
+	var candidates: Array[Vector2i] = [tile]
+	var used: Array[Vector2i] = []
+	return _best_of(def, rng, map, candidates, role, already, ground,
+			_calm_to_leave_alone(map, used), corridor, doors, standing)
+
 ## The acceptance half of a placement: roll `Tuning.EVENT_PLACEMENT_TRIES` candidates out of
 ## `open_candidates`, refuse the ones that break a rule that cannot bend, and answer with the first
 ## perfect one or the roomiest of the rest.

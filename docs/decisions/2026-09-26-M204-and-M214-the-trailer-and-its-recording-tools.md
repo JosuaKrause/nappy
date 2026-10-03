@@ -19,3 +19,27 @@ every frame froze. `main.gd` turns physics interpolation off while recording.
 **Open**: the cut itself (M204 in `TODO.md`), for the player's notes. `--spawn arterial` on day 13
 renders differently each run, not root-caused; `tools/shot.sh --screenshot` seems to hang with
 `--start-escape` and `--walk`.
+
+## Recipe source and editorial review · 2026-10-03
+
+The original PLAYTEST-139 render had no visible truck, no clearly running carrying
+mother, and two consecutive father shots. Its drafted captions were "Every walk is
+a choice.", "Not every street is safe.", and "One family. A whole city.", with
+"Nappy" as the title. These were drafts awaiting the player's review, not a finalized
+edit. The earlier loaded-render experiment found differing second-pass frames in
+choice, danger and title while two other Godot processes were busy; those shots
+matched when rerun on a quieter machine. The original standalone escape screenshot
+hang remained separate from the movie-writer path.
+
+PR #457 replaces the shot sources with authored recipes and supplies stills plus
+action checks. Its first authored cut split early danger into blower and dog, revised
+shot lengths and omitted recipe caption overlays. Review identified that these editorial
+changes were unmarked. M204's queue retains the editorial choices explicitly, with all
+three drafted caption phrases retained for the player's choice. No final editorial
+approval or loaded-render reproducibility is inferred from scene acceptance. The
+queue describes the current recipe source; the earlier seed workflow stays in this
+record as failure context rather than as the procedure to reproduce a new scene.
+
+[Lilac-beaver](../playtests/2026-10-03-lilac-beaver.md) then replaces the blower scene
+with a bird flock and accepts the trucks, gate, chase and whole-city compositions.
+Those scene decisions do not select final movie durations, captions or ordering.
