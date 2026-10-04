@@ -20,8 +20,9 @@ return stays pressed; only events are.
 stays open and the day brief does not start, and the same press after it acts, for both
 notifications.
 
-**Not observed:** which engine notification the web build sends on a real tab return. An automated
-desktop Chrome tab stays hidden and unfocused, so no real return could be produced; a dispatched
+**Not observed:** a real focus return on any platform, and so which engine notification the web
+build sends on a tab return. An automated desktop Chrome tab stays hidden and unfocused, so no real
+return could be produced; a dispatched
 `focus` armed the window and a `visibilitychange` while hidden did not. The review item
 [busy-hedgehog](../review/2026-10-04-busy-hedgehog.md) asks for a real return.
 
