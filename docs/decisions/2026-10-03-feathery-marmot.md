@@ -19,7 +19,8 @@ gatehouse and crossing should be the test no proximity" (#494); "No it should ch
 "Only if silenced" (#497); "for now let's just use my word on the radii and we merge feathery
 marmot as is" (#498); "I wouldn't frame it that way -- create a circle around the current player
 position with the radius of the desired distance -- then follow the path until it reaches the edge
-of the circle" and "no need to special case straight runs or anything like that" (#500); "no
+of the circle" (#500), and "no need to special case straight runs or anything like that"
+(2026-10-03, in conversation, right after inbox #500); "no
 events are dynamically created as you walk around -- if there is a mast queued up that will be the
 next event to be generated" (#503).)*
 

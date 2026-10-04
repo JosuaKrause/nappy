@@ -388,11 +388,12 @@ func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 
 ## feathery-marmot, "touching the van completes the task" — *"the arrow correctly points to the van
 ## but touching the van doesn't solve the task"* (minty-hedgehog, statement 3). The contact rides
-## the van and a roadblock at one fixed offset to the east, as `_reachable_offset()` leaves it, and
-## she walks up to the body from sixteen bearings until she is pressed against it, her edge a pixel
-## off its outline, found from the row's own `GroundShape` along the instance's own axis: every
-## bearing completes the task. Before, only a touch within `ContactPoint.REACH` of that one offset
-## point counted, so pressing against the far side of the van completed nothing. And standing two
+## the van and a roadblock, here at an offset to the east of the body, which a touch of a body does
+## not read — `ContactPoint.touches_the_body()` measures from the body's own centre — and she walks
+## up to the body from sixteen bearings until she is pressed against it, her edge a pixel off its
+## outline, found from the row's own `GroundShape` along the instance's own axis: every bearing
+## completes the task. A touch counted only within `ContactPoint.REACH` of one point beside the body
+## would leave pressing against its far side completing nothing. And standing two
 ## pixels past `ContactPoint.REACH` beyond the farthest she can be stopped from its centre (its
 ## furthest reach and her own body), on any side, completes nothing.
 func _test_touching_a_tasks_body_from_any_side_completes_it(t) -> void:
@@ -4217,11 +4218,11 @@ func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Strolle
 	events._watch_the_door_lines()
 
 # ------------------------------------------------------ M188: reachable targets ---
-# The route rig (M184, a rig walks the route) found a mark and two contacts standing on ground
-# `_pick_reachable()`/`_reachable_offset()` never checked was clear of a solid body —
-# `CityMap.is_obstructed()`, filled by `EventManager.start_day()` from the day's whole plan before
-# this director ever places anything (`main.gd`'s own day order: `_city.events.start_day()` runs
-# before `_resistance.start_day()`). Both now refuse obstructed ground.
+# A mark and every contact stand on ground clear of a solid body, or on the item itself, and are
+# reached from such ground — `CityMap.is_obstructed()`, filled by `EventManager.start_day()` from
+# the day's whole plan before this director places anything (`main.gd`'s own day order:
+# `_city.events.start_day()` runs before `_resistance.start_day()`), and `_pick_reachable()`
+# refuses a drawn tile with a body on it.
 
 ## The same three seeds `tests/probes/m184_route_timing.gd` times days 6-13 against.
 ## feathery-marmot, "a task's target is near its mark" — *"the van should spawn close to the mark
@@ -4499,7 +4500,7 @@ func _production_rng(seed_value: int, day: int, stream: String) -> RandomNumberG
 	rng.seed = hash("%d:%d:%s" % [seed_value, day, stream])
 	return rng
 
-## Every refusal `_pick_reachable()` and `_reachable_offset()` both check today — `is_held_at`
+## Every refusal `_pick_reachable()` checks — `is_held_at`
 ## excepted for the one task deliberately sited on held ground, the crossing at a region door
 ## (`_place_at_a_door()`'s own `allow_held`). `grid`/`blocked`/`reached` are one day's own
 ## `ReachabilityGrid.flood()` answer, built by the caller once per (seed, day) rather than per tile
@@ -4550,7 +4551,7 @@ func _day_reachability(city: City) -> Array:
 ## relocation left it, not wherever the dawn roll did. Skipping it also drew the day's RNG stream
 ## one guard-placement short of a real day: `_move_the_mark()` re-rolls the guard through the same
 ## `_rng` the day's later placements share, so a sweep that never relocated the mark answered
-## every placement *after* it — the task's own `_reachable_offset()` included — from a stream a
+## every placement *after* it — the task's own included — from a stream a
 ## real boot never sees, which is why an earlier sweep's own "moved" list did not match the route
 ## rig's real cases at all.
 ##
