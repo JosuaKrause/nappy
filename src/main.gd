@@ -2020,7 +2020,7 @@ func _event_summary() -> String:
 ##
 ## `struck_by` is `EventManager.what_struck_her()` — the name the logs give the instance whose reach
 ## ended the day — and names it in place of `reason` when there is one, so a day lost to the
-## pelican is `pelican` rather than its row's `cyclist` *(inbox #527)*. `reason` stays the row's id
+## pelican is `pelican` rather than its row's `cyclist` *(inbox #527 in azure-tapir)*. `reason` stays the row's id
 ## for `DayController`'s own sentence, which is the cyclist's either way.
 static func _hard_fail_cause_suffix(reason: String, struck_by := "") -> String:
 	if reason == "car_strike":
@@ -2086,7 +2086,7 @@ func _crying_landed_by_group() -> Dictionary:
 
 ## `_crying_landed_by_group()`'s events half, folded into `by_group`: each live event's own
 ## `landed()` under the name the logs give it (`EventInstance.logged_name()`), so a pelican's
-## share is `pelican`'s rather than added to the cyclists' *(inbox #527)*. Pure over what it is
+## share is `pelican`'s rather than added to the cyclists' *(inbox #527 in azure-tapir)*. Pure over what it is
 ## handed, and tested directly — `tests/test_day_lost_to.gd`.
 static func _group_what_events_landed(instances: Array[EventInstance], by_group: Dictionary) -> void:
 	for instance in instances:

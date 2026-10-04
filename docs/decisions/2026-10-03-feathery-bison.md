@@ -3,7 +3,7 @@
 *([minty-hedgehog](../playtests/2026-10-03-minty-hedgehog.md), statement 8, note #437: "One in ~400
 bikers should be a pelican riding a bicycle instead. Needs to be svg only", and "converted to PNG
 during atlas creation but otherwise it will always stay SVG never become a converted PNG". Shown the
-first drawing, the player: "Looks good, merge" (inbox #526). On 2026-10-04 (inbox #527): "when the
+first drawing, the player: "Looks good, merge" (inbox #526 in [azure-tapir](../playtests/2026-10-04-azure-tapir.md)). On 2026-10-04 (inbox #527 in [azure-tapir](../playtests/2026-10-04-azure-tapir.md)): "when the
 pelican spawns, when it's on screen, and when it's hitting the player. it must appear as its own
 entry and it needs to be more granular than standard event telemetry"; "by telemetry I mean
 goatcounter -- logs should be correctly identifying it from the beginning"; "the telemetry must go

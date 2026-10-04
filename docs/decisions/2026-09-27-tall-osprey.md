@@ -14,7 +14,7 @@ pursuer, the day-3 dog included, keeps its stand-off measured from its own catch
 appears, at least 116 + 130 × 1.5 = 311px). The chalk mark's guard floor, catch plus a contact's
 reach, is 62px; the "Two-thirds wins" placement is unchanged.
 
-**The player's choices** (inbox #526, 2026-10-04): keep the lunge out while only the catch shrinks
+**The player's choices** (inbox #526 in [azure-tapir](../playtests/2026-10-04-azure-tapir.md), 2026-10-04): keep the lunge out while only the catch shrinks
 ("Keep the stand-off at 108px"); then, shown a longer lunge measured, "yes measure", and picked
 120px; then, shown that 120px needs a 315px arrival distance against M137's 311px ceiling,
 "116px, keep every rule". The notice times the question that

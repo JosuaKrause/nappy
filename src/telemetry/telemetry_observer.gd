@@ -1188,7 +1188,7 @@ func _on_city_went_quiet() -> void:
 ## The pelican's first frame on screen (`EventBus.pelican_sighted`), as a `near` line of its own:
 ## the moment she could first see the one rider in about four hundred that is a pelican, which the
 ## distance-driven `near` lines below say nothing about, since a pelican seen across the street
-## never comes within its 90px. *(Inbox #527: "when the pelican spawns, when it's on screen, and
+## never comes within its 90px. *(Inbox #527 in azure-tapir: "when the pelican spawns, when it's on screen, and
 ## when it's hitting the player".)*
 func _on_pelican_sighted(instance: Variant) -> void:
 	var pelican := instance as EventInstance

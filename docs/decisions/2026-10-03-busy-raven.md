@@ -6,7 +6,7 @@ truck event" (#498); "can I spawn this event in a crafted scene so I can test it
 build a scene and let me play it out" (#497, the station door's far sidewalk corners); "and just
 keep a note that we want to verify each task with the scenes" (#499); "in the scene we can use the
 minimum distance which in turn also serves as test whether it will be properly off screen" (#502).
-Asked how a scene is built, the player chose "Recipes with live tasks (Recommended)" (inbox #513).)*
+Asked how a scene is built, the player chose "Recipes with live tasks (Recommended)" (inbox #513 in [azure-tapir](../playtests/2026-10-04-azure-tapir.md)).)*
 
 **What was built** (PR #536). A scene recipe's `setup.task` starts a day's task: `mark` pins the
 chalk mark on days 6 to 13, `{}` starts day 14 with the resistance goal met, and day 10 also takes

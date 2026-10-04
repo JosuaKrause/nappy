@@ -423,7 +423,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 	warned.free()
 	EventBus.pursuit_began.disconnect(on_began)
 
-## The pelican's own four moments, each its own day-numbered event *(inbox #527, the player: "when
+## The pelican's own four moments, each its own day-numbered event *(inbox #527 in azure-tapir, the player: "when
 ## the pelican spawns, when it's on screen, and when it's hitting the player. it must appear as its
 ## own entry")* — one send per signal, in the order the signals came. That each signal fires once
 ## per pelican, at its moment, is `tests/test_pelican.gd`'s.
