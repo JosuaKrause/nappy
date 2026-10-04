@@ -22,8 +22,13 @@ slower CPU, but [Chrome's performance documentation](https://developer.chrome.co
 says it does not truly simulate a phone CPU. Label platform and collection method on every number.
 Do not use `--invincible`: it skips the baby's source sweep and suppresses the meter being measured.
 
-**Two ways to put numbers on the phone, both optional** (the player: "let's record the ideas here --
-maybe we will do them"):
+**Per-system numbers from the phone now come from the frame record**: `?debug=1&framerecord=1` on
+the released page keeps every frame's time by system and downloads it as a file
+([M159, every frame's time by system](../../decisions/2026-09-19-M159-5.md)); the player's phone
+try is the review item [Record a stutter on the phone](../../review/2026-09-19-M159-2.md).
+
+**Two further ways to put numbers on the phone, both optional** (the player: "let's record the
+ideas here -- maybe we will do them"):
 
 - **The live page's own readout, read off screenshots** — the player: "add the screenshot way as
   alternative for phone testing but it's not a complete benchmark it's a hack". The released page

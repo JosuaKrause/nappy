@@ -28,6 +28,15 @@ drives input, takes a picture or writes a file (`--screenshot`, `--after`, `--wa
 `--press`, `--tap`, `--quit-when-still`, `--frame-trace`, `--spikes`); the capture and window
 flags (`--touch`, `--web`, `--title`, `--no-title`, `--no-focus-pause`, `--no-save`); and
 `--start-escape`'s interior-part word, so `?escape=1` always starts at the escape's first part.
+
+**One word writes a file: `?framerecord=1`.** *(Writes no file on a release · overturned on
+2026-10-04 for M159's frame record: [quiet-yak](../playtests/2026-10-03-quiet-yak.md), #510, the
+player chose "Download plus readout line", "under ?debug=1 a button saves the recording as a
+file through the browser's download", and accepted it as this record's exception, inbox #526.)*
+The record reaches a visitor only through the browser download they tap for; every other
+file-writing flag above stays closed. Record: [M159, every frame's time by
+system](2026-09-19-M159-5.md).
+
 The query words (`daylength` rather than `day-length`) were chosen to match `seed`, `skip` and
 `debug`.
 

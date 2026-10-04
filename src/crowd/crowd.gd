@@ -865,6 +865,15 @@ func _is_to_the_right_of(a: CrowdAgent, b: CrowdAgent) -> bool:
 # shape and cost as the `total_excitement_at` the baby already runs every physics frame.
 
 func _physics_process(delta: float) -> void:
+	if FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.CROWD)
+		_tick_the_crowd(delta)
+		FrameRecord.leave(outer)
+	else:
+		_tick_the_crowd(delta)
+
+## The crowd's own tick, timed under `FrameRecord.CROWD`.
+func _tick_the_crowd(delta: float) -> void:
 	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
 	# before the signals advance, so nothing below runs this frame — every agent's own `_process`
 	# is gated the same way (`CrowdAgent._skip_motion`), and `start_day` still placed the whole

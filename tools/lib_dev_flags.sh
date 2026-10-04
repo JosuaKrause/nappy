@@ -193,7 +193,7 @@ _rig_quit_constant() {
 
 # `src/autoload/tuning.gd`'s own DAY_LENGTH_SECONDS -- read live, the day-length fallback for a
 # rig with no --after and no --day-length of its own (a --route, or a bare --walk/--flee/--press/
-# --tap with neither --screenshot nor --frame-trace beside it), matching what
+# --tap with none of --screenshot, --frame-trace or --frame-record beside it), matching what
 # `DevFlags.rig_quit_seconds()` falls back to on the GDScript side (that side additionally shortens
 # it for a curfew day; this side stays with the longer, ordinary-day number, which can only ever
 # make the external kill wait a little longer than the in-game timer, never race it).

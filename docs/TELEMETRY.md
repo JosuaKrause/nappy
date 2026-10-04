@@ -676,6 +676,115 @@ as separate diagnostic trials, keeping the other controls fixed. Inspect the rec
 to verify the route moved, and reject a run with automatic telemetry captures during its measured
 interval. Use a normal exit so the export runs. A pacing trial does not choose shipping settings.
 
+## Per-system frame records
+
+`--frame-record`, or `?framerecord=1` on a page behind `?debug=1`, keeps **every frame's time by
+system for the last few minutes of play, slow frames marked**, so a stutter on a phone can say
+what it was. *(2026-10-03, inbox #510: "let's focus on recording what cause spillover in the
+regular 2ms ... it seems that stuttering happens with a lot of objects on screen so influence
+calculation, pathing, drawing, etc. can all be the culprit"; asked which frames, "Every frame,
+slow ones marked"; asked how it gets off the phone, "Download plus readout line".)* It is its own
+file, like a raw frame trace, and never part of the run log.
+
+**A frame runs from one frame's first callback to the next one's, and every microsecond of it is
+charged to exactly one bucket**, so a row's buckets add up to its `frame_usec` exactly.
+`FrameRecorder` (`src/telemetry/frame_recorder.gd`) marks the engine's phases: its own physics and
+process callbacks run first in their step, a child's process callback runs last, and the
+renderer's post-draw callback ends the drawing. A timed system calls `FrameRecord.enter()` on the
+way in and `leave()` on the way out (`src/telemetry/frame_record.gd`); whatever was being charged
+pauses while it runs, so a timed system inside another is charged to itself alone.
+
+What each bucket catches, and what it cannot:
+
+| Bucket | What it holds | What it cannot catch |
+|---|---|---|
+| scenery | `SceneryResidency.update()`: the scenery queue under its 2ms budget, guard preparations included; and, in a deferred window around everything the update queues for the engine's flush, a new region's tile map update and a newly shown building's, shadow chunk's or decal's first `_draw()` | the renderer's own work on the new pictures, which is `draw`'s; a first draw that was already queued before the update made the item resident |
+| crowd | the crowd's pathing: `Crowd._physics_process()` and every `CrowdAgent._process()` | the agents' drawing (`draw`) and their halos' fades (`process_rest`) |
+| influence | the baby's influence sweep: `Baby._physics_process()`, whose cost is `excitement_sources_at()` over every live event and walker near her | — |
+| events | event updates: `EventManager._physics_process()` and every `EventInstance._process()` | the events' drawing (`draw`) |
+| cues | the danger cues: `ExcitementHalo._process()` (which source charges her, and the carets' predictions) and `DangerEdge._process()` (the badges for what is coming off screen) | the halos' and badges' drawing (`draw`) and the per-body halo fades (`process_rest`) |
+| draw | the CPU side of drawing: the deferred calls and `_draw()` callbacks after the last `_process()` (but the scenery queue's), then the renderer's own sync and submit | GPU time, which a phone's browser offers no way to measure; on a native window with VSync on, the buffer swap's wait lands here |
+| physics_rest | the rest of the physics steps: her movement, the physics server's step, and any `_draw()` a physics callback queued | — |
+| process_rest | the rest of the process step: `main`, the HUD, the day clock, the resistance, scenery animation, the debug readout | — |
+| wait | from the post-draw callback to the next frame: idle time until the refresh, plus the engine's input and window events; not a cost | the GPU, the compositor or the browser holding the next frame back all look like idle time here |
+
+The two rests are the remainder: what the named systems do not account for. A headless run has
+no post-draw callback, so its whole span after the process step is `draw` and its `drawn` column
+is `0`. **The scenery queue's deferred window is what makes the ground modes comparable**: mode 3
+already flushes each step's tile map work inside its own timer, while modes 1 and 2 leave it to the
+engine's flush, so without the window their scenery cost would land in `draw`. Its share of a
+frame's `scenery` is the row's `scenery_deferred_usec`.
+
+**A slow frame is one that ran into the next refresh: longer than one and a half display
+budgets.** On a display that waits for the refresh a frame lasts one budget or two, so the half
+budget of slack keeps ordinary jitter out while catching every frame that missed. The budget is
+the screen's reported refresh; a browser reports none, so the page assumes 60Hz and the file says
+`refresh_assumed`. **A slow frame whose callbacks took less than one budget was held up outside
+them**, and is counted under `outside_callbacks` rather than under whichever small bucket was
+largest.
+
+**A page's clock is coarse.** Without cross-origin isolation the browser's clock is reduced in
+precision, about 100µs in Chrome and about 1ms in Safari and Firefox, so every value in a page's
+record is quantized to that step: a crowd agent's few microseconds read as 0 or as a whole step,
+and a frame's `crowd` swings by the step's share of its two hundred or so intervals. The recorder
+measures the step at setup and writes it as `timer_resolution_usec`.
+
+Each row also counts, for its frame, the physics steps, the timed entry points (`timer_calls`),
+the scenery queue's updates and how far past its budget they ran (`scenery_over_budget_usec`), the
+jobs it ran by kind (`jobs_ground`, `jobs_building`, `jobs_prop` for every other registered item,
+`jobs_shadow`, `jobs_decal`) with the guard's synchronous preparations apart
+(`guard_preparations`), whether the frame was drawn, the renderer's draw calls, objects and
+primitives, the crowd and live-event counts, her position, the day and the process frame.
+
+**Only play is kept**: a frame that is paused, on the title or on a summary is timed, so the
+phases stay in step, but not stored. The storage is a preallocated ring of `FrameLedger.CAPACITY`
+rows (about five minutes at 60 frames a second, `src/telemetry/frame_ledger.gd`) that keeps the
+most recent frames and counts what it overwrote; it survives a held restart, so a recording that
+caught a stutter is not lost to the restart after it. Nothing in it allocates, prints or touches
+the world per frame. **The timing runs only while a recorder is in the tree**: the escape builds
+none, so the hand-over to it switches the timing off and hides the page's button.
+
+**Getting it off the device.** On a page, a `save frames` button at the top of the page saves the
+record through the browser's own download — a page element over the canvas rather than a game
+control, so a tap on it never steers her, and the download starts inside the tap that asked for
+it. On the desktop it is written to `user://frame-records/` on every scene exit, the same file each
+time, and the path is printed. `--frame-record --after N` with `--walk` or `--press` is a timed
+rig that quits without a screenshot, the same way `--frame-trace --after N` is, headless or not.
+
+The file is JSON: `columns`, `rows` (oldest first), `environment` (build, seed, ground mode, the
+scenery budget, display budget, clock step, renderer, and the browser's user agent on a page), a
+note per bucket, and a `summary`. The summary has frame percentiles, the mean of every bucket over
+all frames and over the slow ones, and how often each bucket was the largest cost in a slow frame —
+all of it again for **the slow frames in which the scenery queue ran a job and those in which it
+did not**, which is the split the player's question about mode 2 needs: "my hypothesis is that
+mode 2 allows more expensive things to take up time as it limits itself to a very short time
+budget."
+
+**Its own cost is in the file.** At setup the recorder times `FrameRecorder.CALIBRATION_PAIRS`
+enter/leave pairs on the device and records the mean as `timer_pair_usec`; a frame's
+`timer_calls` times that is what the timing pairs spent in that frame, most of it one pair per
+crowd agent. **That product is a lower bound on the record's cost, not the whole of it**: the
+recorder's own per-frame work — its phase callbacks, the counters it reads at the end of the
+process step, the post-draw callback's renderer reads and the row's copy into the ring — is not
+in it. On a desktop the whole cost, the record on against off, measured between about one and a
+half and four times the product (`docs/evidence/m159-frame-record-2026-10-04/`), so a reader who
+subtracts the product from a phone's frames subtracts too little.
+
+**Off, it costs every player as little as the wrap can.** The crowd's agents and the live events
+are timed a couple of hundred times a frame, so each copies `FrameRecord.on` when it is made and,
+off, pays one member read before its body, which stays in its own `_process()`; a static read and
+a call into a second function there made every player's frame measurably longer on a desktop,
+with the record off. The five systems timed
+once a frame (the crowd's and the event manager's physics steps, the sweep, the halo and the edge)
+are built with the city, before the recorder starts, so they read `FrameRecord.on` each frame. The
+measurement is under `docs/evidence/m159-frame-record-2026-10-04/`.
+
+**The readout carries one line for it**, beneath the frame block: the last slow frame's length and
+what its callbacks took, as `frame/work`, then its largest costs under short names (`phys` and
+`proc` for the rests, `infl` for the sweep), largest first, `wait` never among them —
+`slow 41.2/39.0 ms  crowd 12.3  draw 9.8  proc 6.1` — or `outside callbacks` in their place. Three
+costs are shown when they fit the readout's width at its font, fewer when they do not.
+
 ---
 
 ## Three constraints on the implementation
@@ -864,11 +973,12 @@ build has nothing in `project.godot` to reach:
   when both are present.
   **`readout_requested()` also gates `DevFlags.live_debug_requested()`**, the second, smaller
   bundle M193 opens on a release page beside the readout — `?day=`, `?invincible=1`, `?layers=`,
-  `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1` and
-  `?groundmode=` — so the
+  `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
+  `?groundmode=` and `?framerecord=1` — so the
   snapshot key and everything that drives input, takes a picture or writes a file are the only
-  things still unreachable from a visitor's address bar (docs/DECISIONS.md, M193, "the live page's
-  ?debug=1 reaches the debug flags"). `GameSave.uses_save()` refuses the save the moment the query
+  things still unreachable from a visitor's address bar, except the frame record's own file, which
+  reaches the visitor only through the browser's download when they tap the page's button for it
+  (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags"). `GameSave.uses_save()` refuses the save the moment the query
   actually used one of those parameters.
   Directly beneath the seed line, a `skip` line names what `--skip`/`?skip=` turned off — `events`,
   `crowd`, `shadows`, `motion`, comma-separated, any order (`DevFlags.skip_words()`) — turning the
@@ -884,7 +994,9 @@ build has nothing in `project.godot` to reach:
   never skips anything either. The frame block is `FrameCost.readout_lines()` — `fps`, `draws`, `objects`,
   `primitives`, `process` and `physics`, the same six quantities and the same words the run log's
   own `frame` entry carries, assembled from the same readings so the screen and the log cannot
-  disagree. See "What a frame cost" above for what each one says.
+  disagree. See "What a frame cost" above for what each one says. Under a frame record a `slow`
+  line follows it, the last slow frame's three largest costs (see "Per-system frame records"
+  above).
   **`process` and `physics` each carry one labelled column, `worst`, over the log's own single
   reading** — both are `process_ms()`/`physics_ms()`, the same number `line()` writes, labelled
   here because it is already the engine's own worst interval of the previous second

@@ -101,6 +101,15 @@ func force_sleep() -> void:
 	EventBus.return_phase_started.emit()
 
 func _physics_process(delta: float) -> void:
+	if FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.INFLUENCE)
+		_feel_the_frame(delta)
+		FrameRecord.leave(outer)
+	else:
+		_feel_the_frame(delta)
+
+## The influence sweep and the meters, timed under `FrameRecord.INFLUENCE`.
+func _feel_the_frame(delta: float) -> void:
 	if state == GameEnums.BabyState.CRYING:
 		return
 

@@ -21,6 +21,7 @@ func _test_city(t, seed_value: int) -> void:
 	_test_all_mode(t, city)
 	_test_all_mode_budget(t, city)
 	_test_one_mode(t, city)
+	_test_frame_record(t, city)
 	_use_mode(city, SceneryGround.Mode.STEPPED)
 	_test_pending(t, city)
 	_use_mode(city, DevFlags.GROUND_MODE_DEFAULT as SceneryGround.Mode)
@@ -294,6 +295,40 @@ func _test_one_mode(t, city: City) -> void:
 	for key in ground.keys_in(away.grow(SceneryResidency.LOAD_MARGIN)):
 		covered = covered and ground.chunks.has(key)
 	t.check(covered, "a relocation in mode 2 prepares the whole destination before returning")
+
+## Under the frame record the scenery queue's update is charged to `scenery`, counts the jobs it
+## ran by kind and the guard's preparations apart, and keeps what it spent past its budget.
+func _test_frame_record(t, city: City) -> void:
+	_use_mode(city, SceneryGround.Mode.ALL)
+	var scenery := city.scenery
+	var view := city._home_scenery_view()
+	var keys := _ring_keys(city, view, 2)
+	var close := SceneryGround.key_for(city.map.world_to_tile(view.get_center()))
+	city._ground.release(close)
+	var was_on := FrameRecord.on
+	var was := FrameRecord.ledger
+	var ledger := FrameLedger.new(4)
+	FrameRecord.start(ledger)
+	ledger.process_start(Time.get_ticks_usec())
+	scenery.budget_usec = 1
+	scenery.update(view)
+	scenery.budget_usec = SceneryResidency.BUDGET_USEC
+	ledger.switch_to(FrameRecord.PROCESS_REST, Time.get_ticks_usec())
+	FrameRecord.stop()
+	FrameRecord.ledger = was
+	FrameRecord.on = was_on
+	t.check(keys.size() == 2, "the record check has two actual load-ring regions to prepare")
+	t.check(ledger._counters[FrameLedger.GUARD_PREPARATIONS] >= 1,
+			"the guard's synchronous preparation is counted apart")
+	t.check(ledger._counters[FrameLedger.JOBS_GROUND] == 1,
+			"a one-microsecond budget lets the queue run its one job, counted as ground")
+	t.check(ledger._counters[FrameLedger.SCENERY_UPDATES] == 1
+			and ledger._counters[FrameLedger.SCENERY_OVER_BUDGET] > 0,
+			"the update says how far past its budget it ran")
+	t.check(ledger._spent[FrameRecord.SCENERY] > 0
+			and ledger._spent[FrameRecord.SCENERY] >= ledger._counters[FrameLedger.SCENERY_OVER_BUDGET],
+			"the update's time is charged to scenery, and covers its spill-over")
+	scenery.update(view)
 
 func _test_pending(t, city: City) -> void:
 	var ground := city._ground

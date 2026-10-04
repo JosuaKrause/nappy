@@ -59,6 +59,7 @@ extends RefCounted
 ##   --no-save       0
 ##   --spikes        0
 ##   --frame-trace   0
+##   --frame-record  0
 ##   --no-telemetry  0
 ##   --screenshot    1
 ##   --after         1
@@ -130,16 +131,20 @@ extends RefCounted
 ## `--walk`, `--flee`, `--press` and `--tap` — a release build answers
 ## none of it, from any address a visitor could type.
 ##
-## **The smaller half — the flags that choose where a run starts or how it is drawn, never one
-## that drives input, takes a picture or writes a file — answers to a release page too, behind
-## `?debug=1`.** *(2026-09-25, docs/playtests/PLAYTEST-130.md: "on the published site behind
-## debug=1 we'd want some of the debug flags (like day, invincible, etc.) so debugging the live
-## build is easier", overturning the 2026-09-06 rule above for that half alone — see docs/DECISIONS.md,
-## M193, "the live page's ?debug=1 reaches the debug flags".)* `live_debug_requested()` below is
+## **The smaller half — the flags that choose where a run starts or how it is drawn, and the frame
+## record, never one that drives input or takes a picture, and none that writes a file but the
+## frame record's, which leaves only through the browser's download when the player taps its page
+## button — answers to a release page too, behind `?debug=1`.** *(2026-09-25,
+## docs/playtests/PLAYTEST-130.md: "on the published site behind debug=1 we'd want some of the
+## debug flags (like day, invincible, etc.) so debugging the live build is easier", overturning the
+## 2026-09-06 rule above for that half alone — see docs/DECISIONS.md, M193, "the live page's
+## ?debug=1 reaches the debug flags".)* `live_debug_requested()` below is
 ## that gate: `day_override()`, `invincible()`, `layers_override()`, `ControlsMode.resolve()`,
 ## `start_escape()`, `meters_override()`, `day_length_override()`, `ending_override()`,
-## `blackout_requested()` and `ground_mode()` each read the command line under `enabled()` and,
-## failing that, the page's own query under `live_debug_requested()`.
+## `blackout_requested()`, `ground_mode()` and `frame_record_requested()` each read the command
+## line under `enabled()` and, failing that, the page's own query under `live_debug_requested()`.
+## *(2026-10-03, inbox #510, asked how the frame record should get off the phone: "Download plus
+## readout line".)*
 ##
 ## A debug build carries every flag on this whole page immediately, with nothing further to
 ## unlock; the entry point for the larger half stays what it already is: run a debug build.
@@ -152,8 +157,8 @@ static func enabled() -> bool:
 ## and gates every other release-safe query flag in turn: `--skip`/`?skip=` (`skip_words()`),
 ## `?seed=`'s own positive integer (`seed_override()`), and, through `live_debug_requested()`
 ## below, the smaller bundle M193 opens on top of those two — `?day=`, `?invincible=1`,
-## `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1` and
-## `?groundmode=`.
+## `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
+## `?groundmode=` and `?framerecord=1`.
 ## `Telemetry`'s own `?telemetry=1` is not part of any of this: it stays behind `enabled()` alone
 ## (docs/TELEMETRY.md, "`--spikes` is off by default"), since a stranger's browser collecting a
 ## trace is a different question from a stranger's browser reading a day number back. See
@@ -175,14 +180,16 @@ static func _readout_from_query(query: String) -> bool:
 ## The gate for the smaller, release-safe bundle M193 opens beside the readout: the flags that
 ## choose where a run starts or how it is drawn (`day_override()`, `invincible()`,
 ## `layers_override()`, `ControlsMode.resolve()`, `start_escape()`, `meters_override()`,
-## `day_length_override()`, `ending_override()`, `blackout_requested()`, `ground_mode()`) — never
-## the input-driving, picture-taking or file-writing half `enabled()` alone still gates (see
-## `enabled()`'s own doc for that list). True on a debug build with or without `?debug=1` in the page, since a debug build
-## already answers the whole of `enabled()`'s own bundle regardless of any query string; true on a
-## release page only once `readout_requested()` holds, so a release page nobody asked `?debug=1`
-## of reads exactly as before. *(2026-09-25, docs/playtests/PLAYTEST-130.md: "on the published site
-## behind debug=1 we'd want some of the debug flags (like day, invincible, etc.) so debugging the
-## live build is easier".)*
+## `day_length_override()`, `ending_override()`, `blackout_requested()`, `ground_mode()`,
+## `frame_record_requested()`) — never the input-driving or picture-taking half `enabled()` alone
+## still gates (see `enabled()`'s own doc for that list), and no file but the frame record's, which
+## leaves only through the browser's download when the player taps its page button. True on a debug build
+## with or without `?debug=1` in the page, since a debug build already answers the whole of
+## `enabled()`'s own bundle regardless of any query string; true on a release page only once
+## `readout_requested()` holds, so a release page nobody asked `?debug=1` of reads exactly as
+## before. *(2026-09-25, docs/playtests/PLAYTEST-130.md: "on the published site behind debug=1
+## we'd want some of the debug flags (like day, invincible, etc.) so debugging the live build is
+## easier".)*
 static func live_debug_requested() -> bool:
 	return _live_debug_requested(enabled(), readout_requested())
 
@@ -202,7 +209,7 @@ static func _live_debug_requested(is_debug: bool, readout: bool) -> bool:
 ## against `?debug=1` alone, which opens the bundle without yet having used any of it.
 const _LIVE_DEBUG_QUERY_KEYS := [
 	"day", "invincible", "layers", "controls", "escape", "meters", "daylength", "ending",
-	"blackout", "groundmode",
+	"blackout", "groundmode", "framerecord",
 ]
 
 ## Whether the page's query string actually named one of `live_debug_requested()`'s own
@@ -865,6 +872,29 @@ static func spikes_requested() -> bool:
 static func frame_trace_requested() -> bool:
 	return "--frame-trace" in _args()
 
+## `--frame-record` (or the page's own `?framerecord=1`, under `live_debug_requested()`) — keep
+## every frame's time by system for the last few minutes of play, slow frames marked, with a
+## readout line naming the last slow frame's three largest costs; on the page a button saves the
+## record through the browser's download, and on the desktop it is written on scene exit (see
+## `FrameRecorder`). *(2026-10-03, inbox #510: "let's focus on recording what cause spillover in
+## the regular 2ms"; asked how it should get off the phone: "Download plus readout line".)* Like
+## every word of the bundle, naming it on a release page keeps the run off the save.
+static func frame_record_requested() -> bool:
+	return _frame_record_for(_args(), _web_query(), live_debug_requested())
+
+## `frame_record_requested()`'s own decision, pure in its three inputs the way `_ground_mode_for()`
+## is: the command line, or the page while the bundle is open, and only the value `1` there.
+static func _frame_record_for(args: PackedStringArray, query: String, flags_open: bool) -> bool:
+	if "--frame-record" in args:
+		return true
+	if not flags_open:
+		return false
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "framerecord" and pair[1] == "1":
+			return true
+	return false
+
 ## `--quit-when-still` is present at all — `StillWatch` (`src/dev/still_watch.gd`) reads this to
 ## decide whether to add itself to the tree, the same shape `route_targets().is_empty()` gates
 ## `RouteRig` on. See `quit_when_still_seconds()` for the flag's own optional value.
@@ -1043,7 +1073,8 @@ const RIG_MOVIE_SLOWDOWN := 10.0
 ## `--after`'s own value if the flag was given (a screenshot or timed-trace rig's own wait, the
 ## common case — see `AutoScreenshot._seconds_to_wait`) or `-1.0` for "not given"; `day_length` is
 ## what a rig with no such bound (`--route`, or `--walk`/`--flee`/`--press`/`--tap` on their own,
-## none of which stop anything by themselves without `--screenshot` or `--frame-trace` beside them)
+## none of which stop anything by themselves without `--screenshot`, `--frame-trace` or
+## `--frame-record` beside them)
 ## can run for at the very most — the day it is playing, since nothing else ends it sooner. Pulled
 ## out as a pure function of both so a test can drive every combination without a command line —
 ## the same seam `_no_focus_pause_from_args()` already is for its own flag.

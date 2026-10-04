@@ -884,7 +884,26 @@ func _is_inside_a_hut() -> bool:
 func _pocket_factor() -> float:
 	return 0.0 if _is_in_a_pocket() else 1.0
 
+## Whether the frame record (`FrameRecord`) was running when this agent was made, read once here
+## so that, with the record off, `_process()` pays one member read rather than a static read and a
+## call into a second function: with two hundred or so agents a frame, that difference made every
+## player's frame measurably longer on a desktop (docs/evidence/m159-frame-record-2026-10-04/). An
+## agent is made per day, after the recorder has started, so every one made under a record is timed.
+var _timed := FrameRecord.on
+## True while `_process()` runs its own body inside the record's timing, so the call it makes to
+## itself is the body rather than another round of timing.
+var _timing := false
+
 func _process(delta: float) -> void:
+	# The record's timing, when this agent was made under one and it is still running: the body
+	# below runs inside it through the call to itself. See `_timed`.
+	if _timed and not _timing and FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.CROWD)
+		_timing = true
+		_process(delta)
+		_timing = false
+		FrameRecord.leave(outer)
+		return
 	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
 	# before anything below runs, so this agent stands exactly where the day placed it — no clock,
 	# steering, lookahead, turn, gait or recycle. It is still drawn; see `_draw()`'s own `_skip_draw`.

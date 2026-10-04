@@ -42,6 +42,65 @@ again with it on and requires the plans to be **identical event for event**.
 Anything needing a per-frame check goes in `TelemetryObserver`, **not** in the gameplay class. The
 telemetry stays out of the files that decide things, which is what makes the rule easy to keep.
 
+**The one exception is the per-system frame record's timing wrap** (`FrameRecord`, docs/TELEMETRY.md,
+"Per-system frame records"). *(2026-10-03, inbox #510: "let's focus on recording what cause
+spillover in the regular 2ms ... it seems that stuttering happens with a lot of objects on screen
+so influence calculation, pathing, drawing, etc. can all be the culprit".)* The player accepted
+the exception itself on 2026-10-04 (inbox #526), asked whether to "accept the timing wraps in
+gameplay code as a telemetry-skill exception": "Accept all three (Recommended)". A phone has no
+profiler, so the only way to know what a system cost in a frame is to time it where it runs, and
+an observer cannot do that from outside. The wrap is a single branch in front of an unchanged
+body, and it takes one of two shapes by how often it runs, because what it costs with the record
+off is paid by every player; the scenery queue alone has a third.
+
+A system timed **once a frame** (the crowd's and the event manager's physics steps, the sweep, the
+halo, the edge) reads `FrameRecord.on` and moves its body into a private function of its own:
+
+```gdscript
+func _physics_process(delta: float) -> void:
+	if FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.CROWD)
+		_tick_the_crowd(delta)
+		FrameRecord.leave(outer)
+	else:
+		_tick_the_crowd(delta)
+```
+
+A thing timed **once per body per frame** (a crowd agent, a live event) copies the switch when it
+is made and keeps its body where it is, so off it pays one member read: a static read and a second
+call on each of a couple of hundred bodies made every player's frame measurably longer on a desktop
+(docs/evidence/m159-frame-record-2026-10-04/). It is made per day, after the recorder has started:
+
+```gdscript
+var _timed := FrameRecord.on
+var _timing := false
+
+func _process(delta: float) -> void:
+	if _timed and not _timing and FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.CROWD)
+		_timing = true
+		_process(delta)
+		_timing = false
+		FrameRecord.leave(outer)
+		return
+	# the body, unchanged
+```
+
+The **scenery queue** (`SceneryResidency.update()`) is the third shape, and it is the scenery
+queue's alone. It reads `FrameRecord.on` once into a local and, under the record, also times what
+its jobs leave to the engine's deferred flush, by queuing two window markers with `call_deferred`
+either side of everything it queues there (`_record_deferred_scenery(true)` before, `(false)`
+after), keeps a `kind` on each pending job, and counts the jobs it runs by kind and the time it
+spent past its budget (`FrameRecord.scenery_job()`, `FrameRecord.scenery_update()`). That is what
+the player's question was about — the scenery queue's time, how far past its 2ms, and which jobs —
+and none of it changes what the queue does or in what order. It is not a pattern to copy into
+another system.
+
+Nothing else about the frame record goes in a gameplay class — no reading of state, no counting
+beyond the scenery queue's own jobs, no deferred markers beyond the scenery queue's, no branch that
+changes what the body does — and a new timed system takes one of the first two shapes, with its
+bucket added to `FrameRecord` and the table in docs/TELEMETRY.md.
+
 ## Adding an entry
 
 1. `Telemetry.note("kind", "sentence")` where the thing happens.

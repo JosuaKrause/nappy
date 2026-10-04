@@ -206,6 +206,10 @@ var _layer_readout_on := not DevFlags.player_view_requested() or DevFlags.readou
 ## (`FrameGraph.clear()`), so a graph switched off and back on again starts from blank rather than
 ## picking up wherever the window it was not fed during happened to leave off.
 var _layer_graph_on := false
+## Every frame's time by system, under `--frame-record`/`?framerecord=1` (`DevFlags.
+## frame_record_requested()`), or `null`. The readout carries its line, the last slow frame's
+## three largest costs, so a stutter caught on a phone shows as caught.
+var _frame_recorder: FrameRecorder
 ## The pointer controls, on their own layer for the same reason the danger edge is: they have to
 ## sit above the world they are drawn over. Built in `_ready()`, alongside `_touch_layer`.
 var _touch_controls: TouchControls
@@ -475,6 +479,11 @@ func _ready() -> void:
 		trace.name = "FrameTrace"
 		add_child(trace)
 		trace.setup(self, _city, _player, _day)
+
+	if DevFlags.frame_record_requested():
+		_frame_recorder = FrameRecorder.new()
+		add_child(_frame_recorder)
+		_frame_recorder.setup(self, _city, _player, _day)
 
 	# Built before `_start_day()`, which calls `_route_rig.start_day()` once the day it is meant
 	# to walk actually exists — see `src/dev/route_rig.gd`.
@@ -2430,7 +2439,7 @@ func _process(delta: float) -> void:
 		"crowd       %6d" % _city.crowd.agent_count(),
 		"nearest     %s" % _nearest_event_text(),
 		"",
-	] + FrameCost.readout_lines() + [
+	] + FrameCost.readout_lines() + _frame_record_lines() + [
 		"",
 		"incoming    %6.2f /s" % _baby.last_incoming,
 		"decay       %6.2f /s" % _baby.last_decay,
@@ -2440,6 +2449,12 @@ func _process(delta: float) -> void:
 		"shift       run",
 		"esc         pause  (r restart, q quit)",
 	])
+
+## The frame record's readout line, beneath the frame block, or nothing when no record runs.
+func _frame_record_lines() -> Array[String]:
+	if _frame_recorder == null:
+		return []
+	return [_frame_recorder.readout_line()]
 
 ## The escape's own per-frame work, in place of the day loop: the doors and the service exit while
 ## she is in the building, and the two ways out of the city once she is on the street. The

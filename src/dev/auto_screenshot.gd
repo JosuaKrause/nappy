@@ -155,11 +155,11 @@ static func from_command_line() -> AutoScreenshot:
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--screenshot")
 	var has_picture := index != -1 and index + 1 < args.size()
-	# A timed, capture-free run: `--frame-trace` measuring, or Godot's own movie writer recording
-	# (`tools/record.sh`, `tools/trailer.sh`) — either way the rig drives her and quits at
-	# `--after`, and nothing here saves a picture of its own.
-	var timed_trace := (DevFlags.frame_trace_requested() or DevFlags.recording()) \
-			and "--after" in args
+	# A timed, capture-free run: `--frame-trace` or `--frame-record` measuring, or Godot's own
+	# movie writer recording (`tools/record.sh`, `tools/trailer.sh`) — either way the rig drives
+	# her and quits at `--after`, and nothing here saves a picture of its own.
+	var timed_trace := (DevFlags.frame_trace_requested() or DevFlags.frame_record_requested()
+			or DevFlags.recording()) and "--after" in args
 	if not has_picture and not timed_trace:
 		return null
 	var node := AutoScreenshot.new()
