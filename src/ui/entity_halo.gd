@@ -113,9 +113,9 @@ static var _shared_material: ShaderMaterial
 const COMPATIBILITY_RIM_BLOCKS := 256 / 16
 
 ## The most rims `ExcitementHalo` lets exist at once, lit and fading together: a newly picked
-## source builds its rim only while fewer than this many exist, and otherwise waits in line for a
-## fading one to finish. One block short of `COMPATIBILITY_RIM_BLOCKS`, left for the throwaway quad
-## `main.gd`'s shader warm pass draws with this same material (`_warm_the_canvas_shaders()`), which
+## source builds its rim only while fewer than this many exist, and otherwise is not lit until a
+## block is free, the strongest picks first. One block short of `COMPATIBILITY_RIM_BLOCKS`, left
+## for the throwaway quad `main.gd`'s shader warm pass draws with this same material (`_warm_the_canvas_shaders()`), which
 ## holds a block of its own while it is in the tree. `ExcitementHalo.MAX_SOURCES` has to stay under
 ## it, so the picked sources alone can never fill it and a wait always ends with a fade.
 const RIM_BUDGET := COMPATIBILITY_RIM_BLOCKS - 1
