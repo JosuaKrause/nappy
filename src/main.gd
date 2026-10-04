@@ -98,6 +98,21 @@ var _escape_title_is_resume_gate := false
 ## the getter again on every focus change.
 var _no_focus_pause := DevFlags.no_focus_pause()
 
+## How long every input is ignored after the game gets focus back (`NOTIFICATION_APPLICATION_
+## FOCUS_IN` or `_RESUMED`). *(2026-10-04, inbox #534: "When returning to the game all inputs should
+## be ignored for 500ms this is to prevent the game from immediately starting when returning to the
+## page. The player should see the day brief or pause screen".)* The tap or click that brings the
+## page back is also an event the game reads, and without this it resumes the pause screen or
+## starts the day from its brief before the player has seen either.
+const RETURN_INPUT_IGNORED_MSEC := 500
+## The `Time.get_ticks_msec()` reading at which the window ends, or `0` for no window; `_process()`
+## ends it (`_end_the_return_window()`) the first frame it has passed. Real OS time rather than
+## accumulated `delta`, and `_process()` rather than a timer: this node is `PROCESS_MODE_ALWAYS`, so
+## it runs behind the pause screen too, and a `SceneTreeTimer` can fire before its time (its first
+## frame's delta includes the time before it was made), which left input off for good. Never armed
+## for a rig (`_rig_locked_out`) or under `_no_focus_pause`, which must never be slowed by this.
+var _input_ignored_until_msec := 0
+
 ## Whether `_lock_out_a_rig()` found `DevFlags.is_rig()` true for this run — read once for the same
 ## reason `_no_focus_pause` is, so a test can set it directly. `_input()` reads this member rather
 ## than asking `DevFlags` again on every event.
@@ -304,6 +319,10 @@ func _ready() -> void:
 	# nothing earlier is reachable from GDScript at all — and ahead of the escape's own boot branch
 	# just below, so either path gets it from this one call.
 	_lock_out_a_rig()
+	_return_viewport = get_viewport()
+	_end_the_return_window(true)
+	_return_viewport.set_disable_input(false)
+	_listen_for_a_web_return()
 	# A recording's own real wall clock runs several times slower than its game clock (saving one
 	# frame costs far longer than the 1/60s it represents) — see `_rig_quit_game_seconds`'s own doc.
 	# Physics interpolation blends a rendered frame between two physics ticks by how far the
@@ -1507,6 +1526,8 @@ func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -
 ## given back: the reloaded boot wants exactly the same pages and giving them up here would be a
 ## reload of every one of them, which is the thing the residency exists to prevent.
 func _exit_tree() -> void:
+	_end_the_return_window(true)
+	_stop_listening_for_a_web_return()
 	AtlasLibrary.release_the_loading_moments()
 
 ## Gets the Compatibility renderer to compile the halo and shoreline shader programs before their
@@ -2325,6 +2346,7 @@ func _tree_is_paused() -> bool:
 	return loop is SceneTree and (loop as SceneTree).paused
 
 func _process(delta: float) -> void:
+	_end_the_return_window()
 	# M195, always closes: the outer half of the guarantee `_lock_out_a_rig()` starts — see
 	# `_rig_quit_deadline_msec`'s own doc for why this reads `Time.get_ticks_msec()` fresh rather
 	# than trusting `delta` to have summed correctly. Ahead of every other line in this function on
@@ -2632,6 +2654,70 @@ func _input(event: InputEvent) -> void:
 	if _rig_locked_out and not _is_the_rigs_own_press(event):
 		get_viewport().set_input_as_handled()
 
+## Whether the half second after getting focus back (`_arm_the_return_window()`) is still running.
+func _ignoring_input_after_a_return() -> bool:
+	return Time.get_ticks_msec() < _input_ignored_until_msec
+
+## The viewport whose input is switched off for the window; `_ready()` sets it, a test sets its own.
+var _return_viewport: Viewport = null
+
+## Getting focus back starts the window, and **`Viewport.set_disable_input(true)` is how it is
+## enforced**, not a mark in `_input()`: a disabled viewport delivers nothing to any `_input()`,
+## the GUI or `_unhandled_input()`, so `TouchControls._input()` (a sibling that no handler here can
+## pre-empt) and the pause and day-brief screens are all deaf together. A gate in `main._input()`
+## cannot promise that, since `_input()` runs on children before their parents.
+## It stops *events* only: `Input`'s own held state still follows the keyboard, so a key held
+## through the return is still pressed for polling afterwards, and one released inside the window is
+## released. **Nothing can leave input off:** the end is read off the wall clock by `_process()`
+## (`_end_the_return_window()`), which runs under a pause, and `_exit_tree()` and `_ready()` clear
+## it too, because the root viewport outlives a scene reload. Idempotent: a second trigger inside
+## the window moves the end. A no-op for a rig (`_rig_locked_out`: any of `--screenshot`, `--walk`,
+## `--flee`, `--press`, `--tap`, `--route`, a recording or a scripted recipe — `DevFlags.is_rig()`)
+## and under `_no_focus_pause` (`--no-focus-pause`), so a rig is never slowed.
+func _arm_the_return_window() -> void:
+	if _no_focus_pause or _rig_locked_out or _return_viewport == null:
+		return
+	_input_ignored_until_msec = Time.get_ticks_msec() + RETURN_INPUT_IGNORED_MSEC
+	_return_viewport.set_disable_input(true)
+
+## Called every frame, and by `_exit_tree()`/`_ready()` with `force`: puts input back once the
+## window has passed.
+func _end_the_return_window(force := false) -> void:
+	if _input_ignored_until_msec == 0 or (not force and _ignoring_input_after_a_return()):
+		return
+	_input_ignored_until_msec = 0
+	if _return_viewport != null and is_instance_valid(_return_viewport):
+		_return_viewport.set_disable_input(false)
+
+## The web page is where "returning" was seen, and the engine's FOCUS_IN on a tab return is not
+## confirmed there, so a second trigger comes straight from the browser: the page becoming visible
+## again (`visibilitychange`) and the window getting focus (`focus`). Whichever arrives opens the
+## same window, and `_arm_the_return_window()` is idempotent. Web builds only.
+var _web_return_callback: JavaScriptObject = null
+func _listen_for_a_web_return() -> void:
+	if not OS.has_feature("web"):
+		return
+	_web_return_callback = JavaScriptBridge.create_callback(_on_web_return)
+	var document := JavaScriptBridge.get_interface("document")
+	var window := JavaScriptBridge.get_interface("window")
+	document.addEventListener("visibilitychange", _web_return_callback)
+	window.addEventListener("focus", _web_return_callback)
+
+## Removes what `_listen_for_a_web_return()` added, so a scene reload does not pile up listeners.
+func _stop_listening_for_a_web_return() -> void:
+	if _web_return_callback == null:
+		return
+	JavaScriptBridge.get_interface("document").removeEventListener("visibilitychange", _web_return_callback)
+	JavaScriptBridge.get_interface("window").removeEventListener("focus", _web_return_callback)
+	_web_return_callback = null
+
+func _on_web_return(args: Array) -> void:
+	var event: JavaScriptObject = args[0] if args.size() > 0 else null
+	var kind := str(event.type) if event != null else ""
+	if kind == "visibilitychange" and str(JavaScriptBridge.get_interface("document").visibilityState) != "visible":
+		return
+	_arm_the_return_window()
+
 ## A static, pure predicate for the same reason `_debug_snapshot_action()` and `_debug_layer_key()`
 ## are static — a test can ask it directly without booting a `main` (`_ready()` starts a whole run),
 ## the seam `tests/test_main.gd`'s own class doc explains for every other case here.
@@ -2906,10 +2992,13 @@ func _quit() -> void:
 ## of them lost focus, including to another window of the *same* game — and this project never
 ## builds a second one, so it is not read here.
 ## `NOTIFICATION_APPLICATION_PAUSED` is a phone sending the whole app to the background. Getting
-## focus back (`NOTIFICATION_APPLICATION_FOCUS_IN`/`NOTIFICATION_APPLICATION_RESUMED`) is not
-## answered at all — see `_pause_on_focus_lost()`'s own doc for why coming back does not resume.
+## focus back (`NOTIFICATION_APPLICATION_FOCUS_IN`/`NOTIFICATION_APPLICATION_RESUMED`) does not
+## resume (see `_pause_on_focus_lost()`'s own doc) and starts the 500ms during which the viewport
+## delivers no input at all (`RETURN_INPUT_IGNORED_MSEC`, `_arm_the_return_window()`).
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		Telemetry.end_run()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
 		_pause_on_focus_lost()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
+		_arm_the_return_window()

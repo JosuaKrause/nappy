@@ -44,6 +44,9 @@ func run(t) -> void:
 	_test_focus_lost_does_nothing_when_the_pause_is_already_open(t)
 	_test_focus_gained_does_not_resume(t)
 	_test_focus_lost_does_nothing_under_the_override(t)
+	_test_return_ignores_input_for_half_a_second(t)
+	_test_return_window_always_ends(t)
+	_test_return_window_is_off_under_the_override(t)
 	_test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t)
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
@@ -854,6 +857,83 @@ func _test_focus_lost_does_nothing_under_the_override(t) -> void:
 	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "--no-focus-pause turns off the notification's own pause")
 	t.check(not t.get_tree().paused, "and the tree keeps running")
+	_teardown_focus_pause_main(t, main)
+
+## Inbox #534: for `RETURN_INPUT_IGNORED_MSEC` after `FOCUS_IN` or `RESUMED` the viewport delivers
+## nothing (`_arm_the_return_window()` calls `set_disable_input(true)`), so the press that brings
+## the page back cannot resume the pause screen or start the day brief. Real events are pushed
+## through the suite's own viewport; the window's end is moved into the past rather than waited out
+## (`run_tests.gd` is synchronous, so the real 500ms timer cannot fire inside a test).
+func _press_accept(t) -> void:
+	var press := InputEventAction.new()
+	press.action = &"ui_accept"
+	press.pressed = true
+	t.get_viewport().push_input(press)
+
+func _test_return_ignores_input_for_half_a_second(t) -> void:
+	t.check(MAIN_SCRIPT.RETURN_INPUT_IGNORED_MSEC == 500, "the window is 500ms")
+	for what in [Node.NOTIFICATION_APPLICATION_FOCUS_IN, Node.NOTIFICATION_APPLICATION_RESUMED]:
+		# The pause screen.
+		var main := _build_focus_pause_main(t)
+		main._return_viewport = t.get_viewport()
+		t.get_tree().paused = false
+		main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+		main.notification(what)
+		t.check(t.get_viewport().is_input_disabled(), "a return switches the viewport's input off")
+		_press_accept(t)
+		t.check(main._pause.is_open(), "a press inside the window does not resume the pause (%d)" % what)
+		main._input_ignored_until_msec = Time.get_ticks_msec() - 1
+		main._end_the_return_window()
+		t.check(not t.get_viewport().is_input_disabled(), "the window's end switches it back on")
+		_press_accept(t)
+		t.check(not main._pause.is_open(), "the same press after the window resumes")
+		# The day brief.
+		var starts := [0]
+		main._summary.continued.connect(func(): starts[0] += 1)
+		main._summary.show_day_brief(3, 3)
+		main.notification(what)
+		_press_accept(t)
+		t.check(starts[0] == 0, "a press inside the window does not start the day from the brief")
+		main._input_ignored_until_msec = Time.get_ticks_msec() - 1
+		main._end_the_return_window()
+		_press_accept(t)
+		t.check(starts[0] == 1, "the same press after the window starts it")
+		t.get_viewport().set_disable_input(false)
+		_teardown_focus_pause_main(t, main)
+
+## Nothing can leave input off. A second trigger (the web's page events beside the engine's own)
+## moves the end rather than stacking; an end read early (a frame landing inside the window, which
+## is what a `SceneTreeTimer` firing early looked like) changes nothing and a later frame still
+## puts input back; and a scene reload inside the window (`_exit_tree()`) puts it back at once,
+## because the root viewport outlives the scene.
+func _test_return_window_always_ends(t) -> void:
+	var main := _build_focus_pause_main(t)
+	main._return_viewport = t.get_viewport()
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	main._arm_the_return_window()
+	main._process(0.0)
+	t.check(t.get_viewport().is_input_disabled(), "a frame inside the window leaves it running")
+	main._input_ignored_until_msec = Time.get_ticks_msec() - 1
+	main._process(0.0)
+	t.check(not t.get_viewport().is_input_disabled(), "the first frame after it puts input back")
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	main._exit_tree()
+	t.check(not t.get_viewport().is_input_disabled(),
+			"a scene reload inside the window does not leave the new scene deaf")
+	_teardown_focus_pause_main(t, main)
+
+## A rig (`--no-focus-pause`, `--screenshot`) is never slowed by the window.
+func _test_return_window_is_off_under_the_override(t) -> void:
+	var main := _build_focus_pause_main(t)
+	main._return_viewport = t.get_viewport()
+	main._no_focus_pause = true
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	t.check(not t.get_viewport().is_input_disabled(),
+			"under the override a return does not start the window")
+	main._no_focus_pause = false
+	main._rig_locked_out = true
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	t.check(not t.get_viewport().is_input_disabled(), "nor does a rig run (--walk, --press ...)")
 	_teardown_focus_pause_main(t, main)
 
 # ------------------------------------------------------- day 14 hands over ---
