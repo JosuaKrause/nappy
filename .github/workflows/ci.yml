@@ -17,14 +17,19 @@
 #   shards      the headless suite, one matrix job per shard, each running tools/test.sh --shard
 #               I/8 -- planned from tests/suite_costs.txt exactly as a local sharded run is;
 #               skipped on a docs-only pull request.
+#   browser     the release Web export booted and played in Chrome, the same steps the deploy runs
+#               before it publishes (.github/actions/web-browser-check); skipped on a docs-only
+#               pull request.
 #   test        what main's ruleset actually requires (a check named exactly `test`): it fails if
-#               any job that ran failed, or if `game` or `shards` did not run on anything classify
-#               did not call docs-only, so the ruleset's own required-check name still means
-#               "everything this pull request owes passed" without the ruleset itself changing.
+#               any job that ran failed, or if `game`, `shards` or `browser` did not run on
+#               anything classify did not call docs-only, so the ruleset's own required-check name
+#               still means "everything this pull request owes passed" without the ruleset itself
+#               changing.
 # The Godot tools all honour GODOT=..., which is how CI points them at the downloaded Linux
 # binary instead of the macOS default path. uv is installed in `classify` and `gates`, the jobs
-# that run the Python tooling, and ffmpeg only in `gates`; Godot is downloaded (or restored from
-# cache) in `cost-table`, `game` and `shards`, since each boots the engine.
+# that run the Python tooling, and in `browser` for the template compiler; ffmpeg only in `gates`;
+# Godot is downloaded (or restored from cache) in `cost-table`, `game`, `shards` and `browser`,
+# since each boots the engine.
 name: ci
 
 on:
@@ -383,13 +388,51 @@ jobs:
       - name: Shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
         run: GODOT="$HOME/godot/godot-bin" ./tools/test.sh --shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
 
+  # The release Web export, booted in a real Chrome and played through the same checks the deploy
+  # runs before it publishes (.github/actions/web-browser-check, shared with deploy.yml and
+  # web-template.yml). The headless suite never meets the browser's own input, storage or Wasm
+  # runtime, so a commit can pass every shard and still fail to start a day on the page; this job
+  # is what makes that a red `test` before a tag rather than a failed deploy after one. Skipped on
+  # a docs-only pull request like `game` and `shards`. The template is restored from the cache main
+  # saves; a pull request that changes its inputs compiles it here, which the timeout allows for.
+  browser:
+    needs: classify
+    if: needs.classify.outputs.docs_only != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # Same partial clone as `shards` above: nothing here reads docs/evidence/.
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/evidence/
+
+      # RELEASE_TAG names the export's directory and the version the title screen shows; `ci-`
+      # and the commit says this export was a check and was never published.
+      - name: Export the release build and exercise it in Chrome
+        uses: ./.github/actions/web-browser-check
+        with:
+          release-tag: ci-${{ github.sha }}
+
+      - name: Keep the browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-browser-${{ github.sha }}
+          path: ${{ runner.temp }}/browser-result
+          if-no-files-found: warn
+
   # main's ruleset requires a check named exactly `test`; this job is that check; renaming the
   # job id would silently detach the ruleset from CI without editing the ruleset itself. It passes
-  # only when every job that ran passed, and `game` and `shards` may be skipped only on a pull
-  # request classify called docs-only -- one touching src/ or tests/ never is, so it can never pass
-  # here without the game's tests.
+  # only when every job that ran passed, and `game`, `shards` and `browser` may be skipped only on a
+  # pull request classify called docs-only -- one touching src/ or tests/ never is, so it can never
+  # pass here without the game's tests and the browser check. The `version tags` ruleset requires
+  # this same check before a `v*` tag, so a commit that fails in the browser cannot be released.
   test:
-    needs: [classify, gates, cost-table, game, shards]
+    needs: [classify, gates, cost-table, game, shards, browser]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -402,8 +445,9 @@ jobs:
           COST_TABLE: ${{ needs.cost-table.result }}
           GAME: ${{ needs.game.result }}
           SHARDS: ${{ needs.shards.result }}
+          BROWSER: ${{ needs.browser.result }}
         run: |
-          echo "classify: $CLASSIFY, gates: $GATES, cost-table: $COST_TABLE, game: $GAME, shards: $SHARDS, docs-only: ${DOCS_ONLY:-false}"
+          echo "classify: $CLASSIFY, gates: $GATES, cost-table: $COST_TABLE, game: $GAME, shards: $SHARDS, browser: $BROWSER, docs-only: ${DOCS_ONLY:-false}"
           failed=0
           for pair in "classify=$CLASSIFY" "gates=$GATES" "cost-table=$COST_TABLE"; do
             if [[ "${pair#*=}" != "success" ]]; then
@@ -411,7 +455,7 @@ jobs:
               failed=1
             fi
           done
-          for pair in "game=$GAME" "shards=$SHARDS"; do
+          for pair in "game=$GAME" "shards=$SHARDS" "browser=$BROWSER"; do
             result="${pair#*=}"
             if [[ "$result" == "success" ]]; then
               continue

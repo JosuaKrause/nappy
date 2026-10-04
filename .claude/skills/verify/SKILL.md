@@ -154,7 +154,8 @@ apologise for.
 
 **The two kinds of check are told apart by what a check is about, not by how long it takes.** A
 test of the game — the boot check, the two runner fixtures `tools/test.sh` must fail on, the full
-suite in shards — is skipped on a docs-only pull request. A check that the repository agrees with
+suite in shards, and the browser check, which exports the release build and plays it in Chrome —
+is skipped on a docs-only pull request. A check that the repository agrees with
 itself runs on every one, Godot or not: the doc lint, the CLI help test, the hook tests, the
 agent-role test, the Python gate, the telemetry table's check (`tools/ci_telemetry_kinds.py`), the
 cost table's check (`tools/cost-table.sh --check`, the one that needs Godot), and the pull
@@ -179,6 +180,16 @@ if you changed anything the player experiences, **play a minute of it and read t
 Defects found only that way include a `run` entry claiming a six-hundred-pixel event was "in reach",
 and a meter breakdown reading `crowd 0.0, events 0.0` while the meter climbed, because the player
 was doing it to herself with the run button and nothing said so.
+
+**A green suite says nothing about whether the page starts.** The suite and `check.sh` run
+headless, so they never meet the browser's keyboard events, its IndexedDB save or the Wasm runtime
+the custom template builds. CI's `browser` job exports the release build the way the deploy does
+(`.github/actions/web-browser-check`, which both run) and runs
+`tools/web-template/browser-check.mjs` on it — the title, keyboard play, a day save and its reload,
+day 2, days 8 and 14 booted by query, and the escape interior — so a commit that passes every
+shard but cannot start a day on the page fails `test`, and the tag ruleset refuses to release it.
+It cannot hear audio, plays no day to its end, and judges no picture: its screenshots, kept with
+`result.json` as the job's artifact when it fails, are evidence somebody has to open.
 
 **A green `check.sh` says nothing about whether the game looks right** — headless runs never call
 `_draw()`. Real bugs found only by opening a screenshot: building extrusions overhanging every

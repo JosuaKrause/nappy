@@ -183,8 +183,8 @@ fi
 # not green. Waiting here is the fix for the cause rather than for the symptom.
 #
 # `none` is normal for the first minutes after a merge: the `test` job is CI's last, after the
-# classify, gates, cost-table, game and shards jobs it needs, so its check-run registers only
-# once those finish.
+# classify, gates, cost-table, game, shards and browser jobs it needs, so its check-run registers
+# only once those finish.
 #
 # Every push to main fires two runs of the same workflow, one for `push` and one for
 # `pull_request`, so "green" means *all* of them finished well, not the first one to answer.
