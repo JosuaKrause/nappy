@@ -169,10 +169,10 @@ request carries the whole batch:
 
   `cite` finds each note's playtest from its `## #N` heading under `docs/playtests/` and, in every
   tracked text file outside `docs/playtests/`, turns the plain `inbox #N` (and a run such as
-  `inbox #484, #487 and #492`) into `inbox #N in [name](relative link)` in Markdown, skills
+  `inbox #9001, #9002 and #9003`) into `inbox #N in [name](relative link)` in Markdown, skills
   included, and `inbox #N in name` in a code comment. A number counts only as `#N` followed by no
-  digit or letter, or as `issues/N` in a URL, so an SVG colour such as `#504a46` never matches. A
-  bare `(#N)`, a range such as `#479-#483`, an issue URL, a link text and a run mixing playtests are
+  digit or letter, or as `issues/N` in a URL, so an SVG colour such as `#9004a6` never matches. A
+  bare `(#N)`, a range such as `#9001-#9005`, an issue URL, a link text and a run mixing playtests are
   listed as `file:line: text` and never edited: **fix each of those by hand**, the same way. A line
   that already names the playtest is left alone, so a second run changes nothing. **Then read
   `git diff` by eye**: a `#N` that is not a note (a pull request, an SVG colour written as three
