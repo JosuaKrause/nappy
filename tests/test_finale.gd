@@ -547,8 +547,8 @@ func _test_each_section_opens_on_its_own_brief(t) -> void:
 		# *(2026-09-20, the player: "the escape shouldn't behave any different than the rest of the
 		# game" — read here as the hint showing every time the section's clock starts, a fast click
 		# through the brief included, not only on a first entry.)*
-		var teach: Label = main._hud.get_node("Root/Teach")
-		t.check(teach.text == MAIN_SCRIPT.finale_hint_for(section),
+		var teach: HelpText = main._hud.get_node("Root/Teach")
+		t.check(teach.line == MAIN_SCRIPT.finale_hint_for(section),
 				"section %d: and the section's own hint line said on the first entry" % section)
 
 		finale._clock.time_remaining -= 30.0
@@ -568,7 +568,7 @@ func _test_each_section_opens_on_its_own_brief(t) -> void:
 		main._summary.continued.emit()
 		t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
 				"section %d: which then gives the retry a full clock too" % section)
-		t.check(teach.text == MAIN_SCRIPT.finale_hint_for(section),
+		t.check(teach.line == MAIN_SCRIPT.finale_hint_for(section),
 				"section %d: and the hint line said again on the retry, not only the first entry"
 						% section)
 

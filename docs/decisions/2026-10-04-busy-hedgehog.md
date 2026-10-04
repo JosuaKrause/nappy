@@ -30,9 +30,14 @@ Chrome tab stays hidden and unfocused, so no real return could be produced there
 `focus` armed the window and a `visibilitychange` while hidden did not. The review item
 [busy-hedgehog](../review/2026-10-04-busy-hedgehog.md) asks for a real return.
 
+**The window opens only on a return** (PR #548): after the game has actually left, on a focus-out
+or a pause notification, or on the web the page going hidden or the window blurring, and never on
+the first focus at load. Arming at load dropped the browser check's first key press and failed the
+v0.25.0 deploy before it published; a player's first tap within half a second of the page loading
+was lost the same way. A departure is spent by the arming it allows.
+
 **Proposed, not asked for, and open to overturn:** the window timed on real time, since the tree is
-paused behind the pause screen; the window also opening on a focus-in at boot, if the platform
-sends one; nothing armed in any rig run (`DevFlags.is_rig()`: `--screenshot`, `--walk`, `--flee`,
+paused behind the pause screen; nothing armed in any rig run (`DevFlags.is_rig()`: `--screenshot`, `--walk`, `--flee`,
 `--press`, `--tap`, `--route`, a recording, a scripted recipe) or under `--no-focus-pause`, so a
 rig's presses are not delayed; disabling the viewport's input rather than filtering events, so held keys stay held;
 nothing on screen marking the 500ms.

@@ -44,6 +44,7 @@ func run(t) -> void:
 	_test_mode_button_pressed_and_hovered_drive_the_stylebox(t)
 	_test_hover_lights_up_the_button_under_the_mouse(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
+	_test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t)
 	_test_the_buttons_show_on_every_device(t)
 	_test_the_restart_button_is_a_hold(t)
 	_test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t)
@@ -684,15 +685,15 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 	t.check(pause._hint.text == "",
 			"the hint says nothing at all, even on a keyboard-and-mouse desktop ('%s')"
 					% pause._hint.text)
-	t.check("Tap to walk" in pause._body.text,
-			"and the body names the tap rather than a key, even here ('%s')" % pause._body.text)
-	t.check(not "Shift" in pause._body.text and not "Arrows" in pause._body.text,
+	t.check("Tap to walk" in pause._body.line,
+			"and the body names the tap rather than a key, even here ('%s')" % pause._body.line)
+	t.check(not "Shift" in pause._body.line and not "Arrows" in pause._body.line,
 			"no key is named")
 	# *(2026-09-07: "the movement tutorial should just say 'Tap to walk' and 'Double tap to run'.
 	# no mention of tapping her or 'that way'".)*
-	t.check(pause._body.text.begins_with("Tap to walk, double tap to run."),
-			"and the body says two things and nothing else ('%s')" % pause._body.text)
-	t.check(not "that way" in pause._body.text and not "tap her" in pause._body.text,
+	t.check(pause._body.line.begins_with("Tap to walk, double tap to run."),
+			"and the body says two things and nothing else ('%s')" % pause._body.line)
+	t.check(not "that way" in pause._body.line and not "tap her" in pause._body.line,
 			"no mention of tapping her or 'that way' — stopping still works, it just is not taught")
 	pause.close()
 
@@ -702,7 +703,7 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 	pause.open()
 	t.check(pause._hint.text == "",
 			"the touch hint says nothing either — the buttons say it now ('%s')" % pause._hint.text)
-	t.check("Tap to walk" in pause._body.text,
+	t.check("Tap to walk" in pause._body.line,
 			"and the body names the tap rather than a control it does not draw")
 	t.check(pause._buttons.visible, "and the continue/restart pair is what shows instead")
 
@@ -1410,3 +1411,23 @@ func _left_click() -> InputEventMouseButton:
 	event.button_index = MOUSE_BUTTON_LEFT
 	event.pressed = true
 	return event
+
+## The pause screen's run line shows the run button where the chosen scheme draws one (inbox #533),
+## and is re-read on every open, since the title screen can choose the scheme after the screen was
+## built.
+func _test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t) -> void:
+	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	t.add_child(controls)
+	var pause: PauseScreen = PAUSE.instantiate()
+	t.add_child(pause)
+	pause.open()
+	t.check(pause._body.line.begins_with("Tap to walk, double tap to run."),
+			"tap scheme: the body says double tap to run, got '%s'" % pause._body.line)
+	pause.close()
+	controls.set_mode(ControlsMode.Mode.JOYSTICK)
+	pause.open()
+	t.check(pause._body.line.begins_with("Tap to walk, hold {run} or double tap to run."),
+			"joystick scheme: the body shows the run button, got '%s'" % pause._body.line)
+	pause.close()
+	pause.free()
+	controls.free()

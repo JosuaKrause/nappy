@@ -409,6 +409,16 @@ that begins there counts; and the double press still latches run, for a pointer 
 finger's worth of reach. Either keeps run down on its own, and run lasts while any finger holds a button, so handing it from one thumb to the other does not stutter it. Running lasting only while the button is
 held is the filer's proposal, not their words, and is open to overturn.
 
+**A help text that names a button shows that button's own symbol in the line.** *(2026-10-04, note #533:
+"the press pause to pause text should say press <pause button> to pause where it uses the in-game
+symbol. Likewise joystick run should now say hold <run button> or double tap to run where it makes
+sense".)* The pause lesson reads *Press* + the pause symbol + *to pause* in every scheme, since the
+pause button is always drawn. The run lines (day 1's *Tap to walk, hold* + the run symbol + *or double tap to run*,
+the first pursuit's *Hold* + the run symbol + *or double tap to run*, and the pause screen's body) name the run button
+in the joystick scheme only, where it is on screen; the tap scheme keeps *double tap to run*. The title
+screen is shown before a scheme is chosen, so its body keeps *double tap to run*, which holds in both.
+The symbol is the atlas region the button wears, drawn one text line tall in the line (`HelpText`).
+
 Where a heading is measured from, and what stops her, are the one place a mouse and a real finger
 disagree. A mouse aims from her own world position, and a click within a generous radius of that
 position stops her. A real touch instead aims from whichever of two fixed points on the screen is
@@ -966,6 +976,17 @@ would. It is not a body — a pursuer stays exempt from `obstructs_radius` for t
 `dog_walker` is, a moving wall on a two-tile pavement pins her against a building — it is only ever
 a question about the one tile the next step would land on.
 
+**Nor does it reach through them: it catches her only by touching her.** *(freckled-goose, #544:
+"Only if the Robert touches the player should it end instantly".)* A pursuer's catch is its reach
+**and** a clear line — `EventInstance.is_lethal_at()` asks `_clear_line_to()` whether the straight
+line from it to her crosses any ground `CityMap.is_walkable()` refuses, every tile the line enters,
+so within reach across a building's corner is not a catch. **Its lunge does not ask**: it still
+fires at the stand-off with a building between them, and the chase comes round the wall. Holding the
+lunge until the line clears would clamp the approach at zero — at an alley mouth his notice reaches
+her through the building, the line clears with her already well inside the stand-off, and the lunge
+would fire from a fraction of it. The reach itself is unchanged, and only a pursuer asks — every
+other `hard_fail` row's catch is still the straight-line distance.
+
 ### The stand-off, and what a contract in seconds cannot say
 
 **A contract stated entirely in speeds and durations can pass every line of itself while the dog is
@@ -978,7 +999,7 @@ after the first second.
 Two rules answer it, and they are the same rule twice: the contract restated as geometry.
 
 - **`Tuning.pursuit_standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
-  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `lunge_reach`, so his stand-off is 116px) and *holding* it, backing off if she walks in, because she will: it is sited in
+  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `lunge_reach`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
   front of her and forward is where she was going. Clamping the approach at zero instead leaves the
   contract true of the dog and false of the encounter — it stands politely still while she closes
   the gap herself.
@@ -1098,8 +1119,10 @@ fixture that moves. The price is its body — anything mobile is exempt from "so
 because a moving wall on a two-tile pavement pins her against a building. What stops you walking
 through a man shouting is the meter: intensity 14 over 210px.
 
-**Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 says *Tap to walk, double tap to run* and
-nothing more; day 3 is when something comes after the pram, and the HUD says *Double tap to run* —
+**Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 says *Tap to walk, double tap to run* (in the joystick scheme, *Tap to walk, hold* + the run
+button's symbol *or double tap to run*, said when the title's choice is made) and
+nothing more; day 3 is when something comes after the pram, and the HUD says *Double tap to run* (in the joystick scheme,
+*Hold* + the run button's symbol *or double tap to run*) —
 naming no key on any device, since the keyboard's own **Shift** works silently like every other key
 this game never puts on screen — on the frame the **first** pursuit of that day telegraphs, rather
 than at dawn — a line of text at dawn is a control list, and the same line over a dog at the pram is

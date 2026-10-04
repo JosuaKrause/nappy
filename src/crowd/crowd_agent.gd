@@ -1400,15 +1400,20 @@ func _nose() -> float:
 ## The junction this agent's **body** is standing in, or `(-1, -1)`. Nose and tail, not the
 ## centre: a car is 52px long against a 192px box, so half a length of it is still in the way
 ## after its middle has left.
+##
+## The end nearer the lattice's origin is asked first and the other second, each written out
+## rather than looped over, since `Crowd.give_way_at_junctions()` asks every car this once a
+## physics tick and a loop over the pair would build an array to walk every time.
 func junction_occupied() -> Vector2i:
 	var half := _nose()
-	for edge in [_along() - half, _along() + half]:
-		var tile_along := floori(edge / float(Tuning.TILE_SIZE))
+	var along := _along()
+	var tile_along := floori((along - half) / float(Tuning.TILE_SIZE))
+	if CityMap.corridor_offset(tile_along) < 0:
+		tile_along = floori((along + half) / float(Tuning.TILE_SIZE))
 		if CityMap.corridor_offset(tile_along) < 0:
-			continue
-		var index := CityMap.junction_index(tile_along)
-		return Vector2i(_corridor, index) if _vertical else Vector2i(index, _corridor)
-	return Vector2i(-1, -1)
+			return Vector2i(-1, -1)
+	var index := CityMap.junction_index(tile_along)
+	return Vector2i(_corridor, index) if _vertical else Vector2i(index, _corridor)
 
 ## The junction this agent is coming to, whether or not it is in it yet.
 func junction_ahead() -> Vector2i:

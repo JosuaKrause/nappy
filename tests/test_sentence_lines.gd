@@ -133,6 +133,15 @@ func _test_the_resumed_day_note_breaks_only_between_sentences(t) -> void:
 func _test_the_pause_screens_body_breaks_only_between_sentences(t) -> void:
 	var pause: CanvasLayer = PAUSE_SCENE.instantiate()
 	t.add_child(pause)
-	var body: Label = pause.get_node("Root/Center/Lines/Body")
-	_check_breaks_only_between_sentences(t, pause._BODY, body, "the pause screen's own instructions")
+	var body: HelpText = pause.get_node("Root/Center/Lines/Body")
+	for joystick in [false, true]:
+		var source: String = pause.body_for(joystick)
+		var wrapped := SentenceLines.break_for_help(source, body)
+		var lines := wrapped.split("\n")
+		for i in range(lines.size() - 1):
+			t.check(lines[i].ends_with(".") or lines[i].ends_with("?") or lines[i].ends_with("!"),
+					"the pause screen's instructions (joystick %s) break only after a sentence's end"
+							% joystick)
+		t.check(" ".join(lines) == source,
+				"the pause screen's instructions (joystick %s) keep every word" % joystick)
 	pause.queue_free()

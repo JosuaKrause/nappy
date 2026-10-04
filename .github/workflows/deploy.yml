@@ -3,10 +3,11 @@
 # may write to that setting, and nothing in the export may assume a `/nappy/` path prefix, since
 # the site is served from the domain's root rather than from a project-pages subpath.
 #
-# The Godot binary is installed and cached the same way tools/ci.yml does it, so there is one
-# recipe for "get this exact Godot onto a runner" rather than two. Export templates are the
-# second half of the same version pin: a template set that does not match the binary's own
-# version is the failure that looks like a broken export rather than like a missing download.
+# The Godot binary, the custom Web template, the export and the browser check come from
+# .github/actions/web-browser-check, the one recipe ci.yml's `browser` job and web-template.yml
+# run too. The Godot version is tools/web-template/pins.env's, the pin the template is built
+# against: a template that does not match the binary's own version is the failure that looks like
+# a broken export rather than like a missing download.
 name: deploy
 
 on:
@@ -26,13 +27,10 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
-env:
-  GODOT_VERSION: 4.7.2
-
 jobs:
   # **The suite is not run again here; the tagged commit's own `test` check is what gates the
-  # deploy.** `ci.yml` runs the full suite on every push to `main` and every pull request and
-  # registers a check named `test` on the commit. Actions has no `needs` across workflows, so
+  # deploy.** `ci.yml` runs the full suite and the browser check on every push to `main` and every
+  # pull request and registers a check named `test` on the commit. Actions has no `needs` across workflows, so
   # this job is that dependency: it asks the API for every check run named `test` on the tagged
   # commit, waits while one is still running, and fails the deploy unless all of them completed
   # well -- `build` cannot start without it. A commit can carry more than one such run (a push
@@ -89,45 +87,11 @@ jobs:
             /*
             !/docs/evidence/
 
-      - name: Cache Godot
-        id: godot-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/godot
-          key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
-
-      - name: Download Godot
-        if: steps.godot-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/godot
-          curl -sSL -o ~/godot/godot.zip \
-            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
-          unzip -q ~/godot/godot.zip -d ~/godot
-          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot-bin
-          chmod +x ~/godot/godot-bin
-
-      - name: Install uv for the pinned template compiler
-        uses: astral-sh/setup-uv@v6
-
-      - name: Identify the custom Web template
-        id: web-template-key
-        run: echo "key=$(./tools/build-web-template.sh --key)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache custom Web template
-        uses: actions/cache@v4
-        with:
-          path: build/web-template
-          key: web-template-${{ steps.web-template-key.outputs.key }}
-
-      - name: Build or verify the custom Web template
-        run: ./tools/build-web-template.sh --jobs 4
-
-      # The boot check stays: it is seconds, and its import pass is what leaves the project's
-      # resources imported on a fresh runner before the export reads them. The suite does not run
-      # here -- see `verify` above.
-      - name: Check
-        run: GODOT="$HOME/godot/godot-bin" ./tools/check.sh
-
+      # The template, the boot check, the export and the browser check are the same recipe ci.yml's
+      # `browser` job runs on every code pull request and every push to main
+      # (.github/actions/web-browser-check), so the commit whose `test` check passed was exported
+      # and played in Chrome exactly this way before it could be tagged.
+      #
       # RELEASE_TAG does two jobs in tools/export-web.sh, and github.ref_name on a tag push is the
       # tag itself (e.g. "v1.2.3"), the same shape tools/release.sh writes. It names the
       # build/web/<tag>/ directory index.js, index.wasm and index.pck move into, so their URLs
@@ -138,20 +102,11 @@ jobs:
       # `application/config/source_commit` -- Godot's own settings mechanism, read at runtime by
       # `TitleScreen.version_text()` and `commit_text()` where an export has no repository to ask
       # -- so the page names the actual release rather than the placeholder project.godot carries
-      # in the repository. The script, not a step here, does the writing, so a local export is
-      # stamped the same way; this checkout is shallow, which is why the tag is passed in rather
-      # than asked of `git describe`.
-      - name: Export the Web build
-        run: GODOT="$HOME/godot/godot-bin" RELEASE_TAG="$GITHUB_REF_NAME" ./tools/export-web.sh
-
-      - uses: actions/setup-node@v4
+      # in the repository.
+      - name: Export the Web build and verify it in Chrome before publishing
+        uses: ./.github/actions/web-browser-check
         with:
-          node-version: '22'
-
-      - name: Verify the exported runtime before publishing
-        run: |
-          node tools/web-template/browser-check.mjs --export build/web \
-            --output "$RUNNER_TEMP/browser-result" --browser /usr/bin/google-chrome
+          release-tag: ${{ github.ref_name }}
 
       - name: Keep browser verification evidence
         if: always()

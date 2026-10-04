@@ -785,22 +785,32 @@ func _pram_shares_her_column() -> bool:
 		return true
 	return absf(pram_draw_offset().x) < Tuning.PLAYER_BODY_RADIUS
 
-## How far above the pram the cue floats, which is more on exactly one of the eight facings.
+## How far above the pram's ground point the cue floats, which differs on exactly one of the eight
+## facings.
 ##
-## `BABY_CUE_LIFT` clears the pram's own art, which is all it has to do when the
-## pram is the topmost thing under the cue. Walking **due south** it is not: the pram is in front of
-## her and therefore *lower* on the screen, so a cue lifted off the pram alone lands over her chest.
-## Clearing her as well is what puts it above the pair of them, over the pram's own column, which is
-## where a cue about the baby belongs — and it is why the step aside above could stop being
-## unconditional.
+## `BABY_CUE_LIFT` clears the pram's own art, which is all it has to do when the pram is the
+## topmost thing under the cue. Walking **due south** it is not: the pram is in front of her and
+## therefore *lower* on the screen, so a cue lifted off the pram alone lands over her chest. There
+## the cue is measured from her instead: `FIGURE_HEIGHT` plus the same clearance
+## (`BABY_CUE_LIFT` less the pram art's height) that the other facings keep over the pram, so it
+## sits just above her head, over the pram's own column, with no extra gap. The lift is taken from
+## the pram's ground point, so the pram's offset below her feet is added back.
 ##
 ## South**-east** and south-west are not that facing, whatever they have in common with it: the
-## pram already has enough horizontal separation to sit outside her column, and the extra
-## `FIGURE_HEIGHT` would lift the cue off a pram it is supposed to be sitting on.
+## pram already has enough horizontal separation to sit outside her column, and the extra height
+## would lift the cue off a pram it is supposed to be sitting on.
+##
+## Carrying has no pram at all and keeps the full `BABY_CUE_LIFT + FIGURE_HEIGHT` above her feet
+## walking south.
 func baby_cue_lift() -> float:
 	if _pram_shares_her_column() and facing.y > 0.0:
-		return BABY_CUE_LIFT + FIGURE_HEIGHT
+		if carrying:
+			return BABY_CUE_LIFT + FIGURE_HEIGHT
+		return FIGURE_HEIGHT + (BABY_CUE_LIFT - PRAM_ART_HEIGHT) + pram_draw_offset().y
 	return BABY_CUE_LIFT
+
+## How tall the pram's own art is, in px, from its ground point; what `BABY_CUE_LIFT` clears.
+const PRAM_ART_HEIGHT := 30.0
 
 ## How tall she is, in px, from the ground point her sprite is anchored at. Only the cue above the
 ## pram needs it, and it needs it as a number rather than as a texture size because the cue is

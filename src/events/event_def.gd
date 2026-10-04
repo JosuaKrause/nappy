@@ -1403,9 +1403,10 @@ func as_warned_first() -> EventDef:
 ## anything standing still. A row cannot be both: `EventInstance.travel_velocity()` picks
 ## `pursue_speed` whenever `pursues` is set and never reads `speed` for the same instance.
 ##
-## **Not `is_lethal_at()`'s business.** Lethal is contact, not noise, and stays a plain circle of
-## `inner_radius` about the centre — see docs/EVENTS.md, "Solid things are solid", and
-## `EventInstance.is_lethal_at()`, unchanged by this milestone.
+## **Not `is_lethal_at()`'s business.** Lethal is contact, not noise: a circle of `lethal_reach()`
+## about the centre, with no eccentricity, and for a pursuer only where the straight line to her
+## crosses no building — see docs/EVENTS.md, "Solid things are solid", and
+## `EventInstance.is_lethal_at()`.
 func field_reach() -> float:
 	if shape != null and shape.kind == GroundShape.Kind.SEGMENT:
 		return shape.half_length + outer_radius

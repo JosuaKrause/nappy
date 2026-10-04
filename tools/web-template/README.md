@@ -71,8 +71,9 @@ published release. Restore release capabilities as part of adding the feature:
 Changes under `tools/web-template/`, including `profile.args`, automatically trigger the
 `web-template` workflow. Under GitHub's
 [default cache retention](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#usage-limits-and-eviction-policy),
-an unused template cache can be evicted after more than seven days; a later release then compiles
-the template in the deploy build job.
+an unused template cache can be evicted after more than seven days; CI's `browser` job restores it
+on every code pull request and every push to `main`, and whichever job next finds it missing
+compiles it again.
 
 The preset's desktop texture-compression switch is not evidence of each texture's encoding.
 The actual pack inspection in the engine comparison checks the GST2 payload headers; browser
@@ -95,11 +96,15 @@ keyboard input, an IndexedDB save and its reload with the same run seed and one 
 the ordinary summary-to-day-2 transition, days 8/14, and the escape interior. Query-driven later days are separate boots, not a claim of
 playing through all days. Inspect the images for rendering and baked version metadata too.
 
-The `web-template` workflow performs the same custom build/export/browser check without any
-publication permission. It runs for changes to the build inputs, and supports manual dispatch;
-ordinary unrelated PRs do not download the compiler. Deployment remains a version-tag operation
-gated by the tagged commit's required game test check. It uses the same verified template cache
-and runs the browser check on the exported game before publishing the Pages artifact.
+The build, export and browser check are one composite action,
+`.github/actions/web-browser-check`, which three workflows run. CI's `browser` job runs it on every
+pull request that is not docs-only and on every push to `main`, and the `test` check the version-tag
+ruleset requires waits for it, so a commit whose release export fails in Chrome cannot be tagged.
+The `web-template` workflow runs it without any publication permission for changes to the build
+inputs, beside the browser-scratch fixtures and the Node 22 startup checks, and supports manual
+dispatch. The deploy runs it once more on the tagged commit, against the very files it publishes,
+before uploading the Pages artifact. All three restore the same verified template cache, so an
+ordinary pull request downloads no compiler.
 
 The engine comparison under `docs/evidence/web-package-size-2026-09-30/` records source/toolchain
 provenance, local gzip sizes and browser results. Local gzip bytes are not observed CDN transfer
