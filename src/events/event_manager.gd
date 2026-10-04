@@ -35,9 +35,10 @@ var _city: City
 var _map: CityMap
 var _player: Node2D
 var _hard_failed := false
-## Today's own day number, kept only for `_summon_the_sighted_row()`'s RNG stream — the
-## direction a summoned row enters from is a coin flip like any other placement, and it has to
-## come from the day's own seed to stay deterministic.
+## Today's own day number, kept for the two RNG streams drawn while the day runs:
+## `_summon_the_sighted_row()`'s — the direction a summoned row enters from is a coin flip like any
+## other placement, and it has to come from the day's own seed to stay deterministic — and the
+## pelican's (`rolls_a_pelican()`).
 var _day := 0
 
 ## True between `start_finale()` and the next `start_day()`: this walk is the escape, not a day.
@@ -397,6 +398,7 @@ func clear() -> void:
 	_sighted.clear()
 	_sight_reported.clear()
 	_pending.clear()
+	_pelican_rng = null
 	_broadcast_clock = 0.0
 
 ## Brings into the world everything within reach of a point, and takes away what has gone out
@@ -600,8 +602,52 @@ static func _body_axis(map: CityMap, def: EventDef, placed: Vector2, facing: Vec
 func _spawn_unplanned(def: EventDef, at: Vector2,
 		path := PackedVector2Array()) -> EventInstance:
 	var instance := _create(def, at, path)
+	instance.is_pelican = rolls_a_pelican(def)
 	_instances.append(instance)
 	return instance
+
+# ------------------------------------------------------------------------ the pelican ---
+# *(minty-hedgehog, statement 8: "One in ~400 bikers should be a pelican riding a bicycle instead.
+# Needs to be svg only".)* A picture and nothing else: the rider it is drawn for keeps the row's
+# own def, field, lethal radius, speed and cost (`EventInstance.is_pelican`).
+
+## About one cyclist in four hundred, the player's own number.
+const PELICAN_SHARE := 1.0 / 400.0
+## The `GameState.day_rng()` stream the roll draws from — its own, so a cyclist drawing from it
+## moves nothing any other stream decides.
+const PELICAN_STREAM := "pelican"
+
+## The share `rolls_a_pelican()` rolls against: `PELICAN_SHARE`, and a variable rather than the
+## constant read directly so a rig can make every rider one or the other, the way `stream_radius`
+## lets one turn the streaming off.
+var pelican_share := PELICAN_SHARE
+## Today's pelican stream, made from `_day` on the day's first roll and dropped by `clear()`.
+var _pelican_rng: RandomNumberGenerator
+
+## Whether the rider about to be created for `def` is drawn as the pelican. Asked once per
+## instance, as it is created, which is what keeps a rider one thing for its whole ride.
+##
+## **Only from `_spawn_unplanned()`**, the path every cyclist takes (`spawn_warned()`, for a
+## `TOWARD_PLAYER` row the director sends): an instance made there is never streamed out and made
+## again, so it is never asked twice. A planned row's instance can be — only a scene recipe plans a
+## cyclist — and is never a pelican.
+##
+## **One draw from the day's own `PELICAN_STREAM` per cyclist**, rolled whatever the answer, so the
+## run's seed and the order the day sends its cyclists in decide which of them is the pelican, the
+## same way they decide everything else the director sends. Nothing but a cyclist draws from it.
+## `--pelican` (`DevFlags.pelican()`) answers yes for every one without changing what is drawn.
+func rolls_a_pelican(def: EventDef) -> bool:
+	if def.look != EventDef.Look.CYCLIST:
+		return false
+	if _pelican_rng == null:
+		_pelican_rng = GameState.day_rng(_day, PELICAN_STREAM)
+	var rolled := pelican_roll(_pelican_rng, pelican_share)
+	return rolled or DevFlags.pelican()
+
+## One roll of `rng` against `share`. Static and separate so a test can measure the share over
+## many seeds through the same arithmetic the game uses.
+static func pelican_roll(rng: RandomNumberGenerator, share: float) -> bool:
+	return rng.randf() < share
 
 ## Builds an instance, puts it in the world, and records any permanent mark it leaves.
 ## Everything that puts an event on the map goes through here, so a scar can never be

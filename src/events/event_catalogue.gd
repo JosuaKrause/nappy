@@ -1273,6 +1273,9 @@ static func _pigeon_flock() -> EventDef:
 ## Day 2 rather than day 1 on purpose. Day 1 is allowed to be easy as long as the difficulty then
 ## climbs, and this is the plainest possible way to say it climbed: day 2 is the day the streets
 ## acquire something that can take the day off you.
+##
+## About one rider in 400 is drawn as a pelican on the same bike (`EventManager.rolls_a_pelican()`),
+## and nothing else about him changes: the pelican is a picture, never a row of its own.
 static func _cyclist() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cyclist"

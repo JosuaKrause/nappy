@@ -43,6 +43,7 @@ extends RefCounted
 ##   --follow        1
 ##   --route         1
 ##   --force         1?
+##   --pelican       0
 ##   --overview      0
 ##   --zoom          1
 ##   --start-escape  0w?
@@ -122,10 +123,11 @@ extends RefCounted
 ## file-writing half of the surface still funnels through unconditionally.** *(2026-09-06, the
 ## player: "for dev you need it to be controllable from the getgo -- for release there should be
 ## no modifiers".)* That still holds without exception for an arbitrary, unbounded seed from the
-## command line, `--spawn`, `--follow`, `--route`, `--force`, `--overview`, `--zoom`, `--touch`,
-## `--web`, `--title`/`--no-title`, `--no-focus-pause`, `--no-save`, `--spikes`, `--frame-trace`,
-## `--quit-when-still`, and (through `AutoScreenshot.from_command_line()`'s own copy of this gate)
-## `--screenshot`, `--after`, `--walk`, `--flee`, `--press` and `--tap` — a release build answers
+## command line, `--spawn`, `--follow`, `--route`, `--force`, `--pelican`, `--overview`,
+## `--zoom`, `--touch`, `--web`, `--title`/`--no-title`, `--no-focus-pause`, `--no-save`,
+## `--spikes`, `--frame-trace`, `--quit-when-still`, and (through
+## `AutoScreenshot.from_command_line()`'s own copy of this gate) `--screenshot`, `--after`,
+## `--walk`, `--flee`, `--press` and `--tap` — a release build answers
 ## none of it, from any address a visitor could type.
 ##
 ## **The smaller half — the flags that choose where a run starts or how it is drawn, never one
@@ -459,6 +461,14 @@ static func forced_interval() -> float:
 	return maxf(float(word), 0.5)
 
 const _FORCED_INTERVAL_DEFAULT := 6.0
+
+## `--pelican` — every cyclist the day sends is drawn as the pelican that is otherwise about one in
+## four hundred (`EventManager.rolls_a_pelican()`), so the drawing can be looked at on demand rather
+## than waited for. A picture only, like the pelican itself: the riders, their warnings and their
+## fields are the ones the run would have had. `--force cyclist --pelican` sends one every few
+## seconds.
+static func pelican() -> bool:
+	return "--pelican" in _args()
 
 ## `--meters <sleepiness> <excitement>` (or the page's own `?meters=sleepiness,excitement`, under
 ## `live_debug_requested()`), clamped into range — or `(-1, -1)` if the flag is absent or

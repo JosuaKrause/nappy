@@ -31,6 +31,7 @@ const GAIT_FAMILY_DICTS := {
 	"dog": [EventInstance.DOG_BY_VIEW, EventInstance.DOG_BY_VIEW_B],
 	"charging_dog": [EventInstance.CHARGING_DOG_BY_VIEW, EventInstance.CHARGING_DOG_BY_VIEW_B],
 	"cyclist": [EventInstance.CYCLIST_BY_VIEW, EventInstance.CYCLIST_BY_VIEW_B],
+	"pelican_cyclist": [EventInstance.PELICAN_BY_VIEW, EventInstance.PELICAN_BY_VIEW_B],
 	"mouse": [EventInstance.MOUSE_BY_VIEW, EventInstance.MOUSE_BY_VIEW_B],
 }
 

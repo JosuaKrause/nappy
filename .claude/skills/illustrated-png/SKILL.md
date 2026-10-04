@@ -12,6 +12,12 @@ the source/derivative pair in the family's evidence manifest, including UI and i
 The catalogue-wide conversion manifest is open work under M109, convert the SVG catalogue to PNG.
 Raw generator outputs belong with generation evidence, not in the runtime asset catalogue.
 
+**The pelican cyclist is never converted.** `art/events/pelican_cyclist*.svg` stays SVG by the
+player's word *(minty-hedgehog: "converted to PNG during atlas creation but otherwise it will
+always stay SVG never become a converted PNG")*: the bake rasterizes it like any SVG, and no
+illustrated PNG of it is generated or placed under `art/illustrated/`. `tests/test_pelican.gd`
+fails if one appears there.
+
 The player may authorize a bounded PNG-first family when photographs or a reviewed generated
 concept define the subject more faithfully than an existing SVG. The M109 rooftop equipment,
 fallen-tree and burst-water-main replacement families are such exceptions. Preserve their exact
