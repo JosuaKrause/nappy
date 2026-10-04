@@ -70,6 +70,10 @@ var _sight_reported: Dictionary = {}
 ## else. Built in `start_day()` and read twice: the director sites against it while she walks, and
 ## `light_what_she_never_met()` places off it at dusk on a day she never met what it was for.
 var _siting: EventScheduler.WalkSiting = null
+## The day's own route tree and door positions, as `start_day()` handed them to `build_day`, kept
+## for a placement made later in the day that has no `_siting` to read them from (`queue_a_mast()`).
+var _day_tree: RouteTree = null
+var _day_doors := PackedVector2Array()
 
 ## The run's spent one-shots — `start_day`'s own argument, kept because one kind of one-shot is
 ## spent while the day is running rather than while it is being planned. See `_stream_in()`. Empty
@@ -313,6 +317,8 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# Only on a day that has such a plan: the context grows a corridor and the protected-calm
 	# rects, and a day with nothing left for her walk would pay for both and read neither.
 	_siting = null
+	_day_tree = tree
+	_day_doors = doors
 	for plan in _plans:
 		if plan.def.sited_on_her_way and not plan.is_placed():
 			if not _siting:
@@ -685,23 +691,35 @@ func mast_foot(mast_id: String) -> Vector2:
 			return plan.position
 	return Vector2.INF
 
-## **One more mast, for day 11's task**, when no live mast stands near the mark she read
-## (`ResistanceDirector._place_at_a_mast()`): a `loudspeaker` plan at `foot`, heated like the day's
-## own (`GameState.resistance_progress`, the heat `start_day()` hands the scheduler), under
-## `EventScheduler.added_mast_id(foot)`, appended to the day's plan and its body recorded like any
-## other's. The director has already kept `foot` out of her view, so it streams in off screen like
-## any planned row; it broadcasts on the one clock, is silenced by `silence_mast()` like the others,
-## counts for `silence_all_masts()`, and once silenced stands silenced on every later day from its
-## scar (`EventScheduler._place_masts()`). *(2026-10-04, the player: "The 6 masts rule is stupid
-## anyway. It doesn't come from me. And it actually makes it harder to encounter masts. We need to
-## discuss this again but not now. Now just add a new mast close by".)*
-func add_mast(foot: Vector2) -> EventScheduler.Planned:
+## **One more mast, for day 11's task, generated as the next event** when no live mast stands near
+## the mark she read (`ResistanceDirector._place_at_a_mast()`). *(2026-10-03, inbox #486, the
+## player: "The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
+## harder to encounter masts. We need to discuss this again but not now. Now just add a new mast
+## close by" · inbox #503: "no events are dynamically created as you walk around -- if there is a
+## mast queued up that will be the next event to be generated".)* So it is not put down where the
+## director points: it is generated the way every row the day plans is, a `loudspeaker` heated like
+## the day's own (`GameState.resistance_progress`) placed by `EventScheduler._best_of()` among
+## `offered` — the tiles the director found near her and out of her view — against the whole of the
+## day's plan: `_room_around()`'s spacing, so it never stands inside anything else or inside a lethal
+## row's field, the region doors' clear ground, the calm she has not used, and the route junctions
+## and sidewalks the day keeps open. Appended to the day's plan under
+## `EventScheduler.added_mast_id()` with its body recorded, it streams in like any planned row,
+## broadcasts on the one clock, is silenced by `silence_mast()`, counts for `silence_all_masts()`,
+## and once silenced stands silenced on later days from its scar (`EventScheduler._place_masts()`).
+## Null when no offered tile passes, which leaves day 11 to the nearest live mast.
+func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
+	if offered.is_empty():
+		return null
 	var def := EventCatalogue.heated(EventCatalogue.by_id("loudspeaker"),
 			GameState.resistance_progress)
-	var plan := EventScheduler.Planned.new(def, foot)
-	plan.mast_id = EventScheduler.added_mast_id(foot)
+	var siting := _siting if _siting else EventScheduler.WalkSiting.new(_day, _map, _day_tree,
+			GameState.settled_this_act(), _day_doors)
+	var plan := siting.among(def, rng, _plans, offered)
+	if not plan:
+		return null
+	plan.mast_id = EventScheduler.added_mast_id(plan.position)
 	_plans.append(plan)
-	_record_the_body(plan.get_instance_id(), def, foot, plan.facing)
+	_record_the_body(plan.get_instance_id(), def, plan.position, plan.facing)
 	return plan
 
 ## She has crossed a district door: let out on its far side after the inspection

@@ -99,6 +99,8 @@ func run(t) -> void:
 	_test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
 	_test_the_swings_touch_is_the_ellipse_at_its_base(t)
 	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
+	_test_day_nine_completes_when_she_is_let_through_after_the_inspection(t)
+	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
 	_test_a_task_is_placed_near_its_mark(t)
 	_test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
@@ -1199,7 +1201,7 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 	director.free()
 
 ## feathery-marmot, "a mark only ever sits at an alley's mouth" — *"Mouth only"* (the player,
-## 2026-10-04, asked whether a mark may sit in the middle of its alley). Over six cities, forty dawn
+## 2026-10-03, inbox #486, asked whether a mark may sit in the middle of its alley). Over six cities, forty dawn
 ## draws each (`_place()`, the call `start_day()` makes) and a relocation asked from every
 ## twentieth alley tile and from a point 300px off it in four directions (`_nearest_alley_within()`,
 ## the call every move makes): every mark lands on a mouth, found here independently of the
@@ -4051,17 +4053,21 @@ func _touched_from_standable_ground(director: ResistanceDirector, item: Vector2,
 	return false
 
 ## feathery-marmot, day 12 — *"Not the drawn swing. Place an ellipse at its base. That's the area to
-## touch"*. The swing's contact is touched by her body overlapping `ResistanceDirector.SWING_BASE`
-## round the swing's base: from eight bearings, standing with her edge a pixel inside the ellipse's
+## touch"*. The swing's contact is touched by her body overlapping `ResistanceDirector.swing_base()`
+## round the swing's base, the extent of the shadow the frame casts there
+## (`Prop._playground_frame_shape()`): from eight bearings, standing with her edge a pixel inside the ellipse's
 ## outline completes it, at each side and each corner, and standing two pixels clear of it does not.
 ## Before, a 36px circle round the swing's tile centre counted.
 func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 	var contact := ContactPoint.new()
 	contact.setup(_perform_on(12), Vector2(500.0, 500.0))
-	contact.touch_ellipse = ResistanceDirector.SWING_BASE
+	contact.touch_ellipse = ResistanceDirector.swing_base()
 	t.add_child(contact)
 	contact.set_physics_process(false)
-	var semi := ResistanceDirector.SWING_BASE
+	var semi := ResistanceDirector.swing_base()
+	var shadow := Prop._playground_frame_shape()
+	t.check(is_equal_approx(semi.x, shadow.reach()) and is_equal_approx(semi.y, shadow.across()),
+			"the ellipse spans the shadow the frame casts at its base (%s)" % semi)
 	var touching := 0
 	var clear := 0
 	for i in 8:
@@ -4118,11 +4124,15 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 				director._contact._physics_process(STEP)
 			t.check(not director._contact.is_done,
 					"standing at the gatehouse or under the boom completes nothing")
-			# Another door's line first: nothing.
+			# Another door's line first: nothing — and that crossing is seen happening, so the check
+			# is not vacuous.
+			var walked_before := _city.events.walks_under_a_boom()
 			for body in _city.region_plan().door_bodies:
 				if body.def.lifts_for_traffic and body.position.distance_to(director._door_at) > 200.0:
 					_walk_through(body.position, body.facing, direction, player)
 					break
+			t.check(_city.events.walks_under_a_boom() > walked_before,
+					"another district door's line was walked through")
 			t.check(not director._contact.is_done, "crossing another district door completes nothing")
 			_walk_through(director._door_at, director._door_axis, direction, player)
 			if director._contact.is_done:
@@ -4131,6 +4141,66 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 			director.free()
 		t.check(crossings == 2,
 				"walking through the named door completes the task, in either direction (%d of 2)"
+				% crossings)
+		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
+	GameState.city_state = saved_state
+
+## feathery-marmot, day 9 let through after the inspection — the ordinary way through a door
+## (`EventManager._release_finished_door_detentions()`, which puts her down on the far side of the
+## gatehouse that held her and announces `door_crossed` with that gatehouse's position). On the test
+## city's day 9, its mark read: being held at another door's gatehouse and let out completes nothing;
+## being held at a gatehouse of the named door and let out on its far side completes the task, from
+## either side.
+func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) -> void:
+	_build_city(t)
+	var saved_state := GameState.city_state
+	_with_clean_run(func() -> void:
+		var crossings := 0
+		var elsewhere := 0
+		for entry_side: float in [1.0, -1.0]:
+			_city.events.stream_radius = INF
+			var read := _read_the_mark_on(t, 9, SEED)
+			var director: ResistanceDirector = read[0]
+			var player: Stroller = read[2]
+			var events := _city.events
+			events._player = player
+			events.stream_around(player.global_position)
+			if director._door_at == Vector2.INF:
+				t.check(false, "day 9's door is named")
+				player.free()
+				director.free()
+				continue
+			var named: EventInstance = null
+			var other: EventInstance = null
+			for instance in events.instances():
+				if not instance.def.redetains or instance.def.id != "checkpoint_hut":
+					continue
+				var on_the_door := absf((instance.global_position - director._door_at).dot(
+						director._door_axis)) < 1.0 and instance.global_position.distance_to(
+						director._door_at) < Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5
+				if on_the_door and named == null:
+					named = instance
+				elif not on_the_door and other == null:
+					other = instance
+			t.check(named != null and other != null,
+					"the named door's gatehouse and another door's are in the world")
+			if named and other:
+				for instance: EventInstance in [other, named]:
+					player.global_position = instance.global_position \
+							- instance.facing_now() * 60.0 * entry_side
+					events._door_entry_side[instance] = -entry_side
+					events._release_finished_door_detentions(player)
+					if instance == other:
+						if not director._contact.is_done:
+							elsewhere += 1
+				if director._contact.is_done:
+					crossings += 1
+			player.free()
+			director.free()
+		t.check(elsewhere == 2, "being let through another door completes nothing (%d of 2)"
+				% elsewhere)
+		t.check(crossings == 2,
+				"being let through the named door after the inspection completes it, from either side (%d of 2)"
 				% crossings)
 		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
 	GameState.city_state = saved_state
@@ -4238,14 +4308,16 @@ func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 				queue.append(next)
 	return [edge, inside]
 
-## feathery-marmot, day 11 — *"Now just add a new mast close by"* (the player, 2026-10-04, on a
+## feathery-marmot, day 11 — *"Now just add a new mast close by"* (the player, 2026-10-03, inbox #486, on a
 ## mark with no live mast near it). On three cities, day 11 is planned the way a played day is and
 ## its mark read standing on it: where no planned mast stands where her paths reach in the circle,
-## the task goes to a mast the day has just put up — a `loudspeaker` plan under
-## `EventScheduler.added_mast_id()`, its foot within reach of the mark and out of her view. Reaching
-## it silences it and records its scar; `silence_all_masts()` (day 14) counts it; and the next day's
-## masts, planned from the scars, stand it again at its own foot, silenced. Before, the task went to
-## the nearest of the city's six masts, 1,377px and 3,948px away on two of these cities.
+## the task goes to a mast the scheduler has just generated near her (`EventManager.queue_a_mast()`)
+## — a `loudspeaker` plan under `EventScheduler.added_mast_id()`, on the edge of the circle and out
+## of her view — or, where the scheduler's acceptance refused all of it, the nearest live mast.
+## Reaching it silences it and records its scar; day 14's sabotage (`silence_all_masts()`) puts
+## that very plan out when it is lit again; and the next day's and the last night's masts, planned
+## from the scars, stand it again at its own foot, silenced. Before, the task went to the nearest of
+## the city's six masts, 1,377px and 3,948px away on two of these cities.
 func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 	var saved_scars := GameState.scars.duplicate()
 	var saved_state := GameState.city_state
@@ -4292,8 +4364,27 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 							and (scar["position"] as Vector2).distance_to(foot) < 1.0:
 						scarred = true
 				t.check(scarred, "seed %d: reaching it silences it and records its scar" % seed_value)
-				t.check(_city.events.silence_all_masts() >= 1 and masts_before > 0,
-						"seed %d: day 14's sabotage reaches it with the others" % seed_value)
+				# Day 14's sabotage: lit again, the added mast is put out by `silence_all_masts()`
+				# with the others — it is that one mast's plan this asks about.
+				var added_plan: EventScheduler.Planned = null
+				for plan in _city.events.plans():
+					if plan.mast_id == director._mast_id:
+						added_plan = plan
+				t.check(added_plan != null and masts_before > 0,
+						"seed %d: the queued mast is one of the day's plans" % seed_value)
+				if added_plan:
+					added_plan.silenced = false
+					_city.events.silence_all_masts()
+					t.check(added_plan.silenced,
+							"seed %d: day 14's sabotage puts out the queued mast too" % seed_value)
+				var day_14 := EventScheduler._place_masts(14, _city.map, 0, PackedVector2Array(),
+						GameState.scars)
+				var on_day_14 := false
+				for plan in day_14:
+					if plan.mast_id == director._mast_id and plan.silenced:
+						on_day_14 = true
+				t.check(on_day_14, "seed %d: and the last night plans it, silenced, from its scar"
+						% seed_value)
 				var day_12 := EventScheduler._place_masts(12, _city.map, 0, PackedVector2Array(),
 						GameState.scars)
 				var stands_again := false
@@ -4304,7 +4395,10 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 				t.check(stands_again, "seed %d: and the next day stands it again, silenced"
 						% seed_value)
 			elif not site_near:
-				t.check(false, "seed %d: no mast near the mark and none put up (task at %s)"
+				# The scheduler may refuse every tile it was offered — its acceptance, not the
+				# director's — and then the nearest live mast is the task's, which the director says.
+				t.check(director._fell_back,
+						"seed %d: no mast near the mark, none generated, and the nearest stands in (%s)"
 						% [seed_value, director._mast_id])
 			player.free()
 			director.free())
@@ -4312,6 +4406,63 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 	GameState.city_state = saved_state
 	t.check(added[0] > 0, "some city had no mast near its day-11 mark, so one was put up (%d)"
 			% added[0])
+
+## feathery-marmot, day 11's queued mast — *"if there is a mast queued up that will be the next
+## event to be generated"* (inbox #503). On the test city's day 11, a stationary `reversing_lorry`
+## (hard_fail, 175px field) is planned on a sidewalk, and the mast is queued with only the sidewalk
+## inside that field to stand on: the scheduler's acceptance refuses every tile, so no mast is
+## generated, as `_room_around()` refuses any row inside a lethal field ("Nothing else happens
+## inside a lethal event's field"). Offered sidewalk well clear of it, the mast is generated, joins
+## the day's plan under an added id, and has room by the same rule. A mast put down where the
+## director pointed, as before, fails the first half.
+func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
+	_build_city(t)
+	var saved_state := GameState.city_state
+	_with_clean_run(func() -> void:
+		var read := _read_the_mark_on(t, 11, SEED)
+		var director: ResistanceDirector = read[0]
+		var player: Stroller = read[2]
+		var map := _city.map
+		var lorry_def := EventCatalogue.by_id("reversing_lorry")
+		var walled := director._walled_alleys()
+		var lorry_tile := Vector2i(-1, -1)
+		for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+			if ResistanceDirector.is_legal_ground(map, tile, walled) and not map.is_obstructed(tile) \
+					and map.tile_to_world(tile).distance_to(map.doorstep_world_position()) > 600.0:
+				lorry_tile = tile
+				break
+		var lorry := EventScheduler.Planned.new(lorry_def, map.tile_to_world(lorry_tile))
+		lorry.role = GameEnums.BlockerRole.FRICTION
+		_city.events._plans.append(lorry)
+		var inside: Array[Vector2i] = []
+		var clear: Array[Vector2i] = []
+		for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+			if not ResistanceDirector.is_legal_ground(map, tile, walled) or map.is_obstructed(tile):
+				continue
+			var gap := map.tile_to_world(tile).distance_to(lorry.position)
+			if gap > Tuning.EVENT_SPACING_ANY and gap < lorry_def.field_reach() - Tuning.TILE_SIZE:
+				inside.append(tile)
+			elif gap > lorry_def.field_reach() + 600.0 and gap < lorry_def.field_reach() + 900.0:
+				clear.append(tile)
+		t.check(not inside.is_empty() and not clear.is_empty(),
+				"there is sidewalk inside the lorry's field and well clear of it (%d, %d)"
+				% [inside.size(), clear.size()])
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 11
+		var refused := _city.events.queue_a_mast(inside, rng)
+		t.check(refused == null, "offered only ground inside a lethal field, no mast is generated")
+		var placed := _city.events.queue_a_mast(clear, rng)
+		t.check(placed != null and placed.mast_id.begins_with("added-")
+				and placed in _city.events.plans(),
+				"offered ground clear of it, a mast is generated into the day's plan")
+		if placed:
+			var others := _city.events.plans().filter(
+					func(plan: EventScheduler.Planned) -> bool: return plan != placed)
+			t.check(EventScheduler._room_around(placed, others) != -INF,
+					"and it has room by the scheduler's own spacing")
+		player.free()
+		director.free())
+	GameState.city_state = saved_state
 
 ## Plans `day` on the test city in the real day order (closures, events, resistance) for
 ## `seed_value`, and reads the day's mark standing on it with her screen the view around her:

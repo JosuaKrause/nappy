@@ -34,7 +34,7 @@ var is_done := false
 var reach := REACH
 ## Non-zero for a touch that is an area on the ground rather than a circle: the semi-axes of an
 ## ellipse centred on this contact, which her body has to overlap — day 12's swing, whose base it
-## is (`ResistanceDirector.SWING_BASE`).
+## is (`ResistanceDirector.swing_base()`).
 var touch_ellipse := Vector2.ZERO
 ## True for a task completed by doing something rather than by being near a place — day 9's
 ## crossing, which `ResistanceDirector` completes (`complete_now()`) the moment she is through the

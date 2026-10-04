@@ -786,10 +786,11 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 ## `Planned.silenced` already set — the pole and horns are there, the lamp is out and there is no
 ## field, for the rest of the run.
 ##
-## **So does a mast day 11 added for her task** (`EventManager.add_mast()`): a `SILENCED_MAST` scar
+## **So does a mast queued for day 11's task** (`EventManager.queue_a_mast()`): a `SILENCED_MAST` scar
 ## no site's foot is within a tile of is that mast, and it is planned again at its own foot, silenced,
-## under `added_mast_id()`, on every later day whose holds and closures leave the tile alone. One
-## that was never silenced left no scar and is not planned again.
+## under `added_mast_id()`, on every later day whose holds, closures and doors leave the tile alone
+## — the same refusals a site is planned under. One that was never silenced left no scar and is not
+## planned again (*"Only if silenced"*).
 static func _place_masts(day: int, map: CityMap, heat: int = 0,
 		doors := PackedVector2Array(), scars: Array[Dictionary] = []) -> Array[Planned]:
 	var planned: Array[Planned] = []
@@ -810,6 +811,8 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0,
 				break
 		var tile := map.world_to_tile(foot)
 		if at_a_site or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
+			continue
+		if not _clear_of_the_doors(foot, PackedVector2Array(), doors, loudspeaker.field_reach()):
 			continue
 		var added := Planned.new(loudspeaker, foot)
 		added.mast_id = added_mast_id(foot)
@@ -834,7 +837,7 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0,
 			planned.append(announcement)
 	return planned
 
-## The id of a mast day 11 added for her task at `foot` (`EventManager.add_mast()`), the same
+## The id of a mast queued for day 11's task at `foot` (`EventManager.queue_a_mast()`), the same
 ## every day it is planned again from its scar, and never a `MastSites` site's own id.
 static func added_mast_id(foot: Vector2) -> String:
 	return "added-%d-%d" % [roundi(foot.x), roundi(foot.y)]
@@ -1132,6 +1135,19 @@ class WalkSiting extends RefCounted:
 		if def.pastes_a_front:
 			candidate.facing = Vector2.UP
 		return candidate
+
+	## A placement for `def` among `offered`, by `EventScheduler._best_of()` against `already` with the
+	## day's own ground, corridor, protected calm and doors — the acceptance every row the day plans
+	## gets, over a pool the caller chose: day 11's mast queued near her
+	## (`EventManager.queue_a_mast()`). Null when nothing offered passes. `null` rather than the
+	## roomiest of a refused pool: `_best_of()` already answers with nothing for a pool where every
+	## tile is illegal, and with the roomiest only among legal ones.
+	func among(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+			offered: Array[Vector2i]) -> Planned:
+		if offered.is_empty():
+			return null
+		return EventScheduler._best_of(def, rng, _map, offered, EventScheduler._role_for(def, _day),
+				already, _ground, _leave_alone, _corridor, _doors)
 
 	## How far from where she finished the day a dusk placement has to be: the streaming radius, so
 	## the site is ground she was never near enough to have it exist in front of her.

@@ -384,7 +384,7 @@ static func _body_touch_reach(instance: EventInstance) -> float:
 ##   `_on_door_crossed()`): *"Should trigger on the action not on a proximity test"*;
 ## - **day 11's mast** within its body reach (`ContactPoint.body_reach()`'s sum for the pole: 6 + 14
 ##   + 36 = 56px from the foot), so she completes it from any side before she is stopped by it;
-## - **day 12's swing** by her body overlapping the ellipse at its base (`SWING_BASE`): *"Place an
+## - **day 12's swing** by her body overlapping the ellipse at its base (`swing_base()`): *"Place an
 ##   ellipse at its base. That's the area to touch"*;
 ## - **the last night's station door** within `DOOR_REACH` of the door point on the facade, the rule
 ##   every door takes (sandy-egret: "the acceptance radius centered at the door should have a large
@@ -397,20 +397,21 @@ func _shape_the_touch(contact: ContactPoint, step: ResistanceSteps.Step) -> void
 			contact.reach = EventCatalogue.by_id("loudspeaker").solid_reach() \
 					+ Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH
 		ResistanceSteps.TargetKind.PARK_SWING:
-			contact.touch_ellipse = SWING_BASE
-			contact.reach = SWING_BASE.x + Tuning.PLAYER_BODY_RADIUS
+			contact.touch_ellipse = swing_base()
+			contact.reach = contact.touch_ellipse.x + Tuning.PLAYER_BODY_RADIUS
 		ResistanceSteps.TargetKind.STATION_DOOR:
 			contact.reach = DOOR_REACH
 
-## **The ground ellipse at the swing frame's base** that day 12's task is touched at, semi-axes in
-## px, centred on `CityMap.swing_position()` — the bottom-centre the frame is drawn standing on
-## (`Prop`'s `PLAYGROUND_FRAME`, `Sprites.draw_standing()`). Taken from `art/props/swing_frame.svg`
-## (56 by 34): its four legs meet the ground on its bottom edge from x 6 to x 50, so the base is
-## 44px wide about the picture's centre and the ellipse 22px either side of it; the frame stands
-## side-on to the view, so the base's depth is that width foreshortened the way every flat shadow
-## on the ground is (`GroundShape.SHADOW_SQUASH`, 0.4): 8.8px up and down. *(The player: "Not the
-## drawn swing. Place an ellipse at its base. That's the area to touch".)*
-const SWING_BASE := Vector2(22.0, 22.0 * GroundShape.SHADOW_SQUASH)
+## **The ground ellipse at the swing frame's base** that day 12's task is touched at: semi-axes in
+## px, centred on `CityMap.swing_position()`, the bottom-centre the frame is drawn standing on. Read
+## off the shadow the frame casts there (`Prop._playground_frame_shape()`, drawn by
+## `GroundShape.draw_shadow()`), so what she touches is what she sees: that shadow is a capsule as
+## wide as the frame's picture and as deep as its height, from the region table, so the ellipse is
+## half its width across and its rounding up and down — 28 by 17px for `swing_frame.svg`'s 56 by 34.
+## *(The player: "Not the drawn swing. Place an ellipse at its base. That's the area to touch".)*
+static func swing_base() -> Vector2:
+	var shadow := Prop._playground_frame_shape()
+	return Vector2(shadow.half_length + shadow.radius, shadow.radius)
 
 ## Where the run recorded its scar `scar_id` (`GameState.scars`), or `Vector2.INF` when it never
 ## recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no site
@@ -1152,8 +1153,8 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 	return _pick_near(candidates, rng, mark)
 
 ## **A chalk mark only ever sits at an alley's mouth**: every tile the dawn draw (`_place()`) and
-## every relocation (`_nearest_alley_within()`) may put a mark on. *(2026-10-04, the player, asked
-## whether a mark may sit in the middle of its alley: "Mouth only".)* A through-alley's mouths are
+## every relocation (`_nearest_alley_within()`) may put a mark on. *(2026-10-03, inbox #486, the
+## player, asked whether a mark may sit in the middle of its alley: "Mouth only".)* A through-alley's mouths are
 ## its end tiles along its long axis, both of them across its two-tile width
 ## (`CityMap.alley_rects`), so four to an alley; a courtyard passage's is its tile that opens onto
 ## ground that is neither alley nor courtyard — the street end. In `CityMap.tiles_of_type()`'s own
@@ -1238,7 +1239,7 @@ var _circle_inside := {}
 ## otherwise be put in the world, or a building burnt, in front of her. `docs/EVENTS.md`'s rule,
 ## "Nothing may be seen to appear", and the player's own choice for a task placed near its mark:
 ## asked whether to keep it, at the cost of most tasks landing at the far edge of `NEAR_THE_MARK`
-## rather than nearer, "Keep off-screen" (2026-10-04).
+## rather than nearer, "Keep off-screen" (2026-10-03, inbox #486).
 const TASK_HALF_EXTENT := Vector2(3.0, 4.0) * Tuning.TILE_SIZE
 
 ## A tile from `candidates` where one of her paths first reaches the edge of the circle round her
@@ -1341,7 +1342,7 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 		if not segment.tile_rect().has_point(tile):
 			continue
 		var area := _map.tile_rect_to_world(segment.tile_rect())
-		var houses: Array[Vector2] = []
+		var houses: Array[EventScheduler.Planned] = []
 		for body in region_plan.door_bodies:
 			if not area.has_point(body.position):
 				continue
@@ -1349,15 +1350,18 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 				_door_at = body.position
 				_door_axis = body.facing
 			elif body.def.redetains:
-				houses.append(body.position)
+				houses.append(body)
 		if houses.is_empty():
 			return _map.tile_to_world(tile)
-		houses.sort_custom(func(a: Vector2, b: Vector2) -> bool:
-			return a.x < b.x or (a.x == b.x and a.y < b.y))
+		houses.sort_custom(func(a: EventScheduler.Planned, b: EventScheduler.Planned) -> bool:
+			return a.position.x < b.position.x \
+					or (a.position.x == b.position.x and a.position.y < b.position.y))
+		# A door with no boom today: its line is one of its own gatehouses' — this door's own
+		# bodies share its street's axis, where another door's need not.
 		if _door_at == Vector2.INF:
-			_door_at = houses[0]
-			_door_axis = region_plan.door_bodies[0].facing
-		return houses[rng.randi_range(0, houses.size() - 1)]
+			_door_at = houses[0].position
+			_door_axis = houses[0].facing
+		return houses[rng.randi_range(0, houses.size() - 1)].position
 	return _map.tile_to_world(tile)
 
 ## **Day 9 is done by crossing the door, never by standing near it** *(the player: "Cross at this
@@ -1420,12 +1424,12 @@ static func station_door_point(map: CityMap) -> Vector2:
 ##
 ## **Near the mark she read** (`mark`; `_place()` says why): only the masts she reaches by following
 ## a path from where she read it to the edge of the circle round her (`_follow_the_paths_to_the_edge()`,
-## the tile beside the foot inside the circle or on its edge) are drawn among. **When none is, the day adds one** near the mark
-## (`_add_a_mast_near()`, `EventManager.add_mast()`) — the city's six fixed sites (M180's "the same
-## sites every day") leave most marks with no mast near, and the player chose a new mast over a far
-## one: *"The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
+## the tile beside the foot inside the circle or on its edge) are drawn among. **When none is, a mast is queued as the next event the day generates** near her
+## (`_add_a_mast_near()`, `EventManager.queue_a_mast()`) — the city's six fixed sites (M180's "the
+## same sites every day") leave most marks with no mast near, and the player chose a new mast over a
+## far one: *"The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
 ## harder to encounter masts. We need to discuss this again but not now. Now just add a new mast
-## close by"* (2026-10-04). Only where no ground near the mark can take one is the offered mast
+## close by"* (2026-10-03, inbox #486). Only where no ground near the mark can take one is the offered mast
 ## nearest the mark the one. `Vector2.INF` for `mark` (a rig placing the task without a mark) draws
 ## among them all.
 func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector2:
@@ -1478,44 +1482,34 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 	_mast_id = offered[index].mast_id
 	return offered[index].position
 
-## Puts one more mast near `mark` for day 11's task, when no live mast stands where her paths reach
-## within the circle round her (`_place_at_a_mast()`), and answers `[its foot, the tile beside it she
-## touches it from]`, or `[]` when no ground near the mark can take one. The foot is a sidewalk or
-## square tile, the ground `MastSites` stands every mast on, drawn by the day's RNG among those
-## that:
+## Queues one more mast near `mark` for day 11's task, when no live mast stands where her paths
+## reach within the circle round her (`_place_at_a_mast()`), and answers `[its foot, the tile beside
+## it she touches it from]`, or `[]` when nothing near her can take one. The director only offers
+## the ground; the mast is generated by the scheduler's own acceptance among it
+## (`EventManager.queue_a_mast()`, *"if there is a mast queued up that will be the next event to be
+## generated"*). The ground offered is sidewalk or square, where `MastSites` stands every mast:
 ##
-## - stand where one of her paths first reaches the edge of the circle round her
-##   (`_circle_edge`), with the tile beside them reached too, and out of her view
-##   (`TASK_HALF_EXTENT`), so it is never seen to appear;
-## - pass every refusal a contact's ground passes (`is_legal_ground()`, no body on it, reachable
-##   from home), with a tile beside the foot that does too;
-## - a site would be offered on (`MastSites._is_eligible()`: off the home street, its field off a
-##   calm interior and off every place a region door could stand) and keep today's own doors clear
-##   (`EventScheduler._clear_of_the_doors()`), the two checks every mast's ground already passes.
+## - where one of her paths first reaches the edge of the circle round her (`_circle_edge`), with a
+##   tile beside it reached too, and out of her view (`TASK_HALF_EXTENT`), so it is never seen to
+##   appear;
+## - passing every refusal a contact's ground passes (`is_legal_ground()`, no body on it, reachable
+##   from home);
+## - ground a site would be offered on (`MastSites._is_eligible()`: off the home street, its field
+##   off a calm interior and off every place a region door could stand).
 func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector2i]:
 	var added: Array[Vector2i] = []
 	if not _city or not _city.events:
 		return added
 	var walled_alleys := _walled_alleys()
-	var doors := PackedVector2Array()
-	var region_plan := _region_plan()
-	if region_plan:
-		for body in region_plan.door_bodies:
-			doors.append(body.position)
-	var reach := EventCatalogue.by_id("loudspeaker").field_reach()
 	var feet: Array[Vector2i] = []
-	var besides: Array[Vector2i] = []
+	var beside_of := {}
 	for type: GameEnums.TileType in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]:
 		for tile in _map.tiles_of_type(type):
 			var world := _map.tile_to_world(tile)
 			if not _circle_edge.has(tile) or _box_shows(world, TASK_HALF_EXTENT):
 				continue
 			if not is_legal_ground(_map, tile, walled_alleys) or _map.is_obstructed(tile) \
-					or not _reachable_from_home(tile):
-				continue
-			if not MastSites._is_eligible(world, _map) \
-					or not EventScheduler._clear_of_the_doors(world, PackedVector2Array(), doors,
-					reach):
+					or not _reachable_from_home(tile) or not MastSites._is_eligible(world, _map):
 				continue
 			for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 				var next := tile + side
@@ -1523,19 +1517,18 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 						and _reachable_from_home(next) \
 						and (_circle_edge.has(next) or _circle_inside.has(next)):
 					feet.append(tile)
-					besides.append(next)
+					beside_of[tile] = next
 					break
-	if feet.is_empty():
+	var plan := _city.events.queue_a_mast(feet, rng)
+	if not plan:
 		Telemetry.note("contact", "no ground where her paths reach the %.0fpx circle can take a mast"
 				% NEAR_THE_MARK)
 		return added
-	var index := rng.randi_range(0, feet.size() - 1)
-	_city.events.add_mast(_map.tile_to_world(feet[index]))
-	Telemetry.note("contact", "a mast is put up at %s for the task, %.0fpx from the mark"
-			% [TelemetryLog.tile(feet[index]),
-			_map.tile_to_world(feet[index]).distance_to(mark)])
-	added.append(feet[index])
-	added.append(besides[index])
+	var foot := _map.world_to_tile(plan.position)
+	Telemetry.note("contact", "a mast is generated at %s for the task, %.0fpx from the mark"
+			% [TelemetryLog.tile(foot), plan.position.distance_to(mark)])
+	added.append(foot)
+	added.append(beside_of.get(foot, foot))
 	return added
 
 ## The near mast's edge over the far one: index `i`'s weight is `1.0 / d^2`, `d` the straight-line

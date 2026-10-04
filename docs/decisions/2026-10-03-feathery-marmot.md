@@ -17,14 +17,19 @@ every door do what you did with the burnt building. The arrow goes on the door. 
 enough to touch it from the pavement" (#493); "The gate crossing task should point the arrow on the
 gatehouse and crossing should be the test no proximity" (#494); "No it should choose one" (#495);
 "Only if silenced" (#497); "for now let's just use my word on the radii and we merge feathery
-marmot as is" (#498).)*
+marmot as is" (#498); "I wouldn't frame it that way -- create a circle around the current player
+position with the radius of the desired distance -- then follow the path until it reaches the edge
+of the circle" and "no need to special case straight runs or anything like that" (#500); "no
+events are dynamically created as you walk around -- if there is a mast queued up that will be the
+next event to be generated" (#503).)*
 
 **Built (PR #480).**
 
 **Every arrow and every touch is on the item itself.** `red_arrow_target()` is the contact's own
 position; the random stand point beside the item (`_reachable_offset()`), which M181 slice two
 (PR #336) and M222 put on walkable ground beside a mast, a swing tile or the station's pavement, is
-gone. What counts as touching, by item:
+gone. M222 said "the touch point stays beside it where she can reach it"; that sentence is what
+"No! Never besides the item!" overturns. What counts as touching, by item:
 
 | Day | The arrow ends on | The task completes when |
 |---|---|---|
@@ -32,7 +37,7 @@ gone. What counts as touching, by item:
 | 8 burnt building | its door on the facade | she is within `DOOR_REACH` (50.6px) of it |
 | 9 district door | one of its two gatehouses, drawn once by the day's RNG | she actually crosses that door, either way, let through or walking through (`EventManager.door_crossed`); never by proximity |
 | 11 mast | the mast's foot | she is within 56px of it (6px pole + 14 + 36) |
-| 12 swing | the frame's base | her body overlaps a ground ellipse at the base, `SWING_BASE`, 22px across each way (the legs meet the ground over 44px in `swing_frame.svg`) and 8.8px deep (the 0.4 squash every ground shadow uses) |
+| 12 swing | the frame's base | her body overlaps a ground ellipse at the base, `ResistanceDirector.swing_base()`, the extent of the shadow the frame casts there (`Prop._playground_frame_shape()`): 28px across each way and 17px deep for `swing_frame.svg`'s 56 by 34, so what she touches is what she sees |
 | 13 roadblock | no arrow (any roadblock) | she is within 110px of its band's centre (60px body + 14 + 36) |
 | 14 station door | the door point on the facade | she is within `DOOR_REACH`, as day 8 |
 
@@ -41,22 +46,32 @@ the two-tile station door that reaches both pavement tiles in front of it but no
 outer corners, 57.7px out; the player's answer is to keep the one rule ("use my word on the radii").
 A guard's band follows each contact's own reach.
 
-**A task's target is placed near its mark, out of her view.** The man shouting (day 6), the van (7),
-day 8's burnt building when the run had no day-3 fire, and a roadblock (13) are drawn within
-`NEAR_THE_MARK`, 576px in a straight line (one block, the street beside it and half a block), and
-off her screen when she reads the mark, so nothing is seen to appear (`docs/EVENTS.md`); the nearest
-qualifying tile is used when none is in range. In practice they land 450–570px away. Day 9's
-district door, day 10's neighbor, day 12's swing park, day 14's station door and a burnt building a
-real day-3 fire recorded keep their places. Measuring "near" along her path rather than in a straight
-line is what the entry still holds.
+**A task's target is placed where her path first reaches a circle round her, out of her view.** The
+man shouting (day 6), the van (7), day 8's burnt building when the run had no day-3 fire, and a
+roadblock (13) stand where one of her paths from where she read the mark first reaches the edge of
+a circle of `NEAR_THE_MARK`, 576px (one block, the street beside it and half a block), round her:
+the director walks tile by tile over the day's open ground, going on only from tiles inside the
+circle, and draws among the pool's tiles at or past its edge (`_follow_the_paths_to_the_edge()`),
+off her screen, so nothing is seen to appear (`docs/EVENTS.md`); the nearest qualifying tile is
+used when none stands on the edge. Day 9's district door, day 10's neighbor, day 12's swing park,
+day 14's station door and a burnt building a real day-3 fire recorded keep their places. The
+straight-line draw within 576px it replaces put tasks across a block's buildings from her; with it
+switched back the test fails on 9 of 15 days.
 
-**Day 11 puts up a mast near the mark** when none of the six stands within 576px of it
-(`EventManager.add_mast()`), out of her view, on ground a regular site would be offered on, with the
-day's doors kept clear. She silences it like the others; day 14's sabotage counts it; silenced, it
-leaves a scar from which `EventScheduler._place_masts()` plants it again on later days, and one never
-silenced is not planned again. This overturns M180's "six sites, the same every day" for day 11,
-with the player's agreement; `Tuning.MAST_COUNT` and `MastSites` are unchanged, and the six-site
-rule itself is to be discussed again.
+**Day 11 queues a mast near her** when no live mast stands where her paths reach in that circle:
+the director offers the sidewalk and square on its edge, out of her view, that a site would be
+offered on (`MastSites._is_eligible()`), and the scheduler generates the mast there as the next
+event, through its own acceptance (`EventManager.queue_a_mast()` → `WalkSiting.among()` →
+`EventScheduler._best_of()`): `_room_around()`'s spacing, so never inside a lethal row's field, the
+region doors' clear ground, the calm she has not used and the route junctions and sidewalks the day
+keeps open. Where it refuses every tile, the nearest live mast is the task's. She silences it like
+the others; day 14's sabotage puts it out with them; silenced, it leaves a scar from which
+`EventScheduler._place_masts()` plants it again on later days, under the same holds, closures and
+door clearance a site is planned under, and one never silenced is not planned again ("Only if
+silenced"). This overturns, for day 11, M180's "`_place_masts()` plants a `loudspeaker` plan at
+each from `Tuning.MAST_FIRST_DAY` (day 5), the same sites every day", with the player's agreement;
+`Tuning.MAST_COUNT` and `MastSites` are unchanged, and the six-site rule itself is to be discussed
+again.
 
 **A chalk mark sits only at an alley's mouth**, at dawn and on every relocation: an end tile of a
 through-alley, or the street end of a courtyard passage. Its robber stands two-thirds of the way
@@ -69,13 +84,19 @@ comes near.
 **The route rig** (`src/dev/route_rig.gd`) tries the tiles straight across from a door before the
 diagonals, and aims at open ground beside a contact that stands on a body.
 
-**Open to overturn:** 576px straight-line as "near" until the entry's path measure lands; the swing
-ellipse's 8.8px depth, which the art does not give; the 66px floor.
+**Open to overturn:** the circle's 576px radius ("576px and larger"); the swing ellipse taken as the
+extent of the shadow the frame casts; the 66px floor.
+
+**The queue entry is closed by this PR:** `docs/todo/2026-10-03-feathery-marmot/` held only "near"
+measured along her path, which the circle answers (#500), so it is deleted here.
 
 **Verified.** The resistance suite and the route rig's suite pass, and every new test was seen to
 fail with its change switched off: any-side touch, mouths only, two-thirds, the added mast, the
 arrow on each item, day 9 completing only on crossing that door in either direction and never at
-the gatehouse or under the boom, and the swing ellipse. The route rig, `--route mark,task
+the gatehouse or under the boom, day 9 completing when she is let through the named door after the
+inspection and not another door's, the queued mast refused inside a lethal row's field, day 14's
+sabotage putting out the queued mast, the circle's edge, and the swing ellipse spanning the frame's
+shadow. The route rig, `--route mark,task
 --invincible` on days 6, 7, 8, 9, 11 and 12 over seeds 4242, 90210 and 1234567, completed every
 task but day 6 on seed 4242, where it aimed at where the pacing man had been and stopped 61px from
 him. Stills are in `docs/evidence/feathery-marmot-task-targets-2026-10-03/`; the mast still was
