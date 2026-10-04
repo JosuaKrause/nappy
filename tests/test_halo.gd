@@ -43,6 +43,9 @@ func run(t) -> void:
 	_test_a_flock_is_selected_and_lands(t)
 	_test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t)
 	_test_the_rims_mirrored_copies_land_on_the_ring(t)
+	_test_an_event_holds_no_rim_until_it_is_picked(t)
+	_test_the_lit_rims_always_fit_the_budget(t)
+	_test_live_rims_stay_within_what_the_web_can_read(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -436,9 +439,9 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 
 	t.check(strong._halo._target_alpha > 0.0,
 			"a source above the floor at her position is picked and told a nonzero target")
-	t.check(is_zero_approx(weak._halo._target_alpha),
-			"a source out of reach is told zero -- the same answer the linear `in` scan gave before " +
-			"the picked set became a Dictionary lookup")
+	t.check(weak._halo == null,
+			"a source out of reach is told zero, so it never builds a rim at all -- the same answer " +
+			"the linear `in` scan gave before the picked set became a Dictionary lookup")
 
 	# `manager.free()` frees `strong` and `weak` as its own children, rather than freeing them
 	# directly and leaving `manager` to tick a dangling reference in `_instances` next frame.
@@ -671,3 +674,108 @@ func _test_the_rims_mirrored_copies_land_on_the_ring(t) -> void:
 		t.check(is_equal_approx(out, EntityHalo.HALO_MARGIN),
 				"every copy sits exactly HALO_MARGIN (%.1fpx) out from the bobbing body (%.3f)"
 				% [EntityHalo.HALO_MARGIN, out])
+
+# --------------------------------------------------------- what the web can read ---
+# On the Compatibility renderer the Web export runs, only `EntityHalo.COMPATIBILITY_RIM_BLOCKS`
+# canvas items can hold a readable `instance uniform` at once, and one built past that reads its
+# colour as zero for as long as it lives -- see `EntityHalo`'s class doc. A headless run cannot see
+# a rim that draws nothing, so what is held here is the count that decides it: how many rims exist.
+
+## A live event holds no rim until `ExcitementHalo` picks it, and gives it back once faded. A rim
+## built in `_ready()` for every live event is what filled the web's blocks at dawn and left the
+## man shouting beside her doorstep dark however hard he was charging her.
+func _test_an_event_holds_no_rim_until_it_is_picked(t) -> void:
+	var instance := _rig_instance(t, EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
+	t.check(instance._halo == null and not instance.holds_a_halo(),
+			"a live event holds no rim before anything has picked it")
+	instance.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	t.check(instance._halo != null and instance.holds_a_halo(),
+			"its first nonzero glow builds the rim")
+	var rim: EntityHalo = instance._halo
+	for i in int(round(EntityHalo.FADE_IN_SECONDS / STEP)) + 2:
+		rim._process(STEP)
+	instance.set_halo_strength(0.0, Palette.HALO_WEAK)
+	t.check(instance._halo == rim,
+			"told zero, the rim stays to fade out rather than vanishing on the spot")
+	for i in int(round(EntityHalo.FADE_OUT_SECONDS / STEP)) + 2:
+		rim._process(STEP)
+	instance.set_halo_strength(0.0, Palette.HALO_WEAK)
+	t.check(instance._halo == null and rim.is_queued_for_deletion(),
+			"once the fade is over the rim is given back, so its block is free for the next one")
+
+	instance.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	var second: EntityHalo = instance._halo
+	instance.set_halo_strength(0.0, Palette.HALO_WEAK, true)
+	t.check(instance._halo == null and second.is_queued_for_deletion(),
+			"and a cut gives it back at once, mid-fade")
+	instance.free()
+
+## The relationship the budget rests on: every source `select_sources()` can pick keeps a readable
+## block, with the warm pass's own quad on top. If `MAX_SOURCES` ever reaches the budget, a lit rim
+## is the one that would go dark.
+func _test_the_lit_rims_always_fit_the_budget(t) -> void:
+	t.check(ExcitementHalo.MAX_SOURCES < EntityHalo.RIM_BUDGET,
+			"MAX_SOURCES (%d) stays under RIM_BUDGET (%d)"
+			% [ExcitementHalo.MAX_SOURCES, EntityHalo.RIM_BUDGET])
+	t.check(EntityHalo.RIM_BUDGET < EntityHalo.COMPATIBILITY_RIM_BLOCKS,
+			"and the budget leaves a block for the warm pass under the renderer's own ceiling")
+
+## **However many events are live and however fast the picked set turns over, the rims that exist
+## stay within `EntityHalo.RIM_BUDGET`, and every picked source holds one.** Forty events in a
+## row, a tile apart, and her stepping along them faster than a rim can fade, so each frame drops
+## sources out of the picked set while their rims are still fading. Counted as `EntityHalo` nodes
+## not yet queued for deletion, the same count whether a rim was built in `_ready()` or on demand.
+func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
+	var manager := EventManager.new()
+	t.add_child(manager)
+	var player := Node2D.new()
+	t.add_child(player)
+	var baby := Baby.new()
+	var halo := ExcitementHalo.new()
+	t.add_child(halo)
+	halo.setup(manager, null, player, baby)
+	var count := 40
+	for i in count:
+		var instance := EventInstance.new()
+		instance.setup(_def("row_%d" % i, 20.0), Vector2(32.0 * float(i), 0.0))
+		manager.add_child(instance)
+		instance.set_process(false)
+		manager._instances.append(instance)
+
+	var most := _live_rims(manager)
+	var ever_lit := {}
+	var picked_without_a_rim := 0
+	var steps := int(round(EntityHalo.FADE_OUT_SECONDS / STEP)) * 3
+	for step in steps:
+		# 96px a frame along the row: past the picked set's whole reach every couple of frames.
+		player.global_position = Vector2(fmod(96.0 * float(step), 32.0 * float(count)), 0.0)
+		halo._process(STEP)
+		for instance in manager._instances:
+			if instance.holds_a_halo():
+				instance._halo._process(STEP)
+		for source in ExcitementHalo.select_sources(manager._instances, player.global_position):
+			ever_lit[source] = true
+			if not source.holds_a_halo():
+				picked_without_a_rim += 1
+		most = maxi(most, _live_rims(manager))
+	t.check(ever_lit.size() > EntityHalo.RIM_BUDGET,
+			"the walk lit %d different sources, more than the budget of %d, so the cap was tested"
+			% [ever_lit.size(), EntityHalo.RIM_BUDGET])
+	t.check(most <= EntityHalo.RIM_BUDGET,
+			"at most %d rims existed at once among %d live events, within the budget of %d"
+			% [most, count, EntityHalo.RIM_BUDGET])
+	t.check(picked_without_a_rim == 0,
+			"and every source picked on any frame held a rim on that frame (%d did not)"
+			% picked_without_a_rim)
+	manager.free()
+	player.free()
+	halo.free()
+	baby.free()
+
+func _live_rims(manager: Node) -> int:
+	var live := 0
+	for instance in manager.get_children():
+		for child in instance.get_children():
+			if child is EntityHalo and not child.is_queued_for_deletion():
+				live += 1
+	return live

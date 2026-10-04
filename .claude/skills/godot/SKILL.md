@@ -177,6 +177,14 @@ a power station's stack, is therefore not part of the building: it is an entity 
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw (the
 city ground) is fine, but anything animated must call `queue_redraw()` itself.
 
+**On the web, only sixteen canvas items can carry an `instance uniform` at once.** The
+Compatibility renderer the Web export runs gives each such item a 16-`vec4` block, first free block
+first, and its canvas shader declares only 256 `vec4`s to read them from; an item handed a block
+past the sixteenth reads the uniform as zero and draws as if it were, for as long as it lives, with
+no error anywhere. The desktop's renderers have no such ceiling, so a native run, a headless test
+and a screenshot rig all look right. **Build such an item only while it is needed and free it
+after**, and keep a count: `EntityHalo.RIM_BUDGET` and its class doc are the worked case.
+
 ## Performance
 
 **A `Dictionary` keyed by `Vector2i` hashes a Variant on every lookup.** Fine for a small set; not

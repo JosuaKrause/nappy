@@ -1075,7 +1075,9 @@ var _obstruction: StaticBody2D
 
 ## The child that re-draws this event's own body in a ring of offsets — see `EntityHalo`, the
 ## class shared with `CrowdAgent` that owns the ring, the shared shader material and the drawing.
-## Built in `_ready()`, same as `_obstruction`, so it is never `null` once the instance is live.
+## Built on this instance's first nonzero glow and freed once it has faded back out (or been cut),
+## so it is `null` whenever nothing is drawn — see `set_halo_strength()`, and `EntityHalo`'s class
+## doc for why a rim held by every live event leaves most of them dark on the web.
 var _halo: EntityHalo
 
 ## `[when, points]` entries landed on her from this event, `when` stamped from `_clock` in
@@ -1273,7 +1275,6 @@ func _ready() -> void:
 		_build_obstruction()
 	if def.flock_size > 0:
 		_build_the_flock()
-	_build_halo()
 	_build_scenery()
 
 ## The whole A/B sources remain the badge and halo pictures. The visible scene is instead
@@ -1437,10 +1438,10 @@ func solid_part_shapes() -> Array[GroundShape]:
 		shapes.append(piece.shape)
 	return shapes
 
-## Built once for every instance, whether or not `ExcitementHalo` ever picks it — cheaper to leave
-## true by construction than to special-case which rows never earn a place. `EntityHalo` gets
-## `self`'s own `_draw_body` and `_current_bob` so its ring rides the same lift `_draw()` gives the
-## body.
+## Built by `set_halo_strength()` the first time `ExcitementHalo` picks this instance, never in
+## `_ready()`: a day has dozens of events live at once, and a rim each would take every block the
+## web's renderer can read — see `EntityHalo`'s class doc. `EntityHalo` gets `self`'s own
+## `_draw_body` and `_current_bob` so its ring rides the same lift `_draw()` gives the body.
 func _build_halo() -> void:
 	_halo = EntityHalo.new(_draw_body, _current_bob)
 	add_child(_halo)
@@ -3270,11 +3271,31 @@ func solid_axis() -> Vector2:
 ## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
 ## `CrowdAgent` shares. Called by `ExcitementHalo` once a frame for every live instance — above
 ## zero for the handful `select_sources()` picked, zero for everything else. Refuses a nonzero
-## glow once the event is finished, the same guard the halo's own drawing used to carry, because
-## a finished event still sits in `EventManager.instances()` for one more frame than its
-## `contribution_at()` (already zero) would otherwise buy it.
-func set_halo_strength(strength: float, colour: Color) -> void:
-	_halo.set_glow(0.0 if is_finished else strength, colour)
+## glow once the event is finished, because a finished event still sits in
+## `EventManager.instances()` for one more frame than its `contribution_at()` (already zero) would
+## otherwise buy it.
+##
+## **The rim is built on the first nonzero glow and freed once it has faded all the way out** — not
+## the frame the target first reaches zero, or a source that just left `MAX_SOURCES` would be cut
+## off mid-fade instead of draining over `EntityHalo.FADE_OUT_SECONDS`. `cut` frees it at once
+## instead, which `ExcitementHalo` asks for only to keep the rims alive at once within
+## `EntityHalo.RIM_BUDGET`. The same lifetime `CrowdAgent.set_halo_strength()` gives its own rim.
+func set_halo_strength(strength: float, colour: Color, cut := false) -> void:
+	if strength <= 0.0 or is_finished:
+		if _halo:
+			_halo.set_glow(0.0, colour)
+			if cut or _halo.is_faded_out():
+				_halo.queue_free()
+				_halo = null
+		return
+	if not _halo:
+		_build_halo()
+	_halo.set_glow(strength, colour)
+
+## Whether this instance holds a rim right now, lit or still fading — what `ExcitementHalo` counts
+## against `EntityHalo.RIM_BUDGET`.
+func holds_a_halo() -> bool:
+	return _halo != null
 
 # ------------------------------------------------------------------ the mark ---
 # **Nothing draws a field.** A ring communicates a falloff radius, which is a number, and a number

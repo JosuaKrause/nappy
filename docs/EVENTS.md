@@ -1718,6 +1718,13 @@ and is always the rim of the body being drawn now. The cost is bounded by the se
 by the crowd, `ExcitementHalo.MAX_SOURCES` (8) rims of twelve re-draws apiece, whatever is happening
 on screen.
 
+**A rim exists only while it is lit or fading, and never more than `EntityHalo.RIM_BUDGET` (15) at
+once.** The Web export's renderer can read the per-rim colour of only sixteen rims at a time; a rim
+built past that draws nothing at all, with no error, for as long as it lives. So an event or a
+walker builds its rim the first time it is picked and gives it back once it has faded out, and a
+source that has just dropped out of the picked set fades only while the budget has room — past it,
+its rim is cut at once. `EntityHalo`'s class doc has the engine's numbers.
+
 **A field-sized halo, then a circle sized off `obstructs_radius`, were each built and rejected on
 screenshots before this one.** The field spanned `EventDef.outer_radius` (up to 200px against a
 640x360 view) and painted most of the frame whatever brightness curve sat on top of it; the circle

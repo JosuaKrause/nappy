@@ -42,6 +42,19 @@ extends Node2D
 ## fragment function that writes `COLOR` is not re-multiplied by a node's own `modulate`
 ## afterward, so `instance uniform` is the only channel that reaches one value per rim on one
 ## shared material.
+##
+## **That channel holds sixteen rims on the web, so a rim exists only while it is lit or fading.**
+## The Compatibility renderer — the one the Web export runs — gives every canvas item that draws
+## with an `instance uniform` a block of sixteen `vec4`s in one shared buffer, first free block
+## first, and its canvas shader declares that buffer as an array of 256 (Godot 4.7.2,
+## `MAX_GLOBAL_SHADER_UNIFORMS` in `drivers/gles3/rasterizer_canvas_gles3.cpp`, "arbitrary for
+## now"). So only the first `COMPATIBILITY_RIM_BLOCKS` blocks can be read at all: a rim handed the
+## seventeenth reads `halo_colour` as zero and draws nothing for as long as it lives, however bright
+## it is told to be, and nothing prints an error. The native renderers have no such ceiling, which
+## is how a rim built for every live event worked on the desktop and left most events dark in every
+## browser — the man shouting beside her doorstep among them. Both owners therefore build their
+## rim on its first nonzero glow and give it back once it has faded, and `ExcitementHalo` keeps the
+## rims alive at once within `RIM_BUDGET`, so every rim that exists holds a block the shader reads.
 
 ## How many directions the ring redraws the body in. Checked against a leaf blower's own concave
 ## silhouette (the arm breaks the body's own outline) at 8 first, which already read as a smooth
@@ -81,6 +94,18 @@ var _target_colour := Color.WHITE
 ## One `ShaderMaterial`, shared by every `EntityHalo` rather than built per instance.
 static var _shared_material: ShaderMaterial
 
+## How many rims the Compatibility renderer can read at once: its canvas shader's 256-`vec4`
+## instance buffer over the sixteen `vec4`s every rim's block takes — see the class doc. An engine
+## fact rather than a choice, and the one to re-check when the engine version moves.
+const COMPATIBILITY_RIM_BLOCKS := 256 / 16
+
+## The most rims `ExcitementHalo` lets exist at once — every lit one and as many fading ones as fit.
+## One block short of `COMPATIBILITY_RIM_BLOCKS`, left for the throwaway quad `main.gd`'s shader
+## warm pass draws with this same material (`_warm_the_canvas_shaders()`), which holds a block of
+## its own while it is in the tree. `ExcitementHalo.MAX_SOURCES` has to stay under it, or a lit
+## rim could be the one left without a readable block.
+const RIM_BUDGET := COMPATIBILITY_RIM_BLOCKS - 1
+
 func _init(draw_body: Callable, bob: Callable) -> void:
 	_draw_body = draw_body
 	_bob = bob
@@ -110,9 +135,10 @@ func set_glow(alpha: float, colour: Color) -> void:
 	_target_colour = colour
 
 ## Whether this rim has finished fading to nothing — told a target of zero and drawn at
-## (approximately) zero. `CrowdAgent` is the one caller that needs this: it frees its halo child
-## once the fade is over rather than the frame the target reaches zero, or a burst that just left
-## `MAX_SOURCES` would cut off mid-fade instead of draining.
+## (approximately) zero. `CrowdAgent` and `EventInstance` both free their halo child once the fade
+## is over rather than the frame the target reaches zero, or a burst that just left `MAX_SOURCES`
+## would cut off mid-fade instead of draining — unless `ExcitementHalo` tells them to cut it, which
+## it does only to keep the rims alive at once within `RIM_BUDGET`.
 func is_faded_out() -> bool:
 	return _target_alpha <= 0.0 and _alpha <= 0.001
 

@@ -1265,12 +1265,14 @@ func jolt_radii() -> Vector2:
 ## lazily on first use, rather than paying for an `EntityHalo` on every agent the crowd ever holds,
 ## and frees it once `EntityHalo.is_faded_out()` says the fade is actually over — not the frame the
 ## target first reaches zero, or a burst that just left `MAX_SOURCES` would be cut off mid-fade
-## instead of draining over `EntityHalo.FADE_OUT_SECONDS`.
-func set_halo_strength(strength: float, colour: Color) -> void:
+## instead of draining over `EntityHalo.FADE_OUT_SECONDS`. `cut` frees it at once instead, which
+## `ExcitementHalo` asks for only to keep the rims alive at once within `EntityHalo.RIM_BUDGET` —
+## see `EntityHalo`'s class doc for the web renderer's ceiling that budget keeps under.
+func set_halo_strength(strength: float, colour: Color, cut := false) -> void:
 	if strength <= 0.0:
 		if _halo:
 			_halo.set_glow(0.0, colour)
-			if _halo.is_faded_out():
+			if cut or _halo.is_faded_out():
 				_halo.queue_free()
 				_halo = null
 		return
@@ -1278,6 +1280,11 @@ func set_halo_strength(strength: float, colour: Color) -> void:
 		_halo = EntityHalo.new(_draw_body, _body_bob)
 		add_child(_halo)
 	_halo.set_glow(strength, colour)
+
+## Whether this agent holds a rim right now, lit or still fading — what `ExcitementHalo` counts
+## against `EntityHalo.RIM_BUDGET`.
+func holds_a_halo() -> bool:
+	return _halo != null
 
 ## The lift this agent's body rides right now, the `bob()` `EntityHalo` asks every owner for: a
 ## walker's is zero, since its stride is two frames rather than a lift; a car's is `WheelBob.lift()`

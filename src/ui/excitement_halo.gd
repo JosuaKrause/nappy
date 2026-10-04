@@ -53,9 +53,12 @@ extends Node2D
 ## - `accumulate_landed(points: float) -> void` — folds an exact points share, already computed by
 ##   the caller, into a `WINDOW`-second sliding sum.
 ## - `landed() -> float` — that sum: everything still inside the last `WINDOW` seconds.
-## - `set_halo_strength(alpha: float, colour: Color) -> void` — told once a frame what to show, as
-##   a *target* its own halo state eases toward rather than an immediate value; `0` for everything
-##   not picked.
+## - `set_halo_strength(alpha: float, colour: Color, cut := false) -> void` — told once a frame
+##   what to show, as a *target* its own halo state eases toward rather than an immediate value;
+##   `0` for everything not picked. A source builds its rim on its first nonzero target and gives
+##   it back once faded, or at once when `cut` is true.
+## - `holds_a_halo() -> bool` — whether it holds a rim right now, lit or still fading, which is
+##   what `_process()` counts against `EntityHalo.RIM_BUDGET`.
 ## - `set_player_at(world_position: Vector2, velocity: Vector2, decay_rate: float, sensitivity:
 ##   float) -> void` — this frame's player position, velocity, `Baby.decay_rate()` and
 ##   `Baby.current_sensitivity()`, told once a frame to every candidate whether or not it was
@@ -297,6 +300,13 @@ func setup(events: Node, crowd: Crowd, player: Node2D, baby: Baby) -> void:
 ## every candidate before the halo's own netting loop asks a single one of them for a caret. A
 ## source whose own projection is nothing (far away, or both bodies held still) answers zero and
 ## costs nothing but the reach check `expected_gross_at()` already opens with.
+##
+## **No more than `EntityHalo.RIM_BUDGET` rims exist at once**, because on the web a rim past the
+## renderer's sixteenth block draws nothing at all — `EntityHalo`'s class doc. The picked sources
+## always keep theirs (`MAX_SOURCES` sits under the budget); a source that has just left the picked
+## set fades out as usual while the budget has room, and is cut at once, in candidate order, once it
+## has none. A fade cut short only happens when more than the budget's worth of sources have dropped
+## out of the picked set inside one `EntityHalo.FADE_OUT_SECONDS`.
 func _process(_delta: float) -> void:
 	if not _events or not _player or not _baby:
 		return
@@ -327,10 +337,21 @@ func _process(_delta: float) -> void:
 		# a caret, since the two cues answer different questions over different sets.
 		source.set_player_at(here, player_velocity, player_decay_rate, player_sensitivity)
 		total_expected_gross += source.expected_gross_at(here)
+	# Everything not picked first, so a rim cut to keep within the budget is freed before a newly
+	# picked source builds one: both land at the end of this frame, the free ahead of the draw that
+	# hands the new rim its block — see `EntityHalo.RIM_BUDGET`.
+	var fading_kept := 0
+	var fading_allowed := EntityHalo.RIM_BUDGET - picked.size()
 	for source in _candidates:
 		source.set_expected_total_gross(total_expected_gross)
 		if picked_set.has(source):
-			var net := net_landed(source.landed(), total_landed, decay)
-			source.set_halo_strength(magnitude_for(net), colour_for(net))
-		else:
-			source.set_halo_strength(0.0, Palette.HALO_WEAK)
+			continue
+		var cut := false
+		if source.holds_a_halo():
+			cut = fading_kept >= fading_allowed
+			if not cut:
+				fading_kept += 1
+		source.set_halo_strength(0.0, Palette.HALO_WEAK, cut)
+	for source in picked:
+		var net := net_landed(source.landed(), total_landed, decay)
+		source.set_halo_strength(magnitude_for(net), colour_for(net))
