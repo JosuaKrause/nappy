@@ -1824,10 +1824,10 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 			"standing beside the fire, it reaches her")
 	fire.accumulate_landed(20.0)
 	halo._process(STEP)
-	t.check(fire._halo._target_alpha > 0.0,
+	t.check(fire.holds_a_halo() and fire._halo._target_alpha > 0.0,
 			"the fire she is standing beside wears a rim, read from InteriorEvents with no crowd")
-	t.check(not man._halo._target_alpha > 0.0,
-			"and the masked man on the other shaft, charging her nothing, does not")
+	t.check(not man.holds_a_halo(),
+			"and the masked man on the other shaft, charging her nothing, holds no rim at all")
 
 	# **The badge.** Placed far off any screen and walked in towards her, so the only thing that
 	# can raise it is his own approach — the same test a fire engine coming down a street meets.

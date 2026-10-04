@@ -42,6 +42,32 @@ extends Node2D
 ## fragment function that writes `COLOR` is not re-multiplied by a node's own `modulate`
 ## afterward, so `instance uniform` is the only channel that reaches one value per rim on one
 ## shared material.
+##
+## **That channel holds sixteen rims, so a rim exists only while it is lit or fading.** The
+## Compatibility renderer — the one this project runs everywhere, the desktop as well as the Web
+## export (`project.godot`, `rendering_method="gl_compatibility"`) — gives every canvas item that
+## draws with an `instance uniform` a block of sixteen `vec4`s in one shared buffer, first free block
+## first, and its canvas shader declares that buffer as an array of 256 (Godot 4.7.2,
+## `MAX_GLOBAL_SHADER_UNIFORMS` in `drivers/gles3/rasterizer_canvas_gles3.cpp`, "arbitrary for
+## now"). So only the first `COMPATIBILITY_RIM_BLOCKS` blocks are inside the array. A rim handed the
+## seventeenth reads past the array's end, which GLSL leaves undefined: a desktop GL driver happens
+## to read on into the bound buffer and draws the rim anyway, while a browser's WebGL reads zero and
+## draws nothing for as long as the rim lives, however bright it is told to be, and nothing prints
+## an error. A headless run has no renderer at all. That is how a rim built for every live event
+## looked right on the desktop and left most events dark in every browser — the man shouting beside
+## her doorstep among them. Both owners therefore build their rim on its first nonzero glow and give
+## it back once it has faded, and `ExcitementHalo` builds a new one only while fewer than
+## `RIM_BUDGET` exist, so every rim that exists holds a block the shader declares.
+##
+## **A rim is given back with `release()`, never `queue_free()`, because the engine hands out
+## blocks before it takes a freed one back.** Freeing a canvas item in 4.7.2 clears its material,
+## then works through every canvas item queued for an update — which allocates a block for any rim
+## built earlier in the same frame — and only then releases the freed item's own block
+## (`RendererCanvasCull::free()` in `servers/rendering/renderer_canvas_cull.cpp`). A queued free
+## runs at the end of the frame, so a rim queued for deletion this frame still holds its block when
+## the rims built this frame take theirs: the peak is every rim held at the frame's start plus every
+## rim built in it, not the count after the frame. Freed on the spot, before `ExcitementHalo` builds
+## anything that frame, the block is back first.
 
 ## How many directions the ring redraws the body in. Checked against a leaf blower's own concave
 ## silhouette (the arm breaks the body's own outline) at 8 first, which already read as a smooth
@@ -81,6 +107,19 @@ var _target_colour := Color.WHITE
 ## One `ShaderMaterial`, shared by every `EntityHalo` rather than built per instance.
 static var _shared_material: ShaderMaterial
 
+## How many rims the Compatibility renderer can read at once: its canvas shader's 256-`vec4`
+## instance buffer over the sixteen `vec4`s every rim's block takes — see the class doc. An engine
+## fact rather than a choice, and the one to re-check when the engine version moves.
+const COMPATIBILITY_RIM_BLOCKS := 256 / 16
+
+## The most rims `ExcitementHalo` lets exist at once, lit and fading together: a newly picked
+## source builds its rim only while fewer than this many exist, and otherwise waits in line for a
+## fading one to finish. One block short of `COMPATIBILITY_RIM_BLOCKS`, left for the throwaway quad
+## `main.gd`'s shader warm pass draws with this same material (`_warm_the_canvas_shaders()`), which
+## holds a block of its own while it is in the tree. `ExcitementHalo.MAX_SOURCES` has to stay under
+## it, so the picked sources alone can never fill it and a wait always ends with a fade.
+const RIM_BUDGET := COMPATIBILITY_RIM_BLOCKS - 1
+
 func _init(draw_body: Callable, bob: Callable) -> void:
 	_draw_body = draw_body
 	_bob = bob
@@ -102,6 +141,16 @@ static func _halo_material() -> ShaderMaterial:
 static func shared_material() -> ShaderMaterial:
 	return _halo_material()
 
+## Frees `rim` on the spot — out of its owner, then the object itself — so its block in the
+## renderer's instance buffer is released before anything later this frame builds a rim and asks
+## for one. See the class doc for why `queue_free()` is not enough. The one way an owner gives a
+## rim back: `EventInstance.release_halo()` and `CrowdAgent.release_halo()`.
+static func release(rim: EntityHalo) -> void:
+	var owner_node := rim.get_parent()
+	if owner_node:
+		owner_node.remove_child(rim)
+	rim.free()
+
 ## Sets the alpha and colour this rim is easing *toward* — see the class doc. `colour`'s own alpha
 ## is ignored, the same as before: `alpha` is the one channel that reaches the shader, so a caller
 ## never has to remember to zero both to turn a rim off.
@@ -110,8 +159,8 @@ func set_glow(alpha: float, colour: Color) -> void:
 	_target_colour = colour
 
 ## Whether this rim has finished fading to nothing — told a target of zero and drawn at
-## (approximately) zero. `CrowdAgent` is the one caller that needs this: it frees its halo child
-## once the fade is over rather than the frame the target reaches zero, or a burst that just left
+## (approximately) zero. `CrowdAgent` and `EventInstance` both give their halo child back once the
+## fade is over rather than the frame the target reaches zero, or a burst that just left
 ## `MAX_SOURCES` would cut off mid-fade instead of draining.
 func is_faded_out() -> bool:
 	return _target_alpha <= 0.0 and _alpha <= 0.001

@@ -1,0 +1,15 @@
+13.9 [M205] id=269609866296 d=180.6 c_player=2.404 cur=5.629 age=5.33 rims=1 rims_peak_1s=1 rim_alpha=[0.19337031725715, 0.17872051366121]
+14.9 [M205] id=269089772569 d=398.6 c_player=0.000 cur=13.431 age=6.35 rims=2 rims_peak_1s=2 rim_alpha=<null>
+14.9 [M205] id=269609866296 d=149.9 c_player=8.878 cur=13.431 age=6.35 rims=2 rims_peak_1s=2 rim_alpha=[0.4633873553239, 0.45227264922531]
+15.9 [M205] id=268838114314 d=387.1 c_player=0.000 cur=19.887 age=7.36 rims=3 rims_peak_1s=3 rim_alpha=<null>
+15.9 [M205] id=269089772569 d=371.6 c_player=0.000 cur=19.887 age=7.36 rims=3 rims_peak_1s=3 rim_alpha=<null>
+15.9 [M205] id=269609866296 d=120.3 c_player=16.480 cur=19.887 age=7.36 rims=3 rims_peak_1s=3 rim_alpha=[0.75, 0.75]
+16.9 [M205] id=268838114314 d=360.1 c_player=0.000 cur=15.743 age=8.39 rims=3 rims_peak_1s=4 rim_alpha=<null>
+16.9 [M205] id=269089772569 d=347.3 c_player=0.000 cur=15.743 age=8.39 rims=3 rims_peak_1s=4 rim_alpha=<null>
+16.9 [M205] id=269609866296 d=88.6 c_player=14.886 cur=15.743 age=8.39 rims=3 rims_peak_1s=4 rim_alpha=[0.75, 0.75]
+17.9 [M205] id=268838114314 d=377.4 c_player=0.000 cur=7.032 age=9.40 rims=3 rims_peak_1s=4 rim_alpha=<null>
+17.9 [M205] id=269089772569 d=363.6 c_player=0.000 cur=7.032 age=9.40 rims=3 rims_peak_1s=4 rim_alpha=<null>
+17.9 [M205] id=269609866296 d=106.6 c_player=5.844 cur=7.032 age=9.40 rims=3 rims_peak_1s=4 rim_alpha=[0.75, 0.75]
+18.9 [M205] id=269089772569 d=390.2 c_player=0.000 cur=5.952 age=10.41 rims=2 rims_peak_1s=3 rim_alpha=<null>
+18.9 [M205] id=269609866296 d=135.9 c_player=3.812 cur=5.952 age=10.41 rims=2 rims_peak_1s=3 rim_alpha=[0.75, 0.75]
+20.0 [M205] id=269609866296 d=164.7 c_player=5.399 cur=14.058 age=11.42 rims=4 rims_peak_1s=4 rim_alpha=[0.75, 0.75]

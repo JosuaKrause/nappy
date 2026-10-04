@@ -249,6 +249,14 @@ func _test_consumer_order(t) -> void:
 	for source in [cached, reference, car, reference_car]:
 		source.free()
 
+## `[colour, alpha]` a source's rim is easing toward, or a transparent colour and zero when it
+## holds no rim: an event builds its rim only once `ExcitementHalo` picks it and gives it back once
+## faded (`EventInstance.set_halo_strength()`), so a missing rim is a rim told nothing.
+func _rim_target(source: EventInstance) -> Array:
+	if not source.holds_a_halo():
+		return [Color(0.0, 0.0, 0.0, 0.0), 0.0]
+	return [source._halo._target_colour, source._halo._target_alpha]
+
 func _test_halo_and_removal(t) -> void:
 	var managers: Array[EventManager] = []
 	var halos: Array[ExcitementHalo] = []
@@ -279,14 +287,16 @@ func _test_halo_and_removal(t) -> void:
 			halo._process(0.1)
 		t.check(_same_bits(sources[0].player_expected_total_gross,
 				sources[1].player_expected_total_gross), "real halo publishes identical totals")
-		t.check(sources[0]._halo._target_colour == sources[1]._halo._target_colour,
+		t.check(sources[0].holds_a_halo() == sources[1].holds_a_halo(),
+				"real halo builds a rim for both sources or for neither")
+		t.check(_rim_target(sources[0])[0] == _rim_target(sources[1])[0],
 				"real halo selection/color agrees with baseline source")
-		t.check(_same_bits(sources[0]._halo._target_alpha, sources[1]._halo._target_alpha),
+		t.check(_same_bits(_rim_target(sources[0])[1], _rim_target(sources[1])[1]),
 				"real halo strength agrees with baseline source")
 		t.check(sources[0]._caret_strength() == sources[1]._caret_strength(),
 				"post-halo caret agrees with baseline source")
 		if tick == 0:
-			t.check(sources[0]._halo._target_alpha > 0.0,
+			t.check(_rim_target(sources[0])[1] > 0.0,
 					"real halo comparison selects a source rather than two empty sets")
 			player.velocity = Vector2(43.0, 12.0)
 		if tick == 1:

@@ -177,6 +177,19 @@ a power station's stack, is therefore not part of the building: it is an entity 
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw (the
 city ground) is fine, but anything animated must call `queue_redraw()` itself.
 
+**Only sixteen canvas items can carry a readable `instance uniform` at once, and only a browser
+shows it.** The Compatibility renderer — this project's on every platform (`project.godot`,
+`rendering_method="gl_compatibility"`) — gives each such item a 16-`vec4` block, first free block
+first, and its canvas shader declares only 256 `vec4`s to read them from. An item handed a block
+past the sixteenth reads past the declared array, which GLSL leaves undefined: a desktop GL driver
+happens to read on into the buffer and draws it right, while WebGL reads zero and draws it as if
+the uniform were zero, for as long as it lives, with no error anywhere. A headless test has no
+renderer at all, so a native run, a headless test and a screenshot rig all look right. **Build
+such an item only while it is needed, free it on the spot with `remove_child()` and `free()`, and
+keep a count**: freeing a canvas item hands blocks to items built earlier in the same frame before
+it releases its own, so a `queue_free()` still holds its block while that frame's new items take
+theirs. `EntityHalo.RIM_BUDGET`, `EntityHalo.release()` and its class doc are the worked case.
+
 ## Performance
 
 **A `Dictionary` keyed by `Vector2i` hashes a Variant on every lookup.** Fine for a small set; not
