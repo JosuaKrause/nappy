@@ -9,17 +9,17 @@ show both at the moment of reading: the two task stills pull the camera back wit
 and the zoom widens the view the placement keeps the task out of as well, which can only push a
 task further out, never nearer.
 
-## `seed555555-day6-robber-two-thirds-in.png` — the robber two-thirds through the alley
+## `seed555555-day6-mouth-mark-robber-two-thirds-in.png` — a mark at the mouth, the robber two-thirds in
 
 `tools/shot.sh out.png 1.5 --seed 555555 --day 6 --spawn contact --invincible --no-title --no-save
---zoom 0.75`. The mark is at (67,53) in an east-west through-alley running from column 62 to 69,
-not yet read (the plain circle and cross, left of her); she is at its east mouth. The alley is 256px
-long and the mark 80px in from its east edge, so two-thirds through it is 91px past the mark:
-`chalk mark guarded (two-thirds in): robber 91px away`. He is the hooded figure in the alley's west
-half, in the waiting posture. This is the alley `docs/evidence/m213-robber-at-the-far-end-2026-09-27/`
-photographed with him on the far end tile, (62,53); a one-block alley is too short for two-thirds
-and 176px from the mark both, and two-thirds wins (inbox #471), so reading the mark from this end
-may wake him.
+--zoom 0.75`. `--spawn contact` stands her beside the dawn mark without the relocation running,
+and the dawn draw is itself made only from alley mouths, so the mark shown is the one the day
+drew: `step 1 on offer at (55,64)`, the east end tile of an east-west through-alley, not yet read
+(the plain circle and cross, at the top right of the alley). She is on the sidewalk outside that
+mouth. The alley is 256px long, so two-thirds through it from the mark's end is 155px from the
+mark: `chalk mark guarded (two-thirds in): robber 155px away`. He is the hooded figure at the left
+of the alley, waiting. That is under the 176px his trigger and the touch reach together need, so
+reading the mark from this end may wake him: "Two-thirds wins" (inbox #471).
 
 ## `seed555555-day7-van-near-the-mark.png` — the van near the mark it was read at
 
