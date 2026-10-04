@@ -1044,8 +1044,9 @@ func _test_a_repicked_fading_rim_is_lit_again_at_once(t) -> void:
 ## Two turnovers, each keeping the budget full of rims for stronger picks:
 ##
 ## - **A new strong pick every three frames**, seven at a time: each strong source is picked for 21
-##   frames and never again, so more strong sources want a rim than the budget holds, and every
-##   block a finished fade gives back goes to a rimless strong one.
+##   frames and never again, so more strong sources want a rim than the budget holds and the
+##   budget is full of their rims. A block a finished fade gives back goes to a rimless strong pick
+##   if one is waiting. The weak pick joins late in the churn, so it is still unlit when it stops.
 ## - **The same fifteen strong sources in turn**, seven at a time, the turn moving on every three
 ##   frames: each is dropped for 24 frames, less than a fade, so it is picked again while its rim is
 ##   still fading and lit again in place, and all fifteen blocks stay held.
@@ -1065,11 +1066,13 @@ func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -
 		for i in pool.size():
 			var place := posmod(i - floori(step / 3.0), pool.size())
 			pool[i].strength = 50.0 if place < ExcitementHalo.MAX_SOURCES - 1 else 0.0
-	for turnover in [["a new strong pick every three frames", 80, fresh],
-			["the same fifteen picked in turn", EntityHalo.RIM_BUDGET, in_turn]]:
+	var churn_until := fade_frames * 3
+	for turnover in [["a new strong pick every three frames", 80, fresh, churn_until - 12],
+			["the same fifteen picked in turn", EntityHalo.RIM_BUDGET, in_turn, fade_frames]]:
 		var name: String = turnover[0]
 		var pool_size: int = turnover[1]
 		var set_strengths: Callable = turnover[2]
+		var weak_from: int = turnover[3]
 		var probe := RimProbe.new(t.get_tree())
 		var events := ChurnEvents.new()
 		t.add_child(events)
@@ -1089,8 +1092,6 @@ func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -
 		events.add_child(weak)
 		events.list.append(weak)
 
-		var weak_from := fade_frames
-		var churn_until := weak_from + fade_frames * 2
 		for step in churn_until + fade_frames + 2:
 			if step < churn_until:
 				set_strengths.call(pool, step)
@@ -1102,6 +1103,9 @@ func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -
 			for source in events.list:
 				if source.holds_a_halo():
 					source._halo._process(STEP)
+			if step == churn_until - 1:
+				t.check(not weak.is_lit(),
+						"%s: the weak source is still unlit on the last frame of the churn" % name)
 		t.check(weak.is_lit(),
 				"%s: the weak source is lit within one fade (%d frames) of the stronger picks stopping"
 				% [name, fade_frames + 2])
