@@ -1899,7 +1899,7 @@ func _start_recipe_day() -> void:
 			GameState.day_rng(GameState.day, "closures"))
 	_city.set_act(GameState.current_act())
 	_day.start(DevRig.day_length(GameState.day))
-	var errors := _recipe.install(_city, _player, _baby)
+	var errors := _recipe.install(_city, _player, _baby, _resistance)
 	if not errors.is_empty():
 		_recipe.manifest["setup_failed"] = true
 		_recipe_failed(errors)

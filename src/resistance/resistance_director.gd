@@ -224,11 +224,78 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	# A fresh attempt at the day starts without the package, whether this is the first try
 	# or a retry after a nerve — see GameState.resistance_carrying_package.
 	GameState.resistance_carrying_package = false
-	_happenings.start_day(day)
+	_happenings.start_day(day, not _scene_task)
 
 	var step := ResistanceSteps.for_day(day, GameState.completed_resistance_steps,
 			GameState.failed_resistance_steps, GameState.sabotage_available())
 	_begin_step(step, true)
+
+## **A scene recipe's task** (`SceneRecipeRuntime`, `setup.task`; `docs/SCENE_RECIPES.md`): the
+## day's own step, offered the way `start_day()` offers it, except that the chalk mark stands at
+## `mark` rather than where the day's draw would put it, and is read the moment the scene begins. So
+## the task it unlocks is placed by the same `_begin_step()` a touched mark runs, from where she
+## stands, with every refusal and every guard a played day has, and is live with its arrow from the
+## first frame. *(The player, inbox #513, asked how a scene is built: "Recipes with live tasks".)*
+##
+## `mark` is `Vector2.INF` on the last night, whose finale has no mark and is offered from dawn.
+## `neighbor_start` pins day 10's neighbor's start to a tile the day's own draw
+## (`_a_neighbor_start()`) could have made: the one target whose place is a draw over the whole city
+## rather than a place near the mark or a fixed one, so a scene could not otherwise put it at the
+## distance it means to test. `Vector2.INF` leaves the draw to the day.
+##
+## **What the day brings besides the task is not brought** (`ResistanceHappenings.start_day()`'s
+## `with_its_events`): a recipe installs only what it selects, and the task is what this selects —
+## the mark, its target, whatever the target rides on, the guards and the trap the task sets. The
+## neighbor walking to work, the raid, the market and the column stay out; the park day 12's swing
+## closes is the task's own answer and still closes.
+##
+## Answers every reason the request was refused, empty when the task is on offer.
+func start_recipe_task(day: int, rng: RandomNumberGenerator, day_length: float, mark: Vector2,
+		neighbor_start := Vector2.INF) -> Array[String]:
+	_scene_task = true
+	_scene_task_errors = []
+	_pinned_mark = mark
+	_pinned_neighbor = neighbor_start
+	start_day(day, rng, day_length)
+	if _step and _step.is_pickup and _contact:
+		# She read it as the scene began: the same completion a touch makes, so the task is placed
+		# from where she stands by `_on_contact_completed()` → `_begin_step()`.
+		_contact.complete_now()
+	_pinned_mark = Vector2.INF
+	_pinned_neighbor = Vector2.INF
+	var errors := _scene_task_errors
+	_scene_task_errors = []
+	if errors.is_empty() and (current_step() == null or current_step().is_pickup):
+		errors.append("setup.task: day %d's task has nowhere to go in this scene" % day)
+	return errors
+
+## Set for the length of `start_recipe_task()`'s own `start_day()`, and kept for the day it starts:
+## a scene's day is the authored one, never the day's own happenings.
+var _scene_task := false
+## What `start_recipe_task()` refused, filled while it runs.
+var _scene_task_errors: Array[String] = []
+## The mark and the neighbor's start `start_recipe_task()` pins, `Vector2.INF` the rest of the time.
+var _pinned_mark := Vector2.INF
+var _pinned_neighbor := Vector2.INF
+
+## A scene's mark at `_pinned_mark`, on the same ground the day's own draw keeps a mark to
+## (`_pick_reachable()` over `_alley_mouths()`): the centre of an alley mouth's tile that is legal,
+## unobstructed ground reachable from home. `Vector2.INF`, with the reason recorded, otherwise —
+## a recipe's pin is refused rather than moved.
+func _the_pinned_mark() -> Vector2:
+	var tile := _map.world_to_tile(_pinned_mark)
+	var refusal := ""
+	if not _map.tile_to_world(tile).is_equal_approx(_pinned_mark):
+		refusal = "is not a tile centre"
+	elif not is_alley_mouth(_map, tile):
+		refusal = "is not an alley mouth"
+	elif not is_legal_ground(_map, tile, _walled_alleys()) or _map.is_obstructed(tile) \
+			or not _reachable_from_home(tile):
+		refusal = "is not open ground reachable from home today"
+	if refusal != "":
+		_scene_task_errors.append("setup.task.mark %s %s" % [_pinned_mark, refusal])
+		return Vector2.INF
+	return _pinned_mark
 
 ## Places `step`'s own contact and offers it — a mark at dawn, or the perform half it unlocks a
 ## moment after being touched (`_on_contact_completed()`), which is what makes a task one day
@@ -1146,6 +1213,8 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 	if step.target_kind == ResistanceSteps.TargetKind.SCAR:
 		return _pick_near(_fronts_a_fire_catches_on(), rng, mark)
 	if step.is_pickup:
+		if _pinned_mark != Vector2.INF:
+			return _the_pinned_mark()
 		return _pick_reachable(_alley_mouths(), rng)
 	var candidates: Array[Vector2i] = []
 	for type in step.placement:
@@ -1454,7 +1523,9 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 				offered.append(plan)
 				beside.append(tile)
 				break
-	if offered.is_empty():
+	# No live mast anywhere is no mast near, so a mark still has one put up beside it below — a day
+	# whose holds took every site, or a scene recipe, which installs no mast it does not name.
+	if offered.is_empty() and mark == Vector2.INF:
 		return Vector2.INF
 	if mark != Vector2.INF:
 		_follow_the_paths_to_the_edge(_where_she_read_it(mark))
@@ -1475,6 +1546,8 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 				_mast_id = EventScheduler.added_mast_id(_map.tile_to_world(added[0]))
 				return _map.tile_to_world(added[0])
 			_fell_back = true
+			if offered.is_empty():
+				return Vector2.INF
 			near_plans.append(offered[nearest])
 			near_beside.append(beside[nearest])
 		offered = near_plans
@@ -1617,6 +1690,10 @@ func _send_the_neighbor_home() -> EventInstance:
 		Telemetry.note("contact", "the neighbor is %d tiles of walk from home at %s"
 				% [_map.distance_at(field, start), TelemetryLog.tile(start)])
 		return _city.events.spawn_extra(def, path[0], path)
+	if _pinned_neighbor != Vector2.INF:
+		_scene_task_errors.append(("setup.task.neighbor %s is not a start the day could draw: a " +
+				"sidewalk tile centre %d±%d tiles of walk from home, %.0fpx or more from her")
+				% [_pinned_neighbor, wanted, NEIGHBOR_WALK_BAND_TILES, NEIGHBOR_CLEAR_OF_HER])
 	return null
 
 ## A sidewalk tile whose walk home is within `NEIGHBOR_WALK_BAND_TILES` of `wanted`, off screen
@@ -1637,6 +1714,12 @@ func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
 		if not is_legal_ground(_map, tile, walled_alleys) or _map.is_obstructed(tile):
 			continue
 		offered.append(tile)
+	if _pinned_neighbor != Vector2.INF:
+		# A scene's pin (`start_recipe_task()`): one of the starts the draw below chooses among, or
+		# none — never the nearest one standing in for it.
+		var pinned := _map.world_to_tile(_pinned_neighbor)
+		return pinned if pinned in offered \
+				and _map.tile_to_world(pinned).is_equal_approx(_pinned_neighbor) else _NO_TILE
 	if offered.is_empty():
 		return _NO_TILE
 	return offered[_rng.randi_range(0, offered.size() - 1)]
