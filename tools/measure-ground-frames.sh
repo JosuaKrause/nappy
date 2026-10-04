@@ -9,7 +9,9 @@ usage: tools/measure-ground-frames.sh --godot PATH [--output NEW_DIR] [--help|-h
 Compare the three ground preparation modes (--ground-mode 1, 2 and 3: every needed region
 whole in its frame, at most one whole region a frame, one region stepped across frames) of
 this checkout's committed HEAD, in one clean detached checkout, with one collector.
-Runs one warmup per mode, then three rotated interleaved trials each, serially.
+Runs one warmup per mode, then three rotated interleaved trials each, serially. A capture waits
+for every other Godot process to end first, and one another engine ran beside is kept under a
+rejected name and taken again in the same slot, up to five attempts.
 Requires git, jq, shasum and a native display; retain results.json and the source manifest.
 Full logs and per-frame CSV files remain in the fresh scratch directory.
 
@@ -38,6 +40,9 @@ done
 [[ "$engine" == /* ]] || engine="$PWD/$engine"
 [[ -x "$engine" ]] || fail "not executable: $engine"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_DIR="$root"
+# shellcheck source=tools/lib_dev_flags.sh
+source "$root/tools/lib_dev_flags.sh"
 names=(mode1-all mode2-one mode3-stepped)
 modes=(1 2 3)
 collector_files=(tests/probes/ground_frames_matched.gd tests/probes/ground_frames_matched.gd.uid tests/probes/ground_frames_matched.tscn)
@@ -57,10 +62,10 @@ fi
 output="$(cd "$output" && pwd)"
 tree=""
 child=""
-watchdog=""
+sampler=""
 cleanup() {
     [[ -z "$child" ]] || kill "$child" 2>/dev/null || true
-    [[ -z "$watchdog" ]] || kill "$watchdog" 2>/dev/null || true
+    [[ -z "$sampler" ]] || kill "$sampler" 2>/dev/null || true
     if [[ -n "$tree" ]]; then
         if git -C "$tree" diff --quiet && git -C "$tree" diff --cached --quiet; then
             git -C "$root" worktree remove "$tree" || echo "retained unexpected files: $tree" >&2
@@ -91,64 +96,71 @@ GODOT="$engine" "$tree/tools/check.sh" > "$output/setup.log" 2>&1
 snapshot "$tree" > "$output/runtime.sha256"
 validate
 digest="$(shasum -a 256 "$output/runtime.sha256" | cut -d ' ' -f 1)"
-printf 'order\tmode\ttrial\twarmup\tsource_revision\tload_average_before\n' > "$output/order.tsv"
+printf 'order\tattempt\tmode\ttrial\twarmup\tsource_revision\tload_average_before\n' > "$output/order.tsv"
 run_order=0
+# Another engine (a test run from another checkout, say) competes for the same cores and GPU. A
+# capture waits up to five minutes for every other Godot process to end before it starts; one
+# that another engine ran beside is kept under a rejected name, recorded in rejected.tsv, and the
+# same slot is captured again, up to five attempts, so the order and the mode's trial stay put.
 capture() {
-    local index="$1" trial="$2" warmup="$3" label status
+    local index="$1" trial="$2" warmup="$3" label attempt status fifo others file
     label="$(printf '%02d' "$run_order")-${names[$index]}-$trial"
-    validate
-    # Other work on the machine shows in the load average even when it is not an engine.
-    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$run_order" "${names[$index]}" "$trial" "$warmup" "$revision" \
-        "$(uptime | sed 's/.*load averages*: //')" >> "$output/order.tsv"
-    echo "Capture $label (warmup=$warmup)"
-    # Another engine (a test run from another checkout, say) competes for the same cores and
-    # GPU, so a capture waits up to five minutes for it to end and the comparison stops rather
-    # than recording its timings as a mode's.
-    for _ in $(seq 300); do
-        others="$(pgrep -x Godot || true)"
-        [[ -n "$others" ]] || break
-        sleep 1
-    done
-    [[ -z "$others" ]] || fail "another Godot process is running ($others); retry once it ends"
-    rm -f "$output/competition.tmp"
-    GROUND_MATCH_OUTPUT="$output/$label.json" GROUND_MATCH_STRATEGY="${names[$index]}" \
-        GROUND_MATCH_TRIAL="$trial" GROUND_MATCH_RUN_ORDER="$run_order" \
-        GROUND_MATCH_SOURCE_REVISION="$revision" GROUND_MATCH_COLLECTOR_REVISION="$revision" \
-        GROUND_MATCH_RUNTIME_DIGEST="$digest" "$engine" --path "$tree" \
-        --disable-vsync --resolution 1280x720 res://tests/probes/ground_frames_matched.tscn \
-        -- --no-save --no-telemetry --ground-mode "${modes[$index]}" > "$output/$label.log" 2>&1 &
-    child=$!
-    # The watchdog kills the capture after 150 seconds and samples, once a second, for any other
-    # Godot process that starts mid-capture. It waits on a timed `read` of a FIFO rather than a
-    # `sleep`: a forked `sleep` outlives a kill of its subshell and holds this script's output
-    # open, the defect tools/lib_dev_flags.sh's `wait_or_kill` avoids the same way. The caller
-    # releases it with one line once the capture has exited, and holds the FIFO open (fd 8) until
-    # the watchdog is reaped, so neither side can block on the other.
-    local fifo
-    fifo="$output/watchdog.fifo"
-    rm -f "$fifo"
-    mkfifo "$fifo"
-    exec 8<>"$fifo"
-    (
-        for _ in $(seq 150); do
-            if read -r -t 1 <&8; then exit 0; fi
-            pgrep -x Godot | grep -vx "$child" >> "$output/competition.tmp" || true
+    for attempt in 1 2 3 4 5; do
+        validate
+        for _ in $(seq 300); do
+            others="$(pgrep -x Godot || true)"
+            [[ -n "$others" ]] || break
+            sleep 1
         done
-        kill "$child" 2>/dev/null
-    ) &
-    watchdog=$!
-    status=0
-    wait "$child" || status=$?
-    child=""
-    echo >&8
-    wait "$watchdog" 2>/dev/null || true
-    watchdog=""
-    exec 8>&-
-    rm -f "$fifo"
-    if [[ -s "$output/competition.tmp" ]]; then
-        printf '%s\t%s\n' "$label" "another Godot process ran during the capture" >> "$output/rejected.tsv"
-        fail "capture rejected: another Godot process ran during $label"
-    fi
+        [[ -z "$others" ]] || fail "another Godot process is running ($others); retry once it ends"
+        # Other work on the machine shows in the load average even when it is not an engine.
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$run_order" "$attempt" "${names[$index]}" "$trial" \
+            "$warmup" "$revision" "$(uptime | sed 's/.*load averages*: //')" >> "$output/order.tsv"
+        echo "Capture $label attempt $attempt (warmup=$warmup)"
+        rm -f "$output/competition.tmp"
+        GROUND_MATCH_OUTPUT="$output/$label.json" GROUND_MATCH_STRATEGY="${names[$index]}" \
+            GROUND_MATCH_TRIAL="$trial" GROUND_MATCH_RUN_ORDER="$run_order" \
+            GROUND_MATCH_SOURCE_REVISION="$revision" GROUND_MATCH_COLLECTOR_REVISION="$revision" \
+            GROUND_MATCH_RUNTIME_DIGEST="$digest" "$engine" --path "$tree" \
+            --disable-vsync --resolution 1280x720 res://tests/probes/ground_frames_matched.tscn \
+            -- --no-save --no-telemetry --ground-mode "${modes[$index]}" > "$output/$label.log" 2>&1 &
+        child=$!
+        # The sampler looks once a second for another Godot process while the capture runs. It
+        # paces itself on a timed `read` of a FIFO, never a `sleep`, for the reason
+        # `wait_or_kill`'s own watchdog does: a forked `sleep` outlives a kill of its subshell and
+        # holds this script's output open. One line releases it once the capture has exited.
+        fifo="$output/sampler.fifo"
+        rm -f "$fifo"
+        mkfifo "$fifo"
+        exec 8<>"$fifo"
+        (
+            for _ in $(seq 200); do
+                if read -r -t 1 <&8; then exit 0; fi
+                pgrep -x Godot | grep -vx "$child" >> "$output/competition.tmp" || true
+            done
+        ) &
+        sampler=$!
+        # tools/lib_dev_flags.sh's watchdog kills a capture still running after 150 seconds; its
+        # exit status is the capture's either way.
+        wait_or_kill "$child" 150 || true
+        status=$WAIT_OR_KILL_STATUS
+        child=""
+        echo >&8
+        wait "$sampler" 2>/dev/null || true
+        sampler=""
+        exec 8>&-
+        rm -f "$fifo"
+        if [[ ! -s "$output/competition.tmp" ]]; then
+            break
+        fi
+        printf '%s\t%s\n' "$label" "attempt $attempt: another Godot process ran during the capture" \
+            >> "$output/rejected.tsv"
+        for file in "$output/$label".*; do
+            [[ "$file" != *-rejected* ]] || continue
+            mv "$file" "${file/$label/$label.attempt$attempt-rejected}"
+        done
+        [[ $attempt -lt 5 ]] || fail "capture rejected: another Godot process ran during every attempt at $label"
+    done
     validate
     # The collector reports the mode the city actually ran, so a flag that did not arrive
     # rejects the capture rather than measuring the default three times.
