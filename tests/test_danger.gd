@@ -871,6 +871,12 @@ func _test_the_babys_cue_only_steps_aside_for_something(t) -> void:
 			"walking south with nothing happening, the cue also stays over the pram")
 	t.check(rig.baby_cue_lift() > Stroller.BABY_CUE_LIFT,
 			"and is lifted clear of her instead, because the pram is in front of her and lower")
+	# *(playtest freckled-goose, inbox #545: "when going south the zzz jumps up a full stroller gap
+	# above the player".)* Measured from her feet the cue clears her head by what the other facings
+	# clear the pram art by, not by a second stroller length.
+	t.check(is_equal_approx(rig.pram_draw_offset().y - rig.baby_cue_lift(),
+					-(Stroller.FIGURE_HEIGHT + Stroller.BABY_CUE_LIFT - Stroller.PRAM_ART_HEIGHT)),
+			"the cue is just over her head, with the gap the pram art gets elsewhere")
 	rig.warn(Stroller.Alert.SOON, 1.0, &"test")
 	t.check(not is_zero_approx(rig.baby_cue_aside()),
 			"and it steps out of the mark's column there too, once there is a mark")
@@ -897,8 +903,7 @@ func _test_the_babys_cue_only_steps_aside_for_something(t) -> void:
 		var in_column := is_zero_approx(facing.x)
 		t.check(is_zero_approx(rig.baby_cue_aside()),
 				"facing %v with nothing happening, the cue sits on the pram" % facing)
-		t.check(is_equal_approx(rig.baby_cue_lift(),
-						Stroller.BABY_CUE_LIFT + Stroller.FIGURE_HEIGHT)
+		t.check((rig.baby_cue_lift() > Stroller.BABY_CUE_LIFT)
 				== (in_column and facing.y > 0.0),
 				"facing %v is lifted over her only when the pram is due south of her" % facing)
 		rig.warn(Stroller.Alert.SOON, 1.0, &"test")
