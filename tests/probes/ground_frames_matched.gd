@@ -1,7 +1,8 @@
 extends Node
-## Common rendered-city collector for clean atomic and stepped runtime checkouts.
-## Timing starts at process_frame and ends at frame_post_draw, before observation work.
-## Run through tools/measure-ground-frames.sh; this excludes Main, crowds and events.
+## Common rendered-city collector for the three ground modes of one clean runtime checkout; the
+## mode is the launch's own --ground-mode. Timing starts at process_frame and ends at
+## frame_post_draw, before observation work. Run through tools/measure-ground-frames.sh; this
+## excludes Main, crowds and events.
 
 signal sampled(row: Dictionary)
 const CITY: PackedScene = preload("res://scenes/world/city.tscn")
@@ -17,6 +18,7 @@ var _forced := 0
 var _failures: Array[String] = []
 var _before: Dictionary = {}
 var _stepped := false
+var _city_mode := 0
 
 func _ready() -> void:
 	_started = Time.get_ticks_msec()
@@ -86,9 +88,20 @@ func _finish_frame() -> void:
 	var canceled := 0
 	for key: Vector2i in after.pending:
 		sections += int(after.pending[key]) - int(_before.pending.get(key, 0))
+	var guard := _city.scenery.view.grow(SceneryResidency.GUARD_MARGIN)
+	var ordinary := 0
+	var guarded := 0
 	for key: Vector2i in after.chunks:
 		if after.chunks[key] != _before.chunks.get(key, 0):
 			sections += (4 if _stepped else 1) - int(_before.pending.get(key, 0))
+			if guard.intersects(SceneryGround.bounds(key)):
+				guarded += 1
+			else:
+				ordinary += 1
+	# Mode 2's promise, checked on every real frame: one ordinary region at most, none beside
+	# the guard. The traversal moves under the relocation distance, so no frame relocates.
+	if _city_mode == SceneryGround.Mode.ONE and (ordinary > 1 or (ordinary > 0 and guarded > 0)):
+		_failures.append("mode 2 prepared a second region in one frame outside the guard")
 	for key: Vector2i in _before.pending:
 		canceled += int(not after.pending.has(key) and not after.chunks.has(key))
 	var row := {"span_usec": ended - _begin, "queue_usec": _queue_usec,
@@ -133,7 +146,8 @@ func _run() -> void:
 		_city.scenery.set_process(false)
 		_city._ground.set_process(false)
 		_city._ground.elapsed = 0
-		_stepped = _city._ground.has_method("prepare_step")
+		_city_mode = _city._ground.mode
+		_stepped = _city._ground.mode == SceneryGround.Mode.STEPPED
 		_camera = Camera2D.new()
 		_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		_camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -196,8 +210,8 @@ func _run() -> void:
 		"engine": Engine.get_version_info(), "processor": OS.get_processor_name(),
 		"display": DisplayServer.get_name(), "renderer": RenderingServer.get_current_rendering_driver_name(),
 		"viewport": str(get_viewport().get_visible_rect().size), "extent": str(EXTENT),
-		"seed": 4242, "warmup_frames": 120, "traversal_seconds": 30, "steady_frames": 240,
-		"vsync_disabled": true, "elapsed_ms": Time.get_ticks_msec() - _started,
+		"ground_mode": _city_mode, "seed": 4242, "warmup_frames": 120, "traversal_seconds": 30,
+		"steady_frames": 240, "vsync_disabled": true, "elapsed_ms": Time.get_ticks_msec() - _started,
 		"collector_sha256": FileAccess.get_sha256("res://tests/probes/ground_frames_matched.gd")}
 	for key in ["STRATEGY", "TRIAL", "RUN_ORDER", "SOURCE_REVISION", "COLLECTOR_REVISION", "RUNTIME_DIGEST"]:
 		result[key.to_lower()] = OS.get_environment("GROUND_MATCH_" + key)

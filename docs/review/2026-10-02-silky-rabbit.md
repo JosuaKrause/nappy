@@ -1,15 +1,11 @@
 # silky-rabbit — Nearby ground preparation during real play · 2026-10-02
 
-Hold this stepping-specific review until
-[breezy-walrus, three modes of nearby ground preparation](../todo/2026-10-02-breezy-walrus/README.md)
-is built: stepping becomes the third mode, behind a flag set under `?debug=1`, and the default
-prepares each needed region whole in one frame. Then it is the review of the stepped mode and its
-comparison with the other two; the general scenery review under
-[M159, nearby scenery during walking and transitions](2026-09-19-M159.md) remains. A useful comparison uses the same
-route and settings in each of the three modes of the flag, switched on the phone through
-`?debug=1` on the released page
-([choose-runtime](../todo/2026-10-02-breezy-walrus/choose-runtime.md) says how the flag gets there). This is a controlled comparison that the existing mobile observation does
-not supply; it does not repeat the already answered unpaired perception question.
+This is the review of the stepped mode, the third of
+[breezy-walrus's three ground modes](../decisions/2026-10-02-breezy-walrus.md), switched on the
+phone with `?debug=1&groundmode=3` on the released page; the side-by-side comparison of the three
+modes is [breezy-walrus's own review item](2026-10-02-breezy-walrus.md), and the general scenery
+review under [M159, nearby scenery during walking and transitions](2026-09-19-M159.md) remains. It
+does not repeat the already answered unpaired perception question.
 
 For the stepped mode, use the same ordinary run as M159 in the browser and on
 the phone, traversing blocks, reversing while nearby ground prepares, changing days
@@ -21,6 +17,7 @@ answers the mobile perceptual-stutter question for its tested build; do not ask
 for that same observation again. It does not answer the remaining correctness checks.
 
 Record device/browser, build, route and observations in one new playtest linked
-from both review items. The [decision and matched comparison](../decisions/2026-10-02-silky-rabbit.md)
+from this review item, [M159's](2026-09-19-M159.md) and
+[breezy-walrus's](2026-10-02-breezy-walrus.md). The [decision and matched comparison](../decisions/2026-10-02-silky-rabbit.md)
 and [evidence](../evidence/silky-rabbit-ground-frames-2026-10-02/README.md)
 describe the stepped implementation and its source/cell equality checks.

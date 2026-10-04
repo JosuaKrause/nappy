@@ -41,7 +41,7 @@ src/
 	city_state.gd         run-scoped: how far along each arc the run has got
 	building.gd           one lot, assembled from 32px facade and roof tiles
 	scenery_layer.gd      retained static furniture or small alternating scenery parts
-	scenery_ground.gd     freeable ground chunks prepared across frames in renderer quadrants
+	scenery_ground.gd     freeable ground chunks, prepared whole or across frames by mode
 	scenery_residency.gd  camera view, preparation budget, and wider visual eviction boundary
 	scenery_sprite.gd     persistent placements with independently releasable drawing commands
 	scenery_water.gd      separate south-water surface; pausable shader clock, no ground redraw
@@ -271,7 +271,8 @@ with the command line taken out of it so the mapping is testable.
 flags": "on the published site behind debug=1 we'd want some of the debug flags (like day,
 invincible, etc.) so debugging the live build is easier".)* `DevFlags.live_debug_requested()` —
 `enabled()` or `readout_requested()` — is the gate: `?day=`, `?invincible=1`, `?layers=`,
-`?controls=`, `?escape=1`, `?meters=`, `?daylength=` and `?ending=`/`?blackout=1` each read it.
+`?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1` and
+`?groundmode=` each read it.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
 drives input, takes a picture or writes a file stay behind `enabled()` alone, with no release-page
 door at all. `GameSave.uses_save()` refuses the player's own save the moment a release page's
@@ -516,12 +517,14 @@ kept strictly out of anything that touches the meters.
   parented roof objects and their rotor children on eviction, then restores their roof-foot
   placement in the shared entity layer on return. Props and closure markers retain
   placement facts and release renderer commands. Shared atlas pages and ground composition stay
-  at loading moments. Each off-screen ground region advances at most one renderer quadrant per
-  process frame, with distinct regions sharing the soft CPU budget. Each step explicitly
-  flushes TileMap internals; incomplete regions remain separately owned until complete and
-  pause between the load and retention boundaries.
-  State edits and leaving retention cancel them, while the safety guard completes them
-  synchronously. The camera's transformed viewport determines coverage, including rotation
+  at loading moments. `SceneryGround.Mode`, set by `--ground-mode`, schedules an off-screen
+  ground region inside the soft CPU budget, which each frame applies afresh to what the last
+  one left: mode 1, the default, prepares every needed region whole in its frame, as many as the
+  budget allows; mode 2 at most one whole region a frame, the rest waiting; mode 3 advances
+  each region at most one renderer quadrant per process frame, explicitly flushing TileMap
+  internals each step, its incomplete regions separately owned until complete and paused
+  between the load and retention boundaries. State edits and leaving retention cancel them.
+  In every mode the safety guard completes a region synchronously. The camera's transformed viewport determines coverage, including rotation
   and overview; lifecycle relocations prepare their destination before play. A city clock keeps
   resident water surfaces in phase and restores returning roof animation phases.
 - Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that

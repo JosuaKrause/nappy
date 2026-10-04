@@ -1,0 +1,13 @@
+order	attempt	mode	trial	warmup	source_revision	load_average_before
+0	1	mode1-all	warmup	true	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.39 2.91 3.31
+1	1	mode2-one	warmup	true	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.37 2.88 3.29
+2	1	mode3-stepped	warmup	true	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.14 2.80 3.26
+3	1	mode1-all	0	false	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.04 2.76 3.24
+4	1	mode2-one	0	false	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.09 2.74 3.22
+5	1	mode3-stepped	0	false	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.22 2.73 3.21
+6	1	mode2-one	1	false	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.55 2.78 3.22
+7	1	mode3-stepped	1	false	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.51 2.76 3.20
+8	1	mode1-all	1	false	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.47 2.74 3.19
+9	1	mode3-stepped	2	false	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.41 2.71 3.17
+10	1	mode1-all	2	false	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.63 2.74 3.17
+11	1	mode2-one	2	false	51e794447590a6c8f3940bd3dce4cc387ed4e8cc	2.56 2.73 3.15

@@ -51,6 +51,9 @@ func run(t) -> void:
 	_test_day_length_from_query(t)
 	_test_ending_from_query(t)
 	_test_blackout_from_query(t)
+	_test_ground_mode_reads_the_command_line_and_the_open_page(t)
+	_test_ground_mode_is_ignored_on_a_release_page_without_debug(t)
+	_test_ground_mode_refuses_anything_but_its_three_numbers(t)
 	_test_the_physics_tick_is_pinned_to_thirty_with_interpolation_on(t)
 
 ## The presentation is decided before the game runs and cannot be moved from inside it. Stated as
@@ -192,7 +195,7 @@ func _test_day_from_query_is_not_given_when_absent(t) -> void:
 ## touches the save the page might otherwise share with a real player.
 func _test_web_debug_flag_used_names_the_bundles_own_parameters(t) -> void:
 	for key in ["day", "invincible", "layers", "controls", "escape", "meters", "daylength",
-			"ending", "blackout"]:
+			"ending", "blackout", "groundmode"]:
 		t.check(DevFlags._web_debug_flag_used_in_query("?%s=1" % key),
 			"'%s' is one of the bundle's own parameters" % key)
 
@@ -270,6 +273,35 @@ func _test_blackout_from_query(t) -> void:
 	t.check(DevFlags._blackout_from_query("?blackout=1"), "?blackout=1 forces the blackout")
 	t.check(not DevFlags._blackout_from_query("?blackout=0"), "blackout=0 forces nothing")
 	t.check(not DevFlags._blackout_from_query(""), "an absent parameter forces nothing")
+
+## `--ground-mode`/`?groundmode=`, through `ground_mode()`'s own pure half: the command line, the
+## page under the bundle's gate, and the default of `1` when neither names one.
+func _test_ground_mode_reads_the_command_line_and_the_open_page(t) -> void:
+	var none := PackedStringArray()
+	t.check(DevFlags._ground_mode_for(PackedStringArray(["--ground-mode", "2"]), "", false) == 2,
+		"the command line names the mode")
+	t.check(DevFlags._ground_mode_for(PackedStringArray(["--seed", "4", "--ground-mode", "3"]),
+		"?debug=1&groundmode=2", true) == 3, "the command line wins over the page")
+	t.check(DevFlags._ground_mode_for(none, "?debug=1&groundmode=2", true) == 2,
+		"an open page names the mode among other parameters")
+	t.check(DevFlags._ground_mode_for(none, "?debug=1", true) == DevFlags.GROUND_MODE_DEFAULT
+		and DevFlags.GROUND_MODE_DEFAULT == SceneryGround.Mode.ALL,
+		"naming no mode prepares every needed region in its frame")
+
+func _test_ground_mode_is_ignored_on_a_release_page_without_debug(t) -> void:
+	var none := PackedStringArray()
+	for query in ["?groundmode=3", "?debug=1&groundmode=3"]:
+		var open := DevFlags._live_debug_requested(false, DevFlags._readout_from_query(query))
+		var expected := 3 if query.contains("debug=1") else DevFlags.GROUND_MODE_DEFAULT
+		t.check(DevFlags._ground_mode_for(none, query, open) == expected,
+			"a release page reads %s as mode %d" % [query, expected])
+
+func _test_ground_mode_refuses_anything_but_its_three_numbers(t) -> void:
+	for raw in ["1", "2", "3"]:
+		t.check(DevFlags.parse_ground_mode(raw) == int(raw), "mode %s is read back" % raw)
+	for raw in ["0", "4", "two", ""]:
+		t.check(DevFlags.parse_ground_mode(raw) == DevFlags.GROUND_MODE_DEFAULT,
+			"'%s' refuses the flag rather than choosing a mode" % raw)
 
 ## Pins the engine's own physics rate and interpolation setting so a `project.godot` edit cannot
 ## drift the tick out from under every test that steps the game world by hand with its own `STEP`

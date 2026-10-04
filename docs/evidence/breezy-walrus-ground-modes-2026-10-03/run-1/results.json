@@ -1,0 +1,6489 @@
+{
+  "source_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+  "collector_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+  "rejected": [],
+  "trials": [
+    {
+      "cases": [
+        {
+          "canceled_pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 1800,
+            "max": 348,
+            "median": 198,
+            "p95": 340,
+            "p99": 348,
+            "sum": 333888
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482528,
+          "guards": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 60,
+          "name": "south60",
+          "observed_sections": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 102
+          },
+          "observer_usec": {
+            "count": 1800,
+            "max": 637,
+            "median": 30,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 40,
+            "p99": 46,
+            "sum": 54905
+          },
+          "pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 1800,
+            "max": 1885,
+            "median": 1,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 174,
+            "p99": 394,
+            "sum": 78461
+          },
+          "regions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 102
+          },
+          "resident": {
+            "count": 1800,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 56130
+          },
+          "span_usec": {
+            "count": 1800,
+            "max": 8623,
+            "median": 1207,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 3670,
+            "p99": 5096,
+            "sum": 2591412
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 48,
+              "median": 19,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 28,
+              "p99": 42,
+              "sum": 4830
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 27
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4895,
+              "median": 807,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 2386,
+              "p99": 4676,
+              "sum": 234515
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 348,
+            "median": 199,
+            "p95": 340,
+            "p99": 348,
+            "sum": 83549
+          },
+          "end_distance": 0.000244140625,
+          "evictions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "south15",
+          "observed_sections": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 102
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 66,
+            "median": 31,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 41,
+            "p99": 47,
+            "sum": 13984
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 1849,
+            "median": 1,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 325,
+            "p99": 1598,
+            "sum": 62764
+          },
+          "regions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 102
+          },
+          "resident": {
+            "count": 450,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 14046
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 6894,
+            "median": 1277,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 3910,
+            "p99": 5274,
+            "sum": 705552
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 51,
+              "median": 20,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 28,
+              "p99": 33,
+              "sum": 4882
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 23
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4943,
+              "median": 809,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 2044,
+              "p99": 4721,
+              "sum": 228372
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 357,
+            "median": 188,
+            "p95": 329,
+            "p99": 354,
+            "sum": 96161
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 10,
+            "sum": 120
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "diagonal15",
+          "observed_sections": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 2,
+            "p99": 6,
+            "sum": 130
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 55,
+            "median": 32,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 42,
+            "p99": 50,
+            "sum": 14638
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 2196,
+            "median": 156,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 813,
+            "p99": 1766,
+            "sum": 69800
+          },
+          "regions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 2,
+            "p99": 6,
+            "sum": 130
+          },
+          "resident": {
+            "count": 450,
+            "max": 40,
+            "median": 34,
+            "p95": 40,
+            "p99": 40,
+            "sum": 15603
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 7108,
+            "median": 1431,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4109,
+            "p99": 4630,
+            "sum": 787669
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 39,
+              "median": 21,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 27,
+              "p99": 30,
+              "sum": 5006
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 26
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4106,
+              "median": 804,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1789,
+              "p99": 3219,
+              "sum": 216021
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        }
+      ],
+      "collector_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "collector_sha256": "4de67aa969ddc47d7492911af6cc73ce6c28fc774eb661e43cf9cd70f1abc31a",
+      "display": "macOS",
+      "elapsed_ms": 7051,
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "extent": "(640.0, 360.0)",
+      "failures": [],
+      "forced_draws": 0,
+      "ground_mode": 1,
+      "processor": "Apple M2",
+      "renderer": "opengl3",
+      "run_order": "3",
+      "runtime_digest": "1f539f5db6434e2d5a39f4c40d4d97f3ff7d4ef79527a25950efab18c21815d5",
+      "seed": 4242,
+      "source_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "steady_frames": 240,
+      "strategy": "mode1-all",
+      "traversal_seconds": 30,
+      "trial": "0",
+      "viewport": "(1280.0, 720.0)",
+      "vsync_disabled": true,
+      "warmup_frames": 120
+    },
+    {
+      "cases": [
+        {
+          "canceled_pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 1800,
+            "max": 348,
+            "median": 198,
+            "p95": 340,
+            "p99": 348,
+            "sum": 333888
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482528,
+          "guards": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 60,
+          "name": "south60",
+          "observed_sections": {
+            "count": 1800,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 102
+          },
+          "observer_usec": {
+            "count": 1800,
+            "max": 68,
+            "median": 30,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 40,
+            "p99": 45,
+            "sum": 55034
+          },
+          "pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 1800,
+            "max": 970,
+            "median": 1,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 342,
+            "p99": 430,
+            "sum": 90994
+          },
+          "regions": {
+            "count": 1800,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 102
+          },
+          "resident": {
+            "count": 1800,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 55797
+          },
+          "span_usec": {
+            "count": 1800,
+            "max": 7288,
+            "median": 1200,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 3495,
+            "p99": 5258,
+            "sum": 2589330
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 40,
+              "median": 21,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 28,
+              "p99": 32,
+              "sum": 5061
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 11,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 47
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 5143,
+              "median": 812,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 2073,
+              "p99": 4071,
+              "sum": 222833
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 348,
+            "median": 199,
+            "p95": 340,
+            "p99": 348,
+            "sum": 83549
+          },
+          "end_distance": 0.000244140625,
+          "evictions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "south15",
+          "observed_sections": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 99
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 56,
+            "median": 30,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 40,
+            "p99": 45,
+            "sum": 13799
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 902,
+            "median": 158,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 416,
+            "p99": 593,
+            "sum": 69312
+          },
+          "regions": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 99
+          },
+          "resident": {
+            "count": 450,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 13788
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 5817,
+            "median": 1276,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 3431,
+            "p99": 4944,
+            "sum": 674838
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 40,
+              "median": 20,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 25,
+              "p99": 30,
+              "sum": 4867
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 14
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4273,
+              "median": 807,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1437,
+              "p99": 3714,
+              "sum": 216665
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 357,
+            "median": 188,
+            "p95": 328,
+            "p99": 354,
+            "sum": 96142
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 120
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "diagonal15",
+          "observed_sections": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 128
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 48,
+            "median": 31,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 41,
+            "p99": 45,
+            "sum": 14400
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 734,
+            "median": 159,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 428,
+            "p99": 587,
+            "sum": 79282
+          },
+          "regions": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 128
+          },
+          "resident": {
+            "count": 450,
+            "max": 40,
+            "median": 32,
+            "p95": 40,
+            "p99": 40,
+            "sum": 15164
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 6869,
+            "median": 1501,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4826,
+            "p99": 6028,
+            "sum": 847858
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 30,
+              "median": 18,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 23,
+              "p99": 24,
+              "sum": 4546
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 28
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 5165,
+              "median": 789,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 4371,
+              "p99": 5095,
+              "sum": 251694
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        }
+      ],
+      "collector_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "collector_sha256": "4de67aa969ddc47d7492911af6cc73ce6c28fc774eb661e43cf9cd70f1abc31a",
+      "display": "macOS",
+      "elapsed_ms": 7082,
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "extent": "(640.0, 360.0)",
+      "failures": [],
+      "forced_draws": 0,
+      "ground_mode": 2,
+      "processor": "Apple M2",
+      "renderer": "opengl3",
+      "run_order": "4",
+      "runtime_digest": "1f539f5db6434e2d5a39f4c40d4d97f3ff7d4ef79527a25950efab18c21815d5",
+      "seed": 4242,
+      "source_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "steady_frames": 240,
+      "strategy": "mode2-one",
+      "traversal_seconds": 30,
+      "trial": "0",
+      "viewport": "(1280.0, 720.0)",
+      "vsync_disabled": true,
+      "warmup_frames": 120
+    },
+    {
+      "cases": [
+        {
+          "canceled_pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 1800,
+            "max": 179,
+            "median": 133,
+            "p95": 178,
+            "p99": 179,
+            "sum": 211481
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 776624,
+          "guards": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 60,
+          "name": "south60",
+          "observed_sections": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 408
+          },
+          "observer_usec": {
+            "count": 1800,
+            "max": 66,
+            "median": 30,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 40,
+            "p99": 48,
+            "sum": 54658
+          },
+          "pending": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 306
+          },
+          "queue_usec": {
+            "count": 1800,
+            "max": 1186,
+            "median": 1,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 260,
+            "p99": 651,
+            "sum": 91975
+          },
+          "regions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 102
+          },
+          "resident": {
+            "count": 1800,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 55842
+          },
+          "span_usec": {
+            "count": 1800,
+            "max": 8586,
+            "median": 1062,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 3255,
+            "p99": 4568,
+            "sum": 2264848
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 46,
+              "median": 46,
+              "p95": 46,
+              "p99": 46,
+              "sum": 11040
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 44,
+              "median": 20,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 27,
+              "p99": 30,
+              "sum": 4907
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 29
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 5100,
+              "median": 838,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 2174,
+              "p99": 4326,
+              "sum": 230439
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 24
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 179,
+            "median": 136,
+            "p95": 178,
+            "p99": 179,
+            "sum": 52982
+          },
+          "end_distance": 0.000244140625,
+          "evictions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 776720,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "south15",
+          "observed_sections": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 6,
+            "p99": 6,
+            "sum": 402
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 53,
+            "median": 31,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 41,
+            "p99": 45,
+            "sum": 13915
+          },
+          "pending": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 6,
+            "p99": 6,
+            "sum": 306
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 1197,
+            "median": 157,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 641,
+            "p99": 785,
+            "sum": 72518
+          },
+          "regions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "resident": {
+            "count": 450,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 13734
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 4678,
+            "median": 1115,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 2876,
+            "p99": 4320,
+            "sum": 591858
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 46,
+              "median": 46,
+              "p95": 46,
+              "p99": 46,
+              "sum": 11040
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 36,
+              "median": 21,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 26,
+              "p99": 30,
+              "sum": 4922
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 35
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 3993,
+              "median": 832,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1624,
+              "p99": 3722,
+              "sum": 228216
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 24
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 207,
+            "median": 162,
+            "p95": 197,
+            "p99": 207,
+            "sum": 72956
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 120
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 776720,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "diagonal15",
+          "observed_sections": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 10,
+            "p99": 10,
+            "sum": 520
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 50,
+            "median": 32,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 42,
+            "p99": 47,
+            "sum": 14659
+          },
+          "pending": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 6,
+            "p99": 10,
+            "sum": 390
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 1292,
+            "median": 157,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 764,
+            "p99": 970,
+            "sum": 81294
+          },
+          "regions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 10,
+            "sum": 130
+          },
+          "resident": {
+            "count": 450,
+            "max": 40,
+            "median": 30,
+            "p95": 40,
+            "p99": 40,
+            "sum": 15211
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 7690,
+            "median": 1312,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4423,
+            "p99": 5612,
+            "sum": 764656
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 46,
+              "median": 46,
+              "p95": 46,
+              "p99": 46,
+              "sum": 11040
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 33,
+              "median": 20,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 24,
+              "p99": 29,
+              "sum": 4698
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 22
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 7058,
+              "median": 826,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 2754,
+              "p99": 4904,
+              "sum": 242921
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 24
+          },
+          "world_size": "(5120.0, 5120.0)"
+        }
+      ],
+      "collector_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "collector_sha256": "4de67aa969ddc47d7492911af6cc73ce6c28fc774eb661e43cf9cd70f1abc31a",
+      "display": "macOS",
+      "elapsed_ms": 6550,
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "extent": "(640.0, 360.0)",
+      "failures": [],
+      "forced_draws": 0,
+      "ground_mode": 3,
+      "processor": "Apple M2",
+      "renderer": "opengl3",
+      "run_order": "5",
+      "runtime_digest": "1f539f5db6434e2d5a39f4c40d4d97f3ff7d4ef79527a25950efab18c21815d5",
+      "seed": 4242,
+      "source_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "steady_frames": 240,
+      "strategy": "mode3-stepped",
+      "traversal_seconds": 30,
+      "trial": "0",
+      "viewport": "(1280.0, 720.0)",
+      "vsync_disabled": true,
+      "warmup_frames": 120
+    },
+    {
+      "cases": [
+        {
+          "canceled_pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 1800,
+            "max": 348,
+            "median": 198,
+            "p95": 340,
+            "p99": 348,
+            "sum": 333888
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482528,
+          "guards": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 60,
+          "name": "south60",
+          "observed_sections": {
+            "count": 1800,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 102
+          },
+          "observer_usec": {
+            "count": 1800,
+            "max": 1021,
+            "median": 29,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 38,
+            "p99": 44,
+            "sum": 54653
+          },
+          "pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 1800,
+            "max": 963,
+            "median": 1,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 340,
+            "p99": 422,
+            "sum": 89355
+          },
+          "regions": {
+            "count": 1800,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 102
+          },
+          "resident": {
+            "count": 1800,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 55797
+          },
+          "span_usec": {
+            "count": 1800,
+            "max": 7205,
+            "median": 1191,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 3867,
+            "p99": 4976,
+            "sum": 2589077
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 33,
+              "median": 20,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 27,
+              "p99": 30,
+              "sum": 4854
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 33
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4130,
+              "median": 804,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1912,
+              "p99": 3844,
+              "sum": 222131
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 348,
+            "median": 199,
+            "p95": 340,
+            "p99": 348,
+            "sum": 83549
+          },
+          "end_distance": 0.000244140625,
+          "evictions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "south15",
+          "observed_sections": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 99
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 450,
+            "median": 30,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 39,
+            "p99": 42,
+            "sum": 13744
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 887,
+            "median": 157,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 415,
+            "p99": 575,
+            "sum": 68444
+          },
+          "regions": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 99
+          },
+          "resident": {
+            "count": 450,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 13788
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 7049,
+            "median": 1273,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4513,
+            "p99": 5411,
+            "sum": 720594
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 32,
+              "median": 22,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 27,
+              "p99": 30,
+              "sum": 5182
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 29
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4389,
+              "median": 796,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1394,
+              "p99": 3643,
+              "sum": 214277
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 357,
+            "median": 188,
+            "p95": 328,
+            "p99": 354,
+            "sum": 96142
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 120
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "diagonal15",
+          "observed_sections": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 128
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 66,
+            "median": 31,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 41,
+            "p99": 54,
+            "sum": 14335
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 761,
+            "median": 159,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 427,
+            "p99": 588,
+            "sum": 79663
+          },
+          "regions": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 128
+          },
+          "resident": {
+            "count": 450,
+            "max": 40,
+            "median": 32,
+            "p95": 40,
+            "p99": 40,
+            "sum": 15164
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 5932,
+            "median": 1501,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4859,
+            "p99": 5736,
+            "sum": 853292
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 43,
+              "median": 19,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 25,
+              "p99": 36,
+              "sum": 4707
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 24
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4480,
+              "median": 798,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1844,
+              "p99": 4281,
+              "sum": 225086
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        }
+      ],
+      "collector_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "collector_sha256": "4de67aa969ddc47d7492911af6cc73ce6c28fc774eb661e43cf9cd70f1abc31a",
+      "display": "macOS",
+      "elapsed_ms": 7072,
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "extent": "(640.0, 360.0)",
+      "failures": [],
+      "forced_draws": 0,
+      "ground_mode": 2,
+      "processor": "Apple M2",
+      "renderer": "opengl3",
+      "run_order": "6",
+      "runtime_digest": "1f539f5db6434e2d5a39f4c40d4d97f3ff7d4ef79527a25950efab18c21815d5",
+      "seed": 4242,
+      "source_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "steady_frames": 240,
+      "strategy": "mode2-one",
+      "traversal_seconds": 30,
+      "trial": "1",
+      "viewport": "(1280.0, 720.0)",
+      "vsync_disabled": true,
+      "warmup_frames": 120
+    },
+    {
+      "cases": [
+        {
+          "canceled_pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 1800,
+            "max": 179,
+            "median": 133,
+            "p95": 178,
+            "p99": 179,
+            "sum": 211481
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 776624,
+          "guards": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 60,
+          "name": "south60",
+          "observed_sections": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 408
+          },
+          "observer_usec": {
+            "count": 1800,
+            "max": 1242,
+            "median": 31,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 40,
+            "p99": 46,
+            "sum": 56713
+          },
+          "pending": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 306
+          },
+          "queue_usec": {
+            "count": 1800,
+            "max": 1193,
+            "median": 1,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 259,
+            "p99": 657,
+            "sum": 91828
+          },
+          "regions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 102
+          },
+          "resident": {
+            "count": 1800,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 55842
+          },
+          "span_usec": {
+            "count": 1800,
+            "max": 7798,
+            "median": 1066,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 2764,
+            "p99": 4746,
+            "sum": 2240504
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 46,
+              "median": 46,
+              "p95": 46,
+              "p99": 46,
+              "sum": 11040
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 34,
+              "median": 21,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 26,
+              "p99": 31,
+              "sum": 4938
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 26
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4527,
+              "median": 837,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 2424,
+              "p99": 4324,
+              "sum": 235388
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 24
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 179,
+            "median": 136,
+            "p95": 178,
+            "p99": 179,
+            "sum": 52982
+          },
+          "end_distance": 0.000244140625,
+          "evictions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 776720,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "south15",
+          "observed_sections": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 6,
+            "p99": 6,
+            "sum": 402
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 49,
+            "median": 31,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 41,
+            "p99": 46,
+            "sum": 14065
+          },
+          "pending": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 6,
+            "p99": 6,
+            "sum": 306
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 1311,
+            "median": 158,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 647,
+            "p99": 905,
+            "sum": 75322
+          },
+          "regions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "resident": {
+            "count": 450,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 13734
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 6145,
+            "median": 1107,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4433,
+            "p99": 5575,
+            "sum": 657859
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 46,
+              "median": 46,
+              "p95": 46,
+              "p99": 46,
+              "sum": 11040
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 47,
+              "median": 21,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 30,
+              "p99": 34,
+              "sum": 5205
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 25
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4420,
+              "median": 836,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1696,
+              "p99": 3971,
+              "sum": 230586
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 24
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 207,
+            "median": 162,
+            "p95": 197,
+            "p99": 207,
+            "sum": 72956
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 120
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 776720,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "diagonal15",
+          "observed_sections": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 10,
+            "p99": 10,
+            "sum": 520
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 57,
+            "median": 31,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 42,
+            "p99": 48,
+            "sum": 14546
+          },
+          "pending": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 6,
+            "p99": 10,
+            "sum": 390
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 1307,
+            "median": 157,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 747,
+            "p99": 970,
+            "sum": 81020
+          },
+          "regions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 10,
+            "sum": 130
+          },
+          "resident": {
+            "count": 450,
+            "max": 40,
+            "median": 30,
+            "p95": 40,
+            "p99": 40,
+            "sum": 15211
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 7557,
+            "median": 1322,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4641,
+            "p99": 5330,
+            "sum": 776393
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 46,
+              "median": 46,
+              "p95": 46,
+              "p99": 46,
+              "sum": 11040
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 24,
+              "median": 17,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 22,
+              "p99": 23,
+              "sum": 4431
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 36
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 5270,
+              "median": 816,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 4049,
+              "p99": 4754,
+              "sum": 251632
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 24
+          },
+          "world_size": "(5120.0, 5120.0)"
+        }
+      ],
+      "collector_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "collector_sha256": "4de67aa969ddc47d7492911af6cc73ce6c28fc774eb661e43cf9cd70f1abc31a",
+      "display": "macOS",
+      "elapsed_ms": 6632,
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "extent": "(640.0, 360.0)",
+      "failures": [],
+      "forced_draws": 0,
+      "ground_mode": 3,
+      "processor": "Apple M2",
+      "renderer": "opengl3",
+      "run_order": "7",
+      "runtime_digest": "1f539f5db6434e2d5a39f4c40d4d97f3ff7d4ef79527a25950efab18c21815d5",
+      "seed": 4242,
+      "source_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "steady_frames": 240,
+      "strategy": "mode3-stepped",
+      "traversal_seconds": 30,
+      "trial": "1",
+      "viewport": "(1280.0, 720.0)",
+      "vsync_disabled": true,
+      "warmup_frames": 120
+    },
+    {
+      "cases": [
+        {
+          "canceled_pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 1800,
+            "max": 348,
+            "median": 198,
+            "p95": 340,
+            "p99": 348,
+            "sum": 333888
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482528,
+          "guards": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 60,
+          "name": "south60",
+          "observed_sections": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 102
+          },
+          "observer_usec": {
+            "count": 1800,
+            "max": 680,
+            "median": 30,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 40,
+            "p99": 47,
+            "sum": 54946
+          },
+          "pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 1800,
+            "max": 1883,
+            "median": 1,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 174,
+            "p99": 411,
+            "sum": 78667
+          },
+          "regions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 102
+          },
+          "resident": {
+            "count": 1800,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 56130
+          },
+          "span_usec": {
+            "count": 1800,
+            "max": 12864,
+            "median": 1196,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 3690,
+            "p99": 4916,
+            "sum": 2563275
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 40,
+              "median": 21,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 26,
+              "p99": 33,
+              "sum": 4982
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 31
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4655,
+              "median": 811,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1973,
+              "p99": 4300,
+              "sum": 221808
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 348,
+            "median": 199,
+            "p95": 340,
+            "p99": 348,
+            "sum": 83549
+          },
+          "end_distance": 0.000244140625,
+          "evictions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "south15",
+          "observed_sections": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 102
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 53,
+            "median": 29,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 38,
+            "p99": 45,
+            "sum": 13246
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 1832,
+            "median": 1,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 339,
+            "p99": 1630,
+            "sum": 62560
+          },
+          "regions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 102
+          },
+          "resident": {
+            "count": 450,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 14046
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 6450,
+            "median": 1256,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4272,
+            "p99": 5010,
+            "sum": 709731
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 34,
+              "median": 20,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 25,
+              "p99": 29,
+              "sum": 4801
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 30
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 3675,
+              "median": 801,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1544,
+              "p99": 3583,
+              "sum": 217074
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 357,
+            "median": 188,
+            "p95": 329,
+            "p99": 354,
+            "sum": 96161
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 10,
+            "sum": 120
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "diagonal15",
+          "observed_sections": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 2,
+            "p99": 6,
+            "sum": 130
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 49,
+            "median": 31,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 39,
+            "p99": 44,
+            "sum": 13934
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 2209,
+            "median": 155,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 801,
+            "p99": 1844,
+            "sum": 69115
+          },
+          "regions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 2,
+            "p99": 6,
+            "sum": 130
+          },
+          "resident": {
+            "count": 450,
+            "max": 40,
+            "median": 34,
+            "p95": 40,
+            "p99": 40,
+            "sum": 15603
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 6182,
+            "median": 1416,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4962,
+            "p99": 5352,
+            "sum": 824718
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 28,
+              "median": 19,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 23,
+              "p99": 28,
+              "sum": 4592
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 20
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 5088,
+              "median": 790,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 4254,
+              "p99": 4898,
+              "sum": 244933
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        }
+      ],
+      "collector_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "collector_sha256": "4de67aa969ddc47d7492911af6cc73ce6c28fc774eb661e43cf9cd70f1abc31a",
+      "display": "macOS",
+      "elapsed_ms": 7058,
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "extent": "(640.0, 360.0)",
+      "failures": [],
+      "forced_draws": 0,
+      "ground_mode": 1,
+      "processor": "Apple M2",
+      "renderer": "opengl3",
+      "run_order": "8",
+      "runtime_digest": "1f539f5db6434e2d5a39f4c40d4d97f3ff7d4ef79527a25950efab18c21815d5",
+      "seed": 4242,
+      "source_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "steady_frames": 240,
+      "strategy": "mode1-all",
+      "traversal_seconds": 30,
+      "trial": "1",
+      "viewport": "(1280.0, 720.0)",
+      "vsync_disabled": true,
+      "warmup_frames": 120
+    },
+    {
+      "cases": [
+        {
+          "canceled_pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 1800,
+            "max": 179,
+            "median": 133,
+            "p95": 178,
+            "p99": 179,
+            "sum": 211481
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 776624,
+          "guards": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 60,
+          "name": "south60",
+          "observed_sections": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 408
+          },
+          "observer_usec": {
+            "count": 1800,
+            "max": 1012,
+            "median": 28,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 39,
+            "p99": 48,
+            "sum": 53253
+          },
+          "pending": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 306
+          },
+          "queue_usec": {
+            "count": 1800,
+            "max": 1410,
+            "median": 1,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 294,
+            "p99": 759,
+            "sum": 105415
+          },
+          "regions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 102
+          },
+          "resident": {
+            "count": 1800,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 55842
+          },
+          "span_usec": {
+            "count": 1800,
+            "max": 7988,
+            "median": 1117,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 3967,
+            "p99": 4905,
+            "sum": 2423996
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 46,
+              "median": 46,
+              "p95": 46,
+              "p99": 46,
+              "sum": 11040
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 33,
+              "median": 18,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 22,
+              "p99": 26,
+              "sum": 4343
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 20
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4699,
+              "median": 836,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1574,
+              "p99": 3908,
+              "sum": 230450
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 24
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 179,
+            "median": 136,
+            "p95": 178,
+            "p99": 179,
+            "sum": 52982
+          },
+          "end_distance": 0.000244140625,
+          "evictions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 776720,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "south15",
+          "observed_sections": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 6,
+            "p99": 6,
+            "sum": 402
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 74,
+            "median": 29,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 39,
+            "p99": 45,
+            "sum": 13644
+          },
+          "pending": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 6,
+            "p99": 6,
+            "sum": 306
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 1358,
+            "median": 180,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 736,
+            "p99": 986,
+            "sum": 84910
+          },
+          "regions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "resident": {
+            "count": 450,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 13734
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 5171,
+            "median": 1221,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 3796,
+            "p99": 4893,
+            "sum": 668335
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 46,
+              "median": 46,
+              "p95": 46,
+              "p99": 46,
+              "sum": 11040
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 32,
+              "median": 19,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 24,
+              "p99": 27,
+              "sum": 4693
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 39
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4504,
+              "median": 853,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 2152,
+              "p99": 3719,
+              "sum": 237968
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 24
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 207,
+            "median": 162,
+            "p95": 197,
+            "p99": 207,
+            "sum": 72956
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 120
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 776720,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "diagonal15",
+          "observed_sections": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 10,
+            "p99": 10,
+            "sum": 520
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 67,
+            "median": 34,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 46,
+            "p99": 51,
+            "sum": 15724
+          },
+          "pending": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 6,
+            "p99": 10,
+            "sum": 390
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 1618,
+            "median": 197,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 959,
+            "p99": 1217,
+            "sum": 101290
+          },
+          "regions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 10,
+            "sum": 130
+          },
+          "resident": {
+            "count": 450,
+            "max": 40,
+            "median": 30,
+            "p95": 40,
+            "p99": 40,
+            "sum": 15211
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 6340,
+            "median": 1468,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4397,
+            "p99": 5493,
+            "sum": 834017
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 46,
+              "median": 46,
+              "p95": 46,
+              "p99": 46,
+              "sum": 11040
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 42,
+              "median": 21,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 26,
+              "p99": 35,
+              "sum": 5158
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 33
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4409,
+              "median": 873,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 2760,
+              "p99": 4315,
+              "sum": 247813
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 24
+          },
+          "world_size": "(5120.0, 5120.0)"
+        }
+      ],
+      "collector_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "collector_sha256": "4de67aa969ddc47d7492911af6cc73ce6c28fc774eb661e43cf9cd70f1abc31a",
+      "display": "macOS",
+      "elapsed_ms": 7127,
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "extent": "(640.0, 360.0)",
+      "failures": [],
+      "forced_draws": 0,
+      "ground_mode": 3,
+      "processor": "Apple M2",
+      "renderer": "opengl3",
+      "run_order": "9",
+      "runtime_digest": "1f539f5db6434e2d5a39f4c40d4d97f3ff7d4ef79527a25950efab18c21815d5",
+      "seed": 4242,
+      "source_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "steady_frames": 240,
+      "strategy": "mode3-stepped",
+      "traversal_seconds": 30,
+      "trial": "2",
+      "viewport": "(1280.0, 720.0)",
+      "vsync_disabled": true,
+      "warmup_frames": 120
+    },
+    {
+      "cases": [
+        {
+          "canceled_pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 1800,
+            "max": 348,
+            "median": 198,
+            "p95": 340,
+            "p99": 348,
+            "sum": 333888
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482528,
+          "guards": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 60,
+          "name": "south60",
+          "observed_sections": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 1,
+            "sum": 102
+          },
+          "observer_usec": {
+            "count": 1800,
+            "max": 1292,
+            "median": 33,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 43,
+            "p99": 49,
+            "sum": 62142
+          },
+          "pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 1800,
+            "max": 2272,
+            "median": 1,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 249,
+            "p99": 700,
+            "sum": 106418
+          },
+          "regions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 1,
+            "sum": 102
+          },
+          "resident": {
+            "count": 1800,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 56020
+          },
+          "span_usec": {
+            "count": 1800,
+            "max": 9094,
+            "median": 1412,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4858,
+            "p99": 5528,
+            "sum": 3196680
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 35,
+              "median": 22,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 29,
+              "p99": 31,
+              "sum": 5507
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 41
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 4436,
+              "median": 894,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 2252,
+              "p99": 4059,
+              "sum": 252025
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 348,
+            "median": 199,
+            "p95": 340,
+            "p99": 348,
+            "sum": 83549
+          },
+          "end_distance": 0.000244140625,
+          "evictions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "south15",
+          "observed_sections": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 102
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 72,
+            "median": 35,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 45,
+            "p99": 57,
+            "sum": 15991
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 2287,
+            "median": 222,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 537,
+            "p99": 2199,
+            "sum": 91751
+          },
+          "regions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 102
+          },
+          "resident": {
+            "count": 450,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 14040
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 7054,
+            "median": 1555,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 5216,
+            "p99": 5824,
+            "sum": 909683
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 35,
+              "median": 25,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 31,
+              "p99": 34,
+              "sum": 6065
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 50
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 6067,
+              "median": 1006,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 3282,
+              "p99": 4414,
+              "sum": 281611
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 357,
+            "median": 188,
+            "p95": 329,
+            "p99": 354,
+            "sum": 96161
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 10,
+            "sum": 120
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "diagonal15",
+          "observed_sections": {
+            "count": 450,
+            "max": 7,
+            "median": 0,
+            "p95": 4,
+            "p99": 6,
+            "sum": 130
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 608,
+            "median": 41,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 51,
+            "p99": 56,
+            "sum": 19081
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 2302,
+            "median": 241,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 1511,
+            "p99": 2141,
+            "sum": 107458
+          },
+          "regions": {
+            "count": 450,
+            "max": 7,
+            "median": 0,
+            "p95": 4,
+            "p99": 6,
+            "sum": 130
+          },
+          "resident": {
+            "count": 450,
+            "max": 40,
+            "median": 34,
+            "p95": 40,
+            "p99": 40,
+            "sum": 15581
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 7399,
+            "median": 1801,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 5506,
+            "p99": 5978,
+            "sum": 1046342
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 48,
+              "median": 30,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 37,
+              "p99": 42,
+              "sum": 7348
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 63
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 6189,
+              "median": 921,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 4305,
+              "p99": 5378,
+              "sum": 295995
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        }
+      ],
+      "collector_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "collector_sha256": "4de67aa969ddc47d7492911af6cc73ce6c28fc774eb661e43cf9cd70f1abc31a",
+      "display": "macOS",
+      "elapsed_ms": 9064,
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "extent": "(640.0, 360.0)",
+      "failures": [],
+      "forced_draws": 0,
+      "ground_mode": 1,
+      "processor": "Apple M2",
+      "renderer": "opengl3",
+      "run_order": "10",
+      "runtime_digest": "1f539f5db6434e2d5a39f4c40d4d97f3ff7d4ef79527a25950efab18c21815d5",
+      "seed": 4242,
+      "source_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "steady_frames": 240,
+      "strategy": "mode1-all",
+      "traversal_seconds": 30,
+      "trial": "2",
+      "viewport": "(1280.0, 720.0)",
+      "vsync_disabled": true,
+      "warmup_frames": 120
+    },
+    {
+      "cases": [
+        {
+          "canceled_pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 1800,
+            "max": 348,
+            "median": 198,
+            "p95": 340,
+            "p99": 348,
+            "sum": 333888
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 1800,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482528,
+          "guards": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 60,
+          "name": "south60",
+          "observed_sections": {
+            "count": 1800,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 102
+          },
+          "observer_usec": {
+            "count": 1800,
+            "max": 1220,
+            "median": 37,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 49,
+            "p99": 60,
+            "sum": 69343
+          },
+          "pending": {
+            "count": 1800,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 1800,
+            "max": 1373,
+            "median": 1,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 491,
+            "p99": 651,
+            "sum": 132499
+          },
+          "regions": {
+            "count": 1800,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 102
+          },
+          "resident": {
+            "count": 1800,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 55797
+          },
+          "span_usec": {
+            "count": 1800,
+            "max": 9793,
+            "median": 1477,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 4402,
+            "p99": 5991,
+            "sum": 3230642
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 36,
+              "median": 23,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 31,
+              "p99": 34,
+              "sum": 5812
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 30
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 5132,
+              "median": 1029,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 2915,
+              "p99": 4719,
+              "sum": 290101
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 348,
+            "median": 199,
+            "p95": 340,
+            "p99": 348,
+            "sum": 83549
+          },
+          "end_distance": 0.000244140625,
+          "evictions": {
+            "count": 450,
+            "max": 6,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 96
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "south15",
+          "observed_sections": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 99
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 495,
+            "median": 41,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 53,
+            "p99": 60,
+            "sum": 19051
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 1416,
+            "median": 248,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 684,
+            "p99": 932,
+            "sum": 110603
+          },
+          "regions": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 99
+          },
+          "resident": {
+            "count": 450,
+            "max": 36,
+            "median": 30,
+            "p95": 36,
+            "p99": 36,
+            "sum": 13788
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 39578,
+            "median": 1701,
+            "over_16667": 1,
+            "over_33333": 1,
+            "over_66667": 0,
+            "p95": 4932,
+            "p99": 6261,
+            "sum": 970089
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 53,
+              "median": 29,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 38,
+              "p99": 49,
+              "sum": 7277
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 52
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 9910,
+              "median": 952,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 2399,
+              "p99": 4191,
+              "sum": 274839
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        },
+        {
+          "canceled_pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "draw_calls": {
+            "count": 450,
+            "max": 357,
+            "median": 188,
+            "p95": 328,
+            "p99": 354,
+            "sum": 96142
+          },
+          "end_distance": 0.0,
+          "evictions": {
+            "count": 450,
+            "max": 10,
+            "median": 0,
+            "p95": 0,
+            "p99": 6,
+            "sum": 120
+          },
+          "gaps": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "ground_release_static_bytes": 482552,
+          "guards": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "modeled_hz": 15,
+          "name": "diagonal15",
+          "observed_sections": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 128
+          },
+          "observer_usec": {
+            "count": 450,
+            "max": 357,
+            "median": 111,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 202,
+            "p99": 231,
+            "sum": 56663
+          },
+          "pending": {
+            "count": 450,
+            "max": 0,
+            "median": 0,
+            "p95": 0,
+            "p99": 0,
+            "sum": 0
+          },
+          "queue_usec": {
+            "count": 450,
+            "max": 2253,
+            "median": 513,
+            "over_16667": 0,
+            "over_33333": 0,
+            "over_66667": 0,
+            "p95": 1477,
+            "p99": 1947,
+            "sum": 256977
+          },
+          "regions": {
+            "count": 450,
+            "max": 1,
+            "median": 0,
+            "p95": 1,
+            "p99": 1,
+            "sum": 128
+          },
+          "resident": {
+            "count": 450,
+            "max": 40,
+            "median": 32,
+            "p95": 40,
+            "p99": 40,
+            "sum": 15164
+          },
+          "span_usec": {
+            "count": 450,
+            "max": 116551,
+            "median": 4772,
+            "over_16667": 32,
+            "over_33333": 4,
+            "over_66667": 1,
+            "p95": 18904,
+            "p99": 27166,
+            "sum": 3182558
+          },
+          "start": "(2560.0, 2704.0)",
+          "steady": {
+            "canceled_pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "draw_calls": {
+              "count": 240,
+              "max": 38,
+              "median": 38,
+              "p95": 38,
+              "p99": 38,
+              "sum": 9120
+            },
+            "evictions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "gaps": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "guards": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observed_sections": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "observer_usec": {
+              "count": 240,
+              "max": 98,
+              "median": 43,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 58,
+              "p99": 67,
+              "sum": 10810
+            },
+            "pending": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "queue_usec": {
+              "count": 240,
+              "max": 1,
+              "median": 0,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 1,
+              "p99": 1,
+              "sum": 70
+            },
+            "regions": {
+              "count": 240,
+              "max": 0,
+              "median": 0,
+              "p95": 0,
+              "p99": 0,
+              "sum": 0
+            },
+            "resident": {
+              "count": 240,
+              "max": 18,
+              "median": 18,
+              "p95": 18,
+              "p99": 18,
+              "sum": 4320
+            },
+            "span_usec": {
+              "count": 240,
+              "max": 6951,
+              "median": 1220,
+              "over_16667": 0,
+              "over_33333": 0,
+              "over_66667": 0,
+              "p95": 3634,
+              "p99": 6383,
+              "sum": 364095
+            }
+          },
+          "steady_pixel_sha256": "151246a1523f82cc0bb9d897f98e5982707d1db1f2f66a702dafb97ecd712510",
+          "steady_workload": {
+            "cell_sha256": "62c0d5fecc02b7c4e415c88385584e20befd8f14348dc528e39d0afbc91d16d0",
+            "cells": 976,
+            "regions": 18,
+            "water_cells": 336,
+            "water_surfaces": 6
+          },
+          "world_size": "(5120.0, 5120.0)"
+        }
+      ],
+      "collector_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "collector_sha256": "4de67aa969ddc47d7492911af6cc73ce6c28fc774eb661e43cf9cd70f1abc31a",
+      "display": "macOS",
+      "elapsed_ms": 11884,
+      "engine": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "extent": "(640.0, 360.0)",
+      "failures": [],
+      "forced_draws": 0,
+      "ground_mode": 2,
+      "processor": "Apple M2",
+      "renderer": "opengl3",
+      "run_order": "11",
+      "runtime_digest": "1f539f5db6434e2d5a39f4c40d4d97f3ff7d4ef79527a25950efab18c21815d5",
+      "seed": 4242,
+      "source_revision": "51e794447590a6c8f3940bd3dce4cc387ed4e8cc",
+      "steady_frames": 240,
+      "strategy": "mode2-one",
+      "traversal_seconds": 30,
+      "trial": "2",
+      "viewport": "(1280.0, 720.0)",
+      "vsync_disabled": true,
+      "warmup_frames": 120
+    }
+  ],
+  "order": "order.tsv",
+  "runtime_manifest": "runtime.sha256"
+}

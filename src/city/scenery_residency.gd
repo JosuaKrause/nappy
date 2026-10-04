@@ -14,7 +14,13 @@ const RETAIN_MARGIN := 512.0
 const GUARD_MARGIN := 96.0
 ## Soft CPU preparation limit: finish the current job or ground quadrant, including its
 ## TileMap renderer preparation. GPU drawing and water redraw are separate; guards are synchronous.
+## Each update runs at least one job, so the queue always advances, and whatever is left waits for
+## the next frame's update under a budget of its own, and so on, never dumped whole into one frame.
+## *(2026-10-03, the player, on keeping it for ground mode 1: "if we keep the 2ms budget then it
+## also should apply to the next frame and so on".)*
 const BUDGET_USEC := 2000
+## BUDGET_USEC, lowered by a test to make the per-frame spill-over countable.
+var budget_usec := BUDGET_USEC
 var city: City
 var view := Rect2()
 var _items: Array[Node2D] = []
@@ -24,6 +30,9 @@ var _pending := false
 var _ground_step_frame := -1
 ## Keep the frame fence outside jobs: cancellation must not allow a second step for that key.
 var _ground_stepped: Dictionary = {}
+## The process frame that last prepared a whole ground region here, guard included: ONE's
+## at-most-one-a-frame fence.
+var _whole_region_frame := -1
 
 func _ready() -> void:
 	# Camera and rig callbacks finish before residency reads their final transform. This node
@@ -82,6 +91,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
 			ground.prepare(key)
+			_whole_region_frame = Engine.get_process_frames()
 		else:
 			pending.append({"distance": bounds.get_center().distance_squared_to(view.get_center()),
 					"ground_key": key})
@@ -112,17 +122,34 @@ func update(next_view: Rect2, immediate := false) -> void:
 	city._decals.update_view(load_view, retained, enqueue)
 	pending.sort_custom(func(a: Dictionary, b: Dictionary): return a.distance < b.distance)
 	_pending = false
+	# At least one job runs before the budget can stop the queue, in every mode and for every kind
+	# of job, so the queue always advances. `started` is taken before the synchronous guard
+	# preparations, so the frames where this adds a job beyond the budget are the ones the guard
+	# (or this update's own bookkeeping) has already spent it in: the heaviest frames.
+	var ran := 0
 	for job in pending:
-		if not city.map.recipe_frame_locked and Time.get_ticks_usec() - started >= BUDGET_USEC:
+		if not city.map.recipe_frame_locked and ran > 0 \
+				and Time.get_ticks_usec() - started >= budget_usec:
 			_pending = true
 			break
 		if job.has("ground_key"):
-			if city.map.recipe_frame_locked:
+			if city.map.recipe_frame_locked or ground.mode == SceneryGround.Mode.ALL:
 				ground.prepare(job.ground_key)
+				ran += 1
+				continue
+			var frame := Engine.get_process_frames()
+			if ground.mode == SceneryGround.Mode.ONE:
+				# The fence is per process frame, so repeating an explicit update cannot add a
+				# second region; a guard preparation earlier in this frame has spent it too.
+				if _whole_region_frame == frame:
+					_pending = true
+					continue
+				_whole_region_frame = frame
+				ground.prepare(job.ground_key)
+				ran += 1
 				continue
 			# Several regions may approach together. Advance each once within the shared budget;
 			# repeating an explicit update or replacing a canceled job cannot drain one region.
-			var frame := Engine.get_process_frames()
 			if _ground_step_frame != frame:
 				_ground_step_frame = frame
 				_ground_stepped.clear()
@@ -130,8 +157,10 @@ func update(next_view: Rect2, immediate := false) -> void:
 				_pending = true
 				continue
 			_ground_stepped[job.ground_key] = true
+			ran += 1
 			if not ground.prepare_step(job.ground_key):
 				_pending = true
 		else:
 			(job.prepare as Callable).call()
+			ran += 1
 	worst_update_usec = maxi(worst_update_usec, Time.get_ticks_usec() - started)
