@@ -1222,13 +1222,12 @@ func _show_an_ending_for_a_rig() -> bool:
 ## untouched**: only a `6` toggle-off clears it (`_toggle_debug_layer()`), so a graph that was
 ## recording keeps what it already has across the trip through this screen.
 ##
-## **Re-asks `_apply_orientation()` right here, not only trusts the one `_ready()` already made.**
-## `_ready()`'s own call runs *before* `_start_day()`, which this file's own boot log measures in
-## the hundreds of milliseconds, and a phone browser's window can still be settling its shape in
-## that gap. `_process()`'s per-frame poll would catch it, but only once a frame has rendered past
-## this point; the title the player is looking at right now should not have to wait a frame to be
-## the right way up. Idempotent and cheap (see `_apply_orientation()`'s own doc), so asking again
-## here costs nothing on the ordinary boot, where the answer never changes between the two calls.
+## **Re-asks `_apply_orientation()` right here, as a safeguard.** In the running game it finds
+## nothing to change: `_ready()` asked a moment earlier in the same uninterrupted stretch, with no
+## frame between the two calls, and the web build re-reads the window's size only between frames.
+## It keeps the title from depending on that: whatever reaches this screen, the title is turned to
+## the window's current answer before it is drawn, rather than a frame later through `_process()`'s
+## poll. Idempotent and cheap (see `_apply_orientation()`'s own doc).
 func _open_the_title() -> void:
 	_in_the_title = true
 	# Guarded the same shape `_on_title_start()`'s own final line already is, and for the same
