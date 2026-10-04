@@ -9,9 +9,10 @@ usage: tools/measure-ground-frames.sh --godot PATH [--output NEW_DIR] [--help|-h
 Compare the three ground preparation modes (--ground-mode 1, 2 and 3: every needed region
 whole in its frame, at most one whole region a frame, one region stepped across frames) of
 this checkout's committed HEAD, in one clean detached checkout, with one collector.
-Runs one warmup per mode, then three rotated interleaved trials each, serially. A capture waits
-for every other Godot process to end first, and one another engine ran beside is kept under a
-rejected name and taken again in the same slot, up to five attempts.
+Runs one warmup per mode, then three rotated interleaved trials each, serially. A capture
+waits for every other engine process (one named Godot or named as --godot's binary) to end
+first, and one another engine ran beside is kept under a rejected name and taken again in the
+same slot, up to five attempts.
 Requires git, jq, shasum and a native display; retain results.json and the source manifest.
 Full logs and per-frame CSV files remain in the fresh scratch directory.
 
@@ -39,6 +40,16 @@ done
 [[ -n "$engine" ]] || bad "supply --godot or GODOT"
 [[ "$engine" == /* ]] || engine="$PWD/$engine"
 [[ -x "$engine" ]] || fail "not executable: $engine"
+engine_name="$(basename "$engine")"
+# Every running engine process but the one given: anything whose program is named `Godot` (the
+# macOS app's binary) or the same name as --godot's, read from each process's own argv[0], so an
+# engine installed under another name is seen as well. An argv[0] with a space in it is not.
+other_engines() {
+    ps -axo pid=,args= | awk -v name="$engine_name" -v self="${1:-}" '{
+        program = $2; sub(/.*\//, "", program)
+        if ((program == "Godot" || program == name) && $1 != self) print $1
+    }'
+}
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_DIR="$root"
 # shellcheck source=tools/lib_dev_flags.sh
@@ -108,7 +119,8 @@ capture() {
     for attempt in 1 2 3 4 5; do
         validate
         for _ in $(seq 300); do
-            others="$(pgrep -x Godot || true)"
+            others="$(other_engines | tr '\n' ' ')"
+            others="${others% }"
             [[ -n "$others" ]] || break
             sleep 1
         done
@@ -136,7 +148,7 @@ capture() {
         (
             for _ in $(seq 200); do
                 if read -r -t 1 <&8; then exit 0; fi
-                pgrep -x Godot | grep -vx "$child" >> "$output/competition.tmp" || true
+                other_engines "$child" >> "$output/competition.tmp"
             done
         ) &
         sampler=$!

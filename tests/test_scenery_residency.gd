@@ -218,7 +218,7 @@ func _test_all_mode(t, city: City) -> void:
 		_check_whole_layout(t, city, key)
 
 ## Mode 1 keeps the soft budget, and what does not fit is budgeted again in each following
-## frame rather than prepared all at once in the next. *(2026-10-04: "if we keep the 2ms budget then
+## frame rather than prepared all at once in the next. *(2026-10-03: "if we keep the 2ms budget then
 ## it also should apply to the next frame and so on".)* A budget one microsecond long makes every
 ## update one job, so the spill-over is countable without timing anything.
 func _test_all_mode_budget(t, city: City) -> void:

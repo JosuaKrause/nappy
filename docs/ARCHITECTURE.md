@@ -271,7 +271,8 @@ with the command line taken out of it so the mapping is testable.
 flags": "on the published site behind debug=1 we'd want some of the debug flags (like day,
 invincible, etc.) so debugging the live build is easier".)* `DevFlags.live_debug_requested()` —
 `enabled()` or `readout_requested()` — is the gate: `?day=`, `?invincible=1`, `?layers=`,
-`?controls=`, `?escape=1`, `?meters=`, `?daylength=` and `?ending=`/`?blackout=1` each read it.
+`?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1` and
+`?groundmode=` each read it.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
 drives input, takes a picture or writes a file stay behind `enabled()` alone, with no release-page
 door at all. `GameSave.uses_save()` refuses the player's own save the moment a release page's

@@ -16,7 +16,7 @@ const GUARD_MARGIN := 96.0
 ## TileMap renderer preparation. GPU drawing and water redraw are separate; guards are synchronous.
 ## Each update runs at least one job, so the queue always advances, and whatever is left waits for
 ## the next frame's update under a budget of its own, and so on, never dumped whole into one frame.
-## *(2026-10-04, the player, on keeping it for ground mode 1: "if we keep the 2ms budget then it
+## *(2026-10-03, the player, on keeping it for ground mode 1: "if we keep the 2ms budget then it
 ## also should apply to the next frame and so on".)*
 const BUDGET_USEC := 2000
 ## BUDGET_USEC, lowered by a test to make the per-frame spill-over countable.
@@ -122,6 +122,10 @@ func update(next_view: Rect2, immediate := false) -> void:
 	city._decals.update_view(load_view, retained, enqueue)
 	pending.sort_custom(func(a: Dictionary, b: Dictionary): return a.distance < b.distance)
 	_pending = false
+	# At least one job runs before the budget can stop the queue, in every mode and for every kind
+	# of job, so the queue always advances. `started` is taken before the synchronous guard
+	# preparations, so the frames where this adds a job beyond the budget are the ones the guard
+	# (or this update's own bookkeeping) has already spent it in: the heaviest frames.
 	var ran := 0
 	for job in pending:
 		if not city.map.recipe_frame_locked and ran > 0 \

@@ -843,7 +843,8 @@ build has nothing in `project.godot` to reach:
   when both are present.
   **`readout_requested()` also gates `DevFlags.live_debug_requested()`**, the second, smaller
   bundle M193 opens on a release page beside the readout — `?day=`, `?invincible=1`, `?layers=`,
-  `?controls=`, `?escape=1`, `?meters=`, `?daylength=` and `?ending=`/`?blackout=1` — so the
+  `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1` and
+  `?groundmode=` — so the
   snapshot key and everything that drives input, takes a picture or writes a file are the only
   things still unreachable from a visitor's address bar (docs/DECISIONS.md, M193, "the live page's
   ?debug=1 reaches the debug flags"). `GameSave.uses_save()` refuses the save the moment the query
