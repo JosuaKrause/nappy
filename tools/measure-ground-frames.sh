@@ -148,7 +148,9 @@ capture() {
         (
             for _ in $(seq 200); do
                 if read -r -t 1 <&8; then exit 0; fi
-                other_engines "$child" >> "$output/competition.tmp"
+                # A failed `ps` must not end the sampler and leave the rest of the capture
+                # looking uncontested; the next second samples again.
+                other_engines "$child" >> "$output/competition.tmp" || true
             done
         ) &
         sampler=$!
