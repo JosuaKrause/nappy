@@ -81,7 +81,7 @@ a warning with the same figures and run. An unmeasured job or an unreadable `df`
 guessing. The library's header names the variables that override an estimate, the reserve or the
 check itself.
 
-**A low-disk warning is taken seriously, though nothing enforces it.** *(2026-10-03, inbox #496: "Yes tool should warm and only refuse if it's not possible. The warning should be taken seriously though so for example the situation should be started to get sorted out and no new tasks should be started. That's a guidance no hard hook".)* On seeing one, the
+**A low-disk warning is taken seriously, though nothing enforces it.** *(2026-10-03, quiet-yak, inbox #496: "Yes tool should warm and only refuse if it's not possible. The warning should be taken seriously though so for example the situation should be started to get sorted out and no new tasks should be started. That's a guidance no hard hook".)* On seeing one, the
 job in hand may finish, but no new task, agent, worktree, build or capture batch is started; sorting
 out the space comes first, by **session-cleanup**'s "Finish the job's storage cleanup" steps (the
 worktree inventory, job-owned scratch, then `df` again), and the warning is reported to the player

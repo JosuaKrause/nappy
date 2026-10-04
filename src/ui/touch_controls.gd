@@ -198,7 +198,7 @@ const FOCUS_RIGHT := Vector2(1040.0, 480.0)
 
 ## The run buttons' size and where each stands: 110px *inward* from its own focal point, toward the
 ## middle of the screen, on the same row — the left one at (350, 480) and the right one at (930, 480)
-## in the 1280x720 design box. *(2026-10-03, the player, inbox #477, asked which of four spots —
+## in the 1280x720 design box. *(2026-10-03, the player, quiet-yak, inbox #477, asked which of four spots —
 ## outward, inward, below, above — the buttons should take: "Inward".)* **What the spot takes away:**
 ## a press 64-156px out of a ring toward the middle (a +/-25 degree wedge, due east of the left ring
 ## and due west of the right one) is a run hold, not the heading "walk toward the middle". **What it

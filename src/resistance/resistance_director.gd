@@ -518,7 +518,7 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ## through the alley not pressed against the edge of it"* · *"the main reason for this is so the
 ## robber is not at the edge of the alley which makes him easier visible and easier to avoid"*
 ## (minty-hedgehog, statement 3), and, asked where he stands in an alley too short for two-thirds
-## and 176px from the mark both, *"Two-thirds wins"* (inbox #471). In a courtyard's passage he
+## and 176px from the mark both, *"Two-thirds wins"* (quiet-yak, inbox #471). In a courtyard's passage he
 ## stands at the courtyard's inner end (`_draw_guard_position_near_far_mouth()`). Every other
 ## guarded contact (a door, a mast's foot, a swing, the burnt shell, a roadblock) keeps a band
 ## between `inner_radius + reach` and `pursues_within + reach`, drawn from the whole circle around
@@ -895,7 +895,7 @@ func _through_alley_span(at: Vector2) -> Array[Vector2]:
 ## a touch of the mark from its own end never wakes him; in an alley too short for both — every
 ## one-block alley: a mark stands on its end tile (`_alley_mouths()`), 16px in, so he stands about
 ## 155px from it — he still stands two-thirds in, and reading the mark may wake him: *"Two-thirds
-## wins"* (inbox #471), which overturns M213's floor of 176px for those alleys.
+## wins"* (quiet-yak, inbox #471), which overturns M213's floor of 176px for those alleys.
 ##
 ## **Never within `min_distance` of the mark** — `inner_radius`, his catch, plus
 ## `ContactPoint.REACH`, 66px — kept as a floor that a mark at a mouth never reaches (two-thirds of
@@ -1153,7 +1153,7 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 	return _pick_near(candidates, rng, mark)
 
 ## **A chalk mark only ever sits at an alley's mouth**: every tile the dawn draw (`_place()`) and
-## every relocation (`_nearest_alley_within()`) may put a mark on. *(2026-10-03, inbox #486, the
+## every relocation (`_nearest_alley_within()`) may put a mark on. *(2026-10-03, quiet-yak, inbox #486, the
 ## player, asked whether a mark may sit in the middle of its alley: "Mouth only".)* A through-alley's mouths are
 ## its end tiles along its long axis, both of them across its two-tile width
 ## (`CityMap.alley_rects`), so four to an alley; a courtyard passage's is its tile that opens onto
@@ -1197,7 +1197,7 @@ const NEAR_THE_MARK := (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH + Tuning.BLOCK_S
 ## read the mark, and the ground inside it they cross on the way: walked tile by tile from her own
 ## tile over walkable ground the day's obstruction leaves open (`_reach_blocked`), going on only
 ## from a tile inside the circle, so each tile at or past its edge is the first a path reaches it
-## at. *(The player, inbox #500: "create a circle around the current player position with the
+## at. *(The player, quiet-yak, inbox #500: "create a circle around the current player position with the
 ## radius of the desired distance -- then follow the path until it reaches the edge of the circle";
 ## and 2026-10-03, in conversation, right after inbox #500: "no need to special case straight runs or
 ## anything like that".)* `_circle_edge` and `_circle_inside` hold the
@@ -1240,7 +1240,7 @@ var _circle_inside := {}
 ## otherwise be put in the world, or a building burnt, in front of her. `docs/EVENTS.md`'s rule,
 ## "Nothing may be seen to appear", and the player's own choice for a task placed near its mark:
 ## asked whether to keep it, at the cost of most tasks landing at the far edge of `NEAR_THE_MARK`
-## rather than nearer, "Keep off-screen" (2026-10-03, inbox #486).
+## rather than nearer, "Keep off-screen" (2026-10-03, quiet-yak, inbox #486).
 const TASK_HALF_EXTENT := Vector2(3.0, 4.0) * Tuning.TILE_SIZE
 
 ## A tile from `candidates` where one of her paths first reaches the edge of the circle round her
@@ -1430,7 +1430,7 @@ static func station_door_point(map: CityMap) -> Vector2:
 ## same sites every day") leave most marks with no mast near, and the player chose a new mast over a
 ## far one: *"The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
 ## harder to encounter masts. We need to discuss this again but not now. Now just add a new mast
-## close by"* (2026-10-03, inbox #486). Only where no ground near the mark can take one is the offered mast
+## close by"* (2026-10-03, quiet-yak, inbox #486). Only where no ground near the mark can take one is the offered mast
 ## nearest the mark the one. `Vector2.INF` for `mark` (a rig placing the task without a mark) draws
 ## among them all.
 func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector2:

@@ -2,7 +2,7 @@
 
 *([sandy-marten](../playtests/2026-09-27-sandy-marten.md): the break falls at a sentence end only
 where the text must wrap; the rest of the entry is [sunny-wombat](2026-09-27-sunny-wombat.md),
-PR #419. On 2026-10-03, in conversation, captured as inbox notes #479–#483: "so HUD line and brief
+PR #419. On 2026-10-03, in conversation, captured as inbox notes #479–#483 and filed in [quiet-yak](../playtests/2026-10-03-quiet-yak.md): "so HUD line and brief
 line are not the same -- the brief should properly break the lines -- the HUD should always have a
 short version that gets to the point (we can somehow shorten the "somewhere out there")"; asked
 which prefix, "out there:"; "when I touch the mark the message that shows in big can be the long
