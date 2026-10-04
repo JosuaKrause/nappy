@@ -1185,13 +1185,6 @@ func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 func _on_city_went_quiet() -> void:
 	Telemetry.note("quiet", "the blackout came; every city-wide source is off")
 
-## Walking into somebody. Reported by `Crowd` rather than watched from here, because the contact is
-## a decision the game makes rather than a state to be noticed — but the *rate limiting* stays here,
-## with the rest of what keeps the log readable.
-##
-## The dropped count is printed rather than silently swallowed: "she bumped somebody at 0:14"
-## and "she ploughed through fourteen people between 0:12 and 0:14" are very different days,
-## and without the number they are the same line.
 ## The pelican's first frame on screen (`EventBus.pelican_sighted`), as a `near` line of its own:
 ## the moment she could first see the one rider in about four hundred that is a pelican, which the
 ## distance-driven `near` lines below say nothing about, since a pelican seen across the street
@@ -1216,6 +1209,13 @@ func _on_pelican_struck_her(instance: Variant) -> void:
 			TelemetryLog.tile(_tile_of(pelican.global_position)),
 			pelican.global_position.distance_to(_player.global_position), _meters()])
 
+## Walking into somebody. Reported by `Crowd` rather than watched from here, because the contact is
+## a decision the game makes rather than a state to be noticed — but the *rate limiting* stays here,
+## with the rest of what keeps the log readable.
+##
+## The dropped count is printed rather than silently swallowed: "she bumped somebody at 0:14"
+## and "she ploughed through fourteen people between 0:12 and 0:14" are very different days,
+## and without the number they are the same line.
 func _on_bumped(at: Vector2) -> void:
 	if not _day.is_running():
 		return

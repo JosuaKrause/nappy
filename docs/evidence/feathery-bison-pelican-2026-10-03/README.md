@@ -52,12 +52,13 @@ tools/shot.sh out.png 12 --seed 4242 --day 2 --spawn arterial --walk 1s10e \
   alternating. `still-side-west-full-frame.png` is frame 11 of it uncropped, HUD and readout
   included.
 - `still-front-south.png` — frame 2 of the first run's burst (`burst-front-south.json`), cropped
-  around her and enlarged 2×: a pelican riding south at the camera in the front view, under the
-  doubled red mark that says it is closing on her.
+  around her and enlarged 2×: a pelican riding south in the front view. The frame cuts the rider off
+  at its bottom edge, so only the head and bill show.
 
 Retained: the cropped burst, two stills and both bursts' timing records. The other burst frames,
 the run logs and the end-of-run screenshots stay out; they show the same scene and nothing the
 claim needs.
 
 The screen-edge badge is the cyclist's, before the rider exists and while a pelican is off
-screen alike; the run log calls the rider `cyclist` throughout, since the row is the cyclist's.
+screen alike; the run log names the rider `pelican` from its warning on (docs/TELEMETRY.md, the
+entry kinds).

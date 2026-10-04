@@ -242,6 +242,11 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	EventBus.pelican_sighted.connect(on_sighted)
 	EventBus.pelican_excited_her.connect(on_excited)
 	EventBus.pelican_struck_her.connect(on_struck)
+	t.check(EventBus.pelican_spawned.is_connected(VisitCounter._on_pelican_spawned)
+			and EventBus.pelican_sighted.is_connected(VisitCounter._on_pelican_sighted)
+			and EventBus.pelican_excited_her.is_connected(VisitCounter._on_pelican_excited_her)
+			and EventBus.pelican_struck_her.is_connected(VisitCounter._on_pelican_struck_her),
+			"the page's counter listens to all four of the pelican's signals")
 	Telemetry.begin_memory_log()
 	Telemetry.begin_day(Tuning.RUN_TAUGHT_DAY, 1, SEED, SEED, 180.0)
 
@@ -282,9 +287,9 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	t.check(told["sighted"] == 0, "created just off screen, it is not yet seen")
 	stroller.global_position = pelican.global_position + Vector2(200.0, 0.0)
 	for _i in 3:
-		events._report_the_pelicans_in_view()
+		events._physics_process(STEP)
 	t.check(told["sighted"] == 1,
-			"on screen for three frames, its first is told once (%d)" % told["sighted"])
+			"on screen for three physics frames, its first is told once (%d)" % told["sighted"])
 
 	pelican.accumulate_landed(0.0)
 	t.check(told["excited"] == 0, "nothing landed is nothing told")
@@ -300,14 +305,14 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	observer._map = map
 	observer._player = stroller
 	observer._baby = stroller.get_node("Baby") as Baby
-	observer._on_pelican_sighted(pelican)
+	observer._listen()
+	EventBus.pelican_sighted.emit(pelican)
 
 	stroller.global_position = pelican.global_position
 	events._check_hard_fails()
 	t.check(told["struck"] == 1 and events.what_struck_her() == "pelican",
 			"its reach covering her is told once and names the day's loss the pelican's (%d, '%s')"
 			% [told["struck"], events.what_struck_her()])
-	observer._on_pelican_struck_her(pelican)
 	t.check(observer._nearest().begins_with("pelican "),
 			"and the nearest thing a lost line names is the pelican (%s)" % observer._nearest())
 	observer.free()

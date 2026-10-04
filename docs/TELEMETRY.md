@@ -286,7 +286,7 @@ day 6  act 2  run seed 4242  city seed 4242  length 180.0s
   15.3  near     dog_walker at (23,99), 19px, exc 33, in 15.1/s (crowd 0.0, events 6.1), sleep 5
   15.4  freeze   sleep stopped filling | exc 35, in 15.4/s (...), sleep 5 | near: dog_walker 15px
   18.1  run      ran 6.0s, exc 0 -> 66, nearest when it started: dog_walker 545px (out of range)
-  35.4  lost     lost_crying after 35.4s — She started crying. ... | near: poster_crew 1370px
+  35.4  lost     lost_crying after 35.4s to poster_crew — She started crying. ... | near: poster_crew 1370px
   35.4  nerve    spent a nerve on day 6 (act 2); 2 left
 ```
 
@@ -355,9 +355,9 @@ where she settles the baby again. A place on a line in the building is the build
 grid, which is not the city's.
 
 **The section restart is two lines**: a `lost` line naming the result, the section, how far into
-its clock, the reason, the meter breakdown and what was nearest — the same line a lost day writes,
-with the section in it — and then a `start` line saying `restarted`, stamped `0.0` because the
-retry has a fresh clock. The automatic-snapshot schedule (`Telemetry.SHOTS_PER_DAY`, `SHOT_SPACING`
+its clock, the reason, the meter breakdown and what was nearest — the line a lost day writes,
+with the section in it and without the day's `to <cause>` — and then a `start` line saying
+`restarted`, stamped `0.0` because the retry has a fresh clock. The automatic-snapshot schedule (`Telemetry.SHOTS_PER_DAY`, `SHOT_SPACING`
 — see "Snapshots" below) restarts with that clock, the same clean slate a day's own retry gets from
 `begin_day()`, so a retried section is not left with its whole allowance already spent by the
 attempt that was lost. Getting out is a `home` line, `escaped by the tunnel, 42.1s to spare`,
