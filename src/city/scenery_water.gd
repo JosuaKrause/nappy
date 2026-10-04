@@ -51,6 +51,8 @@ func _process(delta: float) -> void:
 		_ripples.set_shader_parameter("elapsed", elapsed)
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	var extent := Vector2(Tuning.TILE_SIZE, Tuning.TILE_SIZE)
 	for tile in cells:
 		draw_texture_rect(_texture, Rect2(Vector2(tile) * extent, extent), false)

@@ -57,6 +57,8 @@ func _process(_delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not active or target == Vector2.INF:
 		return
 

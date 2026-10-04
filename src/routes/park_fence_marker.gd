@@ -19,6 +19,8 @@ var rail_offset := 0.0
 var sign_offset := Vector2.ZERO
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not scenery_resident:
 		return
 	if piece == Piece.POST:

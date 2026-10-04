@@ -12,6 +12,7 @@ func run(t) -> void:
 	_test_slow_frames_are_marked(t)
 	_test_frames_outside_play_are_timed_but_not_kept(t)
 	_test_a_headless_frame_draws_nothing(t)
+	_test_draw_splits_at_the_renderers_pre_draw(t)
 	_test_the_ring_keeps_the_latest_frames(t)
 	_test_top_costs_order_and_leave_out_the_wait(t)
 	_test_the_readout_line(t)
@@ -25,7 +26,7 @@ func run(t) -> void:
 	_test_a_timed_body_runs_once(t)
 
 ## One frame driven through every phase, with a timed system nested inside another: the inner
-## one is charged to itself alone, and the nine buckets sum to the frame's length exactly.
+## one is charged to itself alone, and the ten buckets sum to the frame's length exactly.
 func _test_a_frame_adds_up(t) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	ledger.physics_step(1000)
@@ -38,6 +39,8 @@ func _test_a_frame_adds_up(t) -> void:
 	ledger.switch_to(before_scenery, 2900)
 	ledger.keep = true
 	ledger.process_end(3000)
+	ledger.add(FrameLedger.DRAWS_CROWD, 2)
+	ledger.pre_draw(3500)
 	ledger.drawn(4000)
 	ledger.physics_step(17000)
 	var rows := ledger.rows()
@@ -48,7 +51,7 @@ func _test_a_frame_adds_up(t) -> void:
 			"a frame runs from its first callback to the next frame's first callback")
 	var expected := {FrameRecord.PHYSICS_REST: 500, FrameRecord.CROWD: 500,
 		FrameRecord.PROCESS_REST: 200, FrameRecord.SCENERY: 700, FrameRecord.EVENTS: 100,
-		FrameRecord.DRAW: 1000, FrameRecord.WAIT: 13000, FrameRecord.INFLUENCE: 0,
+		FrameRecord.DRAW: 500, FrameRecord.RENDER: 500, FrameRecord.WAIT: 13000, FrameRecord.INFLUENCE: 0,
 		FrameRecord.CUES: 0}
 	var total := 0
 	for bucket: int in expected:
@@ -105,6 +108,41 @@ func _test_a_headless_frame_draws_nothing(t) -> void:
 			and row[FrameLedger.FIRST_BUCKET + FrameRecord.WAIT] == 0
 			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWN] == 0,
 			"without a draw callback the post-process span is draw, and drawn is 0")
+
+## `draw` ends at the renderer's pre-draw callback and `render` runs to its post-draw one, so the
+## two together are what `draw` was before the split; the game's own `_draw()` calls are counted by
+## kind through the static switch, only while it is on, and a counter starts every frame at 0.
+func _test_draw_splits_at_the_renderers_pre_draw(t) -> void:
+	var was_on := FrameRecord.on
+	var was := FrameRecord.ledger
+	var ledger := FrameLedger.new(8, 16667)
+	FrameRecord.start(ledger)
+	ledger.process_start(0)
+	ledger.keep = true
+	ledger.process_end(1000)
+	FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
+	FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
+	FrameRecord.drew(FrameLedger.DRAWS_HALOS)
+	ledger.pre_draw(2500)
+	ledger.drawn(6000)
+	ledger.process_start(16000)
+	ledger.keep = true
+	ledger.process_end(17000)
+	ledger.process_start(32000)
+	var first: PackedInt64Array = ledger.rows()[0]
+	var second: PackedInt64Array = ledger.rows()[1]
+	FrameRecord.on = was_on
+	FrameRecord.ledger = was
+	t.check(first[FrameLedger.FIRST_BUCKET + FrameRecord.DRAW] == 1500
+			and first[FrameLedger.FIRST_BUCKET + FrameRecord.RENDER] == 3500,
+			"draw runs to the pre-draw callback and render from it to the post-draw one")
+	t.check(first[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_SCENERY] == 2
+			and first[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_HALOS] == 1
+			and first[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_CROWD] == 0,
+			"_draw() calls are counted by kind")
+	t.check(second[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_SCENERY] == 0
+			and second[FrameLedger.FIRST_BUCKET + FrameRecord.RENDER] == 0,
+			"the next frame starts at zero, and a frame with no renderer has no render")
 
 func _test_the_ring_keeps_the_latest_frames(t) -> void:
 	var ledger := FrameLedger.new(2, 16667)

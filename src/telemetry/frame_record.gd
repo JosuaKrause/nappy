@@ -40,17 +40,23 @@ const EVENTS := 5
 ## The danger cues: `ExcitementHalo._process()` (which source charges her and the carets'
 ## predictions) and `DangerEdge._process()` (the badges for what is coming off screen).
 const CUES := 6
-## The CPU side of drawing: from the last `_process()` callback to the renderer's post-draw
-## callback — the deferred calls and `_draw()` callbacks queued during process (but the scenery
-## queue's own, which are `scenery`'s), then the renderer's own sync and submit. No GPU time: a phone's browser has no way to measure it. On a
-## native window with VSync on, the buffer swap's wait is inside this too.
+## The engine's side of drawing before the renderer: from the last `_process()` callback to the
+## renderer's pre-draw callback — the deferred calls and the game's own `_draw()` callbacks queued
+## during process (but the scenery queue's own, which are `scenery`'s), and the engine's scene
+## preparation. What the game draws is counted per kind in the row's `draws_*` counters.
 const DRAW := 7
+## The renderer's own work: from its pre-draw callback to its post-draw callback — the canvas
+## render, the submit, and any wait on the GPU. `draw` plus `render` is what `draw` was before the
+## split. No GPU time of its own: a phone's browser has no way to measure it. On a native window
+## with VSync on, the buffer swap's wait is inside this too. A headless run has no renderer, so
+## its `render` is 0.
+const RENDER := 8
 ## From the renderer's post-draw callback to the next frame's first callback: idle time until the
 ## next refresh, plus the engine's own input and window event processing. Not a cost.
-const WAIT := 8
+const WAIT := 9
 
 const BUCKET_NAMES: Array[String] = ["physics_rest", "process_rest", "scenery", "crowd",
-	"influence", "events", "cues", "draw", "wait"]
+	"influence", "events", "cues", "draw", "render", "wait"]
 
 ## Whether the record is running. Read by every timed entry point before anything else. Only
 ## while a `FrameRecorder` is in the tree: the escape builds none, so it pays nothing.
@@ -74,6 +80,12 @@ static func enter(bucket: int) -> int:
 ## Goes back to charging `previous`, the bucket `enter()` answered.
 static func leave(previous: int) -> void:
 	ledger.switch_to(previous, Time.get_ticks_usec())
+
+## One of the game's own `_draw()` calls of `kind` (a `FrameLedger` draw counter) ran. A count, not
+## a time: the page's clock steps in 100µs. Callers guard it with `if FrameRecord.on`, so a page
+## without the record pays one static read per `_draw()`.
+static func drew(kind: int) -> void:
+	ledger.add(kind, 1)
 
 ## The two ends of the scenery queue's deferred window, run from the engine's deferred flush. See
 ## `FrameLedger.deferred_scenery_begins()`.

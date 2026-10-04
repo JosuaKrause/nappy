@@ -976,6 +976,8 @@ func neighbor_window_row() -> int:
 	return 3
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	if not scenery_resident:
 		return
 	var cols := columns()
@@ -1606,6 +1608,8 @@ func _clear_roof_objects() -> void:
 	_roof_objects.clear()
 
 func _draw_station_layer() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	_draw_station_yard(_hall_cols(), _station_layer)
 
 func _furniture_texture(kind: int) -> StringName:
@@ -1650,6 +1654,8 @@ class RoofObject extends Node2D:
 		AtlasLibrary.release(&"buildings")
 
 	func _draw() -> void:
+		if FrameRecord.on:
+			FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 		var texture := AtlasLibrary.region(texture_key)
 		if duct_links >= 0:
 			_draw_duct(texture)
@@ -1709,6 +1715,8 @@ class StationStack extends ScenerySprite:
 		AtlasLibrary.release(&"buildings")
 
 	func _draw() -> void:
+		if FrameRecord.on:
+			FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 		if not scenery_resident:
 			return
 		Sprites.draw_standing(self, AtlasLibrary.region(Building.POWER_STATION_STACK), Vector2.ZERO)

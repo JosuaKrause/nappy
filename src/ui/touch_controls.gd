@@ -959,6 +959,8 @@ static func _send_pause_action() -> InputEventAction:
 ## is an undrawn direction any more: see `_draw_focus_circles()`'s own doc for why that mode needs
 ## something to read the locked-in state off, and why `Mode.TAP` does not.
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not visible:
 		return
 	_draw_pause_button()

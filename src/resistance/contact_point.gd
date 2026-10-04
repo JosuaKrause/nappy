@@ -172,6 +172,8 @@ func _complete() -> void:
 # ------------------------------------------------------------------ drawing ---
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	# A perform's contact is invisible — it has to look exactly like the ordinary row it
 	# rides on, or approaching it would already answer "is this the one".
 	if _rider:

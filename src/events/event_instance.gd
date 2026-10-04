@@ -3140,6 +3140,8 @@ func _picture_key() -> Vector4i:
 			roundi(swell * SWELL_STEPS))
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_EVENTS)
 	# `--skip events`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (e)): returns
 	# before anything below is asked for, so a frame under the flag differs from an ordinary one by
 	# drawing alone — the excitement field, the telegraph and everything else `EventInstance` does
