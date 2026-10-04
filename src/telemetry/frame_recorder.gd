@@ -237,6 +237,11 @@ func _add_page_button() -> void:
 		return
 	window.call("nappyFrameRecordButton", _save_callback)
 
+## The button sits at the top of the page, its left edge 64 CSS pixels right of the centre: the
+## day's clock is centred at the top of the canvas in a box 120 design pixels wide, and a button
+## centred over it would cover the time left. 64px clears the clock's box when the canvas is drawn
+## at its design size, and the clock's digits when it is drawn at up to about two and a half times
+## that.
 const _BUTTON_JS := """window.nappyFrameRecordHide = function () {
 	var shown = document.getElementById('nappy-frame-record');
 	if (shown) { shown.style.display = 'none'; }
@@ -248,7 +253,7 @@ window.nappyFrameRecordButton = function (save) {
 	var button = document.createElement('button');
 	button.id = 'nappy-frame-record';
 	button.textContent = 'save frames';
-	button.style.cssText = 'position:fixed;top:4px;left:50%;transform:translateX(-50%);'
+	button.style.cssText = 'position:fixed;top:4px;left:calc(50% + 64px);'
 		+ 'z-index:10;font:13px sans-serif;padding:6px 10px;opacity:0.75;';
 	button.addEventListener('click', function (event) {
 		event.stopPropagation();
