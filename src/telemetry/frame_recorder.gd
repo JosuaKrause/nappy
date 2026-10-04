@@ -115,7 +115,10 @@ func _at_post_draw() -> void:
 
 ## What one `FrameRecord.enter()`/`leave()` pair costs on this device, in microseconds, timed over
 ## `CALIBRATION_PAIRS` pairs on a scratch ledger through the same two calls the game makes. A
-## frame's `timer_calls` times this is the record's own cost in that frame.
+## frame's `timer_calls` times this is what the timing pairs cost in that frame: a lower bound on
+## the record's own cost, since this recorder's per-frame work (its phase callbacks, the counters,
+## the post-draw reads, the ring copy) is not in it. On a desktop the record on against off cost
+## more than the product (docs/evidence/m159-frame-record-2026-10-04/).
 static func calibrate() -> float:
 	var live := FrameRecord.ledger
 	var was_on := FrameRecord.on

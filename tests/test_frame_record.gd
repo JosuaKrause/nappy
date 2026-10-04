@@ -5,6 +5,7 @@ extends RefCounted
 ## rest of the `?debug=1` bundle does, keeping the run off the save.
 
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+const STEP := 1.0 / 60.0
 
 func run(t) -> void:
 	_test_a_frame_adds_up(t)
@@ -21,6 +22,7 @@ func run(t) -> void:
 	_test_slow_frames_outside_callbacks_and_with_scenery(t)
 	_test_the_clock_resolution(t)
 	_test_the_recorder_in_a_real_main(t)
+	_test_a_timed_body_runs_once(t)
 
 ## One frame driven through every phase, with a timed system nested inside another: the inner
 ## one is charged to itself alone, and the nine buckets sum to the frame's length exactly.
@@ -269,23 +271,31 @@ func _test_the_clock_resolution(t) -> void:
 ## off — which is what keeps the escape, which builds no recorder, from paying for it. Real frames
 ## cannot elapse inside a suite (`run_tests.gd` calls every suite synchronously), so the phases
 ## are driven by hand on the real tree's recorder, as `tests/test_camera_start.gd` drives its boot.
+##
+## The record is running before `main` is built, as it is in the game, where `main._ready()` sets
+## the recorder up before `_start_day()` makes the day's agents: so the day's agents copy the switch
+## on, and the timed path of each is checked on the real crowd (`_check_the_agents_are_timed_once`).
+## The recorder itself is then set up from a switch left off, the way a held restart leaves it.
 func _test_the_recorder_in_a_real_main(t) -> void:
 	var saved := _save_game_state()
 	var was_on := FrameRecord.on
 	var was := FrameRecord.ledger
-	FrameRecord.ledger = null
+	var restarted := FrameLedger.new(8)
+	FrameRecord.start(restarted)
 	var main: Node2D = MAIN_SCENE.instantiate()
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 	main._on_title_start(ControlsMode.Mode.TAP)
+	FrameRecord.on = false
 	var recorder := FrameRecorder.new()
 	recorder.save_on_exit = false
 	main.add_child(recorder)
 	recorder.setup(main, main._city, main._player, main._day)
 	main._frame_recorder = recorder
-	t.check(FrameRecord.on and FrameRecord.ledger == recorder.ledger,
-			"setting up the recorder switches the timing on")
+	t.check(FrameRecord.on and FrameRecord.ledger == recorder.ledger
+			and recorder.ledger == restarted,
+			"setting up the recorder switches the timing on, keeping the record a restart left")
 	var end := recorder.get_node("ProcessEnd")
 	var nodes := 0
 	var first := true
@@ -322,12 +332,118 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DAY] == GameState.day,
 			"with the world's counters read at the end of its process step")
 	t.check(main._frame_record_lines().size() == 1, "the readout carries the record's line")
+	_check_the_agents_are_timed_once(t, main._city.crowd.agents())
+	FrameRecord.start(ledger)
 	Telemetry.end_run()
 	main.free()
 	t.check(not FrameRecord.on, "leaving the tree switches the timing off")
 	FrameRecord.ledger = was
 	FrameRecord.on = was_on
 	_restore_game_state(saved)
+
+## The real day's agents, made under the record: each `_process()` runs its body once (its clock
+## moves by one step, not two and not none), inside one timed call charged to `crowd`, and once the
+## record stops, the body still runs once and the record it ran under is not touched again. A
+## missing `return` after the timed call would walk every agent twice a frame, only while recording.
+func _check_the_agents_are_timed_once(t, agents: Array[CrowdAgent]) -> void:
+	var timed := agents.filter(func(agent: CrowdAgent) -> bool: return agent._timed)
+	t.check(not agents.is_empty() and timed.size() == agents.size(),
+			"every agent made under the record copies the switch on (%d of %d)"
+			% [timed.size(), agents.size()])
+	var scratch := FrameLedger.new(4)
+	FrameRecord.start(scratch)
+	scratch.process_start(Time.get_ticks_usec())
+	var clocks: Array[float] = []
+	for agent in agents:
+		clocks.append(agent._clock)
+	for agent in agents:
+		agent._process(STEP)
+	var once := true
+	for i in agents.size():
+		once = once and is_equal_approx(agents[i]._clock, clocks[i] + STEP)
+	t.check(once, "a timed agent's body runs once a call, not twice and not never")
+	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == agents.size(),
+			"each agent's call is one timed call (%d for %d agents)"
+			% [scratch._counters[FrameLedger.TIMER_CALLS], agents.size()])
+	t.check(scratch._spent[FrameRecord.CROWD] > 0
+			and scratch._current == FrameRecord.PROCESS_REST,
+			"their bodies are charged to crowd, and the clock goes back to what was running")
+	FrameRecord.stop()
+	var spent := scratch._spent.duplicate()
+	for agent in agents:
+		agent._process(STEP)
+	once = true
+	for i in agents.size():
+		once = once and is_equal_approx(agents[i]._clock, clocks[i] + 2.0 * STEP)
+	t.check(once and scratch._counters[FrameLedger.TIMER_CALLS] == agents.size()
+			and scratch._spent == spent,
+			"once the record stops, an agent made under it runs its body once and times nothing")
+
+## A crowd agent and a live event made with the record off are never timed, even once it is on;
+## a live event made under it runs its body once a call, inside `events`, and once the record
+## stops, its body still runs once and the record it ran under is not touched again.
+func _test_a_timed_body_runs_once(t) -> void:
+	var was_on := FrameRecord.on
+	var was := FrameRecord.ledger
+	FrameRecord.stop()
+	var untimed_agent := CrowdAgent.new()
+	untimed_agent._skip_motion = true
+	var def := EventCatalogue.by_id("protest")
+	var untimed_event := _event(t, def)
+	var scratch := FrameLedger.new(4)
+	FrameRecord.start(scratch)
+	scratch.process_start(Time.get_ticks_usec())
+	var timed_agent := CrowdAgent.new()
+	timed_agent._skip_motion = true
+	t.check(not untimed_agent._timed and timed_agent._timed,
+			"an agent copies the switch as it stands when it is made")
+	untimed_agent._process(STEP)
+	var age := untimed_event.age
+	untimed_event._process(STEP)
+	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 0
+			and is_equal_approx(untimed_event.age, age + STEP),
+			"an agent and an event made with the record off are not timed once it is on")
+	timed_agent._process(STEP)
+	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 1,
+			"an agent made under the record is timed once a call")
+	var event := _event(t, def)
+	t.check(event._timed, "an event copies the switch as it stands when it is made")
+	# Past its telegraph, so its first body announces it, and the announcement says which bucket
+	# the body ran in.
+	event.age = def.telegraph_time + 0.01
+	age = event.age
+	var charged: Array[int] = []
+	var listen := func(_instance: Variant) -> void: charged.append(FrameRecord.ledger._current)
+	EventBus.event_activated.connect(listen)
+	event._process(STEP)
+	EventBus.event_activated.disconnect(listen)
+	t.check(is_equal_approx(event.age, age + STEP), "a timed event's body runs once a call")
+	t.check(charged == [FrameRecord.EVENTS], "inside the events bucket (%s)" % [charged])
+	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 2
+			and scratch._current == FrameRecord.PROCESS_REST,
+			"as one timed call, and the clock goes back to what was running")
+	FrameRecord.stop()
+	var spent := scratch._spent.duplicate()
+	event._process(STEP)
+	timed_agent._process(STEP)
+	t.check(is_equal_approx(event.age, age + 2.0 * STEP)
+			and scratch._counters[FrameLedger.TIMER_CALLS] == 2 and scratch._spent == spent,
+			"once the record stops, an event made under it runs its body once and times nothing")
+	untimed_agent.free()
+	timed_agent.free()
+	untimed_event.free()
+	event.free()
+	FrameRecord.ledger = was
+	FrameRecord.on = was_on
+
+## A live event standing alone, its process callback left to the test, as `tests/test_acts.gd`
+## builds one.
+func _event(t, def: EventDef) -> EventInstance:
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	t.add_child(instance)
+	instance.set_process(false)
+	return instance
 
 func _save_game_state() -> Dictionary:
 	return {

@@ -20,7 +20,9 @@ brief's measurement run asked: native and windowed, one engine at a time, on the
    recorder's per-frame bookkeeping and the difference between the two batches.
 3. **Mode 2 against mode 1, slow frames with and without a scenery job.** Three recordings each.
    Past the day's load, mode 1 had 49 slow frames and mode 2 had 18. In both, a slow frame on
-   this machine is a draw spike of about 19ms that takes the frame just past the 25ms line. Few
+   this machine is a draw spike of about 19ms that takes the frame just past the 25ms line. On a
+   native window `draw` includes the buffer swap's wait, so these are most likely presentation
+   stalls rather than CPU drawing: their draw calls are only modestly above an ordinary frame's. Few
    are near a scenery job: 5 of mode 1's 49 and 2 of mode 2's 18 ran one in the same frame, and 2
    more of mode 1's one to five frames after one. That is 14% and 11%, against the 4-6% of all
    frames with a job in the same frame or the five before, so a little above chance on small

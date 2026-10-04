@@ -1507,9 +1507,10 @@ func _become_solid_once_it_starts() -> void:
 
 ## Whether the frame record (`FrameRecord`) was running when this event was made, read once here
 ## so that, with the record off, `_process()` pays one member read rather than a static read and a
-## call into a second function: with the crowd's agents beside the live events, that difference cost every player about 0.15ms a frame
-## on a desktop (docs/evidence/m159-frame-record-2026-10-04/). A event is made per day, after the
-## recorder has started, so every one made under a record is timed.
+## call into a second function: with the crowd's agents beside the live events, that difference
+## made every player's frame measurably longer on a desktop
+## (docs/evidence/m159-frame-record-2026-10-04/). An event is made per day, after the recorder has
+## started, so every one made under a record is timed.
 var _timed := FrameRecord.on
 ## True while `_process()` runs its own body inside the record's timing, so the call it makes to
 ## itself is the body rather than another round of timing.
