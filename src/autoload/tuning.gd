@@ -1242,6 +1242,21 @@ const WALKER_BODY_SIDESTEP_TILES := 4
 ## she physically takes up. Either may move without the other.
 const PLAYER_BODY_RADIUS := 14.0
 
+## How far into a building the straight line from a source to her has to reach before the building
+## stands between them and the source's excitement stops reaching her, in px measured from the
+## nearest open ground — `CityMap.wall_between()`. *(plaid-wombat, inbox #554: "Excitement should
+## not go through any wall but it's not straightforward. If the player is partially in a wall they
+## should not be protected so the blocking should happen in the middle of the wall (or one tile
+## deep)".)*
+##
+## **Half a tile: the middle of a building's outer tile**, so a wall one tile thick still blocks a
+## line that crosses it, at its middle, and a line that only clips a building's corner or runs
+## along its face blocks nothing. It has to stay **over `PLAYER_BODY_RADIUS`**, or a pram whose
+## body pokes into a wall's edge is shielded by its own overlap, and **at most `TILE_SIZE`**, the
+## depth `CityMap.wall_between()` can answer from a tile's eight neighbours alone.
+## `tests/test_wall_shield.gd` holds both.
+const WALL_SHIELD_DEPTH := TILE_SIZE * 0.5
+
 ## Centre-to-centre distance at which the player and a pedestrian are touching.
 ##
 ## It has to be **under half a lane spacing**, and that is the whole of why it is 14 rather than a

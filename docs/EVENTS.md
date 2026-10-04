@@ -1388,12 +1388,32 @@ stimulus at its position, and the world sums `contribution_at()` over the live i
 ```gdscript
 func contribution_at(world_position: Vector2, ...) -> float:
     var velocity := travel_velocity()  # or the override expected_impact_at() passes
-    return def.emission_at_distance(_field_distance(world_position, velocity),
+    var field := def.emission_at_distance(_field_distance(world_position, velocity),
             current_intensity())
+    return 0.0 if field > 0.0 and _walled_off(global_position, world_position) else field
 ```
 
 Because it is a pure query there is no ordering to get wrong, events compose by simple
 addition, and an instance can be tested without a scene.
+
+**Nothing reaches her through a building.** *(plaid-wombat, inbox #554: "Excitement should not go
+through any wall but it's not straightforward. If the player is partially in a wall they should
+not be protected so the blocking should happen in the middle of the wall (or one tile deep)".)* A
+field is zero wherever the straight line from the source to her reaches `Tuning.WALL_SHIELD_DEPTH`
+(half a tile) inside a building, measured from the nearest open ground — `CityMap.wall_between()`.
+Every source asks it, the crowd's walkers and cars too (`CrowdAgent.contribution_at()`), horn and
+bump jolts included. Half a tile is the middle of a building's outer tile: a wall one tile thick is
+crossed at its middle and blocks, while a line that clips a corner or runs along a face never gets
+that deep, and the depth is over the pram's own body radius, so her body poking into a wall's edge
+shields her from nothing. The line runs from the source's own node — a flock's centre, a shaped
+row's middle — to her centre, and is asked only once the field is positive. It is the deeper test
+beside the pursuer's catch, which refuses a line that touches a building at all (`_clear_line_to()`,
+"Running that matters" in docs/MECHANICS.md). **The meter, the halo and the caret read the same
+answer**: the meter's sum and the halo's pick both call `contribution_at()`, and the caret's
+projection asks the wall between where the two bodies will be at each step, so a car about to come
+out from behind a building expects what it will land once it is out. A row with no map — every
+event in the building's interior — is not blocked by anything. `docs/COSTS.md` prices a row with
+nothing between, so a route past buildings pays less than the sum of its rows' table prices.
 
 **A row may carry a second, louder part close in, and one does.** `EventDef.core_intensity` and
 `core_radius` are a core: the same curve over a shorter band, and the row emits **the larger** of
@@ -1449,7 +1469,8 @@ source being louder rather than a second falloff with its own idea of where the 
 
 The debug view's fields layer (`DebugLayers`, `1`) traces the exact boundary
 `GroundShape.field_outline()` computes from the same arithmetic, so a screenshot of a field cannot
-disagree with what the meter does — see docs/TELEMETRY.md, "The debug view".
+disagree with what the meter does on open ground — see docs/TELEMETRY.md, "The debug view". It
+draws the whole field, buildings or not, and cuts away nothing a building hides from her.
 
 The lookup is a **linear scan**, not a spatial hash. A late day has around 26 events
 instantiated at once — the whole day is four times that, but only what is inside

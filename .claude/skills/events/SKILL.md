@@ -260,6 +260,14 @@ and the world sums `contribution_at()` over live instances. This is why events c
 addition, there is no ordering to get wrong, and an event can be tested without a scene. **Do not
 add a code path that writes to `Baby.excitement` from outside.**
 
+**Nothing reaches her through a building, and a new source has to ask.** `EventInstance.
+contribution_at()` and `CrowdAgent.contribution_at()` zero a positive field when
+`CityMap.wall_between()` finds the line from the source to her half a tile deep in a building;
+anything else that ever emits goes through the same question. The trap is the caret's projection:
+it translates *her* point rather than moving the source, which is right for the field and wrong for
+the wall — a wall stays where it is, so the projection asks it between the two bodies' own
+projected places.
+
 A contact **startles the person she walked into** — the jolt is a decaying source on that agent's
 own `contribution_at()`. Anything that wants to "add excitement" should find a body to put it on
 rather than a third summand; if there genuinely is no body, that is a design conversation, not a

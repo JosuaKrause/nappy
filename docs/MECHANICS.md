@@ -926,6 +926,14 @@ than a disc's `outer_radius`, since motion only ever adds reach — and less far
 (1+e)`, behind. See docs/EVENTS.md, "The emission model", for the full derivation and the debug
 view (`DebugLayers`, layer `1`) for where the boundary is checked by eye.
 
+**And `d` is never measured through a building.** *(plaid-wombat, inbox #554: "Excitement should
+not go through any wall".)* Every source — an event, a walker, a car — reaches her only while the
+straight line between them stays shallower than `Tuning.WALL_SHIELD_DEPTH` (half a tile) inside
+any building, measured from the nearest open ground (`CityMap.wall_between()`); past that the
+contribution is zero. Half a tile is the middle of a one-tile wall, so any wall stops it, while
+clipping a corner or standing with the pram's body against a facade does not. The meter, the halo
+and the caret all read the same blocked contribution. See docs/EVENTS.md, "The emission model".
+
 **`(1 − t)²` is the shape that looks equally reasonable and inverts the game.** It puts a
 **quarter** of the intensity at the midpoint of the falloff band and six percent three quarters of
 the way out, so a café at 12/s sits under the 6.0/s walking decay across the whole outer 70% of its

@@ -1109,11 +1109,12 @@ var _gait_moving := false
 ## the same day do not lean or strum in lockstep.
 var _idle_phase_offset := 0.0
 
-## The city, for the one question a chase needs answered that nothing here ever asked before:
-## whether the ground a step would land on is somewhere anybody can stand. `null` in every
-## data-level test that builds an instance without one — a rig that walks a straight line on
-## purpose gets exactly the unclamped movement it always has — and always set by
-## `EventManager._create`, the only real caller. See `_walkable_step`.
+## The city, for the questions only the ground can answer: whether the ground a step would land on
+## is somewhere anybody can stand (`_walkable_step`), whether a catch has a clear line
+## (`_clear_line_to`), and whether a building keeps this field from her (`_walled_off`). `null` in
+## every data-level test that builds an instance without one — a rig that walks a straight line on
+## purpose gets exactly the unclamped movement and the open-ground field it always has — and in the
+## building's interior, and always set by `EventManager._create`, the only real caller in the city.
 var _map: CityMap
 
 ## The solid body `_build_obstruction()` made, or `null` before it exists and after
@@ -2772,7 +2773,28 @@ func contribution_at(world_position: Vector2, intensity_override := -1.0,
 		_contribution_cache = result
 	return result
 
+## **Nothing reaches her through a building**: a field is zero wherever `_walled_off()` says a
+## building stands between this node and the point. Asked only once the field is positive, so a
+## source out of reach costs no line at all.
 func _contribution_at_uncached(world_position: Vector2, intensity_override: float,
+		velocity_override: Vector2) -> float:
+	var field := _field_at(world_position, intensity_override, velocity_override)
+	if field > 0.0 and _walled_off(global_position, world_position):
+		return 0.0
+	return field
+
+## Whether a building stands between a source standing at `source_at` and her at `her_at`, deep
+## enough to keep its excitement from her — `CityMap.wall_between()`, measured from this node
+## (a flock's centre, a shaped row's middle) to her centre. *(plaid-wombat, inbox #554: "Excitement
+## should not go through any wall".)* False with no map, which is every data-level rig built
+## without one and the building's interior, whose events are given none.
+func _walled_off(source_at: Vector2, her_at: Vector2) -> bool:
+	return _map != null and _map.wall_between(source_at, her_at)
+
+## The field alone, with no question about what stands between — what `contribution_at()` charges
+## on open ground, and what the caret's projection asks before it asks about walls at the two
+## bodies' own projected places.
+func _field_at(world_position: Vector2, intensity_override: float,
 		velocity_override: Vector2) -> float:
 	if is_finished or is_leaving:
 		return 0.0
@@ -2982,14 +3004,20 @@ func _sample_expected_landed(player_position: Vector2, velocity: Vector2,
 		# Projecting the *source* forward by `velocity * t` and querying its field at her own
 		# projected position, `player_position + player_velocity * t`, is the same number as
 		# holding the source still and asking for its field at the pair's relative offset instead
-		# — `contribution_at` is already the query every other caller uses, translated, so nothing
-		# here recomputes a falloff or a flock sum of its own. `velocity` (the source's own) is
-		# passed a second time, as the override, so the ellipse the translated point is measured
-		# against is oriented the way the source is actually travelling, not the pair's relative
-		# heading — see `contribution_at()`'s own doc for why the two must agree.
+		# — `_field_at` is the field every caller of `contribution_at` is charged, translated, so
+		# nothing here recomputes a falloff or a flock sum of its own. `velocity` (the source's
+		# own) is passed a second time, as the override, so the ellipse the translated point is
+		# measured against is oriented the way the source is actually travelling, not the pair's
+		# relative heading — see `contribution_at()`'s own doc for why the two must agree.
+		# The field translates; a wall does not. So the wall is asked between the two bodies'
+		# own projected places, where a building actually stands, never at the translated point.
 		var t := float(i + 1) * dt
 		var sample := player_position + player_velocity * t - velocity * t
-		integral += contribution_at(sample, live_intensity, velocity) * dt
+		var rate := _field_at(sample, live_intensity, velocity)
+		if rate > 0.0 and _walled_off(global_position + velocity * t,
+				player_position + player_velocity * t):
+			rate = 0.0
+		integral += rate * dt
 	return integral
 
 ## The net points this event is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`

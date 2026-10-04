@@ -587,6 +587,135 @@ func fill_rect(rect: Rect2i, type: GameEnums.TileType) -> void:
 func is_walkable(tile: Vector2i) -> bool:
 	return Tile.is_walkable(tile_at(tile))
 
+## Whether a building stands between two points deeply enough to keep a source's excitement at
+## one from reaching the other: true when the straight segment between them passes a point at
+## least `depth` from all open ground (`is_walkable()`), inside a building. *(plaid-wombat, inbox
+## #554: "If the player is partially in a wall they should not be protected so the blocking should
+## happen in the middle of the wall (or one tile deep)".)* `EventInstance.contribution_at()` and
+## `CrowdAgent.contribution_at()` ask it of every source whose field reaches her, so the meter, the
+## halo and the carets all read the same blocked contribution.
+##
+## **Stated over distance from open ground, not over tiles touched**, which is what makes the two
+## edge cases the player named come out right: a pram whose body overlaps a wall's edge is shielded
+## by nothing short of `depth` in, and a line that clips a building's corner or runs along its face
+## never gets `depth` deep. A wall one tile thick has its middle exactly half a tile from open ground
+## on both sides, so at the default depth every line across it is blocked there. This is the deeper
+## test beside `EventInstance._clear_line_to()`, the pursuer's catch, which refuses a line that
+## touches a building at all.
+##
+## **Exact, never sampled.** It steps the tiles the segment crosses, the same tile-boundary walk
+## the catch's line takes, and in each building tile asks whether the segment meets the part of it
+## `depth` or more from open ground: the tile shrunk by `depth` on every side that faces an open
+## tile, less a disc of radius `depth` round each corner an open tile meets only diagonally. Only a
+## tile's eight neighbours can be nearer than `depth` while `depth` is at most a tile, which is
+## why `Tuning.WALL_SHIELD_DEPTH` may not exceed `Tuning.TILE_SIZE`. A segment exactly `depth`
+## from open ground at its deepest is blocked.
+func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH) -> bool:
+	var tile := world_to_tile(from)
+	var delta := to - from
+	var size := float(Tuning.TILE_SIZE)
+	var step := Vector2i(int(signf(delta.x)), int(signf(delta.y)))
+	# The fraction of the segment at which it next crosses a vertical (x) or horizontal (y) tile
+	# boundary, and how much of the segment one whole tile takes on each axis.
+	var next_x := INF
+	var each_x := INF
+	if step.x != 0:
+		next_x = (float(tile.x + maxi(step.x, 0)) * size - from.x) / delta.x
+		each_x = size / absf(delta.x)
+	var next_y := INF
+	var each_y := INF
+	if step.y != 0:
+		next_y = (float(tile.y + maxi(step.y, 0)) * size - from.y) / delta.y
+		each_y = size / absf(delta.y)
+	while true:
+		if not is_walkable(tile) and _reaches_the_middle_of(tile, from, delta, depth):
+			return true
+		if minf(next_x, next_y) > 1.0:
+			return false
+		# Through a vertex exactly, the two tiles beside it share only that one point with the
+		# segment, and the diagonal tile asked next holds that point too.
+		if next_x < next_y:
+			tile.x += step.x
+			next_x += each_x
+		elif next_y < next_x:
+			tile.y += step.y
+			next_y += each_y
+		else:
+			tile += step
+			next_x += each_x
+			next_y += each_y
+	return false
+
+## Whether the segment `from + t * delta`, `t` in [0, 1], meets the part of building tile `tile`
+## that is at least `depth` from every open tile — see `wall_between()`. The shrunk rectangle is
+## clipped first (an open side's band is shallower than `depth` all along it), then what is left of
+## the segment has to escape the open corner discs: it is shallow only if every point of it lies
+## strictly inside one of them.
+func _reaches_the_middle_of(tile: Vector2i, from: Vector2, delta: Vector2, depth: float) -> bool:
+	var size := float(Tuning.TILE_SIZE)
+	var low := Vector2(tile) * size
+	var high := low + Vector2(size, size)
+	var open_west := is_walkable(tile + Vector2i.LEFT)
+	var open_east := is_walkable(tile + Vector2i.RIGHT)
+	var open_north := is_walkable(tile + Vector2i.UP)
+	var open_south := is_walkable(tile + Vector2i.DOWN)
+	var span := _clip_to(from.x, delta.x, low.x + (depth if open_west else 0.0),
+			high.x - (depth if open_east else 0.0), Vector2(0.0, 1.0))
+	span = _clip_to(from.y, delta.y, low.y + (depth if open_north else 0.0),
+			high.y - (depth if open_south else 0.0), span)
+	if span.x > span.y:
+		return false
+	# A corner whose two sides are both built on but whose diagonal neighbour is open: the open
+	# tile is nearest at that corner point, so the shallow ground there is a disc round it.
+	var shallow: Array[Vector2] = []
+	if not open_west and not open_north and is_walkable(tile + Vector2i(-1, -1)):
+		shallow.append(_inside_disc(from, delta, low, depth))
+	if not open_east and not open_north and is_walkable(tile + Vector2i(1, -1)):
+		shallow.append(_inside_disc(from, delta, Vector2(high.x, low.y), depth))
+	if not open_west and not open_south and is_walkable(tile + Vector2i(-1, 1)):
+		shallow.append(_inside_disc(from, delta, Vector2(low.x, high.y), depth))
+	if not open_east and not open_south and is_walkable(tile + Vector2i(1, 1)):
+		shallow.append(_inside_disc(from, delta, high, depth))
+	# Walk forward from the start of the span through every disc that strictly contains the point
+	# reached so far; the segment reaches the middle unless that walk passes the span's end.
+	var reached := span.x
+	var moved := true
+	while moved:
+		moved = false
+		for interval in shallow:
+			if interval.x < reached and reached < interval.y:
+				reached = interval.y
+				moved = true
+	return reached <= span.y
+
+## `span` narrowed to where `start + t * along` lies in [`low`, `high`] on one axis — empty (start
+## past end) when it never does.
+static func _clip_to(start: float, along: float, low: float, high: float, span: Vector2) -> Vector2:
+	if along == 0.0:
+		return span if start >= low and start <= high else Vector2(1.0, 0.0)
+	var a := (low - start) / along
+	var b := (high - start) / along
+	if a > b:
+		var swap := a
+		a = b
+		b = swap
+	return Vector2(maxf(span.x, a), minf(span.y, b))
+
+## The open interval of `t` for which `from + t * delta` is strictly within `radius` of `centre`,
+## or an empty one (start past end) when it never is.
+static func _inside_disc(from: Vector2, delta: Vector2, centre: Vector2, radius: float) -> Vector2:
+	var offset := from - centre
+	var a := delta.dot(delta)
+	var c := offset.dot(offset) - radius * radius
+	if a == 0.0:
+		return Vector2(-INF, INF) if c < 0.0 else Vector2(1.0, 0.0)
+	var b := 2.0 * offset.dot(delta)
+	var discriminant := b * b - 4.0 * a * c
+	if discriminant <= 0.0:
+		return Vector2(1.0, 0.0)
+	var root := sqrt(discriminant)
+	return Vector2((-b - root) / (2.0 * a), (-b + root) / (2.0 * a))
+
 ## Street ground: pavement, carriageway or crossing. Anything that travels the lattice asks
 ## this, because a corridor may simply not be there — a four-block calm zone is painted over the
 ## streets between its blocks, and those tiles are park somebody walks on rather than street anybody

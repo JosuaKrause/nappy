@@ -1104,7 +1104,27 @@ func _drawn_heading_key() -> Vector2i:
 ## on. `tests/test_crowd.gd`'s own `_test_walking_into_somebody_displaces_and_startles_them` reads
 ## `contribution_at()` again immediately after a bump with `_clock` unmoved and expects the fresh
 ## jolt, which is exactly the case a clock-keyed cache would have answered stale.
+##
+## **Nothing reaches her through a building**, the same rule an event's field keeps: a positive
+## field is zero when `_walled_off()` says a building stands between this body and the point. The
+## horn and a startled walker included — *(plaid-wombat, inbox #554: "Excitement should not go
+## through any wall")* — since the jolt is this body being louder, not a second source.
 func contribution_at(world_position: Vector2) -> float:
+	var field := _field_at(world_position)
+	if field > 0.0 and _walled_off(global_position, world_position):
+		return 0.0
+	return field
+
+## Whether a building stands between this body at `body_at` and her at `her_at`, deep enough to
+## keep its noise from her — `CityMap.wall_between()`, as `EventInstance._walled_off()` asks it.
+## False with no map, which is every data-level rig built without one.
+func _walled_off(body_at: Vector2, her_at: Vector2) -> bool:
+	return _map != null and _map.wall_between(body_at, her_at)
+
+## The field alone, with no question about what stands between — what `contribution_at()` charges
+## on open ground, and what the caret's projection asks before it asks about walls at the two
+## bodies' own projected places.
+func _field_at(world_position: Vector2) -> float:
 	# d_eff = r * (1 - e * cos(theta)) is at least r * (1 - e_max), at every speed
 	# and heading. Outside this bound both falloffs are zero, so the common distant-body
 	# case needs no velocity/turn/pocket lookup or elliptical distance calculation. Read the
@@ -1186,8 +1206,13 @@ func _sample_expected_landed(player_position: Vector2, vel: Vector2) -> float:
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var integral := 0.0
 	for i in steps:
+		# The field translates; a wall does not. So the wall is asked between the two bodies'
+		# own projected places, where a building actually stands, never at the translated point.
 		var t := float(i + 1) * dt
-		integral += contribution_at(player_position + player_velocity * t - vel * t) * dt
+		var rate := _field_at(player_position + player_velocity * t - vel * t)
+		if rate > 0.0 and _walled_off(global_position + vel * t, player_position + player_velocity * t):
+			rate = 0.0
+		integral += rate * dt
 	return integral
 
 ## The net points this agent is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`

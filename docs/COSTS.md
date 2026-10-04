@@ -2,7 +2,7 @@
 
 Computed from the real catalogue (`EventCatalogue.all()`, catalogue order) and the real `Tuning` constants below — never a second copy of the falloff or the decay. Regenerate with `tools/cost-table.sh`; `tools/cost-table.sh --check` compares this file against a fresh run and names every row and column that moved, old → new, without writing anything.
 
-Every figure is on quiet sidewalk (ground multiplier 1.0); other grounds are not in this version. The constants each figure below was computed under, one line each so a change to any of them shows here as this line moving:
+Every figure is on quiet sidewalk (ground multiplier 1.0) with nothing built between her and the row; other grounds are not in this version, and nor is a building between them, which silences a row entirely once the line from it to her is `Tuning.WALL_SHIELD_DEPTH` deep inside the building (`CityMap.wall_between()`). The constants each figure below was computed under, one line each so a change to any of them shows here as this line moving:
 
 - `Tuning.EXCITEMENT_DECAY_WALKING` = 6.0 points/s
 - `Tuning.SLEEPING_SENSITIVITY` = 0.55
