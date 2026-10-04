@@ -19,6 +19,10 @@ such line (bouncy-heron, statements 12, 19 and 23):
   of whitespace is one space, on both sides, since a playtest file quotes a note inside `> ` lines
   wrapped wherever it wraps and an issue wraps nowhere. Every word, letter case and punctuation mark
   still has to match.
+- **So are the words added to it.** On a captured note, every comment by a capture identity whose
+  first line is the marker `tools/inbox.py append` writes is the player's further words, and each
+  appears the same way in a playtest file the pull request adds. The marker is not part of the words,
+  and the same comment on a note the player opened counts for nothing.
 
 The issue is read through the API whatever its state, since the orchestrator closes a batch's notes
 right after pushing the filing pull request, and the description is read when the job runs, never
@@ -34,7 +38,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -59,6 +63,9 @@ CAPTURE_LABEL = "captured"
 # What makes an issue an inbox note at all (leafy-finch: "the inbox is the open issues carrying an
 # `inbox` label"); `tools/inbox.py` checks it before it closes a note.
 INBOX_LABEL = "inbox"
+# The first line of a comment `tools/inbox.py append` writes: the player's further words on a
+# captured note. Only that script writes it, and it counts on a captured note alone.
+APPEND_MARKER = "<!-- inbox-append: the player's further words, added by tools/inbox.py append -->"
 
 EPILOG = """\
 examples:
@@ -73,6 +80,24 @@ class Note:
     labels: tuple[str, ...]
     body: str
     is_pull_request: bool
+    # The words `append` added, marker removed, one entry per comment in order; empty on a note that
+    # is not captured, where no marked comment counts.
+    appended: tuple[str, ...] = ()
+
+
+def appended_words(author: str, labels: tuple[str, ...], comments: list[dict[str, object]]) -> tuple[str, ...]:
+    """The words of every marked comment by a capture identity on a note it opened, marker removed."""
+    if author not in CAPTURE_BOTS or CAPTURE_LABEL not in labels:
+        return ()
+    words: list[str] = []
+    for comment in comments:
+        user = comment.get("user")
+        login = str(user.get("login", "")) if isinstance(user, dict) else ""
+        body = comment.get("body")
+        first, _, rest = (body if isinstance(body, str) else "").replace("\r\n", "\n").partition("\n")
+        if login in CAPTURE_BOTS and first.strip() == APPEND_MARKER and rest.strip():
+            words.append(rest.strip())
+    return tuple(words)
 
 
 def filed_numbers(description: str) -> tuple[list[int], list[str]]:
@@ -161,6 +186,15 @@ def check(notes: list[Note], added_playtests: dict[str, str]) -> list[str]:
         elif not any(body in text for text in normalized.values()):
             names = ", ".join(sorted(normalized))
             failures.append(f"#{note.number}: its body is not in {names} word for word: {mismatch(body, normalized)}")
+        else:
+            for words in note.appended:
+                said = lib_ci.normalize(words)
+                if not any(said in text for text in normalized.values()):
+                    names = ", ".join(sorted(normalized))
+                    failures.append(
+                        f"#{note.number}: the words appended to it are not in {names} word for word:"
+                        f" {mismatch(said, normalized)}"
+                    )
     return failures
 
 
@@ -181,7 +215,7 @@ def parse(argv: list[str]) -> argparse.Namespace:
             f" must carry the `{INBOX_LABEL}` label and be opened by {PLAYER}, or by {' or '.join(CAPTURE_BOTS)}"
             f" with the `{CAPTURE_LABEL}` label, and"
             " its body must appear word for word (blockquote markers and line wrapping aside) in a playtest file"
-            " the branch adds since BASE."
+            " the branch adds since BASE, and so must the words `tools/inbox.py append` added to a captured note."
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -211,7 +245,11 @@ def main(argv: list[str]) -> int:
         notes: list[Note] = []
         for issue in numbers:
             try:
-                notes.append(note_from_api(issue, lib_ci.gh_api(f"repos/{repo}/issues/{issue}")))
+                note = note_from_api(issue, lib_ci.gh_api(f"repos/{repo}/issues/{issue}"))
+                if note.author in CAPTURE_BOTS and CAPTURE_LABEL in note.labels:
+                    comments = lib_ci.gh_api_list(f"repos/{repo}/issues/{issue}/comments")
+                    note = replace(note, appended=appended_words(note.author, note.labels, comments))
+                notes.append(note)
             except lib_ci.CiError as error:
                 failures.append(f"#{issue}: could not be read ({error})")
     except lib_ci.CiError as error:

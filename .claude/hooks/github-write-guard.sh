@@ -1605,7 +1605,7 @@ is, because a hook that cannot finish inside its timeout would let the command t
 $file_hint See .claude/hooks/github-write-guard.sh."
 elif [ "$issue_write" = "true" ]; then
 	reason="This command writes an issue directly ($flagged). An agent writes an issue only through \
-tools/inbox.py -- capture, ask, close --pr, reopen --pr, each running its own write as \
+tools/inbox.py -- capture, append, ask, close --pr, reopen --pr, each running its own write as \
 claude-orchestrator (Codex: codex-coder) -- never with gh issue, nor with gh api on an issue \
 endpoint (a new issue, issues/N, its labels, assignees or lock, an issue comment's edit) or a \
 GraphQL issue mutation, wrapped in an identity or not; the one API route left open is a POST to \

@@ -120,6 +120,25 @@ def gh_api(endpoint: str) -> dict[str, object]:
     return data
 
 
+def gh_api_list(endpoint: str) -> list[dict[str, object]]:
+    """Every item of a list endpoint through `gh api`, a page of 100 at a time."""
+    items: list[dict[str, object]] = []
+    joiner = "&" if "?" in endpoint else "?"
+    page = 1
+    while True:
+        url = f"{endpoint}{joiner}per_page=100&page={page}"
+        result = subprocess.run(["gh", "api", url], cwd=ROOT, capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            raise CiError(f"gh api {url} failed: {result.stderr.strip()}")
+        data = json.loads(result.stdout)
+        if not isinstance(data, list):
+            raise CiError(f"gh api {url} did not return a list")
+        items.extend(item for item in data if isinstance(item, dict))
+        if len(data) < 100:
+            return items
+        page += 1
+
+
 def pr_description(repo: str, number: int) -> str:
     """The pull request's description as it stands now, not as it stood when the run started."""
     body = gh_api(f"repos/{repo}/pulls/{number}").get("body")
