@@ -122,7 +122,9 @@ off the street signals. Supported escape pins are trucks, abduction, roadblocks 
 `observations`. Each observation has a physics `tick`, named `subject` and `condition`:
 `visible`, `moving`, `running`, `carrying`, `pursuing`, `near` or `beyond` with `at` and
 `distance` (at most or at least that far), `off_screen` (no part of a box three tiles either side
-and four up and down, `ResistanceDirector.TASK_HALF_EXTENT`, is in the picture), and for `mark` or
+and four up and down, `ResistanceDirector.TASK_HALF_EXTENT`, is in the picture), `clear_of_both_views` with `half` (`[half width, half height]` in px: no part
+of that box round the subject is in the world the camera shows in the landscape window or in the
+rotated portrait presentation, 640x360 and 360x640 at the game's zoom), and for `mark` or
 `task` alone `offered`, `done`, `arrowed` (the red arrow ends on it) and `unarrowed` (no red arrow
 is drawn). A `subject` of `row:<catalogue id>` names the first live instance of that row, for what
 an event summons rather than what the recipe placed.
@@ -165,7 +167,7 @@ past him, go round. Every scene here shares one context city (`context_seed` 191
 | `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles east of the mark, on the street, the mark unread | the roadblock, 576–608px out; no arrow |
 | `task-14-last-night.json` | 14, the station's front door | on the sidewalk west of it | the door on the facade, 576–640px out |
 | `station-door-corner.json` | 14, the station's front door | on the far outer corner of its sidewalk | the door, 57.7px away, outside its 50.6px reach |
-| `fire-truck.json` | 3, the fire and the engine it calls in | at the doorstep | the fire out of her view, 432px west; the engine parked at the kerb in front of it |
+| `fire-truck.json` | 3, the fire and the engine it calls in | on the sidewalk 496px east of the fire | the whole burning building, smoke included, out of both the landscape and the portrait view at the first tick; the engine parked at the kerb in front of it |
 
 Play one with `tools/run.sh --recipe scene-recipes/task-07-package.json` and walk to the target,
 following the red arrow where there is one; the summary after a won day reloads the scene. Each
@@ -182,7 +184,10 @@ it.
 outer corners of the two sidewalk tiles in front of it (`ResistanceDirector.DOOR_REACH`, 50.6px,
 against the corners' 57.7px): she starts on the west corner, where the door is not touched, and one
 step east touches it. The east corner is 100px from the door's guard, so standing on it wakes him.
-`fire-truck.json` starts on day 3 with `burning_building` named and nothing else: once she has seen
+`fire-truck.json` starts on day 3 with `burning_building` named and nothing else, her start 64px
+farther from the building than the doorstep is, so that its lot, which reaches 320px from the
+doorstep's side, is out of the landscape view at the first frame *(the player, inbox #557: "the
+fire truck scene starts too close to the start -- the building is already on screen")*: once she has seen
 the fire, its own `spawns_on_sight` calls the `fire_truck` in from off screen exactly as a played
 day does, and the engine parks at the kerb in front of the fire for the rest of the day.
 

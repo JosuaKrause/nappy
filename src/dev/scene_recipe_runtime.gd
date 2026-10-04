@@ -264,7 +264,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if not check is Dictionary:
 				errors.append("playback.observations entries must be objects")
 				continue
-			_keys(check, ["tick", "subject", "condition", "at", "distance"], "observation", errors)
+			_keys(check, ["tick", "subject", "condition", "at", "distance", "half"], "observation", errors)
 			_number(check.get("tick"), "observation.tick", 0,
 					float(playback.get("duration", 5)) * Engine.physics_ticks_per_second, errors, true)
 			var subject: Variant = check.get("subject")
@@ -278,6 +278,12 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 					and not subject in ["mark", "task"]:
 				errors.append("observation.condition %s asks about the task's mark or target"
 						% check.get("condition"))
+			if check.get("condition") == "clear_of_both_views":
+				if not SceneRecipe.tuple(check.get("half"), 2, false) or float(check.half[0]) <= 0.0 \
+						or float(check.half[1]) <= 0.0:
+					errors.append("observation.half: clear_of_both_views needs [half width, half height] in px")
+			elif check.has("half"):
+				errors.append("observation.half belongs to clear_of_both_views")
 			if check.get("condition") in ["near", "beyond"]:
 				_position(check.get("at"), "observation.at", errors)
 				_number(check.get("distance"), "observation.distance", 0, 10000, errors)
@@ -285,7 +291,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 
 ## The observation conditions, in the order `docs/SCENE_RECIPES.md` names them.
 const CONDITIONS := ["visible", "moving", "running", "carrying", "pursuing", "near", "beyond",
-		"off_screen", "offered", "done", "arrowed", "unarrowed"]
+		"off_screen", "clear_of_both_views", "offered", "done", "arrowed", "unarrowed"]
 ## An observation subject naming no actor but the first live instance of a catalogue row: what an
 ## event summons rather than what the recipe placed, such as the `fire_truck` a seen
 ## `burning_building` calls in.
@@ -991,6 +997,9 @@ func _observe() -> void:
 				"off_screen":
 					passed = not _box_on_screen(actor.global_position,
 							ResistanceDirector.TASK_HALF_EXTENT)
+				"clear_of_both_views":
+					passed = not _box_in_either_view(actor.global_position,
+							Vector2(float(check.half[0]), float(check.half[1])))
 				"offered":
 					passed = actor is ContactPoint and not actor.is_done and _resistance != null \
 							and _resistance._contact == actor
@@ -1047,6 +1056,22 @@ func _box_on_screen(centre: Vector2, half: Vector2) -> bool:
 	for corner: Vector2 in [centre, centre + half, centre - half, centre + Vector2(half.x, -half.y),
 			centre + Vector2(-half.x, half.y)]:
 		if view.has_point(transform * corner):
+			return true
+	return false
+
+## Whether any part of a box `half` either side of `centre` is inside the world her camera shows
+## in the landscape window or in the rotated, portrait presentation of the same game
+## (`ScreenOrientation`: 1280x720 turned into 720x1280, the same zoom), both centred on where the
+## camera looks: the world 640x360 wide in one and 360x640 in the other at zoom 2.
+func _box_in_either_view(centre: Vector2, half: Vector2) -> bool:
+	var camera := get_viewport().get_camera_2d()
+	var looking := camera.get_screen_center_position() if camera else _player.global_position
+	var zoom := camera.zoom.x if camera else 1.0
+	var landscape := ScreenOrientation.DESIGN_SIZE / zoom
+	var portrait := ScreenOrientation.ROTATED_SIZE / zoom
+	var box := Rect2(centre - half, half * 2.0)
+	for size: Vector2 in [landscape, portrait]:
+		if Rect2(looking - size * 0.5, size).intersects(box):
 			return true
 	return false
 

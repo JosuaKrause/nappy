@@ -73,6 +73,14 @@ func _test_the_task_observations_ask_about_the_task(t) -> void:
 			"a task on a bare point has no rider")
 	t.check(_refused(_recipe(7, null, [{"tick": 1, "subject": "player", "condition": "offered"}]),
 			"asks about the task's mark or target"), "offered asks only about the task")
+	t.check(SceneRecipeRuntime.validate_runtime(_recipe(3, null, [{"tick": 1, "subject": "player",
+			"condition": "clear_of_both_views", "half": [160, 480]}])).is_empty(),
+			"a box clear of the landscape and the portrait view is asked with its half extents")
+	t.check(_refused(_recipe(3, null, [{"tick": 1, "subject": "player",
+			"condition": "clear_of_both_views"}]), "needs [half width, half height]"),
+			"and a view check with no box is refused")
+	t.check(_refused(_recipe(3, null, [{"tick": 1, "subject": "player", "condition": "visible",
+			"half": [1, 1]}]), "belongs to clear_of_both_views"), "the half extents belong to it alone")
 	t.check(_refused(_recipe(3, null, [{"tick": 1, "subject": "row:nothing", "condition": "visible"}]),
 			"row:<catalogue id>"), "a row subject names a catalogue row")
 	t.check(SceneRecipeRuntime.validate_runtime(_recipe(3, null,
