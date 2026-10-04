@@ -27,7 +27,11 @@ west corner, 57.7px from the door against its 50.6px reach. `tools/scene-recipes
 at the first tick the task is offered, the arrow ends on the target (none on days 6 and 13), the
 target is off screen and at its stated distance, and the recorded walk completes the task; the
 station door is not touched from the corner and is touched one step east. `docs/SCENE_RECIPES.md`
-says how to play each. Stills are in `docs/evidence/busy-raven-scenes-2026-10-04/`.
+says how to play each. Stills are in `docs/evidence/busy-raven-scenes-2026-10-04/`. At the
+scenes' zoom (2, a 640x360 view) every point on the 576px circle is already off screen, so the
+`off_screen` check catches the distance shrinking or the zoom changing, not a broken off-screen
+rule: with the director's off-screen refusal switched off, every director-placed scene still
+passed.
 
 **One game rule changed.** On day 11, when no live mast stands anywhere, a mast is now put up near
 the mark, as the task table's "when none is near, a new mast the day puts up near the mark" says;
