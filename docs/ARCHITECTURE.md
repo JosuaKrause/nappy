@@ -519,8 +519,8 @@ kept strictly out of anything that touches the meters.
   placement facts and release renderer commands. Shared atlas pages and ground composition stay
   at loading moments. `SceneryGround.Mode`, set by `--ground-mode`, schedules an off-screen
   ground region inside the soft CPU budget, which each frame applies afresh to what the last
-  one left: mode 1, the default, prepares every needed region whole in its frame, as many as the
-  budget allows; mode 2 at most one whole region a frame, the rest waiting; mode 3 advances
+  one left: mode 1 prepares every needed region whole in its frame, as many as the
+  budget allows; mode 2, the default, at most one whole region a frame, the rest waiting; mode 3 advances
   each region at most one renderer quadrant per process frame, explicitly flushing TileMap
   internals each step, its incomplete regions separately owned until complete and paused
   between the load and retention boundaries. State edits and leaving retention cancel them.
