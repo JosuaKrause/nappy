@@ -20,6 +20,7 @@ const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 func run(t) -> void:
 	_test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t)
+	_test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t)
 
 ## Boots for real, checks the frame the bug lived on, then lets the boot finish and checks the two
 ## frames PLAYTEST-76's own entry named as candidates: the first with the run started, and the
@@ -72,6 +73,54 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
+	_restore_game_state(saved)
+
+## PLAYTEST-140, statement 5: "when you lose with game over the title screen is sideways", and
+## PLAYTEST-144's still after a held restart, "This is the screen when resetting" — both on a
+## portrait phone, both right after a scene reload. The frames `_warm_the_canvas_shaders()` draws
+## before she exists are the boot camera's, and they stay on screen through the rest of `_ready()`
+## until the title is drawn, so the boot camera and the window's box have to be turned for the
+## phone before the first of them, not only once she and the HUD exist.
+##
+## The window is made portrait and the boot told it is on a touch screen, which is the one shape
+## that wants rotation; the box is left at the unrotated 1280x720 a first boot starts in, so both
+## halves — the box and the camera — have something to correct. After a reload the box would
+## already be the rotated one, which leaves only the camera wrong; the camera's assertion is that
+## case.
+func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t) -> void:
+	var saved := _save_game_state()
+	var window: Window = t.get_tree().root
+	var saved_size := window.size
+	var saved_box := window.content_scale_size
+	window.size = Vector2i(ScreenOrientation.ROTATED_SIZE)
+	window.content_scale_size = Vector2i(ScreenOrientation.DESIGN_SIZE)
+	t.check(ScreenOrientation.wants_rotation(window.size, true),
+			"the window this test boots into is one that wants rotation on a touch screen")
+
+	var main: Node2D = MAIN_SCENE.instantiate()
+	main._touch_available = true
+	t.add_child(main)
+
+	# The suspended point, before her camera exists: the frame the boot camera draws.
+	t.check(main._player == null, "suspended before she exists, where the boot camera draws")
+	t.check(window.content_scale_size == ScreenOrientation.content_scale_size(true),
+			"the window already presents in the rotated box before the first frame")
+	var boot_camera := main.get_viewport().get_camera_2d()
+	t.check(boot_camera != null and not boot_camera.ignore_rotation
+				and is_equal_approx(boot_camera.rotation, -deg_to_rad(90.0)),
+			"and the boot camera is turned with it, so the city it shows is not drawn upright")
+
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	t.check(main._rotated, "the finished boot has turned the whole presentation")
+	t.check(main._title.transform == ScreenOrientation.rotation_transform(),
+			"including the title it opens on")
+
+	t.get_tree().paused = false
+	Telemetry.end_run()
+	main.free()
+	window.size = saved_size
+	window.content_scale_size = saved_box
 	_restore_game_state(saved)
 
 ## Mirrors `tests/test_full_run.gd`'s own save/restore: a real boot calls `GameState.start_run()`,

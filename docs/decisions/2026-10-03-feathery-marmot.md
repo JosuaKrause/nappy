@@ -20,7 +20,7 @@ gatehouse and crossing should be the test no proximity" (#494); "No it should ch
 marmot as is" (#498); "I wouldn't frame it that way -- create a circle around the current player
 position with the radius of the desired distance -- then follow the path until it reaches the edge
 of the circle" (#500), and "no need to special case straight runs or anything like that"
-(2026-10-03, in conversation, right after inbox #500); "no
+(2026-10-03, in conversation, right after inbox #500 in [quiet-yak](../playtests/2026-10-03-quiet-yak.md)); "no
 events are dynamically created as you walk around -- if there is a mast queued up that will be the
 next event to be generated" (#503).)*
 
@@ -89,7 +89,7 @@ diagonals, and aims at open ground beside a contact that stands on a body.
 extent of the shadow the frame casts; the 66px floor.
 
 **The queue entry is closed by this PR:** `docs/todo/2026-10-03-feathery-marmot/` held only "near"
-measured along her path, which the circle answers (#500), so it is deleted here.
+measured along her path, which the circle answers (#500 in [quiet-yak](../playtests/2026-10-03-quiet-yak.md)), so it is deleted here.
 
 **Verified.** The resistance suite and the route rig's suite pass, and every new test was seen to
 fail with its change switched off: any-side touch, mouths only, two-thirds, the added mast, the

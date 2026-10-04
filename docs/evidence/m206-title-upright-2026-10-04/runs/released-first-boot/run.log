@@ -1,0 +1,11 @@
+7.54s console: Godot Engine v4.7.2.stable.custom_build - https://godotengine.org
+8.74s console: OpenGL API OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium)) - Compatibility - Using Device: WebKit - WebKit WebGL
+9.10s console: Build configuration: Emscripten 4.0.20, single-threaded, no GDExtension support.
+10.25s console: [GameState] run started, seed=3590005639
+10.32s console: [Main] 9 atlas pages held from startup in 59 ms
+11.11s console: [Main] city generated in 824 ms (seed 3590005639)
+11.46s console: [DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+14.55s console: [Main] day 1 started in 3055 ms (act 1): 349 events (32 live, 23 ahead), 234 crowd, 210s | calm: 1 courtyard, 2 forest, 2 quiet_square, 3 park | closed: roadworks h(8,2)
+14.96s touch: true, canvas 412x915
+17.90s still 01-title
+19.36s still 99-after

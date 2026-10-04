@@ -1,0 +1,33 @@
+4.90s console: Godot Engine v4.7.2.stable.custom_build - https://godotengine.org
+5.98s console: OpenGL API OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium)) - Compatibility - Using Device: WebKit - WebKit WebGL
+6.30s console: Build configuration: Emscripten 4.0.20, single-threaded, no GDExtension support.
+7.18s console: [GameState] run started, seed=2407181328
+7.22s console: [Main] 9 atlas pages held from startup in 46 ms
+7.77s console: [Main] city generated in 542 ms (seed 2407181328)
+7.99s console: [DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+9.91s console: [Main] day 1 started in 1903 ms (act 1): 361 events (25 live, 27 ahead), 234 crowd, 4s | calm: 2 park, 3 courtyard, 3 forest | closed: accident v(9,8)
+10.27s touch: true, canvas 412x915
+13.02s still 01-title
+13.32s start pressed
+15.09s still 02-day
+23.36s still 03-summary-1
+25.04s console: [Main] day 1 started in 1655 ms (act 1): 361 events (25 live, 27 ahead), 234 crowd, 4s | calm: 2 park, 3 courtyard, 3 forest | closed: accident v(9,8)
+25.16s continue pressed
+33.41s still 03-summary-2
+34.99s console: [Main] day 1 started in 1551 ms (act 1): 361 events (25 live, 27 ahead), 234 crowd, 4s | calm: 2 park, 3 courtyard, 3 forest | closed: accident v(9,8)
+35.11s continue pressed
+43.50s still 03-summary-3
+45.63s console: [Main] day 1 started in 2047 ms (act 1): 361 events (25 live, 27 ahead), 234 crowd, 4s | calm: 2 park, 3 courtyard, 3 forest | closed: accident v(9,8)
+45.92s continue pressed
+54.24s still 03-summary-4
+56.25s console: [Main] day 1 started in 1974 ms (act 1): 361 events (25 live, 27 ahead), 234 crowd, 4s | calm: 2 park, 3 courtyard, 3 forest | closed: accident v(9,8)
+56.44s continue pressed
+64.72s still 03-summary-5
+64.86s continue pressed
+68.94s console: [GameState] run started, seed=1275892726
+68.95s console: [Main] 9 atlas pages held from startup in 4 ms
+69.58s console: [Main] city generated in 629 ms (seed 1275892726)
+69.68s continue on the ending pressed
+69.80s console: [DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+71.60s console: [Main] day 1 started in 1793 ms (act 1): 387 events (34 live, 27 ahead), 234 crowd, 4s | calm: 1 courtyard, 1 quiet_square, 2 park, 3 forest | closed: roadworks v(7,5)
+76.01s still 99-after
