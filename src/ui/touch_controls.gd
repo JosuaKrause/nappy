@@ -247,6 +247,11 @@ func set_mode(mode: ControlsMode.Mode) -> void:
 		_let_go_of_the_run_button()
 	queue_redraw()
 
+## The scheme in force, for the help lines that name a button only one scheme draws — see
+## `HelpText.joystick_in_force()`.
+func controls_mode() -> ControlsMode.Mode:
+	return _mode
+
 ## Whether `main` has decided a portrait touch window is presenting rotated — see
 ## `ScreenOrientation`. Set from outside rather than asked here, the same way `_touch` is a read
 ## of a platform fact rather than a query at each use site: `main._apply_orientation()` is the one
@@ -355,6 +360,7 @@ func _exit_tree() -> void:
 	AtlasLibrary.release(&"ui")
 
 func _ready() -> void:
+	add_to_group(HelpText.CONTROLS_GROUP)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Pinned to the fixed design box rather than full-rect, so this node's own ancestor

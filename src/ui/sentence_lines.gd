@@ -29,6 +29,11 @@ extends RefCounted
 static func break_for_label(text: String, label: Label) -> String:
 	return _wrap(text, label.get_theme_font_size("font_size"), label.custom_minimum_size.x)
 
+## The same rule for a `HelpText`, whose line may carry button symbols. The tokens stay in the
+## returned text; `_width()` measures each as the two letters' width the symbol takes.
+static func break_for_help(text: String, label: RichTextLabel) -> String:
+	return _wrap(text, label.get_theme_font_size("normal_font_size"), label.custom_minimum_size.x)
+
 static func _wrap(text: String, font_size: int, max_width: float) -> String:
 	var sentences := _split_sentences(text)
 	return "\n".join(_lines(sentences, font_size, max_width))
@@ -78,4 +83,5 @@ static func _lines(sentences: Array[String], font_size: int, max_width: float) -
 	return lines
 
 static func _width(text: String, font_size: int) -> float:
-	return ThemeDB.fallback_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	return ThemeDB.fallback_font.get_string_size(HelpText.measurable(text),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x

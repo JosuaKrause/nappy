@@ -409,6 +409,16 @@ that begins there counts; and the double press still latches run, for a pointer 
 finger's worth of reach. Either keeps run down on its own, and run lasts while any finger holds a button, so handing it from one thumb to the other does not stutter it. Running lasting only while the button is
 held is the filer's proposal, not their words, and is open to overturn.
 
+**A help text that names a button shows that button's own symbol in the line.** *(2026-10-04, note #533:
+"the press pause to pause text should say press <pause button> to pause where it uses the in-game
+symbol. Likewise joystick run should now say hold <run button> or double tap to run where it makes
+sense".)* The pause lesson reads *Press* + the pause symbol + *to pause* in every scheme, since the
+pause button is always drawn. The run lines (day 1's *Tap to walk, hold* + the run symbol + *or double tap to run*,
+the first pursuit's *Hold* + the run symbol + *or double tap to run*, and the pause screen's body) name the run button
+in the joystick scheme only, where it is on screen; the tap scheme keeps *double tap to run*. The title
+screen is shown before a scheme is chosen, so its body keeps *double tap to run*, which holds in both.
+The symbol is the atlas region the button wears, drawn one text line tall in the line (`HelpText`).
+
 Where a heading is measured from, and what stops her, are the one place a mouse and a real finger
 disagree. A mouse aims from her own world position, and a click within a generous radius of that
 position stops her. A real touch instead aims from whichever of two fixed points on the screen is
@@ -1099,7 +1109,8 @@ because a moving wall on a two-tile pavement pins her against a building. What s
 through a man shouting is the meter: intensity 14 over 210px.
 
 **Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 says *Tap to walk, double tap to run* and
-nothing more; day 3 is when something comes after the pram, and the HUD says *Double tap to run* —
+nothing more; day 3 is when something comes after the pram, and the HUD says *Double tap to run* (in the joystick scheme,
+*Hold* + the run button's symbol *or double tap to run*) —
 naming no key on any device, since the keyboard's own **Shift** works silently like every other key
 this game never puts on screen — on the frame the **first** pursuit of that day telegraphs, rather
 than at dawn — a line of text at dawn is a control list, and the same line over a dog at the pram is

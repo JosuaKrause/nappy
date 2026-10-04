@@ -12,6 +12,7 @@ const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 
 func run(t) -> void:
 	_test_the_run_hint_fires_once_on_the_teaching_day(t)
+	_test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t)
 	_test_the_run_hint_never_fires_off_the_teaching_day(t)
 	_test_the_run_hint_fires_again_on_a_retried_teaching_day(t)
 	_test_the_run_hint_names_a_double_tap_on_a_touch_device(t)
@@ -57,16 +58,16 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 
 	var first := _pursuer()
 	hud._on_event_telegraphed(first)
-	t.check(hud._teach.text == "Double tap to run",
+	t.check(hud._teach.line == "Double tap to run",
 			"the first pursuit of the teaching day shows the hint")
 	t.check(hud._taught_run, "and the day is marked taught")
 
 	# A second pursuit the same day — the day the lesson is repeated most, since `charging_dog` can
 	# land more than once — must not read as a second lesson.
-	hud._teach.text = ""
+	hud._teach.show_line("")
 	var second := _pursuer()
 	hud._on_event_telegraphed(second)
-	t.check(hud._teach.text == "", "a second pursuit the same day says nothing new")
+	t.check(hud._teach.line == "", "a second pursuit the same day says nothing new")
 
 	first.free()
 	second.free()
@@ -86,7 +87,7 @@ func _test_the_run_hint_names_a_double_tap_on_a_touch_device(t) -> void:
 
 	var first := _pursuer()
 	hud._on_event_telegraphed(first)
-	t.check(hud._teach.text == "Double tap to run",
+	t.check(hud._teach.line == "Double tap to run",
 			"a keyboard-and-mouse desktop gets the same wording — no key is named for it either")
 
 	first.free()
@@ -102,7 +103,7 @@ func _test_the_walk_hint_names_a_tap_on_a_touch_device(t) -> void:
 	hud._touch = false
 
 	hud._teach_the_day(1)
-	t.check(hud._teach.text == "Tap to walk, double tap to run",
+	t.check(hud._teach.line == "Tap to walk, double tap to run",
 			"day 1 tells every device to tap — no key is named for a keyboard either")
 
 	hud.free()
@@ -128,14 +129,14 @@ func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
 
 	var second := _pursuer()
 	hud._on_event_telegraphed(second)
-	t.check(hud._teach.text == "Double tap to run",
+	t.check(hud._teach.line == "Double tap to run",
 			"and the lesson fires again on the second attempt")
 
 	# Still only once within that attempt — the gate is the attempt, not "has this run seen it".
-	hud._teach.text = ""
+	hud._teach.show_line("")
 	var third := _pursuer()
 	hud._on_event_telegraphed(third)
-	t.check(hud._teach.text == "", "and still only once within one attempt")
+	t.check(hud._teach.line == "", "and still only once within one attempt")
 
 	first.free()
 	second.free()
@@ -195,8 +196,8 @@ func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t) -> void:
 
 	for _i in 40: # 4s of stillness, past TEACH_PAUSE_AFTER
 		hud._teach_the_pause(0.1)
-	t.check(hud._teach.text == "Tap the pause button to pause",
-			"a keyboard-and-mouse desktop is told to tap the button too — Esc is not named")
+	t.check(hud._teach.line == "Press {pause} to pause",
+			"a keyboard-and-mouse desktop is shown the pause button too — Esc is not named")
 
 	# `.free()`, not `queue_free()`: `Stroller._exit_tree()` removes it from the "player" group
 	# synchronously, and this suite never yields a frame for a deferred deletion to catch up —
@@ -233,8 +234,8 @@ func _test_the_pause_hint_waits_out_a_detention(t) -> void:
 	for _i in 40:
 		hud._teach_the_pause(0.1)
 	t.check(hud._taught_pause, "released, she still earns the lesson on her own stand")
-	t.check(hud._teach.text == "Tap the pause button to pause",
-			"and says the actual line — no key named, even on this default (non-touch) device")
+	t.check(hud._teach.line == "Press {pause} to pause",
+			"and says the actual line, the pause symbol in it — no key named, even on this default (non-touch) device")
 
 	stroller.free()
 	hud.free()
@@ -251,7 +252,7 @@ func _test_the_run_hint_never_fires_off_the_teaching_day(t) -> void:
 	var hud_before := _hud(t)
 	var early := _pursuer()
 	hud_before._on_event_telegraphed(early)
-	t.check(hud_before._teach.text == "", "a pursuit before the teaching day says nothing")
+	t.check(hud_before._teach.line == "", "a pursuit before the teaching day says nothing")
 	early.free()
 	hud_before.free()
 
@@ -262,7 +263,7 @@ func _test_the_run_hint_never_fires_off_the_teaching_day(t) -> void:
 	var hud_after := _hud(t)
 	var late := _pursuer()
 	hud_after._on_event_telegraphed(late)
-	t.check(hud_after._teach.text == "", "a pursuit well after the teaching day says nothing")
+	t.check(hud_after._teach.line == "", "a pursuit well after the teaching day says nothing")
 	late.free()
 	hud_after.free()
 
@@ -436,13 +437,13 @@ func _test_every_task_line_fits_on_one_line(t) -> void:
 ## split. A two-sentence message too wide for one line breaks after the first.
 func _test_a_touched_marks_message_breaks_between_sentences(t) -> void:
 	var hud := _hud(t)
-	var font_size: int = hud._teach.get_theme_font_size("font_size")
+	var font_size: int = hud._teach.get_theme_font_size("normal_font_size")
 	var width: float = hud._teach.custom_minimum_size.x
 	t.check(width > 0.0, "the Teach label has a width for the helper to wrap to")
 	for step in ResistanceSteps.all():
 		if step.brief == "":
 			continue
-		var broken := SentenceLines.break_for_label(step.brief, hud._teach)
+		var broken := SentenceLines.break_for_help(step.brief, hud._teach)
 		t.check(broken.replace("\n", " ") == step.brief,
 				"step %d's message only gains breaks, never loses words" % step.index)
 		for line in broken.split("\n"):
@@ -457,9 +458,9 @@ func _test_a_touched_marks_message_breaks_between_sentences(t) -> void:
 	var saved_brief := step.brief
 	step.brief = "A van is waiting on the sidewalk by the old market. Do not come home empty-handed tonight."
 	hud._on_resistance_step_completed(3)
-	t.check(hud._teach.text == "A van is waiting on the sidewalk by the old market.\n"
+	t.check(hud._teach.line == "A van is waiting on the sidewalk by the old market.\n"
 			+ "Do not come home empty-handed tonight.",
-			"a touched mark's long message breaks after its first sentence, got '%s'" % hud._teach.text)
+			"a touched mark's long message breaks after its first sentence, got '%s'" % hud._teach.line)
 	step.brief = saved_brief
 	GameState.completed_resistance_steps = saved_completed
 	hud.free()
@@ -500,14 +501,14 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 ## removing it — see `Hud._on_resistance_step_completed()`.
 func _test_a_completed_step_puts_no_text_on_screen(t) -> void:
 	var hud := _hud(t)
-	hud._teach.text = ""
+	hud._teach.show_line("")
 	EventBus.resistance_step_completed.emit(1)
-	t.check(hud._teach.text == ResistanceSteps.by_index(1).brief,
+	t.check(hud._teach.line == ResistanceSteps.by_index(1).brief,
 			"a completed mark announces its own words on the teaching line — the mark and " +
 			"nowhere else — rather than staying silent")
-	hud._teach.text = ""
+	hud._teach.show_line("")
 	EventBus.resistance_step_completed.emit(2)
-	t.check(hud._teach.text == "", "a completed perform step puts no text on screen")
+	t.check(hud._teach.line == "", "a completed perform step puts no text on screen")
 
 	hud.free()
 
@@ -580,3 +581,41 @@ func _test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t) -> void:
 			"and only reaches solid once the value genuinely is the max")
 	t.check(MeterBar.displayed_fraction(50.0, Tuning.METER_MAX) == 0.5,
 			"and away from the ceiling the fraction is not touched at all")
+
+## **The joystick scheme's run lines show the run button.** *(2026-10-04, the player, inbox #533:
+## "joystick run should now say hold <run button> or double tap to run where it makes sense".)* The
+## tap scheme draws no run button, so it keeps "double tap to run"; a `TouchControls` in the tree
+## set to `JOYSTICK` is what the HUD asks.
+func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
+	var saved_day := GameState.day
+	GameState.day = Tuning.RUN_TAUGHT_DAY
+	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	t.add_child(controls)
+	controls.set_mode(ControlsMode.Mode.JOYSTICK)
+	var hud := _hud(t)
+
+	hud._teach_the_day(1)
+	t.check(hud._teach.line == "Tap to walk, hold {run} or double tap to run",
+			"joystick, day 1: walking by tap, running by the run button or a double tap")
+	hud._on_event_telegraphed(_pursuer())
+	t.check(hud._teach.line == "Hold {run} or double tap to run",
+			"joystick, first pursuit: the run button's symbol in the line, got '%s'" % hud._teach.line)
+	var with_symbol: int = hud._teach.get_content_width()
+	hud._teach.show_line("Hold  or double tap to run")
+	t.check(with_symbol >= hud._teach.get_content_width() + 20,
+			"and the symbol is really placed in the label (%d px against %d without it)"
+			% [with_symbol, hud._teach.get_content_width()])
+
+	controls.set_mode(ControlsMode.Mode.TAP)
+	hud._teach_the_day(1)
+	t.check(hud._teach.line == "Tap to walk, double tap to run",
+			"tap, day 1: no run button on screen, so none in the line")
+
+	hud._taught_run = false
+	hud._teach_the_day(Tuning.RUN_TAUGHT_DAY)
+	hud._on_event_telegraphed(_pursuer())
+	t.check(hud._teach.line == "Double tap to run", "tap, first pursuit: unchanged")
+
+	GameState.day = saved_day
+	controls.free()
+	hud.free()
