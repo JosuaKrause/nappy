@@ -275,7 +275,7 @@ func _test_blackout_from_query(t) -> void:
 	t.check(not DevFlags._blackout_from_query(""), "an absent parameter forces nothing")
 
 ## `--ground-mode`/`?groundmode=`, through `ground_mode()`'s own pure half: the command line, the
-## page under the bundle's gate, and the default of `1` when neither names one.
+## page under the bundle's gate, and the default of `2` when neither names one.
 func _test_ground_mode_reads_the_command_line_and_the_open_page(t) -> void:
 	var none := PackedStringArray()
 	t.check(DevFlags._ground_mode_for(PackedStringArray(["--ground-mode", "2"]), "", false) == 2,
@@ -285,14 +285,16 @@ func _test_ground_mode_reads_the_command_line_and_the_open_page(t) -> void:
 	t.check(DevFlags._ground_mode_for(none, "?debug=1&groundmode=2", true) == 2,
 		"an open page names the mode among other parameters")
 	t.check(DevFlags._ground_mode_for(none, "?debug=1", true) == DevFlags.GROUND_MODE_DEFAULT
-		and DevFlags.GROUND_MODE_DEFAULT == SceneryGround.Mode.ALL,
-		"naming no mode prepares every needed region in its frame")
+		and DevFlags.GROUND_MODE_DEFAULT == SceneryGround.Mode.ONE
+		and DevFlags._ground_mode_for(none, "", false) == 2
+		and DevFlags._ground_mode_for(PackedStringArray(["--seed", "4"]), "", false) == 2,
+		"naming no mode prepares at most one whole region a frame")
 
 func _test_ground_mode_is_ignored_on_a_release_page_without_debug(t) -> void:
 	var none := PackedStringArray()
 	for query in ["?groundmode=3", "?debug=1&groundmode=3"]:
 		var open := DevFlags._live_debug_requested(false, DevFlags._readout_from_query(query))
-		var expected := 3 if query.contains("debug=1") else DevFlags.GROUND_MODE_DEFAULT
+		var expected := 3 if query.contains("debug=1") else 2
 		t.check(DevFlags._ground_mode_for(none, query, open) == expected,
 			"a release page reads %s as mode %d" % [query, expected])
 
@@ -300,7 +302,8 @@ func _test_ground_mode_refuses_anything_but_its_three_numbers(t) -> void:
 	for raw in ["1", "2", "3"]:
 		t.check(DevFlags.parse_ground_mode(raw) == int(raw), "mode %s is read back" % raw)
 	for raw in ["0", "4", "two", ""]:
-		t.check(DevFlags.parse_ground_mode(raw) == DevFlags.GROUND_MODE_DEFAULT,
+		t.check(DevFlags.parse_ground_mode(raw) == 2 \
+			and DevFlags.parse_ground_mode(raw) == DevFlags.GROUND_MODE_DEFAULT,
 			"'%s' refuses the flag rather than choosing a mode" % raw)
 
 ## Pins the engine's own physics rate and interpolation setting so a `project.godot` edit cannot

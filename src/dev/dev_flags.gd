@@ -523,14 +523,16 @@ static func _blackout_from_query(query: String) -> bool:
 	return false
 
 ## `--ground-mode 1|2|3` (or the page's own `?groundmode=`, under `live_debug_requested()`) — how
-## a needed nearby ground region is scheduled, as `SceneryGround.Mode` numbers it: `1`, the
-## default, prepares every region needed in a frame whole in that frame, as many as the 2ms soft
-## budget allows, the rest in the following frames, each under its own budget; `2` prepares at most
+## a needed nearby ground region is scheduled, as `SceneryGround.Mode` numbers it: `1` prepares
+## every region needed in a frame whole in that frame, as many as the 2ms soft budget allows, the
+## rest in the following frames, each under its own budget; `2`, the default, prepares at most
 ## one whole region a frame; `3` spreads one region's preparation across frames. *(2026-10-03,
-## docs/playtests/2026-10-03-tawny-stork.md: "let's introduce three options 1) (the default) as
-## many graphics as needed are prepared in one frame 2) at most one graphic is prepared in one
-## frame 3) graphic creation is smeared out like in the PR"; and, of the switch, "yes it should be
-## a flag I can use in mobile under debug".)* It chooses how the ground is drawn, not what is
+## docs/playtests/2026-10-03-tawny-stork.md: "let's introduce three options 1) as many graphics as
+## needed are prepared in one frame 2) at most one graphic is prepared in one frame 3) graphic
+## creation is smeared out like in the PR"; and, of the switch, "yes it should be a flag I can use
+## in mobile under debug"; then, after a phone test, inbox #510: "mode 2 felt to have the fewest
+## stutters especially when coming back down it was much smoother than mode 1. let's make 2 the
+## default for now".)* It chooses how the ground is drawn, not what is
 ## drawn, so it sits in the M193 bundle beside `?layers=`; like every word of that bundle, naming
 ## it on a release page keeps the run off the save.
 static func ground_mode() -> int:
@@ -538,7 +540,7 @@ static func ground_mode() -> int:
 
 ## `ground_mode()`'s own decision, pure in its three inputs so a test can drive the command line,
 ## the page and the `?debug=1` gate without a debug build or a web page: the command line wins,
-## the page is read only while the bundle is open, and `1` answers everything else.
+## the page is read only while the bundle is open, and `2` answers everything else.
 static func _ground_mode_for(args: PackedStringArray, query: String, flags_open: bool) -> int:
 	var index := args.find("--ground-mode")
 	if index != -1 and index + 1 < args.size():
@@ -551,7 +553,7 @@ static func _ground_mode_for(args: PackedStringArray, query: String, flags_open:
 			return parse_ground_mode(pair[1])
 	return GROUND_MODE_DEFAULT
 
-const GROUND_MODE_DEFAULT := 1
+const GROUND_MODE_DEFAULT := 2
 
 ## The bare parsing of a `--ground-mode`/`?groundmode=` value. Anything but `1`, `2` or `3` refuses
 ## the whole flag with `push_warning` and answers the default, the reasoning

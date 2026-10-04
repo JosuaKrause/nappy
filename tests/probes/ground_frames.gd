@@ -1,7 +1,7 @@
 extends Node
 ## Bounded quadrant/row/atomic comparison and real-process-frame residency coverage.
 ## Run its scene with --no-save --no-telemetry; GROUND_FRAMES_OUTPUT is a fresh JSON path.
-## Coverage runs in the ground mode --ground-mode names (1 when absent): mode 2 fails on any frame
+## Coverage runs in the ground mode --ground-mode names (2 when absent): mode 2 fails on any frame
 ## that prepares a second region outside the guard, and mode 3 on stepping that never spans frames.
 
 const CITY: PackedScene = preload("res://scenes/world/city.tscn")
