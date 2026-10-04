@@ -202,19 +202,25 @@ summary includes; the last table leaves the first two seconds of play out.
 
 ## Rerun
 
+The scripts come from a runner checkout at this folder's commit (fc96d06161e8be3308cabf6a194a29f9f1b8ee08,
+on the PR's ref); the measured checkouts are separate, since the runner refuses a dirty one.
+
 ```sh
 source_root=$(git rev-parse --show-toplevel)
 scratch=$(mktemp -d)
+evidence=docs/evidence/m159-frame-record-2026-10-04
 git -C "$source_root" fetch origin main refs/pull/521/head
+git -C "$source_root" worktree add --detach "$scratch/runner" fc96d06161e8be3308cabf6a194a29f9f1b8ee08
 git -C "$source_root" worktree add --detach "$scratch/branch" f2e3247545cefe0cb4252669f157b88e80a31f7c
 git -C "$source_root" worktree add --detach "$scratch/main" 8008980567cd7139cf95c6f314e6eb1c5bd73da5
-python3 "$scratch/branch/docs/evidence/m159-frame-record-2026-10-04/measure.py" \
+python3 "$scratch/runner/$evidence/measure.py" \
   --branch "$scratch/branch" --main "$scratch/main" --output "$scratch/run" --godot "$GODOT"
-python3 "$scratch/branch/docs/evidence/m159-frame-record-2026-10-04/summarize.py" "$scratch/run/results.json"
-(cd "$scratch/branch" && "$GODOT" --headless --path . --script "$PWD/docs/evidence/m159-frame-record-2026-10-04/wrap_cost.gd")
+python3 "$scratch/runner/$evidence/summarize.py" "$scratch/run/results.json"
+"$GODOT" --headless --path "$scratch/branch" --script "$scratch/runner/$evidence/wrap_cost.gd"
 ```
 
-Batch 1's branch is c3041d98d675dce92550facfd4d0b1bb6472b002 in place of the first worktree.
-The runner needs a display that stays awake (it was run under `caffeinate -d -i`), takes about
-35 minutes for both parts, opens an always-on-top window for each capture, and refuses a dirty
-checkout. Timing varies between launches; compare conditions within one batch.
+`--part cost` or `--part modes` runs one part. Batch 1's branch is
+c3041d98d675dce92550facfd4d0b1bb6472b002 in place of the second worktree. The runner needs a
+display that stays awake (it was run under `caffeinate -d -i`), takes about 35 minutes for both
+parts, and opens an always-on-top window for each capture. Timing varies between launches;
+compare conditions within one batch.
