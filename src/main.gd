@@ -1920,7 +1920,7 @@ func _start_recipe_day() -> void:
 			GameState.day_rng(GameState.day, "closures"))
 	_city.set_act(GameState.current_act())
 	_day.start(DevRig.day_length(GameState.day))
-	var errors := _recipe.install(_city, _player, _baby)
+	var errors := _recipe.install(_city, _player, _baby, _resistance)
 	if not errors.is_empty():
 		_recipe.manifest["setup_failed"] = true
 		_recipe_failed(errors)
@@ -2221,6 +2221,10 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 ## A won day 14 without them keeps the ending it has today: the neutral screen, from
 ## `_on_summary_continued()`'s own `_run_over` branch.
 func _hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
+	# A recipe boot never takes the escape over: its won day reloads the authored scene, and the
+	# reload would boot the escape with no director for the scene's task to run on.
+	if _recipe:
+		return false
 	return result == GameEnums.DayResult.WON and GameState.is_final_day() \
 			and GameState.earned_good_ending()
 

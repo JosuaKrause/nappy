@@ -111,8 +111,15 @@ func _ready() -> void:
 		return
 	var tree := get_tree()
 	tree.set_meta("recipe_retry_expected", initial)
+	if int(initial.day) == Tuning.RUN_LENGTH_DAYS:
+		# The door touched, so the run has earned the good ending: outside a recipe that hands the
+		# won day over to the escape, and the reload would boot it with no director.
+		GameState.sabotage_done = true
 	main.call("_on_day_finished", GameEnums.DayResult.WON)
-	if GameState.day != int(initial.day) + 1:
+	# The last night's win ends the run on its ending rather than moving on to a next day.
+	var progressed := GameState.ending != GameEnums.Ending.NONE \
+			if int(initial.day) == Tuning.RUN_LENGTH_DAYS else GameState.day == int(initial.day) + 1
+	if not progressed:
 		fail("winning the recipe day did not apply normal progression")
 		return
 	(main.get("_summary") as Node).emit_signal("continued")

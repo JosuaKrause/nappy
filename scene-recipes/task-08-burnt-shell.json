@@ -1,0 +1,13 @@
+{
+  "version": 1, "name": "Day 8: the burnt building, burnt for a run with no day-3 fire where her path first reaches 576px", "seed": 11,
+  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
+  "anchors": {"mark": {"tile": [92, 69]}},
+  "setup": {"tutorial_complete": true, "day": 8, "parent": "mother", "player": {"at": "mark", "facing": "south"}, "task": {"mark": "mark"}},
+  "playback": {"walk": "0.35s2.78w3.13n0.35w1.94n", "duration": 9.2, "capture_at": 8.0,
+    "observations": [{"tick": 1, "subject": "task", "condition": "offered"},
+      {"tick": 1, "subject": "task", "condition": "arrowed"},
+      {"tick": 1, "subject": "task", "condition": "off_screen"},
+      {"tick": 1, "subject": "rider", "condition": "beyond", "at": "mark", "distance": 576},
+      {"tick": 1, "subject": "rider", "condition": "near", "at": "mark", "distance": 608},
+      {"tick": 270, "subject": "task", "condition": "done"}]}
+}

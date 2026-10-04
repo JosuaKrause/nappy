@@ -82,7 +82,12 @@ func setup(city: City, map: CityMap) -> void:
 
 ## Starts the day's happenings: on the mornings before `NEIGHBOR_DAY` the neighbor walks out of
 ## her building beside her and off along her street.
-func start_day(day: int) -> void:
+##
+## `with_its_events` false starts the day with none of them owed — no neighbor, raid, market,
+## column or boarded window — for a scene recipe's task (`ResistanceDirector.start_recipe_task()`),
+## which installs only what it selects. What the task itself asks of this day still answers: day
+## 12's park is taken when its swing is reached (`take_the_park()`).
+func start_day(day: int, with_its_events := true) -> void:
 	_day = day
 	_rng = GameState.day_rng(day, "happenings")
 	morning_neighbor = null
@@ -98,8 +103,10 @@ func start_day(day: int) -> void:
 	_closing.clear()
 	_closing_park = Vector2i(-1, -1)
 	column.clear()
-	_market_owed = day == MARKET_DAY
-	_column_owed = day == COLUMN_DAY
+	_market_owed = with_its_events and day == MARKET_DAY
+	_column_owed = with_its_events and day == COLUMN_DAY
+	if not with_its_events:
+		return
 	if day < NEIGHBOR_DAY:
 		morning_neighbor = _send_the_neighbor_to_work()
 	if day == NEIGHBOR_DAY:

@@ -799,7 +799,8 @@ func mast_foot(mast_id: String) -> Vector2:
 ## `EventScheduler.added_mast_id()` with its body recorded, it streams in like any planned row,
 ## broadcasts on the one clock, is silenced by `silence_mast()`, counts for `silence_all_masts()`,
 ## and once silenced stands silenced on later days from its scar (`EventScheduler._place_masts()`).
-## Null when no offered tile passes, which leaves day 11 to the nearest live mast.
+## Null when no offered tile passes, which leaves day 11 to the nearest live mast, or, when no live
+## mast stands at all, with nowhere to go.
 func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
 	if offered.is_empty():
 		return null

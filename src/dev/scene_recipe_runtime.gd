@@ -25,6 +25,7 @@ var _active := false
 var _capture_tick := -1
 var _zoom: ZoomOutCamera
 var _last_positions: Dictionary = {}
+var _resistance: ResistanceDirector
 
 static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
 	var loaded := SceneRecipe.load_file(path)
@@ -57,7 +58,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	var playback: Dictionary = recipe.get("playback", {})
 	_keys(setup, ["day", "parent", "player", "background", "progression", "events", "actors",
 			"signal_time", "column", "tutorial_complete", "posters", "roof_fixtures",
-			"seals", "gates", "barriers"], "setup", errors)
+			"seals", "gates", "barriers", "task"], "setup", errors)
 	if not setup.get("tutorial_complete", false) is bool:
 		errors.append("setup.tutorial_complete must be boolean")
 	_number(setup.get("day", 1), "setup.day", 1, 14, errors, true)
@@ -178,6 +179,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			elif int(setup.get("day", 1)) < int(PosterWalls.KIND_FIRST_DAY[PosterArt.Kind[key]]):
 				errors.append("setup.posters.kind is not available on the authored day")
 	var names := {"player": true}
+	_validate_task(recipe, names, errors)
 	if setup.has("column"):
 		if not setup.column is Dictionary:
 			errors.append("setup.column must be an object")
@@ -265,14 +267,72 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			_keys(check, ["tick", "subject", "condition", "at", "distance"], "observation", errors)
 			_number(check.get("tick"), "observation.tick", 0,
 					float(playback.get("duration", 5)) * Engine.physics_ticks_per_second, errors, true)
-			if not names.has(check.get("subject")):
-				errors.append("observation.subject is not a named actor")
-			if not check.get("condition") in ["visible", "moving", "running", "carrying", "pursuing", "near"]:
+			var subject: Variant = check.get("subject")
+			if not names.has(subject) and not (subject is String
+					and str(subject).begins_with(ROW_SUBJECT)
+					and EventCatalogue.by_id(str(subject).trim_prefix(ROW_SUBJECT))):
+				errors.append("observation.subject is not a named actor or row:<catalogue id>")
+			if not check.get("condition") in CONDITIONS:
 				errors.append("observation.condition is unsupported")
-			if check.get("condition") == "near":
+			if check.get("condition") in ["offered", "done", "arrowed", "unarrowed"] \
+					and not subject in ["mark", "task"]:
+				errors.append("observation.condition %s asks about the task's mark or target"
+						% check.get("condition"))
+			if check.get("condition") in ["near", "beyond"]:
 				_position(check.get("at"), "observation.at", errors)
 				_number(check.get("distance"), "observation.distance", 0, 10000, errors)
 	return errors
+
+## The observation conditions, in the order `docs/SCENE_RECIPES.md` names them.
+const CONDITIONS := ["visible", "moving", "running", "carrying", "pursuing", "near", "beyond",
+		"off_screen", "offered", "done", "arrowed", "unarrowed"]
+## An observation subject naming no actor but the first live instance of a catalogue row: what an
+## event summons rather than what the recipe placed, such as the `fire_truck` a seen
+## `burning_building` calls in.
+const ROW_SUBJECT := "row:"
+
+## `setup.task`: the day's own resistance step, its mark where `mark` puts it and read as the scene
+## begins (`ResistanceDirector.start_recipe_task()`). The days with a mark take `mark`; the last
+## night has no mark and takes none; `neighbor` pins day 10's neighbor's start and nothing else.
+## Names `mark`, `task` (the contact, where the red arrow ends) and, for a task that rides a body —
+## the man shouting, the van, the burnt shell, the neighbor, a roadblock — `rider`, for the
+## observations.
+static func _validate_task(recipe: Dictionary, names: Dictionary, errors: Array[String]) -> void:
+	var setup: Dictionary = recipe.get("setup", {})
+	if not setup.has("task"):
+		return
+	if not setup.task is Dictionary:
+		errors.append("setup.task must be an object")
+		return
+	var task: Dictionary = setup.task
+	_keys(task, ["mark", "neighbor"], "setup.task", errors)
+	if recipe.get("kind", "city") != "city":
+		errors.append("setup.task requires a city scene")
+	var day := int(setup.get("day", 1))
+	var none: Array[int] = []
+	var step := ResistanceSteps.for_day(day, none, none, true)
+	if not step:
+		errors.append("setup.task: day %d offers no resistance task" % day)
+		return
+	if step.is_pickup:
+		if not task.has("mark"):
+			errors.append("setup.task.mark: day %d's task starts at a chalk mark" % day)
+		else:
+			_position(task.mark, "setup.task.mark", errors)
+		names["mark"] = true
+	elif task.has("mark"):
+		errors.append("setup.task.mark: day %d's task has no chalk mark" % day)
+	var perform := ResistanceSteps.by_index(step.index + 1) if step.is_pickup else step
+	if task.has("neighbor"):
+		if not perform or perform.target_kind != ResistanceSteps.TargetKind.NEIGHBOR:
+			errors.append("setup.task.neighbor: only day %d's neighbor has a start to pin"
+					% ResistanceHappenings.NEIGHBOR_DAY)
+		else:
+			_position(task.neighbor, "setup.task.neighbor", errors)
+	names["task"] = true
+	if perform and perform.target_kind in [ResistanceSteps.TargetKind.EVENT,
+			ResistanceSteps.TargetKind.SCAR, ResistanceSteps.TargetKind.NEIGHBOR]:
+		names["rider"] = true
 
 static func _keys(object: Dictionary, allowed: Array, where: String, errors: Array[String]) -> void:
 	for key: Variant in object:
@@ -339,9 +399,11 @@ func start_position() -> Vector2:
 
 ## Installs the fixed day before the world gets a simulation frame. Geometry eligibility reads
 ## the declared construction context, never the exterior's unbuilt walkable floor.
-func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
+func install(city: City, player: Stroller, baby: Baby,
+		resistance: ResistanceDirector = null) -> Array[String]:
 	_city = city
 	_player = player
+	_resistance = resistance
 	named = {"player": player}
 	var errors: Array[String] = []
 	var setup: Dictionary = data.get("setup", {})
@@ -424,6 +486,50 @@ func install(city: City, player: Stroller, baby: Baby) -> Array[String]:
 		manifest.installed_events.append({"row": plan.def.id,
 				"position": [plan.position.x, plan.position.y], "facing": [plan.facing.x, plan.facing.y]})
 	return errors
+
+## `setup.task`, started once her own camera is the one on screen: the boot camera is gone by
+## `begin()` and is still current during `install()`, and where the task is placed asks what she
+## can see from where she read the mark. The last night is offered only once the goal is met, so a
+## day-14 scene starts with it met. False, with the scene stopped, when the director refused it.
+func _start_the_task() -> bool:
+	if not data.get("setup", {}).has("task"):
+		return true
+	var task: Dictionary = data.setup.task
+	var errors: Array[String] = []
+	if not _resistance:
+		errors.append("setup.task: this boot has no resistance director")
+	var mark := position_of(task.mark, errors) if task.has("mark") else Vector2.INF
+	var neighbor := position_of(task.neighbor, errors) if task.has("neighbor") else Vector2.INF
+	if errors.is_empty():
+		var camera := get_viewport().get_camera_2d()
+		if camera:
+			camera.force_update_scroll()
+		if GameState.is_final_day():
+			GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+		errors = _resistance.start_recipe_task(GameState.day,
+				GameState.day_rng(GameState.day, "resistance"), DevRig.day_length(GameState.day),
+				mark, neighbor)
+	if not errors.is_empty():
+		manifest["setup_failed"] = true
+		for problem in errors:
+			print("[SceneRecipe] " + problem)
+		write_manifest()
+		get_tree().quit(1)
+		return false
+	if _resistance._read_mark:
+		named["mark"] = _resistance._read_mark
+	named["task"] = _resistance._contact
+	if _resistance._rider:
+		named["rider"] = _resistance._rider
+	var step := _resistance.current_step()
+	var target := _resistance.contact_position()
+	var from := mark if mark != Vector2.INF else _player.global_position
+	var arrow := _resistance.red_arrow_target()
+	manifest["task"] = {"step": step.index, "title": step.title,
+			"mark": [mark.x, mark.y] if mark != Vector2.INF else null,
+			"target": [target.x, target.y], "distance": snappedf(from.distance_to(target), 0.01),
+			"arrow": [arrow.x, arrow.y] if arrow != Vector2.INF else null}
+	return true
 
 ## The army column is a production happening, whose close-spaced trucks deliberately do not use
 ## unrelated catalogue-event spacing. Start its real formation at the authored main-road point.
@@ -660,6 +766,8 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 	return candidate
 
 func begin() -> void:
+	if not _start_the_task():
+		return
 	manifest["initial_actors"] = snapshot()
 	_record_crowd("initial_crowd")
 	print("[SceneRecipe] manifest " + JSON.stringify(manifest, "", true))
@@ -812,6 +920,8 @@ func snapshot() -> Dictionary:
 			result[label]["carrying"] = actor.carrying
 			result[label]["speed"] = snappedf(actor.current_speed(), 0.0001)
 			result[label]["gait_frame"] = actor._mother_gait_frame(actor.current_speed() / Tuning.WALK_SPEED)
+		elif actor is ContactPoint:
+			result[label]["done"] = actor.is_done
 		elif actor is EventInstance:
 			result[label]["row"] = actor.def.id
 			result[label]["telegraphing"] = actor.is_telegraphing()
@@ -823,8 +933,8 @@ func _observe() -> void:
 	for check: Dictionary in _observations:
 		if int(check.tick) != tick:
 			continue
-		var passed := is_instance_valid(named.get(check.subject))
-		var actor: Node2D = named[check.subject] if passed else null
+		var actor := subject_of(str(check.subject))
+		var passed := actor != null
 		if passed:
 			match check.condition:
 				"visible":
@@ -841,13 +951,32 @@ func _observe() -> void:
 					passed = actor is EventInstance and actor.def.pursues \
 							and not actor.is_telegraphing() and not actor.is_waiting() \
 							and not actor.is_finished and not actor.is_leaving
-				"near":
+				"near", "beyond":
 					var errors: Array[String] = []
 					var target := position_of(check.at, errors)
-					passed = errors.is_empty() and actor.global_position.distance_to(target) <= float(check.distance)
+					var distance := actor.global_position.distance_to(target)
+					passed = errors.is_empty() and (distance <= float(check.distance)
+							if check.condition == "near" else distance >= float(check.distance))
+				"off_screen":
+					passed = not _box_on_screen(actor.global_position,
+							ResistanceDirector.TASK_HALF_EXTENT)
+				"offered":
+					passed = actor is ContactPoint and not actor.is_done and _resistance != null \
+							and _resistance._contact == actor
+				"done":
+					passed = actor is ContactPoint and actor.is_done \
+							and actor.step.index in GameState.completed_resistance_steps
+				"arrowed":
+					passed = _resistance != null and _resistance.red_arrow_target() != Vector2.INF \
+							and _resistance.red_arrow_target().is_equal_approx(actor.global_position)
+				"unarrowed":
+					passed = _resistance != null and _resistance.red_arrow_target() == Vector2.INF
 		var record := check.duplicate(true)
 		record["passed"] = passed
 		record["state"] = snapshot().get(check.subject, {})
+		if actor and not named.has(check.subject):
+			record["state"] = {"position": [snappedf(actor.global_position.x, 0.0001),
+					snappedf(actor.global_position.y, 0.0001)]}
 		manifest.observations.append(record)
 		if not passed:
 			print("[SceneRecipe] unmet observation: " + JSON.stringify(record))
@@ -857,6 +986,35 @@ func _observe() -> void:
 	for label: String in named:
 		if is_instance_valid(named[label]):
 			_last_positions[label] = (named[label] as Node2D).global_position
+	for check: Dictionary in _observations:
+		var label := str(check.subject)
+		if label.begins_with(ROW_SUBJECT):
+			var summoned := subject_of(label)
+			if summoned:
+				_last_positions[label] = summoned.global_position
+
+## The node an observation names: a named actor, or for `row:<id>` the first live, unfinished
+## instance of that catalogue row in the world. Null when there is none.
+func subject_of(label: String) -> Node2D:
+	if not label.begins_with(ROW_SUBJECT):
+		return named[label] if is_instance_valid(named.get(label)) else null
+	if not _city or not _city.events:
+		return null
+	for instance in _city.events.instances():
+		if instance.def.id == label.trim_prefix(ROW_SUBJECT) and not instance.is_finished:
+			return instance
+	return null
+
+## Whether any part of a box `half` either side of `centre` is in the picture: its centre or a
+## corner, the test `ResistanceDirector._box_shows()` puts a task's target through as it is placed.
+func _box_on_screen(centre: Vector2, half: Vector2) -> bool:
+	var view := get_viewport().get_visible_rect()
+	var transform := get_viewport().get_canvas_transform()
+	for corner: Vector2 in [centre, centre + half, centre - half, centre + Vector2(half.x, -half.y),
+			centre + Vector2(-half.x, half.y)]:
+		if view.has_point(transform * corner):
+			return true
+	return false
 
 func write_manifest() -> void:
 	var path := DevFlags._word_after("--recipe-manifest")
