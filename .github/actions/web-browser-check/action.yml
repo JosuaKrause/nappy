@@ -1,0 +1,105 @@
+# The release Web export, booted in a real Chrome: the one recipe `ci.yml`'s `browser` job,
+# `deploy.yml`'s `build` job and `web-template.yml` all run, so the commit CI passes is exported and
+# exercised exactly the way the deploy will export and exercise it. The caller checks out the tree
+# first and keeps the evidence afterwards (an `upload-artifact` step reading
+# `${{ runner.temp }}/browser-result`, under `if: always()` so a failure leaves its screenshots and
+# result.json behind); everything between is here.
+#
+# Godot comes from tools/web-template/pins.env, not from a workflow's own env: tools/export-web.sh
+# refuses a release export from any other version, so the pin the template is built against is the
+# only one that can work. It is cached under the same `godot-<version>-linux-x86_64` key and path
+# ci.yml's other jobs use, so one download serves them all.
+name: web-browser-check
+description: Build or restore the custom Web template, export the release build and run tools/web-template/browser-check.mjs on it.
+
+inputs:
+  release-tag:
+    description: >-
+      RELEASE_TAG for tools/export-web.sh -- the build/web/<tag>/ directory and the version baked
+      into the export. The deploy passes the pushed tag; a check passes a name that says it is one.
+    required: true
+
+outputs:
+  template-key:
+    description: The custom Web template's cache key, as tools/build-web-template.sh --key prints it.
+    value: ${{ steps.template.outputs.key }}
+
+runs:
+  using: composite
+  steps:
+    - name: Read the pinned Godot version
+      id: pins
+      shell: bash
+      run: |
+        source tools/web-template/pins.env
+        echo "godot_version=$GODOT_VERSION" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Godot
+      id: godot-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/godot
+        key: godot-${{ steps.pins.outputs.godot_version }}-linux-x86_64
+
+    - name: Download Godot
+      if: steps.godot-cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        GODOT_VERSION: ${{ steps.pins.outputs.godot_version }}
+      run: |
+        mkdir -p ~/godot
+        curl --fail -sSL --retry 3 -o ~/godot/godot.zip \
+          "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+        unzip -q ~/godot/godot.zip -d ~/godot
+        mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot-bin
+        chmod +x ~/godot/godot-bin
+
+    # uv runs the pinned SCons on a template cache miss; Node 22 runs the browser check.
+    - name: Install uv for the pinned template compiler
+      uses: astral-sh/setup-uv@v6
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    # The key covers the pins, the build profile and the build script, so a change to any of them
+    # misses the cache and compiles the template from source rather than export against a
+    # stale one. A run on main saves what it built, and a pull request restores main's caches.
+    - name: Identify the custom Web template
+      id: template
+      shell: bash
+      run: echo "key=$(./tools/build-web-template.sh --key)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache custom Web template
+      uses: actions/cache@v4
+      with:
+        path: build/web-template
+        key: web-template-${{ steps.template.outputs.key }}
+
+    - name: Build or verify the custom Web template
+      shell: bash
+      run: ./tools/build-web-template.sh --jobs 4
+
+    # The boot check stays even where `game` already ran it: it is seconds, and its import pass is
+    # what leaves the project's resources imported on a fresh runner before the export reads them.
+    - name: Check
+      shell: bash
+      run: GODOT="$HOME/godot/godot-bin" ./tools/check.sh
+
+    # RELEASE_TAG names the build/web/<tag>/ directory index.js, index.wasm and index.pck move
+    # into, and is the version tools/export-web.sh bakes into the export beside HEAD's hash; the
+    # script, not this step, does the writing, so a local export is stamped the same way. The
+    # checkout is shallow, which is why the tag is passed in rather than asked of `git describe`.
+    - name: Export the Web build
+      shell: bash
+      env:
+        RELEASE_TAG: ${{ inputs.release-tag }}
+      run: GODOT="$HOME/godot/godot-bin" ./tools/export-web.sh
+
+    # Title, keyboard play, the IndexedDB save and its reload, day 2, days 8 and 14 and the escape
+    # interior, in a temporary Chrome profile (tools/web-template/README.md, Verification).
+    - name: Exercise the exported Wasm in Chrome
+      shell: bash
+      run: |
+        node tools/web-template/browser-check.mjs --export build/web \
+          --output "$RUNNER_TEMP/browser-result" --browser /usr/bin/google-chrome
