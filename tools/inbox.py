@@ -85,6 +85,9 @@ CAPTURE_LABEL = "captured"
 # The first line of a comment `append` writes: the player's further words on a captured note, told
 # from an `ask` question. `tools/ci_transcription.py` holds the same.
 APPEND_MARKER = "<!-- inbox-append: the player's further words, added by tools/inbox.py append -->"
+# Separates what the words answered (above it) from the words (below it) in one append comment, so a
+# failed post can never leave the context alone on the issue or duplicate it on a retry.
+WORDS_MARKER = "<!-- inbox-append: the player's words follow -->"
 INBOX_LABEL = "inbox"
 BANDS = ("now", "next", "later", "parked")
 BAND_LABEL = re.compile(r"^queue_(now|next|later|parked)$")
@@ -203,15 +206,41 @@ def is_captured(note: Note) -> bool:
     return note.author in CAPTURE_BOTS and CAPTURE_LABEL in note.labels
 
 
-def appended_words(note: Note, comment: Comment) -> str | None:
-    """The player's words `append` added in `comment` on `note`, marker removed, or None when it is not one.
+def split_append(body: str) -> tuple[str, str] | None:
+    """(what the words answered, the words) of a comment `append` wrote, markers removed; None when it is not one.
 
-    Only a comment by a capture identity that starts with `APPEND_MARKER`, on a captured note.
+    The comment starts with `APPEND_MARKER`; when it carries context, a line `WORDS_MARKER` ends it
+    and the words follow.
     """
+    first, _, rest = body.replace("\r\n", "\n").partition("\n")
+    if first.strip() != APPEND_MARKER:
+        return None
+    lines = rest.split("\n")
+    for index, line in enumerate(lines):
+        if line.strip() == WORDS_MARKER:
+            return "\n".join(lines[:index]).strip(), "\n".join(lines[index + 1 :]).strip()
+    return "", rest.strip()
+
+
+def appended_parts(note: Note, comment: Comment) -> tuple[str, str] | None:
+    """`split_append` of `comment`, only when a capture identity wrote it on a captured note."""
     if not is_captured(note) or comment.author not in CAPTURE_BOTS:
         return None
-    first, _, rest = comment.body.replace("\r\n", "\n").partition("\n")
-    return rest.strip() if first.strip() == APPEND_MARKER else None
+    return split_append(comment.body)
+
+
+def appended_words(note: Note, comment: Comment) -> str | None:
+    """The player's words `append` added in `comment` on `note`, markers removed, or None when it is not one."""
+    parts = appended_parts(note, comment)
+    return parts[1] if parts is not None else None
+
+
+def refuse_markers(text: str, what: str) -> None:
+    """Only `append` writes a marker line; text for any other comment, or for the append, may not carry one."""
+    if any(line.strip() in (APPEND_MARKER, WORDS_MARKER) for line in text.replace("\r\n", "\n").split("\n")):
+        raise InboxError(
+            f"{what} has a line that is the append marker, which only `append` writes; nothing was written"
+        )
 
 
 def bands(labels: Sequence[str]) -> list[str]:
@@ -368,9 +397,14 @@ def cmd_show(github: GitHub, number: int) -> int:
     print(note.body)
     for comment in github.comments(number):
         print()
-        if appended_words(note, comment) is not None:
+        parts = appended_parts(note, comment)
+        if parts is not None:
+            if parts[0]:
+                print(f"--- comment by {comment.author}, {comment.created} (appended: what the words answered) ---")
+                print(parts[0])
+                print()
             print(f"--- comment by {comment.author}, {comment.created} (appended: the player's words) ---")
-            print(appended_words(note, comment))
+            print(parts[1])
         elif comment.author.lower() == PLAYER.lower():
             print(f"--- comment by {comment.author}, {comment.created} (the player's words) ---")
             print(comment.body)
@@ -413,6 +447,8 @@ def cmd_capture(
     The body is the words alone, so it can be copied word for word; what they answered, when given,
     goes on the note as its first comment, the agent's side, which `show` prints before any answer.
     """
+    if context is not None:
+        refuse_markers(context, "the context")
     labels = [INBOX_LABEL, CAPTURE_LABEL] + ([f"queue_{band}"] if band else [])
     args = ["issue", "create", "-R", github.repo, "--title", title or default_title(text), "--body-file", "-"]
     for label in labels:
@@ -430,6 +466,7 @@ def cmd_capture(
 
 def cmd_ask(github: GitHub, role: str, number: int, text: str) -> int:
     open_note(github, number)
+    refuse_markers(text, "the question")
     print(github.write(role, ["issue", "comment", str(number), "-R", github.repo, "--body-file", "-"], text).strip())
     return 0
 
@@ -437,8 +474,9 @@ def cmd_ask(github: GitHub, role: str, number: int, text: str) -> int:
 def cmd_append(github: GitHub, role: str, number: int, text: str, context: str | None = None) -> int:
     """Adds the player's further words to captured note `number`, marked as `append`'s.
 
-    What the words answered, when given, goes first as a comment of the agent's side, as `capture`
-    posts it. A note the player wrote gets the player's own comments, and a closed note is filed.
+    What the words answered, when given, goes first in the same comment, above a `WORDS_MARKER` line,
+    so one post is all there is to fail or to retry. A note the player wrote gets the player's own
+    comments, and a closed note is filed.
     """
     note = open_note(github, number)
     if not is_captured(note):
@@ -446,11 +484,13 @@ def cmd_append(github: GitHub, role: str, number: int, text: str, context: str |
             f"#{number} was not opened by the capture script, so it takes the player's own comments;"
             " words are appended only to a captured note"
         )
-    comment = ["issue", "comment", str(number), "-R", github.repo, "--body-file", "-"]
+    refuse_markers(text, "the player's words")
+    posted = f"{APPEND_MARKER}\n\n{text}"
     if context is not None:
-        github.write(role, comment, context)
-        print(f"posted the context on #{number}")
-    print(github.write(role, comment, f"{APPEND_MARKER}\n\n{text}").strip())
+        refuse_markers(context, "the context")
+        posted = f"{APPEND_MARKER}\n\n{context.strip()}\n\n{WORDS_MARKER}\n\n{text}"
+    comment = ["issue", "comment", str(number), "-R", github.repo, "--body-file", "-"]
+    print(github.write(role, comment, posted).strip())
     return 0
 
 
@@ -521,7 +561,7 @@ def unfiled_words(note: Note, comments: Sequence[Comment], playtests: dict[str, 
     holding = [path for path, text in sorted(playtests.items()) if body in text]
     if not holding:
         return [f"the current text of #{note.number} is not word for word there"]
-    said: list[tuple[Comment, str]] = []
+    said: list[tuple[Comment, str]] = []  # the player's words only; an appended comment's context is the agent's
     for comment in comments:
         appended = appended_words(note, comment)
         words = normalize(appended if appended is not None else comment.body)

@@ -109,12 +109,15 @@ uv run python tools/inbox.py --role claude-orchestrator append N --body-file /tm
 there is an open issue about this topic -- don't spend time reading all issues just to figure out
 whether there is an overlap")*: the inbox is never searched or read to look for an overlap, and
 with no such note in hand the words are captured as a new note. The words go into a file first,
-exactly as for `capture`, and are the player's verbatim; `--context-file` posts what they answered
-first, the agent's side. `append` posts them as a comment under the same identity rules as
-`capture`, led by a marker line (an HTML comment, invisible on the issue) that only the script
-writes, so the tool tells them from a question asked with `ask`. It refuses a note that is not
+exactly as for `capture`, and are the player's verbatim. `append` posts them as one comment under
+the same identity rules as `capture`, led by a marker line (an HTML comment, invisible on the
+issue) that only the script writes, so the tool tells them from a question asked with `ask`;
+`--context-file` puts what they answered, the agent's side, above the words in that same comment,
+so a failed post leaves nothing alone on the issue and a retry duplicates nothing. `ask`,
+`capture --context-file` and `append` refuse text with a marker line in it. It refuses a note that is not
 captured, since a note the player wrote gets the player's own comments, and a closed one. `show`
-prints an appended comment as the player's words, and the filing treats it like the body.
+prints an appended comment's words as the player's and its context as what the words answered, and
+the filing treats the words like the body.
 
 ## Asking about a note
 
@@ -150,7 +153,7 @@ request carries the whole batch:
   `tools/new-name.sh playtest "<title>"`: what the words answered first, when a captured note
   carries it as its first comment, then the body quoted in `> ` lines, then the player's
   comments and the words appended to it, in the order they were said, each after what it answers
-  (the first comment's context, or the question before it). Wrapping and the `> ` markers are free; every
+  (the first comment's context, the question before it, or the context its append comment holds). Wrapping and the `> ` markers are free; every
   word, letter case and punctuation mark is copied as it stands. A playtest file is a primary
   source and is never rewritten afterwards.
 - **File the queue from it** exactly as **playtest-feedback** says, each entry opening with the

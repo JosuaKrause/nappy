@@ -22,7 +22,10 @@ such line (bouncy-heron, statements 12, 19 and 23):
 - **So are the words added to it.** On a captured note, every comment by a capture identity whose
   first line is the marker `tools/inbox.py append` writes is the player's further words, and each
   appears the same way in a playtest file the pull request adds. The marker is not part of the words,
-  and the same comment on a note the player opened counts for nothing.
+  and the same comment on a note the player opened counts for nothing. When the comment carries
+  what the words answered, a `WORDS_MARKER` line ends it and only what follows is the words.
+  This is looser than `tools/inbox.py close`, which needs the body and every appended comment in
+  one and the same playtest file: here each may be in any file the pull request adds.
 
 The issue is read through the API whatever its state, since the orchestrator closes a batch's notes
 right after pushing the filing pull request, and the description is read when the job runs, never
@@ -66,6 +69,9 @@ INBOX_LABEL = "inbox"
 # The first line of a comment `tools/inbox.py append` writes: the player's further words on a
 # captured note. Only that script writes it, and it counts on a captured note alone.
 APPEND_MARKER = "<!-- inbox-append: the player's further words, added by tools/inbox.py append -->"
+# Separates what the words answered (above it) from the words (below it) in one append comment, so a
+# failed post can never leave the context alone on the issue or duplicate it on a retry.
+WORDS_MARKER = "<!-- inbox-append: the player's words follow -->"
 
 EPILOG = """\
 examples:
@@ -95,8 +101,16 @@ def appended_words(author: str, labels: tuple[str, ...], comments: list[dict[str
         login = str(user.get("login", "")) if isinstance(user, dict) else ""
         body = comment.get("body")
         first, _, rest = (body if isinstance(body, str) else "").replace("\r\n", "\n").partition("\n")
-        if login in CAPTURE_BOTS and first.strip() == APPEND_MARKER and rest.strip():
-            words.append(rest.strip())
+        if login not in CAPTURE_BOTS or first.strip() != APPEND_MARKER:
+            continue
+        lines = rest.split("\n")
+        for index, line in enumerate(lines):
+            if line.strip() == WORDS_MARKER:
+                lines = lines[index + 1 :]
+                break
+        said = "\n".join(lines).strip()
+        if said:
+            words.append(said)
     return tuple(words)
 
 
