@@ -7,3 +7,11 @@ counters do not rule out unobserved script work. The readout's `process` and `ph
 lines are the engine's previous-second maxima (`DECISIONS.md`, M143), not per-frame costs.
 A pacing switch remains
 diagnostic, not a shipping decision.
+
+**The phone's own frame record is in.** One v0.24.0 run on an Android phone, recorded with the
+frame recorder and analysed in
+[m159-phone-frame-record-2026-10-04](../../evidence/m159-phone-frame-record-2026-10-04/README.md),
+ranks the candidates to attribute first: what is inside `draw` (the largest share, about 10ms of it
+unexplained by draw calls, objects or primitives), the crowd's per-frame update, the danger cues,
+the physics step and the event updates. Each needs a desktop or headless measurement before it is
+built; the scenery queue and the browser's pacing are not candidates on that evidence.
