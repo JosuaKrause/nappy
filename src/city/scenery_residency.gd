@@ -65,6 +65,10 @@ func camera_view() -> Rect2:
 	return rect
 
 func update(next_view: Rect2, immediate := false) -> void:
+	# The frame record's `scenery` (`FrameRecord`): the whole update, guard preparations included,
+	# with the jobs it ran counted by kind and what it spent past `budget_usec` kept apart.
+	var recording := FrameRecord.on
+	var outer := FrameRecord.enter(FrameRecord.SCENERY) if recording else 0
 	immediate = immediate or city.map.recipe_frame_locked
 	var started := Time.get_ticks_usec()
 	var relocated := not view.has_area() or view.size != next_view.size \
@@ -90,6 +94,8 @@ func update(next_view: Rect2, immediate := false) -> void:
 		if guard.intersects(bounds):
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
+			if recording:
+				FrameRecord.scenery_job(FrameLedger.GUARD_PREPARATIONS)
 			ground.prepare(key)
 			_whole_region_frame = Engine.get_process_frames()
 		else:
@@ -106,20 +112,26 @@ func update(next_view: Rect2, immediate := false) -> void:
 		elif guard.intersects(bounds):
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
+			if recording:
+				FrameRecord.scenery_job(FrameLedger.GUARD_PREPARATIONS)
 			item.set_scenery_resident(true)
 		elif load_view.intersects(bounds):
 			pending.append({"distance": bounds.get_center().distance_squared_to(view.get_center()),
-					"prepare": item.set_scenery_resident.bind(true)})
-	var enqueue := func(bounds: Rect2, prepare: Callable) -> void:
+					"prepare": item.set_scenery_resident.bind(true),
+					"kind": FrameLedger.JOBS_BUILDING if item is Building else FrameLedger.JOBS_PROP})
+	var enqueue := func(bounds: Rect2, prepare: Callable, kind: int) -> void:
 		if guard.intersects(bounds):
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
+			if recording:
+				FrameRecord.scenery_job(FrameLedger.GUARD_PREPARATIONS)
 			prepare.call()
 		else:
 			pending.append({"distance": bounds.get_center().distance_squared_to(view.get_center()),
-					"prepare": prepare})
-	city._building_shadows.update_view(load_view, retained, enqueue)
-	city._decals.update_view(load_view, retained, enqueue)
+					"prepare": prepare, "kind": kind})
+	city._building_shadows.update_view(load_view, retained,
+			enqueue.bind(FrameLedger.JOBS_SHADOW))
+	city._decals.update_view(load_view, retained, enqueue.bind(FrameLedger.JOBS_DECAL))
 	pending.sort_custom(func(a: Dictionary, b: Dictionary): return a.distance < b.distance)
 	_pending = false
 	# At least one job runs before the budget can stop the queue, in every mode and for every kind
@@ -136,6 +148,8 @@ func update(next_view: Rect2, immediate := false) -> void:
 			if city.map.recipe_frame_locked or ground.mode == SceneryGround.Mode.ALL:
 				ground.prepare(job.ground_key)
 				ran += 1
+				if recording:
+					FrameRecord.scenery_job(FrameLedger.JOBS_GROUND)
 				continue
 			var frame := Engine.get_process_frames()
 			if ground.mode == SceneryGround.Mode.ONE:
@@ -147,6 +161,8 @@ func update(next_view: Rect2, immediate := false) -> void:
 				_whole_region_frame = frame
 				ground.prepare(job.ground_key)
 				ran += 1
+				if recording:
+					FrameRecord.scenery_job(FrameLedger.JOBS_GROUND)
 				continue
 			# Several regions may approach together. Advance each once within the shared budget;
 			# repeating an explicit update or replacing a canceled job cannot drain one region.
@@ -158,9 +174,17 @@ func update(next_view: Rect2, immediate := false) -> void:
 				continue
 			_ground_stepped[job.ground_key] = true
 			ran += 1
+			if recording:
+				FrameRecord.scenery_job(FrameLedger.JOBS_GROUND)
 			if not ground.prepare_step(job.ground_key):
 				_pending = true
 		else:
 			(job.prepare as Callable).call()
 			ran += 1
-	worst_update_usec = maxi(worst_update_usec, Time.get_ticks_usec() - started)
+			if recording:
+				FrameRecord.scenery_job(job.kind)
+	var elapsed := Time.get_ticks_usec() - started
+	worst_update_usec = maxi(worst_update_usec, elapsed)
+	if recording:
+		FrameRecord.scenery_update(elapsed, budget_usec)
+		FrameRecord.leave(outer)

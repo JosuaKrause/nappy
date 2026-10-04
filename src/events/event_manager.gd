@@ -953,6 +953,15 @@ func total_excitement_at(world_position: Vector2) -> float:
 # ------------------------------------------------------------------ ticking ---
 
 func _physics_process(delta: float) -> void:
+	if FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.EVENTS)
+		_tick_the_events(delta)
+		FrameRecord.leave(outer)
+	else:
+		_tick_the_events(delta)
+
+## The manager's own tick, timed under `FrameRecord.EVENTS`.
+func _tick_the_events(delta: float) -> void:
 	_broadcast_clock += delta
 	_retire_finished()
 	if _find_player():

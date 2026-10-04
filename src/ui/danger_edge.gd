@@ -133,6 +133,15 @@ func _warnings() -> Array[PendingWarning]:
 	return _events.pending_warnings()
 
 func _process(delta: float) -> void:
+	if FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.CUES)
+		_watch_the_edge(delta)
+		FrameRecord.leave(outer)
+	else:
+		_watch_the_edge(delta)
+
+## The badges' measurement, timed under `FrameRecord.CUES`.
+func _watch_the_edge(delta: float) -> void:
 	_measure(delta)
 	# The camera moves under it every frame, so it redraws every frame — a handful of chevrons.
 	queue_redraw()

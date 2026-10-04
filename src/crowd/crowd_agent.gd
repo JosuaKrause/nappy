@@ -885,6 +885,15 @@ func _pocket_factor() -> float:
 	return 0.0 if _is_in_a_pocket() else 1.0
 
 func _process(delta: float) -> void:
+	if FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.CROWD)
+		_walk_the_frame(delta)
+		FrameRecord.leave(outer)
+	else:
+		_walk_the_frame(delta)
+
+## This agent's own tick, timed under `FrameRecord.CROWD`.
+func _walk_the_frame(delta: float) -> void:
 	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
 	# before anything below runs, so this agent stands exactly where the day placed it — no clock,
 	# steering, lookahead, turn, gait or recycle. It is still drawn; see `_draw()`'s own `_skip_draw`.

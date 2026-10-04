@@ -1506,6 +1506,15 @@ func _become_solid_once_it_starts() -> void:
 	_build_obstruction()
 
 func _process(delta: float) -> void:
+	if FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.EVENTS)
+		_play_the_frame(delta)
+		FrameRecord.leave(outer)
+	else:
+		_play_the_frame(delta)
+
+## This event's own tick, timed under `FrameRecord.EVENTS`.
+func _play_the_frame(delta: float) -> void:
 	if is_finished:
 		return
 	_clock += delta

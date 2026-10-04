@@ -195,7 +195,7 @@ func _test_day_from_query_is_not_given_when_absent(t) -> void:
 ## touches the save the page might otherwise share with a real player.
 func _test_web_debug_flag_used_names_the_bundles_own_parameters(t) -> void:
 	for key in ["day", "invincible", "layers", "controls", "escape", "meters", "daylength",
-			"ending", "blackout", "groundmode"]:
+			"ending", "blackout", "groundmode", "framerecord"]:
 		t.check(DevFlags._web_debug_flag_used_in_query("?%s=1" % key),
 			"'%s' is one of the bundle's own parameters" % key)
 

@@ -298,6 +298,15 @@ func setup(events: Node, crowd: Crowd, player: Node2D, baby: Baby) -> void:
 ## source whose own projection is nothing (far away, or both bodies held still) answers zero and
 ## costs nothing but the reach check `expected_gross_at()` already opens with.
 func _process(_delta: float) -> void:
+	if FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.CUES)
+		_pick_and_predict()
+		FrameRecord.leave(outer)
+	else:
+		_pick_and_predict()
+
+## Picking the rims and predicting the carets, timed under `FrameRecord.CUES`.
+func _pick_and_predict() -> void:
 	if not _events or not _player or not _baby:
 		return
 	var here := _player.global_position
