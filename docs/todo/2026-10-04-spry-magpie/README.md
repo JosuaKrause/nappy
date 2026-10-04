@@ -23,6 +23,7 @@ on the page or in the game answers the tap.
 
 - The button itself answers the tap: its label changes to say the record was saved, with the file
   name, for a few seconds, as a page element like the button rather than a game control. The
-  plainer alternative is a line in the readout, which the player's phone run may not have open.
+  plainer alternative is a line in the readout, which the filer reads as easier to miss on a phone
+  than the button the player just tapped.
 - Whether the browser actually finished the download is not observable from the page; the
   feedback says the download was handed to the browser, and says so in its words.
