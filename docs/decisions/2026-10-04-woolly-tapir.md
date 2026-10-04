@@ -1,4 +1,4 @@
-# The browser check runs in CI before a release · built 2026-10-04
+# woolly-tapir — The browser check runs in CI before a release · 2026-10-04 · not from an entry
 
 *([crisp-lemur](../playtests/2026-10-04-crisp-lemur.md), inbox #550: "That seems to be a bigger issue
 than missing notes", then "Let's fix and release a patch".)*
