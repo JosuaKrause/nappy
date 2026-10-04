@@ -7,8 +7,10 @@ returning to the page. The player should see the day brief or pause screen".)*
 **What was built** (PR #538). When the game gets focus back (`NOTIFICATION_APPLICATION_FOCUS_IN`,
 `NOTIFICATION_APPLICATION_RESUMED`), `main.gd` disables the viewport's input for
 `RETURN_INPUT_IGNORED_MSEC` (500ms), so no `_input()`, GUI or `_unhandled_input()` handler, the
-touch controls' included, sees an event; a real-time timer that runs while the tree is paused
-re-enables it. A gate in `main._input()` was not enough, since a child's `_input()` runs before its
+touch controls' included, sees an event; `main._process()`, which runs while the tree is paused,
+reads the wall clock each frame and re-enables it on the first frame past the end, and leaving the
+scene (`_exit_tree()`) or a fresh `_ready()` re-enables it too, so no path leaves input off. A
+one-shot timer was tried first and could fire before the 500ms was up, leaving input off for good. A gate in `main._input()` was not enough, since a child's `_input()` runs before its
 parent's. On the web a second trigger arms the same window: `document`'s `visibilitychange` when
 it turns visible, and `window`'s `focus`, through `JavaScriptBridge`. Arming again extends the
 window. [M161](2026-09-19-M161-the-game-pauses-when-it-loses-focus-and-a-rig-can-say-not-to.md)'s
@@ -20,14 +22,17 @@ return stays pressed; only events are.
 stays open and the day brief does not start, and the same press after it acts, for both
 notifications.
 
-**Not observed:** a real focus return on any platform, and so which engine notification the web
-build sends on a tab return. An automated desktop Chrome tab stays hidden and unfocused, so no real
-return could be produced; a dispatched
+**Observed once natively:** bringing the macOS window to the front delivered
+`NOTIFICATION_WM_WINDOW_FOCUS_IN` and `NOTIFICATION_APPLICATION_FOCUS_IN` in the same millisecond,
+the window armed, and input came back 502ms later. **Not observed:** a real return on the web or the
+phone, and so which engine notification the web build sends on a tab return. An automated desktop
+Chrome tab stays hidden and unfocused, so no real return could be produced there; a dispatched
 `focus` armed the window and a `visibilitychange` while hidden did not. The review item
 [busy-hedgehog](../review/2026-10-04-busy-hedgehog.md) asks for a real return.
 
 **Proposed, not asked for, and open to overturn:** the window timed on real time, since the tree is
 paused behind the pause screen; the window also opening on a focus-in at boot, if the platform
-sends one; nothing armed under `--no-focus-pause` or `--screenshot`, so a rig's presses are not
-delayed; disabling the viewport's input rather than filtering events, so held keys stay held;
+sends one; nothing armed in any rig run (`DevFlags.is_rig()`: `--screenshot`, `--walk`, `--flee`,
+`--press`, `--tap`, `--route`, a recording, a scripted recipe) or under `--no-focus-pause`, so a
+rig's presses are not delayed; disabling the viewport's input rather than filtering events, so held keys stay held;
 nothing on screen marking the 500ms.
