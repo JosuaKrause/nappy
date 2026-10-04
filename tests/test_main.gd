@@ -45,6 +45,7 @@ func run(t) -> void:
 	_test_focus_gained_does_not_resume(t)
 	_test_focus_lost_does_nothing_under_the_override(t)
 	_test_return_ignores_input_for_half_a_second(t)
+	_test_return_window_is_idempotent(t)
 	_test_return_window_is_off_under_the_override(t)
 	_test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t)
 
@@ -858,34 +859,69 @@ func _test_focus_lost_does_nothing_under_the_override(t) -> void:
 	t.check(not t.get_tree().paused, "and the tree keeps running")
 	_teardown_focus_pause_main(t, main)
 
-## Inbox #534: for `RETURN_INPUT_IGNORED_MSEC` after `FOCUS_IN` or `RESUMED`, `_input()` swallows
-## every event (it asks `_ignoring_input_after_a_return()`), so the click that brings the page back
-## cannot resume the pause screen or start the day brief. Driven through `notification()`; the
-## predicate is the whole of the gate `_input()` applies, since `_input()` itself needs a viewport.
+## Inbox #534: for `RETURN_INPUT_IGNORED_MSEC` after `FOCUS_IN` or `RESUMED` the viewport delivers
+## nothing (`_arm_the_return_window()` calls `set_disable_input(true)`), so the press that brings
+## the page back cannot resume the pause screen or start the day brief. Real events are pushed
+## through the suite's own viewport; the window's end is moved into the past rather than waited out
+## (`run_tests.gd` is synchronous, so the real 500ms timer cannot fire inside a test).
+func _press_accept(t) -> void:
+	var press := InputEventAction.new()
+	press.action = &"ui_accept"
+	press.pressed = true
+	t.get_viewport().push_input(press)
+
 func _test_return_ignores_input_for_half_a_second(t) -> void:
-	t.check(main_script_constant_is_500(), "the window is 500ms")
+	t.check(MAIN_SCRIPT.RETURN_INPUT_IGNORED_MSEC == 500, "the window is 500ms")
 	for what in [Node.NOTIFICATION_APPLICATION_FOCUS_IN, Node.NOTIFICATION_APPLICATION_RESUMED]:
+		# The pause screen.
 		var main := _build_focus_pause_main(t)
-		t.check(not main._ignoring_input_after_a_return(), "nothing is ignored before a return")
+		main._return_viewport = t.get_viewport()
+		t.get_tree().paused = false
 		main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-		t.check(not main._ignoring_input_after_a_return(), "losing focus opens no window")
 		main.notification(what)
-		t.check(main._ignoring_input_after_a_return(),
-				"a press right after the return is ignored (notification %d)" % what)
-		t.check(main._pause.is_open(), "and the pause screen is still up")
+		t.check(t.get_viewport().is_input_disabled(), "a return switches the viewport's input off")
+		_press_accept(t)
+		t.check(main._pause.is_open(), "a press inside the window does not resume the pause (%d)" % what)
 		main._input_ignored_until_msec = Time.get_ticks_msec() - 1
-		t.check(not main._ignoring_input_after_a_return(), "a press after the 500ms gets through")
+		main._end_the_return_window()
+		t.check(not t.get_viewport().is_input_disabled(), "the window's end switches it back on")
+		_press_accept(t)
+		t.check(not main._pause.is_open(), "the same press after the window resumes")
+		# The day brief.
+		var starts := [0]
+		main._summary.continued.connect(func(): starts[0] += 1)
+		main._summary.show_day_brief(3, 3)
+		main.notification(what)
+		_press_accept(t)
+		t.check(starts[0] == 0, "a press inside the window does not start the day from the brief")
+		main._input_ignored_until_msec = Time.get_ticks_msec() - 1
+		main._end_the_return_window()
+		_press_accept(t)
+		t.check(starts[0] == 1, "the same press after the window starts it")
+		t.get_viewport().set_disable_input(false)
 		_teardown_focus_pause_main(t, main)
 
-func main_script_constant_is_500() -> bool:
-	return MAIN_SCRIPT.RETURN_INPUT_IGNORED_MSEC == 500
+## A second trigger inside the window (the web's page events beside the engine's own) extends it
+## rather than stacking: the earlier timer's callback leaves a window that is still running.
+func _test_return_window_is_idempotent(t) -> void:
+	var main := _build_focus_pause_main(t)
+	main._return_viewport = t.get_viewport()
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	main._arm_the_return_window()
+	main._end_the_return_window()
+	t.check(t.get_viewport().is_input_disabled(), "an end called inside a running window leaves it")
+	main._input_ignored_until_msec = Time.get_ticks_msec() - 1
+	main._end_the_return_window()
+	t.check(not t.get_viewport().is_input_disabled(), "and one called after it ends it")
+	_teardown_focus_pause_main(t, main)
 
 ## A rig (`--no-focus-pause`, `--screenshot`) is never slowed by the window.
 func _test_return_window_is_off_under_the_override(t) -> void:
 	var main := _build_focus_pause_main(t)
+	main._return_viewport = t.get_viewport()
 	main._no_focus_pause = true
 	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
-	t.check(not main._ignoring_input_after_a_return(),
+	t.check(not t.get_viewport().is_input_disabled(),
 			"under the override a return does not start the window")
 	_teardown_focus_pause_main(t, main)
 

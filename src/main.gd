@@ -317,6 +317,8 @@ func _ready() -> void:
 	# nothing earlier is reachable from GDScript at all — and ahead of the escape's own boot branch
 	# just below, so either path gets it from this one call.
 	_lock_out_a_rig()
+	_return_viewport = get_viewport()
+	_listen_for_a_web_return()
 	# A recording's own real wall clock runs several times slower than its game clock (saving one
 	# frame costs far longer than the 1/60s it represents) — see `_rig_quit_game_seconds`'s own doc.
 	# Physics interpolation blends a rendered frame between two physics ticks by how far the
@@ -2644,23 +2646,59 @@ func _somebody_is_playing() -> bool:
 func _input(event: InputEvent) -> void:
 	if _rig_locked_out and not _is_the_rigs_own_press(event):
 		get_viewport().set_input_as_handled()
-		return
-	if _ignoring_input_after_a_return():
-		get_viewport().set_input_as_handled()
 
 ## Whether the half second after getting focus back (`_arm_the_return_window()`) is still running.
-## Swallowing in `_input()` is one place before any screen: the GUI phase (the pause screen's
-## buttons) and the `_unhandled_input()` phase (the day brief's tap, the pause screen's keys)
-## both come after it. Touch controls' own `_input()` is a sibling and still sees the event.
 func _ignoring_input_after_a_return() -> bool:
 	return Time.get_ticks_msec() < _input_ignored_until_msec
 
-## Getting focus back starts the window. A no-op under `_no_focus_pause` (`--no-focus-pause`,
-## `--screenshot`), so a rig's own presses are never delayed.
+## The viewport whose input is switched off for the window; `_ready()` sets it, a test sets its own.
+var _return_viewport: Viewport = null
+
+## Getting focus back starts the window, and **`Viewport.set_disable_input(true)` is how it is
+## enforced**, not a mark in `_input()`: a disabled viewport delivers nothing to any `_input()`,
+## the GUI or `_unhandled_input()`, so `TouchControls._input()` (a sibling that no handler here can
+## pre-empt) and the pause and day-brief screens are all deaf together. A gate in `main._input()`
+## cannot promise that, since `_input()` runs on children before their parents.
+## It stops *events* only: `Input`'s own held state still follows the keyboard, so a key held
+## through the return is still pressed for polling afterwards, and one released inside the window is
+## released. The tree is usually paused (the pause screen), so the re-enabling timer is
+## `process_always` and ignores the time scale: real time. Idempotent: a second trigger inside the
+## window extends it, and the earlier timer's callback finds the window still running and leaves
+## it. A no-op under `_no_focus_pause` (`--no-focus-pause`, `--screenshot`), so a rig is never slowed.
 func _arm_the_return_window() -> void:
-	if _no_focus_pause:
+	if _no_focus_pause or _return_viewport == null:
 		return
 	_input_ignored_until_msec = Time.get_ticks_msec() + RETURN_INPUT_IGNORED_MSEC
+	_return_viewport.set_disable_input(true)
+	var timer := _return_viewport.get_tree().create_timer(RETURN_INPUT_IGNORED_MSEC / 1000.0, true, false, true)
+	timer.timeout.connect(_end_the_return_window)
+
+func _end_the_return_window() -> void:
+	if _ignoring_input_after_a_return():
+		return
+	if _return_viewport != null and is_instance_valid(_return_viewport):
+		_return_viewport.set_disable_input(false)
+
+## The web page is where "returning" was seen, and the engine's FOCUS_IN on a tab return is not
+## confirmed there, so a second trigger comes straight from the browser: the page becoming visible
+## again (`visibilitychange`) and the window getting focus (`focus`). Whichever arrives opens the
+## same window, and `_arm_the_return_window()` is idempotent. Web builds only.
+var _web_return_callback: JavaScriptObject = null
+func _listen_for_a_web_return() -> void:
+	if not OS.has_feature("web"):
+		return
+	_web_return_callback = JavaScriptBridge.create_callback(_on_web_return)
+	var document := JavaScriptBridge.get_interface("document")
+	var window := JavaScriptBridge.get_interface("window")
+	document.addEventListener("visibilitychange", _web_return_callback)
+	window.addEventListener("focus", _web_return_callback)
+
+func _on_web_return(args: Array) -> void:
+	var event: JavaScriptObject = args[0] if args.size() > 0 else null
+	var kind := str(event.type) if event != null else ""
+	if kind == "visibilitychange" and str(JavaScriptBridge.get_interface("document").visibilityState) != "visible":
+		return
+	_arm_the_return_window()
 
 ## A static, pure predicate for the same reason `_debug_snapshot_action()` and `_debug_layer_key()`
 ## are static — a test can ask it directly without booting a `main` (`_ready()` starts a whole run),
