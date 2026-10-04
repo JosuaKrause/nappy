@@ -1995,8 +1995,15 @@ func _event_summary() -> String:
 ## hyphenated the same way every other cause name is, so a new hard-fail row (`roadblock`'s guard
 ## once it hunts, `night_raid`, and everything already in the catalogue) is covered without a
 ## second list naming it here. Pure, and tested directly — `tests/test_day_lost_to.gd`.
-static func _hard_fail_cause_suffix(reason: String) -> String:
-	return "car" if reason == "car_strike" else reason.replace("_", "-")
+##
+## `struck_by` is `EventManager.what_struck_her()` — the name the logs give the instance whose reach
+## ended the day — and names it in place of `reason` when there is one, so a day lost to the
+## pelican is `pelican` rather than its row's `cyclist` *(inbox #527)*. `reason` stays the row's id
+## for `DayController`'s own sentence, which is the cyclist's either way.
+static func _hard_fail_cause_suffix(reason: String, struck_by := "") -> String:
+	if reason == "car_strike":
+		return "car"
+	return (struck_by if struck_by != "" else reason).replace("_", "-")
 
 ## `EventBus.day_lost_to`'s own cause for a crying day, folded into the one event a lost day sends
 ## (`VisitCounter._loss_event_suffix()`): whichever group in `landed_by_group` (see
@@ -2024,25 +2031,24 @@ static func _crying_cause_suffix(landed_by_group: Dictionary) -> String:
 	return String(best).replace("_", "-")
 
 ## The impure half `_crying_cause_suffix()` above is named for: every live event's own `landed()`
-## grouped by its catalogue id, every live crowd agent's grouped by `crowd` (a walker) or `traffic`
-## (a car), and the baby's own running/alley share under `self` (`Baby.self_landed()`) — all over
+## grouped by its catalogue id, or `pelican` for a pelican (`_group_what_events_landed()`), every
+## live crowd agent's grouped by `crowd` (a walker) or `traffic` (a car), and the baby's own
+## running/alley share under `self` (`Baby.self_landed()`) — all over
 ## the same `ExcitementHalo.WINDOW` the halo itself reads. Only positive shares are kept, so an
 ## empty result means nothing landed anything in the window at all.
 ##
 ## Read once, from `_on_day_finished()`, in the same physics frame `Baby._update_state()` decided
 ## she was crying — `EventBus.baby_state_changed` -> `DayController._on_baby_state_changed()` ->
 ## `_end()` -> `day_finished` all run synchronously in that one call, so nothing below has aged out
-## of the window between the two. **Not itself unit-tested**: it asks a live `City` and a live
-## `Baby` for their own current numbers rather than computing anything, so there is nothing pure
-## left to pin without a scene — see `tests/test_day_loop.gd` for the integration coverage a day's
+## of the window between the two. **Not itself unit-tested** beyond its events half
+## (`_group_what_events_landed()`): the rest asks a live `City` and a live `Baby` for their own
+## current numbers rather than computing anything, so there is nothing pure left to pin without a
+## scene — see `tests/test_day_loop.gd` for the integration coverage a day's
 ## own ending already gets.
 func _crying_landed_by_group() -> Dictionary:
 	var by_group := {}
 	if _city and _city.events:
-		for instance: EventInstance in _city.events.instances():
-			var points := instance.landed()
-			if points > 0.0:
-				by_group[instance.def.id] = float(by_group.get(instance.def.id, 0.0)) + points
+		_group_what_events_landed(_city.events.instances(), by_group)
 	if _city and _city.crowd:
 		for agent: CrowdAgent in _city.crowd.agents():
 			var points := agent.landed()
@@ -2055,6 +2061,29 @@ func _crying_landed_by_group() -> Dictionary:
 		if self_points > 0.0:
 			by_group["self"] = float(by_group.get("self", 0.0)) + self_points
 	return by_group
+
+## `_crying_landed_by_group()`'s events half, folded into `by_group`: each live event's own
+## `landed()` under the name the logs give it (`EventInstance.logged_name()`), so a pelican's
+## share is `pelican`'s rather than added to the cyclists' *(inbox #527)*. Pure over what it is
+## handed, and tested directly — `tests/test_day_lost_to.gd`.
+static func _group_what_events_landed(instances: Array[EventInstance], by_group: Dictionary) -> void:
+	for instance in instances:
+		var points := instance.landed()
+		if points > 0.0:
+			var name := instance.logged_name()
+			by_group[name] = float(by_group.get(name, 0.0)) + points
+
+## What ended a crying or hard-fail day, named the way `EventBus.day_lost_to` carries it, or "" for a
+## win or a timeout, whose own names already say everything. See `_hard_fail_cause_suffix()` and
+## `_crying_cause_suffix()`.
+func _loss_cause(result: GameEnums.DayResult) -> String:
+	match result:
+		GameEnums.DayResult.LOST_HARD_FAIL:
+			var struck_by := _city.events.what_struck_her() if _city and _city.events else ""
+			return _hard_fail_cause_suffix(_day.hard_fail_reason, struck_by)
+		GameEnums.DayResult.LOST_CRYING:
+			return _crying_cause_suffix(_crying_landed_by_group())
+	return ""
 
 func _on_day_finished(result: GameEnums.DayResult) -> void:
 	var finished_day := GameState.day
@@ -2074,20 +2103,20 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# `EventManager.light_what_she_never_met()`.
 	if result == GameEnums.DayResult.WON and _player:
 		_city.events.light_what_she_never_met(_player.global_position)
+	# What ended the day, read once in the frame it ended (see `_crying_landed_by_group()`), for
+	# the run log's `lost` line and the counter's loss event alike, so the two name it the same way.
+	var cause := _loss_cause(result)
 	# Before the calendar moves, so the outcome is written above the nerve it cost — and
 	# before `end_day()` stops the clock, so it is timestamped where it happened.
 	if _observer:
-		_observer.day_finished(result)
+		_observer.day_finished(result, cause)
 	# `VisitCounter`'s own "what ended a day" — before `day_ended` below, so it can fold this cause
 	# into the one event it sends when `day_ended` fires, and only for the two results whose own
 	# name does not already say what filled the meter or which row struck her; `LOST_TIMEOUT`'s
 	# existing `nappy-day-N-lost-timeout` already says everything about a clock that simply ran
 	# out. See `EventBus.day_lost_to`'s own doc and docs/TELEMETRY.md, "The page counts visits".
-	match result:
-		GameEnums.DayResult.LOST_HARD_FAIL:
-			EventBus.day_lost_to.emit(finished_day, _hard_fail_cause_suffix(_day.hard_fail_reason))
-		GameEnums.DayResult.LOST_CRYING:
-			EventBus.day_lost_to.emit(finished_day, _crying_cause_suffix(_crying_landed_by_group()))
+	if cause != "":
+		EventBus.day_lost_to.emit(finished_day, cause)
 	# `VisitCounter`'s own "each day's end, won or lost and to what" — `finished_day` rather
 	# than `GameState.day`, since a won final day hands over to the escape before the calendar
 	# would otherwise move past it. Fires whether or not a run log is being kept.

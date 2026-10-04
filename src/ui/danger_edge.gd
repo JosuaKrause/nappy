@@ -107,7 +107,9 @@ var _watch := {}
 ## purely to remember who was seen.
 var _watch_generation := 0
 ## What `_draw` should put on the edge this frame, soonest arrival first:
-## `[time_to_reach, distance, def, world position, approach]`.
+## `[time_to_reach, distance, def, world position, approach, logged name]`. The last is for
+## `announcing()` alone — `EventInstance.logged_name()`, `pelican` for the pelican the row's own
+## silhouette is still drawn for — and nothing drawn reads it.
 var _coming: Array = []
 
 ## `events` is anything that answers `instances() -> Array[EventInstance]`: `EventManager` on a
@@ -202,7 +204,8 @@ func _measure(delta: float) -> void:
 			# Sorted by *when it arrives* rather than by how near it is, because that is what
 			# `MOST_AT_ONCE` is choosing between: three badges is a warning and the one worth
 			# keeping is the one that gets here first, which a slow thing standing closer is not.
-			_coming.append([gap / maxf(approach, 1.0), distance, instance.def, at, approach])
+			_coming.append([gap / maxf(approach, 1.0), distance, instance.def, at, approach,
+					instance.logged_name()])
 	# A warning with nothing in the world yet is announced for the whole of its warning, on screen
 	# or off: it points at where the thing will come from, and there is nothing there to see yet.
 	# Sorted by when the thing will exist, which is the soonest it can arrive.
@@ -210,7 +213,7 @@ func _measure(delta: float) -> void:
 		if warning.place == Vector2.INF or not _is_worth_an_arrow_for(warning.def):
 			continue
 		_coming.append([maxf(warning.left, 0.0), warning.place.distance_to(here), warning.def,
-				warning.place, warning.def.speed])
+				warning.place, warning.def.speed, warning.logged_name()])
 	# Only the instances alive this frame carry state forward. An id the event source no
 	# longer carries was never touched above, so its `generation` still reads an earlier one and
 	# is erased here — which is also what keeps a freshly streamed event from flashing an arrow on
@@ -249,12 +252,14 @@ func is_on_screen(world_position: Vector2, margin: float = 0.0) -> bool:
 
 ## What is on the edge of the screen right now: `{id, distance, approach}` per badge, nearest
 ## arrival first. For the telemetry observer, which has to be able to say what she was warned
-## about and whether she then did anything about it, which nothing else in the log can say.
+## about and whether she then did anything about it, which nothing else in the log can say. `id`
+## is the name the log calls the thing by (`EventInstance.logged_name()`): the row's id, or
+## `pelican` for the pelican, from its warning on.
 func announcing() -> Array[Dictionary]:
 	var badges: Array[Dictionary] = []
 	for i in mini(MOST_AT_ONCE, _coming.size()):
 		badges.append({
-			"id": (_coming[i][2] as EventDef).id,
+			"id": str(_coming[i][5]),
 			"distance": float(_coming[i][1]),
 			"approach": float(_coming[i][4]),
 		})

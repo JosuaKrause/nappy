@@ -193,6 +193,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	_recipe_plan = false
 	clear()
 	_hard_failed = false
+	_struck_by = ""
 	_day = day
 	_consumed = consumed_one_shots
 	_walking_the_finale = false
@@ -350,6 +351,7 @@ func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -
 	_recipe_plan = false
 	clear()
 	_hard_failed = false
+	_struck_by = ""
 	_day = GameState.day
 	_walking_the_finale = true
 	# Nothing is held: a hold keeps the catalogue's own roll off ground something else has taken,
@@ -399,6 +401,7 @@ func clear() -> void:
 	_sight_reported.clear()
 	_pending.clear()
 	_pelican_rng = null
+	_unseen_pelicans.clear()
 	_broadcast_clock = 0.0
 
 ## Brings into the world everything within reach of a point, and takes away what has gone out
@@ -602,7 +605,6 @@ static func _body_axis(map: CityMap, def: EventDef, placed: Vector2, facing: Vec
 func _spawn_unplanned(def: EventDef, at: Vector2,
 		path := PackedVector2Array()) -> EventInstance:
 	var instance := _create(def, at, path)
-	instance.is_pelican = rolls_a_pelican(def)
 	_instances.append(instance)
 	return instance
 
@@ -624,13 +626,18 @@ var pelican_share := PELICAN_SHARE
 ## Today's pelican stream, made from `_day` on the day's first roll and dropped by `clear()`.
 var _pelican_rng: RandomNumberGenerator
 
-## Whether the rider about to be created for `def` is drawn as the pelican. Asked once per
-## instance, as it is created, which is what keeps a rider one thing for its whole ride.
+## Whether the rider about to be warned of for `def` is drawn as the pelican. Asked once per
+## rider, **as its warning goes up** (`_warn_down_her_line()`), and handed to `spawn_warned()` when
+## the warning is over, which is what keeps a rider one thing for its whole ride — and what lets the
+## run log call it `pelican` from its first line, the badge going up, rather than only from the frame
+## it is created *(inbox #527, the player: "logs should be correctly identifying it from the
+## beginning")*.
 ##
-## **Only from `_spawn_unplanned()`**, the path every cyclist takes (`spawn_warned()`, for a
-## `TOWARD_PLAYER` row the director sends): an instance made there is never streamed out and made
-## again, so it is never asked twice. A planned row's instance can be — only a scene recipe plans a
-## cyclist — and is never a pelican.
+## **Only from `_warn_down_her_line()`**, the path every cyclist takes (a `TOWARD_PLAYER` row the
+## director sends): the instance it ends in is never streamed out and made again, so it is never
+## asked twice. A planned row's instance can be — only a scene recipe plans a cyclist — and is never
+## a pelican. A warning that never finds a place to stand has still spent its roll, which the seed
+## and her walk decide the same way.
 ##
 ## **One draw from the day's own `PELICAN_STREAM` per cyclist**, rolled whatever the answer, so the
 ## run's seed and the order the day sends its cyclists in decide which of them is the pelican, the
@@ -648,6 +655,46 @@ func rolls_a_pelican(def: EventDef) -> bool:
 ## many seeds through the same arithmetic the game uses.
 static func pelican_roll(rng: RandomNumberGenerator, share: float) -> bool:
 	return rng.randf() < share
+
+## Makes `instance` the pelican, as it is created: the picture (`EventInstance.is_pelican`) and the
+## pelican's own telemetry — `EventBus.pelican_spawned` now, and a place on the list
+## `_report_the_pelicans_in_view()` watches until it is first on screen.
+func _ride_as_a_pelican(instance: EventInstance) -> void:
+	instance.is_pelican = true
+	_unseen_pelicans.append(instance)
+	EventBus.pelican_spawned.emit(instance)
+
+## Pelicans created and not yet on screen. Untyped, so a pelican freed before it was ever seen can
+## be asked `is_instance_valid()` rather than read as a typed element. Empty on all but about one
+## day in a run, so watching it costs nothing on the rest. Emptied by `clear()`.
+var _unseen_pelicans: Array = []
+
+## `EventBus.pelican_sighted` for each pelican on its first frame on screen — the same box
+## `_summon_what_has_been_sighted()` asks for the fire, `_is_on_screen()` — and then never again for
+## that pelican. Telemetry only: it decides nothing and changes nothing gameplay reads.
+func _report_the_pelicans_in_view() -> void:
+	if _unseen_pelicans.is_empty():
+		return
+	var still_unseen: Array = []
+	for pelican: Variant in _unseen_pelicans:
+		if not is_instance_valid(pelican) or (pelican as EventInstance).is_finished:
+			continue
+		var instance := pelican as EventInstance
+		if _is_on_screen(instance.global_position):
+			EventBus.pelican_sighted.emit(instance)
+		else:
+			still_unseen.append(instance)
+	_unseen_pelicans = still_unseen
+
+## What the run log and the page's counter call the event whose lethal reach ended today
+## (`EventInstance.logged_name()` — `pelican` for a pelican, otherwise its row's id), or "" when no
+## event's reach has (a car, or nothing yet). Set by `_check_hard_fails()` with the
+## `hard_fail_triggered` it sends, read by `main._on_day_finished()` for `EventBus.day_lost_to`, and
+## reset with `_hard_failed` when a day starts. Telemetry only.
+func what_struck_her() -> String:
+	return _struck_by
+
+var _struck_by := ""
 
 ## Builds an instance, puts it in the world, and records any permanent mark it leaves.
 ## Everything that puts an event on the map goes through here, so a scar can never be
@@ -878,10 +925,15 @@ func warn_first(def: EventDef, her: Vector2, where: Callable,
 ## **`came_under_a_warning` is set before `resume()`**, which reads it: a resume otherwise restores
 ## an instance streamed back in, and takes a pursuer that never waits to have begun its chase
 ## before it streamed out, so a pursuer created here would never report the chase it starts.
-func spawn_warned(def: EventDef, path: PackedVector2Array) -> EventInstance:
+##
+## `pelican` is the roll its warning made (`rolls_a_pelican()`), and makes a cyclist the pelican;
+## it means nothing for any other row.
+func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> EventInstance:
 	var instance := _spawn_unplanned(as_warned(def), path[0], path)
 	instance.came_under_a_warning = true
 	instance.resume(def.telegraph_time, 0.0)
+	if pelican and def.look == EventDef.Look.CYCLIST:
+		_ride_as_a_pelican(instance)
 	return instance
 
 ## `def` as a row warned of before it exists (`EventDef.warns_before_it_exists()`): itself when it
@@ -1010,6 +1062,7 @@ func _physics_process(delta: float) -> void:
 		if not _recipe_plan:
 			_place_what_is_owed_ahead(delta)
 		_summon_what_has_been_sighted()
+		_report_the_pelicans_in_view()
 		_run_the_warnings(delta, _player.global_position)
 		_tell_them_where_she_is()
 		_warn_about_the_ground_she_is_on()
@@ -1243,17 +1296,23 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 ## cyclist coming through a door's gap is exactly what that refuses. A refusal keeps the warning
 ## up and asks again next frame.
 func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
+	# Rolled as the warning goes up rather than when the rider is created, so the badge's own lines
+	# in the run log already name the pelican — see `rolls_a_pelican()`.
+	var pelican := rolls_a_pelican(def)
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.down_her_line(_map, def, at, direction)
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var path := PendingWarning.route_down_her_line(_map, place, at, direction)
 		if not _director.clear_of_the_doors(path, def):
 			return false
-		spawn_warned(def, path)
+		var instance := spawn_warned(def, path, pelican)
 		Telemetry.note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
-				% [def.id, place.distance_to(at), TelemetryLog.tile(_map.world_to_tile(at))])
+				% [instance.logged_name(), place.distance_to(at),
+				TelemetryLog.tile(_map.world_to_tile(at))])
 		return true
-	warn_first(def, her, where, arrive)
+	var warning := warn_first(def, her, where, arrive)
+	if warning:
+		warning.is_pelican = pelican
 
 ## The other half of the director's day: a place the day budgeted and left unsited, put on a
 ## building face ahead of her once her heading for the day is clear. Day 3's fire is the only row
@@ -1781,5 +1840,9 @@ func _check_hard_fails() -> void:
 	for instance in _instances:
 		if instance.is_lethal_at(_player.global_position):
 			_hard_failed = true
+			_struck_by = instance.logged_name()
+			# Ahead of the hard fail, which ends the day and sends its loss.
+			if instance.is_pelican:
+				EventBus.pelican_struck_her.emit(instance)
 			EventBus.hard_fail_triggered.emit(instance.def.id)
 			return

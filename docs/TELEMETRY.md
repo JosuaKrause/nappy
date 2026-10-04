@@ -79,10 +79,12 @@ The events:
   one that is not a catalogue row (`EventBus.hard_fail_triggered("car_strike")`,
   `Crowd._strike()`), otherwise the id off whichever row's own `is_lethal_at()` fired
   (`EventManager._check_hard_fails()`), hyphenated the same way every other name here is — a
-  caught `charging_dog` is `lost-hard-fail-charging-dog`. A crying loss names whichever source
+  caught `charging_dog` is `lost-hard-fail-charging-dog` — and a pelican is `pelican` rather than
+  its row's `cyclist` (`EventManager.what_struck_her()`). A crying loss names whichever source
   landed the most on her over the halo's own window (`ExcitementHalo.WINDOW`, 5s) at the moment she
-  cried: a catalogue id (`EventInstance.landed()`), `crowd` for walkers or `traffic` for cars
-  (`CrowdAgent.landed()`, told apart by `CrowdAgent.kind`), or `self` for her own running and
+  cried: a catalogue id (`EventInstance.landed()`), again `pelican` for a pelican, `crowd` for
+  walkers or `traffic` for cars (`CrowdAgent.landed()`, told apart by `CrowdAgent.kind`), or `self`
+  for her own running and
   standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
   own). Ties, and a window with nothing landed in it at all, pick the alphabetically first group
   present, falling back to `self` when there is none (`main._crying_cause_suffix()`). A
@@ -106,6 +108,18 @@ The events:
   (`EventInstance._be_done()`, `EventInstance.gave_up`). A caught chase is
   `nappy-day-N-lost-hard-fail-charging-dog` instead, off the pair above, and never also sends
   `dog-outlasted`.
+- `nappy-day-N-pelican-spawned` / `nappy-day-N-pelican-seen` / `nappy-day-N-pelican-excited` /
+  `nappy-day-N-pelican-hit` — the one cyclist in about four hundred drawn as a pelican, as its own
+  entry *(inbox #527, the player: "when the pelican spawns, when it's on screen, and when it's
+  hitting the player. it must appear as its own entry and it needs to be more granular than
+  standard event telemetry")*, each once per pelican: created where its warning pointed
+  (`EventManager.spawn_warned()`); its first frame on screen
+  (`EventManager._report_the_pelicans_in_view()`, the same box the fire's `seen-fire` is measured
+  in); the first share of her meter its field lands, inside its 90px
+  (`EventInstance.accumulate_landed()`); and its lethal reach, 33px, covering her
+  (`EventManager._check_hard_fails()`). The cyclist's contact does those two different things to
+  her — its field fills the meter, its reach ends the day — so each is an event of its own. A
+  `pelican-hit` is sent just ahead of the day's own `lost-hard-fail-pelican`.
 - `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark
   actually noticed (`ResistanceDirector._track_sight_and_reposition()`, within `SEEN_DISTANCE` and
   on screen for `SEEN_DWELL_SECONDS`), touched, or untouched when the day it belongs to ends. The
@@ -131,7 +145,8 @@ The events:
 
 Every signal named above that exists purely for this page — `day_lost_to`, `event_sighted`,
 `event_lit_unmet`, `city_gone_dark`, `escape_city_entered`, `pursuit_began`, `pursuit_ended`,
-`resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent` — is listen-only: it rolls no RNG and
+`resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent`, `pelican_spawned`,
+`pelican_sighted`, `pelican_excited_her`, `pelican_struck_her` — is listen-only: it rolls no RNG and
 changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so, the style the
 existing `escape_*` signals already use.
 
@@ -446,6 +461,12 @@ are the story of the run and they have to be written down as they happen.
 **Each one answers a question somebody actually asked about a run.** A new kind has to be able to
 name the question it answers, or it is a metric and does not belong.
 
+**A line names an event by its row's id, and the pelican as `pelican`** — the one cyclist in about
+four hundred drawn as a pelican (`EventInstance.logged_name()`), from the badge its warning puts up
+(`cue`), through the line it is created on (`ahead`), to every `near`, `cue` and `lost` line after
+*(inbox #527, the player: "logs should be correctly identifying it from the beginning")*. Its roll
+is made as the warning goes up, so the first line already knows.
+
 | Kind | Written by | Answers |
 | --- | --- | --- |
 | `plan` | `main.gd`, `City`, `ClosurePlanner` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm |
@@ -465,7 +486,7 @@ name the question it answers, or it is a metric and does not belong.
 | `path` | observer | **Was she on the day's corridor?** A line each way as she crosses on or off it, and one at dusk with the share of her street time she spent on it. It is what makes *"going off the paths lets me skip events and is safer than going on the path"* a measurement rather than an argument. Time in a park or an alley is counted separately from "off it": the corridor is made of streets and the destination is not one, so folding them together would credit every won day with a long safe stretch off the paths |
 | `crowd` | `Crowd` → observer | Contact with the street: somebody she walked into, or a car that had to sound its horn at her standing in the road, with a timestamp on it |
 | `calm` / `left` | observer, `GameState` | Same park every day? It also says which block she settled in, so the log shows what tomorrow's plan is reacting to |
-| `near` | observer | How many entities were nearby, which, and how close — the cost table as what happened to a person |
+| `near` | observer | How many entities were nearby, which, and how close — the cost table as what happened to a person. And the pelican's own two: the first frame it is on screen, which may be far outside its 90px, and its lethal reach covering her, which under `--invincible` is the only line that says so |
 | `closure` | observer | Are the closures a decision or scenery? |
 | `turn` | observer | Did the player double back — and was it because of a barrier they had just seen? |
 | `run` | observer | Did running help? Against everything you route around the answer is "it made things worse", by design — but there is one kind of thing running is the *only* answer to, so a `run` immediately after a `charging_dog` telegraph is the lesson landing rather than a mistake |
@@ -479,7 +500,7 @@ name the question it answers, or it is a metric and does not belong.
 | `freeze` / `thaw` | observer | Was the day lost to noise or to the clock? Freezing is the invisible failure |
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The blackout came and the masts went off with the power — once she was far enough from the station after the sabotage, not at its door |
-| `home` / `lost` | observer | The outcome, the margin, and what was around when it happened. In the escape a `lost` line also names the section and a `home` line the way out — see "The escape's log" |
+| `home` / `lost` | observer | The outcome, the margin, and what was around when it happened. A crying or hard-fail day's `lost` line names what ended it as `to <cause>`, the cause the page's counter folds into its loss event (`main._loss_cause()`). In the escape a `lost` line also names the section and a `home` line the way out — see "The escape's log" |
 | `nerve` | `GameState` | Where the nerves went — which day, which act |
 | `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log. Followed by whether the save was kept: on the web, a line when the browser's IndexedDB copy is confirmed ("the browser kept the save") or not ("the browser did not keep the save", with the browser's own error or the timeout); anywhere, a line when the save could not be kept at all ("the save was not kept": the file could not be written, or the page's storage was refused at boot). **Deleting the save file writes the same kind** — "deleted the save" when the file was removed, then on the web "the browser dropped the deleted save" or "the browser did not drop the deleted save" (with the browser's own error or the timeout), and "the deletion was not kept" when the file could not be removed or the page's storage was refused at boot; a deletion with no file to delete writes nothing. A held restart logs its deletion's first line, because it deletes the save before the run log closes; a web deletion's later answer is logged only if a log is open when it arrives, so it may land in the next run's log after the reload |

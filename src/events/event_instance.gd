@@ -961,9 +961,29 @@ var is_finished := false
 ## Whether this cyclist is drawn as the pelican (`PELICAN_BY_VIEW`) rather than the kid. Set once,
 ## by `EventManager` as it creates the rider, and never changed afterwards, so a rider is one or the
 ## other for its whole ride. **The picture is all it changes**: the def, the field, the lethal
-## radius, the speed and the cost are the row's own either way, and nothing outside the drawing
-## reads it. Meaningless on any look but `CYCLIST`. See `rider_pictures()`.
+## radius, the speed and the cost are the row's own either way, and nothing reads it but the
+## drawing and the telemetry (`logged_name()` and the pelican's own `EventBus` signals). Meaningless
+## on any look but `CYCLIST`. See `rider_pictures()`.
 var is_pelican := false
+
+## What every run log line and every GoatCounter event calls a pelican, in place of its row's own
+## `cyclist`. *(Inbox #527, the player: "logs should be correctly identifying it from the
+## beginning".)*
+const PELICAN_NAME := "pelican"
+
+## Whether `EventBus.pelican_excited_her` has gone out for this pelican: once per pelican, on the
+## first share of the meter it lands (`accumulate_landed()`).
+var _reported_excitement := false
+
+## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
+## otherwise the row's own `def.id`. Telemetry only — nothing that decides anything reads it.
+func logged_name() -> String:
+	return named_for_the_log(def.id, is_pelican)
+
+## `logged_name()` for a row id and a pelican choice that may not have an instance yet — a warning
+## still up (`PendingWarning.logged_name()`).
+static func named_for_the_log(id: String, pelican: bool) -> String:
+	return PELICAN_NAME if pelican else id
 
 ## A mast that has been reached and silenced — `EventManager.silence_mast()`/`silence_all_masts()`
 ## set this rather than calling `_finish()`, since a silenced mast still stands, with no arcs and
@@ -2643,6 +2663,11 @@ func accumulate_landed(points: float) -> void:
 	_prune_landed_history()
 	if points > 0.0:
 		_landed_history.append([_clock, points])
+		# A pelican's first share of the meter, for `VisitCounter` and the run log — told once, and
+		# never read back by anything here.
+		if is_pelican and not _reported_excitement:
+			_reported_excitement = true
+			EventBus.pelican_excited_her.emit(self)
 
 ## The sum of every entry still inside `ExcitementHalo.WINDOW`. Pruned here too, not only on
 ## write, so a source nobody has visited in a while reports honestly the moment it is asked rather

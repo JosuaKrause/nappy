@@ -291,6 +291,8 @@ func _listen() -> void:
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.crowd_bumped.connect(_on_bumped)
 	EventBus.car_near_miss.connect(_on_near_miss)
+	EventBus.pelican_sighted.connect(_on_pelican_sighted)
+	EventBus.pelican_struck_her.connect(_on_pelican_struck_her)
 
 ## Section one: the building, with `InteriorEvents` as the event source. No `CityMap`, so the
 ## street, calm-ground and closure watchers have nothing to ask and say nothing.
@@ -432,7 +434,12 @@ func _live() -> Array[EventInstance]:
 
 ## The end of the day, with what was around at the moment it ended. Called by `main.gd`
 ## before the calendar advances, so the outcome is written above the nerve it cost.
-func day_finished(result: GameEnums.DayResult) -> void:
+##
+## `cause` is what the page's counter folds into the day's loss — `EventBus.day_lost_to`'s own
+## string, `pelican` for a pelican rather than its row's `cyclist` — or "" for a win or a timeout,
+## which name nothing further. On the `lost` line as `to <cause>`, so a run log and the counter
+## name a lost day the same way.
+func day_finished(result: GameEnums.DayResult, cause := "") -> void:
 	# Above the outcome, because it is part of how the day got there.
 	_flush_road(_player.global_position)
 	_flush_corridor()
@@ -440,8 +447,9 @@ func day_finished(result: GameEnums.DayResult) -> void:
 	if result == GameEnums.DayResult.WON:
 		Telemetry.note("home", "WON, %.1fs to spare" % _day.time_remaining)
 		return
-	Telemetry.note("lost", "%s after %.1fs — %s | %s | near: %s" % [
+	Telemetry.note("lost", "%s after %.1fs%s — %s | %s | near: %s" % [
 		name.to_lower(), _day.time_total - _day.time_remaining,
+		" to %s" % cause if cause != "" else "",
 		_day.failure_reason, _meters(), _nearest()])
 	# The single most useful frame in a run, and the only one that is always worth the file: what
 	# the street looked like at the moment the day ended.
@@ -806,7 +814,7 @@ func _watch_the_cues(delta: float) -> void:
 func _where_is(id: String) -> String:
 	var best := INF
 	for instance in _live():
-		if instance.def.id == id and not instance.is_finished:
+		if instance.logged_name() == id and not instance.is_finished:
 			best = minf(best, instance.global_position.distance_to(_player.global_position))
 	return "now %.0fpx away" % best if best < INF else "no longer in the world"
 
@@ -823,7 +831,7 @@ func _what_raised_the_mark() -> String:
 			continue
 		var distance := instance.global_position.distance_to(here)
 		if distance <= instance.def.outer_radius:
-			return "%s %.0fpx" % [instance.def.id, distance]
+			return "%s %.0fpx" % [instance.logged_name(), distance]
 	if _map and Tile.is_road(_map.tile_type_at_world(here)):
 		return "a car, and she is in the road"
 	return "nothing in reach"
@@ -1004,7 +1012,7 @@ func _watch_what_is_near(here: Vector2) -> void:
 		# are out on a normal day, and "the same one kept following the route" and "three
 		# different ones" are the same two lines without it.
 		Telemetry.note("near", "%s%s at %s, %.0fpx, %s" % [
-			instance.def.id, " (telegraph)" if instance.is_telegraphing() else "",
+			instance.logged_name(), " (telegraph)" if instance.is_telegraphing() else "",
 			TelemetryLog.tile(_tile_of(instance.global_position)),
 			distance, _meters()])
 	for id: int in _near.keys():
@@ -1184,6 +1192,30 @@ func _on_city_went_quiet() -> void:
 ## The dropped count is printed rather than silently swallowed: "she bumped somebody at 0:14"
 ## and "she ploughed through fourteen people between 0:12 and 0:14" are very different days,
 ## and without the number they are the same line.
+## The pelican's first frame on screen (`EventBus.pelican_sighted`), as a `near` line of its own:
+## the moment she could first see the one rider in about four hundred that is a pelican, which the
+## distance-driven `near` lines below say nothing about, since a pelican seen across the street
+## never comes within its 90px. *(Inbox #527: "when the pelican spawns, when it's on screen, and
+## when it's hitting the player".)*
+func _on_pelican_sighted(instance: Variant) -> void:
+	var pelican := instance as EventInstance
+	if not pelican or not _player:
+		return
+	Telemetry.note("near", "%s on screen at %s, %.0fpx, %s" % [pelican.logged_name(),
+			TelemetryLog.tile(_tile_of(pelican.global_position)),
+			pelican.global_position.distance_to(_player.global_position), _meters()])
+
+## The pelican's lethal reach covering her (`EventBus.pelican_struck_her`), written above the
+## `lost` line it ends the day with — and the only line that says so under `--invincible`, where
+## the day goes on.
+func _on_pelican_struck_her(instance: Variant) -> void:
+	var pelican := instance as EventInstance
+	if not pelican or not _player:
+		return
+	Telemetry.note("near", "%s struck her at %s, %.0fpx, %s" % [pelican.logged_name(),
+			TelemetryLog.tile(_tile_of(pelican.global_position)),
+			pelican.global_position.distance_to(_player.global_position), _meters()])
+
 func _on_bumped(at: Vector2) -> void:
 	if not _day.is_running():
 		return
@@ -1239,5 +1271,5 @@ func _nearest() -> String:
 			closest = instance
 	if not closest:
 		return "nothing live"
-	return "%s %.0fpx%s" % [closest.def.id, best,
+	return "%s %.0fpx%s" % [closest.logged_name(), best,
 			"" if best <= closest.def.outer_radius else " (out of range)"]

@@ -41,6 +41,8 @@ func run(t) -> void:
 	_test_pending_events_queue_until_present_and_flush_in_order(t)
 	_test_send_event_never_queues_when_it_may_never_send(t)
 	_test_a_chase_is_reported_once_however_the_pursuer_arrived(t)
+	_test_the_pelican_is_its_own_entry(t)
+	_test_a_day_lost_to_the_pelican_names_the_pelican(t)
 	_test_every_event_opts_out_of_sessions(t)
 
 ## `_should_send()` — on the web, released, unasked-for and with a live
@@ -157,6 +159,10 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	counter._on_city_gone_dark()
 	counter._on_pursuit_began("charging_dog")
 	counter._on_pursuit_ended("charging_dog", true)
+	counter._on_pelican_spawned(null)
+	counter._on_pelican_sighted(null)
+	counter._on_pelican_excited_her(null)
+	counter._on_pelican_struck_her(null)
 	counter._on_poster_torn()
 	counter._on_poster_pursuit_sent()
 	counter._on_player_detained("chatting_mother")
@@ -417,6 +423,37 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 	warned.free()
 	EventBus.pursuit_began.disconnect(on_began)
 
+## The pelican's own four moments, each its own day-numbered event *(inbox #527, the player: "when
+## the pelican spawns, when it's on screen, and when it's hitting the player. it must appear as its
+## own entry")* — one send per signal, in the order the signals came. That each signal fires once
+## per pelican, at its moment, is `tests/test_pelican.gd`'s.
+func _test_the_pelican_is_its_own_entry(t) -> void:
+	var counter := RecordingCounter.new()
+	var day := GameState.day
+	counter._on_pelican_spawned(null)
+	counter._on_pelican_sighted(null)
+	counter._on_pelican_excited_her(null)
+	counter._on_pelican_struck_her(null)
+	var expected: Array[String] = []
+	for moment in ["spawned", "seen", "excited", "hit"]:
+		expected.append("nappy-day-%d-pelican-%s" % [day, moment])
+	t.check(counter.sent == expected,
+			"the pelican's four moments are four events of its own (%s)" % [counter.sent])
+	counter.free()
+
+## A day the pelican ends folds `pelican` into its loss, never its row's `cyclist` — the cause
+## `main._hard_fail_cause_suffix()` names it by (`tests/test_day_lost_to.gd`), carried through.
+func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
+	var counter := RecordingCounter.new()
+	var day := GameState.day
+	counter._on_pelican_struck_her(null)
+	counter._on_day_lost_to(day, "pelican")
+	counter._on_day_ended(day, GameEnums.DayResult.LOST_HARD_FAIL)
+	t.check(counter.sent == ["nappy-day-%d-pelican-hit" % day,
+			"nappy-day-%d-lost-hard-fail-pelican" % day],
+			"the hit, then the day lost to the pelican (%s)" % [counter.sent])
+	counter.free()
+
 ## Every event the counter sends carries `no_session: true`, the one thing that keeps it counted
 ## every time on a site whose sessions stay on for the page visit ("okay, I can turn session back
 ## on and you opt out for everything except /nappy.josuakrause.com/"). Every handler is driven
@@ -438,6 +475,10 @@ func _test_every_event_opts_out_of_sessions(t) -> void:
 	counter._on_city_gone_dark()
 	counter._on_pursuit_began("charging_dog")
 	counter._on_pursuit_ended("charging_dog", false)
+	counter._on_pelican_spawned(null)
+	counter._on_pelican_sighted(null)
+	counter._on_pelican_excited_her(null)
+	counter._on_pelican_struck_her(null)
 	counter._on_poster_torn()
 	counter._on_poster_pursuit_sent()
 	counter._on_player_detained("chatting_mother")

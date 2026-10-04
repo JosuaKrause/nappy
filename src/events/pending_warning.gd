@@ -41,6 +41,15 @@ var _where: Callable
 ## `func(place: Vector2, her: Vector2) -> bool`: creates the thing at `place`; false when it
 ## cannot be created there yet, which keeps the warning up for another frame.
 var _arrive: Callable
+## Whether the cyclist this warns of is the pelican, rolled as the warning went up
+## (`EventManager.rolls_a_pelican()`). Read by the telemetry alone (`logged_name()`): the badge
+## draws the row's own silhouette either way.
+var is_pelican := false
+
+## What the run log calls the thing this warns of — `EventInstance.logged_name()` before there is
+## an instance to ask.
+func logged_name() -> String:
+	return EventInstance.named_for_the_log(def.id, is_pelican)
 
 func _init(row: EventDef, where: Callable, arrive: Callable) -> void:
 	def = row
