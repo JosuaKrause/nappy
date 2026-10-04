@@ -1,0 +1,13 @@
+{
+  "version": 1, "name": "Day 12: the swing, 581px from the mark", "seed": 11,
+  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
+  "anchors": {"mark": {"tile": [51, 111]}},
+  "setup": {"tutorial_complete": true, "day": 12, "parent": "mother", "player": {"at": "mark", "facing": "south"}, "task": {"mark": "mark"}},
+  "playback": {"walk": "0.35w0.35s5.57w3.13s0.35e", "duration": 10.5, "capture_at": 9.5,
+    "observations": [{"tick": 1, "subject": "task", "condition": "offered"},
+      {"tick": 1, "subject": "task", "condition": "arrowed"},
+      {"tick": 1, "subject": "task", "condition": "off_screen"},
+      {"tick": 1, "subject": "task", "condition": "beyond", "at": "mark", "distance": 576},
+      {"tick": 1, "subject": "task", "condition": "near", "at": "mark", "distance": 640},
+      {"tick": 305, "subject": "task", "condition": "done"}]}
+}

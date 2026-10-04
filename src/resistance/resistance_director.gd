@@ -348,7 +348,9 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	else:
 		at = _place(_step, _rng, mark)
 	if at == Vector2.INF:
-		push_warning("resistance step %d has nowhere to go in this city" % _step.index)
+		# A scene's task says why in what `start_recipe_task()` answers instead.
+		if not _scene_task:
+			push_warning("resistance step %d has nowhere to go in this city" % _step.index)
 		_step = null
 		return
 
@@ -1478,8 +1480,9 @@ static func station_door_point(map: CityMap) -> Vector2:
 ## Where day 11's task points: beside the foot of one of today's live loudspeaker masts
 ## (`EventManager.mast_foot()`'s own point, the plan's position), drawn by the day's RNG among the
 ## masts she can reach, weighted toward the nearer ones (`_weighted_mast_index()`). `Vector2.INF`
-## if today stands none, which from `Tuning.MAST_FIRST_DAY` on only a day whose holds took every
-## site could do.
+## when no mast stands near her and none can be put up there, and none stands anywhere else either —
+## from `Tuning.MAST_FIRST_DAY` on, only a day whose holds took every site, or a scene recipe, which
+## installs no mast it does not name.
 ##
 ## **Reachable is asked of the ground beside the foot, not of the foot.** The pole is a body
 ## (`EventScheduler.blocked_by()` paints its disc over the foot's own tile), and she touches it
@@ -1500,8 +1503,9 @@ static func station_door_point(map: CityMap) -> Vector2:
 ## far one: *"The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
 ## harder to encounter masts. We need to discuss this again but not now. Now just add a new mast
 ## close by"* (2026-10-03, quiet-yak, inbox #486). Only where no ground near the mark can take one is the offered mast
-## nearest the mark the one. `Vector2.INF` for `mark` (a rig placing the task without a mark) draws
-## among them all.
+## nearest the mark the one. **No live mast anywhere is no mast near her**, so a mark still has one
+## put up beside it. `Vector2.INF` for `mark` (a rig placing the task without a mark) draws among
+## them all.
 func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector2:
 	_mast_id = ""
 	if not _city or not _city.events:

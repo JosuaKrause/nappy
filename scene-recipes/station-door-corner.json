@@ -1,0 +1,13 @@
+{
+  "version": 1, "name": "The station door from the far outer corner of its sidewalk, 57.7px out", "seed": 11,
+  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
+  "anchors": {"corner": {"world": [3872, 928]}, "door": {"world": [3904, 880]}},
+  "setup": {"tutorial_complete": true, "day": 14, "parent": "mother", "player": {"at": "corner", "facing": "north"}, "task": {}},
+  "playback": {"walk": "1p0.4e", "duration": 1.6, "capture_at": 0.5,
+    "observations": [{"tick": 1, "subject": "task", "condition": "offered"},
+      {"tick": 1, "subject": "task", "condition": "arrowed"},
+      {"tick": 1, "subject": "player", "condition": "beyond", "at": "door", "distance": 57.6},
+      {"tick": 29, "subject": "task", "condition": "offered"},
+      {"tick": 29, "subject": "player", "condition": "beyond", "at": "door", "distance": 57.6},
+      {"tick": 45, "subject": "task", "condition": "done"}]}
+}

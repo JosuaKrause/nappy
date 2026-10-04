@@ -1,0 +1,13 @@
+{
+  "version": 1, "name": "Day 14: the power station's front door, 593px from where she starts", "seed": 11,
+  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
+  "anchors": {"start": {"tile": [103, 28]}},
+  "setup": {"tutorial_complete": true, "day": 14, "parent": "mother", "player": {"at": "start", "facing": "east"}, "task": {}},
+  "playback": {"walk": "6.26e", "duration": 7, "capture_at": 6.0,
+    "observations": [{"tick": 1, "subject": "task", "condition": "offered"},
+      {"tick": 1, "subject": "task", "condition": "arrowed"},
+      {"tick": 1, "subject": "task", "condition": "off_screen"},
+      {"tick": 1, "subject": "task", "condition": "beyond", "at": "start", "distance": 576},
+      {"tick": 1, "subject": "task", "condition": "near", "at": "start", "distance": 640},
+      {"tick": 200, "subject": "task", "condition": "done"}]}
+}

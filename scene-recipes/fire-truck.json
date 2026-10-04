@@ -1,0 +1,12 @@
+{
+  "version": 1, "name": "Day 3: the burning building, and the fire engine it calls in once she sees it", "seed": 11,
+  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
+  "anchors": {"fire": {"world": [2128, 2704]}, "kerb": {"world": [2128, 2768]}},
+  "setup": {"tutorial_complete": true, "day": 3, "parent": "mother", "player": {"at": "doorstep", "facing": "west"}, "events": [{"name": "fire", "row": "burning_building", "at": "fire"}]},
+  "playback": {"walk": "2w", "duration": 13, "capture_at": 12.0,
+    "observations": [{"tick": 1, "subject": "fire", "condition": "off_screen"},
+      {"tick": 60, "subject": "fire", "condition": "visible"},
+      {"tick": 270, "subject": "row:fire_truck", "condition": "visible"},
+      {"tick": 270, "subject": "row:fire_truck", "condition": "moving"},
+      {"tick": 390, "subject": "row:fire_truck", "condition": "near", "at": "kerb", "distance": 24}]}
+}

@@ -294,7 +294,9 @@ const ROW_SUBJECT := "row:"
 ## `setup.task`: the day's own resistance step, its mark where `mark` puts it and read as the scene
 ## begins (`ResistanceDirector.start_recipe_task()`). The days with a mark take `mark`; the last
 ## night has no mark and takes none; `neighbor` pins day 10's neighbor's start and nothing else.
-## Names `mark` and `task` for the observations.
+## Names `mark`, `task` (the contact, where the red arrow ends) and, for a task that rides a body —
+## the man shouting, the van, the burnt shell, the neighbor, a roadblock — `rider`, for the
+## observations.
 static func _validate_task(recipe: Dictionary, names: Dictionary, errors: Array[String]) -> void:
 	var setup: Dictionary = recipe.get("setup", {})
 	if not setup.has("task"):
@@ -328,6 +330,9 @@ static func _validate_task(recipe: Dictionary, names: Dictionary, errors: Array[
 		else:
 			_position(task.neighbor, "setup.task.neighbor", errors)
 	names["task"] = true
+	if perform and perform.target_kind in [ResistanceSteps.TargetKind.EVENT,
+			ResistanceSteps.TargetKind.SCAR, ResistanceSteps.TargetKind.NEIGHBOR]:
+		names["rider"] = true
 
 static func _keys(object: Dictionary, allowed: Array, where: String, errors: Array[String]) -> void:
 	for key: Variant in object:
@@ -514,6 +519,8 @@ func _start_the_task() -> bool:
 	if _resistance._read_mark:
 		named["mark"] = _resistance._read_mark
 	named["task"] = _resistance._contact
+	if _resistance._rider:
+		named["rider"] = _resistance._rider
 	var step := _resistance.current_step()
 	var target := _resistance.contact_position()
 	var from := mark if mark != Vector2.INF else _player.global_position
