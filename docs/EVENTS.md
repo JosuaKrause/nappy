@@ -197,15 +197,64 @@ from off screen" gives: nothing announces a patrol at the edge of the screen. Th
 ordinary `MAP` placement of `police_patrol` reads (`EventCatalogue.heated()`): only its `spawn_mode`
 differs, so the row's cost and picture are exactly the ones the day's own plan already uses.
 
+### What she meets on her route is drawn from a marble bag
+
+*(olive-koala, statement 2: "events should use the marble bag approach as well. that way we can
+control what the player sees on their route".)* The dawn still decides how many director-sited
+events the day buys, by the same weighted roll and at the same cost as everything else. **Which row
+each of them is** is drawn from a bag when it is handed out: `EventDirector` fills a `MarbleBag` at
+dawn with every row it sites that day — recurring, available, `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` —
+`Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight, so over any stretch the length of a
+bag the mix she meets is the rows' own rather than a roll's
+streaks. The bag has its own stream, so the intervals and the sides a crossing comes from are what
+they would be without it. A row met `max_per_day` times that day has its further marbles spent
+unmet. A row owed as itself — a sprinkled dog, the return's patrols, a forced row — is not a marble.
+`tests/probes/olive_badger_route_mix.gd` measures the mix against the rows' weights over many seeds.
+
+**The bag is a queue of bags, and a bag can be rigged** (`MarbleBag.rig()`, inbox #561: "create a
+new marble bag with x holdings place the ensured item in the bag fill the remaining x-1 items by
+*drawing* from the currently active bag"). A rigged bag of `x` marbles holds what is ensured and
+`x - 1` taken from the bag she was drawing from; it is drawn first, and that bag then carries on with
+the rest. `EventDirector.rig_her_route()` moves that many of the owed events to the head of the
+list, so the guarantee is about what is placed on her route. Two rigs stand:
+
+- **After day 6's mark, a man shouting is one of the next two** (`Tuning.TASK_CONTACT_WITHIN_THE_NEXT`;
+  inbox #561: "maybe let's make the other rigged bags smaller, too"). A row the director does not
+  otherwise site is a place, so when its marble comes up it is put on her route the way day 3's
+  fire is (`EventScheduler.WalkSiting.ahead_of()`): on the branch of the day's routes she is
+  walking, past the streaming band so it is never seen to appear, under every acceptance rule a dawn
+  placement is, and moved ahead of her again if she turns away before it has been in the world. He
+  is a look-alike the day's any-instance contact follows her onto, besides the one her reading the
+  mark spawns near it.
+- **After day 11's mark, a second loudspeaker mast is one of the next two**
+  (`Tuning.MAST_WITHIN_THE_NEXT`), put on her route the same way on the sidewalk or square, besides
+  the mast near the mark the task points at first (inbox #561: "let it point to the closest one
+  first"). It is a mast like the one `EventManager.queue_a_mast()` adds, named by its foot.
+- **Each of the return leg's patrols** — see "The return owes her patrols" below.
+
+Day 3's lesson stays the first thing she meets (inbox #561: "keep it first"); its marble is taken
+out of the bag (`MarbleBag.take()`), so the dog's share over a bag stays its weight's with the
+lesson counted in it. **A rig that must not come sooner** takes the two-bag shape
+(`MarbleBag.rig_spaced()`): a bag of what comes first, none of it the ensured marble, then a bag of
+the ensured marble; nothing uses it today.
+
+**A marble may itself be a bag**: drawing it draws from it, and it is back in the next outer bag, so
+its marbles come at most once an outer bag (inbox #561: "this makes it very unlikely that two events
+from the inner bag happen right after each other"). Nothing on her route uses one today.
+
 ### The return owes her patrols
 
 **The streets that go quiet from act III on get something back, on the walk home.** The crowd
 table empties them on purpose — see `docs/MECHANICS.md`, "the cruellest number in the game" — and
 the return phase (`DayPhase.RETURNING`, entered the moment the baby falls asleep) is the one
 stretch of a day nothing in the catalogue was ever pacing for. `Tuning.RETURN_PATROLS_PER_ACT`
-(`[0, 0, 2, 3]`, one entry per act) is what `EventDirector.owe_the_return()` adds to the owed
-queue the moment `EventBus.return_phase_started` fires, at the day's own heat — the same heated
-`police_patrol` copy the day's other plans of that row already use — and from then on the queue
+(`[0, 0, 2, 3]`, one entry per act) is how many `EventDirector.owe_the_return()` owes the moment
+`EventBus.return_phase_started` fires, at the day's own heat — the same heated `police_patrol` copy
+the day's other plans of that row already use. **Each is a rigged bag** in her route's bag (inbox
+#561: "they will need rigged bags"): the patrol and `Tuning.RETURN_PATROL_WITHIN_THE_NEXT` less one
+drawn from the bag she was drawing from, the next rigged once that bag is handed out, so each comes
+within its own bag's events rather than behind the dozens the dawn bought for her route, which the
+pacing never reaches. From then on the queue
 rolls `Tuning.RETURN_PATROL_INTERVAL` (9–16s) instead of `Tuning.AHEAD_INTERVAL` (11–26s) for the
 rest of the day, so the extra rows have a real chance of landing inside a 33–47s leg rather than
 after she is already home. Acts I and II carry nothing, so the teaching days and the return she

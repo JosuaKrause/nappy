@@ -45,8 +45,36 @@ const CROSSING_REACH_TILES := Tuning.STREET_WIDTH
 
 var _map: CityMap
 var _rng := RandomNumberGenerator.new()
-## The events the day has budgeted and not yet spent, in the order the scheduler asked for.
+## The events the day has budgeted and not yet spent, in the order they are handed out. A `null`
+## entry is **a marble from the route's bag**: one of the events the day bought for her route,
+## which row it is decided by `_route` when it is handed out rather than by the dawn's roll. A
+## non-null entry is a row owed as itself — day 3's lesson, a sprinkled dog, a forced row.
 var _owed: Array[EventDef] = []
+## The day, for the siting a row asks for on it (`EventDef.spawn_mode_on()`).
+var _day := 0
+## **What she meets on her route is drawn from a marble bag.** *(olive-koala, statement 2: "events
+## should use the marble bag approach as well. that way we can control what the player sees on
+## their route".)* Filled with each row the director sites today in proportion to its weight
+## (`Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT`), so over any stretch the length of a bag the mix she
+## meets is the rows' own rather than a roll's streaks. The marbles are row ids, looked up in
+## `_route_rows`. Its own stream, derived from the day's director stream rather than drawn from it,
+## so the intervals and the crossing sides are what they would be without it. Null on a rig that
+## has not started a day.
+var _route: MarbleBag = null
+## Row id -> today's `EventDef` for it, heated like the day's own placements: every row the
+## ordinary bag holds, and any a rig put in front of it (`rig_her_route()`).
+var _route_rows := {}
+## Row id -> how many of it the director has handed out today, so a row's `max_per_day` holds for
+## what she meets as it holds for what the dawn buys. Asked only of the ordinary bag's rows
+## (`_ordinary_rows`): a rigged marble is there because something asked for it.
+var _met_today := {}
+## The ids the ordinary bag is filled with today.
+var _ordinary_rows := {}
+## The stream a place put on her route by a marble (`_place_on_her_route()`) is sited and re-sited
+## from — its own, so it never moves a crew's or the fire's.
+var _place_rng := RandomNumberGenerator.new()
+## The plans a marble put on her route, so a re-siting draws from `_place_rng`.
+var _placed_from_the_route := {}
 var _next_in := 0.0
 ## Whether `owe_the_return()` has already handed today its return-phase patrols. Set once and
 ## never cleared until `start_day()`, so a baby that wakes and settles again does not owe a
@@ -106,10 +134,20 @@ func _init(map: CityMap) -> void:
 ## director only on the days it actually answers `AHEAD_OF_PLAYER` or `TOWARD_PLAYER`. Without this
 ## the scheduler's own `EventScheduler._place_one()` would place the row on a tile *and* the
 ## director would separately site a second one in front of her, from the one `EventDef` both read.
+##
+## `heat` is the shape the route bag's rows are put in (`EventCatalogue.heated()`), the same
+## `GameState.resistance_progress` the day's own placements were planned at.
 func start_day(day: int, plans: Array[EventScheduler.Planned],
-		rng: RandomNumberGenerator, siting: EventScheduler.WalkSiting = null) -> void:
+		rng: RandomNumberGenerator, siting: EventScheduler.WalkSiting = null,
+		heat: int = 0) -> void:
 	_owed.clear()
 	_rng = rng
+	_day = day
+	_met_today.clear()
+	_placed_from_the_route.clear()
+	_return_patrols_left = 0
+	_patrol_bag_left = 0
+	_fill_the_route_bag(day, heat, rng)
 	_return_owed = false
 	_return_pacing = false
 	_doors.clear()
@@ -124,6 +162,9 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 	# otherwise hand every cat after it a different interval than a day on which she did not.
 	_walk_rng.seed = hash("%d:on-her-way" % rng.seed)
 	_crew_rng.seed = hash("%d:crews-on-her-way" % rng.seed)
+	_place_rng.seed = hash("%d:placed-from-the-route" % rng.seed)
+	# The first pursuer the day bought, for day 3's lesson — see `_teach_the_run()`.
+	var lesson: EventDef = null
 	for plan in plans:
 		# A door body is read off the same list, so "where do today's doors stand" is answered once,
 		# by the plan, rather than by a second wire from the region planner to here. The huts and
@@ -136,7 +177,10 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 			_on_her_way.append(plan)
 		var mode := plan.def.spawn_mode_on(day)
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
-			_owed.append(plan.def)
+			if plan.def.pursues and not lesson:
+				lesson = plan.def
+			# The dawn decides how many the route is owed; the bag decides which each one is.
+			_owed.append(null if _route_rows.has(plan.def.id) else plan.def)
 	_owe_the_sprinkled_dog(day)
 	_take_the_forced_row()
 	# The first one is not free: a cat on the doorstep before she has taken a step reads as the
@@ -144,7 +188,7 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 	_next_in = _roll_interval()
 	if _forced:
 		return
-	_teach_the_run(day)
+	_teach_the_run(day, lesson)
 
 ## The row `--force <id>` names, or `null` when the flag is absent — see `DevFlags.forced_row()`
 ## for what the flag is for. Debug builds only, like every other dev flag.
@@ -190,24 +234,47 @@ func _take_the_forced_row() -> void:
 ## Two things, and only on that day: the pursuit is moved to the head of the owed list, and the
 ## first interval is cut to a lesson rather than an ambush. `LESSON_DELAY` is far enough in that
 ## she is walking and off the doorstep — the director will not site anything while she is standing
-## still — and early enough that it is the first thing that happens to her.
+## still — and early enough that it is the first thing that happens to her. *(inbox #561, asked
+## whether the lesson should come after a bag of five: "keep it first".)* The dawn's pursuer is one
+## of the route's marbles like the rest, so the lesson takes the place of one of them at the head of
+## the list and its own marble out of the bag (`MarbleBag.take()`): over a bag the dog's share is its
+## weight's with the lesson counted in it, and the bag decides the others.
 ##
 ## It is *not* a scripted event, and that is deliberate: it is one of the day's own budgeted
 ## `AHEAD_OF_PLAYER` plans, so teaching the run cannot quietly make day 3 denser than the budget
 ## says. If the day happened not to buy one, there is nothing to teach and nothing happens.
-func _teach_the_run(day: int) -> void:
-	if day != Tuning.RUN_TAUGHT_DAY:
+func _teach_the_run(day: int, lesson: EventDef) -> void:
+	if day != Tuning.RUN_TAUGHT_DAY or not lesson:
 		return
-	for i in _owed.size():
-		if not _owed[i].pursues:
-			continue
-		_owed.push_front(_owed.pop_at(i))
-		_next_in = LESSON_DELAY
+	var at := _owed.find(lesson)
+	if at < 0:
+		at = _owed.find(null)
+	if at < 0:
 		return
+	_owed.remove_at(at)
+	_owed.push_front(lesson)
+	if _route_rows.has(lesson.id):
+		_route.take(lesson.id)
+	_next_in = LESSON_DELAY
 
 ## How far into day 3 the lesson lands. A few seconds of ordinary walking first, so that what
 ## happens reads as the day changing rather than as the day starting.
 const LESSON_DELAY := 6.0
+
+## Moves `count` of the owed list's marbles to its head, adding marbles where it holds fewer, so the
+## next `count` events handed out are the route bag's next `count` draws — what a rig of that size
+## needs to be a guarantee about what is placed on her route rather than about the bag alone.
+func _bag_the_next(count: int) -> void:
+	var taken := 0
+	var rest: Array[EventDef] = []
+	for owed_def in _owed:
+		if owed_def == null and taken < count:
+			taken += 1
+			continue
+		rest.append(owed_def)
+	_owed = rest
+	for _i in count:
+		_owed.push_front(null)
 
 ## The lesson does not retire. *(2026-09-13, PLAYTEST-68: "The waiting is good. But we can sprinkle
 ## the day 3 charging dog in every now and then, too. Since they always come from offscreen the
@@ -252,6 +319,129 @@ func _owe_the_sprinkled_dog(day: int) -> void:
 
 func owed() -> int:
 	return _owed.size()
+
+# ------------------------------------------------------------ the route's bag ---
+
+## Fills `_route` with every row the director sites on `day` — recurring, available, and
+## `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` that day — in proportion to its weight. **The dawn placement
+## stays a weighted roll** (`EventScheduler._fill_with_recurring()`), and what it buys for her route
+## is how many she is owed, at the same cost as everything else; the bag only decides which row
+## each of those is, in the order she meets them. *(2026-09-27, asked how far the bags reach, the
+## player chose the route's events only.)*
+func _fill_the_route_bag(day: int, heat: int, rng: RandomNumberGenerator) -> void:
+	_route_rows.clear()
+	_ordinary_rows.clear()
+	var weights := {}
+	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
+		var mode := def.spawn_mode_on(day)
+		if mode != EventDef.SpawnMode.AHEAD_OF_PLAYER and mode != EventDef.SpawnMode.TOWARD_PLAYER:
+			continue
+		_route_rows[def.id] = def
+		_ordinary_rows[def.id] = true
+		weights[def.id] = def.weight
+	_route = MarbleBag.new([], MarbleBag.in_proportion(weights,
+			Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT), hash("%d:route-bag" % rng.seed))
+
+## The bag her route's events are drawn from, for a caller that rigs what comes next — a scene that
+## wants a row met at a known point of the walk. Null before `start_day()`.
+func route_bag() -> MarbleBag:
+	return _route
+
+## **Rigs her route so `ids` are among the next `size` events placed on it**: a bag of `size`
+## marbles, `ids` and the rest drawn from the bag she was drawing from, is drawn from first, and
+## that bag carries on with what it has left once the rigged one is empty (`MarbleBag.rig()`). A
+## row that is not one the director sites — the man shouting, a place — is put on her route ahead
+## of her by `_place_on_her_route()` when its marble comes up. Answers the rigged bag's marbles, or
+## nothing under `--force`, whose queue is the forced row's alone, and on a rig with no day.
+##
+## **The next `size` events she is owed are the rigged bag's**, so the guarantee is about what is
+## placed on her route and not about the bag alone: they are moved to the head of the owed list,
+## ahead of a sprinkled dog not yet met, and the list is topped up when the day has fewer left.
+## `siting` is the day's placement context, for a place; `heat` the shape its row is put in.
+func rig_her_route(ids: Array[String], size: int, heat: int = 0,
+		siting: EventScheduler.WalkSiting = null) -> Array:
+	if _forced or not _route:
+		return []
+	if siting and not _siting:
+		_siting = siting
+	var ensured := []
+	for id in ids:
+		var def := EventCatalogue.by_id(id)
+		if not def:
+			push_error("a rigged route names no event in the catalogue: '%s'" % id)
+			continue
+		if not _route_rows.has(id):
+			_route_rows[id] = _with_ground(EventCatalogue.heated(def, heat))
+		ensured.append(id)
+	_route.rig(ensured, size)
+	var rigged := _route.bag_in_front()
+	_bag_the_next(rigged.size())
+	return rigged
+
+## Today's row a marble names, or null — what a caller rigging her route prepares the siting for.
+func route_row(id: String) -> EventDef:
+	return _route_rows.get(id)
+
+## A place whose own row names no ground — a loudspeaker mast, whose sites are the city's
+## (`MastSites`) — is offered the sidewalk and the square when a marble puts it on her route, the
+## ground `ResistanceDirector._add_a_mast_near()` offers a mast near a mark. A copy, never the shared
+## heated row every dawn placement of it reads (`EventCatalogue.heated()`).
+static func _with_ground(def: EventDef) -> EventDef:
+	if not def.placement.is_empty() or def.spawn_mode != EventDef.SpawnMode.MAP:
+		return def
+	var placed := def.duplicate() as EventDef
+	placed.shape = def.shape
+	placed.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	return placed
+
+## The row the next marble from the route's bag names, peeked rather than drawn — a siting that
+## fails must not spend it. A marble whose row has been met `max_per_day` times today is spent unmet
+## and the next one asked. Null when the bag has nothing left to name.
+func _next_on_the_route() -> EventDef:
+	for _i in ROUTE_SKIP_LIMIT:
+		var id: Variant = _route.peek() if _route else null
+		if id == null:
+			return null
+		var def: EventDef = _route_rows.get(id)
+		if def and (not _ordinary_rows.has(id) or int(_met_today.get(id, 0)) < def.max_per_day):
+			return def
+		_route.draw()
+	return null
+
+## How many marbles in a row `_next_on_the_route()` may spend on rows that have had their day before
+## it gives up: more than a whole bag, so it only stops on a bag whose every row is spent.
+const ROUTE_SKIP_LIMIT := 64
+
+## A marble that names a place rather than a moment — the man shouting a rigged bag puts on her route
+## — is sited the way the day's own places left to her walk are (`EventScheduler.WalkSiting.
+## ahead_of()`): on the branch of the day's route tree she is walking, past the streaming band and
+## within `ON_HER_WAY_SIGHT` seconds of walking of it, through every acceptance rule a dawn placement
+## is under. So it is never seen to appear, it is reachable on the route she is walking, and it is in
+## the world once she walks on. Until it has been, it is re-sited ahead of her if she turns away
+## (`site_what_is_on_her_way()`), the way day 3's fire is. Returns `[EventDef, path, Planned]` for
+## the manager to put in the day's plan, or nothing when there is no legal site yet, which is a retry
+## a second of walking later.
+func _place_on_her_route(def: EventDef, at: Vector2, heading: Vector2,
+		plans: Array[EventScheduler.Planned]) -> Array:
+	if not _siting:
+		# Nowhere to ask: a rig that started the day with no placement context. The marble is spent
+		# rather than left to block the route for the rest of the day.
+		_route.draw()
+		return []
+	var band := _siting_band()
+	var sited := _siting.ahead_of(def, _place_rng, plans, at, heading, band.x, band.y)
+	if not sited:
+		_next_in = 1.0
+		return []
+	_next_in = _roll_interval()
+	_owed.pop_front()
+	_route.draw()
+	_handed_from_the_route()
+	_met_today[def.id] = int(_met_today.get(def.id, 0)) + 1
+	_on_her_way.append(sited)
+	_behind_her[sited] = 0.0
+	_placed_from_the_route[sited] = true
+	return [def, sited.path, sited]
 
 # ------------------------------------------------- the place that is on her way ---
 
@@ -367,7 +557,8 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 		if not plan.is_placed() and _waits_its_turn(plan):
 			continue
 		var band := _siting_band()
-		var rng := _walk_rng if plan.def.kind == GameEnums.EventKind.ONE_SHOT else _crew_rng
+		var rng := _walk_rng if plan.def.kind == GameEnums.EventKind.ONE_SHOT \
+				else (_place_rng if _placed_from_the_route.has(plan) else _crew_rng)
 		var sited := _siting.ahead_of(plan.def, rng, _everything_but(plans, plan), at, heading,
 				band.x, band.y)
 		if not sited:
@@ -460,8 +651,9 @@ func _everything_but(plans: Array[EventScheduler.Planned],
 
 ## Hands the day's return leg its own pressure — `docs/TODO.md`'s M98, pressure in the empty acts
 ## — the moment `EventManager` hears `EventBus.return_phase_started`. `Tuning.RETURN_PATROLS_PER_
-## ACT[act - 1]` copies of `police_patrol`, at the day's own heat, are appended to the owed queue
-## sited `TOWARD_PLAYER` down her own carriageway rather than crossed — see
+## ACT[act - 1]` copies of `police_patrol`, at the day's own heat, are owed on top of the day's own
+## events, each rigged into the route's bag in turn (`_rig_the_next_patrol()`) and sited
+## `TOWARD_PLAYER` down her own carriageway rather than crossed — see
 ## `_toward_her_on_the_road()` — and the interval the queue rolls for the rest of the day switches
 ## from `Tuning.AHEAD_INTERVAL` to the tighter `Tuning.RETURN_PATROL_INTERVAL`, so the extra rows
 ## land inside the leg rather than after she is home.
@@ -487,8 +679,13 @@ func owe_the_return(day: int, heat: int) -> void:
 	var for_return := _patrol_toward_her(heat)
 	if not for_return:
 		return
+	# One more event owed for each patrol, as the patrols were always on top of what the day bought;
+	# each is the ensured marble of a rigged bag, rigged as the one before it is handed out.
+	_route_rows[RETURN_PATROL] = for_return
 	for i in count:
-		_owed.append(for_return)
+		_owed.append(null)
+	_return_patrols_left = count
+	_rig_the_next_patrol()
 	_return_pacing = true
 	# Shortened immediately rather than left for the next ordinary roll to expire — `AHEAD_INTERVAL`
 	# can still be waiting out up to 26s when the phase turns, and a 33s return leg cannot afford
@@ -496,6 +693,38 @@ func owe_the_return(day: int, heat: int) -> void:
 	# ever shortened, never lengthened: a `minf` against whatever is already ticking down means the
 	# return can land its first row sooner than the ordinary pacing would have, never later.
 	_next_in = minf(_next_in, _roll_interval())
+
+## The marble a return patrol is in the route's bag.
+const RETURN_PATROL := "police_patrol"
+## How many of today's return patrols are still to be rigged into the route's bag.
+var _return_patrols_left := 0
+## How many more events are handed out of the route's bag before the next patrol is rigged: the
+## size of the patrol's own bag, counted down as it is drawn.
+var _patrol_bag_left := 0
+
+## **Each return patrol is a rigged bag** of `Tuning.RETURN_PATROL_WITHIN_THE_NEXT` marbles, the
+## patrol and the rest drawn from the bag she was drawing from, and the next is rigged once that bag
+## has been handed out — so each comes within its own bag's events and two never come back to back
+## unless the second bag starts with what the first ended on. *(inbox #561: "The return patrols in acts III and IV are added at the back of the
+## route queue -- the marble bag approach will properly fix this" · "they will need rigged
+## bags".)* Behind the day's own events, the dozens the dawn buys and the pacing never drains, they
+## would never come; rigged, each one comes within that many events of the last.
+func _rig_the_next_patrol() -> void:
+	if _return_patrols_left <= 0 or not _route:
+		return
+	_return_patrols_left -= 1
+	_route.rig([RETURN_PATROL], Tuning.RETURN_PATROL_WITHIN_THE_NEXT)
+	_patrol_bag_left = _route.bag_in_front().size()
+	_bag_the_next(_patrol_bag_left)
+
+## Counts one event handed out of the route's bag against the patrol's bag, and rigs the next patrol
+## when it is spent.
+func _handed_from_the_route() -> void:
+	if _patrol_bag_left <= 0:
+		return
+	_patrol_bag_left -= 1
+	if _patrol_bag_left == 0:
+		_rig_the_next_patrol()
 
 ## A copy of `police_patrol` at `heat`, sited `TOWARD_PLAYER` down her own carriageway — the shape
 ## both the return leg's patrols and a torn poster's are sent in. Null, with an error, if the
@@ -572,8 +801,11 @@ func has_a_sent_patrol() -> bool:
 ## facing: something that crosses in front of a player standing still is not in front of
 ## anything.
 ##
-## Returns `[EventDef, PackedVector2Array]`, or an empty array.
-func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
+## Returns `[EventDef, PackedVector2Array]`, or an empty array — or `[EventDef, path, Planned]` for
+## a place the route's bag put ahead of her (`_place_on_her_route()`), which the caller adds to the
+## day's plan. `plans` is the day's plan, which such a place is spaced and checked against.
+func due(delta: float, at: Vector2, velocity: Vector2,
+		plans: Array[EventScheduler.Planned] = []) -> Array:
 	var sent := _site_the_sent_patrol(delta, at, velocity)
 	if not sent.is_empty():
 		return sent
@@ -593,7 +825,16 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	# put *in her way* rather than across it, a `TOWARD_PLAYER` row is put *down* her own line, and
 	# a placement that fails must not spend the event.
 	var next := _owed[0] as EventDef
+	var from_the_bag := next == null
+	if from_the_bag:
+		next = _next_on_the_route()
+		if not next:
+			# The bag has nothing left to name today: the event is owed nothing.
+			_owed.pop_front()
+			return []
 	var heading := velocity / speed
+	if from_the_bag and next.spawn_mode_on(_day) == EventDef.SpawnMode.MAP:
+		return _place_on_her_route(next, at, heading, plans)
 	# A `TOWARD_PLAYER` row whose `placement` names `ROAD` is a car, not a bike — `police_patrol`
 	# is the one row `owe_the_return()` ever adds this way — and a car belongs on the carriageway
 	# lane that drives toward her rather than on her own pavement. `_toward_her()` is still what
@@ -622,6 +863,11 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 		return []
 	_next_in = _roll_interval()
 	var handed := _owed.pop_front() as EventDef
+	if from_the_bag:
+		handed = next
+		_route.draw()
+		_handed_from_the_route()
+	_met_today[handed.id] = int(_met_today.get(handed.id, 0)) + 1
 	# Refilled rather than seeded with a hundred copies, so the queue length stays honest and
 	# `owed()` — which the HUD reads — says "one more coming" rather than a number that means
 	# nothing under this flag.

@@ -331,7 +331,8 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 					_siting.fronts = _city.poster_walls().fronts()
 			# The first attempt's one-time scans, done here rather than mid-walk. See `prepare()`.
 			_siting.prepare(plan.def, _everything_but(plan))
-	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"), _siting)
+	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"), _siting,
+			GameState.resistance_progress)
 	stream_around(focus)
 
 ## Clears whatever was here and takes the escape's whole plan as given.
@@ -1276,11 +1277,14 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	var body := _player as CharacterBody2D
 	if not body:
 		return
-	var due := _director.due(delta, body.global_position, body.velocity)
+	var due := _director.due(delta, body.global_position, body.velocity, _plans)
 	if due.is_empty():
 		return
 	var def := due[0] as EventDef
 	var path := due[1] as PackedVector2Array
+	if due.size() > 2:
+		_put_down_on_her_route(due[2] as EventScheduler.Planned, body)
+		return
 	if def.warns_before_it_exists():
 		_warn_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
 		return
@@ -1296,6 +1300,45 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	Telemetry.note("ahead", "%s %s %.0fpx in front of her at %s" % [
 		def.id, verb, lead,
 		TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+
+## A place a marble from her route's bag named — the man shouting a rigged bag puts on it — sited by
+## the director ahead of her on the branch she is walking (`EventDirector._place_on_her_route()`).
+## It joins the day's plan with the bookkeeping a dawn placement had: its body recorded per tile, the
+## way `queue_a_mast()` records a mast's, and it streams in like any planned row once she walks on.
+func _put_down_on_her_route(plan: EventScheduler.Planned, body: Node2D) -> void:
+	# A mast is a mast like the one `queue_a_mast()` adds: it broadcasts on the one clock, is
+	# silenced by `silence_mast()` and counts for `silence_all_masts()`.
+	if plan.def.id == "loudspeaker":
+		plan.mast_id = EventScheduler.added_mast_id(plan.position)
+	_plans.append(plan)
+	_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
+	# Where, because nothing else records it: the siting depends on the walk she took.
+	Telemetry.note("ahead", "%s is put on her route %.0fpx ahead of her at %s, %s of where she is at %s"
+			% [plan.def.id, plan.position.distance_to(body.global_position),
+			TelemetryLog.tile(_map.world_to_tile(plan.position)),
+			_heading_name((body as CharacterBody2D).velocity.normalized()),
+			TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+
+## **Rigs her route so `ids` are among the next `size` events placed on it** — see
+## `EventDirector.rig_her_route()` and `MarbleBag.rig()`. A place among them is sited ahead of her
+## by the day's placement context, which is built here if the day had none, and its first scans are
+## done now rather than on the frame it is sited. Answers the rigged bag's marbles.
+func rig_her_route(ids: Array[String], size: int) -> Array:
+	# A rig that never started a day has no route to rig, and building it a placement context for
+	# nothing would grow a route tree to no end.
+	if not _director.route_bag():
+		return []
+	if not _siting:
+		_siting = EventScheduler.WalkSiting.new(_day, _map, _day_tree if _day_tree \
+				else RouteTree.for_day(_map, _day), GameState.settled_this_act(), _day_doors)
+		if _city and _city.poster_walls():
+			_siting.fronts = _city.poster_walls().fronts()
+	var rigged := _director.rig_her_route(ids, size, GameState.resistance_progress, _siting)
+	for id in ids:
+		var row := _director.route_row(id)
+		if row and row.spawn_mode_on(_day) == EventDef.SpawnMode.MAP:
+			_siting.prepare(row, _plans)
+	return rigged
 
 ## A row the director sited down her own line, warned first: the badge goes up at once, its place
 ## follows her just off screen in `direction` on a sidewalk or a square (`PendingWarning.
@@ -1343,6 +1386,10 @@ func _site_what_is_on_her_way(delta: float) -> void:
 	for plan in moved:
 		_map.release_obstruction(plan.get_instance_id())
 		_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
+		# A mast's id is its foot (`EventScheduler.added_mast_id()`), so a mast moved before it was
+		# ever in the world is named by where it now stands.
+		if plan.mast_id != "":
+			plan.mast_id = EventScheduler.added_mast_id(plan.position)
 		# Where and why, because nothing else records it: the siting depends on the walk she took
 		# and no seed reproduces it from outside. The same `ahead` entry the director's crossings
 		# write, for the same reason.

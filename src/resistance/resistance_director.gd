@@ -2260,7 +2260,9 @@ func _on_contact_completed(step_index: int) -> void:
 		# to flash the mark's own words — see `Hud._on_resistance_step_completed()`. Activating
 		# the perform half here, rather than waiting for a `start_day()` that will not come
 		# until tomorrow, is what makes the task the same day as the mark.
-		_begin_step(ResistanceSteps.by_index(step_index + 1), false)
+		var task := ResistanceSteps.by_index(step_index + 1)
+		_begin_step(task, false)
+		_rig_her_route_for(task)
 		return
 	if step and step.applies_package_weight:
 		GameState.resistance_carrying_package = true
@@ -2307,6 +2309,47 @@ func _on_contact_completed(step_index: int) -> void:
 	# goes dark once she has walked far enough from the station — every window, every light and
 	# every mast at once, the masts because they run on the same power. That is `Blackout`'s, and
 	# it watches the flag set above rather than this call.
+
+## **After a mark, the task's own row is rigged onto her route** — the man shouting on day 6 and a
+## loudspeaker mast on day 11. *(olive-koala, statement 2: "right now the first mark I almost never
+## see a yeller. after touching the mark a marble bag with 1/3 chance of yeller should be put in so
+## the yeller is guaranteed to encounter a yeller in the next three events" · inbox #561: "day 11 is
+## going to be a x=3", then "let's make the other rigged bags smaller, too".)* The route's bag is
+## rigged with a bag of `Tuning.TASK_CONTACT_WITHIN_THE_NEXT` (`MAST_WITHIN_THE_NEXT` for the mast)
+## marbles, the row and the rest drawn from the bag she was drawing from
+## (`EventManager.rig_her_route()`), and the place it names is put ahead of her on the branch she is
+## walking. It is **besides** the contact `_begin_step()` placed near the mark, never instead of it:
+## the man shouting is a look-alike the any-instance contact follows her onto
+## (`_follow_her_between_look_alikes()`), and the mast is a second one on her way while the task's
+## arrow points at the one near the mark first (inbox #561: "let it point to the closest one first").
+func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
+	if not task or not _city or not _city.events:
+		return
+	var row := ""
+	var size := 0
+	if task.task_event_id == YELLER_ROW:
+		row = YELLER_ROW
+		size = Tuning.TASK_CONTACT_WITHIN_THE_NEXT
+	elif task.target_kind == ResistanceSteps.TargetKind.MAST:
+		row = MAST_ROW
+		size = Tuning.MAST_WITHIN_THE_NEXT
+	if row == "":
+		return
+	var ids: Array[String] = [row]
+	var rigged := _city.events.rig_her_route(ids, size)
+	if rigged.is_empty():
+		return
+	# Which marbles the rest of the rigged bag took depends on how far into her bag the day had got,
+	# which the walk decides.
+	var names: Array[String] = []
+	for marble: Variant in rigged:
+		names.append(str(marble))
+	Telemetry.note("roll", "the next %d on her route are drawn from a rigged bag: %s"
+			% [rigged.size(), ", ".join(names)])
+
+## The rows a task's mark rigs onto her route — see `_rig_her_route_for()`.
+const YELLER_ROW := "homeless_yeller"
+const MAST_ROW := "loudspeaker"
 
 func _clear() -> void:
 	if _contact and is_instance_valid(_contact):

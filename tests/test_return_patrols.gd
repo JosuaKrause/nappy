@@ -14,6 +14,7 @@ func run(t) -> void:
 	_test_no_double_batch_in_a_day(t)
 	_test_forced_queue_is_untouched(t)
 	_test_pacing_switches_after_the_return_is_owed(t)
+	_test_each_patrol_comes_within_its_rigged_bag(t)
 	_test_sited_on_driveable_road_toward_her(t)
 	_test_empty_in_a_park(t)
 	_test_constants_validate(t)
@@ -100,6 +101,52 @@ func _test_pacing_switches_after_the_return_is_owed(t) -> void:
 				and interval <= Tuning.RETURN_PATROL_INTERVAL.y,
 				"after the return, %.2fs is inside RETURN_PATROL_INTERVAL %s"
 				% [interval, Tuning.RETURN_PATROL_INTERVAL])
+
+## *(inbox #561: "The return patrols in acts III and IV are added at the back of the route queue --
+## the marble bag approach will properly fix this" · "they will need rigged bags".)* On a real act
+## IV day, whose dawn bought dozens of route events, the return's patrols are not left behind them:
+## each comes within `Tuning.RETURN_PATROL_WITHIN_THE_NEXT` events of the return or of the patrol
+## before it, so all of them are met within that many events each.
+func _test_each_patrol_comes_within_its_rigged_bag(t) -> void:
+	var map := _map()
+	var day := 13
+	var state := CityState.new()
+	state.begin_day(map.block_plans, day)
+	map.repaint(state)
+	var plan_rng := RandomNumberGenerator.new()
+	plan_rng.seed = 23
+	var plans := EventScheduler.build_day(day, plan_rng, map, [], [], [], RouteTree.for_day(map, day), 0)
+	var director := EventDirector.new(map)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 29
+	director.start_day(day, plans, rng)
+	var count: int = Tuning.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(day) - 1]
+	var x := Tuning.RETURN_PATROL_WITHIN_THE_NEXT
+	t.check(director.owed() > count * x, "the day owes more than the patrols' bags (%d)"
+			% director.owed())
+	var at := CrowdLanes.arterial_pavement(map)
+	at.y = map.world_size().y * 0.5
+	var velocity := Vector2(0.0, -Tuning.WALK_SPEED)
+	var y_max: float = map.world_size().y
+	var met: Array[String] = []
+	var walked := 0.0
+	var step := 0.1
+	while walked < 400.0 and met.size() < count * x:
+		if walked >= 60.0 and not director._return_owed:
+			director.owe_the_return(day, 0)
+		var due := director.due(step, at, velocity)
+		if not due.is_empty() and director._return_owed:
+			met.append((due[0] as EventDef).id)
+		at += velocity * step
+		if at.y < 0.0 or at.y > y_max:
+			velocity.y = -velocity.y
+			at.y = clampf(at.y, 0.0, y_max)
+		walked += step
+	var spaced := met.size() == count * x
+	for i in count:
+		spaced = spaced and met.slice(i * x, (i + 1) * x).count("police_patrol") == 1
+	t.check(spaced, "each of the %d patrols is one of the %d events after the one before (%s)"
+			% [count, x, met])
 
 # --------------------------------------------------------------------- siting ---
 
