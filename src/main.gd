@@ -2684,10 +2684,12 @@ var _return_viewport: Viewport = null
 ## through the return is still pressed for polling afterwards, and one released inside the window is
 ## released. **Nothing can leave input off:** the end is read off the wall clock by `_process()`
 ## (`_end_the_return_window()`), which runs under a pause, and `_exit_tree()` and `_ready()` clear
-## it too, because the root viewport outlives a scene reload. Idempotent: a second trigger inside
-## the window moves the end. A no-op without a departure first (`_has_left_the_game`), and a no-op for a rig (`_rig_locked_out`: any of `--screenshot`, `--walk`,
-## `--flee`, `--press`, `--tap`, `--route`, a recording or a scripted recipe — `DevFlags.is_rig()`)
-## and under `_no_focus_pause` (`--no-focus-pause`), so a rig is never slowed.
+## it too, because the root viewport outlives a scene reload. A no-op without a departure first
+## (`_has_left_the_game`), which the arming spends, so a second trigger inside the window does
+## nothing unless the game was left again in between. A no-op for a rig (`_rig_locked_out`: any of
+## `--screenshot`, `--walk`, `--flee`, `--press`, `--tap`, `--route`, a recording or a scripted
+## recipe — `DevFlags.is_rig()`) and under `_no_focus_pause` (`--no-focus-pause`), so a rig is
+## never slowed.
 func _arm_the_return_window() -> void:
 	if not _has_left_the_game or _no_focus_pause or _rig_locked_out or _return_viewport == null:
 		return
