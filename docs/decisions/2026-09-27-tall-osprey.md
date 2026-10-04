@@ -23,7 +23,9 @@ reach, is 62px; the "Two-thirds wins" placement is unchanged.
 [tall-osprey-catch-2026-10-04](../evidence/tall-osprey-catch-2026-10-04/README.md)). Standing
 still and walking away are caught and running at his notice gets away in every row. A rig that
 runs only once he lunges gets away 12 of 200 before (30px catch, 108px lunge) and 28 of 200 as
-built; 120px would have given 36, 130px 56 with only 0.11s between notice and lunge.
+built; 120px would have given 36, 130px 56. He closes on her while he notices her, so walking in,
+his notice lasts about 0.12s before the lunge at 116px (0.15s at 108px, 0.05s at 130px), and about
+0.20s if she stands at the edge of it.
 
 **Rejected:** a catch under 26px, which the van guard's arrival cone (over 10° in
 `tests/test_resistance.gd`) cannot hold with the shared arrival distance; a 120px lunge, which
