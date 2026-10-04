@@ -24,7 +24,10 @@ const PHYSICS_REST := 0
 ## resistance, scenery animation, the debug readout itself.
 const PROCESS_REST := 1
 ## `SceneryResidency.update()`: the scenery queue under its 2ms budget, guard preparations
-## included.
+## included, and what its jobs left to the engine's deferred flush — a new region's tile map
+## update, a newly shown building's, shadow chunk's or decal's first draw (see
+## `FrameLedger.deferred_scenery_begins()`). What the renderer then does with the new pictures is
+## `draw`'s.
 const SCENERY := 2
 ## The crowd's pathing: `Crowd._physics_process()` and every `CrowdAgent._process()`.
 const CROWD := 3
@@ -37,8 +40,8 @@ const EVENTS := 5
 ## predictions) and `DangerEdge._process()` (the badges for what is coming off screen).
 const CUES := 6
 ## The CPU side of drawing: from the last `_process()` callback to the renderer's post-draw
-## callback — the deferred calls and `_draw()` callbacks queued during process, then the
-## renderer's own sync and submit. No GPU time: a phone's browser has no way to measure it. On a
+## callback — the deferred calls and `_draw()` callbacks queued during process (but the scenery
+## queue's own, which are `scenery`'s), then the renderer's own sync and submit. No GPU time: a phone's browser has no way to measure it. On a
 ## native window with VSync on, the buffer swap's wait is inside this too.
 const DRAW := 7
 ## From the renderer's post-draw callback to the next frame's first callback: idle time until the
@@ -48,7 +51,8 @@ const WAIT := 8
 const BUCKET_NAMES: Array[String] = ["physics_rest", "process_rest", "scenery", "crowd",
 	"influence", "events", "cues", "draw", "wait"]
 
-## Whether the record is running. Read by every timed entry point before anything else.
+## Whether the record is running. Read by every timed entry point before anything else. Only
+## while a `FrameRecorder` is in the tree: the escape builds none, so it pays nothing.
 static var on := false
 ## The record itself, kept across a scene reload (the held restart), so a recording spans the
 ## restart rather than starting over at it.
@@ -69,6 +73,16 @@ static func enter(bucket: int) -> int:
 ## Goes back to charging `previous`, the bucket `enter()` answered.
 static func leave(previous: int) -> void:
 	ledger.switch_to(previous, Time.get_ticks_usec())
+
+## The two ends of the scenery queue's deferred window, run from the engine's deferred flush. See
+## `FrameLedger.deferred_scenery_begins()`.
+static func scenery_deferred_begins() -> void:
+	if on:
+		ledger.deferred_scenery_begins(Time.get_ticks_usec())
+
+static func scenery_deferred_ends() -> void:
+	if on:
+		ledger.deferred_scenery_ends(Time.get_ticks_usec())
 
 ## One scenery job of `kind` (a `FrameLedger` job counter) ran in this frame.
 static func scenery_job(kind: int) -> void:

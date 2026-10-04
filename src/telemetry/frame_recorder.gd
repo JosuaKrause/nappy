@@ -19,12 +19,20 @@ extends Node
 ## Frames are kept only while a day is being played — not paused, not the title, not a summary —
 ## but every frame is timed, so the phases stay in step across a pause. The record survives a
 ## restart (`FrameRecord.ledger` is static), so a recording that caught a stutter is not lost to
-## the restart that followed it.
+## the restart that followed it. **The timing runs only while a recorder is in the tree**: the
+## escape builds none, so leaving the day switches `FrameRecord.on` off and hides the page's
+## button, and the next day's recorder switches both back on.
 
 const PRIORITY_FIRST := -1000000000
 const PRIORITY_LAST := 1000000000
 ## How many enter/leave pairs `calibrate()` times, once, at setup.
 const CALIBRATION_PAIRS := 2000
+## How many clock steps `clock_resolution()` watches, once, at setup.
+const RESOLUTION_STEPS := 50
+## The readout's width in design pixels: `Status` starts at x=960 in the 1280-wide design box and
+## does not clip, so 320px less its 5px outline and a margin. Measured at the 12px fallback font.
+const READOUT_WIDTH := 310.0
+const READOUT_FONT_SIZE := 12
 
 ## The child whose process callback runs after every other one.
 class ProcessEnd extends Node:
@@ -39,6 +47,8 @@ var _city: City
 var _player: Stroller
 var _day: DayController
 var _metadata: Dictionary = {}
+## Whether scene exit writes the record on the desktop. A test turns it off.
+var save_on_exit := true
 
 ## Where a native record is written, chosen once per process so every scene exit rewrites the
 ## same file.
@@ -58,11 +68,14 @@ func setup(main: Node, city: City, player: Stroller, day: DayController) -> void
 	process_physics_priority = PRIORITY_FIRST
 	var refresh := _refresh_hz()
 	var budget_usec := roundi(1000000.0 / (refresh if refresh > 0.0 else 60.0))
-	if FrameRecord.ledger == null:
-		FrameRecord.start(FrameLedger.new(FrameLedger.CAPACITY, budget_usec * 3 / 2))
+	var resolution := clock_resolution()
+	var pair := calibrate()
+	FrameRecord.start(FrameRecord.ledger if FrameRecord.ledger != null
+			else FrameLedger.new(FrameLedger.CAPACITY, budget_usec))
 	ledger = FrameRecord.ledger
 	_metadata = {"refresh_hz": refresh, "refresh_assumed": refresh <= 0.0,
-		"display_budget_usec": budget_usec, "timer_pair_usec": calibrate()}
+		"display_budget_usec": budget_usec, "timer_pair_usec": pair,
+		"timer_resolution_usec": resolution}
 	var end := ProcessEnd.new()
 	end.name = "ProcessEnd"
 	end.recorder = self
@@ -116,9 +129,30 @@ static func calibrate() -> float:
 	FrameRecord.on = was_on
 	return float(elapsed) / CALIBRATION_PAIRS
 
+## The smallest step `Time.get_ticks_usec()` takes on this device, in microseconds, the least of
+## `RESOLUTION_STEPS` watched steps. A page's clock is the browser's `performance.now()` at
+## reduced precision (about 100µs in Chrome, about 1ms in Safari and Firefox), so every per-frame
+## value in a page's record is quantized to this, and a single short interval reads as 0 or as a
+## whole step.
+static func clock_resolution() -> int:
+	var least := 0
+	for _i in RESOLUTION_STEPS:
+		var from := Time.get_ticks_usec()
+		var to := from
+		while to == from:
+			to = Time.get_ticks_usec()
+		least = to - from if least == 0 else mini(least, to - from)
+	return least
+
 ## The readout's line. See `FrameLedger.readout_line()`.
 func readout_line() -> String:
-	return ledger.readout_line()
+	return ledger.readout_line(fits_the_readout)
+
+## Whether `line` fits the readout at its own font. The readout uses the engine's fallback font,
+## since the project sets no theme.
+static func fits_the_readout(line: String) -> bool:
+	return ThemeDB.fallback_font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1,
+			READOUT_FONT_SIZE).x <= READOUT_WIDTH
 
 ## The whole record as the file's text.
 func report_text() -> String:
@@ -127,6 +161,8 @@ func report_text() -> String:
 	report["schema_version"] = 1
 	report["gpu_time"] = "not measured: a phone's browser offers no GPU timing, so draw_usec " \
 			+ "is the CPU side of drawing only"
+	report["clock"] = "every microsecond value is quantized to environment.timer_resolution_usec, "\
+			+ "which on a page is the browser's reduced-precision clock"
 	report["buckets"] = _bucket_notes()
 	var metadata := _metadata.duplicate()
 	metadata["build"] = TitleScreen.build_text()
@@ -174,13 +210,19 @@ func save() -> String:
 	return written
 
 func _exit_tree() -> void:
+	FrameRecord.on = false
 	if RenderingServer.frame_post_draw.is_connected(_at_post_draw):
 		RenderingServer.frame_post_draw.disconnect(_at_post_draw)
-	if OS.get_name() != "Web":
+	if OS.get_name() == "Web":
+		var window := JavaScriptBridge.get_interface("window")
+		if window != null:
+			window.call("nappyFrameRecordHide")
+	elif save_on_exit:
 		save()
 
 ## The page's own button, added once per page: a reload of the scene hands the button the new
-## recorder's callback rather than adding a second button. Focus goes back to the canvas after
+## recorder's callback and shows it again rather than adding a second button; leaving the day
+## hides it (`_exit_tree()`). Focus goes back to the canvas after
 ## the tap, so the keyboard keeps steering in a desktop browser. The callback is held in a static,
 ## the way `GameSave` holds its own, because a callback GDScript lets go of stops answering.
 func _add_page_button() -> void:
@@ -192,9 +234,14 @@ func _add_page_button() -> void:
 		return
 	window.call("nappyFrameRecordButton", _save_callback)
 
-const _BUTTON_JS := """window.nappyFrameRecordButton = function (save) {
+const _BUTTON_JS := """window.nappyFrameRecordHide = function () {
+	var shown = document.getElementById('nappy-frame-record');
+	if (shown) { shown.style.display = 'none'; }
+};
+window.nappyFrameRecordButton = function (save) {
 	window.nappyFrameRecordSave = save;
-	if (document.getElementById('nappy-frame-record')) { return; }
+	var shown = document.getElementById('nappy-frame-record');
+	if (shown) { shown.style.display = ''; return; }
 	var button = document.createElement('button');
 	button.id = 'nappy-frame-record';
 	button.textContent = 'save frames';
@@ -225,14 +272,17 @@ static func _bucket_notes() -> Dictionary:
 		"process_rest": "process work no named system claims: main, HUD, day clock, resistance, "
 			+ "scenery animation, the debug readout",
 		"scenery": "SceneryResidency.update(): the scenery queue under its 2ms budget, guard "
-			+ "preparations included",
+			+ "preparations included, and the tile map work and first draws its jobs left to the "
+			+ "deferred flush (also counted as scenery_deferred_usec); the renderer's own work on "
+			+ "the new pictures is draw's",
 		"crowd": "the crowd's pathing: Crowd._physics_process() and every CrowdAgent._process()",
 		"influence": "the baby's influence sweep: Baby._physics_process()",
 		"events": "event updates: EventManager._physics_process() and every "
 			+ "EventInstance._process()",
 		"cues": "danger cues: ExcitementHalo._process() and DangerEdge._process()",
 		"draw": "CPU side of drawing: deferred calls and _draw() callbacks after the last "
-			+ "_process(), then the renderer's sync and submit; no GPU time",
+			+ "_process() (but the scenery queue's), then the renderer's sync and submit; no GPU "
+			+ "time; on a native window with VSync, the buffer swap's wait",
 		"wait": "after the post-draw callback until the next frame: idle until the refresh, "
 			+ "plus input and window events; not a cost",
 	}

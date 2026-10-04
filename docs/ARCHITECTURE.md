@@ -275,8 +275,8 @@ invincible, etc.) so debugging the live build is easier".)* `DevFlags.live_debug
 `?groundmode=` and `?framerecord=1` each read it; the frame record is the one of them that hands
 over a file, through the browser's download when its page button is tapped.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
-drives input, takes a picture or writes a file stay behind `enabled()` alone, with no release-page
-door at all. `GameSave.uses_save()` refuses the player's own save the moment a release page's
+drives input, takes a picture or writes a file — the frame record's download aside — stay behind
+`enabled()` alone, with no release-page door at all. `GameSave.uses_save()` refuses the player's own save the moment a release page's
 query actually used one of the flags above (`DevFlags.web_debug_flag_used()`), the same way it
 already refuses a debug build's own argv.
 

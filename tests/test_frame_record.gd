@@ -4,6 +4,8 @@ extends RefCounted
 ## the last slow frame's three largest costs; and the flag and its page word open only where the
 ## rest of the `?debug=1` bundle does, keeping the run off the save.
 
+const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+
 func run(t) -> void:
 	_test_a_frame_adds_up(t)
 	_test_slow_frames_are_marked(t)
@@ -15,11 +17,15 @@ func run(t) -> void:
 	_test_the_report_round_trips(t)
 	_test_the_static_switch_charges_the_ledger(t)
 	_test_the_flag_and_its_page_word(t)
+	_test_the_deferred_scenery_window(t)
+	_test_slow_frames_outside_callbacks_and_with_scenery(t)
+	_test_the_clock_resolution(t)
+	_test_the_recorder_in_a_real_main(t)
 
 ## One frame driven through every phase, with a timed system nested inside another: the inner
 ## one is charged to itself alone, and the nine buckets sum to the frame's length exactly.
 func _test_a_frame_adds_up(t) -> void:
-	var ledger := FrameLedger.new(8, 25000)
+	var ledger := FrameLedger.new(8, 16667)
 	ledger.physics_step(1000)
 	var outer := ledger.enter(FrameRecord.CROWD, 1100)
 	ledger.switch_to(outer, 1600)
@@ -57,7 +63,7 @@ func _test_a_frame_adds_up(t) -> void:
 	t.check(row[FrameLedger.SLOW] == 0, "a frame inside its budget is not slow")
 
 func _test_slow_frames_are_marked(t) -> void:
-	var ledger := FrameLedger.new(8, 25000)
+	var ledger := FrameLedger.new(8, 16667)
 	_drive(ledger, 0, 16000, FrameRecord.CROWD, 2000)
 	_drive(ledger, 16000, 40000, FrameRecord.SCENERY, 20000)
 	_drive(ledger, 56000, 25000, FrameRecord.CROWD, 1000)
@@ -71,7 +77,7 @@ func _test_slow_frames_are_marked(t) -> void:
 			"the last slow frame is kept for the readout")
 
 func _test_frames_outside_play_are_timed_but_not_kept(t) -> void:
-	var ledger := FrameLedger.new(8, 25000)
+	var ledger := FrameLedger.new(8, 16667)
 	ledger.process_start(0)
 	ledger.keep = false
 	ledger.process_end(5000)
@@ -87,7 +93,7 @@ func _test_frames_outside_play_are_timed_but_not_kept(t) -> void:
 ## A headless run has no post-draw callback: the span after process is all `draw`, and the row
 ## says it drew nothing.
 func _test_a_headless_frame_draws_nothing(t) -> void:
-	var ledger := FrameLedger.new(8, 25000)
+	var ledger := FrameLedger.new(8, 16667)
 	ledger.process_start(0)
 	ledger.keep = true
 	ledger.process_end(3000)
@@ -99,7 +105,7 @@ func _test_a_headless_frame_draws_nothing(t) -> void:
 			"without a draw callback the post-process span is draw, and drawn is 0")
 
 func _test_the_ring_keeps_the_latest_frames(t) -> void:
-	var ledger := FrameLedger.new(2, 25000)
+	var ledger := FrameLedger.new(2, 16667)
 	_drive(ledger, 0, 10000, FrameRecord.CROWD, 1000)
 	_drive(ledger, 10000, 11000, FrameRecord.CROWD, 1000)
 	_drive(ledger, 21000, 12000, FrameRecord.CROWD, 1000)
@@ -119,11 +125,12 @@ func _test_top_costs_order_and_leave_out_the_wait(t) -> void:
 	row[FrameLedger.FIRST_BUCKET + FrameRecord.SCENERY] = 2000
 	row[FrameLedger.FIRST_BUCKET + FrameRecord.WAIT] = 20000
 	var top := FrameLedger.top_costs(row)
-	t.check(top.size() == 3 and top[0][0] == "crowd" and top[1][0] == "events"
-			and top[2][0] == "draw", "the three largest costs, largest first, without the wait")
+	t.check(top.size() == 3 and top[0][0] == FrameRecord.CROWD and top[1][0] == FrameRecord.EVENTS
+			and top[2][0] == FrameRecord.DRAW,
+			"the three largest costs, largest first, without the wait")
 
 func _test_the_readout_line(t) -> void:
-	var ledger := FrameLedger.new(8, 25000)
+	var ledger := FrameLedger.new(8, 16667)
 	t.check(ledger.readout_line().contains("none yet"), "no slow frame yet says so")
 	ledger.process_start(0)
 	ledger.enter(FrameRecord.CROWD, 1000)
@@ -136,13 +143,29 @@ func _test_the_readout_line(t) -> void:
 	var line := ledger.readout_line()
 	var crowd := line.find("crowd 12.0")
 	var draw := line.find("draw 11.0")
-	var rest := line.find("process_rest 9.0")
-	t.check(line.begins_with("slow  40.0 ms") and crowd > 0 and draw > crowd and rest > draw
-			and not line.contains("scenery"),
-			"the readout names the slow frame and its three largest costs in order (%s)" % line)
+	var rest := line.find("proc 9.0")
+	t.check(line.begins_with("slow 40.0/40.0 ms") and crowd > 0 and draw > crowd
+			and rest > draw and not line.contains("scenery"),
+			"the readout names the slow frame, its work and its three largest costs in order (%s)"
+			% line)
+	t.check(FrameRecorder.fits_the_readout(line), "and it fits the readout's width (%s)" % line)
+	# Three-digit costs under the longest short names: the line drops to the costs that fit.
+	var wide := FrameLedger.new(8, 16667)
+	wide.process_start(0)
+	wide.enter(FrameRecord.SCENERY, 100)
+	wide.switch_to(FrameRecord.EVENTS, 300100)
+	wide.switch_to(FrameRecord.CROWD, 500100)
+	wide.switch_to(FrameRecord.PROCESS_REST, 650100)
+	wide.keep = true
+	wide.process_end(650200)
+	wide.process_start(650300)
+	var squeezed := wide.readout_line(FrameRecorder.fits_the_readout)
+	t.check(FrameRecorder.fits_the_readout(squeezed) and squeezed.contains("scenery 300.0")
+			and squeezed.contains("events 200.0"),
+			"a line too wide for three costs keeps the largest ones that fit (%s)" % squeezed)
 
 func _test_the_report_round_trips(t) -> void:
-	var ledger := FrameLedger.new(8, 25000)
+	var ledger := FrameLedger.new(8, 16667)
 	_drive(ledger, 0, 16000, FrameRecord.CROWD, 2000)
 	_drive(ledger, 16000, 40000, FrameRecord.SCENERY, 20000)
 	ledger.process_start(56000)
@@ -158,7 +181,7 @@ func _test_the_report_round_trips(t) -> void:
 func _test_the_static_switch_charges_the_ledger(t) -> void:
 	var was_on := FrameRecord.on
 	var was := FrameRecord.ledger
-	var ledger := FrameLedger.new(8, 25000)
+	var ledger := FrameLedger.new(8, 16667)
 	FrameRecord.start(ledger)
 	ledger.process_start(Time.get_ticks_usec())
 	var outer := FrameRecord.enter(FrameRecord.INFLUENCE)
@@ -185,6 +208,148 @@ func _test_the_flag_and_its_page_word(t) -> void:
 			"only the value 1 asks for it, and ?debug=1 alone does not")
 	t.check(DevFlags._web_debug_flag_used_in_query("?debug=1&framerecord=1"),
 			"a page that records stays off the save, like the bundle's other words")
+
+## The scenery queue's deferred window: what its update left to the engine's flush is charged to
+## `scenery` and counted apart, and the frame still adds up.
+func _test_the_deferred_scenery_window(t) -> void:
+	var ledger := FrameLedger.new(8, 16667)
+	ledger.process_start(0)
+	var outer := ledger.enter(FrameRecord.SCENERY, 100)
+	ledger.switch_to(outer, 600)
+	ledger.keep = true
+	ledger.process_end(1000)
+	ledger.deferred_scenery_begins(1500)
+	ledger.deferred_scenery_ends(2500)
+	ledger.drawn(4000)
+	ledger.process_start(17000)
+	var row: PackedInt64Array = ledger.rows()[0]
+	var total := 0
+	for i in FrameRecord.BUCKET_NAMES.size():
+		total += row[FrameLedger.FIRST_BUCKET + i]
+	t.check(row[FrameLedger.FIRST_BUCKET + FrameRecord.SCENERY] == 1500
+			and row[FrameLedger.FIRST_BUCKET + FrameRecord.DRAW] == 2000
+			and row[FrameLedger.FIRST_COUNTER + FrameLedger.SCENERY_DEFERRED] == 1000,
+			"the flush's scenery work is scenery's, counted apart, and the rest of drawing is draw's")
+	t.check(total == row[FrameLedger.FRAME], "and the frame still adds up")
+
+## A slow frame whose callbacks fit in one budget was held up outside them; and the summary splits
+## the slow frames by whether the scenery queue ran a job in them.
+func _test_slow_frames_outside_callbacks_and_with_scenery(t) -> void:
+	var ledger := FrameLedger.new(8, 16667)
+	ledger.process_start(0)
+	ledger.keep = true
+	ledger.process_end(2000)
+	ledger.drawn(3000)
+	ledger.process_start(40000)
+	t.check(ledger.readout_line().ends_with("outside callbacks")
+			and ledger.readout_line().begins_with("slow 40.0/3.0 ms"),
+			"a slow frame that was mostly waiting says so (%s)" % ledger.readout_line())
+	var outer := ledger.enter(FrameRecord.SCENERY, 40100)
+	ledger.add(FrameLedger.JOBS_GROUND, 1)
+	ledger.switch_to(outer, 70100)
+	ledger.keep = true
+	ledger.process_end(70200)
+	_drive(ledger, 80000, 40000, FrameRecord.CROWD, 30000)
+	ledger.process_start(120000)
+	var summary: Dictionary = ledger.report().summary
+	t.check(summary.largest_cost_in_slow_frames.get(FrameLedger.OUTSIDE_CALLBACKS, 0) == 1
+			and summary.slow_frames_with_scenery_jobs == 1
+			and summary.largest_cost_in_slow_frames_with_scenery_jobs.get("scenery", 0) == 1
+			and summary.slow_frames_without_scenery_jobs == 2
+			and summary.largest_cost_in_slow_frames_without_scenery_jobs.get("crowd", 0) == 1,
+			"the summary names waiting frames apart and splits slow frames by scenery jobs")
+
+func _test_the_clock_resolution(t) -> void:
+	var step := FrameRecorder.clock_resolution()
+	t.check(step >= 1 and step < 2000, "the clock's smallest step is measured (%dus)" % step)
+
+## The recorder in a real boot of `main`: its markers run first and last because no other node in
+## the tree is prioritised past them, a paused frame is timed but not kept, a played one is kept
+## with its world counters, the readout carries its line, and leaving the tree switches the timing
+## off — which is what keeps the escape, which builds no recorder, from paying for it. Real frames
+## cannot elapse inside a suite (`run_tests.gd` calls every suite synchronously), so the phases
+## are driven by hand on the real tree's recorder, as `tests/test_camera_start.gd` drives its boot.
+func _test_the_recorder_in_a_real_main(t) -> void:
+	var saved := _save_game_state()
+	var was_on := FrameRecord.on
+	var was := FrameRecord.ledger
+	FrameRecord.ledger = null
+	var main: Node2D = MAIN_SCENE.instantiate()
+	t.add_child(main)
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	main._on_title_start(ControlsMode.Mode.TAP)
+	var recorder := FrameRecorder.new()
+	recorder.save_on_exit = false
+	main.add_child(recorder)
+	recorder.setup(main, main._city, main._player, main._day)
+	main._frame_recorder = recorder
+	t.check(FrameRecord.on and FrameRecord.ledger == recorder.ledger,
+			"setting up the recorder switches the timing on")
+	var end := recorder.get_node("ProcessEnd")
+	var nodes := 0
+	var first := true
+	var last := true
+	var stack: Array[Node] = [main]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		stack.append_array(node.get_children())
+		nodes += 1
+		if node == recorder or node == end:
+			continue
+		first = first and node.process_priority > FrameRecorder.PRIORITY_FIRST \
+				and node.process_physics_priority > FrameRecorder.PRIORITY_FIRST
+		last = last and node.process_priority < FrameRecorder.PRIORITY_LAST
+	t.check(nodes > 100, "the real tree was walked (%d nodes)" % nodes)
+	t.check(first and last, "no node in the real tree is prioritised past the recorder's markers")
+	t.check(recorder.process_mode == Node.PROCESS_MODE_ALWAYS
+			and end.process_mode == Node.PROCESS_MODE_ALWAYS, "both markers run through a pause")
+	var ledger := recorder.ledger
+	var kept := ledger.count
+	ledger.process_start(Time.get_ticks_usec())
+	t.get_tree().paused = true
+	recorder.at_process_end()
+	t.check(not ledger.keep, "a paused frame is not kept")
+	ledger.process_start(Time.get_ticks_usec())
+	t.check(ledger.count == kept, "and closing it stores nothing")
+	t.get_tree().paused = false
+	recorder.at_process_end()
+	ledger.process_start(Time.get_ticks_usec())
+	t.check(ledger.count == kept + 1, "a played frame is kept")
+	var row: PackedInt64Array = ledger.rows().back()
+	t.check(row[FrameLedger.FIRST_COUNTER + FrameLedger.CROWD_AGENTS]
+				== main._city.crowd.agent_count()
+			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DAY] == GameState.day,
+			"with the world's counters read at the end of its process step")
+	t.check(main._frame_record_lines().size() == 1, "the readout carries the record's line")
+	Telemetry.end_run()
+	main.free()
+	t.check(not FrameRecord.on, "leaving the tree switches the timing off")
+	FrameRecord.ledger = was
+	FrameRecord.on = was_on
+	_restore_game_state(saved)
+
+func _save_game_state() -> Dictionary:
+	return {
+		"seed": GameState.run_seed, "day": GameState.day, "nerves": GameState.nerves,
+		"progress": GameState.resistance_progress, "ending": GameState.ending,
+		"one_shots": GameState.consumed_one_shots.duplicate(),
+		"completed": GameState.completed_resistance_steps.duplicate(),
+		"failed": GameState.failed_resistance_steps.duplicate(),
+		"scars": GameState.scars.duplicate(true), "sabotage": GameState.sabotage_done,
+	}
+
+func _restore_game_state(saved: Dictionary) -> void:
+	GameState.run_seed = saved["seed"]
+	GameState.day = saved["day"]
+	GameState.nerves = saved["nerves"]
+	GameState.resistance_progress = saved["progress"]
+	GameState.ending = saved["ending"]
+	GameState.consumed_one_shots.assign(saved["one_shots"])
+	GameState.completed_resistance_steps.assign(saved["completed"])
+	GameState.failed_resistance_steps.assign(saved["failed"])
+	GameState.scars.assign(saved["scars"])
+	GameState.sabotage_done = saved["sabotage"]
 
 ## One kept frame starting at `start` and lasting `length`, of which `spent` went to `bucket`.
 func _drive(ledger: FrameLedger, start: int, length: int, bucket: int, spent: int) -> void:

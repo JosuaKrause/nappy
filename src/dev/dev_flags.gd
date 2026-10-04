@@ -129,18 +129,20 @@ extends RefCounted
 ## `--screenshot`, `--after`, `--walk`, `--flee`, `--press` and `--tap` — a release build answers
 ## none of it, from any address a visitor could type.
 ##
-## **The smaller half — the flags that choose where a run starts or how it is drawn, never one
-## that drives input, takes a picture or writes a file — answers to a release page too, behind
-## `?debug=1`.** *(2026-09-25, docs/playtests/PLAYTEST-130.md: "on the published site behind
-## debug=1 we'd want some of the debug flags (like day, invincible, etc.) so debugging the live
-## build is easier", overturning the 2026-09-06 rule above for that half alone — see docs/DECISIONS.md,
-## M193, "the live page's ?debug=1 reaches the debug flags".)* `live_debug_requested()` below is
+## **The smaller half — the flags that choose where a run starts or how it is drawn, and the frame
+## record, never one that drives input or takes a picture, and none that writes a file but the
+## frame record's, which leaves only through the browser's download when the player taps its page
+## button — answers to a release page too, behind `?debug=1`.** *(2026-09-25,
+## docs/playtests/PLAYTEST-130.md: "on the published site behind debug=1 we'd want some of the
+## debug flags (like day, invincible, etc.) so debugging the live build is easier", overturning the
+## 2026-09-06 rule above for that half alone — see docs/DECISIONS.md, M193, "the live page's
+## ?debug=1 reaches the debug flags".)* `live_debug_requested()` below is
 ## that gate: `day_override()`, `invincible()`, `layers_override()`, `ControlsMode.resolve()`,
 ## `start_escape()`, `meters_override()`, `day_length_override()`, `ending_override()`,
 ## `blackout_requested()`, `ground_mode()` and `frame_record_requested()` each read the command
 ## line under `enabled()` and, failing that, the page's own query under `live_debug_requested()`.
-## The frame record is the one word of that bundle that hands a file over, and it does so only
-## through the browser's own download when the player taps the page's button for it.
+## *(2026-10-03, inbox #510, asked how the frame record should get off the phone: "Download plus
+## readout line".)*
 ##
 ## A debug build carries every flag on this whole page immediately, with nothing further to
 ## unlock; the entry point for the larger half stays what it already is: run a debug build.
@@ -177,8 +179,9 @@ static func _readout_from_query(query: String) -> bool:
 ## choose where a run starts or how it is drawn (`day_override()`, `invincible()`,
 ## `layers_override()`, `ControlsMode.resolve()`, `start_escape()`, `meters_override()`,
 ## `day_length_override()`, `ending_override()`, `blackout_requested()`, `ground_mode()`,
-## `frame_record_requested()`) — never the input-driving, picture-taking or file-writing half
-## `enabled()` alone still gates (see `enabled()`'s own doc for that list). True on a debug build
+## `frame_record_requested()`) — never the input-driving or picture-taking half `enabled()` alone
+## still gates (see `enabled()`'s own doc for that list), and no file but the frame record's, which
+## leaves only through the browser's download when the player taps its page button. True on a debug build
 ## with or without `?debug=1` in the page, since a debug build already answers the whole of
 ## `enabled()`'s own bundle regardless of any query string; true on a release page only once
 ## `readout_requested()` holds, so a release page nobody asked `?debug=1` of reads exactly as
