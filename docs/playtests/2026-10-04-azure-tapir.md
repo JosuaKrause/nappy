@@ -115,7 +115,7 @@ best to use". The later file holds the earlier one's 1510 frames as an exact pre
 
 1. **#513, recipes with live tasks** → [busy-raven, playable scenes for each day's task target and
    the fire truck event](../todo/2026-10-03-busy-raven/README.md), whose README now states the
-   answer; the scenes are being built on its branch.
+   answer.
 2. **#514, no further phone check** → nothing new to file. M205's halo half was reproduced from the
    recorded evidence and built ([M205-3](../decisions/2026-09-25-M205-3.md)), and M206 was built
    ([M206](../decisions/2026-09-25-M206.md)). The review item for M205
@@ -129,8 +129,8 @@ best to use". The later file holds the earlier one's 1510 frames as an exact pre
 4. **#527, the pelican's own GoatCounter events** → built in the same release
    ([feathery-bison](../decisions/2026-10-03-feathery-bison.md), `docs/TELEMETRY.md`); "telemetry
    means GoatCounter" is in `CLAUDE.md`.
-5. **#529, the top k halos by intensity** → built on pull request #531 and recorded as
-   [M205-4](../decisions/2026-09-25-M205-4.md) once it merges.
+5. **#529, the top k halos by intensity** → built in pull request #531 and recorded as
+   [M205-4](../decisions/2026-09-25-M205-4.md).
 6. **#530, no feedback that the file was saved** →
    [spry-magpie, the frame record's download says it was saved](../todo/2026-10-04-spry-magpie/README.md),
    band `now` as a note from playing.

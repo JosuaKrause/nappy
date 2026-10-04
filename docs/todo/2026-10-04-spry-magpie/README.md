@@ -3,8 +3,8 @@ priority: now
 # spry-magpie — The frame record's download says it was saved · filed 2026-10-04
 
 [azure-tapir, the frame record's download](../../playtests/2026-10-04-azure-tapir.md) files inbox
-#530. Recording on the phone with the released v0.24.0 page, the player tapped the page's save
-button and saw nothing happen, so tapped it again:
+#530. Recording on the phone with the released v0.24.0 page, the player saved the record through
+the page's save button:
 
 > There is no feedback that the files were saved so I downloaded multiple copies.
 

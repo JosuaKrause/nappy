@@ -25,7 +25,7 @@ the release; and a note kept that each task is to be verified with the scenes.
 **The existing tool.** Authored scene recipes ([`docs/SCENE_RECIPES.md`](../../SCENE_RECIPES.md))
 are saved JSON under `scene-recipes/`, built by `RecipeCityBuilder`, played with
 `tools/run.sh --recipe <file>` (free play, physical input) and asserted headlessly by
-`tools/scene-recipes.sh`. That the scenes are recipes is the filer's proposal, below.
+`tools/scene-recipes.sh`. The scenes are recipes, as the player answered (below).
 
 **What a recipe cannot do yet**, which the scenes need:
 
