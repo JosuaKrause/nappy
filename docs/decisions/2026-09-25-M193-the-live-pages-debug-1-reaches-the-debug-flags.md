@@ -36,6 +36,7 @@ file through the browser's download", and accepted it as this record's exception
 The record reaches a visitor only through the browser download they tap for; every other
 file-writing flag above stays closed. Record: [M159, every frame's time by
 system](2026-09-19-M159-5.md).
+
 The query words (`daylength` rather than `day-length`) were chosen to match `seed`, `skip` and
 `debug`.
 
