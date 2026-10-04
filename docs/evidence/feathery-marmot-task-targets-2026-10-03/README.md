@@ -39,5 +39,8 @@ waves drawn, the red arrow pointing at it.
 ## Not shown
 
 A task with nothing that qualifies within 576px of its mark is placed at the nearest place that
-does: on day 11 that is the nearest live mast (816px on seed 4242 day 11 here, 1377px and 3948px in
-the route rig's sweep), since six masts stand across a whole city.
+does. On day 11 the day instead puts up a mast near the mark when none of the six stands within
+576px: in the route rig's sweep after that change, seeds 4242, 90210 and 1234567 each got one, 500px,
+517px and 396px from the mark. The day-11 still above is from before that change, on a seed whose
+own mast was already near. The swing's touch area (an ellipse 22 by 8.8px at the frame's base) is
+not drawn by any layer, so no still shows it.
