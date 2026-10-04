@@ -24,8 +24,8 @@ extends RefCounted
 ##
 ## `TouchControls` is the one place in `src/ui/` whose *input* needs the same correction the other
 ## direction: a real touch still arrives in the swapped 720x1280 box regardless of any layer
-## transform, so `to_design_space()` is what remaps it back before comparing it to `PAUSE_CENTRE` —
-## the one fixed constant left once the drag stick and the `RUN` button are gone. `DangerEdge` and
+## transform, so `to_design_space()` is what remaps it back before comparing it to `PAUSE_CENTRE`,
+## `RUN_CENTRE_LEFT` and `RUN_CENTRE_RIGHT` — the fixed constants a press is compared to. `DangerEdge` and
 ## `HomeArrow` need the same remap on the way *out* — both compute a
 ## screen position fresh every frame from a world position and
 ## `get_viewport().get_canvas_transform()`, which lands in that same swapped box, and now that

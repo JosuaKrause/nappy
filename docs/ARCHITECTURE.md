@@ -352,7 +352,12 @@ currently-held direction — and is stopped by a press on either focus or in a b
 of the screen (`is_in_stop_band()`) rather than by a press near her own position, which does not
 stop her in this mode at all. Either way the direction locked in is walked with nothing held down
 until the next press changes it, and a double press holds `run` until the next press changes or
-releases it. Held down and moved, a finger or a mouse button keeps re-aiming continuously —
+releases it. `Mode.JOYSTICK` also draws a run button 110px inward of each focus
+(`RUN_CENTRE_LEFT`, `RUN_CENTRE_RIGHT`, caught within `RUN_CATCH_RADIUS`, below the distance to the
+ring): `_on_pointer()` grabs one only for a press that begins on it, tracks every finger on a button in
+`_run_touches`, and holds `run` (`_run_held`) until the last of them lifts, without making the press a heading, so a
+steering drag that slides over a button never presses it. `_run_held` and the double press's
+`_run_active` are two independent reasons for `run` to be down. Held down and moved, a finger or a mouse button keeps re-aiming continuously —
 `_on_drag()` — always at one speed, since `set_direction()` always normalises and no input path may
 press a vector shorter than one. It also draws a pause button top right, shown only when
 `get_tree().paused` is false, which keeps it off the title, the pause and the between-days summary
@@ -375,8 +380,8 @@ band, are asked in **design space** instead, through `ScreenOrientation.to_desig
 that is where "half the screen" and "the middle of the screen" mean what they say — the chosen
 focus then makes the same design→presented→world trip a raw touch's own position already takes, in
 reverse, before it can be subtracted from or used as the heading's own origin. **The pause button's
-own corner is the other place this remap is needed**: a touch there is subtracted from the aiming
-surface, but only while the button is actually showing, against the fixed `PAUSE_CENTRE` — a mouse
+own corner and the run buttons are the other places this remap is needed**: a touch there is subtracted from the aiming
+surface, but only while the button is actually showing, against the fixed `PAUSE_CENTRE` (or, in joystick mode, `RUN_CENTRE_LEFT` and `RUN_CENTRE_RIGHT`) — a mouse
 click never needs the remap for anything else, since the button (and so the corner) is drawn for it
 too now that every device shows the same pair of controls.
 

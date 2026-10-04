@@ -36,8 +36,7 @@ movie_recipe_preflight() {
     "$GODOT" --headless --path "$PROJECT_DIR" -- "${flags[@]}" \
         --recipe-validate --recipe-manifest "$manifest" > "$log" 2>&1 &
     pid=$!
-    # Its watchdog's sleeping child must not retain a caller's output pipe after exit.
-    if ! wait_or_kill "$pid" 120 >/dev/null 2>&1 || [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]] || \
+    if ! wait_or_kill "$pid" 120 || [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]] || \
         grep -qE '^(SCRIPT )?ERROR|Parse Error' "$log"; then
         echo "scene recipe preflight failed: $recipe" >&2
         tail -30 "$log" >&2

@@ -153,7 +153,7 @@ that through the day before the last night:
 | 10 | Warn the neighbor | The neighbor, out in the city and walking home, by the red arrow that follows them: about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk from her door when the mark is touched. Reached first, the neighbor runs; reaching the door first, they are taken, and from the next morning the wanted notice crosses their face out. | red, with a deadline |
 | 11 | Silence a mast | The foot of one live loudspeaker mast, drawn among those she can reach. Its field makes the approach cost while it broadcasts, so the skill is reaching it between broadcasts; reaching it puts its lamp out, and it stays quiet for the rest of the run. | red |
 | 12 | The swing | The playground of one specific park. | red |
-| 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's hut — rather than round it. | any instance |
+| 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's gatehouse — rather than round it. | any instance |
 | 14 | The last night | The power station's front door, offered only once the goal is met. Touching it is the sabotage. | red |
 
 **Two kinds of task.** One any live instance of the right thing answers — the man shouting, a
@@ -234,7 +234,7 @@ There is no quest log and no marker beyond the red arrow's own narrow exception 
 world a mark is a chalk mark on an alley wall, drawn *under* everything that stands on it, found
 by walking past it. **The task is announced at the mark and nowhere else**: the instant she
 touches it, its own words flash where the walking and running lessons do, and then the HUD
-carries one terse line, *somewhere out there* and what she is looking for, for as long as the
+carries one terse line, *out there:* and what she is looking for, for as long as the
 task stands. How far in she is belongs between days rather than during one, on the day summary's
 own tally. **That HUD line is silent until the first mark has ever been touched**, and only later
 ones are named. The day brief is a separate channel and says less, not more: its own line for the

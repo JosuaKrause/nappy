@@ -70,8 +70,8 @@ const _DAY_BRIEF := {
 	6: "A curfew was announced today. There is not as much time. There are rumors of chalk "
 			+ "messages in alleys.",
 	7: "There are more posters than yesterday. The same face is on most of them.",
-	8: "A van took someone from the next street before it was light.",
-	9: "They have closed the districts off from each other. There are huts at the crossings.",
+	8: "A van took someone from the next street before dawn.",
+	9: "They have closed the districts off from each other. There are gatehouses at the crossings.",
 	10: "The stores on the square are boarded up.",
 	11: "A door down the hall was sealed in the night. The name is still on the bell.",
 	12: "They are fencing off the parks.",

@@ -7,6 +7,6 @@ birds, and walking dead through them nets about 45, where stopping short until t
 flown, or skirting them, costs nothing: **do they go up when she touches them, never before
 and never after, and does waiting them out work as the procedure?** The protest nets about 6 a second beside it and 23 to reach its middle from its
 edge, and sits 1.6 points under the line that would make it a wall. A roadblock emits 9 a
-second and a hut or a post 4: **is a door with its usual company a price rather than a
+second and a gatehouse or a post 4: **is a door with its usual company a price rather than a
 loss?** Every figure is a line of `docs/COSTS.md`. Record is `DECISIONS.md`, M176, the loose
 dog is loud while it passes.
