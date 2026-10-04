@@ -1,0 +1,10 @@
+# CityMap.wall_between() calls and their own time, revision d07de58b with count-walls.patch applied,
+# headless, seed 4242, --walk 3s8e4s8w --after 25; cumulative counters printed every 300 physics steps.
+day 1
+ZZWALLS physics=300 process=1357 calls=8879 usec=21552
+ZZWALLS physics=600 process=2799 calls=26265 usec=65861
+ZZWALLS physics=900 process=4245 calls=34265 usec=89127
+day 9
+ZZWALLS physics=300 process=1357 calls=3223 usec=11838
+ZZWALLS physics=600 process=2806 calls=3307 usec=12237
+ZZWALLS physics=900 process=4254 calls=6343 usec=23912
