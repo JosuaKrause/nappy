@@ -42,6 +42,8 @@ OUT_DIR="$PROJECT_DIR/build/trailer"
 source "$PROJECT_DIR/tools/lib_dev_flags.sh"
 # shellcheck source=tools/lib_movie_evidence.sh
 source "$PROJECT_DIR/tools/lib_movie_evidence.sh"
+# shellcheck source=tools/lib_disk_headroom.sh
+source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 
 usage() {
     cat <<EOF
@@ -59,6 +61,11 @@ Frames are deleted as soon as each shot is encoded. Output goes to build/trailer
   --check-load NAME|all  compare an ordinary render with one under a CPU load worker
   --validate       headlessly validate every recipe; never open a recording window
   --list           print the shot list (name, recipe, length, gap); render nothing
+
+Disk: frames stay on disk until each shot is encoded, so this refuses to start unless the volume
+holding \$TMPDIR has the record-second estimate (tools/lib_disk_headroom.sh) free for every game
+second of the shots asked for (an upper bound, as only one shot's frames exist at a time), and warns
+when that leaves less than the reserve. A stale atlas repair is checked the same way.
 
 Checks retain hashes, manifests and settings in build/trailer/checks/. Simulation observations
 and audio must match too. Equality applies only to the recorded engine, assets and settings.
@@ -213,6 +220,7 @@ fi
 # The baked atlas pages, repaired the way tools/shot.sh repairs them -- see its own comment.
 if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
     "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
+    headroom_preflight tools/trailer.sh "$PROJECT_DIR/.godot" "" import || exit 1
     echo "rebuilding with tools/check.sh -- this takes a few seconds" >&2
     if ! "$PROJECT_DIR/tools/check.sh" >/dev/null; then
         echo "tools/check.sh failed; run it directly to see why" >&2
@@ -250,6 +258,16 @@ if [[ "$MODE" == validate ]]; then
     echo "validated ${#targets[@]} normal scene recipes"
     exit 0
 fi
+
+# The whole render is the batch, checked before the first movie window opens. A shot's frames are
+# deleted once it is encoded, so the peak is the largest shot's, but the estimate charges the
+# summed render seconds of every shot asked for -- an upper bound, like every estimate in
+# tools/lib_disk_headroom.sh -- at its record-second rate. Validation writes no frames.
+render_seconds_total="$(for name in "${targets[@]}"; do shot_render_seconds "$name"; done |
+    awk '{ s += $1 } END { printf "%d\n", (s == int(s)) ? s : int(s) + 1 }')"
+headroom_preflight tools/trailer.sh "$WORK" \
+    "render fewer shots: --shot NAME renders one, and the shot list's lengths set the rest" \
+    "record-second:$render_seconds_total" || exit 1
 
 # Renders shot $1's frames and audio into directory $2 (created empty). Fails loudly if Godot
 # did not quit on its own or did not write the frames the cut needs.

@@ -1199,7 +1199,7 @@ const NEAR_THE_MARK := (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH + Tuning.BLOCK_S
 ## from a tile inside the circle, so each tile at or past its edge is the first a path reaches it
 ## at. *(The player, quiet-yak, inbox #500: "create a circle around the current player position with the
 ## radius of the desired distance -- then follow the path until it reaches the edge of the circle";
-## and 2026-10-03, in conversation, right after inbox #500: "no need to special case straight runs or
+## and 2026-10-03, in conversation, right after inbox #500 in quiet-yak: "no need to special case straight runs or
 ## anything like that".)* `_circle_edge` and `_circle_inside` hold the
 ## answer for the placement that follows; both are empty before one is measured.
 func _follow_the_paths_to_the_edge(her: Vector2) -> void:

@@ -540,7 +540,7 @@ static func _blackout_from_query(query: String) -> bool:
 ## docs/playtests/2026-10-03-tawny-stork.md: "let's introduce three options 1) as many graphics as
 ## needed are prepared in one frame 2) at most one graphic is prepared in one frame 3) graphic
 ## creation is smeared out like in the PR"; and, of the switch, "yes it should be a flag I can use
-## in mobile under debug"; then, after a phone test, inbox #510: "mode 2 felt to have the fewest
+## in mobile under debug"; then, after a phone test, inbox #510 in quiet-yak: "mode 2 felt to have the fewest
 ## stutters especially when coming back down it was much smoother than mode 1. let's make 2 the
 ## default for now".)* It chooses how the ground is drawn, not what is
 ## drawn, so it sits in the M193 bundle beside `?layers=`; like every word of that bundle, naming
