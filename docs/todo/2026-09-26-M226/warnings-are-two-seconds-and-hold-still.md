@@ -1,4 +1,4 @@
-**Every off-screen warning is at most two seconds and holds still** (inbox #559). The badge shows
+**Every off-screen warning is at most two seconds and holds still** (inbox #559 in [calm-kestrel](../../playtests/2026-10-04-calm-kestrel.md)). The badge shows
 for a fixed time of at most two seconds with nothing placed, then the thing is created just off
 screen where the badge points, close enough that it enters the view at once and the badge turns off.
 While the badge is up it does not move about: "they jump around wildly" is the defect, so its bearing
