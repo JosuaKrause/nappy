@@ -14,13 +14,14 @@ import base64
 import importlib.util
 import io
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
 from collections.abc import Sequence
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 from unittest import mock
 
 TOOLS = Path(__file__).resolve().parent
@@ -612,6 +613,119 @@ class AppendTests(unittest.TestCase):
         # The context in an appended comment is the agent's side: not required in the playtest file.
         both = f"{inbox.APPEND_MARKER}\n\nAsked: which bag?\n\n{inbox.WORDS_MARKER}\n\n{MORE}"
         self.assertEqual(inbox.unfiled_words(note, [inbox.Comment(BOT, "t1", both)], text), [])
+
+
+class CiteTests(unittest.TestCase):
+    """`cite` on a fixture tree: a real git index, a playtest with `## #N` headings, files that cite the notes."""
+
+    FILES: ClassVar[dict[str, str]] = {
+        "docs/playtests/2026-10-03-quiet-yak.md": "# Quiet yak\n\n## #471 - Wins\n\n> words\n\n## #486 - Mouth\n",
+        "docs/playtests/2026-10-03-gray-egret.md": "# Gray egret\n\n## #497 - Budget\n\n> words\n",
+        "docs/MECHANICS.md": "Two-thirds (inbox #471) and more.\n",
+        "docs/decisions/2026-10-03-one.md": (
+            'He chose it (inbox #471: "Two-thirds wins").\nAlready (inbox #471 in quiet-yak).\n'
+        ),
+        "src/a.gd": "## wins (inbox #471).\n## a run: inbox #471, #486 and #471, and the rest\n",
+        "art/cat.svg": '<rect fill="#471a46"/><rect fill="#486b77"/>\n',
+        "docs/other.md": (
+            "Bare (#471) here.\nRange inbox notes #470\u2013#472 here.\nTo: #486 to #488.\n"
+            "See [inbox #471](https://github.com/o/r/issues/471).\nNot a note #472 and #99.\n"
+            "Mixed inbox #471 and #497 here.\nColour #504a46.\n"
+        ),
+        "docs/binary.dat": "inbox #471\0\n",
+    }
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        for name, text in self.FILES.items():
+            path = self.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(text.encode("utf-8"))
+        subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
+        subprocess.run(["git", "add", "-A"], cwd=self.root, check=True)
+
+    def cite(self, *argv: str) -> tuple[int, str, str]:
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = inbox.main(["cite", "--root", str(self.root), *argv], FakeGh({}))
+        return code, out.getvalue(), err.getvalue()
+
+    def read(self, name: str) -> str:
+        return (self.root / name).read_text(encoding="utf-8")
+
+    def test_a_markdown_citation_gets_a_link_relative_to_its_file(self) -> None:
+        code, _, _ = self.cite("471", "486", "497")
+        self.assertEqual(code, 0)
+        self.assertIn("(inbox #471 in [quiet-yak](playtests/2026-10-03-quiet-yak.md))", self.read("docs/MECHANICS.md"))
+        deeper = self.read("docs/decisions/2026-10-03-one.md")
+        self.assertIn("(inbox #471 in [quiet-yak](../playtests/2026-10-03-quiet-yak.md): ", deeper)
+
+    def test_a_code_comment_gets_the_name_and_a_run_is_edited_once(self) -> None:
+        self.cite("471", "486")
+        text = self.read("src/a.gd")
+        self.assertIn("## wins (inbox #471 in quiet-yak).", text)
+        self.assertIn("inbox #471, #486 and #471 in quiet-yak, and the rest", text)
+
+    def test_a_hex_colour_with_the_same_digits_is_untouched(self) -> None:
+        _, out, _ = self.cite("471", "486")
+        self.assertEqual(self.read("art/cat.svg"), self.FILES["art/cat.svg"])
+        self.assertNotIn("art/cat.svg", out)
+
+    def test_other_forms_are_listed_and_not_edited(self) -> None:
+        _, out, _ = self.cite("471", "486")
+        self.assertEqual(self.read("docs/other.md"), self.FILES["docs/other.md"])
+        listed = out.split("fix each by hand:")[1]
+        for line in (1, 2, 3, 4, 6):
+            self.assertIn(f"docs/other.md:{line}:", listed)
+        self.assertNotIn("docs/other.md:5:", listed)
+        self.assertNotIn("docs/other.md:7:", listed)
+
+    def test_a_line_already_naming_the_playtest_is_left_alone(self) -> None:
+        self.cite("471")
+        self.assertIn("Already (inbox #471 in quiet-yak).\n", self.read("docs/decisions/2026-10-03-one.md"))
+        self.assertNotIn("quiet-yak in quiet-yak", self.read("docs/decisions/2026-10-03-one.md"))
+
+    def test_playtests_and_binary_files_are_never_touched(self) -> None:
+        self.cite("471", "486", "497")
+        self.assertEqual(
+            self.read("docs/playtests/2026-10-03-quiet-yak.md"), self.FILES["docs/playtests/2026-10-03-quiet-yak.md"]
+        )
+        self.assertEqual((self.root / "docs/binary.dat").read_bytes(), self.FILES["docs/binary.dat"].encode())
+
+    def test_a_second_run_changes_nothing(self) -> None:
+        self.cite("471", "486", "497")
+        first = {name: self.read(name) for name in self.FILES if name != "docs/binary.dat"}
+        _, out, _ = self.cite("471", "486", "497")
+        self.assertEqual(first, {name: self.read(name) for name in first})
+        self.assertIn("edited 0 file(s)", out)
+
+    def test_a_dry_run_prints_the_diff_and_writes_nothing(self) -> None:
+        _, out, _ = self.cite("471", "--dry-run")
+        self.assertIn("+Two-thirds (inbox #471 in [quiet-yak](playtests/2026-10-03-quiet-yak.md)) and more.", out)
+        self.assertIn("would edit", out)
+        self.assertEqual(self.read("docs/MECHANICS.md"), self.FILES["docs/MECHANICS.md"])
+
+    def test_a_number_in_no_playtest_is_refused_before_any_edit(self) -> None:
+        code, _, err = self.cite("471", "999")
+        self.assertEqual(code, 1)
+        self.assertIn("#999 is in no playtest", err)
+        self.assertEqual(self.read("docs/MECHANICS.md"), self.FILES["docs/MECHANICS.md"])
+
+    def test_the_numbers_come_from_the_filing_pull_request(self) -> None:
+        fake = FakeGh({f"repos/{REPO}/pulls/5": {"body": "Filed from #471\nFiled from #497\n"}})
+        out = io.StringIO()
+        with redirect_stdout(out):
+            code = inbox.main(["--repo", REPO, "cite", "--pr", "5", "--root", str(self.root)], fake)
+        self.assertEqual(code, 0)
+        self.assertIn("for 2 note(s)", out.getvalue())
+        self.assertIn("inbox #471 in quiet-yak", self.read("src/a.gd"))
+
+    def test_nothing_to_cite_and_unknown_arguments_are_rejected(self) -> None:
+        for argv in ([], ["--bogus"]):
+            with self.subTest(argv=argv), redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                inbox.main(["cite", *argv], FakeGh({}))
 
 
 class AgreementTests(unittest.TestCase):

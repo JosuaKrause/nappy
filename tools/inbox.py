@@ -33,6 +33,10 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
     reopen --pr P            when P was closed without merging, reopens the notes `close --pr P`
                              closed: each one still closed whose last close came from an inbox
                              identity after P was opened and whose last filing note names P
+    cite [N ...] [--pr P]    in the working tree, puts the playtest a filed note is in beside every
+                             existing citation of it outside docs/playtests/ -- `inbox #N` becomes
+                             `inbox #N in [name](relative/link)` in Markdown and `inbox #N in name`
+                             elsewhere -- and lists every other form for a hand fix; local only
 
 **Only the player's notes count** (statements 19 and 23): an issue the player (`PLAYER`) opened,
 or one the capture script opened as one of `CAPTURE_BOTS` with its tag, the label `captured`. The
@@ -64,8 +68,10 @@ from __future__ import annotations
 
 import argparse
 import base64
+import difflib
 import json
 import os
+import posixpath
 import re
 import subprocess
 import sys
@@ -113,6 +119,8 @@ examples:
   uv run python tools/inbox.py --role claude-orchestrator ask 423 --body-file /tmp/question.md
   uv run python tools/inbox.py --role claude-orchestrator close --pr 430
   uv run python tools/inbox.py close --pr 430 --dry-run
+  uv run python tools/inbox.py cite --pr 430 --dry-run
+  uv run python tools/inbox.py cite 497 498
 """
 
 
@@ -667,6 +675,181 @@ def cmd_reopen(github: GitHub, role: str | None, pr: int, dry_run: bool) -> int:
     return 0
 
 
+# Citations: after a batch is filed, a note is cited by its playtest file as well as by its number.
+PLAYTEST_FILE = re.compile(r"^\d{4}-\d{2}-\d{2}-(.+)\.md$")
+PLAYTEST_HEADING = re.compile(r"^##[ \t]+#(\d+)\b", re.MULTILINE)
+# A note's number as the tool takes it: `#N` not followed by another digit or a letter, so the
+# hex colours `#504a46` and `#486b77` that share issue numbers never match.
+NUMBER = re.compile(r"(?<![0-9A-Za-z&])#(\d+)(?![0-9A-Za-z])")
+ISSUE_PATH = re.compile(r"/issues/(\d+)(?![0-9A-Za-z])")
+RANGE = re.compile(r"#(\d+)[ \t]*(?:\u2013|\u2014|-|\.\.|to)[ \t]*#?(\d+)(?![0-9A-Za-z])")
+# The regular form, the only one edited: `inbox #N` or a run of numbers after one.
+CITATION = re.compile(r"\binbox #\d+(?![0-9A-Za-z])(?:(?:, and |, | and )#\d+(?![0-9A-Za-z]))*", re.IGNORECASE)
+
+
+@dataclass(frozen=True)
+class Playtest:
+    name: str  # the two words, the file's name without its date
+    path: str  # relative to the repository root, forward slashes
+
+
+def playtests_by_number(root: Path) -> dict[int, list[Playtest]]:
+    """Every playtest file under docs/playtests/ that has a `## #N` heading, by N."""
+    found: dict[int, list[Playtest]] = {}
+    for file in sorted((root / PLAYTESTS).glob("*.md")):
+        match = PLAYTEST_FILE.match(file.name)
+        if match is None:
+            continue
+        playtest = Playtest(match.group(1), f"{PLAYTESTS}{file.name}")
+        for number in {int(n) for n in PLAYTEST_HEADING.findall(file.read_text(encoding="utf-8"))}:
+            found.setdefault(number, []).append(playtest)
+    return found
+
+
+def names_playtest(line: str, playtest: Playtest) -> bool:
+    return re.search(rf"(?<![\w-]){re.escape(playtest.name)}(?![\w-])", line) is not None
+
+
+def cite_line(line: str, path: str, targets: dict[int, Playtest]) -> tuple[str, bool]:
+    """`line` with the regular citations of `targets` edited, and whether any other form of one is left."""
+
+    def named(number: int) -> bool:
+        return names_playtest(line, targets[number])
+
+    covered: list[tuple[int, int]] = []
+    edits: list[tuple[int, str]] = []
+    irregular = False
+    for match in CITATION.finditer(line):
+        numbers = [int(n) for n in re.findall(r"#(\d+)", match.group(0))]
+        mine = [n for n in numbers if n in targets]
+        if not mine:
+            continue
+        covered.append(match.span())
+        if all(named(n) for n in mine):
+            continue
+        playtest = targets[mine[0]]
+        regular = len(mine) == len(numbers) and all(targets[n] == playtest for n in mine)
+        if regular and line[match.end() : match.end() + 1] != "]":
+            if path.endswith(".md"):
+                link = posixpath.relpath(playtest.path, posixpath.dirname(path) or ".")
+                edits.append((match.end(), f" in [{playtest.name}]({link})"))
+            else:
+                edits.append((match.end(), f" in {playtest.name}"))
+        else:
+            irregular = True
+
+    def uncovered(start: int) -> bool:
+        return not any(low <= start < high for low, high in covered)
+
+    for pattern in (NUMBER, ISSUE_PATH):
+        for match in pattern.finditer(line):
+            number = int(match.group(1))
+            if number in targets and not named(number) and uncovered(match.start()):
+                irregular = True
+    for match in RANGE.finditer(line):
+        low, high = sorted((int(match.group(1)), int(match.group(2))))
+        if any(low <= n <= high and not named(n) for n in targets) and uncovered(match.start()):
+            irregular = True
+    for start, text in sorted(edits, reverse=True):
+        line = line[:start] + text + line[start:]
+    return line, irregular
+
+
+def cite_text(path: str, text: str, targets: dict[int, Playtest]) -> tuple[str, list[int]]:
+    """`text` of file `path` with its regular citations edited, and the 1-based lines left for a hand fix."""
+    lines = text.split("\n")
+    hand: list[int] = []
+    for index, line in enumerate(lines):
+        lines[index], irregular = cite_line(line, path, targets)
+        if irregular:
+            hand.append(index + 1)
+    return "\n".join(lines), hand
+
+
+def tracked_text_files(root: Path) -> list[str]:
+    """Every tracked file here that is text and outside docs/playtests/, as a path relative to `root`.
+
+    Read from the index rather than searched with `git grep`, which has to be bounded; a file git
+    lists but this checkout does not hold (a sparse one), a link, and a file with a NUL byte or
+    that is not UTF-8 are left out.
+    """
+    listed = subprocess.run(["git", "ls-files", "-z"], capture_output=True, check=False, cwd=root)
+    if listed.returncode != 0:
+        raise InboxError(f"`git ls-files` failed in {root}: {listed.stderr.decode(errors='replace').strip()}")
+    kept: list[str] = []
+    for name in listed.stdout.decode("utf-8").split("\0"):
+        file = root / name
+        if not name or name.startswith(PLAYTESTS) or file.is_symlink() or not file.is_file():
+            continue
+        raw = file.read_bytes()
+        if b"\0" in raw:
+            continue
+        try:
+            raw.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        kept.append(name)
+    return kept
+
+
+def cmd_cite(github: GitHub | None, root: Path, numbers: Sequence[int], pr: int | None, dry_run: bool) -> int:
+    wanted = list(numbers)
+    if pr is not None:
+        assert github is not None
+        data = github.get(f"repos/{github.repo}/pulls/{pr}")
+        body = data.get("body") if isinstance(data, dict) else ""
+        named, malformed = filed_numbers(body if isinstance(body, str) else "")
+        if malformed:
+            raise InboxError(f"#{pr}'s description has lines that are not the form `Filed from #N`: {malformed}")
+        if not named:
+            raise InboxError(f"#{pr}'s description names no note: it has no `Filed from #N` line")
+        wanted += [n for n in named if n not in wanted]
+    by_number = playtests_by_number(root)
+    targets: dict[int, Playtest] = {}
+    for number in wanted:
+        held = by_number.get(number, [])
+        if len(held) != 1:
+            where = "no playtest" if not held else "more than one: " + ", ".join(p.path for p in held)
+            raise InboxError(
+                f"#{number} is in {where} (a `## #{number}` heading under {PLAYTESTS}); "
+                f"copy the notes first, or leave #{number} out"
+            )
+        targets[number] = held[0]
+    changed = 0
+    hand: list[str] = []
+    for name in tracked_text_files(root):
+        file = root / name
+        old = file.read_bytes().decode("utf-8")
+        new, lines = cite_text(name, old, targets)
+        old_lines = old.split("\n")
+        hand += [f"{name}:{n}: {old_lines[n - 1].strip()}" for n in lines]
+        if new == old:
+            continue
+        changed += 1
+        sys.stdout.writelines(
+            line if line.endswith("\n") else line + "\n"
+            for line in difflib.unified_diff(
+                old.splitlines(keepends=True), new.splitlines(keepends=True), f"a/{name}", f"b/{name}", n=0
+            )
+        )
+        if not dry_run:
+            file.write_bytes(new.encode("utf-8"))
+    verb = "would edit" if dry_run else "edited"
+    print(f"\n{verb} {changed} file(s) for {len(targets)} note(s).")
+    if hand:
+        print(f"{len(hand)} line(s) cite a note in another form and are not edited; fix each by hand:")
+        for item in hand:
+            print(f"  {item}")
+    else:
+        print("No other form of a citation was found.")
+    if not dry_run:
+        print(
+            "Read `git diff` before committing: a `#N` that is not a note"
+            " (an SVG colour, a pull request) shows up there."
+        )
+    return 0
+
+
 def default_repo(runner: Runner) -> str:
     repo = os.environ.get("GITHUB_REPOSITORY", "")
     if repo:
@@ -697,7 +880,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--repo", default=None, metavar="OWNER/NAME", help="default $GITHUB_REPOSITORY, or gh's own")
     add_role(parser, top=True)
     commands = parser.add_subparsers(
-        dest="command", required=True, metavar="{capture,append,list,show,ask,close,reopen}"
+        dest="command", required=True, metavar="{capture,append,list,show,ask,close,reopen,cite}"
     )
     capture = commands.add_parser("capture", help="open a note holding the player's words verbatim")
     capture.add_argument("--body-file", default=None, help="the player's words (default: standard input)")
@@ -733,12 +916,38 @@ def build_parser() -> argparse.ArgumentParser:
         sub.add_argument("--pr", type=int, required=True, help="the filing pull request")
         sub.add_argument("--dry-run", action="store_true", help="check and print what would change; write nothing")
         add_role(sub, top=False)
+    cite = commands.add_parser(
+        "cite",
+        help="put the playtest beside every citation of a filed note, and list the forms left for a hand fix",
+        description=(
+            "For each note, N given here or named by --pr's `Filed from #N` lines, finds its playtest (the file"
+            " under docs/playtests/ with a `## #N` heading) and, in every tracked text file outside"
+            " docs/playtests/, edits the plain `inbox #N` form (or `inbox #N, #M and #K`) to carry the playtest:"
+            " ` in [name](relative link)` in Markdown, ` in name` elsewhere. A bare `(#N)`, a range, an issue URL"
+            " or a link text is listed as file:line for a hand fix, never edited; a line already naming the"
+            " playtest is left alone, so a second run changes nothing. Edits this checkout only."
+        ),
+    )
+    cite.add_argument("numbers", nargs="*", type=int, metavar="N", help="a filed note's number")
+    cite.add_argument(
+        "--pr", type=int, default=None, help="the filing pull request, whose `Filed from #N` lines name notes"
+    )
+    cite.add_argument("--dry-run", action="store_true", help="print the diff and the hand-fix list; write nothing")
+    cite.add_argument("--root", default=None, help="the checkout to edit (default: the one this tool is in)")
     return parser
 
 
 def main(argv: Sequence[str], runner: Runner = run_command) -> int:
-    args = build_parser().parse_args(list(argv))
+    parser = build_parser()
+    args = parser.parse_args(list(argv))
+    if args.command == "cite" and not args.numbers and args.pr is None:
+        parser.error("cite needs a note number or --pr")
     try:
+        if args.command == "cite":
+            github = GitHub(args.repo or default_repo(runner), runner) if args.pr is not None else None
+            return cmd_cite(
+                github, Path(args.root).resolve() if args.root else ROOT, args.numbers, args.pr, args.dry_run
+            )
         github = GitHub(args.repo or default_repo(runner), runner)
         if args.command == "capture":
             writer = write_role(args.role)
