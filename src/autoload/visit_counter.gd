@@ -49,6 +49,11 @@ extends Node
 ## - `nappy-day-N-dog-chased` / `nappy-day-N-dog-shaken` / `nappy-day-N-dog-outlasted` —
 ##   `charging_dog` starts chasing, and how the chase ended without catching her. A caught chase is
 ##   `nappy-day-N-lost-hard-fail-charging-dog` instead, off the pair above.
+## - `nappy-day-N-pelican-spawned` / `nappy-day-N-pelican-seen` / `nappy-day-N-pelican-excited` /
+##   `nappy-day-N-pelican-hit` — the one cyclist in about four hundred drawn as a pelican: created,
+##   first on screen, its field's first share of her meter, and its lethal reach covering her, each
+##   once per pelican. A day it ends is `nappy-day-N-lost-hard-fail-pelican` (or `lost-crying-pelican`
+##   when it landed the most), never `cyclist`.
 ## - `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark
 ##   noticed, touched, or untouched when the day it belongs to ends.
 ## - `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each perform step done, and each a day
@@ -79,6 +84,10 @@ func _ready() -> void:
 	EventBus.city_gone_dark.connect(_on_city_gone_dark)
 	EventBus.pursuit_began.connect(_on_pursuit_began)
 	EventBus.pursuit_ended.connect(_on_pursuit_ended)
+	EventBus.pelican_spawned.connect(_on_pelican_spawned)
+	EventBus.pelican_sighted.connect(_on_pelican_sighted)
+	EventBus.pelican_excited_her.connect(_on_pelican_excited_her)
+	EventBus.pelican_struck_her.connect(_on_pelican_struck_her)
 	EventBus.poster_torn.connect(_on_poster_torn)
 	EventBus.poster_pursuit_sent.connect(_on_poster_pursuit_sent)
 	EventBus.player_detained.connect(_on_player_detained)
@@ -337,6 +346,22 @@ func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
 	if id != "charging_dog":
 		return
 	_send_event(_day_event_name(GameState.day, "dog-shaken" if shaken_off else "dog-outlasted"))
+
+## The pelican's own four moments *(inbox #527, the player: "when the pelican spawns, when it's on
+## screen, and when it's hitting the player. it must appear as its own entry")*. Each signal fires
+## once per pelican where it is emitted (`EventBus`'s own doc on each), so each sends once; the
+## instance it carries is not read.
+func _on_pelican_spawned(_instance: Variant) -> void:
+	_send_event(_day_event_name(GameState.day, "pelican-spawned"))
+
+func _on_pelican_sighted(_instance: Variant) -> void:
+	_send_event(_day_event_name(GameState.day, "pelican-seen"))
+
+func _on_pelican_excited_her(_instance: Variant) -> void:
+	_send_event(_day_event_name(GameState.day, "pelican-excited"))
+
+func _on_pelican_struck_her(_instance: Variant) -> void:
+	_send_event(_day_event_name(GameState.day, "pelican-hit"))
 
 ## Every tear, not the first of an attempt: every event opts out of the site's sessions so that
 ## each one is counted (PLAYTEST-143: "we need a telemetry item for ripping posters").

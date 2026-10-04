@@ -369,6 +369,27 @@ class FormatTextTests(unittest.TestCase):
         # entry -- here behind won (12) and ahead of nothing else in this fixture.
         self.assertLess(lines.index(line_with(lines, "won")), lines.index(line_with(lines, "Lost:")))
 
+    def test_the_pelican_events_read_back_under_their_day_and_its_loss_as_a_cause(self) -> None:
+        # The pelican's own four events and a day lost to it (inbox #527: "it must appear as its own
+        # entry"), in VisitCounter's day-numbered shape -- listed under the day they were sent on,
+        # never among the names that match none of the known shapes.
+        hits = [
+            hit("nappy-day-4-began", 10, 1),
+            hit("nappy-day-4-pelican-spawned", 2, 2),
+            hit("nappy-day-4-pelican-seen", 2, 3),
+            hit("nappy-day-4-pelican-excited", 1, 4),
+            hit("nappy-day-4-pelican-hit", 1, 5),
+            hit("nappy-day-4-lost-hard-fail-pelican", 1, 6),
+        ]
+        grouped = goatcounter.group_hits(hits, "nappy-")
+        self.assertEqual(grouped["other"], {})
+        text = goatcounter.format_text(grouped, site="s", start=self.start, end=self.end, prefix="nappy-")
+        self.assertNotIn("none of the known shapes", text)
+        day_block = text.split("Day 4:")[1].split("\n\n")[0]
+        for name, count in (("spawned", 2), ("seen", 2), ("excited", 1), ("hit", 1)):
+            self.assertIn(f"nappy-day-4-pelican-{name}: {count}", day_block)
+        self.assertIn("nappy-day-4-lost-hard-fail-pelican: 1 (10.0% of began)", day_block)
+
     def test_the_old_bare_shape_is_still_listed_folded_into_its_kind_subtotal(self) -> None:
         # One playthrough's own old two-event shape (per the player: "the old version only affects
         # one playthrough") -- no cause line of its own, but not dropped either.

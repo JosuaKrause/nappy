@@ -48,6 +48,7 @@ const FAMILY_DICTS := {
 	"dog": EventInstance.DOG_BY_VIEW,
 	"charging_dog": EventInstance.CHARGING_DOG_BY_VIEW,
 	"cyclist": EventInstance.CYCLIST_BY_VIEW,
+	"pelican_cyclist": EventInstance.PELICAN_BY_VIEW,
 	"pigeon": EventInstance.PIGEON_BY_VIEW,
 	"pigeon_down": EventInstance.PIGEON_DOWN_BY_VIEW,
 	"delivery_van": EventInstance.DELIVERY_VAN_BY_VIEW,

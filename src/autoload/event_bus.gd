@@ -103,6 +103,26 @@ signal pursuit_began(id: String)
 ## visits".
 signal pursuit_ended(id: String, shaken_off: bool)
 
+# The pelican's own moments, the one rider in about four hundred drawn as a pelican
+# (`EventInstance.is_pelican`). *(Inbox #527, the player: "I explicitly asked for specific pelican
+# telemetry. when the pelican spawns, when it's on screen, and when it's hitting the player. it
+# must appear as its own entry and it needs to be more granular than standard event telemetry".)*
+# Each carries the pelican's own `EventInstance`, untyped for the reason the section above gives.
+# Listen-only, for `VisitCounter` and the run log — see docs/TELEMETRY.md, "The page counts visits".
+
+## `EventManager.spawn_warned()`'s own moment a pelican is created, its warning over.
+signal pelican_spawned(instance)
+## `EventManager._report_the_pelicans_in_view()`'s own first frame a pelican is on screen — once
+## per pelican.
+signal pelican_sighted(instance)
+## `EventInstance.accumulate_landed()`'s own first share of the meter a pelican's field lands on
+## her — once per pelican. The cyclist's field reaches 90px and its lethal reach 33px, so a pelican
+## that strikes her has almost always sent this first.
+signal pelican_excited_her(instance)
+## `EventManager._check_hard_fails()`'s own moment a pelican's lethal reach covers her, emitted
+## just before the `hard_fail_triggered` that ends the day, so it is sent ahead of the loss.
+signal pelican_struck_her(instance)
+
 # ------------------------------------------------------------------- bodies ---
 # Reported rather than logged where they happen: the crowd is a gameplay file and the telemetry
 # stays out of the files that decide things.

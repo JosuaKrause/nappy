@@ -1,0 +1,40 @@
+<!-- Pelican cyclist, front on, riding at the viewer, the bill tucked down its chest. The pelican that one cyclist in about four hundred is instead (EventInstance's
+     PELICAN_BY_VIEW / PELICAN_BY_VIEW_B, chosen per rider when it spawns). The bike is the
+     cyclist's own, path for path, so the two share wheels, ground contact and registration and
+     only the rider changes: a great white pelican, white with black wing tips gripping the
+     bars, a long yellow bill with an orange pouch, orange webbed feet on the pedals.
+     The pouch and bill carry the read at game scale. SVG only by the player's word: no
+     illustrated PNG is ever made of it; the atlas bake rasterizes it like any SVG.
+     Canvas 30x44, the cyclist's own for this view; bottom-centre ground anchor (15,44). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="44" viewBox="0 0 30 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <ellipse cx="15" cy="28" rx="2" ry="6" fill="none" stroke="#221f28" stroke-width="1.8"/><ellipse cx="15" cy="37" rx="2.5" ry="6" fill="none" stroke="#221f28" stroke-width="1.8"/>
+  <path d="M15 24 L15 37 M11 30 L19 30" fill="none" stroke="#c4503c" stroke-width="2"/>
+  <path d="M12.6 22.6 L10 27.4 L12 32.6" fill="none" stroke="#3b2d32" stroke-width="2"/>
+  <path d="M12.6 22.6 L10 27.4 L12 32.6" fill="none" stroke="#e0843a" stroke-width="1.1"/>
+  <path d="M11.1 32.1 L12.9 32.1 L13.9 33.6 L12.0 34.1 L10.1 33.6 Z" fill="#e0843a" stroke-width="0.6"/>
+  <path d="M17.4 22.6 L20.2 26.6 L18.2 30.6" fill="none" stroke="#3b2d32" stroke-width="2"/>
+  <path d="M17.4 22.6 L20.2 26.6 L18.2 30.6" fill="none" stroke="#e0843a" stroke-width="1.1"/>
+  <path d="M17.3 30.1 L19.1 30.1 L20.1 31.6 L18.2 32.1 L16.3 31.6 Z" fill="#e0843a" stroke-width="0.6"/>
+  <path d="M10.6 12.6 C8 14.4 6.6 19.4 7.2 24.4 L10.4 24.4 C10.2 20.4 10.8 16.6 12.2 13.4 Z" fill="#ddd5c6"/>
+  <path d="M19.4 12.6 C22 14.4 23.4 19.4 22.8 24.4 L19.6 24.4 C19.8 20.4 19.2 16.6 17.8 13.4 Z" fill="#ddd5c6"/>
+  <clipPath id="pelican-body"><path d="M15 10.4 C19.6 10.4 21.8 14.2 21.6 18.2 C21.4 22.2 18.8 24.6 15 24.6 C11.2 24.6 8.6 22.2 8.4 18.2 C8.2 14.2 10.4 10.4 15 10.4 Z"/></clipPath>
+  <path d="M15 10.4 C19.6 10.4 21.8 14.2 21.6 18.2 C21.4 22.2 18.8 24.6 15 24.6 C11.2 24.6 8.6 22.2 8.4 18.2 C8.2 14.2 10.4 10.4 15 10.4 Z" fill="#ebe5d8" stroke="none"/>
+  <g clip-path="url(#pelican-body)" stroke="none">
+    <path d="M7 20.6 C11 23 19 23 23 20.6 L23 26 L7 26 Z" fill="#d5ccbc"/>
+  </g>
+  <path d="M15 10.4 C19.6 10.4 21.8 14.2 21.6 18.2 C21.4 22.2 18.8 24.6 15 24.6 C11.2 24.6 8.6 22.2 8.4 18.2 C8.2 14.2 10.4 10.4 15 10.4 Z" fill="none"/>
+  <path d="M8 25 L22 25" fill="none" stroke="#221f28" stroke-width="2"/>
+  <path d="M7 21.8 C6.6 23.4 6.7 25 7.1 26.2 L10.4 26.2 C10.2 24.8 10.2 23.2 10.5 21.8 Z" fill="#2f2a30"/>
+  <path d="M23 21.8 C23.4 23.4 23.3 25 22.9 26.2 L19.6 26.2 C19.8 24.8 19.8 23.2 19.5 21.8 Z" fill="#2f2a30"/>
+  <path d="M12.4 12 C12.8 10 13 8.4 13.2 7 L16.8 7 C17 8.4 17.2 10 17.6 12 Z" fill="#ebe5d8" stroke="none"/>
+  <path d="M12.7 11 C12.9 9.6 13 8.4 13.2 7.4 M17.3 11 C17.1 9.6 17 8.4 16.8 7.4" fill="none"/>
+  <path d="M14.4 2.4 C14.6 1.2 15.6 0.6 16.6 0.8 C16 1.4 15.6 1.9 15.6 2.4 Z" fill="#ebe5d8" stroke-width="0.6"/>
+  <path d="M15 2.2 C16.8 2.2 18.2 3.6 18.2 5.4 C18.2 7.2 16.8 8.6 15 8.6 C13.2 8.6 11.8 7.2 11.8 5.4 C11.8 3.6 13.2 2.2 15 2.2 Z" fill="#ebe5d8"/>
+  <path d="M12.6 7.6 C10.6 10.6 10.8 15.6 13.8 19.2 L16.2 19.2 C19.2 15.6 19.4 10.6 17.4 7.6 Z" fill="#e3934f"/>
+  <path d="M14 6 L16 6 C15.9 10 15.7 14.4 15.5 18.2 L15 19.8 L14.5 18.2 C14.3 14.4 14.1 10 14 6 Z" fill="#e8b64a"/>
+  <path d="M14.4 18 L15.6 18 L15 19.8 Z" fill="#d0703c" stroke-width="0.5"/>
+  <circle cx="13.1" cy="4.9" r="0.95" fill="#f2c8a2" stroke="none"/>
+  <circle cx="13.1" cy="4.9" r="0.5" fill="#221f28" stroke="none"/>
+  <circle cx="16.9" cy="4.9" r="0.95" fill="#f2c8a2" stroke="none"/>
+  <circle cx="16.9" cy="4.9" r="0.5" fill="#221f28" stroke="none"/>
+</svg>
