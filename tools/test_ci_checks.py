@@ -363,6 +363,39 @@ class TranscriptionTests(unittest.TestCase):
         self.assertIn("first 14 of", failures[0])
         self.assertIn("'visual bounding box.", failures[0])
 
+    def test_words_appended_to_a_captured_note_are_checked_like_its_body(self) -> None:
+        bot = "nappy-claude-orchestrator[bot]"
+        more = "this does not read as shadow. and more"
+        marked = f"{ci_transcription.APPEND_MARKER}\n\n{more}"
+        comments: list[dict[str, object]] = [
+            {"user": {"login": bot}, "body": "Which shadow?"},
+            {"user": {"login": bot}, "body": marked},
+        ]
+        appended = ci_transcription.appended_words(bot, ("inbox", "captured"), comments)
+        self.assertEqual(appended, (more,))
+        captured = ci_transcription.Note(
+            number=423,
+            author=bot,
+            labels=("inbox", "captured"),
+            body=NOTE_BODY,
+            is_pull_request=False,
+            appended=appended,
+        )
+        failures = ci_transcription.check([captured], FILED_PLAYTEST)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("the words appended to it are not in", failures[0])
+        playtest = {path: text + "\n> " + more + "\n" for path, text in FILED_PLAYTEST.items()}
+        self.assertEqual(ci_transcription.check([captured], playtest), [])
+
+    def test_a_marked_comment_counts_only_from_a_capture_identity_on_a_captured_note(self) -> None:
+        bot = "nappy-claude-orchestrator[bot]"
+        marked = f"{ci_transcription.APPEND_MARKER}\n\nmore words"
+        mine: list[dict[str, object]] = [{"user": {"login": bot}, "body": marked}]
+        theirs: list[dict[str, object]] = [{"user": {"login": "someone"}, "body": marked}]
+        self.assertEqual(ci_transcription.appended_words("JosuaKrause", ("inbox",), mine), ())
+        self.assertEqual(ci_transcription.appended_words(bot, ("inbox",), mine), ())
+        self.assertEqual(ci_transcription.appended_words(bot, ("inbox", "captured"), theirs), ())
+
     def test_a_note_in_no_added_playtest_fails(self) -> None:
         self.assertIn("adds no file", ci_transcription.check([note()], {})[0])
 

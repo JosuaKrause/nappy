@@ -1650,6 +1650,12 @@ the agent should never use gh issue close directly, and git push only wrapped
 NOTE"
 assert_write_guard "tools/inbox.py capture --body-file -> allow" allow \
     'uv run python tools/inbox.py --role claude-orchestrator capture --band next --body-file /tmp/note.md'
+assert_write_guard "tools/inbox.py append --body-file -> allow" allow \
+    'uv run python tools/inbox.py --role claude-orchestrator append 504 --body-file /tmp/more.md --context-file /tmp/context.md'
+assert_write_guard "a direct gh issue comment, the append's own write outside the script -> deny" deny \
+    'gh issue comment 504 --body-file /tmp/more.md'
+assert_write_guard "a wrapped direct gh issue comment -> deny" deny \
+    "$orch gh issue comment 504 --body-file /tmp/more.md"
 
 # **The three text shapes** (the guard's header; plaid-tapir, statement 4: the player's "B"). Each
 # is the whole command, and its text -- here prose naming gh issue comment, git push and

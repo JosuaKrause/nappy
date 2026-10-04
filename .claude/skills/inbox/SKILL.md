@@ -48,7 +48,8 @@ automatic call for action ("currently anybody on the internet can create an issu
 good for bringing things to our attention but shouldn't be an automatic call for action"). A
 captured note counts when it was opened as `nappy-claude-orchestrator[bot]` or
 `nappy-codex-coder[bot]` and carries the capture script's tag, the label `captured` (asked, the
-player chose "Yes, marked by the script"). Only the player's own comments are the player's words.
+player chose "Yes, marked by the script"). The player's own comments are the player's words, and so,
+on a captured note alone, are the words `append` added (below).
 `tools/inbox.py` skips everything else with a line saying so, and CI's transcription check
 (`tools/ci_transcription.py`) fails a filing that names any other issue.
 
@@ -95,6 +96,26 @@ answered as **playtest-feedback** asks. The script tags the note with the label 
 only it sets, and opens it as `claude-orchestrator` (Codex: `codex-coder`), which is what makes a
 captured note count as the player's.
 
+**A further word on the topic of a note already open is appended to that note, never captured as a
+new one.** *(2026-10-03: "don't create new inbox notes for the same topic -- keep adding comments
+to it".)* When the agent already knows an open captured note on the topic, one it captured or read
+this session, the player's next words on it go onto that note:
+
+```sh
+uv run python tools/inbox.py --role claude-orchestrator append N --body-file /tmp/more.md
+```
+
+**Only when the agent already knows the note** *(2026-10-03: "well, only if you already know that
+there is an open issue about this topic -- don't spend time reading all issues just to figure out
+whether there is an overlap")*: the inbox is never searched or read to look for an overlap, and
+with no such note in hand the words are captured as a new note. The words go into a file first,
+exactly as for `capture`, and are the player's verbatim; `--context-file` posts what they answered
+first, the agent's side. `append` posts them as a comment under the same identity rules as
+`capture`, led by a marker line (an HTML comment, invisible on the issue) that only the script
+writes, so the tool tells them from a question asked with `ask`. It refuses a note that is not
+captured, since a note the player wrote gets the player's own comments, and a closed one. `show`
+prints an appended comment as the player's words, and the filing treats it like the body.
+
 ## Asking about a note
 
 **An ingestion never waits on a question.** *(2026-10-03: "If there is an open question in an
@@ -128,7 +149,8 @@ request carries the whole batch:
 - **Copy each note's current text word for word into a playtest file** made with
   `tools/new-name.sh playtest "<title>"`: what the words answered first, when a captured note
   carries it as its first comment, then the body quoted in `> ` lines, then the player's
-  comments, each after the question it answers. Wrapping and the `> ` markers are free; every
+  comments and the words appended to it, in the order they were said, each after what it answers
+  (the first comment's context, or the question before it). Wrapping and the `> ` markers are free; every
   word, letter case and punctuation mark is copied as it stands. A playtest file is a primary
   source and is never rewritten afterwards.
 - **File the queue from it** exactly as **playtest-feedback** says, each entry opening with the
@@ -137,8 +159,8 @@ request carries the whole batch:
   `Filed from #N`** — never `Closes #N`, which would leave the note open and editable until the
   merge. It is docs-only, so its commits, push and pull request go out as `claude-orchestrator`
   (Codex: `codex-coder`), under **committing**. CI's transcription check reads those lines and
-  fails a note that is not the player's or whose text is not in a playtest file the pull request
-  adds, word for word.
+  fails a note that is not the player's or whose text, appended words included, is not in a playtest
+  file the pull request adds, word for word.
 - **Right after pushing the pull request, close the batch in one call** *(2026-09-27: "maybe
   let's change the flow to close the issue upon *creating* the PR. so no deferred "Closes #N" but a
   single action by the orchestrator after pushing the PR.")*:
@@ -148,7 +170,7 @@ request carries the whole batch:
   ```
 
   It closes every note the description names, and closes none when any note's current text, or
-  any comment the player wrote on it, is not word for word in one playtest file the pull request
+  any comment the player wrote on it or any words appended to it, is not word for word in one playtest file the pull request
   adds, so a note the player edited, or answered on, after it was copied stops the close rather
   than being filed half-read. A note with no body (a title alone) is refused the same way, as CI's
   transcription check refuses it; it is asked about on its issue instead. `--dry-run` checks the same and writes
