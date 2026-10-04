@@ -1108,23 +1108,12 @@ func _drawn_heading_key() -> Vector2i:
 ## **Nothing reaches her through a building**, the same rule an event's field keeps: a positive
 ## field is zero when `_walled_off()` says a building stands between this body and the point. The
 ## horn and a startled walker included — *(plaid-wombat, inbox #554: "Excitement should not go
-## through any wall")* — since the jolt is this body being louder, not a second source.
-func contribution_at(world_position: Vector2) -> float:
-	var field := _field_at(world_position)
-	if field > 0.0 and _walled_off(global_position, world_position):
-		return 0.0
-	return field
-
-## Whether a building stands between this body at `body_at` and her at `her_at`, deep enough to
-## keep its noise from her — `CityMap.wall_between()`, as `EventInstance._walled_off()` asks it.
-## False with no map, which is every data-level rig built without one.
-func _walled_off(body_at: Vector2, her_at: Vector2) -> bool:
-	return _map != null and _map.wall_between(body_at, her_at)
-
-## The field alone, with no question about what stands between — what `contribution_at()` charges
-## on open ground, and what the caret's projection asks before it asks about walls at the two
-## bodies' own projected places.
-func _field_at(world_position: Vector2) -> float:
+## through any wall")* — since the jolt is this body being louder, not a second source. `walls`
+## false answers the field alone, which is what the caret's projection asks before it asks about
+## walls at the two bodies' own projected places. One function rather than a field function called
+## from this one: every body in the crowd is asked this every frame, most of them out of reach, and
+## a second call each is a cost paid by the whole crowd for the handful a wall could matter to.
+func contribution_at(world_position: Vector2, walls := true) -> float:
 	# d_eff = r * (1 - e * cos(theta)) is at least r * (1 - e_max), at every speed
 	# and heading. Outside this bound both falloffs are zero, so the common distant-body
 	# case needs no velocity/turn/pocket lookup or elliptical distance calculation. Read the
@@ -1147,7 +1136,34 @@ func _field_at(world_position: Vector2) -> float:
 	if _jolt > 0.0:
 		total += Tuning.falloff(distance, _jolt_intensity * (_jolt / _jolt_for),
 				_jolt_inner, _jolt_outer)
+	if walls and total > 0.0 and _walled_off_now(origin, world_position):
+		return 0.0
 	return total
+
+## Whether a building stands between this body at `body_at` and her at `her_at`, deep enough to
+## keep its noise from her — `CityMap.wall_between()`, as `EventInstance._walled_off()` asks it.
+## False with no map, which is every data-level rig built without one.
+func _walled_off(body_at: Vector2, her_at: Vector2) -> bool:
+	return _map != null and _map.wall_between(body_at, her_at)
+
+## The last line `contribution_at()` asked about and its answer, kept by value. The meter's sum,
+## the halo's pick and the caret's present rate ask the same pair in a frame, and the answer
+## depends on nothing but the two points and the map — a body moved from outside is a new key, so
+## nothing here can answer stale the way a clock-keyed cache of the field would.
+var _wall_from := Vector2.INF
+var _wall_to := Vector2.INF
+var _wall_map: CityMap = null
+var _wall_answer := false
+
+## `_walled_off()` through that one-line cache, for `contribution_at()` alone: the caret's
+## projection asks a different pair at every step and would only push the frame's own pair out.
+func _walled_off_now(body_at: Vector2, her_at: Vector2) -> bool:
+	if body_at != _wall_from or her_at != _wall_to or _map != _wall_map:
+		_wall_from = body_at
+		_wall_to = her_at
+		_wall_map = _map
+		_wall_answer = _walled_off(body_at, her_at)
+	return _wall_answer
 
 ## The furthest this agent's own field can currently reach — its ordinary outer radius, or the
 ## jolt's own if a jolt is running and reaches further, the way a car's `CAR_HORN_OUTER_RADIUS`
@@ -1209,7 +1225,7 @@ func _sample_expected_landed(player_position: Vector2, vel: Vector2) -> float:
 		# The field translates; a wall does not. So the wall is asked between the two bodies'
 		# own projected places, where a building actually stands, never at the translated point.
 		var t := float(i + 1) * dt
-		var rate := _field_at(player_position + player_velocity * t - vel * t)
+		var rate := contribution_at(player_position + player_velocity * t - vel * t, false)
 		if rate > 0.0 and _walled_off(global_position + vel * t, player_position + player_velocity * t):
 			rate = 0.0
 		integral += rate * dt

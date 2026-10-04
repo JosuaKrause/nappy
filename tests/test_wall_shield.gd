@@ -214,8 +214,8 @@ func _test_a_crowd_body_is_silent_behind_a_wall(t) -> void:
 	car.kind = CrowdAgent.Kind.CAR
 	car.position = Vector2(176.0, 112.0)
 	car._map = walled
-	t.check(car._field_at(her) > 0.0, "the car's field reaches her distance (%.2f/s)"
-			% car._field_at(her))
+	t.check(car.contribution_at(her, false) > 0.0, "the car's field reaches her distance (%.2f/s)"
+			% car.contribution_at(her, false))
 	t.check(car.contribution_at(her) == 0.0, "but not through the building between them")
 	car.startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
 	t.check(car.contribution_at(her) == 0.0, "nor does its horn")

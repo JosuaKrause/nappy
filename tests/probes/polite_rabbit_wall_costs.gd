@@ -162,7 +162,7 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 		var heard := 0.0
 		var noise := [0.0, 0.0, 0.0]
 		for agent in city.crowd.agents():
-			var field := agent._field_at(here)
+			var field := agent.contribution_at(here, false)
 			if field <= 0.0:
 				continue
 			heard += agent.contribution_at(here)

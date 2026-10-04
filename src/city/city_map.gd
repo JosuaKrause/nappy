@@ -611,37 +611,40 @@ func is_walkable(tile: Vector2i) -> bool:
 ## why `Tuning.WALL_SHIELD_DEPTH` may not exceed `Tuning.TILE_SIZE`. A segment exactly `depth`
 ## from open ground at its deepest is blocked.
 func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH) -> bool:
-	var tile := world_to_tile(from)
+	var tile_size := float(Tuning.TILE_SIZE)
+	var x := floori(from.x / tile_size)
+	var y := floori(from.y / tile_size)
 	var delta := to - from
-	var size := float(Tuning.TILE_SIZE)
-	var step := Vector2i(int(signf(delta.x)), int(signf(delta.y)))
+	var step_x := int(signf(delta.x))
+	var step_y := int(signf(delta.y))
 	# The fraction of the segment at which it next crosses a vertical (x) or horizontal (y) tile
 	# boundary, and how much of the segment one whole tile takes on each axis.
 	var next_x := INF
 	var each_x := INF
-	if step.x != 0:
-		next_x = (float(tile.x + maxi(step.x, 0)) * size - from.x) / delta.x
-		each_x = size / absf(delta.x)
+	if step_x != 0:
+		next_x = (float(x + maxi(step_x, 0)) * tile_size - from.x) / delta.x
+		each_x = tile_size / absf(delta.x)
 	var next_y := INF
 	var each_y := INF
-	if step.y != 0:
-		next_y = (float(tile.y + maxi(step.y, 0)) * size - from.y) / delta.y
-		each_y = size / absf(delta.y)
+	if step_y != 0:
+		next_y = (float(y + maxi(step_y, 0)) * tile_size - from.y) / delta.y
+		each_y = tile_size / absf(delta.y)
 	while true:
-		if not is_walkable(tile) and _reaches_the_middle_of(tile, from, delta, depth):
+		if not _open(x, y) and _reaches_the_middle_of(Vector2i(x, y), from, delta, depth):
 			return true
 		if minf(next_x, next_y) > 1.0:
 			return false
 		# Through a vertex exactly, the two tiles beside it share only that one point with the
 		# segment, and the diagonal tile asked next holds that point too.
 		if next_x < next_y:
-			tile.x += step.x
+			x += step_x
 			next_x += each_x
 		elif next_y < next_x:
-			tile.y += step.y
+			y += step_y
 			next_y += each_y
 		else:
-			tile += step
+			x += step_x
+			y += step_y
 			next_x += each_x
 			next_y += each_y
 	return false
@@ -652,13 +655,13 @@ func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH)
 ## the segment has to escape the open corner discs: it is shallow only if every point of it lies
 ## strictly inside one of them.
 func _reaches_the_middle_of(tile: Vector2i, from: Vector2, delta: Vector2, depth: float) -> bool:
-	var size := float(Tuning.TILE_SIZE)
-	var low := Vector2(tile) * size
-	var high := low + Vector2(size, size)
-	var open_west := is_walkable(tile + Vector2i.LEFT)
-	var open_east := is_walkable(tile + Vector2i.RIGHT)
-	var open_north := is_walkable(tile + Vector2i.UP)
-	var open_south := is_walkable(tile + Vector2i.DOWN)
+	var tile_size := float(Tuning.TILE_SIZE)
+	var low := Vector2(tile) * tile_size
+	var high := low + Vector2(tile_size, tile_size)
+	var open_west := _open(tile.x - 1, tile.y)
+	var open_east := _open(tile.x + 1, tile.y)
+	var open_north := _open(tile.x, tile.y - 1)
+	var open_south := _open(tile.x, tile.y + 1)
 	var span := _clip_to(from.x, delta.x, low.x + (depth if open_west else 0.0),
 			high.x - (depth if open_east else 0.0), Vector2(0.0, 1.0))
 	span = _clip_to(from.y, delta.y, low.y + (depth if open_north else 0.0),
@@ -668,13 +671,13 @@ func _reaches_the_middle_of(tile: Vector2i, from: Vector2, delta: Vector2, depth
 	# A corner whose two sides are both built on but whose diagonal neighbour is open: the open
 	# tile is nearest at that corner point, so the shallow ground there is a disc round it.
 	var shallow: Array[Vector2] = []
-	if not open_west and not open_north and is_walkable(tile + Vector2i(-1, -1)):
+	if not open_west and not open_north and _open(tile.x - 1, tile.y - 1):
 		shallow.append(_inside_disc(from, delta, low, depth))
-	if not open_east and not open_north and is_walkable(tile + Vector2i(1, -1)):
+	if not open_east and not open_north and _open(tile.x + 1, tile.y - 1):
 		shallow.append(_inside_disc(from, delta, Vector2(high.x, low.y), depth))
-	if not open_west and not open_south and is_walkable(tile + Vector2i(-1, 1)):
+	if not open_west and not open_south and _open(tile.x - 1, tile.y + 1):
 		shallow.append(_inside_disc(from, delta, Vector2(low.x, high.y), depth))
-	if not open_east and not open_south and is_walkable(tile + Vector2i(1, 1)):
+	if not open_east and not open_south and _open(tile.x + 1, tile.y + 1):
 		shallow.append(_inside_disc(from, delta, high, depth))
 	# Walk forward from the start of the span through every disc that strictly contains the point
 	# reached so far; the segment reaches the middle unless that walk passes the span's end.
@@ -687,6 +690,15 @@ func _reaches_the_middle_of(tile: Vector2i, from: Vector2, delta: Vector2, depth
 				reached = interval.y
 				moved = true
 	return reached <= span.y
+
+## `is_walkable()` for the tile at (`x`, `y`), read straight off the grid: the line walk above asks
+## it for every tile a segment crosses, and most cross no building at all, so the one call stands
+## for `is_walkable()`'s three. A recipe's exterior still goes through `tile_at()`.
+func _open(x: int, y: int) -> bool:
+	if recipe_exterior:
+		return is_walkable(Vector2i(x, y))
+	return x >= 0 and y >= 0 and x < size.x and y < size.y \
+			and _WALKABLE[tiles[y * size.x + x]] == 1
 
 ## `span` narrowed to where `start + t * along` lies in [`low`, `high`] on one axis — empty (start
 ## past end) when it never does.

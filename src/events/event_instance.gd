@@ -2779,7 +2779,7 @@ func contribution_at(world_position: Vector2, intensity_override := -1.0,
 func _contribution_at_uncached(world_position: Vector2, intensity_override: float,
 		velocity_override: Vector2) -> float:
 	var field := _field_at(world_position, intensity_override, velocity_override)
-	if field > 0.0 and _walled_off(global_position, world_position):
+	if field > 0.0 and _walled_off_now(global_position, world_position):
 		return 0.0
 	return field
 
@@ -2790,6 +2790,25 @@ func _contribution_at_uncached(world_position: Vector2, intensity_override: floa
 ## without one and the building's interior, whose events are given none.
 func _walled_off(source_at: Vector2, her_at: Vector2) -> bool:
 	return _map != null and _map.wall_between(source_at, her_at)
+
+## The last line `contribution_at()` asked about and its answer, kept by value. The meter's sum,
+## the halo's pick and the caret's present rate ask the same pair in a frame, and the answer
+## depends on nothing but the two points and the map — a body moved from outside is a new key, so
+## nothing here can answer stale the way a clock-keyed cache of the field would.
+var _wall_from := Vector2.INF
+var _wall_to := Vector2.INF
+var _wall_map: CityMap = null
+var _wall_answer := false
+
+## `_walled_off()` through that one-line cache, for `contribution_at()` alone: the caret's
+## projection asks a different pair at every step and would only push the frame's own pair out.
+func _walled_off_now(source_at: Vector2, her_at: Vector2) -> bool:
+	if source_at != _wall_from or her_at != _wall_to or _map != _wall_map:
+		_wall_from = source_at
+		_wall_to = her_at
+		_wall_map = _map
+		_wall_answer = _walled_off(source_at, her_at)
+	return _wall_answer
 
 ## The field alone, with no question about what stands between — what `contribution_at()` charges
 ## on open ground, and what the caret's projection asks before it asks about walls at the two
