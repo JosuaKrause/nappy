@@ -137,7 +137,7 @@ next tile out from the circle. Day 8's burnt building stands there for a run wit
 door a tile or two behind the shell. The targets whose place is fixed — day 9's district door, day
 12's swing and day 14's station door — have no such rule, so their scenes put the mark or her start
 just past that same circle. Day 10's neighbor starts at their own least distance, 400px from her.
-All but the last-night scenes share one context city (`context_seed` 1917501) and run seed 11, with
+Every scene here shares one context city (`context_seed` 1917501) and run seed 11, with
 no background crowd, so a scene starts the same way every time.
 
 | Recipe | Day and target | She starts | The target, as the scene asserts it |
