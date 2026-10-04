@@ -16,9 +16,9 @@ shader_type canvas_item;
 // per-instance channel with no per-instance material: one declaration, one value per
 // `CanvasItem` that draws with it, set through `set_instance_shader_parameter()` rather than
 // through the material at all. `EntityHalo._process()` sets it, easing toward what
-// `ExcitementHalo` asked for: the colour and the strength as alpha. On the web's Compatibility
-// renderer only sixteen canvas items can hold a readable value here at once — see
-// `EntityHalo`'s class doc, and `EntityHalo.RIM_BUDGET`.
+// `ExcitementHalo` asked for: the colour and the strength as alpha. The Compatibility renderer
+// declares room for only sixteen canvas items' values here, and in a browser a seventeenth reads
+// zero — see `EntityHalo`'s class doc, and `EntityHalo.RIM_BUDGET`.
 instance uniform vec4 halo_colour : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 
 void fragment() {

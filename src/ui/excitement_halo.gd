@@ -53,12 +53,13 @@ extends Node2D
 ## - `accumulate_landed(points: float) -> void` — folds an exact points share, already computed by
 ##   the caller, into a `WINDOW`-second sliding sum.
 ## - `landed() -> float` — that sum: everything still inside the last `WINDOW` seconds.
-## - `set_halo_strength(alpha: float, colour: Color, cut := false) -> void` — told once a frame
-##   what to show, as a *target* its own halo state eases toward rather than an immediate value;
-##   `0` for everything not picked. A source builds its rim on its first nonzero target and gives
-##   it back once faded, or at once when `cut` is true.
+## - `set_halo_strength(alpha: float, colour: Color) -> void` — told once a frame what to show, as
+##   a *target* its own halo state eases toward rather than an immediate value; `0` for everything
+##   not picked. A source builds its rim on its first nonzero target and gives it back once faded.
 ## - `holds_a_halo() -> bool` — whether it holds a rim right now, lit or still fading, which is
 ##   what `_process()` counts against `EntityHalo.RIM_BUDGET`.
+## - `release_halo() -> void` — gives its rim back on the spot, through `EntityHalo.release()`;
+##   asked of a source only once it is queued for deletion.
 ## - `set_player_at(world_position: Vector2, velocity: Vector2, decay_rate: float, sensitivity:
 ##   float) -> void` — this frame's player position, velocity, `Baby.decay_rate()` and
 ##   `Baby.current_sensitivity()`, told once a frame to every candidate whether or not it was
@@ -257,6 +258,12 @@ var _baby: Baby
 ## whose size barely moves frame to frame.
 var _candidates: Array = []
 
+## Every source holding a rim at the end of the last `_process()`, as dictionary keys — what the
+## budget is counted from, carried across frames so a source that has left the candidate set (or is
+## queued for deletion) is still counted while its rim exists. Rebuilt every frame; at most
+## `EntityHalo.RIM_BUDGET` entries.
+var _holders := {}
+
 ## **The building shows what the city shows.** `events` is an event source rather than a day, the
 ## one question asked of it being `instances()`, and `crowd` may be null — so `InteriorEvents` and
 ## no crowd is a whole candidate set, and a masked man on the stairs or a steam vent in the
@@ -301,12 +308,26 @@ func setup(events: Node, crowd: Crowd, player: Node2D, baby: Baby) -> void:
 ## source whose own projection is nothing (far away, or both bodies held still) answers zero and
 ## costs nothing but the reach check `expected_gross_at()` already opens with.
 ##
-## **No more than `EntityHalo.RIM_BUDGET` rims exist at once**, because on the web a rim past the
-## renderer's sixteenth block draws nothing at all — `EntityHalo`'s class doc. The picked sources
-## always keep theirs (`MAX_SOURCES` sits under the budget); a source that has just left the picked
-## set fades out as usual while the budget has room, and is cut at once, in candidate order, once it
-## has none. A fade cut short only happens when more than the budget's worth of sources have dropped
-## out of the picked set inside one `EntityHalo.FADE_OUT_SECONDS`.
+## **No more than `EntityHalo.RIM_BUDGET` rims exist at once, and none is cut short to keep it
+## so**, because on the web a rim past the renderer's sixteenth block draws nothing at all —
+## `EntityHalo`'s class doc — and because every change a rim shows eases rather than jumps
+## (`.claude/skills/cues/SKILL.md`, the player on 2026-09-08: "all changes should transition (hue
+## and transparency) instead of immediately showing the actual value"). So a rim that has dropped
+## out of the picked set always fades all the way out, and the budget is kept on the other side: a
+## newly picked source builds its rim only while fewer than the budget exist, strongest pick first,
+## and otherwise waits — then eases in from nothing like any other rim, once a fading one has
+## finished and given its block back. `MAX_SOURCES` sits under the budget, so a wait ends within one
+## `EntityHalo.FADE_OUT_SECONDS`; it happens only when the rims still fading take up everything the
+## picked set leaves of the budget — seven or more sources dropped inside one fade while eight are
+## picked.
+##
+## **The count is taken after every block that can come back this frame has**, because the engine
+## hands a new rim its block before it releases one freed by a queued deletion (see `EntityHalo`'s
+## class doc): every unpicked source is told zero before any picked one builds, and a rim whose fade
+## is over is freed on the spot inside that call. `_holders` carries last frame's holders over,
+## so a source that has left the candidate set still counts while its rim exists — and one queued
+## for deletion (an event `EventManager` has just retired, a crowd cleared at the end of a day)
+## gives its rim back on the spot here, since its body goes before the next frame is drawn anyway.
 func _process(_delta: float) -> void:
 	if not _events or not _player or not _baby:
 		return
@@ -337,21 +358,36 @@ func _process(_delta: float) -> void:
 		# a caret, since the two cues answer different questions over different sets.
 		source.set_player_at(here, player_velocity, player_decay_rate, player_sensitivity)
 		total_expected_gross += source.expected_gross_at(here)
-	# Everything not picked first, so a rim cut to keep within the budget is freed before a newly
-	# picked source builds one: both land at the end of this frame, the free ahead of the draw that
-	# hands the new rim its block — see `EntityHalo.RIM_BUDGET`.
-	var fading_kept := 0
-	var fading_allowed := EntityHalo.RIM_BUDGET - picked.size()
+	# Every block that can come back this frame comes back before any picked source builds — see
+	# this function's doc. First the rims of last frame's holders that are being deleted anyway.
+	for source in _holders:
+		if is_instance_valid(source) and source.is_queued_for_deletion():
+			source.release_halo()
+	var holders := {}
 	for source in _candidates:
 		source.set_expected_total_gross(total_expected_gross)
 		if picked_set.has(source):
 			continue
-		var cut := false
+		source.set_halo_strength(0.0, Palette.HALO_WEAK)
 		if source.holds_a_halo():
-			cut = fading_kept >= fading_allowed
-			if not cut:
-				fading_kept += 1
-		source.set_halo_strength(0.0, Palette.HALO_WEAK, cut)
+			holders[source] = true
+	# A holder that is no longer a candidate at all still holds its block; told zero like any other
+	# unpicked source, so it fades and gives it back rather than counting against the budget forever.
+	for source in _holders:
+		if not is_instance_valid(source) or picked_set.has(source) or holders.has(source):
+			continue
+		source.set_halo_strength(0.0, Palette.HALO_WEAK)
+		if source.holds_a_halo():
+			holders[source] = true
 	for source in picked:
+		if source.holds_a_halo():
+			holders[source] = true
+	for source in picked:
+		# Strongest first, so when the budget is full it is the weakest new pick that waits.
+		if not source.holds_a_halo() and holders.size() >= EntityHalo.RIM_BUDGET:
+			continue
 		var net := net_landed(source.landed(), total_landed, decay)
 		source.set_halo_strength(magnitude_for(net), colour_for(net))
+		if source.holds_a_halo():
+			holders[source] = true
+	_holders = holders

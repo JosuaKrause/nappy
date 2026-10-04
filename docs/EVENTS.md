@@ -1719,11 +1719,14 @@ by the crowd, `ExcitementHalo.MAX_SOURCES` (8) rims of twelve re-draws apiece, w
 on screen.
 
 **A rim exists only while it is lit or fading, and never more than `EntityHalo.RIM_BUDGET` (15) at
-once.** The Web export's renderer can read the per-rim colour of only sixteen rims at a time; a rim
-built past that draws nothing at all, with no error, for as long as it lives. So an event or a
-walker builds its rim the first time it is picked and gives it back once it has faded out, and a
-source that has just dropped out of the picked set fades only while the budget has room — past it,
-its rim is cut at once. `EntityHalo`'s class doc has the engine's numbers.
+once.** The renderer can read the per-rim colour of only sixteen rims at a time, and in a browser a
+rim built past that draws nothing at all, with no error, for as long as it lives. So an event or a
+walker builds its rim the first time it is picked and gives it back, freed on the spot, once it has
+faded out. **No fade is cut short to keep within the budget**, since every change a rim shows eases
+(the cues skill, "Both channels ease rather than jump"): when the budget is full of rims still
+fading, a newly picked source waits for one of them to finish — at most one
+`EntityHalo.FADE_OUT_SECONDS` — and its rim then eases in from nothing like any other. The weakest
+new pick is the one that waits. `EntityHalo`'s class doc has the engine's numbers.
 
 **A field-sized halo, then a circle sized off `obstructs_radius`, were each built and rejected on
 screenshots before this one.** The field spanned `EventDef.outer_radius` (up to 200px against a

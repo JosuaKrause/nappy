@@ -3275,18 +3275,16 @@ func solid_axis() -> Vector2:
 ## `EventManager.instances()` for one more frame than its `contribution_at()` (already zero) would
 ## otherwise buy it.
 ##
-## **The rim is built on the first nonzero glow and freed once it has faded all the way out** — not
-## the frame the target first reaches zero, or a source that just left `MAX_SOURCES` would be cut
-## off mid-fade instead of draining over `EntityHalo.FADE_OUT_SECONDS`. `cut` frees it at once
-## instead, which `ExcitementHalo` asks for only to keep the rims alive at once within
-## `EntityHalo.RIM_BUDGET`. The same lifetime `CrowdAgent.set_halo_strength()` gives its own rim.
-func set_halo_strength(strength: float, colour: Color, cut := false) -> void:
+## **The rim is built on the first nonzero glow and given back once it has faded all the way out**
+## — not the frame the target first reaches zero, or a source that just left `MAX_SOURCES` would be
+## cut off mid-fade instead of draining over `EntityHalo.FADE_OUT_SECONDS`. The same lifetime
+## `CrowdAgent.set_halo_strength()` gives its own rim; `release_halo()` is how it is given back.
+func set_halo_strength(strength: float, colour: Color) -> void:
 	if strength <= 0.0 or is_finished:
 		if _halo:
 			_halo.set_glow(0.0, colour)
-			if cut or _halo.is_faded_out():
-				_halo.queue_free()
-				_halo = null
+			if _halo.is_faded_out():
+				release_halo()
 		return
 	if not _halo:
 		_build_halo()
@@ -3296,6 +3294,17 @@ func set_halo_strength(strength: float, colour: Color, cut := false) -> void:
 ## against `EntityHalo.RIM_BUDGET`.
 func holds_a_halo() -> bool:
 	return _halo != null
+
+## Frees the rim on the spot, never through `queue_free()`: a rim keeps its block in the web
+## renderer's instance buffer until the engine frees it, and a queued free lands at the end of the
+## frame, after any rim built in the meantime has already been handed a block — see
+## `EntityHalo.release()`. Called by `set_halo_strength()` once a fade is over, and by
+## `ExcitementHalo` for an instance queued for deletion, whose body goes before the next frame is
+## drawn anyway.
+func release_halo() -> void:
+	if _halo:
+		EntityHalo.release(_halo)
+		_halo = null
 
 # ------------------------------------------------------------------ the mark ---
 # **Nothing draws a field.** A ring communicates a falloff radius, which is a number, and a number
