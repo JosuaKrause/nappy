@@ -2691,6 +2691,8 @@ var _return_viewport: Viewport = null
 ## recipe — `DevFlags.is_rig()`) and under `_no_focus_pause` (`--no-focus-pause`), so a rig is
 ## never slowed.
 func _arm_the_return_window() -> void:
+	if OS.has_feature("web"):
+		_has_left_the_game = true  # TEMPORARY: deliberately broken to prove CI's browser job goes red
 	if not _has_left_the_game or _no_focus_pause or _rig_locked_out or _return_viewport == null:
 		return
 	_has_left_the_game = false
