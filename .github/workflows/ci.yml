@@ -411,17 +411,22 @@ jobs:
             !/docs/evidence/
 
       # RELEASE_TAG names the export's directory and the version the title screen shows; `ci-`
-      # and the commit says this export was a check and was never published.
+      # says this export was a check and was never published. Both it and the artifact below carry
+      # the commit a person looks for: the pull request's head, or the pushed commit on main. On a
+      # pull request github.sha is the merge commit CI checked out, which appears in no commit list;
+      # the export's stamped source commit is still that merge commit, since it is what was built.
       - name: Export the release build and exercise it in Chrome
         uses: ./.github/actions/web-browser-check
         with:
-          release-tag: ci-${{ github.sha }}
+          release-tag: ci-${{ github.event.pull_request.head.sha || github.sha }}
 
+      # On a failure, and on a cancellation too: the job's own timeout cancels it, and a hang (a
+      # Chrome that never answers) is when the screenshots and result.json are wanted most.
       - name: Keep the browser evidence
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v4
         with:
-          name: ci-browser-${{ github.sha }}
+          name: ci-browser-${{ github.event.pull_request.head.sha || github.sha }}
           path: ${{ runner.temp }}/browser-result
           if-no-files-found: warn
 

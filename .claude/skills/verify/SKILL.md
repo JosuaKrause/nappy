@@ -188,8 +188,10 @@ the custom template builds. CI's `browser` job exports the release build the way
 `tools/web-template/browser-check.mjs` on it — the title, keyboard play, a day save and its reload,
 day 2, days 8 and 14 booted by query, and the escape interior — so a commit that passes every
 shard but cannot start a day on the page fails `test`, and the tag ruleset refuses to release it.
-It cannot hear audio, plays no day to its end, and judges no picture: its screenshots, kept with
-`result.json` as the job's artifact when it fails, are evidence somebody has to open.
+It cannot hear audio, plays no day at full length (day 1 is won through ordinary input from a
+nearly settled baby, which reaches the summary and day 2, and days 8 and 14 are booted by query
+rather than reached), and judges no picture: its screenshots, kept with `result.json` as the job's
+artifact when it does not pass, are evidence somebody has to open.
 
 **A green `check.sh` says nothing about whether the game looks right** — headless runs never call
 `_draw()`. Real bugs found only by opening a screenshot: building extrusions overhanging every
