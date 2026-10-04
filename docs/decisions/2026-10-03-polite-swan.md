@@ -11,7 +11,7 @@ the middle of the screen on the focal row: `RUN_CENTRE_LEFT` (350, 480) and `RUN
 (930, 480) in `src/ui/touch_controls.gd`, drawn 34px in radius (`RUN_RADIUS`) and caught within
 46px (`RUN_CATCH_RADIUS`), below the 62px that would reach the 48px stop ring. The spot is the
 player's: shown four candidates on a layout picture, they chose "Inward" (inbox #477 in [quiet-yak](../playtests/2026-10-03-quiet-yak.md)) and, having
-seen it on the phone, "blue is correct" (inbox #478). It takes the "walk toward the middle" press
+seen it on the phone, "blue is correct" (inbox #478 in [quiet-yak](../playtests/2026-10-03-quiet-yak.md)). It takes the "walk toward the middle" press
 64–156px out of a ring, about a ±25° wedge, which a press further out or to the side still steers;
 it is clear of the screen-edge badge strips, the home and task arrows, the HUD meters and the pause
 button. The first build stood the buttons outward, where they took the "walk outward" press and a

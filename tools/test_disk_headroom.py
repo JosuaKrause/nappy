@@ -17,6 +17,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import test_cli_help
+
 ROOT = Path(__file__).resolve().parent.parent
 LIB = ROOT / "tools/lib_disk_headroom.sh"
 
@@ -248,6 +250,64 @@ class ToolRefusalTests(HeadroomFixture):
             self.assertIn("import 16 MiB", result.stderr)
         self.assertEqual(list(tmp.iterdir()), [])
 
+    def trailer_fixture(self) -> tuple[Path, Path, dict[str, str]]:
+        """The trailer copied into a scratch repository with a stub engine, as test_cli_help does."""
+        repo = Path(tempfile.mkdtemp(prefix="trailer-repo-", dir=self.root))
+        script, fixture_env = test_cli_help.CliHelpTests.recipe_trailer_fixture(self, repo)  # type: ignore[arg-type]
+        tmp = Path(tempfile.mkdtemp(prefix="trailer-tmp-", dir=self.root))
+        stub = {key: fixture_env[key] for key in ("GODOT", "RECIPE_CALLS", "RECIPE_RESULT")}
+        env = {**self.env, **stub, "TMPDIR": str(tmp)}
+        return script, tmp, env
+
+    def run_trailer(self, script: Path, env: dict[str, str], *arguments: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [str(script), *arguments],
+            cwd=script.parent.parent,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=120,
+        )
+
+    def test_trailer_counts_the_summed_render_seconds_of_the_shots_asked_for(self) -> None:
+        if shutil.which("jq") is None:
+            self.skipTest("trailer.sh needs jq on PATH before its preflight")
+        # The fixture's recipes each run 10 game seconds, so one shot is 10 and the list is 80.
+        for arguments, seconds in ((("--shot", "choice"), 10), ((), 80)):
+            with self.subTest(arguments=arguments):
+                script, tmp, env = self.trailer_fixture()
+                result = self.run_trailer(script, env, *arguments)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn("tools/trailer.sh: refusing to start", result.stderr)
+                self.assertIn(f"record-second 31 MiB x {seconds}", result.stderr)
+                self.assertIn("render fewer shots", result.stderr)
+                self.assertNotIn("--write-movie", (script.parent.parent / "calls").read_text())
+                self.assertEqual(list(tmp.iterdir()), [])
+
+    def test_trailer_in_the_warning_band_warns_and_renders(self) -> None:
+        if shutil.which("jq") is None:
+            self.skipTest("trailer.sh needs jq on PATH before its preflight")
+        script, _, env = self.trailer_fixture()
+        env["DF_AVAILABLE_KIB"] = str((31 * 10 + 10) * 1024)
+        result = self.run_trailer(script, env, "--shot", "choice")
+        # The stub engine cannot finish a render, so only the warning and the launch matter here.
+        self.assertIn("tools/trailer.sh: WARNING: low disk space", result.stderr)
+        self.assertNotIn("refusing", result.stderr)
+        self.assertIn("--write-movie", (script.parent.parent / "calls").read_text())
+
+    def test_trailer_validation_and_listing_ask_for_no_space(self) -> None:
+        if shutil.which("jq") is None:
+            self.skipTest("trailer.sh needs jq on PATH before its preflight")
+        script, _, env = self.trailer_fixture()
+        env["DF_AVAILABLE_KIB"] = "1024"
+        for flag in ("--list", "--validate"):
+            with self.subTest(flag=flag):
+                self.df_args.unlink(missing_ok=True)
+                result = self.run_trailer(script, env, flag)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertFalse(self.df_args.exists())
+
     def test_run_refuses_its_import_repair(self) -> None:
         if (ROOT / ".godot/global_script_class_cache.cfg").exists():
             self.skipTest("this checkout's class cache is built, so run.sh has no repair to refuse")
@@ -279,6 +339,7 @@ class ToolRefusalTests(HeadroomFixture):
             "tools/scene-recipes.sh",
             "tools/shot.sh",
             "tools/record.sh",
+            "tools/trailer.sh",
             "tools/run.sh",
             "tools/export-web.sh",
             "tools/build-web-template.sh",

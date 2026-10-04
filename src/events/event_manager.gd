@@ -695,7 +695,7 @@ func mast_foot(mast_id: String) -> Vector2:
 ## the mark she read (`ResistanceDirector._place_at_a_mast()`). *(2026-10-03, quiet-yak, inbox #486, the
 ## player: "The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
 ## harder to encounter masts. We need to discuss this again but not now. Now just add a new mast
-## close by" · inbox #503: "no events are dynamically created as you walk around -- if there is a
+## close by" · inbox #503 in quiet-yak: "no events are dynamically created as you walk around -- if there is a
 ## mast queued up that will be the next event to be generated".)* So it is not put down where the
 ## director points: it is generated the way every row the day plans is, a `loudspeaker` heated like
 ## the day's own (`GameState.resistance_progress`) placed by `EventScheduler._best_of()` among
