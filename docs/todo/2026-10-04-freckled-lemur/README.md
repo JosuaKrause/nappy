@@ -18,7 +18,7 @@ two bars, not a word); `HUD._on_event_telegraphed()` says "Double tap to run" at
 of `Tuning.RUN_TAUGHT_DAY`; `PauseScreen._BODY` and `TitleScreen._BODY` both open "Tap to walk,
 double tap to run." The symbols are the atlas regions `ui/pause` and `ui/run` that
 `TouchControls` draws (`_PAUSE_ICON`, `_RUN_ICON`). Joystick mode's run buttons are described in
-`docs/MECHANICS.md` (inbox #434: "for joystick mode a dedicated run button (one on each side next
+`docs/MECHANICS.md` (inbox #434 in [minty-hedgehog](../../playtests/2026-10-03-minty-hedgehog.md): "for joystick mode a dedicated run button (one on each side next
 to the joystick)").
 
 **What it changes.** The run line's wording was fixed on 2026-09-07 ("the movement tutorial should
@@ -30,8 +30,9 @@ here change it for joystick mode, where a run button exists. One wording for eve
 
 - "Where it makes sense" read as: the run line names the run button only in joystick mode, where
   the button is on screen; in tap mode it stays "double tap to run". The pause line shows the
-  symbol in every mode, since the pause button is always drawn. The title screen, shown before a
-  scheme is in play, follows the scheme the save holds.
+  symbol in every mode, since the pause button is always drawn. The title screen is where the
+  scheme is chosen (its joystick and tap buttons start the game in that scheme), so its body is
+  shown before there is a scheme; it keeps "double tap to run", which holds in both.
 - The symbol drawn inline in the text at the text's own height, in the text's colour, through a
   label that can place an image in a line (a `RichTextLabel` with the atlas region), so it reads
   as the same glyph the button wears.
