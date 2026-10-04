@@ -192,7 +192,7 @@ the radii"), the
 ellipse at the swing frame's base, the extent of the shadow it casts there
 (`ResistanceDirector.swing_base()`, 28 by 17px), her body has to
 touch, and day 9's crossing, which is done by going through the door and never by standing near
-it. *(2026-10-03, inbox #484, #487, #489 and #492: "the red arrows should point to the actual item -- however, the radius of
+it. *(2026-10-03, [quiet-yak](playtests/2026-10-03-quiet-yak.md), inbox #484, #487, #489 and #492: "the red arrows should point to the actual item -- however, the radius of
 acceptance should be big enough to be possible to do" · "No! Never besides the item!" · "Should
 trigger on the action not on a proximity test" · "Place an ellipse at its base. That's the area to
 touch".)*
@@ -200,7 +200,7 @@ touch".)*
 ### Risk
 
 - **A mark only ever sits at an alley's mouth**, the end tile of a through-alley or the street end
-  of a courtyard's passage, where it is drawn at dawn and wherever it moves to. *(2026-10-03, inbox #486,
+  of a courtyard's passage, where it is drawn at dawn and wherever it moves to. *(2026-10-03, [quiet-yak](playtests/2026-10-03-quiet-yak.md), inbox #486,
   asked whether a mark may sit in the middle of its alley: "Mouth only".)*
 - **Every mark is guarded**, from the day the first one can appear. Its own robber stands about
   two-thirds of the way through the mark's own alley, counted from the mark's end: inside
@@ -212,7 +212,7 @@ touch".)*
   touch reach), so reading it never lands her inside his catch. *(2026-10-03, minty-hedgehog,
   statement 3: "the robber should be 2/3rds through the alley not pressed against the edge of it" ·
   "the main reason for this is so the robber is not at the edge of the alley which makes him easier
-  visible and easier to avoid"; asked where he stands in an alley too short for both, inbox #471:
+  visible and easier to avoid"; asked where he stands in an alley too short for both, inbox #471 in [quiet-yak](playtests/2026-10-03-quiet-yak.md):
   "Two-thirds wins".)* A mark in the short passage into a
   courtyard has no other end to the alley, so its robber stands at the courtyard's inner end, as far
   from the mark as the courtyard allows and never within his catch of it: he may wake as she reads

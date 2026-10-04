@@ -1202,7 +1202,7 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 	director.free()
 
 ## feathery-marmot, "a mark only ever sits at an alley's mouth" — *"Mouth only"* (the player,
-## 2026-10-03, inbox #486, asked whether a mark may sit in the middle of its alley). Over six cities, forty dawn
+## 2026-10-03, quiet-yak, inbox #486, asked whether a mark may sit in the middle of its alley). Over six cities, forty dawn
 ## draws each (`_place()`, the call `start_day()` makes) and a relocation asked from every
 ## twentieth alley tile and from a point 300px off it in four directions (`_nearest_alley_within()`,
 ## the call every move makes): every mark lands on a mouth, found here independently of the
@@ -1266,7 +1266,7 @@ static func _is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 
 ## feathery-marmot, "the robber stands two-thirds through the alley" — *"the robber should be
 ## 2/3rds through the alley not pressed against the edge of it"* (minty-hedgehog, statement 3) and,
-## for an alley too short for that and 176px from the mark both, *"Two-thirds wins"* (inbox #471).
+## for an alley too short for that and 176px from the mark both, *"Two-thirds wins"* (quiet-yak, inbox #471).
 ## Over every through-alley tile of six cities, the guard `_guard_position()` stands for a mark
 ## (the placement `_maybe_set_a_trap()` and every relocation make) is on the alley's own axis,
 ## two-thirds of its length from the edge nearer the mark — or, where that point is within 66px of
@@ -4309,7 +4309,7 @@ func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 				queue.append(next)
 	return [edge, inside]
 
-## feathery-marmot, day 11 — *"Now just add a new mast close by"* (the player, 2026-10-03, inbox #486, on a
+## feathery-marmot, day 11 — *"Now just add a new mast close by"* (the player, 2026-10-03, quiet-yak, inbox #486, on a
 ## mark with no live mast near it). On three cities, day 11 is planned the way a played day is and
 ## its mark read standing on it: where no planned mast stands where her paths reach in the circle,
 ## the task goes to a mast the scheduler has just generated near her (`EventManager.queue_a_mast()`)
@@ -4409,7 +4409,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 			% added[0])
 
 ## feathery-marmot, day 11's queued mast — *"if there is a mast queued up that will be the next
-## event to be generated"* (inbox #503). On the test city's day 11, a stationary `reversing_lorry`
+## event to be generated"* (quiet-yak, inbox #503). On the test city's day 11, a stationary `reversing_lorry`
 ## (hard_fail, 175px field) is planned on a sidewalk, and the mast is queued with only the sidewalk
 ## inside that field to stand on: the scheduler's acceptance refuses every tile, so no mast is
 ## generated, as `_room_around()` refuses any row inside a lethal field ("Nothing else happens

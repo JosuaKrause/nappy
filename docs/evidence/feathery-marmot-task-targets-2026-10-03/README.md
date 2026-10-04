@@ -19,7 +19,7 @@ drew: `step 1 on offer at (55,64)`, the east end tile of an east-west through-al
 mouth. The alley is 256px long, so two-thirds through it from the mark's end is 155px from the
 mark: `chalk mark guarded (two-thirds in): robber 155px away`. He is the hooded figure at the left
 of the alley, waiting. That is under the 176px his trigger and the touch reach together need, so
-reading the mark from this end may wake him: "Two-thirds wins" (inbox #471).
+reading the mark from this end may wake him: "Two-thirds wins" (inbox #471 in [quiet-yak](../../playtests/2026-10-03-quiet-yak.md)).
 
 ## `seed555555-day7-van-near-the-mark.png` — the van near the mark it was read at
 

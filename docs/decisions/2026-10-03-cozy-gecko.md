@@ -14,7 +14,7 @@ identifier `checkpoint_hut`, its `EventDef.display_name`, the docs that name ide
 
 **Day 7's mark** (`src/resistance/resistance_steps.gd`) is "A van is waiting on the sidewalk.
 Don't come home empty-handed." Asked on 2026-10-03 to choose between that and "A van is waiting on
-the sidewalk. It has something for you to bring home.", the player chose the first (inbox #470:
+the sidewalk. It has something for you to bring home.", the player chose the first (inbox #470 in [quiet-yak](../playtests/2026-10-03-quiet-yak.md):
 "Empty-handed (Recommended)").
 
 **Day 8's brief** is "A van took someone from the next street before dawn.", the filer's proposal,

@@ -5,7 +5,7 @@
 
 **A further word on the topic of an open captured note is appended to that note, never captured as
 a new one, and only when the agent already knows the note.** One session captured five notes in a
-row on one topic (inbox #504 to #508), a line each. `tools/inbox.py append N --body-file F
+row on one topic (inbox #504 to #508, filed in [quiet-yak](../playtests/2026-10-03-quiet-yak.md)), a line each. `tools/inbox.py append N --body-file F
 [--context-file C]` posts the player's further words on a captured note as a comment under the same
 identity rules as `capture`; the inbox skill says to use it only for a note the agent captured or
 read this session, and never to read or search the inbox for an overlap, otherwise to capture.

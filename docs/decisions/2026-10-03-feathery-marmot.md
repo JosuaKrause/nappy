@@ -4,7 +4,7 @@
 correctly points to the van but touching the van doesn't solve the task. also, the van should spawn
 close to the mark not across the city. lastly, the robber should be 2/3rds through the alley not
 pressed against the edge of it" · "this applies to almost all tasks". On 2026-10-03, in
-conversation, captured as inbox notes: the short alley, "Two-thirds wins" (#471); "the red arrows
+conversation, captured as inbox notes (filed in [quiet-yak](../playtests/2026-10-03-quiet-yak.md), and #497 and #498 in [gray-egret](../playtests/2026-10-03-gray-egret.md)): the short alley, "Two-thirds wins" (#471); "the red arrows
 should point to the actual item -- however, the radius of acceptance should be big enough to be
 possible to do" (#484); "Add a mast near the mark" (#485); "Mouth only", "Keep off-screen", and
 "The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it harder to
@@ -102,4 +102,4 @@ shadow. The route rig, `--route mark,task
 task but day 6 on seed 4242, where it aimed at where the pacing man had been and stopped 61px from
 him. Stills are in `docs/evidence/feathery-marmot-task-targets-2026-10-03/`; the mast still was
 taken before its arrow moved onto the foot. Each day's target is to be verified in a playable scene
-once those exist (inbox #498, #499).
+once those exist (inbox #498, #499, in [gray-egret](../playtests/2026-10-03-gray-egret.md)).
