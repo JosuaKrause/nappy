@@ -1,9 +1,9 @@
 class_name ResistanceDirector
 extends Node
 ## Places the day's resistance contact, and enforces the two things that make the subquest
-## cost something: every contact is paid for in danger — a mark is guarded, and the man shouting's
-## note or the van's package sets someone on her the moment it is handed over — and a timed step
-## expires.
+## cost something: every contact is paid for in danger — a mark and a roadblock are guarded where
+## they wait, and every other task but the neighbor's sets someone on her the moment she has done
+## it — and a timed step expires.
 ##
 ## Deterministic from the run seed and the day, like everything else, so an alley that was
 ## safe on day 9 of this run is safe on day 9 of this run every time you replay it. The
@@ -146,14 +146,13 @@ var _seen_dwell := 0.0
 ## never retired for any other reason: he stands until the day ends, whether or not the mark he
 ## guards has since been read, chased her or is merely standing there still asleep.
 var _guard: EventInstance
-## The guard a perform step sited on a bare point or a row sets over its own contact (a door, a
-## mast's foot, a swing, the burnt shell, a roadblock) — tracked apart from `_guard` so activating
-## it, right behind the mark in the same `_on_contact_completed()` call, never retires the mark's
-## own guard by mistake. Set once a day and never replaced until the next `start_day()`, since
-## none of these contacts ever relocates.
+## The guard day 13's roadblock task sets over its own contact (`keeps_a_waiting_guard()`, the one
+## task that does) — tracked apart from `_guard` so activating it, right behind the mark in the
+## same `_on_contact_completed()` call, never retires the mark's own guard by mistake. Set once a
+## day and never replaced until the next `start_day()`, since the contact never relocates.
 var _task_guard: EventInstance
-## The `robber_giving_chase` or `van_guard_giving_chase` today's handed-over task set on her
-## (`_set_the_trap_on_her()`), or null before a task is handed over. Nothing here steers him — he
+## The `robber_giving_chase` or `van_guard_giving_chase` today's done task set on her
+## (`_set_the_trap_on_her()`), or null before a task is done. Nothing here steers him — he
 ## chases on his own — so this is kept only so what was set can be read back.
 var _trap: EventInstance
 ## The RNG `start_day()` was handed, kept rather than re-drawn so a guard spawned later —
@@ -403,27 +402,26 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		Telemetry.note("contact", "step %d stands %.0fpx from the mark it was read at" % [
 			_step.index, mark.distance_to(target)])
 
-	# A guard stands where a contact waits. The neighbor does not wait — they are walking home — so
-	# a robber at the spot they set out from would guard nothing. The man shouting and the van are
-	# not guarded where they wait at all: their trap comes to her once she has handed it over
-	# (`sets_a_trap_on_her()`), from wherever she did. Every other task that rides on a row — the
-	# burnt shell, a roadblock — keeps a guard waiting at the contact, exactly like a chalk mark.
+	# A guard stands where a mark or a roadblock waits (`keeps_a_waiting_guard()`). Every other task
+	# but the neighbor's is not guarded where it waits at all: its trap comes to her once she has
+	# done it (`sets_a_trap_on_her()`), from wherever she did. The neighbor does not wait — they are
+	# walking home — so a robber at the spot they set out from would guard nothing.
 	#
 	# **At dawn her position is not yet today's.** `main.gd` starts the resistance before it resets
 	# her, so `_player_position()` still answers where the previous attempt left her — often right
 	# beside this same mark, if its robber caught her — and the camera `_sight` asks is still
 	# there too. A candidate refused on either still spends its draws from `_rng`, which moves the
 	# guard and every later draw of the day, the task her reading the mark places included. So
-	# a dawn guard is kept clear of the doorstep, where the day starts her, and never asked about
-	# the screen: the day's draws follow from the run seed and the day alone, a retry included. A
-	# guard placed the instant she reads a mark asks her live position and the screen, which the
-	# route she walked decides.
+	# a dawn guard — only ever a mark's, since the last night's door, the one task offered at dawn,
+	# is not guarded — is kept clear of the doorstep, where the day starts her, and never asked
+	# about the screen: the day's draws follow from the run seed and the day alone, a retry
+	# included. A guard placed the instant she reads a mark asks her live position and the screen,
+	# which the route she walked decides.
 	#
-	# **A task that rides a body is guarded from the body, not from the point beside it**: she
-	# completes it from anywhere within `_body_touch_reach()` of the body's own centre
-	# (`ContactPoint.touches_the_body()`), and the guard's band is worked out from that, the way day
-	# 8's is from its door's wider reach.
-	if not neighbor and not sets_a_trap_on_her(_step):
+	# **A roadblock is guarded from its body, not from the point beside it**: she completes it from
+	# anywhere within `_body_touch_reach()` of the body's own centre
+	# (`ContactPoint.touches_the_body()`), and the guard's band is worked out from that.
+	if keeps_a_waiting_guard(_step):
 		var guarded_at := at
 		var guarded_reach := _contact.reach
 		if _rider and ContactPoint.has_a_body(_rider) and _step.target_kind \
@@ -575,12 +573,11 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 		return []
 	return EventScheduler._open_ground_for(fire, _map, {})
 
-## The guard. From `TRAP_FIRST_DAY` no chalk mark is ever placed without one, nor a task that sits
-## on a bare point (a door, a mast's foot, a swing, the last night's front door) or rides on a row
-## without sending its own trap after her (the burnt shell, a roadblock) — a robber drawn
-## from the band `alley_robbery`'s own numbers fix, so *always guarded* stays survivable
-## instead of a guaranteed lost day. The man shouting and the van get `_set_the_trap_on_her()`
-## instead, and the neighbor neither: see `_begin_step()`.
+## The guard. From `TRAP_FIRST_DAY` no chalk mark is ever placed without one, nor day 13's
+## roadblock (`keeps_a_waiting_guard()`) — a robber drawn from the band `alley_robbery`'s own
+## numbers fix, so *always guarded* stays survivable instead of a guaranteed lost day. Every other
+## task but the neighbor's gets `_set_the_trap_on_her()` instead, and the neighbor neither: see
+## `_begin_step()`.
 ##
 ## **A chalk mark's own guard (`for_mark`) stands about two-thirds through its alley**, counted
 ## from the end nearer the mark (`_guard_two_thirds_through()`): *"the robber should be 2/3rds
@@ -588,21 +585,19 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ## robber is not at the edge of the alley which makes him easier visible and easier to avoid"*
 ## (minty-hedgehog, statement 3), and, asked where he stands in an alley too short for two-thirds
 ## and 176px from the mark both, *"Two-thirds wins"* (quiet-yak, inbox #471). In a courtyard's passage he
-## stands at the courtyard's inner end (`_draw_guard_position_near_far_mouth()`). Every other
-## guarded contact (a door, a mast's foot, a swing, the burnt shell, a roadblock) keeps a band
-## between `inner_radius + reach` and `pursues_within + reach`, drawn from the whole circle around
-## its own contact. **`reach` is the contact's own**: `ContactPoint.REACH`, 36px, everywhere but
-## day 8's door, whose `DOOR_REACH` moves the band out with it, and a roadblock, which is touched
-## from any side of its body and is guarded from the body's centre with `_body_touch_reach()`
+## stands at the courtyard's inner end (`_draw_guard_position_near_far_mouth()`). The roadblock's
+## guard keeps a band between `inner_radius + reach` and `pursues_within + reach`, drawn from the
+## whole circle around its own contact. **`reach` is the contact's own**: a roadblock is touched
+## from any side of its body, so it is guarded from the body's centre with `_body_touch_reach()`
 ## (`_begin_step()`). The band is worked out from the reach — nearer than
 ## `inner_radius + reach` a touch from the edge of the reach can land her inside his catch, and
-## past `pursues_within + reach` no touch can wake him — so a wider reach with the old band is a
-## guard standing nearer the ground she completes from than the band means.
+## past `pursues_within + reach` no touch can wake him — so a wider reach with a narrower one's band
+## is a guard standing nearer the ground she completes from than the band means.
 ##
 ## **Retires only the guard of the same kind this replaces.** `_guard` (the mark's own) and
-## `_task_guard` (the one a guarded task — a door, a mast's foot, a swing, the burnt shell, a
-## roadblock — stands at its own contact) are separate, so reading the mark, which activates the
-## task right behind it in the same `_on_contact_completed()` call, never takes the mark's guard
+## `_task_guard` (the roadblock's, at its own contact) are separate, so reading the mark, which
+## activates the task right behind it in the same `_on_contact_completed()` call, never takes the
+## mark's guard
 ## out of the day: he stays, asleep, awake or chasing, until the day ends. A relocation of an unread
 ## mark (`_move_the_mark()`) is the one thing that retires him early, and it never runs while he is
 ## awake or any part of him is on her screen (`_track_sight_and_reposition()`). A task's guard is
@@ -610,7 +605,7 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ##
 ## **`her` and `on_screen_matters` are the caller's to give**: at dawn the doorstep and `false`,
 ## since her own position and the camera are still the previous attempt's (`_begin_step()`); in
-## the day, her live position and `true`, for a task's guard placed as she reads its mark and for
+## the day, her live position and `true`, for the roadblock's guard placed as she reads its mark and for
 ## `_move_the_mark()`'s relocation.
 func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_mark: bool,
 		her: Vector2, on_screen_matters: bool, reach := ContactPoint.REACH) -> void:
@@ -652,7 +647,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 
 ## Where `_maybe_set_a_trap()` stands a guard for the contact at `at`, without spawning him:
 ## `_draw_guard_position_near_far_mouth()` for a chalk mark, the whole-circle
-## band `_draw_guard_position()` draws for every other guarded contact, both measured from the
+## band `_draw_guard_position()` draws for the roadblock, both measured from the
 ## contact's own `reach` (see `_maybe_set_a_trap()`). `Vector2.INF` when no candidate qualifies.
 ## Split out so a rig can ask where he would stand.
 func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, her: Vector2,
@@ -674,41 +669,63 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 	return _draw_guard_position(rng, at, Vector2.INF, min_distance, max_distance,
 			walled_alleys, her, her_refuse_within, on_screen_matters)
 
-## Whether `step`'s trap comes to her rather than waiting at its contact: the man shouting
-## (`task_event_id` "homeless_yeller") and the van (`"delivery_van"`), the two tasks named at the
-## keyboard — *"spawn the robber in pursuing mode offscreen when she interacts with the yeller"*
-## for the first, PLAYTEST-144 statement 15 for the second: "After the van (day 7) a guard chases
-## her; after the man shouting, the robber, which is fine only if he starts off screen." **Not the
-## neighbor**, whose task has never been guarded — they are walking home, and a guard at the spot
-## they set out from would guard nothing — and never a chalk mark, a bare-point task, the burnt
-## shell, a roadblock or the last night, whose robber still waits at the contact
-## (`_maybe_set_a_trap()`).
-static func sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
-	return step != null and step.task_event_id in ["homeless_yeller", "delivery_van"]
+## Whether `step` is guarded where it waits rather than sending its trap after her: a chalk mark,
+## whose robber stands in its alley (`_maybe_set_a_trap()`), and day 13's roadblock, a guarded place
+## by nature whose own robber waits in a band around it. *(grassy-goose, inbox #556, asked which
+## tasks switch to a robber arriving off screen: "Every guarded target (Recommended)" — the option
+## that kept the roadblock's guard and the marks' two-thirds-in robber as they are.)*
+static func keeps_a_waiting_guard(step: ResistanceSteps.Step) -> bool:
+	return step != null and (step.is_pickup or step.task_event_id == "roadblock")
 
-## Which catalogue row `_set_the_trap_on_her()` spawns for `step`'s own task: the alley robber for
-## the man shouting, the roadblock's own guard for the van. Only ever asked once
-## `sets_a_trap_on_her(step)` is already true, so every other `task_event_id` would be a bug
-## reaching here rather than a real third case. Takes the completed step its caller already holds
-## rather than reading `_step`, so it names the right row by construction rather than by the
-## coincidence that `_step` has not yet advanced when a perform step's own handover calls it.
+## Whether `step`'s trap comes to her rather than waiting at its contact: **every task but the
+## roadblock and the neighbor**, the last night's front door included — the man shouting, the van,
+## the burnt shell, the district door, a mast's foot, the swing and the station's door. The man
+## shouting and the van first, the two named at the keyboard — *"spawn the robber in pursuing mode
+## offscreen when she interacts with the yeller"*, and PLAYTEST-144 statement 15: "After the van
+## (day 7) a guard chases her; after the man shouting, the robber, which is fine only if he starts
+## off screen" — then every other guarded target: *"the robber should spawn in off-screen already
+## pursuing when I touch the goal"*, and, asked which, "Every guarded target (Recommended)"
+## (grassy-goose, inbox #556). **Not a mark or the roadblock** (`keeps_a_waiting_guard()`), and
+## **not the neighbor**, whose task has never been guarded — they are walking home, and a guard at
+## the spot they set out from would guard nothing.
+static func sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
+	return step != null and not keeps_a_waiting_guard(step) \
+			and step.target_kind != ResistanceSteps.TargetKind.NEIGHBOR
+
+## Which catalogue row `_set_the_trap_on_her()` spawns for `step`'s own task: the roadblock's own
+## guard for the van, whose package is what he comes for, and the alley robber for every other —
+## the man shouting, the burnt shell, the district door, a mast's foot, the swing and the station's
+## door. Only ever asked once `sets_a_trap_on_her(step)` is already true. Takes the completed step
+## its caller already holds rather than reading `_step`, so it names the right row by construction
+## rather than by the coincidence that `_step` has not yet advanced when a perform step's own
+## completion calls it.
 func _trap_row_id(step: ResistanceSteps.Step) -> String:
 	return "van_guard_giving_chase" if step and step.task_event_id == "delivery_van" \
 			else "robber_giving_chase"
 
 ## **The trap comes to her.** *(2026-09-13, the player: "maybe spawn the robber in pursuing mode
-## offscreen when she interacts with the yeller so it runs towards her from offscreen".)* The moment
-## the man shouting's note or the van's package is handed over, `_trap_row_id()`'s row — the alley
-## robber for the first, the roadblock's own guard for the second, awake from its first frame — is
-## spawned off screen, usually `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) above or
+## offscreen when she interacts with the yeller so it runs towards her from offscreen"; 2026-10-04,
+## grassy-goose: "the robber should spawn in off-screen already pursuing when I touch the goal".)*
+## The moment she completes a task `sets_a_trap_on_her()` answers for — hands over the note or the
+## package, reaches the burnt building's door, crosses the district door, reaches a mast's foot or
+## the swing, or hands the key over at the station's door — `_trap_row_id()`'s row, awake from its
+## first frame, is spawned off screen, usually `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) above or
 ## below her, always far enough past the edge of the view that the screen-edge badge is up before it
-## is in it (`_draw_arrival_position()`), and comes at her. So whichever look-alike she chose, the errand costs the same: the price is
-## paid on the way out, from wherever she did it, rather than guarded at one seeded spot she could
-## avoid by picking another. The screen-edge badge announces it while it is off screen, the same
-## way it announces any pursuer (`DangerEdge._is_worth_an_arrow()`).
+## is in it (`_draw_arrival_position()`), and comes at her. So the errand's price is paid on the way
+## out, from wherever she did it, rather than guarded at one seeded spot she could walk round —
+## and for the man shouting, whichever look-alike she chose costs the same. The screen-edge badge
+## announces it while it is off screen, the same way it announces any pursuer
+## (`DangerEdge._is_worth_an_arrow()`).
+##
+## **On the last night it chases her away from the station.** The hand-over is the sabotage, and
+## the day still has to be won by walking home under the blackout before it goes on to the escape
+## (`GameState.earned_good_ending()`), so being caught there loses day 14 like any other catch,
+## and a lost day gives the sabotage back with the rest of what the attempt spent, so the retry
+## starts at the station's door again.
 ##
 ## From `TRAP_FIRST_DAY`, like the guard. Where she is, or the contact she has just touched when
-## no player is in the tree (a bare director in a rig): she is within `ContactPoint.REACH` of it.
+## no player is in the tree (a bare director in a rig): she is within the contact's own reach of
+## it, or crossing its door.
 ## Nothing is spawned when `_draw_arrival_position()` finds no ground, which the run log says.
 func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 	if _day < TRAP_FIRST_DAY or not _city or not _city.events:
@@ -753,9 +770,11 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 ##
 ## **A clear run at her is what decides it**, since he chases in a straight line
 ## (`EventInstance._chase()`), sliding along whatever wall is in the way: a start behind a building
-## is a man stuck against its back wall while the badge says he is coming. On a minority of
-## handovers there is no clear run from above or below — she is on a street that runs sideways,
-## with no crossing street near enough — and **then he comes along her own street**, straight left
+## is a man stuck against its back wall while the badge says he is coming. On a minority of the
+## man shouting's handovers there is no clear run from above or below — she is on a street that runs
+## sideways, with no crossing street near enough — and on most at a door on a facade (the burnt
+## building's, the station's), where the building stands straight above her
+## (`tests/probes/grassy_goose_target_traps.gd`); **then he comes along her own street**, straight left
 ## or right at `beside_distance()` (about 466px), past the badge line sideways. From there walking
 ## directly away outlasts his notice and chase, which is the price of a start the wider view needs;
 ## standing still or walking into him is still caught. Only when neither has a clear run does the
@@ -873,10 +892,11 @@ func _a_clear_run(from: Vector2, to: Vector2) -> bool:
 ## placed inside a building": his lethal radius travels with him, so a bearing that lands him in
 ## a building is an invisible fatal spot rather than a cosmetic one.
 ##
-## **Used for every guarded contact but a chalk mark's own**, drawn from the whole circle: the
-## director always passes `toward` as `Vector2.INF` (a rig may pass a point to lean the bearing to
-## the half-circle facing it), and `_guard_position()` sends a mark's own guard to
-## `_draw_guard_position_near_far_mouth()` instead. An `ALLEY` tile by preference, since the
+## **Used for the roadblock's guard, the one guarded contact that is not a chalk mark**, drawn
+## from the whole circle: the director always passes `toward` as `Vector2.INF` (a rig may pass a
+## point to lean the bearing to the half-circle facing it), and `_guard_position()` sends a mark's
+## own guard two-thirds through its alley or to `_draw_guard_position_near_far_mouth()` instead,
+## falling back here only for a mark with neither. An `ALLEY` tile by preference, since the
 ## row's own placement is `ALLEY`, but not a requirement: the band this draws from can reach well
 ## past a two-tile-wide alley's own building line, so an alley hit is kept the moment it is found
 ## and any other walkable, unheld, off-the-home-block tile is kept as a fallback in case the
@@ -1175,7 +1195,7 @@ func _courtyard_inner_end(at: Vector2, entrance: Vector2i) -> Vector2:
 
 ## The far end of the mark's alley from `at` — the far end tile of a through-alley, or the inner
 ## end of a courtyard past a passage (`_alley_ends()`) — or `Vector2.INF` when `at` is on no
-## `ALLEY` ground, which a mark never is and every other guarded contact always is. A courtyard
+## `ALLEY` ground, which a mark never is and the roadblock always is. A courtyard
 ## mark's guard stands there, or as near it as the ground allows
 ## (`_draw_guard_position_near_far_mouth()`); a through-alley mark's stands two-thirds through
 ## (`_guard_two_thirds_through()`).
@@ -2055,10 +2075,11 @@ func _tick_lingering_rider(delta: float) -> void:
 ## completes the step. A one-place step (`Step.is_one_place`) never runs this: its rider is the
 ## task.
 ##
-## **Nothing guards the seeded rider, so nothing is lost by leaving it.** Such a task's trap comes
-## to her at the handover from wherever it happens (`sets_a_trap_on_her()`), and `_process()`'s
-## own deadline check reads `_elapsed` against `_day_length` — neither reads `_rider`'s identity,
-## so retargeting onto a different look-alike changes nothing about either rule.
+## **Retargeting changes neither price.** The man shouting's trap comes to her at the handover
+## from wherever it happens (`sets_a_trap_on_her()`); the roadblock's guard stands where the
+## seeded one put him (`keeps_a_waiting_guard()`) and is not moved when she picks another; and
+## `_process()`'s own deadline check reads `_elapsed` against `_day_length` — none of them reads
+## `_rider`'s identity.
 ##
 ## Skipped while the nearest look-alike in reach is already the one it rides (`best == _rider`):
 ## a rider with a body is touched from any side of it (`ContactPoint.touches_the_body()`), and one
@@ -2295,8 +2316,8 @@ func _on_contact_completed(step_index: int) -> void:
 	# reached the swing, and stays taken — see `ResistanceHappenings.take_the_park()`.
 	if step and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
 		_happenings.take_the_park()
-	# The man shouting and the van send a pursuer after her from off screen; every other task
-	# that rides on a row keeps its guard waiting at the contact instead (`_begin_step()`).
+	# Every task but the roadblock and the neighbor sends a pursuer after her from off screen; the
+	# roadblock keeps its guard waiting at the contact instead (`_begin_step()`).
 	if step and sets_a_trap_on_her(step):
 		_set_the_trap_on_her(step)
 	if not (step and step.needs_goal):

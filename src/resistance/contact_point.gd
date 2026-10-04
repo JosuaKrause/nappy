@@ -29,8 +29,9 @@ var step: ResistanceSteps.Step
 var is_done := false
 ## How close she must be for this contact's touch to complete: `REACH` for a bare point with no
 ## size of its own (a chalk mark), `ResistanceDirector.DOOR_REACH` for a door on a facade (day 8's,
-## the last night's), the mast's body reach on day 11 — and how far out the guard's band is worked
-## from for all of them (`ResistanceDirector._maybe_set_a_trap()`).
+## the last night's), the mast's body reach on day 11 — and, for a chalk mark, how far out its
+## guard's band is worked from (`ResistanceDirector._maybe_set_a_trap()`; the roadblock's guard is
+## worked from its body's own reach instead).
 var reach := REACH
 ## Non-zero for a touch that is an area on the ground rather than a circle: the semi-axes of an
 ## ellipse centred on this contact, which her body has to overlap — day 12's swing, whose base it

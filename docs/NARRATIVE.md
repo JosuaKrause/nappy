@@ -136,8 +136,8 @@ it changes hands: he stays and keeps shouting for a couple of seconds first, sti
 the whole time, so walking away from him afterward costs about what an ordinary pass past him
 does — asked how an instant handover should still cost something, the player answered: "he keeps
 shouting for a bit." That is one of two costs at day 6's own handover, not the whole of it: the
-man shouting is also one of the two tasks that sends someone after her the moment she hands it
-over — see "Risk" below. Only completing the task itself grants **1 resistance progress**; the
+man shouting's note, like almost every task, also sends someone after her the moment she hands
+it over — see "Risk" below. Only completing the task itself grants **1 resistance progress**; the
 mark is the note, not the errand. Reaching `Tuning.RESISTANCE_GOAL` (five) tasks earns the chance
 at the good ending; the day-14 sabotage is the act on top of it — see "The finale" below.
 
@@ -221,34 +221,39 @@ touch".)*
   first.")* That robber is the one thing standing on calm ground she has not used this act, which
   the day's events otherwise leave alone (`EventScheduler._calm_to_leave_alone`): the courtyard
   behind a guarded passage mark is no place to settle the baby that day until she has lured him
-  out. The player approved exactly this spot (2026-09-27, crisp-moose, statement 3). Every other
-  guarded contact — a door, a mast's foot, a swing, the burnt shell, a roadblock — keeps a robber
-  somewhere between 62px and 176px of it instead, measured from the ground it is touched from, so a
-  roadblock's, touched from any side of its band, stands that far beyond the band's own reach:
-  inside that band touching it is death, always;
+  out. The player approved exactly this spot (2026-09-27, crisp-moose, statement 3). The roadblock,
+  the one task guarded where it waits, keeps a robber somewhere between 62px and 176px of it
+  instead, measured from the ground it is touched from — touched from any side of its band, so he
+  stands that far beyond the band's own reach: inside that band touching it is death, always;
   above it he never wakes at all; between them, which side the player approaches from decides
   whether he notices them. Seeded from the run and the day, so the distance or the alley that was
   safe on day 9 of this run is safe on day 9 every time you replay it — the pattern is learnable,
   which is the difference between risk and a coin flip.
-- **Two tasks send someone after her rather than guarding where she finds them.** The man shouting
-  and the van's package are not guarded at the contact. The moment she hands either over, someone
-  is sent after her from off screen — usually from above or below her,
-  `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) away, far enough past the edge of the view that the
-  screen-edge badge announces them before they are in it — awake and running at her from the first
-  frame. The man shouting's note sends the alley robber himself; the van's package sends the
-  roadblock's own guard, the same look and the same rules. The warning is short: standing still,
-  whoever comes reaches her about two seconds after the badge rises. Running shakes them off;
-  walking away does not, except where they have to come along her own street from the side, which
-  is further off. Whichever look-alike she chose for the man shouting, the price is the same, and
-  it is paid on the way out rather than guarded at one spot she could avoid by choosing another.
-  *(2026-09-13: "maybe spawn the robber in pursuing mode offscreen when she interacts with the
-  yeller so it runs towards her from offscreen." PLAYTEST-144, statement 15: "After the van (day 7)
-  a guard chases her; after the man shouting, the robber, which is fine only if he starts off
-  screen.")* Every other
-  task that rides on something in the street or sits on a bare point — the burnt shell, a
-  roadblock, the district door, a mast's foot, the swing, the last night's front door — keeps a
-  robber waiting near it, as a mark does; the neighbor's has neither, since they are walking home
-  and there is no one spot to guard.
+- **Every other task sends someone after her rather than guarding where she finds it.** The man
+  shouting, the van's package, the burnt building's door, the district door, a mast's foot, the
+  swing and the last night's front door are not guarded at the contact. The moment she has done
+  one — handed the note or the package over, reached the door, crossed the district door, reached
+  the mast's foot or the swing, handed the key over — someone is sent after her from off screen,
+  `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) above or below her where there is a straight run at her
+  from there, far enough past the edge of the view that the screen-edge badge announces them before
+  they are in it, and awake and running at her from the first frame. The van's package sends the
+  roadblock's own guard, the same look and the same rules; every other task sends the alley robber
+  himself. The warning is short: standing still, whoever comes reaches her about two seconds after
+  the badge rises. Running shakes them off; walking away does not, except where they have to come
+  along her own street from the side, which is further off — and at a door on a facade, with the
+  building behind her and the next block across the street, that is the usual case. Whichever
+  look-alike she chose for the man shouting, the price is the same, and every task's price is paid
+  on the way out rather than guarded at one spot she could walk round. On the last night it
+  chases her away from the station: the day is still won by getting home, so being caught there
+  loses the night and gives the sabotage back with it. *(2026-09-13: "maybe spawn the robber in
+  pursuing mode offscreen when she interacts with the yeller so it runs towards her from
+  offscreen." PLAYTEST-144, statement 15: "After the van (day 7) a guard chases her; after the man
+  shouting, the robber, which is fine only if he starts off screen." 2026-10-04,
+  [grassy-goose](playtests/2026-10-04-grassy-goose.md): "the robber should spawn in off-screen
+  already pursuing when I touch the goal"; asked which tasks, "Every guarded target
+  (Recommended)".)* The roadblock keeps the robber waiting near it described above, a guarded place
+  by nature; the neighbor's task has neither, since they are walking home and there is no one spot
+  to guard.
 - **The any-instance contact is whichever look-alike the player hands the note to.** It does
   not wait at the one instance the day happened to seed; it rides onto whichever live
   look-alike — a `homeless_yeller` or a `roadblock` — the player is within reach of, and follows
