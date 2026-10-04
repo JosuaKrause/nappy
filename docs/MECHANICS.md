@@ -976,6 +976,17 @@ would. It is not a body — a pursuer stays exempt from `obstructs_radius` for t
 `dog_walker` is, a moving wall on a two-tile pavement pins her against a building — it is only ever
 a question about the one tile the next step would land on.
 
+**Nor does it reach through them: it catches her only by touching her.** *(freckled-goose, #544:
+"Only if the Robert touches the player should it end instantly".)* A pursuer's catch is its reach
+**and** a clear line — `EventInstance.is_lethal_at()` asks `_clear_line_to()` whether the straight
+line from it to her crosses any ground `CityMap.is_walkable()` refuses, every tile the line enters,
+so within reach across a building's corner is not a catch. **Its lunge does not ask**: it still
+fires at the stand-off with a building between them, and the chase comes round the wall. Holding the
+lunge until the line clears would clamp the approach at zero — at an alley mouth his notice reaches
+her through the building, the line clears with her already well inside the stand-off, and the lunge
+would fire from a fraction of it. The reach itself is unchanged, and only a pursuer asks — every
+other `hard_fail` row's catch is still the straight-line distance.
+
 ### The stand-off, and what a contract in seconds cannot say
 
 **A contract stated entirely in speeds and durations can pass every line of itself while the dog is
@@ -988,7 +999,7 @@ after the first second.
 Two rules answer it, and they are the same rule twice: the contract restated as geometry.
 
 - **`Tuning.pursuit_standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
-  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `lunge_reach`, so his stand-off is 116px) and *holding* it, backing off if she walks in, because she will: it is sited in
+  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `lunge_reach`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
   front of her and forward is where she was going. Clamping the approach at zero instead leaves the
   contract true of the dog and false of the encounter — it stands politely still while she closes
   the gap herself.

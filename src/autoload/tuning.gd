@@ -1973,7 +1973,7 @@ const PURSUIT_SHAKEN_OFF := 0.35
 ##
 ## **The edge case it does not price, and it is a known gap.** At the instant of the lunge she is
 ## usually walking *into* it — a pursuer is sited in front of her, forward is where she was going,
-## and the stand-off is held by the thing backing off rather than by her stopping — so the gap closes
+## and it is her walking into the stand-off that fires the lunge rather than her stopping — so the gap closes
 ## at `pursue_speed + WALK_SPEED` and the notice is worth about a third of what this buys. Reversing
 ## a walk into a run costs another `(WALK_SPEED + RUN_SPEED) / ACCELERATION` seconds on top, during
 ## which the thing keeps coming. Measured against the day-3 dog the real window is about **two tenths

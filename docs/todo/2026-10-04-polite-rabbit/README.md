@@ -28,11 +28,5 @@ two ways: the robber's field only, or every source's field (a man shouting, a do
 building stands between them and her. The second changes what every route costs and falls under
 the **balance** rules; ask the player which before building it.
 
-**Proposed, not asked for:**
-
-- "Touches her" read as: his body and hers in contact, which is the existing catch reach with a
-  clear line between them added, so no catch across a wall, a building corner or a fence; the 26px
-  is not changed.
-- "Behind a wall" read as: the straight line between him and her crossing an unwalkable tile.
-- The lunge from behind a wall: he does not start a lunge at her across a wall either, since the
-  lunge ends in a catch.
+The catch through a wall is built ([polite-rabbit](../../decisions/2026-10-04-polite-rabbit.md));
+what is left is the excitement half, waiting on its scope.
