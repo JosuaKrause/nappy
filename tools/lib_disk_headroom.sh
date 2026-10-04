@@ -6,11 +6,12 @@
 # before the first byte of the batch is written. It compares the space the volume holding
 # DESTINATION has available (`df -Pk`, on DESTINATION's nearest existing ancestor, since a build
 # directory need not exist yet) with the batch's estimated peak, and with that peak plus a reserve.
-# Three bands *(2026-10-04, inbox #496: "Yes tool should warm and only refuse if it's not
+# Three bands *(2026-10-03, inbox #496: "Yes tool should warm and only refuse if it's not
 # possible")*:
-#   - below the estimated peak the batch cannot finish, so it refuses: it names the available
-#     space, the shortfall, the smaller-batch step HINT (empty when there is none) and the cleanup
-#     action on stderr and returns 1, and the caller writes `headroom_preflight ... || exit 1`;
+#   - below the estimated peak -- an upper bound, so the batch may not finish rather than certainly
+#     cannot -- it refuses: it names the available space, the shortfall, the smaller-batch step
+#     HINT (empty when there is none) and the cleanup action on stderr and returns 1, and the
+#     caller writes `headroom_preflight ... || exit 1`;
 #   - at or above the peak but below peak plus reserve it fits, but would leave the disk in the
 #     range where the player's warnings appear, so it prints a warning naming the same figures and
 #     the cleanup action, and returns 0 so the batch runs;
@@ -177,7 +178,7 @@ headroom_preflight() {
     fi
     if (( available < peak )); then
         {
-            echo "$tool: refusing to start: not enough free disk space for this batch to finish."
+            echo "$tool: refusing to start: this batch's estimated peak (an upper bound) does not fit, so it may not finish."
             echo "  volume holding $destination: $available MiB available"
             echo "  needed: estimated peak $peak MiB ($parts)"
             echo "  short by: $(( peak - available )) MiB, before the $reserve MiB reserve"
