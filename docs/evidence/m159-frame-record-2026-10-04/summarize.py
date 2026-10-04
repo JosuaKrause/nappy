@@ -1,6 +1,7 @@
 """Print the tables of a measure.py run from its results.json: frame-time distributions per
 condition for the cost part, and the frame record's slow-frame split for the modes part."""
 
+import gzip
 import json
 import statistics
 import sys
@@ -93,11 +94,50 @@ def mode_tables(results):
             print(f"| {condition} | {total} | {split} | " + " | ".join(cells) + " |")
 
 
+JOB_COLUMNS = ["jobs_ground", "jobs_building", "jobs_prop", "jobs_shadow", "jobs_decal",
+               "guard_preparations"]
+
+
+def slow_frames_after_load(results, folder):
+    """Slow frames past the first two seconds of play (the day's load is the first frame kept),
+    and how many had a scenery job in their own frame or in the five before it."""
+    runs = accepted(results, "modes")
+    if not runs:
+        return
+    print("\n### Slow frames after the day's load, against recent scenery jobs\n")
+    print("| mode | run | slow after 2s | job in the same frame | job 1-5 frames before | "
+          "frames with a job | frames |")
+    print("|---|---|---:|---:|---:|---:|---:|")
+    for entry in sorted(runs, key=lambda entry: (entry["condition"], entry["trial"])):
+        path = folder / f"{entry['label']}.record.json.gz"
+        if not path.exists():
+            print(f"| {entry['condition']} | {entry['trial']} | (recording not kept) |||||")
+            continue
+        data = json.loads(gzip.decompress(path.read_bytes()))
+        columns = {name: index for index, name in enumerate(data["columns"])}
+        rows = data["rows"]
+        start = rows[0][columns["start_usec"]]
+        has_job = [sum(row[columns[name]] for name in JOB_COLUMNS) > 0 for row in rows]
+        same = before = slow = 0
+        for index, row in enumerate(rows):
+            if not row[columns["slow"]] or row[columns["start_usec"]] - start < 2000000:
+                continue
+            slow += 1
+            if has_job[index]:
+                same += 1
+            elif any(has_job[max(0, index - 5):index]):
+                before += 1
+        print(f"| {entry['condition']} | {entry['trial']} | {slow} | {same} | {before} | "
+              f"{sum(has_job)} | {len(rows)} |")
+
+
 def main():
-    results = json.loads(Path(sys.argv[1]).read_text())
+    path = Path(sys.argv[1])
+    results = json.loads(path.read_text())
     rejected = [entry for entry in results if entry.get("rejected")]
     cost_tables(results)
     mode_tables(results)
+    slow_frames_after_load(results, path.parent)
     if rejected:
         print("\n### Rejected captures\n")
         for entry in rejected:

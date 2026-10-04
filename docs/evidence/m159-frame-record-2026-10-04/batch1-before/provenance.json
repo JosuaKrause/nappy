@@ -1,0 +1,166 @@
+{
+  "command": [
+    "docs/evidence/m159-frame-record-2026-10-04/measure.py",
+    "--branch",
+    ".",
+    "--main",
+    "../m159-measure-main",
+    "--output",
+    "/tmp/m159-measure-run1",
+    "--godot",
+    "/Applications/Godot.app/Contents/MacOS/Godot"
+  ],
+  "godot": "/Applications/Godot.app/Contents/MacOS/Godot",
+  "identity": {
+    "branch": {
+      "revision": "c3041d98d675dce92550facfd4d0b1bb6472b002",
+      "runtime_sha256": "5b9962c82259470720f854be39ad36f6907c16782c69051492720c9fd75a5d3b",
+      "collector_sha256": {
+        "src/telemetry/frame_trace.gd": "32af6b2b35d85ab5edd0a3d935f69898d95aa533dceac7dd4bfdda6c9fe0935e",
+        "src/telemetry/frame_trace_buffer.gd": "2729fdd8ee168fba65934eab0f662e96878641140939ecf45909cd1cc762dac0"
+      }
+    },
+    "main": {
+      "revision": "8008980567cd7139cf95c6f314e6eb1c5bd73da5",
+      "runtime_sha256": "a5bd24c5ef9194db545c450ff7e00d80c33ff84000d3a3d6ef504e9811fbb8e8",
+      "collector_sha256": {
+        "src/telemetry/frame_trace.gd": "32af6b2b35d85ab5edd0a3d935f69898d95aa533dceac7dd4bfdda6c9fe0935e",
+        "src/telemetry/frame_trace_buffer.gd": "2729fdd8ee168fba65934eab0f662e96878641140939ecf45909cd1cc762dac0"
+      }
+    }
+  },
+  "walk": "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+  "after_seconds": 70,
+  "schedule": [
+    [
+      "cost",
+      "main-off",
+      "warmup"
+    ],
+    [
+      "cost",
+      "branch-off",
+      "warmup"
+    ],
+    [
+      "cost",
+      "branch-on",
+      "warmup"
+    ],
+    [
+      "cost",
+      "main-off",
+      "r1"
+    ],
+    [
+      "cost",
+      "branch-off",
+      "r1"
+    ],
+    [
+      "cost",
+      "branch-on",
+      "r1"
+    ],
+    [
+      "cost",
+      "branch-off",
+      "r2"
+    ],
+    [
+      "cost",
+      "branch-on",
+      "r2"
+    ],
+    [
+      "cost",
+      "main-off",
+      "r2"
+    ],
+    [
+      "cost",
+      "branch-on",
+      "r3"
+    ],
+    [
+      "cost",
+      "main-off",
+      "r3"
+    ],
+    [
+      "cost",
+      "branch-off",
+      "r3"
+    ],
+    [
+      "cost",
+      "main-off",
+      "r4"
+    ],
+    [
+      "cost",
+      "branch-off",
+      "r4"
+    ],
+    [
+      "cost",
+      "branch-on",
+      "r4"
+    ],
+    [
+      "cost",
+      "branch-off",
+      "r5"
+    ],
+    [
+      "cost",
+      "branch-on",
+      "r5"
+    ],
+    [
+      "cost",
+      "main-off",
+      "r5"
+    ],
+    [
+      "modes",
+      "mode2",
+      "warmup"
+    ],
+    [
+      "modes",
+      "mode1",
+      "warmup"
+    ],
+    [
+      "modes",
+      "mode2",
+      "r1"
+    ],
+    [
+      "modes",
+      "mode1",
+      "r1"
+    ],
+    [
+      "modes",
+      "mode1",
+      "r2"
+    ],
+    [
+      "modes",
+      "mode2",
+      "r2"
+    ],
+    [
+      "modes",
+      "mode2",
+      "r3"
+    ],
+    [
+      "modes",
+      "mode1",
+      "r3"
+    ]
+  ]
+}
