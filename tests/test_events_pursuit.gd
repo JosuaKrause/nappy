@@ -31,9 +31,10 @@ func run(t) -> void:
 	_test_a_pursuer_stops_at_walls(t)
 	_test_the_robbers_lunge_is_further_out_than_his_catch(t)
 	_test_the_robber_does_not_catch_her_through_a_wall(t)
-	_test_the_robber_does_not_lunge_at_her_through_a_wall(t)
+	_test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t)
 	_test_the_robber_catches_her_by_coming_round_the_corner(t)
 	_test_a_clear_line_is_every_tile_the_line_crosses(t)
+	_test_a_clear_line_at_a_corner_an_edge_and_its_own_start(t)
 
 
 func _instance(t, def: EventDef, at := Vector2.ZERO,
@@ -834,10 +835,16 @@ func _test_the_robber_does_not_catch_her_through_a_wall(t) -> void:
 	t.check(instance.is_lethal_at(in_the_mouth), "and with nothing between them, he catches her")
 	instance.free()
 
-## **He does not lunge at her across a wall either**, since the lunge ends in a catch. Inside his
-## stand-off with the building between them he holds his ground through his notice rather than
-## lunging; the moment the line between them is clear, he lunges.
-func _test_the_robber_does_not_lunge_at_her_through_a_wall(t) -> void:
+## **A wall between them does not hold his lunge back, so a walk past an alley keeps its notice.**
+## The robber waits in the alley 20, 40, 60 and 90px back from the mouth; she walks along the
+## sidewalk toward it at `WALK_SPEED`, 14px off the building's face, and on past. His 140px notice
+## reaches her through the building, so he notices her, closes and lunges with the building still
+## between them, from his stand-off, as he does in the open — a lunge held until the line cleared
+## would fire from a fraction of the stand-off with her almost in the mouth. What the stand-off
+## contract owes her is checked as walked: the lunge from about the stand-off, and at least
+## `PURSUIT_REACTION` from the lunge to the catch. And he still never catches her through the
+## corner: every frame that catches has a clear sampled line.
+func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 	var map := _map()
 	var mouth := _an_alley_mouth(map)
 	if mouth.is_empty():
@@ -846,25 +853,38 @@ func _test_the_robber_does_not_lunge_at_her_through_a_wall(t) -> void:
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
 	var def := EventCatalogue.by_id("alley_robbery")
-	var instance := _instance(t, def, corner + d1 * 1.0 - d2 * 28.0)
-	instance._map = map
-	var standing := instance.position
-	var behind_the_wall := corner - d1 * 28.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
-	t.check(standing.distance_to(behind_the_wall) < standoff,
-			"she is inside his stand-off in a straight line (%.1fpx < %.1fpx)"
-			% [standing.distance_to(behind_the_wall), standoff])
-	instance.player_at = behind_the_wall
-	instance._process(STEP)
-	t.check(not instance.is_waiting(), "he notices her")
-	_advance(instance, def.telegraph_time * 0.5)
-	t.check(instance.is_telegraphing(), "and does not lunge with the building between them")
-	t.close_to(instance.position.distance_to(standing), 0.0, "he holds his ground", 0.5)
-	t.check(not instance.is_lethal_at(behind_the_wall), "and cannot end her day from there")
-	instance.player_at = corner + d1 * 14.0 + d2 * 14.0
-	instance._process(STEP)
-	t.check(not instance.is_telegraphing(), "she steps into the mouth: the line is clear and he lunges")
-	instance.free()
+	for back in [20.0, 40.0, 60.0, 90.0]:
+		var instance := _instance(t, def, corner + d1 * 16.0 - d2 * back)
+		instance._map = map
+		var her := corner - d1 * 300.0 + d2 * Tuning.PLAYER_BODY_RADIUS
+		var elapsed := 0.0
+		var lunged_at := INF
+		var lunge_range := INF
+		var caught_at := INF
+		var through_a_wall := 0
+		while elapsed < 8.0 and caught_at == INF and not instance.is_finished:
+			her += d1 * Tuning.WALK_SPEED * STEP
+			instance.player_at = her
+			instance._process(STEP)
+			elapsed += STEP
+			if lunged_at == INF and not instance.is_waiting() and not instance.is_telegraphing():
+				lunged_at = elapsed
+				lunge_range = instance.global_position.distance_to(her)
+			if instance.is_lethal_at(her):
+				caught_at = elapsed
+				if not _sampled_line_is_walkable(map, instance.global_position, her):
+					through_a_wall += 1
+		t.check(lunged_at != INF and caught_at != INF,
+				"%dpx into the alley: he lunges and catches her as she walks past" % int(back))
+		t.check(lunge_range >= standoff - 6.0,
+				"%dpx in: he lunges from about his stand-off (%.1fpx of %.1fpx)"
+				% [int(back), lunge_range, standoff])
+		t.check(caught_at - lunged_at >= Tuning.PURSUIT_REACTION,
+				"%dpx in: she has her reaction time between his lunge and his catch (%.2fs)"
+				% [int(back), caught_at - lunged_at])
+		t.check(through_a_wall == 0, "%dpx in: and he never catches her through the corner" % int(back))
+		instance.free()
 
 ## **To catch her round a corner he has to come round it.** She stands on the sidewalk just round
 ## the building from him, inside his catch in a straight line, and he chases: he slides along the
@@ -942,3 +962,43 @@ func _test_a_clear_line_is_every_tile_the_line_crosses(t) -> void:
 	t.check(blocked > 40, "the sweep crossed buildings (%d of %d)" % [blocked, asked])
 	t.check(disagreed == 0, "stepping tiles and sampling agree on every line (%d did not)" % disagreed)
 	instance.free()
+
+## A 10×10 map of sidewalk with the given tiles built on, for the stepper's exact cases.
+func _a_small_map(buildings: Array[Vector2i]) -> CityMap:
+	var map := CityMap.new(Vector2i(10, 10))
+	map.fill_rect(Rect2i(0, 0, 10, 10), GameEnums.TileType.SIDEWALK)
+	for tile in buildings:
+		map.set_tile(tile, GameEnums.TileType.BUILDING)
+	return map
+
+func _clear_on(t, map: CityMap, from: Vector2, to: Vector2) -> bool:
+	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), from)
+	instance._map = map
+	var clear := instance._clear_line_to(to)
+	instance.free()
+	return clear
+
+## **The cases a random sweep never lands on, each on exact binary fractions so the arithmetic is
+## exact.** A 45° line through a tile vertex, (80, 80) to (112, 112) through (96, 96), crosses both
+## axes at once: a building on either tile beside the vertex blocks it, the x-side one (3, 2) and
+## the y-side one (2, 3) asked separately, since stepping one axis and then the other visits only one
+## of them. A line ending exactly on a tile's edge, (64, 80) to (128, 80), ends on the building
+## beyond the edge (4, 2), since a point on an edge is the tile it opens (`world_to_tile()` floors),
+## so its last crossing, at exactly the whole of the segment, is asked. A line starting on a
+## building is blocked though it crosses into open ground. A line inside one open tile is clear.
+func _test_a_clear_line_at_a_corner_an_edge_and_its_own_start(t) -> void:
+	var through_the_vertex := [Vector2(80.0, 80.0), Vector2(112.0, 112.0)]
+	t.check(_clear_on(t, _a_small_map([]), through_the_vertex[0], through_the_vertex[1]),
+			"a line through an open vertex is clear")
+	t.check(not _clear_on(t, _a_small_map([Vector2i(3, 2)]), through_the_vertex[0],
+			through_the_vertex[1]), "a building on the x side of the vertex blocks the line")
+	t.check(not _clear_on(t, _a_small_map([Vector2i(2, 3)]), through_the_vertex[0],
+			through_the_vertex[1]), "a building on the y side of the vertex blocks the line")
+	t.check(not _clear_on(t, _a_small_map([Vector2i(4, 2)]), Vector2(64.0, 80.0),
+			Vector2(128.0, 80.0)), "a line ending exactly on a building's edge is blocked")
+	t.check(_clear_on(t, _a_small_map([Vector2i(4, 2)]), Vector2(64.0, 80.0),
+			Vector2(127.5, 80.0)), "and half a pixel short of it is clear")
+	t.check(not _clear_on(t, _a_small_map([Vector2i(2, 2)]), Vector2(80.0, 80.0),
+			Vector2(100.0, 80.0)), "a line starting on a building is blocked")
+	t.check(_clear_on(t, _a_small_map([]), Vector2(66.0, 66.0), Vector2(90.0, 90.0)),
+			"a line inside one open tile is clear")

@@ -980,11 +980,12 @@ a question about the one tile the next step would land on.
 "Only if the Robert touches the player should it end instantly".)* A pursuer's catch is its reach
 **and** a clear line — `EventInstance.is_lethal_at()` asks `_clear_line_to()` whether the straight
 line from it to her crosses any ground `CityMap.is_walkable()` refuses, every tile the line enters,
-so within reach across a building's corner is not a catch. Its lunge asks the same: inside its
-stand-off with a building between them it holds its ground through its notice, and lunges the moment
-the line is clear; if the notice runs out first, the chase comes round the wall like any other. The
-reach itself is unchanged, and only a pursuer asks — every other `hard_fail` row's catch is still the
-straight-line distance.
+so within reach across a building's corner is not a catch. **Its lunge does not ask**: it still
+fires at the stand-off with a building between them, and the chase comes round the wall. Holding the
+lunge until the line clears would clamp the approach at zero — at an alley mouth his notice reaches
+her through the building, the line clears with her already well inside the stand-off, and the lunge
+would fire from a fraction of it. The reach itself is unchanged, and only a pursuer asks — every
+other `hard_fail` row's catch is still the straight-line distance.
 
 ### The stand-off, and what a contract in seconds cannot say
 

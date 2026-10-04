@@ -1893,23 +1893,22 @@ func _chase(delta: float) -> void:
 		# and it neither lunges early nor backs off — it holds its ground while she is nearer than
 		# the stand-off and follows at it once she is further.
 		#
-		# **And not across a wall**, since the lunge ends in a catch (see `is_lethal_at()`): inside
-		# its stand-off with a building between them it holds its ground, neither lunging nor backing
-		# off, and lunges the moment the line between them is clear. The notice's own clock still
-		# ends it, and from there the chase comes round the wall like any other.
+		# **A wall between them does not hold the lunge back.** Only the catch asks for a clear line
+		# (`is_lethal_at()`); the lunge still fires at the stand-off, and the chase comes round the
+		# wall, sliding along it (`_walkable_step()`). Holding the lunge until the line clears is the
+		# approach clamped at zero: at an alley mouth his notice reaches her through the building and
+		# is spent there, so the line clears with her already inside the stand-off and the lunge fires
+		# from a fraction of it, with almost none of `PURSUIT_REACTION` left to answer.
 		if def.sets_off_beside_her:
 			step = clampf(range_to_her - standoff, 0.0, step)
 		elif range_to_her <= standoff:
-			if _clear_line_to(player_at):
-				_lunged = true
-			else:
-				step = 0.0
+			_lunged = true
 		else:
 			step = minf(step, range_to_her - standoff)
 	var moved := _walkable_step(_heading * step)
 	position += moved
-	# Ground covered, not ground gained: backing off is still moving, and the bob is driven by
-	# distance so that a thing holding its ground still reads as alive.
+	# Ground covered, not ground gained: sliding along a wall is still moving, and the bob is driven
+	# by distance so that a thing holding its ground reads as standing still.
 	_path_travelled += moved.length()
 
 ## Ends this chase from outside `_chase()`'s own loop, in the one state `_chase()` reaches when she
@@ -2845,8 +2844,8 @@ func is_lethal_at(world_position: Vector2) -> bool:
 	return not def.pursues or _clear_line_to(world_position)
 
 ## Whether the straight line from this node to `world_position` crosses only ground
-## `CityMap.is_walkable()` agrees with — the question a pursuer's catch and its lunge both ask, since
-## either one across a wall is a man reaching through a building. Every tile the segment enters is
+## `CityMap.is_walkable()` agrees with — the question a pursuer's catch asks, since a catch across a
+## wall is a man reaching through a building. Every tile the segment enters is
 ## asked, found by stepping from one tile boundary to the next along it rather than by sampling, so a
 ## line that clips a building's corner by a pixel is blocked however short it is. A line through a
 ## corner point exactly asks both tiles beside it. True with no map, which is every data-level rig
