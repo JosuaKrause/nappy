@@ -12,9 +12,10 @@ extends RefCounted
 ## between the engine's own phases (physics, process, drawing, waiting), and what no named system
 ## claims stays in the phase's own rest. That is why the buckets add up to the frame exactly.
 ##
-## **Off, it costs one static read per timed entry point** (`on`), and nothing is allocated. Every
-## call site reads it before calling anything here, so a release page without `?framerecord=1`
-## never reaches the clock.
+## **Off, it costs one read per timed entry point**, and nothing is allocated, so a release page
+## without `?framerecord=1` never reaches the clock. The crowd's agents and the live events, timed
+## a couple of hundred times a frame, read a copy of `on` taken when each was made
+## (`CrowdAgent._timed`, `EventInstance._timed`); the systems timed once a frame read `on` itself.
 
 ## What the physics steps did that no named system claims: her own movement and the physics
 ## server's step, and any `_draw()` a physics callback queued, since the engine flushes those at

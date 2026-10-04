@@ -742,7 +742,15 @@ budget."
 **Its own cost is in the file.** At setup the recorder times `FrameRecorder.CALIBRATION_PAIRS`
 enter/leave pairs on the device and records the mean as `timer_pair_usec`; a frame's
 `timer_calls` times that is what the record itself spent in that frame, most of it one pair per
-crowd agent. Off, each timed entry point still reads `FrameRecord.on` and makes one extra call.
+crowd agent.
+
+**Off, it costs every player as little as the wrap can.** The crowd's agents and the live events
+are timed a couple of hundred times a frame, so each copies `FrameRecord.on` when it is made and,
+off, pays one member read before its body, which stays in its own `_process()`; a static read and
+a call into a second function there cost about 0.15ms a frame on a desktop. The five systems timed
+once a frame (the crowd's and the event manager's physics steps, the sweep, the halo and the edge)
+are built with the city, before the recorder starts, so they read `FrameRecord.on` each frame. The
+measurement is under `docs/evidence/m159-frame-record-2026-10-04/`.
 
 **The readout carries one line for it**, beneath the frame block: the last slow frame's length and
 what its callbacks took, as `frame/work`, then its largest costs under short names (`phys` and

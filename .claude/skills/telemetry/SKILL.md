@@ -47,22 +47,46 @@ telemetry stays out of the files that decide things, which is what makes the rul
 spillover in the regular 2ms ... it seems that stuttering happens with a lot of objects on screen
 so influence calculation, pathing, drawing, etc. can all be the culprit".)* A phone has no
 profiler, so the only way to know what a system cost in a frame is to time it where it runs, and
-an observer cannot do that from outside. The wrap is a single `if FrameRecord.on:` split around an
-unchanged body, which moves into a private function of its own:
+an observer cannot do that from outside. The wrap is a single branch in front of an unchanged
+body, and it takes one of two shapes by how often it runs, because what it costs with the record
+off is paid by every player.
+
+A system timed **once a frame** (the crowd's and the event manager's physics steps, the sweep, the
+halo, the edge) reads `FrameRecord.on` and moves its body into a private function of its own:
 
 ```gdscript
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if FrameRecord.on:
 		var outer := FrameRecord.enter(FrameRecord.CROWD)
-		_walk_the_frame(delta)
+		_tick_the_crowd(delta)
 		FrameRecord.leave(outer)
 	else:
-		_walk_the_frame(delta)
+		_tick_the_crowd(delta)
+```
+
+A thing timed **once per body per frame** (a crowd agent, a live event) copies the switch when it
+is made and keeps its body where it is, so off it pays one member read: a static read and a second
+call on each of a couple of hundred bodies cost about 0.15ms a frame on a desktop
+(docs/evidence/m159-frame-record-2026-10-04/). It is made per day, after the recorder has started:
+
+```gdscript
+var _timed := FrameRecord.on
+var _timing := false
+
+func _process(delta: float) -> void:
+	if _timed and not _timing and FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.CROWD)
+		_timing = true
+		_process(delta)
+		_timing = false
+		FrameRecord.leave(outer)
+		return
+	# the body, unchanged
 ```
 
 Nothing else about the frame record goes in a gameplay class — no reading of state, no counting
 beyond the scenery queue's own jobs, no branch that changes what the body does — and a new timed
-system takes exactly this shape, with its bucket added to `FrameRecord` and the table in
+system takes one of these two shapes, with its bucket added to `FrameRecord` and the table in
 docs/TELEMETRY.md.
 
 ## Adding an entry
