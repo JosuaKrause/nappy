@@ -1108,7 +1108,8 @@ fixture that moves. The price is its body — anything mobile is exempt from "so
 because a moving wall on a two-tile pavement pins her against a building. What stops you walking
 through a man shouting is the meter: intensity 14 over 210px.
 
-**Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 says *Tap to walk, double tap to run* and
+**Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 says *Tap to walk, double tap to run* (in the joystick scheme, *Tap to walk, hold* + the run
+button's symbol *or double tap to run*, said when the title's choice is made) and
 nothing more; day 3 is when something comes after the pram, and the HUD says *Double tap to run* (in the joystick scheme,
 *Hold* + the run button's symbol *or double tap to run*) —
 naming no key on any device, since the keyboard's own **Shift** works silently like every other key

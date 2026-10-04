@@ -830,6 +830,7 @@
       "consumers": [
         "src/ui/mode_button.gd",
         "src/ui/touch_controls.gd",
+        "src/ui/help_text.gd",
         "src/ui/save_indicator.gd",
         "src/player/stroller.gd"
       ],

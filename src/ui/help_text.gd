@@ -65,7 +65,7 @@ func show_line(new_line: String) -> void:
 	while rest != "":
 		var at := _next_token(rest)
 		if at.x < 0:
-			append_text(rest)
+			add_text(rest)
 			break
 		if at.x > 0:
 			add_text(rest.substr(0, at.x))

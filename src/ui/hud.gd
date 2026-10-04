@@ -83,6 +83,7 @@ func _ready() -> void:
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.event_telegraphed.connect(_on_event_telegraphed)
 	EventBus.day_started.connect(_teach_the_day)
+	EventBus.controls_chosen.connect(_on_controls_chosen)
 	EventBus.day_started.connect(func(_d: int) -> void:
 		_contact_step = 0
 		_refresh_resistance())
@@ -169,7 +170,7 @@ func _teach_the_day(day: int) -> void:
 		# One wording for every device — see `PauseScreen._BODY`'s own doc — except that the run
 		# half names the run button where the scheme draws one (`_run_phrase()`). The keyboard
 		# still walks and runs; nothing on screen names its keys.
-		_say("Tap to walk, %s" % _run_phrase(), TEACH_SECONDS)
+		_say_the_walking_lesson(HelpText.joystick_in_force(get_tree()))
 	# A nerve is a rewind, not a resource, and a rewound day has not been taught anything: this
 	# flag belongs to the *attempt* at the teaching day rather than to the run, and only on this
 	# one day, so a lost nerve on `RUN_TAUGHT_DAY` gets the lesson again instead of a HUD that
@@ -247,15 +248,27 @@ func _on_event_telegraphed(instance: EventInstance) -> void:
 	if _taught_run or not instance.def.pursues or GameState.day != Tuning.RUN_TAUGHT_DAY:
 		return
 	_taught_run = true
-	var phrase := _run_phrase()
+	var phrase := _run_phrase(HelpText.joystick_in_force(get_tree()))
 	_say(phrase[0].to_upper() + phrase.substr(1), instance.def.telegraph_time + TEACH_RUN_SECONDS)
+
+func _say_the_walking_lesson(joystick: bool) -> void:
+	_say("Tap to walk, %s" % _run_phrase(joystick), TEACH_SECONDS)
+
+## The title opens after day 1 has started, so the lesson said at dawn was worded for whatever
+## scheme was in force before the player chose one, and counted down hidden behind the title. Said
+## again when the choice is made, in the chosen scheme, for its full length. Uses the signal's own
+## `mode`: `main` emits this one line *before* it sets the scheme on `TouchControls`, so the tree
+## still answers with the old one at this moment.
+func _on_controls_chosen(mode: int, _by_key: bool) -> void:
+	if GameState.day == 1:
+		_say_the_walking_lesson(mode == ControlsMode.Mode.JOYSTICK)
 
 ## How the run lessons put it. *(2026-10-04, the player, inbox #533: "joystick run should now say
 ## hold <run button> or double tap to run where it makes sense".)* The joystick scheme draws run
 ## buttons, so there the line shows one; the tap scheme draws none, so there it stays "double tap
 ## to run" — a symbol for a button that is not on screen would point at nothing.
-func _run_phrase() -> String:
-	if HelpText.joystick_in_force(get_tree()):
+func _run_phrase(joystick: bool) -> String:
+	if joystick:
 		return "hold %s or double tap to run" % HelpText.RUN_TOKEN
 	return "double tap to run"
 

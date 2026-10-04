@@ -597,7 +597,8 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
 	hud._teach_the_day(1)
 	t.check(hud._teach.line == "Tap to walk, hold {run} or double tap to run",
 			"joystick, day 1: walking by tap, running by the run button or a double tap")
-	hud._on_event_telegraphed(_pursuer())
+	var p1 := _pursuer()
+	hud._on_event_telegraphed(p1)
 	t.check(hud._teach.line == "Hold {run} or double tap to run",
 			"joystick, first pursuit: the run button's symbol in the line, got '%s'" % hud._teach.line)
 	var with_symbol: int = hud._teach.get_content_width()
@@ -613,8 +614,24 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
 
 	hud._taught_run = false
 	hud._teach_the_day(Tuning.RUN_TAUGHT_DAY)
-	hud._on_event_telegraphed(_pursuer())
+	var p2 := _pursuer()
+	hud._on_event_telegraphed(p2)
 	t.check(hud._teach.line == "Double tap to run", "tap, first pursuit: unchanged")
+
+	# The title chooses the scheme after day 1 began, and `main` emits the choice before it sets
+	# the scheme on `TouchControls`, which still answers TAP here.
+	GameState.day = 1
+	EventBus.controls_chosen.emit(ControlsMode.Mode.JOYSTICK, false)
+	t.check(hud._teach.line == "Tap to walk, hold {run} or double tap to run",
+			"choosing joystick on the title says day 1's line in the joystick wording")
+	EventBus.controls_chosen.emit(ControlsMode.Mode.TAP, false)
+	t.check(hud._teach.line == "Tap to walk, double tap to run", "and choosing tap says the tap one")
+
+	hud._teach.show_line("a [b]bracket[/b] line")
+	t.check(hud._teach.get_parsed_text().contains("[b]"), "a line is shown literally, never parsed as BBCode")
+
+	p1.free()
+	p2.free()
 
 	GameState.day = saved_day
 	controls.free()
