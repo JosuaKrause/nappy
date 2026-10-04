@@ -22,6 +22,8 @@ func run(t) -> void:
 	_test_the_release_hud_drops_the_header(t)
 	_test_the_release_hud_drops_the_status_line_but_keeps_announcements(t)
 	_test_the_first_mark_is_never_named_but_later_ones_are(t)
+	_test_every_task_line_fits_on_one_line(t)
+	_test_a_touched_marks_message_breaks_between_sentences(t)
 	_test_every_perform_steps_header_names_the_instruction_not_the_title(t)
 	_test_a_completed_step_puts_no_text_on_screen(t)
 	_test_the_task_line_clears_when_the_task_is_done(t)
@@ -360,7 +362,7 @@ func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t) -> vo
 	stroller.free()
 
 ## Playtest 19 finding 5, verbatim: *"the first chalk mark is written in the status when it
-## should not be"* — seen as `resistance ....   somewhere out there: a chalk mark` before
+## should not be"* — seen as `resistance ....   out there: a chalk mark` before
 ## anything had been found. `CLAUDE.md`'s own rule is that the first encounter comes with no
 ## hint at all, so the goal title is silent until `GameState.completed_resistance_steps` is
 ## non-empty — which happens the instant the first mark is *touched*, not once its perform
@@ -392,7 +394,7 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 	hud._debug = false
 	hud._on_contact_available(2)
 	var step := ResistanceSteps.by_index(2)
-	t.check(hud._resistance_label.text == "somewhere out there: %s" % step.header.to_lower(),
+	t.check(hud._resistance_label.text == "out there: %s" % step.header.to_lower(),
 			"once the first mark is touched, the next one is named by its own instruction")
 	t.check(not step.title.to_lower() in hud._resistance_label.text,
 			"and not by the step's bare title, which is what playtest 69 could not use")
@@ -409,6 +411,58 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 	GameState.completed_resistance_steps = saved_completed
 	GameState.failed_resistance_steps = saved_failed
 	GameState.resistance_progress = saved_progress
+
+## The small HUD task line is the short version and always one line: every step's own line fits
+## the width the HUD gives the label (the Meters column, 280px) at its 12px font, so it never wraps.
+func _test_every_task_line_fits_on_one_line(t) -> void:
+	var hud := _hud(t)
+	var font_size: int = hud._resistance_label.get_theme_font_size("font_size")
+	var width: float = hud._resistance_label.get_parent().get_combined_minimum_size().x
+	t.check(width >= 280.0, "the Meters column gives the task line at least 280px")
+	for step in ResistanceSteps.all():
+		# A pickup has no header and shows its title, exactly as `_refresh_resistance()` names it.
+		var named: String = step.header if step.header != "" else step.title
+		var line: String = hud._task_text(named)
+		var w := ThemeDB.fallback_font.get_string_size(
+				line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		t.check(w <= 280.0, "step %d's task line '%s' fits one line (%d px)"
+				% [step.index, line, int(w)])
+		t.check(line.begins_with("out there: ") and not "\n" in line,
+				"step %d's task line starts 'out there:' and has no break" % step.index)
+	hud.free()
+
+## The big message shown when a mark is touched breaks between sentences where it must wrap: every
+## real mark text comes out with each line inside the Teach label's width, and a sentence is never
+## split. A two-sentence message too wide for one line breaks after the first.
+func _test_a_touched_marks_message_breaks_between_sentences(t) -> void:
+	var hud := _hud(t)
+	var font_size: int = hud._teach.get_theme_font_size("font_size")
+	var width: float = hud._teach.custom_minimum_size.x
+	t.check(width > 0.0, "the Teach label has a width for the helper to wrap to")
+	for step in ResistanceSteps.all():
+		if step.brief == "":
+			continue
+		var broken := SentenceLines.break_for_label(step.brief, hud._teach)
+		t.check(broken.replace("\n", " ") == step.brief,
+				"step %d's message only gains breaks, never loses words" % step.index)
+		for line in broken.split("\n"):
+			var w := ThemeDB.fallback_font.get_string_size(
+					line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+			var single: bool = SentenceLines._split_sentences(line).size() <= 1
+			t.check(w <= width or single,
+					"step %d's line '%s' fits the width or is one sentence" % [step.index, line])
+
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var step := ResistanceSteps.by_index(3)
+	var saved_brief := step.brief
+	step.brief = "A van is waiting on the sidewalk by the old market. Do not come home empty-handed tonight."
+	hud._on_resistance_step_completed(3)
+	t.check(hud._teach.text == "A van is waiting on the sidewalk by the old market.\n"
+			+ "Do not come home empty-handed tonight.",
+			"a touched mark's long message breaks after its first sentence, got '%s'" % hud._teach.text)
+	step.brief = saved_brief
+	GameState.completed_resistance_steps = saved_completed
+	hud.free()
 
 ## The wording rule holds for every task, not only the first: every perform step
 ## names `Step.header` — the associated mark's own words, cut to fit — never `Step.title`, which
@@ -427,7 +481,7 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 		# Non-empty so the HUD's own "already touched a mark" gate is open.
 		GameState.completed_resistance_steps = [step.index - 1]
 		hud._on_contact_available(step.index)
-		t.check(hud._resistance_label.text == "somewhere out there: %s" % step.header.to_lower(),
+		t.check(hud._resistance_label.text == "out there: %s" % step.header.to_lower(),
 				"step %d's header names the instruction ('%s')"
 				% [step.index, hud._resistance_label.text])
 		t.check(not step.title.to_lower() in hud._resistance_label.text,
@@ -462,7 +516,7 @@ func _test_a_completed_step_puts_no_text_on_screen(t) -> void:
 ## helpful as indication that the task was completed correctly because most tasks right now are
 ## not clear about whether they have been completed."* Pinned for a mark and for a task, as the
 ## item asks: a perform step's own completion is the day's last `_begin_step()`, so nothing else
-## ever overwrites `_resistance_label`'s "somewhere out there" line on its own, and clearing
+## ever overwrites `_resistance_label`'s "out there:" line on its own, and clearing
 ## `_contact_step` here is what stops it naming an already-finished task for the rest of the day.
 func _test_the_task_line_clears_when_the_task_is_done(t) -> void:
 	var saved_completed := GameState.completed_resistance_steps.duplicate()

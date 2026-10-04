@@ -453,7 +453,7 @@ func _give_back_what_the_attempt_spent() -> void:
 ##
 ## `resistance_progress_changed` is emitted when the number actually moves, since the HUD's dots
 ## and the summary's tally are both drawn off it. Nothing announces a step *un*-completing,
-## because nothing needs to: the HUD rebuilds its `somewhere out there:` line from scratch on
+## because nothing needs to: the HUD rebuilds its `out there:` line from scratch on
 ## `day_started` at the retry, which is the next moment either is looked at. The day brief has
 ## nothing to repeat either — it is a static line for the calendar day, not a record of what an
 ## attempt touched, so a lost day's own line reads exactly as it did this morning.

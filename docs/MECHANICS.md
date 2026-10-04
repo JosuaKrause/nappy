@@ -212,17 +212,17 @@ obstacle in each half of a day. See docs/EVENTS.md for the row itself.
 
 ## A checkpoint
 
-`checkpoint_hut` and `checkpoint_post` — the huts and the alley guard a region wall's own door
+`checkpoint_hut` and `checkpoint_post` — the gatehouses and the alley guard a region wall's own door
 stands, see docs/DECISIONS.md, "M62 — Checkpoints that divide the map" — reuse the conversation
 mechanism above at a shorter hold, `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s): a toll paid at every
 crossing of the wall has to stay cheap to repeat, where a conversation is spent once.
 
-**The boom between a street door's huts, `checkpoint_gate`, is not an inspection.** *(2026-09-24,
+**The boom between a street door's gatehouses, `checkpoint_gate`, is not an inspection.** *(2026-09-24,
 the player: "Boom shouldn't inspect her. It should block her.")* Lowered it is a wall across the
 carriageway; raised for a car it is ground she may walk under, at the price of that car, and it does
-not come down while any of her rig is beneath it. A hut does not take her in from the carriageway
-the boom spans, so the inspection is where the guards are: at the huts, on the sidewalks. Walking
-under it is unlawful: a guard steps out of the nearer hut after her — running outpaces him, walking
+not come down while any of her rig is beneath it. A gatehouse does not take her in from the carriageway
+the boom spans, so the inspection is where the guards are: at the gatehouses, on the sidewalks. Walking
+under it is unlawful: a guard steps out of the nearer gatehouse after her — running outpaces him, walking
 does not — and a catch ends the day. See docs/EVENTS.md, "Checkpoints".
 
 **The inspection starts as she walks up, measured from the door body's own wall** —
@@ -261,38 +261,38 @@ baby is still there whether or not the player can see her.
 a `redetains` instance whose hold is running — the only thing the meter sums is that hold's own
 flat `Tuning.CHAT_EXCITEMENT` (25) over `Tuning.CHECKPOINT_DETAIN_SECONDS`. Every other event field
 and the whole crowd are off: `EventManager.door_holding_her_at()` is the one question both halves
-of `City.excitement_sources_at()` ask. She is in the hut for those two seconds, not on the
+of `City.excitement_sources_at()` ask. She is in the gatehouse for those two seconds, not on the
 pavement, so what happens to stand beside that particular door is not part of what the crossing
 costs — *"it works in both directions with the same cost each time"*. Nothing gives back either,
 since `EXCITEMENT_DECAY_IDLE` is zero for a player held still, so the hold is exactly the toll.
 `chatting_mother` is deliberately not in this: her conversation happens on the pavement with both
 of them still drawn, so a lorry reversing beside them is part of what it costs.
 
-**The hut, the boom and the shadow under them stay exactly where they are.** The guard is what goes
+**The gatehouse, the boom and the shadow under them stay exactly where they are.** The guard is what goes
 inside, not the building he works in: a checkpoint that blinks out for two seconds reads as the
 door having been removed rather than as her having gone through it. The one row where the whole
 picture goes is `checkpoint_post`, an alley guard standing alone, since he *is* all of it —
 `EventInstance.is_suppressed_by_its_own_hold()` is that narrower question and the halo gates on it
 too.
 
-**The crowd is held at the same huts, and none of it is her machinery.** *(Playtest 58: "walkers
+**The crowd is held at the same gatehouses, and none of it is her machinery.** *(Playtest 58: "walkers
 walk through checkpoints..."; asked which rule they get, "Held at the hut like her"; then "a small
 fraction can do that"; "others can turn back"; "don't want a queue that is long".)* A walker draws
 its answer once, when it is placed: one in eight walks through, one in four turns back at the last
-junction the way it does at a wall, and the rest are held. A held walker walks up to the hut on its
+junction the way it does at a wall, and the rest are held. A held walker walks up to the gatehouse on its
 own sidewalk, waits stopped beside it in its last facing behind whoever is already in the line,
 goes **inside** for `Tuning.WALKER_DOOR_HOLD_SECONDS` (1s, shorter than her own two, because a
 walker is not the one being looked for) and is not drawn, and comes out on the far side of the door
-on the same lane with a cooldown that keeps that hut from taking it again until it has left the
-hut's area — so the crowd's own steering turning it round just past a door cannot put it through a
+on the same lane with a cooldown that keeps that gatehouse from taking it again until it has left the
+gatehouse's area — so the crowd's own steering turning it round just past a door cannot put it through a
 second inspection. One inside at a time, and **the line is short by construction**: a door holds
 one walker inside and `Tuning.WALKER_DOOR_QUEUE_MAX` (2) behind it, and the next walker to see it
 turns back at the last junction instead of joining. The decision is taken where the lookahead first
-sees the door — the same seven tiles the crowd sees a wall from — rather than at the hut, because a
+sees the door — the same seven tiles the crowd sees a wall from — rather than at the gatehouse, because a
 walker has no about-face to make once it is standing in a queue.
 
 It is the crowd's own state throughout — `Crowd._hold_walkers_at_doors()`, `WalkerDoorHold` and
-`CrowdAgent`'s four `DoorState`s, keyed on the hut body's ground point from the region plan. It
+`CrowdAgent`'s four `DoorState`s, keyed on the gatehouse body's ground point from the region plan. It
 reads no catalogue row: not `detain_radius`, which is the reach *she* is caught at, and none of the
 detention above, which teleports her, hides her, moves the camera and charges her meter.
 
@@ -393,11 +393,21 @@ a second via running)".)* Every pursuit's speed band and lead time is stated aga
 destination**: a tap that walked her to a point would pathfind, and a tap that pathfinds hands the
 route decision to the game.
 
-The two schemes differ only in where that press is measured from. **Tap** aims from wherever she is
+The two schemes differ in where that press is measured from, and joystick adds run buttons (below). **Tap** aims from wherever she is
 standing, the way a mouse always has, and a press within a generous radius of her stops her.
 **Joystick** aims from whichever of two fixed points on the screen is nearer the press — both drawn
 as a ring — and is stopped by a press on either point or in a band down the screen's own middle
 instead. Neither scheme is tied to a touchscreen or a mouse: either can be picked on either device.
+
+**Joystick also has a run button beside each ring**, 110px inward from it, toward the middle of the
+screen (the player chose the spot: "Inward"), which takes away the "walk toward the middle" press
+64-156px out of the ring in a 25-degree wedge either side of due east or west. *(2026-10-03, note #434: "for joystick mode a dedicated run button (one on each
+side next to the joystick) would make running much more precise and easier.")* A press that begins
+on a button holds **run** for as long as that finger stays down, so one thumb steers while the other
+holds it; a finger already steering that slides over a button does not press it, since only a press
+that begins there counts; and the double press still latches run, for a pointer with only one
+finger's worth of reach. Either keeps run down on its own, and run lasts while any finger holds a button, so handing it from one thumb to the other does not stutter it. Running lasting only while the button is
+held is the filer's proposal, not their words, and is open to overturn.
 
 Where a heading is measured from, and what stops her, are the one place a mouse and a real finger
 disagree. A mouse aims from her own world position, and a click within a generous radius of that
@@ -720,7 +730,7 @@ gate the way it already does at a red light or a zebra, and so does a walker —
 drew when it was placed is to turn back, which one in four do, and the door then reads to that
 walker exactly like the wall either side of it. That is the one barrier a walker still gives a
 street up for from a junction away, because turning back at a door is a decision about the door
-rather than about the ground. A walker that crosses is held at the hut on its own sidewalk, one at
+rather than about the ground. A walker that crosses is held at the gatehouse on its own sidewalk, one at
 a time; see "A checkpoint" above.
 
 **And every other solid body diverts the crowd too, as far as avoiding it.** *(2026-09-12: "yes
@@ -731,7 +741,7 @@ it, for the one row that is several (`docs/EVENTS.md`, "A row may be solid in pa
 the day's whole plan rather than from the events near the player, because the crowd is steered
 across the whole map while an event only exists within reach of her. Mobile rows are exempt, the way the
 catalogue's own solidity rule exempts them; so is a body on a segment that is held anyway, and so
-is a door, because a hard seal and a hut each already have an answer.
+is a door, because a hard seal and a gatehouse each already have an answer.
 
 **A body stands on the tiles whose middle it covers, and that is what keeps a row on the pavement
 out of the road.** Every lane in the city is travelled down its own centre line — a car sits on its
@@ -1255,8 +1265,10 @@ on `GameState.format_clock()`'s millisecond form, over the whole run rather than
 own width needs it to**, at whichever sentence end splits the text most evenly and never inside a
 sentence — a short one stays on one line, and a single sentence too long for the width still wraps
 inside itself word by word. `SentenceLines.break_for_label()` (`src/ui/sentence_lines.gd`) is the
-one helper this title, the day briefs, the finale's own body, the endings and the pause screen's
-walking instructions are all broken through, rather than a line break typed into each string.
+one helper this title, the day briefs, the finale's own body, the endings, the pause screen's
+walking instructions and the big message shown when a chalk mark is touched are all broken
+through, rather than a line break typed into each string. The small HUD task line is never broken: it
+is the short version (`out there:` and the step's header) and stays on one line.
 
 **Everything below that one line is the coming day's, not the day that just ended.** The day
 number, the nerves carried into it and the morning's own line (`_DAY_BRIEF`, below) all read off

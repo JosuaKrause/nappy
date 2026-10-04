@@ -348,7 +348,7 @@ func _on_contact_available(step: int) -> void:
 ## *"this is not an onscreen text that shows up so it fits the rule still. but it is helpful as
 ## indication that the task was completed correctly"*): a perform step's own completion, or the
 ## finale's, is the last `_begin_step()` of the day, so nothing else ever overwrites
-## `_resistance_label`'s "somewhere out there" line on its own, and clearing it here is what keeps
+## `_resistance_label`'s "out there:" line on its own, and clearing it here is what keeps
 ## it from naming an already-finished task for the rest of the day. `_refresh_resistance()` still
 ## runs for every completion, pickup or perform, so a pickup's own follow-up perform (`_begin_
 ## step()` activating it a frame later, through `_on_contact_available()`) overwrites this blank
@@ -357,7 +357,8 @@ func _on_contact_available(step: int) -> void:
 func _on_resistance_step_completed(step_index: int) -> void:
 	var step := ResistanceSteps.by_index(step_index)
 	if step and step.is_pickup and step.brief != "":
-		_say(step.brief, TEACH_SECONDS)
+		# The mark's long message: broken between sentences where it must wrap, never mid-sentence.
+		_say(SentenceLines.break_for_label(step.brief, _teach), TEACH_SECONDS)
 	_contact_step = 0
 	_refresh_resistance()
 
@@ -367,9 +368,9 @@ func _on_resistance_step_completed(step_index: int) -> void:
 ## are, the same category as the header's `nerves ***` and read between days rather than during one.
 ## A debug build keeps the `resistance ***..` prefix the rigs and `tools/shot.sh` were built against.
 ##
-## **`somewhere out there:` stays**, because it is what makes a title a goal. Without it the line is
-## a bare fragment — `a chalk mark` — which says a noun rather than *go and find this*, and the
-## whole of what survives the cut is that one instruction.
+## **`out there:` stays**, because it is what makes a header a goal. Without it the line is a bare
+## fragment — `a chalk mark` — which says a noun rather than *go and find this*; it is the shortest
+## prefix that still says so, since this line is the short version and never wraps.
 ##
 ## **The goal itself is silent until the first mark has been touched** (`CLAUDE.md`, "no quest
 ## log or marker for the resistance": *the first encounter comes with no hint at all*). A pickup
@@ -393,7 +394,7 @@ func _refresh_resistance() -> void:
 		named = step.header if step.header != "" else step.title
 
 	if not _debug:
-		_resistance_label.text = "somewhere out there: %s" % named.to_lower() if step else ""
+		_resistance_label.text = _task_text(named) if step else ""
 		return
 
 	if not GameState.has_joined_resistance() and _contact_step == 0:
@@ -404,8 +405,13 @@ func _refresh_resistance() -> void:
 			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - GameState.resistance_progress))
 	var line := "resistance %s" % marks
 	if step:
-		line += "   somewhere out there: %s" % named.to_lower()
+		line += "   " + _task_text(named)
 	_resistance_label.text = line
+
+## The task line: always one short line, never wrapped. It is the short version of what the mark
+## said big (`Step.header`, not `Step.brief`), and `tests/test_hud.gd` checks every step's fits.
+func _task_text(named: String) -> String:
+	return "out there: %s" % named.to_lower()
 
 ## Forwarded from `main._apply_orientation()`. `HomeArrow` is the one child here that computes a
 ## screen position from a world one every frame rather than sitting still under `_root`'s own

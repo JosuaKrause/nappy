@@ -25,6 +25,10 @@
 # out -- and every refusal fires whether or not `push` was given, so the dry run tells the truth
 # about whether the real thing would work.
 #
+# **Nothing is tagged until the `test` check on the release commit is read as green.** A check that
+# cannot be read is not a green one: the script keeps polling, and refuses once the wait runs out.
+# That needs `gh`, so a machine without it is refused up front.
+#
 # Every GitHub call (the origin fetch, the check-runs read, the tag push itself) runs through the
 # caller's own agent identity when one is set (tools/lib_agent_role.sh's `agent_run`, minting each
 # one a fresh token): run this script itself through `uv run python tools/agent-identity.py run
@@ -45,8 +49,10 @@ usage: tools/release.sh [--help|-h] <major|minor|patch> [push]
 
 Bumps the latest version tag by the given part and prints the plan, including the notes
 tools/release-notes.py would publish for it. Add the literal word "push" to actually tag and
-push, once every refusal (dirty tree, wrong branch, main not level with origin/main, checks not
-green) passes.
+push, once every refusal (dirty tree, wrong branch, main not level with origin/main, no gh,
+checks not green) passes. The push form waits for the `test` check on main's commit -- CI's last
+job, so it registers only after the others finish -- and tags nothing until that check is read as
+green; a check that cannot be read is retried, not trusted. Ctrl-C while it waits is safe.
 
   tools/release.sh patch
   tools/release.sh patch push
@@ -93,6 +99,14 @@ fi
 if [[ -n "$(git status --porcelain)" ]]; then
     echo "refusing: the working tree is not clean" >&2
     git status --porcelain >&2
+    exit 1
+fi
+
+# The release is tagged only once the `test` check is read as green, and that read is gh's. A
+# missing gh does not pass with time, so it is refused here rather than waited out.
+if ! command -v gh >/dev/null 2>&1; then
+    echo "refusing: gh is not on PATH" >&2
+    echo "a release needs gh to confirm the test check is green before it tags anything" >&2
     exit 1
 fi
 
@@ -161,58 +175,101 @@ else
     echo "notes:   uv not found -- see .claude/skills/python-tooling/SKILL.md" >&2
 fi
 
-# How the `test` check on the commit about to be tagged is doing, as one word: success, failure,
-# pending (running, or not all of them finished), none (no test run has registered yet), or
-# unavailable (no `gh`, or the API would not answer).
+# How the `test` check on the commit about to be tagged is doing, as one word in CHECK_STATE:
+# success, failure, pending (running, or not all of them finished), none (no test run has
+# registered yet), or unavailable (the API read failed; CHECK_ERROR holds why).
 #
 # `main`'s ruleset covers tag refs, not just branches, so it refuses a tag while that check is
-# still running -- which is not a hypothetical: it is what happened publishing v0.1.2, and the
-# rejection was nearly reported as a release. Waiting here is the fix for the cause rather than
-# for the symptom.
+# not green. Waiting here is the fix for the cause rather than for the symptom.
+#
+# `none` is normal for the first minutes after a merge: the `test` job is CI's last, after the
+# classify, gates, cost-table, game and shards jobs it needs, so its check-run registers only
+# once those finish.
 #
 # Every push to main fires two runs of the same workflow, one for `push` and one for
 # `pull_request`, so "green" means *all* of them finished well, not the first one to answer.
 # `neutral` and `skipped` count as passing because that is what they mean to the ruleset.
+#
+# CHECK_WAIT_SECONDS bounds an unattended or agent-driven run so it cannot hang forever; it sits
+# well above CI's duration, so a normal run never reaches it.
 CHECK_POLL_SECONDS=20
 CHECK_WAIT_SECONDS=1800
 
+REPO=""
+CHECK_STATE=""
+CHECK_ERROR=""
+
+# One scratch file holds each read's stderr. The EXIT trap removes it on every way out, and Ctrl-C
+# and a TERM exit with the shell's usual codes so the same trap runs for them.
+ERR_FILE="$(mktemp)"
+trap 'rm -f "$ERR_FILE"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+# One GitHub read per poll once the repository is resolved. A failed read is `unavailable` with
+# the first lines of gh's own stderr kept in CHECK_ERROR; it is never a pass.
 check_state() {
-    command -v gh >/dev/null 2>&1 || { echo unavailable; return; }
-    local repo state
-    repo="$(agent_run gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)"
-    [[ -n "$repo" ]] || { echo unavailable; return; }
-    state="$(agent_run gh api "repos/$repo/commits/$TARGET_SHA/check-runs" --jq '
+    local out
+    CHECK_ERROR=""
+    if [[ -z "$REPO" ]]; then
+        if ! out="$(agent_run gh repo view --json nameWithOwner --jq .nameWithOwner 2>"$ERR_FILE")" \
+            || [[ -z "$out" ]]; then
+            CHECK_STATE=unavailable
+            CHECK_ERROR="$(head -n 2 "$ERR_FILE" | paste -sd' ' -)"
+            [[ -n "$CHECK_ERROR" ]] || CHECK_ERROR="gh repo view returned nothing"
+            return
+        fi
+        REPO="$out"
+    fi
+    if ! out="$(agent_run gh api "repos/$REPO/commits/$TARGET_SHA/check-runs" --jq '
         [.check_runs[] | select(.name == "test")] as $t
         | if ($t | length) == 0 then "none"
           elif ($t | any(.status == "completed" and
                 ((.conclusion == "success" or .conclusion == "neutral"
                   or .conclusion == "skipped") | not))) then "failure"
           elif ($t | all(.status == "completed")) then "success"
-          else "pending" end' 2>/dev/null)"
-    [[ -n "$state" ]] || { echo unavailable; return; }
-    echo "$state"
+          else "pending" end' 2>"$ERR_FILE")" || [[ -z "$out" ]]; then
+        CHECK_STATE=unavailable
+        CHECK_ERROR="$(head -n 2 "$ERR_FILE" | paste -sd' ' -)"
+        [[ -n "$CHECK_ERROR" ]] || CHECK_ERROR="gh api returned nothing"
+        return
+    fi
+    CHECK_STATE="$out"
 }
 
-STATE="$(check_state)"
+# What a wait says about the current state; the loop adds that nothing is tagged yet.
+wait_reason() {
+    case "$CHECK_STATE" in
+        none) echo "the test check has not started yet (it is CI's last job, after the others finish)" ;;
+        pending) echo "the test check is still running" ;;
+        unavailable) echo "could not read the test check (${CHECK_ERROR}) -- will retry" ;;
+        *) echo "the test check is '$CHECK_STATE'" ;;
+    esac
+}
+
+check_state
 
 if [[ $CONFIRMED -ne 1 ]]; then
-    echo "checks:  $STATE  (on $TARGET_SHA)"
+    echo "checks:  $CHECK_STATE  (on $TARGET_SHA)"
     echo "" >&2
-    case "$STATE" in
-        failure) echo "the test check for the release target did not pass -- a real run would abort here." >&2 ;;
+    case "$CHECK_STATE" in
+        failure) echo "the test check for the release target did not pass -- a real run would refuse here." >&2 ;;
         success) echo "the test check for the release target is green -- a real run would tag and push now." >&2 ;;
-        unavailable) echo "cannot read the test check (no gh, or the API declined); a real run" >&2
-                     echo "would push anyway and let the ruleset refuse it if it is not ready." >&2 ;;
-        *) echo "the test check for the release target has not finished -- a real run would wait for it." >&2 ;;
+        unavailable) echo "cannot read the test check ($CHECK_ERROR); a real run would keep retrying" >&2
+                     echo "for up to ${CHECK_WAIT_SECONDS}s and tag nothing until it reads green." >&2 ;;
+        *) echo "the test check for the release target is not green yet ($CHECK_STATE); a real run would wait" >&2
+           echo "for it, up to ${CHECK_WAIT_SECONDS}s, and tag nothing until it reads green." >&2 ;;
     esac
     echo "dry run -- nothing tagged or pushed. Run 'tools/release.sh $PART push' to publish $NEXT." >&2
     exit 0
 fi
 
-# Nothing is tagged until the check is green, so aborting leaves no tag to clean up.
+# Nothing is tagged until the check is green, so aborting leaves no tag to clean up. Only
+# `success` leaves the loop to tag; `failure` and the end of the wait refuse. A check that cannot
+# be read waits like one that has not finished.
 WAITED=0
 while :; do
-    case "$STATE" in
+    case "$CHECK_STATE" in
         success)
             echo "checks:  green on $TARGET_SHA"
             break
@@ -223,22 +280,18 @@ while :; do
             echo "Nothing was tagged. Refresh main, then run this again." >&2
             exit 1
             ;;
-        unavailable)
-            echo "checks:  unreadable (no gh, or the API declined) -- pushing anyway;" >&2
-            echo "         the ruleset refuses the tag if main is not actually ready." >&2
-            break
-            ;;
     esac
     if (( WAITED >= CHECK_WAIT_SECONDS )); then
         echo "" >&2
-        echo "REFUSING: the test check on main was still '$STATE' after ${CHECK_WAIT_SECONDS}s." >&2
+        echo "REFUSING: the test check on main was still '$CHECK_STATE' after ${CHECK_WAIT_SECONDS}s." >&2
+        [[ "$CHECK_STATE" != unavailable ]] || echo "Last read error: $CHECK_ERROR" >&2
         echo "Nothing was tagged." >&2
         exit 1
     fi
-    echo "checks:  $STATE on $TARGET_SHA -- waiting (${WAITED}s)"
+    echo "checks:  $(wait_reason) -- waiting (${WAITED}s); nothing is tagged yet, Ctrl-C is safe"
     sleep "$CHECK_POLL_SECONDS"
     WAITED=$(( WAITED + CHECK_POLL_SECONDS ))
-    STATE="$(check_state)"
+    check_state
 done
 
 git tag -a "$NEXT" "$TARGET_SHA" -m "$NEXT"

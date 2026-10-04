@@ -74,6 +74,12 @@ if [[ "$MODE" == release ]]; then
     fi
 fi
 
+# The export, and the bake and import it starts on a fresh checkout, checked against the volume
+# build/web/ is on before project.godot is stamped or anything is written.
+# shellcheck source=tools/lib_disk_headroom.sh
+source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
+headroom_preflight tools/export-web.sh "$OUT_DIR" "" web-export || exit 1
+
 # What the export says it is. `application/config/version` and `application/config/source_commit`
 # are project settings the game reads at runtime — `TitleScreen.version_text()` and
 # `commit_text()` — where an exported build has no repository to ask `git`, and Godot bakes the

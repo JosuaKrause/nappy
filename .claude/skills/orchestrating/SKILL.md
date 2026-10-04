@@ -194,7 +194,12 @@ existing worktree. A review agent's scratch checkout is made sparse the same way
 the point keeps the folders it needs. Worktrees share history, so clone
 depth does not avoid repeated working files. Before checkout, import, build or capture batches,
 check free space on the destination volume against the estimated peak working set plus explicit
-headroom; an unknown peak or inadequate room means measure or reduce the batch before starting.
+headroom (`tools/lib_disk_headroom.sh` holds the measured estimates, worktrees' included); an unknown
+peak or inadequate room means measure or reduce the batch before starting. **A low-disk warning
+from a tool, or a check that leaves less than the reserve, stops new work.** *(2026-10-03, inbox #496: "Yes tool should warm and only refuse if it's not possible. The warning should be taken seriously though so for example the situation should be started to get sorted out and no new tasks should be started. That's a guidance no hard hook".)* The
+orchestrator starts no new agent or worktree and an agent starts no new task or batch until the
+space is sorted out by **session-cleanup**'s storage steps; work already running may finish, and
+an agent reports the warning in its report rather than leaving it in a log.
 Record scratch paths and cleanup ownership in the brief, and follow **session-cleanup**'s
 job-owned storage rules. Release a finished agent's brief with `cleanup: ready` only after its
 processes stop and useful artifacts are retained; retirement refuses an unreleased brief.

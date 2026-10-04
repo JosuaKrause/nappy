@@ -14,6 +14,8 @@ GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=tools/lib_dev_flags.sh
 source "$PROJECT_DIR/tools/lib_dev_flags.sh"
+# shellcheck source=tools/lib_disk_headroom.sh
+source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 
 usage() {
     cat <<EOF
@@ -152,6 +154,9 @@ if [[ -n "$missing" || -n "$unimported" || -n "$atlases_stale" ]]; then
         echo "  their .import sidecars are in the tree and the imported copies are not," >&2
         echo "  so every script that preloads one would fail to compile" >&2
     fi
+    # The repair is the one batch this script writes; a run itself allocates only the game's own
+    # telemetry, which is bounded per day.
+    headroom_preflight tools/run.sh "$PROJECT_DIR/.godot" "" import || exit 1
     echo "rebuilding with tools/check.sh -- this takes a few seconds" >&2
     if ! "$PROJECT_DIR/tools/check.sh" >/dev/null; then
         echo "tools/check.sh failed; run it directly to see why" >&2

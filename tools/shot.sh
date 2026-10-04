@@ -23,6 +23,8 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RESOLUTION="${RESOLUTION:-1280x720}"
 # shellcheck source=tools/lib_dev_flags.sh
 source "$PROJECT_DIR/tools/lib_dev_flags.sh"
+# shellcheck source=tools/lib_disk_headroom.sh
+source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 
 usage() {
     cat <<EOF
@@ -49,6 +51,14 @@ done
 
 if [[ $# -lt 1 ]]; then
     echo "usage: shot.sh out.png [seconds] [dev flags...]" >&2
+    exit 1
+fi
+
+# An unknown flag in the output's place is a rejected argument, not a file named after it.
+if [[ "$1" == -* ]]; then
+    echo "shot.sh: expected the output PNG first, got '$1'" >&2
+    echo >&2
+    usage >&2
     exit 1
 fi
 
@@ -95,6 +105,18 @@ if [[ ! -x "$GODOT" ]]; then
     exit 127
 fi
 
+# Relative paths would resolve against the project dir inside Godot, not the caller's cwd.
+case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
+
+# The still, against the volume it goes to, and the import below when the pages are stale, against
+# the volume .godot/ is on, both before either is written.
+atlases_stale=""
+"$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1 || atlases_stale=yes
+headroom_preflight tools/shot.sh "$(dirname "$OUT")" "" shot || exit 1
+if [[ -n "$atlases_stale" ]]; then
+    headroom_preflight tools/shot.sh "$PROJECT_DIR/.godot" "" import || exit 1
+fi
+
 # The baked atlas pages, in the same shape tools/run.sh checks its import cache in: a picture
 # that has changed since the last bake leaves the pages standing for the tree before it, and a
 # capture is the one thing that would then be photographing yesterday's artwork with nothing on
@@ -106,7 +128,7 @@ fi
 # is a file the engine has not imported yet, and a windowed run does no import pass of its own —
 # check.sh bakes, imports, and puts back the project.godot and docs/ARCHITECTURE.md rewrites the
 # import pass causes, which a bare `--import` here would leave in the working tree.
-if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
+if [[ -n "$atlases_stale" ]]; then
     # `--check` exits non-zero by design; this reprint is the reason, not a failure.
     "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
     echo "rebuilding with tools/check.sh -- this takes a few seconds" >&2
@@ -122,9 +144,6 @@ if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
     fi
     echo "atlases rebuilt" >&2
 fi
-
-# Relative paths would resolve against the project dir inside Godot, not the caller's cwd.
-case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 
 # M195: every shot.sh run is a rig by definition, so both halves of the lockdown apply
 # unconditionally, no flag needed. `--disable-vsync` is Godot's own engine flag (before the `--`),

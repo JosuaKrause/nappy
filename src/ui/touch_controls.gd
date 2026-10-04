@@ -8,8 +8,25 @@ extends Control
 ## close enough to the right ground; a double press sets the direction and holds `run` until the
 ## next press changes or releases it. See `set_direction()`, `_stop()` and `is_double_tap()` — that
 ## half of this file used to be `TapControls`, a second node with nothing to draw, and is folded in
-## here because it needs something to draw now: the pause button, the one thing left standing once
-## the drag stick and the held `RUN` circle are deleted.
+## here because it needs something to draw now: the pause button, and in `Mode.JOYSTICK` a run
+## button beside each focal point.
+##
+## **`Mode.JOYSTICK` draws a run button beside each focal point, and running lasts exactly as long
+## as a finger holds one.** *(2026-10-03, the player, note #434: "for joystick mode a dedicated run
+## button (one on each side next to the joystick) would make running much more precise and easier.
+## the button should not trigger when moving the finger over it from navigation and holding the
+## button and navigating should work correctly. also the double tap should still work since mouse
+## only navigation would otherwise break.")* This is not the held `RUN` circle at (1150, 500) that
+## PLAYTEST-28 deleted along with the drag stick (2026-09-06: "double press keeps running") coming
+## back as the only way to run: the double press stays as it was, and a button is the second way to
+## the same `run` action, held by the other hand while one steers. A button takes only a press that
+## *begins* on it — `_on_pointer()` is the one place that grabs it, so a steering finger that slides
+## across a button was never a press there and keeps steering — and holds `run` until that same
+## finger lifts — the last finger on either button, so handing it from one thumb to the other keeps
+## the run (`_run_touches`, `_run_held`) — without ever touching the heading, the drag in flight or
+## the double-tap clock. `_run_active` (a double press's latch) and `_run_held` are two separate
+## reasons to hold `run`, and either one alone keeps it down. Running lasting only while the button
+## is held is the filer's proposal rather than their words and is open to overturn.
 ##
 ## **Two things decide different questions here, and only one of them is about the mode.**
 ## `_touch` (`TouchInput.available()`) is a hardware fact: whether this device has touch hardware
@@ -83,11 +100,10 @@ extends Control
 ## the moment the tree pauses, for any reason, so a finger still down when a day ends is never
 ## still down once the next one begins.
 
-## Smaller than the drag stick and `RUN` button this file used to also draw: it is pressed once a
-## day at most, so it does not want either one's old reach into the walking hand's own space.
+## Smaller than the run buttons (`RUN_RADIUS`, 34px) this file also draws: it is pressed once a day
+## at most, so it does not want the same reach into the walking hand's own space.
 const PAUSE_RADIUS := 26.0
-## As generous as the catch radii this file's own now-deleted stick and `RUN` button used to
-## carry, for the same reason a thumb does not land on a button to the pixel — and also the radius
+## As generous as `RUN_CATCH_RADIUS`'s own 46px, for the same reason a thumb does not land on a button to the pixel — and also the radius
 ## a *release* has to land inside to fire, so a thumb that lands wrong can slide off and lift
 ## without stopping the day. See `_on_pointer()`.
 const PAUSE_CATCH_RADIUS := 46.0
@@ -112,6 +128,9 @@ const PAUSE_CENTRE := Vector2(1218.0, 62.0)
 ## The disc, the rim and the two bars, baked into one asset — see `_draw_pause_button()`. A region
 ## name on the `ui` atlas group; `_enter_tree()`/`_exit_tree()` acquire and release it.
 const _PAUSE_ICON := &"ui/pause"
+## The run button's disc, rim and two chevrons (`art/ui/run.svg`), the same kind of region on the same
+## group — see `_draw_run_buttons()`.
+const _RUN_ICON := &"ui/run"
 
 ## How soon a second press has to land to read as a double, in seconds.
 const DOUBLE_TAP_SECONDS := 0.35
@@ -177,6 +196,25 @@ const TAP_STOP_CENTRE_LIFT := Stroller.FIGURE_HEIGHT / 2.0
 const FOCUS_LEFT := Vector2(240.0, 480.0)
 const FOCUS_RIGHT := Vector2(1040.0, 480.0)
 
+## The run buttons' size and where each stands: 110px *inward* from its own focal point, toward the
+## middle of the screen, on the same row — the left one at (350, 480) and the right one at (930, 480)
+## in the 1280x720 design box. *(2026-10-03, the player, inbox #477, asked which of four spots —
+## outward, inward, below, above — the buttons should take: "Inward".)* **What the spot takes away:**
+## a press 64-156px out of a ring toward the middle (a +/-25 degree wedge, due east of the left ring
+## and due west of the right one) is a run hold, not the heading "walk toward the middle". **What it
+## is clear of:** the `DangerEdge` badge strips (x=104 and x=1176), the home/task arrow strips (x=96
+## and x=1184), the touch HUD meters column and the pause button, and it ends 196px short of the stop
+## band. The ring reaches 48px (`STOP_RADIUS`) and a button's catch circle starts 64px out, so a
+## heading pressed at the ring's rim cannot land on a button. Both are authored in
+## design space like the foci.
+const RUN_OFFSET := 110.0
+const RUN_CENTRE_LEFT := Vector2(FOCUS_LEFT.x + RUN_OFFSET, FOCUS_LEFT.y)
+const RUN_CENTRE_RIGHT := Vector2(FOCUS_RIGHT.x - RUN_OFFSET, FOCUS_RIGHT.y)
+const RUN_RADIUS := 34.0
+## Generous for the reason `PAUSE_CATCH_RADIUS` is: a thumb does not land on a button to the pixel.
+## Below `RUN_OFFSET - STOP_RADIUS` (62px) so the catch never reaches the focal ring.
+const RUN_CATCH_RADIUS := 46.0
+
 ## The knob `_draw_focus_circles()` offsets from each focus, at rest. Sized off `PAUSE_RADIUS`'s
 ## own third — small enough that a knob pressed out to `STOP_RADIUS * 0.6` still sits well inside
 ## its own ring rather than crowding the rim.
@@ -204,6 +242,9 @@ var _mode := ControlsMode.Mode.TAP
 ## circles (`_draw_focus_circles()`) exist only in `Mode.JOYSTICK`.
 func set_mode(mode: ControlsMode.Mode) -> void:
 	_mode = mode
+	if mode != ControlsMode.Mode.JOYSTICK:
+		# The buttons exist only in `JOYSTICK`; a finger still down on one must not keep running on.
+		_let_go_of_the_run_button()
 	queue_redraw()
 
 ## Whether `main` has decided a portrait touch window is presenting rotated — see
@@ -220,6 +261,13 @@ var rotated := false
 ## does not press anything — see `_on_pointer()` for why the action only fires on release, and only
 ## if that release is still over the button.
 var _pause_touch := -1
+
+## Every touch or pointer index currently holding a run button, and whether any hold is what keeps
+## `run` pressed. A list rather than one index, so that handing the button from one thumb to the
+## other (the second lands before the first lifts) never drops the run. Separate from `_run_active` (a double press's latch): either one
+## keeps `run` down, and letting go of one must not release the other. See the class doc.
+var _run_touches: Array[int] = []
+var _run_held := false
 
 ## The rig, found the same way `HUD._rig` is: a state of the player rather than something a
 ## signal carries.
@@ -417,6 +465,17 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 				_pause_touch = index
 				queue_redraw()
 				return
+			if _mode == ControlsMode.Mode.JOYSTICK and run_button_at(design) != Vector2.INF:
+				# A press that *begins* on a button, and only that, holds `run`. It is never also a
+				# direction press, so the steering finger's drag and the double-tap clock are left
+				# alone; a second finger on a button joins the first rather than being read as a
+				# heading, and `run` lasts while any finger holds one.
+				if not _run_touches.has(index):
+					_run_touches.append(index)
+					_run_held = true
+					Input.action_press(&"run")
+					queue_redraw()
+				return
 		_on_tap(position, Time.get_ticks_msec() / 1000.0)
 		# Tracked whether this press walked or stopped her — see `_on_tap()`'s own doc for where
 		# `_drag_origin_focus`/`_drag_run` were just set for this same press. *(Playtest 34 finding
@@ -433,6 +492,12 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 		return
 	if index == _drag_pointer_index:
 		_drag_pointer_index = -1
+	if _run_touches.has(index):
+		# Lifting anywhere lets go, not only over the button: the hold began on it, and a thumb that
+		# drifted off while running should not leave `run` stuck down. Run ends with the last finger.
+		_run_touches.erase(index)
+		if _run_touches.is_empty():
+			_let_go_of_the_run_button()
 	if index == _pause_touch:
 		_pause_touch = -1
 		queue_redraw()
@@ -616,7 +681,7 @@ func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 	_set_axis(&"move_left", &"move_right", direction.x)
 	_set_axis(&"move_up", &"move_down", direction.y)
 	_run_active = run
-	if run:
+	if run or _run_held:
 		Input.action_press(&"run")
 	else:
 		Input.action_release(&"run")
@@ -631,6 +696,27 @@ func _stop() -> void:
 	_direction = Vector2.ZERO
 	_run_active = false
 	_release_movement()
+	if _run_held:
+		# A stop is about the heading; the finger on a run button is still down.
+		Input.action_press(&"run")
+	queue_redraw()
+
+## Which run button's catch circle `design_position` (already in design space) lands in, as that
+## button's centre, or `Vector2.INF` for neither. Pure and static like `nearer_focus()`, so the
+## geometry is testable with no viewport.
+static func run_button_at(design_position: Vector2) -> Vector2:
+	for centre in [RUN_CENTRE_LEFT, RUN_CENTRE_RIGHT]:
+		if design_position.distance_to(centre) <= RUN_CATCH_RADIUS:
+			return centre
+	return Vector2.INF
+
+## Lets go of a run button's hold. `run` itself stays down if a double press's latch still wants it.
+func _let_go_of_the_run_button() -> void:
+	var was_held := _run_held
+	_run_touches.clear()
+	_run_held = false
+	if was_held and not _run_active:
+		Input.action_release(&"run")
 	queue_redraw()
 
 ## The keyboard resets whatever heading a click, tap or drag last locked in. *(PLAYTEST-57: "arrow
@@ -675,7 +761,8 @@ func _yield_to_the_keyboard(key: InputEventKey) -> void:
 		if action != pressed_action:
 			Input.action_release(action)
 	if _run_active:
-		Input.action_release(&"run")
+		if not _run_held:
+			Input.action_release(&"run")
 		_run_active = false
 	_drag_pointer_index = -1
 	_walking = false
@@ -787,6 +874,8 @@ static func _set_axis(negative: StringName, positive: StringName, value: float) 
 ## on next.
 func _release_all() -> void:
 	_pause_touch = -1
+	_run_touches.clear()
+	_run_held = false
 	_drag_pointer_index = -1
 	_walking = false
 	_direction = Vector2.ZERO
@@ -875,6 +964,7 @@ func _draw() -> void:
 	_draw_pause_button()
 	if _mode == ControlsMode.Mode.JOYSTICK:
 		_draw_focus_circles()
+		_draw_run_buttons()
 
 ## The disc, its rim and the two bars — a region of the baked `ui` atlas page, sourced from
 ## `art/ui/pause.svg`, not painted in code. *(Playtest 29 finding 3: "neither should the buttons use draw commands -- I explicitly
@@ -899,6 +989,22 @@ func _draw_pause_button() -> void:
 	var size := Vector2(PAUSE_RADIUS, PAUSE_RADIUS) * 2.0
 	draw_texture_rect(AtlasLibrary.region(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
+
+## The two run buttons, beside the focal points — a region of the baked `ui` page sourced from
+## `art/ui/run.svg`, drawn the way `_draw_pause_button()` draws its own: one overall alpha for idle
+## against held, and `Palette.BUTTON_PRESSED` behind the glyph while a finger holds one. Both buttons
+## light together, since either one holds the same `run` action.
+func _draw_run_buttons() -> void:
+	var held := _run_held
+	var size := Vector2(RUN_RADIUS, RUN_RADIUS) * 2.0
+	for centre in [RUN_CENTRE_LEFT, RUN_CENTRE_RIGHT]:
+		if held:
+			draw_circle(centre, RUN_RADIUS, Palette.BUTTON_PRESSED)
+		# `run.svg`'s chevrons point up on both buttons: a chevron pointing sideways, now that the
+		# buttons sit toward the middle, would read as "walk that way". (Open to overturn: a glyph
+		# with no direction at all.)
+		draw_texture_rect(AtlasLibrary.region(_RUN_ICON), Rect2(centre - size * 0.5, size), false,
+				Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
 
 ## Both focal points, always, in `Mode.JOYSTICK` — M83 drew nothing for them and left *whether they
 ## can be found by feel* as the played question the next report would answer; the answer is no.

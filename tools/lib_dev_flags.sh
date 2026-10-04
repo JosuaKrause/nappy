@@ -287,6 +287,17 @@ rig_kill_after_movie_seconds() {
 WAIT_OR_KILL_STATUS=0
 wait_or_kill() {
     local pid="$1" limit="$2"
+    # `read -t` takes whole seconds only (bash 3.2 rejects `1.5`, and a rejected read would kill a
+    # healthy process at once), so anything else is refused here.
+    if [[ ! "$limit" =~ ^[0-9]+$ ]]; then
+        echo "wait_or_kill: limit must be whole seconds, got '$limit'" >&2
+        # The process was launched for this wait and has no watchdog: it is killed and reaped,
+        # not left running for a caller that reports it as killed anyway.
+        kill -9 "$pid" 2>/dev/null
+        wait "$pid" 2>/dev/null
+        WAIT_OR_KILL_STATUS=$?
+        return 2
+    fi
     local marker
     # `-u`: print a unique name without creating the file. `mktemp` alone *creates* it as part of
     # naming it, which would make the `-f` check below true from this line on regardless of
@@ -294,20 +305,41 @@ wait_or_kill() {
     # caught by tools/test_cli_help.sh reporting an instant, spurious kill on a stub that exits in
     # milliseconds.
     marker="$(mktemp -u)"
-    (
-        sleep "$limit"
-        if kill -0 "$pid" 2>/dev/null; then
-            kill -9 "$pid" 2>/dev/null
-            : > "$marker"
-        fi
-    ) &
-    local watchdog=$!
-    wait "$pid" 2>/dev/null
-    WAIT_OR_KILL_STATUS=$?
-    # Stop the watchdog if the process already exited on its own -- otherwise it is still asleep
-    # and would fire pointlessly, or (rarer, a close race) has already fired and this is a no-op.
-    kill "$watchdog" 2>/dev/null
-    wait "$watchdog" 2>/dev/null
+    # **The watchdog is a timed `read` on a FIFO, not a `sleep`.** A `sleep` the watchdog forked
+    # outlives a `kill` of the watchdog's subshell and, holding the caller's stdout/stderr, keeps a
+    # capturing reader (a test's `subprocess.run(capture_output=...)`, a terminal pipeline) waiting
+    # for EOF until the whole limit has run out -- minutes, for a process that exited at once.
+    # Killing the subshell and its `sleep` instead is a race against the subshell's own start-up,
+    # which loses a signal that arrives before the subshell is ready for it. A `read -t` on a FIFO
+    # forks nothing: the caller releases the watchdog by writing a line, and the watchdog kills
+    # only when the read timed out. The caller holds the FIFO open read-write (fd 9) until the
+    # watchdog has been reaped, so a line written before the watchdog opened it is not lost, and a
+    # watchdog that already timed out leaves no writer blocked.
+    # A call interrupted inside `wait` leaves its FIFO in $TMPDIR: a trap to remove it would have to
+    # replace the caller's own INT/TERM/EXIT traps from inside a sourced function, so there is none.
+    local fifo
+    fifo="$(mktemp -u)"
+    mkfifo "$fifo"
+    # The brace group's `9<>` is scoped to it: the caller's own fd 9, if it has one, is back as it
+    # was afterwards.
+    {
+        (
+            # Any failed `read` kills: a timeout (1 on bash 3.2, above 128 on bash 4+) or an error
+            # such as an unusable FIFO. A released one returns 0.
+            if ! read -r -t "$limit" <&9 && kill -0 "$pid" 2>/dev/null; then
+                kill -9 "$pid" 2>/dev/null
+                : > "$marker"
+            fi
+        ) &
+        local watchdog=$!
+        wait "$pid" 2>/dev/null
+        WAIT_OR_KILL_STATUS=$?
+        # Release the watchdog: the process exited on its own (or this already is the second half
+        # of a race it has won, and the line is simply never read).
+        echo >&9
+        wait "$watchdog" 2>/dev/null
+    } 9<>"$fifo"
+    rm -f "$fifo"
     if [[ -f "$marker" ]]; then
         rm -f "$marker"
         return 1

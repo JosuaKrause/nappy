@@ -119,6 +119,17 @@ assert_exit "build-web-template.sh unknown" nonzero ./tools/build-web-template.s
 assert_exit "build-web-template.sh missing jobs" nonzero ./tools/build-web-template.sh --jobs
 assert_exit "build-web-template.sh invalid jobs" nonzero ./tools/build-web-template.sh --jobs 0
 assert_exit "build-web-template.sh stray word" nonzero ./tools/build-web-template.sh stray
+assert_exit "measure-disk-peak.sh --help" zero ./tools/measure-disk-peak.sh --help
+assert_exit "measure-disk-peak.sh -h" zero ./tools/measure-disk-peak.sh -h
+assert_exit "measure-disk-peak.sh unknown" nonzero ./tools/measure-disk-peak.sh --not-a-flag
+assert_exit "measure-disk-peak.sh missing path" nonzero ./tools/measure-disk-peak.sh --path
+assert_exit "measure-disk-peak.sh no command" nonzero ./tools/measure-disk-peak.sh --path build
+assert_exit "measure-disk-peak.sh zero interval" nonzero ./tools/measure-disk-peak.sh --interval 0 --path build -- true
+assert_exit "measure-disk-peak.sh validates before running" nonzero ./tools/measure-disk-peak.sh --path "$work_dir" --not-a-flag -- touch "$work_dir/measured-command-ran"
+if [[ -e "$work_dir/measured-command-ran" ]]; then
+    echo "FAIL measure-disk-peak.sh ran its command on invalid arguments" >&2
+    failures=$((failures + 1))
+fi
 assert_exit "browser-check.mjs help" zero node ./tools/web-template/browser-check.mjs --help
 assert_exit "browser-check.mjs unknown" nonzero node ./tools/web-template/browser-check.mjs --not-a-flag
 assert_exit "browser-check.mjs missing value" nonzero node ./tools/web-template/browser-check.mjs --export
@@ -546,6 +557,45 @@ check_that() {
         failures=$(( failures + 1 ))
     fi
 }
+
+# ------------------------------------------------ wait_or_kill leaves nothing holding the pipe ---
+# The process lives 0.3s, long enough for the watchdog to have forked its `sleep 7`. The call's
+# output is captured, so the command substitution only returns once every holder of the pipe has
+# closed it: a watchdog `sleep` that outlived wait_or_kill would keep it open for the whole 7s.
+wok_started=$SECONDS
+wok_out="$(
+    # shellcheck source=tools/lib_dev_flags.sh
+    source "$root/tools/lib_dev_flags.sh"
+    sleep 0.3 &
+    wait_or_kill "$!" 7
+    echo "returned $? status $WAIT_OR_KILL_STATUS"
+)"
+wok_elapsed=$(( SECONDS - wok_started ))
+check_that "wait_or_kill returns at once for a process that exited, with no watchdog holding the pipe" \
+    '[[ "$wok_out" == "returned 0 status 0" && $wok_elapsed -lt 5 ]]'
+
+# A limit that is not whole seconds is refused, never turned into an instant kill, and the
+# caller's own fd 9 is the same file after a call as before it.
+wok_fd_file="$work_dir/wok-fd9"
+wok_out="$(
+    # shellcheck source=tools/lib_dev_flags.sh
+    source "$root/tools/lib_dev_flags.sh"
+    exec 9>"$wok_fd_file"
+    sleep 0.2 &
+    sleep 30 &
+    wok_bad=$!
+    wait_or_kill "$wok_bad" 1.5 2>&1
+    echo "rc $?"
+    kill -0 "$wok_bad" 2>/dev/null && echo "bad-limit process still running"
+    sleep 0.2 &
+    wait_or_kill "$!" 5
+    echo "after" >&9
+    echo "fd9 ok"
+)"
+check_that "wait_or_kill refuses a limit that is not whole seconds and leaves the caller's fd 9 alone" \
+    '[[ "$wok_out" == *"limit must be whole seconds"*"rc 2"*"fd9 ok" && "$wok_out" != *"still running"* && "$(cat "$wok_fd_file")" == "after" ]]'
+check_that "test.sh refuses a TEST_SHARD_TIMEOUT_S that is not whole seconds before any work" \
+    '[[ "$(GODOT=/nonexistent TEST_SHARD_TIMEOUT_S=1.5 ./tools/test.sh 2>&1; echo "rc $?")" == *"must be whole seconds"*"rc 2" ]]'
 
 # ------------------------------------------------ audit-pck.sh reads the artefact, not the tree ---
 # A minimal format-4 pack keeps this regression independent of Godot and export templates while

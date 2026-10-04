@@ -1,0 +1,16 @@
+{
+  "command": ["./tools/bake-atlases.sh"],
+  "exit_status": 0,
+  "elapsed_seconds": 9,
+  "interval_seconds": 0.5,
+  "samples": 18,
+  "paths": [
+    {"path": "/tmp/teal-ibis-measure/wt-full/assets/atlases/baked", "baseline_kib": 0, "peak_kib": 1148, "final_kib": 1148},
+    {"path": "/tmp/teal-ibis-measure/wt-full/.godot", "baseline_kib": 0, "peak_kib": 0, "final_kib": 0}
+  ],
+  "peak_additional_kib": 1148,
+  "retained_kib": 1148,
+  "available_start_kib": 72099416,
+  "available_min_kib": 71614068,
+  "available_end_kib": 71613044
+}

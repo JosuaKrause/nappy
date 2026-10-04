@@ -1,0 +1,16 @@
+{
+  "command": ["./tools/export-web.sh", "debug"],
+  "exit_status": 0,
+  "elapsed_seconds": 13,
+  "interval_seconds": 0.5,
+  "samples": 24,
+  "paths": [
+    {"path": "/tmp/teal-ibis-measure/wt-full/build", "baseline_kib": 0, "peak_kib": 39516, "final_kib": 39516},
+    {"path": "/tmp/teal-ibis-measure/wt-full/.godot", "baseline_kib": 1004, "peak_kib": 1112, "final_kib": 1112}
+  ],
+  "peak_additional_kib": 39624,
+  "retained_kib": 39624,
+  "available_start_kib": 71561852,
+  "available_min_kib": 71519748,
+  "available_end_kib": 71519948
+}
