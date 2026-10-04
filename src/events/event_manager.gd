@@ -692,7 +692,7 @@ func mast_foot(mast_id: String) -> Vector2:
 	return Vector2.INF
 
 ## **One more mast, for day 11's task, generated as the next event** when no live mast stands near
-## the mark she read (`ResistanceDirector._place_at_a_mast()`). *(2026-10-03, inbox #486, the
+## the mark she read (`ResistanceDirector._place_at_a_mast()`). *(2026-10-03, quiet-yak, inbox #486, the
 ## player: "The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
 ## harder to encounter masts. We need to discuss this again but not now. Now just add a new mast
 ## close by" · inbox #503: "no events are dynamically created as you walk around -- if there is a

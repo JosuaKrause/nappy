@@ -6,7 +6,7 @@
 # before the first byte of the batch is written. It compares the space the volume holding
 # DESTINATION has available (`df -Pk`, on DESTINATION's nearest existing ancestor, since a build
 # directory need not exist yet) with the batch's estimated peak, and with that peak plus a reserve.
-# Three bands *(2026-10-03, inbox #496: "Yes tool should warm and only refuse if it's not
+# Three bands *(2026-10-03, quiet-yak, inbox #496: "Yes tool should warm and only refuse if it's not
 # possible")*:
 #   - below the estimated peak -- an upper bound, so the batch may not finish rather than certainly
 #     cannot -- it refuses: it names the available space, the shortfall, the smaller-batch step

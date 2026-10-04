@@ -5,7 +5,7 @@
 prepared in one frame 3) graphic creation is smeared out like in the PR"; statement 2: "yes it
 should be a flag I can use in mobile under debug"; statement 3: "we should measure option 2 like we
 measure option 1 and 3". On 2026-10-03, asked whether mode 1 keeps the old atomic code's 2ms
-budget ([inbox #497](https://github.com/JosuaKrause/nappy/issues/497)): "if we keep the 2ms budget then it also should apply to the next frame and so
+budget ([inbox #497](https://github.com/JosuaKrause/nappy/issues/497), filed in [gray-egret](../playtests/2026-10-03-gray-egret.md)): "if we keep the 2ms budget then it also should apply to the next frame and so
 on". Context: [snowy-ibis](../playtests/2026-10-02-snowy-ibis.md),
 [sunny-chipmunk](../playtests/2026-10-03-sunny-chipmunk.md), and the
 [silky-rabbit record](2026-10-02-silky-rabbit.md), whose stepping is mode 3.)*
@@ -62,7 +62,7 @@ name and its values 1, 2, 3; a guard preparation using up mode 2's one region a 
 `?groundmode=` on the released page kept off the save like the other `?debug=1` words.
 
 **A reading, open to overturn:** mode 1 keeping the 2ms budget. Asked on
-[inbox #497](https://github.com/JosuaKrause/nappy/issues/497) between no budget and keeping it, the
+[inbox #497](https://github.com/JosuaKrause/nappy/issues/497) ([gray-egret](../playtests/2026-10-03-gray-egret.md)) between no budget and keeping it, the
 player chose neither and answered with a condition, "if we keep the 2ms budget then it also should
 apply to the next frame and so on"; keeping it, re-budgeted in every following frame, meets that
 condition, and is a reading of mode 1's "as many graphics as needed are prepared in one frame".
