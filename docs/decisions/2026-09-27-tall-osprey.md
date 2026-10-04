@@ -17,7 +17,9 @@ reach, is 62px; the "Two-thirds wins" placement is unchanged.
 **The player's choices** (inbox #526, 2026-10-04): keep the lunge out while only the catch shrinks
 ("Keep the stand-off at 108px"); then, shown a longer lunge measured, "yes measure", and picked
 120px; then, shown that 120px needs a 315px arrival distance against M137's 311px ceiling,
-"116px, keep every rule".
+"116px, keep every rule". The notice times those questions quoted counted only her walk
+from his notice to his lunge (0.35s at 108px, 0.26s at 116px); measured with him closing on her,
+they are about half that, below. The player was told the corrected figures after choosing (2026-10-04).
 
 **Measured** (`tests/probes/tall_osprey_catch.gd`, 200 seeded chases per row, evidence in
 [tall-osprey-catch-2026-10-04](../evidence/tall-osprey-catch-2026-10-04/README.md)). Standing
