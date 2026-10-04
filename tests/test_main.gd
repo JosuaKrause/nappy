@@ -46,6 +46,7 @@ func run(t) -> void:
 	_test_focus_lost_does_nothing_under_the_override(t)
 	_test_return_ignores_input_for_half_a_second(t)
 	_test_return_window_always_ends(t)
+	_test_return_window_needs_a_departure(t)
 	_test_return_window_is_off_under_the_override(t)
 	_test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t)
 
@@ -891,6 +892,7 @@ func _test_return_ignores_input_for_half_a_second(t) -> void:
 		var starts := [0]
 		main._summary.continued.connect(func(): starts[0] += 1)
 		main._summary.show_day_brief(3, 3)
+		main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 		main.notification(what)
 		_press_accept(t)
 		t.check(starts[0] == 0, "a press inside the window does not start the day from the brief")
@@ -909,6 +911,7 @@ func _test_return_ignores_input_for_half_a_second(t) -> void:
 func _test_return_window_always_ends(t) -> void:
 	var main := _build_focus_pause_main(t)
 	main._return_viewport = t.get_viewport()
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	main._arm_the_return_window()
 	main._process(0.0)
@@ -916,10 +919,40 @@ func _test_return_window_always_ends(t) -> void:
 	main._input_ignored_until_msec = Time.get_ticks_msec() - 1
 	main._process(0.0)
 	t.check(not t.get_viewport().is_input_disabled(), "the first frame after it puts input back")
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	main._exit_tree()
 	t.check(not t.get_viewport().is_input_disabled(),
 			"a scene reload inside the window does not leave the new scene deaf")
+	_teardown_focus_pause_main(t, main)
+
+## The window opens on a return, not on the first focus at load: a focus-in with no loss before it
+## does not arm (the v0.25.0 browser check's Space arrived inside it and was dropped), a loss then a
+## focus-in does, and the web's `blur`/`visibilitychange`/`focus` decide the same way.
+func _test_return_window_needs_a_departure(t) -> void:
+	var main := _build_focus_pause_main(t)
+	main._return_viewport = t.get_viewport()
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	t.check(not t.get_viewport().is_input_disabled() and main._input_ignored_until_msec == 0,
+			"a focus-in with no loss before it (the page's own focus at load) does not arm")
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	t.check(t.get_viewport().is_input_disabled(), "a loss then a focus-in arms")
+	main._end_the_return_window(true)
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	t.check(not t.get_viewport().is_input_disabled(), "the departure is spent: a second focus-in does not arm")
+	# The web path.
+	main._on_web_event("focus", "visible")
+	t.check(not t.get_viewport().is_input_disabled(), "web: a focus with no blur before it does not arm")
+	main._on_web_event("blur", "visible")
+	main._on_web_event("focus", "visible")
+	t.check(t.get_viewport().is_input_disabled(), "web: a blur then a focus arms")
+	main._end_the_return_window(true)
+	main._on_web_event("visibilitychange", "hidden")
+	t.check(not t.get_viewport().is_input_disabled(), "web: the page going hidden does not arm")
+	main._on_web_event("visibilitychange", "visible")
+	t.check(t.get_viewport().is_input_disabled(), "web: hidden then visible arms")
+	t.get_viewport().set_disable_input(false)
 	_teardown_focus_pause_main(t, main)
 
 ## A rig (`--no-focus-pause`, `--screenshot`) is never slowed by the window.
@@ -927,11 +960,13 @@ func _test_return_window_is_off_under_the_override(t) -> void:
 	var main := _build_focus_pause_main(t)
 	main._return_viewport = t.get_viewport()
 	main._no_focus_pause = true
+	main._has_left_the_game = true
 	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	t.check(not t.get_viewport().is_input_disabled(),
 			"under the override a return does not start the window")
 	main._no_focus_pause = false
 	main._rig_locked_out = true
+	main._has_left_the_game = true
 	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	t.check(not t.get_viewport().is_input_disabled(), "nor does a rig run (--walk, --press ...)")
 	_teardown_focus_pause_main(t, main)

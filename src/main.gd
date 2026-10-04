@@ -2662,6 +2662,16 @@ func _input(event: InputEvent) -> void:
 func _ignoring_input_after_a_return() -> bool:
 	return Time.get_ticks_msec() < _input_ignored_until_msec
 
+## Whether the game has lost focus or been hidden since the window last opened. **A return needs a
+## departure:** the page's own first focus at load is not a return, and a player's first tap in the
+## half second after the page loads must reach the game (the browser check's Space does). Set by
+## `_note_leaving_the_game()`, cleared by `_arm_the_return_window()` when it opens the window.
+var _has_left_the_game := false
+
+## Marks that the game has been left (focus out, paused, the page hidden or blurred).
+func _note_leaving_the_game() -> void:
+	_has_left_the_game = true
+
 ## The viewport whose input is switched off for the window; `_ready()` sets it, a test sets its own.
 var _return_viewport: Viewport = null
 
@@ -2675,12 +2685,13 @@ var _return_viewport: Viewport = null
 ## released. **Nothing can leave input off:** the end is read off the wall clock by `_process()`
 ## (`_end_the_return_window()`), which runs under a pause, and `_exit_tree()` and `_ready()` clear
 ## it too, because the root viewport outlives a scene reload. Idempotent: a second trigger inside
-## the window moves the end. A no-op for a rig (`_rig_locked_out`: any of `--screenshot`, `--walk`,
+## the window moves the end. A no-op without a departure first (`_has_left_the_game`), and a no-op for a rig (`_rig_locked_out`: any of `--screenshot`, `--walk`,
 ## `--flee`, `--press`, `--tap`, `--route`, a recording or a scripted recipe — `DevFlags.is_rig()`)
 ## and under `_no_focus_pause` (`--no-focus-pause`), so a rig is never slowed.
 func _arm_the_return_window() -> void:
-	if _no_focus_pause or _rig_locked_out or _return_viewport == null:
+	if not _has_left_the_game or _no_focus_pause or _rig_locked_out or _return_viewport == null:
 		return
+	_has_left_the_game = false
 	_input_ignored_until_msec = Time.get_ticks_msec() + RETURN_INPUT_IGNORED_MSEC
 	_return_viewport.set_disable_input(true)
 
@@ -2695,8 +2706,9 @@ func _end_the_return_window(force := false) -> void:
 
 ## The web page is where "returning" was seen, and the engine's FOCUS_IN on a tab return is not
 ## confirmed there, so a second trigger comes straight from the browser: the page becoming visible
-## again (`visibilitychange`) and the window getting focus (`focus`). Whichever arrives opens the
-## same window, and `_arm_the_return_window()` is idempotent. Web builds only.
+## again (`visibilitychange`) and the window getting focus (`focus`); the departures are the page
+## going hidden and the window losing focus (`blur`). Whichever return arrives first opens the
+## window; later ones inside it find the departure already spent. Web builds only.
 var _web_return_callback: JavaScriptObject = null
 func _listen_for_a_web_return() -> void:
 	if not OS.has_feature("web"):
@@ -2706,6 +2718,7 @@ func _listen_for_a_web_return() -> void:
 	var window := JavaScriptBridge.get_interface("window")
 	document.addEventListener("visibilitychange", _web_return_callback)
 	window.addEventListener("focus", _web_return_callback)
+	window.addEventListener("blur", _web_return_callback)
 
 ## Removes what `_listen_for_a_web_return()` added, so a scene reload does not pile up listeners.
 func _stop_listening_for_a_web_return() -> void:
@@ -2713,14 +2726,22 @@ func _stop_listening_for_a_web_return() -> void:
 		return
 	JavaScriptBridge.get_interface("document").removeEventListener("visibilitychange", _web_return_callback)
 	JavaScriptBridge.get_interface("window").removeEventListener("focus", _web_return_callback)
+	JavaScriptBridge.get_interface("window").removeEventListener("blur", _web_return_callback)
 	_web_return_callback = null
 
 func _on_web_return(args: Array) -> void:
 	var event: JavaScriptObject = args[0] if args.size() > 0 else null
 	var kind := str(event.type) if event != null else ""
-	if kind == "visibilitychange" and str(JavaScriptBridge.get_interface("document").visibilityState) != "visible":
-		return
-	_arm_the_return_window()
+	_on_web_event(kind, str(JavaScriptBridge.get_interface("document").visibilityState))
+
+## The decision half of the web callback, with the browser's answers passed in so a test can drive
+## it: a `blur`, or a `visibilitychange` to anything but "visible", is a departure; a `focus`, or a
+## `visibilitychange` to "visible", is a return.
+func _on_web_event(kind: String, visibility: String) -> void:
+	if kind == "blur" or (kind == "visibilitychange" and visibility != "visible"):
+		_note_leaving_the_game()
+	elif kind == "focus" or kind == "visibilitychange":
+		_arm_the_return_window()
 
 ## A static, pure predicate for the same reason `_debug_snapshot_action()` and `_debug_layer_key()`
 ## are static — a test can ask it directly without booting a `main` (`_ready()` starts a whole run),
@@ -3003,6 +3024,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		Telemetry.end_run()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		_note_leaving_the_game()
 		_pause_on_focus_lost()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
 		_arm_the_return_window()
