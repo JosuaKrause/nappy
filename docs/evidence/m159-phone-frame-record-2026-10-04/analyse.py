@@ -66,11 +66,6 @@ def mean(values: Iterable[float]) -> float:
     return statistics.fmean(list(values))
 
 
-def largest_cost(row: Row) -> str:
-    """The bucket that took most of a frame, `wait` excluded since it is not a cost."""
-    return max(BUCKETS[:-1], key=lambda b: row[f"{b}_usec"])
-
-
 def jobs(row: Row) -> int:
     return sum(row[name] for name in JOBS)
 
@@ -260,7 +255,7 @@ def phase(rows: list[Row], row: Row) -> str:
     return "day 1, first 40s" if seconds(rows, row) < SPLIT_SECONDS else "day 1, after 40s"
 
 
-def buckets(rows: list[Row]) -> None:
+def buckets(record: dict[str, object], rows: list[Row]) -> None:
     heading("4. Which system the time goes to")
     ordered = sorted(rows, key=lambda r: r["frame_usec"])
     worst10 = ordered[-len(rows) // 10 :]
@@ -286,8 +281,24 @@ def buckets(rows: list[Row]) -> None:
         ],
         out,
     )
-    largest = Counter(largest_cost(r) for r in rows)
-    print("Largest cost in each frame (wait excluded):", dict(largest.most_common()), "\n")
+    # A tie is counted apart rather than handed to whichever bucket comes first in BUCKETS: the
+    # record's own summary breaks ties its own way, so a silent tie-break would disagree with it.
+    largest: Counter[str] = Counter()
+    ties = []
+    for r in rows:
+        top = max(r[f"{b}_usec"] for b in BUCKETS[:-1])
+        tied = [b for b in BUCKETS[:-1] if r[f"{b}_usec"] == top]
+        if len(tied) > 1:
+            ties.append((r["process_frame"], " and ".join(tied), ms(top)))
+        else:
+            largest[tied[0]] += 1
+    print("Largest cost in each frame, outright (wait excluded):", dict(largest.most_common()), "\n")
+    if ties:
+        print("Frames where two or more buckets tie for the largest:\n")
+        table(["process frame", "tied", "ms each"], ties)
+    summary = record["summary"]
+    assert isinstance(summary, dict)
+    print("The record's own summary, ties broken its own way:", summary["largest_cost_in_slow_frames"], "\n")
     print("By stretch of the run:\n")
     stretches: dict[str, list[Row]] = defaultdict(list)
     for r in rows:
@@ -380,9 +391,33 @@ def steps(rows: list[Row]) -> None:
     table(["bucket", "added by the second step, ms"], added)
 
 
-def fit(xs: Sequence[float], ys: Sequence[float]) -> tuple[float, float, float]:
-    slope, intercept = statistics.linear_regression(xs, ys)
-    return slope, intercept, statistics.correlation(xs, ys)
+def least_squares(columns: Sequence[Sequence[float]], ys: Sequence[float]) -> tuple[list[float], float]:
+    """Ordinary least squares with an intercept: answers the coefficients, the intercept first,
+    and R squared. The normal equations are solved by Gaussian elimination with partial pivoting,
+    which is exact enough for four regressors over a few hundred rows."""
+    n = len(ys)
+    design = [[1.0, *(column[i] for column in columns)] for i in range(n)]
+    width = len(design[0])
+    normal = [[sum(row[a] * row[b] for row in design) for b in range(width)] for a in range(width)]
+    target = [sum(row[a] * y for row, y in zip(design, ys, strict=True)) for a in range(width)]
+    for col in range(width):
+        pivot = max(range(col, width), key=lambda r: abs(normal[r][col]))
+        normal[col], normal[pivot] = normal[pivot], normal[col]
+        target[col], target[pivot] = target[pivot], target[col]
+        for r in range(col + 1, width):
+            factor = normal[r][col] / normal[col][col]
+            for c in range(col, width):
+                normal[r][c] -= factor * normal[col][c]
+            target[r] -= factor * target[col]
+    coefficients = [0.0] * width
+    for r in reversed(range(width)):
+        known = sum(normal[r][c] * coefficients[c] for c in range(r + 1, width))
+        coefficients[r] = (target[r] - known) / normal[r][r]
+    fitted = [sum(c * x for c, x in zip(coefficients, row, strict=True)) for row in design]
+    average = statistics.fmean(ys)
+    residual = sum((y - f) ** 2 for y, f in zip(ys, fitted, strict=True))
+    total = sum((y - average) ** 2 for y in ys)
+    return coefficients, 1.0 - residual / total
 
 
 def tracking(rows: list[Row]) -> None:
@@ -399,25 +434,47 @@ def tracking(rows: list[Row]) -> None:
         earlier = [float(b[column]) for b, _ in consecutive]
         against.append((label, f"{statistics.correlation(earlier, after):.2f}"))
     table(["draw against", "correlation, every frame"], against)
-    steady = [r for r in rows if phase(rows, r) == "day 1, first 40s" and r["physics_steps"] == 1]
+    # One stretch and one step count, and only frames whose previous frame was kept, so every
+    # model below is fitted to the same frames. Draw follows the previous frame's length (the
+    # phone's speed drifts), so a fit on draw calls alone credits the drift to the counter and to
+    # the intercept; the second and third models hold the previous frame's length fixed.
+    steady_pairs = [
+        (before, row)
+        for before, row in consecutive
+        if phase(rows, row) == "day 1, first 40s" and row["physics_steps"] == 1
+    ]
+    steady = [row for _, row in steady_pairs]
+    calls = [float(r["draw_calls"]) for r in steady]
+    previous = [ms(b["frame_usec"]) for b, _ in steady_pairs]
+    objects = [float(r["render_objects"]) for r in steady]
+    primitives = [float(r["primitives"]) for r in steady]
+    drawn = [float(r["draw_usec"]) for r in steady]
     print(
-        f"Within one stretch and one step count (day 1's first 40s, one step: {len(steady)} frames),"
-        " a straight line through draw:\n"
+        f"Draw fitted by least squares within one stretch and one step count (day 1's first 40s, one"
+        f" step, previous frame kept: {len(steady)} frames; draw calls {min(calls):.0f}-{max(calls):.0f},"
+        f" previous frame {min(previous):.1f}-{max(previous):.1f}ms):\n"
     )
-    out: list[tuple[str, str, str, float, str]] = []
-    for counter, per in [("draw_calls", 1), ("render_objects", 100), ("primitives", 1000)]:
-        xs = [float(r[counter]) for r in steady]
-        slope, intercept, r_value = fit(xs, [float(r["draw_usec"]) for r in steady])
-        out.append(
+    models: list[tuple[str, list[list[float]]]] = [
+        ("draw calls", [calls]),
+        ("draw calls + previous frame", [calls, previous]),
+        ("draw calls + previous frame + objects + primitives", [calls, previous, objects, primitives]),
+    ]
+    fits = []
+    for name, columns in models:
+        coefficients, r_squared = least_squares(columns, drawn)
+        fits.append(
             (
-                counter,
-                f"{min(xs):.0f}-{max(xs):.0f}",
-                f"{slope * per:.1f}us per {per}",
-                ms(intercept),
-                f"{r_value:.2f}",
+                name,
+                f"{coefficients[1]:.1f}us",
+                ms(coefficients[0]),
+                f"{coefficients[2] / 1000:.2f}" if len(columns) > 1 else "-",
+                f"{r_squared:.2f}",
             )
         )
-    table(["counter", "range", "slope", "draw at zero", "correlation"], out)
+    table(
+        ["model", "per draw call", "draw at zero calls (intercept), ms", "draw ms per ms of previous frame", "R2"],
+        fits,
+    )
     bins: dict[int, list[float]] = defaultdict(list)
     for r in steady:
         bins[r["draw_calls"] // 50 * 50].append(ms(r["draw_usec"]))
@@ -501,12 +558,40 @@ def workload(rows: list[Row]) -> None:
             for b, rs in sorted(bins.items())
         ],
     )
+    # The live-event count rises over the same stretch in which the phone drifts slower, so the
+    # slope is fitted again with the previous frame's length held fixed, as draw's is in section 6.
+    pairs = [
+        (before, row)
+        for before, row in pairwise(rows)
+        if row["process_frame"] == before["process_frame"] + 1
+        and phase(rows, row) == "day 1, first 40s"
+        and row["physics_steps"] == 1
+    ]
+    live = [float(r["live_events"]) for _, r in pairs]
+    previous = [ms(b["frame_usec"]) for b, _ in pairs]
     out = []
+    totals = [0.0, 0.0]
     for b in ["events", "cues", "crowd", "influence"]:
-        xs = [float(r["live_events"]) for r in steady]
-        slope, _, r_value = fit(xs, [float(r[f"{b}_usec"]) for r in steady])
-        out.append((b, f"{slope:.0f}us per live event", f"{r_value:.2f}"))
-    table(["bucket", "slope (day 1, first 40s, one step)", "correlation"], out)
+        ys = [float(r[f"{b}_usec"]) for _, r in pairs]
+        alone, alone_r2 = least_squares([live], ys)
+        held, _ = least_squares([live, previous], ys)
+        totals[0] += alone[1]
+        totals[1] += held[1]
+        out.append(
+            (
+                b,
+                f"{alone[1]:.0f}us",
+                f"{statistics.correlation(live, ys):.2f}",
+                f"{alone_r2:.2f}",
+                f"{held[1]:.0f}us",
+            )
+        )
+    out.append(("all four", f"{totals[0]:.0f}us", "", "", f"{totals[1]:.0f}us"))
+    print(f"Slope per live event, day 1's first 40s, one step, previous frame kept ({len(pairs)} frames):\n")
+    table(
+        ["bucket", "per live event, alone", "correlation", "R2", "per live event, previous frame held fixed"],
+        out,
+    )
 
 
 def scenery(rows: list[Row]) -> None:
@@ -593,7 +678,7 @@ SECTIONS: list[Callable[[dict[str, object], list[Row]], None]] = [
     coverage,
     lambda _record, rows: distribution(rows),
     lambda _record, rows: over_time(rows),
-    lambda _record, rows: buckets(rows),
+    buckets,
     lambda _record, rows: steps(rows),
     lambda _record, rows: tracking(rows),
     lambda _record, rows: workload(rows),
