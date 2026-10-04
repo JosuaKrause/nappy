@@ -158,10 +158,43 @@ request carries the whole batch:
   source and is never rewritten afterwards.
 - **File the queue from it** exactly as **playtest-feedback** says, each entry opening with the
   note's band.
+- **Patch the citations of the notes just copied**, before the pull request is opened. Records,
+  docs, skills and code comments that already quote a note cite it as `inbox #N`, a closed issue
+  once it is filed; the playtest goes beside that number, which stays:
+
+  ```sh
+  uv run python tools/inbox.py cite N M ... --dry-run   # the numbers of the batch, as in its `Filed from` lines
+  uv run python tools/inbox.py cite N M ...
+  ```
+
+  The pull request does not exist yet at this step, so the notes are given by number; once it is
+  open, `cite --pr P` reads the same numbers from its `Filed from #N` lines, for a later pass.
+
+  `cite` finds each note's playtest from its `## #N` heading under `docs/playtests/` and, in every
+  tracked text file outside `docs/playtests/`, turns the plain `inbox #N` (and a run such as
+  `inbox #9001, #9002 and #9003`) into `inbox #N in [name](relative link)` in Markdown, skills
+  included, and `inbox #N in name` in a code comment. A number counts only as `#N` followed by no
+  digit or letter, or as `issues/N` in a URL, so an SVG colour such as `#9004a6` never matches. A
+  bare `(#N)`, a range such as `#9001-#9005`, an issue URL, a link text and a run mixing playtests are
+  listed as `file:line: text` and never edited. **Fix a listed citation by hand, the same way, when
+  nothing near it names the playtest**; a bare number inside a sentence, list or heading that already
+  links the playtest can stay. A line that already names the playtest, or a citation already followed
+  by ` in <name or link>`, is left alone (a different playtest there is listed), so a second run
+  changes nothing. **Then read
+  `git diff` by eye**: a `#N` that is not a note (a pull request, an SVG colour written as three
+  digits) shows up there, and an edit the tool should not have made is reverted by hand. Because
+  this edits code comments, the filing pull request may touch `src/` and `tests/`, which makes it a
+  code pull request for CI (`tools/ci_classify.py`), and **that has a cost**: it is no longer
+  queue-only, so it loses the queue update's merge-first lane and its lighter faithfulness review
+  and gets the full review. Its commits, push and writes go out as
+  `claude-coder` from that commit on, and its description carries a `No queue item: <reason>` line
+  (`tools/ci_code_pr_queue.py`). **Anything written after a filing cites the playtest file, not the
+  closed issue.**
 - **Open one pull request whose description names every note on a line of its own,
   `Filed from #N`** — never `Closes #N`, which would leave the note open and editable until the
-  merge. It is docs-only, so its commits, push and pull request go out as `claude-orchestrator`
-  (Codex: `codex-coder`), under **committing**. CI's transcription check reads those lines and
+  merge. It is docs-only unless `cite` edited a code comment, so its commits, push and pull request go
+  out as `claude-orchestrator` (Codex: `codex-coder`), under **committing**, or as `claude-coder` once
+  it is a code pull request. CI's transcription check reads those lines and
   fails a note that is not the player's or whose text, appended words included, is not in a playtest
   file the pull request adds, word for word.
 - **Right after pushing the pull request, close the batch in one call** *(2026-09-27: "maybe
