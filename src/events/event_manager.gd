@@ -630,7 +630,7 @@ var _pelican_rng: RandomNumberGenerator
 ## rider, **as its warning goes up** (`_warn_down_her_line()`), and handed to `spawn_warned()` when
 ## the warning is over, which is what keeps a rider one thing for its whole ride — and what lets the
 ## run log call it `pelican` from its first line, the badge going up, rather than only from the frame
-## it is created *(inbox #527, the player: "logs should be correctly identifying it from the
+## it is created *(inbox #527 in azure-tapir, the player: "logs should be correctly identifying it from the
 ## beginning")*.
 ##
 ## **Only from `_warn_down_her_line()`**, the path every cyclist takes (a `TOWARD_PLAYER` row the

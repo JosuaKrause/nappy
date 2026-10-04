@@ -370,7 +370,7 @@ class FormatTextTests(unittest.TestCase):
         self.assertLess(lines.index(line_with(lines, "won")), lines.index(line_with(lines, "Lost:")))
 
     def test_the_pelican_events_read_back_under_their_day_and_its_loss_as_a_cause(self) -> None:
-        # The pelican's own four events and a day lost to it (inbox #527: "it must appear as its own
+        # The pelican's own four events and a day lost to it (inbox #527 in azure-tapir: "it must appear as its own
         # entry"), in VisitCounter's day-numbered shape -- listed under the day they were sent on,
         # never among the names that match none of the known shapes.
         hits = [

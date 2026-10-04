@@ -44,7 +44,7 @@ two trap rows (the walk-away ceiling below), and the van guard's cone above and 
 (`arrival_cone()`) must stay over 10 degrees, which needs a start of at least about 310px, so a catch
 under 25px has no start that satisfies both.
 
-## The lunge (inbox #526)
+## The lunge (inbox #526 in [azure-tapir](../../playtests/2026-10-04-azure-tapir.md))
 
 Measured for the alley robber alone: his stand-off at 108, 112, 116, 120 and 130px, set as
 `lunge_reach` = stand-off less 78; every other pursuer, the day-3 dog included, keeps

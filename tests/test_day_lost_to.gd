@@ -49,7 +49,7 @@ func _test_crying_cause_suffix(t) -> void:
 	t.check(MAIN_SCRIPT._crying_cause_suffix({}) == "self",
 		"an empty window falls back to her own unattributed share")
 
-## The pelican is named `pelican` in the cause, never its row's `cyclist` *(inbox #527)*: a hard fail
+## The pelican is named `pelican` in the cause, never its row's `cyclist` *(inbox #527 in azure-tapir)*: a hard fail
 ## through `EventManager.what_struck_her()`'s own name, and a crying loss through the events half of
 ## the grouping, where a pelican's share is its own rather than added to the cyclists'.
 func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:

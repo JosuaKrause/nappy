@@ -25,7 +25,7 @@ the release; and a note kept that each task is to be verified with the scenes.
 **The existing tool.** Authored scene recipes ([`docs/SCENE_RECIPES.md`](../../SCENE_RECIPES.md))
 are saved JSON under `scene-recipes/`, built by `RecipeCityBuilder`, played with
 `tools/run.sh --recipe <file>` (free play, physical input) and asserted headlessly by
-`tools/scene-recipes.sh`. That the scenes are recipes is the filer's proposal, below.
+`tools/scene-recipes.sh`. The scenes are recipes, as the player answered (below).
 
 **What a recipe cannot do yet**, which the scenes need:
 
@@ -42,19 +42,17 @@ are saved JSON under `scene-recipes/`, built by `RecipeCityBuilder`, played with
   may need explicit support of its own.
 
 **Where the targets are.** Each day's target, and what counts as reaching it, is in the task
-table of [`docs/NARRATIVE.md`](../../NARRATIVE.md) and, for the targets as the open pull request
-#480 changes them, in `docs/decisions/2026-10-03-feathery-marmot.md` on that pull request's branch
-(not yet on `main`; the path is the link once it merges).
-The path measure for "near its mark" goes into PR #480 itself, not into this entry.
+table of [`docs/NARRATIVE.md`](../../NARRATIVE.md), and why each stands where it does in
+[`docs/decisions/2026-10-03-feathery-marmot.md`](../../decisions/2026-10-03-feathery-marmot.md).
+
+**The scenes are recipes with live tasks** (inbox #513 in [azure-tapir](../../playtests/2026-10-04-azure-tapir.md)). Asked "how should a scene be built?",
+between "Recipes with live tasks" (recipes gain a field for a mark and its task: the day's task
+offered from the start, its arrow live, the target events installed, so the task can be played to
+completion) and "Authored actors only" (mark and target placed with no task logic running), the
+player answered "Recipes with live tasks (Recommended)".
 
 **Proposed, not asked for:**
 
-- That the scenes are recipes, one file each: the player asked for scenes, not for the recipe
-  mechanism. A recipe `setup` field for a mark and its task (a day's task offered from the scene's
-  start, its arrow live), and named mast and rider support for the van, would give the scenes what
-  they lack. The plainer alternative is a scene with the mark and target as authored actors only,
-  with no task logic running, which tests where a target stands but not that the task is reached
-  and completed.
 - Days 6 to 14 as the set: the filer's reading of "each day's target", being the days whose task
   table row names a target.
 - A gating rule that a task's target is not called checked until the player has played its scene,

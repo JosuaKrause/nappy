@@ -967,7 +967,7 @@ var is_finished := false
 var is_pelican := false
 
 ## What every run log line and every GoatCounter event calls a pelican, in place of its row's own
-## `cyclist`. *(Inbox #527, the player: "logs should be correctly identifying it from the
+## `cyclist`. *(Inbox #527 in azure-tapir, the player: "logs should be correctly identifying it from the
 ## beginning".)*
 const PELICAN_NAME := "pelican"
 
