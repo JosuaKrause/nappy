@@ -16,3 +16,6 @@ dawn by a weighted roll over the whole city (`EventScheduler`), with a few `AHEA
 placed later out of where she walks. Day 6's task, a note for the man shouting, relies on several
 `homeless_yeller` rows already being live, and the player rarely meets one after the first mark.
 The bags reach the events placed on her route only (the player's answer, 2026-09-27).
+
+The bags and the route draw are built ([olive-badger](../../decisions/2026-09-27-olive-badger.md));
+what is left is the item below.
