@@ -1,0 +1,48 @@
+diff -ru a/src/events/event_instance.gd b/src/events/event_instance.gd
+--- a/src/events/event_instance.gd	2026-10-04 00:23:53
++++ b/src/events/event_instance.gd	2026-10-04 00:23:53
+@@ -1505,11 +1505,27 @@
+ 		return
+ 	_build_obstruction()
+ 
++var _m205_next := 0.0
++func _m205_probe() -> void:
++	if def.id != "homeless_yeller":
++		return
++	var now := Time.get_ticks_msec() / 1000.0
++	if now < _m205_next:
++		return
++	_m205_next = now + 1.0
++	var d := INF if player_at == Vector2.INF else global_position.distance_to(player_at)
++	var at_player := 0.0 if player_at == Vector2.INF else contribution_at(player_at)
++	print("[M205] id=%d d=%.1f c_player=%.3f cur=%.3f tele=%s age=%.2f rims=%d rim_alpha=%s" % [
++		get_instance_id(), d, at_player, current_intensity(), is_telegraphing(), age,
++		EntityHalo.m205_alive,
++		[_halo.get("_target_alpha"), _halo.get("_alpha")] if _halo else null])
++
+ func _process(delta: float) -> void:
+ 	if is_finished:
+ 		return
+ 	_clock += delta
+ 	age += delta
++	_m205_probe()
+ 	# The gait phase advances by whatever this tick actually adds to `_path_travelled` below,
+ 	# whichever branch does the adding (`_leave`, `_advance_along_path`, `_chase`) or none of them
+ 	# — see `_advance_gait()`, called once at every exit from this function.
+diff -ru a/src/ui/entity_halo.gd b/src/ui/entity_halo.gd
+--- a/src/ui/entity_halo.gd	2026-10-04 00:23:53
++++ b/src/ui/entity_halo.gd	2026-10-04 00:23:53
+@@ -81,7 +81,13 @@
+ ## One `ShaderMaterial`, shared by every `EntityHalo` rather than built per instance.
+ static var _shared_material: ShaderMaterial
+ 
++static var m205_alive := 0
++func _notification(what: int) -> void:
++	if what == NOTIFICATION_PREDELETE:
++		m205_alive -= 1
++
+ func _init(draw_body: Callable, bob: Callable) -> void:
++	m205_alive += 1
+ 	_draw_body = draw_body
+ 	_bob = bob
+ 	name = "Halo"
