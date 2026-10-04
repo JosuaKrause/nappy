@@ -25,7 +25,7 @@ while it is lit or fading, and `ExcitementHalo` keeps the rims alive at once wit
 |---|---|---|
 | `released-v0.23.0.png` | the released page, nappy.josuakrause.com, v0.23.0 (custom template) | him at 94px, `incoming` 18.57/s, no rim on him; a car's rim drawn |
 | `before-e904eb17.png` | local release export of `e904eb17` (`main` before the fix), stock template | him at 147px, `incoming` 29.44/s, no rim on him; a walker's rim drawn |
-| `after-d6225463.png` | local release export of `d6225463` (the fix), stock template | him at 155px, `incoming` 21.04/s, his rim drawn |
+| `after-d6225463.png` | local release export of `d6225463` (the fix, on PR #525: `git fetch origin refs/pull/525/head` first), stock template | him at 155px, `incoming` 21.04/s, his rim drawn |
 
 `probe-console.txt` holds his own lines from a run of `e904eb17` with `probe.patch` applied: `d`
 is his distance from her, `c_player` his excitement/s at her, `rims` the `EntityHalo` nodes alive,
