@@ -264,6 +264,16 @@ var _candidates: Array = []
 ## `EntityHalo.RIM_BUDGET` entries.
 var _holders := {}
 
+## Every source told a nonzero glow by the last `_process()`, as dictionary keys: the picked sources
+## whose rims are lit rather than fading. A source still in it next frame, still picked and still
+## holding its rim, stays lit without waiting; any other picked source joins `_waiting`.
+var _lit := {}
+
+## The picked sources waiting to be lit, in the order they began waiting — oldest first, and
+## strongest first among those that began on the same frame. A source leaves the line when it is
+## lit, or when it is no longer picked. See `_process()` for why the line is served in this order.
+var _waiting: Array = []
+
 ## **The building shows what the city shows.** `events` is an event source rather than a day, the
 ## one question asked of it being `instances()`, and `crowd` may be null — so `InteriorEvents` and
 ## no crowd is a whole candidate set, and a masked man on the stairs or a steam vent in the
@@ -314,20 +324,34 @@ func setup(events: Node, crowd: Crowd, player: Node2D, baby: Baby) -> void:
 ## (`.claude/skills/cues/SKILL.md`, the player on 2026-09-08: "all changes should transition (hue
 ## and transparency) instead of immediately showing the actual value"). So a rim that has dropped
 ## out of the picked set always fades all the way out, and the budget is kept on the other side: a
-## newly picked source builds its rim only while fewer than the budget exist, strongest pick first,
-## and otherwise waits — then eases in from nothing like any other rim, once a fading one has
-## finished and given its block back. `MAX_SOURCES` sits under the budget, so a wait ends within one
-## `EntityHalo.FADE_OUT_SECONDS`; it happens only when the rims still fading take up everything the
-## picked set leaves of the budget — seven or more sources dropped inside one fade while eight are
-## picked.
+## picked source that holds no lit rim waits in `_waiting` until there is a block for it, then eases
+## in like any other rim. A wait happens only when the budget is full, and the source that stops
+## the line holds no rim, so the other picks hold at most seven: it takes eight or more rims still
+## fading while eight are picked, more while fewer are.
+##
+## **The line is served oldest first, and while anybody waits a fading rim is not lit again**, so
+## a wait ends within one `EntityHalo.FADE_OUT_SECONDS` and the frame or two it takes to see the
+## fade end. Strongest first would let every block freed by a finished fade go to a stronger pick
+## newer than the one already waiting, for as long as the picked set kept turning over — a street of
+## moving cars, which are crowd agents. And a rim still fading whose source is picked again holds
+## its block for another whole fade if it is lit again, so such a source joins the back of the line
+## like any other: its rim keeps fading while it waits, and is lit again in place if its turn comes
+## before the fade ends (nobody ahead of it waiting means at once). A source lit last frame and still
+## picked stays lit without waiting. That makes the bound true: once a pick starts waiting, the only
+## rims that can be lit before it are the picks already lit (they keep their blocks) and the ones
+## ahead of it in the line, fewer than eight between them since all are picked; every other rim
+## finishes its fade within one `FADE_OUT_SECONDS`, so by then there are fewer than
+## `RIM_BUDGET` rims and it is served. While it waits, a source with no rim shows nothing yet and
+## one with a fading rim goes on easing down: no change jumps.
 ##
 ## **The count is taken after every block that can come back this frame has**, because the engine
 ## hands a new rim its block before it releases one freed by a queued deletion (see `EntityHalo`'s
-## class doc): every unpicked source is told zero before any picked one builds, and a rim whose fade
-## is over is freed on the spot inside that call. `_holders` carries last frame's holders over,
-## so a source that has left the candidate set still counts while its rim exists — and one queued
-## for deletion (an event `EventManager` has just retired, a crowd cleared at the end of a day)
-## gives its rim back on the spot here, since its body goes before the next frame is drawn anyway.
+## class doc): every source not to be lit — unpicked, no longer a candidate, or waiting — is told
+## zero before any waiting source is served, and a rim whose fade is over is freed on the spot inside
+## that call. `_holders` carries last frame's holders over, so a source that has left the candidate
+## set still counts while its rim exists — and one queued for deletion (an event `EventManager` has
+## just retired, a crowd cleared at the end of a day) gives its rim back on the spot here, since its
+## body goes before the next frame is drawn anyway, and is never lit again.
 func _process(_delta: float) -> void:
 	if not _events or not _player or not _baby:
 		return
@@ -358,8 +382,8 @@ func _process(_delta: float) -> void:
 		# a caret, since the two cues answer different questions over different sets.
 		source.set_player_at(here, player_velocity, player_decay_rate, player_sensitivity)
 		total_expected_gross += source.expected_gross_at(here)
-	# Every block that can come back this frame comes back before any picked source builds — see
-	# this function's doc. First the rims of last frame's holders that are being deleted anyway.
+	# Every block that can come back this frame comes back before any waiting source is served —
+	# see this function's doc. First the rims of last frame's holders that are being deleted anyway.
 	for source in _holders:
 		if is_instance_valid(source) and source.is_queued_for_deletion():
 			source.release_halo()
@@ -379,15 +403,46 @@ func _process(_delta: float) -> void:
 		source.set_halo_strength(0.0, Palette.HALO_WEAK)
 		if source.holds_a_halo():
 			holders[source] = true
+	# The line: last frame's waiters still picked, in their order, then this frame's new ones,
+	# strongest first. A pick lit last frame that still holds its rim stays lit; every other pick
+	# waits its turn and is told zero meanwhile, so a fading rim among them goes on fading.
+	var lit := {}
+	var line: Array = []
+	var in_line := {}
+	for source in _waiting:
+		if is_instance_valid(source) and picked_set.has(source) \
+				and not source.is_queued_for_deletion():
+			line.append(source)
+			in_line[source] = true
+	for source in picked:
+		if source.is_queued_for_deletion():
+			continue
+		if _lit.has(source) and source.holds_a_halo():
+			lit[source] = true
+		elif not in_line.has(source):
+			line.append(source)
+			in_line[source] = true
+	for source in line:
+		source.set_halo_strength(0.0, Palette.HALO_WEAK)
 	for source in picked:
 		if source.holds_a_halo():
 			holders[source] = true
-	for source in picked:
-		# Strongest first, so when the budget is full it is the weakest new pick that waits.
+	# Served oldest first; the first one with no rim and no block to build one in stops the line,
+	# so nobody behind it is lit — not even a rim still fading — before it is.
+	var served := 0
+	for source in line:
 		if not source.holds_a_halo() and holders.size() >= EntityHalo.RIM_BUDGET:
+			break
+		lit[source] = true
+		holders[source] = true
+		served += 1
+	_waiting = line.slice(served)
+	for source in picked:
+		if not lit.has(source):
 			continue
 		var net := net_landed(source.landed(), total_landed, decay)
 		source.set_halo_strength(magnitude_for(net), colour_for(net))
 		if source.holds_a_halo():
 			holders[source] = true
+	_lit = lit
 	_holders = holders

@@ -1075,9 +1075,10 @@ var _obstruction: StaticBody2D
 
 ## The child that re-draws this event's own body in a ring of offsets — see `EntityHalo`, the
 ## class shared with `CrowdAgent` that owns the ring, the shared shader material and the drawing.
-## Built on this instance's first nonzero glow and freed once it has faded back out (or been cut),
-## so it is `null` whenever nothing is drawn — see `set_halo_strength()`, and `EntityHalo`'s class
-## doc for why a rim held by every live event leaves most of them dark on the web.
+## Built on this instance's first nonzero glow and freed on the spot once it has faded back out,
+## or by `ExcitementHalo` through `release_halo()` once this instance is queued for deletion, so it
+## is `null` whenever nothing is drawn — see `set_halo_strength()`, and `EntityHalo`'s class doc
+## for why a rim held by every live event leaves most of them dark on the web.
 var _halo: EntityHalo
 
 ## `[when, points]` entries landed on her from this event, `when` stamped from `_clock` in

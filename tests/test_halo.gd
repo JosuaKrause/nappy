@@ -47,6 +47,8 @@ func run(t) -> void:
 	_test_the_lit_rims_always_fit_the_budget(t)
 	_test_live_rims_stay_within_what_the_web_can_read(t)
 	_test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t)
+	_test_a_waiting_pick_is_lit_within_one_fade_however_fast_picks_turn_over(t)
+	_test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t)
 
 func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventDef:
 	var def := EventDef.new()
@@ -877,6 +879,212 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 	t.check(probe.most <= EntityHalo.RIM_BUDGET,
 			"and at most %d rims were held at any moment, within the budget of %d"
 			% [probe.most, EntityHalo.RIM_BUDGET])
+	manager.free()
+	probe.stop()
+	player.free()
+	halo.free()
+	baby.free()
+
+## A source in nothing but `ExcitementHalo`'s duck type, for a picked set a test turns over by hand:
+## `strength` is its excitement/s anywhere, and it holds its rim the way `CrowdAgent` does — built
+## on its first nonzero glow, freed on the spot through `EntityHalo.release()` once faded. It has
+## landed enough that a lit rim reads at `ExcitementHalo.MAX_ALPHA`, so every fade out is a whole
+## `EntityHalo.FADE_OUT_SECONDS`, the longest a rim can hold its block after it is dropped.
+class ChurnSource extends Node2D:
+	var strength := 0.0
+	var _halo: EntityHalo
+
+	func contribution_at(_at: Vector2) -> float:
+		return strength
+
+	func landed() -> float:
+		return ExcitementHalo.LOW_EMPHASIS_POINTS
+
+	func set_player_at(_at: Vector2, _velocity: Vector2, _decay_rate: float,
+			_sensitivity: float) -> void:
+		pass
+
+	func expected_gross_at(_at: Vector2) -> float:
+		return 0.0
+
+	func set_expected_total_gross(_total: float) -> void:
+		pass
+
+	func set_halo_strength(alpha: float, colour: Color) -> void:
+		if alpha <= 0.0:
+			if _halo:
+				_halo.set_glow(0.0, colour)
+				if _halo.is_faded_out():
+					release_halo()
+			return
+		if not _halo:
+			_halo = EntityHalo.new(_draw_nothing, _no_bob)
+			add_child(_halo)
+		_halo.set_glow(alpha, colour)
+
+	func holds_a_halo() -> bool:
+		return _halo != null
+
+	func release_halo() -> void:
+		if _halo:
+			EntityHalo.release(_halo)
+			_halo = null
+
+	## Whether its rim is lit — told a nonzero target — rather than absent or fading.
+	func is_lit() -> bool:
+		return _halo != null and _halo._target_alpha > 0.0
+
+	func _draw_nothing(_canvas: CanvasItem) -> void:
+		pass
+
+	func _no_bob() -> float:
+		return 0.0
+
+## The one question `ExcitementHalo.setup()` asks of an event source, over a list a test edits.
+class ChurnEvents extends Node:
+	var list: Array = []
+
+	func instances() -> Array:
+		return list
+
+## **A waiting pick is lit within one fade however fast the picked set turns over.** Two turnovers
+## that each keep a weak pick waiting longer than a fade under one of the two ways of serving the
+## line replaces, while under the line it is lit within one `EntityHalo.FADE_OUT_SECONDS` and the frame or
+## two it takes to see the fade end — and so is every other pick — with no fade cut short and no
+## block past the budget.
+##
+## - **A new strong pick every three frames**, seven at a time: each strong source is picked for
+##   21 frames and never again, so its rim, once lit, holds its block for those frames and a whole
+##   fade after, and more strong sources want a rim than the budget holds. Served strongest first,
+##   every block a finished fade gives back goes to a rimless strong source newer than the weak
+##   pick, which gets one only after more than a fade.
+## - **The same fifteen strong sources in turn**, seven at a time, the turn moving on every three
+##   frames: each is dropped for 24 frames, less than a fade, so it is picked again while its rim is
+##   still fading. Lit again in place, every one of those rims keeps its block for another whole
+##   fade, all fifteen blocks stay held, and the weak pick never gets one.
+func _test_a_waiting_pick_is_lit_within_one_fade_however_fast_picks_turn_over(t) -> void:
+	var fade_frames := int(ceil(EntityHalo.FADE_OUT_SECONDS / STEP))
+	var fresh := func(pool: Array, step: int) -> void:
+		for i in pool.size():
+			var first := 3 * i
+			pool[i].strength = 50.0 \
+					if step >= first and step < first + 3 * (ExcitementHalo.MAX_SOURCES - 1) else 0.0
+	var in_turn := func(pool: Array, step: int) -> void:
+		for i in pool.size():
+			var place := posmod(i - floori(step / 3.0), pool.size())
+			pool[i].strength = 50.0 if place < ExcitementHalo.MAX_SOURCES - 1 else 0.0
+	for turnover in [["a new strong pick every three frames", 80, fresh],
+			["the same fifteen picked in turn", EntityHalo.RIM_BUDGET, in_turn]]:
+		var name: String = turnover[0]
+		var pool_size: int = turnover[1]
+		var set_strengths: Callable = turnover[2]
+		var probe := RimProbe.new(t.get_tree())
+		var events := ChurnEvents.new()
+		t.add_child(events)
+		var player := Node2D.new()
+		t.add_child(player)
+		var baby := Baby.new()
+		var halo := ExcitementHalo.new()
+		t.add_child(halo)
+		halo.setup(events, null, player, baby)
+		var pool: Array = []
+		for i in pool_size:
+			var source := ChurnSource.new()
+			events.add_child(source)
+			events.list.append(source)
+			pool.append(source)
+		var weak := ChurnSource.new()
+		events.add_child(weak)
+		events.list.append(weak)
+
+		var weak_from := fade_frames
+		var waited := {}
+		var longest_wait := 0
+		var weak_wait := -1
+		for step in weak_from + fade_frames * 2:
+			set_strengths.call(pool, step)
+			weak.strength = 3.0 if step >= weak_from else 0.0
+			halo._process(STEP)
+			for source in events.list:
+				if source.holds_a_halo():
+					source._halo._process(STEP)
+			for source in ExcitementHalo.select_sources(events.list, player.global_position):
+				waited[source] = 0 if source.is_lit() else waited.get(source, 0) + 1
+				longest_wait = maxi(longest_wait, waited[source])
+			if weak_wait < 0 and weak.is_lit():
+				weak_wait = step - weak_from
+			for source in waited.keys():
+				if source.strength <= 0.0:
+					waited.erase(source)
+		t.check(weak_wait > 0,
+				"%s: the weak source was picked into a full budget and waited (%d frames)"
+				% [name, weak_wait])
+		t.check(weak_wait >= 0 and weak_wait <= fade_frames + 2,
+				"%s: the weak source was lit within one fade, %d frames against %d"
+				% [name, weak_wait, fade_frames + 2])
+		t.check(longest_wait <= fade_frames + 2,
+				"%s: no pick waited longer than one fade, %d frames against %d"
+				% [name, longest_wait, fade_frames + 2])
+		t.check(probe.most <= EntityHalo.RIM_BUDGET,
+				"%s: at most %d rims were held at any moment, within the budget of %d"
+				% [name, probe.most, EntityHalo.RIM_BUDGET])
+		t.check(probe.given_back_unfaded == 0,
+				"%s: every rim given back had finished its fade, none cut short (%d were)"
+				% [name, probe.given_back_unfaded])
+		events.free()
+		probe.stop()
+		player.free()
+		halo.free()
+		baby.free()
+
+## **A holder that leaves the candidate set without being freed is told zero, still counted while it
+## fades, and freed once the fade is over.** Every source that leaves today is queued for deletion
+## as it goes (`EventManager`'s retirement, `InteriorEvents.stand_down()`, `Crowd.clear()`), so this
+## is the net for a later path that takes a source out of `instances()` and keeps it: without it,
+## such a source is never told zero, so its rim stays lit on a thing that is no longer charging her,
+## and holds a block nothing counts against the budget.
+func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t) -> void:
+	var probe := RimProbe.new(t.get_tree())
+	var manager := EventManager.new()
+	t.add_child(manager)
+	var player := Node2D.new()
+	t.add_child(player)
+	var baby := Baby.new()
+	var halo := ExcitementHalo.new()
+	t.add_child(halo)
+	halo.setup(manager, null, player, baby)
+	var instance := EventInstance.new()
+	instance.setup(_def("dropped", 20.0), Vector2.ZERO)
+	manager.add_child(instance)
+	instance.set_process(false)
+	manager._instances.append(instance)
+	for step in int(ceil(EntityHalo.FADE_IN_SECONDS / STEP)) + 2:
+		halo._process(STEP)
+		instance._halo._process(STEP)
+	t.check(instance.holds_a_halo() and instance._halo._target_alpha > 0.0,
+			"picked beside her, the event holds a lit rim")
+
+	# Out of the list, but not freed and not queued for deletion.
+	manager._instances.erase(instance)
+	halo._process(STEP)
+	t.check(instance.holds_a_halo() and is_zero_approx(instance._halo._target_alpha),
+			"no longer a candidate, it is told zero and its rim starts to fade")
+	var counted_while_fading := true
+	var frames := 0
+	while instance.holds_a_halo() and frames < int(ceil(EntityHalo.FADE_OUT_SECONDS / STEP)) * 2:
+		counted_while_fading = counted_while_fading and halo._holders.has(instance)
+		instance._halo._process(STEP)
+		halo._process(STEP)
+		frames += 1
+	t.check(counted_while_fading,
+			"every frame its rim was fading, it was counted against the budget")
+	t.check(not instance.holds_a_halo() and not halo._holders.has(instance),
+			"once the fade was over its rim was freed and no longer counted (%d frames)" % frames)
+	t.check(frames <= int(ceil(EntityHalo.FADE_OUT_SECONDS / STEP)) + 2,
+			"and that took one fade: %d frames" % frames)
+	t.check(probe.given_back_unfaded == 0,
+			"the rim was given back only after its fade (%d cut short)" % probe.given_back_unfaded)
+	# `manager.free()` frees `instance` too: still its child, though no longer in its list.
 	manager.free()
 	probe.stop()
 	player.free()
