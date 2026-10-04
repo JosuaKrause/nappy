@@ -110,7 +110,7 @@ The events:
   `dog-outlasted`.
 - `nappy-day-N-pelican-spawned` / `nappy-day-N-pelican-seen` / `nappy-day-N-pelican-excited` /
   `nappy-day-N-pelican-hit` — the one cyclist in about four hundred drawn as a pelican, as its own
-  entry *(inbox #527, the player: "when the pelican spawns, when it's on screen, and when it's
+  entry *(inbox #527 in [azure-tapir](playtests/2026-10-04-azure-tapir.md), the player: "when the pelican spawns, when it's on screen, and when it's
   hitting the player. it must appear as its own entry and it needs to be more granular than
   standard event telemetry")*, each once per pelican: created where its warning pointed
   (`EventManager.spawn_warned()`); its first frame on screen
@@ -464,7 +464,7 @@ name the question it answers, or it is a metric and does not belong.
 **A line names an event by its row's id, and the pelican as `pelican`** — the one cyclist in about
 four hundred drawn as a pelican (`EventInstance.logged_name()`), from the badge its warning puts up
 (`cue`), through the line it is created on (`ahead`), to every `near`, `cue` and `lost` line after
-*(inbox #527, the player: "logs should be correctly identifying it from the beginning")*. Its roll
+*(inbox #527 in [azure-tapir](playtests/2026-10-04-azure-tapir.md), the player: "logs should be correctly identifying it from the beginning")*. Its roll
 is made as the warning goes up, so the first line already knows.
 
 | Kind | Written by | Answers |

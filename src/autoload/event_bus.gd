@@ -104,7 +104,7 @@ signal pursuit_began(id: String)
 signal pursuit_ended(id: String, shaken_off: bool)
 
 # The pelican's own moments, the one rider in about four hundred drawn as a pelican
-# (`EventInstance.is_pelican`). *(Inbox #527, the player: "I explicitly asked for specific pelican
+# (`EventInstance.is_pelican`). *(Inbox #527 in azure-tapir, the player: "I explicitly asked for specific pelican
 # telemetry. when the pelican spawns, when it's on screen, and when it's hitting the player. it
 # must appear as its own entry and it needs to be more granular than standard event telemetry".)*
 # Each carries the pelican's own `EventInstance`, untyped for the reason the section above gives.

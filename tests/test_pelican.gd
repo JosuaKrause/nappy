@@ -207,7 +207,7 @@ func _ride() -> PackedVector2Array:
 	var from := CrowdLanes.arterial_pavement(_city.map)
 	return PackedVector2Array([from, from + Vector2(0.0, -300.0)])
 
-## *(Inbox #527, the player: "when the pelican spawns, when it's on screen, and when it's hitting the
+## *(Inbox #527 in azure-tapir, the player: "when the pelican spawns, when it's on screen, and when it's hitting the
 ## player ... logs should be correctly identifying it from the beginning".)* One pelican sent the
 ## way the director sends every cyclist (`_warn_down_her_line()`), from its warning to its hit:
 ##

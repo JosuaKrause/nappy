@@ -45,7 +45,7 @@ are saved JSON under `scene-recipes/`, built by `RecipeCityBuilder`, played with
 table of [`docs/NARRATIVE.md`](../../NARRATIVE.md), and why each stands where it does in
 [`docs/decisions/2026-10-03-feathery-marmot.md`](../../decisions/2026-10-03-feathery-marmot.md).
 
-**The scenes are recipes with live tasks** (inbox #513). Asked "how should a scene be built?",
+**The scenes are recipes with live tasks** (inbox #513 in [azure-tapir](../../playtests/2026-10-04-azure-tapir.md)). Asked "how should a scene be built?",
 between "Recipes with live tasks" (recipes gain a field for a mark and its task: the day's task
 offered from the start, its arrow live, the target events installed, so the task can be played to
 completion) and "Authored actors only" (mark and target placed with no task logic running), the

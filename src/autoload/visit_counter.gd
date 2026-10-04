@@ -347,7 +347,7 @@ func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
 		return
 	_send_event(_day_event_name(GameState.day, "dog-shaken" if shaken_off else "dog-outlasted"))
 
-## The pelican's own four moments *(inbox #527, the player: "when the pelican spawns, when it's on
+## The pelican's own four moments *(inbox #527 in azure-tapir, the player: "when the pelican spawns, when it's on
 ## screen, and when it's hitting the player. it must appear as its own entry")*. Each signal fires
 ## once per pelican where it is emitted (`EventBus`'s own doc on each), so each sends once; the
 ## instance it carries is not read.

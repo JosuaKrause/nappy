@@ -32,7 +32,7 @@ flags (`--touch`, `--web`, `--title`, `--no-title`, `--no-focus-pause`, `--no-sa
 **One word writes a file: `?framerecord=1`.** *(Writes no file on a release · overturned on
 2026-10-04 for M159's frame record: [quiet-yak](../playtests/2026-10-03-quiet-yak.md), #510, the
 player chose "Download plus readout line", "under ?debug=1 a button saves the recording as a
-file through the browser's download", and accepted it as this record's exception, inbox #526.)*
+file through the browser's download", and accepted it as this record's exception, inbox #526 in [azure-tapir](../playtests/2026-10-04-azure-tapir.md).)*
 The record reaches a visitor only through the browser download they tap for; every other
 file-writing flag above stays closed. Record: [M159, every frame's time by
 system](2026-09-19-M159-5.md).

@@ -46,7 +46,7 @@ telemetry stays out of the files that decide things, which is what makes the rul
 "Per-system frame records"). *(2026-10-03, inbox #510: "let's focus on recording what cause
 spillover in the regular 2ms ... it seems that stuttering happens with a lot of objects on screen
 so influence calculation, pathing, drawing, etc. can all be the culprit".)* The player accepted
-the exception itself on 2026-10-04 (inbox #526), asked whether to "accept the timing wraps in
+the exception itself on 2026-10-04 (inbox #526 in [azure-tapir](../../../docs/playtests/2026-10-04-azure-tapir.md)), asked whether to "accept the timing wraps in
 gameplay code as a telemetry-skill exception": "Accept all three (Recommended)". A phone has no
 profiler, so the only way to know what a system cost in a frame is to time it where it runs, and
 an observer cannot do that from outside. The wrap is a single branch in front of an unchanged
