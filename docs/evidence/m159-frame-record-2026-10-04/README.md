@@ -226,3 +226,60 @@ c3041d98d675dce92550facfd4d0b1bb6472b002 in place of the second worktree. The ru
 display that stays awake (it was run under `caffeinate -d -i`), takes about 35 minutes for both
 parts, and opens an always-on-top window for each capture. Timing varies between launches;
 compare conditions within one batch.
+
+## The page path in a browser
+
+Asked by the re-review on PR #521 (its blocking finding: the page path had never run in a browser).
+A release export (`tools/export-web.sh`, the custom template the release ships, built locally with
+`tools/build-web-template.sh`) of commit 925a75b9c123dccfebd06edd5d37891b74f9e7df, served on a
+port of its own and driven by `browser/drive.mjs` in headless Chrome 154 on the same M2, in a fresh
+temporary profile that is removed afterwards. Headless Chrome draws through SwiftShader, a
+software renderer, so every frame took 45-60ms and every kept frame is slow: **the timings in these
+files say nothing about a real browser's speed**, only that the page path works.
+
+What it showed (`browser/result.json`, every check passed, no engine or page error logged):
+
+- `?debug=1&framerecord=1&seed=67`: one `save frames` button at the top of the page, right of the
+  day's clock (`browser/button-and-readout.png`), and the readout's `slow` line under the frame
+  block, for example `slow 45.6/45.3 ms  draw 33.5  crowd 6.2  events 1.7`.
+- A click on the button downloaded `nappy-frames-seed67-<time>.json` through the browser's own
+  download. It parses; every row's nine buckets add up to its `frame_usec`; `environment` carries
+  the browser's user agent, `timer_resolution_usec` 100 (Chrome's reduced-precision clock step),
+  `refresh_assumed` true and the seed 67; rows time a median of 274 calls a frame. The first file
+  is kept gzipped beside it.
+- After the click, focus was back on the canvas, and the keyboard still steered: 1.5s of the down
+  arrow moved her from (2560, 2646) to (2560, 2786) in the next file's newest row.
+- A restart through the pause screen (Esc, then R, which calls `_restart_run()`, the function the
+  held restart reaches) left exactly one button, shown, and a click on it still downloaded the
+  record, kept across the restart.
+- `?debug=1&seed=67` alone, and `?framerecord=1&seed=67` without `?debug=1`, showed no button,
+  and the recorder's page hook was never defined; without `?debug=1` the seed was ignored too.
+- At a phone's size (844x390 CSS pixels, touch emulation) the button sits between the clock and
+  the debug readout (`browser/phone.png`).
+- No save was written in the profile, so the player's save, which lives in their own browser
+  profile, was never in reach; `browser/scratch.json` records the browser closed through the
+  protocol with no scratch left behind.
+
+**The first run found a defect, fixed before this one.** At c5f1a175, the button was centred at
+the top of the page and covered the day's clock, which is centred at the top of the canvas. Commit
+925a75b9 moves its left edge 64 CSS pixels right of the centre. Those runs' screenshots are not
+kept; every other check passed in them too.
+
+Not covered: iOS Safari and Chrome on a phone, a touch tap on the button rather than a click, and
+any timing on a real GPU. Those are the player's try on the phone.
+
+The folder holds the driver, its result, the console log, the scratch report, the two screenshots
+and one downloaded record (7 files, about 690KB, most of it the two screenshots).
+
+```sh
+source_root=$(git rev-parse --show-toplevel)
+scratch=$(mktemp -d)
+git -C "$source_root" fetch origin refs/pull/521/head
+git -C "$source_root" worktree add --detach "$scratch/page" 925a75b9c123dccfebd06edd5d37891b74f9e7df
+cd "$scratch/page"
+tools/build-web-template.sh && tools/export-web.sh
+node docs/evidence/m159-frame-record-2026-10-04/browser/drive.mjs --export build/web \
+  --output "$scratch/browser" --browser "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+```
+
+The driver needs Node 22 and Chrome; the export needs the matching Godot editor (`GODOT=...`).
