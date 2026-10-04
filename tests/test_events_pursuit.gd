@@ -150,15 +150,15 @@ func _a_building_corner(map: CityMap) -> Dictionary:
 			return {"building": tile, "north": north, "east": east}
 	return {}
 
-## The alley robber's catch is smaller than his lunge's reach (tall-osprey, 2026-10-04): the lunge
-## stays at the 108px his old 30px catch gave it, so the room between lunge and catch is the stand-off
-## less the catch, and no other pursuer's lunge moves off its own catch.
-func _test_the_robbers_lunge_stays_while_his_catch_shrinks(t) -> void:
+## The alley robber's catch is smaller than his lunge's reach (tall-osprey, 2026-10-04): he catches
+## at 26px and lunges from 116px (`lunge_reach` 38), so the room between lunge and catch is 90px, and
+## no other pursuer's lunge moves off its own catch.
+func _test_the_robbers_lunge_is_further_out_than_his_catch(t) -> void:
 	for id in ["alley_robbery", "robber_giving_chase"]:
 		var def := EventCatalogue.by_id(id)
 		t.close_to(def.lethal_reach(), 26.0, "'%s' catches at 26px" % id, 0.01)
-		t.close_to(Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()), 108.0,
-				"'%s' lunges from 108px" % id, 0.01)
+		t.close_to(Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()), 116.0,
+				"'%s' lunges from 116px" % id, 0.01)
 	for def in EventCatalogue.all():
 		if def.pursues and def.id != "alley_robbery" and def.id != "robber_giving_chase":
 			t.check(is_equal_approx(def.standoff_reach(), def.lethal_reach()),

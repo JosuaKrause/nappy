@@ -875,8 +875,9 @@ func lethal_reach() -> float:
 ## is `reach + pursue_speed × PURSUIT_REACTION`, which for a row whose catch is its reach is the
 ## distance that leaves her `PURSUIT_REACTION` of the pursuer's own approach. Shrinking only the
 ## robber's catch (tall-osprey: *"the capture zone"* is the catch) would drag the stand-off in with it
-## and keep the room between lunge and catch at 78px whatever the catch; set to the catch he had
-## (30px) it keeps the lunge where it was, 108px, and the room grows by exactly what the catch lost.
+## and keep the room between lunge and catch at 78px whatever the catch; set to 38px it puts his
+## lunge at 116px against a 26px catch, 90px of room, the furthest his trap row's arrival distance
+## allows (`Tuning.TRAP_ARRIVAL_DISTANCE`).
 @export var lunge_reach := 0.0
 
 ## What `Tuning.pursuit_standoff()` is stated over for this row: `lunge_reach` where it sets one, the

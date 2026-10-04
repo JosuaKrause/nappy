@@ -18,13 +18,19 @@ catch   18  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/2
 catch   16  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 31/200 | turn_at_notice 85/200 |
 == catch 30, lunge moved out ==
 catch   30  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 68/200 |
+catch   30  standoff 112.0  walk-in 28.0px 0.30s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 14/200 | turn_at_notice 67/200 |
+catch   30  standoff 116.0  walk-in 24.0px 0.26s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 20/200 | turn_at_notice 66/200 |
 catch   30  standoff 120.0  walk-in 20.0px 0.22s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 28/200 | turn_at_notice 66/200 |
 catch   30  standoff 130.0  walk-in 10.0px 0.11s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 49/200 | turn_at_notice 68/200 |
 == catch 26, lunge moved out ==
 catch   26  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 14/200 | turn_at_notice 73/200 |
+catch   26  standoff 112.0  walk-in 28.0px 0.30s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 20/200 | turn_at_notice 72/200 |
+catch   26  standoff 116.0  walk-in 24.0px 0.26s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 28/200 | turn_at_notice 70/200 |
 catch   26  standoff 120.0  walk-in 20.0px 0.22s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 36/200 | turn_at_notice 70/200 |
 catch   26  standoff 130.0  walk-in 10.0px 0.11s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 56/200 | turn_at_notice 74/200 |
 == catch 24, lunge moved out ==
 catch   24  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 15/200 | turn_at_notice 74/200 |
+catch   24  standoff 112.0  walk-in 28.0px 0.30s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 21/200 | turn_at_notice 74/200 |
+catch   24  standoff 116.0  walk-in 24.0px 0.26s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 33/200 | turn_at_notice 74/200 |
 catch   24  standoff 120.0  walk-in 20.0px 0.22s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 43/200 | turn_at_notice 74/200 |
 catch   24  standoff 130.0  walk-in 10.0px 0.11s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 57/200 | turn_at_notice 74/200 |

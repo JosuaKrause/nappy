@@ -7,9 +7,12 @@ extends RefCounted
 ##
 ## **Two arrangements, measured side by side.** `follows`: the stand-off follows the catch
 ## (`EventDef.lunge_reach` 0), `Tuning.pursuit_standoff(130, catch)` is `catch + 78`, so the room
-## between lunge and catch stays 78px whatever the catch. `held`: the lunge stays where it was,
-## `lunge_reach` 30 so 108px, and the room is 108 minus the catch (the shipped arrangement; the
-## player chose it on 2026-10-04).
+## between lunge and catch stays 78px whatever the catch. `held`: the lunge held at 108px
+## (`lunge_reach` 30) whatever the catch, so the room is 108 minus the catch.
+##
+## **Then the lunge moved out**, for the alley robber alone, at catches of 30, 26 and 24px: stand-offs
+## of 108, 112, 116, 120 and 130px (`lunge_reach` = stand-off less 78). The game ships the 26px catch
+## with the 116px lunge (`lunge_reach` 38); the probe sets both per row, whatever the catalogue says.
 ##
 ## The rig walks her along a line at the robber from outside his notice (`pursues_within` 140),
 ## and answers after a reaction time drawn per seed: `turns` runs away `reaction` seconds after
@@ -28,7 +31,7 @@ func run(t) -> void:
 	# The robber-only stand-off override: `lunge_reach` is the stand-off less 78 (130 x 0.6).
 	for catch_radius in [30.0, 26.0, 24.0]:
 		print("== catch %.0f, lunge moved out ==" % catch_radius)
-		for standoff in [108.0, 120.0, 130.0]:
+		for standoff in [108.0, 112.0, 116.0, 120.0, 130.0]:
 			_report(catch_radius, standoff - 78.0)
 	t.check(true, "tall_osprey_catch probe ran")
 

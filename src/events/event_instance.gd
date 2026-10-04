@@ -1790,7 +1790,7 @@ func _chase(delta: float) -> void:
 	# inside it the frame he notices her, and he would lunge with no warning at all.
 	#
 	# `standoff_reach()` is that same reach unless the row keeps its lunge further out than its catch
-	# (`EventDef.lunge_reach`, the alley robber's): the catch can shrink and the lunge stays put.
+	# (`EventDef.lunge_reach`, the alley robber's): his catch and his lunge are set separately.
 	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 	# **She ran, so it backs off.** Counting seconds of the *gap actually opening* is the same
 	# sentence said about the geometry instead of about the player, and in play it is a different

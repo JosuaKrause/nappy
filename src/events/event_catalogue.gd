@@ -1925,11 +1925,14 @@ static func _alley_robbery() -> EventDef:
 	def.placement = [GameEnums.TileType.ALLEY]
 	def.intensity = 16.0
 	def.inner_radius = 26.0
-	# **The lunge stays where it was**, 30px + 130px/s × `PURSUIT_REACTION` = 108px, while the catch
-	# shrinks to 26px: the stand-off is stated over `lunge_reach` rather than the catch, so the room
-	# between his lunge and his catch is 108 − 26 = 82px rather than the 78 it would be if the lunge
-	# followed the catch in. (The player, 2026-10-04, chose to keep the stand-off at 108px.)
-	def.lunge_reach = 30.0
+	# **The lunge is further out than the catch**: 38px + 130px/s × `PURSUIT_REACTION` = 116px, while
+	# the catch is 26px. The stand-off is stated over `lunge_reach` rather than the catch, so the room
+	# between his lunge and his catch is 116 − 26 = 90px rather than the 78 it would be if the lunge
+	# followed the catch. 116px is as far out as the trap row that copies this one can lunge from:
+	# `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) must be at least stand-off + 130 × `PURSUIT_MIN_NOTICE`,
+	# and it cannot grow past 311px without cutting into the half second of chase a walker who leaves
+	# is caught with (see that constant's doc). (The player, 2026-10-04: "116px, keep every rule".)
+	def.lunge_reach = 38.0
 	# Wider than the trigger, and that is the contract rather than a taste: he may not notice her from
 	# outside his own field, because the meter is the only thing that says a stranger in an alley is
 	# worth crossing the road for. The sixty pixels between this and `pursues_within` are the row's
@@ -1942,7 +1945,7 @@ static func _alley_robbery() -> EventDef:
 	# The same speed as the charging dog, deliberately: a player who learned on day 3 what a thing
 	# that comes after you moves like should not have to learn it again in act III.
 	def.pursue_speed = 130.0
-	# Outside his stand-off (108px) and inside his field, which is what leaves room for both halves of
+	# Outside his stand-off (116px) and inside his field, which is what leaves room for both halves of
 	# the row: far enough out that the notice is not spent standing still, near enough that she has
 	# felt him for a while before he decides anything about her.
 	#
@@ -1970,7 +1973,7 @@ static func _alley_robbery() -> EventDef:
 ## trigger on any other terms.
 ##
 ## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
-## (16 over 26–200px), his 130px/s, his 26px catch and the 108px lunge (`lunge_reach`), his `hard_fail` and the way he walks off once
+## (16 over 26–200px), his 130px/s, his 26px catch and the 116px lunge (`lunge_reach`), his `hard_fail` and the way he walks off once
 ## he has lost her. What differs is the whole of the request — **no trigger** (`pursues_within` 0),
 ## so he is never `is_waiting()` and his notice and chase are clocked from the frame he exists —
 ## and the split of his time between notice and chase.
@@ -1990,8 +1993,8 @@ static func _alley_robbery() -> EventDef:
 ## What that leaves her: the man she just left keeps shouting, and charging her, for
 ## `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover (M205) — longer
 ## than this row's own 2.0s notice, so his field is still live for the whole of it whichever way
-## she answers. Standing still, he lunges from his stand-off about 1.6s after he appears and
-## reaches her about 0.6s later, before the man would have stopped shouting on his own; walking
+## she answers. Standing still, he lunges from his stand-off about 1.5s after he appears and
+## reaches her about 0.7s later, before the man would have stopped shouting on his own; walking
 ## into him, the lunge comes sooner and still at his stand-off; walking directly away, he closes
 ## at 38px/s and catches her about 7.5s after he appeared; running for `PURSUIT_SHAKEN_OFF` shakes
 ## him off. Whether shouting-plus-chasing at once is more than a walker should answer is

@@ -371,10 +371,12 @@ const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 ##   (`ResistanceDirector._draw_arrival_position()`, `beside_distance()`), and walking away outlasts
 ##   it there.
 ## - **Standing still, it lunges no sooner than `PURSUIT_MIN_NOTICE` (1.5s) after it appears.** The
-##   lunge fires at the row's own stand-off, `pursuit_standoff(130, reach)` — 108px for the robber,
-##   whose lunge stays at his old 30px reach (`EventDef.lunge_reach`) while his catch is 26px, 106px
-##   for the guard's 28px — so the start has to be at least stand-off plus 130 × 1.5 = 303px for
-##   the robber, 301px for the guard; 311px clears both.
+##   lunge fires at the row's own stand-off, `pursuit_standoff(130, reach)` — 116px for the robber,
+##   whose lunge is measured from 38px (`EventDef.lunge_reach`) while his catch is 26px, 106px for
+##   the guard's 28px — so the start has to be at least stand-off plus 130 × 1.5 = 311px for the
+##   robber, 301px for the guard. 311px meets the robber's exactly: **his lunge is as far out as the
+##   walk-away ceiling above lets it be**, and a lunge further out would need a start this constant
+##   cannot reach without giving up the half second.
 ##
 ## Not `OUT_OF_SIGHT` (420px) plus a notice: from that far a walker escapes unless the chase ran
 ## past the 6.0s `Tuning.validate_pursuit()` allows either pursuer.

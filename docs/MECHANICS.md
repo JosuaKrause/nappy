@@ -978,7 +978,7 @@ after the first second.
 Two rules answer it, and they are the same rule twice: the contract restated as geometry.
 
 - **`Tuning.pursuit_standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
-  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and keeps the 30px reach his lunge was measured from, `lunge_reach`, so his stand-off is 108px) and *holding* it, backing off if she walks in, because she will: it is sited in
+  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `lunge_reach`, so his stand-off is 116px) and *holding* it, backing off if she walks in, because she will: it is sited in
   front of her and forward is where she was going. Clamping the approach at zero instead leaves the
   contract true of the dog and false of the encounter — it stands politely still while she closes
   the gap herself.
