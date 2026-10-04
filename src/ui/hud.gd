@@ -26,7 +26,7 @@ extends CanvasLayer
 ## Second instance of the same class, in red, for a one-place resistance task — see
 ## `HomeArrow`'s own class doc and `Palette.TASK_ARROW`.
 @onready var _task_arrow: HomeArrow = $Root/TaskArrow
-@onready var _teach: Label = $Root/Teach
+@onready var _teach: HelpText = $Root/Teach
 
 ## Read once per instance rather than at each use site, so a test can flip it and drive both HUD
 ## shapes without needing an actual debug build — the test process itself always is one, so asking
@@ -83,6 +83,7 @@ func _ready() -> void:
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.event_telegraphed.connect(_on_event_telegraphed)
 	EventBus.day_started.connect(_teach_the_day)
+	EventBus.controls_chosen.connect(_on_controls_chosen)
 	EventBus.day_started.connect(func(_d: int) -> void:
 		_contact_step = 0
 		_refresh_resistance())
@@ -162,13 +163,14 @@ var _taught_run := false
 ## on the street asks for a key she has not needed yet.
 func _teach_the_day(day: int) -> void:
 	_teach_left = 0.0
-	_teach.text = ""
+	_teach.show_line("")
 	_walked_today = false
 	_stood_for = 0.0
 	if day == 1:
-		# One wording for every device now — see `PauseScreen._BODY`'s own doc for the same
-		# collapse made there. The keyboard still walks and runs; nothing on screen names its keys.
-		_say("Tap to walk, double tap to run", TEACH_SECONDS)
+		# One wording for every device — see `PauseScreen._BODY`'s own doc — except that the run
+		# half names the run button where the scheme draws one (`_run_phrase()`). The keyboard
+		# still walks and runs; nothing on screen names its keys.
+		_say_the_walking_lesson(HelpText.joystick_in_force(get_tree()))
 	# A nerve is a rewind, not a resource, and a rewound day has not been taught anything: this
 	# flag belongs to the *attempt* at the teaching day rather than to the run, and only on this
 	# one day, so a lost nerve on `RUN_TAUGHT_DAY` gets the lesson again instead of a HUD that
@@ -222,11 +224,11 @@ func _teach_the_pause(delta: float) -> void:
 	if _stood_for < TEACH_PAUSE_AFTER:
 		return
 	_taught_pause = true
-	# "the pause button" rather than any drawn label: `TouchControls._draw_pause_button()` draws
-	# an icon, two bars, not a word — naming a label that is not there would be the same defect
-	# this line exists to fix on the other lessons. One wording for every device — `Esc` still
-	# pauses on a keyboard, but nothing on screen names it any more.
-	_say("Tap the pause button to pause", TEACH_SECONDS)
+	# The pause button is an icon, two bars, not a word (`TouchControls._draw_pause_button()`), so
+	# the line shows that icon where it says what to press rather than describing it. In every
+	# scheme, since the button is always drawn. `Esc` still pauses on a keyboard, but nothing on
+	# screen names it.
+	_say("Press %s to pause" % HelpText.PAUSE_TOKEN, TEACH_SECONDS)
 
 ## The run is taught by the thing that requires it, at the moment it requires it — and only for
 ## that one lesson.
@@ -239,18 +241,39 @@ func _teach_the_pause(delta: float) -> void:
 ## pursues her. So it fires once, for the first pursuit of the day the run is taught, and never
 ## again this run: the same "once per run" shape as `_teach_the_pause()`, for the same reason —
 ## it is a keybinding, not a warning, and a cue that keeps coming back is one that gets read once
-## and then ignored. One wording for every device now: `Shift` still holds `run` on a keyboard,
-## but nothing on screen names it any more — see `PauseScreen._BODY`'s own doc for the same
-## collapse made there.
+## and then ignored. One wording for every device, except that the joystick scheme's line shows its
+## run button (`_run_phrase()`): `Shift` still holds `run` on a keyboard, but nothing on screen
+## names it — see `PauseScreen._BODY`'s own doc.
 func _on_event_telegraphed(instance: EventInstance) -> void:
 	if _taught_run or not instance.def.pursues or GameState.day != Tuning.RUN_TAUGHT_DAY:
 		return
 	_taught_run = true
-	_say("Double tap to run", instance.def.telegraph_time + TEACH_RUN_SECONDS)
+	var phrase := _run_phrase(HelpText.joystick_in_force(get_tree()))
+	_say(phrase[0].to_upper() + phrase.substr(1), instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
+func _say_the_walking_lesson(joystick: bool) -> void:
+	_say("Tap to walk, %s" % _run_phrase(joystick), TEACH_SECONDS)
+
+## The title opens after day 1 has started, so the lesson said at dawn was worded for whatever
+## scheme was in force before the player chose one, and counted down hidden behind the title. Said
+## again when the choice is made, in the chosen scheme, for its full length. Uses the signal's own
+## `mode`: `main` emits this one line *before* it sets the scheme on `TouchControls`, so the tree
+## still answers with the old one at this moment.
+func _on_controls_chosen(mode: int, _by_key: bool) -> void:
+	if GameState.day == 1:
+		_say_the_walking_lesson(mode == ControlsMode.Mode.JOYSTICK)
+
+## How the run lessons put it. *(2026-10-04, the player, inbox #533: "joystick run should now say
+## hold <run button> or double tap to run where it makes sense".)* The joystick scheme draws run
+## buttons, so there the line shows one; the tap scheme draws none, so there it stays "double tap
+## to run" — a symbol for a button that is not on screen would point at nothing.
+func _run_phrase(joystick: bool) -> String:
+	if joystick:
+		return "hold %s or double tap to run" % HelpText.RUN_TOKEN
+	return "double tap to run"
 
 func _say(line: String, seconds: float) -> void:
-	_teach.text = line
+	_teach.show_line(line)
 	_teach_left = seconds
 
 ## The escape's two hint lines — *"escape the apartment"* and *"exit the city"* — said by `main` at
@@ -277,7 +300,7 @@ func _process(delta: float) -> void:
 		# subtitle does and not the way an alarm does.
 		_teach.modulate.a = clampf(_teach_left, 0.0, 1.0)
 		if _teach_left <= 0.0:
-			_teach.text = ""
+			_teach.show_line("")
 	_refresh_state()
 	if _announcement_for > 0.0:
 		_announcement_for = maxf(0.0, _announcement_for - delta)
@@ -358,7 +381,7 @@ func _on_resistance_step_completed(step_index: int) -> void:
 	var step := ResistanceSteps.by_index(step_index)
 	if step and step.is_pickup and step.brief != "":
 		# The mark's long message: broken between sentences where it must wrap, never mid-sentence.
-		_say(SentenceLines.break_for_label(step.brief, _teach), TEACH_SECONDS)
+		_say(SentenceLines.break_for_help(step.brief, _teach), TEACH_SECONDS)
 	_contact_step = 0
 	_refresh_resistance()
 

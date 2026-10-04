@@ -1935,7 +1935,7 @@ func _apply_recipe_teaching() -> void:
 	if not _recipe.data.get("setup", {}).get("tutorial_complete", false):
 		return
 	_hud._teach_left = 0
-	_hud._teach.text = ""
+	_hud._teach.show_line("")
 	_hud._taught_pause = true
 	_hud._taught_run = true
 

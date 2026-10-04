@@ -21,7 +21,7 @@ signal quit_requested()
 @onready var _root: Control = $Root
 @onready var _dim: ColorRect = $Root/Dim
 @onready var _standing: Label = $Root/Center/Lines/Standing
-@onready var _body: Label = $Root/Center/Lines/Body
+@onready var _body: HelpText = $Root/Center/Lines/Body
 ## Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space`/`esc`/`r`/`q`
 ## keep working, and the continue/restart pair already says what a tap does — there is nothing
 ## left for a sentence here to say that does not name a key, so the label stays only to be looked
@@ -67,10 +67,24 @@ func set_touch_controls(controls: TouchControls) -> void:
 ## game simply stops teaching it, exactly as `HUD._teach_the_day()`'s own day-1 line already reads.
 ##
 ## Plain prose, not a string with its own `\n`: `_refresh_body()` breaks it onto more than one line
-## through `SentenceLines.break_for_label()`, the same helper every other screen's prose goes
-## through, so this reads exactly as it would in the source it was written in.
-const _BODY := "Tap to walk, double tap to run. " \
+## through `SentenceLines.break_for_help()`, the sentence-boundary rule every other screen's prose
+## goes through in `break_for_label()`, with each `{run}` measured as two letters wide, so this reads
+## exactly as it would in the source it was written in.
+##
+## **The run half names the run button in the joystick scheme only.** *(2026-10-04, the player, inbox
+## #533: "joystick run should now say hold <run button> or double tap to run where it makes
+## sense".)* The joystick scheme draws run buttons, so its line shows one — `{run}` stands for the
+## button's own symbol, see `HelpText` — and the tap scheme, which draws none, keeps "double tap to
+## run". That is the one place the body varies, and it varies by the scheme the player chose, not
+## by the device.
+const _BODY := "Tap to walk, %s. " \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
+const _RUN_TAP := "double tap to run"
+const _RUN_JOYSTICK := "hold " + HelpText.RUN_TOKEN + " or double tap to run"
+
+## The body as the scheme in force words it.
+static func body_for(joystick: bool) -> String:
+	return _BODY % (_RUN_JOYSTICK if joystick else _RUN_TAP)
 
 func _ready() -> void:
 	# Above the world and above the HUD, and it must keep running while everything else stops.
@@ -87,9 +101,12 @@ func _ready() -> void:
 	_restart_button.hold_completed.connect(func() -> void: restart_requested.emit())
 
 ## Its own function for the same reason it always was: so a test can call this again rather than
-## reaching for a fresh scene. No longer branches on `_touch` — see `_BODY`'s own doc.
+## reaching for a fresh scene. Branches on the control scheme, not on `_touch` — see `_BODY`'s own
+## doc — and runs again on every `open()`, since the title screen can choose the scheme after this
+## screen was built.
 func _refresh_body() -> void:
-	_body.text = SentenceLines.break_for_label(_BODY, _body)
+	_body.show_line(SentenceLines.break_for_help(
+			body_for(HelpText.joystick_in_force(get_tree())), _body))
 
 ## Shown on every device — there is one control scheme now, and a press sets a direction on a
 ## keyboard-and-mouse desktop exactly as it does on a phone, so the same pair of buttons is a
@@ -130,6 +147,7 @@ func _show_where_the_run_stands() -> void:
 
 func open() -> void:
 	visible = true
+	_refresh_body()
 	_show_where_the_run_stands()
 	_restart_button.cancel_hold()
 	# Before anything else touches the tree's own `paused` flag: `TouchControls._process()`'s own

@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://src/ui/pause_screen.gd" id="1_pause"]
 [ext_resource type="Script" path="res://src/ui/mode_button.gd" id="2_mode_button"]
+[ext_resource type="Script" path="res://src/ui/help_text.gd" id="3_help"]
 
 [node name="PauseScreen" type="CanvasLayer"]
 layer = 90
@@ -34,13 +35,16 @@ theme_override_colors/font_color = Color(0.94, 0.9, 0.83, 1)
 theme_override_font_sizes/font_size = 36
 text = "Stopped on the pavement."
 
-[node name="Body" type="Label" parent="Root/Center/Lines"]
+[node name="Body" type="RichTextLabel" parent="Root/Center/Lines"]
 custom_minimum_size = Vector2(820, 0)
-horizontal_alignment = 1
+mouse_filter = 2
+theme_override_colors/default_color = Color(0.8, 0.78, 0.74, 1)
+theme_override_font_sizes/normal_font_size = 32
+bbcode_enabled = false
+fit_content = true
+scroll_active = false
 autowrap_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
-theme_override_font_sizes/font_size = 32
-text = "Tap to walk, double tap to run. Walk to calm ground and stay moving; standing still settles nothing."
+script = ExtResource("3_help")
 
 [node name="Hint" type="Label" parent="Root/Center/Lines"]
 horizontal_alignment = 1
