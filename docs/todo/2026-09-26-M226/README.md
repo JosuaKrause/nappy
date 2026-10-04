@@ -33,3 +33,15 @@ means they are not to stay there either. The player, asked whether to keep PR #3
 2.0s notice and 6.0s chase until this milestone fits them to the gold timing, or retune them to
 the dog's own timing immediately: "A, remove the exemption." Both rows keep their built numbers
 until this milestone lands.
+
+**Every off-screen warning is at most two seconds, with nothing placed, then the thing placed just
+off screen** ([calm-kestrel](../../playtests/2026-10-04-calm-kestrel.md), inbox #559, 2026-10-04):
+
+> the offscreen spawning is still bad for all offscreen warnings it should *always* show the warning for x seconds (never longer than 2s) without placing anything then place the object immediately off screen so it will immediately start coming on the screen turning off the warning. the warnings right now are way too long and they jump around wildly
+
+So for everything warned from off screen (the pursuers, the trap robbers, the cyclist, the fire
+engine, the column): the badge shows alone for at most two seconds, nothing in the world; then the
+thing is placed just off screen where the badge points, so it comes into view at once and the badge
+goes off. The fire engine's 6.27s warning and every other one longer than two seconds goes. The gold
+timing above is now read within that ceiling.
+
