@@ -291,8 +291,8 @@ const CONDITIONS := ["visible", "moving", "running", "carrying", "pursuing", "ne
 ## `burning_building` calls in.
 const ROW_SUBJECT := "row:"
 
-## `setup.task`: the day's own resistance step, its mark where `mark` puts it and read as the scene
-## begins (`ResistanceDirector.start_recipe_task()`). The days with a mark take `mark`; the last
+## `setup.task`: the day's own resistance step, its mark where `mark` puts it and unread until she
+## touches it (`ResistanceDirector.start_recipe_task()`). The days with a mark take `mark`; the last
 ## night has no mark and takes none; `neighbor` pins day 10's neighbor's start and nothing else.
 ## Names `mark`, `task` (the contact, where the red arrow ends) and, for a task that rides a body —
 ## the man shouting, the van, the burnt shell, the neighbor, a roadblock — `rider`, for the
@@ -489,8 +489,10 @@ func install(city: City, player: Stroller, baby: Baby,
 
 ## `setup.task`, started once her own camera is the one on screen: the boot camera is gone by
 ## `begin()` and is still current during `install()`, and where the task is placed asks what she
-## can see from where she read the mark. The last night is offered only once the goal is met, so a
-## day-14 scene starts with it met. False, with the scene stopped, when the director refused it.
+## can see from where she reads the mark, which is later: the mark stands unread and the task is
+## placed when she touches it (`_bind_task_names()`). The last night is offered only once the goal
+## is met, so a day-14 scene starts with it met. False, with the scene stopped, when the director
+## refused it.
 func _start_the_task() -> bool:
 	if not data.get("setup", {}).has("task"):
 		return true
@@ -516,20 +518,48 @@ func _start_the_task() -> bool:
 		write_manifest()
 		get_tree().quit(1)
 		return false
+	_task_from = mark if mark != Vector2.INF else _player.global_position
+	manifest["task"] = {"mark": [mark.x, mark.y] if mark != Vector2.INF else null}
+	_bind_task_names()
+	return true
+
+## Where the task's distance is measured from: the mark, or on the last night where she starts.
+var _task_from := Vector2.INF
+
+## Names what the director offers now. A mark stands unread as `mark` until she touches it; the
+## task it unlocks is placed at that touch, so `task` and `rider` are named from the tick after,
+## and the manifest records where the target was put and which way the arrow points. Called every
+## tick, so an observation finds the task however late she reads the mark. A placement the
+## director refuses stops the scene.
+func _bind_task_names() -> void:
+	if not _resistance or not data.get("setup", {}).has("task") or manifest.get("setup_failed", false):
+		return
+	var contact: ContactPoint = _resistance._contact
 	if _resistance._read_mark:
 		named["mark"] = _resistance._read_mark
-	named["task"] = _resistance._contact
+	elif contact and contact.step.is_pickup and not contact.is_done:
+		named["mark"] = contact
+		return
+	if not contact or contact.step.is_pickup:
+		manifest["setup_failed"] = true
+		for problem in _resistance.scene_task_errors():
+			print("[SceneRecipe] " + problem)
+		print("[SceneRecipe] setup.task: the mark's task has nowhere to go in this scene")
+		write_manifest()
+		_active = false
+		get_tree().quit(1)
+		return
+	if named.get("task") == contact:
+		return
+	named["task"] = contact
 	if _resistance._rider:
 		named["rider"] = _resistance._rider
 	var step := _resistance.current_step()
 	var target := _resistance.contact_position()
-	var from := mark if mark != Vector2.INF else _player.global_position
 	var arrow := _resistance.red_arrow_target()
-	manifest["task"] = {"step": step.index, "title": step.title,
-			"mark": [mark.x, mark.y] if mark != Vector2.INF else null,
-			"target": [target.x, target.y], "distance": snappedf(from.distance_to(target), 0.01),
-			"arrow": [arrow.x, arrow.y] if arrow != Vector2.INF else null}
-	return true
+	manifest.task.merge({"step": step.index, "title": step.title,
+			"target": [target.x, target.y], "distance": snappedf(_task_from.distance_to(target), 0.01),
+			"arrow": [arrow.x, arrow.y] if arrow != Vector2.INF else null, "read_tick": tick})
 
 ## The army column is a production happening, whose close-spaced trucks deliberately do not use
 ## unrelated catalogue-event spacing. Start its real formation at the authored main-road point.
@@ -930,6 +960,7 @@ func snapshot() -> Dictionary:
 	return result
 
 func _observe() -> void:
+	_bind_task_names()
 	for check: Dictionary in _observations:
 		if int(check.tick) != tick:
 			continue
@@ -974,6 +1005,9 @@ func _observe() -> void:
 		var record := check.duplicate(true)
 		record["passed"] = passed
 		record["state"] = snapshot().get(check.subject, {})
+		if is_instance_valid(_player):
+			record["player_at"] = [snappedf(_player.global_position.x, 0.01),
+					snappedf(_player.global_position.y, 0.01)]
 		if actor and not named.has(check.subject):
 			record["state"] = {"position": [snappedf(actor.global_position.x, 0.0001),
 					snappedf(actor.global_position.y, 0.0001)]}
