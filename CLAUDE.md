@@ -208,6 +208,12 @@ follow; it is a claim with the evidence withheld.
   player answers from the message in front of them, and a question that leans on something said
   three turns ago is a question with its evidence withheld.
 
+**"Telemetry", in the player's words, primarily means GoatCounter.** *(2026-10-04: "for future reference I
+primarily consider goatcounter telemetry. what you think of telemetry is just logs".)* A request for
+telemetry on something is a request for its own GoatCounter events (`VisitCounter`, the page counts
+visits in `docs/TELEMETRY.md`); the run log is "logs", which name each thing correctly from its
+first line as well.
+
 **This rule is about conversation, so nothing can trigger it but you.** It lives here rather than in
 a skill because no file edit precedes it — it applies to the first sentence of a turn as much as the
 last.
