@@ -22,7 +22,7 @@ city's ground is created (`src/city/scenery_ground.gd`, `src/city/scenery_reside
 3. **silky-rabbit's per-region stepping**, under the rule below.
 
 **Mode 1 was asked for as the default · overturned to mode 2 by the player on 2026-10-03**, after
-trying all three on a phone ([inbox #510](https://github.com/JosuaKrause/nappy/issues/510)), full
+trying all three on a phone ([inbox #510](https://github.com/JosuaKrause/nappy/issues/510), filed in [quiet-yak](../playtests/2026-10-03-quiet-yak.md)), full
 events, seed 67, a long walk up and back through the car accident and between the stalls: "mode 2
 felt to have the fewest stutters especially when coming back down it was much smoother than mode
 1. let's make 2 the default for now". That is the eye test the review item asked for; it does not
