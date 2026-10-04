@@ -29,6 +29,11 @@ func run(t) -> void:
 	_test_a_paced_event_walks_a_beat(t)
 	_test_a_pursuer_can_wait(t)
 	_test_a_pursuer_stops_at_walls(t)
+	_test_the_robbers_lunge_is_further_out_than_his_catch(t)
+	_test_the_robber_does_not_catch_her_through_a_wall(t)
+	_test_the_robber_does_not_lunge_at_her_through_a_wall(t)
+	_test_the_robber_catches_her_by_coming_round_the_corner(t)
+	_test_a_clear_line_is_every_tile_the_line_crosses(t)
 
 
 func _instance(t, def: EventDef, at := Vector2.ZERO,
@@ -761,4 +766,179 @@ func _test_a_pursuer_stops_at_walls(t) -> void:
 		t.check(map.is_walkable(tile),
 				"the pursuer never stands on the building at %s (t=%.2fs)" % [tile, elapsed])
 	t.check(checked > 0, "the walk round the corner actually ran")
+	instance.free()
+
+## An alley mouth on the real map, as the corner the robber reaches round: a building tile with
+## alley ground on one side (`d1`, where he stands) and walkable ground on a perpendicular side
+## (`d2`, the sidewalk she walks), with the tile between the two (the mouth, `d1 + d2`) walkable too,
+## so the corner is one he can come round. `corner` is the building's own vertex shared by all four
+## tiles; from it the building lies toward `-d1` and `-d2`. `{}` would mean the generator stopped
+## carving alleys onto streets rather than that the search picked badly.
+func _an_alley_mouth(map: CityMap) -> Dictionary:
+	var sides: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]
+	for tile in map.tiles_of_type(GameEnums.TileType.BUILDING):
+		for d1 in sides:
+			if map.tile_at(tile + d1) != GameEnums.TileType.ALLEY:
+				continue
+			for d2 in [Vector2i(d1.y, d1.x), Vector2i(-d1.y, -d1.x)]:
+				if map.is_walkable(tile + d2) and map.is_walkable(tile + d1 + d2):
+					return {"building": tile, "d1": Vector2(d1), "d2": Vector2(d2),
+							"corner": map.tile_to_world(tile) + Vector2(d1 + d2) * 16.0}
+	return {}
+
+## The alley robber on `map`, past his notice and chasing, so what follows is about the line between
+## the two of them and not about the notice.
+func _a_chasing_robber(t, map: CityMap) -> EventInstance:
+	var def := EventCatalogue.by_id("alley_robbery")
+	var instance := _instance(t, def, Vector2.ZERO)
+	instance._map = map
+	instance.player_at = Vector2(def.pursues_within - 10.0, 0.0)
+	instance._process(STEP)
+	_advance(instance, def.telegraph_time + 0.1)
+	return instance
+
+## **He catches her only by touching her.** *(freckled-goose, #544: "Even then the distance would
+## not physically connect so counting it as caught would be unfair. Only if the Robert touches the
+## player should it end instantly".)* The catch the player met: him in the alley hugging the
+## building, her on the sidewalk round its corner, 22px apart — inside his 26px catch — with the
+## building's corner between them. She stands 14px off the building's face (`PLAYER_BODY_RADIUS`,
+## where the building holds her) and is not inside the mouth.
+func _test_the_robber_does_not_catch_her_through_a_wall(t) -> void:
+	var map := _map()
+	var mouth := _an_alley_mouth(map)
+	t.check(not mouth.is_empty(), "the sampled map has an alley opening onto a street")
+	if mouth.is_empty():
+		return
+	var corner: Vector2 = mouth["corner"]
+	var d1: Vector2 = mouth["d1"]
+	var d2: Vector2 = mouth["d2"]
+	var instance := _a_chasing_robber(t, map)
+	t.check(not instance.is_telegraphing() and not instance.is_waiting(), "he is chasing")
+	instance.position = corner + d1 * 1.0 - d2 * 7.0
+	var behind_the_wall := corner - d1 * 4.0 + d2 * Tuning.PLAYER_BODY_RADIUS
+	var reach := instance.def.lethal_reach()
+	t.check(instance.global_position.distance_to(behind_the_wall) < reach,
+			"she is inside his catch in a straight line (%.1fpx < %.1fpx)"
+			% [instance.global_position.distance_to(behind_the_wall), reach])
+	t.check(map.tile_at(map.world_to_tile(instance.global_position)) == GameEnums.TileType.ALLEY,
+			"he is in the alley")
+	t.check(not _sampled_line_is_walkable(map, instance.global_position, behind_the_wall),
+			"the building's corner is between them")
+	t.check(not instance.is_lethal_at(behind_the_wall),
+			"and he does not catch her with the building's corner between them")
+	# The same distance on open ground still catches: her in the mouth, the line between them clear.
+	var in_the_mouth := corner + d1 * 4.0 + d2 * 14.0
+	t.check(instance.global_position.distance_to(in_the_mouth) < reach, "the mouth is inside his catch")
+	t.check(_sampled_line_is_walkable(map, instance.global_position, in_the_mouth),
+			"nothing stands between him and the mouth")
+	t.check(instance.is_lethal_at(in_the_mouth), "and with nothing between them, he catches her")
+	instance.free()
+
+## **He does not lunge at her across a wall either**, since the lunge ends in a catch. Inside his
+## stand-off with the building between them he holds his ground through his notice rather than
+## lunging; the moment the line between them is clear, he lunges.
+func _test_the_robber_does_not_lunge_at_her_through_a_wall(t) -> void:
+	var map := _map()
+	var mouth := _an_alley_mouth(map)
+	if mouth.is_empty():
+		return
+	var corner: Vector2 = mouth["corner"]
+	var d1: Vector2 = mouth["d1"]
+	var d2: Vector2 = mouth["d2"]
+	var def := EventCatalogue.by_id("alley_robbery")
+	var instance := _instance(t, def, corner + d1 * 1.0 - d2 * 28.0)
+	instance._map = map
+	var standing := instance.position
+	var behind_the_wall := corner - d1 * 28.0 + d2 * Tuning.PLAYER_BODY_RADIUS
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	t.check(standing.distance_to(behind_the_wall) < standoff,
+			"she is inside his stand-off in a straight line (%.1fpx < %.1fpx)"
+			% [standing.distance_to(behind_the_wall), standoff])
+	instance.player_at = behind_the_wall
+	instance._process(STEP)
+	t.check(not instance.is_waiting(), "he notices her")
+	_advance(instance, def.telegraph_time * 0.5)
+	t.check(instance.is_telegraphing(), "and does not lunge with the building between them")
+	t.close_to(instance.position.distance_to(standing), 0.0, "he holds his ground", 0.5)
+	t.check(not instance.is_lethal_at(behind_the_wall), "and cannot end her day from there")
+	instance.player_at = corner + d1 * 14.0 + d2 * 14.0
+	instance._process(STEP)
+	t.check(not instance.is_telegraphing(), "she steps into the mouth: the line is clear and he lunges")
+	instance.free()
+
+## **To catch her round a corner he has to come round it.** She stands on the sidewalk just round
+## the building from him, inside his catch in a straight line, and he chases: he slides along the
+## building's face (`_walkable_step`) and catches her only once the line between them clears the
+## building's corner, never through it. Every frame of the chase is checked against a line sampled
+## a quarter pixel at a time, a second answer to the question `_clear_line_to()` asks, so a frame
+## that catches through the corner fails it wherever it falls.
+func _test_the_robber_catches_her_by_coming_round_the_corner(t) -> void:
+	var map := _map()
+	var mouth := _an_alley_mouth(map)
+	if mouth.is_empty():
+		return
+	var corner: Vector2 = mouth["corner"]
+	var d2: Vector2 = mouth["d2"]
+	var d1: Vector2 = mouth["d1"]
+	var instance := _a_chasing_robber(t, map)
+	var start := corner + d1 * 1.0 - d2 * 7.0
+	instance.position = start
+	var her := corner - d1 * 4.0 + d2 * Tuning.PLAYER_BODY_RADIUS
+	instance.player_at = her
+	var elapsed := 0.0
+	var caught := false
+	var through_a_wall := 0
+	while elapsed < 2.0 and not caught and not instance.is_finished:
+		if instance.is_lethal_at(her):
+			caught = true
+			if not _sampled_line_is_walkable(map, instance.global_position, her):
+				through_a_wall += 1
+		instance._process(STEP)
+		elapsed += STEP
+	t.check(caught, "he catches her in the end")
+	t.check(through_a_wall == 0, "and never with the building between them")
+	t.check(instance.global_position.distance_to(start) > 4.0,
+			"he had to move to do it (%.1fpx, %.2fs)" % [instance.global_position.distance_to(start),
+			elapsed])
+	instance.free()
+
+## Every tile a straight line passes through, found by sampling it `per_px` times a pixel.
+func _sampled_line_is_walkable(map: CityMap, from: Vector2, to: Vector2, per_px := 4.0) -> bool:
+	var samples := maxi(1, ceili(from.distance_to(to) * per_px))
+	for i in samples + 1:
+		if not map.is_walkable(map.world_to_tile(from.lerp(to, float(i) / float(samples)))):
+			return false
+	return true
+
+## **`_clear_line_to()` against the sampled line, over the real map.** Seeded segments up to a
+## stand-off long from walkable ground near buildings, in every direction, each answered both by
+## stepping tile boundaries and by sampling an eighth of a pixel at a time; the two have to agree.
+## The guard counts how many of them crossed a building, so a sweep that only ever asked open
+## ground cannot pass.
+func _test_a_clear_line_is_every_tile_the_line_crosses(t) -> void:
+	var map := _map()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 544
+	var buildings := map.tiles_of_type(GameEnums.TileType.BUILDING)
+	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), Vector2.ZERO)
+	instance._map = map
+	var asked := 0
+	var blocked := 0
+	var disagreed := 0
+	while asked < 400:
+		var near: Vector2i = buildings[rng.randi_range(0, buildings.size() - 1)]
+		var from := map.tile_to_world(near) + Vector2(rng.randf_range(-64.0, 64.0),
+				rng.randf_range(-64.0, 64.0))
+		if not map.is_walkable(map.world_to_tile(from)):
+			continue
+		var to := from + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(1.0, 116.0)
+		instance.position = from
+		var sampled := _sampled_line_is_walkable(map, from, to, 8.0)
+		asked += 1
+		if not sampled:
+			blocked += 1
+		if instance._clear_line_to(to) != sampled:
+			disagreed += 1
+	t.check(blocked > 40, "the sweep crossed buildings (%d of %d)" % [blocked, asked])
+	t.check(disagreed == 0, "stepping tiles and sampling agree on every line (%d did not)" % disagreed)
 	instance.free()

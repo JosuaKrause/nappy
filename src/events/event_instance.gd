@@ -1892,10 +1892,18 @@ func _chase(delta: float) -> void:
 		# stand-off, the lunge would fire on its first frame, so the notice runs its whole length
 		# and it neither lunges early nor backs off — it holds its ground while she is nearer than
 		# the stand-off and follows at it once she is further.
+		#
+		# **And not across a wall**, since the lunge ends in a catch (see `is_lethal_at()`): inside
+		# its stand-off with a building between them it holds its ground, neither lunging nor backing
+		# off, and lunges the moment the line between them is clear. The notice's own clock still
+		# ends it, and from there the chase comes round the wall like any other.
 		if def.sets_off_beside_her:
 			step = clampf(range_to_her - standoff, 0.0, step)
 		elif range_to_her <= standoff:
-			_lunged = true
+			if _clear_line_to(player_at):
+				_lunged = true
+			else:
+				step = 0.0
 		else:
 			step = minf(step, range_to_her - standoff)
 	var moved := _walkable_step(_heading * step)
@@ -2823,10 +2831,65 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 ## every row and a separate, smaller number for one whose killer is not what the field is drawn
 ## around. A roadblock is that row: the node is the man once he leaves the post, and what he
 ## reaches with is a pair of arms rather than the width of the barrier he left standing.
+##
+## **A pursuer catches her only by touching her**, so its catch also needs `_clear_line_to()` her:
+## within reach across a building's corner is not a catch. *(freckled-goose, #544: "Even then the
+## distance would not physically connect so counting it as caught would be unfair. Only if the
+## Robert touches the player should it end instantly".)* The reach is unchanged; what is added is
+## that nothing stands between them. Every other `hard_fail` row keeps the straight-line distance.
 func is_lethal_at(world_position: Vector2) -> bool:
 	if is_finished or is_leaving or is_waiting() or not def.hard_fail or is_telegraphing():
 		return false
-	return global_position.distance_to(world_position) <= def.lethal_reach()
+	if global_position.distance_to(world_position) > def.lethal_reach():
+		return false
+	return not def.pursues or _clear_line_to(world_position)
+
+## Whether the straight line from this node to `world_position` crosses only ground
+## `CityMap.is_walkable()` agrees with — the question a pursuer's catch and its lunge both ask, since
+## either one across a wall is a man reaching through a building. Every tile the segment enters is
+## asked, found by stepping from one tile boundary to the next along it rather than by sampling, so a
+## line that clips a building's corner by a pixel is blocked however short it is. A line through a
+## corner point exactly asks both tiles beside it. True with no map, which is every data-level rig
+## built without one, exactly as `_walkable_step()` is.
+func _clear_line_to(world_position: Vector2) -> bool:
+	if not _map:
+		return true
+	var from := global_position
+	var tile := _map.world_to_tile(from)
+	if not _map.is_walkable(tile):
+		return false
+	var delta := world_position - from
+	var size := float(Tuning.TILE_SIZE)
+	var step := Vector2i(int(signf(delta.x)), int(signf(delta.y)))
+	# The fraction of the segment at which it next crosses a vertical (x) or horizontal (y) tile
+	# boundary, and how much of the segment one whole tile takes on each axis.
+	var next_x := INF
+	var each_x := INF
+	if step.x != 0:
+		next_x = (float(tile.x + maxi(step.x, 0)) * size - from.x) / delta.x
+		each_x = size / absf(delta.x)
+	var next_y := INF
+	var each_y := INF
+	if step.y != 0:
+		next_y = (float(tile.y + maxi(step.y, 0)) * size - from.y) / delta.y
+		each_y = size / absf(delta.y)
+	while minf(next_x, next_y) <= 1.0:
+		if is_equal_approx(next_x, next_y):
+			if not _map.is_walkable(tile + Vector2i(step.x, 0)) \
+					or not _map.is_walkable(tile + Vector2i(0, step.y)):
+				return false
+			tile += step
+			next_x += each_x
+			next_y += each_y
+		elif next_x < next_y:
+			tile.x += step.x
+			next_x += each_x
+		else:
+			tile.y += step.y
+			next_y += each_y
+		if not _map.is_walkable(tile):
+			return false
+	return true
 
 ## One bounded integral cache per source, with a by-value key rather than a clock or identity.
 var _expected_landed_key: Array = []
