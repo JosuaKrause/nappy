@@ -399,7 +399,7 @@ func _tear(tile: Vector2i) -> void:
 	var bag := _the_bag()
 	if not state.tear(tile, which):
 		return
-	var pursuit := bag.draw()
+	var pursuit: bool = bag.draw()
 	state.tears += 1
 	_refresh_wall(_by_tile[tile].x)
 	# `VisitCounter`'s own "poster-torn" — see docs/TELEMETRY.md, "The page counts visits".
