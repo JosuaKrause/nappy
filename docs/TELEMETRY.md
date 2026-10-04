@@ -690,7 +690,8 @@ file, like a raw frame trace, and never part of the run log.
 charged to exactly one bucket**, so a row's buckets add up to its `frame_usec` exactly.
 `FrameRecorder` (`src/telemetry/frame_recorder.gd`) marks the engine's phases: its own physics and
 process callbacks run first in their step, a child's process callback runs last, and the
-renderer's post-draw callback ends the drawing. A timed system calls `FrameRecord.enter()` on the
+renderer's pre-draw callback ends the engine's side of drawing (`draw`) and its post-draw callback
+ends the renderer's (`render`). A timed system calls `FrameRecord.enter()` on the
 way in and `leave()` on the way out (`src/telemetry/frame_record.gd`); whatever was being charged
 pauses while it runs, so a timed system inside another is charged to itself alone.
 

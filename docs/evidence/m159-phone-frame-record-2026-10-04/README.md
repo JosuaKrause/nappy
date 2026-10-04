@@ -40,6 +40,10 @@ only the standard library and writes nothing:
 uv run python docs/evidence/m159-phone-frame-record-2026-10-04/analyse.py
 ```
 
+It reads schema 1 files (this one) and schema 2 files (a later build's: the `render` bucket joins
+the tables and a section 10 reports the `draws_*` counts and `render_cpu_usec`), so the next phone
+recording is read the same way: pass its path as the argument.
+
 ## What the file cannot say
 
 - **The clock steps in 100µs.** The page's clock is the browser's reduced-precision one

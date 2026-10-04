@@ -173,8 +173,8 @@ func report_text() -> String:
 	var report := ledger.report()
 	report["schema"] = "nappy-frame-record"
 	report["schema_version"] = 2
-	report["gpu_time"] = "not measured: a phone's browser offers no GPU timing, so draw_usec " \
-			+ "is the CPU side of drawing only"
+	report["gpu_time"] = "not measured: a phone's browser offers no GPU timing, so draw_usec + " \
+			+ "render_usec is the CPU side of drawing only"
 	report["clock"] = "every microsecond value is quantized to environment.timer_resolution_usec, "\
 			+ "which on a page is the browser's reduced-precision clock"
 	report["buckets"] = _bucket_notes()
