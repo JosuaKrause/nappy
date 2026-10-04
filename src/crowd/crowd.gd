@@ -31,6 +31,15 @@ const WARNING_SOURCE := &"traffic"
 ## acquiring their own reference would still be correct under `AtlasLibrary`'s counting, but it is
 ## a couple of hundred redundant calls for a page this class already knows the lifetime of.
 const ATLAS_GROUP := &"crowd"
+
+## The squared distance from her beyond which a walker can neither make way for her
+## (`_make_way()` reaches `Tuning.CROWD_YIELD_DISTANCE`) nor be in contact with her (`_bump()`
+## releases at `Tuning.BUMP_CLEAR_RADIUS`), read by the tick's player half to skip both. The sum of
+## the two radii and a pixel more rather than the larger of them, so every walker it skips is one
+## both functions' own `length()` tests already refuse, whatever the rounding of a square root;
+## a walker inside it is asked by the two functions exactly as before.
+const _BEYOND_CONTACT_SQUARED := (Tuning.CROWD_YIELD_DISTANCE + Tuning.BUMP_CLEAR_RADIUS + 1.0) \
+		* (Tuning.CROWD_YIELD_DISTANCE + Tuning.BUMP_CLEAR_RADIUS + 1.0)
 ## Whether this crowd currently holds `ATLAS_GROUP` — guards two different calls rather than one:
 ## `start_day()`'s own acquire, taken once on the first day a crowd is built rather than every day
 ## (PLAYTEST-109, "don't unload anything that might be needed in one day and in the next" — a page
@@ -41,6 +50,15 @@ const ATLAS_GROUP := &"crowd"
 var _atlas_held := false
 
 var _agents: Array[CrowdAgent] = []
+## `_agents`' cars and its walkers, each in `_agents`' own order, sorted by `_sort_by_kind()` at
+## the top of `_resolve_the_queues()` — the first thing every frame's traffic pass does — and read by
+## everything after it in the same frame that is about one kind only: the queue, the turns, the
+## junctions, the gates and the doors. **Rebuilt rather than kept**, because suites add and remove agents through `_agents` and
+## `agents()` directly, and a list kept beside it would leave such an agent out of the traffic with
+## nothing to say so; the sort costs one pass, where each of those loops walking the whole crowd
+## and skipping the other kind cost one pass each.
+var _cars: Array[CrowdAgent] = []
+var _walkers: Array[CrowdAgent] = []
 var _city: City
 var _map: CityMap
 var _player: Stroller
@@ -317,6 +335,8 @@ func clear() -> void:
 	for agent in _agents:
 		agent.queue_free()
 	_agents.clear()
+	_cars.clear()
+	_walkers.clear()
 	# Nobody is standing at a checkpoint any more, and a hut that is still holding a freed walker
 	# never lets anybody in again — see `WalkerDoorHold.empty()`.
 	for hold in _door_holds:
@@ -481,7 +501,7 @@ func space_out_the_traffic(delta: float) -> void:
 ## so the reservation is visible to every car for the whole frame rather than only to the ones that
 ## happen to move after the turning one.
 func _book_the_turns() -> void:
-	for agent in _agents:
+	for agent in _cars:
 		if agent.is_turning():
 			_traffic.claim(agent.turn_lane_key(), agent.turn_landing())
 
@@ -494,10 +514,9 @@ func _book_the_turns() -> void:
 ## gates, not the index rebuild, none of which moves a body. See `start_day()` for why that call is
 ## not the thing the crowd rules refuse.
 func _resolve_the_queues() -> Dictionary:
+	_sort_by_kind()
 	var lanes := {}
-	for agent in _agents:
-		if agent.kind != CrowdAgent.Kind.CAR:
-			continue
+	for agent in _cars:
 		agent.gap_ahead = INF
 		agent.leader_speed = 0.0
 		var key := agent.lane_key()
@@ -521,6 +540,18 @@ func _resolve_the_queues() -> Dictionary:
 			queue[i].gap_ahead = gap
 			queue[i].leader_speed = queue[i + 1].speed()
 	return lanes
+
+## Fills `_cars` and `_walkers` from `_agents` — see `_cars` for why once a frame rather than once a
+## day. Walked in `_agents`' order, so every loop over one of them meets its agents in the order the
+## loop over `_agents` it replaces did, and a frame decided in that order decides the same way.
+func _sort_by_kind() -> void:
+	_cars.clear()
+	_walkers.clear()
+	for agent in _agents:
+		if agent.kind == CrowdAgent.Kind.CAR:
+			_cars.append(agent)
+		else:
+			_walkers.append(agent)
 
 ## The resolved buckets, as bare positions, handed to `TrafficIndex` for every look a car takes
 ## before it places itself — a turn's landing, a recycle's entry point, the arm it prefers.
@@ -564,7 +595,7 @@ func _index_the_queues(lanes: Dictionary) -> void:
 ## **Nobody ahead of the landing is touched.** They are driving away from it, and giving a car a
 ## leader that is behind it is how a queue deadlocks.
 func _keep_room_for_the_turning(lanes: Dictionary) -> void:
-	for agent in _agents:
+	for agent in _cars:
 		if not agent.is_turning():
 			continue
 		var queue: Array[CrowdAgent] = lanes.get(agent.turn_lane_key(), [] as Array[CrowdAgent])
@@ -613,11 +644,12 @@ func give_way_at_junctions() -> void:
 	# can be told about each other. See `_collide_in_the_box`.
 	var inside_the_box := {}
 	var approaching := {}
-	for agent in _agents:
-		if agent.kind != CrowdAgent.Kind.CAR:
-			continue
+	# junction -> each approaching car's `distance_to_junction()`, in `approaching`'s own order.
+	# Read once here and handed to everything below that asks again: nothing in this function
+	# moves a car, so a second reading is the same number paid for twice.
+	var distances := {}
+	for agent in _cars:
 		agent.junction_hold = INF
-		var axis := 1 if agent.travelling_vertically() else 2
 		# **A car in a turn holds the whole box rather than one arm of it.** Its path crosses both
 		# axes, its tail is still in the way after its nose has left, and it is in there for the
 		# length of a manoeuvre rather than for the length of a drive-through — so nothing else may
@@ -630,6 +662,7 @@ func give_way_at_junctions() -> void:
 				inside_the_box[turning] = [] as Array[CrowdAgent]
 			inside_the_box[turning].append(agent)
 			continue
+		var axis := 1 if agent.travelling_vertically() else 2
 		var inside := agent.junction_occupied()
 		if inside.x >= 0:
 			occupied[inside] = int(occupied.get(inside, 0)) | axis
@@ -646,7 +679,9 @@ func give_way_at_junctions() -> void:
 			continue
 		if not approaching.has(junction):
 			approaching[junction] = [] as Array[CrowdAgent]
+			distances[junction] = [] as Array[float]
 		approaching[junction].append(agent)
+		distances[junction].append(distance)
 
 	for junction: Vector2i in inside_the_box:
 		if int(occupied.get(junction, 0)) == 3:
@@ -654,23 +689,25 @@ func give_way_at_junctions() -> void:
 
 	for junction: Vector2i in approaching:
 		var queue: Array[CrowdAgent] = approaching[junction]
+		var distance_of: Array[float] = distances[junction]
 		var busy := int(occupied.get(junction, 0))
 		var signalled := _signals != null and _signals.is_signalled(junction)
 		# Right of way is only negotiated where nothing is deciding it. A light decides it, and
 		# two answers to the same question is how a junction stops meaning anything.
 		var winner: CrowdAgent = null
 		if busy == 0 and not signalled:
-			winner = _first_through(queue)
-		for agent in queue:
-			var axis := 1 if agent.travelling_vertically() else 2
+			winner = _first_through(queue, distance_of)
+		var winner_vertical := winner != null and winner.travelling_vertically()
+		for i in queue.size():
+			var agent := queue[i]
+			var vertical := agent.travelling_vertically()
+			var axis := 1 if vertical else 2
 			var crossing_is_in_the_box := (busy & (3 - axis)) != 0
-			var outranked := winner != null \
-					and winner.travelling_vertically() != agent.travelling_vertically()
-			var red := signalled \
-					and not _signals.green_for(junction, agent.travelling_vertically())
-			if crossing_is_in_the_box or outranked or red or not _can_clear_the_box(agent):
-				agent.junction_hold = maxf(0.0,
-						agent.distance_to_junction() - Tuning.CAR_STOP_LINE_SETBACK)
+			var outranked := winner != null and winner_vertical != vertical
+			var red := signalled and not _signals.green_for(junction, vertical)
+			if crossing_is_in_the_box or outranked or red \
+					or not _can_clear_the_box(agent, distance_of[i]):
+				agent.junction_hold = maxf(0.0, distance_of[i] - Tuning.CAR_STOP_LINE_SETBACK)
 
 ## Cars stop at a checkpoint gate exactly the way they stop at a red light: a hold computed here
 ## and consumed by `CrowdAgent._give_way()` alongside `junction_hold` and the zebra's own stop
@@ -699,16 +736,16 @@ func give_way_at_junctions() -> void:
 ## already public and are all the geometry a gate needs — the along/across split below is the same
 ## projection `RegionPlanner`'s own door bodies stand on, done from the car's side instead.
 func _stop_for_gates(delta: float) -> void:
-	for agent in _agents:
+	# Cars only: a walker's `gate_hold` is never anything but `INF`, since only a car is ever made
+	# to hold for a gate below.
+	for agent in _cars:
 		agent.gate_hold = INF
 	var car_length := Tuning.CAR_STRIKE_HALF_LENGTH * 2.0
 	for gate in _gates:
 		var nearest: CrowdAgent = null
 		var nearest_along := INF
 		var anybody_within_a_length := false
-		for agent in _agents:
-			if agent.kind != CrowdAgent.Kind.CAR:
-				continue
+		for agent in _cars:
 			var offset: Vector2 = gate.position - agent.global_position
 			var along := offset.dot(agent.heading())
 			var across := (offset - agent.heading() * along).length()
@@ -760,13 +797,18 @@ func _stop_for_gates(delta: float) -> void:
 ##   anything. Nobody in the crowd ever walks an alley, so this leaves those guards holding nobody,
 ##   which is correct rather than a gap.
 func _hold_walkers_at_doors(delta: float) -> void:
-	for agent in _agents:
-		if agent.kind != CrowdAgent.Kind.WALKER:
-			continue
+	# **A day with no hut is a day this whole pass changes nothing**, which is every day before the
+	# wall stands (`Tuning.REGION_WALL_FIRST_DAY`) and the busiest ones. `door_ahead` is only ever
+	# set from a hut, so it is already null and `door_ahead_along` already `INF` for every walker,
+	# and a walker with nothing ahead of it and nothing held is in `WALKING` with no hut and no
+	# refusal, where `advance_the_door_hold()` reads three fields and returns. Huts are only ever
+	# made in `start_day()`, with a new crowd behind them, so no walker can be holding one.
+	if _door_holds.is_empty():
+		return
+	for agent in _walkers:
 		agent.door_ahead = null
 		agent.door_ahead_along = INF
-		if not _door_holds.is_empty():
-			_find_the_hut_in_front_of(agent)
+		_find_the_hut_in_front_of(agent)
 		agent.advance_the_door_hold(delta)
 
 func _find_the_hut_in_front_of(agent: CrowdAgent) -> void:
@@ -794,12 +836,13 @@ func _find_the_hut_in_front_of(agent: CrowdAgent) -> void:
 ## instant and over half the traffic stationary.
 ##
 ## `gap_ahead` is to the car in front in this car's own lane, so the room it needs is the distance
-## to the box, plus the box, plus a car's length of road beyond it.
-func _can_clear_the_box(agent: CrowdAgent) -> bool:
+## to the box, plus the box, plus a car's length of road beyond it. `distance` is the car's own
+## `distance_to_junction()`, which its caller has already read.
+func _can_clear_the_box(agent: CrowdAgent, distance: float) -> bool:
 	if agent.gap_ahead == INF:
 		return true
 	var box := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
-	var far_side := agent.distance_to_junction() + box
+	var far_side := distance + box
 	var room := agent.gap_ahead
 	if room >= far_side:
 		room += agent.leader_speed * Tuning.CAR_HEADWAY_TIME
@@ -834,18 +877,20 @@ func _collide_in_the_box(here: Array[CrowdAgent]) -> void:
 			two.crashed_into()
 
 ## The one car that may take the box this frame. Stable given a stable agent order, which is
-## what makes a day's traffic reproducible from its seed.
-func _first_through(queue: Array[CrowdAgent]) -> CrowdAgent:
-	var best := queue[0]
+## what makes a day's traffic reproducible from its seed. `distance_of` is each car's
+## `distance_to_junction()`, in the queue's order.
+func _first_through(queue: Array[CrowdAgent], distance_of: Array[float]) -> CrowdAgent:
+	var best := 0
 	for i in range(1, queue.size()):
-		if _goes_first(queue[i], best):
-			best = queue[i]
-	return best
+		if _goes_first(queue[i], distance_of[i], queue[best], distance_of[best]):
+			best = i
+	return queue[best]
 
 ## Whether `a` has right of way over `b`: nearest first, and right before left when the two of
-## them are arriving together. `CAR_JUNCTION_TIE` is what "together" means.
-func _goes_first(a: CrowdAgent, b: CrowdAgent) -> bool:
-	var difference := a.distance_to_junction() - b.distance_to_junction()
+## them are arriving together. `CAR_JUNCTION_TIE` is what "together" means. Each distance is that
+## car's own `distance_to_junction()`.
+func _goes_first(a: CrowdAgent, a_distance: float, b: CrowdAgent, b_distance: float) -> bool:
+	var difference := a_distance - b_distance
 	if absf(difference) > Tuning.CAR_JUNCTION_TIE:
 		return difference < 0.0
 	return _is_to_the_right_of(a, b)
@@ -908,6 +953,13 @@ func _meet_the_player() -> void:
 
 	for agent in _agents:
 		if agent.kind == CrowdAgent.Kind.WALKER:
+			# Out of reach of both, which is most of the crowd: `_make_way()` would return at its
+			# own distance test and `_bump()` would release the contact and return nothing, so this
+			# is the one thing either of them does for a walker this far off. See
+			# `_BEYOND_CONTACT_SQUARED` for why the test cannot disagree with theirs.
+			if (agent.global_position - here).length_squared() > _BEYOND_CONTACT_SQUARED:
+				agent.touching = false
+				continue
 			_make_way(agent, here, going)
 			shove += _bump(agent, here)
 			continue
