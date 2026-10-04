@@ -1,0 +1,37 @@
+<!-- Pelican cyclist, three-quarter back. The other pedal position. The pelican that one cyclist in about four hundred is instead (EventInstance's
+     PELICAN_BY_VIEW / PELICAN_BY_VIEW_B, chosen per rider when it spawns). The bike is the
+     cyclist's own, path for path, so the two share wheels, ground contact and registration and
+     only the rider changes: a great white pelican, white with black wing tips gripping the
+     bars, a long yellow bill with an orange pouch, orange webbed feet on the pedals.
+     The pouch and bill carry the read at game scale. SVG only by the player's word: no
+     illustrated PNG is ever made of it; the atlas bake rasterizes it like any SVG.
+     Canvas 40x44, the cyclist's own for this view; bottom-centre ground anchor (20,44). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="44" viewBox="0 0 40 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <ellipse cx="8" cy="36" rx="4.5" ry="6" fill="none" stroke="#221f28" stroke-width="1.6"/><ellipse cx="29" cy="28" rx="4.5" ry="6" fill="none" stroke="#221f28" stroke-width="1.6"/>
+  <path d="M8 36 L16 25 L20 32 L8 36 M16 25 L27 22 L20 32 L29 28 L27 20" fill="none" stroke="#c4503c" stroke-width="1.8"/>
+  <path d="M25 20 L32 18" fill="none" stroke="#221f28" stroke-width="1.6"/>
+  <path d="M16 24 L17 27 L18.6 30.2" fill="none" stroke="#3b2d32" stroke-width="2"/>
+  <path d="M16 24 L17 27 L18.6 30.2" fill="none" stroke="#e0843a" stroke-width="1.1"/>
+  <path d="M17.8 30.3 L20.8 29.0 L21.4 30.2 L20.4 31.0 L18.0 31.2 Z" fill="#e0843a" stroke-width="0.6"/>
+  <path d="M20.2 23.4 L23.4 27.8 L22.8 32.2" fill="none" stroke="#3b2d32" stroke-width="2"/>
+  <path d="M20.2 23.4 L23.4 27.8 L22.8 32.2" fill="none" stroke="#e0843a" stroke-width="1.1"/>
+  <path d="M22.0 32.3 L25.0 31.0 L25.6 32.2 L24.6 33.0 L22.2 33.2 Z" fill="#e0843a" stroke-width="0.6"/>
+  <clipPath id="pelican-body"><path d="M12 20.6 C11.6 15.2 15 11 19.8 10.8 C24 10.6 26.6 13.8 26 18 C25.4 22.4 22 25.4 17.6 25.4 C14.4 25.4 12.4 23.4 12 20.6 Z"/></clipPath>
+  <path d="M12 20.6 C11.6 15.2 15 11 19.8 10.8 C24 10.6 26.6 13.8 26 18 C25.4 22.4 22 25.4 17.6 25.4 C14.4 25.4 12.4 23.4 12 20.6 Z" fill="#ebe5d8" stroke="none"/>
+  <g clip-path="url(#pelican-body)" stroke="none">
+    <path d="M10 21.4 C15 24 22 23.4 28 18.6 L28 27 L10 27 Z" fill="#d5ccbc"/>
+  </g>
+  <path d="M12 20.6 C11.6 15.2 15 11 19.8 10.8 C24 10.6 26.6 13.8 26 18 C25.4 22.4 22 25.4 17.6 25.4 C14.4 25.4 12.4 23.4 12 20.6 Z" fill="none"/>
+  <path d="M14 21.4 L8.6 24.6 L9.6 26.8 L15.6 24.2 Z" fill="#ebe5d8"/>
+  <path d="M22.6 12.6 C25.4 13.6 27.6 15.8 29 18.6 L26.4 19.8 C25.4 17.8 23.6 16 21.6 15 Z" fill="#ddd5c6"/>
+  <path d="M27 17 C28.2 17.4 29.4 18 30.4 18.8 L27.6 20.4 C27.4 19.4 27 18.6 26.2 17.8 Z" fill="#2f2a30"/>
+  <path d="M15.4 13.8 C18.6 14.6 21.6 16.8 23.8 19.4 L21.6 21.2 C19.4 19.2 16.8 17.8 14.2 17.2 C13.6 16 14.2 14.4 15.4 13.8 Z" fill="#ddd5c6"/>
+  <path d="M22.4 17.8 C23.8 18.4 24.8 19.2 25.8 20.2 L22.8 21.8 C22.4 20.8 21.8 20 21 19.4 Z" fill="#2f2a30"/>
+  <path d="M20.4 13 C20.4 10 21 8.4 21.6 7.6 L25.8 7.8 C25.6 9 25.4 10.6 25.6 13 Z" fill="#ebe5d8" stroke="none"/>
+  <path d="M20.7 11.6 C20.8 9.8 21.2 8.6 21.6 7.8 M25.5 11.8 C25.4 10.4 25.5 9.2 25.7 8.2" fill="none"/>
+  <path d="M25.2 6.6 L33.6 9.6 C32.2 11.4 28.8 12 26.6 10.8 C25.4 10.2 24.8 8.4 25.2 6.6 Z" fill="#e3934f"/>
+  <path d="M25.4 4.4 C28.4 5.4 31.4 6.8 34.4 8.4 C35.2 8.8 35.2 9.8 34.6 10 C34.2 9.6 33.8 9.6 33.4 9.6 C30.6 8.6 27.8 7.6 25 6.6 Z" fill="#e8b64a"/>
+  <path d="M33.6 8 C34.6 8.5 35.3 9.4 34.6 10 C34.2 9.6 33.8 9.6 33.4 9.6 Z" fill="#d0703c" stroke-width="0.5"/>
+  <path d="M22.4 3.4 C21.8 2.2 22.2 1.2 23 0.8 C23.2 1.6 23.6 2.2 24.2 2.6 Z" fill="#ebe5d8" stroke-width="0.6"/>
+  <path d="M20.6 5.8 C20.6 4 22 2.6 23.6 2.6 C25.2 2.6 26.6 4 26.6 5.8 C26.6 7.6 25.2 8.8 23.6 8.8 C22 8.8 20.6 7.6 20.6 5.8 Z" fill="#ebe5d8"/>
+</svg>
