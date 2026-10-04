@@ -3,7 +3,7 @@ priority: now
 # busy-hedgehog — Returning to the page ignores input for half a second · filed 2026-10-04
 
 [misty-toad, a return to the page waits half a second](../../playtests/2026-10-04-misty-toad.md)
-files inbox #534, band `now` as the player labelled it:
+files inbox #534 in [misty-toad](../../playtests/2026-10-04-misty-toad.md), band `now` as the player labelled it:
 
 > When returning to the game all inputs should be ignored for 500ms this is to prevent the game from immediately starting when returning to the page. The player should see the day brief or pause screen
 
