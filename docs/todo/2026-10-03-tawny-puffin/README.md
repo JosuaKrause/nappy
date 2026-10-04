@@ -10,7 +10,8 @@ priority: next
 it, and keep it loaded if it can be.** `src/main.gd` pauses when focus is lost, but a page Safari
 discards reloads, and a day under way resumes at dawn with a nerve charged. Adjacent work is built:
 the rosy-chipmunk record (web saves wait for IndexedDB and retry after Safari drops its connection),
-with its iPhone check still open in `docs/review/2026-10-02-rosy-chipmunk.md`.
+and saving on that iPhone works on v0.22.0
+([quiet-yak](../../playtests/2026-10-03-quiet-yak.md), #468).
 
 **Only if Safari cannot be fixed**, the note's fallback — "saving the full state of the game on every
 blur (and in regular intervals) and allowing to reload from the last location without penalty" —
