@@ -686,6 +686,9 @@ RANGE = re.compile(r"#(\d+)[ \t]*(?:\u2013|\u2014|-|\.\.|to)[ \t]*#?(\d+)(?![0-9
 # The regular form, the only one edited: `inbox #N` or a run of numbers after one.
 CITATION = re.compile(r"\binbox #\d+(?![0-9A-Za-z])(?:(?:, and |, | and )#\d+(?![0-9A-Za-z]))*", re.IGNORECASE)
 
+# ` in name` or ` in [name](link)` right after a citation.
+ALREADY_IN = re.compile(r" in (?:\[([^\]]*)\]\([^)]*\)|([A-Za-z][\w-]*))")
+
 
 @dataclass(frozen=True)
 class Playtest:
@@ -728,6 +731,13 @@ def cite_line(line: str, path: str, targets: dict[int, Playtest]) -> tuple[str, 
         if all(named(n) for n in mine):
             continue
         playtest = targets[mine[0]]
+        already = ALREADY_IN.match(line, match.end())
+        if already is not None:
+            # An ` in <name or link>` right after the citation is a citation already made; a different
+            # playtest there is for a hand fix, and never gets a second "in".
+            if (already.group(1) or already.group(2)) != playtest.name:
+                irregular = True
+            continue
         regular = len(mine) == len(numbers) and all(targets[n] == playtest for n in mine)
         if regular and line[match.end() : match.end() + 1] != "]":
             if path.endswith(".md"):

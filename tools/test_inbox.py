@@ -694,6 +694,26 @@ class CiteTests(unittest.TestCase):
         )
         self.assertEqual((self.root / "docs/binary.dat").read_bytes(), self.FILES["docs/binary.dat"].encode())
 
+    def test_a_citation_already_followed_by_in_is_not_given_a_second_one(self) -> None:
+        (self.root / "docs/c.md").write_text(
+            "A (inbox #9001 in [gray-egret](playtests/2026-10-03-gray-egret.md)) b.\n"
+            "B (inbox #9001 in other-name) c.\n"
+            "C (inbox #9001 in [quiet-yak](playtests/2026-10-03-quiet-yak.md)) d.\n",
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "add", "-A"], cwd=self.root, check=True)
+        _, out, _ = self.cite("9001")
+        self.assertEqual(
+            self.read("docs/c.md"),
+            "A (inbox #9001 in [gray-egret](playtests/2026-10-03-gray-egret.md)) b.\n"
+            "B (inbox #9001 in other-name) c.\n"
+            "C (inbox #9001 in [quiet-yak](playtests/2026-10-03-quiet-yak.md)) d.\n",
+        )
+        listed = out.split("fix each by hand:")[1]
+        self.assertIn("docs/c.md:1:", listed)
+        self.assertIn("docs/c.md:2:", listed)
+        self.assertNotIn("docs/c.md:3:", listed)
+
     def test_a_second_run_changes_nothing(self) -> None:
         self.cite("9001", "9002", "9003")
         first = {name: self.read(name) for name in self.FILES if name != "docs/binary.dat"}
