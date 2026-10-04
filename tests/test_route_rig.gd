@@ -798,9 +798,12 @@ func _test_task_target_resolves_for_the_mast_task_on_day_11(t) -> void:
 			and task.is_one_place, "touching it offers the mast, a one-place task")
 	var rig := _target_shape_rig(t, fixture)
 	var resolved := rig._resolve_target("task")
-	t.check(resolved != Vector2.INF
-			and resolved == (fixture["resistance"] as ResistanceDirector).contact_position(),
-			"'task' resolves to the ground beside the mast's own foot")
+	var director := fixture["resistance"] as ResistanceDirector
+	# The contact stands on the mast's foot, a body's tile no plan can end on, so the leg aims at
+	# the open ground nearest it, from which the touch completes.
+	t.check(resolved != Vector2.INF and resolved != director.contact_position()
+			and director._contact.would_complete_at(resolved),
+			"'task' resolves to open ground the mast's foot is touched from")
 	rig.free()
 	_free_target_shape_fixture(fixture)
 
@@ -852,9 +855,13 @@ func _test_task_target_resolves_for_the_station_door_on_the_last_night(t) -> voi
 	t.check(rig._resolve_target("mark") == Vector2.INF,
 			"'mark' is unavailable on the last night, which has none")
 	var resolved := rig._resolve_target("task")
-	t.check(resolved != Vector2.INF
-			and resolved == (fixture["resistance"] as ResistanceDirector).contact_position(),
-			"'task' resolves to the power station's own front door")
+	var director := fixture["resistance"] as ResistanceDirector
+	# The contact stands on the door, on the station's facade, so the leg aims at the pavement in
+	# front of it, from which `DOOR_REACH` completes the touch.
+	var map := (fixture["city"] as City).map
+	t.check(resolved != Vector2.INF and director._contact.would_complete_at(resolved)
+			and map.is_walkable(map.world_to_tile(resolved)),
+			"'task' resolves to the pavement the power station's front door is touched from")
 	rig.free()
 	_free_target_shape_fixture(fixture)
 

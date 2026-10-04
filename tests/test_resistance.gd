@@ -4680,6 +4680,10 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 				director.setup(city, city.map)
 				var at := director._place(step, _production_rng(seed_value, day, "resistance"))
 				var at_tile := city.map.world_to_tile(at) if at != Vector2.INF else Vector2i(-1, -1)
+				# The station's contact stands on its door, on the facade, and is touched from the
+				# pavement straight below it, which is the ground asked about.
+				if step.target_kind == ResistanceSteps.TargetKind.STATION_DOOR and at != Vector2.INF:
+					at_tile = city.map.world_to_tile(at + Vector2.DOWN * Tuning.TILE_SIZE)
 				t.check(at != Vector2.INF and _stands_on_legal_ground(city.map, at_tile, walled,
 						allow_held, grid, blocked, reached),
 						"seed %d day %d: step %d's contact stands on reachable ground at %s"
