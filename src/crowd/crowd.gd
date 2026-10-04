@@ -881,6 +881,12 @@ func _tick_the_crowd(delta: float) -> void:
 	if _skip_motion:
 		return
 	_advance_the_world(delta)
+	_meet_the_player()
+
+## The tick's player half: who makes way for her, who she bumps, which car may strike her and which
+## sounds its horn. Its own function beside `_advance_the_world()` so a probe can time the two halves
+## apart (`tests/probes/m159_crowd_tick_cost.gd`); nothing else calls it.
+func _meet_the_player() -> void:
 	if not _player:
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 		if not _player:
