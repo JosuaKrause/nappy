@@ -130,9 +130,7 @@ func _split_tick(crowd: Crowd) -> Array[int]:
 	stamps.append(Time.get_ticks_usec())
 	crowd._index_the_queues(lanes)
 	stamps.append(Time.get_ticks_usec())
-	for agent in crowd.agents():
-		if agent.is_turning():
-			crowd._traffic.claim(agent.turn_lane_key(), agent.turn_landing())
+	crowd._book_the_turns()
 	stamps.append(Time.get_ticks_usec())
 	crowd.give_way_at_junctions()
 	stamps.append(Time.get_ticks_usec())

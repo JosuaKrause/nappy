@@ -469,18 +469,21 @@ func space_out_the_traffic(delta: float) -> void:
 	var lanes := _resolve_the_queues()
 	_keep_room_for_the_turning(lanes)
 	_index_the_queues(lanes)
-	# And the road a car in a turn has **booked** rather than reached. A turning car is still in the
-	# queue it came from — that is where its body is, and that is who has to keep a gap behind it —
-	# so nothing above knows about the lane it is on its way into, and a second car would happily
-	# turn or recycle into the piece of it the first one is already committed to. See
-	# `CrowdAgent._claim_the_turn()`; put into the rebuild rather than left to the claim alone so
-	# the reservation is visible to every car for the whole frame rather than only to the ones that
-	# happen to move after the turning one.
+	_book_the_turns()
+	give_way_at_junctions()
+	_stop_for_gates(delta)
+
+## And the road a car in a turn has **booked** rather than reached. A turning car is still in the
+## queue it came from — that is where its body is, and that is who has to keep a gap behind it —
+## so nothing in the queue's resolve knows about the lane it is on its way into, and a second car
+## would happily turn or recycle into the piece of it the first one is already committed to. See
+## `CrowdAgent._claim_the_turn()`; put into the index's rebuild rather than left to the claim alone
+## so the reservation is visible to every car for the whole frame rather than only to the ones that
+## happen to move after the turning one.
+func _book_the_turns() -> void:
 	for agent in _agents:
 		if agent.is_turning():
 			_traffic.claim(agent.turn_lane_key(), agent.turn_landing())
-	give_way_at_junctions()
-	_stop_for_gates(delta)
 
 ## The separation itself: cars bucketed by lane, each lane sorted along itself, and any two inside
 ## each other pulled apart from the front backwards. Returns the buckets, since the rest of the
