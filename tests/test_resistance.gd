@@ -625,7 +625,7 @@ func _test_touching_the_mark_activates_the_same_days_task(t) -> void:
 		director.free())
 
 ## *Always guarded* has to mean a survivable placement, not a guaranteed lost day: a robber
-## stands at least 66px (30 + `ContactPoint.REACH`) from every mark, in the mark's own alley —
+## stands at least 62px (26 + `ContactPoint.REACH`) from every mark, in the mark's own alley —
 ## within 96px of where `_guard_spot()` says he stands, two-thirds through it or at a courtyard's
 ## inner end — and the distance is the same every time this day is replayed.
 func _test_the_guard_is_seeded(t) -> void:
@@ -655,7 +655,7 @@ func _test_the_guard_is_seeded(t) -> void:
 			var distance := guard.global_position.distance_to(at) if guard else -1.0
 			if guard:
 				t.check(distance >= min_distance - 0.5,
-						"day %d's guard stands at least 66px from the mark" % day)
+						"day %d's guard stands at least 62px from the mark" % day)
 				var spot := director._guard_spot(at)
 				t.check(spot == Vector2.INF or guard.global_position.distance_to(spot) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
 						"day %d's guard stands two-thirds through the mark's alley, or at its courtyard's inner end" % day)
@@ -798,7 +798,7 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 		director.start_day(6, _rng(6, "resistance"), 300.0)
 		var mark_at := director.contact_position()
 		# The mark's own picture on screen and nothing else: its corners are 23px from its centre,
-		# and its guard stands at least 66px from it, so a relocation is never held back for him.
+		# and its guard stands at least 62px from it, so a relocation is never held back for him.
 		director.set_sight(func(p: Vector2) -> bool: return p.distance_to(mark_at) < 30.0)
 
 		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
@@ -1269,8 +1269,8 @@ static func _is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 ## for an alley too short for that and 176px from the mark both, *"Two-thirds wins"* (quiet-yak, inbox #471).
 ## Over every through-alley tile of six cities, the guard `_guard_position()` stands for a mark
 ## (the placement `_maybe_set_a_trap()` and every relocation make) is on the alley's own axis,
-## two-thirds of its length from the edge nearer the mark — or, where that point is within 66px of
-## the mark (his catch and the touch reach), 66px past the mark. Every alley here is one block
+## two-thirds of its length from the edge nearer the mark — or, where that point is within 62px of
+## the mark (his catch and the touch reach), 62px past the mark. Every alley here is one block
 ## long, so this is the short case on every mark: he stands two-thirds in although that is under
 ## 176px from the mark, which the test counts so it is not vacuous. Before, he stood at the far end
 ## tile or up to three tiles in from it, at least 176px from the mark where the alley allowed.
@@ -1312,7 +1312,7 @@ func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t) -> void:
 				expected = catch_floor
 			t.check(guard_at.distance_to(expected) < 0.5,
 					("seed %d: the guard for the mark at %s stands two-thirds through its alley, " +
-					"or 66px past the mark where that is nearer (%s, wanted %s)")
+					"or 62px past the mark where that is nearer (%s, wanted %s)")
 					% [seed_value, tile, guard_at, expected])
 			t.check(guard_at.distance_to(mark) >= min_distance - 0.5,
 					"seed %d: and never within %.0fpx of the mark at %s"
@@ -1535,8 +1535,8 @@ func _stays_asleep_walking_in_and_out(robbery: EventDef, guard_at: Vector2, near
 ## resistance's guard trap, from `TRAP_FIRST_DAY` (6) — ever stands within lethal reach of the
 ## doorstep, over `RULE_SEEDS` seeds and every day either kind can appear.
 ##
-## `reach` is computed from the row's own `inner_radius` (30px, the always-lethal zone around
-## whichever one of them it is) and the trap's own `min_distance` (66px, how close a guard is
+## `reach` is computed from the row's own `inner_radius` (26px, the always-lethal zone around
+## whichever one of them it is) and the trap's own `min_distance` (62px, how close a guard is
 ## ever placed to its mark) rather than a literal — the two named constants this bug was always
 ## about, added together as a generous rather than exact bound.
 ##
@@ -2245,7 +2245,7 @@ func _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t) -> vo
 ## `_van_guard_giving_chase()`'s.
 func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> void:
 	var def := EventCatalogue.by_id(id)
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.lethal_reach())
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 	var walker_closes := def.pursue_speed - Tuning.WALK_SPEED
 	t.check((Tuning.TRAP_ARRIVAL_DISTANCE - def.lethal_reach()) / walker_closes
 			<= def.telegraph_time + def.duration - 0.5,

@@ -150,6 +150,32 @@ func _a_building_corner(map: CityMap) -> Dictionary:
 			return {"building": tile, "north": north, "east": east}
 	return {}
 
+## The alley robber's catch is smaller than his lunge's reach (tall-osprey, 2026-10-04): he catches
+## at 26px and lunges from 116px (`lunge_reach` 38), so the room between lunge and catch is 90px, and
+## no other pursuer's lunge moves off its own catch.
+func _test_the_robbers_lunge_is_further_out_than_his_catch(t) -> void:
+	for id in ["alley_robbery", "robber_giving_chase"]:
+		var def := EventCatalogue.by_id(id)
+		t.close_to(def.lethal_reach(), 26.0, "'%s' catches at 26px" % id, 0.01)
+		t.close_to(Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()), 116.0,
+				"'%s' lunges from 116px" % id, 0.01)
+	for def in EventCatalogue.all():
+		t.check(not def.lunge_is_inside_the_catch(), "'%s' does not lunge from inside its catch" % def.id)
+		if def.pursues and def.id != "alley_robbery" and def.id != "robber_giving_chase":
+			t.check(is_equal_approx(def.standoff_reach(), def.lethal_reach()),
+					"'%s' lunges from its own catch" % def.id)
+	# A `lunge_reach` inside the catch would stand the pursuer off closer than `PURSUIT_REACTION` of
+	# its own approach from taking her: 10px on a 26px catch is an 88px stand-off, 62px of room, 0.48s
+	# at 130px/s. `validate()` refuses it on load (asked here through the predicate, since the refusal
+	# is a `push_error`, which fails the whole run); a lunge exactly at the catch is allowed.
+	var too_short := EventCatalogue.by_id("alley_robbery").duplicate() as EventDef
+	too_short.lunge_reach = 10.0
+	t.check(too_short.lunge_is_inside_the_catch(), "a 10px lunge on a 26px catch is inside it")
+	too_short.lunge_reach = too_short.lethal_reach()
+	t.check(not too_short.lunge_is_inside_the_catch(), "a lunge exactly at the catch is not")
+	too_short.lunge_reach = 0.0
+	t.check(not too_short.lunge_is_inside_the_catch(), "and 0 means the catch")
+
 ## **The one encounter in the game with a right answer, walked three ways.** *(M35, playtest 08
 ## finding 4: "I like the running tutorial on day 3 but I don't know how to solve it yet — I died
 ## every time.")*
@@ -172,7 +198,7 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 		if not def.pursues or def.sets_off_beside_her:
 			continue
 		pursuers += 1
-		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 		t.check(standoff > def.inner_radius,
 				"'%s' holds off outside the radius that ends the day" % def.id)
 
@@ -288,7 +314,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 		# Sited beside her by construction, which is what its own stand-off rule answers.
 		if not def.pursues or def.sets_off_beside_her:
 			continue
-		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 		var floor_lead := Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED,
 				def.offscreen_notice)
 		t.check(standoff < floor_lead,

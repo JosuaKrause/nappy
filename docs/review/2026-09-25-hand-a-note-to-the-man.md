@@ -2,7 +2,7 @@
 `--invincible`, since the subject is a cost). A robber comes at her from off screen, announced by
 the screen-edge badge first. **Does he read as the price of the errand rather than bad luck, is
 the badge warning enough to run, and does a 2s warning with a 6s chase read as pursuit?** Walking
-away he catches her in about 7.4s; standing still, in about 2s. Then **hand the van's package over
+away he catches her in about 7.5s; standing still, in about 2s. Then **hand the van's package over
 on day 7**: a guard comes at her the same way. **Does he read the same way the robber does, or does
 the different picture and loss line change the answer?**
 

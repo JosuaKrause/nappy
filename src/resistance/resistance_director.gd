@@ -631,7 +631,7 @@ func _trap_row_id(step: ResistanceSteps.Step) -> String:
 ## offscreen when she interacts with the yeller so it runs towards her from offscreen".)* The moment
 ## the man shouting's note or the van's package is handed over, `_trap_row_id()`'s row — the alley
 ## robber for the first, the roadblock's own guard for the second, awake from its first frame — is
-## spawned off screen, usually `Tuning.TRAP_ARRIVAL_DISTANCE` (313px) above or
+## spawned off screen, usually `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) above or
 ## below her, always far enough past the edge of the view that the screen-edge badge is up before it
 ## is in it (`_draw_arrival_position()`), and comes at her. So whichever look-alike she chose, the errand costs the same: the price is
 ## paid on the way out, from wherever she did it, rather than guarded at one seeded spot she could
@@ -674,9 +674,9 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 ## qualifies; `clear` when the straight line from there to her is walkable; `beside` when he starts
 ## to her side rather than above or below her.
 ##
-## **Above or below her, `Tuning.TRAP_ARRIVAL_DISTANCE` (313px) out, by preference.** That is past
-## the badge line vertically within `arrival_cone()` — about 17° for `robber_giving_chase`
-## (`outer_radius` 200), about 13° for `van_guard_giving_chase` (`outer_radius` 120, a narrower
+## **Above or below her, `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) out, by preference.** That is past
+## the badge line vertically within `arrival_cone()` — about 16° for `robber_giving_chase`
+## (`outer_radius` 200), about 11° for `van_guard_giving_chase` (`outer_radius` 120, a narrower
 ## field, so the badge needs longer to rise and the cone that stays past its line is tighter) — of
 ## straight up or down, and never sideways, where the view is wider — so those bearings are drawn
 ## inside the two cones rather than from the whole circle. Straight up and straight down first, in
@@ -741,8 +741,8 @@ func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: Event
 ## - plus the ground the gap closes by while the badge rises (`badge_rise_time()`), at his speed and
 ##   hers together, since she may be walking into him.
 ##
-## For `robber_giving_chase` at 313px, about 453 sideways and 299 vertically; for
-## `van_guard_giving_chase` at the same 313px, about 459 sideways and 305 vertically — a few px
+## For `robber_giving_chase` at 311px, about 453 sideways and 299 vertically; for
+## `van_guard_giving_chase` at the same 311px, about 459 sideways and 305 vertically — a few px
 ## more each way, since his narrower 120px `outer_radius` (against the robber's 200px) leaves more
 ## of the approach still to close and so costs the badge a little longer to rise.
 static func badge_line(def: EventDef, distance: float) -> Vector2:
@@ -758,8 +758,8 @@ static func badge_line(def: EventDef, distance: float) -> Vector2:
 ## from zero), and it announces once that reaches `DangerEdge.announces()`'s own threshold at that
 ## range — `CLOSING_SPEED`, or the gap to the field over `LEAD_TIME`. Plus two frames at 30 frames a
 ## second, the slowest a phone runs it: the first, which has no earlier position to measure an
-## approach from, and one of rounding. About 0.1s for the robber at 313px, 0.15s at his 466px
-## beside distance; about 0.13s for the van's guard at 313px, 0.2s at his own 476px beside
+## approach from, and one of rounding. About 0.1s for the robber at 311px, 0.15s at his 466px
+## beside distance; about 0.13s for the van's guard at 311px, 0.2s at his own 476px beside
 ## distance — his narrower field leaves more of the approach still to close either way.
 static func badge_rise_time(speed: float, distance: float, outer: float) -> float:
 	var needed := maxf(DangerEdge.CLOSING_SPEED, maxf(0.0, distance - outer) / DangerEdge.LEAD_TIME)
@@ -898,8 +898,8 @@ func _through_alley_span(at: Vector2) -> Array[Vector2]:
 ## wins"* (quiet-yak, inbox #471), which overturns M213's floor of 176px for those alleys.
 ##
 ## **Never within `min_distance` of the mark** — `inner_radius`, his catch, plus
-## `ContactPoint.REACH`, 66px — kept as a floor that a mark at a mouth never reaches (two-thirds of
-## any alley is far past 66px from its end tile), so it changes nothing for a mark; it holds for any
+## `ContactPoint.REACH`, 62px — kept as a floor that a mark at a mouth never reaches (two-thirds of
+## any alley is far past 62px from its end tile), so it changes nothing for a mark; it holds for any
 ## other point a caller asks about.
 ##
 ## Refused, as every guard is, on ground he may not stand on, within `her_refuse_within` of `her`

@@ -208,7 +208,7 @@ touch".)*
   is long enough for that spot to be 176px or more from the mark (his 140px trigger range and the
   36px touch reach), walking in from the mark's own end, reading it and walking back out never
   wakes him; in a shorter alley, which every alley one block long is, he still stands two-thirds
-  in, and reading the mark may wake him. He never stands within 66px of the mark (his catch and the
+  in, and reading the mark may wake him. He never stands within 62px of the mark (his catch and the
   touch reach), so reading it never lands her inside his catch. *(2026-10-03, minty-hedgehog,
   statement 3: "the robber should be 2/3rds through the alley not pressed against the edge of it" ·
   "the main reason for this is so the robber is not at the edge of the alley which makes him easier
@@ -223,7 +223,7 @@ touch".)*
   behind a guarded passage mark is no place to settle the baby that day until she has lured him
   out. The player approved exactly this spot (2026-09-27, crisp-moose, statement 3). Every other
   guarded contact — a door, a mast's foot, a swing, the burnt shell, a roadblock — keeps a robber
-  somewhere between 66px and 176px of it instead, measured from the ground it is touched from, so a
+  somewhere between 62px and 176px of it instead, measured from the ground it is touched from, so a
   roadblock's, touched from any side of its band, stands that far beyond the band's own reach:
   inside that band touching it is death, always;
   above it he never wakes at all; between them, which side the player approaches from decides
@@ -233,7 +233,7 @@ touch".)*
 - **Two tasks send someone after her rather than guarding where she finds them.** The man shouting
   and the van's package are not guarded at the contact. The moment she hands either over, someone
   is sent after her from off screen — usually from above or below her,
-  `Tuning.TRAP_ARRIVAL_DISTANCE` (313px) away, far enough past the edge of the view that the
+  `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) away, far enough past the edge of the view that the
   screen-edge badge announces them before they are in it — awake and running at her from the first
   frame. The man shouting's note sends the alley robber himself; the van's package sends the
   roadblock's own guard, the same look and the same rules. The warning is short: standing still,

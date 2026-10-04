@@ -977,8 +977,8 @@ after the first second.
 
 Two rules answer it, and they are the same rule twice: the contract restated as geometry.
 
-- **`Tuning.pursuit_standoff()`.** The telegraph is spent closing to `lethal_reach() + speed ×
-  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own) and *holding* it, backing off if she walks in, because she will: it is sited in
+- **`Tuning.pursuit_standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
+  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `lunge_reach`, so his stand-off is 116px) and *holding* it, backing off if she walks in, because she will: it is sited in
   front of her and forward is where she was going. Clamping the approach at zero instead leaves the
   contract true of the dog and false of the encounter — it stands politely still while she closes
   the gap herself.
@@ -1228,7 +1228,7 @@ through that alley (or at the courtyard's inner end, past a courtyard's passage)
 screen, so neither is ever planted in front of her —
 skipping an alley a completed step's mark already stood at as long as some other one is still
 in reach. Its guard moves with it, to two-thirds of the way through that alley from the end
-nearer wherever the mark lands, never within 66px of the mark (the courtyard's inner end, for a
+nearer wherever the mark lands, never within 62px of the mark (the courtyard's inner end, for a
 courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
 his own `pursues_within` of her or in view when he is placed — so where that spot is 176px or
 more from the mark, entering the alley from the mark's own end, reading it and leaving the same way
