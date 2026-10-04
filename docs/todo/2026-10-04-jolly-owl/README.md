@@ -16,11 +16,15 @@ louder cues in the same place) sits just above her head, with the same gap it ke
 in the other facings; no extra stroller-length gap.
 
 **What exists.** `Stroller._draw_baby_cue()` draws the cue at the pram's offset lifted by
-`baby_cue_lift()`: `BABY_CUE_LIFT` above the pram, and on due south (the pram in her own column,
-facing down) `BABY_CUE_LIFT + FIGURE_HEIGHT` (46px), measured from the pram, which is a pram's
-length below her. `baby_cue_aside()` steps the cue sideways when the pram shares her column and a
-danger mark is up over her, so the cue that ends a day never shares a column with the baby's
-(M32, the cues mean now; the lift came with M39).
+`baby_cue_lift()`: `BABY_CUE_LIFT` (36px) above the pram's ground point in every facing but one,
+which clears the pram's own art (about 30px tall) by about 6px. On due south (the pram in her own
+column, facing down, `PRAM_SOUTH_DISTANCE` 9px below her feet) the lift is `BABY_CUE_LIFT +
+FIGURE_HEIGHT` (36 + 46 = 82px) above the pram, so the cue sits about 73px above her feet, roughly
+her own height above her head. `baby_cue_aside()` steps the cue sideways when the pram shares her
+column and a danger mark is up over her, so the cue that ends a day never shares a column with the
+baby's (M32, the cues mean now; the lift came with M39).
 
-**Proposed, not asked for:** on due south, the cue measured from her rather than from the pram:
-`BABY_CUE_LIFT` above her head; the step aside when a danger mark is up stays as it is.
+**Proposed, not asked for:** on due south, the cue measured from her rather than from the pram,
+with the same clearance over her head (`FIGURE_HEIGHT`, 46px) that the other facings keep over the
+pram's art: about 6px clear, so about 52px above her feet, about 21px lower than now. The step aside
+when a danger mark is up stays as it is.
