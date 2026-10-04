@@ -1228,7 +1228,7 @@ through that alley (or at the courtyard's inner end, past a courtyard's passage)
 screen, so neither is ever planted in front of her —
 skipping an alley a completed step's mark already stood at as long as some other one is still
 in reach. Its guard moves with it, to two-thirds of the way through that alley from the end
-nearer wherever the mark lands, never within 66px of the mark (the courtyard's inner end, for a
+nearer wherever the mark lands, never within 62px of the mark (the courtyard's inner end, for a
 courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
 his own `pursues_within` of her or in view when he is placed — so where that spot is 176px or
 more from the mark, entering the alley from the mark's own end, reading it and leaving the same way

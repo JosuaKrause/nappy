@@ -1,0 +1,9 @@
+catch   30  standoff 108.0 | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 68/200 |
+catch   28  standoff 106.0 | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 70/200 |
+catch   26  standoff 104.0 | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 74/200 |
+catch   24  standoff 102.0 | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 76/200 |
+catch   23  standoff 101.0 | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 76/200 |
+catch   22  standoff 100.0 | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 80/200 |
+catch   20  standoff  98.0 | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 80/200 |
+catch   18  standoff  96.0 | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 85/200 |
+catch   16  standoff  94.0 | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 85/200 |

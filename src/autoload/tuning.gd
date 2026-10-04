@@ -345,12 +345,15 @@ const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 ## Walking directly away, the gap closes at `pursue_speed` less `WALK_SPEED` (130 − 92 = 38px/s) for
 ## either row (`Tuning.HEAT_HUNTS_SPEED`, the same figure `_alley_robbery()` hardcodes), and each has
 ## its notice plus its chase — `telegraph_time` 2.0s and `duration` 6.0s on both rows — to close it
-## to its own catch. **The van's guard catches two pixels tighter than the robber**, 28px
-## (`MASKED_MAN_REACH`, `door_guard`'s own reach) against 30px, so his row is the one this constant
-## is stated over: with half a second of the notice-plus-chase kept as margin,
-## 28 + 38 × (2.0 + 6.0 − 0.5) = **313px**. At the robber's own 30px catch the same arithmetic would
-## allow 315px, so 313px leaves the robber a hair more margin than his own row alone would need —
+## to its own catch. **The robber catches two pixels tighter than the van's guard**, 26px against
+## the guard's 28px (`MASKED_MAN_REACH`, `door_guard`'s own reach), so his row is the one this
+## constant is stated over: with half a second of the notice-plus-chase kept as margin,
+## 26 + 38 × (2.0 + 6.0 − 0.5) = **311px**. At the guard's own 28px catch the same arithmetic would
+## allow 313px, so 311px leaves the guard a hair more margin than his own row alone would need —
 ## the price of one constant serving two rows is that it is stated over whichever is less forgiving.
+## A smaller robber catch than 26px would pull it under the guard's own floor: his badge line is
+## 305px vertically, and `tests/test_resistance.gd` asks for a cone of more than 10° above and below
+## her that is past it, which 311px leaves at about 11°.
 ## Any further and a player who simply walks away outlasts whichever row is watching, which is the
 ## one answer a pursuit may not accept.
 ##
@@ -362,19 +365,19 @@ const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 ##   plus the camera's lead toward it (`Stroller.CAMERA_LOOK_AHEAD`, 46px sideways and 32px
 ##   vertically), plus that margin, plus the ground the gap closes while the badge rises — a figure
 ##   `ResistanceDirector.badge_line()` computes per row, since it depends on the row's own
-##   `outer_radius` as well as its speed. 313px clears the vertical line and not the sideways one for
+##   `outer_radius` as well as its speed. 311px clears the vertical line and not the sideways one for
 ##   either row, so the director starts it within a cone of straight above or below her; where no
 ##   such start has a clear run at her, it comes along her own street from the side instead
 ##   (`ResistanceDirector._draw_arrival_position()`, `beside_distance()`), and walking away outlasts
 ##   it there.
 ## - **Standing still, it lunges no sooner than `PURSUIT_MIN_NOTICE` (1.5s) after it appears.** The
-##   lunge fires at the row's own stand-off, `pursuit_standoff(130, inner)` — 108px for the robber's
-##   30px catch, 106px for the guard's 28px — so the start has to be at least stand-off plus
-##   130 × 1.5 = 303px for the robber, 301px for the guard; 313px clears both.
+##   lunge fires at the row's own stand-off, `pursuit_standoff(130, inner)` — 104px for the robber's
+##   26px catch, 106px for the guard's 28px — so the start has to be at least stand-off plus
+##   130 × 1.5 = 299px for the robber, 301px for the guard; 311px clears both.
 ##
 ## Not `OUT_OF_SIGHT` (420px) plus a notice: from that far a walker escapes unless the chase ran
 ## past the 6.0s `Tuning.validate_pursuit()` allows either pursuer.
-const TRAP_ARRIVAL_DISTANCE := 313.0
+const TRAP_ARRIVAL_DISTANCE := 311.0
 
 ## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
 ## way. Chosen, not measured, and open to overturn once the late days are timed (M184).
@@ -1867,10 +1870,10 @@ const CHARGING_DOG_SPRINKLE_CHANCE := 0.25
 ## (Fork 2 in the decision record), the guard's 120px field never reaches a walker who left the
 ## moment he appeared — his ~476px start closes to only ~172px over the whole 8.0s — and the
 ## robber's 200px field reaches her only for about the last second, at its weak far edge. From
-## the usual `TRAP_ARRIVAL_DISTANCE` (313px) start above or below her, though — the rarer beside
+## the usual `TRAP_ARRIVAL_DISTANCE` (311px) start above or below her, though — the rarer beside
 ## start is the exception, not the rule — she is inside the robber's field from about 3s onward:
 ## a 3.0s chase, every other pursuer's own ceiling, would have freed her at 5.0s, well before his
-## 30px catch at 7.4s, so the doubled 6.0s chase is what makes her keep paying his field until she
+## 26px catch at 7.5s, so the doubled 6.0s chase is what makes her keep paying his field until she
 ## runs, and then pay the sprint cost above to shed him before the catch.
 const PURSUIT_TIME := 3.0
 

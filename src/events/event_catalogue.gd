@@ -1905,7 +1905,7 @@ static func _abduction() -> EventDef:
 ## - **On sight.** 16 over a 200px field, so the far end of an alley is already expensive and the
 ##   meter is what tells you he is there. This is the *only* warning the design will give: a robbery
 ##   has no telegraph you could see coming, and it never did.
-## - **Getting close is day ending.** `hard_fail` inside 30px, and it has to be **reachable**: he
+## - **Getting close is day ending.** `hard_fail` inside 26px, and it has to be **reachable**: he
 ##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
 ##   the inner radius means the kill can never fire.
 ## - **Get close and he comes at you.** `pursues_within` 140: inside that he stands up, takes 1.8s
@@ -1924,7 +1924,7 @@ static func _alley_robbery() -> EventDef:
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.ALLEY]
 	def.intensity = 16.0
-	def.inner_radius = 30.0
+	def.inner_radius = 26.0
 	# Wider than the trigger, and that is the contract rather than a taste: he may not notice her from
 	# outside his own field, because the meter is the only thing that says a stranger in an alley is
 	# worth crossing the road for. The sixty pixels between this and `pursues_within` are the row's
@@ -1937,7 +1937,7 @@ static func _alley_robbery() -> EventDef:
 	# The same speed as the charging dog, deliberately: a player who learned on day 3 what a thing
 	# that comes after you moves like should not have to learn it again in act III.
 	def.pursue_speed = 130.0
-	# Outside his stand-off (108px) and inside his field, which is what leaves room for both halves of
+	# Outside his stand-off (104px) and inside his field, which is what leaves room for both halves of
 	# the row: far enough out that the notice is not spent standing still, near enough that she has
 	# felt him for a while before he decides anything about her.
 	#
@@ -1959,13 +1959,13 @@ static func _alley_robbery() -> EventDef:
 ## from off screen the moment she hands a task over.** *(2026-09-13, the player: "maybe spawn the
 ## robber in pursuing mode offscreen when she interacts with the yeller so it runs towards her from
 ## offscreen"; "we need a version of the robber that is not frozen when spawned".)* Nothing places
-## it but `ResistanceDirector._set_the_trap_on_her()`, `Tuning.TRAP_ARRIVAL_DISTANCE` (313px) from
+## it but `ResistanceDirector._set_the_trap_on_her()`, `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) from
 ## her on walkable ground outside the view: `SCRIPTED` on day 0, the day nobody plays, so the roll,
 ## the stream and the budget never reach it — `EventDef.validate()` refuses a pursuer with no
 ## trigger on any other terms.
 ##
 ## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
-## (16 over 30–200px), his 130px/s, his 30px catch, his `hard_fail` and the way he walks off once
+## (16 over 26–200px), his 130px/s, his 26px catch, his `hard_fail` and the way he walks off once
 ## he has lost her. What differs is the whole of the request — **no trigger** (`pursues_within` 0),
 ## so he is never `is_waiting()` and his notice and chase are clocked from the frame he exists —
 ## and the split of his time between notice and chase.
@@ -1988,7 +1988,7 @@ static func _alley_robbery() -> EventDef:
 ## she answers. Standing still, he lunges from his stand-off about 1.6s after he appears and
 ## reaches her about 0.6s later, before the man would have stopped shouting on his own; walking
 ## into him, the lunge comes sooner and still at his stand-off; walking directly away, he closes
-## at 38px/s and catches her about 7.4s after he appeared; running for `PURSUIT_SHAKEN_OFF` shakes
+## at 38px/s and catches her about 7.5s after he appeared; running for `PURSUIT_SHAKEN_OFF` shakes
 ## him off. Whether shouting-plus-chasing at once is more than a walker should answer is
 ## `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not settled here.
 ##
@@ -2042,15 +2042,15 @@ static func _robber_giving_chase() -> EventDef:
 ## half a second, `duration` is `Tuning.PURSUIT_TIME` × 2 — identical to `robber_giving_chase`,
 ## since nothing about the notice or the chase length is the picture's to change.
 ##
-## **`Tuning.TRAP_ARRIVAL_DISTANCE` is stated over this row's own catch, two pixels tighter than
-## the robber's (28px against 30px).** With the same 38px/s a walker opens on either (130px/s
-## pursue speed less `WALK_SPEED`), "a walker who leaves the moment it appears is still caught,
-## with half a second of chase to spare" only holds for both rows if the constant is measured
-## against whichever catch is tighter (see `Tuning.TRAP_ARRIVAL_DISTANCE`'s own doc); the robber
-## keeps the same contract with a hair more margin than his own row alone would need. His field is
-## also 80px narrower (120px against 200px), which only moves where the screen-edge badge can rise,
-## never the arrival distance. `tests/test_resistance.gd` holds the relationship for this row
-## rather than assuming the robber's own numbers carry over unchecked.
+## **`Tuning.TRAP_ARRIVAL_DISTANCE` is stated over the tighter of the two catches, which is the
+## robber's (26px against this guard's 28px).** With the same 38px/s a walker opens on either
+## (130px/s pursue speed less `WALK_SPEED`), "a walker who leaves the moment it appears is still
+## caught, with half a second of chase to spare" only holds for both rows if the constant is
+## measured against whichever catch is tighter (see `Tuning.TRAP_ARRIVAL_DISTANCE`'s own doc); this
+## guard keeps the same contract with two pixels more margin than his own row alone would need. His
+## field is also 80px narrower (120px against 200px), which only moves where the screen-edge badge
+## can rise, never the arrival distance. `tests/test_resistance.gd` holds the relationship for this
+## row rather than assuming the robber's own numbers carry over unchecked.
 static func _van_guard_giving_chase() -> EventDef:
 	var guard := _door_guard()
 	var alley := _alley_robbery()
