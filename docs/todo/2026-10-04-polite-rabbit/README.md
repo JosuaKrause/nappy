@@ -23,10 +23,13 @@ slides each chase step along an unwalkable tile ([PLAYTEST-16](../../playtests/P
 finding 8: "he can run through walls"). An event's excitement falls off with straight-line
 distance too (`Tuning.falloff()` in the field sums), through buildings alike.
 
-**Open, for whoever picks this up:** "excitement shouldn't go up behind a wall at least" is read
-two ways: the robber's field only, or every source's field (a man shouting, a dog, traffic) when a
-building stands between them and her. The second changes what every route costs and falls under
-the **balance** rules; ask the player which before building it.
+**Every source, blocked from the middle of the wall** (inbox #554, answering whether it is the
+robber's field only or every source's):
+
+> Excitement should not go through any wall but it's not straightforward. If the player is partially in a wall they should not be protected so the blocking should happen in the middle of the wall (or one tile deep)
+
+So no source's excitement reaches her through a building, and grazing a building's edge shields
+nothing: the line counts as blocked only once it passes the middle of the wall, or one tile deep.
 
 The catch through a wall is built ([polite-rabbit](../../decisions/2026-10-04-polite-rabbit.md));
 what is left is the excitement half, waiting on its scope.
