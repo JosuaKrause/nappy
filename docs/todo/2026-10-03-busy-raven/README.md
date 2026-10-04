@@ -42,19 +42,17 @@ are saved JSON under `scene-recipes/`, built by `RecipeCityBuilder`, played with
   may need explicit support of its own.
 
 **Where the targets are.** Each day's target, and what counts as reaching it, is in the task
-table of [`docs/NARRATIVE.md`](../../NARRATIVE.md) and, for the targets as the open pull request
-#480 changes them, in `docs/decisions/2026-10-03-feathery-marmot.md` on that pull request's branch
-(not yet on `main`; the path is the link once it merges).
-The path measure for "near its mark" goes into PR #480 itself, not into this entry.
+table of [`docs/NARRATIVE.md`](../../NARRATIVE.md), and why each stands where it does in
+[`docs/decisions/2026-10-03-feathery-marmot.md`](../../decisions/2026-10-03-feathery-marmot.md).
+
+**The scenes are recipes with live tasks** (inbox #513). Asked "how should a scene be built?",
+between "Recipes with live tasks" (recipes gain a field for a mark and its task: the day's task
+offered from the start, its arrow live, the target events installed, so the task can be played to
+completion) and "Authored actors only" (mark and target placed with no task logic running), the
+player answered "Recipes with live tasks (Recommended)".
 
 **Proposed, not asked for:**
 
-- That the scenes are recipes, one file each: the player asked for scenes, not for the recipe
-  mechanism. A recipe `setup` field for a mark and its task (a day's task offered from the scene's
-  start, its arrow live), and named mast and rider support for the van, would give the scenes what
-  they lack. The plainer alternative is a scene with the mark and target as authored actors only,
-  with no task logic running, which tests where a target stands but not that the task is reached
-  and completed.
 - Days 6 to 14 as the set: the filer's reading of "each day's target", being the days whose task
   table row names a target.
 - A gating rule that a task's target is not called checked until the player has played its scene,
