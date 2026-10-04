@@ -70,6 +70,10 @@ var _sight_reported: Dictionary = {}
 ## else. Built in `start_day()` and read twice: the director sites against it while she walks, and
 ## `light_what_she_never_met()` places off it at dusk on a day she never met what it was for.
 var _siting: EventScheduler.WalkSiting = null
+## The day's own route tree and door positions, as `start_day()` handed them to `build_day`, kept
+## for a placement made later in the day that has no `_siting` to read them from (`queue_a_mast()`).
+var _day_tree: RouteTree = null
+var _day_doors := PackedVector2Array()
 
 ## The run's spent one-shots — `start_day`'s own argument, kept because one kind of one-shot is
 ## spent while the day is running rather than while it is being planned. See `_stream_in()`. Empty
@@ -313,6 +317,8 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# Only on a day that has such a plan: the context grows a corridor and the protected-calm
 	# rects, and a day with nothing left for her walk would pay for both and read neither.
 	_siting = null
+	_day_tree = tree
+	_day_doors = doors
 	for plan in _plans:
 		if plan.def.sited_on_her_way and not plan.is_placed():
 			if not _siting:
@@ -684,6 +690,44 @@ func mast_foot(mast_id: String) -> Vector2:
 		if plan.mast_id == mast_id and plan.def.id == "loudspeaker":
 			return plan.position
 	return Vector2.INF
+
+## **One more mast, for day 11's task, generated as the next event** when no live mast stands near
+## the mark she read (`ResistanceDirector._place_at_a_mast()`). *(2026-10-03, inbox #486, the
+## player: "The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
+## harder to encounter masts. We need to discuss this again but not now. Now just add a new mast
+## close by" · inbox #503: "no events are dynamically created as you walk around -- if there is a
+## mast queued up that will be the next event to be generated".)* So it is not put down where the
+## director points: it is generated the way every row the day plans is, a `loudspeaker` heated like
+## the day's own (`GameState.resistance_progress`) placed by `EventScheduler._best_of()` among
+## `offered` — the tiles the director found near her and out of her view — against the whole of the
+## day's plan: `_room_around()`'s spacing, so it never stands inside anything else or inside a lethal
+## row's field, the region doors' clear ground, the calm she has not used, and the route junctions
+## and sidewalks the day keeps open. Appended to the day's plan under
+## `EventScheduler.added_mast_id()` with its body recorded, it streams in like any planned row,
+## broadcasts on the one clock, is silenced by `silence_mast()`, counts for `silence_all_masts()`,
+## and once silenced stands silenced on later days from its scar (`EventScheduler._place_masts()`).
+## Null when no offered tile passes, which leaves day 11 to the nearest live mast.
+func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
+	if offered.is_empty():
+		return null
+	var def := EventCatalogue.heated(EventCatalogue.by_id("loudspeaker"),
+			GameState.resistance_progress)
+	var siting := _siting if _siting else EventScheduler.WalkSiting.new(_day, _map, _day_tree,
+			GameState.settled_this_act(), _day_doors)
+	var plan := siting.among(def, rng, _plans, offered)
+	if not plan:
+		return null
+	plan.mast_id = EventScheduler.added_mast_id(plan.position)
+	_plans.append(plan)
+	_record_the_body(plan.get_instance_id(), def, plan.position, plan.facing)
+	return plan
+
+## She has crossed a district door: let out on its far side after the inspection
+## (`_release_finished_door_detentions()`), or walked through its line (`_watch_the_door_lines()`).
+## `at` is the body of the door that saw it and `axis` the street's own axis, which every body of
+## one door shares, so a listener can tell which door it was. Day 9's task is completed on it
+## (`ResistanceDirector._on_door_crossed()`).
+signal door_crossed(at: Vector2, axis: Vector2)
 
 ## Silences one mast by id, for the rest of the day — a mast still stands once silenced, with no
 ## arcs and no field, so this sets `Planned.silenced` and its live instance's own mirror rather
@@ -1508,6 +1552,7 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 		body.show_after_inspection()
 		body.release_camera_focus()
 		_latch_everything_she_was_let_out_into(released_at)
+		door_crossed.emit(instance.global_position, axis)
 		Telemetry.note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
 			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
 			instance.def.detain_seconds, _compass_of(axis, released_along)])
@@ -1597,6 +1642,7 @@ func _watch_the_door_lines() -> void:
 	if not crossed:
 		return
 	_walked_under += 1
+	door_crossed.emit(crossed.global_position, crossed.facing_now())
 	Telemetry.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
 		crossed.def.id, TelemetryLog.tile(_map.world_to_tile(crossed.global_position)),
 		_heading_name(here - was),
