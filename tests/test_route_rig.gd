@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t)
 	_test_reachable_point_near_returns_centre_when_already_open(t)
 	_test_reachable_point_near_steps_off_obstructed_ground(t)
+	_test_reachable_point_near_takes_the_tile_straight_below_a_door(t)
 	_test_resolve_target_mark_is_todays_contact(t)
 	_test_resolve_target_task_is_unavailable_before_the_mark_is_touched(t)
 	_test_resolve_target_home_is_the_home_rects_centre(t)
@@ -601,6 +602,38 @@ func _test_reachable_point_near_steps_off_obstructed_ground(t) -> void:
 	_city.map.obstructed_tiles.erase(obstructed_tile)
 	rig.free()
 
+## feathery-marmot, the day-8 door: a contact on a building's wall is walked to from the open
+## tile nearest it, and the tile straight across from it comes before a diagonal one. A centre
+## whose straight neighbours below and to the sides are open and whose row above is building: the
+## search hands back the tile straight below (32px), never the diagonal (45px), which a leg
+## arriving within `_ARRIVE_RADIUS` could leave past day 8's `DOOR_REACH` (50.6px). Before, the
+## ring was scanned row by row and its first open tile below was the diagonal one on the left.
+func _test_reachable_point_near_takes_the_tile_straight_below_a_door(t) -> void:
+	var rig := _rig(t)
+	var map := _city.map
+	var door_tile := Vector2i(-1, -1)
+	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		var above := tile + Vector2i.UP
+		if map.in_bounds(above + Vector2i.UP) and map.tile_at(above) == GameEnums.TileType.BUILDING \
+				and map.tile_at(above + Vector2i.LEFT) == GameEnums.TileType.BUILDING \
+				and map.tile_at(above + Vector2i.RIGHT) == GameEnums.TileType.BUILDING \
+				and map.tile_at(above + Vector2i.UP) == GameEnums.TileType.BUILDING \
+				and map.is_open(tile) and map.is_open(tile + Vector2i.LEFT) \
+				and map.is_open(tile + Vector2i.RIGHT) and not map.is_obstructed(tile) \
+				and not map.is_obstructed(tile + Vector2i.LEFT):
+			door_tile = above
+			break
+	t.check(door_tile != Vector2i(-1, -1), "the test city has a front with open sidewalk below it")
+	if door_tile != Vector2i(-1, -1):
+		var door := map.tile_to_world(door_tile)
+		var stand := rig._reachable_point_near(door)
+		t.check(map.world_to_tile(stand) == door_tile + Vector2i.DOWN,
+				"the door at %s is walked to from the tile straight below it (got %s)"
+				% [door_tile, map.world_to_tile(stand)])
+		t.check(stand.distance_to(door) + RouteRig._ARRIVE_RADIUS < ResistanceDirector.DOOR_REACH,
+				"which, arrived at within the rig's own radius, is inside the door's reach")
+	rig.free()
+
 # ---------------------------------------------------------- _resolve_target ---
 
 ## `mark` is today's own contact for exactly as long as the pickup step is still on offer — day 6's
@@ -765,9 +798,12 @@ func _test_task_target_resolves_for_the_mast_task_on_day_11(t) -> void:
 			and task.is_one_place, "touching it offers the mast, a one-place task")
 	var rig := _target_shape_rig(t, fixture)
 	var resolved := rig._resolve_target("task")
-	t.check(resolved != Vector2.INF
-			and resolved == (fixture["resistance"] as ResistanceDirector).contact_position(),
-			"'task' resolves to the ground beside the mast's own foot")
+	var director := fixture["resistance"] as ResistanceDirector
+	# The contact stands on the mast's foot, a body's tile no plan can end on, so the leg aims at
+	# the open ground nearest it, from which the touch completes.
+	t.check(resolved != Vector2.INF and resolved != director.contact_position()
+			and director._contact.would_complete_at(resolved),
+			"'task' resolves to open ground the mast's foot is touched from")
 	rig.free()
 	_free_target_shape_fixture(fixture)
 
@@ -819,9 +855,13 @@ func _test_task_target_resolves_for_the_station_door_on_the_last_night(t) -> voi
 	t.check(rig._resolve_target("mark") == Vector2.INF,
 			"'mark' is unavailable on the last night, which has none")
 	var resolved := rig._resolve_target("task")
-	t.check(resolved != Vector2.INF
-			and resolved == (fixture["resistance"] as ResistanceDirector).contact_position(),
-			"'task' resolves to the power station's own front door")
+	var director := fixture["resistance"] as ResistanceDirector
+	# The contact stands on the door, on the station's facade, so the leg aims at the pavement in
+	# front of it, from which `DOOR_REACH` completes the touch.
+	var map := (fixture["city"] as City).map
+	t.check(resolved != Vector2.INF and director._contact.would_complete_at(resolved)
+			and map.is_walkable(map.world_to_tile(resolved)),
+			"'task' resolves to the pavement the power station's front door is touched from")
 	rig.free()
 	_free_target_shape_fixture(fixture)
 

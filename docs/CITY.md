@@ -212,12 +212,15 @@ bodies never seal it off:
 pool is the tiles the contact may stand on (`ResistanceSteps.target_candidates`) that pass the
 director's own refusals of the tile — walkable, not closed, not held (a door excepted), not on the
 home block, not in a walled-off alley — and the director draws among them asking reachability of
-every draw, so the tile it picks is one the day kept. Planned on the day number alone, never on
+every draw, so the tile it picks is one the day kept. The contact itself stands on the thing the
+tile belongs to and is reached from that tile: on day 9 one of the door's gatehouses, a solid body,
+which she crosses the door beside; on the last night the station's door on its facade, touched from
+the pavement tile the day kept. Planned on the day number alone, never on
 the run, so the day is the same whether or not this run will be offered the step. **One thing it
 does not cover:** a moving event, which has no body to seal anything with (a hard-fail mover counts
 where it starts). `tests/test_resistance.gd` plans the three days on cities whose narrow places the
-day's seals and bodies have been found to ring, and finds the place reached and the contact
-standing on it.
+day's seals and bodies have been found to ring, and finds the place's tile reached and the contact
+reached from it.
 
 **Day 12's place is a park that is open whatever its state, and the day owes her a second one.**
 *(PLAYTEST-119: "we can just force open the park she needs to go to that day"; PLAYTEST-122: the

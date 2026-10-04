@@ -1703,8 +1703,10 @@ static func _loudspeaker() -> EventDef:
 	def.pulse_period = 22.0
 	def.cost = 0
 	# `_place_masts()` places one at every site `MastSites.compute()` names, which is
-	# `Tuning.MAST_COUNT` of them: not a roll's own cap, but the true count a day carries, which is
-	# what `tests/test_events.gd`'s `_test_scheduler_respects_placement_and_caps` reads it as.
+	# `Tuning.MAST_COUNT` of them: not a roll's own cap, but the count of the city's sites, which is
+	# what `tests/test_events.gd`'s `_test_scheduler_respects_placement_and_caps` reads it as. A day
+	# can carry one more: the mast day 11 queued for her task (`EventManager.queue_a_mast()`), which
+	# once she silenced it `_place_masts()` plans again from its scar on every later day.
 	def.max_per_day = Tuning.MAST_COUNT
 	return def
 
