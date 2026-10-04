@@ -1925,6 +1925,11 @@ static func _alley_robbery() -> EventDef:
 	def.placement = [GameEnums.TileType.ALLEY]
 	def.intensity = 16.0
 	def.inner_radius = 26.0
+	# **The lunge stays where it was**, 30px + 130px/s × `PURSUIT_REACTION` = 108px, while the catch
+	# shrinks to 26px: the stand-off is stated over `lunge_reach` rather than the catch, so the room
+	# between his lunge and his catch is 108 − 26 = 82px rather than the 78 it would be if the lunge
+	# followed the catch in. (The player, 2026-10-04, chose to keep the stand-off at 108px.)
+	def.lunge_reach = 30.0
 	# Wider than the trigger, and that is the contract rather than a taste: he may not notice her from
 	# outside his own field, because the meter is the only thing that says a stranger in an alley is
 	# worth crossing the road for. The sixty pixels between this and `pursues_within` are the row's
@@ -1937,7 +1942,7 @@ static func _alley_robbery() -> EventDef:
 	# The same speed as the charging dog, deliberately: a player who learned on day 3 what a thing
 	# that comes after you moves like should not have to learn it again in act III.
 	def.pursue_speed = 130.0
-	# Outside his stand-off (104px) and inside his field, which is what leaves room for both halves of
+	# Outside his stand-off (108px) and inside his field, which is what leaves room for both halves of
 	# the row: far enough out that the notice is not spent standing still, near enough that she has
 	# felt him for a while before he decides anything about her.
 	#
@@ -1965,7 +1970,7 @@ static func _alley_robbery() -> EventDef:
 ## trigger on any other terms.
 ##
 ## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
-## (16 over 26–200px), his 130px/s, his 26px catch, his `hard_fail` and the way he walks off once
+## (16 over 26–200px), his 130px/s, his 26px catch and the 108px lunge (`lunge_reach`), his `hard_fail` and the way he walks off once
 ## he has lost her. What differs is the whole of the request — **no trigger** (`pursues_within` 0),
 ## so he is never `is_waiting()` and his notice and chase are clocked from the frame he exists —
 ## and the split of his time between notice and chase.
@@ -2007,6 +2012,7 @@ static func _robber_giving_chase() -> EventDef:
 	def.act_tag = 2
 	def.intensity = alley.intensity
 	def.inner_radius = alley.inner_radius
+	def.lunge_reach = alley.lunge_reach
 	def.outer_radius = alley.outer_radius
 	def.telegraph_time = Tuning.PURSUIT_MIN_NOTICE + 0.5
 	def.duration = Tuning.PURSUIT_TIME * 2.0

@@ -371,9 +371,10 @@ const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 ##   (`ResistanceDirector._draw_arrival_position()`, `beside_distance()`), and walking away outlasts
 ##   it there.
 ## - **Standing still, it lunges no sooner than `PURSUIT_MIN_NOTICE` (1.5s) after it appears.** The
-##   lunge fires at the row's own stand-off, `pursuit_standoff(130, inner)` — 104px for the robber's
-##   26px catch, 106px for the guard's 28px — so the start has to be at least stand-off plus
-##   130 × 1.5 = 299px for the robber, 301px for the guard; 311px clears both.
+##   lunge fires at the row's own stand-off, `pursuit_standoff(130, reach)` — 108px for the robber,
+##   whose lunge stays at his old 30px reach (`EventDef.lunge_reach`) while his catch is 26px, 106px
+##   for the guard's 28px — so the start has to be at least stand-off plus 130 × 1.5 = 303px for
+##   the robber, 301px for the guard; 311px clears both.
 ##
 ## Not `OUT_OF_SIGHT` (420px) plus a notice: from that far a walker escapes unless the chase ran
 ## past the 6.0s `Tuning.validate_pursuit()` allows either pursuer.
@@ -2027,7 +2028,7 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 ## still leave a two-tenths-of-a-second window. See `pursuit_standoff()`. The rig in
 ## `tests/test_events.gd` that has to accelerate is what checks the half this cannot.
 func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
-		telegraph: float, notice_within := 0.0, outer := 0.0) -> bool:
+		telegraph: float, notice_within := 0.0, outer := 0.0, standoff_from := 0.0) -> bool:
 	if speed < WALK_SPEED + PURSUIT_MIN_MARGIN:
 		push_error("Unfair pursuit '%s': %.0fpx/s is not enough faster than a walk (%.0f)"
 				% [id, speed, WALK_SPEED])
@@ -2064,7 +2065,9 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 	# `field_scale` was built for — the check can only get easier to satisfy as the field grows
 	# forward, never harder.
 	var forward_reach := outer * field_scale(field_eccentricity(speed))
-	var standoff := pursuit_standoff(speed, inner)
+	# `standoff_from` is `EventDef.standoff_reach()`: the lunge is measured from the catch unless a row
+	# keeps it somewhere else, and 0 here means the catch.
+	var standoff := pursuit_standoff(speed, standoff_from if standoff_from > 0.0 else inner)
 	if standoff > forward_reach and outer > 0.0:
 		push_error("Unfair pursuit '%s': it stands off at %.0fpx and reaches %.0fpx, so its whole "
 				% [id, standoff, forward_reach] + "notice is spent outside its own field")

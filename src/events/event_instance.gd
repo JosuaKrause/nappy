@@ -1788,7 +1788,10 @@ func _chase(delta: float) -> void:
 	# `lethal_radius` and reads its `inner_radius` here; a roadblock's guard catches at a man's reach,
 	# and a stand-off measured from the band's 86px core would put the guard posted beside the band
 	# inside it the frame he notices her, and he would lunge with no warning at all.
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.lethal_reach())
+	#
+	# `standoff_reach()` is that same reach unless the row keeps its lunge further out than its catch
+	# (`EventDef.lunge_reach`, the alley robber's): the catch can shrink and the lunge stays put.
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 	# **She ran, so it backs off.** Counting seconds of the *gap actually opening* is the same
 	# sentence said about the geometry instead of about the player, and in play it is a different
 	# rule: a run opens the gap at 38px/s against the day-3 dog, a fifth of a pixel a frame, so a

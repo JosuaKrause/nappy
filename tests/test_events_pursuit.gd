@@ -150,6 +150,20 @@ func _a_building_corner(map: CityMap) -> Dictionary:
 			return {"building": tile, "north": north, "east": east}
 	return {}
 
+## The alley robber's catch is smaller than his lunge's reach (tall-osprey, 2026-10-04): the lunge
+## stays at the 108px his old 30px catch gave it, so the room between lunge and catch is the stand-off
+## less the catch, and no other pursuer's lunge moves off its own catch.
+func _test_the_robbers_lunge_stays_while_his_catch_shrinks(t) -> void:
+	for id in ["alley_robbery", "robber_giving_chase"]:
+		var def := EventCatalogue.by_id(id)
+		t.close_to(def.lethal_reach(), 26.0, "'%s' catches at 26px" % id, 0.01)
+		t.close_to(Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()), 108.0,
+				"'%s' lunges from 108px" % id, 0.01)
+	for def in EventCatalogue.all():
+		if def.pursues and def.id != "alley_robbery" and def.id != "robber_giving_chase":
+			t.check(is_equal_approx(def.standoff_reach(), def.lethal_reach()),
+					"'%s' lunges from its own catch" % def.id)
+
 ## **The one encounter in the game with a right answer, walked three ways.** *(M35, playtest 08
 ## finding 4: "I like the running tutorial on day 3 but I don't know how to solve it yet — I died
 ## every time.")*
@@ -172,7 +186,7 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 		if not def.pursues or def.sets_off_beside_her:
 			continue
 		pursuers += 1
-		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 		t.check(standoff > def.inner_radius,
 				"'%s' holds off outside the radius that ends the day" % def.id)
 
@@ -288,7 +302,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 		# Sited beside her by construction, which is what its own stand-off rule answers.
 		if not def.pursues or def.sets_off_beside_her:
 			continue
-		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 		var floor_lead := Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED,
 				def.offscreen_notice)
 		t.check(standoff < floor_lead,

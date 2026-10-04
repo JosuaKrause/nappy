@@ -2245,7 +2245,7 @@ func _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t) -> vo
 ## `_van_guard_giving_chase()`'s.
 func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> void:
 	var def := EventCatalogue.by_id(id)
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.lethal_reach())
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 	var walker_closes := def.pursue_speed - Tuning.WALK_SPEED
 	t.check((Tuning.TRAP_ARRIVAL_DISTANCE - def.lethal_reach()) / walker_closes
 			<= def.telegraph_time + def.duration - 0.5,

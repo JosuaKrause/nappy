@@ -867,6 +867,23 @@ func detain_distance() -> float:
 func lethal_reach() -> float:
 	return lethal_radius if lethal_radius > 0.0 else inner_radius
 
+## The distance a pursuer's **lunge is measured from** when it differs from the catch, in px; 0 means
+## the catch itself (`lethal_reach()`), which is every row but the alley robber and the man who comes
+## at her from his row.
+##
+## **The stand-off and the catch are two numbers that happened to be one.** `Tuning.pursuit_standoff()`
+## is `reach + pursue_speed × PURSUIT_REACTION`, which for a row whose catch is its reach is the
+## distance that leaves her `PURSUIT_REACTION` of the pursuer's own approach. Shrinking only the
+## robber's catch (tall-osprey: *"the capture zone"* is the catch) would drag the stand-off in with it
+## and keep the room between lunge and catch at 78px whatever the catch; set to the catch he had
+## (30px) it keeps the lunge where it was, 108px, and the room grows by exactly what the catch lost.
+@export var lunge_reach := 0.0
+
+## What `Tuning.pursuit_standoff()` is stated over for this row: `lunge_reach` where it sets one, the
+## catch (`lethal_reach()`) otherwise. The form every caller of the stand-off wants.
+func standoff_reach() -> float:
+	return lunge_reach if lunge_reach > 0.0 else lethal_reach()
+
 ## Whether this row's body is a **fixture of the street** that a pursuer leaves standing, rather
 ## than the pursuer's own bulk.
 ##
@@ -1248,7 +1265,7 @@ func validate() -> bool:
 					% [inner_radius, outer_radius]))
 			return false
 	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, lethal_reach(),
-			telegraph_time, pursues_within, outer_radius):
+			telegraph_time, pursues_within, outer_radius, standoff_reach()):
 		return false
 	# The day-switched trigger is a second shape of the same contract and nothing else exercises
 	# it: `EventCatalogue.all()` validates every *heat* shape of every row, but the day axis is
@@ -1256,7 +1273,7 @@ func validate() -> bool:
 	# run actually reached the day that reads it.
 	if pursues and pursues_within_after_first_day > 0.0 \
 			and not Tuning.validate_pursuit(id, pursue_speed, duration, lethal_reach(), telegraph_time,
-					pursues_within_after_first_day, outer_radius):
+					pursues_within_after_first_day, outer_radius, standoff_reach()):
 		return false
 	if pursues:
 		# A pursuer has no line to be walked out of — it follows — so the ordinary escape-distance

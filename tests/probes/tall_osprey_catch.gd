@@ -5,11 +5,11 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/tall_osprey_catch.gd
 ##
-## **The stand-off follows the catch**: `Tuning.pursuit_standoff(130, catch)` is `catch + 78`, so a
-## smaller catch moves the lunge nearer by the same amount and the room between lunge and catch
-## stays 78px whatever the catch. What a smaller catch changes is therefore small and comes only
-## from the geometry after the lunge (`turn_at_notice` below); a held stand-off, which would widen
-## that room, is not measured because it needs a change to `EventInstance._chase()`.
+## **Two arrangements, measured side by side.** `follows`: the stand-off follows the catch
+## (`EventDef.lunge_reach` 0), `Tuning.pursuit_standoff(130, catch)` is `catch + 78`, so the room
+## between lunge and catch stays 78px whatever the catch. `held`: the lunge stays where it was,
+## `lunge_reach` 30 so 108px, and the room is 108 minus the catch (the shipped arrangement; the
+## player chose it on 2026-10-04).
 ##
 ## The rig walks her along a line at the robber from outside his notice (`pursues_within` 140),
 ## and answers after a reaction time drawn per seed: `turns` runs away `reaction` seconds after
@@ -18,27 +18,30 @@ extends RefCounted
 
 const STEP := 1.0 / 60.0
 const SEEDS := 200
-const CATCHES := [30.0, 28.0, 26.0, 24.0, 23.0, 22.0, 20.0, 18.0, 16.0]
+const CATCHES := [30.0, 28.0, 26.0, 24.0, 22.0, 20.0, 18.0, 16.0]
 
 func run(t) -> void:
-	for catch_radius in CATCHES:
-		_report(float(catch_radius))
+	for lunge in [0.0, 30.0]:
+		print("== %s ==" % ("held: lunge_reach 30 (108px)" if lunge > 0.0 else "follows the catch"))
+		for catch_radius in CATCHES:
+			_report(float(catch_radius), lunge)
 	t.check(true, "tall_osprey_catch probe ran")
 
-func _def(catch_radius: float) -> EventDef:
+func _def(catch_radius: float, lunge: float) -> EventDef:
 	var def := EventCatalogue.by_id("alley_robbery").duplicate() as EventDef
 	def.inner_radius = catch_radius
+	def.lunge_reach = lunge
 	return def
 
-func _report(catch_radius: float) -> void:
+func _report(catch_radius: float, lunge: float) -> void:
 	var out := "catch %4.0f  standoff %5.1f |" % [catch_radius,
-			Tuning.pursuit_standoff(130.0, catch_radius)]
+			Tuning.pursuit_standoff(130.0, _def(catch_radius, lunge).standoff_reach())]
 	for mode in ["still", "walk_away", "run_at_notice", "turn_at_lunge", "turn_at_notice"]:
 		var got_away := 0
 		for seed_i in SEEDS:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = 7000 + seed_i
-			if not _caught(_def(catch_radius), mode, rng):
+			if not _caught(_def(catch_radius, lunge), mode, rng):
 				got_away += 1
 		out += " %s %2d/%d |" % [mode, got_away, SEEDS]
 	print(out)
