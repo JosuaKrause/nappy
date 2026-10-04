@@ -55,7 +55,7 @@ extends Node2D
 ## - `landed() -> float` — that sum: everything still inside the last `WINDOW` seconds.
 ## - `set_halo_strength(alpha: float, colour: Color) -> void` — told once a frame what to show, as
 ##   a *target* its own halo state eases toward rather than an immediate value; `0` for everything
-##   not picked. A source builds its rim on its first nonzero target and gives it back once faded.
+##   not picked, and for a pick still waiting in line for a block. A source builds its rim on its first nonzero target and gives it back once faded.
 ## - `holds_a_halo() -> bool` — whether it holds a rim right now, lit or still fading, which is
 ##   what `_process()` counts against `EntityHalo.RIM_BUDGET`.
 ## - `release_halo() -> void` — gives its rim back on the spot, through `EntityHalo.release()`;
