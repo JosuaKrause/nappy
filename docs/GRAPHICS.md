@@ -348,9 +348,10 @@ Map-specific scenery is prepared around the camera and released beyond a wider r
 boundary. Ground chunks share the loading-time composed sheet; unloading cells does not unload
 shared atlas pages. A needed region's preparation has three modes, chosen by the
 `--ground-mode` dev flag (README.md, "Dev flags"); all three draw the same picture and run inside
-the scenery queue's soft CPU budget. Mode 1, the default, prepares every region needed in a
-frame whole in that frame, as one layer whose renderer work Godot defers to the frame's end, with
-one water surface per region. Mode 2 prepares the same whole region, at most one a frame; the
+the scenery queue's soft CPU budget, which each frame applies afresh to whatever the last one
+left. Mode 1, the default, prepares every region needed in a frame whole in that frame, as many as
+that budget allows, as one layer whose renderer work Godot defers to the frame's end, with one
+water surface per region. Mode 2 prepares the same whole region, at most one a frame; the
 other needed regions wait for the following frames. Mode 3 prepares at most one
 four-by-four-cell renderer quadrant per region per process frame, distinct approaching regions
 advancing together. Each of its steps flushes TileMap internals; the in-tree layer stays visible

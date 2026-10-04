@@ -524,8 +524,9 @@ static func _blackout_from_query(query: String) -> bool:
 
 ## `--ground-mode 1|2|3` (or the page's own `?groundmode=`, under `live_debug_requested()`) — how
 ## a needed nearby ground region is scheduled, as `SceneryGround.Mode` numbers it: `1`, the
-## default, prepares every region needed in a frame whole in that frame; `2` prepares at most one
-## whole region a frame; `3` spreads one region's preparation across frames. *(2026-10-03,
+## default, prepares every region needed in a frame whole in that frame, as many as the 2ms soft
+## budget allows, the rest in the following frames, each under its own budget; `2` prepares at most
+## one whole region a frame; `3` spreads one region's preparation across frames. *(2026-10-03,
 ## docs/playtests/2026-10-03-tawny-stork.md: "let's introduce three options 1) (the default) as
 ## many graphics as needed are prepared in one frame 2) at most one graphic is prepared in one
 ## frame 3) graphic creation is smeared out like in the PR"; and, of the switch, "yes it should be

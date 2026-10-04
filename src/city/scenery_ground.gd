@@ -9,7 +9,8 @@ const CHUNK_PX := CHUNK_TILES * Tuning.TILE_SIZE
 const STEP_TILES := 4
 ## How SceneryResidency schedules a needed region's preparation; laziness, nearby-only and the
 ## load/unload boundaries are the same in all three. ALL prepares every needed region whole in
-## the frame that needs it; ONE prepares at most one whole region a frame, the rest waiting for
+## the frame that needs it, as many as the residency's soft budget allows, the rest in the
+## following frames, each under its own budget; ONE prepares at most one whole region a frame, the rest waiting for
 ## following frames; STEPPED spreads one region over frames, a renderer quadrant a frame. The
 ## values are the `--ground-mode` numbers (docs/playtests/2026-10-03-tawny-stork.md).
 enum Mode { ALL = 1, ONE = 2, STEPPED = 3 }

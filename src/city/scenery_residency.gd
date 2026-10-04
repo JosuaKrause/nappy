@@ -14,7 +14,13 @@ const RETAIN_MARGIN := 512.0
 const GUARD_MARGIN := 96.0
 ## Soft CPU preparation limit: finish the current job or ground quadrant, including its
 ## TileMap renderer preparation. GPU drawing and water redraw are separate; guards are synchronous.
+## Each update runs at least one job, so the queue always advances, and whatever is left waits for
+## the next frame's update under a budget of its own, and so on, never dumped whole into one frame.
+## *(2026-10-04, the player, on keeping it for ground mode 1: "if we keep the 2ms budget then it
+## also should apply to the next frame and so on".)*
 const BUDGET_USEC := 2000
+## BUDGET_USEC, lowered by a test to make the per-frame spill-over countable.
+var budget_usec := BUDGET_USEC
 var city: City
 var view := Rect2()
 var _items: Array[Node2D] = []
@@ -116,13 +122,16 @@ func update(next_view: Rect2, immediate := false) -> void:
 	city._decals.update_view(load_view, retained, enqueue)
 	pending.sort_custom(func(a: Dictionary, b: Dictionary): return a.distance < b.distance)
 	_pending = false
+	var ran := 0
 	for job in pending:
-		if not city.map.recipe_frame_locked and Time.get_ticks_usec() - started >= BUDGET_USEC:
+		if not city.map.recipe_frame_locked and ran > 0 \
+				and Time.get_ticks_usec() - started >= budget_usec:
 			_pending = true
 			break
 		if job.has("ground_key"):
 			if city.map.recipe_frame_locked or ground.mode == SceneryGround.Mode.ALL:
 				ground.prepare(job.ground_key)
+				ran += 1
 				continue
 			var frame := Engine.get_process_frames()
 			if ground.mode == SceneryGround.Mode.ONE:
@@ -133,6 +142,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 					continue
 				_whole_region_frame = frame
 				ground.prepare(job.ground_key)
+				ran += 1
 				continue
 			# Several regions may approach together. Advance each once within the shared budget;
 			# repeating an explicit update or replacing a canceled job cannot drain one region.
@@ -143,8 +153,10 @@ func update(next_view: Rect2, immediate := false) -> void:
 				_pending = true
 				continue
 			_ground_stepped[job.ground_key] = true
+			ran += 1
 			if not ground.prepare_step(job.ground_key):
 				_pending = true
 		else:
 			(job.prepare as Callable).call()
+			ran += 1
 	worst_update_usec = maxi(worst_update_usec, Time.get_ticks_usec() - started)

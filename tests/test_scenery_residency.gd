@@ -19,6 +19,7 @@ func _test_city(t, seed_value: int) -> void:
 	var map := CityGenerator.generate(seed_value)
 	city.build(map)
 	_test_all_mode(t, city)
+	_test_all_mode_budget(t, city)
 	_test_one_mode(t, city)
 	_use_mode(city, SceneryGround.Mode.STEPPED)
 	_test_pending(t, city)
@@ -215,6 +216,34 @@ func _test_all_mode(t, city: City) -> void:
 	for key in keys:
 		_check_chunk(t, city, key)
 		_check_whole_layout(t, city, key)
+
+## Mode 1 keeps the soft budget, and what does not fit is budgeted again in each following
+## frame rather than prepared all at once in the next. *(2026-10-04: "if we keep the 2ms budget then
+## it also should apply to the next frame and so on".)* A budget one microsecond long makes every
+## update one job, so the spill-over is countable without timing anything.
+func _test_all_mode_budget(t, city: City) -> void:
+	_use_mode(city, SceneryGround.Mode.ALL)
+	var ground := city._ground
+	var scenery := city.scenery
+	var view := city._home_scenery_view()
+	var keys := _ring_keys(city, view, 5)
+	t.check(keys.size() == 5, "the budget check has five actual load-ring regions to prepare")
+	scenery.budget_usec = 1
+	var counts: Array[int] = []
+	for frame in keys.size() + 2:
+		var prepared := ground.prepared
+		scenery.update(view)
+		counts.append(ground.prepared - prepared)
+		if not scenery._pending:
+			break
+	scenery.budget_usec = SceneryResidency.BUDGET_USEC
+	var all_whole := true
+	for key in keys:
+		all_whole = all_whole and ground.chunks.has(key)
+	t.check(all_whole and not scenery._pending, "every spilled region is prepared in the end")
+	t.check(counts.size() == keys.size() and counts.all(func(n: int) -> bool: return n == 1),
+			"each frame's update prepares only what its own budget allows, frame after frame "
+			+ "(regions per update: %s)" % [counts])
 
 func _test_one_mode(t, city: City) -> void:
 	_use_mode(city, SceneryGround.Mode.ONE)
