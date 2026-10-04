@@ -157,14 +157,14 @@ past him, go round. Every scene here shares one context city (`context_seed` 191
 
 | Recipe | Day and target | She starts | The target, as the scene asserts it |
 |---|---|---|---|
-| `task-06-note.json` | 6, a note for the man shouting | 5 tiles east of the mark, on the street, the mark unread | the man shouting, 576–608px out; no arrow, since any of them answers |
-| `task-07-package.json` | 7, the package at the van | 5 tiles east of the mark, on the street, the mark unread | the van, 576–608px out |
-| `task-08-burnt-shell.json` | 8, the burnt building | 5 tiles east of the mark, on the street, the mark unread | the shell 576–608px out, the arrow on the door behind it |
+| `task-06-note.json` | 6, a note for the man shouting | 5 tiles west of the mark, on the street, the mark unread | the man shouting, 576–608px out; no arrow, since any of them answers |
+| `task-07-package.json` | 7, the package at the van | 5 tiles west of the mark, on the street, the mark unread | the van, 576–608px out |
+| `task-08-burnt-shell.json` | 8, the burnt building | 5 tiles west of the mark, on the street, the mark unread | the shell 576–608px out, the arrow on the door behind it |
 | `task-09-crossing.json` | 9, the crossing | 5 tiles west of the mark, the mark unread | the named district door's gatehouse, 576–640px out; done by crossing the door |
 | `task-10-neighbor.json` | 10, warning the neighbor | 5 tiles east of the mark on the street above it, the mark unread | the neighbor, 400px or more from where she reads the mark (about 455px from it), walking home |
-| `task-11-mast.json` | 11, silencing a mast | 5 tiles east of the mark, on the street, the mark unread | a mast put up for the task, 576–608px out |
+| `task-11-mast.json` | 11, silencing a mast | 5 tiles west of the mark, on the street, the mark unread | a mast put up for the task, 576–608px out |
 | `task-12-swing.json` | 12, the swing | 5 tiles east of the mark on the street below it, the mark unread | the swing's base, 576–640px out |
-| `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles east of the mark, on the street, the mark unread | the roadblock, 576–608px out; no arrow |
+| `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles west of the mark, on the street, the mark unread | the roadblock, 576–608px out; no arrow |
 | `task-14-last-night.json` | 14, the station's front door | on the sidewalk west of it | the door on the facade, 576–640px out |
 | `station-door-corner.json` | 14, the station's front door | on the far outer corner of its sidewalk | the door, 57.7px away, outside its 50.6px reach |
 | `fire-truck.json` | 3, the fire and the engine it calls in | on the sidewalk 496px east of the fire | the whole burning building, smoke included, out of both the landscape and the portrait view at the first tick; the engine parked at the kerb in front of it |
@@ -184,9 +184,9 @@ it.
 outer corners of the two sidewalk tiles in front of it (`ResistanceDirector.DOOR_REACH`, 50.6px,
 against the corners' 57.7px): she starts on the west corner, where the door is not touched, and one
 step east touches it. The east corner is 100px from the door's guard, so standing on it wakes him.
-`fire-truck.json` starts on day 3 with `burning_building` named and nothing else, her start 64px
-farther from the building than the doorstep is, so that its lot, which reaches 320px from the
-doorstep's side, is out of the landscape view at the first frame *(the player, inbox #557: "the
+`fire-truck.json` starts on day 3 with `burning_building` named and nothing else, her start 496px
+east of the fire, so that its lot, its rise and its smoke are out of both the landscape and the
+portrait view at the first frame *(the player, inbox #557: "the
 fire truck scene starts too close to the start -- the building is already on screen")*: once she has seen
 the fire, its own `spawns_on_sight` calls the `fire_truck` in from off screen exactly as a played
 day does, and the engine parks at the kerb in front of the fire for the rest of the day.
