@@ -36,11 +36,22 @@ it. The hooded figure behind her is the mark's robber, woken as she read it.
 from the mark it was read at` — the mast's foot across the main road to the east, its broadcast
 waves drawn, the red arrow pointing at it.
 
+## `seed90210-day11-queued-mast-arrow-and-mark-on-its-foot.png` — the mast queued near her, the arrow and the touch point on its foot
+
+`tools/shot.sh out.png 7.5 --seed 90210 --day 11 --spawn contact --walk 0.7@293@0.3p2.8s3.2e2p
+--invincible --no-title --no-save --zoom 0.75`, at the head the PR's review fixes landed on: a step
+onto the mark at (135,97), then 2.8 seconds south and 3.2 east toward the task. No live mast stood
+where her paths reach the 576px circle round her, so one was queued and the scheduler generated it:
+`a mast is generated at (148,112) for the task, 635px from the mark`. It is at the bottom of the
+frame, its broadcast arcs over it, on the sidewalk in front of the building; the red arrow's tip is
+on its foot, and the touch point's chalk mark (`chalk_mark.svg`, which every task with no body
+draws where it is touched) is drawn on the foot too.
+
 ## Not shown
 
-A task with nothing that qualifies within 576px of its mark is placed at the nearest place that
-does. On day 11 the day instead puts up a mast near the mark when none of the six stands within
-576px: in the route rig's sweep after that change, seeds 4242, 90210 and 1234567 each got one, 500px,
-517px and 396px from the mark. The day-11 still above is from before that change, on a seed whose
-own mast was already near. The swing's touch area (an ellipse 22 by 8.8px at the frame's base) is
-not drawn by any layer, so no still shows it.
+Days 9, 12 and 14. Their places are fixed (a district door's gatehouse, the one swing park, the
+station's door) and stand 1,388–4,866px from where their marks were read in the runs tried, too far
+for a timed `--walk` to reach, and a `--route` run cannot take a screenshot (it quits on arrival).
+Day 14 cannot be started with the goal met from the command line at all. The playable scenes the
+busy-raven entry asks for are what will show those three. The swing's touch area, the ellipse at
+its base, is the shadow the frame already casts there, so it is drawn in any still of the swing.
