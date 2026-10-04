@@ -98,6 +98,19 @@ var _escape_title_is_resume_gate := false
 ## the getter again on every focus change.
 var _no_focus_pause := DevFlags.no_focus_pause()
 
+## How long every input is ignored after the game gets focus back (`NOTIFICATION_APPLICATION_
+## FOCUS_IN` or `_RESUMED`). *(2026-10-04, inbox #534: "When returning to the game all inputs should
+## be ignored for 500ms this is to prevent the game from immediately starting when returning to the
+## page. The player should see the day brief or pause screen".)* The tap or click that brings the
+## page back is also an event the game reads, and without this it resumes the pause screen or
+## starts the day from its brief before the player has seen either.
+const RETURN_INPUT_IGNORED_MSEC := 500
+## The `Time.get_ticks_msec()` reading until which `_input()` swallows every event, or `0` for no
+## window. Real OS time rather than accumulated `delta`, because the tree is paused behind the
+## pause screen and `_process()` does not run there. Never armed while `_no_focus_pause` is set: a
+## rig's window opens and gets focus on its own schedule and must never be slowed by this.
+var _input_ignored_until_msec := 0
+
 ## Whether `_lock_out_a_rig()` found `DevFlags.is_rig()` true for this run — read once for the same
 ## reason `_no_focus_pause` is, so a test can set it directly. `_input()` reads this member rather
 ## than asking `DevFlags` again on every event.
@@ -2631,6 +2644,23 @@ func _somebody_is_playing() -> bool:
 func _input(event: InputEvent) -> void:
 	if _rig_locked_out and not _is_the_rigs_own_press(event):
 		get_viewport().set_input_as_handled()
+		return
+	if _ignoring_input_after_a_return():
+		get_viewport().set_input_as_handled()
+
+## Whether the half second after getting focus back (`_arm_the_return_window()`) is still running.
+## Swallowing in `_input()` is one place before any screen: the GUI phase (the pause screen's
+## buttons) and the `_unhandled_input()` phase (the day brief's tap, the pause screen's keys)
+## both come after it. Touch controls' own `_input()` is a sibling and still sees the event.
+func _ignoring_input_after_a_return() -> bool:
+	return Time.get_ticks_msec() < _input_ignored_until_msec
+
+## Getting focus back starts the window. A no-op under `_no_focus_pause` (`--no-focus-pause`,
+## `--screenshot`), so a rig's own presses are never delayed.
+func _arm_the_return_window() -> void:
+	if _no_focus_pause:
+		return
+	_input_ignored_until_msec = Time.get_ticks_msec() + RETURN_INPUT_IGNORED_MSEC
 
 ## A static, pure predicate for the same reason `_debug_snapshot_action()` and `_debug_layer_key()`
 ## are static — a test can ask it directly without booting a `main` (`_ready()` starts a whole run),
@@ -2906,10 +2936,13 @@ func _quit() -> void:
 ## of them lost focus, including to another window of the *same* game — and this project never
 ## builds a second one, so it is not read here.
 ## `NOTIFICATION_APPLICATION_PAUSED` is a phone sending the whole app to the background. Getting
-## focus back (`NOTIFICATION_APPLICATION_FOCUS_IN`/`NOTIFICATION_APPLICATION_RESUMED`) is not
-## answered at all — see `_pause_on_focus_lost()`'s own doc for why coming back does not resume.
+## focus back (`NOTIFICATION_APPLICATION_FOCUS_IN`/`NOTIFICATION_APPLICATION_RESUMED`) does not
+## resume (see `_pause_on_focus_lost()`'s own doc) and starts the 500ms during which `_input()`
+## ignores every event (`RETURN_INPUT_IGNORED_MSEC`).
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		Telemetry.end_run()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
 		_pause_on_focus_lost()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
+		_arm_the_return_window()
