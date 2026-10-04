@@ -887,24 +887,11 @@ func set_camera_limits(bounds: Rect2) -> void:
 	_camera.limit_right = int(bounds.end.x)
 	_camera.limit_bottom = int(bounds.end.y)
 
-## Rotates the world in the viewport without asking the device to rotate — see
-## `ScreenOrientation`. Every other piece of screen furniture is a `CanvasLayer` and takes
-## `ScreenOrientation.rotation_transform()` straight, but the world is drawn on the root viewport's
-## own canvas rather than through a `CanvasLayer`, and a `Camera2D`'s `rotation` is the only handle
-## on that canvas's transform — so it is kept, rather than folded into the layer mechanism, because
-## there is nothing to fold it into.
-##
-## **The sign is the opposite of `rotation_transform()`'s own +90°, and has to be**: a `Camera2D`
-## rotated by `+r` turns the *view* by `-r` — rotating the thing you are looking through one way
-## swings what you see through it the other way — so passing `+90°` here once turned the world
-## counter-clockwise while every layer turned clockwise, 180° apart. `-90°` turns the view by
-## `+90°`, which agrees.
-##
-## `Camera2D.ignore_rotation` defaults to `true` — a camera's own rotation does nothing to the
-## rendered view until this is turned off, which nothing before this needed.
-func set_screen_rotation(radians: float) -> void:
-	_camera.ignore_rotation = is_zero_approx(radians)
-	_camera.rotation = -radians
+## Rotates the world in the viewport without asking the device to rotate, through her own camera —
+## `ScreenOrientation.apply_to_camera()` is the one definition of what that does to a camera, and
+## says why the world turns through a camera rather than a `CanvasLayer`.
+func set_screen_rotation(rotate: bool) -> void:
+	ScreenOrientation.apply_to_camera(_camera, rotate)
 
 # ------------------------------------------------------------------ queries ---
 # Consumed by `Baby` to decide how the meters move.

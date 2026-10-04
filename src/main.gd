@@ -273,6 +273,10 @@ var _touch_available := TouchInput.available()
 ## question every frame and reapply only on change — see that function's own doc for why a signal
 ## alone is not enough.
 var _rotated := false
+## The camera `_new_boot_camera()` made current while neither boot path's own player exists yet,
+## until `_retire_the_boot_camera()` frees it — kept so `_apply_orientation()` can turn it with
+## the window the same way it turns hers.
+var _boot_camera: Camera2D
 func _ready() -> void:
 	if not DevFlags.recipe_path().is_empty():
 		var result := SceneRecipeRuntime.load_recipe(DevFlags.recipe_path(), DevFlags.active_args())
@@ -483,13 +487,13 @@ func _ready() -> void:
 
 	_start_day()
 	if _recipe and _recipe.manifest.get("setup_failed", false):
-		boot_camera.free()
+		_retire_the_boot_camera()
 		return
 	_write_dawn_for_a_resumed_run()
 	# `_player.reset_at()` inside `_start_day()` above has just put her own camera exactly where
 	# the boot camera was standing in for it, so freeing it now hands the viewport's current camera
 	# straight to hers — see `_new_boot_camera()`'s own doc for why freeing is what does that.
-	boot_camera.free()
+	_retire_the_boot_camera()
 
 	if DevFlags.overview_requested():
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
@@ -686,7 +690,7 @@ func _ready_escape() -> void:
 	# camera) at this section's own start position — see `_on_finale_section_started()`. Freeing
 	# now hands the viewport's current camera straight to hers, the same moment `_ready()` frees
 	# its own boot camera.
-	boot_camera.free()
+	_retire_the_boot_camera()
 
 	if DevFlags.overview_requested() and _city:
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
@@ -1219,17 +1223,12 @@ func _show_an_ending_for_a_rig() -> bool:
 ## recording keeps what it already has across the trip through this screen.
 ##
 ## **Re-asks `_apply_orientation()` right here, not only trusts the one `_ready()` already made.**
-## PLAYTEST-140, statement 5: after a lost run's game over, the phone's title came up sideways.
-## `_ready()`'s own call (used by every path that reaches this one) runs *before* `_start_day()` —
-## which this file's own boot log measures in the hundreds of milliseconds, planning a day's
-## closures and every event on it — so a window whose real shape settles anywhere in that gap (a
-## phone browser's own chrome hiding or showing on the very tap that just dismissed the ending
-## screen and asked for this restart) is never re-read before the title is the thing on screen.
-## `_process()`'s own per-frame poll would still catch it eventually, but only once a frame has
-## actually rendered past this point — the title the player is looking at right now should not
-## have to wait a frame to be the right way up. Idempotent and cheap (see `_apply_orientation()`'s
-## own doc), so asking again here costs nothing on the ordinary boot, where the answer never
-## changes between the two calls.
+## `_ready()`'s own call runs *before* `_start_day()`, which this file's own boot log measures in
+## the hundreds of milliseconds, and a phone browser's window can still be settling its shape in
+## that gap. `_process()`'s per-frame poll would catch it, but only once a frame has rendered past
+## this point; the title the player is looking at right now should not have to wait a frame to be
+## the right way up. Idempotent and cheap (see `_apply_orientation()`'s own doc), so asking again
+## here costs nothing on the ordinary boot, where the answer never changes between the two calls.
 func _open_the_title() -> void:
 	_in_the_title = true
 	# Guarded the same shape `_on_title_start()`'s own final line already is, and for the same
@@ -1420,11 +1419,23 @@ func _world_now() -> Node2D:
 ## rather than the world's default identity transform, whose origin sits at the top-left of
 ## whatever is in the tree under it.
 ##
+## **Turned the way the window wants before it enters the tree**, through the same
+## `_apply_orientation()` her own camera is later turned by, because the frames it shows are the
+## ones a phone sees first. *(PLAYTEST-140: "when you lose with game over the title screen is
+## sideways"; PLAYTEST-144's still after a held restart, "This is the screen when resetting".)*
+## The root window outlives a scene reload, and with it the `content_scale_size` the previous
+## boot left: after a restart on a portrait phone the new boot already presents in the rotated
+## 720x1280 box, so an unturned camera here draws the city upright in it, filling the screen the
+## wrong way up — and that frame stays on screen through the rest of `_ready()`, `_start_day()`
+## included, until the title is drawn. On a first boot the window still has the project's
+## 1280x720 box, which the same call swaps before the first frame.
+##
 ## **Freeing it is what hands the viewport's current camera to the player's own.** A `Camera2D`
 ## that exits the tree while it is the viewport's current one looks for another enabled camera on
 ## the same canvas and makes that one current in its place, and the stroller's own `Camera2D`
 ## (`scenes/player/stroller.tscn`) — sitting dormant since it entered the tree while this one was
 ## already current — is the only other camera either boot path ever has in the tree by then.
+## `_retire_the_boot_camera()` is that free, and forgets it for `_apply_orientation()` too.
 func _new_boot_camera(ground: Vector2) -> Camera2D:
 	var camera := Camera2D.new()
 	camera.name = "BootCamera"
@@ -1437,10 +1448,19 @@ func _new_boot_camera(ground: Vector2) -> Camera2D:
 	# never arrives": with physics interpolation on project-wide, the default leaves the engine to
 	# override this itself and warn about it once a run.
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	_boot_camera = camera
+	_apply_orientation()
 	add_child(camera)
 	_pauses_with_the_game(camera)
 	camera.make_current()
 	return camera
+
+## Frees the boot camera once her own stands where it stood — see `_new_boot_camera()` for why
+## freeing is what hands the view over — and forgets it, so `_apply_orientation()` stops turning a
+## camera that is gone.
+func _retire_the_boot_camera() -> void:
+	_boot_camera.free()
+	_boot_camera = null
 
 ## Takes every baked page this boot will ever need, inside a named loading window, and holds it
 ## for the life of the process. *(PLAYTEST-109: "we cannot start loading something in the frame we
@@ -1670,24 +1690,24 @@ func _add_touch_controls() -> void:
 ## Every `CanvasLayer` of screen furniture gets the same `ScreenOrientation.rotation_transform()`,
 ## so the HUD, the pause screen, the day summary, the title screen, the debug status line, the
 ## danger edge and the touch controls all turn together; the world is the one thing not drawn
-## through a `CanvasLayer`, so it rotates separately, through the camera — see
-## `Stroller.set_screen_rotation()`.
+## through a `CanvasLayer`, so it rotates separately, through whichever camera is current —
+## `ScreenOrientation.apply_to_camera()`, on hers or on the boot camera standing in for hers.
 ##
-## Called once from `_ready()` and again from `_process()` whenever the answer changes — never
-## only from a `size_changed` signal, which can arrive with a stale `get_window().size`, or not
-## arrive at all if a phone is turned back to a shape that already reads as landscape without the
-## browser ever resizing the canvas, latching the wrong `content_scale_size` until a reload. Asking
-## the same question every frame instead means the decision cannot go stale between calls.
+## Called from `_new_boot_camera()`, again from `_ready()` once every layer exists, and from
+## `_process()` whenever the answer changes — never only from a `size_changed` signal, which can
+## arrive with a stale `get_window().size`, or not arrive at all if a phone is turned back to a
+## shape that already reads as landscape without the browser ever resizing the canvas, latching
+## the wrong `content_scale_size` until a reload. Asking the same question every frame instead
+## means the decision cannot go stale between calls.
 ##
-## **Guarded against a real boot-time race.** `_ready()` sets `process_mode = PROCESS_MODE_ALWAYS`
-## on this node before its own `await _warm_the_canvas_shaders()` — two awaited frames in which the
-## engine still calls `_process()` on an ALWAYS node, and `_process()` asks this same question
-## every frame (see above). `_player`, `_touch_controls` and `_hud` are not built until after that
-## await returns, so a frame drawn during it would otherwise call this on all three while they are
-## still null. Never true once `_ready()` has finished building them — see `_ready_escape()` and
-## `_build_the_finale_city()`'s own later calls, both made once their own player already exists —
-## and true by construction for `tests/test_orientation.gd`'s script-only `main`, which never runs
-## `_ready()` at all.
+## **The window half is applied before anything else exists, because the window outlives a
+## reload.** `content_scale_size` lives on the root window, not on this scene, so a held restart's
+## `reload_current_scene()` boots into whatever box the previous boot left. The box, the boot
+## camera and every layer already built are turned the moment the boot camera is made, ahead of
+## the first frame `_warm_the_canvas_shaders()` draws; `_player`, `_touch_controls` and `_hud`,
+## which are not built until after that await, are turned once they exist. `_rotated` is set only
+## then, so `_process()` keeps asking until the whole presentation has been turned once. A
+## script-only `main` in a test has none of them and gets the window half alone.
 ##
 ## Reads the window through `Engine.get_main_loop()` rather than `get_window()`, the same
 ## substitution `_tree_is_paused()` makes and for the same reason: `get_window()` needs `main`
@@ -1697,48 +1717,42 @@ func _add_touch_controls() -> void:
 ## `SceneTree` for the whole process either way, so asking the engine for its root window answers
 ## the same question a parented `main`'s own `get_window()` would.
 ##
-## **Neither of this function's two inputs can go persistently stale on the Web export, checked
-## against the engine's own source for the exported version (Godot 4.7).** `_touch_available`
-## (`TouchInput.available()` → `DisplayServer.is_touchscreen_available()`) compiles on Web to
-## `platform/web/js/libs/library_godot_display.js`'s `godot_js_display_touchscreen_is_available:
-## function () { return 'ontouchstart' in window; }` — a static browser capability check, not one
-## learned from an actual touch event, and never cached anywhere in this project (no autoload, no
-## `static var`, nothing on `GameState`): every `main` recomputes it fresh from the same real
-## device fact. And `window.size` (`DisplayServerWeb::window_get_size()`, reading the canvas
-## element's own `width`/`height`) is resynced against the browser's real viewport every single
-## rendered frame before Godot's own per-frame processing ever runs —
-## `platform/web/web_main.cpp`'s `main_loop_callback()`, registered as the page's
-## `requestAnimationFrame` callback, calls `DisplayServerWeb::check_size_force_redraw()`
-## unconditionally as its first line, ahead of `os->main_loop_iterate()`. So whatever a lost run's
-## restart leaves `window.size` and `_touch_available` reading, `_process()`'s own poll (right
-## above, and `_apply_orientation()` here) is asking the *current* frame's real answer, not a
-## leftover one — a review of PR #378 raised both as a candidate cause for PLAYTEST-140's sideways
-## title, and this is the paper trail for why the answer is no, not a shrug.
+## **Both inputs are the current frame's on the Web export (Godot 4.7's own source).**
+## `_touch_available` (`TouchInput.available()` → `DisplayServer.is_touchscreen_available()`)
+## compiles on Web to `'ontouchstart' in window`, a static browser capability check rather than one
+## learned from a touch, cached nowhere in this project. `window.size` is the canvas element's own
+## `width`/`height`, which the page's `requestAnimationFrame` callback resyncs against the real
+## viewport (`DisplayServerWeb::check_size_force_redraw()`) before each frame's processing runs. So
+## `_process()`'s poll cannot stay wrong for more than a frame once this node is processing; what it
+## cannot reach is a frame drawn before anything here has been asked, which is why the boot camera
+## asks first.
 func _apply_orientation() -> void:
-	if not _player or not _touch_controls or not _hud:
-		return
 	var loop := Engine.get_main_loop()
 	if not loop is SceneTree:
 		return
 	var window := (loop as SceneTree).root
 	var rotate := ScreenOrientation.wants_rotation(window.size, _touch_available)
-	_rotated = rotate
 	window.content_scale_size = ScreenOrientation.content_scale_size(rotate)
-	_player.set_screen_rotation(deg_to_rad(90.0) if rotate else 0.0)
+	if _boot_camera:
+		ScreenOrientation.apply_to_camera(_boot_camera, rotate)
+	# Every layer of screen furniture carries the same rotation, so the world (rotated by the
+	# camera) and everything drawn over it agree — see `ScreenOrientation`'s class doc for why a
+	# `CanvasLayer` transform is the mechanism and `apply_to_layer()` the one place that reads
+	# `if rotate: ... else: IDENTITY`. A layer not built yet, or absent under `--start-escape` (see
+	# `_ready_escape()`), is skipped rather than assumed.
+	for layer in _screen_furniture_layers():
+		if layer:
+			ScreenOrientation.apply_to_layer(layer, rotate)
+	if not _player or not _touch_controls or not _hud:
+		return
+	_rotated = rotate
+	_player.set_screen_rotation(rotate)
 	_touch_controls.rotated = rotate
 	# `_edge` (the screen-edge badge) is built with the first world either boot builds — see
 	# `_add_danger_edge()` — so it is null only for a script-only `main` a test drives by hand.
 	if _edge:
 		_edge.rotated = rotate
 	_hud.set_rotated(rotate)
-	# Every layer of screen furniture carries the same rotation, so the world (rotated by the
-	# camera above) and everything drawn over it agree — see `ScreenOrientation`'s class doc for
-	# why a `CanvasLayer` transform is the mechanism and `apply_to_layer()` the one place that
-	# reads `if rotate: ... else: IDENTITY`. Some layers are absent under `--start-escape` (see
-	# `_ready_escape()`), so the list is filtered rather than assumed complete.
-	for layer in _screen_furniture_layers():
-		if layer:
-			ScreenOrientation.apply_to_layer(layer, rotate)
 
 func _screen_furniture_layers() -> Array[CanvasLayer]:
 	var layers: Array[CanvasLayer] = [

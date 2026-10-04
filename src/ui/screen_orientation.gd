@@ -99,3 +99,20 @@ static func pin_to_design_box(control: Control) -> void:
 ## as one line per layer rather than an `if rotate: ... else: IDENTITY` repeated at each one.
 static func apply_to_layer(layer: CanvasLayer, rotate: bool) -> void:
 	layer.transform = rotation_transform() if rotate else Transform2D.IDENTITY
+
+## The world's half of the same rotation, for whichever `Camera2D` is current: hers
+## (`Stroller.set_screen_rotation()`) or the boot camera that stands in for hers until she exists
+## (`main._new_boot_camera()`). The world is drawn on the root viewport's own canvas rather than
+## through a `CanvasLayer`, and a camera's `rotation` is the only handle on that canvas's
+## transform, so this is the one definition every camera the game draws through takes.
+##
+## **The sign is the opposite of `rotation_transform()`'s own +90°, and has to be**: a `Camera2D`
+## rotated by `+r` turns the *view* by `-r` — rotating the thing you are looking through one way
+## swings what you see through it the other way — so `+90°` here turns the world counter-clockwise
+## while every layer turns clockwise, 180° apart. `-90°` turns the view by `+90°`, which agrees.
+##
+## `Camera2D.ignore_rotation` defaults to `true` — a camera's own rotation does nothing to the
+## rendered view until it is turned off — so it is set on every call rather than once.
+static func apply_to_camera(camera: Camera2D, rotate: bool) -> void:
+	camera.ignore_rotation = not rotate
+	camera.rotation = -deg_to_rad(90.0) if rotate else 0.0
