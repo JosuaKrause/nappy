@@ -1,0 +1,15 @@
+{
+  "command": ["./tools/scene-recipes.sh", "--screenshots", "--recipe", "scene-recipes/trailer-city.json", "--output", "/tmp/teal-ibis-measure/recipes-capture"],
+  "exit_status": 0,
+  "elapsed_seconds": 86,
+  "interval_seconds": 0.25,
+  "samples": 285,
+  "paths": [
+    {"path": "/tmp/teal-ibis-measure/recipes-capture", "baseline_kib": 0, "peak_kib": 436, "final_kib": 436}
+  ],
+  "peak_additional_kib": 436,
+  "retained_kib": 436,
+  "available_start_kib": 71424796,
+  "available_min_kib": 71412340,
+  "available_end_kib": 71412628
+}

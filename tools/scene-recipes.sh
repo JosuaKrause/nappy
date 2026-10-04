@@ -36,11 +36,19 @@ if [[ ${#selected_recipes[@]} -gt 0 ]]; then
         selected_recipes[$index]="$(cd "$(dirname "$recipe")" && pwd)/$(basename "$recipe")"
     done
 fi
+recipes=("$root"/scene-recipes/*.json)
+if [[ ${#selected_recipes[@]} -gt 0 ]]; then recipes=("${selected_recipes[@]}"); fi
+# The whole batch is checked before its first log is written: a recipe's logs and manifests, or,
+# with --screenshots, those and its still.
+source "$root/tools/lib_disk_headroom.sh"
+headroom_job=scene-recipe
+$screenshots && headroom_job=scene-capture
+headroom_hint=""
+[[ ${#recipes[@]} -gt 1 ]] && headroom_hint="run fewer recipes, each named with --recipe FILE"
+headroom_preflight tools/scene-recipes.sh "$output" "$headroom_hint" "$headroom_job:${#recipes[@]}" || exit 1
 mkdir -p "$output"
 output="$(cd "$output" && pwd)"
 cd "$root"
-recipes=(scene-recipes/*.json)
-if [[ ${#selected_recipes[@]} -gt 0 ]]; then recipes=("${selected_recipes[@]}"); fi
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 source "$root/tools/lib_dev_flags.sh"
 for file in "${recipes[@]}"; do

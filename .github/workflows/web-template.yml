@@ -39,6 +39,8 @@ jobs:
           node-version: '22'
       - name: Check command-line and browser startup failures
         run: ./tools/test_cli_help.sh
+      - name: Check browser scratch ownership against fixtures
+        run: node --test tools/web-template/browser-scratch.test.mjs
       - name: Identify build inputs
         id: template
         run: echo "key=$(./tools/build-web-template.sh --key)" >> "$GITHUB_OUTPUT"

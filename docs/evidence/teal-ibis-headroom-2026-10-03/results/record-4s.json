@@ -1,0 +1,16 @@
+{
+  "command": ["./tools/record.sh", "--out", "measure-4s.mp4", "--", "--seed", "4242", "--walk", "north", "--after", "4"],
+  "exit_status": 0,
+  "elapsed_seconds": 56,
+  "interval_seconds": 0.5,
+  "samples": 100,
+  "paths": [
+    {"path": "/tmp/teal-ibis-measure/rec-tmp", "baseline_kib": 0, "peak_kib": 38816, "final_kib": 0},
+    {"path": "/tmp/teal-ibis-measure/wt-full/build/records", "baseline_kib": 0, "peak_kib": 360, "final_kib": 360}
+  ],
+  "peak_additional_kib": 39176,
+  "retained_kib": 360,
+  "available_start_kib": 71406780,
+  "available_min_kib": 71348568,
+  "available_end_kib": 71386876
+}

@@ -134,14 +134,22 @@ locations outside `/tmp`. Stop the owning processes and check exact paths before
 A browser's installed application, the player's regular profile and arbitrary OS/application
 caches are not job-owned scratch. A one-time request to remove identified directories does not
 authorize future blanket deletion of the application's temporary area.
+`tools/web-template/browser-check.mjs` follows this for macOS Chrome's code-sign clone, a copy of
+the browser's own bundle that Chrome removes after a graceful close and leaves behind when it is
+killed: it launches Chrome with the clone disabled, closes it through the debugging protocol and
+waits for it, removes only a clone `lsof` showed its own browser holding once nothing holds it,
+and writes what it removed, kept or could not attribute to `scratch.json` in its output.
 
 **Check actual free space before and after.** `du` gives allocated sizes that may overlap shared
 copy-on-write blocks; it does not promise exclusive reclaimable bytes. `df` on each destination
 volume measures the available headroom. Before multiplying worktrees or producing large imports,
 builds or capture batches, compare estimated peak use with free space and a stated reserve.
 When the peak is unknown, start with a bounded measurement or reuse an existing checkout rather
-than claiming an arbitrary fixed threshold makes the job safe. Keep unrelated tracked archives
-out of new worktrees through sparse checkout (**orchestrating**).
+than claiming an arbitrary fixed threshold makes the job safe. The tools that allocate a batch
+make that comparison themselves through `tools/lib_disk_headroom.sh` (**using-tools** lists them),
+whose per-job estimates are peaks measured with `tools/measure-disk-peak.sh`, and refuse an
+unmeasured job; a worktree made by hand compares the same file's worktree estimate with `df`.
+Keep unrelated tracked archives out of new worktrees through sparse checkout (**orchestrating**).
 
 ### 7. There is no checked-in handoff
 

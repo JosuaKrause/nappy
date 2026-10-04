@@ -119,6 +119,17 @@ assert_exit "build-web-template.sh unknown" nonzero ./tools/build-web-template.s
 assert_exit "build-web-template.sh missing jobs" nonzero ./tools/build-web-template.sh --jobs
 assert_exit "build-web-template.sh invalid jobs" nonzero ./tools/build-web-template.sh --jobs 0
 assert_exit "build-web-template.sh stray word" nonzero ./tools/build-web-template.sh stray
+assert_exit "measure-disk-peak.sh --help" zero ./tools/measure-disk-peak.sh --help
+assert_exit "measure-disk-peak.sh -h" zero ./tools/measure-disk-peak.sh -h
+assert_exit "measure-disk-peak.sh unknown" nonzero ./tools/measure-disk-peak.sh --not-a-flag
+assert_exit "measure-disk-peak.sh missing path" nonzero ./tools/measure-disk-peak.sh --path
+assert_exit "measure-disk-peak.sh no command" nonzero ./tools/measure-disk-peak.sh --path build
+assert_exit "measure-disk-peak.sh zero interval" nonzero ./tools/measure-disk-peak.sh --interval 0 --path build -- true
+assert_exit "measure-disk-peak.sh validates before running" nonzero ./tools/measure-disk-peak.sh --path "$work_dir" --not-a-flag -- touch "$work_dir/measured-command-ran"
+if [[ -e "$work_dir/measured-command-ran" ]]; then
+    echo "FAIL measure-disk-peak.sh ran its command on invalid arguments" >&2
+    failures=$((failures + 1))
+fi
 assert_exit "browser-check.mjs help" zero node ./tools/web-template/browser-check.mjs --help
 assert_exit "browser-check.mjs unknown" nonzero node ./tools/web-template/browser-check.mjs --not-a-flag
 assert_exit "browser-check.mjs missing value" nonzero node ./tools/web-template/browser-check.mjs --export
