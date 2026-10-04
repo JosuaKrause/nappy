@@ -1726,12 +1726,15 @@ rim built past that draws nothing at all, with no error, for as long as it lives
 walker builds its rim the first time it is picked and gives it back, freed on the spot, once it has
 faded out. **No fade is cut short to keep within the budget**, since every change a rim shows eases
 (the cues skill, "Both channels ease rather than jump"): when the budget is full of rims still
-fading, a newly picked source waits for one of them to finish, and its rim then eases in from
-nothing like any other. Waiting sources are served in the order they began to wait, the strongest
-first among those that began together, and while one waits a fading rim whose source is picked
-again keeps fading and takes its turn in the same line. So a wait ends within one
-`EntityHalo.FADE_OUT_SECONDS`, and a frame or two, however fast the picked set turns over —
-`ExcitementHalo._process()` has the argument. `EntityHalo`'s class doc has the engine's numbers.
+fading, a newly picked source waits until a block is free and no stronger pick wants it, and its rim
+then eases in from nothing like any other. *(2026-10-04, the player: "if we have a limit with number
+of halos the selection should be by intensity so only the top k most intensive halos show at any one
+time".)* So the blocks go by strength: a pick that still holds a rim, lit or fading, is lit again at
+once in the rim it has, and picks with no rim are served strongest first, by what each delivers at
+her now, as blocks come back. There is no line, so a weak pick may stay unlit for as long as
+stronger ones keep arriving, and no fade is cut short to change that; once the stronger picks stop,
+it is lit within one `EntityHalo.FADE_OUT_SECONDS`, and a frame or two. `ExcitementHalo._process()`
+has the argument. `EntityHalo`'s class doc has the engine's numbers.
 
 **A field-sized halo, then a circle sized off `obstructs_radius`, were each built and rejected on
 screenshots before this one.** The field spanned `EventDef.outer_radius` (up to 200px against a
