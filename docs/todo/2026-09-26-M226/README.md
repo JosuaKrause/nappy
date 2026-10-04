@@ -42,6 +42,12 @@ off screen** ([calm-kestrel](../../playtests/2026-10-04-calm-kestrel.md), inbox 
 So for everything warned from off screen (the pursuers, the trap robbers, the cyclist, the fire
 engine, the column): the badge shows alone for at most two seconds, nothing in the world; then the
 thing is placed just off screen where the badge points, so it comes into view at once and the badge
-goes off. The fire engine's 6.27s warning and every other one longer than two seconds goes. The gold
-timing above is now read within that ceiling.
+goes off. The fire engine's 6.27s warning and every other badge longer than two seconds goes.
+
+**How the two fit, as filed:** the two-second ceiling is on the badge shown with nothing placed;
+what follows once the thing is placed and visibly closing is the gold timing's on-screen part (the
+day-3 dog's 4.5s of visible closing and 3s chase), which the ceiling does not shorten. That is the
+reading that keeps both of the player's statements; the other reading, that the whole warning
+including the visible closing fits in two seconds, would overturn the gold timing and is not taken
+without asking the player.
 
