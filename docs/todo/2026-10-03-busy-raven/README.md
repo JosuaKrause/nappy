@@ -5,9 +5,8 @@ priority: now
 
 
 [gray-egret, scenes to play each day's target and the fire truck](../../playtests/2026-10-03-gray-egret.md)
-files three notes (#497, #498, #499). Band `now` is the note's own order on a queue slot: the
-player said "we pick those scenes up after the release" (#499), so it is picked up once the
-pending release is out, and it is not parked.
+files four notes (#497, #498, #499, #502). The player said "we pick those scenes up after the
+release" (#499); band `now` is the filer's note, below.
 
 **Asked for**, in the player's words:
 
@@ -19,50 +18,52 @@ pending release is out, and it is not parked.
 - "we pick those scenes up after the release" and "and just keep a note that we want to verify each
   task with the scenes" (#499).
 
-So the entry is two kinds of scene, both played by the player rather than only asserted: one per
-day that has a task target (days 6 to 14), each built from the mark, enough gap blocks between the
-mark and the target, and the target; and one for the `fire_truck` event. **And the note to keep:
-each task is verified with its scene** — a task's target is not called checked until the player
-has played its scene (`docs/review/` is where a thing that waits on a person goes, when a scene
-is built).
+So the entry is what the player asked: scenes (a mark, enough gap blocks, and the target) for
+testing each day's target, a scene for the `fire_truck` event, played by the player; picked up after
+the release; and a note kept that each task is to be verified with the scenes.
 
 **The existing tool.** Authored scene recipes ([`docs/SCENE_RECIPES.md`](../../SCENE_RECIPES.md))
 are saved JSON under `scene-recipes/`, built by `RecipeCityBuilder`, played with
 `tools/run.sh --recipe <file>` (free play, physical input) and asserted headlessly by
-`tools/scene-recipes.sh`. The scenes are recipes.
+`tools/scene-recipes.sh`. That the scenes are recipes is the filer's proposal, below.
 
 **What a recipe cannot do yet**, which the scenes need:
 
 - `setup` has no field for a resistance mark or a task: nothing places a mark, offers the day's
-  task or points the red arrow at a target. The day-6 to day-14 scenes need this before any can
-  be built.
+  task or points the red arrow at a target.
 - A recipe installs no event unless it names one ("Only explicit selections install events"), so
   the targets that are events or ride on one need support: the day-11 loudspeaker mast, the
   day-7 delivery van's drop, the day-10 neighbor walking home, the day-3 fire the day-8 burnt
   shell comes from, the day-13 roadblock. Which of these a recipe can already name is read from
   the recipe schema before any is built.
 - The `fire_truck` row (`docs/EVENTS.md`) is "Never scheduled: a SCRIPTED def with no day, created
-  only once `burning_building` has been seen", so its scene names `burning_building` and lets the
-  player's sight of it call the truck in; it does not place the truck by hand.
+  only once `burning_building` has been seen". Whether naming `burning_building` in a recipe is
+  enough to bring the truck in is not known: only explicit selections install events, so the truck
+  may need explicit support of its own.
 
 **Where the targets are.** Each day's target, and what counts as reaching it, is in the task
 table of [`docs/NARRATIVE.md`](../../NARRATIVE.md) and, for the targets as the open pull request
 #480 changes them, in `docs/decisions/2026-10-03-feathery-marmot.md` on that pull request's branch
 (not yet on `main`; the path is the link once it merges).
-The path measure for "near its mark" is held by that pull request's entry
-`docs/todo/2026-10-03-feathery-marmot/`, not by this one.
+The path measure for "near its mark" goes into PR #480 itself, not into this entry.
 
 **Proposed, not asked for:**
 
-- A recipe `setup` field for a mark and its task (a day's task offered from the scene's start, its
-  arrow live), and named mast and rider support for the van, as the way to give the scenes what
+- That the scenes are recipes, one file each: the player asked for scenes, not for the recipe
+  mechanism. A recipe `setup` field for a mark and its task (a day's task offered from the scene's
+  start, its arrow live), and named mast and rider support for the van, would give the scenes what
   they lack. The plainer alternative is a scene with the mark and target as authored actors only,
   with no task logic running, which tests where a target stands but not that the task is reached
   and completed.
-- One scene per day 6 to 14 plus the fire truck, as the set. The player named "each day's target"
-  and "a scene to test the fire truck event"; the grouping into one recipe file each is the
-  filer's.
+- Days 6 to 14 as the set: the filer's reading of "each day's target", being the days whose task
+  table row names a target.
+- A gating rule that a task's target is not called checked until the player has played its scene,
+  and a `docs/review/` item per scene as the way it waits on a person. The player said only "keep a
+  note that we want to verify each task with the scenes".
+- Band `now` is the filer's choice: the notes carry no band, and #499 says only that the scenes
+  are picked up after the release.
 
-**Open question, asked of nobody yet:** whether a scene's gap blocks should be as few as the
-"near its mark" distance allows or as the real city's gaps run; whoever picks the task up reads
-the open pull request #480's measure first and asks the player if it does not settle it.
+**The gap, in the player's words** (#502): "in the scene we can use the minimum distance which in
+turn also serves as test whether it will be properly off screen". A scene puts the target at the
+minimum distance the task allows, so playing it also tests that the target is placed properly off
+screen.

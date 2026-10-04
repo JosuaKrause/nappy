@@ -1,6 +1,6 @@
 # Playtest gray-egret — Scenes to play each day's target and the fire truck; the verify-each-task note
 
-2026-10-03. Three notes from the inbox, filed together: #497, #498 and #499. Each is copied word
+2026-10-03. Four notes from the inbox, filed together: #497, #498, #499 and #502. Each is copied word
 for word, after what its words answered.
 
 ## #497 — Mode 1 budget carries over; a crafted scene to play the station door; added mast only if silenced; near counted along the path
@@ -44,18 +44,29 @@ truck event"), while the minor release v0.23.0 was pending.
 > we pick those scenes up after the release
 > and just keep a note that we want to verify each task with the scenes
 
+## #502 — busy-raven: scenes use the minimum distance, which also tests off-screen
+
+Said in conversation on 2026-10-03, answering the open question in the busy-raven entry (PR #501,
+playable scenes for each day's target): "should a scene's gap be as short as the "near" distance
+allows, or as long as the real city's gaps?" Context: a task's target is placed out of her view when
+she reads the mark, and "near" is where a path from her first reaches a 576px circle round her
+(#500).
+
+> in the scene we can use the minimum distance which in turn also serves as test whether it will be properly off screen
+
 ## Routing
 
 1. **Playable scenes for testing each day's task target, and one for the fire truck event**
    (#497 line 2, #498, #499) → the new queue entry
-   busy-raven ([the entry](../todo/2026-10-03-busy-raven/README.md)), band `now`. #499's "after
-   the release" is the order the player gave, stated in the entry; the entry is not parked.
+   busy-raven ([the entry](../todo/2026-10-03-busy-raven/README.md)), band `now` as the filer's
+   choice (the notes carry no band); #499's "after the release" is the order the player gave.
 2. **#497 line 1, the 2ms budget carrying over to the next frame and so on** → already handled:
    it answers PR #475's question about mode 1's budget, which that pull request holds.
 3. **#497 line 3, "Only if silenced"** → already handled: it answers PR #480's day-11 mast
    question, which that pull request holds.
 4. **#497 line 4, "near" counted along the path, 576px and larger** → already handled: the path
-   measure is held by the entry `docs/todo/2026-10-03-feathery-marmot/` on PR #480's branch
-   (`feature/feathery-marmot-task-targets`). No second entry is filed for it.
+   measure goes into PR #480 itself (inbox #500, not part of this filing). No entry is filed for it.
 5. **#498's "merge feathery marmot as is" with the radii left as the player's word** → an
    instruction for PR #480, which carries it; nothing to file.
+6. **#502, a scene uses the minimum distance** → the busy-raven entry: a scene puts the target at the
+   minimum distance, which also tests that the target is placed properly off screen.
