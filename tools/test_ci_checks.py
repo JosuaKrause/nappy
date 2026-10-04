@@ -10,11 +10,15 @@ about git.
 
 from __future__ import annotations
 
+import contextlib
+import io
+import json
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -363,6 +367,84 @@ class TranscriptionTests(unittest.TestCase):
         self.assertIn("first 14 of", failures[0])
         self.assertIn("'visual bounding box.", failures[0])
 
+    def test_words_appended_to_a_captured_note_are_checked_like_its_body(self) -> None:
+        bot = "nappy-claude-orchestrator[bot]"
+        more = "this does not read as shadow. and more"
+        marked = f"{ci_transcription.APPEND_MARKER}\n\n{more}"
+        comments: list[dict[str, object]] = [
+            {"user": {"login": bot}, "body": "Which shadow?"},
+            {"user": {"login": bot}, "body": marked},
+        ]
+        appended = ci_transcription.appended_words(bot, ("inbox", "captured"), comments)
+        self.assertEqual(appended, (more,))
+        captured = ci_transcription.Note(
+            number=423,
+            author=bot,
+            labels=("inbox", "captured"),
+            body=NOTE_BODY,
+            is_pull_request=False,
+            appended=appended,
+        )
+        failures = ci_transcription.check([captured], FILED_PLAYTEST)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("the words appended to it are not in", failures[0])
+        playtest = {path: text + "\n> " + more + "\n" for path, text in FILED_PLAYTEST.items()}
+        self.assertEqual(ci_transcription.check([captured], playtest), [])
+
+    def test_a_marked_comment_counts_only_from_a_capture_identity_on_a_captured_note(self) -> None:
+        bot = "nappy-claude-orchestrator[bot]"
+        marked = f"{ci_transcription.APPEND_MARKER}\n\nmore words"
+        mine: list[dict[str, object]] = [{"user": {"login": bot}, "body": marked}]
+        theirs: list[dict[str, object]] = [{"user": {"login": "someone"}, "body": marked}]
+        self.assertEqual(ci_transcription.appended_words("JosuaKrause", ("inbox",), mine), ())
+        self.assertEqual(ci_transcription.appended_words(bot, ("inbox",), mine), ())
+        self.assertEqual(ci_transcription.appended_words(bot, ("inbox", "captured"), theirs), ())
+
+    def test_main_fetches_comments_only_for_captured_notes_and_checks_their_appended_words(self) -> None:
+        bot = "nappy-claude-orchestrator[bot]"
+        more = "and more words about the bag"
+        calls: list[str] = []
+
+        def issue(number: int, author: str, labels: list[str]) -> dict[str, object]:
+            return {
+                "user": {"login": author},
+                "labels": [{"name": name} for name in labels],
+                "body": NOTE_BODY,
+                "number": number,
+            }
+
+        issues = {1: issue(1, bot, ["inbox", "captured"]), 2: issue(2, "JosuaKrause", ["inbox"])}
+
+        def gh_api(endpoint: str) -> dict[str, object]:
+            calls.append(endpoint)
+            return issues[int(endpoint.rsplit("/", 1)[1])]
+
+        def gh_api_list(endpoint: str) -> list[dict[str, object]]:
+            calls.append(endpoint)
+            return [{"user": {"login": bot}, "body": f"{ci_transcription.APPEND_MARKER}\n\n{more}"}]
+
+        patches = (
+            mock.patch.object(lib_ci, "default_repo", return_value="o/r"),
+            mock.patch.object(lib_ci, "pr_description", return_value="Filed from #1\nFiled from #2\n"),
+            mock.patch.object(lib_ci, "changed_files", return_value=[]),
+            mock.patch.object(lib_ci, "gh_api", side_effect=gh_api),
+            mock.patch.object(lib_ci, "gh_api_list", side_effect=gh_api_list),
+            mock.patch.object(ci_transcription, "added_playtests", return_value=dict(FILED_PLAYTEST)),
+        )
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.ExitStack() as stack:
+            for patch in patches:
+                stack.enter_context(patch)
+            stack.enter_context(contextlib.redirect_stdout(out))
+            stack.enter_context(contextlib.redirect_stderr(err))
+            code = ci_transcription.main(["--pr", "9"])
+        self.assertEqual(calls.count("repos/o/r/issues/1/comments"), 1)
+        self.assertNotIn("repos/o/r/issues/2/comments", calls)
+        self.assertEqual(code, 1)
+        text = out.getvalue() + err.getvalue()
+        self.assertIn("#1: the words appended to it are not in", text)
+        self.assertNotIn("#2:", text)
+
     def test_a_note_in_no_added_playtest_fails(self) -> None:
         self.assertIn("adds no file", ci_transcription.check([note()], {})[0])
 
@@ -454,6 +536,40 @@ class TranscriptionTests(unittest.TestCase):
             (read.author, read.labels, read.body, read.is_pull_request),
             ("JosuaKrause", ("inbox", "queue_next"), "", False),
         )
+
+
+class GhApiListTests(unittest.TestCase):
+    """`lib_ci.gh_api_list` reads every page: a short page ends it, a full one is followed by another."""
+
+    def pages(self, sizes: list[int]) -> tuple[list[dict[str, object]], list[str]]:
+        urls: list[str] = []
+
+        def fake_run(args: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+            urls.append(args[2])
+            page = int(args[2].rsplit("page=", 1)[1])
+            items = [{"n": page, "i": i} for i in range(sizes[page - 1])]
+            return subprocess.CompletedProcess(args, 0, json.dumps(items), "")
+
+        with mock.patch.object(subprocess, "run", side_effect=fake_run):
+            return lib_ci.gh_api_list("repos/o/r/issues/1/comments"), urls
+
+    def test_a_short_page_ends_it(self) -> None:
+        items, urls = self.pages([100, 3])
+        self.assertEqual(len(items), 103)
+        self.assertEqual(len(urls), 2)
+        self.assertTrue(urls[0].endswith("?per_page=100&page=1"))
+
+    def test_an_exact_page_is_followed_by_an_empty_one(self) -> None:
+        items, urls = self.pages([100, 0])
+        self.assertEqual((len(items), len(urls)), (100, 2))
+
+    def test_an_error_or_a_non_list_is_a_ci_error(self) -> None:
+        failed = subprocess.CompletedProcess([], 1, "", "boom")
+        with mock.patch.object(subprocess, "run", return_value=failed), self.assertRaises(lib_ci.CiError):
+            lib_ci.gh_api_list("x")
+        not_list = subprocess.CompletedProcess([], 0, "{}", "")
+        with mock.patch.object(subprocess, "run", return_value=not_list), self.assertRaises(lib_ci.CiError):
+            lib_ci.gh_api_list("x")
 
 
 class CodePrQueueTests(unittest.TestCase):

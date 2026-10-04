@@ -441,6 +441,179 @@ class WriteTests(unittest.TestCase):
                 self.assertEqual(fake.writes, [])
 
 
+BOT = "nappy-claude-orchestrator[bot]"
+MORE = "and the bag should be generic, not marbles only"
+
+
+def marked(words: str) -> str:
+    return f"{inbox.APPEND_MARKER}\n\n{words}"
+
+
+class AppendTests(unittest.TestCase):
+    """`append` adds the player's further words to a captured note, and only the script's marker makes them count."""
+
+    def captured(self, **extra: Any) -> FakeGh:
+        reads: dict[str, Any] = {f"repos/{REPO}/issues/5": issue(5, author=BOT, labels=("inbox", "captured"), **extra)}
+        return FakeGh(reads)
+
+    def test_append_posts_the_marked_words_through_the_wrapper(self) -> None:
+        fake = self.captured()
+        code, _, err = run(fake, "--role", "claude-orchestrator", "append", "5", stdin=MORE + "\n")
+        self.assertEqual(code, 0, err)
+        wrapper = [sys.executable, str(TOOLS / "agent-identity.py"), "run", "claude-orchestrator", "--", "gh"]
+        self.assertEqual(
+            fake.writes, [([*wrapper, "issue", "comment", "5", "-R", REPO, "--body-file", "-"], marked(MORE + "\n"))]
+        )
+
+    def test_append_posts_what_the_words_answered_first(self) -> None:
+        fake = self.captured()
+        with tempfile.TemporaryDirectory() as folder:
+            context = Path(folder) / "context.md"
+            context.write_text("Asked: generic how?", encoding="utf-8")
+            code, out, _ = run(
+                fake, "--role", "claude-orchestrator", "append", "5", "--context-file", str(context), stdin=MORE
+            )
+        self.assertEqual(code, 0)
+        self.assertEqual(out.count("\n"), 1)
+        both = f"{inbox.APPEND_MARKER}\n\nAsked: generic how?\n\n{inbox.WORDS_MARKER}\n\n{MORE}"
+        self.assertEqual([stdin for _, stdin in fake.writes], [both])
+
+    def test_a_failed_post_leaves_nothing_to_duplicate_on_a_retry(self) -> None:
+        # The context and the words are one comment, so a failing post leaves no context alone on
+        # the issue, and the retry posts the same one comment.
+        fake = self.captured()
+        attempts: list[str | None] = []
+
+        def flaky(args: Sequence[str], stdin: str | None) -> str:
+            if "comment" in args:
+                attempts.append(stdin)
+                if len(attempts) == 1:
+                    raise inbox.InboxError("network down")
+            return fake(args, stdin)
+
+        with tempfile.TemporaryDirectory() as folder:
+            context = Path(folder) / "context.md"
+            context.write_text("Asked: generic how?", encoding="utf-8")
+            argv = ["--role", "claude-orchestrator", "append", "5", "--context-file", str(context)]
+            err = io.StringIO()
+            for _ in range(2):
+                with (
+                    redirect_stdout(io.StringIO()),
+                    redirect_stderr(err),
+                    mock.patch.object(sys, "stdin", io.StringIO(MORE)),
+                ):
+                    inbox.main(["--repo", REPO, *argv], flaky)
+        self.assertIn("network down", err.getvalue())
+        self.assertEqual(len(attempts), 2)
+        self.assertEqual(attempts[0], attempts[1])
+        self.assertEqual(len(fake.writes), 1)
+
+    def test_only_append_writes_a_marker_line(self) -> None:
+        fake = self.captured()
+        for argv in (("ask", "5"), ("append", "5")):
+            for line in (inbox.APPEND_MARKER, inbox.WORDS_MARKER):
+                with self.subTest(argv=argv, line=line[:30]):
+                    code, _, err = run(fake, "--role", "claude-orchestrator", *argv, stdin=f"{line}\nwords\n")
+                    self.assertEqual(code, 1)
+                    self.assertIn("append marker", err)
+        with tempfile.TemporaryDirectory() as folder:
+            context = Path(folder) / "context.md"
+            context.write_text(f"{inbox.APPEND_MARKER}\nx", encoding="utf-8")
+            for with_context in (("capture",), ("append", "5")):
+                code, _, err = run(
+                    fake, "--role", "claude-orchestrator", *with_context, "--context-file", str(context), stdin="words"
+                )
+                self.assertEqual(code, 1)
+                self.assertIn("append marker", err)
+        self.assertEqual(fake.writes, [])
+
+    def test_append_refuses_without_a_role_an_empty_text_and_a_stray_role(self) -> None:
+        fake = self.captured()
+        with mock.patch.dict("os.environ", {}, clear=True):
+            code, _, err = run(fake, "append", "5", stdin=MORE)
+            self.assertEqual(code, 1)
+            self.assertIn("never writes as the player", err)
+            self.assertIn("is empty", run(fake, "--role", "claude-orchestrator", "append", "5", stdin=" \n")[2])
+        with mock.patch.dict("os.environ", {"NAPPY_AGENT_ROLE": "claude-coder"}, clear=True):
+            self.assertIn("not claude-coder", run(fake, "append", "5", stdin=MORE)[2])
+        self.assertEqual(fake.writes, [])
+
+    def test_append_refuses_a_note_the_player_wrote_and_a_closed_one(self) -> None:
+        closed = issue(5, author=BOT, labels=("inbox", "captured"), state="closed")
+        for label, data in (
+            ("the player's own note", issue(5)),
+            ("a closed note", closed),
+            ("not a note", issue(5, author="someone", labels=("inbox", "captured"))),
+        ):
+            with self.subTest(label):
+                fake = FakeGh({f"repos/{REPO}/issues/5": data})
+                code, _, err = run(fake, "--role", "claude-orchestrator", "append", "5", stdin=MORE)
+                self.assertEqual(code, 1)
+                self.assertEqual(fake.writes, [])
+                if label == "the player's own note":
+                    self.assertIn("takes the player's own comments", err)
+
+    def test_show_prints_a_marked_comment_as_the_players_words_only_on_a_captured_note(self) -> None:
+        comments = [{"user": {"login": BOT}, "created_at": "t1", "body": marked(MORE)}]
+        captured = self.captured()
+        captured.reads[f"repos/{REPO}/issues/5/comments"] = comments
+        _, out, _ = run(captured, "show", "5")
+        self.assertIn("t1 (appended: the player's words)", out)
+        self.assertIn(MORE, out)
+        self.assertNotIn("inbox-append", out)
+        # With context in the comment, the context is the agent's side and only the words are the player's.
+        both = f"{inbox.APPEND_MARKER}\n\nAsked: which bag?\n\n{inbox.WORDS_MARKER}\n\n{MORE}"
+        withcontext = self.captured()
+        withcontext.reads[f"repos/{REPO}/issues/5/comments"] = [
+            {"user": {"login": BOT}, "created_at": "t3", "body": both}
+        ]
+        _, out, _ = run(withcontext, "show", "5")
+        self.assertIn("t3 (appended: what the words answered)", out)
+        self.assertIn("t3 (appended: the player's words)", out)
+        self.assertLess(out.index("Asked: which bag?"), out.index(MORE))
+        # On a note the player opened the same comment is the agent's side, marker and all.
+        own = FakeGh({f"repos/{REPO}/issues/5": issue(5), f"repos/{REPO}/issues/5/comments": comments})
+        _, out, _ = run(own, "show", "5")
+        self.assertIn("t1 (the agent's side, not the player's words)", out)
+        # A marker from anybody but a capture identity is skipped.
+        stranger = self.captured()
+        stranger.reads[f"repos/{REPO}/issues/5/comments"] = [{**comments[0], "user": {"login": "someone"}}]
+        _, out, _ = run(stranger, "show", "5")
+        self.assertIn("skipped a comment by someone", out)
+
+    def batch(self, playtest: str) -> FakeGh:
+        reads: dict[str, Any] = {
+            f"repos/{REPO}/pulls/430": filing_pr(430, "Filed from #5"),
+            f"repos/{REPO}/issues/5": issue(5, author=BOT, labels=("inbox", "captured")),
+            f"repos/{REPO}/issues/5/comments": [
+                {"user": {"login": BOT}, "created_at": "t1", "body": "Which bag?"},
+                {"user": {"login": BOT}, "created_at": "t2", "body": marked(MORE)},
+            ],
+        }
+        reads.update(playtest_reads(430, playtest))
+        return FakeGh(reads)
+
+    def test_close_requires_the_appended_words_in_the_playtest_file(self) -> None:
+        fake = self.batch("# Playtest\n\n> " + BODY + "\n")
+        code, _, err = run(fake, "--role", "claude-orchestrator", "close", "--pr", "430")
+        self.assertEqual(code, 1)
+        self.assertIn("the player's comment on #5 of t2", err)
+        self.assertEqual(fake.writes, [])
+        fake = self.batch("# Playtest\n\n> " + BODY + "\n\n> and the bag should be generic,\n> not marbles only\n")
+        code, out, _ = run(fake, "--role", "claude-orchestrator", "close", "--pr", "430")
+        self.assertEqual(code, 0, out)
+        self.assertEqual([args[6:9] for args, _ in fake.writes], [["issue", "close", "5"]])
+
+    def test_the_marker_is_not_part_of_the_words_and_the_question_need_not_be_copied(self) -> None:
+        note = inbox.note_from_api(issue(5, author=BOT, labels=("inbox", "captured")))
+        text = {"p.md": inbox.normalize("> " + BODY + "\n> " + MORE)}
+        comments = [inbox.Comment(BOT, "t1", marked(MORE)), inbox.Comment(BOT, "t0", "Which bag?")]
+        self.assertEqual(inbox.unfiled_words(note, comments, text), [])
+        # The context in an appended comment is the agent's side: not required in the playtest file.
+        both = f"{inbox.APPEND_MARKER}\n\nAsked: which bag?\n\n{inbox.WORDS_MARKER}\n\n{MORE}"
+        self.assertEqual(inbox.unfiled_words(note, [inbox.Comment(BOT, "t1", both)], text), [])
+
+
 class AgreementTests(unittest.TestCase):
     """The CI check that reads a filing (tools/ci_transcription.py) and this tool must read it the same way."""
 
@@ -461,6 +634,18 @@ class AgreementTests(unittest.TestCase):
         self.assertEqual(self.ci.CAPTURE_LABEL, inbox.CAPTURE_LABEL)
         self.assertEqual(self.ci.INBOX_LABEL, inbox.INBOX_LABEL)
         self.assertEqual(set(inbox.WRITE_ROLES.values()), set(inbox.CAPTURE_BOTS))
+
+    def test_the_append_marker_is_the_same(self) -> None:
+        self.assertEqual(self.ci.APPEND_MARKER, inbox.APPEND_MARKER)
+        self.assertEqual(self.ci.WORDS_MARKER, inbox.WORDS_MARKER)
+
+    def test_both_read_the_words_of_an_appended_comment_alike(self) -> None:
+        for body in (marked(MORE), f"{inbox.APPEND_MARKER}\n\nctx\n\n{inbox.WORDS_MARKER}\n\n{MORE}"):
+            with self.subTest(body=body[:60]):
+                ours = inbox.split_append(body)
+                assert ours is not None
+                theirs = self.ci.appended_words(BOT, ("inbox", "captured"), [{"user": {"login": BOT}, "body": body}])
+                self.assertEqual(theirs, (ours[1],))
 
     def test_the_same_notes_are_filable(self) -> None:
         # Both rules run over the same notes and agree on every one. The label rule is the player's
