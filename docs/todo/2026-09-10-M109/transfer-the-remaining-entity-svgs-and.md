@@ -8,7 +8,10 @@ and registration inputs. Inspect detail and animation consistency at gameplay sc
 
 The two dog families are outside this item ([their record](../../decisions/2026-09-10-M109-2.md)).
 Roof equipment is also outside this item
-([its record](../../decisions/2026-09-10-M109-3.md)). Broken water mains and fallen
+([its record](../../decisions/2026-09-10-M109-3.md)). The pelican
+cyclist family (`art/events/pelican_cyclist*.svg`) is outside this item by the player's
+word: it stays SVG and never becomes a converted PNG
+([its record](../../decisions/2026-10-03-feathery-bison.md)). Broken water mains and fallen
 trees remain in scope: their active SVGs still need accepted PNG conversions, as
 the player's [roof and obstruction review](../../playtests/2026-10-03-bouncy-squirrel.md)
 rejects the candidate transfers. Preserve all directional and animation layers;
