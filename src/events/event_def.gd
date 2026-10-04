@@ -885,6 +885,14 @@ func lethal_reach() -> float:
 func standoff_reach() -> float:
 	return lunge_reach if lunge_reach > 0.0 else lethal_reach()
 
+## True when `lunge_reach` is set and sits inside the row's own catch (`0 < lunge_reach <
+## lethal_reach()`). A stand-off is `reach + pursue_speed × PURSUIT_REACTION`, so a reach under the
+## catch leaves less than `PURSUIT_REACTION` of the pursuer's own approach between its lunge and the
+## moment it takes her: the contract `Tuning.pursuit_standoff()` exists to keep. `validate()` refuses
+## it on load; a predicate rather than only the error so a test can ask it without raising one.
+func lunge_is_inside_the_catch() -> bool:
+	return lunge_reach > 0.0 and lunge_reach < lethal_reach()
+
 ## Whether this row's body is a **fixture of the street** that a pursuer leaves standing, rather
 ## than the pursuer's own bulk.
 ##
@@ -1265,6 +1273,10 @@ func validate() -> bool:
 					+ ("sit inside its own field (inner %.0f <= outer %.0f)"
 					% [inner_radius, outer_radius]))
 			return false
+	if pursues and lunge_is_inside_the_catch():
+		push_error("Unfair pursuit '%s': its lunge is measured from %.0fpx, inside its own %.0fpx catch"
+				% [id, lunge_reach, lethal_reach()])
+		return false
 	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, lethal_reach(),
 			telegraph_time, pursues_within, outer_radius, standoff_reach()):
 		return false

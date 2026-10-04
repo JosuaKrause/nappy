@@ -160,9 +160,21 @@ func _test_the_robbers_lunge_is_further_out_than_his_catch(t) -> void:
 		t.close_to(Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()), 116.0,
 				"'%s' lunges from 116px" % id, 0.01)
 	for def in EventCatalogue.all():
+		t.check(not def.lunge_is_inside_the_catch(), "'%s' does not lunge from inside its catch" % def.id)
 		if def.pursues and def.id != "alley_robbery" and def.id != "robber_giving_chase":
 			t.check(is_equal_approx(def.standoff_reach(), def.lethal_reach()),
 					"'%s' lunges from its own catch" % def.id)
+	# A `lunge_reach` inside the catch would stand the pursuer off closer than `PURSUIT_REACTION` of
+	# its own approach from taking her: 10px on a 26px catch is an 88px stand-off, 62px of room, 0.48s
+	# at 130px/s. `validate()` refuses it on load (asked here through the predicate, since the refusal
+	# is a `push_error`, which fails the whole run); a lunge exactly at the catch is allowed.
+	var too_short := EventCatalogue.by_id("alley_robbery").duplicate() as EventDef
+	too_short.lunge_reach = 10.0
+	t.check(too_short.lunge_is_inside_the_catch(), "a 10px lunge on a 26px catch is inside it")
+	too_short.lunge_reach = too_short.lethal_reach()
+	t.check(not too_short.lunge_is_inside_the_catch(), "a lunge exactly at the catch is not")
+	too_short.lunge_reach = 0.0
+	t.check(not too_short.lunge_is_inside_the_catch(), "and 0 means the catch")
 
 ## **The one encounter in the game with a right answer, walked three ways.** *(M35, playtest 08
 ## finding 4: "I like the running tutorial on day 3 but I don't know how to solve it yet — I died

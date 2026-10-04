@@ -1896,7 +1896,7 @@ static func _abduction() -> EventDef:
 ## **A man in an alley who is worth crossing the road for, and who comes after you if you do not.**
 ##
 ## **A tiny field on the argument that *the alley itself is the warning* goes nowhere**: a lethal
-## radius of 30 inside a field of 42 is a thing that does nothing at all until it does everything,
+## radius of 26 inside a field of 42 is a thing that does nothing at all until it does everything,
 ## which is the one row in the catalogue where that is fatal rather than merely dull. And a robber
 ## who never moves is avoidable by walking two tiles wide of him for ever.
 ##
@@ -1908,10 +1908,13 @@ static func _abduction() -> EventDef:
 ## - **Getting close is day ending.** `hard_fail` inside 26px, and it has to be **reachable**: he
 ##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
 ##   the inner radius means the kill can never fire.
-## - **Get close and he comes at you.** `pursues_within` 140: inside that he stands up, takes 1.8s
-##   of visibly coming — the notice `Tuning.PURSUIT_MIN_NOTICE` owes her — and then chases at
-##   130px/s until she has shaken him off. Walking away does not work and running away does, which
-##   is exactly `charging_dog`'s contract arriving in act III as a *place* rather than a moment.
+## - **Get close and he comes at you.** `pursues_within` 140: inside that he stands up, turns to
+##   face her and closes at 130px/s for as long as she is outside his 116px stand-off, up to a
+##   1.8s notice (`Tuning.PURSUIT_MIN_NOTICE` is what the notice may not be shorter than) — the
+##   lunge ends it the moment she is inside the stand-off, so a walker who comes in has about a tenth
+##   of a second between his turning and his lunge, and one who stands still at his edge about a fifth
+##   — and then chases at 130px/s until she has shaken him off. Walking away does not work and
+##   running away does, which is exactly `charging_dog`'s contract arriving in act III as a *place* rather than a moment.
 ##
 ## The alley is the warning, and it is not the only one.
 static func _alley_robbery() -> EventDef:

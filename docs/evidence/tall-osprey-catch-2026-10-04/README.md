@@ -50,30 +50,36 @@ Measured for the alley robber alone: his stand-off at 108, 112, 116, 120 and 130
 `lunge_reach` = stand-off less 78; every other pursuer, the day-3 dog included, keeps
 `Tuning.pursuit_standoff()` from its own catch. Same probe, same 200 seeds (`results.txt`, last three
 blocks). Runs of 200 that got away; `still` and `walk_away` are 0/200 in every row and
-`run_at_notice` is 200/200 in every row. Walk-in is the ground between his 140px notice and his
-lunge, walked at `WALK_SPEED` (92px/s).
+`run_at_notice` is 200/200 in every row. **Notice to lunge** is the time the real `EventInstance`
+takes from the frame he notices her (leaves waiting, turns to face her) to the frame his telegraph
+ends (he lunges), counted frame to frame at 60 steps a second. He is not still during it: he closes
+on her at his 130px/s until she is inside the stand-off, so the gap closes at 130 + 92 = 222px/s when
+she walks in (from 200px, at `WALK_SPEED` 92px/s) and at 130px/s when she stands at 139px, just
+inside his 140px notice. Her walk alone, `(140 - stand-off) / 92`, is not the notice: it would say 0.26s at 116px
+against the 0.117s measured, because he closes too.
 
-| catch | stand-off | walk-in notice to lunge | turn at lunge | turn at notice |
-|---|---|---|---|---|
-| 30 | 108 | 32px, 0.35s | 12 | 68 |
-| 30 | 112 | 28px, 0.30s | 14 | 67 |
-| 30 | 116 | 24px, 0.26s | 20 | 66 |
-| 30 | 120 | 20px, 0.22s | 28 | 66 |
-| 30 | 130 | 10px, 0.11s | 49 | 68 |
-| 26 | 108 | 32px, 0.35s | 14 | 73 |
-| 26 | 112 | 28px, 0.30s | 20 | 72 |
-| **26** | **116 (built)** | 24px, 0.26s | **28** | 70 |
-| 26 | 120 | 20px, 0.22s | 36 | 70 |
-| 26 | 130 | 10px, 0.11s | 56 | 74 |
-| 24 | 108 | 32px, 0.35s | 15 | 74 |
-| 24 | 112 | 28px, 0.30s | 21 | 74 |
-| 24 | 116 | 24px, 0.26s | 33 | 74 |
-| 24 | 120 | 20px, 0.22s | 43 | 74 |
-| 24 | 130 | 10px, 0.11s | 57 | 74 |
+| catch | stand-off | notice to lunge, walking in | notice to lunge, standing at 139px | turn at lunge | turn at notice |
+|---|---|---|---|---|---|
+| 30 | 108 | 0.150s | 0.267s | 12 | 68 |
+| 30 | 112 | 0.133s | 0.233s | 14 | 67 |
+| 30 | 116 | 0.117s | 0.200s | 20 | 66 |
+| 30 | 120 | 0.100s | 0.167s | 28 | 66 |
+| 30 | 130 | 0.050s | 0.100s | 49 | 68 |
+| 26 | 108 | 0.150s | 0.267s | 14 | 73 |
+| 26 | 112 | 0.133s | 0.233s | 20 | 72 |
+| **26** | **116 (built)** | 0.117s | 0.200s | **28** | 70 |
+| 26 | 120 | 0.100s | 0.167s | 36 | 70 |
+| 26 | 130 | 0.050s | 0.100s | 56 | 74 |
+| 24 | 108 | 0.150s | 0.267s | 15 | 74 |
+| 24 | 112 | 0.133s | 0.233s | 21 | 74 |
+| 24 | 116 | 0.117s | 0.200s | 33 | 74 |
+| 24 | 120 | 0.100s | 0.167s | 43 | 74 |
+| 24 | 130 | 0.050s | 0.100s | 57 | 74 |
 
 Moving the lunge out is what moves `turn_at_lunge` (14 to 28 to 36 to 56 at 26px of catch); the catch
-alone barely does. The cost is the notice: the further out the lunge, the less of a walk-in his
-notice is, down to 10px at 130px.
+alone barely does. The cost is the notice: the further out the lunge, the less time there is between
+his turning to face her and his lunge, down to 0.05s walking in (0.10s standing) at 130px, and 0.117s
+(0.200s) at the built 116px, where 108px leaves 0.150s (0.267s).
 
 **Built: the 26px catch with the 116px lunge** (`lunge_reach` 38) on `alley_robbery` and
 `robber_giving_chase` (the player, 2026-10-04: "116px, keep every rule"). It is the furthest lunge
@@ -99,7 +105,10 @@ Walking the built trap row (`tests/test_resistance.gd`'s own rig, from straight 
 311px): the badge rises at 0.05s, he is on screen at 0.77s, standing still he lunges at 1.52s and
 catches her at 2.20s; walking directly away he catches her at 7.50s.
 
-The chalk mark's guard placement is stated over `pursues_within` (140px) and his catch, not the
-stand-off, so it is unaffected: the guard stays outside his notice range of a touch at the mark.
+The chalk mark's guard placement reads his catch (26px plus the 36px touch reach) and his notice
+(`pursues_within` 140px plus that reach), never the stand-off, so the longer lunge does not move him.
+Under "Two-thirds wins" (inbox #471) the guard in a one-block alley stands about 155px from the mark,
+inside that 176px: reading the mark may wake him, which `docs/NARRATIVE.md` ("Risk") says too. His
+notice range is not kept clear of the mark.
 
 **Limits.** One straight line, no corners; the real alley is met at other angles.

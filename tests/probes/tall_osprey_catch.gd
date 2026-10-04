@@ -43,8 +43,9 @@ func _def(catch_radius: float, lunge: float) -> EventDef:
 
 func _report(catch_radius: float, lunge: float) -> void:
 	var standoff := Tuning.pursuit_standoff(130.0, _def(catch_radius, lunge).standoff_reach())
-	var out := "catch %4.0f  standoff %5.1f  walk-in %4.1fpx %.2fs |" % [catch_radius, standoff,
-			140.0 - standoff, (140.0 - standoff) / (Tuning.WALK_SPEED + 0.0)]
+	var out := "catch %4.0f  standoff %5.1f  notice-to-lunge walking in %.3fs standing %.3fs |" % [
+			catch_radius, standoff, _notice_to_lunge(_def(catch_radius, lunge), true),
+			_notice_to_lunge(_def(catch_radius, lunge), false)]
 	for mode in ["still", "walk_away", "run_at_notice", "turn_at_lunge", "turn_at_notice"]:
 		var got_away := 0
 		for seed_i in SEEDS:
@@ -54,6 +55,32 @@ func _report(catch_radius: float, lunge: float) -> void:
 				got_away += 1
 		out += " %s %2d/%d |" % [mode, got_away, SEEDS]
 	print(out)
+
+## **The notice she really gets**: seconds from the frame (counted frame to frame, so a lunge on the
+## frame after the notice reads one step, 0.017s) the real `EventInstance` leaves waiting (he
+## turns to face her) to the frame its telegraph ends (he lunges). He is not still during it: he
+## closes on her at `pursue_speed` until she is at the stand-off, so the gap closes at 130 + 92px/s
+## when she walks in (from 200px, at `WALK_SPEED`) and at 130px/s when she stands at 139px, just
+## inside his 140px notice. Not the `(140 - stand-off) / WALK_SPEED` of her walk alone.
+func _notice_to_lunge(def: EventDef, walking: bool) -> float:
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	var her := Vector2(200.0 if walking else 139.0, 0.0)
+	var noticed := -1.0
+	var elapsed := 0.0
+	var result := -1.0
+	while elapsed < 6.0 and result < 0.0:
+		if walking:
+			her.x -= Tuning.WALK_SPEED * STEP
+		instance.player_at = her
+		instance._process(STEP)
+		elapsed += STEP
+		if noticed < 0.0 and not instance.is_waiting():
+			noticed = elapsed
+		if noticed >= 0.0 and not instance.is_telegraphing():
+			result = elapsed - noticed
+	instance.free()
+	return result
 
 ## One chase. She starts 170-230px out walking in (or still), the robber notices at 140.
 func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:

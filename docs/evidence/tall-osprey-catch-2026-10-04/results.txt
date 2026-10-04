@@ -1,36 +1,36 @@
 == follows the catch ==
-catch   30  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 68/200 |
-catch   28  standoff 106.0  walk-in 34.0px 0.37s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 70/200 |
-catch   26  standoff 104.0  walk-in 36.0px 0.39s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 74/200 |
-catch   24  standoff 102.0  walk-in 38.0px 0.41s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 76/200 |
-catch   22  standoff 100.0  walk-in 40.0px 0.43s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 80/200 |
-catch   20  standoff  98.0  walk-in 42.0px 0.46s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 80/200 |
-catch   18  standoff  96.0  walk-in 44.0px 0.48s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 85/200 |
-catch   16  standoff  94.0  walk-in 46.0px 0.50s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 85/200 |
+catch   30  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 68/200 |
+catch   28  standoff 106.0  notice-to-lunge walking in 0.167s standing 0.283s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 70/200 |
+catch   26  standoff 104.0  notice-to-lunge walking in 0.167s standing 0.300s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 74/200 |
+catch   24  standoff 102.0  notice-to-lunge walking in 0.183s standing 0.317s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 76/200 |
+catch   22  standoff 100.0  notice-to-lunge walking in 0.200s standing 0.317s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 80/200 |
+catch   20  standoff  98.0  notice-to-lunge walking in 0.200s standing 0.333s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 80/200 |
+catch   18  standoff  96.0  notice-to-lunge walking in 0.217s standing 0.350s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 85/200 |
+catch   16  standoff  94.0  notice-to-lunge walking in 0.217s standing 0.367s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 85/200 |
 == held: lunge_reach 30 (108px) ==
-catch   30  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 68/200 |
-catch   28  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 13/200 | turn_at_notice 68/200 |
-catch   26  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 14/200 | turn_at_notice 73/200 |
-catch   24  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 15/200 | turn_at_notice 74/200 |
-catch   22  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 20/200 | turn_at_notice 78/200 |
-catch   20  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 23/200 | turn_at_notice 80/200 |
-catch   18  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 28/200 | turn_at_notice 82/200 |
-catch   16  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 31/200 | turn_at_notice 85/200 |
+catch   30  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 68/200 |
+catch   28  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 13/200 | turn_at_notice 68/200 |
+catch   26  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 14/200 | turn_at_notice 73/200 |
+catch   24  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 15/200 | turn_at_notice 74/200 |
+catch   22  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 20/200 | turn_at_notice 78/200 |
+catch   20  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 23/200 | turn_at_notice 80/200 |
+catch   18  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 28/200 | turn_at_notice 82/200 |
+catch   16  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 31/200 | turn_at_notice 85/200 |
 == catch 30, lunge moved out ==
-catch   30  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 68/200 |
-catch   30  standoff 112.0  walk-in 28.0px 0.30s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 14/200 | turn_at_notice 67/200 |
-catch   30  standoff 116.0  walk-in 24.0px 0.26s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 20/200 | turn_at_notice 66/200 |
-catch   30  standoff 120.0  walk-in 20.0px 0.22s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 28/200 | turn_at_notice 66/200 |
-catch   30  standoff 130.0  walk-in 10.0px 0.11s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 49/200 | turn_at_notice 68/200 |
+catch   30  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 12/200 | turn_at_notice 68/200 |
+catch   30  standoff 112.0  notice-to-lunge walking in 0.133s standing 0.233s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 14/200 | turn_at_notice 67/200 |
+catch   30  standoff 116.0  notice-to-lunge walking in 0.117s standing 0.200s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 20/200 | turn_at_notice 66/200 |
+catch   30  standoff 120.0  notice-to-lunge walking in 0.100s standing 0.167s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 28/200 | turn_at_notice 66/200 |
+catch   30  standoff 130.0  notice-to-lunge walking in 0.050s standing 0.100s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 49/200 | turn_at_notice 68/200 |
 == catch 26, lunge moved out ==
-catch   26  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 14/200 | turn_at_notice 73/200 |
-catch   26  standoff 112.0  walk-in 28.0px 0.30s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 20/200 | turn_at_notice 72/200 |
-catch   26  standoff 116.0  walk-in 24.0px 0.26s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 28/200 | turn_at_notice 70/200 |
-catch   26  standoff 120.0  walk-in 20.0px 0.22s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 36/200 | turn_at_notice 70/200 |
-catch   26  standoff 130.0  walk-in 10.0px 0.11s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 56/200 | turn_at_notice 74/200 |
+catch   26  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 14/200 | turn_at_notice 73/200 |
+catch   26  standoff 112.0  notice-to-lunge walking in 0.133s standing 0.233s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 20/200 | turn_at_notice 72/200 |
+catch   26  standoff 116.0  notice-to-lunge walking in 0.117s standing 0.200s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 28/200 | turn_at_notice 70/200 |
+catch   26  standoff 120.0  notice-to-lunge walking in 0.100s standing 0.167s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 36/200 | turn_at_notice 70/200 |
+catch   26  standoff 130.0  notice-to-lunge walking in 0.050s standing 0.100s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 56/200 | turn_at_notice 74/200 |
 == catch 24, lunge moved out ==
-catch   24  standoff 108.0  walk-in 32.0px 0.35s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 15/200 | turn_at_notice 74/200 |
-catch   24  standoff 112.0  walk-in 28.0px 0.30s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 21/200 | turn_at_notice 74/200 |
-catch   24  standoff 116.0  walk-in 24.0px 0.26s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 33/200 | turn_at_notice 74/200 |
-catch   24  standoff 120.0  walk-in 20.0px 0.22s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 43/200 | turn_at_notice 74/200 |
-catch   24  standoff 130.0  walk-in 10.0px 0.11s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 57/200 | turn_at_notice 74/200 |
+catch   24  standoff 108.0  notice-to-lunge walking in 0.150s standing 0.267s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 15/200 | turn_at_notice 74/200 |
+catch   24  standoff 112.0  notice-to-lunge walking in 0.133s standing 0.233s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 21/200 | turn_at_notice 74/200 |
+catch   24  standoff 116.0  notice-to-lunge walking in 0.117s standing 0.200s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 33/200 | turn_at_notice 74/200 |
+catch   24  standoff 120.0  notice-to-lunge walking in 0.100s standing 0.167s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 43/200 | turn_at_notice 74/200 |
+catch   24  standoff 130.0  notice-to-lunge walking in 0.050s standing 0.100s | still  0/200 | walk_away  0/200 | run_at_notice 200/200 | turn_at_lunge 57/200 | turn_at_notice 74/200 |

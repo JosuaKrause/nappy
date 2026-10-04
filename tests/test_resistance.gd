@@ -1270,7 +1270,7 @@ static func _is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 ## Over every through-alley tile of six cities, the guard `_guard_position()` stands for a mark
 ## (the placement `_maybe_set_a_trap()` and every relocation make) is on the alley's own axis,
 ## two-thirds of its length from the edge nearer the mark — or, where that point is within 62px of
-## the mark (his catch and the touch reach), 66px past the mark. Every alley here is one block
+## the mark (his catch and the touch reach), 62px past the mark. Every alley here is one block
 ## long, so this is the short case on every mark: he stands two-thirds in although that is under
 ## 176px from the mark, which the test counts so it is not vacuous. Before, he stood at the far end
 ## tile or up to three tiles in from it, at least 176px from the mark where the alley allowed.

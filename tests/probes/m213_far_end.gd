@@ -10,7 +10,7 @@ extends RefCounted
 ## mouth, up to 34px short of the mark on its near side — inside `ContactPoint.REACH` (36px), so the
 ## mark is read — and back out the way she came, in 8px steps. A bare `alley_robbery` stands where
 ## a draw put him; the walk counts as reaching the mark when he is still `is_waiting()` at the end.
-## Four draws on the same marks: the whole circle of the 66-176px band around the mark (no far-end
+## Four draws on the same marks: the whole circle of the 62-176px band around the mark (no far-end
 ## rule at all), the same band with the bearing leaning toward the far end, and the director's own
 ## `_draw_guard_position_near_far_mouth()`.
 ##
@@ -161,7 +161,7 @@ func _reachability(t) -> void:
 	for i in 3:
 		var total: int = asleep["through"][i] + asleep["passage"][i]
 		var all: int = counted["through"] + counted["passage"]
-		print("[m213] all      %-16s asleep %4d of %4d (%.0f%%), inside 66px of the mark %d"
+		print("[m213] all      %-16s asleep %4d of %4d (%.0f%%), inside 62px of the mark %d"
 				% [names[i], total, all, 100.0 * total / maxf(1.0, all), too_close[i]])
 	t.check(true, "probe ran")
 
