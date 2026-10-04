@@ -1119,9 +1119,10 @@ func _far_alley_mouth(at: Vector2) -> Vector2:
 ## a matter of picking a tile type, and a `SCAR` fallback stands on a front day 3's fire could have
 ## caught on (`_fronts_a_fire_catches_on()`), since a building has to be behind it to burn.
 ##
-## **A task is placed near the mark that unlocked it** (`mark`, where she read it; `_pick_near()`):
-## the man shouting, the van, a roadblock, day 11's mast and day 8's burnt building when the run has
-## no fire of its own. *(feathery-marmot: "the van should spawn close to the mark not across the
+## **A task is placed near the mark that unlocked it** (`mark`; `_pick_near()`), where one of her
+## paths from where she read it first reaches the edge of a `NEAR_THE_MARK` circle round her
+## (`_follow_the_paths_to_the_edge()`): the man shouting, the van, a roadblock, day 11's mast and
+## day 8's burnt building when the run has no fire of its own. *(feathery-marmot: "the van should spawn close to the mark not across the
 ## city" · "this applies to almost all tasks".)* The ones whose place is fixed keep it: day 9's
 ## district door, day 12's swing park and the last night's station door are drawn from their own
 ## pools as before, day 10's neighbor walks home from wherever `_send_the_neighbor_home()` starts
@@ -1185,14 +1186,50 @@ static func is_alley_mouth(map: CityMap, tile: Vector2i) -> bool:
 			return true
 	return false
 
-## How far from the mark she read a task may be placed: **the mark's own block or the next one**,
-## measured as a straight line from the mark — one block and the street beside it
-## (`Tuning.BLOCK_SIZE` + `Tuning.STREET_WIDTH`, 14 tiles) plus half a block, 18 tiles, 576px. From a
-## mark in the middle of its block that reaches every tile of the block itself and of the next
-## block over on each side, and the streets between; a diagonal neighbor's near half. Chosen by the
-## agent that built it, open to overturn: the player's words are "close to the mark".
+## The radius of the circle round her a task is placed on the edge of: one block and the street
+## beside it (`Tuning.BLOCK_SIZE` + `Tuning.STREET_WIDTH`, 14 tiles) plus half a block, 18 tiles,
+## 576px — the mark's own block or the next one. *(The player: "576px and larger".)*
 const NEAR_THE_MARK := (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH + Tuning.BLOCK_SIZE / 2.0) \
 		* Tuning.TILE_SIZE
+
+## **Where her paths first reach the edge of the circle** of `NEAR_THE_MARK` round `her`, where she
+## read the mark, and the ground inside it they cross on the way: walked tile by tile from her own
+## tile over walkable ground the day's obstruction leaves open (`_reach_blocked`), going on only
+## from a tile inside the circle, so each tile at or past its edge is the first a path reaches it
+## at. *(The player: "create a circle around the current player position with the radius of the
+## desired distance -- then follow the path until it reaches the edge of the circle" · "no need to
+## special case straight runs or anything like that".)* `_circle_edge` and `_circle_inside` hold the
+## answer for the placement that follows; both are empty before one is measured.
+func _follow_the_paths_to_the_edge(her: Vector2) -> void:
+	_ensure_reachability()
+	_circle_edge = {}
+	_circle_inside = {}
+	var start := _map.world_to_tile(her)
+	if not _map.is_walkable(start):
+		return
+	var centre := _map.tile_to_world(start)
+	_circle_inside[start] = true
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	while head < queue.size():
+		var tile: Vector2i = queue[head]
+		head += 1
+		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + step
+			if _circle_inside.has(next) or _circle_edge.has(next):
+				continue
+			if not _map.is_walkable(next) or _reach_blocked.has(next):
+				continue
+			if _map.tile_to_world(next).distance_to(centre) >= NEAR_THE_MARK:
+				_circle_edge[next] = true
+				continue
+			_circle_inside[next] = true
+			queue.append(next)
+
+## The tiles where a path from her first reaches the circle's edge (`_follow_the_paths_to_the_edge()`)
+## and the tiles inside it those paths cross. `tile -> true`.
+var _circle_edge := {}
+var _circle_inside := {}
 
 ## Half the box a task's rider is kept out of her view by when it is placed, around the tile it
 ## stands on: three tiles either side and four up and down — more than a roadblock's 60px band and
@@ -1204,29 +1241,40 @@ const NEAR_THE_MARK := (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH + Tuning.BLOCK_S
 ## rather than nearer, "Keep off-screen" (2026-10-04).
 const TASK_HALF_EXTENT := Vector2(3.0, 4.0) * Tuning.TILE_SIZE
 
-## A tile from `candidates` near `mark` — within `NEAR_THE_MARK` of it and off her screen
-## (`TASK_HALF_EXTENT`), drawn as `_pick_reachable()` draws, with every refusal it makes. When
-## nothing there qualifies, the qualifying tile nearest the mark anywhere in `candidates` stands in
-## (`_nearest_to_the_mark()`), so a task is never left with nowhere to go for being too far. With no
-## mark (`Vector2.INF`: a rig that places a task without reading one) the whole pool is drawn from,
-## as before.
+## A tile from `candidates` where one of her paths first reaches the edge of the circle round her
+## (`_follow_the_paths_to_the_edge()`), off her screen (`TASK_HALF_EXTENT`), drawn as
+## `_pick_reachable()` draws, with every refusal it makes. When no candidate stands on the edge, the
+## qualifying tile nearest the mark anywhere in `candidates` stands in (`_nearest_to_the_mark()`),
+## so a task is never left with nowhere to go. With no mark (`Vector2.INF`: a rig that places a task
+## without reading one) the whole pool is drawn from, as before.
 func _pick_near(candidates: Array[Vector2i], rng: RandomNumberGenerator, mark: Vector2) -> Vector2:
 	if mark == Vector2.INF:
 		return _pick_reachable(candidates, rng)
+	_follow_the_paths_to_the_edge(_where_she_read_it(mark))
 	var near: Array[Vector2i] = []
 	for tile in candidates:
-		var world := _map.tile_to_world(tile)
-		if world.distance_to(mark) > NEAR_THE_MARK or _box_shows(world, TASK_HALF_EXTENT):
+		if not _circle_edge.has(tile) or _box_shows(_map.tile_to_world(tile), TASK_HALF_EXTENT):
 			continue
 		near.append(tile)
 	var at := _pick_reachable(near, rng)
+	_fell_back = at == Vector2.INF
 	if at != Vector2.INF:
 		return at
 	var nearest := _nearest_to_the_mark(candidates, mark)
-	Telemetry.note("contact", "nothing within %.0fpx of the mark qualifies; the nearest that does is %s"
-			% [NEAR_THE_MARK, "none" if nearest == Vector2.INF
+	Telemetry.note("contact", ("nothing qualifies where a path reaches the %.0fpx circle round her; " +
+			"the nearest that does is %s") % [NEAR_THE_MARK, "none" if nearest == Vector2.INF
 			else "%.0fpx away" % nearest.distance_to(mark)])
 	return nearest
+
+## Where she stands as she reads the mark at `mark`: her own position, or the mark with no player in
+## the tree (a bare director in a rig).
+func _where_she_read_it(mark: Vector2) -> Vector2:
+	var her := _player_position()
+	return her if her != Vector2.INF else mark
+
+## Whether the last task placed near a mark fell back to the nearest place, no candidate standing
+## where a path reaches the circle's edge — for the run log and the tests.
+var _fell_back := false
 
 ## The tile of `candidates` nearest `mark` that every placement refusal here leaves alone — legal
 ## ground (`is_legal_ground()`), no body on it, reachable from home, off her screen — or
@@ -1370,8 +1418,9 @@ static func station_door_point(map: CityMap) -> Vector2:
 ## after a won attempt could meet; the draw is over the plans in the day's own order, so the same
 ## day draws the same mast every time.
 ##
-## **Near the mark she read** (`mark`; `_place()` says why): only the masts whose foot is within
-## `NEAR_THE_MARK` of it are drawn among. **When none is, the day adds one** near the mark
+## **Near the mark she read** (`mark`; `_place()` says why): only the masts she reaches by following
+## a path from where she read it to the edge of the circle round her (`_follow_the_paths_to_the_edge()`,
+## the tile beside the foot inside the circle or on its edge) are drawn among. **When none is, the day adds one** near the mark
 ## (`_add_a_mast_near()`, `EventManager.add_mast()`) — the city's six fixed sites (M180's "the same
 ## sites every day") leave most marks with no mast near, and the player chose a new mast over a far
 ## one: *"The 6 masts rule is stupid anyway. It doesn't come from me. And it actually makes it
@@ -1403,6 +1452,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 	if offered.is_empty():
 		return Vector2.INF
 	if mark != Vector2.INF:
+		_follow_the_paths_to_the_edge(_where_she_read_it(mark))
 		var near_plans: Array[EventScheduler.Planned] = []
 		var near_beside: Array[Vector2i] = []
 		var nearest := 0
@@ -1410,14 +1460,16 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 			var distance := _map.tile_to_world(beside[i]).distance_to(mark)
 			if distance < _map.tile_to_world(beside[nearest]).distance_to(mark):
 				nearest = i
-			if distance <= NEAR_THE_MARK:
+			if _circle_inside.has(beside[i]) or _circle_edge.has(beside[i]):
 				near_plans.append(offered[i])
 				near_beside.append(beside[i])
+		_fell_back = false
 		if near_plans.is_empty():
 			var added := _add_a_mast_near(mark, rng)
 			if not added.is_empty():
 				_mast_id = EventScheduler.added_mast_id(_map.tile_to_world(added[0]))
 				return _map.tile_to_world(added[0])
+			_fell_back = true
 			near_plans.append(offered[nearest])
 			near_beside.append(beside[nearest])
 		offered = near_plans
@@ -1426,13 +1478,14 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 	_mast_id = offered[index].mast_id
 	return offered[index].position
 
-## Puts one more mast near `mark` for day 11's task, when no live mast stands within
-## `NEAR_THE_MARK` of it (`_place_at_a_mast()`), and answers `[its foot, the tile beside it she
+## Puts one more mast near `mark` for day 11's task, when no live mast stands where her paths reach
+## within the circle round her (`_place_at_a_mast()`), and answers `[its foot, the tile beside it she
 ## touches it from]`, or `[]` when no ground near the mark can take one. The foot is a sidewalk or
 ## square tile, the ground `MastSites` stands every mast on, drawn by the day's RNG among those
 ## that:
 ##
-## - are within `NEAR_THE_MARK` of the mark, beside tile included, and out of her view
+## - stand where one of her paths first reaches the edge of the circle round her
+##   (`_circle_edge`), with the tile beside them reached too, and out of her view
 ##   (`TASK_HALF_EXTENT`), so it is never seen to appear;
 ## - pass every refusal a contact's ground passes (`is_legal_ground()`, no body on it, reachable
 ##   from home), with a tile beside the foot that does too;
@@ -1455,8 +1508,7 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 	for type: GameEnums.TileType in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]:
 		for tile in _map.tiles_of_type(type):
 			var world := _map.tile_to_world(tile)
-			if world.distance_to(mark) > NEAR_THE_MARK - Tuning.TILE_SIZE \
-					or _box_shows(world, TASK_HALF_EXTENT):
+			if not _circle_edge.has(tile) or _box_shows(world, TASK_HALF_EXTENT):
 				continue
 			if not is_legal_ground(_map, tile, walled_alleys) or _map.is_obstructed(tile) \
 					or not _reachable_from_home(tile):
@@ -1468,12 +1520,13 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 			for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 				var next := tile + side
 				if is_legal_ground(_map, next, walled_alleys) and not _map.is_obstructed(next) \
-						and _reachable_from_home(next):
+						and _reachable_from_home(next) \
+						and (_circle_edge.has(next) or _circle_inside.has(next)):
 					feet.append(tile)
 					besides.append(next)
 					break
 	if feet.is_empty():
-		Telemetry.note("contact", "no ground within %.0fpx of the mark can take a mast"
+		Telemetry.note("contact", "no ground where her paths reach the %.0fpx circle can take a mast"
 				% NEAR_THE_MARK)
 		return added
 	var index := rng.randi_range(0, feet.size() - 1)

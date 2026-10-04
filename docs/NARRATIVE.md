@@ -162,13 +162,15 @@ reaches is the right one. The rest are one place, and get the red arrow, `HomeAr
 in a color of its own (`Palette.TASK_ARROW`) — a decided exception to *no quest log or marker for
 the resistance*, narrowed to a task with exactly one place to be.
 
-**A task is near its mark.** The man shouting the task puts in the street, the van, a roadblock,
-day 11's mast and the building burnt for a run with no day-3 fire all stand within
-`ResistanceDirector.NEAR_THE_MARK` (576px, 18 tiles: the mark's own block or the next one) of where
-she read the mark, and out of her view when they are put there (*"Nothing may be seen to
-appear"*, `docs/EVENTS.md`; the player, asked whether to keep that at the cost of most tasks
-landing near the edge of that reach: "Keep off-screen"); when nothing that near qualifies,
-the nearest place that does. The places that are fixed keep them: day 9's district door, day 12's
+**A task is near its mark.** The man shouting the task puts in the street, the van, a roadblock
+and the building burnt for a run with no day-3 fire stand where one of her paths from where she
+read the mark first reaches the edge of a circle of `ResistanceDirector.NEAR_THE_MARK` (576px, 18
+tiles: the mark's own block or the next one) round her, drawn among those places — *"create a
+circle around the current player position with the radius of the desired distance -- then follow
+the path until it reaches the edge of the circle"* — and out of her view when they are put there
+(*"Nothing may be seen to appear"*, `docs/EVENTS.md`; the player: "Keep off-screen"); day 11's
+mast is one her paths reach inside that circle, or one put up on its edge. When nothing on the
+edge qualifies, the nearest place that does. The places that are fixed keep them: day 9's district door, day 12's
 swing park, the neighbor on the walk home, the last night's station door, and the building a run's
 own day-3 fire burned. *(2026-10-03, minty-hedgehog, statement 3: "the van should spawn close to the
 mark not across the city" · "this applies to almost all tasks".)* **A task with a body is touched

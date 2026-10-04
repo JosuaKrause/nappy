@@ -4159,14 +4159,18 @@ func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Strolle
 ## three cities, each day whose task is placed rather than fixed — day 6's man shouting, day 7's
 ## van, day 8's burnt building on a run with no day-3 fire, day 11's mast, day 13's roadblock — is
 ## planned the way a played day is and its mark read standing on it, the screen her view around
-## her: the task lands within `ResistanceDirector.NEAR_THE_MARK` of the mark, and a task put in the
-## world is put outside her view. Day 11's mast stands near only where a mast does; where none is
-## near, it is the nearest live mast she can reach. Before, every one was drawn from a pool across
-## the whole city.
+## her: the task lands where one of her paths first reaches the edge of a
+## `ResistanceDirector.NEAR_THE_MARK` (576px) circle round her — worked out here by its own walk
+## over the day's obstruction (`_edge_of_her_circle()`) — or the director says nothing on the edge
+## qualified; day 11's mast is one her paths reach inside or on that circle; and a task put in the
+## world is put outside her view. *("create a circle around the current player position with the
+## radius of the desired distance -- then follow the path until it reaches the edge of the
+## circle".)* Before, it was drawn anywhere within 576px as the crow flies.
 func _test_a_task_is_placed_near_its_mark(t) -> void:
 	var saved_scars := GameState.scars.duplicate()
 	var saved_state := GameState.city_state
 	var checked := [0]
+	var fell_back := [0]
 	for seed_value: int in [SEED, 90210, 1234567]:
 		_build_city(t, seed_value)
 		_with_clean_run(func() -> void:
@@ -4184,17 +4188,19 @@ func _test_a_task_is_placed_near_its_mark(t) -> void:
 					var mast := step.target_kind == ResistanceSteps.TargetKind.MAST
 					var target := director.contact_position() if mast or director._rider == null \
 							else director._rider.global_position
-					var distance := target.distance_to(mark)
-					if mast and distance > ResistanceDirector.NEAR_THE_MARK:
-						t.check(_no_live_mast_nearer(director, mark, distance),
-								("seed %d day 11: no mast stands near the mark, and the one it " +
-								"sends her to (%.0fpx away) is the nearest live one")
-								% [seed_value, distance])
-					else:
-						t.check(distance <= ResistanceDirector.NEAR_THE_MARK,
-								("seed %d day %d: the task stands %.0fpx from the mark, within " +
-								"%.0fpx") % [seed_value, day, distance,
-								ResistanceDirector.NEAR_THE_MARK])
+					var circle := _edge_of_her_circle(director, mark)
+					var on_it := false
+					var centre := _city.map.world_to_tile(target)
+					for step_to: Vector2i in [Vector2i.ZERO, Vector2i.LEFT, Vector2i.RIGHT,
+							Vector2i.UP, Vector2i.DOWN]:
+						var tile := centre + step_to
+						if circle[0].has(tile) or (mast and circle[1].has(tile)):
+							on_it = true
+					t.check(on_it or director._fell_back,
+							("seed %d day %d: the task stands where her path reaches the circle's " +
+							"edge, or nothing there qualified") % [seed_value, day])
+					if director._fell_back:
+						fell_back[0] += 1
 					if not mast:
 						t.check(not director._box_shows(target, ResistanceDirector.TASK_HALF_EXTENT),
 								"seed %d day %d: and was put in the world outside her view"
@@ -4203,11 +4209,38 @@ func _test_a_task_is_placed_near_its_mark(t) -> void:
 				director.free())
 	GameState.scars = saved_scars
 	GameState.city_state = saved_state
-	t.check(checked[0] > 0, "some task was actually placed (%d)" % checked[0])
+	t.check(checked[0] > 0 and fell_back[0] * 3 < checked[0],
+			"tasks were placed (%d), most on the edge rather than by the fallback (%d)"
+			% [checked[0], fell_back[0]])
+
+## `[edge, inside]`, each `tile -> true`: walked tile by tile from her tile at `her` over walkable
+## ground the day's obstruction (`director._reach_blocked`) leaves open, going on only from a tile
+## inside the `NEAR_THE_MARK` circle round her — a tile at or past its edge is where that path
+## reaches the edge.
+func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
+	var map := _city.map
+	var start := map.world_to_tile(her)
+	var centre := map.tile_to_world(start)
+	var edge := {}
+	var inside := {start: true}
+	var queue: Array[Vector2i] = [start]
+	while not queue.is_empty():
+		var tile: Vector2i = queue.pop_back()
+		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + step
+			if inside.has(next) or edge.has(next) or not map.is_walkable(next) \
+					or director._reach_blocked.has(next):
+				continue
+			if map.tile_to_world(next).distance_to(centre) >= ResistanceDirector.NEAR_THE_MARK:
+				edge[next] = true
+			else:
+				inside[next] = true
+				queue.append(next)
+	return [edge, inside]
 
 ## feathery-marmot, day 11 — *"Now just add a new mast close by"* (the player, 2026-10-04, on a
 ## mark with no live mast near it). On three cities, day 11 is planned the way a played day is and
-## its mark read standing on it: where no planned mast stands within `NEAR_THE_MARK` of the mark,
+## its mark read standing on it: where no planned mast stands where her paths reach in the circle,
 ## the task goes to a mast the day has just put up — a `loudspeaker` plan under
 ## `EventScheduler.added_mast_id()`, its foot within reach of the mark and out of her view. Reaching
 ## it silences it and records its scar; `silence_all_masts()` (day 14) counts it; and the next day's
@@ -4225,17 +4258,29 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 			var director: ResistanceDirector = read[0]
 			var mark: Vector2 = read[1]
 			var player: Stroller = read[2]
+			var circle := _edge_of_her_circle(director, mark)
 			var site_near := false
 			for plan in _city.events.plans():
-				if plan.def.id == "loudspeaker" and not plan.mast_id.begins_with("added-") \
-						and plan.position.distance_to(mark) <= ResistanceDirector.NEAR_THE_MARK:
-					site_near = true
+				if plan.def.id != "loudspeaker" or plan.mast_id.begins_with("added-") or plan.silenced:
+					continue
+				var foot_tile := _city.map.world_to_tile(plan.position)
+				# The tile she touches it from: the first beside the foot she can stand on, the
+				# order `_place_at_a_mast()` asks them in.
+				for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+					var next := foot_tile + side
+					if not ResistanceDirector.is_legal_ground(_city.map, next,
+							director._walled_alleys()) or _city.map.is_obstructed(next) \
+							or not director._reachable_from_home(next):
+						continue
+					if circle[0].has(next) or circle[1].has(next):
+						site_near = true
+					break
 			if not site_near and director._mast_id.begins_with("added-"):
 				added[0] += 1
 				var foot := _city.events.mast_foot(director._mast_id)
-				t.check(foot != Vector2.INF and foot.distance_to(mark) <= ResistanceDirector.NEAR_THE_MARK,
-						"seed %d: the mast put up for the task stands %.0fpx from the mark"
-						% [seed_value, foot.distance_to(mark)])
+				t.check(foot != Vector2.INF and circle[0].has(_city.map.world_to_tile(foot)),
+						"seed %d: the mast put up for the task stands where her path reaches the circle's edge"
+						% seed_value)
 				t.check(not director._box_shows(foot, ResistanceDirector.TASK_HALF_EXTENT),
 						"seed %d: and out of her view" % seed_value)
 				var masts_before := _city.events.plans().filter(
@@ -4291,24 +4336,6 @@ func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
 	if step != null and step.is_pickup:
 		director._on_contact_completed(step.index)
 	return [director, mark, player]
-
-## Whether no live, unsilenced mast's foot she could stand beside stands nearer `mark` than the one
-## today's task is at, `distance` from it — a tile's slack, since the task stands beside the foot.
-func _no_live_mast_nearer(director: ResistanceDirector, mark: Vector2, distance: float) -> bool:
-	for plan in _city.events.plans():
-		if plan.mast_id == "" or plan.def.id != "loudspeaker" or plan.silenced \
-				or not plan.is_placed() or plan.mast_id == director._mast_id:
-			continue
-		var foot := _city.map.world_to_tile(plan.position)
-		var standable := false
-		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-			var tile := foot + side
-			if ResistanceDirector.is_legal_ground(_city.map, tile, director._walled_alleys()) \
-					and not _city.map.is_obstructed(tile) and director._reachable_from_home(tile):
-				standable = true
-		if standable and plan.position.distance_to(mark) + Tuning.TILE_SIZE < distance:
-			return false
-	return true
 
 const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
 const REACHABILITY_SWEEP_DAYS := [6, 7, 8, 9, 10, 11, 12, 13]
