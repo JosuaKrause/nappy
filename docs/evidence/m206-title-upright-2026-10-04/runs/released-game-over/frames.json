@@ -1,0 +1,450 @@
+[
+ {
+  "name": "frame-000-0ms.jpg",
+  "ms": 0
+ },
+ {
+  "name": "frame-001-140ms.jpg",
+  "ms": 140
+ },
+ {
+  "name": "frame-002-219ms.jpg",
+  "ms": 219
+ },
+ {
+  "name": "frame-003-329ms.jpg",
+  "ms": 329
+ },
+ {
+  "name": "frame-004-405ms.jpg",
+  "ms": 405
+ },
+ {
+  "name": "frame-005-461ms.jpg",
+  "ms": 461
+ },
+ {
+  "name": "frame-006-536ms.jpg",
+  "ms": 536
+ },
+ {
+  "name": "frame-007-596ms.jpg",
+  "ms": 596
+ },
+ {
+  "name": "frame-008-654ms.jpg",
+  "ms": 654
+ },
+ {
+  "name": "frame-009-722ms.jpg",
+  "ms": 722
+ },
+ {
+  "name": "frame-010-787ms.jpg",
+  "ms": 787
+ },
+ {
+  "name": "frame-011-847ms.jpg",
+  "ms": 847
+ },
+ {
+  "name": "frame-012-935ms.jpg",
+  "ms": 935
+ },
+ {
+  "name": "frame-013-1003ms.jpg",
+  "ms": 1003
+ },
+ {
+  "name": "frame-014-1084ms.jpg",
+  "ms": 1084
+ },
+ {
+  "name": "frame-015-1142ms.jpg",
+  "ms": 1142
+ },
+ {
+  "name": "frame-016-1220ms.jpg",
+  "ms": 1220
+ },
+ {
+  "name": "frame-017-1288ms.jpg",
+  "ms": 1288
+ },
+ {
+  "name": "frame-018-1343ms.jpg",
+  "ms": 1343
+ },
+ {
+  "name": "frame-019-1402ms.jpg",
+  "ms": 1402
+ },
+ {
+  "name": "frame-020-1452ms.jpg",
+  "ms": 1452
+ },
+ {
+  "name": "frame-021-1507ms.jpg",
+  "ms": 1507
+ },
+ {
+  "name": "frame-022-1592ms.jpg",
+  "ms": 1592
+ },
+ {
+  "name": "frame-023-1652ms.jpg",
+  "ms": 1652
+ },
+ {
+  "name": "frame-024-1745ms.jpg",
+  "ms": 1745
+ },
+ {
+  "name": "frame-025-1876ms.jpg",
+  "ms": 1876
+ },
+ {
+  "name": "frame-026-1962ms.jpg",
+  "ms": 1962
+ },
+ {
+  "name": "frame-027-2035ms.jpg",
+  "ms": 2035
+ },
+ {
+  "name": "frame-028-2168ms.jpg",
+  "ms": 2168
+ },
+ {
+  "name": "frame-029-2263ms.jpg",
+  "ms": 2263
+ },
+ {
+  "name": "frame-030-2330ms.jpg",
+  "ms": 2330
+ },
+ {
+  "name": "frame-031-2392ms.jpg",
+  "ms": 2392
+ },
+ {
+  "name": "frame-032-2516ms.jpg",
+  "ms": 2516
+ },
+ {
+  "name": "frame-033-2619ms.jpg",
+  "ms": 2619
+ },
+ {
+  "name": "frame-034-2693ms.jpg",
+  "ms": 2693
+ },
+ {
+  "name": "frame-035-2769ms.jpg",
+  "ms": 2769
+ },
+ {
+  "name": "frame-036-2845ms.jpg",
+  "ms": 2845
+ },
+ {
+  "name": "frame-037-2906ms.jpg",
+  "ms": 2906
+ },
+ {
+  "name": "frame-038-3003ms.jpg",
+  "ms": 3003
+ },
+ {
+  "name": "frame-039-3084ms.jpg",
+  "ms": 3084
+ },
+ {
+  "name": "frame-040-3243ms.jpg",
+  "ms": 3243
+ },
+ {
+  "name": "frame-041-3418ms.jpg",
+  "ms": 3418
+ },
+ {
+  "name": "frame-042-3514ms.jpg",
+  "ms": 3514
+ },
+ {
+  "name": "frame-043-3601ms.jpg",
+  "ms": 3601
+ },
+ {
+  "name": "frame-044-3683ms.jpg",
+  "ms": 3683
+ },
+ {
+  "name": "frame-045-3788ms.jpg",
+  "ms": 3788
+ },
+ {
+  "name": "frame-046-3875ms.jpg",
+  "ms": 3875
+ },
+ {
+  "name": "frame-047-3976ms.jpg",
+  "ms": 3976
+ },
+ {
+  "name": "frame-048-4047ms.jpg",
+  "ms": 4047
+ },
+ {
+  "name": "frame-049-4124ms.jpg",
+  "ms": 4124
+ },
+ {
+  "name": "frame-050-4190ms.jpg",
+  "ms": 4190
+ },
+ {
+  "name": "frame-051-4285ms.jpg",
+  "ms": 4285
+ },
+ {
+  "name": "frame-052-4372ms.jpg",
+  "ms": 4372
+ },
+ {
+  "name": "frame-053-4447ms.jpg",
+  "ms": 4447
+ },
+ {
+  "name": "frame-054-4568ms.jpg",
+  "ms": 4568
+ },
+ {
+  "name": "frame-055-4683ms.jpg",
+  "ms": 4683
+ },
+ {
+  "name": "frame-056-4801ms.jpg",
+  "ms": 4801
+ },
+ {
+  "name": "frame-057-6637ms.jpg",
+  "ms": 6637
+ },
+ {
+  "name": "frame-058-6752ms.jpg",
+  "ms": 6752
+ },
+ {
+  "name": "frame-059-8606ms.jpg",
+  "ms": 8606
+ },
+ {
+  "name": "frame-060-8654ms.jpg",
+  "ms": 8654
+ },
+ {
+  "name": "frame-061-8702ms.jpg",
+  "ms": 8702
+ },
+ {
+  "name": "frame-062-8755ms.jpg",
+  "ms": 8755
+ },
+ {
+  "name": "frame-063-8819ms.jpg",
+  "ms": 8819
+ },
+ {
+  "name": "frame-064-8917ms.jpg",
+  "ms": 8917
+ },
+ {
+  "name": "frame-065-8987ms.jpg",
+  "ms": 8987
+ },
+ {
+  "name": "frame-066-9046ms.jpg",
+  "ms": 9046
+ },
+ {
+  "name": "frame-067-9122ms.jpg",
+  "ms": 9122
+ },
+ {
+  "name": "frame-068-9194ms.jpg",
+  "ms": 9194
+ },
+ {
+  "name": "frame-069-9285ms.jpg",
+  "ms": 9285
+ },
+ {
+  "name": "frame-070-9376ms.jpg",
+  "ms": 9376
+ },
+ {
+  "name": "frame-071-9476ms.jpg",
+  "ms": 9476
+ },
+ {
+  "name": "frame-072-9556ms.jpg",
+  "ms": 9556
+ },
+ {
+  "name": "frame-073-9635ms.jpg",
+  "ms": 9635
+ },
+ {
+  "name": "frame-074-9718ms.jpg",
+  "ms": 9718
+ },
+ {
+  "name": "frame-075-9794ms.jpg",
+  "ms": 9794
+ },
+ {
+  "name": "frame-076-9851ms.jpg",
+  "ms": 9851
+ },
+ {
+  "name": "frame-077-9921ms.jpg",
+  "ms": 9921
+ },
+ {
+  "name": "frame-078-10004ms.jpg",
+  "ms": 10004
+ },
+ {
+  "name": "frame-079-10095ms.jpg",
+  "ms": 10095
+ },
+ {
+  "name": "frame-080-10173ms.jpg",
+  "ms": 10173
+ },
+ {
+  "name": "frame-081-10270ms.jpg",
+  "ms": 10270
+ },
+ {
+  "name": "frame-082-10336ms.jpg",
+  "ms": 10336
+ },
+ {
+  "name": "frame-083-10413ms.jpg",
+  "ms": 10413
+ },
+ {
+  "name": "frame-084-10497ms.jpg",
+  "ms": 10497
+ },
+ {
+  "name": "frame-085-10565ms.jpg",
+  "ms": 10565
+ },
+ {
+  "name": "frame-086-10651ms.jpg",
+  "ms": 10651
+ },
+ {
+  "name": "frame-087-10742ms.jpg",
+  "ms": 10742
+ },
+ {
+  "name": "frame-088-10879ms.jpg",
+  "ms": 10879
+ },
+ {
+  "name": "frame-089-11011ms.jpg",
+  "ms": 11011
+ },
+ {
+  "name": "frame-090-11158ms.jpg",
+  "ms": 11158
+ },
+ {
+  "name": "frame-091-11285ms.jpg",
+  "ms": 11285
+ },
+ {
+  "name": "frame-092-11362ms.jpg",
+  "ms": 11362
+ },
+ {
+  "name": "frame-093-11451ms.jpg",
+  "ms": 11451
+ },
+ {
+  "name": "frame-094-11506ms.jpg",
+  "ms": 11506
+ },
+ {
+  "name": "frame-095-11581ms.jpg",
+  "ms": 11581
+ },
+ {
+  "name": "frame-096-11636ms.jpg",
+  "ms": 11636
+ },
+ {
+  "name": "frame-097-11694ms.jpg",
+  "ms": 11694
+ },
+ {
+  "name": "frame-098-11748ms.jpg",
+  "ms": 11748
+ },
+ {
+  "name": "frame-099-11803ms.jpg",
+  "ms": 11803
+ },
+ {
+  "name": "frame-100-11871ms.jpg",
+  "ms": 11871
+ },
+ {
+  "name": "frame-101-11944ms.jpg",
+  "ms": 11944
+ },
+ {
+  "name": "frame-102-12005ms.jpg",
+  "ms": 12005
+ },
+ {
+  "name": "frame-103-12076ms.jpg",
+  "ms": 12076
+ },
+ {
+  "name": "frame-104-12136ms.jpg",
+  "ms": 12136
+ },
+ {
+  "name": "frame-105-12198ms.jpg",
+  "ms": 12198
+ },
+ {
+  "name": "frame-106-12261ms.jpg",
+  "ms": 12261
+ },
+ {
+  "name": "frame-107-12330ms.jpg",
+  "ms": 12330
+ },
+ {
+  "name": "frame-108-12388ms.jpg",
+  "ms": 12388
+ },
+ {
+  "name": "frame-109-12443ms.jpg",
+  "ms": 12443
+ },
+ {
+  "name": "frame-110-12501ms.jpg",
+  "ms": 12501
+ },
+ {
+  "name": "frame-111-12564ms.jpg",
+  "ms": 12564
+ }
+]

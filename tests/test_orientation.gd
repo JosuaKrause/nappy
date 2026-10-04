@@ -129,7 +129,7 @@ func _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t: Node) ->
 ## finding 6: "the focal points are in design space and the heading has to end up in world space
 ## ... the presentation rotates on a portrait phone".)* `main._apply_orientation()` rotates the
 ## camera the opposite way `ScreenOrientation.rotation_transform()` rotates the presentation
-## (`Stroller.set_screen_rotation()`: `_camera.rotation = -radians`), so the two cancel and a
+## (`ScreenOrientation.apply_to_camera()`: `camera.rotation = -90°`), so the two cancel and a
 ## design-space direction survives the round trip unchanged. Proven here by giving a bare rig the
 ## same compensating camera rotation `main.gd` would, rather than assuming `canvas_transform` is
 ## identity the way this suite's other rotation tests can — neither of those ever touches a focus.
@@ -139,9 +139,9 @@ func _test_a_rotated_touch_still_aims_from_the_nearer_focus_correctly(t: Node) -
 	t.add_child(rig)
 	var camera := Camera2D.new()
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
-	# `Camera2D.ignore_rotation` defaults to `true` — see `Stroller.set_screen_rotation()`'s own
-	# doc for why a camera's own rotation does nothing to the canvas transform unless this is
-	# turned off, which is exactly the mistake a first version of this test made.
+	# `Camera2D.ignore_rotation` defaults to `true` — see `ScreenOrientation.apply_to_camera()`'s
+	# own doc for why a camera's own rotation does nothing to the canvas transform unless this is
+	# turned off.
 	camera.ignore_rotation = false
 	camera.rotation = -deg_to_rad(90.0)
 	rig.add_child(camera)

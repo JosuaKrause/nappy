@@ -448,13 +448,10 @@ func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
 	main.free()
 	stroller.free()
 
-## PLAYTEST-140, statement 5: "when you lose with game over the title screen is sideways" — seen
-## on the phone only. `_ready()`'s own `_apply_orientation()` call happens before `_start_day()`,
-## and `main.gd`'s own boot log times that at hundreds of milliseconds (planning a day's closures
-## and every event on it); a real phone's browser chrome can still be settling into its own real
-## shape somewhere in that gap, most plausibly on the very tap that just dismissed the ending
-## screen and asked for this restart. Nothing re-read the window between the two, until
-## `_open_the_title()` started asking again — see that function's own doc.
+## `_open_the_title()` asks `_apply_orientation()` again rather than trusting the answer the
+## previous call left — a safeguard that finds nothing to change in the running game, where
+## `_ready()`'s own call comes in the same stretch with no frame between, and that this test gives
+## a stale answer to correct.
 ##
 ## `main` itself is never added to this suite's own tree — same reason as the test above, its own
 ## `_ready()` boots a whole run — so `_apply_orientation()`'s own `Engine.get_main_loop()` is what
@@ -494,7 +491,7 @@ func _test_opening_the_title_reasserts_the_orientation_it_finds_stale(t) -> void
 	# `_apply_orientation()` had last been asked while the window was portrait and touch.
 	main._rotated = true
 	main._touch_controls.rotated = true
-	main._player.set_screen_rotation(deg_to_rad(90.0))
+	main._player.set_screen_rotation(true)
 	ScreenOrientation.apply_to_layer(main._title, true)
 	t.check(main._touch_controls.rotated and not camera.ignore_rotation,
 			"set up rotated, to prove the assertions below actually move something")
