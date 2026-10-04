@@ -67,8 +67,9 @@ func set_touch_controls(controls: TouchControls) -> void:
 ## game simply stops teaching it, exactly as `HUD._teach_the_day()`'s own day-1 line already reads.
 ##
 ## Plain prose, not a string with its own `\n`: `_refresh_body()` breaks it onto more than one line
-## through `SentenceLines.break_for_help()` (the same sentence-boundary rule, each `{run}` measured as two letters wide), the same helper every other screen's prose goes
-## through, so this reads exactly as it would in the source it was written in.
+## through `SentenceLines.break_for_help()`, the sentence-boundary rule every other screen's prose
+## goes through in `break_for_label()`, with each `{run}` measured as two letters wide, so this reads
+## exactly as it would in the source it was written in.
 ##
 ## **The run half names the run button in the joystick scheme only.** *(2026-10-04, the player, inbox
 ## #533: "joystick run should now say hold <run button> or double tap to run where it makes
