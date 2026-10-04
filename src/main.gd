@@ -105,10 +105,12 @@ var _no_focus_pause := DevFlags.no_focus_pause()
 ## page back is also an event the game reads, and without this it resumes the pause screen or
 ## starts the day from its brief before the player has seen either.
 const RETURN_INPUT_IGNORED_MSEC := 500
-## The `Time.get_ticks_msec()` reading until which `_input()` swallows every event, or `0` for no
-## window. Real OS time rather than accumulated `delta`, because the tree is paused behind the
-## pause screen and `_process()` does not run there. Never armed while `_no_focus_pause` is set: a
-## rig's window opens and gets focus on its own schedule and must never be slowed by this.
+## The `Time.get_ticks_msec()` reading at which the window ends, or `0` for no window; `_process()`
+## ends it (`_end_the_return_window()`) the first frame it has passed. Real OS time rather than
+## accumulated `delta`, and `_process()` rather than a timer: this node is `PROCESS_MODE_ALWAYS`, so
+## it runs behind the pause screen too, and a `SceneTreeTimer` can fire before its time (its first
+## frame's delta includes the time before it was made), which left input off for good. Never armed
+## for a rig (`_rig_locked_out`) or under `_no_focus_pause`, which must never be slowed by this.
 var _input_ignored_until_msec := 0
 
 ## Whether `_lock_out_a_rig()` found `DevFlags.is_rig()` true for this run — read once for the same
@@ -318,6 +320,8 @@ func _ready() -> void:
 	# just below, so either path gets it from this one call.
 	_lock_out_a_rig()
 	_return_viewport = get_viewport()
+	_end_the_return_window(true)
+	_return_viewport.set_disable_input(false)
 	_listen_for_a_web_return()
 	# A recording's own real wall clock runs several times slower than its game clock (saving one
 	# frame costs far longer than the 1/60s it represents) — see `_rig_quit_game_seconds`'s own doc.
@@ -1522,6 +1526,8 @@ func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -
 ## given back: the reloaded boot wants exactly the same pages and giving them up here would be a
 ## reload of every one of them, which is the thing the residency exists to prevent.
 func _exit_tree() -> void:
+	_end_the_return_window(true)
+	_stop_listening_for_a_web_return()
 	AtlasLibrary.release_the_loading_moments()
 
 ## Gets the Compatibility renderer to compile the halo and shoreline shader programs before their
@@ -2340,6 +2346,7 @@ func _tree_is_paused() -> bool:
 	return loop is SceneTree and (loop as SceneTree).paused
 
 func _process(delta: float) -> void:
+	_end_the_return_window()
 	# M195, always closes: the outer half of the guarantee `_lock_out_a_rig()` starts — see
 	# `_rig_quit_deadline_msec`'s own doc for why this reads `Time.get_ticks_msec()` fresh rather
 	# than trusting `delta` to have summed correctly. Ahead of every other line in this function on
@@ -2661,21 +2668,24 @@ var _return_viewport: Viewport = null
 ## cannot promise that, since `_input()` runs on children before their parents.
 ## It stops *events* only: `Input`'s own held state still follows the keyboard, so a key held
 ## through the return is still pressed for polling afterwards, and one released inside the window is
-## released. The tree is usually paused (the pause screen), so the re-enabling timer is
-## `process_always` and ignores the time scale: real time. Idempotent: a second trigger inside the
-## window extends it, and the earlier timer's callback finds the window still running and leaves
-## it. A no-op under `_no_focus_pause` (`--no-focus-pause`, `--screenshot`), so a rig is never slowed.
+## released. **Nothing can leave input off:** the end is read off the wall clock by `_process()`
+## (`_end_the_return_window()`), which runs under a pause, and `_exit_tree()` and `_ready()` clear
+## it too, because the root viewport outlives a scene reload. Idempotent: a second trigger inside
+## the window moves the end. A no-op for a rig (`_rig_locked_out`: any of `--screenshot`, `--walk`,
+## `--flee`, `--press`, `--tap`, `--route`, a recording or a scripted recipe — `DevFlags.is_rig()`)
+## and under `_no_focus_pause` (`--no-focus-pause`), so a rig is never slowed.
 func _arm_the_return_window() -> void:
-	if _no_focus_pause or _return_viewport == null:
+	if _no_focus_pause or _rig_locked_out or _return_viewport == null:
 		return
 	_input_ignored_until_msec = Time.get_ticks_msec() + RETURN_INPUT_IGNORED_MSEC
 	_return_viewport.set_disable_input(true)
-	var timer := _return_viewport.get_tree().create_timer(RETURN_INPUT_IGNORED_MSEC / 1000.0, true, false, true)
-	timer.timeout.connect(_end_the_return_window)
 
-func _end_the_return_window() -> void:
-	if _ignoring_input_after_a_return():
+## Called every frame, and by `_exit_tree()`/`_ready()` with `force`: puts input back once the
+## window has passed.
+func _end_the_return_window(force := false) -> void:
+	if _input_ignored_until_msec == 0 or (not force and _ignoring_input_after_a_return()):
 		return
+	_input_ignored_until_msec = 0
 	if _return_viewport != null and is_instance_valid(_return_viewport):
 		_return_viewport.set_disable_input(false)
 
@@ -2692,6 +2702,14 @@ func _listen_for_a_web_return() -> void:
 	var window := JavaScriptBridge.get_interface("window")
 	document.addEventListener("visibilitychange", _web_return_callback)
 	window.addEventListener("focus", _web_return_callback)
+
+## Removes what `_listen_for_a_web_return()` added, so a scene reload does not pile up listeners.
+func _stop_listening_for_a_web_return() -> void:
+	if _web_return_callback == null:
+		return
+	JavaScriptBridge.get_interface("document").removeEventListener("visibilitychange", _web_return_callback)
+	JavaScriptBridge.get_interface("window").removeEventListener("focus", _web_return_callback)
+	_web_return_callback = null
 
 func _on_web_return(args: Array) -> void:
 	var event: JavaScriptObject = args[0] if args.size() > 0 else null
@@ -2975,8 +2993,8 @@ func _quit() -> void:
 ## builds a second one, so it is not read here.
 ## `NOTIFICATION_APPLICATION_PAUSED` is a phone sending the whole app to the background. Getting
 ## focus back (`NOTIFICATION_APPLICATION_FOCUS_IN`/`NOTIFICATION_APPLICATION_RESUMED`) does not
-## resume (see `_pause_on_focus_lost()`'s own doc) and starts the 500ms during which `_input()`
-## ignores every event (`RETURN_INPUT_IGNORED_MSEC`).
+## resume (see `_pause_on_focus_lost()`'s own doc) and starts the 500ms during which the viewport
+## delivers no input at all (`RETURN_INPUT_IGNORED_MSEC`, `_arm_the_return_window()`).
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		Telemetry.end_run()
