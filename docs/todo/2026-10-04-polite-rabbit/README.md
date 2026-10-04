@@ -3,7 +3,7 @@ priority: now
 # polite-rabbit — Nothing reaches her through a wall · filed 2026-10-04
 
 [freckled-goose, the robber through a wall](../../playtests/2026-10-04-freckled-goose.md) files
-inbox #544, from playing the released v0.24.0 on a phone:
+inbox #544 in [freckled-goose](../../playtests/2026-10-04-freckled-goose.md), from playing the released v0.24.0 on a phone:
 
 > The new robber reach is worse in a way I just got killed by a robber that was behind a wall. He couldn't reach me. But it was instant
 
