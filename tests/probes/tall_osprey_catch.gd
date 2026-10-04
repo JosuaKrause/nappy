@@ -25,6 +25,11 @@ func run(t) -> void:
 		print("== %s ==" % ("held: lunge_reach 30 (108px)" if lunge > 0.0 else "follows the catch"))
 		for catch_radius in CATCHES:
 			_report(float(catch_radius), lunge)
+	# The robber-only stand-off override: `lunge_reach` is the stand-off less 78 (130 x 0.6).
+	for catch_radius in [30.0, 26.0, 24.0]:
+		print("== catch %.0f, lunge moved out ==" % catch_radius)
+		for standoff in [108.0, 120.0, 130.0]:
+			_report(catch_radius, standoff - 78.0)
 	t.check(true, "tall_osprey_catch probe ran")
 
 func _def(catch_radius: float, lunge: float) -> EventDef:
@@ -34,8 +39,9 @@ func _def(catch_radius: float, lunge: float) -> EventDef:
 	return def
 
 func _report(catch_radius: float, lunge: float) -> void:
-	var out := "catch %4.0f  standoff %5.1f |" % [catch_radius,
-			Tuning.pursuit_standoff(130.0, _def(catch_radius, lunge).standoff_reach())]
+	var standoff := Tuning.pursuit_standoff(130.0, _def(catch_radius, lunge).standoff_reach())
+	var out := "catch %4.0f  standoff %5.1f  walk-in %4.1fpx %.2fs |" % [catch_radius, standoff,
+			140.0 - standoff, (140.0 - standoff) / (Tuning.WALK_SPEED + 0.0)]
 	for mode in ["still", "walk_away", "run_at_notice", "turn_at_lunge", "turn_at_notice"]:
 		var got_away := 0
 		for seed_i in SEEDS:

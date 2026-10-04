@@ -46,3 +46,40 @@ which needs a start of at least about 310px, so a catch under 25px has no start 
 catch.
 
 **Limits.** One straight line, no corners; the real alley is met at other angles.
+
+## Moving the robber's lunge out (inbox #526, the player's second ask)
+
+Measured for the alley robber alone: his stand-off at 108 (today's), 120 and 130px, set as
+`lunge_reach` = stand-off less 78; every other pursuer, the day-3 dog included, keeps
+`Tuning.pursuit_standoff()` from its own catch. Same probe, same 200 seeds (`results.txt`, last three
+blocks). Runs of 200 that got away; `still` and `walk_away` are 0/200 in every row and
+`run_at_notice` is 200/200 in every row. Walk-in is the ground between his 140px notice and his
+lunge, walked at `WALK_SPEED` (92px/s).
+
+| catch | stand-off | walk-in notice to lunge | turn at lunge | turn at notice |
+|---|---|---|---|---|
+| 30 | 108 | 32px, 0.35s | 12 | 68 |
+| 30 | 120 | 20px, 0.22s | 28 | 66 |
+| 30 | 130 | 10px, 0.11s | 49 | 68 |
+| 26 | 108 (built, default) | 32px, 0.35s | 14 | 73 |
+| 26 | 120 | 20px, 0.22s | 36 | 70 |
+| 26 | 130 | 10px, 0.11s | 56 | 74 |
+| 24 | 108 | 32px, 0.35s | 15 | 74 |
+| 24 | 120 | 20px, 0.22s | 43 | 74 |
+| 24 | 130 | 10px, 0.11s | 57 | 74 |
+
+Moving the lunge out is what moves `turn_at_lunge` (14 to 36 to 56 at 26px of catch); the catch
+alone barely does. The cost is the notice: at 130px the lunge is 10px inside his notice, so he
+notices and lunges within about a tenth of a second of walking in, and the notice is no longer a
+walk-in at all.
+
+Contracts at the cost: `Tuning.validate_pursuit` still passes (lunge inside 140px notice and 200px
+field). Trying 130px in the catalogue and running `tools/test.sh resistance events_pursuit
+events_costs tutorial_dog` fails six checks, all about the no-trigger trap row (`robber_giving_chase`
+copies the alley robber): `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) must be at least stand-off plus
+130 x 1.5 = 325px so that standing still he lunges no sooner than 1.5s after he appears (he lunged at
+1.42s), and the arrival cone would need re-measuring; 120px needs 315px, also over 311. The chalk
+mark's guard placement is stated over `pursues_within` (140px) and his catch, not the stand-off, so it
+is unaffected: no guard test failed, and the guard stays outside his notice range of a touch at the
+mark. 108px is built as the default; 120 or 130 also needs the arrival distance raised past the van
+guard's cone floor.
