@@ -262,7 +262,8 @@ add a code path that writes to `Baby.excitement` from outside.**
 
 **Nothing reaches her through a building, and a new source has to ask.** `EventInstance.
 contribution_at()` and `CrowdAgent.contribution_at()` zero a positive field when
-`CityMap.wall_between()` finds the line from the source to her half a tile deep in a building;
+`CityMap.wall_between()` finds the line from the source to her a tile deep in a building, or at
+the middle of a wall only one tile thick;
 anything else that ever emits goes through the same question. The trap is the caret's projection:
 it translates *her* point rather than moving the source, which is right for the field and wrong for
 the wall — a wall stays where it is, so the projection asks it between the two bodies' own

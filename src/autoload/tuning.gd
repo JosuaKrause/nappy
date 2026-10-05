@@ -1244,18 +1244,23 @@ const PLAYER_BODY_RADIUS := 14.0
 
 ## How far into a building the straight line from a source to her has to reach before the building
 ## stands between them and the source's excitement stops reaching her, in px measured from the
-## nearest open ground — `CityMap.wall_between()`. *(plaid-wombat, inbox #554: "Excitement should
-## not go through any wall but it's not straightforward. If the player is partially in a wall they
-## should not be protected so the blocking should happen in the middle of the wall (or one tile
-## deep)".)*
+## nearest open ground — `CityMap.wall_between()`. *(plaid-wombat, inbox #554: "the blocking should
+## happen in the middle of the wall (or one tile deep)"; inbox #568: "half a tile was only supposed
+## to be done if the wall is only one tile wide otherwise it should be one tile".)*
 ##
-## **Half a tile: the middle of a building's outer tile**, so a wall one tile thick still blocks a
-## line that crosses it, at its middle, and a line that only clips a building's corner or runs
-## along its face blocks nothing. It has to stay **over `PLAYER_BODY_RADIUS`**, or a pram whose
-## body pokes into a wall's edge is shielded by its own overlap, and **at most `TILE_SIZE`**, the
-## depth `CityMap.wall_between()` can answer from a tile's eight neighbours alone.
-## `tests/test_wall_shield.gd` holds both.
-const WALL_SHIELD_DEPTH := TILE_SIZE * 0.5
+## **One tile, wherever the building is thicker than one tile.** So a building two tiles thick
+## blocks every line across it at its middle, and a line that clips a corner, runs along a face or
+## crosses only a building's outer tile blocks nothing. It has to stay **at most `TILE_SIZE`**, the
+## depth `CityMap.wall_between()` can answer from a tile's eight neighbours alone, and at least
+## `THIN_WALL_SHIELD_DEPTH`. `tests/test_wall_shield.gd` holds both.
+const WALL_SHIELD_DEPTH := float(TILE_SIZE)
+
+## The same depth inside a wall only one tile thick, which never has a point a whole tile from open
+## ground: **half a tile, its middle**, so every line across it is still blocked there, square or
+## slanted. It has to stay **over `PLAYER_BODY_RADIUS`**, or a pram whose body pokes into a thin
+## wall's edge is shielded by its own overlap, and **at most half a tile**, or a one-tile wall could
+## never block anything. `tests/test_wall_shield.gd` holds both.
+const THIN_WALL_SHIELD_DEPTH := TILE_SIZE * 0.5
 
 ## Centre-to-centre distance at which the player and a pedestrian are touching.
 ##

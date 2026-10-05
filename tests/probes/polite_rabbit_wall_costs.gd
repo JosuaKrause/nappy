@@ -12,10 +12,12 @@ extends RefCounted
 ## start_day()` for the catalogue, the seals and the region's bodies — and walks every route of
 ## every branch of the day's `RouteTree` from the doorstep to its calm area at `Tuning.WALK_SPEED`,
 ## streaming the events and stepping the crowd around her as she goes. At every step each source's
-## field is asked three ways: through walls (no wall test, what the game charged before), blocked at
-## `Tuning.WALL_SHIELD_DEPTH` (what it charges now), and blocked one whole tile in (the other
-## reading of "the middle of the wall (or one tile deep)"). The built depth is also summed through
-## the real `contribution_at()`, and the probe fails if the two disagree.
+## field is asked three ways: through walls (no wall test, what the game charged before), blocked as
+## built (`Tuning.WALL_SHIELD_DEPTH`, a tile, in a building thicker than one tile, and
+## `Tuning.THIN_WALL_SHIELD_DEPTH`, half a tile, the middle of a wall one tile thick), and blocked
+## half a tile in everywhere (the first reading of "the middle of the wall (or one tile deep)",
+## which inbox #568 corrected). The built rule is also summed through the real `contribution_at()`,
+## and the probe fails if the two disagree.
 ##
 ## **Limits.** The events are not ticked: each is priced at its own live rate
 ## (`EventInstance._caret_intensity_over_horizon()`, the telegraph's damping undone) where it
@@ -28,12 +30,15 @@ const STEP := 1.0 / 30.0
 const SEEDS: Array[int] = [4242, 90210, 1337]
 const DAYS: Array[int] = [1, 5, 9, 13]
 
-## The three ways of asking, in print order: no wall test, the built depth, a whole tile.
+## The three ways of asking, in print order: no wall test, as built, half a tile everywhere.
 const NONE := 0
 const BUILT := 1
-const TILE := 2
+const HALF := 2
 
-var _depths: Array[float] = [INF, Tuning.WALL_SHIELD_DEPTH, float(Tuning.TILE_SIZE)]
+## The (thick, thin) depths each way asks `CityMap.wall_between()` with; `NONE` asks nothing.
+var _depths: Array[Vector2] = [Vector2.INF,
+		Vector2(Tuning.WALL_SHIELD_DEPTH, Tuning.THIN_WALL_SHIELD_DEPTH),
+		Vector2(Tuning.THIN_WALL_SHIELD_DEPTH, Tuning.THIN_WALL_SHIELD_DEPTH)]
 
 func run(t) -> void:
 	var mismatches := 0
@@ -41,8 +46,9 @@ func run(t) -> void:
 	var grand_crowd := [0.0, 0.0, 0.0]
 	var grand_seconds := 0.0
 	var grand_routes := 0
-	print("\n== gross points over the day's routes: through walls | blocked at %.0fpx | at %dpx =="
-			% [Tuning.WALL_SHIELD_DEPTH, Tuning.TILE_SIZE])
+	print("\n== gross points over the day's routes: through walls | as built (%.0fpx, %.0fpx in a"
+			% [Tuning.WALL_SHIELD_DEPTH, Tuning.THIN_WALL_SHIELD_DEPTH]
+			+ " one-tile wall) | %.0fpx everywhere ==" % Tuning.THIN_WALL_SHIELD_DEPTH)
 	print("  %6s %4s %6s %8s   %-26s   %-26s" % ["seed", "day", "routes", "seconds",
 			"events", "crowd"])
 	for city_seed in SEEDS:
@@ -86,9 +92,9 @@ func run(t) -> void:
 			_three(_per_minute(grand_crowd, grand_seconds))])
 	print("  share kept: events %.1f%% / %.1f%%, crowd %.1f%% / %.1f%%" % [
 			100.0 * grand_events[BUILT] / maxf(grand_events[NONE], 1e-9),
-			100.0 * grand_events[TILE] / maxf(grand_events[NONE], 1e-9),
+			100.0 * grand_events[HALF] / maxf(grand_events[NONE], 1e-9),
 			100.0 * grand_crowd[BUILT] / maxf(grand_crowd[NONE], 1e-9),
-			100.0 * grand_crowd[TILE] / maxf(grand_crowd[NONE], 1e-9)])
+			100.0 * grand_crowd[HALF] / maxf(grand_crowd[NONE], 1e-9)])
 	t.check(grand_routes > 0, "the probe walked routes (%d)" % grand_routes)
 	t.check(mismatches == 0,
 			"the built depth summed here is what contribution_at() charges (%d steps differed)"
@@ -149,7 +155,8 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 			else:
 				charged += actual
 			for i in 3:
-				if i != NONE and map.wall_between(instance.global_position, here, _depths[i]):
+				if i != NONE and map.wall_between(instance.global_position, here, _depths[i].x,
+						_depths[i].y):
 					continue
 				if instance.def.barrier_structure:
 					barrier[i] = maxf(barrier[i], field)
@@ -167,7 +174,8 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 				continue
 			heard += agent.contribution_at(here)
 			for i in 3:
-				if i != NONE and map.wall_between(agent.global_position, here, _depths[i]):
+				if i != NONE and map.wall_between(agent.global_position, here, _depths[i].x,
+						_depths[i].y):
 					continue
 				noise[i] += field
 		if not is_equal_approx(heard, noise[BUILT]):

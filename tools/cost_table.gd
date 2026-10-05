@@ -314,8 +314,9 @@ func _header_text() -> String:
 	lines.append("")
 	lines.append("Every figure is on quiet sidewalk (ground multiplier 1.0) with nothing built " +
 			"between her and the row; other grounds are not in this version, and nor is a building " +
-			"between them, which silences a row entirely once the line from it to her is " +
-			"`Tuning.WALL_SHIELD_DEPTH` deep inside the building (`CityMap.wall_between()`). " +
+			"between them, which silences a row entirely once the line from it to her passes the " +
+			"middle of a wall one tile thick or a tile deep into a thicker building " +
+			"(`CityMap.wall_between()`). " +
 			"The constants each figure below was computed under, one line each so " +
 			"a change to any of them shows here as this line moving:")
 	lines.append("")

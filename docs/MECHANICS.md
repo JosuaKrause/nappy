@@ -928,10 +928,12 @@ view (`DebugLayers`, layer `1`) for where the boundary is checked by eye.
 
 **And `d` is never measured through a building.** *(plaid-wombat, inbox #554: "Excitement should
 not go through any wall".)* Every source — an event, a walker, a car — reaches her only while the
-straight line between them stays shallower than `Tuning.WALL_SHIELD_DEPTH` (half a tile) inside
-any building, measured from the nearest open ground (`CityMap.wall_between()`); past that the
-contribution is zero. Half a tile is the middle of a one-tile wall, so any wall stops it, while
-clipping a corner or standing with the pram's body against a facade does not. The meter, the halo
+straight line between them stays short of a tile (`Tuning.WALL_SHIELD_DEPTH`) into any building
+thicker than one tile, and short of the middle (`Tuning.THIN_WALL_SHIELD_DEPTH`, half a tile) of a
+wall only one tile thick, measured from the nearest open ground (`CityMap.wall_between()`); past
+that the contribution is zero. *(Inbox #568: "half a tile was only supposed to be done if the wall
+is only one tile wide otherwise it should be one tile".)* So any wall stops it, while clipping a
+corner or standing with the pram's body against a facade does not. The meter, the halo
 and the caret all read the same blocked contribution. See docs/EVENTS.md, "The emission model".
 
 **`(1 − t)²` is the shape that looks equally reasonable and inverts the game.** It puts a

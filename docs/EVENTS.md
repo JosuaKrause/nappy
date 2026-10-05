@@ -1398,14 +1398,19 @@ addition, and an instance can be tested without a scene.
 
 **Nothing reaches her through a building.** *(plaid-wombat, inbox #554: "Excitement should not go
 through any wall but it's not straightforward. If the player is partially in a wall they should
-not be protected so the blocking should happen in the middle of the wall (or one tile deep)".)* A
-field is zero wherever the straight line from the source to her reaches `Tuning.WALL_SHIELD_DEPTH`
-(half a tile) inside a building, measured from the nearest open ground — `CityMap.wall_between()`.
-Every source asks it, the crowd's walkers and cars too (`CrowdAgent.contribution_at()`), horn and
-bump jolts included. Half a tile is the middle of a building's outer tile: a wall one tile thick is
-crossed at its middle and blocks, while a line that clips a corner or runs along a face never gets
-that deep, and the depth is over the pram's own body radius, so her body poking into a wall's edge
-shields her from nothing. The line runs from the source's own node — a flock's centre, a shaped
+not be protected so the blocking should happen in the middle of the wall (or one tile deep)"; and
+inbox #568: "half a tile was only supposed to be done if the wall is only one tile wide otherwise it
+should be one tile".)* A field is zero wherever the straight line from the source to her reaches a
+tile (`Tuning.WALL_SHIELD_DEPTH`) into a building thicker than one tile, or the middle of a wall
+only one tile thick (`Tuning.THIN_WALL_SHIELD_DEPTH`, half a tile), measured from the nearest open
+ground — `CityMap.wall_between()`. Thick or thin is decided tile by tile: a building tile is part of
+something thicker when one of its corners is a point where four building tiles meet, and otherwise
+it is part of a one-tile wall, the bend of an L of them included. Every source asks it, the crowd's
+walkers and cars too (`CrowdAgent.contribution_at()`), horn and bump jolts included. Every line
+across a one-tile wall passes its middle and is blocked; a building two tiles thick blocks every
+line across it at its middle, a tile in; a line that clips a corner, runs along a face or crosses
+only a building's outer tile blocks nothing; and half a tile is over the pram's own body radius, so
+her body poking into a wall's edge shields her from nothing. The line runs from the source's own node — a flock's centre, a shaped
 row's middle — to her centre, and is asked only once the field is positive. It is the deeper test
 beside the pursuer's catch, which refuses a line that touches a building at all (`_clear_line_to()`,
 "Running that matters" in docs/MECHANICS.md). **The meter, the halo and the caret read the same
