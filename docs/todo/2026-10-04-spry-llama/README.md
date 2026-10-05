@@ -36,27 +36,35 @@ On her own running, which the assistant had proposed leaving out:
 
 **Asked for:**
 
-- **An encounter** is one event instance coming onto the screen, counted for the catalogue's rows,
-  the pelican as `pelican`. It ends when the instance leaves the screen, and the same instance
-  counts again only when it is encountered again at a later time, about 5 s after it left. A
-  different instance is always a new encounter ("if it's a different yeller it's definitely a
-  distinct interaction"). Not once per day.
-- **`nappy-day-N-seen-<event>`**, once per encounter, when the instance is "(fully; or reasonably)
-  visible on screen (just a part or too far off the edge doesn't count)".
-- **`nappy-day-N-influenced-<event>`**, at most once per encounter: a "meaningful encounter", the
-  influence of the event having "reached a certain threshold", "a binary yes".
-- **The reading is influenced ÷ seen per event type, by day** ("mostly I'm interested in the ratio
-  of interacted/seen"), to answer how often each event actually appears and whether players avoid
-  it or ignore it.
+- **An encounter** is one event instance coming onto the screen. It ends when the instance leaves
+  the screen, and the same instance counts again only when it is "encountered again at a later
+  time (eg 5s)". A different instance is always a new encounter ("if it's a different yeller it's
+  definitely a distinct interaction"). Not once per day ("don't send only once per day").
+- **A seen event per encounter**, when the instance is "(fully; or reasonably) visible on screen
+  (just a part or too far off the edge doesn't count)"; the gap rule "should also apply to seen".
+- **An influenced event per encounter**: a "meaningful encounter", the influence of the event
+  having "reached a certain threshold", "a binary yes", in the note's own form
+  `day_x_influenced_by_y`.
+- **The reading is influenced ÷ seen per event type** ("mostly I'm interested in the ratio of
+  interacted/seen"), to answer how often each event actually appears and whether players avoid it
+  or ignore it.
 - **Ordinary walkers and cars are left out**, "unless there is a good way to measure them".
-- **`nappy-day-N-ran`**, one per bout of her running, a restart less than 10 s after she stopped
-  being the same bout.
+- **A count of her running**, "excluding gaps smaller than 10s": a restart less than 10 s after she
+  stopped is the same run.
 
-The player read back and accepted the event names in GoatCounter's hyphenated form rather than the
-note's `day_x_influenced_by_y`, and the running count sent when the bout begins.
+The player's only word after the assistant's last read-back was "yeah we can start it for the next
+patch.", an answer to when to file it; nothing below was accepted beyond that.
 
 **Proposed, not asked for:**
 
+- **The names** are `nappy-day-N-seen-<event>`, `nappy-day-N-influenced-<event>` and
+  `nappy-day-N-ran`, hyphenated like every other GoatCounter event rather than the note's
+  `day_x_influenced_by_y`, and the reading is printed by day.
+- **`nappy-day-N-ran` is sent when the bout begins**, whether or not the run excites the baby; the
+  alternative is sending it when the bout ends, once its 10 s gap has passed.
+- **What counts as an event** is the catalogue's rows, and the pelican as `pelican` rather than its
+  row's `cyclist`, the name it already has on the counter. The player was asked whether the
+  pelican is included and did not answer; it is open for whoever picks the entry up.
 - "Properly on screen" is **at least about 80% of what is drawn for the instance inside the view**;
   a sliver at the edge, or only its halo or warning badge, does not count. The plainer alternative
   is the point test `EventManager._is_on_screen()` already makes (below).
@@ -81,8 +89,11 @@ note's `day_x_influenced_by_y`, and the running count sent when the bout begins.
 the view's half extent (`Tuning.VIEW_HALF_EXTENT`), not how much of its drawing is in view; the
 fire's `seen-fire` (`EventManager._summon_what_has_been_sighted()`, once per fire) and the
 pelican's `pelican-seen` (`EventManager._report_the_pelicans_in_view()`, once per pelican) use it.
-`EventInstance.accumulate_landed()` already records every share an instance lands on her meter,
-stamped on its own clock, which the crying-loss cause and the halos read. `EventBus.pursuit_began`
-fires when a pursuer starts chasing her. `Stroller.run_excess_ratio()` is above 0 whenever she
-moves faster than walking pace, which is how the run log and `EventManager` tell running already.
-Every name `VisitCounter` sends is listed in `docs/TELEMETRY.md`, which the work updates.
+`EventInstance.accumulate_landed()` is handed each share an instance lands on her meter, stamped
+on its own clock, but keeps only the shares inside the halo's 5 s window (`ExcitementHalo.WINDOW`,
+pruned on every write and read), which is what the crying-loss cause and the halos read; a total
+over a whole encounter, which can last longer, needs a running sum of its own beside it.
+`EventBus.pursuit_began` fires when a pursuer starts chasing her. `Stroller.run_excess_ratio()` is
+above 0 whenever she moves faster than walking pace, which is how the run log and `EventManager`
+tell running already. Every name `VisitCounter` sends is listed in `docs/TELEMETRY.md`, which the
+work updates.
