@@ -939,6 +939,7 @@ func _physics_process(_delta: float) -> void:
 	_observe()
 	if not _active:
 		return
+	_watch_the_void()
 	if _draft:
 		var step := _resistance.current_step() if _resistance else null
 		var walking_home: Node2D = named.get("rider") if step and not step.is_pickup \
@@ -1208,6 +1209,27 @@ func _box_in_either_view(centre: Vector2, half: Vector2) -> bool:
 		if Rect2(looking - size * 0.5, size).intersects(box):
 			return true
 	return false
+
+## Every body the scene put in the world to wait on ground the stretch cut off
+## (`CityMap.is_cut_off()`) — a guard placed while she walks, standing where the whole city has a
+## street and the scene has none — with its tile and row: the manifest's `in_the_void`, which
+## `tools/scene-draft.sh` adds to the next draft (`draft.include`) so that nothing waiting for her
+## stands in the void. Asked once of each body, where it first stands: a pursuer on its way to her
+## from off screen comes down streets the scene does not have and is not one of these.
+var _in_the_void := {}
+
+func _watch_the_void() -> void:
+	if not _city or not _city.map.has_stretch():
+		return
+	for instance in _city.events.instances():
+		if _in_the_void.has(instance):
+			continue
+		_in_the_void[instance] = true
+		var tile := _city.map.world_to_tile(instance.global_position)
+		if instance.is_waiting() and _city.map.is_cut_off(tile):
+			var found: Array = manifest.get("in_the_void", [])
+			found.append({"tile": [tile.x, tile.y], "row": instance.def.id, "tick": tick})
+			manifest["in_the_void"] = found
 
 ## `--recipe-draft FILE`: the stretch the walk just took, written as a recipe (`SceneRecipeDraft`).
 ## Answers the exit code.

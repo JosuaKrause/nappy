@@ -31,7 +31,7 @@
     }
   },
   "playback": {
-    "walk": "1.9e6.26w0.8s",
+    "walk": "1.9@85@6.26w0.8s",
     "duration": 8.6,
     "capture_at": 7.4,
     "observations": [
@@ -51,7 +51,7 @@
   },
   "stretch": {
     "tiles": {
-      "alley": [[68,92,93],[69,92,93]],
+      "alley": [[62,92,93],[63,92,93],[64,92,93],[65,92,93],[66,92,93],[67,92,93],[68,92,93],[69,92,93]],
       "sidewalk": [
         [69,89,89],
         [70,70,71],
@@ -88,6 +88,7 @@
       "road": [[72,72,73],[72,76,83],[72,86,87],[73,72,73],[73,76,83],[73,86,87]]
     },
     "buildings": [
+      {"lot":[90,56,2,6],"district":"residential","variant":2597239413,"height":2,"condition":"lived_in"},
       {"lot":[62,62,8,8],"district":"residential","variant":2593753553,"height":2,"condition":"lived_in"},
       {"lot":[76,62,8,8],"district":"residential","variant":2595083222,"height":3,"condition":"lived_in"},
       {"lot":[90,62,2,8],"district":"residential","variant":2597239442,"height":3,"condition":"lived_in"},
@@ -98,18 +99,29 @@
     ],
     "trees": [],
     "props": [
+      {"kind":"sack","at":[2960,2160],"variant":0,"scale":1},
       {"kind":"sack","at":[2512,2248],"variant":0,"scale":1},
       {"kind":"sack","at":[2576,2248],"variant":0,"scale":1},
       {"kind":"sack","at":[2608,2248],"variant":0,"scale":1},
       {"kind":"sack","at":[2544,2424],"variant":0,"scale":1}
     ],
     "litter": [
+      {"kind":"can","at":[2959.76,2024.18]},
       {"kind":"newspaper","at":[2573.68,2261.28]},
       {"kind":"apple","at":[2415.06,2423.04]},
       {"kind":"apple","at":[2645.69,2422.24]},
       {"kind":"newspaper","at":[2740.98,2410.72]}
     ],
     "cracks": [
+      [93,62,2,0],
+      [92,63,0,1],
+      [93,63,0,0],
+      [92,64,1,1],
+      [93,64,1,0],
+      [92,65,0,0],
+      [93,65,0,1],
+      [92,66,2,1],
+      [93,67,0,0],
       [92,68,0,1],
       [89,69,2,0],
       [93,69,0,1],

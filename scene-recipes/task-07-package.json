@@ -20,13 +20,13 @@
     ],
     "actors": [
       {"name":"car_1","kind":"car","at":[2250.75,2352],"direction":"east","speed":182.4326},
-      {"name":"walker_1","kind":"walker","at":[2248,2245.79],"direction":"north","speed":47.6476},
-      {"name":"walker_2","kind":"walker","at":[2404.29,2248],"direction":"west","speed":66.6712},
-      {"name":"walker_3","kind":"walker","at":[2434.96,2248],"direction":"east","speed":68.0652},
-      {"name":"walker_4","kind":"walker","at":[2654.18,2248],"direction":"east","speed":66.936},
-      {"name":"walker_5","kind":"walker","at":[2345.21,2296],"direction":"east","speed":71.9687},
-      {"name":"walker_6","kind":"walker","at":[2242.26,2376],"direction":"east","speed":55.4344},
-      {"name":"walker_7","kind":"walker","at":[2807.01,2376],"direction":"east","speed":48.6087},
+      {"name":"walker_1","kind":"walker","at":[2404.29,2248],"direction":"west","speed":66.6712},
+      {"name":"walker_2","kind":"walker","at":[2434.96,2248],"direction":"east","speed":68.0652},
+      {"name":"walker_3","kind":"walker","at":[2654.18,2248],"direction":"east","speed":66.936},
+      {"name":"walker_4","kind":"walker","at":[2345.21,2296],"direction":"east","speed":71.9687},
+      {"name":"walker_5","kind":"walker","at":[2242.26,2376],"direction":"east","speed":55.4344},
+      {"name":"walker_6","kind":"walker","at":[2807.01,2376],"direction":"east","speed":48.6087},
+      {"name":"walker_7","kind":"walker","at":[2424,2394.44],"direction":"north","speed":71.732},
       {"name":"walker_8","kind":"walker","at":[2691.41,2424],"direction":"east","speed":58.9632}
     ],
     "route_bag": {
@@ -57,7 +57,7 @@
   },
   "stretch": {
     "tiles": {
-      "alley": [[68,92,93],[69,92,93]],
+      "alley": [[62,92,93],[63,92,93],[64,92,93],[65,92,93],[66,92,93],[67,92,93],[68,92,93],[69,92,93]],
       "sidewalk": [
         [69,89,89],
         [70,70,71],
@@ -94,6 +94,7 @@
       "road": [[72,72,73],[72,76,83],[72,86,87],[73,72,73],[73,76,83],[73,86,87]]
     },
     "buildings": [
+      {"lot":[90,56,2,6],"district":"residential","variant":2597239413,"height":2,"condition":"lived_in"},
       {"lot":[62,62,8,8],"district":"residential","variant":2593753553,"height":2,"condition":"lived_in"},
       {"lot":[76,62,8,8],"district":"residential","variant":2595083222,"height":3,"condition":"lived_in"},
       {"lot":[90,62,2,8],"district":"residential","variant":2597239442,"height":3,"condition":"lived_in"},
@@ -112,6 +113,8 @@
       {"kind":"apple","at":[2415.06,2423.04]}
     ],
     "cracks": [
+      [93,62,2,0],
+      [92,66,2,1],
       [89,69,2,0],
       [74,70,1,1],
       [80,70,0,0],

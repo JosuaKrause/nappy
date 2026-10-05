@@ -13,7 +13,9 @@ litter and cracks, the day's posters on those walls, a starting crowd of walkers
 cars, and the day's route bag, each listed explicitly for the author to edit. A recipe
 that already has a stretch is drafted again from its route; the drafted fields are
 replaced, but for a route bag already in the recipe, and everything else is kept.
-The draft is then checked with --recipe-validate.
+The draft is then played as the scene it is; a body it puts to wait on ground the
+stretch cut off has that tile added to draft.include and the stretch is drafted again
+(three rounds at most). The draft is then checked with --recipe-validate.
 --output FILE writes the draft there; --in-place overwrites the recipe itself.
 Example: tools/scene-draft.sh --recipe scene-recipes/task-07-package.json --in-place
 EOF
@@ -48,15 +50,36 @@ GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 source "$root/tools/lib_dev_flags.sh"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-"$GODOT" --headless --path "$root" --fixed-fps 60 -- \
-    --recipe "$recipe" --recipe-mode scripted --recipe-draft "$work/draft.json" \
-    --no-save --no-telemetry >"$work/draft.log" 2>&1 &
-pid=$!
-if ! wait_or_kill "$pid" 120 || [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]] || [[ ! -s "$work/draft.json" ]]; then
-    cat "$work/draft.log" >&2
-    echo "scene-draft.sh: the walk did not complete, so nothing was drafted: $recipe" >&2
-    exit 1
-fi
+cp "$recipe" "$work/input.json"
+# Each round drafts from the input, then plays the draft as the scene it is: a body the scene puts to
+# wait on ground the stretch cut off (the manifest's `in_the_void`) has its tile added to the input's
+# `draft.include`, and the stretch is drafted again, so nothing waiting for her stands in the void.
+# Three rounds at most; what is still in the void after them is named.
+for round in 1 2 3; do
+    "$GODOT" --headless --path "$root" --fixed-fps 60 -- \
+        --recipe "$work/input.json" --recipe-mode scripted --recipe-draft "$work/draft.json" \
+        --no-save --no-telemetry >"$work/draft.log" 2>&1 &
+    pid=$!
+    if ! wait_or_kill "$pid" 120 || [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]] || [[ ! -s "$work/draft.json" ]]; then
+        cat "$work/draft.log" >&2
+        echo "scene-draft.sh: the walk did not complete, so nothing was drafted: $recipe" >&2
+        exit 1
+    fi
+    "$GODOT" --headless --path "$root" --fixed-fps 60 -- \
+        --recipe "$work/draft.json" --recipe-mode scripted --recipe-manifest "$work/scene.json" \
+        --no-save --no-telemetry >"$work/scene.log" 2>&1 &
+    pid=$!
+    wait_or_kill "$pid" 120 || true
+    void="$(jq -c '[.in_the_void // [] | .[].tile]' "$work/scene.json" 2>/dev/null || echo '[]')"
+    new="$(jq -c --argjson void "$void" '($void - (.draft.include // [])) | unique' "$work/input.json")"
+    [[ "$new" == "[]" ]] && break
+    if [[ "$round" == 3 ]]; then
+        echo "scene-draft.sh: after three rounds the scene still puts bodies on cut-off ground at $new" >&2
+        break
+    fi
+    jq --argjson new "$new" '.draft.include = ((.draft.include // []) + $new)' "$work/input.json" \
+        >"$work/next.json" && mv "$work/next.json" "$work/input.json"
+done
 grep '^\[SceneRecipe\] draft' "$work/draft.log" || true
 "$GODOT" --headless --path "$root" --fixed-fps 60 -- \
     --recipe "$work/draft.json" --recipe-mode scripted --recipe-validate \

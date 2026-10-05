@@ -22,10 +22,16 @@ extends RefCounted
 ## rule, on the streets the scene has — which need not be where the whole city would put it — so
 ## the draft is walked on the whole city, the scene is played on the stretch, and the author makes
 ## the walk reach the target the scene puts out (`docs/SCENE_RECIPES.md`, "The task scenes"). A
-## draft therefore plays its walk to the end whatever the recipe's observations say. Two more things
-## are the scene's whatever the stretch: the ground of the places `setup.task` pins (the mark she
-## reads from beside it, day 10's neighbor's start), and the way day 10's neighbor walks home, which
-## the recipe pins and the whole city routes, the same in the scene as in the draft.
+## draft therefore plays its walk to the end whatever the recipe's observations say. Three more
+## things are the scene's whatever the stretch, and their ground is added too: the places
+## `setup.task` pins (the mark she reads from beside it, day 10's neighbor's start); whatever stands
+## in the world as the scene starts, which the day plans over the whole city at dawn, with the whole
+## of an alley it stands in (the guard waiting up the mark's alley), so that nothing the scene is
+## about stands in the void; the way day 10's neighbor
+## walks home, which the recipe pins and the whole city routes, the same in the scene as in the
+## draft; and every tile `draft.include` names, which is how the author — and the tool, for a guard
+## the scene put to wait on ground the stretch cut off (the manifest's `in_the_void`) — asks for a
+## street.
 
 ## Where she was, tile by tile, over the run.
 var _walked := {}
@@ -44,10 +50,16 @@ static func base_of(recipe: Dictionary) -> Dictionary:
 		setup.erase(drafted)
 	return base
 
+## What stood in the world as the scene started, by tile.
+var _at_the_start := {}
+
 ## One tick of the walk: her tile, and the tile of a neighbor walking home (`neighbor`, or null).
+## The first tick also takes the dawn's tiles and what stands in the world.
 func record(player: Node2D, city: City, neighbor: Node2D) -> void:
 	if _dawn_tiles.is_empty():
 		_dawn_tiles = city.map.tiles.duplicate()
+		for instance in city.events.instances():
+			_at_the_start[city.map.world_to_tile(instance.global_position)] = true
 	_walked[city.map.world_to_tile(player.global_position)] = true
 	if neighbor:
 		_walked[city.map.world_to_tile(neighbor.global_position)] = true
@@ -64,6 +76,10 @@ func compose(recipe: Dictionary, city: City, start: Vector2, pinned: Array[Vecto
 		_add_the_ground_of(map, tile, ground)
 	for at in pinned:
 		_add_the_ground_of(map, map.world_to_tile(at), ground, false)
+	for tile: Vector2i in _at_the_start:
+		_add_the_ground_of(map, tile, ground)
+	for tile: Array in recipe.get("draft", {}).get("include", []):
+		_add_the_ground_of(map, Vector2i(int(tile[0]), int(tile[1])), ground, false)
 	var stretch := {"tiles": _tile_runs(map, ground, _dawn_tiles)}
 	var buildings: Array = []
 	for building in city.buildings():

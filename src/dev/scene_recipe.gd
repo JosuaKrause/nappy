@@ -20,7 +20,7 @@ static func load_file(path: String) -> Dictionary:
 static func validate(data: Dictionary) -> Array[String]:
 	var errors: Array[String] = []
 	_keys(data, ["version", "name", "seed", "kind", "classification", "expected_violations",
-			"extent", "city", "anchors", "setup", "playback", "stretch"], "recipe", errors)
+			"extent", "city", "anchors", "setup", "playback", "stretch", "draft"], "recipe", errors)
 	if not integer(data.get("version")) or int(data.get("version", 0)) != 1:
 		errors.append("recipe.version: expected 1")
 	if not data.get("name") is String or str(data.get("name", "")).strip_edges().is_empty():
@@ -42,7 +42,7 @@ static func validate(data: Dictionary) -> Array[String]:
 			seen[code] = true
 		if data.get("classification", "normal") == "normal" and not expected.is_empty():
 			errors.append("recipe.expected_violations: normal scenes cannot waive checks")
-	for field in ["extent", "city", "anchors", "setup", "playback", "stretch"]:
+	for field in ["extent", "city", "anchors", "setup", "playback", "stretch", "draft"]:
 		if not data.get(field, {}) is Dictionary:
 			errors.append("recipe.%s: expected an object" % field)
 	if not errors.is_empty():
@@ -55,6 +55,12 @@ static func validate(data: Dictionary) -> Array[String]:
 		errors.append("stretch: a stretch scope and a stretch object come together")
 	elif data.has("stretch"):
 		_validate_stretch(data.stretch, errors)
+	if data.get("draft", {}) is Dictionary:
+		_keys(data.get("draft", {}), ["include"], "draft", errors)
+		var include: Variant = data.get("draft", {}).get("include", [])
+		if not include is Array or not (include as Array).all(
+				func(tile: Variant) -> bool: return tuple(tile, 2, true)):
+			errors.append("draft.include: a list of tiles [x, y] whose ground the draft adds")
 	if extent.get("scope") == "bounded":
 		if not tuple(extent.get("bounds"), 4, true):
 			errors.append("extent.bounds: expected [x,y,width,height] in integer tiles")

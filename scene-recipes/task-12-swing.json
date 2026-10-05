@@ -27,21 +27,19 @@
       {"at":[1776,3600],"kind":"rules"}
     ],
     "actors": [
-      {"name":"car_1","kind":"car","at":[976,3652.29],"direction":"south","speed":151.6679},
-      {"name":"walker_1","kind":"walker","at":[1038.16,3592],"direction":"east","speed":56.545},
-      {"name":"walker_2","kind":"walker","at":[1183.11,3592],"direction":"west","speed":48.0356},
-      {"name":"walker_3","kind":"walker","at":[1201.31,3592],"direction":"west","speed":51.0504},
-      {"name":"walker_4","kind":"walker","at":[1486.33,3592],"direction":"east","speed":46.4214},
-      {"name":"walker_5","kind":"walker","at":[1848,3620.68],"direction":"north","speed":72.3682},
-      {"name":"walker_6","kind":"walker","at":[998.43,3640],"direction":"west","speed":70.1271},
-      {"name":"walker_7","kind":"walker","at":[1976,3679.26],"direction":"south","speed":67.2873},
-      {"name":"walker_8","kind":"walker","at":[1800,3684.4],"direction":"south","speed":51.4193},
-      {"name":"walker_9","kind":"walker","at":[1305.69,3720],"direction":"east","speed":61.9037},
-      {"name":"walker_10","kind":"walker","at":[1976,3732.42],"direction":"south","speed":52.869},
-      {"name":"walker_11","kind":"walker","at":[1928,3757.19],"direction":"north","speed":57.9274},
+      {"name":"walker_1","kind":"walker","at":[1800,3588.4],"direction":"south","speed":51.4193},
+      {"name":"walker_2","kind":"walker","at":[1038.16,3592],"direction":"east","speed":56.545},
+      {"name":"walker_3","kind":"walker","at":[1183.11,3592],"direction":"west","speed":48.0356},
+      {"name":"walker_4","kind":"walker","at":[1201.31,3592],"direction":"west","speed":51.0504},
+      {"name":"walker_5","kind":"walker","at":[1976,3636.42],"direction":"south","speed":52.869},
+      {"name":"walker_6","kind":"walker","at":[1928,3661.19],"direction":"north","speed":57.9274},
+      {"name":"walker_7","kind":"walker","at":[1879.01,3720],"direction":"west","speed":46.8671},
+      {"name":"walker_8","kind":"walker","at":[1898.32,3720],"direction":"west","speed":65.4635},
+      {"name":"walker_9","kind":"walker","at":[1080,3764.74],"direction":"north","speed":63.4442},
+      {"name":"walker_10","kind":"walker","at":[1600.78,3768],"direction":"east","speed":48.6967},
+      {"name":"walker_11","kind":"walker","at":[1714.4,3768],"direction":"west","speed":70.9963},
       {"name":"walker_12","kind":"walker","at":[1813.49,3768],"direction":"west","speed":49.4592},
-      {"name":"walker_13","kind":"walker","at":[1080,3860.74],"direction":"north","speed":63.4442},
-      {"name":"walker_14","kind":"walker","at":[1080,3928.12],"direction":"south","speed":67.1358}
+      {"name":"walker_13","kind":"walker","at":[1080,3832.12],"direction":"south","speed":67.1358}
     ],
     "route_bag": {
       "marbles": ["cat_dash","cat_dash","cat_dash","cat_dash","cat_dash","loose_dog","loose_dog","loose_dog","loose_dog","loose_dog","loose_dog","cyclist","cyclist","cyclist"],
@@ -71,7 +69,7 @@
   },
   "stretch": {
     "tiles": {
-      "alley": [[110,50,51],[111,50,51]],
+      "alley": [[104,50,51],[105,50,51],[106,50,51],[107,50,51],[108,50,51],[109,50,51],[110,50,51],[111,50,51]],
       "sidewalk": [
         [112,28,29],
         [112,32,43],
@@ -166,6 +164,15 @@
       {"kind":"newspaper","at":[1650.15,3639.57]}
     ],
     "cracks": [
+      [50,104,0,1],
+      [50,105,2,0],
+      [51,106,1,0],
+      [50,107,2,0],
+      [51,107,1,0],
+      [50,108,2,1],
+      [51,108,2,1],
+      [50,109,2,1],
+      [51,109,2,1],
       [50,110,1,1],
       [51,110,0,0],
       [50,111,2,0],
