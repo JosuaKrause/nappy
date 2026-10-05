@@ -15,6 +15,7 @@ func run(t) -> void:
 	_test_forced_queue_is_untouched(t)
 	_test_pacing_switches_after_the_return_is_owed(t)
 	_test_each_patrol_comes_within_its_rigged_bag(t)
+	_test_a_marble_spent_unmet_counts_against_the_patrols_bag(t)
 	_test_sited_on_driveable_road_toward_her(t)
 	_test_empty_in_a_park(t)
 	_test_constants_validate(t)
@@ -147,6 +148,49 @@ func _test_each_patrol_comes_within_its_rigged_bag(t) -> void:
 		spaced = spaced and met.slice(i * x, (i + 1) * x).count("police_patrol") == 1
 	t.check(spaced, "each of the %d patrols is one of the %d events after the one before (%s)"
 			% [count, x, met])
+
+## A marble spent unmet because its row has had its `max_per_day` was one of a patrol's rigged bag
+## all the same, so it counts against that bag and the next patrol is rigged when the bag is gone —
+## or "within 2" would quietly become "within 3" for every such marble. Asked of a return on which
+## every ordinary row has had its day: each patrol's other marble is spent unmet, so the patrols are
+## the only events handed out, one after another. Counted only when handed out, the first patrol's
+## bag would never be spent and the others would never be rigged.
+func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t) -> void:
+	var map := _map()
+	var day := 13
+	var state := CityState.new()
+	state.begin_day(map.block_plans, day)
+	map.repaint(state)
+	var plan_rng := RandomNumberGenerator.new()
+	plan_rng.seed = 23
+	var plans := EventScheduler.build_day(day, plan_rng, map, [], [], [], RouteTree.for_day(map, day), 0)
+	var director := EventDirector.new(map)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 31
+	director.start_day(day, plans, rng)
+	for id: String in director._ordinary_rows:
+		director._met_today[id] = (director._route_rows[id] as EventDef).max_per_day
+	director.owe_the_return(day, 0)
+	var count: int = Tuning.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(day) - 1]
+	var at := CrowdLanes.arterial_pavement(map)
+	at.y = map.world_size().y * 0.5
+	var velocity := Vector2(0.0, -Tuning.WALK_SPEED)
+	var y_max: float = map.world_size().y
+	var met: Array[String] = []
+	var walked := 0.0
+	var step := 0.1
+	while walked < 300.0 and met.size() < count:
+		var due := director.due(step, at, velocity)
+		if not due.is_empty():
+			met.append((due[0] as EventDef).id)
+		at += velocity * step
+		if at.y < 0.0 or at.y > y_max:
+			velocity.y = -velocity.y
+			at.y = clampf(at.y, 0.0, y_max)
+		walked += step
+	t.check(met.size() == count and met.count("police_patrol") == count,
+			"with every ordinary row capped, all %d patrols still come, one after another (%s)"
+			% [count, met])
 
 # --------------------------------------------------------------------- siting ---
 

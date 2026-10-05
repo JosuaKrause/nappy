@@ -1599,11 +1599,20 @@ const AHEAD_INTERVAL := Vector2(11.0, 26.0)
 ## (`EventDirector`, `MarbleBag.in_proportion()`), rounded, at least one a row. *(olive-koala,
 ## statement 2: "events should use the marble bag approach as well. that way we can control what
 ## the player sees on their route".)* The bag is the stretch over which the mix is exact, so it is
-## sized to about a day's worth of what she meets: at 2 the rows' weights (2.5, 1.5 and 3.0, and
-## day 3's dog at 1.4) make a bag of 14 — 17 on day 3 — against the ten or so a whole day of
-## walking at `AHEAD_INTERVAL` hands out (`tests/probes/olive_badger_route_mix.gd` counts them),
-## and every weight but the dog's comes out whole.
+## sized to about a day's worth of what she meets: at 2 the rows' weights (2.5, 1.5 and 3.0) make a
+## bag of 14 — 16 on day 3, with `ROUTE_BAG_MARBLES_OF`'s dogs — against the ten or so a whole day
+## of walking at `AHEAD_INTERVAL` hands out (`tests/probes/olive_badger_route_mix.gd` counts them),
+## and every weight comes out whole.
 const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
+
+## Rows whose marbles in her route's bag are set here rather than by `ROUTE_BAG_MARBLES_PER_WEIGHT`
+## times their weight, because the weight is not only the bag's: the dawn's weighted roll reads it
+## on every day the row is placed. *(inbox #566: "if we want to change the probability then we can
+## change the bag -- I'd say we could do 2 dogs -- we don't need the charging dog that often and in
+## 17 rolls there are two guaranteed ones".)* `charging_dog` is in the bag only on day 3, the one
+## day it is director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`)
+## and takes none of these, so with the lesson and these two `max_per_day`'s 3 rarely binds.
+const ROUTE_BAG_MARBLES_OF := {"charging_dog": 2}
 
 ## How many of the events placed on her route after day 6's mark a man shouting is one of: the
 ## route's bag is rigged (`MarbleBag.rig()`) with a bag of this many marbles, one `homeless_yeller`

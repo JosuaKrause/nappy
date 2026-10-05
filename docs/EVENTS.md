@@ -206,9 +206,14 @@ each of them is** is drawn from a bag when it is handed out: `EventDirector` fil
 dawn with every row it sites that day — recurring, available, `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` —
 `Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight, so over any stretch the length of a
 bag the mix she meets is the rows' own rather than a roll's
-streaks. The bag has its own stream, so the intervals and the sides a crossing comes from are what
-they would be without it. A row met `max_per_day` times that day has its further marbles spent
-unmet. A row owed as itself — a sprinkled dog, the return's patrols, a forced row — is not a marble.
+streaks. A row `Tuning.ROUTE_BAG_MARBLES_OF` names has the marbles it sets instead: day 3's
+`charging_dog` has 2 (inbox #566: "I'd say we could do 2 dogs -- we don't need the charging dog
+that often"), set in the bag because the dawn roll reads the row's weight too. The bag has its own
+stream and draws nothing from the director's; the director's own draws still follow from which row
+each handout is — a crossing spends one on the side it comes from, a row down her line none — so the
+same seed and the same walk are the same day. A row met `max_per_day` times that day has its further
+marbles spent unmet. A row owed as itself — a sprinkled dog, a forced row — is not a marble; the
+return's patrols are rigged marbles (below).
 `tests/probes/olive_badger_route_mix.gd` measures the mix against the rows' weights over many seeds.
 
 **The bag is a queue of bags, and a bag can be rigged** (`MarbleBag.rig()`, inbox #561: "create a
@@ -232,15 +237,23 @@ list, so the guarantee is about what is placed on her route. Two rigs stand:
   first"). It is a mast like the one `EventManager.queue_a_mast()` adds, named by its foot.
 - **Each of the return leg's patrols** — see "The return owes her patrols" below.
 
-Day 3's lesson stays the first thing she meets (inbox #561: "keep it first"); its marble is taken
-out of the bag (`MarbleBag.take()`), so the dog's share over a bag stays its weight's with the
-lesson counted in it. **A rig that must not come sooner** takes the two-bag shape
+**Day 3's lesson is a rigged bag of one**, and it stays the first thing she meets (inbox #561:
+"keep it first"; inbox #566: "the first dog is a rigged bag with only one entry that is separate
+from anything that comes after" · "the lesson is not paid for. why would it be? that's not how the
+marble bag works"). A bag holding only the dog goes in front at dawn and takes nothing from the bag
+behind it, so the ordinary bag keeps both its dog marbles and the lesson is on top of them; the
+first of the events the dawn bought for her route is drawn from it, at `LESSON_DELAY`.
+**A rig that must not come sooner** takes the two-bag shape
 (`MarbleBag.rig_spaced()`): a bag of what comes first, none of it the ensured marble, then a bag of
 the ensured marble; nothing uses it today.
 
-**A marble may itself be a bag**: drawing it draws from it, and it is back in the next outer bag, so
-its marbles come at most once an outer bag (inbox #561: "this makes it very unlikely that two events
-from the inner bag happen right after each other"). Nothing on her route uses one today.
+**A marble may itself be a bag**: drawing it draws from it, and the bag marble goes straight back
+into the bag it was drawn from (inbox #561: "this makes it very unlikely that two events from the
+inner bag happen right after each other"). An inner bag of n marbles is spent after n draws (the
+player: "The inner bag becomes empty after n draws"), and the draw that empties it takes the bag
+marble out for good, out of every queued bag and the ordinary set, so it gives exactly n events
+and a bag marble left last in its bag drains its inner bag and stops. A rigged bag holding one lasts
+until it is spent. Nothing on her route uses one today.
 
 ### The return owes her patrols
 

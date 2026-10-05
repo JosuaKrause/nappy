@@ -4,10 +4,11 @@ extends RefCounted
 ## Holds what a run cannot show at a glance: that a bag put in front of another leaves the one it
 ## interrupted exactly as it was, that rigging a bag makes and loses no marble but the ensured one
 ## (inbox #561: "you will be left with two initialized bags: 1 with x elements and one with n-x+1
-## elements"), that a bag marble hands out once an outer bag, that a stretch of her route the length
-## of a bag has the rows' own mix, that day 3's lesson is still first, and that after day 6's and day
-## 11's marks the task's row is one of the next events placed on her route, ahead of her, where she
-## can reach it, and in the world once she walks on.
+## elements"), that an inner bag of n marbles gives n events and is gone, that a stretch of her
+## route the length of a bag has the rows' own mix, that day 3's lesson is still first and paid for
+## by nothing in the bag, and that after day 6's and day 11's marks the task's row is one of the next
+## events placed on her route, ahead of her, where she can reach it, and in the world once she walks
+## on.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
@@ -18,8 +19,8 @@ func run(t) -> void:
 	_test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t)
 	_test_a_marble_peeked_at_is_the_marble_drawn(t)
 	_test_a_spaced_rig_comes_after_its_bag_and_no_sooner(t)
-	_test_a_bag_marble_hands_out_once_a_bag(t)
-	_test_day_3s_lesson_is_first_and_one_of_the_bags_dogs(t)
+	_test_an_inner_bag_of_n_gives_n_events_and_is_gone(t)
+	_test_day_3s_lesson_is_first_and_a_bag_of_its_own(t)
 	_test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t)
 	_test_after_the_mark_the_task_row_is_put_on_her_route(t)
 
@@ -118,35 +119,51 @@ func _test_a_spaced_rig_comes_after_its_bag_and_no_sooner(t) -> void:
 		t.check(sorted == expected, ("seed %d: with the dog's own marble taken out, the bags " +
 				"between them hold the ordinary set exactly") % seed_value)
 
-## A marble that is itself a bag: drawing it draws from it, and it is back in the next outer bag, so
-## its marbles come at most once an outer bag — never two from it in one bag — and over its own
-## length they keep its own share. Peeking at it names what its draw will give.
-func _test_a_bag_marble_hands_out_once_a_bag(t) -> void:
-	var inner := MarbleBag.new([], ["robber", "van", "van"], 3)
-	var outer_set := ["cat", "cat", "dog", "dog", "dog", inner]
-	var outer := MarbleBag.new([], outer_set, 4)
-	var from_inner := 0
-	var twice_in_a_bag := 0
-	var inner_marbles: Array = []
+## A marble that is itself a bag *(inbox #561; asked whether a drawn bag marble goes back at once or
+## with the next outer fill: "The inner bag becomes empty after n draws")*: drawing it draws from
+## it and it goes straight back into the outer bag, and an inner bag of n marbles gives exactly n
+## events and is then never drawn again — not by this outer bag and not by any later fill. A bag
+## marble left last in its bag drains its inner bag and stops. Peeking names what a draw gives.
+func _test_an_inner_bag_of_n_gives_n_events_and_is_gone(t) -> void:
+	var others := ["cat", "cat", "dog", "dog", "dog"]
+	var inner_marbles := ["robber", "van", "van"]
 	var peeked_right := true
-	for bag_index in 6:
-		var this_bag := 0
-		for _i in outer_set.size():
+	for seed_value: int in [3, 4, 5, 6, 7]:
+		var inner := MarbleBag.new([], inner_marbles, seed_value)
+		var outer := MarbleBag.new([], others + [inner], seed_value + 100)
+		var first: Array = []
+		for _i in others.size() + inner_marbles.size():
 			var looked: Variant = outer.peek()
 			var marble: Variant = outer.draw()
 			peeked_right = peeked_right and looked == marble
-			if marble in ["robber", "van"]:
-				this_bag += 1
+			first.append(marble)
+		first.sort()
+		var expected: Array = others + inner_marbles
+		expected.sort()
+		t.check(first == expected, ("seed %d: back in at once, the first outer bag gives its %d " +
+				"marbles and all %d of the inner bag's (%s)")
+				% [seed_value, others.size(), inner_marbles.size(), first])
+		var later: Array = []
+		for _i in others.size() * 3:
+			later.append(outer.draw())
+		var from_inner := 0
+		for marble: Variant in later:
+			if inner_marbles.has(marble):
 				from_inner += 1
-				inner_marbles.append(marble)
-		if this_bag > 1:
-			twice_in_a_bag += 1
-	t.check(from_inner == 6 and twice_in_a_bag == 0,
-			"the bag marble hands out once an outer bag, %d over 6 bags, never twice in one" % from_inner)
-	inner_marbles.sort()
-	t.check(inner_marbles == ["robber", "robber", "van", "van", "van", "van"],
-			"and over two of its own bags the inner marbles keep its share (%s)" % [inner_marbles])
+		t.check(from_inner == 0 and later.size() == others.size() * 3,
+				"seed %d: and once its inner bag is empty the bag marble is never drawn again (%s)"
+				% [seed_value, later])
 	t.check(peeked_right, "a peek at a bag marble names what its draw gives")
+
+	var last_inner := MarbleBag.new(inner_marbles, [], 8)
+	var last := MarbleBag.new([last_inner], ["cat"], 9)
+	var drained: Array = []
+	for _i in inner_marbles.size():
+		drained.append(last.draw())
+	drained.sort()
+	t.check(drained == inner_marbles and last.draw() == "cat" and last.draw() == "cat",
+			"a bag marble left last in its bag drains its %d marbles and stops (%s)"
+			% [inner_marbles.size(), drained])
 
 # ------------------------------------------------------------- her route ---
 
@@ -173,7 +190,8 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
 		for id: String in director._route_rows:
 			weights[id] = (director._route_rows[id] as EventDef).weight
 		var expected := {}
-		for marble: String in MarbleBag.in_proportion(weights, Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT):
+		for marble: String in MarbleBag.in_proportion(weights, Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT,
+				Tuning.ROUTE_BAG_MARBLES_OF):
 			expected[marble] = int(expected.get(marble, 0)) + 1
 		var length := 0
 		for id: String in expected:
@@ -205,9 +223,11 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
 				% [seed_value, length, met, expected])
 
 ## Day 3's lesson through the director: on a real day's plan the dog is the first thing she meets,
-## and its marble has come out of the route's bag, so over a bag its share is its weight's with the
-## lesson counted in it. *(inbox #561: "keep it first".)*
-func _test_day_3s_lesson_is_first_and_one_of_the_bags_dogs(t) -> void:
+## at `LESSON_DELAY`, out of a rigged bag of one in front of the route's bag, and the ordinary bag
+## after it still holds every dog marble it was filled with. *(inbox #561: "keep it first" · inbox
+## #566: "but the first dog is a rigged bag with only one entry that is separate from anything that
+## comes after" · "the lesson is not paid for".)*
+func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for seed_value: int in [4242, 90210]:
 		var map := CityGenerator.generate(seed_value)
@@ -222,26 +242,34 @@ func _test_day_3s_lesson_is_first_and_one_of_the_bags_dogs(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:lesson:ahead:%d" % seed_value)
 		director.start_day(day, plans, rng)
-		var weights := {}
-		for id: String in director._route_rows:
-			weights[id] = (director._route_rows[id] as EventDef).weight
-		var dogs := MarbleBag.in_proportion(weights,
-				Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT).count("charging_dog")
-		t.check(dogs > 0 and director.route_bag().bag_in_front().count("charging_dog") == dogs - 1,
-				"seed %d: the lesson's marble is one of the bag's %d dogs" % [seed_value, dogs])
+		var bag := director.route_bag()
+		t.check(bag.sizes() == [1] and bag.bag_in_front() == ["charging_dog"],
+				"seed %d: the lesson is a bag of one dog in front of the route's bag (%s, %s)"
+				% [seed_value, bag.sizes(), bag.bag_in_front()])
 		var first := ""
+		var first_at := 0.0
 		var at := CrowdLanes.arterial_pavement(map)
 		at.y = map.world_size().y * 0.5
 		var velocity := Vector2(0.0, -Tuning.WALK_SPEED)
 		var walked := 0.0
 		while first == "" and walked < 60.0:
 			var due := director.due(STEP, at, velocity)
-			if not due.is_empty():
-				first = (due[0] as EventDef).id
 			at += velocity * STEP
 			walked += STEP
+			if not due.is_empty():
+				first = (due[0] as EventDef).id
+				first_at = walked
 		t.check(first == "charging_dog", "seed %d: the first thing she meets is the lesson's dog (%s)"
 				% [seed_value, first])
+		t.close_to(first_at, EventDirector.LESSON_DELAY,
+				"seed %d: and she meets it at LESSON_DELAY of walking" % seed_value, STEP * 1.5)
+		# The next marble fills the ordinary bag: the lesson took none of it.
+		bag.peek()
+		var ordinary := bag.bag_in_front()
+		var dogs: int = Tuning.ROUTE_BAG_MARBLES_OF["charging_dog"]
+		t.check(ordinary.count("charging_dog") == dogs,
+				"seed %d: the ordinary bag after the lesson keeps all %d of its dog marbles (%d of %d)"
+				% [seed_value, dogs, ordinary.count("charging_dog"), ordinary.size()])
 
 ## Day 6's man shouting and day 11's second mast, through a real city: reading the mark rigs her
 ## route with a bag of the task's size holding the row once; walking the day's route, it is one of
@@ -356,6 +384,23 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 		if row == "loudspeaker":
 			t.check(plan.mast_id == EventScheduler.added_mast_id(plan.position),
 					"a mast put on her route is a mast the day can silence, named by its foot")
+			t.check(MastSites._is_eligible(plan.position, map),
+					"a mast put on her route stands where a mast site may (off the home street)")
+			# And not by luck of this seed: the ground a route mast is offered holds no tile a mast
+			# site would refuse, out of a sidewalk and square that do hold some.
+			var mast := city.events._director.route_row(row)
+			var offered: Dictionary = city.events._siting._ground_as_a_set(mast)
+			var refused_offered := 0
+			for at: Vector2i in offered:
+				if not MastSites._is_eligible(map.tile_to_world(at), map):
+					refused_offered += 1
+			var refused_ground := 0
+			for at in EventScheduler._open_ground_for(mast, map, {}, mast.pavement_side):
+				if not MastSites._is_eligible(map.tile_to_world(at), map):
+					refused_ground += 1
+			t.check(not offered.is_empty() and refused_offered == 0 and refused_ground > 0,
+					"a route mast is offered none of the %d tiles of its ground a mast site refuses (%d)"
+					% [refused_ground, refused_offered])
 		t.check(plan.live == null, "day %d: it is not in the world while she is far from it" % day)
 		city.events.stream_around(plan.position)
 		t.check(plan.live != null and is_instance_valid(plan.live),

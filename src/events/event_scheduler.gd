@@ -1334,6 +1334,9 @@ class WalkSiting extends RefCounted:
 					offered.append(tile)
 		return offered
 
+	## The row a mast is, for `_ground_as_a_set()`.
+	const MAST_ROW := "loudspeaker"
+
 	## `_open_ground_for`'s list as a set, so a cell can ask whether one of its four tiles is in it.
 	##
 	## **The precinct weighting is dropped here and that is correct rather than a shortcut.** The
@@ -1345,12 +1348,20 @@ class WalkSiting extends RefCounted:
 	## `AT_THE_FRONT` lane with every rule `_open_ground_for` asks of any other row, narrowed to the
 	## tiles in `fronts` — in front of a blank ground-floor cell, which only the city's buildings
 	## know — and nothing at all where no city handed any over.
+	##
+	## **A mast is offered only ground a mast site would be** (`MastSites._is_eligible()`: off the home
+	## street, its field off a calm interior and off every place a region door could stand), the same
+	## refusal day 11's mast near the mark is under — a mast is never on the home street (M180, the
+	## masts), whichever way it is put down.
 	func _ground_as_a_set(def: EventDef) -> Dictionary:
 		var side := EventDef.Pavement.AT_THE_FRONT if def.pastes_a_front else def.pavement_side
-		var key := "set|%s|%d" % [def.placement, side]
+		var a_mast := def.id == MAST_ROW
+		var key := "set|%s|%d%s" % [def.placement, side, "|mast" if a_mast else ""]
 		if not _ground.has(key):
 			var found := {}
 			for tile in EventScheduler._open_ground_for(def, _map, _ground, side):
+				if a_mast and not MastSites._is_eligible(_map.tile_to_world(tile), _map):
+					continue
 				if not def.pastes_a_front or fronts.has(tile):
 					found[tile] = true
 			_ground[key] = found

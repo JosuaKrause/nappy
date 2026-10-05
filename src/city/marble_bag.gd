@@ -23,11 +23,15 @@ extends RefCounted
 ## **A marble may itself be a bag.** *(inbox #561: "a marble in a bag is itself a bag. when its drawn
 ## the bag marble gets drawn from and produces the actual event then the bag marble gets placed bag
 ## in the outer bag. this makes it very unlikely that two events from the inner bag happen right
-## after each other".)* Drawing a `MarbleBag` marble draws from it and answers what that draw gave;
-## the marble leaves the bag it was drawn from like any other and is back in the next one filled,
-## because the ordinary set holds the inner bag itself rather than a copy. So the inner bag hands
-## out at most one marble per outer bag, and two in a row only across the seam between two bags,
-## while its own marbles keep their own exact share.
+## after each other" · asked whether a drawn bag marble goes back at once or with the next outer
+## fill: "The inner bag becomes empty after n draws".)* Drawing a `MarbleBag` marble draws from it
+## and answers what that draw gave, and the bag marble goes straight back into the bag it was drawn
+## from. **An inner bag of n marbles is spent after n draws**: the draw that empties it takes the bag
+## marble out for good — out of every bag in the queue and out of the ordinary set, so no later fill
+## brings it back. So it gives exactly n events, each draw of the outer bag reaches it at its own
+## share of what is left, and a bag marble left last in its bag drains its inner bag and stops rather
+## than being drawn for ever. A bag marble keeps the bag holding it from emptying until it is spent,
+## so a rigged bag holding one lasts longer than its size.
 ##
 ## **A run's draws are reproducible from its seed**: the stream is the bag's own, and the marble a
 ## draw takes is chosen the first time it is asked about (`peek()`), so asking first and drawing
@@ -56,11 +60,16 @@ func _init(pre_bag: Array, ordinary: Array, seed_value: int) -> void:
 
 ## A bag of the keys of `weights` in proportion to their weights: `marbles_per_weight` marbles per
 ## unit of weight, rounded, and at least one of each, in `weights`' own order so a seeded draw over
-## it is the same every time.
-static func in_proportion(weights: Dictionary, marbles_per_weight: float) -> Array:
+## it is the same every time. A key in `counts` has that many marbles instead, its weight aside —
+## for a caller that sets how often one thing comes in the bag rather than through the weight
+## something else reads.
+static func in_proportion(weights: Dictionary, marbles_per_weight: float,
+		counts := {}) -> Array:
 	var marbles := []
 	for key: Variant in weights:
-		for _i in maxi(1, roundi(float(weights[key]) * marbles_per_weight)):
+		var count: int = int(counts[key]) if counts.has(key) \
+				else maxi(1, roundi(float(weights[key]) * marbles_per_weight))
+		for _i in count:
 			marbles.append(key)
 	return marbles
 
@@ -82,13 +91,41 @@ func draw() -> Variant:
 	var marble: Variant = _peek_the_marble()
 	if _picked < 0:
 		return marble
+	if marble is MarbleBag:
+		# Back in at once: the bag marble stays where it is until its inner bag is spent.
+		var inner := marble as MarbleBag
+		var given: Variant = inner.draw()
+		_picked = -1
+		drawn += 1
+		if inner.ran_empty():
+			_retire(inner)
+		return given
 	var bag: Array = _queue[0]
 	bag.remove_at(_picked)
 	_picked = -1
 	if bag.is_empty():
 		_queue.pop_front()
 	drawn += 1
-	return marble.draw() if marble is MarbleBag else marble
+	return marble
+
+## Whether the draws so far have emptied every bag in the queue — the last draw took the last
+## marble there was, and only a fresh fill of the ordinary set could give another. A bag marble whose
+## inner bag has run empty is spent and leaves the outer bag for good (`draw()`), whatever the inner
+## bag's ordinary set holds.
+func ran_empty() -> bool:
+	return drawn > 0 and _queue.is_empty()
+
+## Takes a spent bag marble out of every bag in the queue and out of the ordinary set, so it is
+## never drawn again; a bag left empty by it is dropped from the queue.
+func _retire(inner: MarbleBag) -> void:
+	while _ordinary.has(inner):
+		_ordinary.erase(inner)
+	for i in range(_queue.size() - 1, -1, -1):
+		var bag: Array = _queue[i]
+		while bag.has(inner):
+			bag.erase(inner)
+		if bag.is_empty():
+			_queue.remove_at(i)
 
 ## The marble itself the next draw takes out of the bag being drawn from — a bag marble as the bag.
 func _peek_the_marble() -> Variant:
