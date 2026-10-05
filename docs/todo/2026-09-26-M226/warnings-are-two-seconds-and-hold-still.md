@@ -1,5 +1,5 @@
-**Every off-screen warning is at most two seconds and holds still** (inbox #559 in [calm-kestrel](../../playtests/2026-10-04-calm-kestrel.md)). The badge shows
-for a fixed time of at most two seconds with nothing placed, then the thing is created just off
+**Every off-screen warning is one second and holds still** (inbox #559 in [calm-kestrel](../../playtests/2026-10-04-calm-kestrel.md), #569). The badge
+shows for one second with nothing placed, then the thing is created just off
 screen where the badge points, close enough that it enters the view at once and the badge turns off.
 While the badge is up it does not jump about ("they jump around wildly" is the defect). *Proposed, not
 asked for:* its bearing fixed when it goes up, or following only her own movement, never a re-planned

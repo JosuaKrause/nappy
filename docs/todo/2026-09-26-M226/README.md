@@ -51,3 +51,10 @@ reading that keeps both of the player's statements; the other reading, that the 
 including the visible closing fits in two seconds, would overturn the gold timing and is not taken
 without asking the player.
 
+**The badge alone is one second** ([busy-quail](../../playtests/2026-10-04-busy-quail.md), inbox #569,
+said of the trap robber's 2.0s notice):
+
+> 1s warning should be enough -- there is enough screen space to cross -- let's apply that to the others as well
+
+So the two-second ceiling above is one second, for every off-screen arrival.
+
