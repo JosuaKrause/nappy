@@ -99,8 +99,10 @@ func run(t) -> void:
 	_test_an_arrow_exists_on_every_task_day(t)
 	_test_the_arrow_chooses_by_walking_distance_not_straight_line(t)
 	_test_the_arrow_switches_as_another_target_becomes_closer(t)
+	_test_the_arrow_moves_at_four_tiles_closer_and_not_at_three(t)
+	_test_the_arrow_leaves_a_freed_instance_at_once(t)
 	_test_a_single_target_arrow_stays_on_its_contact(t)
-	_test_only_the_near_mast_and_the_routed_mast_answer_day_eleven(t)
+	_test_day_eleven_answers_at_the_near_mast_and_the_routed_mast_only(t)
 	_test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
 	_test_the_swings_touch_is_the_ellipse_at_its_base(t)
 	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
@@ -4159,32 +4161,34 @@ func _test_an_arrow_exists_on_every_task_day(t) -> void:
 	GameState.resistance_progress = saved_progress
 	GameState.sabotage_done = saved_sabotage
 
-## The top-left tile of a straight run of walkable, unobstructed tiles `before` tiles to its left
-## and `after` to its right, for building a constructed case, or (-1, -1).
-func _open_run_for(director: ResistanceDirector, before: int, after: int) -> Vector2i:
-	director._ensure_reachability()
+## A tile with a straight run of walkable tiles that nothing blocks today — no closure, no soft
+## seal, no body standing — `before` tiles to its left and `after` to its right, for building a
+## constructed case, or (-1, -1).
+func _open_run_for(before: int, after: int) -> Vector2i:
 	var map := _city.map
 	for y in range(8, map.size.y - 8):
 		for x in range(before + 1, map.size.x - after - 1):
 			var open := true
 			for dx in range(-before, after + 1):
 				var tile := Vector2i(x + dx, y)
-				if not map.is_walkable(tile) or director._reach_blocked.has(tile):
+				if not map.is_walkable(tile) or map.is_closed(tile) or map.is_obstructed(tile) \
+						or map.is_soft_sealed(tile):
 					open = false
 					break
 			if open:
 				return Vector2i(x, y)
 	return Vector2i(-1, -1)
 
-## Day 6 on the test city with every man shouting but the ones this test puts in retired, and a
-## rig of her at `here`: `[director, her rig, tile]`, the tile the open run is centred on.
+## Day 6 on the test city with every man shouting retired, so the ones a test puts in are the only
+## ones, and a rig of her on an open run: `[director, her rig, tile]`, the tile the run is centred
+## on.
 func _yeller_arrow_case(t, before: int, after: int) -> Array:
 	var director := _director_on_the_yeller_perform(t)
 	for instance in _city.events.instances():
 		if instance.def.id == "homeless_yeller":
 			_city.events.retire(instance)
 	director._rider = null
-	var tile := _open_run_for(director, before, after)
+	var tile := _open_run_for(before, after)
 	var player := _rig_player(t, _city.map.tile_to_world(tile))
 	return [director, player, tile]
 
@@ -4192,9 +4196,10 @@ func _put_a_yeller(tile: Vector2i) -> EventInstance:
 	return _city.events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
 			_city.map.tile_to_world(tile))
 
-## plush-moose, "closest here always means path closeness not crow closeness": a wall of closed
-## ground between her and the man who is nearer as the crow flies sends the arrow to the farther
-## one she can walk to.
+## plush-moose, "closest here always means path closeness not crow closeness": a wall of standing
+## bodies between her and the man who is nearer as the crow flies sends the arrow to the farther
+## one she can walk to sooner. The wall goes up after the arrow has chosen, in the live record of
+## bodies (`CityMap.obstruct_tiles()`), so this is also the arrow reading what blocks her now.
 func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
@@ -4209,24 +4214,27 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
 			t.check(player.global_position.distance_to(near_by_crow.global_position)
 					< player.global_position.distance_to(near_by_path.global_position),
 					"the one beyond the wall is the nearer as the crow flies")
-			director.retarget_the_arrow()
+			director._settle_the_arrow()
 			t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) < 1.0,
 					"with nothing between them the arrow points at the nearer one")
-			# A wall of closed ground two tiles beyond her, far longer than the detour allowance.
+			# A wall of bodies three tiles beyond her, far longer than the hold.
+			var wall: Array[Vector2i] = []
 			for dy in range(-30, 31):
-				director._reach_blocked[here + Vector2i(3, dy)] = true
-			director._arrow_key = null
-			director.retarget_the_arrow()
+				wall.append(here + Vector2i(3, dy))
+			var owner := get_instance_id()
+			_city.map.obstruct_tiles(owner, wall)
+			director._settle_the_arrow()
 			t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
 					"behind a wall the arrow points at the one she can walk to sooner")
 			t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) > 100.0,
 					"and not at the nearer as the crow flies")
+			_city.map.release_obstruction(owner)
 		player.free()
 		director.free())
 
 ## plush-moose, "might switch if another closest one comes close": as she walks the arrow moves to
-## whichever target has become closer along her path, with a hold of `ARROW_HOLD_TILES` so two
-## about-as-near ones do not make it flicker, and the tick moves it by itself.
+## whichever target has become closer on foot, with a hold of `ARROW_HOLD_TILES` so two about-as-
+## near ones do not make it flicker, and the tick moves it by itself.
 func _test_the_arrow_switches_as_another_target_becomes_closer(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
@@ -4238,7 +4246,7 @@ func _test_the_arrow_switches_as_another_target_becomes_closer(t) -> void:
 		if here.x >= 0:
 			var west := _put_a_yeller(here + Vector2i(-6, 0))
 			var east := _put_a_yeller(here + Vector2i(14, 0))
-			director.retarget_the_arrow()
+			director._settle_the_arrow()
 			t.check(director.red_arrow_target().distance_to(west.global_position) < 1.0,
 					"standing at the start the arrow points at the closer one")
 			# Walking east: the other becomes closer by more than the hold, and the tick moves it.
@@ -4248,52 +4256,237 @@ func _test_the_arrow_switches_as_another_target_becomes_closer(t) -> void:
 					"walking toward the other one, the arrow switches to it")
 			# Back to a spot about as near to both: it stays where it is.
 			player.global_position = _city.map.tile_to_world(here + Vector2i(4, 0))
-			director.retarget_the_arrow()
+			director._settle_the_arrow()
 			t.check(director.red_arrow_target().distance_to(east.global_position) < 1.0,
 					"about as near to both, it does not flicker back")
 			# Ignoring the task and walking on west: it goes back to the first.
 			player.global_position = _city.map.tile_to_world(here + Vector2i(-4, 0))
-			director.retarget_the_arrow()
+			director._settle_the_arrow()
 			t.check(director.red_arrow_target().distance_to(west.global_position) < 1.0,
 					"walking away from the task the arrow jumps to the closest on the other side")
 		player.free()
 		director.free())
 
-## Day 11 has two masts that answer the task: the one near the mark and the one rigged onto her
-## route. Any other mast neither answers nor moves the contact.
-func _test_only_the_near_mast_and_the_routed_mast_answer_day_eleven(t) -> void:
+## The hold's margin, as the docs state it: another target exactly `ARROW_HOLD_TILES` (four) tiles
+## closer on foot takes the arrow, and one three tiles closer does not. Each case puts the arrow on
+## the east man first, then stands her where the walking lengths differ by that much, measured from
+## the fields themselves so a case the city's ground does not give is a failure, not a pass.
+func _test_the_arrow_moves_at_four_tiles_closer_and_not_at_three(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
+		var made := _yeller_arrow_case(t, 10, 18)
+		var director: ResistanceDirector = made[0]
+		var player: Stroller = made[1]
+		var here: Vector2i = made[2]
+		t.check(here.x >= 0, "the test city has an open run to build the case on")
+		if here.x >= 0:
+			for case: Array in [[14, ResistanceDirector.ARROW_HOLD_TILES, true],
+					[13, ResistanceDirector.ARROW_HOLD_TILES - 1, false]]:
+				var east_at: int = case[0]
+				var west := _put_a_yeller(here + Vector2i(-6, 0))
+				var east := _put_a_yeller(here + Vector2i(east_at, 0))
+				player.global_position = _city.map.tile_to_world(here + Vector2i(east_at - 1, 0))
+				director._settle_the_arrow()
+				t.check(director.red_arrow_target().distance_to(east.global_position) < 1.0,
+						"beside the east man the arrow is on him")
+				player.global_position = _city.map.tile_to_world(here + Vector2i(2, 0))
+				var tile := _city.map.world_to_tile(player.global_position)
+				var to_west := director._arrow_nearest.length_at(tile)
+				var to_east := director._arrow_own.length_at(tile)
+				t.check(director._arrow_nearest.nearest_at(tile) == west.get_instance_id()
+						and to_east - to_west == case[1],
+						"the west man is %d tiles closer on foot (%d against %d)"
+						% [case[1], to_west, to_east])
+				director.retarget_the_arrow()
+				var moved := director.red_arrow_target().distance_to(west.global_position) < 1.0
+				t.check(moved == case[2], "%d tiles closer %s the arrow"
+						% [case[1], "moves" if case[2] else "does not move"])
+				_city.events.retire(west)
+				_city.events.retire(east)
+		player.free()
+		director.free())
+
+## When the instance the arrow points at goes — freed as it streams out, the way
+## `EventManager._stream_out()` frees it — asking for the arrow is still a read that answers a
+## real place (the contact's own, never a freed one's and never (0, 0)), and the next frame points
+## the arrow at a target that is still there.
+func _test_the_arrow_leaves_a_freed_instance_at_once(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var made := _yeller_arrow_case(t, 15, 15)
+		var director: ResistanceDirector = made[0]
+		var player: Stroller = made[1]
+		var here: Vector2i = made[2]
+		t.check(here.x >= 0, "the test city has an open run to build the case on")
+		if here.x >= 0:
+			var near := _put_a_yeller(here + Vector2i(-4, 0))
+			var far := _put_a_yeller(here + Vector2i(12, 0))
+			# The contact rides the far one, as it rides a live man shouting all day.
+			director._rider = far
+			director._contact.ride(director._step, far, Vector2.ZERO)
+			director._settle_the_arrow()
+			t.check(director.red_arrow_target().distance_to(near.global_position) < 1.0,
+					"the arrow is on the nearer man")
+			_city.events._instances.erase(near)
+			near.free()
+			var asked := director.red_arrow_target()
+			t.check(asked == director.contact_position() and asked != Vector2.ZERO,
+					"asked after he is freed, it answers the contact's own place (%s)" % asked)
+			t.check(director._arrow_nearest_next == null,
+					"and asking started no sweep: it is a read")
+			director._process(STEP)
+			t.check(director.red_arrow_target().distance_to(far.global_position) < 1.0,
+					"the next frame the arrow is on a man still there")
+			director._settle_the_arrow()
+			t.check(director.red_arrow_target().distance_to(far.global_position) < 1.0,
+					"and stays there once the sweep without the freed one is done")
+		player.free()
+		director.free())
+
+## The cell centres of the day's longest route, from the doorstep end out: the walk she takes, as
+## `tests/test_route_bag.gd` walks it.
+func _longest_route_points() -> Array[Vector2]:
+	var longest: Array = []
+	for branch in _city.route_tree().branches:
+		for route: Array in branch.routes:
+			if route.size() > longest.size():
+				longest = route
+	var points: Array[Vector2] = []
+	for i in range(longest.size() - 1, -1, -1):
+		points.append(EventScheduler.WalkSiting._cell_centre(_city.map, longest[i]))
+	return points
+
+## Walks her down the day's longest route, the events placing what is owed ahead of her as they do
+## in play, until the mast reading day 11's mark rigged onto her route is put down: its mast id, or
+## "" if the walk ends first.
+func _walk_until_the_route_mast(director: ResistanceDirector, player: Stroller) -> String:
+	var path := _longest_route_points()
+	_city.events._find_player()
+	if path.size() < 2:
+		return ""
+	var index := 0
+	var direction := 1
+	player.global_position = path[0]
+	var walked := 0.0
+	var step := 0.1
+	while walked < 600.0:
+		for plan in _city.events.plans():
+			if plan.def.id == ResistanceDirector.MAST_ROW and plan.mast_id != "" \
+					and plan.mast_id != director._near_mast_id \
+					and not director._masts_at_the_mark.has(plan.mast_id):
+				return plan.mast_id
+		var next: Vector2 = path[index + direction] if index + direction >= 0 \
+				and index + direction < path.size() else Vector2.INF
+		if next == Vector2.INF:
+			direction = -direction
+			continue
+		var toward := next - player.global_position
+		if toward.length() < Tuning.WALK_SPEED * step:
+			player.global_position = next
+			index += direction
+			continue
+		player.velocity = toward.normalized() * Tuning.WALK_SPEED
+		_city.events._place_what_is_owed_ahead(step)
+		player.global_position += player.velocity * step
+		walked += step
+	return ""
+
+## A tile beside `foot` she can stand on to touch the mast there, as `_place_at_a_mast()` asks it.
+func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
+	var foot_tile := _city.map.world_to_tile(foot)
+	for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		var tile := foot_tile + side
+		if ResistanceDirector.is_legal_ground(_city.map, tile, director._walled_alleys()) \
+				and not _city.map.is_obstructed(tile):
+			return _city.map.tile_to_world(tile)
+	return Vector2.INF
+
+## Day 11, through the real rig: reading the mark rigs a mast onto her route, and walking the
+## day's route puts it down. Then the two masts the record names answer the task — the one near
+## the mark and the routed one — and no third mast does: standing at a third mast neither moves the
+## contact nor completes the task, while touching the routed mast completes it, silences that mast
+## and scars its foot, and leaves the near one lit. Asking for the arrow along the way is a read.
+func _test_day_eleven_answers_at_the_near_mast_and_the_routed_mast_only(t) -> void:
+	var saved_scars := GameState.scars.duplicate()
+	var saved_state := GameState.city_state
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		GameState.scars = []
 		var read := _read_the_mark_on(t, 11, SEED)
 		var director: ResistanceDirector = read[0]
+		var player: Stroller = read[2]
 		var step := director.current_step()
 		var near := director._mast_id
-		t.check(step != null and near != "", "day 11's task is on offer at a mast")
+		t.check(step != null and near != "" and near == director._near_mast_id,
+				"day 11's task is on offer at the mast near the mark")
+		var before := [director._arrow_key, director._mast_id, director.contact_position()]
+		var asked := director.red_arrow_target()
+		t.check(asked == director.contact_position() and director._arrow_nearest_next == null
+				and [director._arrow_key, director._mast_id, director.contact_position()] == before,
+				"asking for the arrow chooses nothing, sweeps nothing and moves no contact")
+		var routed := _walk_until_the_route_mast(director, player)
+		t.check(routed != "", "walking the day's route puts the rigged mast down on seed %d" % SEED)
+		if routed == "" or step == null:
+			player.free()
+			director.free()
+			return
 		var keys: Array = []
-		for c in director._arrow_candidates(step):
-			keys.append(c["key"])
-		t.check(keys == [near], "with no mast put on her route only the one near the mark answers")
-		var others: Array[String] = []
+		for target in director._arrow_candidates(step):
+			keys.append(target["key"])
+		keys.sort()
+		var expected: Array = [near, routed]
+		expected.sort()
+		t.check(keys == expected, "the near mast and the routed one answer, and only they (%s)"
+				% [keys])
+		var third: EventScheduler.Planned = null
 		for plan in _city.events.plans():
-			if plan.mast_id != "" and plan.mast_id != near and plan.def.id == "loudspeaker":
-				others.append(plan.mast_id)
-		director.retarget_the_arrow()
-		t.check(director._mast_id == near, "and the contact stays on it, however many masts stand")
-		# A mast put down after the mark was read stands for the one rigged onto her route.
-		var routed := ""
-		for id in others:
-			director._masts_at_the_mark.erase(id)
-			keys = []
-			for c in director._arrow_candidates(step):
-				keys.append(c["key"])
-			if id in keys:
-				routed = id
+			if plan.def.id == ResistanceDirector.MAST_ROW and plan.mast_id != "" \
+					and plan.mast_id != near and plan.mast_id != routed and not plan.silenced \
+					and _beside_the_mast(director, plan.position) != Vector2.INF:
+				third = plan
 				break
-			director._masts_at_the_mark[id] = true
-		if routed != "":
-			t.check(keys.size() == 2 and near in keys, "the mast put down after the mark answers too")
-		(read[2] as Stroller).free()
+		t.check(third != null, "the city has a third mast to stand at")
+		if third:
+			player.global_position = _beside_the_mast(director, third.position)
+			director._process(STEP)
+			t.check(director._mast_id != third.mast_id
+					and not director._contact.would_complete_at(player.global_position),
+					"standing at a third mast neither moves the task there nor completes it")
+		var routed_foot := _city.events.mast_foot(routed)
+		var near_foot := _city.events.mast_foot(near)
+		player.global_position = _beside_the_mast(director, routed_foot)
+		director._settle_the_arrow()
+		t.check(director.red_arrow_target().distance_to(routed_foot) < 1.0,
+				"beside the routed mast the arrow is on it")
+		director._process(STEP)
+		director._contact._physics_process(STEP)
+		t.check(step.index in GameState.completed_resistance_steps,
+				"touching the routed mast completes the task")
+		var routed_plan: EventScheduler.Planned = null
+		var near_plan: EventScheduler.Planned = null
+		for plan in _city.events.plans():
+			if plan.mast_id == routed:
+				routed_plan = plan
+			elif plan.mast_id == near:
+				near_plan = plan
+		t.check(routed_plan != null and routed_plan.silenced
+				and near_plan != null and not near_plan.silenced,
+				"and silences the routed mast, not the one near the mark")
+		var scarred_routed := false
+		var scarred_near := false
+		for scar: Dictionary in GameState.scars:
+			if String(scar["id"]) != EventScheduler.SILENCED_MAST:
+				continue
+			var at: Vector2 = scar["position"]
+			scarred_routed = scarred_routed or at.distance_to(routed_foot) < 1.0
+			scarred_near = scarred_near or at.distance_to(near_foot) < 1.0
+		t.check(scarred_routed and not scarred_near, "and the scar is the routed mast's")
+		if third:
+			t.check(not third.silenced, "the third mast is still lit")
+		player.free()
 		director.free())
+	GameState.scars = saved_scars
+	GameState.city_state = saved_state
 
 ## A single-target task keeps its arrow on its contact exactly, retargeting or not.
 func _test_a_single_target_arrow_stays_on_its_contact(t) -> void:
