@@ -148,11 +148,13 @@ The events:
     encounter (`EventInstance.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or it
     catching her or beginning a hold of her *(inbox #577, the player: "let's count chases and catches
     as influenced always")*. A catch and a hold are the game's own tests, called and not copied
-    *(inbox #586, the player: "use the real catch code")*: `EventInstance.is_lethal_at()`, so a guard
-    within reach through a wall, a cyclist still only warned or waiting, or a finished row is no
-    catch; and `EventManager._hold_that_would_begin()`, so a hold counts the frame it would start and
-    only for the one instance that would take her in. Both are pure reads. A static row that can do none of these — a fallen tree, a skip — still
-    sends `seen` ("the static things question was meant for telemetry. we need to record seen for
+    *(inbox #586, the player: "use the real catch code")*: `EventInstance.is_lethal_at()`, so a cyclist
+    or lorry still only warned or waiting, a finished row, or a pursuer within reach through a wall
+    is no catch; and `EventManager._hold_that_would_begin()`, so a hold counts the frame it would
+    start and only for the one instance that would take her in. Both are pure reads. A pursuer is
+    chasing from the first frame after its telegraph, and a chase counts, so a guard with a wall
+    between them still counts as influenced — through the chase, not the catch. A static row that
+    can do none of these — a fallen tree, a skip — still sends `seen` ("the static things question was meant for telemetry. we need to record seen for
     them") and is never influenced.
   - **`influenced-unseen`** is a meaningful encounter she never saw: an influence before the
     encounter is seen waits, goes out as `influenced` the moment the instance is seen, and as

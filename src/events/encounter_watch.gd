@@ -32,10 +32,11 @@ extends RefCounted
 ##   (`EventInstance.landed_ever`, since `landed()` keeps only the halo's window), or it chasing her
 ##   (`EventInstance.is_chasing()`), or it catching her or beginning a hold of her, whichever comes
 ##   first. **A catch and a hold are the game's own tests, called and not copied** *(inbox #586, the
-##   player: "use the real catch code")*: `EventInstance.is_lethal_at()` for the catch, so a guard
-##   within reach through a wall, a cyclist still only warned or waiting, or a row already finished
+##   player: "use the real catch code")*: `EventInstance.is_lethal_at()` for the catch, so a cyclist
+##   still only warned or waiting, a row already finished, or a pursuer within reach through a wall
 ##   is no catch; and `EventManager._hold_that_would_begin()` for the hold, handed in as a callable.
-##   Both are pure reads, which start nothing and roll nothing.
+##   Both are pure reads, which start nothing and roll nothing. A pursuer chases from the first frame
+##   after its telegraph, so one with a wall between them still counts, through the chase.
 ##   *(Inbox #577, the player: "let's count chases and catches as influenced always".)* A row that
 ##   can do none of the three — a fallen tree, a skip — is seen and never influenced.
 ##   An influence before the encounter is seen waits: it goes out as influenced the moment the

@@ -368,7 +368,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
 	t.check(guard.def.hard_fail and not guard.is_telegraphing() and not guard.is_waiting()
 			and not guard.is_chasing()
 			and guard.global_position.distance_to(her) < guard.def.lethal_reach(),
-			"the guard is chasing, and she is inside his reach in a straight line")
+			"the guard is past his telegraph, not yet reported chasing, and she is inside his reach")
 	t.check(not guard.is_lethal_at(her), "but the game does not call it a catch, a corner between")
 	var watch := _watch()
 	var guards: Array[EventInstance] = [guard]
