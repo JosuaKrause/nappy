@@ -15,37 +15,46 @@ running excluding gaps smaller than 10s".)*
   into names and does nothing else. Nothing it reads is changed by it: it rolls nothing, and what it
   keeps on an instance (`EventInstance.landed_ever`, `EventInstance.encounter`) nothing gameplay
   reads.
-- **An encounter** opens the first frame any of an instance's drawn box is in the view, or it lands
+- **An encounter** opens the first frame any of an instance's drawn box is visible, or it lands
   something on her from off screen, and is over once it has been neither for `Tuning.ENCOUNTER_GAP`
-  (5s). **Seen** is `Tuning.ENCOUNTER_SEEN_SHARE` (80%) of the drawn box inside the view.
+  (5s). **Seen** is `Tuning.ENCOUNTER_SEEN_SHARE` (80%) of the drawn box visible.
   **Influenced** is `Tuning.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed within the
-  encounter for a row whose field excites her, and her inside its lethal reach or hold, or it chasing
-  her, for a row whose field does not. A **bout of running** begins when she runs after
+  encounter, or it chasing her, or her inside its lethal reach or hold, for every row. A **bout of running** begins when she runs after
   `Tuning.RUN_BOUT_GAP` (10s) or more without.
 - `tools/goatcounter.sh --encounters` prints seen, influenced, influenced ÷ seen and the unseen
   influences per event type, overall and per day, with `--json` as well.
 - `tests/test_encounters.gd` covers one encounter one seen, a second after the gap, none inside
-  it, the edge sliver, the 10% landing once per encounter, the waiting off-screen influence, the
-  chase for a row that does not excite, two instances, the running bouts, and the manager's wiring
+  it, the edge sliver, the 10% landing once per encounter, the waiting off-screen influence, a
+  chase or a reach or a hold with nothing landed, a static row seen and never influenced, the
+  covered corners in both control schemes, two instances, the running bouts, and the manager's wiring
   (nothing behind the title); `tests/test_visit_counter.gd` the names; `tools/test_goatcounter.py`
   the table on canned hits.
 
-**Which rule each row uses** (read off the row's own `intensity`/`core_intensity`,
-`EncounterWatch.excites()`):
+**Influenced is one rule for every row** *(inbox #577, the player: "the static things question was
+meant for telemetry. we need to record seen for them. let's count chases and catches as influenced
+always")*: 10% of a full meter landed within the encounter, or it chasing her, or her inside its
+lethal reach or its hold, whichever comes first. What each row can be influenced by:
 
-- **10% of the meter:** `cat_dash`, `alley_mouse`, `dog_walker`, `cafe_tables`, `homeless_yeller`,
-  `busker`, `fire_truck`, `burnt_shell`, `loose_dog`, `market_stall`, `leaf_blower`,
-  `pigeon_flock`, `cyclist` and the pelican, `ice_cream_van`, `reversing_lorry`, `charging_dog`,
-  `chatting_mother`, `police_patrol`, `poster_crew`, `poster_crew_square`, `loudspeaker`,
-  `curfew_announce`, `roadblock`, `checkpoint_hut`, `checkpoint_post`, `door_guard`, `abduction`,
-  `alley_robbery`, `night_raid`, `military_convoy`, `protest`, `firefight`, `car_accident`,
-  `robber_giving_chase`, `van_guard_giving_chase`, `finale_explosion`, `masked_pursuer`,
-  `basement_steam`.
-- **Reach, hold or chase:** `playground`, `delivery_van`, `construction`, `burning_building`,
+- **10% of the meter** (its field excites her): `cat_dash`, `alley_mouse`, `dog_walker`,
+  `cafe_tables`, `homeless_yeller`, `busker`, `fire_truck`, `burnt_shell`, `loose_dog`,
+  `market_stall`, `leaf_blower`, `pigeon_flock`, `cyclist` and the pelican, `ice_cream_van`,
+  `reversing_lorry`, `charging_dog`, `chatting_mother`, `police_patrol`, `poster_crew`,
+  `poster_crew_square`, `loudspeaker`, `curfew_announce`, `roadblock`, `checkpoint_hut`,
+  `checkpoint_post`, `door_guard`, `abduction`, `alley_robbery`, `night_raid`, `military_convoy`,
+  `protest`, `firefight`, `car_accident`, `robber_giving_chase`, `van_guard_giving_chase`,
+  `finale_explosion`, `masked_pursuer`, `basement_steam`.
+- **And a chase:** `charging_dog`, `door_guard`, `alley_robbery`, `robber_giving_chase`,
+  `van_guard_giving_chase`.
+- **And her inside its lethal reach:** `cyclist` and the pelican, `reversing_lorry`, `charging_dog`,
+  `door_guard`, `abduction`, `alley_robbery`, `firefight`, `robber_giving_chase`,
+  `van_guard_giving_chase`, `masked_pursuer`.
+- **And her inside its hold:** `chatting_mother`, `checkpoint_hut`, `checkpoint_post`.
+- **Seen only**, nothing to be influenced by: `delivery_van`, `construction`, `burning_building`,
   `checkpoint_gate`, `barricade`, `fallen_tree`, `skip`, `scaffolding`, `burst_water_main`,
-  `moving_van`, `burnt_out_car`, `collapsed_frontage`, `neighbor`, `impact_crater`. None of them can
-  end the day, hold her or chase her, so none is ever influenced: every row that can also excites
-  her. The detour around a blocker stays out, as filed.
+  `moving_van`, `burnt_out_car`, `collapsed_frontage`, `neighbor`, `impact_crater`. The detour
+  around a blocker stays out, as filed.
+- **Never seen**, since it draws nothing of its own: `playground` (never influenced either),
+  `curfew_announce` and `finale_explosion` (only ever `influenced-unseen`).
 
 **Decided while building, where the filing left it open.**
 

@@ -36,7 +36,8 @@ func run(t) -> void:
 	_test_a_thing_under_the_joystick_controls_is_not_seen(t)
 	_test_a_tenth_of_the_meter_is_one_influence_per_encounter(t)
 	_test_an_influence_from_off_screen_waits_to_be_seen(t)
-	_test_a_chase_is_an_influence_for_a_row_that_does_not_excite(t)
+	_test_a_chase_or_a_catch_is_always_an_influence(t)
+	_test_a_static_row_is_seen_and_never_influenced(t)
 	_test_two_instances_are_two_encounters(t)
 	_test_runs_less_than_the_gap_apart_are_one_bout(t)
 	_test_the_manager_watches_only_while_she_is_playing(t)
@@ -210,7 +211,6 @@ func _test_a_tenth_of_the_meter_is_one_influence_per_encounter(t) -> void:
 	var watch := _watch()
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
 	var instances: Array[EventInstance] = [yeller]
-	t.check(EncounterWatch.excites(yeller.def), "the yeller is a row that excites her")
 	var share := Tuning.ENCOUNTER_INFLUENCE_POINTS
 	_run(watch, instances, Vector2.ZERO, 1.0)
 	yeller.accumulate_landed(share * 0.6)
@@ -279,42 +279,60 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t) -> void:
 			% [_influenced])
 	other.free()
 
-## A row whose field does not excite her is influenced by being chased, or by her inside its reach:
-## a dog that charges with no field of its own stands in for one. A dog that does excite her is
-## judged by its landing alone, chase or no chase.
-func _test_a_chase_is_an_influence_for_a_row_that_does_not_excite(t) -> void:
+## *(Inbox #577, the player: "let's count chases and catches as influenced always".)* A dog coming
+## for her is an influence the moment it chases, with nothing landed; a lorry that can end the day
+## is one the moment she is inside its reach, and a checkpoint post the moment she is inside its
+## hold — neither with anything landed.
+func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 	_clear()
 	var watch := _watch()
-	var quiet_def := EventCatalogue._charging_dog()
-	quiet_def.intensity = 0.0
-	quiet_def.core_intensity = 0.0
-	t.check(not EncounterWatch.excites(quiet_def) and quiet_def.pursues,
-			"the stand-in is a pursuer that does not excite")
-	var quiet := _chasing_dog(t, quiet_def)
-	var loud := _chasing_dog(t, EventCatalogue.by_id("charging_dog"))
-	var instances: Array[EventInstance] = [quiet, loud]
-	_run(watch, instances, Vector2.ZERO, 0.5)
-	t.check(quiet.is_chasing() and loud.is_chasing(), "both dogs are chasing her")
+	var dog := _chasing_dog(t, EventCatalogue.by_id("charging_dog"))
+	_run(watch, [dog] as Array[EventInstance], Vector2.ZERO, 0.5)
+	t.check(dog.is_chasing() and dog.landed_ever < Tuning.ENCOUNTER_INFLUENCE_POINTS,
+			"the dog is chasing her and has landed less than the threshold (%.1f)" % dog.landed_ever)
 	t.check(_influenced == ["%d:charging_dog:seen" % DAY],
-			"the chase is an influence for the dog with no field, and not for the one with a field "
-			+ "that has landed nothing (%s)" % [_influenced])
-	quiet.free()
-	loud.free()
+			"the chase is an influence all the same (%s)" % [_influenced])
+	dog.free()
+
+	for id: String in ["reversing_lorry", "checkpoint_post"]:
+		_clear()
+		var standing := _instance(t, id, Vector2.ZERO)
+		var reach := standing.def.lethal_reach() if standing.def.hard_fail \
+				else standing.def.detain_distance()
+		var outside := Vector2(0.0, reach + 40.0)
+		_run(watch, [standing] as Array[EventInstance], outside, 0.5)
+		t.check(_seen.size() == 1 and _influenced.is_empty(),
+				"%s: seen outside its reach is no influence (%s)" % [id, _influenced])
+		var inside := Vector2(0.0, reach - 2.0)
+		for _i in 3:
+			watch.tick(STEP, [standing] as Array[EventInstance], _view(inside), false, inside, false)
+		t.check(_influenced.size() == 1 and standing.landed_ever == 0.0,
+				"%s: her inside its %s is, with nothing landed (%d)"
+				% [id, "reach" if standing.def.hard_fail else "hold", _influenced.size()])
+		standing.free()
+
+## *(Inbox #577: "the static things question was meant for telemetry. we need to record seen for
+## them".)* Every row that draws something has a drawn box to be seen by, and a fallen tree in
+## full view, with her beside it, is seen and never influenced.
+func _test_a_static_row_is_seen_and_never_influenced(t) -> void:
+	var boxless: Array[String] = []
+	for def in EventCatalogue.all():
+		if EventInstance.icon_for(def.look).is_empty():
+			continue
+		var instance := EventInstance.new()
+		instance.setup(def, Vector2.ZERO)
+		if not instance.drawn_box().has_area():
+			boxless.append(def.id)
+		instance.free()
+	t.check(boxless.is_empty(), "every row that draws something has a drawn box (%s)" % [boxless])
 
 	_clear()
-	var lethal_def := EventCatalogue._charging_dog()
-	lethal_def.intensity = 0.0
-	lethal_def.pursues = false
-	var standing := _instance(t, "homeless_yeller", Vector2.ZERO)
-	standing.def = lethal_def
-	_run(watch, [standing] as Array[EventInstance], Vector2(0.0, lethal_def.lethal_reach() + 40.0),
-			0.5)
-	t.check(_seen.size() == 1 and _influenced.is_empty(), "seen outside its reach is no influence")
-	var inside := Vector2(0.0, lethal_def.lethal_reach() - 2.0)
-	for _i in 3:
-		watch.tick(STEP, [standing] as Array[EventInstance], _view(inside), false, inside, false)
-	t.check(_influenced.size() == 1, "her inside its reach is (%d)" % _influenced.size())
-	standing.free()
+	var watch := _watch()
+	var tree := _instance(t, "fallen_tree", Vector2.ZERO)
+	_run(watch, [tree] as Array[EventInstance], Vector2(0.0, 30.0), 3.0)
+	t.check(_seen == ["%d:fallen_tree" % DAY] and _influenced.is_empty(),
+			"a fallen tree in view is seen once and never influenced (%s, %s)" % [_seen, _influenced])
+	tree.free()
 
 ## A dog of `def` that has been warned of and is coming for her at the origin, from 200px off.
 func _chasing_dog(t, def: EventDef) -> EventInstance:

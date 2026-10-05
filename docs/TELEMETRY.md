@@ -143,11 +143,13 @@ The events:
   - **`seen`**, at most once per encounter: the first frame `Tuning.ENCOUNTER_SEEN_SHARE` (80%) of
     the instance's drawn box is visible, so a sliver at the edge, a thing under the joystick's
     controls, its halo or its badge does not count. A row that draws nothing of its own (`playground`, `curfew_announce`) is never seen.
-  - **`influenced`**, at most once per encounter, the first frame it is meaningful: for a row whose
-    field excites her, `Tuning.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed on her within
-    the encounter (`EventInstance.landed_ever`); for a row that does not, her inside its lethal
-    reach or its hold, or it chasing her (`EventInstance.is_chasing()`). Every row in the catalogue
-    that can end the day, chase or hold her also excites her, so the second rule reaches none today.
+  - **`influenced`**, at most once per encounter, the first frame it is meaningful, the same for
+    every row: `Tuning.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed on her within the
+    encounter (`EventInstance.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or her
+    inside its lethal reach or its hold *(inbox #577, the player: "let's count chases and catches as
+    influenced always")*. A static row that can do none of these — a fallen tree, a skip — still
+    sends `seen` ("the static things question was meant for telemetry. we need to record seen for
+    them") and is never influenced.
   - **`influenced-unseen`** is a meaningful encounter she never saw: an influence before the
     encounter is seen waits, goes out as `influenced` the moment the instance is seen, and as
     `influenced-unseen` once the encounter is over without it (or the next day starts, under the day

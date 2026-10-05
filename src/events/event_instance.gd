@@ -1016,8 +1016,8 @@ var _drawn_box := Rect2()
 var _drawn_box_known := false
 
 ## Whether this pursuer is coming for her right now: its chase has begun (`EventBus.pursuit_began`'s
-## own moment) and it has neither given up nor left. Telemetry only — `EncounterWatch` reads it for a
-## row whose field does not excite her.
+## own moment) and it has neither given up nor left. Telemetry only — `EncounterWatch` counts a
+## chase as an influence.
 func is_chasing() -> bool:
 	return def.pursues and _pursuit_began_reported and not is_finished and not is_leaving \
 			and not is_waiting()

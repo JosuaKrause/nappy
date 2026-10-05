@@ -27,10 +27,12 @@ extends RefCounted
 ##
 ## - **seen** at most once, the first frame `Tuning.ENCOUNTER_SEEN_SHARE` of its drawn box is
 ##   visible. A row that draws nothing of its own has nothing to be seen and is never seen.
-## - **influenced** at most once, the first frame the encounter is meaningful: for a row that excites
-##   her, `Tuning.ENCOUNTER_INFLUENCE_POINTS` landed on her within the encounter
-##   (`EventInstance.landed_ever`, since `landed()` keeps only the halo's window); for one that does
-##   not, her inside its lethal reach or its hold, or it chasing her (`EventInstance.is_chasing()`).
+## - **influenced** at most once, the first frame the encounter is meaningful, for every row alike:
+##   `Tuning.ENCOUNTER_INFLUENCE_POINTS` landed on her within the encounter
+##   (`EventInstance.landed_ever`, since `landed()` keeps only the halo's window), or it chasing her
+##   (`EventInstance.is_chasing()`), or her inside its lethal reach or its hold, whichever comes first.
+##   *(Inbox #577, the player: "let's count chases and catches as influenced always".)* A row that
+##   can do none of the three — a fallen tree, a skip — is seen and never influenced.
 ##   An influence before the encounter is seen waits: it goes out as influenced the moment the
 ##   instance is seen, or as influenced-unseen once the encounter is over without it, so influenced
 ##   ÷ seen counts only what she could see.
@@ -142,12 +144,12 @@ func _open_an_encounter(record: Record) -> void:
 	record.landed_at_open = record.landed_last
 	_open.append(record)
 
-## The meaningful-encounter test — see the class doc. Whether a row excites her is read off its
-## own field (`intensity`, `core_intensity`), so a row that adds one later changes rule with it.
+## The meaningful-encounter test — see the class doc. The same three ways in for every row: what a
+## row cannot do (land anything, chase, reach or hold her) simply never happens.
 static func _is_meaningful(instance: EventInstance, record: Record, her: Vector2) -> bool:
 	var def := instance.def
-	if excites(def):
-		return instance.landed_ever - record.landed_at_open >= Tuning.ENCOUNTER_INFLUENCE_POINTS
+	if instance.landed_ever - record.landed_at_open >= Tuning.ENCOUNTER_INFLUENCE_POINTS:
+		return true
 	if instance.is_chasing():
 		return true
 	var reach := 0.0
@@ -156,11 +158,6 @@ static func _is_meaningful(instance: EventInstance, record: Record, her: Vector2
 	if def.detain_seconds > 0.0:
 		reach = maxf(reach, def.detain_distance())
 	return reach > 0.0 and instance.global_position.distance_to(her) <= reach
-
-## Whether a row's field can land anything on her meter — the split between the two influence
-## rules.
-static func excites(def: EventDef) -> bool:
-	return def.intensity > 0.0 or def.core_intensity > 0.0
 
 ## Closes every open encounter whose instance has gone, or has been away for the gap. Removal swaps
 ## the last record in, so the list never shifts.
