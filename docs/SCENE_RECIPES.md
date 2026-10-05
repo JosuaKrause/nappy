@@ -178,12 +178,17 @@ mark and checks that reading it completed the mark and offered the task, the arr
 checks that reaching the target completed the task. The mark's robber stands where the day puts him and the walks keep out of his notice; once a
 target is done, the robber or guard the task sends comes from off screen as in a played day and
 catches her a little after the scene's last assertion; add `--invincible` to play on without a robber
-ending it.
+ending it. Days 10 and 13 send nobody after the target: the neighbor's task has no pursuer, and the
+roadblock keeps its own guard waiting in its band instead. At a door on a building's front — day 8's
+burnt building and day 14's station — the robber usually comes from across the street, out of view,
+and by the rule every other target uses, usually from beside her along her own street, only where
+no start across it has a way to her.
 
 `station-door-corner.json` is for the question whether the station's door is touched from the far
 outer corners of the two sidewalk tiles in front of it (`ResistanceDirector.DOOR_REACH`, 50.6px,
 against the corners' 57.7px): she starts on the west corner, where the door is not touched, and one
-step east touches it. The east corner is 100px from the door's guard, so standing on it wakes him.
+step east touches it. No guard waits at the station's door; touching it sends a robber from off
+screen, usually from across the street, who arrives after the scene's last assertion.
 `fire-truck.json` starts on day 3 with `burning_building` named and nothing else, her start 496px
 east of the fire, so that its lot, its rise and its smoke are out of both the landscape and the
 portrait view at the first frame *(the player, inbox #557: "the
