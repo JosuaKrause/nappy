@@ -1133,7 +1133,8 @@ not yet in the world, so the day's crews are spread along her walk rather than b
 (`Pavement.AT_THE_FRONT`, narrowed to `PosterWalls.fronts()`), facing the wall, and the line rules
 still apply to it, since a crew closes nothing. **Not a set piece**: it is not spent as a one-shot
 and not lit at dusk if she never met it. Once in the world, `PosterWalls` has it paste the wall it
-stands at, a sheet every `PosterWalls.PASTE_EVERY` seconds while it is inside her view, with its
+stands at, a sheet every `PosterWalls.PASTE_EVERY` seconds while she can see it (`VisibleView`, so
+not while it is only under a corner the joystick scheme's controls cover), with its
 brush raised on alternate frames (`poster_crew_back_b.svg`), and the wall keeps its sheets for the
 rest of the run. Its field and its cost are unchanged. `tools/test.sh
 probes/m180_crews_on_her_way.gd` walks the day's routes and prints how many crews were sited, met
