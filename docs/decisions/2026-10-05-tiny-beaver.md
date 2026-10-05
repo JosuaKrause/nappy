@@ -11,12 +11,13 @@ under `art/events/policeman_*`: waiting in five views, lunging in five views wit
 each, and the unsuffixed pair the robber also has for its badge silhouette. Same canvas, scale and
 ground anchor as the robber. A navy peaked cap with a silver badge, a police-blue tunic, a dark duty
 belt and a baton; the collar and chest badge in the patrol car's white, so the two read as one force.
-He is the only saturated blue figure in the city, distinct from the robber's dark hood, the guard's
-olive and the crowd's greys and browns. No amber or red on him, since the danger carets use them.
+He is the only figure in navy and a peaked cap: the robber is a dark hood, the guard olive, the
+crowd grey and brown, and the neighbor, the nearest look-alike, wears lighter steel-blue coveralls
+with a yellow band and a soft work cap. No amber or red on him, since the danger carets use them.
 
 **Not bound yet.** No catalogue row and no atlas line: the behaviour — a pursuit marble sends him from
 off screen at once, a guardsman from day 9 — is its own change, after the off-screen warning rework
 (M226). `docs/GRAPHICS.md` lists the family as prepared and unbound.
 
-**Chosen while drawing, open to overturn:** the baton, which the lunge swings (the player's to keep
-or drop); side and diagonal views face east, as the robber's do.
+**Chosen while drawing, open to overturn:** the baton, which the lunge swings in his left hand in
+every view (the player's to keep or drop); side and diagonal views face east, as the robber's do.

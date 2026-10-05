@@ -2,5 +2,6 @@
 
 
 Look at the review sheet on PR #594 (every view at game scale beside the robber and the guard): does
-he read at once as police and as a danger, apart from the robber, the guard and the crowd? Keep the
+he read at once as police and as a danger, apart from the robber, the guard, the crowd and the
+neighbor, the other man in blue? Keep the
 baton or drop it? Record is [2026-10-05-tiny-beaver](../decisions/2026-10-05-tiny-beaver.md).
