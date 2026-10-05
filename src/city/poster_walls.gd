@@ -54,16 +54,19 @@ const KIND_WEIGHTS := [
 		PosterArt.Kind.RULES: 0.5, PosterArt.Kind.CURFEW: 0.5},
 ]
 ## Share of the walls each dawn works, per act, on the streets the day's routes run along and off
-## them. "Sparse at first and denser towards the end", and in act III and IV most of it on "the
-## streets she uses most" — which are the day's own routes, the one reading of that a morning can
-## make. A front faces an east-west street and the main road runs north-south, so act IV's "most
-## walls on a main street" is read as the routes too. Taste, open to overturn.
-const DAWN_SHARE_ON_ROUTES := [0.0, 0.10, 0.30, 0.45]
-const DAWN_SHARE_OFF_ROUTES := [0.0, 0.06, 0.08, 0.12]
+## them. Denser towards the end, and weighted to "the streets she uses most" — which are the day's
+## own routes, the one reading of that a morning can make. A front faces an east-west street and
+## the main road runs north-south, so act IV's "most walls on a main street" is read as the routes
+## too. Raised after a playtest ("on the first day with posters it's very hard to find one --
+## increase the probability throughout"): measured along the routes she walks (`tests/probes/
+## merry_elk_poster_density.gd`), the first poster day leaves a sheet in view on about six route
+## steps in ten and every route passes at least two. Taste, open to overturn.
+const DAWN_SHARE_ON_ROUTES := [0.0, 0.55, 0.65, 0.80]
+const DAWN_SHARE_OFF_ROUTES := [0.0, 0.30, 0.35, 0.40]
 ## Extra share of the walls the first morning of each act beyond the first works, on top of the
 ## above: day 4 is the city's first posters ("some are already up that first morning"), day 8 the
 ## uniform sheets going up edge to edge, day 12 the wanted notice. On the routes and off them alike.
-const ACT_MORNING_SHARE := 0.10
+const ACT_MORNING_SHARE := 0.25
 ## Share of new sheets pasted over an older one that leave it showing, offset, rather than
 ## covering it exactly. The exception: "if it's visibly over pasted for all of them then it will
 ## look weird" (PLAYTEST-123, statement 33). Taste, open to overturn.
@@ -251,20 +254,17 @@ static func _kind_for(day: int, rng: RandomNumberGenerator) -> int:
 			break
 	return chosen
 
-## How many of a wall's `cells` one working covers: one or two in act II ("a wall here and there,
-## one or two sheets on it"), the whole wall for the uniform sheet ("whole walls, edge to edge"),
-## at least half of it in act IV ("dense"). Always consumes one value.
+## How many of a wall's `cells` one working covers: two to four in acts II and III, the whole wall
+## for the uniform sheet ("whole walls, edge to edge"), at least half of it in act IV ("dense"). Always consumes one value.
 static func _sheets_for(kind: int, act: int, cells: int, rng: RandomNumberGenerator) -> int:
 	var roll := rng.randi_range(0, 1 << 16)
 	if kind == PosterArt.Kind.UNIFORM:
 		return cells
-	var low := 1
-	var high := 2
+	var low := 2
+	var high := 4
 	if act >= 4:
 		low = ceili(cells * 0.5)
 		high = cells
-	elif act == 3:
-		high = 3
 	low = clampi(low, 1, cells)
 	high = clampi(high, low, cells)
 	return low + roll % (high - low + 1)
