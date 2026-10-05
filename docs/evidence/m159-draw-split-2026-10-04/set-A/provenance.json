@@ -1,0 +1,98 @@
+{
+  "command": [
+    "docs/evidence/m159-frame-record-2026-10-04/measure.py",
+    "--branch",
+    "/Users/krause/workspace/nappy-claude/.claude/worktrees/draw-split",
+    "--main",
+    "/Users/krause/workspace/nappy-claude/.claude/worktrees/draw-split-base",
+    "--output",
+    "/tmp/ds-A",
+    "--part",
+    "cost",
+    "--cost-rounds",
+    "3"
+  ],
+  "godot": "/Applications/Godot.app/Contents/MacOS/Godot",
+  "identity": {
+    "branch": {
+      "revision": "d572b8efda5f698f858a183947289407cc79ebf6",
+      "runtime_sha256": "7d0bdfb71489df5cfcc9770d79196dcda6d8cf90a760e1217aee3ccdc605f107",
+      "collector_sha256": {
+        "src/telemetry/frame_trace.gd": "32af6b2b35d85ab5edd0a3d935f69898d95aa533dceac7dd4bfdda6c9fe0935e",
+        "src/telemetry/frame_trace_buffer.gd": "2729fdd8ee168fba65934eab0f662e96878641140939ecf45909cd1cc762dac0"
+      }
+    },
+    "main": {
+      "revision": "daa09e97128bc1077b08f8258db9f5fbf1002d00",
+      "runtime_sha256": "83f084b45cc541c2b602188f4392d4ac01587a2530d39b538136f2d4128c9f92",
+      "collector_sha256": {
+        "src/telemetry/frame_trace.gd": "32af6b2b35d85ab5edd0a3d935f69898d95aa533dceac7dd4bfdda6c9fe0935e",
+        "src/telemetry/frame_trace_buffer.gd": "2729fdd8ee168fba65934eab0f662e96878641140939ecf45909cd1cc762dac0"
+      }
+    }
+  },
+  "walk": "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+  "after_seconds": 70,
+  "schedule": [
+    [
+      "cost",
+      "main-off",
+      "warmup"
+    ],
+    [
+      "cost",
+      "branch-off",
+      "warmup"
+    ],
+    [
+      "cost",
+      "branch-on",
+      "warmup"
+    ],
+    [
+      "cost",
+      "main-off",
+      "r1"
+    ],
+    [
+      "cost",
+      "branch-off",
+      "r1"
+    ],
+    [
+      "cost",
+      "branch-on",
+      "r1"
+    ],
+    [
+      "cost",
+      "branch-off",
+      "r2"
+    ],
+    [
+      "cost",
+      "branch-on",
+      "r2"
+    ],
+    [
+      "cost",
+      "main-off",
+      "r2"
+    ],
+    [
+      "cost",
+      "branch-on",
+      "r3"
+    ],
+    [
+      "cost",
+      "main-off",
+      "r3"
+    ],
+    [
+      "cost",
+      "branch-off",
+      "r3"
+    ]
+  ]
+}
