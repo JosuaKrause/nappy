@@ -207,7 +207,7 @@ dawn with every row it sites that day — recurring, available, `AHEAD_OF_PLAYER
 `Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight, so over any stretch the length of a
 bag the mix she meets is the rows' own rather than a roll's
 streaks. A row `Tuning.ROUTE_BAG_MARBLES_OF` names has the marbles it sets instead: day 3's
-`charging_dog` has 2 (inbox #566: "I'd say we could do 2 dogs -- we don't need the charging dog
+`charging_dog` has 2 (inbox #566 in [feathery-stork](playtests/2026-10-04-feathery-stork.md): "I'd say we could do 2 dogs -- we don't need the charging dog
 that often"), set in the bag because the dawn roll reads the row's weight too. The bag has its own
 stream and draws nothing from the director's; the director's own draws still follow from which row
 each handout is — a crossing spends one on the side it comes from, a row down her line none — so the
@@ -216,7 +216,7 @@ marbles spent unmet. A row owed as itself — a sprinkled dog, a forced row — 
 return's patrols are rigged marbles (below).
 `tests/probes/olive_badger_route_mix.gd` measures the mix against the rows' weights over many seeds.
 
-**The bag is a queue of bags, and a bag can be rigged** (`MarbleBag.rig()`, inbox #561: "create a
+**The bag is a queue of bags, and a bag can be rigged** (`MarbleBag.rig()`, inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "create a
 new marble bag with x holdings place the ensured item in the bag fill the remaining x-1 items by
 *drawing* from the currently active bag"). A rigged bag of `x` marbles holds what is ensured and
 `x - 1` taken from the bag she was drawing from; it is drawn first, and that bag then carries on with
@@ -224,7 +224,7 @@ the rest. `EventDirector.rig_her_route()` moves that many of the owed events to 
 list, so the guarantee is about what is placed on her route. Two rigs stand:
 
 - **After day 6's mark, a man shouting is one of the next two** (`Tuning.TASK_CONTACT_WITHIN_THE_NEXT`;
-  inbox #561: "maybe let's make the other rigged bags smaller, too"). A row the director does not
+  inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "maybe let's make the other rigged bags smaller, too"). A row the director does not
   otherwise site is a place, so when its marble comes up it is put on her route the way day 3's
   fire is (`EventScheduler.WalkSiting.ahead_of()`): on the branch of the day's routes she is
   walking, past the streaming band so it is never seen to appear, under every acceptance rule a dawn
@@ -233,12 +233,12 @@ list, so the guarantee is about what is placed on her route. Two rigs stand:
   mark spawns near it.
 - **After day 11's mark, a second loudspeaker mast is one of the next two**
   (`Tuning.MAST_WITHIN_THE_NEXT`), put on her route the same way on the sidewalk or square, besides
-  the mast near the mark the task points at first (inbox #561: "let it point to the closest one
+  the mast near the mark the task points at first (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "let it point to the closest one
   first"). It is a mast like the one `EventManager.queue_a_mast()` adds, named by its foot.
 - **Each of the return leg's patrols** — see "The return owes her patrols" below.
 
-**Day 3's lesson is a rigged bag of one**, and it stays the first thing she meets (inbox #561:
-"keep it first"; inbox #566: "the first dog is a rigged bag with only one entry that is separate
+**Day 3's lesson is a rigged bag of one**, and it stays the first thing she meets (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md):
+"keep it first"; inbox #566 in [feathery-stork](playtests/2026-10-04-feathery-stork.md): "the first dog is a rigged bag with only one entry that is separate
 from anything that comes after" · "the lesson is not paid for. why would it be? that's not how the
 marble bag works"). A bag holding only the dog goes in front at dawn and takes nothing from the bag
 behind it, so the ordinary bag keeps both its dog marbles and the lesson is on top of them; the
@@ -248,7 +248,7 @@ first of the events the dawn bought for her route is drawn from it, at `LESSON_D
 the ensured marble; nothing uses it today.
 
 **A marble may itself be a bag**: drawing it draws from it, and the bag marble goes straight back
-into the bag it was drawn from (inbox #561: "this makes it very unlikely that two events from the
+into the bag it was drawn from (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "this makes it very unlikely that two events from the
 inner bag happen right after each other"). An inner bag of n marbles is spent after n draws (the
 player: "The inner bag becomes empty after n draws"), and the draw that empties it takes the bag
 marble out for good, out of every queued bag and the ordinary set, so it gives exactly n events
@@ -264,7 +264,7 @@ stretch of a day nothing in the catalogue was ever pacing for. `Tuning.RETURN_PA
 (`[0, 0, 2, 3]`, one entry per act) is how many `EventDirector.owe_the_return()` owes the moment
 `EventBus.return_phase_started` fires, at the day's own heat — the same heated `police_patrol` copy
 the day's other plans of that row already use. **Each is a rigged bag** in her route's bag (inbox
-#561: "they will need rigged bags"): the patrol and `Tuning.RETURN_PATROL_WITHIN_THE_NEXT` less one
+#561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "they will need rigged bags"): the patrol and `Tuning.RETURN_PATROL_WITHIN_THE_NEXT` less one
 drawn from the bag she was drawing from, the next rigged once that bag is handed out, so each comes
 within its own bag's events rather than behind the dozens the dawn bought for her route, which the
 pacing never reaches. From then on the queue

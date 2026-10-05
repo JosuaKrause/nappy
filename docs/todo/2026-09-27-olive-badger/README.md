@@ -11,11 +11,9 @@ priority: now
 a bag holds a fixed set of marbles in the wanted proportion and each draw removes one at random, so
 over one bag the share is exact; a pre-bag can guarantee the first draws. PLAYTEST-125, statement
 4 limited it to poster tears ("for now let's use this technique only for poster rips and nothing
-else"); this statement extends it to events, by the player. Today a day's events are planned at
-dawn by a weighted roll over the whole city (`EventScheduler`), with a few `AHEAD_OF_PLAYER` plans
-placed later out of where she walks. Day 6's task, a note for the man shouting, relies on several
-`homeless_yeller` rows already being live, and the player rarely meets one after the first mark.
-The bags reach the events placed on her route only (the player's answer, 2026-09-27).
+else"); this statement extends it to events, by the player. The bags reach the events placed on her
+route only (the player's answer, 2026-09-27); a forced case gets a rigged bag, its size chosen per
+case ([coral-bunny](../../playtests/2026-10-04-coral-bunny.md), #561).
 
-The bags and the route draw are built ([olive-badger](../../decisions/2026-09-27-olive-badger.md));
-what is left is the item below.
+Open: the forced cases still placed at the mark rather than drawn on her route,
+[the-other-forced-cases.md](the-other-forced-cases.md).
