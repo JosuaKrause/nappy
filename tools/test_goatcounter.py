@@ -12,6 +12,8 @@ import importlib.util
 import io
 import tempfile
 import unittest
+import urllib.error
+import urllib.parse
 from collections.abc import Callable
 from contextlib import redirect_stderr, redirect_stdout
 from datetime import UTC, datetime
@@ -499,7 +501,52 @@ class FetchHitsTests(unittest.TestCase):
         self.assertEqual([h["path"] for h in hits], ["nappy-a", "nappy-b", "nappy-c"])
         self.assertEqual(len(calls), 2)
         self.assertNotIn("exclude_paths", calls[0])
-        self.assertEqual(calls[1]["exclude_paths"], ["1", "2"])
+        # One comma-separated value: the server honours only the first of a repeated parameter.
+        self.assertEqual(calls[1]["exclude_paths"], "1,2")
+
+    def test_a_path_the_server_repeats_is_counted_once(self) -> None:
+        pages = iter(
+            [
+                {"hits": [hit("nappy-a", 1, 1), hit("nappy-b", 2, 2)], "more": True},
+                {"hits": [hit("nappy-b", 2, 2), hit("nappy-c", 3, 3)], "more": False},
+            ]
+        )
+        hits = goatcounter.fetch_hits(
+            lambda _p: next(pages), datetime(2026, 9, 1, tzinfo=UTC), datetime(2026, 9, 2, tzinfo=UTC)
+        )
+        self.assertEqual([h["path"] for h in hits], ["nappy-a", "nappy-b", "nappy-c"])
+
+    def test_a_page_of_only_repeats_stops_the_paging(self) -> None:
+        calls: list[int] = []
+
+        def fetch(_params: dict[str, Any]) -> dict[str, Any]:
+            calls.append(1)
+            return {"hits": [hit("nappy-a", 1, 1)], "more": True}
+
+        hits = goatcounter.fetch_hits(fetch, datetime(2026, 9, 1, tzinfo=UTC), datetime(2026, 9, 2, tzinfo=UTC))
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(len(calls), 2)
+
+    def test_thousands_of_paths_page_to_the_end_with_a_query_the_server_accepts(self) -> None:
+        total = 3000
+        queries: list[int] = []
+
+        def fetch(params: dict[str, Any]) -> dict[str, Any]:
+            excluded = {int(i) for i in str(params.get("exclude_paths", "")).split(",") if i}
+            rest = [i for i in range(1, total + 1) if i not in excluded]
+            queries.append(len(urllib.parse.urlencode(params, safe=",")))
+            page = rest[: params["limit"]]
+            return {"hits": [hit(f"nappy-{i}", 1, i) for i in page], "more": len(rest) > len(page)}
+
+        hits = goatcounter.fetch_hits(fetch, datetime(2026, 9, 1, tzinfo=UTC), datetime(2026, 9, 2, tzinfo=UTC))
+        self.assertEqual(len(hits), total)
+        self.assertLess(max(queries), goatcounter.MAX_QUERY_BYTES)
+
+    def test_a_query_past_the_servers_limit_is_refused_with_the_way_out(self) -> None:
+        fetch = goatcounter.make_fetcher("https://example.goatcounter.com/api/v0/", "k")
+        with self.assertRaises(goatcounter.GoatCounterError) as ctx:
+            fetch({"exclude_paths": ",".join(str(100_000_000 + i) for i in range(4000))})
+        self.assertIn("narrow the range", str(ctx.exception))
 
     def test_stops_rather_than_looping_forever_if_more_is_true_with_nothing_new(self) -> None:
         def fetch(_params: dict[str, Any]) -> dict[str, Any]:
@@ -517,6 +564,55 @@ class FetchHitsTests(unittest.TestCase):
         end = datetime(2026, 9, 2, tzinfo=UTC)
         with self.assertRaises(goatcounter.GoatCounterError):
             goatcounter.fetch_hits(fetch, start, end)
+
+
+class GetRetryTests(unittest.TestCase):
+    """_get against an opener that answers from a script, with the sleeping stubbed out."""
+
+    def opener(self, script: list[Any]) -> Any:
+        steps = iter(script)
+
+        def open_(_request: Any, timeout: float = 0) -> Any:
+            step = next(steps)
+            if isinstance(step, BaseException):
+                raise step
+            response = mock.MagicMock()
+            response.__enter__.return_value.read.return_value = step
+            return response
+
+        return mock.Mock(open=open_)
+
+    def test_a_dropped_connection_is_retried_and_then_succeeds(self) -> None:
+        import http.client
+
+        opener = self.opener([http.client.RemoteDisconnected("closed"), b'{"hits": []}'])
+        with mock.patch.object(goatcounter.time, "sleep"):
+            self.assertEqual(goatcounter._get(opener, "https://x/y", "k"), {"hits": []})
+
+    def test_a_connection_that_keeps_dropping_fails_after_the_retries(self) -> None:
+        import http.client
+
+        opener = self.opener([http.client.RemoteDisconnected("closed")] * (goatcounter.MAX_RETRIES + 1))
+        with mock.patch.object(goatcounter.time, "sleep"), self.assertRaises(goatcounter.GoatCounterError):
+            goatcounter._get(opener, "https://x/y", "k")
+
+    def test_a_429_is_retried(self) -> None:
+        error = urllib.error.HTTPError("https://x/y", 429, "slow down", mock.Mock(), io.BytesIO(b"rate limited"))
+        self.addCleanup(error.close)
+        opener = self.opener([error, b'{"ok": 1}'])
+        with mock.patch.object(goatcounter.time, "sleep"):
+            self.assertEqual(goatcounter._get(opener, "https://x/y", "k"), {"ok": 1})
+
+    def test_a_real_error_carries_the_servers_own_answer_and_not_the_query(self) -> None:
+        error = urllib.error.HTTPError(
+            "https://x/y?secret=1", 400, "Bad Request", mock.Mock(), io.BytesIO(b'{"error": "bad start"}')
+        )
+        self.addCleanup(error.close)
+        with self.assertRaises(goatcounter.GoatCounterHTTPError) as ctx:
+            goatcounter._get(self.opener([error]), "https://x/y?secret=1", "k")
+        self.assertIn("bad start", str(ctx.exception))
+        self.assertEqual(ctx.exception.status, 400)
+        self.assertNotIn("secret", str(ctx.exception))
 
 
 class RawModeTests(unittest.TestCase):
