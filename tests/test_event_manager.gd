@@ -491,6 +491,10 @@ func _walker(t, at: Vector2) -> Stroller:
 	# Set here rather than left to the engine: a camera built in code under physics interpolation is
 	# overridden to the physics callback with a warning, and a warning in a test run is a failure.
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	# Never the current camera: a rig walked by hand never runs a frame for its camera to work out
+	# where it is drawing from, so what she can see (`VisibleView.look_through()`) is about her,
+	# `Stroller.camera_screen_center()`'s own answer for a camera that is not current.
+	camera.enabled = false
 	rig.add_child(camera)
 	t.add_child(rig)
 	rig.set_physics_process(false)
@@ -546,7 +550,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 	_walk_clock = 0.0
 	if plan:
 		_walk(rig, route,
-				func() -> bool: return plan.is_placed() and _city.events._is_on_screen(plan.position))
+				func() -> bool: return plan.is_placed() and _city.events.sees(plan.position))
 	var warning: PendingWarning = null
 	for pending in _city.events.pending_warnings():
 		if pending.def.id == "fire_truck":
@@ -817,8 +821,8 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 		t.check(siting != null and siting.still_ahead_of(sited_from, heading, plan.position),
 				"walking %s: and it is ahead of her along the branch she is walking" % leg)
 		var seen_at := -1.0
-		_walk(rig, route, func() -> bool: return _city.events._is_on_screen(plan.position))
-		if _city.events._is_on_screen(plan.position):
+		_walk(rig, route, func() -> bool: return _city.events.sees(plan.position))
+		if _city.events.sees(plan.position):
 			seen_at = _walk_clock
 		t.check(seen_at >= 0.0,
 				"walking %s: and continuing along the route brings it into view (%.1fs in)"
@@ -903,8 +907,8 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 	var rig := _walker(t, route[0])
 	_walk_clock = 0.0
 	_walk(rig, route,
-			func() -> bool: return plan.is_placed() and _city.events._is_on_screen(plan.position))
-	t.check(plan.is_placed() and _city.events._is_on_screen(plan.position),
+			func() -> bool: return plan.is_placed() and _city.events.sees(plan.position))
+	t.check(plan.is_placed() and _city.events.sees(plan.position),
 			"she walks out and finds the fire")
 	if not plan.is_placed():
 		rig.free()

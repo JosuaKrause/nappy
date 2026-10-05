@@ -2238,31 +2238,19 @@ func _robbers_on_the_street() -> int:
 			count += 1
 	return count
 
-## Whether `at` would actually render on screen with the camera on `her` and led toward `at` the
-## way `Stroller` leads it when she faces what she is walking toward — the worst-case lead, since a
-## start behind her would only pull the camera the other way. Built the same way `_walk_the_trap()`
-## drives `DangerEdge` under a synthetic camera, but asking `DangerEdge.is_on_screen()` directly
-## rather than the badge's own smoothed approach, since a spawn is a single frame with no earlier
-## position to smooth from. This is `ResistanceDirector.set_sight()`'s own production predicate —
-## the real screen extent, rotation-aware — not the axis-aligned `VIEW_HALF_EXTENT` box a bare
-## `_sight` callable elsewhere in this suite approximates it with.
-func _is_really_on_screen(t, her: Vector2, at: Vector2) -> bool:
-	var viewport: Viewport = t.get_viewport()
-	var saved_canvas := viewport.canvas_transform
+## Whether `at` would actually be in sight with the camera on `her` and led toward `at` the way
+## `Stroller` leads it when she faces what she is walking toward — the worst-case lead, since a
+## start behind her would only pull the camera the other way. Asked of `VisibleView`, the one
+## answer the game has to what she can see and what `ResistanceDirector.set_sight()` is wired to in
+## play, in either scheme: the joystick's covered corners only ever take ground out of sight, so a
+## point out of the tap scheme's whole view is out of both.
+func _is_really_on_screen(_t, her: Vector2, at: Vector2) -> bool:
 	var bearing := at - her
 	var lead := Vector2.ZERO
 	if bearing.length() > 0.001:
 		var dir := bearing.normalized()
 		lead = Vector2(dir.x, dir.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
-	viewport.canvas_transform = Transform2D(0.0, Vector2(2.0, 2.0), 0.0,
-			ScreenOrientation.DESIGN_SIZE * 0.5 - (her + lead) * 2.0)
-	var edge := DangerEdge.new()
-	t.add_child(edge)
-	edge.size = ScreenOrientation.DESIGN_SIZE
-	var on_screen := edge.is_on_screen(at)
-	edge.free()
-	viewport.canvas_transform = saved_canvas
-	return on_screen
+	return VisibleView.around(her + lead).sees(at)
 
 ## *(PLAYTEST-71: "maybe spawn the robber in pursuing mode offscreen when she interacts with the
 ## yeller so it runs towards her from offscreen"; "we need a version of the robber that is not

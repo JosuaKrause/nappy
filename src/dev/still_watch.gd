@@ -117,8 +117,8 @@ func _held() -> bool:
 		return true
 	return facing_a_red_light(_city.map, _city.signals, _player.global_position, _visible_world_rect())
 
-## The world-space rect the screen currently shows, computed the same way `DangerEdge.is_on_screen()`
-## and `TouchControls`'s own screen-to-world reads do: `get_viewport().get_canvas_transform()` maps a
+## The world-space rect the screen currently shows, computed the same way `TouchControls`'s own
+## screen-to-world reads do: `get_viewport().get_canvas_transform()` maps a
 ## world position to a screen one, so its inverse maps the screen's own corners back to world space.
 ## Kept out of `facing_a_red_light()` itself, which takes the rect as a plain argument, so that
 ## function stays pure and a test can hand it any rect without a viewport anywhere in reach.

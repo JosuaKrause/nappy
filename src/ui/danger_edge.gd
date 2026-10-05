@@ -79,23 +79,29 @@ const HOLD := 0.8
 ## frame's difference is mostly noise at these distances; this is the same smoothing the badge
 ## would otherwise need three of.
 const SMOOTHING := 6.0
-## How far outside the view something has to be before it is worth a badge, in screen px. A
-## thing sitting on the boundary would otherwise trade places with its own badge every frame:
-## off screen, badge up, badge draws it back into mind, on screen, badge gone. Once one is up it
-## is kept until the thing is properly in view, which is the same hysteresis `HOLD` gives the
-## closing test and for the same reason.
+## How far out of sight something has to be before it is worth a badge, in screen px. A thing
+## sitting on the boundary would otherwise trade places with its own badge every frame: off screen,
+## badge up, badge draws it back into mind, on screen, badge gone. Once one is up it is kept until
+## the thing is properly in sight, which is the same hysteresis `HOLD` gives the closing test and
+## for the same reason. Asked of what she can see (`VisibleView.sees()`), in world px at the
+## camera's zoom: past the view's edge, and into a covered corner.
 const SCREEN_MARGIN := 130.0
 
 ## Whether `main` has decided a portrait touch window is presenting rotated. Set from outside —
 ## see `TouchControls.rotated`'s own doc. This control is pinned to `ScreenOrientation.DESIGN_SIZE`
 ## regardless of rotation (see `main._add_danger_edge()`), so a raw canvas-space position has to
-## come back through `ScreenOrientation.to_design_space()` before it is usable as a local
-## coordinate here.
+## come back through `ScreenOrientation.to_design_space()` before it is drawn here. What is in
+## sight needs no such turn: `VisibleView` asks it of the world box the camera shows, the same
+## whichever way the window presents it.
 var rotated := false
 
 ## The event source — see `setup()`.
 var _events: Node
 var _player: Node2D
+## What she can see, when the event source does not keep the day's own (`EventManager.
+## visible_view()`): the escape's building, whose source is `InteriorEvents`. Looked through once a
+## frame from her camera.
+var _own_view := VisibleView.new()
 ## Per live instance: where it was last frame, its smoothed approach speed, how long its badge is
 ## still owed, and the generation it was last touched on. Keyed by instance id and mutated in
 ## place — see `_measure()` — so an event that streams out drops out of this the frame after it
@@ -126,6 +132,24 @@ func setup(events: Node, player: Node2D) -> void:
 ## `EventInstance` to the analyser.
 func _live() -> Array[EventInstance]:
 	return _events.instances()
+
+## What she can see this frame: the day's own view where the event source keeps one
+## (`EventManager.visible_view()`), so the badge and everything else that asks agree on it frame for
+## frame, and otherwise this edge's own, looked through from her camera.
+func view() -> VisibleView:
+	if _events and _events.has_method("visible_view"):
+		return _events.visible_view()
+	return _own_view
+
+## Whether something at `world_position` is in sight (`VisibleView.sees()`), counting `margin`
+## screen px past the edge as in sight as well — the one test the badge asks.
+func sees(world_position: Vector2, margin := 0.0) -> bool:
+	return view().sees(world_position, margin * world_per_screen_px())
+
+## World px per design-space screen px at the camera's zoom: the world the view shows across the
+## design box's width.
+static func world_per_screen_px() -> float:
+	return Tuning.VIEW_HALF_EXTENT.x * 2.0 / ScreenOrientation.DESIGN_SIZE.x
 
 ## The warnings that are up for something not in the world yet, or none for a source that has no
 ## such thing (`InteriorEvents`).
@@ -159,6 +183,8 @@ func _measure(delta: float) -> void:
 		return
 	var here := _player.global_position
 	_watch_generation += 1
+	if not (_events.has_method("visible_view")):
+		_own_view.look_through(_player)
 
 	for instance in _live():
 		if instance.is_finished:
@@ -176,7 +202,8 @@ func _measure(delta: float) -> void:
 			# stretch of its approach the warning was for. So it starts closing at its own speed,
 			# already raised, and the margin waits until it has been seen once.
 			var warned := instance.came_under_a_warning
-			state = {"was": at, "approach": instance.def.speed if warned else 0.0,
+			var own_speed := instance.def.pursue_speed if instance.def.pursues else instance.def.speed
+			state = {"was": at, "approach": own_speed if warned else 0.0,
 					"hold": HOLD if warned else 0.0, "seen": not warned}
 			_watch[id] = state
 		# The event's own approach: how much closer *it* got to where she is standing now. Both
@@ -192,11 +219,11 @@ func _measure(delta: float) -> void:
 		# without it a thing hovering on the boundary trades places with its own badge every
 		# frame. It has to be well outside the view to raise one, and keeps it until it is
 		# properly in view.
-		if is_on_screen(at):
+		if sees(at):
 			state["seen"] = true
 		var margin: float = SCREEN_MARGIN if state["seen"] else 0.0
 		if _is_worth_an_arrow(instance) and announces(approach, gap) \
-				and not is_on_screen(at, margin):
+				and not sees(at, margin):
 			hold = HOLD
 		else:
 			hold = maxf(0.0, hold - delta)
@@ -209,7 +236,7 @@ func _measure(delta: float) -> void:
 		# Coming on screen is not a lapse in the condition to be held through — it is the badge's
 		# job being done by the thing itself — so it is filtered here, after the hold and not
 		# inside it.
-		if hold > 0.0 and not is_on_screen(at):
+		if hold > 0.0 and not sees(at):
 			# Sorted by *when it arrives* rather than by how near it is, because that is what
 			# `MOST_AT_ONCE` is choosing between: three badges is a warning and the one worth
 			# keeping is the one that gets here first, which a slow thing standing closer is not.
@@ -246,18 +273,6 @@ static func approach_speed(was: Vector2, now: Vector2, player: Vector2, delta: f
 ## announcing. Pulled out so a test can ask the question without a viewport.
 static func announces(approach: float, gap: float) -> bool:
 	return approach >= CLOSING_SPEED and gap <= approach * LEAD_TIME
-
-## Whether something is in view, optionally counting a band `margin` px beyond the edge as in
-## view as well. In screen pixels, because that is the question — the world is drawn scaled.
-##
-## Public because it is the one rotation-aware "is this world point on screen" test the game
-## has: `ResistanceDirector.set_sight()` is wired to it from `main` rather than growing a
-## second one, since a chalk mark asks exactly this question of itself every frame it is
-## unseen.
-func is_on_screen(world_position: Vector2, margin: float = 0.0) -> bool:
-	var at := ScreenOrientation.to_design_space(
-			get_viewport().get_canvas_transform() * world_position, rotated)
-	return Rect2(Vector2.ZERO, size).grow(margin).has_point(at)
 
 ## What is on the edge of the screen right now: `{id, distance, approach}` per badge, nearest
 ## arrival first. For the telemetry observer, which has to be able to say what she was warned

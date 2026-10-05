@@ -92,9 +92,10 @@ The events:
   something drives `day_ended` without first driving `day_lost_to` for the same day, which nothing
   in `main.gd`'s own wiring does — still sends the bare `lost-crying` / `lost-hard-fail` rather than
   nothing.
-- `nappy-day-3-seen-fire` — the first frame the burning building is on screen, whether or not the
+- `nappy-day-3-seen-fire` — the first frame the burning building is in sight, whether or not the
   warning for the fire engine it summons can be put up yet
-  (`EventManager._summon_what_has_been_sighted()`).
+  (`EventManager._summon_what_has_been_sighted()`): the point it stands at inside what she can see
+  (`VisibleView.sees()`), so not while it is only under a covered corner in the joystick scheme.
 - `nappy-day-3-fire-unmet` — a won day 3 on which the fire was never met and was lit off her path
   at dusk (`EventManager.light_what_she_never_met()`).
 - `nappy-day-14-blackout` — the city goes dark, whether or not a mast was silenced
@@ -134,7 +135,9 @@ The events:
     the far edge of its run button, and from the top of its ring down *(inbox #581, the player:
     "remove the area at the bottom left and right up to the top of the joystick circle and
     horizontal extent of the speed button ... for the other mode those rectangles *do* count")*.
-    `pelican-seen` asks it too. Nothing gameplay decides by asks it yet.
+    `pelican-seen` asks it too, and so does everything gameplay decides by what she can see: the
+    screen-edge badge, where a thing from off screen is placed, the fire's sighting, a chalk mark's
+    notice and the poster crews ("yes, everything should follow this").
   - **An encounter** is one instance's time on screen: it opens the first frame any of what is
     drawn for it is visible (`EventInstance.drawn_box()`, its own picture stretched over the run a
     spread covers) or it lands something on her from off screen, and it is over once the instance has been neither for
@@ -162,7 +165,7 @@ The events:
   excluding gaps smaller than 10s".)*
 - `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark
   actually noticed (`ResistanceDirector._track_sight_and_reposition()`, within `SEEN_DISTANCE` and
-  on screen for `SEEN_DWELL_SECONDS`), touched, or untouched when the day it belongs to ends. The
+  in sight — `VisibleView.sees()`, so not under a covered corner — for `SEEN_DWELL_SECONDS`), touched, or untouched when the day it belongs to ends. The
   mark/task split reads `ResistanceSteps.Step.is_pickup` off the resistance's own data.
 - `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each perform step done, and each a day
   ended without: a perform step reached but not finished. A chalk mark sends `mark-*` above

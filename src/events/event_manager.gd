@@ -708,27 +708,29 @@ func _watch_the_encounters(delta: float) -> void:
 	var running := stroller != null and stroller.run_excess_ratio() > 0.0
 	_encounters.tick(delta, _instances, _visible, _player.global_position, running)
 
-## What she can see this frame, for the page's counter alone — the encounters and `pelican-seen`.
-## Set once a frame by `_look_through_the_camera()`.
+## What she can see this frame — the one answer to "can she see it" for everything on a day
+## (`VisibleView`): the screen-edge badge, the placing of what arrives from off screen, the fire's
+## sighting, the resistance's own sight (`ResistanceDirector.set_sight()`, wired to `sees()` by
+## `main`), the poster crews and the page's counter. One instance for the day, never replaced, so a
+## caller may keep it. Set at the top of each physics frame by `_look_through_the_camera()`.
 var _visible := VisibleView.new()
 
-## Tells `_visible` this frame's view and scheme: the camera's view, `Tuning.VIEW_HALF_EXTENT` about
-## the centre of the screen, which her look-ahead moves off her a little, and whether the on-screen
-## controls are the joystick scheme, whose rings and buttons cover the view's bottom corners
-## *(inbox #581, the player: "yes, everything should follow this (and treat it depending on the
-## input mode)")*.
-func _look_through_the_camera() -> void:
-	var stroller := _player as Stroller
-	var centre := stroller.camera_screen_center() if stroller else _player.global_position
-	if _controls == null or not is_instance_valid(_controls):
-		_controls = get_tree().get_first_node_in_group(HelpText.CONTROLS_GROUP) as TouchControls
-	var joystick := _controls != null and is_instance_valid(_controls) \
-			and _controls.controls_mode() == ControlsMode.Mode.JOYSTICK
-	_visible.look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
+## What she can see this frame — see `_visible`.
+func visible_view() -> VisibleView:
+	return _visible
 
-## The on-screen controls, found once — `null` where nothing built them (a rig, a test), which is
-## the tap scheme's whole view.
-var _controls: TouchControls = null
+## Whether a world point is in sight this frame: `VisibleView.sees()` on `_visible`. `margin` world
+## px past the edge count as in sight as well.
+func sees(world_position: Vector2, margin := 0.0) -> bool:
+	return _visible.sees(world_position, margin)
+
+## Tells `_visible` this frame's view and scheme (`VisibleView.look_through()`): the camera's view,
+## `Tuning.VIEW_HALF_EXTENT` about the centre of the screen, which her look-ahead moves off her a
+## little, and whether the on-screen controls are the joystick scheme, whose rings and buttons cover
+## the view's bottom corners *(inbox #581, the player: "yes, everything should follow this (and
+## treat it depending on the input mode)")*.
+func _look_through_the_camera() -> void:
+	_visible.look_through(_player)
 
 ## What the run log and the page's counter call the event whose lethal reach ended today
 ## (`EventInstance.logged_name()` — `pelican` for a pelican, otherwise its row's id), or "" when no
@@ -1109,6 +1111,8 @@ func _tick_the_events(delta: float) -> void:
 	_broadcast_clock += delta
 	_retire_finished()
 	if _find_player():
+		# First, so everything below asks the same view of what she can see this frame.
+		_look_through_the_camera()
 		# Before the streaming, so a plan sited this frame is in the world on the same frame it
 		# would have been had the day placed it at dawn.
 		if not _recipe_plan:
@@ -1117,7 +1121,6 @@ func _tick_the_events(delta: float) -> void:
 		if not _recipe_plan:
 			_place_what_is_owed_ahead(delta)
 		_summon_what_has_been_sighted()
-		_look_through_the_camera()
 		_report_the_pelicans_in_view()
 		_watch_the_encounters(delta)
 		_run_the_warnings(delta, _player.global_position)
@@ -1139,7 +1142,7 @@ func _summon_what_has_been_sighted() -> void:
 	for plan in _plans:
 		if not plan.live or plan.def.spawns_on_sight == "" or _sighted.get(plan, false):
 			continue
-		if not _is_on_screen(plan.live.global_position):
+		if not _visible.sees(plan.live.global_position):
 			continue
 		# `VisitCounter`'s own "seen-fire" — the moment she could see it, whether or not the
 		# engine's warning can be put up below: a summon that finds no road off screen to wait on
@@ -1150,22 +1153,6 @@ func _summon_what_has_been_sighted() -> void:
 			EventBus.event_sighted.emit(plan.def.id)
 		if _summon_the_sighted_row(plan.def, plan.live.global_position):
 			_sighted[plan] = true
-
-## Whether a world point is inside the camera's view of the player — the same
-## `Tuning.VIEW_HALF_EXTENT` box `DangerEdge` measures the screen edge against
-## (`Tuning.offscreen_boundary()`'s own box, and the camera holds her at its centre at a fixed
-## zoom — see docs/DECISIONS.md, "M77 — Everything arrives from off screen"). A direct geometry
-## test rather than `DangerEdge.is_on_screen()` itself: that call needs a live `Control` in the
-## viewport tree, which a headless rig driving `EventManager` alone —
-## `tests/test_event_manager.gd` — has none of, and asks the identical question
-## `ResistanceDirector.set_sight()` is wired to that same `Control` for. Ignores screen rotation,
-## which only a touch layout ever applies: the smaller reading of a silence, since nothing else
-## here is stated per input scheme.
-func _is_on_screen(world_position: Vector2) -> bool:
-	if not _player:
-		return false
-	var offset := world_position - _player.global_position
-	return absf(offset.x) <= Tuning.VIEW_HALF_EXTENT.x and absf(offset.y) <= Tuning.VIEW_HALF_EXTENT.y
 
 ## Warns of the row `source.spawns_on_sight` names, coming along `at`'s own street to `at` — `at`
 ## is a sidewalk point (`burning_building` is placed `AT_THE_FRONT`), so the along-street

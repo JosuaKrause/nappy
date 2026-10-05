@@ -995,12 +995,11 @@ func drawn_box() -> Rect2:
 	if _drawn_box_known:
 		return _drawn_box
 	_drawn_box_known = true
-	var icon := icon_for(def.look)
-	if icon.is_empty():
+	var box := box_of(def)
+	if not box.has_area():
 		_drawn_box = Rect2()
 		return _drawn_box
-	var size := _native_size(icon)
-	var box := Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+	var size := box.size
 	var half := maxf(11.0, def.obstructs_radius)
 	if def.has_a_spread and _spread_vertical:
 		box = box.merge(Rect2(-size.x * 0.5, -half, size.x, half * 2.0))
@@ -1011,6 +1010,18 @@ func drawn_box() -> Rect2:
 		box = box.grow(def.flock_spread)
 	_drawn_box = box
 	return _drawn_box
+
+## The box a row's own picture fills standing on its feet at the origin — `drawn_box()` before an
+## instance exists, and without the run a spread covers, which only an instance's own street decides.
+## What a thing arriving from off screen is placed just out of sight by (`VisibleView.
+## clear_of_sight()`), since nothing of it may be seen on the frame it exists. Empty for a row that
+## draws nothing of its own.
+static func box_of(row: EventDef) -> Rect2:
+	var icon := icon_for(row.look)
+	if icon.is_empty():
+		return Rect2()
+	var size := _native_size(icon)
+	return Rect2(-size.x * 0.5, -size.y, size.x, size.y)
 
 var _drawn_box := Rect2()
 var _drawn_box_known := false
