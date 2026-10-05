@@ -46,7 +46,7 @@ which the player did not choose: first pelican after 8.2 runs on average, at the
   request #565 (olive-badger, what she meets on her route is drawn from a marble bag), since merged.
   A fresh clone fetches it with `git fetch origin refs/pull/565/head`.
 - **Command:** with the probe copied to `tests/probes/pelican_cyclists_per_run.gd`,
-  `tools/test.sh probes/pelican_cyclists_per_run.gd`, which took 55 minutes.
+  `tools/test.sh probes/pelican_cyclists_per_run.gd`.
 - **Settings:** 120 cities, seeds 772041 + 31 × i for i from 0 to 119, days 2 to 14; each day's
   plan and director draw from streams hashed from the seed and the day, so a rerun gives the same
   lines.

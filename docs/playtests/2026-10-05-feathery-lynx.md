@@ -101,7 +101,7 @@ their ratio".
 Said on 2026-10-05, a new instruction after the build of spry-llama (PR #578) reported its seen
 test: an encounter is seen on the first frame 80% of the instance's drawn box is inside the
 camera's view. "The other mode" is the control mode without the on-screen joystick and run button
-(the tap mode). Elsewhere the game's on-screen test, `EventManager._is_on_screen()`, checks only an
+(the tap mode), and the "speed button" is the run button beside each joystick ring. Elsewhere the game's on-screen test, `EventManager._is_on_screen()`, checks only an
 instance's centre point against the view's half extent.
 
 > when counting the 80% visibility for seen remove the area at the bottom left and right up to the top of the joystick circle and horizontal extent of the speed button -- use that everywhere where visibility is concerned -- for the other mode those rectangles *do* count

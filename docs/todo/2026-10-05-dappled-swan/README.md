@@ -36,8 +36,8 @@ events):
 view, less, in the joystick mode, two rects each running from the screen's side to the far edge of
 that corner's run button and from the top of its joystick ring down, worked out from
 `TouchControls`' own constants, since both bottom corners carry a ring and a run button; in the tap
-mode the whole view. It is used for the counter's seen test only, and this entry waits on it
-(`after: 2026-10-04-spry-llama`). The rest of the game asks one of two other tests, neither of
+mode the whole view. It is used for the counter's seen test and for the pelican's `pelican-seen`,
+which PR #578 also moves onto it, and this entry waits on it (`after: 2026-10-04-spry-llama`). The rest of the game asks one of two other tests, neither of
 which knows the corners:
 
 - `DangerEdge.is_on_screen(world_position, margin)`, a point against the screen rect in design
@@ -52,8 +52,8 @@ The tests it covers, each an item of its own:
   badge alone for at most a second, then places the thing just off screen), so this entry is
   ordered after it (`after: 2026-09-26-M226`).
 - **A chalk mark counting as noticed** (`chalk-mark-noticed.md`).
-- **The sightings: the fire's `seen-fire`, which also summons the fire truck, and the pelican's
-  `pelican-seen`** (`the-sightings.md`).
+- **The sightings: the fire's `seen-fire`, which also summons the fire truck, and the poster
+  crews' pasting** (`the-sightings.md`).
 
 **Proposed, not asked for:**
 
