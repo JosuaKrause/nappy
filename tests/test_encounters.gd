@@ -73,8 +73,15 @@ static func _view(centre: Vector2) -> Rect2:
 ## `seconds` of frames of `watch`, with the view about `centre` and her standing at its centre.
 func _run(watch: EncounterWatch, instances: Array[EventInstance], centre: Vector2, seconds: float,
 		running := false, joystick := false) -> void:
+	var visible := _visible(centre, joystick)
 	for _i in int(round(seconds / STEP)):
-		watch.tick(STEP, instances, _view(centre), joystick, centre, running)
+		watch.tick(STEP, instances, visible, centre, running)
+
+## What she can see with the view about `centre`, in the joystick scheme or not.
+static func _visible(centre: Vector2, joystick := false) -> VisibleView:
+	var visible := VisibleView.new()
+	visible.look(_view(centre), joystick)
+	return visible
 
 ## Far enough from any instance near the origin that nothing of it is in view.
 const AWAY := Vector2(2000.0, 0.0)
@@ -305,7 +312,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 				"%s: seen outside its reach is no influence (%s)" % [id, _influenced])
 		var inside := Vector2(0.0, reach - 2.0)
 		for _i in 3:
-			watch.tick(STEP, [standing] as Array[EventInstance], _view(inside), false, inside, false)
+			watch.tick(STEP, [standing] as Array[EventInstance], _visible(inside), inside, false)
 		t.check(_influenced.size() == 1 and standing.landed_ever == 0.0,
 				"%s: her inside its %s is, with nothing landed (%d)"
 				% [id, "reach" if standing.def.hard_fail else "hold", _influenced.size()])
@@ -377,7 +384,9 @@ func _test_runs_less_than_the_gap_apart_are_one_bout(t) -> void:
 	t.check(_ran.size() == 3, "and a new day's first run is its own bout (%d)" % _ran.size())
 
 ## The manager reads the scheme off the on-screen controls: a yeller under the bottom-left
-## controls is not seen while they are the joystick scheme, and is once they are the tap one.
+## controls is not seen while they are the joystick scheme, and is once they are the tap one — and a
+## pelican under the bottom-right ones is the same for `pelican-seen` *(inbox #581: "yes,
+## everything should follow this (and treat it depending on the input mode)")*.
 func _test_the_manager_reads_the_controls_scheme(t) -> void:
 	_clear()
 	var city: City = CITY_SCENE.instantiate()
@@ -402,14 +411,30 @@ func _test_the_manager_reads_the_controls_scheme(t) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
 	var yeller := events.spawn_extra(def, her)
 	yeller.global_position = corner - yeller.drawn_box().get_center()
+	var right_corner := view.position + VisibleView.covered_right().get_center() * scale
+	var cyclist := EventCatalogue.by_id("cyclist")
+	var pelican := events.spawn_extra(cyclist, right_corner,
+			PackedVector2Array([right_corner, right_corner + Vector2(0.0, -300.0)]))
+	pelican.set_process(false)
+	events._ride_as_a_pelican(pelican)
+	pelican.global_position = right_corner - pelican.drawn_box().get_center()
+	var pelican_seen: Array[int] = [0]
+	var on_pelican := func(_instance: Variant) -> void: pelican_seen[0] += 1
+	EventBus.pelican_sighted.connect(on_pelican)
 	for _i in 30:
 		events._physics_process(STEP)
 	t.check(not _seen.has("%d:homeless_yeller" % DAY),
 			"under the joystick scheme's controls it is not seen (%s)" % [_seen])
+	t.check(pelican_seen[0] == 0 and not _seen.has("%d:pelican" % DAY),
+			"nor is the pelican, by either of its names")
 	controls.set_mode(ControlsMode.Mode.TAP)
 	for _i in 30:
 		events._physics_process(STEP)
 	t.check(_seen.has("%d:homeless_yeller" % DAY), "in the tap scheme it is (%s)" % [_seen])
+	t.check(pelican_seen[0] == 1 and _seen.has("%d:pelican" % DAY),
+			"and so is the pelican, once by each name (%d, %s)" % [pelican_seen[0], _seen])
+	EventBus.pelican_sighted.disconnect(on_pelican)
+	events.retire(pelican)
 	events.retire(yeller)
 	events._player = null
 	controls.free()

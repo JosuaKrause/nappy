@@ -672,9 +672,11 @@ func _ride_as_a_pelican(instance: EventInstance) -> void:
 ## day in a run, so watching it costs nothing on the rest. Emptied by `clear()`.
 var _unseen_pelicans: Array = []
 
-## `EventBus.pelican_sighted` for each pelican on its first frame on screen — the same box
-## `_summon_what_has_been_sighted()` asks for the fire, `_is_on_screen()` — and then never again for
-## that pelican. Telemetry only: it decides nothing and changes nothing gameplay reads.
+## `EventBus.pelican_sighted` for each pelican on its first frame properly on screen — the same test
+## an encounter's seen makes, `Tuning.ENCOUNTER_SEEN_SHARE` of its drawn box visible to her
+## (`_visible`, `VisibleView`), so `pelican-seen` and `seen-pelican` answer the same question — and
+## then never again for that pelican. Telemetry only: it decides nothing and changes nothing gameplay
+## reads.
 func _report_the_pelicans_in_view() -> void:
 	if _unseen_pelicans.is_empty():
 		return
@@ -683,7 +685,9 @@ func _report_the_pelicans_in_view() -> void:
 		if not is_instance_valid(pelican) or (pelican as EventInstance).is_finished:
 			continue
 		var instance := pelican as EventInstance
-		if _is_on_screen(instance.global_position):
+		var box := instance.drawn_box()
+		var world := Rect2(box.position + instance.global_position, box.size)
+		if _visible.share_of(world) >= Tuning.ENCOUNTER_SEEN_SHARE:
 			EventBus.pelican_sighted.emit(instance)
 		else:
 			still_unseen.append(instance)
@@ -695,21 +699,31 @@ var _encounters := EncounterWatch.new()
 
 ## Asks `_encounters` about this frame, while a day is being played: not behind the title screen,
 ## which runs the city with her stood aside out of the `player` group, and not on the escape, which
-## is not a day and has `nappy-escape-*` of its own. The view is the camera's — `Tuning.
-## VIEW_HALF_EXTENT` about the centre of the screen, which her look-ahead moves off her a little —
-## and the controls' scheme says whether its bottom corners are covered (`VisibleView`).
+## is not a day and has `nappy-escape-*` of its own.
 func _watch_the_encounters(delta: float) -> void:
 	if _walking_the_finale or not _player.is_in_group("player"):
 		return
 	var stroller := _player as Stroller
-	var centre := stroller.camera_screen_center() if stroller else _player.global_position
-	var view := Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	var running := stroller != null and stroller.run_excess_ratio() > 0.0
+	_encounters.tick(delta, _instances, _visible, _player.global_position, running)
+
+## What she can see this frame, for the page's counter alone — the encounters and `pelican-seen`.
+## Set once a frame by `_look_through_the_camera()`.
+var _visible := VisibleView.new()
+
+## Tells `_visible` this frame's view and scheme: the camera's view, `Tuning.VIEW_HALF_EXTENT` about
+## the centre of the screen, which her look-ahead moves off her a little, and whether the on-screen
+## controls are the joystick scheme, whose rings and buttons cover the view's bottom corners
+## *(inbox #581, the player: "yes, everything should follow this (and treat it depending on the
+## input mode)")*.
+func _look_through_the_camera() -> void:
+	var stroller := _player as Stroller
+	var centre := stroller.camera_screen_center() if stroller else _player.global_position
 	if _controls == null or not is_instance_valid(_controls):
 		_controls = get_tree().get_first_node_in_group(HelpText.CONTROLS_GROUP) as TouchControls
 	var joystick := _controls != null and is_instance_valid(_controls) \
 			and _controls.controls_mode() == ControlsMode.Mode.JOYSTICK
-	_encounters.tick(delta, _instances, view, joystick, _player.global_position, running)
+	_visible.look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
 
 ## The on-screen controls, found once — `null` where nothing built them (a rig, a test), which is
 ## the tap scheme's whole view.
@@ -1101,6 +1115,7 @@ func _tick_the_events(delta: float) -> void:
 		if not _recipe_plan:
 			_place_what_is_owed_ahead(delta)
 		_summon_what_has_been_sighted()
+		_look_through_the_camera()
 		_report_the_pelicans_in_view()
 		_watch_the_encounters(delta)
 		_run_the_warnings(delta, _player.global_position)

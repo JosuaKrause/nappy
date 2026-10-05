@@ -58,10 +58,17 @@ lethal reach or its hold, whichever comes first. What each row can be influenced
 
 **Decided while building, where the filing left it open.**
 
-- **A pelican is `pelican`, never `cyclist`**, in every name here. The player, asked after the
-  filing: "yes cyclist and pelican are treated separately".
-- **`nappy-day-3-seen-fire` and `nappy-day-N-pelican-seen` stay** unchanged beside the new set, as
-  proposed; `--encounters` leaves the older `seen-fire` out of its table, since `fire` is no row.
+- **A pelican is `pelican`, never `cyclist`**, in every name here (inbox #577). The player, asked
+  after the filing: "yes cyclist and pelican are treated separately"; then, asked whether to count a
+  pelican as both: "counterpoint: a pelican is functionally a bicycle. if we want to measure the rate
+  of anything bicycle we could either add bicycle and pelican up every time or just count pelicans
+  as both. that said we can always add them up later so let's keep it separate for now". So
+  `cyclist`'s ratio leaves pelicans out, and anything bicycle is `cyclist` and `pelican` added up.
+  On the static rows and the influence rule, the same note: "the static things question was meant
+  for telemetry. we need to record seen for them. let's count chases and catches as influenced
+  always" (see above).
+- **`nappy-day-3-seen-fire` and `nappy-day-N-pelican-seen` stay** beside the new set, as proposed,
+  `pelican-seen` measured by the same test as an encounter's seen (below); `--encounters` leaves the older `seen-fire` out of its table, since `fire` is no row.
 - **An influence before the encounter is seen waits** rather than going out at once as unseen: a
   field such as the yeller's (210px) reaches further than the 180px from her to the top and bottom
   edges of the view, so an exciting row can land its 10% a moment before it is 80% in view, and sending those as unseen
@@ -75,16 +82,21 @@ lethal reach or its hold, whichever comes first. What each row can be influenced
   facade are wider than its one flame picture, so the fire counts as seen a little early. A row that
   draws nothing of its own (`playground`, `curfew_announce`, `finale_explosion`) is never seen.
 - **The view is the camera's**, `Tuning.VIEW_HALF_EXTENT` about `Stroller.camera_screen_center()`,
-  not the point test `EventManager._is_on_screen()` makes about her for the fire and the pelican.
+  not the point test `EventManager._is_on_screen()` makes about her for the fire's sighting.
 - **The joystick scheme's controls hide the bottom corners.** *(Inbox #581, the player: "when
   counting the 80% visibility for seen remove the area at the bottom left and right up to the top
   of the joystick circle and horizontal extent of the speed button -- use that everywhere where
   visibility is concerned -- for the other mode those rectangles *do* count".)* Each bottom corner
   holds a ring with its run button inward of it, so each covered rectangle runs from the screen's
   side to the far edge of its run button and from the top of its ring down, worked out from
-  `TouchControls`' own constants. `VisibleView.visible_share()` is the one function that answers
-  how much of a world rectangle she can see; the encounter's opening and its seen both ask it.
-  Switching gameplay's own visibility tests to it changes play and is a question of its own.
+  `TouchControls`' own constants. `VisibleView` is the one place that answers how much of a world
+  rectangle she can see, set once a frame by `EventManager._look_through_the_camera()`; the
+  encounter's opening, its seen and the pelican's `pelican-seen` (80% of its drawn box, the same as
+  `seen-pelican`) ask it. Asked whether the rest of the game follows: "yes, everything should follow
+  this (and treat it depending on the input mode)". The gameplay half — off-screen warnings and
+  where things are placed just off screen, the edge badges, when a chalk mark counts as noticed, the
+  fire's sighting and the `seen-fire` it sends — changes play and goes in the next batch with M226,
+  the pursuing dog keeps its day-3 timing, from #581; nothing here moves it.
 - **Not counted behind the title screen**, which runs the city with her stood aside, **nor on the
   escape**, which is not a day and has `nappy-escape-*` of its own.
 - **A planned event streamed out and back in is a new instance**, and that changes nothing: it

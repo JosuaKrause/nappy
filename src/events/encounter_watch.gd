@@ -41,9 +41,11 @@ extends RefCounted
 ## test `EventManager` already makes) after `Tuning.RUN_BOUT_GAP` or more without running, or the
 ## first time in a day.
 ##
-## **Cheap by construction**: one pass over the live instances, arithmetic on two rectangles each, a
-## record made once per instance the first time it is present and nothing allocated on a frame
-## otherwise. The open encounters are a short list of their own, so an encounter can be closed after
+## **Cheap by construction**, since it runs every physics frame for every player: one pass over
+## the live instances, where one out of view with nothing open and nothing new landed — most of them
+## — costs one box test and nothing more; the covered corners laid onto the view once a frame
+## (`VisibleView.look()`), not once an instance; a record made once per instance the first time it
+## is present, and nothing allocated on a frame otherwise. The open encounters are a short list of their own, so an encounter can be closed after
 ## its instance has gone.
 
 ## One instance's encounters. Kept on the instance (`EventInstance.encounter`) so finding it costs
@@ -76,14 +78,24 @@ var _ran_last := -INF
 ## next day starts goes out under the day it happened on.
 var day := 0
 
-## One frame. `view` is the world the camera shows, `joystick` whether the joystick scheme's
-## controls cover its bottom corners, `her` where she stands, `running` whether she is running.
-func tick(delta: float, instances: Array[EventInstance], view: Rect2, joystick: bool,
-		her: Vector2, running: bool) -> void:
+## One frame. `visible` is what she can see this frame (`VisibleView.look()` already told), `her`
+## where she stands, `running` whether she is running.
+func tick(delta: float, instances: Array[EventInstance], visible: VisibleView, her: Vector2,
+		running: bool) -> void:
 	_clock += delta
 	_frame += 1
+	var view := visible.view
 	for instance in instances:
-		_look_at(instance, view, joystick, her)
+		# Most live instances are out of view, with nothing open and nothing new landed, and there is
+		# nothing to do for them: asked here, before any call, since a call is most of the cost.
+		var record := instance.encounter
+		if record == null or not record.open:
+			var landed_before := record.landed_last if record != null else 0.0
+			if instance.landed_ever <= landed_before:
+				var box := instance.drawn_box()
+				if not Rect2(box.position + instance.global_position, box.size).intersects(view):
+					continue
+		_look_at(instance, visible, her)
 	_close_what_is_over()
 	_watch_the_running(running)
 
@@ -97,13 +109,13 @@ func end_day() -> void:
 	_running = false
 	_ran_last = -INF
 
-func _look_at(instance: EventInstance, view: Rect2, joystick: bool, her: Vector2) -> void:
+func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> void:
 	var box := instance.drawn_box()
 	var world := Rect2(box.position + instance.global_position, box.size)
-	var share := VisibleView.visible_share(world, view, joystick)
-	var in_view := share > 0.0
 	var record := instance.encounter
-	var landing := record != null and instance.landed_ever > record.landed_last
+	var landing := instance.landed_ever > (record.landed_last if record != null else 0.0)
+	var share := visible.share_of(world)
+	var in_view := share > 0.0
 	if record == null:
 		if not in_view and instance.landed_ever <= 0.0:
 			return
@@ -111,7 +123,6 @@ func _look_at(instance: EventInstance, view: Rect2, joystick: bool, her: Vector2
 		record.instance = instance
 		record.name = instance.logged_name()
 		instance.encounter = record
-		landing = instance.landed_ever > 0.0
 	record.last_frame = _frame
 	if in_view or landing:
 		if not record.open:

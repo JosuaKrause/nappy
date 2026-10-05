@@ -231,7 +231,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
 	t.add_child(stroller)
 	stroller.set_physics_process(false)
-	stroller.global_position = her
+	stroller.reset_at(her)
 	events._player = stroller
 	var told := {"spawned": 0, "sighted": 0, "excited": 0, "struck": 0}
 	var on_spawned := func(_instance: Variant) -> void: told["spawned"] += 1
@@ -285,7 +285,9 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 
 	events._report_the_pelicans_in_view()
 	t.check(told["sighted"] == 0, "created just off screen, it is not yet seen")
-	stroller.global_position = pelican.global_position + Vector2(200.0, 0.0)
+	# `reset_at()` rather than a bare move, so the camera's screen centre, which a headless run never
+	# smooths along, is on her: what counts as on screen is measured about it.
+	stroller.reset_at(pelican.global_position + Vector2(200.0, 0.0))
 	for _i in 3:
 		events._physics_process(STEP)
 	t.check(told["sighted"] == 1,

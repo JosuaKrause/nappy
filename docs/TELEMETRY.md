@@ -113,9 +113,9 @@ The events:
   entry *(inbox #527 in [azure-tapir](playtests/2026-10-04-azure-tapir.md), the player: "when the pelican spawns, when it's on screen, and when it's
   hitting the player. it must appear as its own entry and it needs to be more granular than
   standard event telemetry")*, each once per pelican: created where its warning pointed
-  (`EventManager.spawn_warned()`); its first frame on screen
-  (`EventManager._report_the_pelicans_in_view()`, the same box the fire's `seen-fire` is measured
-  in); the first share of her meter its field lands, inside its 90px
+  (`EventManager.spawn_warned()`); its first frame properly on screen
+  (`EventManager._report_the_pelicans_in_view()`, the same test as an encounter's `seen` below:
+  80% of its drawn box visible to her, `VisibleView`); the first share of her meter its field lands, inside its 90px
   (`EventInstance.accumulate_landed()`); and its lethal reach, 33px, covering her
   (`EventManager._check_hard_fails()`). The cyclist's contact does those two different things to
   her — its field fills the meter, its reach ends the day — so each is an event of its own. A
@@ -134,7 +134,7 @@ The events:
     the far edge of its run button, and from the top of its ring down *(inbox #581, the player:
     "remove the area at the bottom left and right up to the top of the joystick circle and
     horizontal extent of the speed button ... for the other mode those rectangles *do* count")*.
-    Nothing gameplay decides by asks it yet.
+    `pelican-seen` asks it too. Nothing gameplay decides by asks it yet.
   - **An encounter** is one instance's time on screen: it opens the first frame any of what is
     drawn for it is visible (`EventInstance.drawn_box()`, its own picture stretched over the run a
     spread covers) or it lands something on her from off screen, and it is over once the instance has been neither for
