@@ -81,14 +81,15 @@ by frame):
 | 12 | 30 | 0 | 30 | 0 |
 | 14 | 29 | 3 → 0 | 27 → 29 | 25 → 24 |
 
-**Open, asked of the player on PR #570: day 14 barely moves.** The power station stands in the same
+**Day 14 barely moves, and is kept by the player's choice.** The power station stands in the same
 place in every city, and its nearest start across the street is a cross street about 144px to the
 side and 320px down, about 351px out — past the 311px that `Tuning.TRAP_ARRIVAL_DISTANCE`'s own doc
 gives as the walk-away ceiling — so walking away along the street still escapes him in 24 of 29
-cities. The options put to the player: accept it, as the proposal was worded; cap the across start's
-distance near 311px, which changes nothing alone since the beside start escapes too; or give the
-station a start of its own. The coder would accept it until a played last night says it is too easy.
-Neither change is built.
+cities. Asked on PR #570 whether to (a) accept it for now and revisit if a played last night feels
+too easy, or (b) give the station a nearer start of its own (capping the distance alone changes
+nothing, since the beside start escapes too), the player answered "let's keep day 14"
+([plush-bunny](../playtests/2026-10-05-plush-bunny.md), inbox #582). The across start stays as
+built; what would make it worth discussing again is a played last night that feels too easy.
 
 **Proposed, not asked for, and open to overturn (the fix):**
 

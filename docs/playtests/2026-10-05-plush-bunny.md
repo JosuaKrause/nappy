@@ -1,8 +1,8 @@
 # Playtest plush-bunny — Day 9 under the boom, a hut's hold and the robber, front doors across the street
 
 2026-10-05. The player's answers to the review of PR #570 (every guarded target sends the robber
-from off screen, [grassy-goose](2026-10-04-grassy-goose.md)), captured as one note, #571. The
-player's words are copied word for word, after what they answered.
+from off screen, [grassy-goose](2026-10-04-grassy-goose.md)), captured as two notes, #571 and
+#582. The player's words are copied word for word, after what they answered.
 
 ## #571 — Day 9 under the boom: only the guard; front doors: the robber from across the street if out of view
 
@@ -32,6 +32,17 @@ has a walkable way to you; if there's none, fall back to today's rule. Is that w
 
 > yeah, you shouldn't try to cheat it by going back in the hut -- that should be fatal by the robber. yes, to your proposal about front doors
 
+## #582 — Day 14's station door: keep the start across the street
+
+Asked on 2026-10-05 on PR #570, after the fix for #571: on day 14, the last night's station door,
+the robber's start across the street is about 351px away, just past the distance a walk can still
+outrun, so in 24 of 29 test cities she still escapes by walking away. Options: **(a)** accept it for
+now and revisit if a played last night feels too easy (the assistant's pick); **(b)** give the
+station a nearer start of its own. Capping the distance alone would not help, because the fallback
+start beside her escapes too.
+
+> let's keep day 14
+
 ## Routing
 
 **#571** → built in PR #570, the pull request that files it: on day 9 a walk under the raised boom
@@ -39,5 +50,7 @@ sends only the door's guard, and the trap robber comes only after an inspected c
 hold does not end the robber's chase, so stepping back into a hut with him after her lets him catch
 her; at a front door (the burnt shell, the station) the robber starts across the street, out of
 view, where his own walk reaches her, and falls back to the note's rule when no such start exists.
-What stays open — day 14's start across the street still lets a walk escape — is in the record,
-[feathery-badger](../decisions/2026-10-04-feathery-badger.md), as a question for the player.
+
+**#582** → nothing more to build: day 14's start across the street stays as built, a walk still
+escaping in 24 of 29 cities, and is revisited if a played last night feels too easy; the record,
+[feathery-badger](../decisions/2026-10-04-feathery-badger.md), says so.
