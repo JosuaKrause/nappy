@@ -171,9 +171,16 @@ static func _main_road_sites(map: CityMap) -> Array[Vector2]:
 ## where a region door could ever stand. Every margin is generous on purpose — a site excluded here
 ## is simply not offered to the farthest-point sampling above, so refusing a little too much costs
 ## variety and refusing too little costs a guarantee.
-static func _is_eligible(at: Vector2, map: CityMap) -> bool:
-	return not _too_close_to_home(at, map) and not _reaches_a_calm_interior(at, map) \
-			and not _reaches_a_possible_door(at, map)
+##
+## `door_points` is `possible_door_points(map)` for a caller that asks of many tiles: it is the one
+## costly part (every boundary segment rebuilt), and it is the same for every tile of a run. Left
+## empty, it is computed for this one call.
+static func _is_eligible(at: Vector2, map: CityMap,
+		door_points := PackedVector2Array()) -> bool:
+	if _too_close_to_home(at, map) or _reaches_a_calm_interior(at, map):
+		return false
+	var points := door_points if not door_points.is_empty() else possible_door_points(map)
+	return not _reaches_a_possible_door(at, points)
 
 static func _too_close_to_home(at: Vector2, map: CityMap) -> bool:
 	var margin := Tuning.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
@@ -214,17 +221,29 @@ static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 ## for that and for anything this misses, exactly as it is for held ground.
 ## *(2026-09-23, CI on PR 292, tests/test_checkpoints.gd: "nothing the day placed reaches inside a
 ## door's 176px gap" — the gap this had never checked at all.)*
-static func _reaches_a_possible_door(at: Vector2, map: CityMap) -> bool:
+static func _reaches_a_possible_door(at: Vector2, door_points: PackedVector2Array) -> bool:
 	var limit := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.by_id("loudspeaker").field_reach()
+	for position in door_points:
+		if at.distance_to(position) < limit:
+			return true
+	return false
+
+## Every point a street door could ever stand at — each boundary segment's two huts and gate, at the
+## end its wall stands — for `_reaches_a_possible_door()`. Day-independent, like the sites, and the
+## costly half of the question (`RegionPlanner.boundary_segments()` is rebuilt for it), so a caller
+## asking of many tiles computes it once and hands it to `_is_eligible()`. Never empty on a city
+## with region boundaries; on one with none, an empty answer means every call computes it again,
+## which costs nothing there.
+static func possible_door_points(map: CityMap) -> PackedVector2Array:
+	var points := PackedVector2Array()
 	for segment in RegionPlanner.boundary_segments(map):
 		var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
 				< RegionPlanner.region_of_junction(map, segment.b)
 		var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
 		var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
-		for position in SealPlanner.positions_across(world, segment.horizontal, Tuning.TILE_SIZE):
-			if at.distance_to(position) < limit:
-				return true
-	return false
+		points.append_array(PackedVector2Array(
+				SealPlanner.positions_across(world, segment.horizontal, Tuning.TILE_SIZE)))
+	return points
 
 static func _circle_touches_rect(at: Vector2, radius: float, rect: Rect2) -> bool:
 	var closest := Vector2(clampf(at.x, rect.position.x, rect.end.x),

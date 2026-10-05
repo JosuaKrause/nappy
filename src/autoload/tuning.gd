@@ -1595,6 +1595,47 @@ const AHEAD_MIN_SPEED := 40.0
 ## than spent in the first ten seconds. The director rolls within this band.
 const AHEAD_INTERVAL := Vector2(11.0, 26.0)
 
+## Marbles per unit of `EventDef.weight` in the bag the director draws her route's events from
+## (`EventDirector`, `MarbleBag.in_proportion()`), rounded, at least one a row. *(olive-koala,
+## statement 2: "events should use the marble bag approach as well. that way we can control what
+## the player sees on their route".)* The bag is the stretch over which the mix is exact, so it is
+## sized to about a day's worth of what she meets: at 2 the rows' weights (2.5, 1.5 and 3.0) make a
+## bag of 14 — 16 on day 3, with `ROUTE_BAG_MARBLES_OF`'s dogs — against the ten or so a whole day
+## of walking at `AHEAD_INTERVAL` hands out (`tests/probes/olive_badger_route_mix.gd` counts them),
+## and every weight comes out whole.
+const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
+
+## Rows whose marbles in her route's bag are set here rather than by `ROUTE_BAG_MARBLES_PER_WEIGHT`
+## times their weight, because the weight is not only the bag's: the dawn's weighted roll reads it
+## on every day the row is placed. *(inbox #566 in feathery-stork: "if we want to change the probability then we can
+## change the bag -- I'd say we could do 2 dogs -- we don't need the charging dog that often and in
+## 17 rolls there are two guaranteed ones".)* `charging_dog` is in the bag only on day 3, the one
+## day it is director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`)
+## and takes none of these, so with the lesson and these two `max_per_day`'s 3 rarely binds.
+const ROUTE_BAG_MARBLES_OF := {"charging_dog": 2}
+
+## How many of the events placed on her route after day 6's mark a man shouting is one of: the
+## route's bag is rigged (`MarbleBag.rig()`) with a bag of this many marbles, one `homeless_yeller`
+## and the rest drawn from the bag she was drawing from. *(olive-koala, statement 2: "after touching
+## the mark a marble bag with 1/3 chance of yeller should be put in so the yeller is guaranteed to
+## encounter a yeller in the next three events" · inbox #561 in coral-bunny, on the size of a rigged bag: "x
+## defines how soon we want to get the guaranteed event", and, told how sparse the route's events
+## are: "maybe let's make the other rigged bags smaller, too".)* The second of the next two: at
+## `AHEAD_INTERVAL`, within a minute of walking.
+const TASK_CONTACT_WITHIN_THE_NEXT := 2
+
+## The same for day 11: once she has read its mark, a second loudspeaker mast is put on her route
+## within this many events, beside the one near the mark the task points at first. *(inbox #561 in coral-bunny:
+## "day 11 is going to be a x=3", then "let's make the other rigged bags smaller".)*
+const MAST_WITHIN_THE_NEXT := 2
+
+## The same for each of the return leg's patrols (`RETURN_PATROLS_PER_ACT`): rigged into a bag of
+## this many as the one before it is handed out, so they come one after another inside the leg.
+## *(inbox #561 in coral-bunny, of the return patrols: "they will need rigged bags".)* Two, with
+## `RETURN_PATROL_INTERVAL` between handouts, is a patrol every 18-32s of walking, which lands one or
+## two inside a return leg rather than all of them.
+const RETURN_PATROL_WITHIN_THE_NEXT := 2
+
 ## Extra `police_patrol` rows the return leg owes in acts III and IV, one entry per act —
 ## `Tuning.act_for_day()` is 1-based, so `RETURN_PATROLS_PER_ACT[act - 1]`. Acts I and II carry
 ## none, so the teaching days and the return she learns the mechanic on stay exactly as they were

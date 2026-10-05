@@ -1314,6 +1314,7 @@ class WalkSiting extends RefCounted:
 	func _faces_on(def: EventDef, ahead: Dictionary, at: Vector2, near: float,
 			far: float) -> Array[Vector2i]:
 		var pool := _ground_as_a_set(def)
+		var a_mast := def.id == MAST_ROW
 		var offered: Array[Vector2i] = []
 		for cell: Vector2i in ahead:
 			if float(ahead[cell]) > far:
@@ -1331,8 +1332,37 @@ class WalkSiting extends RefCounted:
 						continue
 					if _map.tile_to_world(tile).distance_to(at) < near:
 						continue
+					if a_mast and not _a_mast_may_stand(tile):
+						continue
 					offered.append(tile)
 		return offered
+
+	## The row a mast is, for `_faces_on()`.
+	const MAST_ROW := "loudspeaker"
+
+	## **A mast is offered only ground a mast site would be** (`MastSites._is_eligible()`: off the home
+	## street, its field off a calm interior and off every place a region door could stand), the same
+	## refusal day 11's mast near the mark is under — a mast is never on the home street (M180, the
+	## masts), whichever way it is put down. Asked only of the tiles `_faces_on()` offers, never of the
+	## whole ground: over every sidewalk and square in the city it is seconds of work on the frame she
+	## reads day 11's mark. Each tile's answer is kept, and the door points it measures against are
+	## computed once (`MastSites.possible_door_points()`).
+	func _a_mast_may_stand(tile: Vector2i) -> bool:
+		if not _mast_may_stand.has(tile):
+			if _door_points.is_empty():
+				_door_points = MastSites.possible_door_points(_map)
+			mast_checks += 1
+			_mast_may_stand[tile] = MastSites._is_eligible(_map.tile_to_world(tile), _map,
+					_door_points)
+		return _mast_may_stand[tile]
+
+	## Tile -> whether a mast may stand there, for `_a_mast_may_stand()`.
+	var _mast_may_stand := {}
+	## Where a region door could ever stand, for `_a_mast_may_stand()`; empty until first asked.
+	var _door_points := PackedVector2Array()
+	## How many tiles `_a_mast_may_stand()` has asked `MastSites` about. For the test that holds the
+	## cost of siting a mast on her route to the tiles it was offered.
+	var mast_checks := 0
 
 	## `_open_ground_for`'s list as a set, so a cell can ask whether one of its four tiles is in it.
 	##
