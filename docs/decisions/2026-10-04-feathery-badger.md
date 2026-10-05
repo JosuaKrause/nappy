@@ -12,7 +12,8 @@ the burnt shell (day 8), the district door (day 9, the moment the inspection let
 mast's foot (day 11), the swing (day 12) or the station's front door (day 14) sends
 `robber_giving_chase` from off screen on the note's own rules: `Tuning.TRAP_ARRIVAL_DISTANCE` away, past
 the line where the screen-edge badge rises, awake from his first frame; the van still sends
-`van_guard_giving_chase`. Day 14 included, since the night is won by walking home after the sabotage.
+`van_guard_giving_chase`. Day 14 included, as asked: the option the player picked names "last
+night's door", and the night is still won by walking home after the sabotage.
 `docs/NARRATIVE.md` and `docs/EVENTS.md` say so; `tests/test_resistance.gd` checks every target on its
 real day.
 
@@ -23,8 +24,7 @@ start comes up about a fifth of the time. 2 of 30 cities on days 8, 11 and 14 ha
 any start, and one day-14 city had no legal start, so nobody came. Stills of day 8's robber arriving
 are in `docs/evidence/grassy-goose-target-trap-arrives-2026-10-04/` (four replays, not one burst).
 
-**Proposed, not asked for, and open to overturn (the first pass):** day 14 trapped; one row for
-every target, his line still "They were waiting for you."; day 9's robber sent as she is let
+**Proposed, not asked for, and open to overturn (the first pass):** one row for every target, his line still "They were waiting for you."; day 9's robber sent as she is let
 through. His warning is the note's as it stands, the badge up from the moment he is placed just past
 the view's edge; [M226](../todo/2026-09-26-M226/README.md), the pursuing dog keeps its day-3 timing
 and the other warnings fit it, has not started, and is to make every off-screen warning at most one
