@@ -17,7 +17,9 @@ used nowhere yet. A marble may itself be a bag (nested): drawing it draws from t
 bag marble goes straight back into the bag it was drawn from; its inner bag of n gives exactly n
 events (the player, #566 in [feathery-stork](../playtests/2026-10-04-feathery-stork.md): "The inner bag becomes empty after n draws"), and the draw that empties it
 takes the bag marble out for good, from every queued bag and the ordinary set, so no later fill
-brings it back and a bag marble left last in its bag drains its inner bag and stops. Built and
+brings it back and a bag marble left last in its bag drains its inner bag and stops. A rig's x−1
+are drawn, so one that reaches a bag marble draws from its inner bag and leaves the bag marble
+where it is, and a rigged bag of x gives its ensured marble within x draws. Built and
 tested, used nowhere on her route yet. `peek()` names the next marble without spending it, so a failed siting does not burn an event.
 
 The dawn still decides how many events the day buys for her route, with the same weighted roll; the
@@ -58,12 +60,17 @@ the first marble.
 needs" read as the rigged places; two marbles per unit of weight; a rig moving owed events to the head
 of the queue and topping it up; a rigged bag's other marbles taken from the next bag if the active one
 runs short; "the inner bag becomes empty after n draws" read as an inner bag that never refills, even
-one built with an ordinary set of its own; the day-3 rise in dogs against `main`; the day-13 roadblock
+one built with an ordinary set of its own; a drawn bag marble going straight back into its bag (the
+player was offered back at once or back with the next outer fill and answered "The inner bag
+becomes empty after n draws", which holds under both; back with the next fill is the alternative);
+the day-3 rise in dogs against `main`; the day-13 roadblock
 left unrigged, since a solid body on the branch she walks fights the walkability guarantees.
 **Rejected:** the lesson dog's marble taken out of the ordinary bag so it is not counted twice, as first
 built (3 dogs in a bag of 17, about 2.25 a day), which the player turned down in #566 ([feathery-stork](../playtests/2026-10-04-feathery-stork.md)); a day-3 bag of 5
-then a bag of 1 with the dog, dropped by the player's "keep it first" (#561 in [coral-bunny](../playtests/2026-10-04-coral-bunny.md)); a nested marble returned
-only with the next outer fill, replaced by the player's answer on #566; the route mast sited under the
-dawn rules alone, where it could stand on the home street.
+then a bag of 1 with the dog, dropped by the player's "keep it first" (#561 in [coral-bunny](../playtests/2026-10-04-coral-bunny.md)); the route mast sited
+under the dawn rules alone, where it could stand on the home street; the route mast's ground checked
+against the mast-site rules tile by tile over the whole city, which froze the game for about 12s on
+reading day 11's mark, replaced by asking only the tiles a siting is offered; a rig taking a bag
+marble whole, which kept the rigged bag alive until its inner bag was spent and broke "within x".
 **Not changed:** feathery-marmot's near-the-mark mast and the day-6 near-the-mark man shouting, which
 must exist the moment she reads the mark, which a route marble cannot promise.

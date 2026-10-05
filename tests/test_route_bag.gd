@@ -13,6 +13,9 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 0.1
+## How long reading a mark may take, rig and all, in seconds. A frame of play: generous for a loaded
+## machine, and far under the seconds a siting prepared over the whole city's ground costs.
+const READING_THE_MARK_BOUND := 1.5
 
 func run(t) -> void:
 	_test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t)
@@ -20,6 +23,7 @@ func run(t) -> void:
 	_test_a_marble_peeked_at_is_the_marble_drawn(t)
 	_test_a_spaced_rig_comes_after_its_bag_and_no_sooner(t)
 	_test_an_inner_bag_of_n_gives_n_events_and_is_gone(t)
+	_test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t)
 	_test_day_3s_lesson_is_first_and_a_bag_of_its_own(t)
 	_test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t)
 	_test_after_the_mark_the_task_row_is_put_on_her_route(t)
@@ -164,6 +168,49 @@ func _test_an_inner_bag_of_n_gives_n_events_and_is_gone(t) -> void:
 	t.check(drained == inner_marbles and last.draw() == "cat" and last.draw() == "cat",
 			"a bag marble left last in its bag drains its %d marbles and stops (%s)"
 			% [inner_marbles.size(), drained])
+
+## A rig fills its x−1 by *drawing* from the active bag (inbox #561 in coral-bunny: "fill the
+## remaining x-1 items by *drawing* from the currently active bag. x defines how soon we want to get
+## the guaranteed event"), so a bag marble it reaches gives a draw from its inner bag and stays where
+## it is. The rigged bag then holds only plain marbles and the ensured one comes within x draws,
+## every time, and the inner bag still gives exactly its n marbles.
+func _test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t) -> void:
+	var x := 2
+	var late := 0
+	var reached_the_bag_marble := 0
+	var a_bag_in_the_rig := 0
+	var inner_count_wrong := 0
+	for seed_value in 1000:
+		var inner := MarbleBag.new([], ["robber", "van", "van"], seed_value * 7 + 1)
+		var outer := MarbleBag.new([], ["cat", "cat", "dog", inner], seed_value)
+		outer.rig(["yeller"], x)
+		var rigged := outer.bag_in_front()
+		for marble: Variant in rigged:
+			if marble is MarbleBag:
+				a_bag_in_the_rig += 1
+			if marble in ["robber", "van"]:
+				reached_the_bag_marble += 1
+		var drawn: Array = []
+		for _i in x:
+			drawn.append(outer.draw())
+		if not drawn.has("yeller"):
+			late += 1
+		for _i in 6:
+			drawn.append(outer.draw())
+		var from_inner := 0
+		for marble: Variant in drawn:
+			if marble in ["robber", "van"]:
+				from_inner += 1
+		if from_inner != 3:
+			inner_count_wrong += 1
+	t.check(reached_the_bag_marble > 0, "the rig's fill reached the bag marble on %d of 1000 seeds"
+			% reached_the_bag_marble)
+	t.check(a_bag_in_the_rig == 0 and late == 0,
+			"a rig of %d over a bag holding a bag marble holds no bag marble (%d) and gives its ensured marble within %d draws (late %d of 1000)"
+			% [x, a_bag_in_the_rig, x, late])
+	t.check(inner_count_wrong == 0,
+			"and the inner bag still gives exactly its 3 marbles, rig and all (wrong on %d of 1000)"
+			% inner_count_wrong)
 
 # ------------------------------------------------------------- her route ---
 
@@ -313,8 +360,22 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	var mark := resistance.current_step()
 	t.check(mark != null and mark.is_pickup and mark.day == day, "day %d opens on its mark" % day)
 	var bag := city.events._director.route_bag()
+	var reading_took := 0.0
 	if mark:
+		var started := Time.get_ticks_usec()
 		resistance._on_contact_completed(mark.index)
+		reading_took = (Time.get_ticks_usec() - started) / 1000000.0
+		print("[test_route_bag] day %d: reading the mark and rigging her route took %.3fs"
+				% [day, reading_took])
+	# Reading the mark is one frame of play, and the rig is part of it: a mast's siting must not be
+	# prepared over the whole city's ground (seconds of work), only over what a siting is offered.
+	t.check(reading_took < READING_THE_MARK_BOUND,
+			"day %d: reading the mark and rigging her route takes %.2fs, under %.1fs"
+			% [day, reading_took, READING_THE_MARK_BOUND])
+	if city.events._siting:
+		t.check(city.events._siting.mast_checks == 0,
+				"day %d: the rig asks no tile whether a mast may stand there (%d)"
+				% [day, city.events._siting.mast_checks])
 	var rigged := bag.bag_in_front()
 	t.check(rigged.size() == size and rigged.count(row) == 1,
 			"day %d: reading the mark rigs her route with a bag of %d holding one %s (%s)"
@@ -343,6 +404,7 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	var handed := 0
 	var placed: Array[EventScheduler.Planned] = []
 	var her_at_siting := Vector2.INF
+	var heading_at_siting := Vector2.ZERO
 	var walked := 0.0
 	while handed < size and walked < 600.0:
 		var next: Vector2 = path[index + direction] if index + direction >= 0 \
@@ -365,6 +427,7 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 				if (plan as EventScheduler.Planned).def.id == row:
 					placed.append(plan)
 					her_at_siting = player.global_position
+					heading_at_siting = player.velocity.normalized()
 		player.global_position += player.velocity * STEP
 		walked += STEP
 	t.check(placed.size() == 1, "day %d: one %s is among the next %d events on her route (%d)"
@@ -386,21 +449,31 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 					"a mast put on her route is a mast the day can silence, named by its foot")
 			t.check(MastSites._is_eligible(plan.position, map),
 					"a mast put on her route stands where a mast site may (off the home street)")
-			# And not by luck of this seed: the ground a route mast is offered holds no tile a mast
-			# site would refuse, out of a sidewalk and square that do hold some.
+			# And not by luck of this seed: what a route mast is offered along the whole of the
+			# branch she was walking holds no tile a mast site would refuse, out of a sidewalk and
+			# square that do hold some.
+			var siting := city.events._siting
 			var mast := city.events._director.route_row(row)
-			var offered: Dictionary = city.events._siting._ground_as_a_set(mast)
+			var ground: Dictionary = siting._ground_as_a_set(mast)
+			t.check(siting.mast_checks > 0 and siting.mast_checks * 10 < ground.size(),
+					"siting it asked %d tiles whether a mast may stand there, of %d tiles of ground"
+					% [siting.mast_checks, ground.size()])
+			print("[test_route_bag] siting the route mast asked %d tiles of %d tiles of ground"
+					% [siting.mast_checks, ground.size()])
+			var ahead := siting._the_way_she_is_going(her_at_siting, heading_at_siting, INF)
+			var offered := siting._faces_on(mast, ahead, her_at_siting, 0.0, INF)
+			var door_points := MastSites.possible_door_points(map)
 			var refused_offered := 0
-			for at: Vector2i in offered:
-				if not MastSites._is_eligible(map.tile_to_world(at), map):
+			for at in offered:
+				if not MastSites._is_eligible(map.tile_to_world(at), map, door_points):
 					refused_offered += 1
 			var refused_ground := 0
-			for at in EventScheduler._open_ground_for(mast, map, {}, mast.pavement_side):
-				if not MastSites._is_eligible(map.tile_to_world(at), map):
+			for at: Vector2i in ground:
+				if not MastSites._is_eligible(map.tile_to_world(at), map, door_points):
 					refused_ground += 1
 			t.check(not offered.is_empty() and refused_offered == 0 and refused_ground > 0,
-					"a route mast is offered none of the %d tiles of its ground a mast site refuses (%d)"
-					% [refused_ground, refused_offered])
+					"a route mast is offered %d tiles ahead of her, none of the %d of its ground a mast site refuses (%d)"
+					% [offered.size(), refused_ground, refused_offered])
 		t.check(plan.live == null, "day %d: it is not in the world while she is far from it" % day)
 		city.events.stream_around(plan.position)
 		t.check(plan.live != null and is_instance_valid(plan.live),

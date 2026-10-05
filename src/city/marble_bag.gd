@@ -30,8 +30,9 @@ extends RefCounted
 ## marble out for good — out of every bag in the queue and out of the ordinary set, so no later fill
 ## brings it back. So it gives exactly n events, each draw of the outer bag reaches it at its own
 ## share of what is left, and a bag marble left last in its bag drains its inner bag and stops rather
-## than being drawn for ever. A bag marble keeps the bag holding it from emptying until it is spent,
-## so a rigged bag holding one lasts longer than its size.
+## than being drawn for ever. A rig that takes from a bag holding one draws from its inner bag and
+## leaves the bag marble where it is (`rig()`), so a rigged bag only ever holds plain marbles and is
+## spent in as many draws as its size.
 ##
 ## **A run's draws are reproducible from its seed**: the stream is the bag's own, and the marble a
 ## draw takes is chosen the first time it is asked about (`peek()`), so asking first and drawing
@@ -159,7 +160,10 @@ func put_in_front(marbles: Array) -> void:
 ##
 ## The marbles are taken from the bag being drawn from, filled first if there is none; one that
 ## runs out part way is followed by the next bag in the queue, an ordinary one filled for it if need
-## be. Taking them is not drawing: `drawn` counts only what `draw()` has handed out.
+## be. Taking them is not drawing: `drawn` counts only what `draw()` has handed out. **A bag marble
+## is not taken whole**: the rig draws one marble from its inner bag, the way drawing it would, and
+## leaves it in the bag it stands in — so the rigged bag holds `size` plain marbles and its ensured
+## one comes within `size` draws ("x defines how soon we want to get the guaranteed event").
 func rig(ensured: Array, size: int) -> void:
 	put_in_front(ensured + _take(size - ensured.size(), []))
 
@@ -178,6 +182,7 @@ func rig_spaced(ensured: Array, before: int) -> void:
 ## order, leaving any that is one of `keep_out` where it is, and answers them. An empty queue is
 ## filled with the ordinary set first, and one more ordinary bag may be filled at the back when what
 ## is queued runs out; fewer than `count` come back only when even that has nothing left to give.
+## A bag marble gives a draw from its inner bag and stays where it is (see `rig()`).
 func _take(count: int, keep_out: Array) -> Array:
 	var taken := []
 	_picked = -1
@@ -192,12 +197,24 @@ func _take(count: int, keep_out: Array) -> Array:
 		var bag: Array = _queue[at]
 		var open: Array[int] = []
 		for i in bag.size():
-			if not keep_out.has(bag[i]):
+			# A bag marble is open when what its inner bag gives next is.
+			var next: Variant = bag[i].peek() if bag[i] is MarbleBag else bag[i]
+			if not keep_out.has(next):
 				open.append(i)
 		if open.is_empty():
 			at += 1
 			continue
 		var i := open[_rng.randi_range(0, open.size() - 1)]
+		if bag[i] is MarbleBag:
+			# Drawn from, not taken: the bag marble stays where it is until its inner bag is spent.
+			var inner := bag[i] as MarbleBag
+			taken.append(inner.draw())
+			if inner.ran_empty():
+				_retire(inner)
+				# Retiring may have dropped a bag anywhere in the queue; the bags before `at` have
+				# nothing open, so starting over finds the same place.
+				at = 0
+			continue
 		taken.append(bag[i])
 		bag.remove_at(i)
 		if bag.is_empty():

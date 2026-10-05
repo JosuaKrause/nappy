@@ -252,8 +252,9 @@ into the bag it was drawn from (inbox #561 in [coral-bunny](playtests/2026-10-04
 inner bag happen right after each other"). An inner bag of n marbles is spent after n draws (the
 player: "The inner bag becomes empty after n draws"), and the draw that empties it takes the bag
 marble out for good, out of every queued bag and the ordinary set, so it gives exactly n events
-and a bag marble left last in its bag drains its inner bag and stops. A rigged bag holding one lasts
-until it is spent. Nothing on her route uses one today.
+and a bag marble left last in its bag drains its inner bag and stops. A rig that takes from a bag
+holding one draws from its inner bag and leaves the bag marble where it is, so a rigged bag of x
+still gives its ensured marble within x draws. Nothing on her route uses one today.
 
 ### The return owes her patrols
 
