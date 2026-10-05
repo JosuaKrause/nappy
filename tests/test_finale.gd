@@ -915,6 +915,9 @@ func _test_escape_section_came_from_the_file(t) -> void:
 ## without paying for the whole async `_ready_escape()`, which nothing in this suite drives (see
 ## `tests/test_main.gd`'s own class doc for why `main` is never added to the tree here).
 func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void:
+	# `finale.begin()` below reaches `main._on_finale_section_started()`, which writes the section
+	# onto the autoload; put it back at the end so no suite after this one starts mid-escape.
+	var saved_section := GameState.escape_section
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = SUMMARY_SCENE.instantiate()
 	t.add_child(main._summary)
@@ -973,6 +976,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	finale.free()
 	main.free()
 	t.get_tree().paused = false
+	GameState.escape_section = saved_section
 
 ## The handover reload from a won day 14 reaches `_on_finale_section_started()` with
 ## `_escape_resumed_from_disk` still `false` — set only when `GameState.escape_section` was `NONE`
@@ -980,6 +984,9 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 ## the autoload before the reload — so it falls straight through to the section's own brief exactly
 ## as it always has, with no title in front of it.
 func _test_a_handover_does_not_open_on_the_title(t) -> void:
+	# `finale.begin()` below reaches `main._on_finale_section_started()`, which writes the section
+	# onto the autoload; put it back at the end so no suite after this one starts mid-escape.
+	var saved_section := GameState.escape_section
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = SUMMARY_SCENE.instantiate()
 	t.add_child(main._summary)
@@ -1026,6 +1033,7 @@ func _test_a_handover_does_not_open_on_the_title(t) -> void:
 	finale.free()
 	main.free()
 	t.get_tree().paused = false
+	GameState.escape_section = saved_section
 
 ## *"the held restart from the escape ends in a fresh run with escape_section cleared"* —
 ## `main._restart_run()` cannot safely run inside this suite: it defers a real
