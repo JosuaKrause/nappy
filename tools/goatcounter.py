@@ -34,9 +34,15 @@ The key goes only to the site it was set for: a `--site` or `GOATCOUNTER_SITE` t
 redirect that leaves the site's own `https://` host is refused rather than followed, since urllib
 carries the `Authorization` header across a redirect to any host.
 
-`GET /api/v0/stats/hits` answers `{hits: [...], more, total}`, paginated by repeating
-`exclude_paths=<path_id>` for every id already seen while `more` stays true (see
-`https://nappy.goatcounter.com/api.json`, the endpoint's own Swagger spec). `count` on each hit is
+`GET /api/v0/stats/hits` answers `{hits: [...], more, total}`, paginated by passing every path id
+already seen as ONE comma-separated `exclude_paths=1,2,3` while `more` stays true (see
+`https://nappy.goatcounter.com/api.json`, the endpoint's own Swagger spec). The comma form is the
+only one that works: the spec says `exclude_paths` is an array, but the server honours only the first
+value of a repeated `exclude_paths=1&exclude_paths=2`, so repeating it re-sent the same hits page after
+page (duplicated counts) and, with the list growing by ~24 bytes an id, ended in a query of ~32 KB that
+the server answers by closing the connection (the "Remote end closed connection without response" of a
+long range). Comma-joined, an id costs ~10 bytes, and a range whose list would still pass ~30 KB is
+refused with a message to narrow it rather than sent. `count` on each hit is
 "Number of visitors for the selected date range", the API's own wording. The page visit keeps the
 site's sessions, so its count is visitors; every event opts out of them (`count.js`'s `no_session`,
 sent as the hit's `ns` parameter), and GoatCounter counts a hit without a session as a visit of its
@@ -71,6 +77,7 @@ API directly -- see `.claude/skills/using-tools/SKILL.md`'s own row for why.
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import os
 import re
@@ -93,6 +100,9 @@ PAGE_LIMIT = 100
 # 429 is a rate limit, not a failure -- back off and try again a few times before giving up.
 MAX_RETRIES = 5
 RETRY_BACKOFF_SECONDS = 2.0
+# The server closes the connection on a request line of roughly 32 KB (measured: 31 KB answered, 33 KB
+# closed); stay under it and say so, rather than send a query that can only end in a dropped connection.
+MAX_QUERY_BYTES = 30_000
 
 # The shapes VisitCounter sends outside a day, from docs/TELEMETRY.md's own list -- not the full
 # set of run-level names, which grows; a name starting with one of these is run-level regardless.
@@ -298,6 +308,21 @@ def _build_opener() -> urllib.request.OpenerDirector:
     return urllib.request.build_opener(urllib.request.HTTPSHandler(context=context), _SameSiteRedirects())
 
 
+def _is_transient(error: object) -> bool:
+    """A dropped or timed-out connection, which a second try may get through (http.client's
+    RemoteDisconnected is a ConnectionResetError)."""
+    return isinstance(error, (ConnectionError, TimeoutError, http.client.HTTPException))
+
+
+def _server_answer(exc: urllib.error.HTTPError) -> str:
+    """The server's own words for an HTTP error, trimmed -- the body GoatCounter sends says what was wrong."""
+    try:
+        text = exc.read().decode("utf-8", "replace").strip()
+    except OSError:
+        text = ""
+    return (text[:500] or exc.reason or "no message") if isinstance(text, str) else "no message"
+
+
 def _get(opener: urllib.request.OpenerDirector, url: str, token: str, *, timeout: float = 20.0) -> dict[str, Any]:
     request = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/json"})
     attempt = 0
@@ -311,13 +336,21 @@ def _get(opener: urllib.request.OpenerDirector, url: str, token: str, *, timeout
                 raise GoatCounterHTTPError(
                     exc.code, f"GoatCounter rejected the API key (HTTP {exc.code}) -- check GOATCOUNTER_TOKEN"
                 ) from exc
-            if exc.code == 429 and attempt <= MAX_RETRIES:
+            if exc.code in (429, 502, 503, 504) and attempt <= MAX_RETRIES:
                 time.sleep(RETRY_BACKOFF_SECONDS * attempt)
                 continue
-            raise GoatCounterHTTPError(exc.code, f"GoatCounter returned HTTP {exc.code} for {url}") from exc
+            raise GoatCounterHTTPError(
+                exc.code, f"GoatCounter returned HTTP {exc.code} for {url.partition('?')[0]}: {_server_answer(exc)}"
+            ) from exc
         except urllib.error.URLError as exc:
+            if _is_transient(exc.reason) and attempt <= MAX_RETRIES:
+                time.sleep(RETRY_BACKOFF_SECONDS * attempt)
+                continue
             raise GoatCounterError(f"could not reach GoatCounter: {exc.reason}") from exc
         except OSError as exc:
+            if _is_transient(exc) and attempt <= MAX_RETRIES:
+                time.sleep(RETRY_BACKOFF_SECONDS * attempt)
+                continue
             raise GoatCounterError(f"network error reaching GoatCounter: {exc}") from exc
         try:
             decoded: Any = json.loads(body.decode("utf-8"))
@@ -333,7 +366,13 @@ def make_fetcher(site: str, token: str) -> Fetcher:
     opener = _build_opener()
 
     def fetch(params: dict[str, Any]) -> dict[str, Any]:
-        query = urllib.parse.urlencode(params, doseq=True)
+        # safe="," keeps the comma-joined exclude_paths at one byte a separator instead of three.
+        query = urllib.parse.urlencode(params, doseq=True, safe=",")
+        if len(query) > MAX_QUERY_BYTES:
+            raise GoatCounterError(
+                f"the query would be {len(query)} bytes (the server drops requests past ~32 KB); "
+                "narrow the range with --days or --start/--end"
+            )
         return _get(opener, f"{base}?{query}", token)
 
     return fetch
@@ -343,16 +382,21 @@ def fetch_hits(fetch: Fetcher, start: datetime, end: datetime, *, limit: int = P
     """Every hit in `[start, end]`, paginated with repeated `exclude_paths` while `more` holds."""
     hits: list[dict[str, Any]] = []
     exclude: list[str] = []
+    seen: set[str] = set()
     while True:
         params: dict[str, Any] = {"start": rfc3339(start), "end": rfc3339(end), "limit": limit}
         if exclude:
-            params["exclude_paths"] = list(exclude)
+            # One comma-separated value: the server reads only the first of a repeated parameter.
+            params["exclude_paths"] = ",".join(exclude)
         page = fetch(params)
         page_hits = page.get("hits")
         if not isinstance(page_hits, list):
             raise GoatCounterError("GoatCounter's response had no 'hits' list")
-        hits.extend(page_hits)
-        new_ids = [str(hit["path_id"]) for hit in page_hits if isinstance(hit, dict) and "path_id" in hit]
+        # A path already seen is never counted twice, whatever the server sends.
+        fresh = [h for h in page_hits if not (isinstance(h, dict) and str(h.get("path_id")) in seen)]
+        hits.extend(fresh)
+        new_ids = [str(hit["path_id"]) for hit in fresh if isinstance(hit, dict) and "path_id" in hit]
+        seen.update(new_ids)
         # A server claiming more with nothing new to exclude would otherwise loop forever asking
         # the same question; stop rather than trust that half of the contract blindly.
         if not page.get("more") or not new_ids:
