@@ -350,7 +350,7 @@ func _stand(watch: EncounterWatch, instances: Array[EventInstance], at: Vector2,
 	for _i in 3:
 		watch.tick(STEP, instances, _visible(at), at, false, hold_source)
 
-## *(Inbox #586, the player: "use the real catch code".)* A guard within reach with a building's
+## *(Inbox #586 in olive-hedgehog, the player: "use the real catch code".)* A guard within reach with a building's
 ## corner between them has not touched her, a cyclist still only warned has not reached her, and a
 ## hold the manager would not begin (another one already running) is not a hold.
 func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
