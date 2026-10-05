@@ -395,6 +395,26 @@ func _test_a_held_push_tears_every_sheet_she_slides_past(t) -> void:
 	slide.call(diagonal, start_x, PosterWalls.PRESS_TO_TEAR * 0.5)
 	t.check(torn_count.call() == 1, "and tears once it has passed")
 
+	# The push a player makes: a diagonal held while walking into the wall, never stopping. She
+	# slides at the diagonal's share of her walking speed, so the 0.4s covers about 26px: entering
+	# the wall 20px into the first cell, that sheet is slid past before it elapses and escapes, the
+	# second tears, and every sheet after it comes down as she reaches it.
+	paste_all.call()
+	walls._sliding = false
+	walls._pressed_for = 0.0
+	var slide_speed := speed * diagonal.x
+	var x := rect.position.x + 20.0
+	for i in ceili((float(sheets) * Tuning.TILE_SIZE) / slide_speed / step):
+		walls._push_to_tear(step, Vector2(x, y), diagonal)
+		x += slide_speed * step
+	t.check(GameState.posters.has_intact_sheet(run[0]),
+			"the sheet she was already past when the time elapsed escapes the first tear")
+	var rest_torn := true
+	for i in range(1, sheets):
+		rest_torn = rest_torn and GameState.posters.is_torn(run[i])
+	t.check(rest_torn, "and every sheet after the first tear comes down as she reaches it")
+	t.check(GameState.posters.tears == sheets - 1, "one marble each (%d)" % GameState.posters.tears)
+
 	# Letting go re-arms the wait: the next sheet she stands before takes the time again.
 	GameState.posters.paste(run[0], PosterArt.Kind.RULES, false, 1)
 	walls._push_to_tear(step, Vector2(start_x, y), Vector2.ZERO)

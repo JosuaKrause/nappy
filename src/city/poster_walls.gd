@@ -77,7 +77,8 @@ const FIRST_PASTE_AFTER := 0.8
 
 ## How long her heading has to press into a postered wall before the sheet tears — long enough that
 ## brushing past does not tear, short enough that a push made by accident does, which is how the
-## gimmick is found (it is taught nowhere). Only the first sheet of a push waits this long; see `_push_to_tear()`. Taste, open to overturn.
+## gimmick is found (it is taught nowhere). Only the first sheet of a push waits this long; see
+## `_push_to_tear()`. Taste, open to overturn.
 const PRESS_TO_TEAR := 0.4
 ## How far into the wall her heading has to point to be a push: the sine of the angle it makes with
 ## the wall's line. A half is thirty degrees, so a diagonal into the wall (forty-five) pushes, and
