@@ -130,10 +130,14 @@ var _day_length := 0.0
 var _expired := false
 var _day := 0
 
-## Injected by `main` from the one rotation-aware "is this on screen" test the game already
-## has, `DangerEdge.is_on_screen()`. A rig may leave this unset — with no predicate, nothing
-## is ever seen and the re-placement rule below simply keeps running, which is also correct:
-## a mark nobody is watching for should never stop moving because of it.
+## Whether she can see a world point: injected by `main` from the one answer the game has,
+## `EventManager.sees()` — what she can see (`VisibleView`), the camera's view less, in the
+## joystick scheme, the two bottom corners its controls cover *(inbox #581, the player:
+## "everything should follow this (and treat it depending on the input mode)")*. So a chalk mark
+## under a covered corner is not seen, and its notice does not run there. A rig may leave this
+## unset — with no predicate, nothing is ever seen and the re-placement rule below simply keeps
+## running, which is also correct: a mark nobody is watching for should never stop moving because
+## of it.
 var _sight: Callable
 ## Whether the current pickup's mark has been seen this world-day. Sticky once true — see
 ## `_track_sight_and_reposition()`.
@@ -192,8 +196,8 @@ func setup(city: City, map: CityMap) -> void:
 		city.events.door_crossed.connect(_on_door_crossed)
 	_happenings.setup(city, map)
 
-## Lets the danger edge's own screen test answer "has she seen this" for the resistance
-## too, without the director holding a viewport of its own. See the class doc on `_sight`.
+## Lets the day's own answer to "can she see it" answer "has she seen this" for the resistance
+## too, without the director holding a camera of its own. See the doc on `_sight`.
 func set_sight(is_on_screen: Callable) -> void:
 	_sight = is_on_screen
 
@@ -1241,8 +1245,8 @@ const GUARD_HALF_EXTENT := Vector2(14.0, 26.0)
 ## of the centre and the four corners. The screen is a rectangle far larger than either box and
 ## only ever turned by quarter turns (`ScreenOrientation`), so a box that overlaps it has a corner
 ## inside it. A bare centre test is what lets a picture whose centre is one pixel past the edge
-## show half of itself. The corners are asked through `_sight` itself rather than
-## `DangerEdge.is_on_screen()`'s own `margin`, which is in screen pixels and not in the world's.
+## show half of itself. The corners are asked through `_sight` itself rather than a margin on
+## it, since a margin grows every side of the box alike and the box is not square.
 ## `false` when `_sight` is unset: the bare-map rigs several tests in `tests/test_resistance.gd`
 ## drive have no camera to ask, so nothing they place is ever refused for being seen.
 func _box_shows(centre: Vector2, half: Vector2) -> bool:

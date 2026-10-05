@@ -1252,8 +1252,9 @@ are the ones that cost you the baby's calm.
 A resistance pickup's chalk mark follows her rather than sitting still: it counts as noticed
 only once she has been within `ResistanceDirector.SEEN_DISTANCE` (150px, kept under the
 visible world's own 180px vertical half-extent so the point is on screen on every bearing
-rather than only a favourable one — never right at the screen's own edge) of it, on screen,
-continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough, for long
+rather than only a favourable one — never right at the screen's own edge) of it, in sight —
+what she can see, `VisibleView`, so not while it is under a corner the joystick scheme's controls
+cover — continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough, for long
 enough, that walking past it rather than to it is a choice, not the instant its tile merely
 swept across the camera on the way to somewhere else. Until then, walking more than
 `ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
