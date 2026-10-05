@@ -276,7 +276,8 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if not check is Dictionary:
 				errors.append("playback.observations entries must be objects")
 				continue
-			_keys(check, ["tick", "subject", "condition", "at", "distance", "half"], "observation", errors)
+			_keys(check, ["tick", "subject", "condition", "at", "distance", "half", "walkers", "cars"],
+					"observation", errors)
 			_number(check.get("tick"), "observation.tick", 0,
 					float(playback.get("duration", 5)) * Engine.physics_ticks_per_second, errors, true)
 			var subject: Variant = check.get("subject")
@@ -299,11 +300,19 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if check.get("condition") in ["near", "beyond"]:
 				_position(check.get("at"), "observation.at", errors)
 				_number(check.get("distance"), "observation.distance", 0, 10000, errors)
+			if check.get("condition") == "crowd":
+				if subject != "player":
+					errors.append("observation.condition crowd asks about the picture round the player")
+				for key in ["walkers", "cars"]:
+					_number(check.get(key, 0), "observation." + key, 0, 1000, errors, true)
+			elif check.has("walkers") or check.has("cars"):
+				errors.append("observation.walkers and cars belong to crowd")
 	return errors
 
 ## The observation conditions, in the order `docs/SCENE_RECIPES.md` names them.
 const CONDITIONS := ["visible", "moving", "running", "carrying", "pursuing", "near", "beyond",
-		"off_screen", "clear_of_both_views", "offered", "done", "arrowed", "unarrowed"]
+		"off_screen", "clear_of_both_views", "offered", "done", "arrowed", "unarrowed", "appeared",
+		"crowd"]
 ## An observation subject naming no actor but the first live instance of a catalogue row: what an
 ## event summons rather than what the recipe placed, such as the `fire_truck` a seen
 ## `burning_building` calls in.
@@ -931,7 +940,10 @@ func _physics_process(_delta: float) -> void:
 	if not _active:
 		return
 	if _draft:
-		_draft.record(_player, _city)
+		var step := _resistance.current_step() if _resistance else null
+		var walking_home: Node2D = named.get("rider") if step and not step.is_pickup \
+				and step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR else null
+		_draft.record(_player, _city, walking_home if is_instance_valid(walking_home) else null)
 	if _capture_tick >= 0 and tick >= _capture_tick:
 		prepare_capture()
 		return
@@ -1056,15 +1068,25 @@ func snapshot() -> Dictionary:
 func _observe() -> void:
 	_bind_task_names()
 	for check: Dictionary in _observations:
+		if check.condition == "appeared" and not _appeared.has(check.subject) \
+				and subject_of(str(check.subject)):
+			_appeared[check.subject] = tick
+	for check: Dictionary in _observations:
 		if int(check.tick) != tick:
 			continue
 		var actor := subject_of(str(check.subject))
 		var passed := actor != null
-		if passed:
+		if check.condition == "appeared":
+			# Asked of the past, so the subject may be gone by now: a cat that crossed and left.
+			passed = _appeared.has(check.subject)
+		elif passed:
 			match check.condition:
 				"visible":
-					var point := get_viewport().get_canvas_transform() * actor.global_position
-					passed = get_viewport().get_visible_rect().grow(-20).has_point(point)
+					passed = _in_the_picture(actor.global_position)
+				"crowd":
+					var moving := _moving_in_the_picture()
+					passed = moving.walkers >= int(check.get("walkers", 0)) \
+							and moving.cars >= int(check.get("cars", 0))
 				"moving":
 					passed = _last_positions.has(check.subject) and actor.global_position.distance_to(
 							_last_positions[check.subject]) > 0.01
@@ -1109,7 +1131,9 @@ func _observe() -> void:
 			record["state"] = {"position": [snappedf(actor.global_position.x, 0.0001),
 					snappedf(actor.global_position.y, 0.0001)]}
 		manifest.observations.append(record)
-		if not passed:
+		if not passed and _draft:
+			print("[SceneRecipe] draft: unmet on the whole city, walked on: " + JSON.stringify(record))
+		elif not passed:
 			print("[SceneRecipe] unmet observation: " + JSON.stringify(record))
 			write_manifest()
 			_active = false
@@ -1123,6 +1147,28 @@ func _observe() -> void:
 			var summoned := subject_of(label)
 			if summoned:
 				_last_positions[label] = summoned.global_position
+
+## The subjects an `appeared` observation asks about that have been in the world, and the first
+## tick each was: a route event the rigged bag hands out comes when the director's pacing and siting
+## say, so a scene asks that it came by a tick rather than at one. In the world rather than in the
+## picture, since the director sites a crossing a lead ahead of her and the game decides whether it
+## ever runs into view.
+var _appeared := {}
+
+## Whether a world point is in the picture, a margin inside its edges.
+func _in_the_picture(at: Vector2) -> bool:
+	return get_viewport().get_visible_rect().grow(-20).has_point(
+			get_viewport().get_canvas_transform() * at)
+
+## How many walkers and cars are moving in the picture now.
+func _moving_in_the_picture() -> Dictionary:
+	var counts := {"walkers": 0, "cars": 0}
+	if not _city or not _city.crowd:
+		return counts
+	for agent in _city.crowd.agents():
+		if not agent.velocity().is_zero_approx() and _in_the_picture(agent.global_position):
+			counts["cars" if agent.kind == CrowdAgent.Kind.CAR else "walkers"] += 1
+	return counts
 
 ## The node an observation names: a named actor, or for `row:<id>` the first live, unfinished
 ## instance of that catalogue row in the world. Null when there is none.
@@ -1167,7 +1213,11 @@ func _box_in_either_view(centre: Vector2, half: Vector2) -> bool:
 ## Answers the exit code.
 func _write_the_draft() -> int:
 	var problems: Array[String] = []
-	var drafted := _draft.compose(_written, _city, problems)
+	var pinned: Array[Vector2] = []
+	var errors: Array[String] = []
+	for field: String in data.get("setup", {}).get("task", {}):
+		pinned.append(position_of(data.setup.task[field], errors))
+	var drafted := _draft.compose(_written, _city, start_position(), pinned, problems)
 	for problem in problems:
 		print("[SceneRecipe] draft: " + problem)
 	var path := DevFlags._word_after("--recipe-draft")

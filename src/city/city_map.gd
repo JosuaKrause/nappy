@@ -25,12 +25,13 @@ var recipe_closures: Array[RoadClosure] = []
 var recipe_tree_moves := {}
 ## A task scene's **stretch**: the tiles of the streets she walks, read off the recipe
 ## (`docs/SCENE_RECIPES.md`, "The task scenes"), one byte per tile, 1 inside it. Empty for every
-## other city. While `stretch_active` is on, every question about the ground — `tile_at()`,
-## `is_street()`, `is_walkable()`, and the sweep `walk_field_from()` — answers a tile outside it as
-## `BUILDING`: the void, which is drawn as nothing and walked into by nobody, so whatever is placed
-## while she walks is placed on the streets the scene has. The dawn's plans are stated over the
-## construction witness instead (`witness_only()`): the route tree, the regions, the task's mark —
-## questions about the city the stretch was cut from, whose answers the void would only refuse.
+## other city. While `stretch_active` is on, every single-tile question — `tile_at()`,
+## `is_street()`, `is_walkable()` — answers a tile outside it as `BUILDING`: the void, which is
+## drawn as nothing and walked into by nobody, so whatever is placed while she walks stands on the
+## streets the scene has. A distance measured by walking (`walk_field_from()`) and the dawn's plans
+## (`witness_only()`: the route tree, the regions, the task's mark) still read the construction
+## witness underneath — they are questions about the city the stretch was cut from, such as how far
+## day 10's neighbor walks home, whose answers the void would only refuse.
 var stretch := PackedByteArray()
 ## Whether the stretch is what the single-tile questions answer. On for the scene; switched off by
 ## `witness_only()` while a whole-city rule is stated.
@@ -1212,12 +1213,6 @@ func walk_field_from(sources: Array, blocked: Dictionary = {}) -> PackedInt32Arr
 	for tile: Vector2i in blocked:
 		if in_bounds(tile):
 			field[tile.y * width + tile.x] = BLOCKED
-	# A stretch's void is a wall to the sweep as it is to every single-tile question, so a path
-	# measured while the scene is on screen stays on the streets the scene has.
-	if stretch_active:
-		for index in cells:
-			if stretch[index] == 0:
-				field[index] = BLOCKED
 
 	var queue := PackedInt32Array()
 	queue.resize(cells)

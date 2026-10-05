@@ -121,7 +121,7 @@ static func build(data: Dictionary) -> Dictionary:
 				tile.y += Tuning.STREET_WIDTH - 1
 			at = map.tile_to_world(tile)
 		if not bounds.has_point(map.world_to_tile(at)) \
-				or (map.has_stretch() and not map.in_stretch(map.world_to_tile(at))):
+				or (map.has_stretch() and not _on_the_stretch(map, map.world_to_tile(at))):
 			errors.append("anchor.extent: %s lies outside the authored %s" % [name,
 					"stretch" if map.has_stretch() else "bounds"])
 		anchors[name] = at
@@ -239,6 +239,16 @@ static func _cut_the_stretch(stretch: Dictionary, map: CityMap, errors: Array[St
 		if not map.in_stretch(source) or not map.in_stretch(map.recipe_tree_moves[source]):
 			errors.append("extent.tree_moves: both sides of a selected tree move must lie inside the stretch")
 	map.stretch_active = true
+
+## Whether a stretch scene can name `tile`: one of its own tiles, or a tile of a building it lists —
+## a door on a facade (`power_station_door`) is part of the building, not of the street.
+static func _on_the_stretch(map: CityMap, tile: Vector2i) -> bool:
+	if map.in_stretch(tile):
+		return true
+	for lot: Rect2i in map.stretch_buildings:
+		if lot.has_point(tile):
+			return true
+	return false
 
 ## Whether a lot touches the stretch, a tile beside one of its own tiles or across a corner from it.
 static func _fronts_the_stretch(map: CityMap, lot: Rect2i) -> bool:

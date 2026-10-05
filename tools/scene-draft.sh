@@ -12,7 +12,8 @@ street segments she walked, the buildings fronting them, their street trees, pro
 litter and cracks, the day's posters on those walls, a starting crowd of walkers and
 cars, and the day's route bag, each listed explicitly for the author to edit. A recipe
 that already has a stretch is drafted again from its route; the drafted fields are
-replaced and everything else is kept. The draft is then checked with --recipe-validate.
+replaced, but for a route bag already in the recipe, and everything else is kept.
+The draft is then checked with --recipe-validate.
 --output FILE writes the draft there; --in-place overwrites the recipe itself.
 Example: tools/scene-draft.sh --recipe scene-recipes/task-07-package.json --in-place
 EOF

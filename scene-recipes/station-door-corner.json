@@ -1,13 +1,146 @@
 {
-  "version": 1, "name": "The station door from the far outer corner of its sidewalk, 57.7px out", "seed": 11,
-  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
-  "anchors": {"corner": {"world": [3872, 928]}, "door": {"world": [3904, 880]}},
-  "setup": {"tutorial_complete": true, "day": 14, "parent": "mother", "player": {"at": "corner", "facing": "north"}, "task": {}},
-  "playback": {"walk": "1p0.4e", "duration": 1.6, "capture_at": 0.5,
-    "observations": [{"tick": 1, "subject": "task", "condition": "offered"},
-      {"tick": 1, "subject": "task", "condition": "arrowed"},
-      {"tick": 1, "subject": "player", "condition": "beyond", "at": "door", "distance": 57.6},
-      {"tick": 29, "subject": "task", "condition": "offered"},
-      {"tick": 29, "subject": "player", "condition": "beyond", "at": "door", "distance": 57.6},
-      {"tick": 45, "subject": "task", "condition": "done"}]}
+  "version": 1,
+  "name": "The station door from the far outer corner of its sidewalk, 57.7px out",
+  "seed": 11,
+  "extent": {"scope":"stretch"},
+  "city": {"context_seed":1917501},
+  "anchors": {
+    "corner": {"world":[3872,928]},
+    "door": {"world":[3904,880]}
+  },
+  "setup": {
+    "tutorial_complete": true,
+    "day": 14,
+    "parent": "mother",
+    "player": {"at":"corner","facing":"north"},
+    "task": {},
+    "posters": [],
+    "actors": [
+      {"name":"walker_1","kind":"walker","at":[4216,994.46],"direction":"south","speed":47.673},
+      {"name":"walker_2","kind":"walker","at":[3735.14,1080],"direction":"east","speed":71.2358},
+      {"name":"walker_3","kind":"walker","at":[3955.32,1080],"direction":"west","speed":62.6429},
+      {"name":"walker_4","kind":"walker","at":[4129.14,1080],"direction":"east","speed":67.8283},
+      {"name":"walker_5","kind":"walker","at":[4175.69,1080],"direction":"east","speed":56.028}
+    ],
+    "route_bag": {
+      "marbles": ["cat_dash","cat_dash","cat_dash","cat_dash","cat_dash","loose_dog","loose_dog","loose_dog","loose_dog","loose_dog","loose_dog","cyclist","cyclist","cyclist"],
+      "owed": 14,
+      "pre_bag": ["cat_dash"],
+      "first_after": 3
+    }
+  },
+  "playback": {
+    "walk": "1p0.4e",
+    "duration": 1.6,
+    "capture_at": 0.5,
+    "observations": [
+      {"tick":1,"subject":"task","condition":"offered"},
+      {"tick":1,"subject":"task","condition":"arrowed"},
+      {"tick":1,"subject":"player","condition":"beyond","at":"door","distance":57.6},
+      {"tick":29,"subject":"task","condition":"offered"},
+      {"tick":29,"subject":"player","condition":"beyond","at":"door","distance":57.6},
+      {"tick":45,"subject":"task","condition":"done"},
+      {"tick":45,"subject":"player","condition":"crowd","walkers":2}
+    ]
+  },
+  "stretch": {
+    "tiles": {
+      "sidewalk": [[28,112,113],[28,116,131],[29,112,113],[29,116,131],[32,112,113],[32,116,131],[33,112,113],[33,116,131]],
+      "crossing": [
+        [28,114,115],
+        [29,114,115],
+        [30,112,113],
+        [30,116,117],
+        [30,126,127],
+        [30,130,131],
+        [31,112,113],
+        [31,116,117],
+        [31,126,127],
+        [31,130,131],
+        [32,114,115],
+        [33,114,115]
+      ],
+      "road": [[30,114,115],[30,118,125],[30,128,129],[31,114,115],[31,118,125],[31,128,129]]
+    },
+    "buildings": [
+      {"lot":[104,20,8,8],"district":"residential","variant":3791228600,"height":2,"condition":"lived_in"},
+      {"lot":[118,20,22,8],"district":"big_building","variant":3792558269,"height":4,"condition":"lived_in"},
+      {"lot":[104,34,8,8],"district":"residential","variant":3791228637,"height":2,"condition":"lived_in"},
+      {"lot":[118,34,13,4],"district":"courtyard","variant":3792558306,"height":2,"condition":"lived_in"},
+      {"lot":[132,34,8,4],"district":"residential","variant":3794714526,"height":2,"condition":"lived_in"}
+    ],
+    "trees": [],
+    "props": [
+      {"kind":"sack","at":[3888,904],"variant":0,"scale":1},
+      {"kind":"sack","at":[4016,904],"variant":0,"scale":1},
+      {"kind":"sack","at":[3792,1080],"variant":0,"scale":1},
+      {"kind":"sack","at":[3824,1080],"variant":0,"scale":1},
+      {"kind":"sack","at":[4016,1080],"variant":0,"scale":1}
+    ],
+    "litter": [
+      {"kind":"can","at":[3887.56,916.47]},
+      {"kind":"apple","at":[3921.25,919.52]}
+    ],
+    "cracks": [
+      [112,28,0,1],
+      [113,28,1,0],
+      [116,28,0,0],
+      [117,28,0,0],
+      [118,28,0,1],
+      [119,28,2,0],
+      [120,28,2,1],
+      [121,28,2,1],
+      [122,28,1,1],
+      [123,28,2,1],
+      [124,28,2,1],
+      [125,28,0,0],
+      [126,28,0,0],
+      [127,28,0,1],
+      [128,28,2,0],
+      [129,28,2,1],
+      [130,28,0,1],
+      [131,28,1,1],
+      [112,29,2,1],
+      [113,29,2,1],
+      [116,29,1,0],
+      [117,29,1,1],
+      [126,29,1,1],
+      [127,29,2,0],
+      [128,29,0,0],
+      [129,29,1,0],
+      [130,29,0,0],
+      [131,29,2,0],
+      [115,30,0,1],
+      [128,30,0,1],
+      [115,31,2,1],
+      [112,32,0,0],
+      [113,32,1,0],
+      [116,32,2,0],
+      [117,32,1,0],
+      [126,32,2,1],
+      [127,32,1,1],
+      [128,32,0,1],
+      [129,32,0,1],
+      [130,32,0,0],
+      [131,32,2,0],
+      [112,33,1,1],
+      [113,33,2,0],
+      [116,33,0,0],
+      [117,33,1,1],
+      [118,33,2,1],
+      [119,33,2,0],
+      [120,33,0,0],
+      [121,33,2,1],
+      [122,33,2,1],
+      [123,33,0,1],
+      [124,33,1,0],
+      [125,33,0,0],
+      [126,33,2,1],
+      [127,33,2,0],
+      [128,33,1,1],
+      [129,33,0,0],
+      [130,33,2,0],
+      [131,33,2,1]
+    ]
+  }
 }

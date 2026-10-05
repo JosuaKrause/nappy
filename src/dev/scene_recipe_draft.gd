@@ -7,21 +7,31 @@ extends RefCounted
 ## once on its whole construction witness, with its own walk, and what she walked is cut out of the
 ## city — the tiles, the buildings fronting them, the street trees, props, litter and cracks on
 ## them, the day's posters on those walls, a starting crowd and the day's route bag — and written as
-## a `stretch` recipe the author then edits. The scene loads only what this writes.
+## a `stretch` recipe the author then edits. The scene loads only what this writes. Drafting a
+## stretch recipe again writes all of that afresh but its route bag, which is the author's rigging
+## rather than a fact about where the stretch runs.
 ##
 ## **The stretch is the streets she walks** *(asked how wide "the path" is, the player chose "The
 ## streets she walks": every tile of the street segments along her route from start to mark to
 ## target, both sidewalks and the carriageway, crossings and corners; everything else void)*: every
 ## street segment she sets foot on, whole and both sidewalks wide, with the junction box at each of
 ## its ends; a junction box she crosses; and, off the streets — an alley, a park, a square — the
-## ground she walks over and the tiles beside it, with the whole of an alley she walks into. The
-## bodies a task puts in the world while she walks — the mark's guard, the target, what it rides on —
-## add the ground they stand on by the same rule, so nothing the scene is about stands in the void.
+## ground she walks over and the tiles beside it, with the whole of an alley she walks into.
+##
+## **Only her walk decides it.** The task's target is placed while she walks, by the director's own
+## rule, on the streets the scene has — which need not be where the whole city would put it — so
+## the draft is walked on the whole city, the scene is played on the stretch, and the author makes
+## the walk reach the target the scene puts out (`docs/SCENE_RECIPES.md`, "The task scenes"). A
+## draft therefore plays its walk to the end whatever the recipe's observations say. Two more things
+## are the scene's whatever the stretch: the ground of the places `setup.task` pins (the mark she
+## reads from beside it, day 10's neighbor's start), and the way day 10's neighbor walks home, which
+## the recipe pins and the whole city routes, the same in the scene as in the draft.
 
 ## Where she was, tile by tile, over the run.
 var _walked := {}
-## Where the task's bodies stood over the run.
-var _bodies := {}
+## The tiles as the day began, before anything the walk set off repainted them — day 12's park
+## closing behind the swing — since the stretch lists the ground the scene starts on.
+var _dawn_tiles := PackedByteArray()
 
 ## A recipe as the draft plays it: the whole witness, with nothing the draft writes. Its stretch,
 ## starting population, posters and route bag are what the draft is about to write again.
@@ -34,24 +44,27 @@ static func base_of(recipe: Dictionary) -> Dictionary:
 		setup.erase(drafted)
 	return base
 
-## One tick of the walk: her tile, and the tile of every body in the world, which in a draft is only
-## ever what the task brought (the recipe's own events aside, and they are placed things already).
-func record(player: Node2D, city: City) -> void:
+## One tick of the walk: her tile, and the tile of a neighbor walking home (`neighbor`, or null).
+func record(player: Node2D, city: City, neighbor: Node2D) -> void:
+	if _dawn_tiles.is_empty():
+		_dawn_tiles = city.map.tiles.duplicate()
 	_walked[city.map.world_to_tile(player.global_position)] = true
-	for instance in city.events.instances():
-		_bodies[city.map.world_to_tile(instance.global_position)] = true
+	if neighbor:
+		_walked[city.map.world_to_tile(neighbor.global_position)] = true
 
 ## The drafted recipe, built from `recipe` (the file as written, not `base_of()`'s copy) and the
-## world the run has left behind. Fills `problems` with anything the draft could not place.
-func compose(recipe: Dictionary, city: City, problems: Array[String]) -> Dictionary:
+## world the run has left behind, `pinned` the places `setup.task` names. Fills `problems` with
+## anything the draft could not place.
+func compose(recipe: Dictionary, city: City, start: Vector2, pinned: Array[Vector2],
+		problems: Array[String]) -> Dictionary:
 	var map := city.map
 	var day := GameState.day
 	var ground := {}
 	for tile: Vector2i in _walked:
 		_add_the_ground_of(map, tile, ground)
-	for tile: Vector2i in _bodies:
-		_add_the_ground_of(map, tile, ground)
-	var stretch := {"tiles": _tile_runs(map, ground)}
+	for at in pinned:
+		_add_the_ground_of(map, map.world_to_tile(at), ground, false)
+	var stretch := {"tiles": _tile_runs(map, ground, _dawn_tiles)}
 	var buildings: Array = []
 	for building in city.buildings():
 		if _fronts(map, building.lot, ground):
@@ -97,9 +110,12 @@ func compose(recipe: Dictionary, city: City, problems: Array[String]) -> Diction
 	drafted["stretch"] = stretch
 	var setup: Dictionary = drafted.get("setup", {})
 	setup["posters"] = _posters(map, ground)
-	setup["actors"] = _starting_crowd(city, ground, problems)
-	var marbles := EventDirector.ordinary_route_marbles(day, GameState.resistance_progress)
-	setup["route_bag"] = {"marbles": marbles, "owed": marbles.size()}
+	setup["actors"] = _starting_crowd(city, ground, start, problems)
+	# A route bag the author has already rigged is theirs: it is about what she meets, not about
+	# where the stretch runs, so drafting the stretch again keeps it.
+	if not setup.has("route_bag"):
+		var marbles := EventDirector.ordinary_route_marbles(day, GameState.resistance_progress)
+		setup["route_bag"] = {"marbles": marbles, "owed": marbles.size()}
 	var background: Dictionary = setup.get("background", {})
 	background.erase("crowd")
 	if background.is_empty():
@@ -107,8 +123,11 @@ func compose(recipe: Dictionary, city: City, problems: Array[String]) -> Diction
 	drafted["setup"] = setup
 	return drafted
 
-## Adds the ground `tile` stands on to `ground`, by the rule in the class doc.
-static func _add_the_ground_of(map: CityMap, tile: Vector2i, ground: Dictionary) -> void:
+## Adds the ground `tile` stands on to `ground`, by the rule in the class doc. `walked` is false for
+## a place the task pins, which adds its street but not the whole of an alley it stands at the mouth
+## of: she reads a mark from beside it, and never walks up the alley behind.
+static func _add_the_ground_of(map: CityMap, tile: Vector2i, ground: Dictionary,
+		walked := true) -> void:
 	var on_x := CityMap.corridor_offset(tile.x) >= 0
 	var on_y := CityMap.corridor_offset(tile.y) >= 0
 	if on_x and on_y:
@@ -122,7 +141,7 @@ static func _add_the_ground_of(map: CityMap, tile: Vector2i, ground: Dictionary)
 		return
 	_add_walkable(map, Rect2i(tile - Vector2i.ONE, Vector2i(3, 3)), ground)
 	for alley in map.alley_rects:
-		if alley.has_point(tile):
+		if walked and alley.has_point(tile):
 			_add_walkable(map, alley, ground)
 
 static func _junction_box(junction: Vector2i) -> Rect2i:
@@ -134,10 +153,10 @@ static func _add_walkable(map: CityMap, rect: Rect2i, ground: Dictionary) -> voi
 			ground[tile] = true
 
 ## `ground` as the recipe lists it: tile type name -> `[y, x_from, x_to]` runs, row by row.
-static func _tile_runs(map: CityMap, ground: Dictionary) -> Dictionary:
+static func _tile_runs(map: CityMap, ground: Dictionary, dawn: PackedByteArray) -> Dictionary:
 	var runs := {}
 	for tile: Vector2i in _sorted(ground):
-		var type := str(GameEnums.TileType.keys()[map.tile_at(tile)]).to_lower()
+		var type := str(GameEnums.TileType.keys()[dawn[tile.y * map.size.x + tile.x]]).to_lower()
 		if not runs.has(type):
 			runs[type] = []
 		var list: Array = runs[type]
@@ -179,8 +198,12 @@ static func _posters(map: CityMap, ground: Dictionary) -> Array:
 ## A morning's crowd round the stretch, the day's own numbers placed the day's own way, and of them
 ## the walkers and cars standing on it — each then placed again as the scene places it, on the
 ## stretch alone, so one the scene would refuse (a lane that is void on one side, a car in another's
-## queue) is left out rather than written.
-static func _starting_crowd(city: City, ground: Dictionary, problems: Array[String]) -> Array:
+## queue) is left out rather than written. **No car starts in her view**
+## (`Tuning.VIEW_HALF_EXTENT` round `start`): a scene's first frame is not a car already bearing
+## down on a pram that has not taken a step — the start of a played day is her doorstep, on a street
+## no car is in yet.
+static func _starting_crowd(city: City, ground: Dictionary, start: Vector2,
+		problems: Array[String]) -> Array:
 	var map := city.map
 	var day := GameState.day
 	var box := Rect2i()
@@ -218,9 +241,13 @@ static func _starting_crowd(city: City, ground: Dictionary, problems: Array[Stri
 	map.stretch_active = true
 	var counts := {"walker": 0, "car": 0}
 	var actors: Array = []
+	var view := Rect2(start - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	for entry in found:
 		var label := "%s_%d" % [entry.kind, int(counts[entry.kind]) + 1]
 		var at: Vector2 = entry.at
+		if entry.kind == "car" and view.has_point(at):
+			problems.append("left out a car at %s: it would start in her view" % at)
+			continue
 		var placed := city.crowd.add_recipe_actor(label,
 				CrowdAgent.Kind.CAR if entry.kind == "car" else CrowdAgent.Kind.WALKER, at,
 				SceneRecipeRuntime.DIRECTIONS[entry.direction], float(entry.speed),
