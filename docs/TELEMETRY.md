@@ -145,9 +145,13 @@ The events:
     controls, its halo or its badge does not count. A row that draws nothing of its own (`playground`, `curfew_announce`) is never seen.
   - **`influenced`**, at most once per encounter, the first frame it is meaningful, the same for
     every row: `Tuning.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed on her within the
-    encounter (`EventInstance.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or her
-    inside its lethal reach or its hold *(inbox #577, the player: "let's count chases and catches as
-    influenced always")*. A static row that can do none of these — a fallen tree, a skip — still
+    encounter (`EventInstance.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or it
+    catching her or beginning a hold of her *(inbox #577, the player: "let's count chases and catches
+    as influenced always")*. A catch and a hold are the game's own tests, called and not copied
+    *(inbox #586, the player: "use the real catch code")*: `EventInstance.is_lethal_at()`, so a guard
+    within reach through a wall, a cyclist still only warned or waiting, or a finished row is no
+    catch; and `EventManager._hold_that_would_begin()`, so a hold counts the frame it would start and
+    only for the one instance that would take her in. Both are pure reads. A static row that can do none of these — a fallen tree, a skip — still
     sends `seen` ("the static things question was meant for telemetry. we need to record seen for
     them") and is never influenced.
   - **`influenced-unseen`** is a meaningful encounter she never saw: an influence before the

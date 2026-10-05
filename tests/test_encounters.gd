@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_a_tenth_of_the_meter_is_one_influence_per_encounter(t)
 	_test_an_influence_from_off_screen_waits_to_be_seen(t)
 	_test_a_chase_or_a_catch_is_always_an_influence(t)
+	_test_influenced_follows_the_real_catch_and_hold(t)
 	_test_a_static_row_is_seen_and_never_influenced(t)
 	_test_two_instances_are_two_encounters(t)
 	_test_runs_less_than_the_gap_apart_are_one_bout(t)
@@ -301,22 +302,116 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 			"the chase is an influence all the same (%s)" % [_influenced])
 	dog.free()
 
-	for id: String in ["reversing_lorry", "checkpoint_post"]:
-		_clear()
-		var standing := _instance(t, id, Vector2.ZERO)
-		var reach := standing.def.lethal_reach() if standing.def.hard_fail \
-				else standing.def.detain_distance()
-		var outside := Vector2(0.0, reach + 40.0)
-		_run(watch, [standing] as Array[EventInstance], outside, 0.5)
-		t.check(_seen.size() == 1 and _influenced.is_empty(),
-				"%s: seen outside its reach is no influence (%s)" % [id, _influenced])
-		var inside := Vector2(0.0, reach - 2.0)
-		for _i in 3:
-			watch.tick(STEP, [standing] as Array[EventInstance], _visible(inside), inside, false)
-		t.check(_influenced.size() == 1 and standing.landed_ever == 0.0,
-				"%s: her inside its %s is, with nothing landed (%d)"
-				% [id, "reach" if standing.def.hard_fail else "hold", _influenced.size()])
-		standing.free()
+	# A lorry that can end the day: the catch is the game's own `is_lethal_at()`, so it counts once
+	# the lorry is past its telegraph and not before, with her inside the same reach.
+	_clear()
+	var lorry := _instance(t, "reversing_lorry", Vector2.ZERO)
+	var reach := lorry.def.lethal_reach()
+	var outside := Vector2(0.0, reach + 40.0)
+	_run(watch, [lorry] as Array[EventInstance], outside, 0.5)
+	t.check(_seen.size() == 1 and _influenced.is_empty(),
+			"reversing_lorry: seen outside its reach is no influence (%s)" % [_influenced])
+	var inside := Vector2(0.0, reach - 2.0)
+	_stand(watch, [lorry] as Array[EventInstance], inside)
+	t.check(lorry.is_telegraphing() and _influenced.is_empty(),
+			"reversing_lorry: inside its reach while still telegraphing is no catch (%s)"
+			% [_influenced])
+	lorry.resume(lorry.def.telegraph_time + 0.1, 0.0, 0.0)
+	t.check(not lorry.is_telegraphing() and lorry.is_lethal_at(inside),
+			"the lorry is now past its telegraph and the game's own test catches her")
+	_stand(watch, [lorry] as Array[EventInstance], inside)
+	t.check(_influenced.size() == 1 and lorry.landed_ever == 0.0,
+			"reversing_lorry: her inside its reach is, with nothing landed (%d)" % _influenced.size())
+	lorry.free()
+
+	# A hold: the manager's own `_hold_that_would_begin()`, handed in as the watch is given it.
+	_clear()
+	var manager := EventManager.new()
+	manager._map = CityMap.new()
+	t.add_child(manager)
+	manager.set_physics_process(false)
+	var post := _instance(t, "checkpoint_post", Vector2.ZERO)
+	manager._instances.append(post)
+	var hold_reach := post.def.detain_distance()
+	_run(watch, [post] as Array[EventInstance], Vector2(0.0, hold_reach + 40.0), 0.5)
+	t.check(_seen.size() == 1 and _influenced.is_empty(),
+			"checkpoint_post: seen outside its hold is no influence (%s)" % [_influenced])
+	var held := Vector2(0.0, hold_reach - 2.0)
+	_stand(watch, [post] as Array[EventInstance], held, manager._hold_that_would_begin)
+	t.check(_influenced.size() == 1 and post.landed_ever == 0.0,
+			"checkpoint_post: her inside its hold is, with nothing landed (%d)" % _influenced.size())
+	manager._instances.clear()
+	post.free()
+	manager.free()
+
+## Three frames with her standing at `at` and the view about her.
+func _stand(watch: EncounterWatch, instances: Array[EventInstance], at: Vector2,
+		hold_source := Callable()) -> void:
+	for _i in 3:
+		watch.tick(STEP, instances, _visible(at), at, false, hold_source)
+
+## *(Inbox #586, the player: "use the real catch code".)* A guard within reach with a building's
+## corner between them has not touched her, a cyclist still only warned has not reached her, and a
+## hold the manager would not begin (another one already running) is not a hold.
+func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
+	_clear()
+	var map := CityMap.new(Vector2i(8, 8))
+	map.fill_rect(Rect2i(0, 0, 8, 8), GameEnums.TileType.SIDEWALK)
+	map.set_tile(Vector2i(4, 4), GameEnums.TileType.BUILDING)
+	var guard := _instance(t, "alley_robbery", Vector2(122.0, 134.0))
+	guard._map = map
+	# Created where a warning pointed, so its chase has not been reported yet: this isolates the
+	# reach, since a live pursuer that is chasing her counts by the chase arm whatever the wall.
+	guard.came_under_a_warning = true
+	guard.resume(guard.def.telegraph_time + 0.1, 0.0, 0.0)
+	var her := Vector2(134.0, 122.0)
+	t.check(guard.def.hard_fail and not guard.is_telegraphing() and not guard.is_waiting()
+			and not guard.is_chasing()
+			and guard.global_position.distance_to(her) < guard.def.lethal_reach(),
+			"the guard is chasing, and she is inside his reach in a straight line")
+	t.check(not guard.is_lethal_at(her), "but the game does not call it a catch, a corner between")
+	var watch := _watch()
+	var guards: Array[EventInstance] = [guard]
+	# Her centre on the view's centre so the guard is seen and the encounter is open.
+	_stand(watch, guards, her)
+	t.check(_seen.size() == 1 and _influenced.is_empty(),
+			"seen and inside his reach through the wall is no influence (%s)" % [_influenced])
+	map.set_tile(Vector2i(4, 4), GameEnums.TileType.SIDEWALK)
+	t.check(guard.is_lethal_at(her), "with the wall gone it is a catch")
+	_stand(watch, guards, her)
+	t.check(_influenced == ["%d:alley_robbery:seen" % DAY],
+			"and then it counts (%s)" % [_influenced])
+	guard.free()
+
+	_clear()
+	var cyclist := _instance(t, "cyclist", Vector2.ZERO)
+	var warned: Array[EventInstance] = [cyclist]
+	var near := Vector2(0.0, cyclist.def.lethal_reach() - 2.0)
+	_stand(watch, warned, near)
+	t.check(cyclist.is_telegraphing() and not cyclist.is_lethal_at(near) and _influenced.is_empty(),
+			"a cyclist still only warned is not a catch, and not an influence (%s)" % [_influenced])
+	cyclist.free()
+
+	# A hold already running: the manager would begin no other, so the watch counts none.
+	_clear()
+	var manager := EventManager.new()
+	manager._map = CityMap.new()
+	t.add_child(manager)
+	manager.set_physics_process(false)
+	var mother := _instance(t, "chatting_mother", Vector2.ZERO)
+	var post := _instance(t, "checkpoint_post", Vector2(0.0, 500.0))
+	manager._instances.append(mother)
+	manager._instances.append(post)
+	mother.start_chat()
+	var at_post := Vector2(0.0, 500.0 + post.def.detain_distance() - 2.0)
+	var both: Array[EventInstance] = [mother, post]
+	_stand(_watch(), both, at_post, manager._hold_that_would_begin)
+	t.check(_influenced.is_empty(),
+			"inside a post's reach while another hold runs is no hold (%s)" % [_influenced])
+	manager._instances.clear()
+	mother.free()
+	post.free()
+	manager.free()
 
 ## *(Inbox #577: "the static things question was meant for telemetry. we need to record seen for
 ## them".)* Every row that draws something has a drawn box to be seen by, and a fallen tree in

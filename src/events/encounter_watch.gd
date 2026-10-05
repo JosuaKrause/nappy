@@ -30,7 +30,12 @@ extends RefCounted
 ## - **influenced** at most once, the first frame the encounter is meaningful, for every row alike:
 ##   `Tuning.ENCOUNTER_INFLUENCE_POINTS` landed on her within the encounter
 ##   (`EventInstance.landed_ever`, since `landed()` keeps only the halo's window), or it chasing her
-##   (`EventInstance.is_chasing()`), or her inside its lethal reach or its hold, whichever comes first.
+##   (`EventInstance.is_chasing()`), or it catching her or beginning a hold of her, whichever comes
+##   first. **A catch and a hold are the game's own tests, called and not copied** *(inbox #586, the
+##   player: "use the real catch code")*: `EventInstance.is_lethal_at()` for the catch, so a guard
+##   within reach through a wall, a cyclist still only warned or waiting, or a row already finished
+##   is no catch; and `EventManager._hold_that_would_begin()` for the hold, handed in as a callable.
+##   Both are pure reads, which start nothing and roll nothing.
 ##   *(Inbox #577, the player: "let's count chases and catches as influenced always".)* A row that
 ##   can do none of the three — a fallen tree, a skip — is seen and never influenced.
 ##   An influence before the encounter is seen waits: it goes out as influenced the moment the
@@ -73,17 +78,24 @@ var _frame := 0
 var _open: Array[Record] = []
 var _running := false
 var _ran_last := -INF
+## `EventManager._hold_that_would_begin()`, or empty when nothing hands one in (a rig without a
+## manager: no hold ever begins). Asked at most once a frame, when an instance first needs the answer.
+var _hold_source := Callable()
+var _hold_frame := -1
+var _hold: EventInstance = null
 
 ## The day the signals carry. Set by `EventManager.start_day()`; an influence still waiting when the
 ## next day starts goes out under the day it happened on.
 var day := 0
 
 ## One frame. `visible` is what she can see this frame (`VisibleView.look()` already told), `her`
-## where she stands, `running` whether she is running.
+## where she stands, `running` whether she is running, `hold_source` the game's own question of
+## which instance's hold would begin with her at a point.
 func tick(delta: float, instances: Array[EventInstance], visible: VisibleView, her: Vector2,
-		running: bool) -> void:
+		running: bool, hold_source := Callable()) -> void:
 	_clock += delta
 	_frame += 1
+	_hold_source = hold_source
 	var view := visible.view
 	for instance in instances:
 		# Most live instances are out of view, with nothing open and nothing new landed, and there is
@@ -156,19 +168,25 @@ func _open_an_encounter(record: Record) -> void:
 	_open.append(record)
 
 ## The meaningful-encounter test — see the class doc. The same three ways in for every row: what a
-## row cannot do (land anything, chase, reach or hold her) simply never happens.
-static func _is_meaningful(instance: EventInstance, record: Record, her: Vector2) -> bool:
-	var def := instance.def
+## row cannot do (land anything, chase, catch or hold her) simply never happens.
+func _is_meaningful(instance: EventInstance, record: Record, her: Vector2) -> bool:
 	if instance.landed_ever - record.landed_at_open >= Tuning.ENCOUNTER_INFLUENCE_POINTS:
 		return true
 	if instance.is_chasing():
 		return true
-	var reach := 0.0
-	if def.hard_fail:
-		reach = def.lethal_reach()
-	if def.detain_seconds > 0.0:
-		reach = maxf(reach, def.detain_distance())
-	return reach > 0.0 and instance.global_position.distance_to(her) <= reach
+	if instance.is_lethal_at(her):
+		return true
+	return instance.def.detain_seconds > 0.0 and _hold_begins_for(instance, her)
+
+## Whether the game's own hold test picks `instance` this frame. Asked of the manager once a frame
+## and only for an instance that can hold her at all.
+func _hold_begins_for(instance: EventInstance, her: Vector2) -> bool:
+	if not _hold_source.is_valid():
+		return false
+	if _hold_frame != _frame:
+		_hold_frame = _frame
+		_hold = _hold_source.call(her)
+	return _hold == instance
 
 ## Closes every open encounter whose instance has gone, or has been away for the gap. Removal swaps
 ## the last record in, so the list never shifts.
