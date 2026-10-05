@@ -30,8 +30,20 @@ func _ready() -> void:
 		add_child(runtime)
 		var from := Camera2D.new()
 		from.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+		from.position = Vector2(320, 240)
+		from.position_smoothing_enabled = true
 		add_child(from)
 		from.make_current()
+		var player := Stroller.new()
+		player.facing = Vector2.RIGHT
+		runtime._player = player
+		runtime._settle_starting_camera()
+		var settled_current := from.is_current()
+		player.free()
+		runtime._player = null
+		if not settled_current or from.offset != Vector2(Stroller.CAMERA_LOOK_AHEAD, 0):
+			get_tree().quit(18)
+			return
 		var zoom := ZoomOutCamera.new()
 		runtime.add_child(zoom)
 		runtime._zoom = zoom
@@ -223,7 +235,8 @@ func _test_real_argv_and_failure(t) -> void:
 					"one-tick input moves once, observes after the world, and completes the final tick")
 		elif mode == "camera":
 			t.check(status == 0 and text_output.contains("CAPTURE_CAMERA_FROZEN"),
-					"capture freezes camera at the shared physics tick even when idle time advances")
+					"capture freezes camera at the shared physics tick even when idle time advances: %s"
+					% text_output)
 		else:
 			t.check(status == 0 and text_output.contains("RECIPE_FLAGS_OK"),
 					"%s recipe reads real argv, keeps the intended input mode and disables saves" % mode)

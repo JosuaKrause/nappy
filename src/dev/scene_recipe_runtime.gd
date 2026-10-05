@@ -815,6 +815,11 @@ func begin() -> void:
 		return
 	if not scripted:
 		return
+	# `install()` positions the player while the boot camera is still current. Camera2D can only
+	# reset its smoothed screen centre once the player's camera owns the viewport, which is true
+	# here. Settle that state before the excluded moving lead-in begins so a movie never records the
+	# camera travelling from its boot position toward an already-moving actor.
+	_settle_starting_camera()
 	var playback: Dictionary = data.get("playback", {})
 	var camera: Dictionary = playback.get("camera", {})
 	DevRig.apply_zoom(get_viewport().get_camera_2d(), float(camera.get("zoom", 1)))
@@ -833,6 +838,15 @@ func begin() -> void:
 	_active = true
 	_observe()
 	_apply_input()
+
+func _settle_starting_camera() -> void:
+	var starting_camera := get_viewport().get_camera_2d()
+	if not starting_camera or not _player:
+		return
+	starting_camera.offset = Vector2(_player.facing.x,
+			_player.facing.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	starting_camera.reset_smoothing()
+	starting_camera.force_update_scroll()
 
 func _physics_process(_delta: float) -> void:
 	if not _active:

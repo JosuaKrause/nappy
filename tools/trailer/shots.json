@@ -20,16 +20,16 @@
       {"at": 8.65, "duration": 1.20, "frequency": 146.83, "gain": 0.016},
       {"at": 10.35, "duration": 2.05, "frequency": 110.00, "gain": 0.021},
       {"at": 11.00, "duration": 1.30, "frequency": 164.81, "gain": 0.013},
-      {"at": 12.90, "duration": 1.15, "frequency": 146.83, "gain": 0.015},
-      {"at": 13.50, "duration": 1.45, "frequency": 220.00, "gain": 0.013},
-      {"at": 15.50, "duration": 0.48, "frequency": 55.00, "gain": 0.030},
-      {"at": 16.80, "duration": 0.48, "frequency": 61.74, "gain": 0.030},
-      {"at": 18.10, "duration": 0.48, "frequency": 73.42, "gain": 0.030},
-      {"at": 19.55, "duration": 1.30, "frequency": 220.00, "gain": 0.016},
-      {"at": 20.25, "duration": 1.45, "frequency": 329.63, "gain": 0.014},
-      {"at": 21.05, "duration": 1.60, "frequency": 440.00, "gain": 0.012},
-      {"at": 22.90, "duration": 1.35, "frequency": 293.66, "gain": 0.013},
-      {"at": 23.60, "duration": 1.70, "frequency": 440.00, "gain": 0.011}
+      {"at": 13.40, "duration": 1.15, "frequency": 146.83, "gain": 0.015},
+      {"at": 14.00, "duration": 1.45, "frequency": 220.00, "gain": 0.013},
+      {"at": 16.00, "duration": 0.48, "frequency": 55.00, "gain": 0.030},
+      {"at": 17.30, "duration": 0.48, "frequency": 61.74, "gain": 0.030},
+      {"at": 18.60, "duration": 0.48, "frequency": 73.42, "gain": 0.030},
+      {"at": 20.05, "duration": 1.30, "frequency": 220.00, "gain": 0.016},
+      {"at": 20.75, "duration": 1.45, "frequency": 329.63, "gain": 0.014},
+      {"at": 21.55, "duration": 1.60, "frequency": 440.00, "gain": 0.012},
+      {"at": 23.40, "duration": 1.35, "frequency": 293.66, "gain": 0.013},
+      {"at": 24.10, "duration": 1.70, "frequency": 440.00, "gain": 0.011}
     ]
   },
   "shots": [
@@ -44,14 +44,14 @@
       "name": "choice",
       "recipe": "scene-recipes/trailer-choice.json",
       "motion": true,
-      "in": 0.5,
+      "in": 0.8,
       "length": 7.15
     },
     {
       "name": "birds",
       "recipe": "scene-recipes/trailer-birds.json",
       "motion": true,
-      "in": 0.5,
+      "in": 1,
       "length": 1.5,
       "gap": 0.25
     },
@@ -60,7 +60,7 @@
       "recipe": "scene-recipes/trailer-dog.json",
       "motion": true,
       "in": 0.5,
-      "length": 2.1,
+      "length": 2.6,
       "gap": 0.25
     },
     {
@@ -74,7 +74,7 @@
       "name": "trucks",
       "recipe": "scene-recipes/trailer-trucks.json",
       "motion": true,
-      "in": 0.5,
+      "in": 1,
       "length": 1,
       "gap": 0.3
     },
@@ -82,7 +82,7 @@
       "name": "gatehouse",
       "recipe": "scene-recipes/trailer-gatehouse.json",
       "motion": true,
-      "in": 0.5,
+      "in": 1,
       "length": 1,
       "gap": 0.3
     },
@@ -90,7 +90,7 @@
       "name": "chase",
       "recipe": "scene-recipes/trailer-chase.json",
       "motion": true,
-      "in": 1.4,
+      "in": 2,
       "length": 1,
       "gap": 0.3
     },
@@ -98,7 +98,7 @@
       "name": "city",
       "recipe": "scene-recipes/trailer-city.json",
       "motion": true,
-      "in": 0.5,
+      "in": 1.5,
       "length": 6.5,
       "gap": 0.3,
       "ending": {
