@@ -21,7 +21,8 @@ frame was drawn on demand (`AutoScreenshot.drawn_frame()`), which is why the bur
 
 - `frame-0002.png` (0.18s): the badge alone, top edge, "9 m", nothing on the sidewalk above her.
 - `frame-0007.png` (0.87s): the badge at the same place on the edge, still nothing in the world.
-- `frame-0008.png` (1.00s): the cyclist created just out of sight at the top edge, already coming
-  into view; the readout's nearest is `cyclist active age=1.0/1.0`.
+- `frame-0008.png` (1.00s): the cyclist on his first frame, partly in view at the top edge — a
+  pop-in the review of 4013935b found (he draws his front view and a shadow larger than the box he
+  was placed by); fixed in 8321e965, whose stills are in `../m226-off-screen-arrivals-2026-10-05/`.
 - `frame-0009.png` (1.24s): the cyclist in view, the badge gone, the lethal mark over her.
 - `frame-0011.png` (1.53s): the cyclist reaching her, about half a second after he came into view; `--invincible` keeps the day going.
