@@ -104,8 +104,8 @@
   ]
  },
  "playback": {
-  "walk": "5w",
-  "duration": 5,
+  "walk": "5.6w",
+  "duration": 5.6,
   "capture_at": 2.5,
   "observations": [
    {
