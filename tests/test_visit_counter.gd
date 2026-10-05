@@ -43,6 +43,7 @@ func run(t) -> void:
 	_test_a_chase_is_reported_once_however_the_pursuer_arrived(t)
 	_test_the_pelican_is_its_own_entry(t)
 	_test_a_day_lost_to_the_pelican_names_the_pelican(t)
+	_test_encounters_and_runs_are_named_by_their_day_and_row(t)
 	_test_every_event_opts_out_of_sessions(t)
 
 ## `_should_send()` — on the web, released, unasked-for and with a live
@@ -159,6 +160,10 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	counter._on_city_gone_dark()
 	counter._on_pursuit_began("charging_dog")
 	counter._on_pursuit_ended("charging_dog", true)
+	counter._on_encounter_seen(1, "homeless_yeller")
+	counter._on_encounter_influenced(1, "homeless_yeller", true)
+	counter._on_encounter_influenced(1, "pelican", false)
+	counter._on_run_bout_began(1)
 	counter._on_pelican_spawned(null)
 	counter._on_pelican_sighted(null)
 	counter._on_pelican_excited_her(null)
@@ -454,6 +459,22 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 			"the hit, then the day lost to the pelican (%s)" % [counter.sent])
 	counter.free()
 
+## An encounter's three names and a bout of running *(misty-newt)*: the day the signal carries,
+## not `GameState`'s, since an influence that waited can go out after the next day began; the row
+## hyphenated as every id in a name is; and an influence never seen named apart, so influenced ÷
+## seen counts only what she could see. When each is sent is `tests/test_encounters.gd`'s.
+func _test_encounters_and_runs_are_named_by_their_day_and_row(t) -> void:
+	var counter := RecordingCounter.new()
+	counter._on_encounter_seen(4, "charging_dog")
+	counter._on_encounter_influenced(4, "charging_dog", true)
+	counter._on_encounter_influenced(7, "pelican", false)
+	counter._on_run_bout_began(9)
+	t.check(counter.sent == ["nappy-day-4-seen-charging-dog", "nappy-day-4-influenced-charging-dog",
+			"nappy-day-7-influenced-unseen-pelican", "nappy-day-9-ran"],
+			"seen, influenced, influenced-unseen and ran, each under its own day (%s)"
+			% [counter.sent])
+	counter.free()
+
 ## Every event the counter sends carries `no_session: true`, the one thing that keeps it counted
 ## every time on a site whose sessions stay on for the page visit ("okay, I can turn session back
 ## on and you opt out for everything except /nappy.josuakrause.com/"). Every handler is driven
@@ -475,6 +496,10 @@ func _test_every_event_opts_out_of_sessions(t) -> void:
 	counter._on_city_gone_dark()
 	counter._on_pursuit_began("charging_dog")
 	counter._on_pursuit_ended("charging_dog", false)
+	counter._on_encounter_seen(2, "charging_dog")
+	counter._on_encounter_influenced(2, "charging_dog", true)
+	counter._on_encounter_influenced(2, "charging_dog", false)
+	counter._on_run_bout_began(2)
 	counter._on_pelican_spawned(null)
 	counter._on_pelican_sighted(null)
 	counter._on_pelican_excited_her(null)

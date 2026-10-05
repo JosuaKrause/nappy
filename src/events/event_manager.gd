@@ -195,6 +195,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	_hard_failed = false
 	_struck_by = ""
 	_day = day
+	_encounters.day = day
 	_consumed = consumed_one_shots
 	_walking_the_finale = false
 	# The corridor the city grew this morning, before it placed its closures off it. Passed rather
@@ -377,6 +378,7 @@ func start_recipe(plans: Array[EventScheduler.Planned], day: int, focus: Vector2
 		if plan.is_placed():
 			_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 	_day = day
+	_encounters.day = day
 	_walking_the_finale = finale
 	_recipe_plan = true
 
@@ -402,6 +404,7 @@ func clear() -> void:
 	_pending.clear()
 	_pelican_rng = null
 	_unseen_pelicans.clear()
+	_encounters.end_day()
 	_broadcast_clock = 0.0
 
 ## Brings into the world everything within reach of a point, and takes away what has gone out
@@ -685,6 +688,23 @@ func _report_the_pelicans_in_view() -> void:
 		else:
 			still_unseen.append(instance)
 	_unseen_pelicans = still_unseen
+
+## The page's counter's encounters and bouts of running — see `EncounterWatch`. Telemetry only: it
+## reads and decides nothing gameplay reads.
+var _encounters := EncounterWatch.new()
+
+## Asks `_encounters` about this frame, while a day is being played: not behind the title screen,
+## which runs the city with her stood aside out of the `player` group, and not on the escape, which
+## is not a day and has `nappy-escape-*` of its own. The view is the camera's — `Tuning.
+## VIEW_HALF_EXTENT` about the centre of the screen, which her look-ahead moves off her a little.
+func _watch_the_encounters(delta: float) -> void:
+	if _walking_the_finale or not _player.is_in_group("player"):
+		return
+	var stroller := _player as Stroller
+	var centre := stroller.camera_screen_center() if stroller else _player.global_position
+	var view := Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	var running := stroller != null and stroller.run_excess_ratio() > 0.0
+	_encounters.tick(delta, _instances, view, _player.global_position, running)
 
 ## What the run log and the page's counter call the event whose lethal reach ended today
 ## (`EventInstance.logged_name()` — `pelican` for a pelican, otherwise its row's id), or "" when no
@@ -1073,6 +1093,7 @@ func _tick_the_events(delta: float) -> void:
 			_place_what_is_owed_ahead(delta)
 		_summon_what_has_been_sighted()
 		_report_the_pelicans_in_view()
+		_watch_the_encounters(delta)
 		_run_the_warnings(delta, _player.global_position)
 		_tell_them_where_she_is()
 		_warn_about_the_ground_she_is_on()

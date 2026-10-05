@@ -975,6 +975,53 @@ const PELICAN_NAME := "pelican"
 ## first share of the meter it lands (`accumulate_landed()`).
 var _reported_excitement := false
 
+## Every point this instance has ever landed on her meter, never pruned — the running total
+## `EncounterWatch` measures an encounter's share against, since `landed()` keeps only the halo's
+## `ExcitementHalo.WINDOW` and an encounter can be longer. Telemetry only: nothing that decides
+## anything reads it.
+var landed_ever := 0.0
+
+## `EncounterWatch`'s own record of this instance's encounters with her, made the first time it is
+## on screen or lands on her, or `null` until then. Telemetry only, like `landed_ever`.
+var encounter: EncounterWatch.Record = null
+
+## The box, in this node's own space, that what this instance draws roughly fills: its row's own
+## picture (`icon_for()`) standing on its feet at the origin, stretched along the run a spread, a
+## protest or a firefight covers, and grown by the wheel of a flock. An empty box for a row that
+## draws nothing of its own (`Look.NONE`). Not pixel-exact — no halo, no badge, no bob, the view a
+## mover is drawn in this frame aside — and it does not need to be: `EncounterWatch` asks only
+## whether most of it is in view. Worked out once, on first asking, from what `setup()` decided.
+func drawn_box() -> Rect2:
+	if _drawn_box_known:
+		return _drawn_box
+	_drawn_box_known = true
+	var icon := icon_for(def.look)
+	if icon.is_empty():
+		_drawn_box = Rect2()
+		return _drawn_box
+	var size := _native_size(icon)
+	var box := Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+	var half := maxf(11.0, def.obstructs_radius)
+	if def.has_a_spread and _spread_vertical:
+		box = box.merge(Rect2(-size.x * 0.5, -half, size.x, half * 2.0))
+	elif def.has_a_spread or def.look == EventDef.Look.PROTEST \
+			or def.look == EventDef.Look.FIREFIGHT:
+		box = box.merge(Rect2(-half, -size.y, half * 2.0, size.y))
+	if def.flock_size > 0:
+		box = box.grow(def.flock_spread)
+	_drawn_box = box
+	return _drawn_box
+
+var _drawn_box := Rect2()
+var _drawn_box_known := false
+
+## Whether this pursuer is coming for her right now: its chase has begun (`EventBus.pursuit_began`'s
+## own moment) and it has neither given up nor left. Telemetry only — `EncounterWatch` reads it for a
+## row whose field does not excite her.
+func is_chasing() -> bool:
+	return def.pursues and _pursuit_began_reported and not is_finished and not is_leaving \
+			and not is_waiting()
+
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
 ## otherwise the row's own `def.id`. Telemetry only — nothing that decides anything reads it.
 func logged_name() -> String:
@@ -2695,6 +2742,7 @@ func accumulate_landed(points: float) -> void:
 	_prune_landed_history()
 	if points > 0.0:
 		_landed_history.append([_clock, points])
+		landed_ever += points
 		# A pelican's first share of the meter, for `VisitCounter` and the run log — told once, and
 		# never read back by anything here.
 		if is_pelican and not _reported_excitement:

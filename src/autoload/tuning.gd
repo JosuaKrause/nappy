@@ -1559,6 +1559,25 @@ func offscreen_boundary(heading: Vector2) -> float:
 func min_offscreen_boundary() -> float:
 	return VIEW_HALF_EXTENT.y
 
+# The page's counter counts encounters (`EncounterWatch`, docs/TELEMETRY.md, "The page counts
+# visits"). None of these four changes anything a player can feel: they decide only what is sent.
+
+## How long an event instance has to have been off screen, in seconds, before coming back counts as
+## a new encounter rather than the one it left. *(misty-newt, the player: "I would define the gap as
+## left the screen and encountered again at a later time (eg 5s). this should also apply to seen.")*
+const ENCOUNTER_GAP := 5.0
+## The share of what is drawn for an instance that has to be inside the view for it to count as
+## seen: a sliver at the edge does not. *(misty-newt: "(fully; or reasonably) visible on screen
+## (just a part or too far off the edge doesn't count)".)*
+const ENCOUNTER_SEEN_SHARE := 0.8
+## How much of a full meter an exciting instance has to land on her within one encounter for the
+## encounter to be meaningful — the player's "influence of the event reached a certain threshold".
+const ENCOUNTER_INFLUENCE_POINTS := METER_MAX * 0.1
+## A run that starts again less than this many seconds after she stopped running is the same bout
+## of running. *(misty-newt: "we can count the number of running excluding gaps smaller than
+## 10s".)*
+const RUN_BOUT_GAP := 10.0
+
 ## The default seconds a row travelling toward her has to still be off screen once it is created, at
 ## the speed the gap is actually closing. *(2026-09-07: "events that go towards the player (biker /
 ## pursuing dog) should at least be 200ms off screen with a warning.")*
