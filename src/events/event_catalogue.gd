@@ -1970,9 +1970,13 @@ static func _alley_robbery() -> EventDef:
 	return def
 
 ## **The robber a task sets on her: the alley robber, awake from his first frame, coming at her
-## from off screen the moment she hands a task over.** *(2026-09-13, the player: "maybe spawn the
+## from off screen the moment she has done a task.** *(2026-09-13, the player: "maybe spawn the
 ## robber in pursuing mode offscreen when she interacts with the yeller so it runs towards her from
-## offscreen"; "we need a version of the robber that is not frozen when spawned".)* Nothing places
+## offscreen"; "we need a version of the robber that is not frozen when spawned"; 2026-10-04,
+## grassy-goose: "the robber should spawn in off-screen already pursuing when I touch the goal".)*
+## Every task but the van's, the roadblock's and the neighbor's sends him
+## (`ResistanceDirector.sets_a_trap_on_her()`): the man shouting's note, the burnt building's door,
+## the district door, a mast's foot, the swing and the last night's front door. Nothing places
 ## it but `ResistanceDirector._set_the_trap_on_her()`, `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) from
 ## her on walkable ground outside the view: `SCRIPTED` on day 0, the day nobody plays, so the roll,
 ## the stream and the budget never reach it — `EventDef.validate()` refuses a pursuer with no
@@ -1996,14 +2000,15 @@ static func _alley_robbery() -> EventDef:
 ## chase` are the two pursuers whose chase is longer than `Tuning.PURSUIT_TIME`, and
 ## `tests/test_events_costs.gd` names both as such.
 ##
-## What that leaves her: the man she just left keeps shouting, and charging her, for
+## What that leaves her: standing still, he lunges from his stand-off about 1.5s after he appears
+## and reaches her about 0.7s later; walking into him, the lunge comes sooner and still at his
+## stand-off; walking directly away, he closes at 38px/s and catches her about 7.5s after he
+## appeared; running for `PURSUIT_SHAKEN_OFF` shakes him off. After the note, the man she just
+## left also keeps shouting, and charging her, for
 ## `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover (M205) — longer
 ## than this row's own 2.0s notice, so his field is still live for the whole of it whichever way
-## she answers. Standing still, he lunges from his stand-off about 1.5s after he appears and
-## reaches her about 0.7s later, before the man would have stopped shouting on his own; walking
-## into him, the lunge comes sooner and still at his stand-off; walking directly away, he closes
-## at 38px/s and catches her about 7.5s after he appeared; running for `PURSUIT_SHAKEN_OFF` shakes
-## him off. Whether shouting-plus-chasing at once is more than a walker should answer is
+## she answers, and standing still is caught before the man would have stopped shouting on his
+## own. Whether shouting-plus-chasing at once is more than a walker should answer is
 ## `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not settled here.
 ##
 ## **His own look, `ROBBER_GIVING_CHASE`, drawing the alley robber's own pictures**, the way

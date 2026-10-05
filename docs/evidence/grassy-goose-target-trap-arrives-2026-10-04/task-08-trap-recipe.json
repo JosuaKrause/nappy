@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "name": "Day 8 trap arriving at 9.5s",
+  "seed": 11,
+  "extent": {
+    "scope": "full"
+  },
+  "city": {
+    "context_seed": 1917501
+  },
+  "anchors": {
+    "mark": {
+      "tile": [
+        92,
+        69
+      ]
+    }
+  },
+  "setup": {
+    "tutorial_complete": true,
+    "day": 8,
+    "parent": "mother",
+    "player": {
+      "at": "mark",
+      "facing": "south"
+    },
+    "task": {
+      "mark": "mark"
+    }
+  },
+  "playback": {
+    "walk": "0.35s2.78w3.13n0.35w1.94n4.5p",
+    "duration": 12.5,
+    "capture_at": 9.5,
+    "observations": [
+      {
+        "tick": 1,
+        "subject": "task",
+        "condition": "offered"
+      },
+      {
+        "tick": 1,
+        "subject": "task",
+        "condition": "arrowed"
+      },
+      {
+        "tick": 1,
+        "subject": "task",
+        "condition": "off_screen"
+      },
+      {
+        "tick": 1,
+        "subject": "rider",
+        "condition": "beyond",
+        "at": "mark",
+        "distance": 576
+      },
+      {
+        "tick": 1,
+        "subject": "rider",
+        "condition": "near",
+        "at": "mark",
+        "distance": 608
+      },
+      {
+        "tick": 270,
+        "subject": "task",
+        "condition": "done"
+      }
+    ]
+  }
+}

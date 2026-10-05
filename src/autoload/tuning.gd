@@ -366,8 +366,9 @@ const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 ##   vertically), plus that margin, plus the ground the gap closes while the badge rises — a figure
 ##   `ResistanceDirector.badge_line()` computes per row, since it depends on the row's own
 ##   `outer_radius` as well as its speed. 311px clears the vertical line and not the sideways one for
-##   either row, so the director starts it within a cone of straight above or below her; where no
-##   such start has a clear run at her, it comes along her own street from the side instead
+##   either row, so the director starts it within a cone of straight above or below her — at a
+##   front door from across the street first, at least this far out — and where no such start has
+##   a clear run at her, it comes along her own street from the side instead
 ##   (`ResistanceDirector._draw_arrival_position()`, `beside_distance()`), and walking away outlasts
 ##   it there.
 ## - **Standing still, it lunges no sooner than `PURSUIT_MIN_NOTICE` (1.5s) after it appears.** The

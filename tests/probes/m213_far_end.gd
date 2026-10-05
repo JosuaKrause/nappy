@@ -20,9 +20,10 @@ extends RefCounted
 ## relocation. Counted: a relocated mark whose picture, or whose guard's body, shows on that
 ## screen, and a relocation that leaves the mark unguarded.
 ##
-## **The task guards.** Days 8, 9, 11, 12 and 13 of the same six cities, on a real `City`: she
-## stands on the day's mark and reads it, and the guard the task stands at its own contact
-## (`_task_guard`) is counted when none is placed and when his body shows on her screen.
+## **The task guard.** Day 13 of the same six cities, on a real `City` — the roadblock, the one task
+## guarded where it waits (`ResistanceDirector.keeps_a_waiting_guard()`): she stands on the day's
+## mark and reads it, and the guard the task stands at its own contact (`_task_guard`) is counted
+## when none is placed and when his body shows on her screen.
 
 const STEP := 1.0 / 60.0
 const SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555]
@@ -35,7 +36,7 @@ func run(t) -> void:
 	_on_screen(t)
 	_task_guards(t)
 
-## The guard a guarded task (days 8, 9, 11, 12, 13) stands at its contact, placed the instant she
+## The guard the guarded task (day 13's roadblock) stands at its contact, placed the instant she
 ## reads the mark: how often none is placed, and how often he shows on her screen.
 func _task_guards(t) -> void:
 	var saved := GameState.completed_resistance_steps.duplicate()
@@ -47,7 +48,7 @@ func _task_guards(t) -> void:
 		var city: City = CITY_SCENE.instantiate()
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
-		for day in [8, 9, 11, 12, 13]:
+		for day in [13]:
 			GameState.completed_resistance_alley_tiles = []
 			var done: Array[int] = []
 			done.assign(range(1, 2 * (day - 6) + 1))
