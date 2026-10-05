@@ -61,4 +61,8 @@ static func full_contribution(agent: CrowdAgent, at: Vector2) -> float:
 	if agent._jolt > 0.0:
 		total += Tuning.falloff(distance, agent._jolt_intensity * (agent._jolt / agent._jolt_for),
 			agent._jolt_inner, agent._jolt_outer)
+	# A building between them silences the whole of it; asked of every body, never only the near
+	# ones, so the oracle stays the unfiltered calculation on a real map too.
+	if agent._map and agent._map.wall_between(agent.global_position, at):
+		return 0.0
 	return total

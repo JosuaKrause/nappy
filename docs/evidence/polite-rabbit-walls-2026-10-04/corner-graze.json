@@ -1,0 +1,9 @@
+{
+  "version": 1, "name": "A street musician on a square, she round the corner of the building beside it", "seed": 11,
+  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
+  "anchors": {"her": {"world": [2864, 2512]}, "musician": {"world": [2928, 2576]}},
+  "setup": {"tutorial_complete": true, "day": 2, "parent": "mother", "player": {"at": "her", "facing": "south"},
+    "events": [{"name": "musician", "row": "busker", "at": "musician"}]},
+  "playback": {"walk": "6p", "duration": 6, "capture_at": 5,
+    "observations": [{"tick": 1, "subject": "musician", "condition": "visible"}]}
+}

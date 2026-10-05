@@ -1,0 +1,35 @@
+diff --git i/src/city/city_map.gd w/src/city/city_map.gd
+index dbdd56a8..96252c24 100644
+--- i/src/city/city_map.gd
++++ w/src/city/city_map.gd
+@@ -617,8 +617,17 @@ func is_walkable(tile: Vector2i) -> bool:
+ ## Only a tile's eight neighbours can be nearer than a whole tile, which is why neither depth may
+ ## exceed `Tuning.TILE_SIZE`. A segment exactly the depth from open ground at its deepest is blocked
+ ## — so a building two tiles thick blocks every line that crosses it, at its middle.
++static var zz_calls := 0
++static var zz_usec := 0
+ func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH,
+ 		thin_depth := Tuning.THIN_WALL_SHIELD_DEPTH) -> bool:
++	zz_calls += 1
++	var zz_t := Time.get_ticks_usec()
++	var zz_r := _zz_wall_between(from, to, depth, thin_depth)
++	zz_usec += Time.get_ticks_usec() - zz_t
++	return zz_r
++
++func _zz_wall_between(from: Vector2, to: Vector2, depth: float, thin_depth: float) -> bool:
+ 	var tile_size := float(Tuning.TILE_SIZE)
+ 	var x := floori(from.x / tile_size)
+ 	var y := floori(from.y / tile_size)
+diff --git i/src/player/baby.gd w/src/player/baby.gd
+index c8ea7d84..2577968b 100644
+--- i/src/player/baby.gd
++++ w/src/player/baby.gd
+@@ -139,6 +139,8 @@ func _feel_the_frame(delta: float) -> void:
+ ## merely left unsummed, so `accumulate_landed()` below is never called either: a source that
+ ## charges the halo but never reaches the meter is the exact drift this guards against.
+ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
++	if Engine.get_physics_frames() % 300 == 0:
++		print("ZZWALLS physics=%d process=%d calls=%d usec=%d" % [Engine.get_physics_frames(), Engine.get_process_frames(), CityMap.zz_calls, CityMap.zz_usec])
+ 	_clock += delta
+ 	var invincible := DevFlags.invincible()
+ 	var sources := [] if invincible else (_world.excitement_sources_at(here) if _world else [])

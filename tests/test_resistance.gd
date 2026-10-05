@@ -2484,7 +2484,9 @@ func _test_starting_a_day_resets_the_package_flag(t) -> void:
 
 ## The look-alike she never reached is a second live `homeless_yeller`, spawned directly rather
 ## than waiting for the scheduler to place one, so the test does not depend on the seed placing a
-## second one that day.
+## second one that day. It stands on the open tile nearest 600px east of the rider, never inside
+## a building: a source deep in a building is shut out by the wall even at its own position
+## (`CityMap.wall_between()`), and nothing the city places ever stands there.
 ## Split into two moments (M205, "he keeps shouting for a bit"): the instant the note changes
 ## hands, and once `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` has actually elapsed. He does
 ## not leave the first moment — he stays and keeps shouting, still charging her, until the second.
@@ -2497,7 +2499,10 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
 		t.check(rider != null and not rider.is_leaving, "the seeded rider is shouting, not leaving")
 
 		var decoy := _city.events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
-				rider.global_position + Vector2(600.0, 0.0))
+				DevRig.nearest_walkable(_city.map, rider.global_position + Vector2(600.0, 0.0)))
+		t.check(_city.map.is_walkable(_city.map.world_to_tile(decoy.global_position))
+				and decoy.global_position.distance_to(rider.global_position) > 400.0,
+				"the look-alike stands on open ground, well away from the one she reached")
 
 		director._on_contact_completed(2)
 

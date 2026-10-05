@@ -1451,12 +1451,41 @@ stimulus at its position, and the world sums `contribution_at()` over the live i
 ```gdscript
 func contribution_at(world_position: Vector2, ...) -> float:
     var velocity := travel_velocity()  # or the override expected_impact_at() passes
-    return def.emission_at_distance(_field_distance(world_position, velocity),
+    var field := def.emission_at_distance(_field_distance(world_position, velocity),
             current_intensity())
+    return 0.0 if field > 0.0 and _walled_off(global_position, world_position) else field
 ```
 
 Because it is a pure query there is no ordering to get wrong, events compose by simple
 addition, and an instance can be tested without a scene.
+
+**Nothing reaches her through a building.** *(plaid-wombat, inbox #554: "Excitement should not go
+through any wall but it's not straightforward. If the player is partially in a wall they should
+not be protected so the blocking should happen in the middle of the wall (or one tile deep)"; and
+inbox #568: "half a tile was only supposed to be done if the wall is only one tile wide otherwise it
+should be one tile".)* A field is zero wherever the straight line from the source to her reaches a
+tile (`Tuning.WALL_SHIELD_DEPTH`) into a building thicker than one tile, or the middle of a wall
+only one tile thick (`Tuning.THIN_WALL_SHIELD_DEPTH`, half a tile), measured from the nearest open
+ground — `CityMap.wall_between()`. Thick or thin is decided tile by tile: a building tile is part of
+something thicker when one of its corners is a point where four building tiles meet, and otherwise
+it is part of a one-tile wall, the bend of an L of them included. Every source asks it, the crowd's
+walkers and cars too (`CrowdAgent.contribution_at()`), horn and bump jolts included. A line across
+a one-tile wall is blocked at its middle, square or slanted, except within half a tile of an open
+end of the wall. A building two tiles thick has its points a tile in only along its middle line, so
+it blocks a line across it only away from its ends: within a tile of an open end a line straight
+through 64px of building passes, and a building two tiles square blocks only a line through its very
+centre — the player's "otherwise it should be one tile" read literally, with the ends open to them.
+A line that clips a corner, runs along a face or crosses only a building's outer tile blocks
+nothing; and half a tile is over the pram's own body radius, so her body poking into a wall's edge
+shields her from nothing. The line runs from the source's own node — a flock's centre, a shaped
+row's middle — to her centre, and is asked only once the field is positive. It is the deeper test
+beside the pursuer's catch, which refuses a line that touches a building at all (`_clear_line_to()`,
+"Running that matters" in docs/MECHANICS.md). **The meter, the halo and the caret read the same
+answer**: the meter's sum and the halo's pick both call `contribution_at()`, and the caret's
+projection asks the wall between where the two bodies will be at each step, so a car about to come
+out from behind a building expects what it will land once it is out. A row with no map — every
+event in the building's interior — is not blocked by anything. `docs/COSTS.md` prices a row with
+nothing between, so a route past buildings pays less than the sum of its rows' table prices.
 
 **A row may carry a second, louder part close in, and one does.** `EventDef.core_intensity` and
 `core_radius` are a core: the same curve over a shorter band, and the row emits **the larger** of
@@ -1512,7 +1541,8 @@ source being louder rather than a second falloff with its own idea of where the 
 
 The debug view's fields layer (`DebugLayers`, `1`) traces the exact boundary
 `GroundShape.field_outline()` computes from the same arithmetic, so a screenshot of a field cannot
-disagree with what the meter does — see docs/TELEMETRY.md, "The debug view".
+disagree with what the meter does on open ground — see docs/TELEMETRY.md, "The debug view". It
+draws the whole field, buildings or not, and cuts away nothing a building hides from her.
 
 The lookup is a **linear scan**, not a spatial hash. A late day has around 26 events
 instantiated at once — the whole day is four times that, but only what is inside
