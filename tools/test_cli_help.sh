@@ -99,6 +99,12 @@ assert_exit "scene-recipes.sh --help" zero ./tools/scene-recipes.sh --help
 assert_exit "scene-recipes.sh -h" zero ./tools/scene-recipes.sh -h
 assert_exit "scene-recipes.sh unknown" nonzero ./tools/scene-recipes.sh --not-a-flag
 assert_exit "scene-recipes.sh missing value" nonzero ./tools/scene-recipes.sh --recipe
+assert_exit "scene-draft.sh --help" zero ./tools/scene-draft.sh --help
+assert_exit "scene-draft.sh -h" zero ./tools/scene-draft.sh -h
+assert_exit "scene-draft.sh unknown" nonzero ./tools/scene-draft.sh --not-a-flag
+assert_exit "scene-draft.sh missing value" nonzero ./tools/scene-draft.sh --recipe
+assert_exit "scene-draft.sh no destination" nonzero ./tools/scene-draft.sh --recipe scene-recipes/task-07-package.json
+assert_exit "scene-draft.sh two destinations" nonzero ./tools/scene-draft.sh --recipe scene-recipes/task-07-package.json --in-place --output "$work_dir/draft.json"
 assert_exit "measure-ground-frames.sh --help" zero ./tools/measure-ground-frames.sh --help
 assert_exit "measure-ground-frames.sh -h" zero ./tools/measure-ground-frames.sh -h
 assert_exit "measure-ground-frames.sh unknown" nonzero ./tools/measure-ground-frames.sh --not-a-flag

@@ -667,7 +667,7 @@ func _is_in_a_pocket() -> bool:
 func _out_of_view() -> bool:
 	if not field:
 		return true
-	return position.distance_to(field.centre) > Tuning.OUT_OF_SIGHT
+	return position.distance_to(field.looking_at()) > Tuning.OUT_OF_SIGHT
 
 ## Whether a tile's own street segment is shut to this agent the way a hard blocker is: held for
 ## today (`CityMap.is_held_at` — a hard seal's segment, a region wall, a closure, or the streets
@@ -963,6 +963,10 @@ func _process(delta: float) -> void:
 		_consider_turning()
 		_advance_walker_gait(delta)
 	_look_ahead()
+	if field.has_stretch() and _walks_off_the_stretch():
+		_recycle()
+		_redraw_if_the_picture_changed()
+		return
 	if _blocked_in <= _acts_on_a_barrier_within():
 		_divert(delta)
 	# A car with no road either way goes when nobody is looking, which is the rule a body a pocket
@@ -2273,6 +2277,11 @@ func _look_ahead() -> void:
 	_blocked_in = LOOKAHEAD_TILES + 1
 	var step := (Vector2i.DOWN if _vertical else Vector2i.RIGHT) * int(signf(_direction))
 	for i in range(1, LOOKAHEAD_TILES + 1):
+		# A stretch's street goes on into the void as far as anybody on it knows: the agent walks to
+		# its end and leaves the scene there (`_walks_off_the_stretch()`), rather than turning back
+		# from a wall that is not there.
+		if _map.is_cut_off(here + step * i):
+			break
 		if _cannot_go_on(_vertical, here + step * i):
 			_blocked_in = i
 			return
@@ -3167,6 +3176,9 @@ func _recycle() -> void:
 	# answer — and draws it here, before the rolls below, for the reason `_draw_the_door_answer()`
 	# gives: the entry point is checked against ground this walker may actually walk.
 	_draw_the_door_answer()
+	if field.has_stretch():
+		_enter_at_a_stretch_end()
+		return
 	var legal: Array = []
 	for _attempt in 6:
 		_choose_lane(_rng.randf())
@@ -3219,6 +3231,56 @@ func _recycle() -> void:
 		# `world_to_tile` always floors away — so the clamp's own top has to give up a whole
 		# pixel or it can land exactly on the line and read as out of bounds again.
 		_set_along(clampf(_along(), 0.0, limit - 1.0))
+
+## Whether this agent is about to step off the end of a stretch's street into the void: the tile
+## half a tile ahead of it, along its lane, is ground the stretch cut off (`CityMap.is_cut_off()`).
+## A wall is not this — a street that ends at a building is turned at as everywhere else.
+func _walks_off_the_stretch() -> bool:
+	var ahead := Vector2(_lane_centre, _along()) if _vertical else Vector2(_along(), _lane_centre)
+	ahead += (Vector2.DOWN if _vertical else Vector2.RIGHT) * signf(_direction) * Tuning.TILE_SIZE * 0.5
+	return _map.is_cut_off(_map.world_to_tile(ahead))
+
+## **A recycle on a stretch: in at one of its ends.** *(azure-beaver, proposed and built: "walkers
+## and cars recycled at the stretch's ends".)* The scene's crowd is the street she walks and nothing
+## beyond it exists, so an agent that walks off one end comes back in at an end, rolled from the
+## field's own list (`CrowdField.stretch_ends`), heading in: a car on the lane that drives that way,
+## a walker on any lane its footway has there, each at its ordinary speed. The same ground and room
+## a recycle anywhere asks for are asked here, for a handful of rolls; a car that finds no free end
+## joins the back of the queue at the last one it rolled, as anywhere else.
+func _enter_at_a_stretch_end() -> void:
+	var ends: Array[Dictionary] = field.stretch_ends
+	for _attempt in 8:
+		if ends.is_empty():
+			break
+		var end: Dictionary = ends[_rng.randi_range(0, ends.size() - 1)]
+		_vertical = end.vertical
+		_corridor = end.corridor
+		_direction = end.direction
+		var along_tile: int = end.along
+		if kind == Kind.CAR:
+			_lane = CrowdLanes.road_lane(_vertical, _direction)
+			_speed = _rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
+		else:
+			var offsets := CrowdLanes.walkable_offsets(_map, _vertical, _corridor, along_tile)
+			_lane = offsets[_rng.randi_range(0, offsets.size() - 1)]
+			_speed = _rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y)
+		_cruise = _speed
+		_set_along((along_tile + 0.5) * Tuning.TILE_SIZE)
+		_lane_centre = _lane_centre_here()
+		_set_cross(_lane_centre)
+		_junction = -1
+		_turn = null
+		_turn_run_up = 0.0
+		_turn_back_hold = 0.0
+		_forget_the_detour()
+		if _stands_on_a_street() and not _is_in_a_pocket() and _has_room_here():
+			break
+	_join_the_back_of_the_queue()
+	_settle_junction()
+	_claim_the_road_here()
+	gap_ahead = INF
+	junction_hold = INF
+	gate_hold = INF
 
 ## The lane and the spot one placement roll settled on, kept so that a later roll which turns out
 ## worse can be given the earlier one back.

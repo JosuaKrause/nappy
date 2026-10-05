@@ -284,6 +284,12 @@ func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vecto
 func field() -> CrowdField:
 	return _field
 
+## Makes today's crowd a task scene's: the field is the whole stretch and the crowd enters and
+## leaves it at its ends (`CrowdField.use_stretch()`). Called by the scene once its starting
+## population is placed.
+func use_stretch() -> void:
+	_field.use_stretch()
+
 ## A capture can report what is actually present across its city view. Effective velocities
 ## include traffic braking, checkpoint holds and pockets; the sample does not invent motion.
 func recipe_coverage() -> Dictionary:

@@ -339,19 +339,57 @@ func owed() -> int:
 func _fill_the_route_bag(day: int, heat: int, rng: RandomNumberGenerator) -> void:
 	_route_rows.clear()
 	_ordinary_rows.clear()
-	var weights := {}
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
-		var mode := def.spawn_mode_on(day)
-		if mode != EventDef.SpawnMode.AHEAD_OF_PLAYER and mode != EventDef.SpawnMode.TOWARD_PLAYER:
-			continue
+	for def in route_rows_on(day, heat):
 		_route_rows[def.id] = def
 		_ordinary_rows[def.id] = true
+	_route = MarbleBag.new([], ordinary_route_marbles(day, heat), hash("%d:route-bag" % rng.seed))
+
+## The rows the director sites on `day` — recurring, available, and `AHEAD_OF_PLAYER` or
+## `TOWARD_PLAYER` that day — at `heat`, in the catalogue's own order.
+static func route_rows_on(day: int, heat: int) -> Array[EventDef]:
+	var rows: Array[EventDef] = []
+	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
+		var mode := def.spawn_mode_on(day)
+		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
+			rows.append(def)
+	return rows
+
+## The marbles of `day`'s ordinary route bag: each of `route_rows_on()` in proportion to its weight
+## (`Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT`). A row `Tuning.ROUTE_BAG_MARBLES_OF` names comes as often
+## as it says rather than as its weight says: the weight is the dawn roll's too, on every day.
+static func ordinary_route_marbles(day: int, heat: int) -> Array:
+	var weights := {}
+	for def in route_rows_on(day, heat):
 		weights[def.id] = def.weight
-	# A row `Tuning.ROUTE_BAG_MARBLES_OF` names comes as often as it says rather than as its weight
-	# says: the weight is the dawn roll's too, on every day.
-	_route = MarbleBag.new([], MarbleBag.in_proportion(weights,
-			Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT, Tuning.ROUTE_BAG_MARBLES_OF),
-			hash("%d:route-bag" % rng.seed))
+	return MarbleBag.in_proportion(weights, Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT,
+			Tuning.ROUTE_BAG_MARBLES_OF)
+
+## **A scene's route, from the bag its recipe rigs** (`setup.route_bag`, `docs/SCENE_RECIPES.md`).
+## *(polite-dolphin, inbox #555: "the events should still spawn using the same rules but the marble
+## bag should be rigged".)* Called after `start_day()`, which a scene runs with no plans of the
+## day's own: what she is owed on her route becomes `owed` marbles of a bag holding `marbles`, with
+## `pre_bag` drawn from first when it holds any, and everything after that is the director's own —
+## the pacing, the siting ahead of her or down her line, the doors, a row's `max_per_day` over the
+## ordinary bag's rows, and a rig a task asks for later (`rig_her_route()`). `first_after` is the
+## seconds of walking before the first is due, or a negative number for the ordinary roll
+## (`Tuning.AHEAD_INTERVAL`): a scene is a minute rather than a day, the same reason day 3's lesson
+## has `LESSON_DELAY`. A row the catalogue does not have is refused by the recipe before this runs.
+func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: float,
+		heat: int) -> void:
+	_owed.clear()
+	_route_rows.clear()
+	_ordinary_rows.clear()
+	_return_patrols_left = 0
+	_patrol_bag_left = 0
+	for id: String in marbles + pre_bag:
+		if not _route_rows.has(id):
+			_route_rows[id] = _with_ground(EventCatalogue.heated(EventCatalogue.by_id(id), heat))
+	for id: String in marbles:
+		_ordinary_rows[id] = true
+	_route = MarbleBag.new(pre_bag, marbles, hash("%d:route-bag" % _rng.seed))
+	for _i in owed:
+		_owed.append(null)
+	_next_in = first_after if first_after >= 0.0 else _roll_interval()
 
 ## The bag her route's events are drawn from, for a caller that rigs what comes next — a scene that
 ## wants a row met at a known point of the walk. Null before `start_day()`.

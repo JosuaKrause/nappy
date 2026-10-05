@@ -46,6 +46,9 @@ var streamed := false
 var _by_chunk: Dictionary = {}
 var _resident: Dictionary = {}
 var _rects: Array[Rect2i] = []
+## Which tiles a shadow may fall on, or empty for every tile. A task scene's stretch casts no shadow
+## into its void (`City.build()`): a shadow is ground darkened, and the void has no ground.
+var falls_on := Callable()
 
 ## `DevFlags.skip_shadows()`, read once when this node is built. The flag controls drawing, while
 ## shadow geometry is prepared per nearby chunk and reconstructed when a chunk returns. Reading
@@ -60,7 +63,7 @@ func set_buildings(rects: Array[Rect2i]) -> void:
 	_rects = rects
 	if streamed:
 		return
-	_tiles = compute(rects)
+	_tiles = _on_the_ground(compute(rects))
 	_by_chunk = split(_tiles)
 	if not streamed:
 		_rebuild_chunks()
@@ -96,9 +99,16 @@ func _tiles_for_chunk(key: Vector2i) -> Tiles:
 	for rect in _rects:
 		if rect.intersects(area.grow(1)):
 			nearby.append(rect.intersection(area.grow(1)))
-	var tiles := compute(nearby)
+	var tiles := _on_the_ground(compute(nearby))
 	tiles.full = tiles.full.filter(func(tile: Vector2i): return area.has_point(tile))
 	tiles.triangles = tiles.triangles.filter(func(tile: Vector2i): return area.has_point(tile))
+	return tiles
+
+## `tiles` less those `falls_on` refuses.
+func _on_the_ground(tiles: Tiles) -> Tiles:
+	if falls_on.is_valid():
+		tiles.full = tiles.full.filter(falls_on)
+		tiles.triangles = tiles.triangles.filter(falls_on)
 	return tiles
 
 func _chunk_bounds(key: Vector2i) -> Rect2:
