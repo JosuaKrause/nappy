@@ -231,10 +231,12 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 
 ## **A scene recipe's task** (`SceneRecipeRuntime`, `setup.task`; `docs/SCENE_RECIPES.md`): the
 ## day's own step, offered the way `start_day()` offers it, except that the chalk mark stands at
-## `mark` rather than where the day's draw would put it, and is read the moment the scene begins. So
-## the task it unlocks is placed by the same `_begin_step()` a touched mark runs, from where she
-## stands, with every refusal and every guard a played day has, and is live with its arrow from the
-## first frame. *(The player, inbox #513, asked how a scene is built: "Recipes with live tasks".)*
+## `mark` rather than where the day's draw would put it. The mark stands **unread**: a scene starts
+## her a short walk from it, and her touch reads it, so the task it unlocks is placed by the same
+## `_begin_step()` a played day runs, from where she stands, with every refusal and every guard a
+## played day has, and its arrow is drawn from that moment. *(The player, inbox #513, asked how a
+## scene is built: "Recipes with live tasks"; inbox #555: "make them not start *on* the mark",
+## answered "Unread, walk to it".)*
 ##
 ## `mark` is `Vector2.INF` on the last night, whose finale has no mark and is offered from dawn.
 ## `neighbor_start` pins day 10's neighbor's start to a tile the day's own draw
@@ -248,7 +250,8 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 ## neighbor walking to work, the raid, the market and the column stay out; the park day 12's swing
 ## closes is the task's own answer and still closes.
 ##
-## Answers every reason the request was refused, empty when the task is on offer.
+## Answers every reason the request was refused, empty when the mark (or, on the last night, the
+## task) is on offer.
 func start_recipe_task(day: int, rng: RandomNumberGenerator, day_length: float, mark: Vector2,
 		neighbor_start := Vector2.INF) -> Array[String]:
 	_scene_task = true
@@ -256,24 +259,27 @@ func start_recipe_task(day: int, rng: RandomNumberGenerator, day_length: float, 
 	_pinned_mark = mark
 	_pinned_neighbor = neighbor_start
 	start_day(day, rng, day_length)
-	if _step and _step.is_pickup and _contact:
-		# She read it as the scene began: the same completion a touch makes, so the task is placed
-		# from where she stands by `_on_contact_completed()` → `_begin_step()`.
-		_contact.complete_now()
 	_pinned_mark = Vector2.INF
-	_pinned_neighbor = Vector2.INF
-	var errors := _scene_task_errors
-	_scene_task_errors = []
-	if errors.is_empty() and (current_step() == null or current_step().is_pickup):
+	# The mark stands unread: reading it is her touch, which `_on_contact_completed()` answers by
+	# placing the task exactly as a played day does. What that placement refuses is answered by
+	# `scene_task_errors()`, since it happens after this returns.
+	var errors := _scene_task_errors.duplicate()
+	if errors.is_empty() and current_step() == null:
 		errors.append("setup.task: day %d's task has nowhere to go in this scene" % day)
 	return errors
+
+## What a scene's task refused after `start_recipe_task()` returned: the placement of the task a read
+## mark unlocks, which happens when she touches the mark. Empty while nothing is refused.
+func scene_task_errors() -> Array[String]:
+	return _scene_task_errors
 
 ## Set for the length of `start_recipe_task()`'s own `start_day()`, and kept for the day it starts:
 ## a scene's day is the authored one, never the day's own happenings.
 var _scene_task := false
 ## What `start_recipe_task()` refused, filled while it runs.
 var _scene_task_errors: Array[String] = []
-## The mark and the neighbor's start `start_recipe_task()` pins, `Vector2.INF` the rest of the time.
+## The mark `start_recipe_task()` pins, `Vector2.INF` once the mark is placed, and the neighbor's
+## start it pins, kept until she reads the mark and the task draws the neighbor.
 var _pinned_mark := Vector2.INF
 var _pinned_neighbor := Vector2.INF
 
