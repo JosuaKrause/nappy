@@ -32,8 +32,10 @@ The default is 0.5 seconds. A still shows composition; the headless observations
 The trailer shot list's existing `in` is a separate adjustable recording cut-in: the recording
 simulates from setup, then trims the picture and audio to that time. `capture_at` chooses a
 screenshot moment, not a recording duration or a reset of the movement clock.
-The action scenes check movement at their configured cut-in ticks; the title and initial
-doorstep framing deliberately start at time zero.
+A trailer scene walks through an excluded lead-in, so its first retained frame is already moving
+with a settled camera; its observations check what the cut shows, at the ticks it shows it. When
+a trailer scene is re-staged, its observations are rewritten to the new staging, rather than the
+staging bent back to satisfy an old observation: the checks follow the trailer.
 
 ## Activity and playback
 
@@ -122,7 +124,8 @@ off the street signals. Supported escape pins are trucks, abduction, roadblocks 
 `title` and `observations`. `landscape_margin` grows only the zoom-out's final framing around the
 finite map. In a full-city scene, exterior ground remains unwalkable and loads only when the camera
 can see it. Each observation has a physics `tick`, named `subject` and `condition`:
-`visible`, `moving`, `running`, `carrying`, `pursuing`, `near` or `beyond` with `at` and
+`visible`, `moving`, `running`, `carrying`, `asleep` or `awake` (the baby's own state, which draws the
+pram's zzz), `pursuing`, `near` or `beyond` with `at` and
 `distance` (at most or at least that far), `off_screen` (no part of a box three tiles either side
 and four up and down, `ResistanceDirector.TASK_HALF_EXTENT`, is in the picture), `clear_of_both_views` with `half` (`[half width, half height]` in px: no part
 of that box round the subject is in the world the camera shows in the landscape window or in the

@@ -292,7 +292,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	return errors
 
 ## The observation conditions, in the order `docs/SCENE_RECIPES.md` names them.
-const CONDITIONS := ["visible", "moving", "running", "carrying", "pursuing", "near", "beyond",
+const CONDITIONS := ["visible", "moving", "running", "carrying", "asleep", "awake", "pursuing", "near", "beyond",
 		"off_screen", "clear_of_both_views", "offered", "done", "arrowed", "unarrowed"]
 ## An observation subject naming no actor but the first live instance of a catalogue row: what an
 ## event summons rather than what the recipe placed, such as the `fire_truck` a seen
@@ -1001,6 +1001,12 @@ func _observe() -> void:
 					passed = actor is Stroller and actor.current_speed() > Tuning.WALK_SPEED
 				"carrying":
 					passed = actor is Stroller and actor.carrying
+				"asleep", "awake":
+					# The baby's own state, the one `Baby` sets by the game's sleep rule and the
+					# pram's zzz is drawn from -- never a recipe-authored indicator.
+					var baby := actor.get_node_or_null("Baby") as Baby if actor is Stroller else null
+					passed = baby != null and (baby.state == GameEnums.BabyState.ASLEEP) \
+							== (check.condition == "asleep")
 				"pursuing":
 					passed = actor is EventInstance and actor.def.pursues \
 							and not actor.is_telegraphing() and not actor.is_waiting() \

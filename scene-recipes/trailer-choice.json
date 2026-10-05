@@ -1,7 +1,7 @@
 {
   "version": 1, "name": "A wrong path, a turn, and the other sidewalk", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
-  "anchors": {"start": {"world": [1942, 1936]}, "blower": {"tile": [69, 60]}},
+  "anchors": {"start": {"world": [1942, 1936]}, "blower": {"tile": [69, 61]}},
   "setup": {"tutorial_complete": true, "day": 1, "parent": "mother", "player": {"at": "start", "facing": "east"},
     "background": {"crowd": true, "uniform_walkers": true, "walker_multiplier": 2},
     "seals": [{"segment": [5, 4, 0], "candidate": "cafe_pair"}],

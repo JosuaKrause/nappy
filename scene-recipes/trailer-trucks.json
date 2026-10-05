@@ -19,7 +19,7 @@
       {"tick": 38, "subject": "truck_1", "condition": "moving"},
       {"tick": 38, "subject": "truck_2", "condition": "visible"},
       {"tick": 38, "subject": "truck_2", "condition": "moving"},
-      {"tick": 38, "subject": "truck_3", "condition": "visible"},
+      {"tick": 57, "subject": "truck_3", "condition": "visible"},
       {"tick": 38, "subject": "player", "condition": "moving"},
       {"tick": 57, "subject": "player", "condition": "moving"}]}
 }

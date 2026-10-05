@@ -113,15 +113,13 @@ fi
 # ------------------------------------------------------------------- the shot list, checked ---
 # Every shot is checked before any window opens: the fields a shot must carry, the dev flags it
 # forwards (against the game's own DEV_FLAG_TABLE, the same way run.sh and shot.sh check theirs),
-# and the whole cut against the list's own `max_seconds` -- PLAYTEST-139's "30s should be max".
+# and the editorial fields. The cut has no length cap.
 schema_errors="$(jq -r '
     def num: type == "number";
-    (if (keys - ["fps","max_seconds","fade","style","score","shots"] | length) == 0
+    (if (keys - ["fps","fade","style","score","shots"] | length) == 0
         then empty else "unknown top-level field" end),
     (if (.fps | num) and .fps > 0 and .fps == (.fps | floor) then empty
         else "fps must be a positive integer" end),
-    (if (.max_seconds | num) and .max_seconds > 0 and .max_seconds <= 30 then empty
-        else "max_seconds must be positive and at most 30" end),
     (if (.shots | type) == "array" and (.shots | length) > 0 then empty
         else "shots must be a non-empty array" end),
     (if (.style | type) == "object" and
@@ -161,10 +159,17 @@ schema_errors="$(jq -r '
                       (.card.subtitle_font_size | num) and .card.subtitle_font_size > 0))))
             then empty
             else "\($n): scene shots need a recipe; card shots need text and font_size" end),
-        (if (keys - ["name","kind","recipe","card","ending","motion","length","in","gap","fade_in","fade_out"] | length) == 0
+        (if (keys - ["name","kind","recipe","card","ending","captions","motion","length","in","gap","fade_in","fade_out"] | length) == 0
             then empty else "\($n): unknown shot field (setup and playback belong in the recipe)" end),
         (if .motion == null or (.motion | type) == "boolean" then empty
             else "\($n): motion must be true or false" end),
+        (if .captions == null then empty
+            elif $kind == "scene" and (.captions | type) == "array" and (.captions | length) > 0 and
+                all(.captions[]; (keys - ["at","until","text","font_size"] | length) == 0 and
+                    (.at | num) and .at >= 0 and (.until | num) and .until > .at and
+                    (.text | type) == "string" and (.text | length) > 0 and
+                    (.font_size | num) and .font_size > 0)
+            then empty else "\($n): captions are malformed or belong to a card" end),
         (if .ending == null then empty
             elif $kind == "scene" and (.ending | type) == "object" and
                 (.ending | keys - ["at","line","url","line_font_size","url_font_size"] | length) == 0 and
@@ -188,7 +193,6 @@ if [[ -n "$schema_errors" ]]; then
 fi
 
 FPS="$(jq -r '.fps' "$SHOTS_FILE")"
-MAX_SECONDS="$(jq -r '.max_seconds' "$SHOTS_FILE")"
 DEFAULT_FADE="$(jq -r '.fade // 0.25' "$SHOTS_FILE")"
 SHOT_NAMES=()
 while IFS= read -r name; do SHOT_NAMES+=("$name"); done < <(jq -r '.shots[].name' "$SHOTS_FILE")
@@ -226,13 +230,10 @@ shot_render_seconds() {
 
 total_seconds="$(jq -r '[.shots[] | (.gap // 0) + .length] | add' "$SHOTS_FILE" |
     awk '{ printf "%.2f\n", $1 }')"
-if awk -v t="$total_seconds" -v m="$MAX_SECONDS" 'BEGIN { exit !(t > m + 0.0001) }'; then
-    echo "trailer.sh: the shot list runs ${total_seconds}s, over its own max_seconds ($MAX_SECONDS)" >&2
-    exit 1
-fi
 if ! jq -e --argjson total "$total_seconds" '
     all(.score.notes[]; .at + .duration <= $total) and
-    all(.shots[] | select(.ending != null); .ending.at < .length)
+    all(.shots[] | select(.ending != null); .ending.at < .length) and
+    all(.shots[] | select(.captions != null); .length as $l | all(.captions[]; .until <= $l))
 ' "$SHOTS_FILE" >/dev/null; then
     echo "trailer.sh: score notes and ending copy must finish inside the cut" >&2
     exit 1
@@ -264,16 +265,19 @@ if [[ "$MODE" == "list" ]]; then
         printf '%-10s %-10s %-40s %6s %5s\n' "$name" "$(shot_kind "$name")" "$source" \
             "$(shot_field "$name" length)" "$(shot_field "$name" gap 0)"
     done
-    echo "total ${total_seconds}s of ${MAX_SECONDS}s"
+    echo "total ${total_seconds}s"
     exit 0
 fi
 
-for tool in ffmpeg fc-match; do
-    if ! command -v "$tool" >/dev/null 2>&1; then
-        echo "trailer.sh: $tool not found on PATH" >&2
-        exit 127
-    fi
-done
+# `--validate` renders nothing, so it needs neither ffmpeg nor a font; every other mode does.
+if [[ "$MODE" != validate ]]; then
+    for tool in ffmpeg fc-match; do
+        if ! command -v "$tool" >/dev/null 2>&1; then
+            echo "trailer.sh: $tool not found on PATH" >&2
+            exit 127
+        fi
+    done
+fi
 
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT" >&2
@@ -291,12 +295,23 @@ if ! [[ "$WIDTH" =~ ^[0-9]+$ && "$HEIGHT" =~ ^[0-9]+$ ]]; then
 fi
 
 FONT_FAMILY="$(jq -r '.style.font_family' "$SHOTS_FILE")"
-FONT_FILE="$(fc-match -f '%{file}\n' "$FONT_FAMILY" | head -1)"
-if [[ -z "$FONT_FILE" || ! -f "$FONT_FILE" ]]; then
-    echo "trailer.sh: fontconfig could not resolve the editorial font '$FONT_FAMILY'" >&2
-    exit 1
+FONT_FILE=""
+if [[ "$MODE" != validate ]]; then
+    # A font that does not resolve to the family asked for stops the render: `fc-match` answers
+    # with its nearest substitute rather than failing, and a trailer set in a substitute is the
+    # wrong trailer.
+    FONT_FILE="$(fc-match -f '%{file}\n' "$FONT_FAMILY" | head -1)"
+    FONT_RESOLVED="$(fc-match -f '%{family}\n' "$FONT_FAMILY" | head -1)"
+    if [[ -z "$FONT_FILE" || ! -f "$FONT_FILE" ]]; then
+        echo "trailer.sh: fontconfig could not resolve the editorial font '$FONT_FAMILY'" >&2
+        exit 1
+    fi
+    if ! printf '%s\n' "$FONT_RESOLVED" | tr ',' '\n' | grep -Fixq -- "$FONT_FAMILY"; then
+        echo "trailer.sh: the editorial font '$FONT_FAMILY' resolved to '$FONT_RESOLVED' ($FONT_FILE), not the family asked for" >&2
+        exit 1
+    fi
 fi
-if [[ "$FONT_FILE" == *":"* || "$FONT_FILE" == *"'"* ]]; then
+if [[ -n "$FONT_FILE" && ( "$FONT_FILE" == *":"* || "$FONT_FILE" == *"'"* ) ]]; then
     echo "trailer.sh: the resolved editorial font path cannot be passed safely to ffmpeg: $FONT_FILE" >&2
     exit 1
 fi
@@ -518,6 +533,20 @@ encode_shot() {
     local gap_ms
     gap_ms="$(awk -v g="$gap" 'BEGIN { printf "%d\n", int(g * 1000 + 0.5) }')"
     local video_filters="trim=end_frame=${count},setpts=PTS-STARTPTS"
+    local caption_count caption_index
+    caption_count="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | (.captions // []) | length' "$SHOTS_FILE")"
+    for (( caption_index = 0; caption_index < caption_count; caption_index++ )); do
+        local caption_at caption_until caption_size
+        caption_at="$(jq -r --arg n "$name" --argjson i "$caption_index" '.shots[] | select(.name == $n) | .captions[$i].at' "$SHOTS_FILE")"
+        caption_until="$(jq -r --arg n "$name" --argjson i "$caption_index" '.shots[] | select(.name == $n) | .captions[$i].until' "$SHOTS_FILE")"
+        caption_size="$(jq -r --arg n "$name" --argjson i "$caption_index" '.shots[] | select(.name == $n) | .captions[$i].font_size' "$SHOTS_FILE")"
+        jq -j --arg n "$name" --argjson i "$caption_index" '.shots[] | select(.name == $n) | .captions[$i].text' "$SHOTS_FILE" > "$dir/caption-${caption_index}.txt"
+        # Faded in and out over 0.4s, low and centred: the HUD's bars sit lower left and the
+        # clock top centre, and the middle of the frame is what the shot is about.
+        video_filters+=",drawtext=fontfile='${FONT_FILE}':textfile='${dir}/caption-${caption_index}.txt':"
+        video_filters+="fontsize=${caption_size}:fontcolor=${INK}:box=1:boxcolor=${PAPER}@0.86:boxborderw=14:"
+        video_filters+="x=(w-text_w)/2:y=h*0.84:alpha='min(1\\,max(0\\,min((t-${caption_at})/0.4\\,(${caption_until}-t)/0.4)))'"
+    done
     if jq -e --arg n "$name" '.shots[] | select(.name == $n) | .ending != null' "$SHOTS_FILE" >/dev/null; then
         local ending_at line_size url_size
         ending_at="$(shot_nested_field "$name" ending at)"

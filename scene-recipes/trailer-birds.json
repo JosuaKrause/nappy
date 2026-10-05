@@ -1,17 +1,16 @@
 {
   "version": 1, "name": "A bird flock on the father's industrial street", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501,
-    "lots": [{"blocks": [3, 2, 1, 1], "purpose": "industrial"},
-      {"blocks": [2, 2, 1, 1], "purpose": "park"}]},
-  "anchors": {"start": {"world": [1756, 1360]}, "birds": {"tile": [48, 42]}},
+    "lots": [{"blocks": [5, 2, 1, 1], "purpose": "park"}]},
+  "anchors": {"start": {"world": [3068, 1360]}, "birds": {"tile": [89, 42]}},
   "setup": {"tutorial_complete": true, "day": 1, "parent": "father", "player": {"at": "start", "facing": "west"},
     "background": {"crowd": true, "uniform_walkers": true, "walker_multiplier": 2},
     "events": [{"name": "birds", "row": "pigeon_flock", "at": "birds"}]},
-  "playback": {"walk": "5w", "duration": 5, "capture_at": 2.5,
+  "playback": {"walk": "4.1w1.3@315@", "duration": 5.4, "capture_at": 2.7,
     "observations": [{"tick": 30, "subject": "player", "condition": "moving"},
       {"tick": 45, "subject": "player", "condition": "moving"},
       {"tick": 75, "subject": "birds", "condition": "visible"},
       {"tick": 87, "subject": "player", "condition": "moving"},
       {"tick": 120, "subject": "player", "condition": "moving"},
-      {"tick": 148, "subject": "player", "condition": "moving"}]}
+      {"tick": 156, "subject": "player", "condition": "moving"}]}
 }

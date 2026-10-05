@@ -83,19 +83,22 @@ See `docs/MECHANICS.md`, "Saving and resuming".
 ## Dev flags
 
 `tools/trailer.sh` records the saved scenes referenced by `tools/trailer/shots.json` through the
-game's frame-locked movie writer, then adds the shot list's dark editorial cards, tracked logo, ending copy
+game's frame-locked movie writer, then adds the shot list's dark editorial cards, tracked logo, captions over the footage, ending copy
 and deterministic oscillator score before joining them with the captured game audio. Run
 `tools/trailer.sh --list` to inspect the cut, `--validate` to check its recipes headlessly,
 or `--shot choice` to record one scene. Each recipe owns its setup and scripted action;
 the shot list owns the cut timing and editorial treatment. Only normal scenes enter the trailer,
 with their authored extent and validation scope preserved in the resolved manifest. The editor
-reads the native viewport size from `project.godot`, resolves the named font through fontconfig,
-and records the exact font, ffmpeg, source hashes and dimensions in
+reads the native viewport size from `project.godot`, resolves the named font through fontconfig
+(a font that resolves to a different family stops the render with an error, never a substitute;
+`--validate` renders nothing and needs neither ffmpeg nor a font), and records the exact font, ffmpeg, source hashes and dimensions in
 `build/trailer/editorial-settings.json` beside the local video.
 
 `tools/record.sh --recipe scene-recipes/trailer-choice.json` records a recipe in scripted mode.
 It also records ordinary rigs, such as `tools/record.sh --route calm,home --seed 4242`.
-Videos and temporary frames stay under ignored build output. Recordings retain compact frame
+Videos and temporary frames stay under ignored build output. A render is the same every time
+by construction: fixed recipes and seeds, the recipe's own simulation clock, the movie writer's fixed
+frame rate, and an editor whose inputs (font, ffmpeg, shot list) are recorded. Recordings retain compact frame
 hashes, manifests and settings beside the video. `tools/trailer.sh --check all` compares two
 renders of each gameplay shot, including their simulation observations and audio, compares the
 editorial cards, then composes both retained passes and compares the decoded ending overlays,
