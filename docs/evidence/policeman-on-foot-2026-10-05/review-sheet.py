@@ -8,13 +8,16 @@ at scale 1 and at scale 4, in a throwaway Godot project under the scratch direct
 then shows, on the game's own sidewalk and asphalt colours (`Palette.SIDEWALK`, `Palette.ASPHALT`):
 
 - **game scale**: the scale-1 raster doubled with bilinear filtering, which is what the camera at
-  zoom 2 does to the baked atlas region, for the policeman beside the robber and the checkpoint
-  guard, every family on one shared ground line and one shared world scale;
+  zoom 2 does to the baked atlas region, for the policeman beside the robber, the checkpoint
+  guard and the neighbor (the other blue figure with a dark cap), every family on one shared
+  ground line and one shared world scale;
 - **4x detail**: the policeman alone, rendered at scale 4, for joins and clipping.
 
 The soft ellipse under each figure stands in for the runtime's own drop shadow
 (`Palette.SHADOW`, black at 22%); its size is an approximation, not the runtime's.
-A view not yet drawn is an empty, labelled cell.
+A cell is empty where a family has no such picture: no family has an unsuffixed stride frame,
+and the neighbor has no unsuffixed picture at all. A cell labelled "not yet drawn" names a
+listed file that is missing.
 """
 
 from __future__ import annotations
@@ -50,6 +53,8 @@ FAMILIES: list[tuple[str, str, list[str]]] = [
     ("robber lunging _b", "art/events/robber_lunging{v}_b.svg", VIEWS),
     ("guard standing", "art/checkpoints/guard_standing{v}.svg", [*VIEWS, ""]),
     ("guard lunging", "art/checkpoints/guard_lunging{v}.svg", [*VIEWS, ""]),
+    ("neighbor walking", "art/events/neighbor{v}.svg", VIEWS),
+    ("neighbor walking _b", "art/events/neighbor{v}_b.svg", VIEWS),
 ]
 POLICE_ROWS = 3
 
