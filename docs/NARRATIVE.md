@@ -232,16 +232,20 @@ touch".)*
 - **Every other task sends someone after her rather than guarding where she finds it.** The man
   shouting, the van's package, the burnt building's door, the district door, a mast's foot, the
   swing and the last night's front door are not guarded at the contact. The moment she has done
-  one — handed the note or the package over, reached the door, crossed the district door, reached
-  the mast's foot or the swing, handed the key over — someone is sent after her from off screen,
-  `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) above or below her where there is a straight run at her
-  from there, far enough past the edge of the view that the screen-edge badge announces them before
-  they are in it, and awake and running at her from the first frame. The van's package sends the
+  one — handed the note or the package over, reached the door, been let through the district door
+  after its inspection, reached the mast's foot or the swing, handed the key over — someone is sent
+  after her from off screen, `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) above or below her where there
+  is a straight run at her from there — at a front door, from across the street first, out of the
+  block opposite — far enough past the edge of the view that the screen-edge badge announces them
+  before they are in it, never through the district's wall or a door, and awake and running at her
+  from the first frame. Walking under the district door's raised boom instead brings out the door's
+  own guard and nobody else, and a gatehouse is no hiding place: stepping back into one with the
+  robber after her holds her where he catches her. The van's package sends the
   roadblock's own guard, the same look and the same rules; every other task sends the alley robber
   himself. The warning is short: standing still, whoever comes reaches her about two seconds after
   the badge rises. Running shakes them off; walking away does not, except where they have to come
-  along her own street from the side, which is further off — and at a door on a facade, with the
-  building behind her and the next block across the street, that is the usual case. Whichever
+  along her own street from the side, which is further off, or from across the street at a corner
+  rather than straight below her, as at the station's door. Whichever
   look-alike she chose for the man shouting, the price is the same, and every task's price is paid
   on the way out rather than guarded at one spot she could walk round. On the last night it
   chases her away from the station: the day is still won by getting home, so being caught there
@@ -251,7 +255,10 @@ touch".)*
   shouting, the robber, which is fine only if he starts off screen." 2026-10-04,
   [grassy-goose](playtests/2026-10-04-grassy-goose.md): "the robber should spawn in off-screen
   already pursuing when I touch the goal"; asked which tasks, "Every guarded target
-  (Recommended)".)* The roadblock keeps the robber waiting near it described above, a guarded place
+  (Recommended)". 2026-10-04, on the district door: under the boom only the guard, the robber only
+  after an inspected crossing, and "you shouldn't try to cheat it by going back in the hut -- that
+  should be fatal by the robber"; on front doors, "yes, to your proposal about front doors" — a
+  start across the street, out of view, with a walkable way to her.)* The roadblock keeps the robber waiting near it described above, a guarded place
   by nature; the neighbor's task has neither, since they are walking home and there is no one spot
   to guard.
 - **The any-instance contact is whichever look-alike the player hands the note to.** It does

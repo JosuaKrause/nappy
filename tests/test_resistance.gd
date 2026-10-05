@@ -2007,10 +2007,13 @@ func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
 ## night's at dawn, adds none to the street — and doing it sends `robber_giving_chase` from off
 ## screen on the same terms as the man shouting's note, checked on each target's own ground (a
 ## door on a facade, a crossing in a region wall, a mast's foot, a swing in a park, the station's
-## door): past the badge line, never on her real screen, on legal ground, with a straight run at
-## her, awake from his first frame, and catching her where she stands if she does nothing.
-## Planned through the real day order (`City.start_day()`, then the events), since the door, the
-## mast and the station's door are today's own plans.
+## door): past the badge line, never on her real screen, on legal ground, with a way at her that
+## never runs through a district door, awake from his first frame, and catching her where she stands
+## if she does nothing. Day 9's is measured from where the inspection lets her out, 54px past the
+## door's line beside the gatehouse that held her, on each side in turn
+## (`EventManager._release_finished_door_detentions()`), since that is where she stands when it
+## sends him. Planned through the real day order (`City.start_day()`, then the events), since the
+## door, the mast and the station's door are today's own plans.
 func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 	for day: int in [8, 9, 11, 12, Tuning.RUN_LENGTH_DAYS]:
 		_build_city(t)
@@ -2054,6 +2057,11 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 					% [day, before, _robbers_on_the_street(), marks_guard])
 			t.check(director._trap == null, "day %d: nobody is sent before she does it" % day)
 
+			var front_door := ResistanceDirector.is_at_a_front_door(task)
+			if day == 9:
+				_check_day_nines_trap_from_where_she_is_let_out(t, director, task)
+				director.free()
+				return
 			# A door on a facade (the burnt building's, the station's) stands on the building's own
 			# ground-floor tile, which nobody can stand on: she touches it from the sidewalk tile
 			# straight below, inside its `DOOR_REACH`.
@@ -2063,13 +2071,11 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 			t.check(_city.map.is_walkable(_city.map.world_to_tile(her))
 					and her.distance_to(director.contact_position()) <= director._contact.reach,
 					"day %d: she stands on open ground within the touch's reach" % day)
-			director.set_sight(func(at: Vector2) -> bool:
-				var off := (at - her).abs()
-				return off.x <= Tuning.VIEW_HALF_EXTENT.x and off.y <= Tuning.VIEW_HALF_EXTENT.y)
+			director.set_sight(_the_screen_round(her))
 			var player := _rig_player(t, her)
 			director._contact.complete_now()
 			_check_the_trap_comes_from_off_screen(t, director, her, "robber_giving_chase",
-					"day %d" % day)
+					"day %d" % day, front_door)
 			player.free()
 			director.free())
 		GameState.scars = saved_scars
@@ -2078,17 +2084,85 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 		GameState.sabotage_done = saved_sabotage
 		GameState.completed_resistance_alley_tiles = saved_tiles
 
+## Day 9 let through the named door: she stands where the inspection sets her down — the gatehouse
+## the arrow names, `obstructs_radius + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) along
+## the street past the door's line — first on one side, through the director's own `door_crossed`
+## answer to an inspection, then on the other, sending the trap again from there. From each, the
+## trap owes everything `_check_the_trap_comes_from_off_screen()` asks, his run at her through the
+## door's line included.
+func _check_day_nines_trap_from_where_she_is_let_out(t, director: ResistanceDirector,
+		task: ResistanceSteps.Step) -> void:
+	var hut: EventScheduler.Planned = null
+	for body in _city.region_plan().door_bodies:
+		if body.def.redetains and body.position.distance_to(director.contact_position()) < 0.5:
+			hut = body
+	t.check(hut != null and director._door_at != Vector2.INF,
+			"day 9: the arrow names a gatehouse of the named door")
+	if hut == null or director._door_at == Vector2.INF:
+		return
+	var out := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+			+ Tuning.CHECKPOINT_RELEASE_MARGIN
+	var player := _rig_player(t, hut.position)
+	for side: float in [1.0, -1.0]:
+		var her := hut.position + hut.facing * side * out
+		t.check(_city.map.is_walkable(_city.map.world_to_tile(her)),
+				"day 9: the ground she is let out onto is open (%s)" % _city.map.world_to_tile(her))
+		player.global_position = her
+		director.set_sight(_the_screen_round(her))
+		director._trap = null
+		if director._contact.is_done:
+			director._set_the_trap_on_her(task)
+		else:
+			director._on_door_crossed(director._door_at, director._door_axis, true)
+			t.check(director._contact.is_done, "day 9: an inspected crossing completes the task")
+		var label := "day 9, let out %.0fpx along the street from the gatehouse" % (side * out)
+		if director._trap == null:
+			_check_no_start_was_passed_over(t, director, her, label)
+			continue
+		_check_the_trap_comes_from_off_screen(t, director, her, "robber_giving_chase", label)
+	player.free()
+
+## When a done task sends nobody (`_set_the_trap_on_her()` found no start), none of the fixed starts
+## — straight above or below at `Tuning.TRAP_ARRIVAL_DISTANCE`, either side along her street at
+## `beside_distance()` — was legal ground off her screen whose run at her keeps out of the region's
+## wall and doors, so the director passed over none it could have taken.
+func _check_no_start_was_passed_over(t, director: ResistanceDirector, her: Vector2,
+		label: String) -> void:
+	var def := EventCatalogue.by_id("robber_giving_chase")
+	var beside := ResistanceDirector.beside_distance(def)
+	var boundary := director._boundary_bodies_near(her, beside)
+	var fixed: Array[Vector2] = [Vector2.UP * Tuning.TRAP_ARRIVAL_DISTANCE,
+			Vector2.DOWN * Tuning.TRAP_ARRIVAL_DISTANCE, Vector2.LEFT * beside,
+			Vector2.RIGHT * beside]
+	for offset in fixed:
+		var candidate := her + offset
+		t.check(not (ResistanceDirector.is_legal_ground(_city.map,
+				_city.map.world_to_tile(candidate), director._walled_alleys())
+				and not _is_really_on_screen(t, her, candidate)
+				and not ResistanceDirector._runs_through_the_boundary(candidate, her, boundary)),
+				"%s: nobody is sent, and no start %s off her was passed over" % [label, offset])
+
+## A `_sight` answering the unrotated 640x360 screen round `her`.
+func _the_screen_round(her: Vector2) -> Callable:
+	return func(at: Vector2) -> bool:
+		var off := (at - her).abs()
+		return off.x <= Tuning.VIEW_HALF_EXTENT.x and off.y <= Tuning.VIEW_HALF_EXTENT.y
+
 ## What every trap owes at the moment it is sent, on the real city: `director._trap` is a `row_id`
-## started `Tuning.TRAP_ARRIVAL_DISTANCE` from `her` (or the along-her-street `beside_distance()`),
-## never on her real screen (`_is_really_on_screen()`), past the badge line, on legal ground, never
-## waiting, and coming at her from his first frame. **A straight walkable run at her is a
-## preference, not a guarantee** (`_draw_arrival_position()`'s own doc: with none from any start,
-## the first legal one stands in): so with one he catches her where she stands, and without one
-## none of the fixed starts — straight above, straight below, either side along her street — had
-## one on legal ground either, so the director passed over no clear start it could have taken.
-## Measured per target by `tests/probes/grassy_goose_target_traps.gd`.
+## started `Tuning.TRAP_ARRIVAL_DISTANCE` from `her` (or the along-her-street `beside_distance()`,
+## or at a front door from across the street, below her, between the two), never on her real screen
+## (`_is_really_on_screen()`), past the badge line, on legal ground, never waiting, and coming at her
+## from his first frame. **His run at her never crosses a district door's line**, asked here of each
+## door body the way `EventManager._watch_the_door_lines()` asks it of her own steps
+## (`EventManager.where_she_crossed()`), not through the director's own refusal. **A straight
+## walkable run at her is a preference, not a guarantee** (`_draw_arrival_position()`'s own doc:
+## with none from any start, the first legal one stands in): so with one — or from across the
+## street, with his own walk at her (`_his_walk_reaches_her()`) — he catches her where she stands,
+## and without one none of the fixed starts — straight above, straight below, either side along her
+## street — had one on legal ground either, so the director passed over no clear start it could have
+## taken. Measured per target by `tests/probes/grassy_goose_target_traps.gd`.
 func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her: Vector2,
-		row_id: String, label: String) -> void:
+		row_id: String, label: String, front_door := false) -> void:
 	var chaser: EventInstance = director._trap
 	t.check(chaser != null and chaser.def.id == row_id,
 			"%s: %s is sent after her the moment she does it" % [label, row_id])
@@ -2097,9 +2171,22 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 	var start := chaser.global_position
 	var beside := ResistanceDirector.beside_distance(chaser.def)
 	var dist := start.distance_to(her)
-	t.check(absf(dist - Tuning.TRAP_ARRIVAL_DISTANCE) <= 0.5 or absf(dist - beside) <= 0.5,
-			"%s: from TRAP_ARRIVAL_DISTANCE (%.0f) or the beside distance (%.0f) away (got %.1f)"
+	var boundary := director._boundary_bodies_near(her, beside)
+	var across := front_door and start.y > her.y \
+			and dist >= Tuning.TRAP_ARRIVAL_DISTANCE - 0.5 and dist <= beside + 0.5 \
+			and director._his_walk_reaches_her(start, her, beside, boundary)
+	t.check(absf(dist - Tuning.TRAP_ARRIVAL_DISTANCE) <= 0.5 or absf(dist - beside) <= 0.5
+			or across,
+			"%s: from TRAP_ARRIVAL_DISTANCE (%.0f), the beside distance (%.0f) or across the street, away (got %.1f)"
 			% [label, Tuning.TRAP_ARRIVAL_DISTANCE, beside, dist])
+	var through_a_door := false
+	for body in _city.region_plan().door_bodies:
+		if EventManager.where_she_crossed(body.position, body.facing, body.def.obstructs_radius,
+				start, her) != Vector2.INF:
+			through_a_door = true
+	t.check(not through_a_door,
+			"%s: his run at her from %s never crosses a district door's line"
+			% [label, _city.map.world_to_tile(start)])
 	t.check(not _is_really_on_screen(t, her, start),
 			"%s: never actually on screen the frame he spawns" % label)
 	t.check(ResistanceDirector.is_past_the_badge_line(start - her, chaser.def),
@@ -2107,7 +2194,7 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 	t.check(ResistanceDirector.is_legal_ground(_city.map, _city.map.world_to_tile(start),
 			director._walled_alleys()), "%s: on walkable ground nothing refuses" % label)
 	var clear := director._a_clear_run(start, her)
-	if not clear:
+	if not clear and not across:
 		var fixed: Array[Vector2] = [Vector2.UP * Tuning.TRAP_ARRIVAL_DISTANCE,
 				Vector2.DOWN * Tuning.TRAP_ARRIVAL_DISTANCE, Vector2.LEFT * beside,
 				Vector2.RIGHT * beside]
@@ -2116,16 +2203,18 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 			t.check(not (ResistanceDirector.is_legal_ground(_city.map,
 					_city.map.world_to_tile(candidate), director._walled_alleys())
 					and not _is_really_on_screen(t, her, candidate)
-					and director._a_clear_run(candidate, her)),
+					and director._a_clear_run(candidate, her)
+					and not ResistanceDirector._runs_through_the_boundary(candidate, her, boundary)),
 					"%s: with no clear run from %s, none from %s off her either"
 					% [label, _city.map.world_to_tile(start), offset])
 	t.check(not chaser.is_waiting(), "%s: never waiting, even before his first frame" % label)
 	chaser.player_at = her
 	chaser._process(STEP)
-	t.check(start.distance_to(her) - chaser.global_position.distance_to(her)
-			> chaser.def.pursue_speed * STEP * 0.9,
-			"%s: and coming at her at his own speed from his first frame" % label)
-	if not clear:
+	var closed := start.distance_to(her) - chaser.global_position.distance_to(her)
+	t.check(closed > chaser.def.pursue_speed * STEP * 0.9 or (across and closed > 0.0),
+			"%s: and coming at her%s from his first frame" % [label,
+			"" if across else " at his own speed"])
+	if not clear and not across:
 		return
 	var caught := false
 	var elapsed := 0.0
@@ -2135,8 +2224,9 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 		chaser._process(STEP)
 		elapsed += STEP
 		caught = chaser.is_lethal_at(her)
-	t.check(caught, "%s: and, with a clear run, reaches her where she stands (%.1fs)"
-			% [label, elapsed])
+	t.check(caught, "%s: and, with a %s, reaches her where she stands (%.1fs)"
+			% [label, "walk from across the street" if across and not clear else "clear run",
+			elapsed])
 
 ## Every robber or guard standing or running in the test city: the alley robber and the two the
 ## director can send after her.
@@ -4177,7 +4267,10 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 ## arrow ends on one of the named door's gatehouses, the same one every time the day is replayed;
 ## standing at that gatehouse, or on the door's line under the boom, completes nothing; walking
 ## through the door's line (`EventManager._watch_the_door_lines()`, its `door_crossed`) completes
-## it, in either direction; and walking through another door's line does not.
+## it, in either direction; and walking through another door's line does not. Walked under the
+## boom, the crossing sends no robber from off screen: the door's own guard is its price.
+## *(2026-10-04, the player, asked whether both should come at once: "(a)" — under the boom only the
+## guard, the robber only after an inspected crossing.)*
 func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> void:
 	_build_city(t)
 	var saved_state := GameState.city_state
@@ -4224,6 +4317,10 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 			_walk_through(director._door_at, director._door_axis, direction, player)
 			if director._contact.is_done:
 				crossings += 1
+			t.check(director._trap == null,
+					"walking under the named door's boom sends no robber after her")
+			t.check(_city.events._guard_after_her != null,
+					"the door's own guard is after her instead")
 			player.free()
 			director.free()
 		t.check(crossings == 2,
@@ -4237,7 +4334,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 ## gatehouse that held her and announces `door_crossed` with that gatehouse's position). On the test
 ## city's day 9, its mark read: being held at another door's gatehouse and let out completes nothing;
 ## being held at a gatehouse of the named door and let out on its far side completes the task, from
-## either side.
+## either side, and sends the robber after her from where she was let out, never through the door.
 func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) -> void:
 	_build_city(t)
 	var saved_state := GameState.city_state
@@ -4282,6 +4379,16 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 							elsewhere += 1
 				if director._contact.is_done:
 					crossings += 1
+				var trap := director._trap
+				t.check(trap != null and trap.def.id == "robber_giving_chase",
+						"the inspected crossing sends the robber after her")
+				if trap:
+					for body in _city.region_plan().door_bodies:
+						t.check(EventManager.where_she_crossed(body.position, body.facing,
+								body.def.obstructs_radius, trap.global_position,
+								player.global_position) == Vector2.INF,
+								"his run at her from %s never crosses a district door's line"
+								% _city.map.world_to_tile(trap.global_position))
 			player.free()
 			director.free()
 		t.check(elsewhere == 2, "being let through another door completes nothing (%d of 2)"

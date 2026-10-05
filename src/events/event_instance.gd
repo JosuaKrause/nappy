@@ -1992,9 +1992,17 @@ func _flush_the_flock_if_she_is_among_them() -> void:
 ## ever really following her round it. Tried larger component first, so a pursuer coming at a wall
 ## nearly square-on slides along it rather than snagging on whichever axis happens to be smaller.
 func _walkable_step(delta_pos: Vector2) -> Vector2:
-	if not _map or delta_pos.is_zero_approx():
+	if not _map:
 		return delta_pos
-	if _map.is_walkable(_map.world_to_tile(global_position + delta_pos)):
+	return walkable_step_on(_map, global_position, delta_pos)
+
+## `_walkable_step()`'s own rule asked of any point on `map`: the part of the step `delta_pos` from
+## `from` a chaser actually takes. Static so that a placement can walk a chase it has not started
+## yet the way the chase will walk it (`ResistanceDirector._his_walk_reaches_her()`).
+static func walkable_step_on(map: CityMap, from: Vector2, delta_pos: Vector2) -> Vector2:
+	if delta_pos.is_zero_approx():
+		return delta_pos
+	if map.is_walkable(map.world_to_tile(from + delta_pos)):
 		return delta_pos
 	var along_x := Vector2(delta_pos.x, 0.0)
 	var along_y := Vector2(0.0, delta_pos.y)
@@ -2002,7 +2010,7 @@ func _walkable_step(delta_pos: Vector2) -> Vector2:
 	var second := along_y if first == along_x else along_x
 	for candidate in [first, second]:
 		if not candidate.is_zero_approx() \
-				and _map.is_walkable(_map.world_to_tile(global_position + candidate)):
+				and map.is_walkable(map.world_to_tile(from + candidate)):
 			return candidate
 	return Vector2.ZERO
 

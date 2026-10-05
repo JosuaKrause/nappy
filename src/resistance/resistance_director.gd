@@ -715,9 +715,10 @@ func _trap_row_id(step: ResistanceSteps.Step) -> String:
 ## The moment she completes a task `sets_a_trap_on_her()` answers for — hands over the note or the
 ## package, reaches the burnt building's door, crosses the district door, reaches a mast's foot or
 ## the swing, or hands the key over at the station's door — `_trap_row_id()`'s row, awake from its
-## first frame, is spawned off screen, usually `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) above or
-## below her, always far enough past the edge of the view that the screen-edge badge is up before it
-## is in it (`_draw_arrival_position()`), and comes at her. So the errand's price is paid on the way
+## first frame, is spawned off screen — at a front door from across the street, elsewhere usually
+## `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) above or below her — always far enough past the edge of
+## the view that the screen-edge badge is up before it is in it (`_draw_arrival_position()`), and
+## comes at her. On day 9 only an inspected crossing sends him (`_on_door_crossed()`). So the errand's price is paid on the way
 ## out, from wherever she did it, rather than guarded at one seeded spot she could walk round —
 ## and for the man shouting, whichever look-alike she chose costs the same. The screen-edge badge
 ## announces it while it is off screen, the same way it announces any pursuer
@@ -744,7 +745,7 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 		her = contact_position()
 	if her == Vector2.INF:
 		return
-	var arrival := _draw_arrival_position(_rng, her, def)
+	var arrival := _draw_arrival_position(_rng, her, def, is_at_a_front_door(step))
 	var at: Vector2 = arrival[0]
 	if at == Vector2.INF:
 		Telemetry.note("roll", ("task handed over unguarded: no walkable ground %.0fpx from her "
@@ -752,7 +753,9 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 		return
 	_trap = _city.events.spawn_extra(def, at)
 	var run := "no clear run at her"
-	if arrival[1]:
+	if arrival[3]:
+		run = "a walk at her from across the street"
+	elif arrival[1]:
 		run = "a clear run at her along her street, beside her" if arrival[2] \
 				else "a clear run at her"
 	var sent := "a robber" if def.id == "robber_giving_chase" else "a guard"
@@ -762,9 +765,23 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 ## Where the robber a handed-over task sets on her starts, past `badge_line()` so the screen-edge
 ## badge is up before he is on screen, on ground `_draw_guard_position()`'s own refusals leave alone
 ## (walkable, not behind a closure, not held, not the home block, not a walled-off alley) and off
-## screen by `_sight` as well. Returns `[position, clear, beside]` — `Vector2.INF` when no start
-## qualifies; `clear` when the straight line from there to her is walkable; `beside` when he starts
-## to her side rather than above or below her.
+## screen by `_sight` as well. Returns `[position, clear, beside, across]` — `Vector2.INF` when no
+## start qualifies; `clear` when the straight line from there to her is walkable; `beside` when he
+## starts to her side rather than above or below her; `across` when he comes from across the street
+## at a front door (`_across_the_street()`).
+##
+## **At a front door, across the street first** (`front_door` — the burnt building's, the
+## station's: `is_at_a_front_door()`). *(2026-10-04, the player, asked "at a front door, prefer a
+## start on the far side of the street that's out of view and has a walkable way to you; if there's
+## none, fall back to today's rule. Is that what you mean?": "yes, to your proposal about front
+## doors".)* Only when `_across_the_street()` finds no such start does the rule below decide.
+##
+## **Never through the region's wall or a door** (`_runs_through_the_boundary()`): a start whose
+## straight run at her passes through a body of the day's region wall or of a district door is
+## refused outright, as a fallback too. He chases in a straight line and nothing solid in the wall
+## or the door stops him, so such a start is a man walking through the checkpoint she has just been
+## inspected at — on day 9 she is let out 54px past the door's line, where a start straight above,
+## below or beside her is often on the door's far side.
 ##
 ## **Above or below her, `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) out, by preference.** That is past
 ## the badge line vertically within `arrival_cone()` — about 16° for `robber_giving_chase`
@@ -778,9 +795,9 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 ## (`EventInstance._chase()`), sliding along whatever wall is in the way: a start behind a building
 ## is a man stuck against its back wall while the badge says he is coming. On a minority of the
 ## man shouting's handovers there is no clear run from above or below — she is on a street that runs
-## sideways, with no crossing street near enough — and on most at a door on a facade (the burnt
-## building's, the station's), where the building stands straight above her
-## (`tests/probes/grassy_goose_target_traps.gd`); **then he comes along her own street**, straight left
+## sideways, with no crossing street near enough — and at a front door with no start across the
+## street, where the building stands straight above her (`tests/probes/grassy_goose_target_traps.gd`
+## measures how often); **then he comes along her own street**, straight left
 ## or right at `beside_distance()` (about 466px), past the badge line sideways. From there walking
 ## directly away outlasts his notice and chase, which is the price of a start the wider view needs;
 ## standing still or walking into him is still caught. Only when neither has a clear run does the
@@ -793,8 +810,14 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 ## `van_guard_giving_chase` 54 times in 200 (27.0%) — the guard's narrower 120px field (against the
 ## robber's 200px) leaves a tighter vertical cone (`arrival_cone()`), so fewer of its bearings clear
 ## a wall along the way.
-func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: EventDef) -> Array:
+func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: EventDef,
+		front_door := false) -> Array:
 	var walled_alleys := _walled_alleys()
+	var boundary := _boundary_bodies_near(her, beside_distance(def))
+	if front_door:
+		var across := _across_the_street(her, def, walled_alleys, boundary)
+		if across != Vector2.INF:
+			return [across, _a_clear_run(across, her), false, true]
 	var cone := arrival_cone(def)
 	var up := PI / 2.0 if rng.randf() < 0.5 else -PI / 2.0
 	var starts: Array[Vector2] = [Vector2.RIGHT.rotated(up) * Tuning.TRAP_ARRIVAL_DISTANCE,
@@ -817,11 +840,126 @@ func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: Event
 			continue
 		if _sight.is_valid() and _sight.call(candidate):
 			continue
+		if _runs_through_the_boundary(candidate, her, boundary):
+			continue
 		if _a_clear_run(candidate, her):
-			return [candidate, true, is_zero_approx(offset.y)]
+			return [candidate, true, is_zero_approx(offset.y), false]
 		if fallback == Vector2.INF:
 			fallback = candidate
-	return [fallback, false, false]
+	return [fallback, false, false, false]
+
+## Whether `step`'s target is a door on a building's front — the burnt building's (day 8) or the
+## power station's (the last night) — where she stands on the sidewalk below the facade and the
+## building fills the view above her. Every front in this city faces south, the way the oblique view
+## looks at it (`City.way_in_behind()`, `station_door_point()`), so the far side of her street is
+## always straight below her.
+static func is_at_a_front_door(step: ResistanceSteps.Step) -> bool:
+	return step != null and (step.target_kind == ResistanceSteps.TargetKind.STATION_DOOR
+			or step.task_event_id == "burnt_shell")
+
+## Where he starts at a front door: on the far side of her street, below her, out of view, with a
+## walk at her — he comes out of the block opposite and crosses at her. The nearest tile centre that
+## is:
+##
+## - below her and past `badge_line()`, so the badge is up before he is on screen, and off screen by
+##   `_sight`;
+## - at least `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) from her, the floor under his notice: standing
+##   still she is lunged at no sooner than `Tuning.PURSUIT_MIN_NOTICE` after he appears;
+## - legal ground (`is_legal_ground()`);
+## - one his own chase walks to her (`_his_walk_reaches_her()`) in no more ground than
+##   `beside_distance()` (about 466px), so he is never later than the start along her street he
+##   replaces, and never through the region's wall or a door.
+##
+## The walk is his chase's, not a path: straight at her, sliding along whatever wall is in the way
+## (`EventInstance.walkable_step_on()`), so a start in an alley or a courtyard of the block opposite
+## counts when sliding up it brings him out onto her street. Nearest first, ties broken by being
+## nearer straight below her, so nothing is drawn from the day's RNG. `Vector2.INF` when no tile
+## qualifies.
+func _across_the_street(her: Vector2, def: EventDef, walled_alleys: Array[Rect2i],
+		boundary: Array[EventScheduler.Planned]) -> Vector2:
+	var furthest := beside_distance(def)
+	var reach := ceili(furthest / Tuning.TILE_SIZE) + 1
+	var at := _map.world_to_tile(her)
+	var candidates: Array[Vector2] = []
+	for dy in range(1, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var centre := _map.tile_to_world(at + Vector2i(dx, dy))
+			var offset := centre - her
+			var distance := offset.length()
+			if offset.y <= 0.0 or distance < Tuning.TRAP_ARRIVAL_DISTANCE or distance > furthest:
+				continue
+			if absf(offset.y) < badge_line(def, distance).y:
+				continue
+			candidates.append(centre)
+	candidates.sort_custom(func(a: Vector2, b: Vector2) -> bool:
+		var da := a.distance_squared_to(her)
+		var db := b.distance_squared_to(her)
+		if not is_equal_approx(da, db):
+			return da < db
+		return absf(a.x - her.x) < absf(b.x - her.x))
+	for candidate in candidates:
+		if not is_legal_ground(_map, _map.world_to_tile(candidate), walled_alleys):
+			continue
+		if _sight.is_valid() and _sight.call(candidate):
+			continue
+		if _his_walk_reaches_her(candidate, her, furthest, boundary):
+			return candidate
+	return Vector2.INF
+
+## The step `_his_walk_reaches_her()` walks a chase in, in px: an eighth of a tile, finer than a
+## chase's own step at 30 frames a second (130px/s, about 4.3px).
+const WALK_PROBE_STEP := Tuning.TILE_SIZE / 8.0
+
+## Whether a chase started at `from` reaches her at `her` — walked the way `EventInstance._chase()`
+## walks it, straight at her and sliding along walls (`EventInstance.walkable_step_on()`) — within
+## `limit` px of ground, never stuck against a wall and never through a body of `boundary`. **Stuck
+## includes creeping**: a slide along a wall he meets nearly square-on keeps only the sliver of the
+## step that runs along it, so a step that keeps under a quarter of its length is a man standing at
+## the wall, not one coming round it.
+func _his_walk_reaches_her(from: Vector2, her: Vector2, limit: float,
+		boundary: Array[EventScheduler.Planned]) -> bool:
+	var at := from
+	var walked := 0.0
+	while walked <= limit:
+		var toward := her - at
+		if toward.length() <= WALK_PROBE_STEP:
+			return true
+		var moved := EventInstance.walkable_step_on(_map, at, toward.normalized() * WALK_PROBE_STEP)
+		if moved.length() < WALK_PROBE_STEP * 0.25 \
+				or _runs_through_the_boundary(at, at + moved, boundary):
+			return false
+		at += moved
+		walked += moved.length()
+	return false
+
+## The day's region wall and district-door bodies (`RegionPlanner.RegionPlan.wall_bodies`,
+## `door_bodies`) whose body could stand in a run at `her` from `within` px away. Empty before
+## `Tuning.REGION_WALL_FIRST_DAY` and in a bare-map rig with no `_city`.
+func _boundary_bodies_near(her: Vector2, within: float) -> Array[EventScheduler.Planned]:
+	var near: Array[EventScheduler.Planned] = []
+	var plan := _region_plan()
+	if not plan:
+		return near
+	var bodies: Array[EventScheduler.Planned] = []
+	bodies.append_array(plan.wall_bodies)
+	bodies.append_array(plan.door_bodies)
+	for body in bodies:
+		if body.position.distance_to(her) <= within + body.def.obstructs_radius:
+			near.append(body)
+	return near
+
+## Whether the straight line from `from` to `to` passes through one of `boundary`'s bodies — within
+## its own `obstructs_radius` of its centre. A street door's three bodies, and a wall's, stand a
+## body's width apart across the street, kerb to kerb (`RegionPlanner._add_door_bodies()`,
+## `SealPlanner.place_hard_on()`), so a line through the door or the wall passes through one of them
+## wherever it crosses.
+static func _runs_through_the_boundary(from: Vector2, to: Vector2,
+		boundary: Array[EventScheduler.Planned]) -> bool:
+	for body in boundary:
+		var nearest := Geometry2D.get_closest_point_to_segment(body.position, from, to)
+		if nearest.distance_to(body.position) <= body.def.obstructs_radius:
+			return true
+	return false
 
 ## How far from her, along each axis, a pursuer `def` started `distance` out has to be for
 ## `DangerEdge` to raise its badge before he is on screen, whatever the camera is doing. Per axis,
@@ -1467,16 +1605,30 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 ## `door_crossed` — she was let out on the far side after the inspection, or walked through the
 ## door's line — completes the task when it is the named door, in either direction. A crossing of
 ## any other door does nothing.
-func _on_door_crossed(at: Vector2, axis: Vector2) -> void:
+##
+## **Only an inspected crossing sends the trap.** Walked under a raised boom (`inspected` false), the
+## door sets its own guard on her (`EventManager._set_a_guard_on_her()`), and that guard is the whole
+## of the crossing's price: no robber comes from off screen as well. *(2026-10-04, the player, asked
+## whether both should come at once: "(a)" — under the boom only the guard, the robber only after an
+## inspected crossing.)* `_walked_under_the_door` carries that into `_on_contact_completed()`, which
+## `complete_now()` calls before it returns.
+func _on_door_crossed(at: Vector2, axis: Vector2, inspected: bool) -> void:
 	if not _step or _step.target_kind != ResistanceSteps.TargetKind.DOOR or not _contact \
 			or _contact.is_done or _door_at == Vector2.INF:
 		return
 	if absf((at - _door_at).dot(_door_axis)) > 1.0 or absf(axis.dot(_door_axis)) < 0.99 \
 			or at.distance_to(_door_at) > Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5:
 		return
-	Telemetry.note("contact", "step %d: she crossed the district door at %s" % [_step.index,
-			TelemetryLog.tile(_map.world_to_tile(_door_at))])
+	Telemetry.note("contact", "step %d: she crossed the district door at %s, %s" % [_step.index,
+			TelemetryLog.tile(_map.world_to_tile(_door_at)),
+			"let through after the inspection" if inspected else "under the boom, not inspected"])
+	_walked_under_the_door = not inspected
 	_contact.complete_now()
+	_walked_under_the_door = false
+
+## Set only while `_on_door_crossed()` completes day 9's task from a walk under the boom, so the
+## completion it calls sends no trap: the door's own guard is already after her.
+var _walked_under_the_door := false
 
 ## Where day 12's task points: the swing of the one park the city chose for it
 ## (`CityGenerator.swing_park()`), forced open today whatever its arc has reached
@@ -2323,9 +2475,13 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
 		_happenings.take_the_park()
 	# Every task but the roadblock and the neighbor sends a pursuer after her from off screen; the
-	# roadblock keeps its guard waiting at the contact instead (`_begin_step()`).
-	if step and sets_a_trap_on_her(step):
+	# roadblock keeps its guard waiting at the contact instead (`_begin_step()`). Day 9's door sends
+	# none when she walked under its boom, whose own guard is already after her (`_on_door_crossed()`).
+	if step and sets_a_trap_on_her(step) and not _walked_under_the_door:
 		_set_the_trap_on_her(step)
+	elif step and sets_a_trap_on_her(step):
+		Telemetry.note("roll", "task done under the boom: the door's own guard is after her, "
+				+ "and nobody else is sent")
 	if not (step and step.needs_goal):
 		return
 

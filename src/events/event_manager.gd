@@ -817,11 +817,12 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	return plan
 
 ## She has crossed a district door: let out on its far side after the inspection
-## (`_release_finished_door_detentions()`), or walked through its line (`_watch_the_door_lines()`).
-## `at` is the body of the door that saw it and `axis` the street's own axis, which every body of
-## one door shares, so a listener can tell which door it was. Day 9's task is completed on it
-## (`ResistanceDirector._on_door_crossed()`).
-signal door_crossed(at: Vector2, axis: Vector2)
+## (`_release_finished_door_detentions()`, `inspected` true), or walked through its line under a
+## raised boom (`_watch_the_door_lines()`, `inspected` false, which sets the door's own guard on her
+## as well). `at` is the body of the door that saw it and `axis` the street's own axis, which every
+## body of one door shares, so a listener can tell which door it was. Day 9's task is completed on
+## it either way, and sends its trap only after an inspection (`ResistanceDirector._on_door_crossed()`).
+signal door_crossed(at: Vector2, axis: Vector2, inspected: bool)
 
 ## Silences one mast by id, for the rest of the day — a mast still stands once silenced, with no
 ## arcs and no field, so this sets `Planned.silenced` and its live instance's own mirror rather
@@ -1667,7 +1668,7 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 		body.show_after_inspection()
 		body.release_camera_focus()
 		_latch_everything_she_was_let_out_into(released_at)
-		door_crossed.emit(instance.global_position, axis)
+		door_crossed.emit(instance.global_position, axis, true)
 		Telemetry.note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
 			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
 			instance.def.detain_seconds, _compass_of(axis, released_along)])
@@ -1757,7 +1758,7 @@ func _watch_the_door_lines() -> void:
 	if not crossed:
 		return
 	_walked_under += 1
-	door_crossed.emit(crossed.global_position, crossed.facing_now())
+	door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 	Telemetry.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
 		crossed.def.id, TelemetryLog.tile(_map.world_to_tile(crossed.global_position)),
 		_heading_name(here - was),
@@ -1805,7 +1806,11 @@ func _set_a_guard_on_her(crossed: EventInstance, here: Vector2) -> void:
 ## hold starts gives up too, since nothing here asks whether it is over — the smallest reading of
 ## "the whole pursuit has been accomplished" once she is inside a hut of her own accord. The
 ## roadblock's hunting guard and the escape's masked pursuer are never `_guard_after_her`, so a hold
-## never reaches them.
+## never reaches them — and neither is the robber a done task sends after her
+## (`ResistanceDirector._set_the_trap_on_her()`), on day 9 the one sent the moment the inspection
+## lets her through: a hut is not a hiding place from him, and stepping back into one with him after
+## her holds her where he can catch her. *(2026-10-04, the player: "you shouldn't try to cheat it by
+## going back in the hut -- that should be fatal by the robber".)*
 func _end_the_guard_for_a_hold() -> void:
 	if is_instance_valid(_guard_after_her) \
 			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving:
