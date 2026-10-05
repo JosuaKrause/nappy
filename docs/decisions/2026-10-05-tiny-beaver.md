@@ -1,7 +1,7 @@
 # tiny-beaver — A policeman on foot, drawn for the pursuits to come · 2026-10-05 · not from an entry
 
 
-Inbox #591, said in a session on 2026-10-05, on what a torn poster's pursuit should be: "it should be
+Inbox #591 in [olive-hedgehog](../playtests/2026-10-05-olive-hedgehog.md), said in a session on 2026-10-05, on what a torn poster's pursuit should be: "it should be
 a proper pursuer not a police car -- maybe a policeman on foot? (we will need a graphic for that
 anyway for the polic robber chase later) and a guardsman once they are in the city (earlier a
 guardsman won't make much sense)", then "policemen get switched to guardman on day 9".

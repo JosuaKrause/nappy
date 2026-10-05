@@ -31,7 +31,7 @@ extends RefCounted
 ##   `Tuning.ENCOUNTER_INFLUENCE_POINTS` landed on her within the encounter
 ##   (`EventInstance.landed_ever`, since `landed()` keeps only the halo's window), or it chasing her
 ##   (`EventInstance.is_chasing()`), or it catching her or beginning a hold of her, whichever comes
-##   first. **A catch and a hold are the game's own tests, called and not copied** *(inbox #586, the
+##   first. **A catch and a hold are the game's own tests, called and not copied** *(inbox #586 in olive-hedgehog, the
 ##   player: "use the real catch code")*: `EventInstance.is_lethal_at()` for the catch, so a cyclist
 ##   still only warned or waiting, a row already finished, or a pursuer within reach through a wall
 ##   is no catch; and `EventManager._hold_that_would_begin()` for the hold, handed in as a callable.
