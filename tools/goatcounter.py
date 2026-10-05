@@ -379,7 +379,7 @@ def make_fetcher(site: str, token: str) -> Fetcher:
 
 
 def fetch_hits(fetch: Fetcher, start: datetime, end: datetime, *, limit: int = PAGE_LIMIT) -> list[dict[str, Any]]:
-    """Every hit in `[start, end]`, paginated with repeated `exclude_paths` while `more` holds."""
+    """Every hit in `[start, end]`, paginated with one comma-joined `exclude_paths` while `more` holds."""
     hits: list[dict[str, Any]] = []
     exclude: list[str] = []
     seen: set[str] = set()
