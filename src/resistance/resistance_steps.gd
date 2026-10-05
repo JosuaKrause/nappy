@@ -51,8 +51,10 @@ class Step extends RefCounted:
 	## subject to `ResistanceDirector._follow_her_between_look_alikes()`'s retargeting. False for
 	## the two tasks any live instance answers (the man shouting, a roadblock), which retarget onto
 	## whichever instance she is within reach of, so the one she hands it to is the one that counts.
-	## **Every task draws the red arrow** (plush-moose), one-place or not; where several places
-	## answer it points at the closest by walking distance (`ResistanceDirector.red_arrow_target()`).
+	## **Every task draws the red arrow**, one-place or not; where several places answer it points
+	## at the closest by walking distance (`ResistanceDirector.red_arrow_target()`). Day 11's mast
+	## is one-place by this flag (its contact is a bare point, not a rider) and still answers at any
+	## live mast (`answers_at_several_places()`).
 	## Unused by a pickup, which never draws the arrow; true for the finale, whose door is one place.
 	var is_one_place := true
 	## Fraction of the day after which the step is gone for good. 0 means no deadline, which is
@@ -130,8 +132,9 @@ const NARROW_KINDS: Array[TargetKind] = [TargetKind.DOOR, TargetKind.PARK_SWING,
 		TargetKind.STATION_DOOR]
 
 ## Whether more than one place can answer `step` at once, so the red arrow has a choice to make:
-## the any-instance tasks (the man shouting, a roadblock) and day 11's mast, whose task takes the mast
-## near the mark or the one rigged onto her route. Every other task is one place and its arrow has nothing to choose.
+## the any-instance tasks (the man shouting, a roadblock) and day 11's mast, whose task any live
+## mast answers (`ResistanceDirector._mast_answers()`). Every other task is one place and its
+## arrow has nothing to choose.
 static func answers_at_several_places(step: Step) -> bool:
 	return step != null and not step.is_pickup \
 			and (not step.is_one_place or step.target_kind == TargetKind.MAST)

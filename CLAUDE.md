@@ -286,5 +286,5 @@ Each was a decision. Do not "fix" one without a reason; the reasoning is in the 
   overturned on 2026-08-31 to "Only the first encounter (the chalk mark) should come without
   hint" (playtest 16, finding 7) · overturned again on 2026-09-23: "we do now hint at the first
   task" (playtest 122).* Nothing lists the tasks and the day brief carries none; day 6's brief
-  names the rumor of chalk, and a task sent to one place has a red arrow (M181, the resistance
-  has a reason, and a task is one day).
+  names the rumor of chalk, and every task has a red arrow (M181, the resistance has a reason,
+  and a task is one day).

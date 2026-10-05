@@ -102,7 +102,7 @@ func run(t) -> void:
 	_test_the_arrow_moves_at_four_tiles_closer_and_not_at_three(t)
 	_test_the_arrow_leaves_a_freed_instance_at_once(t)
 	_test_a_single_target_arrow_stays_on_its_contact(t)
-	_test_day_eleven_answers_at_the_near_mast_and_the_routed_mast_only(t)
+	_test_day_eleven_answers_at_any_live_mast(t)
 	_test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
 	_test_the_swings_touch_is_the_ellipse_at_its_base(t)
 	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
@@ -4357,9 +4357,10 @@ func _longest_route_points() -> Array[Vector2]:
 	return points
 
 ## Walks her down the day's longest route, the events placing what is owed ahead of her as they do
-## in play, until the mast reading day 11's mark rigged onto her route is put down: its mast id, or
-## "" if the walk ends first.
-func _walk_until_the_route_mast(director: ResistanceDirector, player: Stroller) -> String:
+## in play, until the mast reading day 11's mark rigged onto her route is put down — a mast that is
+## not in `at_the_mark`, the ids the day had when she read it: its mast id, or "" if the walk ends
+## first.
+func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> String:
 	var path := _longest_route_points()
 	_city.events._find_player()
 	if path.size() < 2:
@@ -4372,8 +4373,7 @@ func _walk_until_the_route_mast(director: ResistanceDirector, player: Stroller) 
 	while walked < 600.0:
 		for plan in _city.events.plans():
 			if plan.def.id == ResistanceDirector.MAST_ROW and plan.mast_id != "" \
-					and plan.mast_id != director._near_mast_id \
-					and not director._masts_at_the_mark.has(plan.mast_id):
+					and not at_the_mark.has(plan.mast_id):
 				return plan.mast_id
 		var next: Vector2 = path[index + direction] if index + direction >= 0 \
 				and index + direction < path.size() else Vector2.INF
@@ -4402,11 +4402,11 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 	return Vector2.INF
 
 ## Day 11, through the real rig: reading the mark rigs a mast onto her route, and walking the
-## day's route puts it down. Then the two masts the record names answer the task — the one near
-## the mark and the routed one — and no third mast does: standing at a third mast neither moves the
-## contact nor completes the task, while touching the routed mast completes it, silences that mast
-## and scars its foot, and leaves the near one lit. Asking for the arrow along the way is a read.
-func _test_day_eleven_answers_at_the_near_mast_and_the_routed_mast_only(t) -> void:
+## day's route puts it down. Then **any live mast answers the task** *(the player: "why limit
+## artificially to two arbitrary masts")* — the one near the mark, the routed one and a third one
+## besides — and touching the third, which is neither, completes the task, silences that mast and
+## scars its foot, and leaves the other two lit. Asking for the arrow along the way is a read.
+func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 	var saved_scars := GameState.scars.duplicate()
 	var saved_state := GameState.city_state
 	_build_city(t)
@@ -4417,14 +4417,17 @@ func _test_day_eleven_answers_at_the_near_mast_and_the_routed_mast_only(t) -> vo
 		var player: Stroller = read[2]
 		var step := director.current_step()
 		var near := director._mast_id
-		t.check(step != null and near != "" and near == director._near_mast_id,
-				"day 11's task is on offer at the mast near the mark")
+		t.check(step != null and near != "", "day 11's task is on offer at the mast near the mark")
 		var before := [director._arrow_key, director._mast_id, director.contact_position()]
 		var asked := director.red_arrow_target()
 		t.check(asked == director.contact_position() and director._arrow_nearest_next == null
 				and [director._arrow_key, director._mast_id, director.contact_position()] == before,
 				"asking for the arrow chooses nothing, sweeps nothing and moves no contact")
-		var routed := _walk_until_the_route_mast(director, player)
+		var at_the_mark := {}
+		for plan in _city.events.plans():
+			if plan.mast_id != "":
+				at_the_mark[plan.mast_id] = true
+		var routed := _walk_until_the_route_mast(at_the_mark, player)
 		t.check(routed != "", "walking the day's route puts the rigged mast down on seed %d" % SEED)
 		if routed == "" or step == null:
 			player.free()
@@ -4433,56 +4436,40 @@ func _test_day_eleven_answers_at_the_near_mast_and_the_routed_mast_only(t) -> vo
 		var keys: Array = []
 		for target in director._arrow_candidates(step):
 			keys.append(target["key"])
-		keys.sort()
-		var expected: Array = [near, routed]
-		expected.sort()
-		t.check(keys == expected, "the near mast and the routed one answer, and only they (%s)"
-				% [keys])
-		var third: EventScheduler.Planned = null
-		for plan in _city.events.plans():
-			if plan.def.id == ResistanceDirector.MAST_ROW and plan.mast_id != "" \
-					and plan.mast_id != near and plan.mast_id != routed and not plan.silenced \
-					and _beside_the_mast(director, plan.position) != Vector2.INF:
-				third = plan
-				break
-		t.check(third != null, "the city has a third mast to stand at")
-		if third:
-			player.global_position = _beside_the_mast(director, third.position)
-			director._process(STEP)
-			t.check(director._mast_id != third.mast_id
-					and not director._contact.would_complete_at(player.global_position),
-					"standing at a third mast neither moves the task there nor completes it")
-		var routed_foot := _city.events.mast_foot(routed)
-		var near_foot := _city.events.mast_foot(near)
-		player.global_position = _beside_the_mast(director, routed_foot)
+		var third := ""
+		for key: String in keys:
+			if key != near and key != routed \
+					and _beside_the_mast(director, _city.events.mast_foot(key)) != Vector2.INF:
+				third = key
+		t.check(near in keys and routed in keys and third != "",
+				"the near mast, the routed one and a third all answer (%s)" % [keys])
+		if third == "":
+			player.free()
+			director.free()
+			return
+		var third_foot := _city.events.mast_foot(third)
+		player.global_position = _beside_the_mast(director, third_foot)
 		director._settle_the_arrow()
-		t.check(director.red_arrow_target().distance_to(routed_foot) < 1.0,
-				"beside the routed mast the arrow is on it")
+		t.check(director.red_arrow_target().distance_to(third_foot) < 1.0
+				and director._mast_id == third,
+				"beside the third mast the arrow, and the task, are on it")
 		director._process(STEP)
 		director._contact._physics_process(STEP)
 		t.check(step.index in GameState.completed_resistance_steps,
-				"touching the routed mast completes the task")
-		var routed_plan: EventScheduler.Planned = null
-		var near_plan: EventScheduler.Planned = null
+				"touching the third mast completes the task")
+		var silenced := {}
 		for plan in _city.events.plans():
-			if plan.mast_id == routed:
-				routed_plan = plan
-			elif plan.mast_id == near:
-				near_plan = plan
-		t.check(routed_plan != null and routed_plan.silenced
-				and near_plan != null and not near_plan.silenced,
-				"and silences the routed mast, not the one near the mark")
-		var scarred_routed := false
-		var scarred_near := false
+			if plan.mast_id in [near, routed, third]:
+				silenced[plan.mast_id] = plan.silenced
+		t.check(silenced.get(third, false) and not silenced.get(near, true)
+				and not silenced.get(routed, true),
+				"and silences the mast she touched, not the near or the routed one (%s)" % silenced)
+		var scarred := []
 		for scar: Dictionary in GameState.scars:
-			if String(scar["id"]) != EventScheduler.SILENCED_MAST:
-				continue
-			var at: Vector2 = scar["position"]
-			scarred_routed = scarred_routed or at.distance_to(routed_foot) < 1.0
-			scarred_near = scarred_near or at.distance_to(near_foot) < 1.0
-		t.check(scarred_routed and not scarred_near, "and the scar is the routed mast's")
-		if third:
-			t.check(not third.silenced, "the third mast is still lit")
+			if String(scar["id"]) == EventScheduler.SILENCED_MAST:
+				scarred.append(scar["position"])
+		t.check(scarred.size() == 1 and (scarred[0] as Vector2).distance_to(third_foot) < 1.0,
+				"and the one scar is that mast's foot")
 		player.free()
 		director.free())
 	GameState.scars = saved_scars

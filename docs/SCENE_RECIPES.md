@@ -157,14 +157,14 @@ past him, go round. Every scene here shares one context city (`context_seed` 191
 
 | Recipe | Day and target | She starts | The target, as the scene asserts it |
 |---|---|---|---|
-| `task-06-note.json` | 6, a note for the man shouting | 5 tiles west of the mark, on the street, the mark unread | the man shouting, 576–608px out; no arrow, since any of them answers |
+| `task-06-note.json` | 6, a note for the man shouting | 5 tiles west of the mark, on the street, the mark unread | the man shouting, 576–608px out, the arrow on him as the closest on foot of the men who answer |
 | `task-07-package.json` | 7, the package at the van | 5 tiles west of the mark, on the street, the mark unread | the van, 576–608px out |
 | `task-08-burnt-shell.json` | 8, the burnt building | 5 tiles west of the mark, on the street, the mark unread | the shell 576–608px out, the arrow on the door behind it |
 | `task-09-crossing.json` | 9, the crossing | 5 tiles west of the mark, the mark unread | the named district door's gatehouse, 576–640px out; done by crossing the door |
 | `task-10-neighbor.json` | 10, warning the neighbor | 5 tiles east of the mark on the street above it, the mark unread | the neighbor, 400px or more from where she reads the mark (about 455px from it), walking home |
 | `task-11-mast.json` | 11, silencing a mast | 5 tiles west of the mark, on the street, the mark unread | a mast put up for the task, 576–608px out |
 | `task-12-swing.json` | 12, the swing | 5 tiles east of the mark on the street below it, the mark unread | the swing's base, 576–640px out |
-| `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles west of the mark, on the street, the mark unread | the roadblock, 576–608px out; no arrow |
+| `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles west of the mark, on the street, the mark unread | the roadblock, 576–608px out, the arrow on it as the closest on foot of the roadblocks that answer |
 | `task-14-last-night.json` | 14, the station's front door | on the sidewalk west of it | the door on the facade, 576–640px out |
 | `station-door-corner.json` | 14, the station's front door | on the far outer corner of its sidewalk | the door, 57.7px away, outside its 50.6px reach |
 | `fire-truck.json` | 3, the fire and the engine it calls in | on the sidewalk 496px east of the fire | the whole burning building, smoke included, out of both the landscape and the portrait view at the first tick; the engine parked at the kerb in front of it |
@@ -173,8 +173,8 @@ Play one with `tools/run.sh --recipe scene-recipes/task-07-package.json` and wal
 following the red arrow where there is one; the summary after a won day reloads the scene. Each
 scene's headless assertion, in `tools/scene-recipes.sh`, checks at the first tick that the mark is
 unread, no arrow is drawn and she stands outside the mark's notice, walks the recorded route to the
-mark and checks that reading it completed the mark and offered the task, the arrow ends on the target
-(or that none is drawn), the target is out of her view and at its stated distance, then walks on and
+mark and checks that reading it completed the mark and offered the task, the arrow ends on the target,
+the target is out of her view and at its stated distance, then walks on and
 checks that reaching the target completed the task. The mark's robber stands where the day puts him and the walks keep out of his notice; once a
 target is done, the robber or guard the task sends comes from off screen as in a played day and
 catches her a little after the scene's last assertion; add `--invincible` to play on without a robber

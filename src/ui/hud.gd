@@ -23,7 +23,7 @@ extends CanvasLayer
 @onready var _header: Label = $Root/Header
 @onready var _clock: Label = $Root/Clock
 @onready var _home_arrow: HomeArrow = $Root/HomeArrow
-## Second instance of the same class, in red, for a one-place resistance task — see
+## Second instance of the same class, in red, for the resistance task — see
 ## `HomeArrow`'s own class doc and `Palette.TASK_ARROW`.
 @onready var _task_arrow: HomeArrow = $Root/TaskArrow
 @onready var _teach: HelpText = $Root/Teach
@@ -452,11 +452,13 @@ func set_home_guidance(showing: bool, home: Vector2) -> void:
 	else:
 		_home_arrow.hide_arrow()
 
-## The red arrow: shown from the moment a one-place task's own mark is touched until the task is
-## done, at whatever `ResistanceDirector.red_arrow_target()` answers — the task's own rider when it
-## has one (the van's body, not the touch point beside it), the bare contact point when it does
-## not, and for day 8 the burnt building's door, where that task's contact stands. That
-## function is the one place that decides where it points and whether today's task earns it at all.
+## The red arrow: shown from the moment a task's own mark is touched until the task is done —
+## every task, and the last night's from dawn — at whatever
+## `ResistanceDirector.red_arrow_target()` answers: the task's own rider when it has one (the van's
+## body, not the touch point beside it), the bare contact point when it does not, for day 8 the
+## burnt building's door, where that task's contact stands, and where several places answer (any
+## man shouting, any roadblock, any live mast) the closest of them on foot. That function is the
+## one place that decides where it points and whether there is a task to point at.
 func set_task_guidance(showing: bool, at: Vector2) -> void:
 	if showing:
 		_task_arrow.show_toward(at)

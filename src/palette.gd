@@ -143,10 +143,11 @@ const GAME_OVER := Color("b2434a")
 ## colour, in `ContactPoint._draw_chalk()`.
 const CHALK_DONE := Color(0.78, 0.88, 0.72, 0.9)
 const HOME_ARROW := Color("8fb4d9")
-## `HomeArrow`'s own form, in red, for a one-place resistance task — a decided exception to "no
-## quest log or marker for the resistance" (`CLAUDE.md`, "Things deliberately not done"),
-## narrowed to one-place tasks only. *(PLAYTEST-117: "a red arrow (like the blue home arrow but
-## red) to point to tasks where we need to go to a specific location".)* Distinct from every
+## `HomeArrow`'s own form, in red, for the resistance task — a decided exception to "no quest log
+## or marker for the resistance" (`CLAUDE.md`, "Things deliberately not done") that every task
+## has once its mark is read. *(PLAYTEST-117: "a red arrow (like the blue home arrow but red) to
+## point to tasks where we need to go to a specific location"; busy-quail: "yeah let's just
+## always do arrows".)* Distinct from every
 ## other red in this file — `SIGNAL_RED`, `MARK_LETHAL`, `GAME_OVER` — since none of those is
 ## about a place to walk to.
 const TASK_ARROW := Color("d1453a")

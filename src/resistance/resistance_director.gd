@@ -360,14 +360,6 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		_step = null
 		return
 
-	# Day 11's two masts that answer the task: this one, near the mark, and the one rigged onto her
-	# route (`_rig_her_route_for()`), which is any mast the day puts down after this moment.
-	if _step.target_kind == ResistanceSteps.TargetKind.MAST and _city and _city.events:
-		_near_mast_id = _mast_id
-		for plan in _city.events.plans():
-			if plan.mast_id != "":
-				_masts_at_the_mark[plan.mast_id] = true
-
 	# The contact this replaces is only ever the mark she has just read, activating the task right
 	# behind it in this same call (`start_day()` clears everything else first). It stays standing
 	# as `_read_mark`, crossed through, rather than being freed: the player, asked whether a read
@@ -2603,7 +2595,7 @@ func pointable_objective() -> Vector2:
 ## Where the red arrow should point, or `Vector2.INF` when nothing warrants one: no step today,
 ## today's step is the mark rather than the task, or the task is done. **Every task has one**
 ## *(the player, playtest busy-quail: "yeah let's just always do arrows")*, the tasks several places
-## answer included — any man shouting, any roadblock, either of day 11's two masts. The last
+## answer included — any man shouting, any roadblock, any of day 11's live masts. The last
 ## night's front door has it from dawn, since the finale has no mark. *(PLAYTEST-117: "a red arrow
 ## (like the blue home arrow but red) to point to tasks where we need to go to a specific
 ## location".)* **And none once the task is done**: the arrow is there until she has reached the
@@ -2656,11 +2648,6 @@ const ARROW_SWEEP_TILES_PER_FRAME := 1000
 ## touched — `instance_from_id()` answers null for it), or the mast id of a mast. Null before the
 ## task is placed.
 var _arrow_key: Variant = null
-## Day 11: the mast the task was placed at near the mark, and the ids of every mast the day had
-## when it was placed. A mast put down after that is the one rigged onto her route
-## (`_rig_her_route_for()`), the only other mast that answers the task.
-var _near_mast_id := ""
-var _masts_at_the_mark := {}
 var _arrow_clock := 0.0
 ## The finished fields the arrow reads (`ArrowField`): `_arrow_nearest` swept from every target at
 ## once, which says which is closest from any tile and how far; `_arrow_own` swept from the one the
@@ -2679,8 +2666,6 @@ var _arrow_ground_versions := Vector2i(-1, -1)
 func _forget_the_arrow() -> void:
 	_arrow_key = null
 	_arrow_clock = 0.0
-	_near_mast_id = ""
-	_masts_at_the_mark = {}
 	_arrow_nearest = null
 	_arrow_own = null
 	_arrow_nearest_next = null
@@ -2734,16 +2719,14 @@ func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
 					"beat": instance.path if instance.def.paces else PackedVector2Array()})
 	return found
 
-## Whether `plan` is one of the two masts that answer day 11's task — the one placed near the mark
-## or the one rigged onto her route, and no other mast — and is a live mast the task can take: the
-## same offer `_place_at_a_mast()` makes — a placed, unsilenced mast off the home block whose foot
-## has legal, unobstructed ground beside it that is reachable from home — so the arrow never moves
-## the task onto a mast she cannot touch.
+## Whether `plan` is a mast that answers day 11's task: **any live mast does** *(the player, asked
+## whether only the mast near the mark and the one rigged onto her route should: "why limit
+## artificially to two arbitrary masts")* — the mast near the mark, the one rigged onto her route
+## and every other. Live means the same offer `_place_at_a_mast()` makes: a placed, unsilenced mast
+## off the home block whose foot has legal, unobstructed ground beside it that is reachable from
+## home, so the arrow never moves the task onto a mast she cannot touch.
 func _mast_answers(plan: EventScheduler.Planned, walled_alleys: Array[Rect2i]) -> bool:
 	if plan.mast_id == "" or plan.def.id != MAST_ROW or plan.silenced or not plan.is_placed():
-		return false
-	if plan.mast_id != _near_mast_id \
-			and (_near_mast_id == "" or _masts_at_the_mark.has(plan.mast_id)):
 		return false
 	var foot := _map.world_to_tile(plan.position)
 	if _map.is_closed(foot) or _map.is_on_home_block(foot):
