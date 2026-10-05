@@ -17,6 +17,7 @@ func run(t) -> void:
 	_test_the_depth_sits_between_her_body_and_a_tile(t)
 	_test_a_wall_one_tile_thick_blocks_at_its_middle(t)
 	_test_a_thicker_building_blocks_a_tile_deep(t)
+	_test_an_open_end_is_shallower(t)
 	_test_a_one_tile_wall_blocks_at_its_corner_too(t)
 	_test_grazing_a_corner_shields_nothing(t)
 	_test_a_line_deep_across_a_corner_is_blocked(t)
@@ -66,7 +67,8 @@ func _test_the_depth_sits_between_her_body_and_a_tile(t) -> void:
 			"which is no deeper than a tile, which a tile's neighbours can answer")
 
 ## A wall one tile thick, the column x = 4 (128 to 160px): its middle is half a tile from open
-## ground on both sides, and every line across it, square or slanted, passes that middle.
+## ground on both sides, and every line across it, square or slanted, passes that middle. The
+## column runs off both edges of the map, which counts as building, so it has no open end here.
 func _test_a_wall_one_tile_thick_blocks_at_its_middle(t) -> void:
 	var map := _map_with(_rect_tiles(Rect2i(4, 0, 1, 12)))
 	t.check(_blocked(map, Vector2(112.0, 80.0), Vector2(176.0, 80.0)),
@@ -78,9 +80,9 @@ func _test_a_wall_one_tile_thick_blocks_at_its_middle(t) -> void:
 	t.check(not _blocked(map, Vector2(112.0, 20.0), Vector2(112.0, 360.0)),
 			"and a line along the wall's face, in the open, never is")
 
-## A wall two tiles thick, x 4 to 5 (128 to 192px): its middle, x = 160, is a whole tile from open
-## ground, and every line across it passes there; a line that reaches only part of the way in is not
-## blocked, however far past half a tile it gets.
+## A wall two tiles thick, x 4 to 5 (128 to 192px), with no open end: its middle, x = 160, is a whole
+## tile from open ground, and every line across it passes there; a line that reaches only part of the
+## way in is not blocked, however far past half a tile it gets.
 func _test_a_thicker_building_blocks_a_tile_deep(t) -> void:
 	var map := _map_with(_rect_tiles(Rect2i(4, 0, 2, 12)))
 	t.check(_blocked(map, Vector2(112.0, 80.0), Vector2(208.0, 80.0)),
@@ -96,6 +98,22 @@ func _test_a_thicker_building_blocks_a_tile_deep(t) -> void:
 			"in a building four tiles thick a line a tile and a little in is blocked")
 	t.check(not _blocked(deep, Vector2(112.0, 80.0), Vector2(158.0, 80.0)),
 			"and one 30px in is not")
+
+## Near an open end, where the middle is shallower: a building two tiles thick and eight long, x 4 to
+## 5 and y 2 to 9 (y from 64px), blocks a line straight across it only once it is a tile from the end,
+## and a one-tile wall of the same length only once it is half a tile from it. Pinned as built, the
+## player's "otherwise it should be one tile" read literally; the end is a question put to them.
+func _test_an_open_end_is_shallower(t) -> void:
+	var thick := _map_with(_rect_tiles(Rect2i(4, 2, 2, 8)))
+	t.check(not _blocked(thick, Vector2(112.0, 95.0), Vector2(208.0, 95.0)),
+			"a line through a two-tile building 31px from its end passes")
+	t.check(_blocked(thick, Vector2(112.0, 97.0), Vector2(208.0, 97.0)),
+			"and 33px from its end is blocked")
+	var thin := _map_with(_rect_tiles(Rect2i(4, 2, 1, 8)))
+	t.check(not _blocked(thin, Vector2(112.0, 79.0), Vector2(176.0, 79.0)),
+			"a line through a one-tile wall 15px from its end passes")
+	t.check(_blocked(thin, Vector2(112.0, 81.0), Vector2(176.0, 81.0)),
+			"and 17px from its end is blocked")
 
 ## An L of one-tile walls, the column x = 4 down to y = 5 and the row y = 5 east from it: the corner
 ## tile (4, 5) holds no point a tile from open ground, so it is thin and a line across the bend is

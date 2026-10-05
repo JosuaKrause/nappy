@@ -605,8 +605,9 @@ func is_walkable(tile: Vector2i) -> bool:
 ## tiles meet — exactly the tiles that hold a point a whole tile from open ground — and those ask
 ## `depth` (`Tuning.WALL_SHIELD_DEPTH`, a tile). Every other building tile is part of a wall one tile
 ## thick, whose deepest points are its middle, and asks `thin_depth`
-## (`Tuning.THIN_WALL_SHIELD_DEPTH`, half a tile): every line across such a wall, straight or
-## slanted, passes its middle there. This is the deeper test beside
+## (`Tuning.THIN_WALL_SHIELD_DEPTH`, half a tile): a line across such a wall, straight or
+## slanted, is blocked at its middle, except within half a tile of an open end of the wall, where
+## no point is that deep. This is the deeper test beside
 ## `EventInstance._clear_line_to()`, the pursuer's catch, which refuses a line that touches a
 ## building at all.
 ##
@@ -615,8 +616,11 @@ func is_walkable(tile: Vector2i) -> bool:
 ## that tile's depth or more from open ground: the tile shrunk by that depth on every side that faces
 ## an open tile, less a disc of that radius round each corner an open tile meets only diagonally.
 ## Only a tile's eight neighbours can be nearer than a whole tile, which is why neither depth may
-## exceed `Tuning.TILE_SIZE`. A segment exactly the depth from open ground at its deepest is blocked
-## — so a building two tiles thick blocks every line that crosses it, at its middle.
+## exceed `Tuning.TILE_SIZE`. A segment exactly the depth from open ground at its deepest is blocked.
+## **A building two tiles thick blocks only along its middle**, the one line of points a whole tile
+## in, and not within a tile of an open end of it: a line straight through such a building 31px from
+## its end passes, and a building two tiles square blocks only a line through its very centre. That
+## is the player's "otherwise it should be one tile" read literally, and the end is open to them.
 func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH,
 		thin_depth := Tuning.THIN_WALL_SHIELD_DEPTH) -> bool:
 	var tile_size := float(Tuning.TILE_SIZE)

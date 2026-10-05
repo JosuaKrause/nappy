@@ -1406,11 +1406,15 @@ only one tile thick (`Tuning.THIN_WALL_SHIELD_DEPTH`, half a tile), measured fro
 ground — `CityMap.wall_between()`. Thick or thin is decided tile by tile: a building tile is part of
 something thicker when one of its corners is a point where four building tiles meet, and otherwise
 it is part of a one-tile wall, the bend of an L of them included. Every source asks it, the crowd's
-walkers and cars too (`CrowdAgent.contribution_at()`), horn and bump jolts included. Every line
-across a one-tile wall passes its middle and is blocked; a building two tiles thick blocks every
-line across it at its middle, a tile in; a line that clips a corner, runs along a face or crosses
-only a building's outer tile blocks nothing; and half a tile is over the pram's own body radius, so
-her body poking into a wall's edge shields her from nothing. The line runs from the source's own node — a flock's centre, a shaped
+walkers and cars too (`CrowdAgent.contribution_at()`), horn and bump jolts included. A line across
+a one-tile wall is blocked at its middle, square or slanted, except within half a tile of an open
+end of the wall. A building two tiles thick has its points a tile in only along its middle line, so
+it blocks a line across it only away from its ends: within a tile of an open end a line straight
+through 64px of building passes, and a building two tiles square blocks only a line through its very
+centre — the player's "otherwise it should be one tile" read literally, with the ends open to them.
+A line that clips a corner, runs along a face or crosses only a building's outer tile blocks
+nothing; and half a tile is over the pram's own body radius, so her body poking into a wall's edge
+shields her from nothing. The line runs from the source's own node — a flock's centre, a shaped
 row's middle — to her centre, and is asked only once the field is positive. It is the deeper test
 beside the pursuer's catch, which refuses a line that touches a building at all (`_clear_line_to()`,
 "Running that matters" in docs/MECHANICS.md). **The meter, the halo and the caret read the same

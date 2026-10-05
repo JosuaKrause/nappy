@@ -1,21 +1,22 @@
 diff --git i/src/city/city_map.gd w/src/city/city_map.gd
-index d60da1ec..b98b0040 100644
+index dbdd56a8..96252c24 100644
 --- i/src/city/city_map.gd
 +++ w/src/city/city_map.gd
-@@ -610,7 +610,16 @@ func is_walkable(tile: Vector2i) -> bool:
- ## tile's eight neighbours can be nearer than `depth` while `depth` is at most a tile, which is
- ## why `Tuning.WALL_SHIELD_DEPTH` may not exceed `Tuning.TILE_SIZE`. A segment exactly `depth`
- ## from open ground at its deepest is blocked.
+@@ -617,8 +617,17 @@ func is_walkable(tile: Vector2i) -> bool:
+ ## Only a tile's eight neighbours can be nearer than a whole tile, which is why neither depth may
+ ## exceed `Tuning.TILE_SIZE`. A segment exactly the depth from open ground at its deepest is blocked
+ ## — so a building two tiles thick blocks every line that crosses it, at its middle.
 +static var zz_calls := 0
 +static var zz_usec := 0
- func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH) -> bool:
+ func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH,
+ 		thin_depth := Tuning.THIN_WALL_SHIELD_DEPTH) -> bool:
 +	zz_calls += 1
 +	var zz_t := Time.get_ticks_usec()
-+	var zz_r := _zz_wall_between(from, to, depth)
++	var zz_r := _zz_wall_between(from, to, depth, thin_depth)
 +	zz_usec += Time.get_ticks_usec() - zz_t
 +	return zz_r
 +
-+func _zz_wall_between(from: Vector2, to: Vector2, depth: float) -> bool:
++func _zz_wall_between(from: Vector2, to: Vector2, depth: float, thin_depth: float) -> bool:
  	var tile_size := float(Tuning.TILE_SIZE)
  	var x := floori(from.x / tile_size)
  	var y := floori(from.y / tile_size)
