@@ -696,7 +696,8 @@ var _encounters := EncounterWatch.new()
 ## Asks `_encounters` about this frame, while a day is being played: not behind the title screen,
 ## which runs the city with her stood aside out of the `player` group, and not on the escape, which
 ## is not a day and has `nappy-escape-*` of its own. The view is the camera's — `Tuning.
-## VIEW_HALF_EXTENT` about the centre of the screen, which her look-ahead moves off her a little.
+## VIEW_HALF_EXTENT` about the centre of the screen, which her look-ahead moves off her a little —
+## and the controls' scheme says whether its bottom corners are covered (`VisibleView`).
 func _watch_the_encounters(delta: float) -> void:
 	if _walking_the_finale or not _player.is_in_group("player"):
 		return
@@ -704,7 +705,15 @@ func _watch_the_encounters(delta: float) -> void:
 	var centre := stroller.camera_screen_center() if stroller else _player.global_position
 	var view := Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	var running := stroller != null and stroller.run_excess_ratio() > 0.0
-	_encounters.tick(delta, _instances, view, _player.global_position, running)
+	if _controls == null or not is_instance_valid(_controls):
+		_controls = get_tree().get_first_node_in_group(HelpText.CONTROLS_GROUP) as TouchControls
+	var joystick := _controls != null and is_instance_valid(_controls) \
+			and _controls.controls_mode() == ControlsMode.Mode.JOYSTICK
+	_encounters.tick(delta, _instances, view, joystick, _player.global_position, running)
+
+## The on-screen controls, found once — `null` where nothing built them (a rig, a test), which is
+## the tap scheme's whole view.
+var _controls: TouchControls = null
 
 ## What the run log and the page's counter call the event whose lethal reach ended today
 ## (`EventInstance.logged_name()` — `pelican` for a pelican, otherwise its row's id), or "" when no

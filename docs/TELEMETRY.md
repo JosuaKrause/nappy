@@ -128,15 +128,21 @@ The events:
   (`charging-dog`), or `pelican` for a pelican, never `cyclist`; ordinary walkers and cars send
   none. `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
   `EventManager` while a day is played (not behind the title, not on the escape), decides each:
+  - **What she can see** is `VisibleView.visible_share()` (`src/ui/visible_view.gd`): the share of
+    a world rectangle inside the camera's view, `Tuning.VIEW_HALF_EXTENT` about its centre, less, in
+    the joystick scheme, the two bottom corners its controls cover — each from the screen's side to
+    the far edge of its run button, and from the top of its ring down *(inbox #581, the player:
+    "remove the area at the bottom left and right up to the top of the joystick circle and
+    horizontal extent of the speed button ... for the other mode those rectangles *do* count")*.
+    Nothing gameplay decides by asks it yet.
   - **An encounter** is one instance's time on screen: it opens the first frame any of what is
-    drawn for it is inside the view (`EventInstance.drawn_box()`, its own picture stretched over
-    the run a spread covers, against `Tuning.VIEW_HALF_EXTENT` about the camera's centre) or it
-    lands something on her from off screen, and it is over once the instance has been neither for
+    drawn for it is visible (`EventInstance.drawn_box()`, its own picture stretched over the run a
+    spread covers) or it lands something on her from off screen, and it is over once the instance has been neither for
     `Tuning.ENCOUNTER_GAP` (5s). Coming back sooner is the same encounter; a different instance is
     always another.
   - **`seen`**, at most once per encounter: the first frame `Tuning.ENCOUNTER_SEEN_SHARE` (80%) of
-    the instance's drawn box is inside the view, so a sliver at the edge, its halo or its badge does
-    not count. A row that draws nothing of its own (`playground`, `curfew_announce`) is never seen.
+    the instance's drawn box is visible, so a sliver at the edge, a thing under the joystick's
+    controls, its halo or its badge does not count. A row that draws nothing of its own (`playground`, `curfew_announce`) is never seen.
   - **`influenced`**, at most once per encounter, the first frame it is meaningful: for a row whose
     field excites her, `Tuning.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed on her within
     the encounter (`EventInstance.landed_ever`); for a row that does not, her inside its lethal

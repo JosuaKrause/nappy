@@ -12,8 +12,11 @@ extends RefCounted
 ## `influenced-unseen-<event>`) and `nappy-day-N-ran`. No roll, no write to anything an event, the
 ## baby or the player reads, so the day plays the same with nobody listening.
 ##
+## **What she can see is `VisibleView.visible_share()`**: the view, less the two bottom corners the
+## joystick scheme's rings and run buttons cover, which count in the tap scheme.
+##
 ## **An encounter is one instance's time on screen.** It opens the first frame any of what is drawn
-## for the instance is in the view (`EventInstance.drawn_box()` against the view box), or the instance
+## for the instance is visible (`EventInstance.drawn_box()`), or the instance
 ## lands something on her from off screen; it stays open while either goes on; and it is over once
 ## the instance has been neither for `Tuning.ENCOUNTER_GAP` — so coming back sooner is the same
 ## encounter, and later a new one. Every instance is its own: a different yeller is a different
@@ -22,8 +25,8 @@ extends RefCounted
 ##
 ## Within one encounter:
 ##
-## - **seen** at most once, the first frame `Tuning.ENCOUNTER_SEEN_SHARE` of its drawn box is inside
-##   the view. A row that draws nothing of its own has nothing to be seen and is never seen.
+## - **seen** at most once, the first frame `Tuning.ENCOUNTER_SEEN_SHARE` of its drawn box is
+##   visible. A row that draws nothing of its own has nothing to be seen and is never seen.
 ## - **influenced** at most once, the first frame the encounter is meaningful: for a row that excites
 ##   her, `Tuning.ENCOUNTER_INFLUENCE_POINTS` landed on her within the encounter
 ##   (`EventInstance.landed_ever`, since `landed()` keeps only the halo's window); for one that does
@@ -71,13 +74,14 @@ var _ran_last := -INF
 ## next day starts goes out under the day it happened on.
 var day := 0
 
-## One frame. `view` is the visible world, `her` where she stands, `running` whether she is running.
-func tick(delta: float, instances: Array[EventInstance], view: Rect2, her: Vector2,
-		running: bool) -> void:
+## One frame. `view` is the world the camera shows, `joystick` whether the joystick scheme's
+## controls cover its bottom corners, `her` where she stands, `running` whether she is running.
+func tick(delta: float, instances: Array[EventInstance], view: Rect2, joystick: bool,
+		her: Vector2, running: bool) -> void:
 	_clock += delta
 	_frame += 1
 	for instance in instances:
-		_look_at(instance, view, her)
+		_look_at(instance, view, joystick, her)
 	_close_what_is_over()
 	_watch_the_running(running)
 
@@ -91,11 +95,11 @@ func end_day() -> void:
 	_running = false
 	_ran_last = -INF
 
-func _look_at(instance: EventInstance, view: Rect2, her: Vector2) -> void:
+func _look_at(instance: EventInstance, view: Rect2, joystick: bool, her: Vector2) -> void:
 	var box := instance.drawn_box()
-	var drawn := box.has_area()
 	var world := Rect2(box.position + instance.global_position, box.size)
-	var in_view := drawn and world.intersects(view)
+	var share := VisibleView.visible_share(world, view, joystick)
+	var in_view := share > 0.0
 	var record := instance.encounter
 	var landing := record != null and instance.landed_ever > record.landed_last
 	if record == null:
@@ -114,7 +118,7 @@ func _look_at(instance: EventInstance, view: Rect2, her: Vector2) -> void:
 	if not record.open:
 		record.landed_last = instance.landed_ever
 		return
-	if not record.seen and in_view and _share_inside(world, view) >= Tuning.ENCOUNTER_SEEN_SHARE:
+	if not record.seen and share >= Tuning.ENCOUNTER_SEEN_SHARE:
 		record.seen = true
 		EventBus.encounter_seen.emit(day, record.name)
 		if record.influence_waiting:
@@ -137,9 +141,6 @@ func _open_an_encounter(record: Record) -> void:
 	record.influence_waiting = false
 	record.landed_at_open = record.landed_last
 	_open.append(record)
-
-static func _share_inside(world: Rect2, view: Rect2) -> float:
-	return world.intersection(view).get_area() / world.get_area()
 
 ## The meaningful-encounter test — see the class doc. Whether a row excites her is read off its
 ## own field (`intensity`, `core_intensity`), so a row that adds one later changes rule with it.

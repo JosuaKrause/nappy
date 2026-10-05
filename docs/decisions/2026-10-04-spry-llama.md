@@ -67,6 +67,15 @@ running excluding gaps smaller than 10s".)*
   draws nothing of its own (`playground`, `curfew_announce`, `finale_explosion`) is never seen.
 - **The view is the camera's**, `Tuning.VIEW_HALF_EXTENT` about `Stroller.camera_screen_center()`,
   not the point test `EventManager._is_on_screen()` makes about her for the fire and the pelican.
+- **The joystick scheme's controls hide the bottom corners.** *(Inbox #581, the player: "when
+  counting the 80% visibility for seen remove the area at the bottom left and right up to the top
+  of the joystick circle and horizontal extent of the speed button -- use that everywhere where
+  visibility is concerned -- for the other mode those rectangles *do* count".)* Each bottom corner
+  holds a ring with its run button inward of it, so each covered rectangle runs from the screen's
+  side to the far edge of its run button and from the top of its ring down, worked out from
+  `TouchControls`' own constants. `VisibleView.visible_share()` is the one function that answers
+  how much of a world rectangle she can see; the encounter's opening and its seen both ask it.
+  Switching gameplay's own visibility tests to it changes play and is a question of its own.
 - **Not counted behind the title screen**, which runs the city with her stood aside, **nor on the
   escape**, which is not a day and has `nappy-escape-*` of its own.
 - **A planned event streamed out and back in is a new instance**, and that changes nothing: it

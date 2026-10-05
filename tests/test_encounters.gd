@@ -32,12 +32,15 @@ func run(t) -> void:
 	_test_coming_back_after_the_gap_is_a_second_encounter(t)
 	_test_coming_back_inside_the_gap_is_the_same_encounter(t)
 	_test_a_sliver_at_the_edge_is_not_seen(t)
+	_test_the_joystick_corners_are_not_visible(t)
+	_test_a_thing_under_the_joystick_controls_is_not_seen(t)
 	_test_a_tenth_of_the_meter_is_one_influence_per_encounter(t)
 	_test_an_influence_from_off_screen_waits_to_be_seen(t)
 	_test_a_chase_is_an_influence_for_a_row_that_does_not_excite(t)
 	_test_two_instances_are_two_encounters(t)
 	_test_runs_less_than_the_gap_apart_are_one_bout(t)
 	_test_the_manager_watches_only_while_she_is_playing(t)
+	_test_the_manager_reads_the_controls_scheme(t)
 
 	EventBus.encounter_seen.disconnect(on_seen)
 	EventBus.encounter_influenced.disconnect(on_influenced)
@@ -68,9 +71,9 @@ static func _view(centre: Vector2) -> Rect2:
 
 ## `seconds` of frames of `watch`, with the view about `centre` and her standing at its centre.
 func _run(watch: EncounterWatch, instances: Array[EventInstance], centre: Vector2, seconds: float,
-		running := false) -> void:
+		running := false, joystick := false) -> void:
 	for _i in int(round(seconds / STEP)):
-		watch.tick(STEP, instances, _view(centre), centre, running)
+		watch.tick(STEP, instances, _view(centre), joystick, centre, running)
 
 ## Far enough from any instance near the origin that nothing of it is in view.
 const AWAY := Vector2(2000.0, 0.0)
@@ -130,6 +133,76 @@ func _test_a_sliver_at_the_edge_is_not_seen(t) -> void:
 	t.check(_seen.is_empty(), "nor with 70% of it in view")
 	_run(watch, instances, centre_for.call(0.9), 1.0)
 	t.check(_seen.size() == 1, "with 90%% of it in view it is seen, once (%d)" % _seen.size())
+	yeller.free()
+
+## `VisibleView` *(inbox #581, the player: "remove the area at the bottom left and right up to the
+## top of the joystick circle and horizontal extent of the speed button ... for the other mode those
+## rectangles *do* count")*: each covered corner holds its own ring and run button whole, and
+## reaches no higher than the ring's top; in the joystick scheme what lies in a corner is not
+## visible, in the tap scheme it is, and the middle of the view is visible in both.
+func _test_the_joystick_corners_are_not_visible(t) -> void:
+	var left := VisibleView.covered_left()
+	var right := VisibleView.covered_right()
+	var ring := Vector2(TouchControls.STOP_RADIUS, TouchControls.STOP_RADIUS)
+	var button := Vector2(TouchControls.RUN_RADIUS, TouchControls.RUN_RADIUS)
+	t.check(left.encloses(Rect2(TouchControls.FOCUS_LEFT - ring, ring * 2.0))
+			and left.encloses(Rect2(TouchControls.RUN_CENTRE_LEFT - button, button * 2.0)),
+			"the left corner holds the left ring and its run button (%s)" % left)
+	t.check(right.encloses(Rect2(TouchControls.FOCUS_RIGHT - ring, ring * 2.0))
+			and right.encloses(Rect2(TouchControls.RUN_CENTRE_RIGHT - button, button * 2.0)),
+			"the right corner holds the right ring and its run button (%s)" % right)
+	t.check(is_equal_approx(left.position.y, TouchControls.FOCUS_LEFT.y - TouchControls.STOP_RADIUS)
+			and is_equal_approx(left.end.x, TouchControls.RUN_CENTRE_LEFT.x + TouchControls.RUN_RADIUS)
+			and is_equal_approx(left.end.y, ScreenOrientation.DESIGN_SIZE.y)
+			and is_zero_approx(left.position.x),
+			"and runs from the screen's side to the button's far edge, the ring's top to the bottom")
+	t.check(not left.intersects(right), "the two corners do not overlap")
+
+	var view := _view(Vector2.ZERO)
+	var scale := view.size / ScreenOrientation.DESIGN_SIZE
+	# A 10px square well inside each corner, at the bottom middle, and in the middle of the view.
+	var in_left := Rect2(view.position + (left.get_center() * scale) - Vector2(5.0, 5.0),
+			Vector2(10.0, 10.0))
+	var in_right := Rect2(view.position + (right.get_center() * scale) - Vector2(5.0, 5.0),
+			Vector2(10.0, 10.0))
+	var bottom_middle := Rect2(Vector2(-5.0, view.end.y - 12.0), Vector2(10.0, 10.0))
+	var middle := Rect2(Vector2(-5.0, -5.0), Vector2(10.0, 10.0))
+	for rect: Rect2 in [in_left, in_right]:
+		t.check(is_zero_approx(VisibleView.visible_share(rect, view, true))
+				and is_equal_approx(VisibleView.visible_share(rect, view, false), 1.0),
+				"a thing in a bottom corner is hidden by the joystick scheme and seen in the tap one")
+	for rect: Rect2 in [bottom_middle, middle]:
+		t.check(is_equal_approx(VisibleView.visible_share(rect, view, true), 1.0)
+				and is_equal_approx(VisibleView.visible_share(rect, view, false), 1.0),
+				"a thing between the corners or in the middle is visible in both schemes")
+	var top := view.position.y + left.position.y * scale.y
+	var straddling := Rect2(Vector2(view.position.x + 10.0, top - 5.0), Vector2(10.0, 10.0))
+	t.check(is_equal_approx(VisibleView.visible_share(straddling, view, true), 0.5),
+			"one across the corner's top edge is half visible in the joystick scheme (%.2f)"
+			% VisibleView.visible_share(straddling, view, true))
+	t.check(is_zero_approx(VisibleView.visible_share(Rect2(), view, false)),
+			"a thing with no area is not visible")
+
+## A yeller standing in the view's bottom-left corner: in the joystick scheme it is under the
+## controls, so nothing is seen and no encounter opens; in the tap scheme it is seen.
+func _test_a_thing_under_the_joystick_controls_is_not_seen(t) -> void:
+	_clear()
+	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
+	var instances: Array[EventInstance] = [yeller]
+	var view := _view(Vector2.ZERO)
+	var corner := view.position + VisibleView.covered_left().get_center() \
+			* (view.size / ScreenOrientation.DESIGN_SIZE)
+	# The view's centre that puts the yeller's drawn box in the middle of that corner.
+	var centre := yeller.drawn_box().get_center() - corner
+	t.check(is_zero_approx(VisibleView.visible_share(
+			Rect2(yeller.drawn_box().position, yeller.drawn_box().size), _view(centre), true)),
+			"the yeller's whole drawn box is under the joystick controls")
+	var watch := _watch()
+	_run(watch, instances, centre, 2.0, false, true)
+	t.check(_seen.is_empty(), "with the joystick scheme it is not seen")
+	_run(watch, instances, AWAY, Tuning.ENCOUNTER_GAP + 1.0)
+	_run(watch, instances, centre, 1.0, false, false)
+	t.check(_seen.size() == 1, "with the tap scheme it is (%d)" % _seen.size())
 	yeller.free()
 
 func _test_a_tenth_of_the_meter_is_one_influence_per_encounter(t) -> void:
@@ -239,7 +312,7 @@ func _test_a_chase_is_an_influence_for_a_row_that_does_not_excite(t) -> void:
 	t.check(_seen.size() == 1 and _influenced.is_empty(), "seen outside its reach is no influence")
 	var inside := Vector2(0.0, lethal_def.lethal_reach() - 2.0)
 	for _i in 3:
-		watch.tick(STEP, [standing] as Array[EventInstance], _view(inside), inside, false)
+		watch.tick(STEP, [standing] as Array[EventInstance], _view(inside), false, inside, false)
 	t.check(_influenced.size() == 1, "her inside its reach is (%d)" % _influenced.size())
 	standing.free()
 
@@ -284,6 +357,46 @@ func _test_runs_less_than_the_gap_apart_are_one_bout(t) -> void:
 	watch.end_day()
 	_run(watch, none, AWAY, 0.5, true)
 	t.check(_ran.size() == 3, "and a new day's first run is its own bout (%d)" % _ran.size())
+
+## The manager reads the scheme off the on-screen controls: a yeller under the bottom-left
+## controls is not seen while they are the joystick scheme, and is once they are the tap one.
+func _test_the_manager_reads_the_controls_scheme(t) -> void:
+	_clear()
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = SEED
+	city.events.start_day(DAY, rng, [] as Array[String])
+	var events := city.events
+	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	var her := CrowdLanes.arterial_pavement(city.map)
+	stroller.reset_at(her)
+	events._player = stroller
+	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	t.add_child(controls)
+	controls.set_mode(ControlsMode.Mode.JOYSTICK)
+	var view := _view(stroller.camera_screen_center())
+	var scale := view.size / ScreenOrientation.DESIGN_SIZE
+	var corner := view.position + VisibleView.covered_left().get_center() * scale
+	var def := EventCatalogue.by_id("homeless_yeller")
+	var yeller := events.spawn_extra(def, her)
+	yeller.global_position = corner - yeller.drawn_box().get_center()
+	for _i in 30:
+		events._physics_process(STEP)
+	t.check(not _seen.has("%d:homeless_yeller" % DAY),
+			"under the joystick scheme's controls it is not seen (%s)" % [_seen])
+	controls.set_mode(ControlsMode.Mode.TAP)
+	for _i in 30:
+		events._physics_process(STEP)
+	t.check(_seen.has("%d:homeless_yeller" % DAY), "in the tap scheme it is (%s)" % [_seen])
+	events.retire(yeller)
+	events._player = null
+	controls.free()
+	stroller.free()
+	city.free()
 
 ## The wiring: a real day's manager, with her on the street beside a yeller, tells the yeller seen
 ## under the day it was started for — and tells nothing while she is stood aside for the title.
