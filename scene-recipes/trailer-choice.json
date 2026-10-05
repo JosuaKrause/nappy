@@ -9,7 +9,7 @@
       {"cell": [1, 3], "kind": "water_tank"}, {"cell": [5, 3], "kind": "water_tank"},
       {"cell": [3, 1], "kind": "vent"}]}],
     "events": [{"name": "obstacle", "row": "leaf_blower", "at": "blower", "age": 1.8}]},
-  "playback": {"walk": "2.4e1.6w1.35n2.6e", "duration": 7.95, "capture_at": 6.75,
+  "playback": {"walk": "2.4e2.2w1.35n2.0e", "duration": 7.95, "capture_at": 6.75,
     "observations": [{"tick": 24, "subject": "player", "condition": "moving"},
       {"tick": 39, "subject": "player", "condition": "moving"},
       {"tick": 72, "subject": "player", "condition": "moving"},
@@ -19,5 +19,5 @@
       {"tick": 120, "subject": "player", "condition": "near", "at": [2016, 1936], "distance": 45},
       {"tick": 150, "subject": "player", "condition": "moving"},
       {"tick": 195, "subject": "player", "condition": "moving"},
-      {"tick": 237, "subject": "player", "condition": "near", "at": [2255, 1812], "distance": 35}]}
+      {"tick": 237, "subject": "player", "condition": "near", "at": [2141, 1812], "distance": 35}]}
 }

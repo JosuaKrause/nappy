@@ -15,21 +15,21 @@
       {"at": 0.10, "duration": 0.65, "frequency": 220.00, "gain": 0.020},
       {"at": 0.48, "duration": 0.80, "frequency": 329.63, "gain": 0.017},
       {"at": 0.88, "duration": 0.85, "frequency": 440.00, "gain": 0.014},
-      {"at": 2.70, "duration": 0.95, "frequency": 196.00, "gain": 0.010},
-      {"at": 5.40, "duration": 1.10, "frequency": 164.81, "gain": 0.012},
-      {"at": 8.65, "duration": 1.20, "frequency": 146.83, "gain": 0.016},
-      {"at": 10.35, "duration": 2.05, "frequency": 110.00, "gain": 0.021},
-      {"at": 11.00, "duration": 1.30, "frequency": 164.81, "gain": 0.013},
-      {"at": 13.40, "duration": 1.15, "frequency": 146.83, "gain": 0.015},
-      {"at": 14.00, "duration": 1.45, "frequency": 220.00, "gain": 0.013},
-      {"at": 16.00, "duration": 0.48, "frequency": 55.00, "gain": 0.030},
-      {"at": 17.30, "duration": 0.48, "frequency": 61.74, "gain": 0.030},
-      {"at": 18.60, "duration": 0.48, "frequency": 73.42, "gain": 0.030},
-      {"at": 20.05, "duration": 1.30, "frequency": 220.00, "gain": 0.016},
-      {"at": 20.75, "duration": 1.45, "frequency": 329.63, "gain": 0.014},
-      {"at": 21.55, "duration": 1.60, "frequency": 440.00, "gain": 0.012},
-      {"at": 23.40, "duration": 1.35, "frequency": 293.66, "gain": 0.013},
-      {"at": 24.10, "duration": 1.70, "frequency": 440.00, "gain": 0.011}
+      {"at": 3.20, "duration": 0.95, "frequency": 196.00, "gain": 0.010},
+      {"at": 5.90, "duration": 1.10, "frequency": 164.81, "gain": 0.012},
+      {"at": 9.15, "duration": 1.20, "frequency": 146.83, "gain": 0.016},
+      {"at": 13.35, "duration": 2.05, "frequency": 110.00, "gain": 0.021},
+      {"at": 14.00, "duration": 1.30, "frequency": 164.81, "gain": 0.013},
+      {"at": 16.40, "duration": 1.15, "frequency": 146.83, "gain": 0.015},
+      {"at": 17.00, "duration": 1.45, "frequency": 220.00, "gain": 0.013},
+      {"at": 19.00, "duration": 0.48, "frequency": 55.00, "gain": 0.030},
+      {"at": 20.30, "duration": 0.48, "frequency": 61.74, "gain": 0.030},
+      {"at": 21.60, "duration": 0.48, "frequency": 73.42, "gain": 0.030},
+      {"at": 23.05, "duration": 1.30, "frequency": 220.00, "gain": 0.016},
+      {"at": 23.75, "duration": 1.45, "frequency": 329.63, "gain": 0.014},
+      {"at": 24.55, "duration": 1.60, "frequency": 440.00, "gain": 0.012},
+      {"at": 26.40, "duration": 1.35, "frequency": 293.66, "gain": 0.013},
+      {"at": 27.10, "duration": 1.70, "frequency": 440.00, "gain": 0.011}
     ]
   },
   "shots": [
@@ -38,7 +38,7 @@
       "kind": "card",
       "card": {"text": "Just a walk.", "font_size": 108,
         "subtitle": "Get the baby to sleep.", "subtitle_font_size": 30},
-      "length": 1.2
+      "length": 1.7
     },
     {
       "name": "choice",
@@ -52,7 +52,7 @@
       "recipe": "scene-recipes/trailer-birds.json",
       "motion": true,
       "in": 1,
-      "length": 1.5,
+      "length": 4,
       "gap": 0.25
     },
     {
