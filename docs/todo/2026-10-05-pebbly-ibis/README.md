@@ -3,9 +3,12 @@ priority: now
 # pebbly-ibis — The pelican is drawn from one shared bag per run · filed 2026-10-05
 
 [feathery-lynx](../../playtests/2026-10-05-feathery-lynx.md) files inbox #575, said in a
-conversation about the marble bags. The band `now` is the filer's proposal: the player's last word
-on it was "let's do", and it builds on the marble bag that olive-badger (what she meets on her
-route is drawn from a marble bag, PR #565) has just merged.
+conversation about the marble bags. It builds on the marble bag that olive-badger (what she meets
+on her route is drawn from a marble bag, PR #565) has merged. **The band `now` is the player's**,
+for right after the release (inbox #591 in
+[olive-hedgehog](../../playtests/2026-10-05-olive-hedgehog.md), of this entry with jolly-hare,
+olive-badger's forced cases and sandy-ferret): "queue those items as immediately now after the
+release (but don't start them this session)".
 
 The idea, said unprompted:
 
