@@ -98,6 +98,8 @@ func _prepare_chunk(key: Vector2i) -> void:
 			layer.append(texture, Rect2(entry.position - texture.get_size() * 0.5, texture.get_size()))
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	if streamed:
 		return
 	for entry in _placed:

@@ -7,7 +7,8 @@ extends Node
 ## Built by `main` under `--frame-record` or the page's `?framerecord=1` (`DevFlags.
 ## frame_record_requested()`). It marks the engine's phases for `FrameLedger`: its own physics and
 ## process callbacks run first in their step (`PRIORITY_FIRST`), a child's process callback runs
-## last (`PRIORITY_LAST`), and the renderer's post-draw callback ends the drawing. The named
+## last (`PRIORITY_LAST`), the renderer's pre-draw callback ends `draw` and its post-draw callback
+## ends `render`. The named
 ## systems mark themselves through `FrameRecord`.
 ##
 ## **On the web, a button the page itself draws saves the record** through the browser's own
@@ -47,6 +48,8 @@ var _city: City
 var _player: Stroller
 var _day: DayController
 var _metadata: Dictionary = {}
+## The window's viewport, whose render time the engine measures while the record is on.
+var _viewport: RID
 ## Whether scene exit writes the record on the desktop. A test turns it off.
 var save_on_exit := true
 
@@ -82,7 +85,10 @@ func setup(main: Node, city: City, player: Stroller, day: DayController) -> void
 	end.process_mode = Node.PROCESS_MODE_ALWAYS
 	end.process_priority = PRIORITY_LAST
 	add_child(end)
+	RenderingServer.frame_pre_draw.connect(_at_pre_draw)
 	RenderingServer.frame_post_draw.connect(_at_post_draw)
+	_viewport = get_viewport().get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(_viewport, true)
 	if OS.get_name() == "Web":
 		_add_page_button()
 
@@ -107,8 +113,14 @@ func at_process_end() -> void:
 		ledger.set_counter(FrameLedger.PROCESS_FRAME, Engine.get_process_frames())
 	ledger.process_end(Time.get_ticks_usec())
 
+## The renderer is about to do its own work: `draw` ends and `render` begins.
+func _at_pre_draw() -> void:
+	ledger.pre_draw(Time.get_ticks_usec())
+
 func _at_post_draw() -> void:
 	ledger.drawn(Time.get_ticks_usec())
+	ledger.set_counter(FrameLedger.RENDER_CPU_USEC, roundi(
+			RenderingServer.viewport_get_measured_render_time_cpu(_viewport) * 1000.0))
 	ledger.set_counter(FrameLedger.DRAW_CALLS, FrameCost.draw_calls())
 	ledger.set_counter(FrameLedger.RENDER_OBJECTS, FrameCost.objects())
 	ledger.set_counter(FrameLedger.PRIMITIVES, FrameCost.primitives())
@@ -161,12 +173,19 @@ static func fits_the_readout(line: String) -> bool:
 func report_text() -> String:
 	var report := ledger.report()
 	report["schema"] = "nappy-frame-record"
-	report["schema_version"] = 1
-	report["gpu_time"] = "not measured: a phone's browser offers no GPU timing, so draw_usec " \
-			+ "is the CPU side of drawing only"
+	report["schema_version"] = 2
+	report["gpu_time"] = "not measured: a phone's browser offers no GPU timing, so draw_usec + " \
+			+ "render_usec is the CPU side of drawing only"
 	report["clock"] = "every microsecond value is quantized to environment.timer_resolution_usec, "\
 			+ "which on a page is the browser's reduced-precision clock"
 	report["buckets"] = _bucket_notes()
+	report["render_cpu_usec"] = "the engine's own measured CPU time for the window's last render " \
+			+ "(RenderingServer.viewport_get_measured_render_time_cpu), in microseconds; 0 in " \
+			+ "every row means this build does not report it (see environment." \
+			+ "render_cpu_reported)"
+	report["draws"] = "draws_* count the game's own _draw() calls in the frame by kind: crowd, " \
+			+ "events, halos (EntityHalo rims), scenery, badges (DangerEdge), player, other; " \
+			+ "counts, not times"
 	var metadata := _metadata.duplicate()
 	metadata["build"] = TitleScreen.build_text()
 	metadata["run_seed"] = GameState.run_seed
@@ -178,6 +197,7 @@ func report_text() -> String:
 	metadata["video_adapter"] = RenderingServer.get_video_adapter_name()
 	metadata["display_server"] = DisplayServer.get_name()
 	metadata["main_thread_is_render_thread"] = RenderingServer.is_on_render_thread()
+	metadata["render_cpu_reported"] = _render_cpu_reported()
 	metadata["saved_at"] = Time.get_datetime_string_from_system()
 	if OS.get_name() == "Web":
 		var agent: Variant = JavaScriptBridge.eval("navigator.userAgent")
@@ -212,8 +232,19 @@ func save() -> String:
 	print("Frame record: %s" % written)
 	return written
 
+## Whether the engine reported a render time in any kept frame.
+func _render_cpu_reported() -> bool:
+	for row in ledger.rows():
+		if row[FrameLedger.FIRST_COUNTER + FrameLedger.RENDER_CPU_USEC] > 0:
+			return true
+	return false
+
 func _exit_tree() -> void:
 	FrameRecord.on = false
+	if _viewport.is_valid():
+		RenderingServer.viewport_set_measure_render_time(_viewport, false)
+	if RenderingServer.frame_pre_draw.is_connected(_at_pre_draw):
+		RenderingServer.frame_pre_draw.disconnect(_at_pre_draw)
 	if RenderingServer.frame_post_draw.is_connected(_at_post_draw):
 		RenderingServer.frame_post_draw.disconnect(_at_post_draw)
 	if OS.get_name() == "Web":
@@ -288,9 +319,12 @@ static func _bucket_notes() -> Dictionary:
 		"events": "event updates: EventManager._physics_process() and every "
 			+ "EventInstance._process()",
 		"cues": "danger cues: ExcitementHalo._process() and DangerEdge._process()",
-		"draw": "CPU side of drawing: deferred calls and _draw() callbacks after the last "
-			+ "_process() (but the scenery queue's), then the renderer's sync and submit; no GPU "
-			+ "time; on a native window with VSync, the buffer swap's wait",
+		"draw": "from the last _process() to the renderer's pre-draw callback: deferred calls, the "
+			+ "game's _draw() callbacks (but the scenery queue's) and the engine's scene "
+			+ "preparation; counted per kind in draws_*",
+		"render": "from the renderer's pre-draw callback to its post-draw callback: the "
+			+ "renderer's own work and any GPU wait; no GPU time of its own; on a native window "
+			+ "with VSync, the buffer swap's wait; draw + render is the whole CPU side of drawing",
 		"wait": "after the post-draw callback until the next frame: idle until the refresh, "
 			+ "plus input and window events; not a cost",
 	}

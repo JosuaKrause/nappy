@@ -1,0 +1,1225 @@
+[
+  {
+    "label": "00-cost-main-off-warmup",
+    "order": 0,
+    "part": "cost",
+    "condition": "main-off",
+    "trial": "warmup",
+    "attempt": 1,
+    "started": "2026-10-04T15:32:30",
+    "load_average_before": [
+      2.46,
+      2.44,
+      2.69
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "main",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 8157,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 7.9257,
+      "p50_ms": 7.697,
+      "p95_ms": 11.168,
+      "p99_ms": 12.594,
+      "max_ms": 24.142,
+      "over_60hz_budget": 4,
+      "over_30hz_budget": 0,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2808.4,
+      "days": [
+        1
+      ],
+      "median_live_events": 37.0,
+      "median_crowd": 234.0,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": null
+  },
+  {
+    "label": "01-cost-branch-off-warmup",
+    "order": 1,
+    "part": "cost",
+    "condition": "branch-off",
+    "trial": "warmup",
+    "attempt": 1,
+    "started": "2026-10-04T15:33:44",
+    "load_average_before": [
+      2.76,
+      2.5,
+      2.69
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "branch",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 8147,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 7.9356,
+      "p50_ms": 7.684,
+      "p95_ms": 11.135,
+      "p99_ms": 12.337,
+      "max_ms": 17.329,
+      "over_60hz_budget": 4,
+      "over_30hz_budget": 0,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2808.0,
+      "days": [
+        1
+      ],
+      "median_live_events": 37.0,
+      "median_crowd": 234.0,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": null
+  },
+  {
+    "label": "02-cost-branch-on-warmup",
+    "attempt": 1,
+    "rejected": true,
+    "reasons": [
+      "another Godot process ran beside it"
+    ],
+    "competition": [
+      "50999 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552 --script tools/bake_atlases.gd --",
+      "51034 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552",
+      "51069 /Applications/Godot.app/Contents/MacOS/Godot --headless --quit-after 60 --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552",
+      "55388 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552",
+      "55420 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552 res://tools/cost_table.tscn -- --check"
+    ]
+  },
+  {
+    "label": "02-cost-branch-on-warmup",
+    "attempt": 2,
+    "rejected": true,
+    "reasons": [
+      "another Godot process ran beside it"
+    ],
+    "competition": [
+      "76469 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552",
+      "77234 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552",
+      "77249 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552 res://tests/tests.tscn -- events_pursuit",
+      "77394 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552",
+      "77402 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552 res://tests/tests.tscn -- events_pursuit"
+    ]
+  },
+  {
+    "label": "02-cost-branch-on-warmup",
+    "order": 2,
+    "part": "cost",
+    "condition": "branch-on",
+    "trial": "warmup",
+    "attempt": 3,
+    "started": "2026-10-04T15:46:27",
+    "load_average_before": [
+      2.05,
+      2.38,
+      2.5
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "branch",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace",
+      "--frame-record"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 4717,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 13.7005,
+      "p50_ms": 14.193,
+      "p95_ms": 24.165,
+      "p99_ms": 26.716,
+      "max_ms": 35.115,
+      "over_60hz_budget": 1407,
+      "over_30hz_budget": 2,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2817.4,
+      "days": [
+        1
+      ],
+      "median_live_events": 38.0,
+      "median_crowd": 234.0,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": {
+      "rows": 5145,
+      "undrawn_rows": 0,
+      "overwritten": 0,
+      "ground_mode": 2,
+      "refresh_hz": 60.0,
+      "display_budget_usec": 16667,
+      "timer_pair_usec": 0.569,
+      "timer_resolution_usec": 1,
+      "mean_timer_calls": 275.2,
+      "own_cost_us_per_frame": 156.6,
+      "northmost_y_px": 19,
+      "last_y_px": 2817,
+      "summary": {
+        "display_budget_ms": 16.667,
+        "frame_max_ms": 37.977,
+        "frame_p50_ms": 13.403,
+        "frame_p95_ms": 24.041,
+        "frame_p99_ms": 26.578,
+        "frames": 5145,
+        "largest_cost_in_slow_frames": {
+          "crowd": 112,
+          "render": 17
+        },
+        "largest_cost_in_slow_frames_with_scenery_jobs": {
+          "crowd": 20,
+          "render": 1
+        },
+        "largest_cost_in_slow_frames_without_scenery_jobs": {
+          "crowd": 92,
+          "render": 16
+        },
+        "mean_ms_per_frame": {
+          "crowd": 4.80645014577259,
+          "cues": 2.06944334305151,
+          "draw": 1.19960641399417,
+          "events": 1.31735762876579,
+          "influence": 0.0189755102040816,
+          "physics_rest": 0.106026822157434,
+          "process_rest": 0.352503012633625,
+          "render": 3.55768649173955,
+          "scenery": 0.0689376093294461,
+          "wait": 0.040001166180758
+        },
+        "mean_ms_per_slow_frame": {
+          "crowd": 9.97908527131783,
+          "cues": 3.87498449612403,
+          "draw": 2.82117829457364,
+          "events": 3.15741085271318,
+          "influence": 0.0698682170542636,
+          "physics_rest": 0.404922480620155,
+          "process_rest": 0.662062015503876,
+          "render": 5.56595348837209,
+          "scenery": 0.613813953488372,
+          "wait": 0.0876356589147287
+        },
+        "mean_ms_per_slow_frame_with_scenery_jobs": {
+          "crowd": 9.71423809523809,
+          "cues": 3.82814285714286,
+          "draw": 2.39166666666667,
+          "events": 3.1752380952381,
+          "influence": 0.0683809523809524,
+          "physics_rest": 0.388857142857143,
+          "process_rest": 0.605857142857143,
+          "render": 4.00357142857143,
+          "scenery": 2.53347619047619,
+          "wait": 0.0759047619047619
+        },
+        "mean_ms_per_slow_frame_without_scenery_jobs": {
+          "crowd": 10.0305833333333,
+          "cues": 3.88409259259259,
+          "draw": 2.90469444444444,
+          "events": 3.15394444444444,
+          "influence": 0.0701574074074074,
+          "physics_rest": 0.408046296296296,
+          "process_rest": 0.672990740740741,
+          "render": 5.86975,
+          "scenery": 0.240546296296296,
+          "wait": 0.0899166666666667
+        },
+        "slow_after_ms": 25.0,
+        "slow_frames": 129,
+        "slow_frames_with_scenery_jobs": 21,
+        "slow_frames_without_scenery_jobs": 108
+      }
+    }
+  },
+  {
+    "label": "03-cost-main-off-r1",
+    "attempt": 1,
+    "rejected": true,
+    "reasons": [
+      "another Godot process ran beside it"
+    ],
+    "competition": [
+      "96567 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552",
+      "96594 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552 res://tests/tests.tscn -- probes/review552_edges.gd"
+    ]
+  },
+  {
+    "label": "03-cost-main-off-r1",
+    "attempt": 2,
+    "rejected": true,
+    "reasons": [
+      "another Godot process ran beside it"
+    ],
+    "competition": [
+      "97244 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552",
+      "97254 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552 res://tests/tests.tscn -- probes/review552_mouth.gd",
+      "97301 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552"
+    ]
+  },
+  {
+    "label": "03-cost-main-off-r1",
+    "attempt": 3,
+    "rejected": true,
+    "reasons": [
+      "another Godot process ran beside it"
+    ],
+    "competition": [
+      "97548 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552",
+      "97559 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552 res://tests/tests.tscn -- probes/review552_mouth.gd",
+      "97748 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552",
+      "97788 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552 res://tests/tests.tscn -- probes/review552_mouth.gd",
+      "97857 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/review-552"
+    ]
+  },
+  {
+    "label": "03-cost-main-off-r1",
+    "order": 3,
+    "part": "cost",
+    "condition": "main-off",
+    "trial": "r1",
+    "attempt": 4,
+    "started": "2026-10-04T15:51:28",
+    "load_average_before": [
+      2.94,
+      2.76,
+      2.64
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "main",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 8047,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 8.0341,
+      "p50_ms": 7.19,
+      "p95_ms": 11.228,
+      "p99_ms": 12.552,
+      "max_ms": 16.296,
+      "over_60hz_budget": 0,
+      "over_30hz_budget": 0,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2808.4,
+      "days": [
+        1
+      ],
+      "median_live_events": 37.0,
+      "median_crowd": 234.0,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": null
+  },
+  {
+    "label": "04-cost-branch-off-r1",
+    "order": 4,
+    "part": "cost",
+    "condition": "branch-off",
+    "trial": "r1",
+    "attempt": 1,
+    "started": "2026-10-04T15:52:41",
+    "load_average_before": [
+      2.74,
+      2.74,
+      2.64
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "branch",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 6241,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 10.3563,
+      "p50_ms": 9.29,
+      "p95_ms": 16.128,
+      "p99_ms": 17.885,
+      "max_ms": 24.139,
+      "over_60hz_budget": 172,
+      "over_30hz_budget": 0,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2808.8,
+      "days": [
+        1
+      ],
+      "median_live_events": 37.0,
+      "median_crowd": 234.0,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": null
+  },
+  {
+    "label": "05-cost-branch-on-r1",
+    "order": 5,
+    "part": "cost",
+    "condition": "branch-on",
+    "trial": "r1",
+    "attempt": 1,
+    "started": "2026-10-04T15:53:55",
+    "load_average_before": [
+      3.51,
+      2.92,
+      2.71
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "branch",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace",
+      "--frame-record"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 6595,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 9.792,
+      "p50_ms": 9.036,
+      "p95_ms": 15.953,
+      "p99_ms": 17.251,
+      "max_ms": 19.943,
+      "over_60hz_budget": 142,
+      "over_30hz_budget": 0,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2805.1,
+      "days": [
+        1
+      ],
+      "median_live_events": 36.0,
+      "median_crowd": 234.0,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": {
+      "rows": 6960,
+      "undrawn_rows": 0,
+      "overwritten": 0,
+      "ground_mode": 2,
+      "refresh_hz": 60.0,
+      "display_budget_usec": 16667,
+      "timer_pair_usec": 0.871,
+      "timer_resolution_usec": 1,
+      "mean_timer_calls": 273.2,
+      "own_cost_us_per_frame": 238.0,
+      "northmost_y_px": 19,
+      "last_y_px": 2805,
+      "summary": {
+        "display_budget_ms": 16.667,
+        "frame_max_ms": 53.591,
+        "frame_p50_ms": 9.158,
+        "frame_p95_ms": 16.111,
+        "frame_p99_ms": 17.628,
+        "frames": 6960,
+        "largest_cost_in_slow_frames": {
+          "crowd": 1,
+          "render": 1
+        },
+        "largest_cost_in_slow_frames_with_scenery_jobs": {},
+        "largest_cost_in_slow_frames_without_scenery_jobs": {
+          "crowd": 1,
+          "render": 1
+        },
+        "mean_ms_per_frame": {
+          "crowd": 3.31250833333333,
+          "cues": 1.48915890804598,
+          "draw": 0.695375574712644,
+          "events": 0.858314367816092,
+          "influence": 0.00992140804597701,
+          "physics_rest": 0.0573377873563218,
+          "process_rest": 0.257612787356322,
+          "render": 3.26107327586207,
+          "scenery": 0.0352966954022988,
+          "wait": 0.0274896551724138
+        },
+        "mean_ms_per_slow_frame": {
+          "crowd": 16.544,
+          "cues": 2.221,
+          "draw": 8.0615,
+          "events": 1.9175,
+          "influence": 0.107,
+          "physics_rest": 0.649,
+          "process_rest": 0.381,
+          "render": 15.5895,
+          "scenery": 0.171,
+          "wait": 4.6215
+        },
+        "mean_ms_per_slow_frame_with_scenery_jobs": {
+          "crowd": 0.0,
+          "cues": 0.0,
+          "draw": 0.0,
+          "events": 0.0,
+          "influence": 0.0,
+          "physics_rest": 0.0,
+          "process_rest": 0.0,
+          "render": 0.0,
+          "scenery": 0.0,
+          "wait": 0.0
+        },
+        "mean_ms_per_slow_frame_without_scenery_jobs": {
+          "crowd": 16.544,
+          "cues": 2.221,
+          "draw": 8.0615,
+          "events": 1.9175,
+          "influence": 0.107,
+          "physics_rest": 0.649,
+          "process_rest": 0.381,
+          "render": 15.5895,
+          "scenery": 0.171,
+          "wait": 4.6215
+        },
+        "slow_after_ms": 25.0,
+        "slow_frames": 2,
+        "slow_frames_with_scenery_jobs": 0,
+        "slow_frames_without_scenery_jobs": 2
+      }
+    }
+  },
+  {
+    "label": "06-cost-branch-off-r2",
+    "order": 6,
+    "part": "cost",
+    "condition": "branch-off",
+    "trial": "r2",
+    "attempt": 1,
+    "started": "2026-10-04T15:55:10",
+    "load_average_before": [
+      3.64,
+      3.07,
+      2.78
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "branch",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 8020,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 8.0607,
+      "p50_ms": 7.409,
+      "p95_ms": 11.41,
+      "p99_ms": 13.426,
+      "max_ms": 19.346,
+      "over_60hz_budget": 5,
+      "over_30hz_budget": 0,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2808.6,
+      "days": [
+        1
+      ],
+      "median_live_events": 37,
+      "median_crowd": 234,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": null
+  },
+  {
+    "label": "07-cost-branch-on-r2",
+    "attempt": 1,
+    "rejected": true,
+    "reasons": [
+      "another Godot process ran beside it"
+    ],
+    "competition": [
+      "30876 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/polite-rabbit",
+      "30883 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/polite-rabbit res://tests/tests.tscn -- events_pursuit",
+      "31140 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/polite-rabbit",
+      "31176 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/polite-rabbit res://tests/tests.tscn -- events_pursuit",
+      "31329 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/polite-rabbit"
+    ]
+  },
+  {
+    "label": "07-cost-branch-on-r2",
+    "attempt": 2,
+    "rejected": true,
+    "reasons": [
+      "another Godot process ran beside it"
+    ],
+    "competition": [
+      "32409 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/polite-rabbit",
+      "32417 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/krause/workspace/nappy-claude/.claude/worktrees/polite-rabbit res://tests/tests.tscn -- events_pursuit",
+      "32836 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/polite-rabbit",
+      "32923 /Applications/Godot.app/Contents/MacOS/Godot --headless --quit-after 60 --path /Users/krause/workspace/nappy-claude/.claude/worktrees/polite-rabbit",
+      "37420 /Applications/Godot.app/Contents/MacOS/Godot --headless --import --path /Users/krause/workspace/nappy-claude/.claude/worktrees/polite-rabbit"
+    ]
+  },
+  {
+    "label": "07-cost-branch-on-r2",
+    "order": 7,
+    "part": "cost",
+    "condition": "branch-on",
+    "trial": "r2",
+    "attempt": 3,
+    "started": "2026-10-04T16:02:02",
+    "load_average_before": [
+      2.25,
+      2.99,
+      2.9
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "branch",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace",
+      "--frame-record"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 7920,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 8.1588,
+      "p50_ms": 7.918,
+      "p95_ms": 11.091,
+      "p99_ms": 12.532,
+      "max_ms": 19.76,
+      "over_60hz_budget": 3,
+      "over_30hz_budget": 0,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2801.6,
+      "days": [
+        1
+      ],
+      "median_live_events": 37,
+      "median_crowd": 234,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": {
+      "rows": 8509,
+      "undrawn_rows": 0,
+      "overwritten": 0,
+      "ground_mode": 2,
+      "refresh_hz": 60.0,
+      "display_budget_usec": 16667,
+      "timer_pair_usec": 0.5705,
+      "timer_resolution_usec": 1,
+      "mean_timer_calls": 273.6,
+      "own_cost_us_per_frame": 156.1,
+      "northmost_y_px": 19,
+      "last_y_px": 2802,
+      "summary": {
+        "display_budget_ms": 16.667,
+        "frame_max_ms": 36.578,
+        "frame_p50_ms": 7.927,
+        "frame_p95_ms": 11.081,
+        "frame_p99_ms": 12.647,
+        "frames": 8509,
+        "largest_cost_in_slow_frames": {
+          "crowd": 2
+        },
+        "largest_cost_in_slow_frames_with_scenery_jobs": {},
+        "largest_cost_in_slow_frames_without_scenery_jobs": {
+          "crowd": 2
+        },
+        "mean_ms_per_frame": {
+          "crowd": 2.58487213538606,
+          "cues": 1.18262710071689,
+          "draw": 0.470780115172171,
+          "events": 0.656856387354566,
+          "influence": 0.00568621459630979,
+          "physics_rest": 0.0339790809730873,
+          "process_rest": 0.194851686449642,
+          "render": 3.01266494300153,
+          "scenery": 0.0232801739334822,
+          "wait": 0.0196353273005053
+        },
+        "mean_ms_per_slow_frame": {
+          "crowd": 12.1155,
+          "cues": 1.561,
+          "draw": 5.9615,
+          "events": 1.5565,
+          "influence": 0.0935,
+          "physics_rest": 0.637,
+          "process_rest": 0.301,
+          "render": 6.0455,
+          "scenery": 0.131,
+          "wait": 4.1425
+        },
+        "mean_ms_per_slow_frame_with_scenery_jobs": {
+          "crowd": 0.0,
+          "cues": 0.0,
+          "draw": 0.0,
+          "events": 0.0,
+          "influence": 0.0,
+          "physics_rest": 0.0,
+          "process_rest": 0.0,
+          "render": 0.0,
+          "scenery": 0.0,
+          "wait": 0.0
+        },
+        "mean_ms_per_slow_frame_without_scenery_jobs": {
+          "crowd": 12.1155,
+          "cues": 1.561,
+          "draw": 5.9615,
+          "events": 1.5565,
+          "influence": 0.0935,
+          "physics_rest": 0.637,
+          "process_rest": 0.301,
+          "render": 6.0455,
+          "scenery": 0.131,
+          "wait": 4.1425
+        },
+        "slow_after_ms": 25.0,
+        "slow_frames": 2,
+        "slow_frames_with_scenery_jobs": 0,
+        "slow_frames_without_scenery_jobs": 2
+      }
+    }
+  },
+  {
+    "label": "08-cost-main-off-r2",
+    "order": 8,
+    "part": "cost",
+    "condition": "main-off",
+    "trial": "r2",
+    "attempt": 1,
+    "started": "2026-10-04T16:03:15",
+    "load_average_before": [
+      2.51,
+      2.94,
+      2.89
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "main",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 8204,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 7.8794,
+      "p50_ms": 7.659,
+      "p95_ms": 11.12,
+      "p99_ms": 11.935,
+      "max_ms": 17.535,
+      "over_60hz_budget": 3,
+      "over_30hz_budget": 0,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2808.1,
+      "days": [
+        1
+      ],
+      "median_live_events": 37,
+      "median_crowd": 234,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": null
+  },
+  {
+    "label": "09-cost-branch-on-r3",
+    "order": 9,
+    "part": "cost",
+    "condition": "branch-on",
+    "trial": "r3",
+    "attempt": 1,
+    "started": "2026-10-04T16:04:28",
+    "load_average_before": [
+      2.63,
+      2.87,
+      2.87
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "branch",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace",
+      "--frame-record"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 7666,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 8.4299,
+      "p50_ms": 8.007,
+      "p95_ms": 11.078,
+      "p99_ms": 15.419,
+      "max_ms": 19.026,
+      "over_60hz_budget": 9,
+      "over_30hz_budget": 0,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2807.9,
+      "days": [
+        1
+      ],
+      "median_live_events": 37,
+      "median_crowd": 234,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": {
+      "rows": 8110,
+      "undrawn_rows": 0,
+      "overwritten": 0,
+      "ground_mode": 2,
+      "refresh_hz": 60.0,
+      "display_budget_usec": 16667,
+      "timer_pair_usec": 0.738,
+      "timer_resolution_usec": 1,
+      "mean_timer_calls": 273.6,
+      "own_cost_us_per_frame": 201.9,
+      "northmost_y_px": 19,
+      "last_y_px": 2808,
+      "summary": {
+        "display_budget_ms": 16.667,
+        "frame_max_ms": 56.583,
+        "frame_p50_ms": 8.25,
+        "frame_p95_ms": 11.468,
+        "frame_p99_ms": 15.694,
+        "frames": 8110,
+        "largest_cost_in_slow_frames": {
+          "crowd": 2
+        },
+        "largest_cost_in_slow_frames_with_scenery_jobs": {},
+        "largest_cost_in_slow_frames_without_scenery_jobs": {
+          "crowd": 2
+        },
+        "mean_ms_per_frame": {
+          "crowd": 2.87421257706535,
+          "cues": 1.31208064118372,
+          "draw": 0.525355240443896,
+          "events": 0.730625400739827,
+          "influence": 0.0060422934648582,
+          "physics_rest": 0.0343602959309494,
+          "process_rest": 0.212652897657213,
+          "render": 2.84772305795314,
+          "scenery": 0.0265345252774353,
+          "wait": 0.0197381011097411
+        },
+        "mean_ms_per_slow_frame": {
+          "crowd": 14.994,
+          "cues": 1.9785,
+          "draw": 7.395,
+          "events": 1.827,
+          "influence": 0.116,
+          "physics_rest": 0.7185,
+          "process_rest": 0.3955,
+          "render": 6.712,
+          "scenery": 0.165,
+          "wait": 12.2445
+        },
+        "mean_ms_per_slow_frame_with_scenery_jobs": {
+          "crowd": 0.0,
+          "cues": 0.0,
+          "draw": 0.0,
+          "events": 0.0,
+          "influence": 0.0,
+          "physics_rest": 0.0,
+          "process_rest": 0.0,
+          "render": 0.0,
+          "scenery": 0.0,
+          "wait": 0.0
+        },
+        "mean_ms_per_slow_frame_without_scenery_jobs": {
+          "crowd": 14.994,
+          "cues": 1.9785,
+          "draw": 7.395,
+          "events": 1.827,
+          "influence": 0.116,
+          "physics_rest": 0.7185,
+          "process_rest": 0.3955,
+          "render": 6.712,
+          "scenery": 0.165,
+          "wait": 12.2445
+        },
+        "slow_after_ms": 25.0,
+        "slow_frames": 2,
+        "slow_frames_with_scenery_jobs": 0,
+        "slow_frames_without_scenery_jobs": 2
+      }
+    }
+  },
+  {
+    "label": "10-cost-main-off-r3",
+    "order": 10,
+    "part": "cost",
+    "condition": "main-off",
+    "trial": "r3",
+    "attempt": 1,
+    "started": "2026-10-04T16:05:42",
+    "load_average_before": [
+      3.1,
+      3.07,
+      2.95
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "main",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 8242,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 7.8417,
+      "p50_ms": 7.59,
+      "p95_ms": 11.18,
+      "p99_ms": 11.785,
+      "max_ms": 16.307,
+      "over_60hz_budget": 0,
+      "over_30hz_budget": 0,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2806.9,
+      "days": [
+        1
+      ],
+      "median_live_events": 37,
+      "median_crowd": 234,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": null
+  },
+  {
+    "label": "11-cost-branch-off-r3",
+    "order": 11,
+    "part": "cost",
+    "condition": "branch-off",
+    "trial": "r3",
+    "attempt": 1,
+    "started": "2026-10-04T16:06:55",
+    "load_average_before": [
+      2.91,
+      3.04,
+      2.95
+    ],
+    "command": [
+      "/Applications/Godot.app/Contents/MacOS/Godot",
+      "--path",
+      "branch",
+      "--always-on-top",
+      "--disable-vsync",
+      "--resolution",
+      "1280x720",
+      "--",
+      "--seed",
+      "67",
+      "--no-title",
+      "--invincible",
+      "--no-focus-pause",
+      "--no-save",
+      "--no-telemetry",
+      "--after",
+      "70",
+      "--walk",
+      "2.6e15.5n1w4n1e11n11s1w4s1e15.5s",
+      "--player-view",
+      "--frame-trace"
+    ],
+    "status": 0,
+    "rejected": false,
+    "reasons": [],
+    "trace": {
+      "frames": 8206,
+      "undrawn_process_frames": 0,
+      "dropped_after_capacity": 0,
+      "mean_ms": 7.8794,
+      "p50_ms": 7.646,
+      "p95_ms": 11.173,
+      "p99_ms": 11.914,
+      "max_ms": 16.579,
+      "over_60hz_budget": 0,
+      "over_30hz_budget": 0,
+      "northmost_y_px": 18.7,
+      "last_y_px": 2811.0,
+      "days": [
+        1
+      ],
+      "median_live_events": 37,
+      "median_crowd": 234,
+      "vsync_mode": 0,
+      "refresh_hz": 60.0,
+      "window_size": [
+        1280,
+        720
+      ]
+    },
+    "record": null
+  }
+]

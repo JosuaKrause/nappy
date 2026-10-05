@@ -3420,6 +3420,8 @@ func _update_car_view() -> void:
 	_car_view = EightDirection.update(_car_view, velocity(), CAR_IDLE_SPEED)
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_CROWD)
 	# `--skip crowd`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (d)): returns
 	# before anything is drawn, so a frame under the flag differs from an ordinary one by drawing
 	# alone — the crowd's own motion, lanes and traffic negotiation keep running. `_draw_body()` is

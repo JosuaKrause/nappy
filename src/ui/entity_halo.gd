@@ -240,6 +240,8 @@ static func trace_offsets(bob: float) -> Array[Vector2]:
 ## has to be handed the offset rather than left to discover it. See `Sprites._base_transform` for
 ## what it looked like when it was not: twelve copies stacked on the body and no ring.
 func _on_draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_HALOS)
 	if not is_showing():
 		return
 	var bob: float = _bob.call()

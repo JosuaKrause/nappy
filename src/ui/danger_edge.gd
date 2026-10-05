@@ -275,6 +275,8 @@ func announcing() -> Array[Dictionary]:
 	return badges
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_BADGES)
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()

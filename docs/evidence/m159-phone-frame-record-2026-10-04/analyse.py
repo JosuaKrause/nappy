@@ -1,4 +1,4 @@
-"""Reads a frame record (`nappy-frame-record`, schema 1) and prints the tables README.md quotes.
+"""Reads a frame record (`nappy-frame-record`, schema 1 or 2) and prints the tables README.md quotes.
 
     uv run python docs/evidence/m159-phone-frame-record-2026-10-04/analyse.py
     uv run python docs/evidence/m159-phone-frame-record-2026-10-04/analyse.py <record.json>
@@ -8,6 +8,12 @@ Every figure is in milliseconds unless its label says otherwise. The phone's clo
 browser's, quantized to `environment.timer_resolution_usec` (100us here), so a single short
 interval reads as 0 or one step and only sums and means over many frames carry information below
 a millisecond.
+
+Schema 2 splits `draw` at the renderer's pre-draw callback (`draw` ends there, the new `render`
+bucket runs to post-draw) and adds `draws_*` counts and `render_cpu_usec`; a schema 2 file's
+tables carry the `render` column and section 10 reports the counts. In a schema 1 file `draw` is
+the old `draw` and holds both, so a schema 1 `draw` is comparable with a schema 2 `draw + render`,
+not with its `draw` alone.
 """
 
 from __future__ import annotations
@@ -22,6 +28,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 DEFAULT = HERE / "nappy-frames-seed478156010-2026-10-04T12-27-57.json"
+# The buckets of a schema 1 file; `load()` inserts "render" after "draw" for a schema 2 file, in
+# place, so every table below reads the file's own list.
 BUCKETS = [
     "draw",
     "crowd",
@@ -87,6 +95,8 @@ def load(path: Path) -> tuple[dict[str, object], list[Row]]:
     record = json.loads(path.read_text())
     columns: list[str] = record["columns"]
     rows = [dict(zip(columns, values, strict=True)) for values in record["rows"]]
+    if "render_usec" in columns and "render" not in BUCKETS:
+        BUCKETS.insert(BUCKETS.index("draw") + 1, "render")
     for row in rows:
         spent = sum(row[f"{b}_usec"] for b in BUCKETS)
         if spent != row["frame_usec"]:
@@ -99,10 +109,10 @@ def coverage(record: dict[str, object], rows: list[Row]) -> None:
     env = record["environment"]
     assert isinstance(env, dict)
     print(f"build {env['build']}, seed {env['run_seed']}, ground mode {env['ground_mode']}")
-    print(f"user agent: {env['user_agent']}")
+    print(f"user agent: {env.get('user_agent', 'none (not a browser)')}")
     print(
         f"clock step {env['timer_resolution_usec']}us, one timing pair "
-        f"{env['timer_pair_usec']}us, refresh assumed: {env['refresh_assumed']}\n"
+        f"{env['timer_pair_usec']}us, refresh assumed: {env.get('refresh_assumed')}\n"
     )
     slow = sum(r["slow"] for r in rows)
     summary = record["summary"]
@@ -214,6 +224,8 @@ def over_time(rows: list[Row]) -> None:
                 for r in rows
                 if r["day"] == 1 and low <= r["player_y"] < high and earliest <= seconds(rows, r) < latest
             ]
+            if not rs:
+                continue  # a recording of another route need not pass through every band
             out.append(
                 (
                     f"{low}-{high}",
@@ -378,6 +390,9 @@ def steps(rows: list[Row]) -> None:
             groups[(row["physics_steps"], before["frame_usec"] // 5000 * 5)].append(row)
     bands = [low for (n, low) in groups if n == 2 and groups.get((1, low)) and len(groups[(2, low)]) >= 8]
     weight = sum(len(groups[(2, low)]) for low in bands)
+    if not weight:
+        print("no 5ms band holds eight or more two-step frames and a one-step match: nothing to compare\n")
+        return
     added = []
     for b in ["frame", *BUCKETS]:
         column = f"{b}_usec"
@@ -674,6 +689,38 @@ def limits(record: dict[str, object], rows: list[Row]) -> None:
     print(f"frames whose callbacks fit one 60Hz budget (outside_callbacks): {len(outside)}\n")
 
 
+def counts(record: dict[str, object], rows: list[Row]) -> None:
+    heading("10. The game's own `_draw()` calls and the engine's render time (schema 2)")
+    kinds = sorted(name for name in rows[0] if name.startswith("draws_"))
+    if not kinds:
+        print("this file has no `draws_*` columns (schema 1)\n")
+        return
+    table(
+        ["kind", "mean a frame", "p95", "max"],
+        [
+            (
+                name.removeprefix("draws_"),
+                f"{mean(r[name] for r in rows):.2f}",
+                pct(sorted(r[name] for r in rows), 0.95),
+                max(r[name] for r in rows),
+            )
+            for name in kinds
+        ],
+    )
+    every = sorted(sum(r[name] for name in kinds) for r in rows)
+    print(
+        f"all kinds together: mean {mean(every):.1f}, p95 {pct(every, 0.95)}, max {every[-1]} a frame\n"
+    )
+    cpu = [r["render_cpu_usec"] for r in rows if "render_cpu_usec" in r]
+    if cpu:
+        reported = sum(1 for c in cpu if c)
+        print(
+            f"render_cpu_usec: reported in {reported} of {len(cpu)} frames, mean "
+            f"{ms(mean(cpu)):.2f}ms against `render` {ms(mean(r['render_usec'] for r in rows)):.2f}ms "
+            f"and `draw` {ms(mean(r['draw_usec'] for r in rows)):.2f}ms\n"
+        )
+
+
 SECTIONS: list[Callable[[dict[str, object], list[Row]], None]] = [
     coverage,
     lambda _record, rows: distribution(rows),
@@ -684,6 +731,7 @@ SECTIONS: list[Callable[[dict[str, object], list[Row]], None]] = [
     lambda _record, rows: workload(rows),
     lambda _record, rows: scenery(rows),
     limits,
+    counts,
 ]
 
 

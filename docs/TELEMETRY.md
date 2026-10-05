@@ -690,7 +690,8 @@ file, like a raw frame trace, and never part of the run log.
 charged to exactly one bucket**, so a row's buckets add up to its `frame_usec` exactly.
 `FrameRecorder` (`src/telemetry/frame_recorder.gd`) marks the engine's phases: its own physics and
 process callbacks run first in their step, a child's process callback runs last, and the
-renderer's post-draw callback ends the drawing. A timed system calls `FrameRecord.enter()` on the
+renderer's pre-draw callback ends the engine's side of drawing (`draw`) and its post-draw callback
+ends the renderer's (`render`). A timed system calls `FrameRecord.enter()` on the
 way in and `leave()` on the way out (`src/telemetry/frame_record.gd`); whatever was being charged
 pauses while it runs, so a timed system inside another is charged to itself alone.
 
@@ -703,14 +704,15 @@ What each bucket catches, and what it cannot:
 | influence | the baby's influence sweep: `Baby._physics_process()`, whose cost is `excitement_sources_at()` over every live event and walker near her | — |
 | events | event updates: `EventManager._physics_process()` and every `EventInstance._process()` | the events' drawing (`draw`) |
 | cues | the danger cues: `ExcitementHalo._process()` (which source charges her, and the carets' predictions) and `DangerEdge._process()` (the badges for what is coming off screen) | the halos' and badges' drawing (`draw`) and the per-body halo fades (`process_rest`) |
-| draw | the CPU side of drawing: the deferred calls and `_draw()` callbacks after the last `_process()` (but the scenery queue's), then the renderer's own sync and submit | GPU time, which a phone's browser offers no way to measure; on a native window with VSync on, the buffer swap's wait lands here |
+| draw | the engine's side of drawing before the renderer: from the last `_process()` to the renderer's pre-draw callback (`RenderingServer.frame_pre_draw`) — the deferred calls, the game's own `_draw()` callbacks (but the scenery queue's) and the engine's scene preparation | what each `_draw()` cost: they are counted per kind (below), never timed one by one, since the page's clock steps in 100µs and hundreds of reads a frame would slow the record |
+| render | the renderer's own work: from its pre-draw callback to its post-draw callback — the canvas render, the submit, and any wait on the GPU. `draw` plus `render` is the whole CPU side of drawing | GPU time, which a phone's browser offers no way to measure; on a native window with VSync on, the buffer swap's wait lands here |
 | physics_rest | the rest of the physics steps: her movement, the physics server's step, and any `_draw()` a physics callback queued | — |
 | process_rest | the rest of the process step: `main`, the HUD, the day clock, the resistance, scenery animation, the debug readout | — |
 | wait | from the post-draw callback to the next frame: idle time until the refresh, plus the engine's input and window events; not a cost | the GPU, the compositor or the browser holding the next frame back all look like idle time here |
 
 The two rests are the remainder: what the named systems do not account for. A headless run has
-no post-draw callback, so its whole span after the process step is `draw` and its `drawn` column
-is `0`. **The scenery queue's deferred window is what makes the ground modes comparable**: mode 3
+no pre-draw or post-draw callback, so its whole span after the process step is `draw`, its
+`render` is `0` and its `drawn` column is `0`. **The scenery queue's deferred window is what makes the ground modes comparable**: mode 3
 already flushes each step's tile map work inside its own timer, while modes 1 and 2 leave it to the
 engine's flush, so without the window their scenery cost would land in `draw`. Its share of a
 frame's `scenery` is the row's `scenery_deferred_usec`.
@@ -735,6 +737,24 @@ jobs it ran by kind (`jobs_ground`, `jobs_building`, `jobs_prop` for every other
 `jobs_shadow`, `jobs_decal`) with the guard's synchronous preparations apart
 (`guard_preparations`), whether the frame was drawn, the renderer's draw calls, objects and
 primitives, the crowd and live-event counts, her position, the day and the process frame.
+
+**What `draw` holds is counted, not timed.** *(2026-10-04, jolly-trout, #541: "Can we get more
+granular mobile measurements or would that break up things that are currently drawn together into
+separate draws? We wouldn't want that I guess"; then "Yes and let's start work on it".)* Splitting
+the record's own `draw` adds a timestamp and some counters, never a canvas item, a layer, a
+material or a draw call, so `draw_calls` and `render_objects` on the same seed read the same with
+the split as without. The row counts the game's own `_draw()` calls in the frame by kind:
+`draws_crowd` (each `CrowdAgent`), `draws_events` (each `EventInstance`), `draws_halos` (each
+`EntityHalo` rim re-trace), `draws_scenery` (buildings, their roof objects, station layers and
+shadow chunks, decals, props, the city's edges, water and ground layers), `draws_badges`
+(`DangerEdge`), `draws_player` (her stroller) and `draws_other` (traffic lights, chalk, closure
+and fence markers, the HUD's own drawing). Each is a counter line at the top of the `_draw()`,
+guarded by `FrameRecord.on`; a call that returns early is still a call. The engine's own
+measurement of the window's last render is `render_cpu_usec`
+(`RenderingServer.viewport_get_measured_render_time_cpu`, switched on only while the record is on);
+a row with 0 means the engine reported nothing, and `environment.render_cpu_reported` says whether
+any row held a value, so a build that does not report it says so rather than looking like a fast
+renderer.
 
 **Only play is kept**: a frame that is paused, on the title or on a summary is timed, so the
 phases stay in step, but not stored. The storage is a preallocated ring of `FrameLedger.CAPACITY`
@@ -778,6 +798,17 @@ with the record off. The five systems timed
 once a frame (the crowd's and the event manager's physics steps, the sweep, the halo and the edge)
 are built with the city, before the recorder starts, so they read `FrameRecord.on` each frame. The
 measurement is under `docs/evidence/m159-frame-record-2026-10-04/`.
+
+The game's own `_draw()` overrides each start with `if FrameRecord.on:` and one call that adds 1
+to a per-kind count, so off they pay one static read each. That is acceptable where the timing
+wrap's read was not, because of how often it runs: a frame runs about twenty `_draw()` calls (the
+per-kind means add up to 17.6 to 20.3 a frame in the three desktop records; the retained canvas
+items redraw only when something changes) against some 270 timed bodies, and the most in one
+frame was 275, once. One guarded counter costs about 130ns more than the same body without it in
+GDScript's own interpreter (`drew_cost.gd`, off), so about 3µs a frame, and 36µs in the worst
+frame, against a mean frame of 7.9ms. The desktop's full runs with the record off agree: the
+branch's median of six runs is 7.957ms against the base's 7.901ms, inside the runs' own spread
+(`docs/evidence/m159-draw-split-2026-10-04/`).
 
 **The readout carries one line for it**, beneath the frame block: the last slow frame's length and
 what its callbacks took, as `frame/work`, then its largest costs under short names (`phys` and

@@ -942,6 +942,8 @@ func pram_draw_offset() -> Vector2:
 # ------------------------------------------------------------------ drawing ---
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_PLAYER)
 	# Carrying her in arms rather than pushing her ahead in the pram: there is no second figure
 	# and nothing offset in front of her, so the cue over the bundle floats over her own column —
 	# see `_draw_baby_cue()` and `baby_cue_lift()`, both of which already treat a zero offset as

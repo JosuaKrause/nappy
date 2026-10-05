@@ -185,6 +185,8 @@ static func compute(rects: Array[Rect2i]) -> Tiles:
 	return tiles
 
 func _draw_chunk(canvas: CanvasItem, tiles: Tiles) -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	# `--skip shadows`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (c)): no chunk
 	# draws anything, so a frame under the flag differs from an ordinary one by drawing alone.
 	if _skip_draw:

@@ -51,16 +51,32 @@ const PLAYER_X := 17
 const PLAYER_Y := 18
 const DAY := 19
 const PROCESS_FRAME := 20
+## What the engine itself measured for the viewport's last render, in microseconds, read at the
+## post-draw callback (`RenderingServer.viewport_get_measured_render_time_cpu`). 0 where the
+## engine does not report it.
+const RENDER_CPU_USEC := 21
+## How many of the game's own `_draw()` calls ran in the frame, by kind: the crowd's agents, the
+## live events, the danger halos' rims (`EntityHalo`), scenery (buildings, their shadow chunks,
+## decals, props, edges, water), the danger badges (`DangerEdge`), her own stroller, and every
+## other (traffic lights, chalk, closure markers, the HUD's own drawing).
+const DRAWS_CROWD := 22
+const DRAWS_EVENTS := 23
+const DRAWS_HALOS := 24
+const DRAWS_SCENERY := 25
+const DRAWS_BADGES := 26
+const DRAWS_PLAYER := 27
+const DRAWS_OTHER := 28
 const COUNTER_NAMES: Array[String] = ["physics_steps", "timer_calls", "scenery_updates",
 	"scenery_over_budget_usec", "scenery_deferred_usec", "jobs_ground", "jobs_building",
 	"jobs_prop", "jobs_shadow", "jobs_decal", "guard_preparations", "drawn", "draw_calls",
 	"render_objects", "primitives", "crowd_agents", "live_events", "player_x", "player_y", "day",
-	"process_frame"]
+	"process_frame", "render_cpu_usec", "draws_crowd", "draws_events", "draws_halos",
+	"draws_scenery", "draws_badges", "draws_player", "draws_other"]
 ## The summary's name for a slow frame whose callbacks fit inside one display budget.
 const OUTSIDE_CALLBACKS := "outside_callbacks"
 ## The readout's short names, so three costs fit the readout's width.
 const SHORT_NAMES: Array[String] = ["phys", "proc", "scenery", "crowd", "infl", "events", "cues",
-	"draw", "wait"]
+	"draw", "render", "wait"]
 
 ## A row: when the frame started, how long it ran, whether it was slow, then one column per
 ## bucket and one per counter.
@@ -68,8 +84,8 @@ const START := 0
 const FRAME := 1
 const SLOW := 2
 const FIRST_BUCKET := 3
-const FIRST_COUNTER := FIRST_BUCKET + 9
-const WIDTH := FIRST_COUNTER + 21
+const FIRST_COUNTER := FIRST_BUCKET + 10
+const WIDTH := FIRST_COUNTER + 29
 
 enum Phase { NONE, IN_FRAME, AFTER_PROCESS, AFTER_DRAW }
 
@@ -177,8 +193,16 @@ func process_end(now: int) -> void:
 	switch_to(FrameRecord.DRAW, now)
 	_phase = Phase.AFTER_PROCESS
 
+## The renderer's pre-draw callback: what follows is the renderer's own work. A headless run never
+## calls this, so its `render` is 0.
+func pre_draw(now: int) -> void:
+	if _phase != Phase.AFTER_PROCESS:
+		return
+	switch_to(FrameRecord.RENDER, now)
+
 ## The renderer's post-draw callback: what follows is waiting. A headless run draws nothing and
 ## never calls this, so its whole span after process is `draw`, and its `drawn` column is 0.
+## Without a pre-draw callback first (a test's frame), the span up to here is all `draw`.
 func drawn(now: int) -> void:
 	if _phase != Phase.AFTER_PROCESS:
 		return

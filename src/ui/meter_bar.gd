@@ -62,6 +62,8 @@ static func displayed_fraction(value: float, max_value: float) -> float:
 	return fraction
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	var width := size.x
 	var bar := Rect2(0.0, BAR_TOP, width, BAR_HEIGHT)
 	var fraction := displayed_fraction(value, Tuning.METER_MAX)

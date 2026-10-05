@@ -96,10 +96,19 @@ the player's question was about — the scenery queue's time, how far past its 2
 and none of it changes what the queue does or in what order. It is not a pattern to copy into
 another system.
 
+A **`_draw()` counter** is the fourth shape, and it counts and nothing else. The first statement of
+a game `_draw()` override is `if FrameRecord.on: FrameRecord.drew(FrameLedger.DRAWS_<KIND>)`: one
+guarded static read off, one added integer on, never a time (the page's clock steps in 100µs, and
+a `_draw()` is far shorter) and never a branch in the body. It exists because the player asked
+which kinds of node redraw each frame (docs/playtests/2026-10-04-jolly-trout.md, #541: the
+per-kind `_draw()` counts) and a node's own `_draw()` is the only place that is known. A new
+`_draw()` override in `src/` takes the line with the kind it belongs to, or the kind `other`;
+dev-only layers are not counted.
+
 Nothing else about the frame record goes in a gameplay class — no reading of state, no counting
-beyond the scenery queue's own jobs, no deferred markers beyond the scenery queue's, no branch that
-changes what the body does — and a new timed system takes one of the first two shapes, with its
-bucket added to `FrameRecord` and the table in docs/TELEMETRY.md.
+beyond the scenery queue's own jobs and the `_draw()` counter, no deferred markers beyond the
+scenery queue's, no branch that changes what the body does — and a new timed system takes one of
+the first two shapes, with its bucket added to `FrameRecord` and the table in docs/TELEMETRY.md.
 
 ## Adding an entry
 

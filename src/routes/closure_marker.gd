@@ -72,6 +72,8 @@ func _exit_tree() -> void:
 	AtlasLibrary.release(&"street_kit")
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not scenery_resident:
 		return
 	match piece:

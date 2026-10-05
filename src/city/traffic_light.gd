@@ -100,6 +100,8 @@ func _lamp() -> int:
 	return 0
 
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not scenery_resident:
 		return
 	# The 5.0 here is the signal head's own shape, a point — small enough that a `GroundShape`

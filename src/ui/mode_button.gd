@@ -316,6 +316,8 @@ func _refresh_look() -> void:
 ## 1.0 and the sweep has closed the whole circle. Segment count scales with `hold_progress` rather
 ## than always drawing `_HOLD_FILL_SEGMENTS` wedges, so a `hold_progress` of 0 needs no fan at all.
 func _draw() -> void:
+	if FrameRecord.on:
+		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if symbol != Symbol.RESTART or hold_progress <= 0.0:
 		return
 	# The rect's own middle and the rect's own radius, for the same reason the stylebox reads them
