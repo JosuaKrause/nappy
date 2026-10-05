@@ -16,7 +16,7 @@ route only (the player's answer, 2026-09-27); a forced case gets a rigged bag, i
 case ([coral-bunny](../../playtests/2026-10-04-coral-bunny.md), #561).
 
 Open: day 7's van, day 10's neighbor and day 13's roadblock, still placed at the mark only, each
-get a second instance drawn on her route from a rigged bag of 2 or 3 (inbox #586 in [olive-hedgehog](../../playtests/2026-10-05-olive-hedgehog.md): "each olive badger rigged bag should
+get a second instance (all three is the filer's reading, the item says how else it reads) drawn on her route from a rigged bag of 2 or 3 (inbox #586 in [olive-hedgehog](../../playtests/2026-10-05-olive-hedgehog.md): "each olive badger rigged bag should
 be 2 or 3"), [the-other-forced-cases.md](the-other-forced-cases.md).
 
 **The band is the player's**, for right after the release (inbox #591 in [olive-hedgehog](../../playtests/2026-10-05-olive-hedgehog.md), of this item with jolly-hare,

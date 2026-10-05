@@ -46,6 +46,18 @@ toward her is found, outside the day's own queue (it takes no turn in it and tou
 screen"). The tears' bag itself (`PosterWalls.TEAR_PRE_BAG`, `TEAR_BAG`, one pursuit in ten after a
 safe first tear, its state `PosterState.tears`) is not changed by this entry.
 
+The record that built the police car is [M180, seen, walled and torn](../../decisions/2026-09-23-M180-posters-she-notices-and-loudspeakers-that-are-somewhere-seen-walled-and.md) (posters
+she notices, and loudspeakers that are somewhere), which this entry replaces in part: "A pursuit
+marble sends a heated `police_patrol` `TOWARD_PLAYER` down the carriageway toward her ... waiting
+`EventDirector.TEAR_PATROL_AFTER` (1s of her walking) so she has turned from the wall, and at most
+one waits at a time; nothing is sent during the escape or under `--force`." The pursuer on foot
+replaces the patrol and the 1s wait; "at most one" and nothing during the escape are kept, under
+**Proposed, not asked for** below. [M225](../../decisions/2026-09-26-M225.md) (the counter counts
+every attempt, a key player, and a torn poster's chase) built the counter's own event for it: "A
+torn poster that sends a patrol sends its own event, `nappy-day-N-poster-pursuit`, beside
+`poster-torn`, when the patrol is sent; a second tear while a patrol is on its way sends none." With
+the pursuer sent at once, "sent" becomes the moment the marble is drawn, and the event goes out then.
+
 **What exists to build on.** The policeman's drawing, merged in PR #594 and recorded in
 [tiny-beaver](../../decisions/2026-10-05-tiny-beaver.md) (a policeman on foot, drawn for the pursuits
 to come): `art/events/policeman_*`, the robber's set one for one (waiting and lunging in five views,
@@ -57,6 +69,12 @@ pursuer from off screen is warned and placed by — the badge alone for at most 
 thing just out of sight — which is why this entry waits on it.
 
 The one item is [the-pursuer-on-foot.md](the-pursuer-on-foot.md).
+
+**The `after: 2026-09-26-M226` line is the filer's ordering, not the player's.** The player did not
+say this waits on M226; the filer put it behind M226 (PR #597) because the pursuer is to be warned
+and placed the way M226 warns and places every pursuer from off screen (the first proposal below).
+Without that proposal the entry waits on nothing, and the line is what keeps it from starting right
+after the release ahead of M226.
 
 **Proposed, not asked for:**
 

@@ -313,8 +313,10 @@ comma-joined exclude list). No new queue entry.
 leaving out the touch-control corners), whose build these words direct: the telegraphing rule
 (a heavy penalty, not only lethal), the day-3 dog's timing (the chase counted on screen only), no
 pop-in, off screen as distinct from visible, a pursuing robber not walking up to her, pursuers that
-a walk does not escape, and the warnings decided for now with the question put to a review item once
-the cost table is ready. "fire truck has heavy penalty" also goes into jolly-hare: the fire truck keeps its
+a walk does not escape, and the warnings decided for now. The review item the player asked for
+("put the question into a review point for later when the table is ready": which things get an
+off-screen warning, given "heavy penalty, not only lethal") is not filed by this filing: the
+orchestrator files it on PR #597 when that pull request's table of warnings is ready. "fire truck has heavy penalty" also goes into jolly-hare: the fire truck keeps its
 one-second warning. "pursuers should never (or a long time) stop pursuing if she walks" also goes
 into sandy-ferret for the poster's pursuer. No new queue entry.
 
