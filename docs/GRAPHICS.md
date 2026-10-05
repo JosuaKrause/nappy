@@ -297,6 +297,7 @@ arm direction; ordinary movement suffixes describe the body's facing.
 | Owning design | Prepared assets, dimensions and registration |
 |---|---|
 | M100 — Small, real, and nobody's (alley review) | `art/tiles/alley_draft.svg` is a 32×32 paving alternative for comparison; the live alley tile is the runtime alley. |
+| The policeman on foot, the pursuer a torn poster sends (the player's note on GitHub Issues #591, "maybe a policeman on foot? (we will need a graphic for that anyway for the polic robber chase later)") | `art/events/policeman_waiting_{front,back,side,front_diagonal,back_diagonal}.svg` (22×44, ground anchor (11, 44)), `policeman_lunging_{view}.svg` and its stride frames `policeman_lunging_{view}_b.svg` (34×44, anchor (17, 44)), and the unsuffixed `policeman_waiting.svg` (the front view) and `policeman_lunging.svg` (the side view) for a badge silhouette — the robber's set one for one, same canvases, anchors and postures, so the runtime can drive him the way it drives the robber. Side and diagonal views are east-authored. A peaked cap, a police-blue tunic, a black duty belt and a baton, with the police car's own white in his collar and badge; the lunge reaches out with one hand and swings the baton with the other. No atlas page carries him yet. The [source review](evidence/policeman-on-foot-2026-10-05/README.md) shows every view at game scale beside the robber and the checkpoint guard. |
 
 ### Unbound, with nothing to bind them
 
