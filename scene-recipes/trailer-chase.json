@@ -10,6 +10,8 @@
       {"tick": 38, "subject": "guards", "condition": "visible"},
       {"tick": 38, "subject": "guards", "condition": "moving"},
       {"tick": 38, "subject": "player", "condition": "running"},
+      {"tick": 38, "subject": "guards", "condition": "near_player", "distance": 180},
+      {"tick": 67, "subject": "guards", "condition": "near_player", "distance": 180},
       {"tick": 67, "subject": "guards", "condition": "visible"},
       {"tick": 67, "subject": "guards", "condition": "moving"},
       {"tick": 67, "subject": "player", "condition": "running"},

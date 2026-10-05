@@ -123,9 +123,12 @@ func _test_water_ownership(t) -> void:
 	var city: City = packed.instantiate()
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
-	# Inspect the complete shore explicitly; an ordinary home boot retains none of this water.
-	city.scenery.update(Rect2(Vector2(0, city.map.world_size().y),
-			Vector2(city.map.world_size().x, City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
+	var shore_reach := float(City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)
+	# Inspect the complete shore explicitly, corners under the forest bands included; an ordinary
+	# home boot retains none of this water.
+	city.scenery.update(Rect2(Vector2(-shore_reach, city.map.world_size().y),
+			Vector2(city.map.world_size().x + 2.0 * shore_reach,
+					City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
 	var surfaces: Array[SceneryWater] = []
 	for chunk: TileMapLayer in city._ground.chunks.values():
 		for child in chunk.get_children():
@@ -158,9 +161,10 @@ func _test_water_ownership(t) -> void:
 	t.check(actual == expected and actual.size() == count,
 			"resident water has one owner per cell and excludes the bridge columns at every depth")
 	for y in range(city.map.size.y + 1, city.map.size.y + City.OUTSIDE_DEPTH_TILES):
-		for x in range(city.map.size.x):
+		for x in range(-City.OUTSIDE_DEPTH_TILES, city.map.size.x + City.OUTSIDE_DEPTH_TILES):
 			if x < bridge_left or x >= bridge_right:
-				t.check(actual.has(Vector2i(x, y)), "water fills the complete requested shore")
+				t.check(actual.has(Vector2i(x, y)),
+						"water fills the complete requested shore, south-west and south-east corners included")
 	var cells := water.cells.duplicate()
 	water._process(0.25)
 	t.check(water.elapsed > 0.0 and water.cells == cells,
@@ -190,8 +194,9 @@ func _test_water_ownership(t) -> void:
 			"reentry rebinds the region and shared shader without resetting its clock")
 	city._paint_ground()
 	t.check(not is_instance_valid(water), "repaint releases the prior water and material")
-	city.scenery.update(Rect2(Vector2(0, city.map.world_size().y),
-			Vector2(city.map.world_size().x, City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
+	city.scenery.update(Rect2(Vector2(-shore_reach, city.map.world_size().y),
+			Vector2(city.map.world_size().x + 2.0 * shore_reach,
+					City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
 	for tile: Vector2i in expected:
 		t.check(city._ground.has_water(tile), "repaint preserves the shoreline and bridge gap")
 	city.free()

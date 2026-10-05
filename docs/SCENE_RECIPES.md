@@ -126,7 +126,7 @@ finite map. In a full-city scene, exterior ground remains unwalkable and loads o
 can see it. Each observation has a physics `tick`, named `subject` and `condition`:
 `visible`, `moving`, `running`, `carrying`, `asleep` or `awake` (the baby's own state, which draws the
 pram's zzz), `pursuing`, `near` or `beyond` with `at` and
-`distance` (at most or at least that far), `off_screen` (no part of a box three tiles either side
+`distance` (at most or at least that far), or `near_player` with `distance` (the subject is at most that far from her), `off_screen` (no part of a box three tiles either side
 and four up and down, `ResistanceDirector.TASK_HALF_EXTENT`, is in the picture), `clear_of_both_views` with `half` (`[half width, half height]` in px: no part
 of that box round the subject is in the world the camera shows in the landscape window or in the
 rotated portrait presentation, 640x360 and 360x640 at the game's zoom), and for `mark` or

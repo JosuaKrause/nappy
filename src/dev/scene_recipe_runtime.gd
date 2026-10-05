@@ -289,10 +289,13 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if check.get("condition") in ["near", "beyond"]:
 				_position(check.get("at"), "observation.at", errors)
 				_number(check.get("distance"), "observation.distance", 0, 10000, errors)
+			elif check.get("condition") == "near_player":
+				_number(check.get("distance"), "observation.distance", 0, 10000, errors)
 	return errors
 
 ## The observation conditions, in the order `docs/SCENE_RECIPES.md` names them.
 const CONDITIONS := ["visible", "moving", "running", "carrying", "asleep", "awake", "pursuing", "near", "beyond",
+		"near_player",
 		"off_screen", "clear_of_both_views", "offered", "done", "arrowed", "unarrowed"]
 ## An observation subject naming no actor but the first live instance of a catalogue row: what an
 ## event summons rather than what the recipe placed, such as the `fire_truck` a seen
@@ -1011,6 +1014,10 @@ func _observe() -> void:
 					passed = actor is EventInstance and actor.def.pursues \
 							and not actor.is_telegraphing() and not actor.is_waiting() \
 							and not actor.is_finished and not actor.is_leaving
+				"near_player":
+					# What ties one actor to her: a pursuer that closes on her stays this close.
+					passed = is_instance_valid(_player) and actor.global_position.distance_to(
+							_player.global_position) <= float(check.distance)
 				"near", "beyond":
 					var errors: Array[String] = []
 					var target := position_of(check.at, errors)
