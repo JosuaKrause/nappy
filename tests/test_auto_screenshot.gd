@@ -43,6 +43,7 @@ func run(t) -> void:
 	_test_a_pursuit_reverses_an_angled_step_too(t)
 	_test_a_headless_run_has_nothing_to_photograph(t)
 	_test_the_scan_finds_a_bare_wait_on_the_render_loop(t)
+	_test_only_a_covered_recording_needs_an_on_demand_frame(t)
 	_test_no_capture_under_src_waits_on_the_render_loop_alone(t)
 
 # --------------------------------------------------------------- photographing ---

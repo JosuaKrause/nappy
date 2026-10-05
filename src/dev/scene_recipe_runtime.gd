@@ -253,10 +253,12 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 		errors.append("playback.camera must be an object")
 	else:
 		var camera: Dictionary = playback.get("camera", {})
-		_keys(camera, ["zoom", "zoom_out", "zoom_delay"], "playback.camera", errors)
+		_keys(camera, ["zoom", "zoom_out", "zoom_delay", "landscape_margin"],
+				"playback.camera", errors)
 		for key in camera:
 			_number(camera[key], "playback.camera." + key,
-					0 if key == "zoom_delay" else 0.001, 240, errors)
+					0 if key in ["zoom_delay", "landscape_margin"] else 0.001,
+					4096 if key == "landscape_margin" else 240, errors)
 	if not playback.get("observations", []) is Array:
 		errors.append("playback.observations must be an array")
 	else:
@@ -821,8 +823,9 @@ func begin() -> void:
 		_zoom = zoom
 		zoom.simulation_clock = elapsed
 		add_child(zoom)
-		zoom.setup(get_viewport().get_camera_2d(), _city.map.tile_rect_to_world(
-				Rect2i(Vector2i.ZERO, _city.map.size)), get_viewport().get_visible_rect().size,
+		var bounds := _city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, _city.map.size)).grow(
+				float(camera.get("landscape_margin", 0)))
+		zoom.setup(get_viewport().get_camera_2d(), bounds, get_viewport().get_visible_rect().size,
 				float(camera.zoom_out), float(camera.get("zoom_delay", 0)))
 	var title := TrailerText.build(str(playback.get("caption", "")), str(playback.get("title", "")))
 	if title:

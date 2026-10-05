@@ -118,8 +118,10 @@ installed: the recipe selects its own events. `progression.blackout` turns
 off the street signals. Supported escape pins are trucks, abduction, roadblocks and explosions.
 
 `playback` accepts a timed `walk` script (the same syntax as `--walk`), `duration` in seconds,
-`capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`), `caption`, `title` and
-`observations`. Each observation has a physics `tick`, named `subject` and `condition`:
+`capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`, `landscape_margin`), `caption`,
+`title` and `observations`. `landscape_margin` grows only the zoom-out's final framing around the
+finite map. In a full-city scene, exterior ground remains unwalkable and loads only when the camera
+can see it. Each observation has a physics `tick`, named `subject` and `condition`:
 `visible`, `moving`, `running`, `carrying`, `pursuing`, `near` or `beyond` with `at` and
 `distance` (at most or at least that far), `off_screen` (no part of a box three tiles either side
 and four up and down, `ResistanceDirector.TASK_HALF_EXTENT`, is in the picture), `clear_of_both_views` with `half` (`[half width, half height]` in px: no part

@@ -9,8 +9,9 @@
       {"cell": [1, 1], "kind": "duct_straight"}, {"cell": [3, 1], "kind": "duct_corner"},
       {"cell": [5, 1], "kind": "hvac_b"}, {"cell": [6, 1], "kind": "vent"}]}],
     "events": [{"name": "birds", "row": "pigeon_flock", "at": "birds"}]},
-  "playback": {"walk": "0.6e1.4p", "duration": 2, "capture_at": 0.5,
+  "playback": {"walk": "2e", "duration": 2, "capture_at": 0.5,
     "observations": [{"tick": 6, "subject": "player", "condition": "moving"},
       {"tick": 15, "subject": "player", "condition": "moving"},
-      {"tick": 45, "subject": "birds", "condition": "visible"}]}
+      {"tick": 45, "subject": "birds", "condition": "visible"},
+      {"tick": 57, "subject": "player", "condition": "moving"}]}
 }

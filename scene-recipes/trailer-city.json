@@ -4,7 +4,12 @@
   "anchors": {"start": "doorstep"},
   "setup": {"tutorial_complete": true, "day": 1, "parent": "mother", "player": {"at": "start", "facing": "south"},
     "background": {"crowd": true, "crowd_scope": "city"}},
-  "playback": {"walk": "7p", "duration": 7, "capture_at": 5, "camera": {"zoom_out": 4, "zoom_delay": 0.5},
+  "playback": {"walk": "0.5p0.5s6e", "duration": 7, "capture_at": 5,
+    "camera": {"zoom_out": 4, "zoom_delay": 0.5, "landscape_margin": 512},
     "observations": [{"tick": 15, "subject": "player", "condition": "visible"},
-      {"tick": 150, "subject": "player", "condition": "visible"}]}
+      {"tick": 24, "subject": "player", "condition": "moving"},
+      {"tick": 75, "subject": "player", "condition": "moving"},
+      {"tick": 150, "subject": "player", "condition": "visible"},
+      {"tick": 195, "subject": "player", "condition": "moving"},
+      {"tick": 207, "subject": "player", "condition": "near", "at": [3112, 2750], "distance": 45}]}
 }

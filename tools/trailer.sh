@@ -125,8 +125,8 @@ schema_errors="$(jq -r '
     (if (.shots | type) == "array" and (.shots | length) > 0 then empty
         else "shots must be a non-empty array" end),
     (if (.style | type) == "object" and
-        (.style | keys - ["font_family","paper","ink","accent"] | length) == 0 and
-        all([.style.font_family,.style.paper,.style.ink,.style.accent][];
+        (.style | keys - ["font_family","card_background","paper","ink","accent"] | length) == 0 and
+        all([.style.font_family,.style.card_background,.style.paper,.style.ink,.style.accent][];
             type == "string" and length > 0)
         then empty else "style must name the font and three colors" end),
     (if (.score | type) == "object" and
@@ -150,9 +150,15 @@ schema_errors="$(jq -r '
             then empty
             elif $kind == "card" and (.recipe == null) and (.in == null) and
                 (.card | type) == "object" and
-                (.card | keys - ["text","font_size"] | length) == 0 and
-                (.card.text | type) == "string" and (.card.text | length) > 0 and
-                (.card.font_size | num) and .card.font_size > 0
+                (.card | keys - ["text","font_size","subtitle","subtitle_font_size","asset"] | length) == 0 and
+                (((.card.asset | type) == "string" and (.card.asset | test("^art/[a-z0-9/_-]+\\.png$")) and
+                    .card.text == null and .card.font_size == null and .card.subtitle == null and
+                    .card.subtitle_font_size == null) or
+                 ((.card.text | type) == "string" and (.card.text | length) > 0 and
+                    (.card.font_size | num) and .card.font_size > 0 and .card.asset == null and
+                    ((.card.subtitle == null and .card.subtitle_font_size == null) or
+                     ((.card.subtitle | type) == "string" and (.card.subtitle | length) > 0 and
+                      (.card.subtitle_font_size | num) and .card.subtitle_font_size > 0))))
             then empty
             else "\($n): scene shots need a recipe; card shots need text and font_size" end),
         (if (keys - ["name","kind","recipe","card","ending","motion","length","in","gap","fade_in","fade_out"] | length) == 0
@@ -297,6 +303,14 @@ fi
 PAPER="$(jq -r '.style.paper' "$SHOTS_FILE")"
 INK="$(jq -r '.style.ink' "$SHOTS_FILE")"
 ACCENT="$(jq -r '.style.accent' "$SHOTS_FILE")"
+CARD_BACKGROUND="$(jq -r '.style.card_background' "$SHOTS_FILE")"
+
+while IFS= read -r asset; do
+    if [[ ! -f "$PROJECT_DIR/$asset" ]] || ! git -C "$PROJECT_DIR" ls-files --error-unmatch "$asset" >/dev/null 2>&1; then
+        echo "trailer.sh: editorial card asset is absent or untracked: $asset" >&2
+        exit 1
+    fi
+done < <(jq -r '.shots[].card.asset? // empty' "$SHOTS_FILE")
 
 # The baked atlas pages, repaired the way tools/shot.sh repairs them -- see its own comment.
 if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
@@ -493,7 +507,7 @@ adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[a]" \
 # same edit.
 encode_card() {
     local name="$1" out="$2"
-    local length gap fade_in fade_out out_start total gap_ms font_size text_file
+    local length gap fade_in fade_out out_start total gap_ms asset
     length="$(shot_field "$name" length)"
     gap="$(shot_field "$name" gap 0)"
     fade_in="$(shot_field "$name" fade_in "$DEFAULT_FADE")"
@@ -501,18 +515,42 @@ encode_card() {
     out_start="$(awk -v l="$length" -v o="$fade_out" 'BEGIN { printf "%.4f\n", l - o }')"
     total="$(awk -v l="$length" -v g="$gap" 'BEGIN { printf "%.4f\n", l + g }')"
     gap_ms="$(awk -v g="$gap" 'BEGIN { printf "%d\n", int(g * 1000 + 0.5) }')"
+    asset="$(shot_nested_field "$name" card asset)"
+    if [[ "$asset" != null ]]; then
+        ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i "color=c=${CARD_BACKGROUND}:s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${length}" \
+            -f lavfi -i "anullsrc=r=48000:cl=stereo" \
+            -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$asset" \
+            -filter_complex "\
+[0:v][2:v]overlay=x=(W-w)/2:y=(H-h)/2:shortest=1:format=auto,\
+fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out},\
+tpad=start_duration=${gap}:color=black,format=yuv420p[v];\
+[1:a]atrim=duration=${length},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${fade_in},\
+afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[a]" \
+            -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset veryfast -crf 12 \
+            -c:a pcm_s16le "$out"
+        return
+    fi
+    local font_size subtitle subtitle_size text_file subtitle_file
     font_size="$(shot_nested_field "$name" card font_size)"
+    subtitle="$(shot_nested_field "$name" card subtitle)"
+    subtitle_size="$(shot_nested_field "$name" card subtitle_font_size)"
     text_file="$WORK/card-${name}.txt"
+    subtitle_file="$WORK/card-${name}-subtitle.txt"
     shot_nested_field "$name" card text > "$text_file"
+    [[ "$subtitle" == null ]] || printf '%s\n' "$subtitle" > "$subtitle_file"
+    local card_filters="drawtext=fontfile='${FONT_FILE}':textfile='${text_file}':"
+    card_filters+="fontsize=${font_size}:fontcolor=${PAPER}:x=(w-text_w)/2:y=h*0.29"
+    if [[ "$subtitle" != null ]]; then
+        card_filters+=",drawtext=fontfile='${FONT_FILE}':textfile='${subtitle_file}':"
+        card_filters+="fontsize=${subtitle_size}:fontcolor=${PAPER}@0.86:x=(w-text_w)/2:y=h*0.63"
+    fi
     ffmpeg -hide_banner -loglevel error -y \
-        -f lavfi -i "color=c=${PAPER}:s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${length}" \
+        -f lavfi -i "color=c=${CARD_BACKGROUND}:s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${length}" \
         -f lavfi -i "anullsrc=r=48000:cl=stereo" \
         -filter_complex "\
-[0:v]drawbox=x=iw*0.055:y=ih*0.075:w=iw*0.89:h=ih*0.85:color=${INK}@0.52:t=3,\
-drawbox=x=iw*0.42:y=ih*0.63:w=iw*0.16:h=4:color=${ACCENT}@0.92:t=fill,\
-drawtext=fontfile='${FONT_FILE}':textfile='${text_file}':fontsize=${font_size}:fontcolor=${INK}:\
-x=(w-text_w)/2:y=(h-text_h)/2,fade=t=in:st=0:d=${fade_in},\
-fade=t=out:st=${out_start}:d=${fade_out},tpad=start_duration=${gap}:color=black,format=yuv420p[v];\
+[0:v]${card_filters},fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out},\
+tpad=start_duration=${gap}:color=black,format=yuv420p[v];\
 [1:a]atrim=duration=${length},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${fade_in},\
 afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[a]" \
         -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset veryfast -crf 12 \
@@ -659,9 +697,14 @@ check_card() {
         && diff -u "$WORK/card-a.audio" "$WORK/card-b.audio" > "$evidence/audio.diff"; then
         passed=true
     fi
-    jq -n --argjson passed "$passed" --arg mode "$MODE" \
+    local asset asset_sha=""
+    asset="$(shot_nested_field "$name" card asset)"
+    [[ "$asset" == null ]] || asset_sha="$(shasum -a 256 < "$PROJECT_DIR/$asset" | awk '{print $1}')"
+    jq -n --argjson passed "$passed" --arg mode "$MODE" --arg asset "$asset" \
+        --arg asset_sha256 "$asset_sha" \
         --arg font "$FONT_FILE" --arg font_sha256 "$(shasum -a 256 < "$FONT_FILE" | awk '{print $1}')" \
-        '{passed:$passed,mode:$mode,kind:"editorial card",font:$font,font_sha256:$font_sha256}' \
+        '{passed:$passed,mode:$mode,kind:"editorial card",font:$font,font_sha256:$font_sha256,
+          asset:(if $asset == "null" then null else $asset end),asset_sha256:$asset_sha256}' \
         > "$evidence/result.json"
     if [[ "$passed" == true ]]; then
         echo "check '$name': editorial card video and silence are identical"
@@ -709,21 +752,25 @@ check_editor() {
 }
 
 write_editorial_settings() {
-    local revision tree dirty ffmpeg_version font_sha shots_sha
+    local revision tree dirty ffmpeg_version font_sha shots_sha card_asset card_asset_sha=""
     revision="$(git -C "$PROJECT_DIR" rev-parse HEAD)"
     tree="$(git -C "$PROJECT_DIR" rev-parse HEAD^{tree})"
     dirty="$(git -C "$PROJECT_DIR" diff HEAD -- | shasum -a 256 | awk '{print $1}')"
     ffmpeg_version="$(ffmpeg -version | head -1)"
     font_sha="$(shasum -a 256 < "$FONT_FILE" | awk '{print $1}')"
     shots_sha="$(shasum -a 256 < "$SHOTS_FILE" | awk '{print $1}')"
+    card_asset="$(jq -r '[.shots[].card.asset? // empty][0] // ""' "$SHOTS_FILE")"
+    [[ -z "$card_asset" ]] || card_asset_sha="$(shasum -a 256 < "$PROJECT_DIR/$card_asset" | awk '{print $1}')"
     mkdir -p "$OUT_DIR"
     jq -n --arg revision "$revision" --arg tree "$tree" --arg dirty "$dirty" \
         --arg ffmpeg "$ffmpeg_version" --arg font_family "$FONT_FAMILY" --arg font "$FONT_FILE" \
         --arg font_sha256 "$font_sha" --arg shots_sha256 "$shots_sha" \
+        --arg card_asset "$card_asset" --arg card_asset_sha256 "$card_asset_sha" \
         --argjson fps "$FPS" --argjson width "$WIDTH" --argjson height "$HEIGHT" \
         --argjson duration "$total_seconds" \
         '{revision:$revision,tracked_tree:$tree,working_diff_sha256:$dirty,ffmpeg:$ffmpeg,
           font_family:$font_family,font:$font,font_sha256:$font_sha256,shots_sha256:$shots_sha256,
+          card_asset:$card_asset,card_asset_sha256:$card_asset_sha256,
           fps:$fps,width:$width,height:$height,duration_seconds:$duration,
           score:"deterministic oscillator notes from tools/trailer/shots.json"}' \
         > "$OUT_DIR/editorial-settings.json"

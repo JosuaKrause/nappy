@@ -83,7 +83,7 @@ See `docs/MECHANICS.md`, "Saving and resuming".
 ## Dev flags
 
 `tools/trailer.sh` records the saved scenes referenced by `tools/trailer/shots.json` through the
-game's frame-locked movie writer, then adds the shot list's warm paper-and-ink cards, ending copy
+game's frame-locked movie writer, then adds the shot list's dark editorial cards, tracked logo, ending copy
 and deterministic oscillator score before joining them with the captured game audio. Run
 `tools/trailer.sh --list` to inspect the cut, `--validate` to check its recipes headlessly,
 or `--shot choice` to record one scene. Each recipe owns its setup and scripted action;

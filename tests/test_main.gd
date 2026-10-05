@@ -34,6 +34,7 @@ func run(t) -> void:
 	_test_no_interior_exists_outside_a_debug_build(t)
 	_test_play_seconds_only_advances_while_the_world_moves(t)
 	_test_the_border_reaches_the_window_from_every_corner(t)
+	_test_the_overview_is_landscape_to_every_edge(t)
 	_test_no_focus_pause_from_args(t)
 	_test_no_focus_pause_from_query(t)
 	_test_focus_lost_opens_the_pause_during_a_played_day(t)
@@ -721,6 +722,45 @@ func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
 		t.check(unpainted == 0,
 				"corner %s: every cell the window can show is painted (%d unpainted of %d)"
 				% [name, unpainted, (hi.x - lo.x + 1) * (hi.y - lo.y + 1)])
+
+	city.free()
+	GameState.play_seconds = 0.0
+
+## The trailer overview grows the finite city by one authored landscape margin. Its added east and
+## west columns are forest, while the north and south bands own their corners and the bridge ends
+## at the ordinary camera border depth.
+func _test_the_overview_is_landscape_to_every_edge(t) -> void:
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+
+	var bounds := city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, city.map.size)).grow(512.0)
+	var viewport := Vector2(
+			ProjectSettings.get_setting("display/window/size/viewport_width"),
+			ProjectSettings.get_setting("display/window/size/viewport_height"))
+	var zoom := ZoomOutCamera.overview_zoom(bounds, viewport)
+	var size := viewport / zoom
+	var view := Rect2(bounds.get_center() - size / 2.0, size)
+	var lo := city.map.world_to_tile(view.position)
+	var hi := city.map.world_to_tile(view.end - Vector2.ONE)
+	var middle_y := city.map.size.y / 2
+	var south_spine_x := city.map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH
+	var keys := city._ground.keys_in(view)
+
+	t.check(keys.has(SceneryGround.key_for(lo)) and keys.has(SceneryGround.key_for(hi)),
+			"overview residency covers both far landscape corners")
+	t.check(city.scenery_ground_source(Vector2i(lo.x, middle_y)) == GroundTiles.FOREST \
+			and city.scenery_ground_source(Vector2i(hi.x, middle_y)) == GroundTiles.FOREST,
+			"overview's wide east and west columns remain forest")
+	t.check(city.scenery_ground_source(lo) == GroundTiles.MOUNTAIN \
+			and city.scenery_ground_source(Vector2i(hi.x, lo.y)) == GroundTiles.MOUNTAIN,
+			"north owns both overview corners as mountain")
+	t.check(city.scenery_ground_source(Vector2i(lo.x, hi.y)) == GroundTiles.WATER \
+			and city.scenery_ground_source(hi) == GroundTiles.WATER,
+			"south owns both overview corners as water")
+	t.check(city.scenery_ground_source(Vector2i(south_spine_x,
+			city.map.size.y + City.OUTSIDE_DEPTH_TILES)) == GroundTiles.WATER,
+			"the southern bridge ends at the authored border depth")
 
 	city.free()
 	GameState.play_seconds = 0.0

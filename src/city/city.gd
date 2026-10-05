@@ -64,8 +64,9 @@ const HOME_BUILDING_WALL_ROWS := 4
 ## constant only has to be something that cap can act on.
 const HOME_FLANKING_WALL_ROWS := 2
 const BOUNDARY_THICKNESS := 64.0
-## How deep the ring of frontages outside the map is, in tiles. A block, so the far side of a
-## boundary street is the same depth of building as both sides of every other street.
+## How far ordinary camera framing reaches beyond the finite map, and how far the southern bridge
+## carries its road over the water. The unwalkable landscape beneath and beyond that band is
+## streamed to whichever view asks for it.
 const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
 
 ## The layer for the one thing drawn *over* the entities: the dark inside the tunnel, which has to
@@ -1472,10 +1473,6 @@ func _home_scenery_view() -> Rect2:
 func scenery_ground_source(tile: Vector2i) -> int:
 	if map.recipe_exterior and not map.recipe_bounds.has_point(tile):
 		return GroundTiles.ALLEY
-	var depth := OUTSIDE_DEPTH_TILES
-	if tile.x < -depth or tile.y < -depth or tile.x >= map.size.x + depth \
-			or tile.y >= map.size.y + depth:
-		return -1
 	if tile.x < 0 or tile.y < 0 or tile.x >= map.size.x or tile.y >= map.size.y:
 		return _paint_outside_the_map(tile)
 	var source := GroundTiles.source_for(map, tile, _day)
@@ -1506,10 +1503,9 @@ func _composed_ground_tile_set() -> TileSet:
 
 ## What the city stops at, on each of its four sides.
 ##
-## The tilemap is painted over `map.size` and no further, so without this everything the camera can
-## see outside the map stands on the clear colour. Painting it by continuing the edge outward cures
-## the black and leaves the wrong answer standing: more city, receding into a camera limit, on
-## every side.
+## The resident tilemap covers only the current view. Outside the finite city, this continues the
+## landscape far enough for that view without continuing the city itself: no roads, walkable cells
+## or collision are added.
 ##
 ## **The border is the land, and each side says a different thing about why the city ends:**
 ##
