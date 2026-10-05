@@ -319,6 +319,14 @@ merging is what collides — so parallelism is planned at the file level, before
   `main`, a fix the player wants urgently: wait for the agent's report, or do the work on a
   branch of its own from `main` and tell the agent what it will touch, so the later merge is
   small.
+- **No agent runs `git stash`.** `refs/stash` is one stack shared by every worktree of the
+  repository, so a `git stash pop` applies whichever stash is on top, which may be a sibling
+  agent's. To test another head, add a temporary worktree under `.claude/worktrees/` (`git
+  worktree add --detach <path> <sha>`, made sparse as in "Create sparse worktrees before
+  materializing files") and remove it afterwards. To set work aside, `git add -A` (so untracked
+  files are kept) and make a WIP commit on the branch, kept local and unpushed; undo it with
+  `git reset HEAD~1`, which leaves the changes unstaged as a pop would. Once it is pushed it is
+  not undone: a follow-up commit continues from it. A brief for an agent says so.
 - **The main checkout is the player's test bed.** Whatever the player is asked to try out is
   checked out in the repository's own folder before they are told it is ready — never left in an
   agent's worktree under `.claude/worktrees/`. *(2026-09-08: "always check out what you want me to
