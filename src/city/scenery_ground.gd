@@ -53,9 +53,9 @@ static func bounds(key: Vector2i) -> Rect2:
 
 func keys_in(view: Rect2) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
-	# Ground residency follows the visible view. Ordinary play remains bounded by the player's
-	# camera limits, while an overview may expose more of the unwalkable landscape beyond them.
-	# Keeping this view-driven avoids a permanently allocated world-sized backdrop.
+	# Ground residency follows whatever view asks, including the player's own camera, which has
+	# no limits and so shows the landscape past the city's edge. Keeping it view-driven avoids a
+	# permanently allocated world-sized backdrop.
 	if not view.has_area():
 		return result
 	var lo := Vector2i((view.position / CHUNK_PX).floor())

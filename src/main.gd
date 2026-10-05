@@ -432,7 +432,7 @@ func _ready() -> void:
 
 	_player = _make_player()
 	_city.add_entity(_player)
-	_player.set_camera_limits(_city.camera_bounds())
+	_player.clear_camera_limits()
 	_baby = _player.get_node("Baby")
 
 	_hud = HUD.instantiate()
@@ -850,7 +850,7 @@ func _build_the_finale_city() -> void:
 		_player.slope_dir_at = Callable()
 		_player.get_parent().remove_child(_player)
 		_city.add_entity(_player)
-	_player.set_camera_limits(_city.camera_bounds())
+	_player.clear_camera_limits()
 	# The **tiles** the chains end on rather than the points `CityEdge` draws its pictures at: the
 	# portal's own face is anchored on the map edge, past the last ground she can stand on, so a
 	# reach measured from it would have to be wide enough to cover the difference and would then

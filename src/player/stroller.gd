@@ -890,7 +890,17 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	_walk_phase = 0.0
 	queue_redraw()
 
-## Stops the camera from panning past the edge of the city.
+## Takes the limits off the camera, which is Godot's own default: it follows her, centered, with
+## the look-ahead, wherever she stands. The city has no limits, since the ground past its edge
+## is painted for whatever view asks (`City.scenery_ground_source()`), and leaving an interior
+## goes through here so the interior's limits do not stay on the street camera.
+func clear_camera_limits() -> void:
+	_camera.limit_left = -10000000
+	_camera.limit_top = -10000000
+	_camera.limit_right = 10000000
+	_camera.limit_bottom = 10000000
+
+## Stops the camera from panning past the edge of the space she is in (an interior's walls).
 func set_camera_limits(bounds: Rect2) -> void:
 	_camera.limit_left = int(bounds.position.x)
 	_camera.limit_top = int(bounds.position.y)

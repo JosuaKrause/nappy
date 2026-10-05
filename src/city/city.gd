@@ -64,9 +64,9 @@ const HOME_BUILDING_WALL_ROWS := 4
 ## constant only has to be something that cap can act on.
 const HOME_FLANKING_WALL_ROWS := 2
 const BOUNDARY_THICKNESS := 64.0
-## How far ordinary camera framing reaches beyond the finite map, and how far the southern bridge
-## carries its road over the water. The unwalkable landscape beneath and beyond that band is
-## streamed to whichever view asks for it.
+## How deep the framed border band outside the finite map is, in tiles, which is also how far the
+## southern bridge carries its road over the water. The unwalkable landscape beneath and beyond
+## that band is streamed to whichever view asks for it, the player's camera included.
 const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
 
 ## The layer for the one thing drawn *over* the entities: the dark inside the tunnel, which has to
@@ -1397,25 +1397,12 @@ func _add_prop(prop: Node2D) -> void:
 	if prop is ScenerySprite:
 		scenery.register(prop)
 
-## How far the camera may see. The map, plus the band of land painted outside it, less the reach
-## a glance toward the corner costs.
-##
-## **Not the map exactly**, or the boundary looks like a wall however much is built out there: the
-## camera would stop at the last walkable tile, so the far side of a boundary street — and the
-## tunnel the spine leaves by — would be drawn every frame and never once on screen. She still
-## cannot *walk* past the boundary; she can see that there is something past it.
-##
-## **And not the painted depth exactly either.** `Camera2D.limit_*` only clamps `position`;
-## `Stroller._update_camera()`'s look-ahead is `_camera.offset`, added on top and unclamped, so
-## facing along an edge pushes the drawn view `Stroller.CAMERA_LOOK_AHEAD` past wherever `position`
-## was held to. On the north and south sides that overrun still lands inside the painted band —
-## `Tuning.VIEW_HALF_EXTENT.y` (180px) leaves 76px of the eight-tile depth spare. East and west have
-## none to give: `VIEW_HALF_EXTENT.x` (320px) already exceeds it, so `position` is already clamped
-## flush with the painted edge before any lead is added, and the full look-ahead shows past it —
-## measured, the missing column the border paints but the window still shows black beyond.
-## Reserving the look-ahead from the clamp itself, uniformly, costs the same slack on every side
-## instead of only the two that happened to have room for it, which is what leaves every side
-## reaching exactly as deep as the paint does.
+## The framing of the whole city plus its border band, for the cameras that look at the city
+## rather than follow her: the `--overview` view, the dev rig and the trailer's zoom-out. The
+## player's own camera has no limits, so it follows her centered with the look-ahead wherever she
+## stands, and the ground past the edge is painted for whatever view asks
+## (`scenery_ground_source()`). The rectangle is the map grown by the band painted outside it,
+## less the reach a glance toward a corner costs.
 func camera_bounds() -> Rect2:
 	if map.recipe_exterior:
 		return Rect2(-100000000, -100000000, 200000000, 200000000)

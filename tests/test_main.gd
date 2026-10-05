@@ -33,7 +33,7 @@ func run(t) -> void:
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
 	_test_no_interior_exists_outside_a_debug_build(t)
 	_test_play_seconds_only_advances_while_the_world_moves(t)
-	_test_the_border_reaches_the_window_from_every_corner(t)
+	_test_the_unclamped_view_at_every_corner_is_painted(t)
 	_test_the_overview_is_landscape_to_every_edge(t)
 	_test_no_focus_pause_from_args(t)
 	_test_no_focus_pause_from_query(t)
@@ -671,23 +671,20 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	GameState.sabotage_done = saved_sabotage
 	GameState.play_seconds = 0.0
 
-## M120: the border band the camera may see (`City.camera_bounds()`) has to reach exactly as far
-## as `_paint_outside_the_map()` painted it, in every direction a look-ahead glance can push the
-## drawn view — not only wherever `Camera2D.limit_*` alone would stop it.
+## The player's camera has no limits, so at each map corner the view is centered on her, the
+## look-ahead is added toward the corner, and the ground has to be painted under all of it through
+## the view-driven residency. Fails if residency were clipped back to the border band, since the
+## view then reaches past the band on the east and west sides (the view is wider than the band).
 ##
-## Computed rather than driven through a real windowed `Camera2D`: engine-internal clamping and
-## smoothing run once a frame through the rendering server, which nothing in this synchronous
-## headless suite steps. The check instead does the same arithmetic Godot's own clamp does —
-## `position` held inside `limit_left..limit_right` less half the visible view, `Stroller.
-## CAMERA_LOOK_AHEAD` added on top the way `_camera.offset` is, unclamped — for the worst-case
-## glance at each of the four corners, and reads the actual static `TileMapLayer` cells plus the
-## independently drawn south-water cells rather than re-deriving what should be there.
-func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
+## Computed rather than driven through a real windowed `Camera2D`: engine-internal smoothing runs
+## once a frame through the rendering server, which nothing in this synchronous headless suite
+## steps. The check reads the actual static `TileMapLayer` cells plus the independently drawn
+## south-water cells rather than re-deriving what should be there.
+func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 
-	var bounds := city.camera_bounds()
 	var half := Tuning.VIEW_HALF_EXTENT
 	var lead := Stroller.CAMERA_LOOK_AHEAD
 	var size := city.map.world_size()
@@ -695,20 +692,16 @@ func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
 		"nw": Vector2(0.0, 0.0), "ne": Vector2(size.x, 0.0),
 		"sw": Vector2(0.0, size.y), "se": Vector2(size.x, size.y),
 	}
+	var beyond_the_band := false
 	for name in corners:
 		var toward: Vector2 = corners[name]
-		# Where `Camera2D.limit_*` alone would hold `position`: as close to the corner as the
-		# clamp allows, which `City.camera_bounds()` already keeps flush with the painted band on
-		# the two sides a square viewport does not out-reach.
-		var clamped := Vector2(
-				clampf(toward.x, bounds.position.x + half.x, bounds.end.x - half.x),
-				clampf(toward.y, bounds.position.y + half.y, bounds.end.y - half.y))
-		# The look-ahead lead a glance straight at this corner adds on top, unclamped — the whole
-		# reach on whichever axis a facing may point purely along.
 		var glance := Vector2(
 				lead if toward.x > size.x * 0.5 else -lead,
 				lead if toward.y > size.y * 0.5 else -lead)
-		var window := Rect2(clamped + glance - half, half * 2.0)
+		var window := Rect2(toward + glance - half, half * 2.0)
+		var band := Rect2(Vector2.ZERO, size).grow(
+				City.OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE))
+		beyond_the_band = beyond_the_band or not band.encloses(window)
 		city.scenery.update(window, true)
 		var lo := city.map.world_to_tile(window.position)
 		var hi := city.map.world_to_tile(window.end - Vector2.ONE)
@@ -723,6 +716,7 @@ func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
 				"corner %s: every cell the window can show is painted (%d unpainted of %d)"
 				% [name, unpainted, (hi.x - lo.x + 1) * (hi.y - lo.y + 1)])
 
+	t.check(beyond_the_band, "a corner view reaches past the band, so the check is not vacuous")
 	city.free()
 	GameState.play_seconds = 0.0
 
