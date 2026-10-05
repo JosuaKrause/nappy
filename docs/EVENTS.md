@@ -197,15 +197,78 @@ from off screen" gives: nothing announces a patrol at the edge of the screen. Th
 ordinary `MAP` placement of `police_patrol` reads (`EventCatalogue.heated()`): only its `spawn_mode`
 differs, so the row's cost and picture are exactly the ones the day's own plan already uses.
 
+### What she meets on her route is drawn from a marble bag
+
+*(olive-koala, statement 2: "events should use the marble bag approach as well. that way we can
+control what the player sees on their route".)* The dawn still decides how many director-sited
+events the day buys, by the same weighted roll and at the same cost as everything else. **Which row
+each of them is** is drawn from a bag when it is handed out: `EventDirector` fills a `MarbleBag` at
+dawn with every row it sites that day — recurring, available, `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` —
+`Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight, so over any stretch the length of a
+bag the mix she meets is the rows' own rather than a roll's
+streaks. A row `Tuning.ROUTE_BAG_MARBLES_OF` names has the marbles it sets instead: day 3's
+`charging_dog` has 2 (inbox #566 in [feathery-stork](playtests/2026-10-04-feathery-stork.md): "I'd say we could do 2 dogs -- we don't need the charging dog
+that often"), set in the bag because the dawn roll reads the row's weight too. The bag has its own
+stream and draws nothing from the director's; the director's own draws still follow from which row
+each handout is — a crossing spends one on the side it comes from, a row down her line none — so the
+same seed and the same walk are the same day. A row met `max_per_day` times that day has its further
+marbles spent unmet. A row owed as itself — a sprinkled dog, a forced row — is not a marble; the
+return's patrols are rigged marbles (below).
+`tests/probes/olive_badger_route_mix.gd` measures the mix against the rows' weights over many seeds.
+
+**The bag is a queue of bags, and a bag can be rigged** (`MarbleBag.rig()`, inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "create a
+new marble bag with x holdings place the ensured item in the bag fill the remaining x-1 items by
+*drawing* from the currently active bag"). A rigged bag of `x` marbles holds what is ensured and
+`x - 1` taken from the bag she was drawing from; it is drawn first, and that bag then carries on with
+the rest. `EventDirector.rig_her_route()` moves that many of the owed events to the head of the
+list, so the guarantee is about what is placed on her route. Two rigs stand:
+
+- **After day 6's mark, a man shouting is one of the next two** (`Tuning.TASK_CONTACT_WITHIN_THE_NEXT`;
+  inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "maybe let's make the other rigged bags smaller, too"). A row the director does not
+  otherwise site is a place, so when its marble comes up it is put on her route the way day 3's
+  fire is (`EventScheduler.WalkSiting.ahead_of()`): on the branch of the day's routes she is
+  walking, past the streaming band so it is never seen to appear, under every acceptance rule a dawn
+  placement is, and moved ahead of her again if she turns away before it has been in the world. He
+  is a look-alike the day's any-instance contact follows her onto, besides the one her reading the
+  mark spawns near it.
+- **After day 11's mark, a second loudspeaker mast is one of the next two**
+  (`Tuning.MAST_WITHIN_THE_NEXT`), put on her route the same way on the sidewalk or square, besides
+  the mast near the mark the task points at first (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "let it point to the closest one
+  first"). It is a mast like the one `EventManager.queue_a_mast()` adds, named by its foot.
+- **Each of the return leg's patrols** — see "The return owes her patrols" below.
+
+**Day 3's lesson is a rigged bag of one**, and it stays the first thing she meets (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md):
+"keep it first"; inbox #566 in [feathery-stork](playtests/2026-10-04-feathery-stork.md): "the first dog is a rigged bag with only one entry that is separate
+from anything that comes after" · "the lesson is not paid for. why would it be? that's not how the
+marble bag works"). A bag holding only the dog goes in front at dawn and takes nothing from the bag
+behind it, so the ordinary bag keeps both its dog marbles and the lesson is on top of them; the
+first of the events the dawn bought for her route is drawn from it, at `LESSON_DELAY`.
+**A rig that must not come sooner** takes the two-bag shape
+(`MarbleBag.rig_spaced()`): a bag of what comes first, none of it the ensured marble, then a bag of
+the ensured marble; nothing uses it today.
+
+**A marble may itself be a bag**: drawing it draws from it, and the bag marble goes straight back
+into the bag it was drawn from (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "this makes it very unlikely that two events from the
+inner bag happen right after each other"). An inner bag of n marbles is spent after n draws (the
+player: "The inner bag becomes empty after n draws"), and the draw that empties it takes the bag
+marble out for good, out of every queued bag and the ordinary set, so it gives exactly n events
+and a bag marble left last in its bag drains its inner bag and stops. A rig that takes from a bag
+holding one draws from its inner bag and leaves the bag marble where it is, so a rigged bag of x
+still gives its ensured marble within x draws. Nothing on her route uses one today.
+
 ### The return owes her patrols
 
 **The streets that go quiet from act III on get something back, on the walk home.** The crowd
 table empties them on purpose — see `docs/MECHANICS.md`, "the cruellest number in the game" — and
 the return phase (`DayPhase.RETURNING`, entered the moment the baby falls asleep) is the one
 stretch of a day nothing in the catalogue was ever pacing for. `Tuning.RETURN_PATROLS_PER_ACT`
-(`[0, 0, 2, 3]`, one entry per act) is what `EventDirector.owe_the_return()` adds to the owed
-queue the moment `EventBus.return_phase_started` fires, at the day's own heat — the same heated
-`police_patrol` copy the day's other plans of that row already use — and from then on the queue
+(`[0, 0, 2, 3]`, one entry per act) is how many `EventDirector.owe_the_return()` owes the moment
+`EventBus.return_phase_started` fires, at the day's own heat — the same heated `police_patrol` copy
+the day's other plans of that row already use. **Each is a rigged bag** in her route's bag (inbox
+#561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "they will need rigged bags"): the patrol and `Tuning.RETURN_PATROL_WITHIN_THE_NEXT` less one
+drawn from the bag she was drawing from, the next rigged once that bag is handed out, so each comes
+within its own bag's events rather than behind the dozens the dawn bought for her route, which the
+pacing never reaches. From then on the queue
 rolls `Tuning.RETURN_PATROL_INTERVAL` (9–16s) instead of `Tuning.AHEAD_INTERVAL` (11–26s) for the
 rest of the day, so the extra rows have a real chance of landing inside a 33–47s leg rather than
 after she is already home. Acts I and II carry nothing, so the teaching days and the return she
@@ -555,7 +618,11 @@ not a rung of the heat ladder, and the summary says she was taken in. **He sets 
 from her, inside his own 106px stand-off** (`EventDef.sets_off_beside_her`): the ordinary rule
 would lunge on his first frame, so instead his notice runs its whole length while he holds his
 ground and then follows at the stand-off, and walking into him during it is caught when it ends.
-One at a time: a second walk under while he is after her sets nobody else on her.
+One at a time: a second walk under while he is after her sets nobody else on her. On day 9 a walk
+under the named door's boom completes the task, and he is the whole of its price: the robber the
+task sends (`robber_giving_chase`, "The resistance's trap" below) comes only after a crossing
+inspected at a gatehouse. *(2026-10-04, the player, asked whether both should come at once:
+"(a)" — under the boom only the guard, the robber only after an inspected crossing.)*
 `tests/test_checkpoints.gd` walks the chase at the door's own geometry, since the catalogue's
 pursuer rigs walk the director's.
 
@@ -567,7 +634,10 @@ ends his chase through `EventInstance.give_up_the_chase()`, the same state, the 
 same telemetry line as running him out of `Tuning.PURSUIT_SHAKEN_OFF`; no catch can land during the
 hold or after it. A guard still in his own 1.8s notice when the hold starts gives up too — nothing
 asks whether it has finished. The roadblock's hunting guard and the escape's masked pursuer are
-never the one guard this reaches, so a hold does not touch either.
+never the one guard this reaches, so a hold does not touch either — and neither is the robber a
+done task sends after her: a gatehouse is no hiding place from him, and stepping back into one with
+him after her holds her where he catches her. *(2026-10-04, the player: "you shouldn't try to cheat
+it by going back in the hut -- that should be fatal by the robber".)*
 
 **The boundary's structures charge as one source, never their sum.** *(2026-09-20, the player:
 "since two gates can be adjacent to each other their influence shouldn't add up" · "otherwise
@@ -1316,12 +1386,13 @@ One row the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resi
 
 ### The resistance's trap — the robber and the guard sent after her
 
-Two rows the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resistance sets each
-on her at a handover, never at dawn.
+Two rows the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resistance sets one
+on her the moment she has done a task, never at dawn — every task but the roadblock, which keeps a
+guard waiting at it, and the neighbor, which has neither (`ResistanceDirector.sets_a_trap_on_her()`).
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `robber_giving_chase` **`hard_fail`** | SCRIPTED | day 6 | **The trap of the man shouting's own task, coming to her rather than waiting at it.** *(PLAYTEST-144, statement 15, the player: "After the man shouting, the robber, which is fine only if he starts off screen." The van's own task sends `van_guard_giving_chase` below instead; the burnt shell and a roadblock keep a waiting guard.)* The moment she hands over the man shouting's note, `ResistanceDirector._set_the_trap_on_her()` spawns him off screen and he comes at her. **The alley robber, read off his row rather than copied**: the same body, 16 over a 26–200px field, 130px/s, the 26px catch with the 116px lunge (`lunge_reach` 38), `hard_fail`, the walk-off at 100px/s. **No trigger**, so he is never waiting: his notice and his chase run from the frame he exists. **A short notice and a long chase**: 2.0s of notice, `Tuning.PURSUIT_MIN_NOTICE` and half a second, then a 6.0s chase, `Tuning.PURSUIT_TIME` × 2, the longest `validate_pursuit` allows and one of the two pursuers given it — walking away has to lose inside the two, and the notice may not be long. **Where he starts**: `Tuning.TRAP_ARRIVAL_DISTANCE` (311px, stated over his own catch, the tighter of the two — see that constant's own doc) above or below her, and past the line where the screen-edge badge can rise before he is on screen, which on the narrow vertical axis is 299px and holds within about 16° of straight up or down; on walkable ground a guard may stand on, with a straight walkable run at her, since he chases in a straight line. Where no start above or below has one — about a fifth of handovers (`tests/probes/m137_trap_arrival.gd`) — he comes along her own street from about 466px to her side, and there walking directly away outlasts him. **The man she just left keeps shouting, and charging her, for `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover (M205)** — longer than this row's own 2.0s notice, so his field is still live for the whole of it whichever way she answers. What that leaves her: standing still, he is on screen under a second after the badge rises, lunges from his stand-off about 1.5s after he appears and reaches her about 0.7s later, before the man would have stopped shouting on his own; walking into him he still lunges from his stand-off, and turning to run within `Tuning.PURSUIT_REACTION` of the badge gets her away; walking directly away he catches her about 7.5s after he appears; running for `PURSUIT_SHAKEN_OFF` shakes him off. Whether shouting-plus-chasing at once is more than a walker should answer is `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not settled here. His own look, `ROBBER_GIVING_CHASE`, draws the alley robber's own pictures (only ever the lunge) and is badged by the lunge's side view, the one picture of him `ROBBER` does not already stand for — `door_guard`'s arrangement. `EventDef.validate()` refuses a pursuer with no trigger that the scheduler could place, so this shape exists only as a row nothing but a director spawns. |
+| `robber_giving_chase` **`hard_fail`** | SCRIPTED | day 6 | **The trap of every task but the van's, coming to her rather than waiting at it**: the man shouting's note, the burnt building's door, the district door, a mast's foot, the swing and the last night's front door. *(PLAYTEST-144, statement 15, the player: "After the man shouting, the robber, which is fine only if he starts off screen." [grassy-goose](playtests/2026-10-04-grassy-goose.md): "the robber should spawn in off-screen already pursuing when I touch the goal"; asked which tasks, "Every guarded target (Recommended)". The van's own task sends `van_guard_giving_chase` below instead; a roadblock keeps a waiting guard.)* The moment she has done one — handed the note over, reached the door, been let through the district door after its inspection, reached the mast's foot or the swing, handed the key over — `ResistanceDirector._set_the_trap_on_her()` spawns him off screen and he comes at her. Walked under the district door's raised boom, the door's own `door_guard` comes instead, and he does not ("Checkpoints" above). **The alley robber, read off his row rather than copied**: the same body, 16 over a 26–200px field, 130px/s, the 26px catch with the 116px lunge (`lunge_reach` 38), `hard_fail`, the walk-off at 100px/s. **No trigger**, so he is never waiting: his notice and his chase run from the frame he exists. **A short notice and a long chase**: 2.0s of notice, `Tuning.PURSUIT_MIN_NOTICE` and half a second, then a 6.0s chase, `Tuning.PURSUIT_TIME` × 2, the longest `validate_pursuit` allows and one of the two pursuers given it — walking away has to lose inside the two, and the notice may not be long. **Where he starts**: `Tuning.TRAP_ARRIVAL_DISTANCE` (311px, stated over his own catch, the tighter of the two — see that constant's own doc) above or below her, and past the line where the screen-edge badge can rise before he is on screen, which on the narrow vertical axis is 299px and holds within about 16° of straight up or down; on walkable ground a guard may stand on, with a straight walkable run at her, since he chases in a straight line, and never one that runs through the region's wall or a district door (`ResistanceDirector._runs_through_the_boundary()`) — on day 9 she is let out 54px past the door's line, where a start straight above, below or beside her is often on its far side. **At a front door — the burnt building's, the station's — he comes from across the street first**: the nearest start below her, beyond her street, out of view, at least 311px out, from which his own chase, straight at her and sliding along walls, reaches her in no more ground than the start beside her would take (`ResistanceDirector._across_the_street()`). *(2026-10-04, the player: "yes, to your proposal about front doors" — "at a front door, prefer a start on the far side of the street that's out of view and has a walkable way to you; if there's none, fall back to today's rule".)* Where no start above or below has a run at her — about a fifth of the man shouting's handovers (`tests/probes/m137_trap_arrival.gd`), and a front door with no start across the street (`tests/probes/grassy_goose_target_traps.gd` measures both) — he comes along her own street from about 466px to her side, and there walking directly away outlasts him; where no start has one at all, the first legal start stands in and he may never reach her, and where there is no legal start at all nobody is sent. **After the note, the man she just left keeps shouting, and charging her, for `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover (M205)** — longer than this row's own 2.0s notice, so his field is still live for the whole of it whichever way she answers. What that leaves her: standing still, he is on screen under a second after the badge rises, lunges from his stand-off about 1.5s after he appears and reaches her about 0.7s later — after the note, before the man would have stopped shouting on his own; walking into him he still lunges from his stand-off, and turning to run within `Tuning.PURSUIT_REACTION` of the badge gets her away; walking directly away he catches her about 7.5s after he appears; running for `PURSUIT_SHAKEN_OFF` shakes him off. Whether shouting-plus-chasing at once is more than a walker should answer is `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not settled here. His own look, `ROBBER_GIVING_CHASE`, draws the alley robber's own pictures (only ever the lunge) and is badged by the lunge's side view, the one picture of him `ROBBER` does not already stand for — `door_guard`'s arrangement. `EventDef.validate()` refuses a pursuer with no trigger that the scheduler could place, so this shape exists only as a row nothing but a director spawns. |
 | `van_guard_giving_chase` **`hard_fail`** | SCRIPTED | day 7 | **The trap of the van's own task**, on the same terms as `robber_giving_chase` above: the moment she hands the van's package over, `ResistanceDirector._set_the_trap_on_her()` spawns him off screen at the same `Tuning.TRAP_ARRIVAL_DISTANCE` (311px), with the same no-trigger contract, the same 2.0s notice and 6.0s chase. **The roadblock's own guard, read off his row rather than copied**: the same body, 18 over a 28–120px field (`door_guard`'s own numbers, `MASKED_MAN_REACH` — 28px — the catch), `Tuning.HEAT_HUNTS_SPEED` (130px/s, identical to the robber's own speed, so nothing about the chase itself differs), `hard_fail`. His narrower 120px field (against the robber's 200px) leaves more of the approach still to close, so his own badge line sits at 305px vertically, within about 11° of straight up or down, and his own beside distance is about 476px rather than the robber's 466px — the tighter cone this leaves is why the beside fallback measures higher for this row than the robber's, about a quarter of handovers against about a fifth (`tests/probes/m137_trap_arrival.gd`). **The walk-off is the robber's**, 100px/s, rather than `door_guard`'s own (who never leaves his post): this guard, like the robber, is a stranger in the street with nowhere to be once he has lost her. His own look, `VAN_GUARD_GIVING_CHASE`, draws the same `guard_standing_*`/`guard_lunging_*` pictures as `door_guard` and `masked_pursuer`, badged by the lunge's back view, the one picture of the man neither of theirs already stands for. Caught, the loss line names what she was carrying rather than dwelling on it: "He caught up with the package still on her. They took her in." |
 
 ### The escape — the walk that is not a day
@@ -1388,12 +1459,41 @@ stimulus at its position, and the world sums `contribution_at()` over the live i
 ```gdscript
 func contribution_at(world_position: Vector2, ...) -> float:
     var velocity := travel_velocity()  # or the override expected_impact_at() passes
-    return def.emission_at_distance(_field_distance(world_position, velocity),
+    var field := def.emission_at_distance(_field_distance(world_position, velocity),
             current_intensity())
+    return 0.0 if field > 0.0 and _walled_off(global_position, world_position) else field
 ```
 
 Because it is a pure query there is no ordering to get wrong, events compose by simple
 addition, and an instance can be tested without a scene.
+
+**Nothing reaches her through a building.** *(plaid-wombat, inbox #554: "Excitement should not go
+through any wall but it's not straightforward. If the player is partially in a wall they should
+not be protected so the blocking should happen in the middle of the wall (or one tile deep)"; and
+inbox #568: "half a tile was only supposed to be done if the wall is only one tile wide otherwise it
+should be one tile".)* A field is zero wherever the straight line from the source to her reaches a
+tile (`Tuning.WALL_SHIELD_DEPTH`) into a building thicker than one tile, or the middle of a wall
+only one tile thick (`Tuning.THIN_WALL_SHIELD_DEPTH`, half a tile), measured from the nearest open
+ground — `CityMap.wall_between()`. Thick or thin is decided tile by tile: a building tile is part of
+something thicker when one of its corners is a point where four building tiles meet, and otherwise
+it is part of a one-tile wall, the bend of an L of them included. Every source asks it, the crowd's
+walkers and cars too (`CrowdAgent.contribution_at()`), horn and bump jolts included. A line across
+a one-tile wall is blocked at its middle, square or slanted, except within half a tile of an open
+end of the wall. A building two tiles thick has its points a tile in only along its middle line, so
+it blocks a line across it only away from its ends: within a tile of an open end a line straight
+through 64px of building passes, and a building two tiles square blocks only a line through its very
+centre — the player's "otherwise it should be one tile" read literally, with the ends open to them.
+A line that clips a corner, runs along a face or crosses only a building's outer tile blocks
+nothing; and half a tile is over the pram's own body radius, so her body poking into a wall's edge
+shields her from nothing. The line runs from the source's own node — a flock's centre, a shaped
+row's middle — to her centre, and is asked only once the field is positive. It is the deeper test
+beside the pursuer's catch, which refuses a line that touches a building at all (`_clear_line_to()`,
+"Running that matters" in docs/MECHANICS.md). **The meter, the halo and the caret read the same
+answer**: the meter's sum and the halo's pick both call `contribution_at()`, and the caret's
+projection asks the wall between where the two bodies will be at each step, so a car about to come
+out from behind a building expects what it will land once it is out. A row with no map — every
+event in the building's interior — is not blocked by anything. `docs/COSTS.md` prices a row with
+nothing between, so a route past buildings pays less than the sum of its rows' table prices.
 
 **A row may carry a second, louder part close in, and one does.** `EventDef.core_intensity` and
 `core_radius` are a core: the same curve over a shorter band, and the row emits **the larger** of
@@ -1449,7 +1549,8 @@ source being louder rather than a second falloff with its own idea of where the 
 
 The debug view's fields layer (`DebugLayers`, `1`) traces the exact boundary
 `GroundShape.field_outline()` computes from the same arithmetic, so a screenshot of a field cannot
-disagree with what the meter does — see docs/TELEMETRY.md, "The debug view".
+disagree with what the meter does on open ground — see docs/TELEMETRY.md, "The debug view". It
+draws the whole field, buildings or not, and cuts away nothing a building hides from her.
 
 The lookup is a **linear scan**, not a spatial hash. A late day has around 26 events
 instantiated at once — the whole day is four times that, but only what is inside

@@ -1,0 +1,47 @@
+# CityMap.wall_between() calls and their own time. The first build (half a tile everywhere),
+# revision d07de58b with that revision's version of the count patch applied,
+# headless, seed 4242, --walk 3s8e4s8w --after 25; cumulative counters printed every 300 physics steps.
+day 1
+ZZWALLS physics=300 process=1357 calls=8879 usec=21552
+ZZWALLS physics=600 process=2799 calls=26265 usec=65861
+ZZWALLS physics=900 process=4245 calls=34265 usec=89127
+day 9
+ZZWALLS physics=300 process=1357 calls=3223 usec=11838
+ZZWALLS physics=600 process=2806 calls=3307 usec=12237
+ZZWALLS physics=900 process=4254 calls=6343 usec=23912
+
+# As built (a tile, or half one in a one-tile wall), revision ea5f0b4c with count-walls.patch
+# applied, four runs each: a headless run is not frame-for-frame repeatable, so the walk meets
+# different sources from run to run.
+day 1 run 1
+ZZWALLS physics=300 process=1301 calls=8134 usec=24398
+ZZWALLS physics=600 process=2738 calls=25587 usec=74648
+ZZWALLS physics=900 process=4159 calls=59387 usec=174859
+day 9 run 1
+ZZWALLS physics=300 process=1351 calls=3180 usec=10978
+ZZWALLS physics=600 process=2802 calls=3260 usec=11299
+ZZWALLS physics=900 process=4251 calls=6305 usec=23470
+day 1 run 2
+ZZWALLS physics=300 process=1348 calls=7213 usec=16081
+ZZWALLS physics=600 process=2796 calls=26612 usec=63149
+ZZWALLS physics=900 process=4244 calls=35789 usec=90003
+day 9 run 2
+ZZWALLS physics=300 process=1361 calls=3226 usec=9333
+ZZWALLS physics=600 process=2810 calls=3310 usec=9618
+ZZWALLS physics=900 process=4259 calls=7708 usec=23387
+day 1 run 3
+ZZWALLS physics=300 process=1359 calls=9019 usec=19022
+ZZWALLS physics=600 process=2808 calls=28407 usec=59867
+ZZWALLS physics=900 process=4256 calls=42029 usec=98771
+day 9 run 3
+ZZWALLS physics=300 process=1358 calls=3228 usec=10273
+ZZWALLS physics=600 process=2807 calls=3311 usec=10587
+ZZWALLS physics=900 process=4256 calls=6494 usec=22371
+day 1 run 4
+ZZWALLS physics=300 process=1359 calls=10669 usec=26396
+ZZWALLS physics=600 process=2807 calls=29638 usec=69992
+ZZWALLS physics=900 process=4252 calls=39561 usec=93637
+day 9 run 4
+ZZWALLS physics=300 process=1359 calls=3231 usec=10605
+ZZWALLS physics=600 process=2806 calls=3317 usec=11013
+ZZWALLS physics=900 process=4250 calls=6500 usec=30975

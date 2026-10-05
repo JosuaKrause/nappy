@@ -25,8 +25,9 @@ at all. It does not drain either — the baby is just too interested in the worl
 At `sleepiness = 100` the baby falls asleep and the day enters its **return phase**.
 
 **In acts III and IV, the return leg owes its own pressure.** `EventDirector.owe_the_return()`
-fires the moment `EventBus.return_phase_started` does, adding `Tuning.RETURN_PATROLS_PER_ACT`
-(`[0, 0, 2, 3]`) extra `police_patrol` rows to the owed queue and switching its pacing to
+fires the moment `EventBus.return_phase_started` does, owing `Tuning.RETURN_PATROLS_PER_ACT`
+(`[0, 0, 2, 3]`) extra `police_patrol` rows, each rigged into her route's bag so it comes within
+`Tuning.RETURN_PATROL_WITHIN_THE_NEXT` events of the one before, and switching its pacing to
 `Tuning.RETURN_PATROL_INTERVAL` (9–16s, tighter than the ordinary 11–26s) for the rest of the day
 — see `docs/EVENTS.md`, "The return owes her patrols", for the siting and the fairness. Acts I
 and II are untouched, so the days she is taught the mechanic on stay exactly as they were.
@@ -926,6 +927,16 @@ than a disc's `outer_radius`, since motion only ever adds reach — and less far
 (1+e)`, behind. See docs/EVENTS.md, "The emission model", for the full derivation and the debug
 view (`DebugLayers`, layer `1`) for where the boundary is checked by eye.
 
+**And `d` is never measured through a building.** *(plaid-wombat, inbox #554: "Excitement should
+not go through any wall".)* Every source — an event, a walker, a car — reaches her only while the
+straight line between them stays short of a tile (`Tuning.WALL_SHIELD_DEPTH`) into any building
+thicker than one tile, and short of the middle (`Tuning.THIN_WALL_SHIELD_DEPTH`, half a tile) of a
+wall only one tile thick, measured from the nearest open ground (`CityMap.wall_between()`); past
+that the contribution is zero. *(Inbox #568: "half a tile was only supposed to be done if the wall
+is only one tile wide otherwise it should be one tile".)* So any wall stops it, while clipping a
+corner or standing with the pram's body against a facade does not. The meter, the halo
+and the caret all read the same blocked contribution. See docs/EVENTS.md, "The emission model".
+
 **`(1 − t)²` is the shape that looks equally reasonable and inverts the game.** It puts a
 **quarter** of the intensity at the midpoint of the falloff band and six percent three quarters of
 the way out, so a café at 12/s sits under the 6.0/s walking decay across the whole outer 70% of its
@@ -1158,7 +1169,8 @@ seed, and its whole state is how many tears the run has made (`PosterState.tears
 lost day and a retry all draw the same marbles. A pursuit marble sends a `police_patrol` toward
 her from off screen, down the carriageway lane driving toward her, under the lead the row already
 owes (`EventDirector.send_a_patrol()`) — sited once she walks on along the street, since a heading
-into a wall gives a car no street to come down. Only poster tears use a marble bag.
+into a wall gives a car no street to come down. The same class is the bag her route's events are
+drawn from (`docs/EVENTS.md`, "What she meets on her route is drawn from a marble bag").
 
 ## Telegraphing
 

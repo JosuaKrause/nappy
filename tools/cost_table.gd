@@ -312,8 +312,12 @@ func _header_text() -> String:
 			"against a fresh run and names every row and column that moved, old → new, without " +
 			"writing anything.")
 	lines.append("")
-	lines.append("Every figure is on quiet sidewalk (ground multiplier 1.0); other grounds are not " +
-			"in this version. The constants each figure below was computed under, one line each so " +
+	lines.append("Every figure is on quiet sidewalk (ground multiplier 1.0) with nothing built " +
+			"between her and the row; other grounds are not in this version, and nor is a building " +
+			"between them, which silences a row entirely once the line from it to her passes the " +
+			"middle of a wall one tile thick or a tile deep into a thicker building " +
+			"(`CityMap.wall_between()`). " +
+			"The constants each figure below was computed under, one line each so " +
 			"a change to any of them shows here as this line moving:")
 	lines.append("")
 	lines.append("- `Tuning.EXCITEMENT_DECAY_WALKING` = %.1f points/s" % Tuning.EXCITEMENT_DECAY_WALKING)

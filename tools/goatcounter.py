@@ -7,6 +7,7 @@ Run it through the wrapper, which owns the environment:
     tools/goatcounter.sh --days 7
     tools/goatcounter.sh --start 2026-09-01 --end 2026-09-15
     tools/goatcounter.sh --json
+    tools/goatcounter.sh --encounters
 
 `VisitCounter` (`src/autoload/visit_counter.gd`) sends one GoatCounter event per moment worth
 counting, each path starting `nappy-`, to the game's own site, `nappy.goatcounter.com` -- see
@@ -47,6 +48,13 @@ names, since the catalogue keeps growing: a name is either run-level (`run-*`, `
 printed anyway, at the end, rather than silently dropped. `--raw` skips the grouping and the
 `--prefix` filter and prints every path GoatCounter has for the range, events and the page visit
 alike -- what an assistant would otherwise reach for a hand-written request to answer.
+
+`--encounters` reads the encounter events instead of the funnel: for each event type, how many
+encounters were seen (`day-<N>-seen-<event>`), how many of those were meaningful
+(`day-<N>-influenced-<event>`), influenced / seen, and the meaningful encounters she never saw
+(`day-<N>-influenced-unseen-<event>`) as a column of their own -- overall and per day. The ratio is
+left blank when nothing was seen rather than divided by nothing. The fire's older
+`nappy-day-3-seen-fire` is a moment of its own, not an encounter, and stays out of the table.
 
 `--check` proves the key works with `GET /api/v0/stats/total` for the last hour, which needs only
 the "Read statistics" permission -- the one every read-only key has. It then tries `GET /api/v0/me`
@@ -98,6 +106,15 @@ DAY_RE = re.compile(r"^day-(\d+)-(.+)$")
 # which is exactly the "still listed, no special handling" the funnel owes it: it folds into the
 # kind's own subtotal with no cause line of its own.
 LOST_RE = re.compile(r"^lost-(crying|hard-fail|timeout)(?:-(.+))?$")
+
+# A day's encounter names, EncounterWatch's three readings: seen-<event>, influenced-<event> and
+# influenced-unseen-<event>, the longer alternative tried first so an unseen influence is never read
+# as an influence of an event called "unseen-...".
+ENCOUNTER_RE = re.compile(r"^(seen|influenced-unseen|influenced)-(.+)$")
+# Day names that match the shape and are not encounters: the burning building's own first sighting,
+# sent beside the encounter set, whose `fire` is no catalogue row.
+NOT_ENCOUNTERS = frozenset({"seen-fire"})
+ENCOUNTER_COLUMNS = ("seen", "influenced", "influenced-unseen")
 
 # One HTTP request as {query params} -> decoded JSON body; a real fetcher talks to GoatCounter,
 # a test fetcher is a closure over canned pages. Kept as a callable so fetch_hits and the grouping
@@ -569,6 +586,68 @@ def format_text(grouped: dict[str, Any], *, site: str, start: datetime, end: dat
     return "\n".join(lines)
 
 
+def encounter_table(grouped: dict[str, Any]) -> dict[str, Any]:
+    """`grouped`'s encounter names as counts per event type: `overall` summed over every day, and
+    `days` per day, each event's `seen`, `influenced` and `influenced-unseen` (zero when absent) and
+    `ratio`, influenced / seen, or None when nothing was seen."""
+    overall: dict[str, dict[str, int]] = {}
+    days: dict[int, dict[str, dict[str, int]]] = {}
+    for day, bucket in grouped["days"].items():
+        for name, count in bucket.items():
+            match = ENCOUNTER_RE.match(name)
+            if not match or name in NOT_ENCOUNTERS:
+                continue
+            column, event = match.group(1), match.group(2)
+            for table in (overall, days.setdefault(day, {})):
+                row = table.setdefault(event, dict.fromkeys(ENCOUNTER_COLUMNS, 0))
+                row[column] += count
+    return {"overall": _with_ratios(overall), "days": {day: _with_ratios(days[day]) for day in sorted(days)}}
+
+
+def _with_ratios(table: dict[str, dict[str, int]]) -> dict[str, dict[str, Any]]:
+    rows: dict[str, dict[str, Any]] = {}
+    for event in sorted(table):
+        row: dict[str, Any] = dict(table[event])
+        row["ratio"] = row["influenced"] / row["seen"] if row["seen"] else None
+        rows[event] = row
+    return rows
+
+
+def encounters_jsonable(table: dict[str, Any]) -> dict[str, Any]:
+    return {"overall": table["overall"], "days": {str(day): rows for day, rows in table["days"].items()}}
+
+
+def _encounter_lines(rows: dict[str, dict[str, Any]]) -> list[str]:
+    if not rows:
+        return ["  (none)"]
+    width = max(len("event"), *(len(event) for event in rows))
+    lines = [f"  {'event':<{width}}  {'seen':>6}  {'influenced':>10}  {'ratio':>5}  {'unseen':>6}"]
+    # Most seen first, the name as the tiebreak, so two runs of the same input print the same order.
+    for event, row in sorted(rows.items(), key=lambda pair: (-pair[1]["seen"], pair[0])):
+        ratio = f"{row['ratio']:.2f}" if row["ratio"] is not None else ""
+        lines.append(
+            f"  {event:<{width}}  {row['seen']:>6}  {row['influenced']:>10}  {ratio:>5}  {row['influenced-unseen']:>6}"
+        )
+    return lines
+
+
+def format_encounters(table: dict[str, Any], *, site: str, start: datetime, end: datetime, prefix: str) -> str:
+    lines = [f"GoatCounter encounters for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {prefix!r})"]
+    lines.append(
+        "Per event type: encounters seen, how many of those influenced her, influenced / seen (blank when "
+        "nothing was seen), and the influences from encounters she never saw (unseen), which the ratio "
+        "leaves out."
+    )
+    lines.append("")
+    lines.append("Overall:")
+    lines.extend(_encounter_lines(table["overall"]))
+    for day, rows in table["days"].items():
+        lines.append("")
+        lines.append(f"Day {day}:")
+        lines.extend(_encounter_lines(rows))
+    return "\n".join(lines)
+
+
 def format_check(result: dict[str, Any], *, site: str) -> str:
     lines = [f"GoatCounter key for {site} reads statistics -- it works."]
     if result.get("permissions_available"):
@@ -622,6 +701,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--raw",
         action="store_true",
         help="print every path and its count for the range, unfiltered by --prefix -- events and the page visit alike",
+    )
+    mode.add_argument(
+        "--encounters",
+        action="store_true",
+        help=(
+            "print seen, influenced, influenced / seen and unseen influences per event type, overall and "
+            "per day, instead of the funnel"
+        ),
     )
     mode.add_argument(
         "--check",
@@ -705,6 +792,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     grouped = group_hits(hits, args.prefix)
+    if args.encounters:
+        table = encounter_table(grouped)
+        if args.json:
+            print(json.dumps(encounters_jsonable(table), indent=2, sort_keys=True))
+        else:
+            print(format_encounters(table, site=site, start=start, end=end, prefix=args.prefix))
+        return 0
     if args.json:
         print(json.dumps(to_jsonable(grouped), indent=2, sort_keys=True))
     else:

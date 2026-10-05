@@ -273,8 +273,8 @@ class ToolRefusalTests(HeadroomFixture):
     def test_trailer_counts_the_summed_render_seconds_of_the_shots_asked_for(self) -> None:
         if shutil.which("jq") is None:
             self.skipTest("trailer.sh needs jq on PATH before its preflight")
-        # The fixture's recipes each run 10 game seconds, so one shot is 10 and the list is 80.
-        for arguments, seconds in ((("--shot", "choice"), 10), ((), 80)):
+        # Seven gameplay recipes each run 10 seconds; editorial cards need no engine frames.
+        for arguments, seconds in ((("--shot", "choice"), 10), ((), 70)):
             with self.subTest(arguments=arguments):
                 script, tmp, env = self.trailer_fixture()
                 result = self.run_trailer(script, env, *arguments)

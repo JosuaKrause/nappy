@@ -16,7 +16,7 @@ from collections.abc import Callable
 from contextlib import redirect_stderr, redirect_stdout
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 from unittest import mock
 
 SPEC = importlib.util.spec_from_file_location("goatcounter", Path(__file__).with_name("goatcounter.py"))
@@ -398,6 +398,89 @@ class FormatTextTests(unittest.TestCase):
         text = goatcounter.format_text(grouped, site="s", start=self.start, end=self.end, prefix="nappy-")
         self.assertIn("Lost: 3 (60.0% of began)", text)
         self.assertIn("nappy-day-2-lost-crying: 3 (60.0% of began)", text)
+
+
+class EncounterTableTests(unittest.TestCase):
+    """`--encounters`: influenced / seen per event type, overall and by day, on canned hits."""
+
+    HITS: ClassVar[list[dict[str, Any]]] = [
+        hit("nappy-day-2-seen-homeless-yeller", 4, 1),
+        hit("nappy-day-2-influenced-homeless-yeller", 1, 2),
+        hit("nappy-day-2-influenced-unseen-homeless-yeller", 2, 3),
+        hit("nappy-day-3-seen-homeless-yeller", 6, 4),
+        hit("nappy-day-3-influenced-homeless-yeller", 3, 5),
+        hit("nappy-day-3-seen-charging-dog", 0, 6),
+        hit("nappy-day-3-influenced-unseen-pelican", 1, 7),
+        hit("nappy-day-3-seen-fire", 1, 8),
+        hit("nappy-day-3-began", 10, 9),
+        hit("nappy-day-3-ran", 7, 10),
+    ]
+
+    def table(self) -> dict[str, Any]:
+        table: dict[str, Any] = goatcounter.encounter_table(goatcounter.group_hits(self.HITS, "nappy-"))
+        return table
+
+    def test_overall_sums_the_days_and_divides_influenced_by_seen(self) -> None:
+        yeller = self.table()["overall"]["homeless-yeller"]
+        self.assertEqual((yeller["seen"], yeller["influenced"], yeller["influenced-unseen"]), (10, 4, 2))
+        self.assertAlmostEqual(yeller["ratio"], 0.4)
+
+    def test_each_day_has_its_own_rows(self) -> None:
+        days = self.table()["days"]
+        self.assertEqual(list(days), [2, 3])
+        self.assertAlmostEqual(days[2]["homeless-yeller"]["ratio"], 0.25)
+        self.assertAlmostEqual(days[3]["homeless-yeller"]["ratio"], 0.5)
+
+    def test_the_unseen_influences_stay_out_of_the_ratio_and_nothing_seen_leaves_it_blank(self) -> None:
+        overall = self.table()["overall"]
+        self.assertEqual(overall["pelican"]["influenced-unseen"], 1)
+        self.assertEqual(overall["pelican"]["influenced"], 0)
+        self.assertIsNone(overall["pelican"]["ratio"])
+        self.assertIsNone(overall["charging-dog"]["ratio"])
+
+    def test_the_fires_older_sighting_and_the_rest_of_the_day_are_not_encounters(self) -> None:
+        overall = self.table()["overall"]
+        self.assertEqual(sorted(overall), ["charging-dog", "homeless-yeller", "pelican"])
+
+    def test_the_printout_has_a_row_per_event_with_its_ratio(self) -> None:
+        text = goatcounter.format_encounters(
+            self.table(),
+            site="s",
+            start=datetime(2026, 10, 1, tzinfo=UTC),
+            end=datetime(2026, 10, 5, tzinfo=UTC),
+            prefix="nappy-",
+        )
+        lines = text.splitlines()
+        overall = lines.index("Overall:")
+        day_3 = lines.index("Day 3:")
+        self.assertLess(overall, lines.index("Day 2:"))
+        yeller_overall = line_with(lines[overall:], "homeless-yeller").split()
+        self.assertEqual(yeller_overall, ["homeless-yeller", "10", "4", "0.40", "2"])
+        yeller_day_3 = line_with(lines[day_3:], "homeless-yeller").split()
+        self.assertEqual(yeller_day_3, ["homeless-yeller", "6", "3", "0.50", "0"])
+        self.assertEqual(line_with(lines[overall:], "pelican").split(), ["pelican", "0", "0", "1"])
+
+    def test_main_prints_the_table_for_the_flag_and_json_with_it(self) -> None:
+        import json
+
+        for argv in (["--encounters"], ["--encounters", "--json"]):
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with (
+                mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "secret"}, clear=True),
+                mock.patch.object(
+                    goatcounter, "make_fetcher", return_value=lambda _params: {"hits": self.HITS, "more": False}
+                ),
+                redirect_stdout(stdout),
+                redirect_stderr(stderr),
+            ):
+                code = goatcounter.main(argv)
+            self.assertEqual(code, 0, stderr.getvalue())
+            if "--json" in argv:
+                payload = json.loads(stdout.getvalue())
+                self.assertAlmostEqual(payload["days"]["3"]["homeless-yeller"]["ratio"], 0.5)
+            else:
+                self.assertIn("Overall:", stdout.getvalue())
+                self.assertNotIn("began", stdout.getvalue())
 
 
 class FetchHitsTests(unittest.TestCase):

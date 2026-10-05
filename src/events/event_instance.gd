@@ -975,6 +975,53 @@ const PELICAN_NAME := "pelican"
 ## first share of the meter it lands (`accumulate_landed()`).
 var _reported_excitement := false
 
+## Every point this instance has ever landed on her meter, never pruned — the running total
+## `EncounterWatch` measures an encounter's share against, since `landed()` keeps only the halo's
+## `ExcitementHalo.WINDOW` and an encounter can be longer. Telemetry only: nothing that decides
+## anything reads it.
+var landed_ever := 0.0
+
+## `EncounterWatch`'s own record of this instance's encounters with her, made the first time it is
+## on screen or lands on her, or `null` until then. Telemetry only, like `landed_ever`.
+var encounter: EncounterWatch.Record = null
+
+## The box, in this node's own space, that what this instance draws roughly fills: its row's own
+## picture (`icon_for()`) standing on its feet at the origin, stretched along the run a spread, a
+## protest or a firefight covers, and grown by the wheel of a flock. An empty box for a row that
+## draws nothing of its own (`Look.NONE`). Not pixel-exact — no halo, no badge, no bob, the view a
+## mover is drawn in this frame aside — and it does not need to be: `EncounterWatch` asks only
+## whether most of it is in view. Worked out once, on first asking, from what `setup()` decided.
+func drawn_box() -> Rect2:
+	if _drawn_box_known:
+		return _drawn_box
+	_drawn_box_known = true
+	var icon := icon_for(def.look)
+	if icon.is_empty():
+		_drawn_box = Rect2()
+		return _drawn_box
+	var size := _native_size(icon)
+	var box := Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+	var half := maxf(11.0, def.obstructs_radius)
+	if def.has_a_spread and _spread_vertical:
+		box = box.merge(Rect2(-size.x * 0.5, -half, size.x, half * 2.0))
+	elif def.has_a_spread or def.look == EventDef.Look.PROTEST \
+			or def.look == EventDef.Look.FIREFIGHT:
+		box = box.merge(Rect2(-half, -size.y, half * 2.0, size.y))
+	if def.flock_size > 0:
+		box = box.grow(def.flock_spread)
+	_drawn_box = box
+	return _drawn_box
+
+var _drawn_box := Rect2()
+var _drawn_box_known := false
+
+## Whether this pursuer is coming for her right now: its chase has begun (`EventBus.pursuit_began`'s
+## own moment) and it has neither given up nor left. Telemetry only — `EncounterWatch` counts a
+## chase as an influence.
+func is_chasing() -> bool:
+	return def.pursues and _pursuit_began_reported and not is_finished and not is_leaving \
+			and not is_waiting()
+
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
 ## otherwise the row's own `def.id`. Telemetry only — nothing that decides anything reads it.
 func logged_name() -> String:
@@ -1109,11 +1156,12 @@ var _gait_moving := false
 ## the same day do not lean or strum in lockstep.
 var _idle_phase_offset := 0.0
 
-## The city, for the one question a chase needs answered that nothing here ever asked before:
-## whether the ground a step would land on is somewhere anybody can stand. `null` in every
-## data-level test that builds an instance without one — a rig that walks a straight line on
-## purpose gets exactly the unclamped movement it always has — and always set by
-## `EventManager._create`, the only real caller. See `_walkable_step`.
+## The city, for the questions only the ground can answer: whether the ground a step would land on
+## is somewhere anybody can stand (`_walkable_step`), whether a catch has a clear line
+## (`_clear_line_to`), and whether a building keeps this field from her (`_walled_off`). `null` in
+## every data-level test that builds an instance without one — a rig that walks a straight line on
+## purpose gets exactly the unclamped movement and the open-ground field it always has — and in the
+## building's interior, and always set by `EventManager._create`, the only real caller in the city.
 var _map: CityMap
 
 ## The solid body `_build_obstruction()` made, or `null` before it exists and after
@@ -1992,9 +2040,17 @@ func _flush_the_flock_if_she_is_among_them() -> void:
 ## ever really following her round it. Tried larger component first, so a pursuer coming at a wall
 ## nearly square-on slides along it rather than snagging on whichever axis happens to be smaller.
 func _walkable_step(delta_pos: Vector2) -> Vector2:
-	if not _map or delta_pos.is_zero_approx():
+	if not _map:
 		return delta_pos
-	if _map.is_walkable(_map.world_to_tile(global_position + delta_pos)):
+	return walkable_step_on(_map, global_position, delta_pos)
+
+## `_walkable_step()`'s own rule asked of any point on `map`: the part of the step `delta_pos` from
+## `from` a chaser actually takes. Static so that a placement can walk a chase it has not started
+## yet the way the chase will walk it (`ResistanceDirector._his_walk_reaches_her()`).
+static func walkable_step_on(map: CityMap, from: Vector2, delta_pos: Vector2) -> Vector2:
+	if delta_pos.is_zero_approx():
+		return delta_pos
+	if map.is_walkable(map.world_to_tile(from + delta_pos)):
 		return delta_pos
 	var along_x := Vector2(delta_pos.x, 0.0)
 	var along_y := Vector2(0.0, delta_pos.y)
@@ -2002,7 +2058,7 @@ func _walkable_step(delta_pos: Vector2) -> Vector2:
 	var second := along_y if first == along_x else along_x
 	for candidate in [first, second]:
 		if not candidate.is_zero_approx() \
-				and _map.is_walkable(_map.world_to_tile(global_position + candidate)):
+				and map.is_walkable(map.world_to_tile(from + candidate)):
 			return candidate
 	return Vector2.ZERO
 
@@ -2695,6 +2751,7 @@ func accumulate_landed(points: float) -> void:
 	_prune_landed_history()
 	if points > 0.0:
 		_landed_history.append([_clock, points])
+		landed_ever += points
 		# A pelican's first share of the meter, for `VisitCounter` and the run log — told once, and
 		# never read back by anything here.
 		if is_pelican and not _reported_excitement:
@@ -2772,7 +2829,47 @@ func contribution_at(world_position: Vector2, intensity_override := -1.0,
 		_contribution_cache = result
 	return result
 
+## **Nothing reaches her through a building**: a field is zero wherever `_walled_off()` says a
+## building stands between this node and the point. Asked only once the field is positive, so a
+## source out of reach costs no line at all.
 func _contribution_at_uncached(world_position: Vector2, intensity_override: float,
+		velocity_override: Vector2) -> float:
+	var field := _field_at(world_position, intensity_override, velocity_override)
+	if field > 0.0 and _walled_off_now(global_position, world_position):
+		return 0.0
+	return field
+
+## Whether a building stands between a source standing at `source_at` and her at `her_at`, deep
+## enough to keep its excitement from her — `CityMap.wall_between()`, measured from this node
+## (a flock's centre, a shaped row's middle) to her centre. *(plaid-wombat, inbox #554: "Excitement
+## should not go through any wall".)* False with no map, which is every data-level rig built
+## without one and the building's interior, whose events are given none.
+func _walled_off(source_at: Vector2, her_at: Vector2) -> bool:
+	return _map != null and _map.wall_between(source_at, her_at)
+
+## The last line `contribution_at()` asked about and its answer, kept by value. The meter's sum,
+## the halo's pick and the caret's present rate ask the same pair in a frame, and the answer
+## depends on nothing but the two points and the map — a body moved from outside is a new key, so
+## nothing here can answer stale the way a clock-keyed cache of the field would.
+var _wall_from := Vector2.INF
+var _wall_to := Vector2.INF
+var _wall_map: CityMap = null
+var _wall_answer := false
+
+## `_walled_off()` through that one-line cache, for `contribution_at()` alone: the caret's
+## projection asks a different pair at every step and would only push the frame's own pair out.
+func _walled_off_now(source_at: Vector2, her_at: Vector2) -> bool:
+	if source_at != _wall_from or her_at != _wall_to or _map != _wall_map:
+		_wall_from = source_at
+		_wall_to = her_at
+		_wall_map = _map
+		_wall_answer = _walled_off(source_at, her_at)
+	return _wall_answer
+
+## The field alone, with no question about what stands between — what `contribution_at()` charges
+## on open ground, and what the caret's projection asks before it asks about walls at the two
+## bodies' own projected places.
+func _field_at(world_position: Vector2, intensity_override: float,
 		velocity_override: Vector2) -> float:
 	if is_finished or is_leaving:
 		return 0.0
@@ -2982,14 +3079,20 @@ func _sample_expected_landed(player_position: Vector2, velocity: Vector2,
 		# Projecting the *source* forward by `velocity * t` and querying its field at her own
 		# projected position, `player_position + player_velocity * t`, is the same number as
 		# holding the source still and asking for its field at the pair's relative offset instead
-		# — `contribution_at` is already the query every other caller uses, translated, so nothing
-		# here recomputes a falloff or a flock sum of its own. `velocity` (the source's own) is
-		# passed a second time, as the override, so the ellipse the translated point is measured
-		# against is oriented the way the source is actually travelling, not the pair's relative
-		# heading — see `contribution_at()`'s own doc for why the two must agree.
+		# — `_field_at` is the field every caller of `contribution_at` is charged, translated, so
+		# nothing here recomputes a falloff or a flock sum of its own. `velocity` (the source's
+		# own) is passed a second time, as the override, so the ellipse the translated point is
+		# measured against is oriented the way the source is actually travelling, not the pair's
+		# relative heading — see `contribution_at()`'s own doc for why the two must agree.
+		# The field translates; a wall does not. So the wall is asked between the two bodies'
+		# own projected places, where a building actually stands, never at the translated point.
 		var t := float(i + 1) * dt
 		var sample := player_position + player_velocity * t - velocity * t
-		integral += contribution_at(sample, live_intensity, velocity) * dt
+		var rate := _field_at(sample, live_intensity, velocity)
+		if rate > 0.0 and _walled_off(global_position + velocity * t,
+				player_position + player_velocity * t):
+			rate = 0.0
+		integral += rate * dt
 	return integral
 
 ## The net points this event is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`

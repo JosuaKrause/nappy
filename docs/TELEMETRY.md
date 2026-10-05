@@ -113,13 +113,53 @@ The events:
   entry *(inbox #527 in [azure-tapir](playtests/2026-10-04-azure-tapir.md), the player: "when the pelican spawns, when it's on screen, and when it's
   hitting the player. it must appear as its own entry and it needs to be more granular than
   standard event telemetry")*, each once per pelican: created where its warning pointed
-  (`EventManager.spawn_warned()`); its first frame on screen
-  (`EventManager._report_the_pelicans_in_view()`, the same box the fire's `seen-fire` is measured
-  in); the first share of her meter its field lands, inside its 90px
+  (`EventManager.spawn_warned()`); its first frame properly on screen
+  (`EventManager._report_the_pelicans_in_view()`, the same test as an encounter's `seen` below:
+  80% of its drawn box visible to her, `VisibleView`); the first share of her meter its field lands, inside its 90px
   (`EventInstance.accumulate_landed()`); and its lethal reach, 33px, covering her
   (`EventManager._check_hard_fails()`). The cyclist's contact does those two different things to
   her — its field fills the meter, its reach ends the day — so each is an event of its own. A
   `pelican-hit` is sent just ahead of the day's own `lost-hard-fail-pelican`.
+- `nappy-day-N-seen-<event>` / `nappy-day-N-influenced-<event>` /
+  `nappy-day-N-influenced-unseen-<event>` — her encounters with the day's events, counted per
+  instance, so the reading influenced ÷ seen says how often each event appears and whether players
+  avoid it or ignore it *([misty-newt](playtests/2026-10-04-misty-newt.md), the player: "mostly I'm
+  interested in the ratio of interacted/seen")*. `<event>` is a catalogue row's id hyphenated
+  (`charging-dog`), or `pelican` for a pelican, never `cyclist`; ordinary walkers and cars send
+  none. `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
+  `EventManager` while a day is played (not behind the title, not on the escape), decides each:
+  - **What she can see** is `VisibleView.visible_share()` (`src/ui/visible_view.gd`): the share of
+    a world rectangle inside the camera's view, `Tuning.VIEW_HALF_EXTENT` about its centre, less, in
+    the joystick scheme, the two bottom corners its controls cover — each from the screen's side to
+    the far edge of its run button, and from the top of its ring down *(inbox #581, the player:
+    "remove the area at the bottom left and right up to the top of the joystick circle and
+    horizontal extent of the speed button ... for the other mode those rectangles *do* count")*.
+    `pelican-seen` asks it too. Nothing gameplay decides by asks it yet.
+  - **An encounter** is one instance's time on screen: it opens the first frame any of what is
+    drawn for it is visible (`EventInstance.drawn_box()`, its own picture stretched over the run a
+    spread covers) or it lands something on her from off screen, and it is over once the instance has been neither for
+    `Tuning.ENCOUNTER_GAP` (5s). Coming back sooner is the same encounter; a different instance is
+    always another.
+  - **`seen`**, at most once per encounter: the first frame `Tuning.ENCOUNTER_SEEN_SHARE` (80%) of
+    the instance's drawn box is visible, so a sliver at the edge, a thing under the joystick's
+    controls, its halo or its badge does not count. A row that draws nothing of its own (`playground`, `curfew_announce`) is never seen.
+  - **`influenced`**, at most once per encounter, the first frame it is meaningful, the same for
+    every row: `Tuning.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed on her within the
+    encounter (`EventInstance.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or her
+    inside its lethal reach or its hold *(inbox #577, the player: "let's count chases and catches as
+    influenced always")*. A static row that can do none of these — a fallen tree, a skip — still
+    sends `seen` ("the static things question was meant for telemetry. we need to record seen for
+    them") and is never influenced.
+  - **`influenced-unseen`** is a meaningful encounter she never saw: an influence before the
+    encounter is seen waits, goes out as `influenced` the moment the instance is seen, and as
+    `influenced-unseen` once the encounter is over without it (or the next day starts, under the day
+    it happened on), so influenced ÷ seen counts only what she could see.
+  `tools/goatcounter.sh --encounters` prints the three per event type with the ratio, overall and by
+  day. `seen-fire` and `pelican-seen` above stay as they are beside these.
+- `nappy-day-N-ran` — a bout of her running, sent as it begins: she runs (`Stroller.run_excess_ratio()`
+  above 0, faster than walking pace) after `Tuning.RUN_BOUT_GAP` (10s) or more without running, or
+  for the first time in the day (`EncounterWatch`). *(misty-newt: "we can count the number of running
+  excluding gaps smaller than 10s".)*
 - `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark
   actually noticed (`ResistanceDirector._track_sight_and_reposition()`, within `SEEN_DISTANCE` and
   on screen for `SEEN_DWELL_SECONDS`), touched, or untouched when the day it belongs to ends. The
@@ -146,7 +186,8 @@ The events:
 Every signal named above that exists purely for this page — `day_lost_to`, `event_sighted`,
 `event_lit_unmet`, `city_gone_dark`, `escape_city_entered`, `pursuit_began`, `pursuit_ended`,
 `resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent`, `pelican_spawned`,
-`pelican_sighted`, `pelican_excited_her`, `pelican_struck_her` — is listen-only: it rolls no RNG and
+`pelican_sighted`, `pelican_excited_her`, `pelican_struck_her`, `encounter_seen`,
+`encounter_influenced`, `run_bout_began` — is listen-only: it rolls no RNG and
 changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so, the style the
 existing `escape_*` signals already use.
 
@@ -470,10 +511,10 @@ is made as the warning goes up, so the first line already knows.
 | Kind | Written by | Answers |
 | --- | --- | --- |
 | `plan` | `main.gd`, `City`, `ClosurePlanner` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm |
-| `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed. A torn poster's marble is one: which marble the tear drew and how many are left in the bag |
+| `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed. A torn poster's marble is one: which marble the tear drew and how many are left in the bag. So is the bag day 6's or day 11's mark rigs her route with: which marbles the next events on it are drawn from |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager`, `PosterWalls` | Where the city stopped being recomputable — a scar an event left, a crew starting and finishing a wall, a poster she tore down |
-| `ahead` | `EventManager` | Where the director put something from her own walk and where she was standing: a run across her line, a row down her line at the moment its warning is over and it is created, day 3's fire sited or moved on the branch she is walking, or — on a day she won without it ever entering the world — where it was lit at dusk instead. The only record of a placement no seed reproduces, since it depends on the route she took |
+| `ahead` | `EventManager` | Where the director put something from her own walk and where she was standing: a run across her line, a row down her line at the moment its warning is over and it is created, day 3's fire sited or moved on the branch she is walking, a place a marble from her route's bag put on it (the man shouting after day 6's mark, the mast after day 11's), or — on a day she won without it ever entering the world — where it was lit at dusk instead. The only record of a placement no seed reproduces, since it depends on the route she took |
 | `taken` | `EventInstance` | Whether an `abduction`'s own bystander scene ever actually finishes — the only record that the catalogue touched the crowd at all. Written by the instance itself rather than by `EventManager`: the scene needs nothing the instance does not already carry (`player_at`, its own age), and that is what lets a data-level rig assert it with no map or city behind it |
 | `chat` | `EventManager` | A detention conversation started — which one, where, and how long it holds her. Written whenever `detain_seconds` fires, not only for `chatting_mother`, so a redetaining door's own toll is on this line too; what it costs the meter is on the line as well, since a sleeping baby pays nothing and an awake one pays `Tuning.CHAT_EXCITEMENT` |
 | `checkpoint` | `EventManager` | A region door's toll paid — where she was held, how long, and which side she came out on. Written on release rather than on capture, since "released on the north side" is the fact a reader wants and the teleport is what makes it true. **And a door she walked through instead** — which body's line she crossed on foot, heading where, and whether the boom was up: a crossing under a raised boom that skipped the toll, detected rather than guessed (docs/EVENTS.md, "Checkpoints"), so a trace can say whether the player took the dash and a rig run can be held to never taking it |
@@ -959,7 +1000,8 @@ build has nothing in `project.godot` to reach:
   walkers and cars alike, since all three run `Tuning.falloff()` through the same
   `GroundShape.field_outline()`/`field_outline_at()` arithmetic the falloff itself uses: a capsule
   about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one, a
-  plain circle at zero speed — so this layer cannot disagree with what the meter does. A flock
+  plain circle at zero speed — so its shapes are the meter's, except that it draws them through
+  buildings, where the meter receives nothing past the middle of a wall (`CityMap.wall_between()`). A flock
   draws one pair per bird, at its own position and its own velocity, rather than one for the whole
   event. Amber (`Palette.MARK_COSTLY`) for a merely costly field, deep red (`Palette.MARK_LETHAL`)
   for a `hard_fail` event's — the same two colours the caret already uses, so this view speaks the

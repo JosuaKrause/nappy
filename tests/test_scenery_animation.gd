@@ -139,10 +139,15 @@ func _test_water_ownership(t) -> void:
 	var expected: Dictionary[Vector2i, bool] = {}
 	var bridge_left := city.map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH
 	var bridge_right := bridge_left + Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH
-	for y in range(city.map.size.y + 1, city.map.size.y + City.OUTSIDE_DEPTH_TILES):
-		for x in range(-City.OUTSIDE_DEPTH_TILES, city.map.size.x + City.OUTSIDE_DEPTH_TILES):
-			if x < bridge_left or x >= bridge_right:
-				expected[Vector2i(x, y)] = true
+	# Residency prepares whole chunks, including water beyond the requested shore. The bridge
+	# ends at the finite border depth; water continues underneath its columns after that point.
+	for key: Vector2i in city._ground.chunks:
+		var start := key * SceneryGround.CHUNK_TILES
+		for y in range(maxi(start.y, city.map.size.y + 1), start.y + SceneryGround.CHUNK_TILES):
+			for x in range(start.x, start.x + SceneryGround.CHUNK_TILES):
+				if y >= city.map.size.y + City.OUTSIDE_DEPTH_TILES \
+						or x < bridge_left or x >= bridge_right:
+					expected[Vector2i(x, y)] = true
 	var actual: Dictionary[Vector2i, bool] = {}
 	var count := 0
 	for surface in surfaces:
@@ -152,7 +157,11 @@ func _test_water_ownership(t) -> void:
 			t.check(city._ground.get_cell_source_id(tile) == -1,
 					"animated water has no duplicate pixel owner in the static TileMap")
 	t.check(actual == expected and actual.size() == count,
-			"water fills the complete south band beyond the bulkhead, excluding the bridge")
+			"resident water has one owner per cell and excludes only the finite bridge")
+	for y in range(city.map.size.y + 1, city.map.size.y + City.OUTSIDE_DEPTH_TILES):
+		for x in range(city.map.size.x):
+			if x < bridge_left or x >= bridge_right:
+				t.check(actual.has(Vector2i(x, y)), "water fills the complete requested shore")
 	var cells := water.cells.duplicate()
 	water._process(0.25)
 	t.check(water.elapsed > 0.0 and water.cells == cells,

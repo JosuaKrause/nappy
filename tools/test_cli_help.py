@@ -93,7 +93,12 @@ class CliHelpTests(unittest.TestCase):
         (root / "src" / "dev" / "dev_flags.gd").write_text(flag_source.replace(marker, additions + marker))
         shots = json.loads((root / "tools" / "trailer" / "shots.json").read_text())
         for shot in shots["shots"]:
-            (root / shot["recipe"]).write_text('{"playback":{"duration":10}}\n')
+            if "recipe" in shot:
+                (root / shot["recipe"]).write_text('{"playback":{"duration":10}}\n')
+            elif asset := shot["card"].get("asset"):
+                destination = root / asset
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(PROJECT_ROOT / asset, destination)
         bake = root / "tools" / "bake-atlases.sh"
         bake.write_text("#!/bin/sh\nexit 0\n")
         bake.chmod(0o755)
@@ -110,7 +115,7 @@ class CliHelpTests(unittest.TestCase):
         )
         stub.chmod(0o755)
         subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
-        subprocess.run(["git", "-C", str(root), "add", "scene-recipes"], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(root), "add", "scene-recipes", "art"], check=True, capture_output=True)
         env = dict(os.environ, GODOT=str(stub), RECIPE_CALLS=str(root / "calls"))
         env["RECIPE_RESULT"] = json.dumps({"classification": "normal", "scope": "bounded", "bounds": [0, 0, 12, 12]})
         return root / "tools" / "trailer.sh", env
@@ -122,7 +127,7 @@ class CliHelpTests(unittest.TestCase):
             result = subprocess.run([str(script), "--validate"], env=env, text=True, capture_output=True, timeout=20)
             self.assertEqual(result.returncode, 0, result.stderr)
             calls = (root / "calls").read_text().splitlines()
-            self.assertEqual(len(calls), 8)
+            self.assertEqual(len(calls), 7)
             self.assertTrue(all("--headless" in call and "--write-movie" not in call for call in calls))
             manifest = json.loads((root / "build" / "trailer" / "validation" / "choice.json").read_text())
             self.assertEqual(manifest["scope"], "bounded")

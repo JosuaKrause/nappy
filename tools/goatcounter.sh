@@ -7,6 +7,7 @@
 #   tools/goatcounter.sh --days 7
 #   tools/goatcounter.sh --start 2026-09-01 --end 2026-09-15
 #   tools/goatcounter.sh --json
+#   tools/goatcounter.sh --encounters                 # influenced / seen per event type, by day
 #   tools/goatcounter.sh --raw                        # every path and count, unfiltered
 #   tools/goatcounter.sh --check                      # does the key read statistics, and what else
 #
@@ -23,7 +24,8 @@ set -euo pipefail
 usage() {
 	cat <<'EOF'
 usage: tools/goatcounter.sh [--help|-h] [--days N] [--start DATE] [--end DATE]
-                             [--prefix PREFIX] [--site URL] [--json] [--raw | --check]
+                             [--prefix PREFIX] [--site URL] [--json]
+                             [--raw | --encounters | --check]
 
 Prints the nappy- GoatCounter event counts as a per-day funnel for a date range, reading the API
 key from GOATCOUNTER_TOKEN (never accepted as a flag). The site read is the game's own,
@@ -32,7 +34,9 @@ its count is visitors, and every event without them, so an event's count is atte
 it was sent. --site reads another; josuakrause.goatcounter.com holds only the visits and events
 from before the page counted everything on the game's site. Default range is the last 30 days;
 --days, --start and --end (YYYY-MM-DD or RFC3339) narrow it. --json prints the result as JSON
-instead of plain text. --raw prints every path and its count for the range, unfiltered by
+instead of plain text. --encounters prints, in place of the funnel, each event type's encounters
+seen, how many of those influenced her, influenced / seen (blank when nothing was seen) and the
+influences from encounters she never saw, overall and per day. --raw prints every path and its count for the range, unfiltered by
 --prefix -- events and the page visit alike. --check proves the key works with
 GET /api/v0/stats/total (needs only "Read statistics", the one permission every read-only key
 has) and reports its permissions too if GET /api/v0/me allows it -- GET /api/v0/me is optional
@@ -45,6 +49,7 @@ web request.
   tools/goatcounter.sh --days 7
   tools/goatcounter.sh --start 2026-09-01 --end 2026-09-15
   tools/goatcounter.sh --json
+  tools/goatcounter.sh --encounters
   tools/goatcounter.sh --raw
   tools/goatcounter.sh --check
 EOF
@@ -58,7 +63,7 @@ done
 
 for arg in "$@"; do
 	case "$arg" in
-		--days|--start|--end|--prefix|--site|--json|--raw|--check) ;;
+		--days|--start|--end|--prefix|--site|--json|--raw|--encounters|--check) ;;
 		-*)
 			echo "unknown option: $arg" >&2
 			echo >&2

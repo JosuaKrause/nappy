@@ -56,6 +56,7 @@ func run(t) -> void:
 	_test_a_huts_hold_ends_the_door_guards_chase(t)
 	_test_a_hold_at_the_guards_own_hut_ends_it_too(t)
 	_test_a_hold_does_not_end_the_roadblock_guard(t)
+	_test_a_huts_hold_does_not_end_the_robbers_chase(t)
 	_test_a_chase_with_no_hold_still_catches(t)
 
 # ------------------------------------------------------------------------ setup ---
@@ -2099,6 +2100,47 @@ func _test_a_hold_does_not_end_the_roadblock_guard(t) -> void:
 
 	road_guard.free()
 	_free_guard_after_her_rig(rig)
+
+## **A hut is not a hiding place from the robber a done task sends.** *(2026-10-04, the player, on
+## going back through the hut when the robber comes: "you shouldn't try to cheat it by going back in
+## the hut -- that should be fatal by the robber".)* A hut's hold ends only the door's own guard
+## (`EventManager._end_the_guard_for_a_hold()`); the `robber_giving_chase` sent after her once she
+## is let through day 9's door is never that guard, so stepping back into a hut with him 200px
+## behind her starts the hold, and he keeps coming and catches her while she is held.
+func _test_a_huts_hold_does_not_end_the_robbers_chase(t) -> void:
+	var rig := _door_rig(t)
+	var manager: EventManager = rig["manager"]
+	var stroller: Stroller = rig["stroller"]
+	var doors: Array[EventInstance] = []
+	doors.assign(rig["doors"])
+	var hut := doors[0]
+	var axis := hut.facing_now()
+	var her := hut.global_position - axis * 40.0 + Vector2(0.0, 16.0)
+	var robber := _door_instance(t, "robber_giving_chase", her - axis * 200.0, axis)
+	manager._instances.append(robber)
+
+	stroller.global_position = her
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(hut.is_chatting(), "stepping back into the hut starts its hold")
+	t.check(not robber.gave_up and not robber.is_finished and not robber.is_leaving,
+			"and the robber after her does not give up for it")
+	var caught_while_held := false
+	var elapsed := 0.0
+	while elapsed < Tuning.CHECKPOINT_DETAIN_SECONDS and hut.is_chatting():
+		manager._tell_them_where_she_is()
+		robber._process(STEP)
+		hut._process(STEP)
+		elapsed += STEP
+		if robber.is_lethal_at(stroller.global_position):
+			caught_while_held = true
+			break
+	t.check(caught_while_held and not robber.gave_up,
+			"he reaches her inside the hut and catches her while she is held (%.2fs into the hold)"
+			% elapsed)
+
+	robber.free()
+	_free_door_rig(rig)
 
 ## **No hold, no give-up: he still catches her exactly as before.** Regression for
 ## `_end_the_guard_for_a_hold()` — it fires only from a hold that has actually started, so a chase

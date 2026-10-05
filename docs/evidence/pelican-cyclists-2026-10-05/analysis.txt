@@ -1,0 +1,25 @@
+seeds 120
+2 rolls mean 2.23 med 2 min 1 max 3 | created mean 2.23 | all rows mean 10.8
+3 rolls mean 2.05 med 2 min 1 max 3 | created mean 2.05 | all rows mean 11.4
+4 rolls mean 2.25 med 2 min 0 max 3 | created mean 2.25 | all rows mean 10.8
+5 rolls mean 2.12 med 2 min 0 max 3 | created mean 2.12 | all rows mean 10.8
+6 rolls mean 1.93 med 2 min 0 max 3 | created mean 1.93 | all rows mean 9.2
+7 rolls mean 1.93 med 2 min 0 max 3 | created mean 1.93 | all rows mean 9.1
+8 rolls mean 1.88 med 2 min 0 max 3 | created mean 1.88 | all rows mean 9.0
+9 rolls mean 2.03 med 2 min 0 max 3 | created mean 2.03 | all rows mean 9.2
+10 rolls mean 1.84 med 2 min 0 max 3 | created mean 1.84 | all rows mean 9.1
+11 rolls mean 1.92 med 2 min 0 max 3 | created mean 1.92 | all rows mean 9.1
+12 rolls mean 1.94 med 2 min 0 max 3 | created mean 1.94 | all rows mean 9.0
+13 rolls mean 1.95 med 2 min 0 max 3 | created mean 1.95 | all rows mean 9.2
+14 rolls mean 2.09 med 2 min 0 max 3 | created mean 2.09 | all rows mean 9.1
+N mean 26.16 med 26 p10 22 p90 29 min 20 max 37; created mean 26.16
+(a) flat P/run 0.0634 {0.5: 11, 0.9: 36, 0.99: 71} E runs 15.8
+(b) one bag/run P/run 0.0654 {0.5: 11, 0.9: 35, 0.99: 69} E runs 15.3
+(c) per-day bag P/run 0.0635 {0.5: 11, 0.9: 36, 0.99: 71} E runs 15.8
+sim a (np.float64(15.760095), array([11., 36., 70.]))
+sim b (np.float64(15.309175), array([11., 35., 69.]))
+(d) median 26.0 guaranteed by run 16
+(d) p10 22.0 guaranteed by run 19
+(d) mean 26.158333333333335 guaranteed by run 16
+(d) sim first-pelican runs mean 8.17 p50/p90/p99 [ 8. 14. 16.]
+guarantee run by N: p50 16 p90 19 max 20

@@ -1,0 +1,1749 @@
+atlases: baking (png mode) -- no bake manifest: nothing has been baked yet
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+bake_atlases: buildings          73 members  570x394  extrude padding  88% fill
+bake_atlases: crowd              35 members  194x250  transparent padding  92% fill
+bake_atlases: decoration         15 members  144x196  transparent padding  69% fill
+bake_atlases: events            379 members  775x1054  transparent padding  91% fill
+bake_atlases: father             30 members  168x242  transparent padding  96% fill
+bake_atlases: ground             43 members  172x308  extrude padding  94% fill
+bake_atlases: interior           41 members  466x326  extrude padding  94% fill
+bake_atlases: mother             30 members  168x242  transparent padding  96% fill
+bake_atlases: street_kit         21 members  392x454  transparent padding  87% fill
+bake_atlases: stroller            5 members  104x66  transparent padding  83% fill
+bake_atlases: ui                 13 members  392x392  transparent padding  91% fill
+bake_atlases: 685 regions over 11 pages in png mode, 9148 ms
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:737)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:740)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:741)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:742)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:745)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:746)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:747)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:748)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:753)
+SCRIPT ERROR: Parse Error: Assigned value for constant "ALLEY_CHANCE" isn't a constant expression.
+          at: GDScript::reload (res://src/autoload/tuning.gd:736)
+SCRIPT ERROR: Parse Error: Identifier "CrowdLanes" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2211)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "lane_gap" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2211)
+SCRIPT ERROR: Parse Error: Identifier "CrowdAgent" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2212)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "crossing_run" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2212)
+ERROR: Failed to load script "res://src/autoload/tuning.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/tuning.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/event_bus.gd:11)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/event_bus.gd:30)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/event_bus.gd:35)
+ERROR: Failed to load script "res://src/autoload/event_bus.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/event_bus.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "TelemetryLog" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:37)
+SCRIPT ERROR: Parse Error: Could not find type "TelemetryLog" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:296)
+SCRIPT ERROR: Parse Error: Could not find type "CityMap" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:578)
+SCRIPT ERROR: Parse Error: Could not find type "RoadClosure" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:578)
+SCRIPT ERROR: Parse Error: Could not find type "RouteTree" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:579)
+SCRIPT ERROR: Parse Error: Could not find type "EventScheduler" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:579)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:103)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryLog" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:157)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryLog" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:179)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:208)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:236)
+SCRIPT ERROR: Parse Error: Identifier "AutoScreenshot" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:462)
+SCRIPT ERROR: Parse Error: Identifier "RouteTree" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:585)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "drawn" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:585)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryMap" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:586)
+SCRIPT ERROR: Parse Error: Identifier "AutoScreenshot" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:596)
+ERROR: Failed to load script "res://src/autoload/telemetry.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/telemetry.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:13)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:13)
+SCRIPT ERROR: Parse Error: Identifier "CityState" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:68)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "city_state" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/game_state.gd:68)
+SCRIPT ERROR: Parse Error: Identifier "PosterState" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:74)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "posters" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/game_state.gd:74)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:271)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:321)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryLog" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:192)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:203)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:272)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:289)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:304)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:304)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:331)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "run_ended".
+          at: GDScript::reload (res://src/autoload/game_state.gd:334)
+SCRIPT ERROR: Parse Error: Identifier "GameSave" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:341)
+SCRIPT ERROR: Parse Error: Identifier "ResistanceHappenings" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:371)
+SCRIPT ERROR: Parse Error: Identifier "ResistanceSteps" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:373)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "warning" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/game_state.gd:373)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:602)
+ERROR: Failed to load script "res://src/autoload/game_state.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/game_state.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:208)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:219)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:384)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:387)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "day_ended".
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:75)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "run_ended".
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:77)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:106)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:155)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:209)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:223)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:223)
+SCRIPT ERROR: Parse Error: Identifier "ControlsMode" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:235)
+SCRIPT ERROR: Parse Error: Identifier "ResistanceSteps" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:251)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "data" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:251)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:385)
+ERROR: Failed to load script "res://src/autoload/visit_counter.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/visit_counter.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+
+The pages above were baked correctly. The errors above them are the engine loading the game's
+own scripts -- this wrapper starts Godot with --script, which loads every autoload first -- on a
+checkout with no .godot/ to resolve their class_names against, which is every fresh clone and
+every new worktree. The bake reads its sources directly and builds nothing out of those classes,
+so its pages are unaffected.
+
+Run tools/check.sh: it bakes (nothing to redo, the pages above are current) and then runs the
+import pass the engine's own errors above are missing.
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CYC 772041 2 1 1 10 cat_dash=4,loose_dog=5
+CYC 772041 3 2 2 12 charging_dog=2,loose_dog=4,cat_dash=4
+CYC 772041 4 1 1 10 cat_dash=3,loose_dog=6
+CYC 772041 5 1 1 11 loose_dog=5,cat_dash=5
+CYC 772041 6 2 2 9 cat_dash=3,loose_dog=4
+CYC 772041 7 2 2 9 loose_dog=5,cat_dash=2
+CYC 772041 8 1 1 9 cat_dash=4,loose_dog=4
+CYC 772041 9 3 3 10 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 772041 10 2 2 10 loose_dog=5,cat_dash=3
+CYC 772041 11 1 1 9 cat_dash=3,loose_dog=5
+CYC 772041 12 3 3 9 cat_dash=4,loose_dog=2
+CYC 772041 13 3 3 9 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 772041 14 3 3 9 charging_dog=1,loose_dog=2,cat_dash=3
+CYC 772072 2 3 3 10 loose_dog=5,cat_dash=2
+CYC 772072 3 2 2 12 charging_dog=2,loose_dog=4,cat_dash=4
+CYC 772072 4 3 3 11 loose_dog=5,cat_dash=3
+CYC 772072 5 3 3 11 loose_dog=4,cat_dash=4
+CYC 772072 6 1 1 8 loose_dog=5,cat_dash=2
+CYC 772072 7 1 1 8 cat_dash=2,loose_dog=5
+CYC 772072 8 3 3 9 loose_dog=3,cat_dash=3
+CYC 772072 9 3 3 10 cat_dash=4,loose_dog=3
+CYC 772072 10 1 1 9 cat_dash=4,loose_dog=4
+CYC 772072 11 1 1 8 cat_dash=4,loose_dog=3
+CYC 772072 12 0 0 8 loose_dog=3,cat_dash=5
+CYC 772072 13 3 3 10 cat_dash=3,loose_dog=4
+CYC 772072 14 2 2 8 loose_dog=3,cat_dash=3
+CYC 772103 2 2 2 11 cat_dash=5,loose_dog=4
+CYC 772103 3 2 2 11 charging_dog=3,loose_dog=4,cat_dash=2
+CYC 772103 4 2 2 11 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 772103 5 2 2 10 charging_dog=1,cat_dash=5,loose_dog=2
+CYC 772103 6 2 2 10 loose_dog=4,cat_dash=4
+CYC 772103 7 2 2 8 cat_dash=2,loose_dog=4
+CYC 772103 8 2 2 10 loose_dog=5,cat_dash=3
+CYC 772103 9 2 2 9 cat_dash=3,loose_dog=4
+CYC 772103 10 2 2 9 cat_dash=4,loose_dog=3
+CYC 772103 11 2 2 10 loose_dog=4,cat_dash=4
+CYC 772103 12 3 3 10 cat_dash=5,loose_dog=2
+CYC 772103 13 3 3 9 loose_dog=5,cat_dash=1
+CYC 772103 14 3 3 9 loose_dog=3,cat_dash=3
+CYC 772134 2 3 3 11 loose_dog=5,cat_dash=3
+CYC 772134 3 3 3 11 charging_dog=3,cat_dash=3,loose_dog=2
+CYC 772134 4 1 1 11 charging_dog=1,loose_dog=6,cat_dash=3
+CYC 772134 5 2 2 11 cat_dash=3,loose_dog=6
+CYC 772134 6 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 772134 7 2 2 9 loose_dog=3,cat_dash=4
+CYC 772134 8 3 3 9 cat_dash=3,loose_dog=3
+CYC 772134 9 3 3 10 loose_dog=4,cat_dash=3
+CYC 772134 10 3 3 9 cat_dash=3,loose_dog=3
+CYC 772134 11 2 2 10 loose_dog=4,cat_dash=4
+CYC 772134 12 1 1 9 cat_dash=4,loose_dog=4
+CYC 772134 13 2 2 10 cat_dash=4,loose_dog=4
+CYC 772134 14 2 2 8 cat_dash=3,loose_dog=3
+CYC 772166 2 3 3 12 cat_dash=5,loose_dog=4
+CYC 772166 3 1 1 11 charging_dog=2,cat_dash=3,loose_dog=5
+CYC 772166 4 3 3 10 loose_dog=4,cat_dash=3
+CYC 772166 5 3 3 12 loose_dog=5,cat_dash=4
+CYC 772166 6 2 2 9 charging_dog=1,cat_dash=2,loose_dog=4
+CYC 772166 7 2 2 9 cat_dash=4,loose_dog=3
+CYC 772166 8 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 772166 9 2 2 9 loose_dog=4,cat_dash=3
+CYC 772166 10 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 772166 11 3 3 9 charging_dog=1,loose_dog=2,cat_dash=3
+CYC 772166 12 2 2 10 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 772166 13 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 772166 14 1 1 10 cat_dash=4,loose_dog=5
+CYC 772196 2 3 3 11 loose_dog=4,cat_dash=4
+CYC 772196 3 2 2 11 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 772196 4 3 3 12 loose_dog=6,cat_dash=3
+CYC 772196 5 1 1 10 loose_dog=5,cat_dash=4
+CYC 772196 6 1 1 9 loose_dog=5,cat_dash=3
+CYC 772196 7 2 2 9 charging_dog=1,loose_dog=2,cat_dash=4
+CYC 772196 8 1 1 8 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 772196 9 2 2 9 cat_dash=4,loose_dog=3
+CYC 772196 10 2 2 8 loose_dog=3,cat_dash=3
+CYC 772196 11 1 1 9 loose_dog=4,cat_dash=4
+CYC 772196 12 2 2 9 loose_dog=4,cat_dash=3
+CYC 772196 13 3 3 9 loose_dog=3,cat_dash=3
+CYC 772196 14 3 3 10 cat_dash=3,loose_dog=4
+CYC 772228 2 2 2 11 cat_dash=5,loose_dog=4
+CYC 772228 3 1 1 12 charging_dog=3,cat_dash=4,loose_dog=4
+CYC 772228 4 3 3 11 loose_dog=6,cat_dash=2
+CYC 772228 5 2 2 10 loose_dog=5,cat_dash=3
+CYC 772228 6 1 1 10 loose_dog=5,cat_dash=4
+CYC 772228 7 2 2 9 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 772228 8 3 3 10 cat_dash=2,loose_dog=5
+CYC 772228 9 2 2 9 cat_dash=4,loose_dog=3
+CYC 772228 10 3 3 11 loose_dog=4,cat_dash=4
+CYC 772228 11 3 3 9 loose_dog=5,cat_dash=1
+CYC 772228 12 2 2 9 loose_dog=4,cat_dash=3
+CYC 772228 13 1 1 8 loose_dog=5,cat_dash=2
+CYC 772228 14 3 3 9 loose_dog=4,cat_dash=2
+CYC 772258 2 2 2 11 cat_dash=5,loose_dog=4
+CYC 772258 3 3 3 10 charging_dog=2,cat_dash=3,loose_dog=2
+CYC 772258 4 1 1 12 charging_dog=1,loose_dog=5,cat_dash=5
+CYC 772258 5 2 2 11 cat_dash=4,loose_dog=5
+CYC 772258 6 3 3 10 loose_dog=3,cat_dash=4
+CYC 772258 7 3 3 10 loose_dog=3,cat_dash=4
+CYC 772258 8 2 2 9 cat_dash=4,loose_dog=3
+CYC 772258 9 3 3 11 charging_dog=1,loose_dog=5,cat_dash=2
+CYC 772258 10 3 3 8 cat_dash=4,loose_dog=1
+CYC 772258 11 1 1 8 loose_dog=4,cat_dash=3
+CYC 772258 12 2 2 8 loose_dog=3,cat_dash=3
+CYC 772258 13 2 2 9 loose_dog=6,cat_dash=1
+CYC 772258 14 2 2 10 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 772289 2 1 1 9 cat_dash=4,loose_dog=4
+CYC 772289 3 2 2 11 charging_dog=2,cat_dash=3,loose_dog=4
+CYC 772289 4 1 1 11 charging_dog=1,loose_dog=6,cat_dash=3
+CYC 772289 5 3 3 11 loose_dog=5,cat_dash=3
+CYC 772289 6 2 2 8 cat_dash=4,loose_dog=2
+CYC 772289 7 2 2 9 cat_dash=4,loose_dog=3
+CYC 772289 8 1 1 9 cat_dash=4,loose_dog=4
+CYC 772289 9 1 1 9 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 772289 10 2 2 10 cat_dash=5,loose_dog=3
+CYC 772289 11 0 0 8 loose_dog=4,cat_dash=4
+CYC 772289 12 2 2 9 cat_dash=3,loose_dog=4
+CYC 772289 13 2 2 8 cat_dash=1,loose_dog=5
+CYC 772289 14 2 2 9 cat_dash=3,loose_dog=4
+CYC 772320 2 3 3 11 cat_dash=3,loose_dog=5
+CYC 772320 3 1 1 12 charging_dog=2,loose_dog=4,cat_dash=5
+CYC 772320 4 3 3 12 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 772320 5 2 2 10 cat_dash=5,loose_dog=3
+CYC 772320 6 2 2 10 cat_dash=4,loose_dog=4
+CYC 772320 7 2 2 9 loose_dog=3,cat_dash=4
+CYC 772320 8 2 2 10 cat_dash=4,loose_dog=4
+CYC 772320 9 1 1 9 loose_dog=5,cat_dash=3
+CYC 772320 10 1 1 9 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 772320 11 3 3 9 cat_dash=4,loose_dog=2
+CYC 772320 12 3 3 9 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 772320 13 3 3 9 loose_dog=3,cat_dash=3
+CYC 772320 14 2 2 9 loose_dog=3,cat_dash=4
+CYC 772351 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 772351 3 2 2 12 charging_dog=3,cat_dash=4,loose_dog=3
+CYC 772351 4 2 2 12 loose_dog=6,cat_dash=4
+CYC 772351 5 2 2 12 cat_dash=4,loose_dog=6
+CYC 772351 6 3 3 10 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 772351 7 1 1 9 cat_dash=4,loose_dog=4
+CYC 772351 8 2 2 10 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 772351 9 1 1 8 loose_dog=4,cat_dash=3
+CYC 772351 10 2 2 9 cat_dash=3,loose_dog=4
+CYC 772351 11 2 2 9 loose_dog=4,cat_dash=3
+CYC 772351 12 3 3 9 cat_dash=3,loose_dog=3
+CYC 772351 13 2 2 10 charging_dog=1,cat_dash=5,loose_dog=2
+CYC 772351 14 2 2 9 cat_dash=5,loose_dog=2
+CYC 772382 2 1 1 11 loose_dog=5,cat_dash=5
+CYC 772382 3 2 2 11 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 772382 4 2 2 11 loose_dog=4,cat_dash=5
+CYC 772382 5 2 2 11 loose_dog=5,cat_dash=4
+CYC 772382 6 2 2 10 cat_dash=4,loose_dog=4
+CYC 772382 7 1 1 10 loose_dog=6,cat_dash=3
+CYC 772382 8 0 0 8 loose_dog=4,cat_dash=4
+CYC 772382 9 2 2 10 loose_dog=5,cat_dash=3
+CYC 772382 10 2 2 8 loose_dog=3,cat_dash=3
+CYC 772382 11 2 2 10 loose_dog=4,cat_dash=4
+CYC 772382 12 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 772382 13 1 1 9 loose_dog=5,cat_dash=3
+CYC 772382 14 2 2 9 cat_dash=3,loose_dog=4
+CYC 772413 2 2 2 9 loose_dog=4,cat_dash=3
+CYC 772413 3 1 1 11 charging_dog=2,loose_dog=5,cat_dash=3
+CYC 772413 4 3 3 11 loose_dog=5,cat_dash=3
+CYC 772413 5 3 3 10 loose_dog=4,cat_dash=3
+CYC 772413 6 3 3 10 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 772413 7 2 2 9 loose_dog=4,cat_dash=3
+CYC 772413 8 2 2 9 charging_dog=1,cat_dash=1,loose_dog=5
+CYC 772413 9 2 2 9 loose_dog=4,cat_dash=3
+CYC 772413 10 2 2 9 cat_dash=4,loose_dog=3
+CYC 772413 11 2 2 8 loose_dog=2,cat_dash=4
+CYC 772413 12 3 3 10 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 772413 13 1 1 8 cat_dash=3,loose_dog=4
+CYC 772413 14 3 3 10 cat_dash=3,loose_dog=4
+CYC 772444 2 3 3 11 loose_dog=4,cat_dash=4
+CYC 772444 3 2 2 10 charging_dog=1,cat_dash=2,loose_dog=5
+CYC 772444 4 2 2 10 cat_dash=3,loose_dog=5
+CYC 772444 5 2 2 11 loose_dog=5,cat_dash=4
+CYC 772444 6 3 3 11 loose_dog=4,cat_dash=4
+CYC 772444 7 2 2 10 loose_dog=5,cat_dash=3
+CYC 772444 8 1 1 9 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 772444 9 3 3 10 loose_dog=5,cat_dash=2
+CYC 772444 10 2 2 10 loose_dog=4,cat_dash=4
+CYC 772444 11 2 2 9 loose_dog=4,cat_dash=3
+CYC 772444 12 3 3 8 loose_dog=3,cat_dash=2
+CYC 772444 13 3 3 10 cat_dash=3,loose_dog=4
+CYC 772444 14 2 2 9 cat_dash=2,loose_dog=5
+CYC 772475 2 3 3 11 loose_dog=6,cat_dash=2
+CYC 772475 3 2 2 12 charging_dog=2,cat_dash=3,loose_dog=5
+CYC 772475 4 1 1 10 cat_dash=4,loose_dog=5
+CYC 772475 5 0 0 11 charging_dog=1,cat_dash=4,loose_dog=6
+CYC 772475 6 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 772475 7 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 772475 8 1 1 9 cat_dash=3,loose_dog=5
+CYC 772475 9 1 1 10 cat_dash=5,loose_dog=4
+CYC 772475 10 3 3 8 charging_dog=1,cat_dash=2,loose_dog=2
+CYC 772475 11 3 3 11 loose_dog=4,cat_dash=4
+CYC 772475 12 3 3 8 cat_dash=1,loose_dog=4
+CYC 772475 13 2 2 10 loose_dog=4,cat_dash=4
+CYC 772475 14 3 3 10 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 772506 2 1 1 10 cat_dash=4,loose_dog=5
+CYC 772506 3 3 3 12 charging_dog=2,loose_dog=4,cat_dash=3
+CYC 772506 4 3 3 12 loose_dog=5,cat_dash=4
+CYC 772506 5 2 2 10 cat_dash=4,loose_dog=4
+CYC 772506 6 1 1 8 loose_dog=4,cat_dash=3
+CYC 772506 7 1 1 9 cat_dash=4,loose_dog=4
+CYC 772506 8 2 2 9 loose_dog=4,cat_dash=3
+CYC 772506 9 1 1 9 loose_dog=5,cat_dash=3
+CYC 772506 10 2 2 8 loose_dog=2,cat_dash=4
+CYC 772506 11 1 1 9 cat_dash=3,loose_dog=5
+CYC 772506 12 3 3 8 loose_dog=4,cat_dash=1
+CYC 772506 13 1 1 10 cat_dash=5,loose_dog=4
+CYC 772506 14 2 2 9 loose_dog=4,cat_dash=3
+CYC 772537 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 772537 3 2 2 11 charging_dog=2,cat_dash=5,loose_dog=2
+CYC 772537 4 3 3 12 loose_dog=5,cat_dash=4
+CYC 772537 5 1 1 11 cat_dash=5,loose_dog=5
+CYC 772537 6 2 2 10 loose_dog=3,cat_dash=5
+CYC 772537 7 2 2 9 loose_dog=4,cat_dash=3
+CYC 772537 8 1 1 9 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 772537 9 2 2 10 cat_dash=3,loose_dog=5
+CYC 772537 10 1 1 9 cat_dash=4,loose_dog=4
+CYC 772537 11 2 2 8 cat_dash=4,loose_dog=2
+CYC 772537 12 3 3 10 loose_dog=5,cat_dash=2
+CYC 772537 13 2 2 11 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 772537 14 2 2 10 loose_dog=5,cat_dash=3
+CYC 772568 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 772568 3 2 2 10 charging_dog=3,loose_dog=3,cat_dash=2
+CYC 772568 4 3 3 10 cat_dash=2,loose_dog=5
+CYC 772568 5 2 2 11 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 772568 6 1 1 9 cat_dash=3,loose_dog=5
+CYC 772568 7 3 3 10 cat_dash=3,loose_dog=4
+CYC 772568 8 2 2 10 loose_dog=5,cat_dash=3
+CYC 772568 9 2 2 9 cat_dash=4,loose_dog=3
+CYC 772568 10 3 3 10 loose_dog=3,cat_dash=4
+CYC 772568 11 2 2 9 loose_dog=5,cat_dash=2
+CYC 772568 12 2 2 9 loose_dog=4,cat_dash=3
+CYC 772568 13 3 3 10 loose_dog=5,cat_dash=2
+CYC 772568 14 2 2 8 loose_dog=3,cat_dash=3
+CYC 772599 2 2 2 12 loose_dog=5,cat_dash=5
+CYC 772599 3 1 1 13 charging_dog=3,loose_dog=5,cat_dash=4
+CYC 772599 4 2 2 9 cat_dash=4,loose_dog=3
+CYC 772599 5 3 3 10 cat_dash=4,loose_dog=3
+CYC 772599 6 3 3 11 loose_dog=4,cat_dash=4
+CYC 772599 7 1 1 9 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 772599 8 3 3 10 loose_dog=4,cat_dash=3
+CYC 772599 9 3 3 10 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 772599 10 1 1 10 cat_dash=5,loose_dog=4
+CYC 772599 11 3 3 10 loose_dog=4,cat_dash=3
+CYC 772599 12 2 2 10 loose_dog=4,cat_dash=4
+CYC 772599 13 3 3 9 cat_dash=3,loose_dog=3
+CYC 772599 14 3 3 9 cat_dash=5,loose_dog=1
+CYC 772630 2 3 3 11 cat_dash=5,loose_dog=3
+CYC 772630 3 2 2 12 charging_dog=3,cat_dash=4,loose_dog=3
+CYC 772630 4 1 1 11 charging_dog=1,cat_dash=4,loose_dog=5
+CYC 772630 5 3 3 10 loose_dog=5,cat_dash=2
+CYC 772630 6 2 2 9 loose_dog=5,cat_dash=2
+CYC 772630 7 2 2 9 loose_dog=3,cat_dash=4
+CYC 772630 8 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 772630 9 1 1 8 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 772630 10 3 3 11 cat_dash=4,loose_dog=4
+CYC 772630 11 2 2 10 cat_dash=3,loose_dog=5
+CYC 772630 12 1 1 10 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 772630 13 3 3 10 loose_dog=4,cat_dash=3
+CYC 772630 14 1 1 9 loose_dog=4,cat_dash=4
+CYC 772662 2 3 3 12 loose_dog=5,cat_dash=4
+CYC 772662 3 1 1 10 charging_dog=2,loose_dog=4,cat_dash=3
+CYC 772662 4 3 3 11 loose_dog=5,cat_dash=3
+CYC 772662 5 1 1 11 cat_dash=5,loose_dog=5
+CYC 772662 6 1 1 9 loose_dog=4,cat_dash=4
+CYC 772662 7 3 3 10 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 772662 8 2 2 8 charging_dog=1,loose_dog=2,cat_dash=3
+CYC 772662 9 2 2 9 loose_dog=5,cat_dash=2
+CYC 772662 10 1 1 10 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 772662 11 2 2 9 cat_dash=3,loose_dog=4
+CYC 772662 12 3 3 9 cat_dash=3,loose_dog=3
+CYC 772662 13 2 2 9 loose_dog=3,cat_dash=4
+CYC 772662 14 2 2 9 loose_dog=3,cat_dash=4
+CYC 772692 2 2 2 11 cat_dash=4,loose_dog=5
+CYC 772692 3 1 1 11 charging_dog=2,cat_dash=4,loose_dog=4
+CYC 772692 4 2 2 10 loose_dog=4,cat_dash=4
+CYC 772692 5 3 3 10 loose_dog=3,cat_dash=4
+CYC 772692 6 1 1 10 loose_dog=4,cat_dash=5
+CYC 772692 7 3 3 10 charging_dog=1,cat_dash=1,loose_dog=5
+CYC 772692 8 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 772692 9 1 1 8 cat_dash=3,loose_dog=4
+CYC 772692 10 2 2 9 loose_dog=5,cat_dash=2
+CYC 772692 11 1 1 8 loose_dog=3,cat_dash=4
+CYC 772692 12 2 2 9 loose_dog=4,cat_dash=3
+CYC 772692 13 2 2 10 cat_dash=4,loose_dog=4
+CYC 772692 14 2 2 9 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 772723 2 2 2 10 cat_dash=4,loose_dog=4
+CYC 772723 3 3 3 11 charging_dog=2,cat_dash=4,loose_dog=2
+CYC 772723 4 2 2 10 cat_dash=4,loose_dog=4
+CYC 772723 5 3 3 11 cat_dash=4,loose_dog=4
+CYC 772723 6 3 3 9 loose_dog=4,cat_dash=2
+CYC 772723 7 1 1 9 loose_dog=5,cat_dash=3
+CYC 772723 8 3 3 10 cat_dash=4,loose_dog=3
+CYC 772723 9 1 1 10 loose_dog=5,cat_dash=4
+CYC 772723 10 2 2 9 cat_dash=3,loose_dog=4
+CYC 772723 11 2 2 9 loose_dog=4,cat_dash=3
+CYC 772723 12 3 3 10 loose_dog=4,cat_dash=3
+CYC 772723 13 2 2 9 cat_dash=5,loose_dog=2
+CYC 772723 14 3 3 9 loose_dog=2,cat_dash=4
+CYC 772754 2 1 1 9 cat_dash=4,loose_dog=4
+CYC 772754 3 2 2 11 charging_dog=2,cat_dash=5,loose_dog=2
+CYC 772754 4 1 1 11 charging_dog=1,loose_dog=5,cat_dash=4
+CYC 772754 5 3 3 12 loose_dog=5,cat_dash=4
+CYC 772754 6 2 2 9 charging_dog=1,loose_dog=2,cat_dash=4
+CYC 772754 7 3 3 10 loose_dog=4,cat_dash=3
+CYC 772754 8 2 2 8 loose_dog=4,cat_dash=2
+CYC 772754 9 2 2 10 cat_dash=5,loose_dog=3
+CYC 772754 10 2 2 9 cat_dash=3,loose_dog=4
+CYC 772754 11 2 2 9 cat_dash=4,loose_dog=3
+CYC 772754 12 2 2 9 loose_dog=4,cat_dash=3
+CYC 772754 13 1 1 10 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 772754 14 1 1 8 cat_dash=3,loose_dog=4
+CYC 772785 2 3 3 11 loose_dog=5,cat_dash=3
+CYC 772785 3 3 3 11 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 772785 4 2 2 11 loose_dog=6,cat_dash=3
+CYC 772785 5 2 2 12 cat_dash=5,loose_dog=5
+CYC 772785 6 2 2 9 loose_dog=4,cat_dash=3
+CYC 772785 7 2 2 9 loose_dog=5,cat_dash=2
+CYC 772785 8 2 2 8 cat_dash=3,loose_dog=3
+CYC 772785 9 2 2 10 loose_dog=4,cat_dash=4
+CYC 772785 10 2 2 10 cat_dash=3,loose_dog=5
+CYC 772785 11 2 2 9 cat_dash=3,loose_dog=4
+CYC 772785 12 2 2 8 cat_dash=3,loose_dog=3
+CYC 772785 13 2 2 9 loose_dog=4,cat_dash=3
+CYC 772785 14 1 1 10 cat_dash=4,loose_dog=5
+CYC 772816 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 772816 3 1 1 11 charging_dog=2,loose_dog=5,cat_dash=3
+CYC 772816 4 2 2 10 loose_dog=4,cat_dash=4
+CYC 772816 5 2 2 10 cat_dash=4,loose_dog=4
+CYC 772816 6 3 3 10 cat_dash=4,loose_dog=3
+CYC 772816 7 2 2 9 loose_dog=3,cat_dash=4
+CYC 772816 8 2 2 9 loose_dog=4,cat_dash=3
+CYC 772816 9 2 2 10 cat_dash=5,loose_dog=3
+CYC 772816 10 1 1 8 loose_dog=2,cat_dash=5
+CYC 772816 11 3 3 9 loose_dog=4,cat_dash=2
+CYC 772816 12 3 3 9 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 772816 13 2 2 9 loose_dog=5,cat_dash=2
+CYC 772816 14 1 1 9 cat_dash=4,loose_dog=4
+CYC 772847 2 3 3 11 cat_dash=4,loose_dog=4
+CYC 772847 3 2 2 12 charging_dog=2,cat_dash=4,loose_dog=4
+CYC 772847 4 3 3 11 cat_dash=4,loose_dog=4
+CYC 772847 5 2 2 11 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 772847 6 1 1 9 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 772847 7 2 2 9 loose_dog=4,cat_dash=3
+CYC 772847 8 2 2 10 loose_dog=3,cat_dash=5
+CYC 772847 9 3 3 9 cat_dash=3,loose_dog=3
+CYC 772847 10 1 1 8 cat_dash=4,loose_dog=3
+CYC 772847 11 2 2 9 loose_dog=4,cat_dash=3
+CYC 772847 12 1 1 8 cat_dash=4,loose_dog=3
+CYC 772847 13 2 2 10 cat_dash=4,loose_dog=4
+CYC 772847 14 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 772878 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 772878 3 2 2 12 charging_dog=2,cat_dash=4,loose_dog=4
+CYC 772878 4 1 1 10 cat_dash=5,loose_dog=4
+CYC 772878 5 2 2 11 loose_dog=5,cat_dash=4
+CYC 772878 6 1 1 9 charging_dog=1,cat_dash=2,loose_dog=5
+CYC 772878 7 2 2 9 loose_dog=3,cat_dash=4
+CYC 772878 8 1 1 8 cat_dash=5,loose_dog=2
+CYC 772878 9 1 1 8 charging_dog=1,cat_dash=2,loose_dog=4
+CYC 772878 10 3 3 10 loose_dog=2,cat_dash=5
+CYC 772878 11 3 3 9 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 772878 12 3 3 8 loose_dog=3,cat_dash=2
+CYC 772878 13 3 3 8 cat_dash=2,loose_dog=3
+CYC 772878 14 3 3 10 loose_dog=4,cat_dash=3
+CYC 772909 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 772909 3 3 3 11 charging_dog=3,loose_dog=3,cat_dash=2
+CYC 772909 4 1 1 11 charging_dog=1,cat_dash=5,loose_dog=4
+CYC 772909 5 3 3 12 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 772909 6 3 3 10 loose_dog=4,cat_dash=3
+CYC 772909 7 2 2 10 loose_dog=4,cat_dash=4
+CYC 772909 8 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 772909 9 2 2 9 cat_dash=3,loose_dog=4
+CYC 772909 10 1 1 10 loose_dog=4,cat_dash=5
+CYC 772909 11 2 2 9 cat_dash=4,loose_dog=3
+CYC 772909 12 2 2 10 loose_dog=4,cat_dash=4
+CYC 772909 13 2 2 9 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 772909 14 3 3 8 cat_dash=3,loose_dog=2
+CYC 772940 2 2 2 11 cat_dash=3,loose_dog=6
+CYC 772940 3 3 3 11 charging_dog=2,cat_dash=3,loose_dog=3
+CYC 772940 4 3 3 11 cat_dash=3,loose_dog=5
+CYC 772940 5 1 1 10 loose_dog=4,cat_dash=5
+CYC 772940 6 2 2 11 loose_dog=6,cat_dash=3
+CYC 772940 7 1 1 9 loose_dog=4,cat_dash=4
+CYC 772940 8 1 1 9 cat_dash=4,loose_dog=4
+CYC 772940 9 3 3 9 loose_dog=4,cat_dash=2
+CYC 772940 10 2 2 9 charging_dog=1,cat_dash=2,loose_dog=4
+CYC 772940 11 3 3 8 cat_dash=2,loose_dog=3
+CYC 772940 12 3 3 10 loose_dog=6,cat_dash=1
+CYC 772940 13 2 2 10 cat_dash=4,loose_dog=4
+CYC 772940 14 2 2 9 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 772971 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 772971 3 2 2 13 charging_dog=3,loose_dog=5,cat_dash=3
+CYC 772971 4 2 2 11 cat_dash=4,loose_dog=5
+CYC 772971 5 1 1 10 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 772971 6 3 3 10 loose_dog=3,cat_dash=4
+CYC 772971 7 2 2 8 charging_dog=1,loose_dog=2,cat_dash=3
+CYC 772971 8 3 3 10 cat_dash=5,loose_dog=2
+CYC 772971 9 2 2 9 cat_dash=3,loose_dog=4
+CYC 772971 10 3 3 9 cat_dash=3,loose_dog=3
+CYC 772971 11 2 2 9 cat_dash=4,loose_dog=3
+CYC 772971 12 1 1 9 loose_dog=4,cat_dash=4
+CYC 772971 13 2 2 9 loose_dog=4,cat_dash=3
+CYC 772971 14 3 3 9 loose_dog=5,cat_dash=1
+CYC 773002 2 2 2 10 cat_dash=3,loose_dog=5
+CYC 773002 3 2 2 11 charging_dog=3,cat_dash=2,loose_dog=4
+CYC 773002 4 3 3 10 cat_dash=5,loose_dog=2
+CYC 773002 5 2 2 11 charging_dog=1,cat_dash=3,loose_dog=5
+CYC 773002 6 2 2 10 loose_dog=4,cat_dash=4
+CYC 773002 7 2 2 8 loose_dog=4,cat_dash=2
+CYC 773002 8 2 2 9 cat_dash=2,loose_dog=5
+CYC 773002 9 3 3 10 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 773002 10 1 1 10 charging_dog=1,loose_dog=3,cat_dash=5
+CYC 773002 11 2 2 9 loose_dog=3,cat_dash=4
+CYC 773002 12 2 2 9 cat_dash=4,loose_dog=3
+CYC 773002 13 2 2 9 loose_dog=4,cat_dash=3
+CYC 773002 14 2 2 11 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 773033 2 2 2 11 cat_dash=5,loose_dog=4
+CYC 773033 3 2 2 12 charging_dog=2,cat_dash=4,loose_dog=4
+CYC 773033 4 2 2 11 cat_dash=4,loose_dog=5
+CYC 773033 5 2 2 11 cat_dash=5,loose_dog=4
+CYC 773033 6 1 1 10 cat_dash=4,loose_dog=5
+CYC 773033 7 3 3 9 cat_dash=2,loose_dog=4
+CYC 773033 8 1 1 10 cat_dash=4,loose_dog=5
+CYC 773033 9 3 3 10 loose_dog=5,cat_dash=2
+CYC 773033 10 1 1 9 loose_dog=5,cat_dash=3
+CYC 773033 11 1 1 8 cat_dash=3,loose_dog=4
+CYC 773033 12 2 2 9 cat_dash=4,loose_dog=3
+CYC 773033 13 3 3 10 loose_dog=4,cat_dash=3
+CYC 773033 14 2 2 10 cat_dash=4,loose_dog=4
+CYC 773064 2 2 2 12 cat_dash=5,loose_dog=5
+CYC 773064 3 3 3 11 charging_dog=2,loose_dog=3,cat_dash=3
+CYC 773064 4 3 3 11 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 773064 5 2 2 12 charging_dog=1,cat_dash=4,loose_dog=5
+CYC 773064 6 3 3 10 cat_dash=4,loose_dog=3
+CYC 773064 7 3 3 9 loose_dog=3,cat_dash=3
+CYC 773064 8 1 1 9 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 773064 9 3 3 9 loose_dog=5,cat_dash=1
+CYC 773064 10 1 1 8 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 773064 11 2 2 9 cat_dash=2,loose_dog=5
+CYC 773064 12 1 1 8 loose_dog=3,cat_dash=4
+CYC 773064 13 0 0 9 loose_dog=5,cat_dash=4
+CYC 773064 14 2 2 10 charging_dog=1,loose_dog=5,cat_dash=2
+CYC 773095 2 3 3 11 loose_dog=5,cat_dash=3
+CYC 773095 3 1 1 10 charging_dog=3,loose_dog=4,cat_dash=2
+CYC 773095 4 2 2 12 cat_dash=5,loose_dog=5
+CYC 773095 5 1 1 9 cat_dash=3,loose_dog=5
+CYC 773095 6 2 2 8 cat_dash=4,loose_dog=2
+CYC 773095 7 1 1 8 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 773095 8 2 2 9 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 773095 9 3 3 8 cat_dash=1,loose_dog=4
+CYC 773095 10 3 3 10 cat_dash=3,loose_dog=4
+CYC 773095 11 2 2 11 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 773095 12 2 2 9 charging_dog=1,loose_dog=5,cat_dash=1
+CYC 773095 13 1 1 9 cat_dash=4,loose_dog=4
+CYC 773095 14 3 3 8 charging_dog=1,cat_dash=3,loose_dog=1
+CYC 773126 2 1 1 10 loose_dog=5,cat_dash=4
+CYC 773126 3 1 1 10 charging_dog=3,loose_dog=2,cat_dash=4
+CYC 773126 4 3 3 11 loose_dog=4,cat_dash=4
+CYC 773126 5 1 1 11 loose_dog=6,cat_dash=4
+CYC 773126 6 0 0 9 loose_dog=6,cat_dash=3
+CYC 773126 7 2 2 8 cat_dash=3,loose_dog=3
+CYC 773126 8 2 2 9 loose_dog=5,cat_dash=2
+CYC 773126 9 2 2 9 loose_dog=5,cat_dash=2
+CYC 773126 10 3 3 11 loose_dog=3,cat_dash=5
+CYC 773126 11 2 2 10 cat_dash=3,loose_dog=5
+CYC 773126 12 2 2 10 loose_dog=4,cat_dash=4
+CYC 773126 13 3 3 10 cat_dash=4,loose_dog=3
+CYC 773126 14 1 1 9 loose_dog=4,cat_dash=4
+CYC 773157 2 3 3 9 loose_dog=4,cat_dash=2
+CYC 773157 3 2 2 11 charging_dog=3,loose_dog=4,cat_dash=2
+CYC 773157 4 1 1 10 loose_dog=4,cat_dash=5
+CYC 773157 5 3 3 10 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 773157 6 2 2 10 loose_dog=4,cat_dash=4
+CYC 773157 7 3 3 10 cat_dash=4,loose_dog=3
+CYC 773157 8 2 2 8 charging_dog=1,loose_dog=2,cat_dash=3
+CYC 773157 9 2 2 9 cat_dash=2,loose_dog=5
+CYC 773157 10 1 1 9 loose_dog=4,cat_dash=4
+CYC 773157 11 2 2 9 loose_dog=4,cat_dash=3
+CYC 773157 12 1 1 8 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 773157 13 3 3 9 loose_dog=4,cat_dash=2
+CYC 773157 14 1 1 9 charging_dog=1,loose_dog=5,cat_dash=2
+CYC 773189 2 3 3 11 loose_dog=6,cat_dash=2
+CYC 773189 3 2 2 12 charging_dog=2,loose_dog=4,cat_dash=4
+CYC 773189 4 1 1 10 cat_dash=4,loose_dog=5
+CYC 773189 5 3 3 9 cat_dash=2,loose_dog=4
+CYC 773189 6 2 2 9 loose_dog=3,cat_dash=4
+CYC 773189 7 0 0 9 cat_dash=3,loose_dog=6
+CYC 773189 8 2 2 10 loose_dog=4,cat_dash=4
+CYC 773189 9 2 2 10 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 773189 10 3 3 8 cat_dash=3,loose_dog=2
+CYC 773189 11 1 1 10 loose_dog=5,cat_dash=4
+CYC 773189 12 3 3 10 loose_dog=5,cat_dash=2
+CYC 773189 13 2 2 10 cat_dash=4,loose_dog=4
+CYC 773189 14 3 3 8 cat_dash=2,loose_dog=3
+CYC 773219 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 773219 3 2 2 12 charging_dog=2,cat_dash=3,loose_dog=5
+CYC 773219 4 3 3 11 loose_dog=6,cat_dash=2
+CYC 773219 5 2 2 10 cat_dash=3,loose_dog=5
+CYC 773219 6 1 1 9 loose_dog=5,cat_dash=3
+CYC 773219 7 1 1 8 loose_dog=5,cat_dash=2
+CYC 773219 8 1 1 8 cat_dash=3,loose_dog=4
+CYC 773219 9 2 2 8 loose_dog=4,cat_dash=2
+CYC 773219 10 2 2 8 loose_dog=4,cat_dash=2
+CYC 773219 11 2 2 8 loose_dog=4,cat_dash=2
+CYC 773219 12 0 0 9 cat_dash=5,loose_dog=4
+CYC 773219 13 2 2 9 cat_dash=4,loose_dog=3
+CYC 773219 14 3 3 9 loose_dog=3,cat_dash=3
+CYC 773250 2 2 2 11 cat_dash=3,loose_dog=6
+CYC 773250 3 2 2 11 charging_dog=3,cat_dash=3,loose_dog=3
+CYC 773250 4 2 2 10 loose_dog=6,cat_dash=2
+CYC 773250 5 1 1 10 loose_dog=5,cat_dash=4
+CYC 773250 6 2 2 9 cat_dash=4,loose_dog=3
+CYC 773250 7 1 1 9 cat_dash=5,loose_dog=3
+CYC 773250 8 2 2 9 loose_dog=3,cat_dash=4
+CYC 773250 9 0 0 9 cat_dash=5,loose_dog=4
+CYC 773250 10 2 2 9 cat_dash=2,loose_dog=5
+CYC 773250 11 2 2 10 loose_dog=4,cat_dash=4
+CYC 773250 12 1 1 8 charging_dog=1,cat_dash=5,loose_dog=1
+CYC 773250 13 3 3 9 cat_dash=2,loose_dog=4
+CYC 773250 14 2 2 9 loose_dog=4,cat_dash=3
+CYC 773281 2 1 1 12 cat_dash=5,loose_dog=6
+CYC 773281 3 3 3 13 charging_dog=2,loose_dog=5,cat_dash=3
+CYC 773281 4 2 2 11 cat_dash=4,loose_dog=5
+CYC 773281 5 2 2 10 cat_dash=3,loose_dog=5
+CYC 773281 6 2 2 8 cat_dash=3,loose_dog=3
+CYC 773281 7 2 2 9 loose_dog=4,cat_dash=3
+CYC 773281 8 2 2 9 loose_dog=4,cat_dash=3
+CYC 773281 9 1 1 8 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 773281 10 2 2 9 charging_dog=1,loose_dog=2,cat_dash=4
+CYC 773281 11 3 3 9 loose_dog=4,cat_dash=2
+CYC 773281 12 3 3 9 charging_dog=1,cat_dash=2,loose_dog=3
+CYC 773281 13 3 3 9 cat_dash=3,loose_dog=3
+CYC 773281 14 1 1 8 charging_dog=1,cat_dash=2,loose_dog=4
+CYC 773312 2 2 2 12 cat_dash=5,loose_dog=5
+CYC 773312 3 2 2 11 charging_dog=2,cat_dash=2,loose_dog=5
+CYC 773312 4 2 2 11 loose_dog=6,cat_dash=3
+CYC 773312 5 3 3 12 cat_dash=4,loose_dog=5
+CYC 773312 6 3 3 9 loose_dog=5,cat_dash=1
+CYC 773312 7 1 1 9 cat_dash=4,loose_dog=4
+CYC 773312 8 2 2 10 cat_dash=3,loose_dog=5
+CYC 773312 9 3 3 9 cat_dash=2,loose_dog=4
+CYC 773312 10 1 1 9 loose_dog=5,cat_dash=3
+CYC 773312 11 1 1 10 cat_dash=4,loose_dog=5
+CYC 773312 12 1 1 8 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 773312 13 2 2 9 loose_dog=5,cat_dash=2
+CYC 773312 14 2 2 10 loose_dog=4,cat_dash=4
+CYC 773343 2 2 2 11 cat_dash=5,loose_dog=4
+CYC 773343 3 3 3 13 charging_dog=2,cat_dash=4,loose_dog=4
+CYC 773343 4 3 3 12 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 773343 5 1 1 10 charging_dog=1,cat_dash=3,loose_dog=5
+CYC 773343 6 1 1 9 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 773343 7 2 2 10 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 773343 8 2 2 11 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 773343 9 3 3 10 loose_dog=4,cat_dash=3
+CYC 773343 10 2 2 9 loose_dog=5,cat_dash=2
+CYC 773343 11 3 3 8 charging_dog=1,loose_dog=1,cat_dash=3
+CYC 773343 12 0 0 9 loose_dog=5,cat_dash=4
+CYC 773343 13 2 2 9 loose_dog=4,cat_dash=3
+CYC 773343 14 2 2 10 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 773374 2 3 3 11 cat_dash=4,loose_dog=4
+CYC 773374 3 1 1 12 charging_dog=3,loose_dog=4,cat_dash=4
+CYC 773374 4 2 2 11 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 773374 5 2 2 11 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 773374 6 1 1 9 cat_dash=4,loose_dog=4
+CYC 773374 7 2 2 10 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 773374 8 2 2 8 loose_dog=3,cat_dash=3
+CYC 773374 9 1 1 8 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 773374 10 3 3 10 loose_dog=3,cat_dash=4
+CYC 773374 11 2 2 10 loose_dog=4,cat_dash=4
+CYC 773374 12 1 1 9 loose_dog=5,cat_dash=3
+CYC 773374 13 1 1 10 charging_dog=1,cat_dash=3,loose_dog=5
+CYC 773374 14 3 3 8 charging_dog=1,cat_dash=3,loose_dog=1
+CYC 773405 2 1 1 9 loose_dog=4,cat_dash=4
+CYC 773405 3 3 3 11 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 773405 4 3 3 10 loose_dog=5,cat_dash=2
+CYC 773405 5 1 1 10 cat_dash=5,loose_dog=4
+CYC 773405 6 2 2 9 loose_dog=5,cat_dash=2
+CYC 773405 7 0 0 9 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 773405 8 3 3 9 cat_dash=3,loose_dog=3
+CYC 773405 9 3 3 10 cat_dash=2,loose_dog=5
+CYC 773405 10 2 2 9 loose_dog=4,cat_dash=3
+CYC 773405 11 2 2 9 loose_dog=4,cat_dash=3
+CYC 773405 12 2 2 9 cat_dash=3,loose_dog=4
+CYC 773405 13 3 3 10 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 773405 14 2 2 9 loose_dog=6,cat_dash=1
+CYC 773436 2 1 1 11 cat_dash=5,loose_dog=5
+CYC 773436 3 2 2 12 charging_dog=1,loose_dog=4,cat_dash=5
+CYC 773436 4 2 2 10 loose_dog=5,cat_dash=3
+CYC 773436 5 3 3 11 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 773436 6 1 1 8 loose_dog=4,cat_dash=3
+CYC 773436 7 3 3 7 loose_dog=2,cat_dash=2
+CYC 773436 8 2 2 8 cat_dash=4,loose_dog=2
+CYC 773436 9 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 773436 10 2 2 9 cat_dash=3,loose_dog=4
+CYC 773436 11 2 2 8 charging_dog=1,loose_dog=4,cat_dash=1
+CYC 773436 12 2 2 9 cat_dash=5,loose_dog=2
+CYC 773436 13 2 2 9 cat_dash=3,loose_dog=4
+CYC 773436 14 3 3 9 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 773467 2 3 3 12 cat_dash=4,loose_dog=5
+CYC 773467 3 2 2 11 charging_dog=3,loose_dog=5,cat_dash=1
+CYC 773467 4 3 3 10 cat_dash=3,loose_dog=4
+CYC 773467 5 2 2 11 charging_dog=1,cat_dash=3,loose_dog=5
+CYC 773467 6 3 3 10 cat_dash=5,loose_dog=2
+CYC 773467 7 1 1 9 cat_dash=4,loose_dog=4
+CYC 773467 8 2 2 8 loose_dog=4,cat_dash=2
+CYC 773467 9 3 3 10 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 773467 10 3 3 10 cat_dash=3,loose_dog=4
+CYC 773467 11 3 3 9 loose_dog=3,cat_dash=3
+CYC 773467 12 1 1 9 cat_dash=3,loose_dog=5
+CYC 773467 13 2 2 10 cat_dash=4,loose_dog=4
+CYC 773467 14 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 773498 2 3 3 12 cat_dash=3,loose_dog=6
+CYC 773498 3 2 2 12 charging_dog=3,loose_dog=4,cat_dash=3
+CYC 773498 4 3 3 12 loose_dog=5,cat_dash=4
+CYC 773498 5 3 3 11 loose_dog=6,cat_dash=2
+CYC 773498 6 2 2 9 cat_dash=5,loose_dog=2
+CYC 773498 7 2 2 9 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 773498 8 3 3 9 cat_dash=2,loose_dog=4
+CYC 773498 9 3 3 9 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 773498 10 1 1 9 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 773498 11 1 1 8 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 773498 12 2 2 8 loose_dog=2,cat_dash=4
+CYC 773498 13 2 2 9 cat_dash=3,loose_dog=4
+CYC 773498 14 0 0 8 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 773529 2 1 1 10 cat_dash=5,loose_dog=4
+CYC 773529 3 2 2 11 charging_dog=3,loose_dog=2,cat_dash=4
+CYC 773529 4 2 2 10 cat_dash=3,loose_dog=5
+CYC 773529 5 2 2 9 cat_dash=3,loose_dog=4
+CYC 773529 6 2 2 10 loose_dog=4,cat_dash=4
+CYC 773529 7 1 1 9 loose_dog=5,cat_dash=3
+CYC 773529 8 2 2 9 loose_dog=4,cat_dash=3
+CYC 773529 9 3 3 10 loose_dog=4,cat_dash=3
+CYC 773529 10 3 3 8 loose_dog=3,cat_dash=2
+CYC 773529 11 0 0 8 cat_dash=4,loose_dog=4
+CYC 773529 12 2 2 8 cat_dash=3,loose_dog=3
+CYC 773529 13 1 1 9 cat_dash=5,loose_dog=3
+CYC 773529 14 1 1 8 loose_dog=3,cat_dash=4
+CYC 773560 2 2 2 10 loose_dog=4,cat_dash=4
+CYC 773560 3 1 1 11 charging_dog=3,cat_dash=2,loose_dog=5
+CYC 773560 4 2 2 11 loose_dog=6,cat_dash=3
+CYC 773560 5 1 1 12 loose_dog=6,cat_dash=5
+CYC 773560 6 2 2 10 loose_dog=6,cat_dash=2
+CYC 773560 7 1 1 9 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 773560 8 1 1 9 loose_dog=5,cat_dash=3
+CYC 773560 9 2 2 8 cat_dash=3,loose_dog=3
+CYC 773560 10 2 2 10 loose_dog=4,cat_dash=4
+CYC 773560 11 1 1 9 loose_dog=5,cat_dash=3
+CYC 773560 12 3 3 9 loose_dog=4,cat_dash=2
+CYC 773560 13 2 2 9 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 773560 14 1 1 9 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 773591 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 773591 3 3 3 10 charging_dog=3,loose_dog=2,cat_dash=2
+CYC 773591 4 2 2 11 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 773591 5 3 3 11 cat_dash=5,loose_dog=3
+CYC 773591 6 2 2 9 loose_dog=4,cat_dash=3
+CYC 773591 7 3 3 10 loose_dog=4,cat_dash=3
+CYC 773591 8 2 2 9 cat_dash=4,loose_dog=3
+CYC 773591 9 2 2 9 cat_dash=4,loose_dog=3
+CYC 773591 10 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 773591 11 3 3 9 cat_dash=2,loose_dog=4
+CYC 773591 12 1 1 8 cat_dash=3,loose_dog=4
+CYC 773591 13 2 2 9 loose_dog=4,cat_dash=3
+CYC 773591 14 2 2 9 cat_dash=4,loose_dog=3
+CYC 773622 2 1 1 11 cat_dash=4,loose_dog=6
+CYC 773622 3 3 3 10 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 773622 4 3 3 11 loose_dog=3,cat_dash=5
+CYC 773622 5 3 3 12 charging_dog=1,cat_dash=5,loose_dog=3
+CYC 773622 6 1 1 9 loose_dog=5,cat_dash=3
+CYC 773622 7 2 2 8 loose_dog=5,cat_dash=1
+CYC 773622 8 2 2 9 cat_dash=3,loose_dog=4
+CYC 773622 9 3 3 10 cat_dash=3,loose_dog=4
+CYC 773622 10 2 2 9 loose_dog=4,cat_dash=3
+CYC 773622 11 1 1 8 cat_dash=4,loose_dog=3
+CYC 773622 12 2 2 8 charging_dog=1,cat_dash=2,loose_dog=3
+CYC 773622 13 2 2 9 loose_dog=3,cat_dash=4
+CYC 773622 14 1 1 10 cat_dash=5,loose_dog=4
+CYC 773653 2 2 2 10 cat_dash=4,loose_dog=4
+CYC 773653 3 2 2 12 charging_dog=2,loose_dog=5,cat_dash=3
+CYC 773653 4 3 3 9 charging_dog=1,cat_dash=2,loose_dog=3
+CYC 773653 5 3 3 11 loose_dog=6,cat_dash=2
+CYC 773653 6 2 2 10 charging_dog=1,cat_dash=2,loose_dog=5
+CYC 773653 7 3 3 9 loose_dog=5,cat_dash=1
+CYC 773653 8 2 2 10 cat_dash=5,loose_dog=3
+CYC 773653 9 2 2 9 cat_dash=4,loose_dog=3
+CYC 773653 10 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 773653 11 3 3 10 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 773653 12 1 1 9 loose_dog=4,cat_dash=4
+CYC 773653 13 2 2 11 loose_dog=6,cat_dash=3
+CYC 773653 14 2 2 10 loose_dog=5,cat_dash=3
+CYC 773685 2 3 3 12 cat_dash=5,loose_dog=4
+CYC 773685 3 3 3 12 charging_dog=2,loose_dog=5,cat_dash=2
+CYC 773685 4 1 1 10 cat_dash=5,loose_dog=4
+CYC 773685 5 2 2 11 cat_dash=3,loose_dog=6
+CYC 773685 6 2 2 9 loose_dog=4,cat_dash=3
+CYC 773685 7 3 3 11 cat_dash=3,loose_dog=5
+CYC 773685 8 3 3 9 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 773685 9 3 3 10 charging_dog=1,cat_dash=2,loose_dog=4
+CYC 773685 10 1 1 9 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 773685 11 2 2 7 charging_dog=1,loose_dog=2,cat_dash=2
+CYC 773685 12 2 2 8 cat_dash=3,loose_dog=3
+CYC 773685 13 2 2 10 loose_dog=5,cat_dash=3
+CYC 773685 14 3 3 8 loose_dog=4,cat_dash=1
+CYC 773715 2 2 2 10 loose_dog=4,cat_dash=4
+CYC 773715 3 3 3 12 charging_dog=3,loose_dog=3,cat_dash=3
+CYC 773715 4 2 2 11 charging_dog=1,cat_dash=3,loose_dog=5
+CYC 773715 5 3 3 10 cat_dash=4,loose_dog=3
+CYC 773715 6 3 3 10 cat_dash=4,loose_dog=3
+CYC 773715 7 2 2 9 cat_dash=3,loose_dog=4
+CYC 773715 8 3 3 9 loose_dog=2,cat_dash=4
+CYC 773715 9 3 3 9 loose_dog=2,cat_dash=4
+CYC 773715 10 1 1 10 charging_dog=1,loose_dog=6,cat_dash=2
+CYC 773715 11 3 3 9 loose_dog=3,cat_dash=3
+CYC 773715 12 1 1 10 loose_dog=5,cat_dash=4
+CYC 773715 13 0 0 8 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 773715 14 2 2 9 cat_dash=4,loose_dog=3
+CYC 773746 2 2 2 10 loose_dog=3,cat_dash=5
+CYC 773746 3 2 2 12 charging_dog=2,loose_dog=4,cat_dash=4
+CYC 773746 4 2 2 11 cat_dash=3,loose_dog=6
+CYC 773746 5 2 2 10 cat_dash=4,loose_dog=4
+CYC 773746 6 1 1 9 loose_dog=4,cat_dash=4
+CYC 773746 7 1 1 9 cat_dash=4,loose_dog=4
+CYC 773746 8 1 1 8 cat_dash=3,loose_dog=4
+CYC 773746 9 3 3 9 loose_dog=3,cat_dash=3
+CYC 773746 10 2 2 9 loose_dog=4,cat_dash=3
+CYC 773746 11 1 1 10 loose_dog=5,cat_dash=4
+CYC 773746 12 0 0 8 loose_dog=5,cat_dash=3
+CYC 773746 13 2 2 8 charging_dog=1,cat_dash=2,loose_dog=3
+CYC 773746 14 3 3 9 loose_dog=4,cat_dash=2
+CYC 773777 2 3 3 10 loose_dog=4,cat_dash=3
+CYC 773777 3 1 1 11 charging_dog=2,cat_dash=4,loose_dog=4
+CYC 773777 4 2 2 11 loose_dog=6,cat_dash=3
+CYC 773777 5 2 2 10 loose_dog=6,cat_dash=2
+CYC 773777 6 2 2 10 loose_dog=6,cat_dash=2
+CYC 773777 7 2 2 10 loose_dog=5,cat_dash=3
+CYC 773777 8 1 1 10 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 773777 9 1 1 10 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 773777 10 3 3 10 cat_dash=2,loose_dog=5
+CYC 773777 11 1 1 10 cat_dash=5,loose_dog=4
+CYC 773777 12 3 3 8 loose_dog=3,cat_dash=2
+CYC 773777 13 3 3 10 loose_dog=3,cat_dash=4
+CYC 773777 14 3 3 9 loose_dog=4,cat_dash=2
+CYC 773808 2 2 2 11 loose_dog=6,cat_dash=3
+CYC 773808 3 1 1 11 charging_dog=2,cat_dash=3,loose_dog=5
+CYC 773808 4 3 3 10 cat_dash=4,loose_dog=3
+CYC 773808 5 2 2 12 charging_dog=1,cat_dash=4,loose_dog=5
+CYC 773808 6 2 2 10 cat_dash=3,loose_dog=5
+CYC 773808 7 3 3 10 cat_dash=3,loose_dog=4
+CYC 773808 8 2 2 9 cat_dash=4,loose_dog=3
+CYC 773808 9 2 2 10 cat_dash=3,loose_dog=5
+CYC 773808 10 2 2 8 loose_dog=3,cat_dash=3
+CYC 773808 11 2 2 8 loose_dog=4,cat_dash=2
+CYC 773808 12 1 1 9 cat_dash=4,loose_dog=4
+CYC 773808 13 2 2 9 loose_dog=5,cat_dash=2
+CYC 773808 14 2 2 9 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 773839 2 2 2 11 cat_dash=3,loose_dog=6
+CYC 773839 3 2 2 10 charging_dog=3,loose_dog=3,cat_dash=2
+CYC 773839 4 3 3 11 cat_dash=4,loose_dog=4
+CYC 773839 5 1 1 10 loose_dog=6,cat_dash=3
+CYC 773839 6 2 2 8 charging_dog=1,loose_dog=4,cat_dash=1
+CYC 773839 7 2 2 10 loose_dog=5,cat_dash=3
+CYC 773839 8 1 1 8 loose_dog=3,cat_dash=4
+CYC 773839 9 1 1 8 loose_dog=3,cat_dash=4
+CYC 773839 10 1 1 9 cat_dash=4,loose_dog=4
+CYC 773839 11 3 3 9 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 773839 12 1 1 9 loose_dog=4,cat_dash=4
+CYC 773839 13 2 2 9 cat_dash=3,loose_dog=4
+CYC 773839 14 3 3 8 charging_dog=1,loose_dog=2,cat_dash=2
+CYC 773870 2 1 1 11 loose_dog=6,cat_dash=4
+CYC 773870 3 2 2 12 charging_dog=3,loose_dog=4,cat_dash=3
+CYC 773870 4 2 2 11 charging_dog=1,loose_dog=6,cat_dash=2
+CYC 773870 5 1 1 11 cat_dash=5,loose_dog=5
+CYC 773870 6 2 2 9 loose_dog=3,cat_dash=4
+CYC 773870 7 3 3 10 cat_dash=5,loose_dog=2
+CYC 773870 8 3 3 10 loose_dog=4,cat_dash=3
+CYC 773870 9 1 1 10 loose_dog=5,cat_dash=4
+CYC 773870 10 2 2 9 loose_dog=5,cat_dash=2
+CYC 773870 11 2 2 10 cat_dash=4,loose_dog=4
+CYC 773870 12 3 3 9 loose_dog=3,cat_dash=3
+CYC 773870 13 2 2 9 cat_dash=2,loose_dog=5
+CYC 773870 14 2 2 9 cat_dash=3,loose_dog=4
+CYC 773901 2 1 1 11 loose_dog=6,cat_dash=4
+CYC 773901 3 1 1 10 charging_dog=2,loose_dog=4,cat_dash=3
+CYC 773901 4 3 3 11 loose_dog=4,cat_dash=4
+CYC 773901 5 2 2 11 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 773901 6 2 2 9 cat_dash=3,loose_dog=4
+CYC 773901 7 1 1 9 loose_dog=4,cat_dash=4
+CYC 773901 8 3 3 9 loose_dog=3,cat_dash=3
+CYC 773901 9 3 3 10 cat_dash=4,loose_dog=3
+CYC 773901 10 2 2 8 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 773901 11 2 2 11 loose_dog=6,cat_dash=3
+CYC 773901 12 2 2 9 loose_dog=4,cat_dash=3
+CYC 773901 13 3 3 9 cat_dash=3,loose_dog=3
+CYC 773901 14 2 2 9 loose_dog=3,cat_dash=4
+CYC 773932 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 773932 3 1 1 12 charging_dog=3,cat_dash=4,loose_dog=4
+CYC 773932 4 2 2 10 cat_dash=4,loose_dog=4
+CYC 773932 5 2 2 10 loose_dog=5,cat_dash=3
+CYC 773932 6 1 1 8 cat_dash=2,loose_dog=5
+CYC 773932 7 3 3 8 loose_dog=3,cat_dash=2
+CYC 773932 8 0 0 9 loose_dog=5,cat_dash=4
+CYC 773932 9 2 2 10 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 773932 10 1 1 9 loose_dog=4,cat_dash=4
+CYC 773932 11 2 2 10 loose_dog=3,cat_dash=5
+CYC 773932 12 2 2 9 cat_dash=3,loose_dog=4
+CYC 773932 13 2 2 10 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 773932 14 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 773964 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 773964 3 3 3 11 charging_dog=2,loose_dog=5,cat_dash=1
+CYC 773964 4 3 3 11 loose_dog=4,cat_dash=4
+CYC 773964 5 1 1 10 cat_dash=4,loose_dog=5
+CYC 773964 6 3 3 9 loose_dog=3,cat_dash=3
+CYC 773964 7 1 1 9 charging_dog=1,loose_dog=5,cat_dash=2
+CYC 773964 8 1 1 9 loose_dog=4,cat_dash=4
+CYC 773964 9 1 1 9 loose_dog=5,cat_dash=3
+CYC 773964 10 2 2 10 charging_dog=1,loose_dog=5,cat_dash=2
+CYC 773964 11 2 2 10 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 773964 12 1 1 8 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 773964 13 2 2 8 loose_dog=4,cat_dash=2
+CYC 773964 14 2 2 9 loose_dog=3,cat_dash=4
+CYC 773994 2 2 2 11 cat_dash=4,loose_dog=5
+CYC 773994 3 2 2 12 charging_dog=3,cat_dash=3,loose_dog=4
+CYC 773994 4 1 1 11 charging_dog=1,cat_dash=5,loose_dog=4
+CYC 773994 5 3 3 10 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 773994 6 2 2 9 loose_dog=4,cat_dash=3
+CYC 773994 7 0 0 9 loose_dog=6,cat_dash=3
+CYC 773994 8 2 2 8 cat_dash=3,loose_dog=3
+CYC 773994 9 2 2 9 cat_dash=3,loose_dog=4
+CYC 773994 10 3 3 9 loose_dog=4,cat_dash=2
+CYC 773994 11 2 2 9 loose_dog=4,cat_dash=3
+CYC 773994 12 2 2 10 cat_dash=5,loose_dog=3
+CYC 773994 13 1 1 8 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 773994 14 2 2 11 loose_dog=4,cat_dash=5
+CYC 774025 2 3 3 11 loose_dog=4,cat_dash=4
+CYC 774025 3 1 1 12 charging_dog=3,loose_dog=4,cat_dash=4
+CYC 774025 4 3 3 10 loose_dog=4,cat_dash=3
+CYC 774025 5 2 2 11 loose_dog=5,cat_dash=4
+CYC 774025 6 2 2 10 cat_dash=4,loose_dog=4
+CYC 774025 7 2 2 9 cat_dash=4,loose_dog=3
+CYC 774025 8 3 3 9 cat_dash=4,loose_dog=2
+CYC 774025 9 2 2 10 loose_dog=5,cat_dash=3
+CYC 774025 10 2 2 8 charging_dog=1,cat_dash=2,loose_dog=3
+CYC 774025 11 3 3 9 loose_dog=3,cat_dash=3
+CYC 774025 12 1 1 9 cat_dash=4,loose_dog=4
+CYC 774025 13 2 2 9 charging_dog=1,loose_dog=2,cat_dash=4
+CYC 774025 14 2 2 10 loose_dog=4,cat_dash=4
+CYC 774056 2 2 2 10 loose_dog=5,cat_dash=3
+CYC 774056 3 2 2 12 charging_dog=3,loose_dog=3,cat_dash=4
+CYC 774056 4 1 1 11 charging_dog=1,loose_dog=4,cat_dash=5
+CYC 774056 5 3 3 11 cat_dash=3,loose_dog=5
+CYC 774056 6 1 1 9 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 774056 7 0 0 9 loose_dog=5,cat_dash=4
+CYC 774056 8 3 3 9 loose_dog=4,cat_dash=2
+CYC 774056 9 2 2 10 cat_dash=5,loose_dog=3
+CYC 774056 10 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 774056 11 2 2 11 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 774056 12 1 1 9 cat_dash=4,loose_dog=4
+CYC 774056 13 3 3 10 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 774056 14 2 2 9 loose_dog=3,cat_dash=4
+CYC 774087 2 2 2 10 cat_dash=3,loose_dog=5
+CYC 774087 3 1 1 12 charging_dog=2,cat_dash=3,loose_dog=6
+CYC 774087 4 2 2 10 charging_dog=1,cat_dash=5,loose_dog=2
+CYC 774087 5 3 3 9 loose_dog=3,cat_dash=3
+CYC 774087 6 2 2 9 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 774087 7 3 3 9 loose_dog=4,cat_dash=2
+CYC 774087 8 3 3 9 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 774087 9 2 2 8 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 774087 10 2 2 9 cat_dash=5,loose_dog=2
+CYC 774087 11 3 3 9 loose_dog=3,cat_dash=3
+CYC 774087 12 1 1 9 cat_dash=5,loose_dog=3
+CYC 774087 13 2 2 8 cat_dash=3,loose_dog=3
+CYC 774087 14 2 2 8 loose_dog=2,cat_dash=4
+CYC 774118 2 3 3 12 cat_dash=4,loose_dog=5
+CYC 774118 3 3 3 12 charging_dog=3,loose_dog=4,cat_dash=2
+CYC 774118 4 3 3 10 loose_dog=4,cat_dash=3
+CYC 774118 5 2 2 11 loose_dog=6,cat_dash=3
+CYC 774118 6 2 2 10 loose_dog=4,cat_dash=4
+CYC 774118 7 2 2 9 loose_dog=4,cat_dash=3
+CYC 774118 8 2 2 9 loose_dog=3,cat_dash=4
+CYC 774118 9 3 3 9 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 774118 10 1 1 9 loose_dog=4,cat_dash=4
+CYC 774118 11 3 3 10 cat_dash=3,loose_dog=4
+CYC 774118 12 1 1 9 loose_dog=6,cat_dash=2
+CYC 774118 13 0 0 8 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 774118 14 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 774149 2 3 3 12 loose_dog=4,cat_dash=5
+CYC 774149 3 1 1 11 charging_dog=2,loose_dog=4,cat_dash=4
+CYC 774149 4 3 3 10 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 774149 5 2 2 10 charging_dog=1,cat_dash=2,loose_dog=5
+CYC 774149 6 3 3 10 charging_dog=1,cat_dash=2,loose_dog=4
+CYC 774149 7 1 1 8 cat_dash=3,loose_dog=4
+CYC 774149 8 1 1 9 loose_dog=5,cat_dash=3
+CYC 774149 9 3 3 10 loose_dog=5,cat_dash=2
+CYC 774149 10 2 2 10 loose_dog=4,cat_dash=4
+CYC 774149 11 2 2 9 loose_dog=3,cat_dash=4
+CYC 774149 12 3 3 9 loose_dog=4,cat_dash=2
+CYC 774149 13 2 2 8 loose_dog=5,cat_dash=1
+CYC 774149 14 2 2 10 loose_dog=5,cat_dash=3
+CYC 774180 2 3 3 11 cat_dash=4,loose_dog=4
+CYC 774180 3 2 2 12 charging_dog=3,loose_dog=3,cat_dash=4
+CYC 774180 4 3 3 12 cat_dash=4,loose_dog=5
+CYC 774180 5 3 3 11 cat_dash=3,loose_dog=5
+CYC 774180 6 2 2 9 cat_dash=5,loose_dog=2
+CYC 774180 7 2 2 9 loose_dog=4,cat_dash=3
+CYC 774180 8 2 2 9 cat_dash=4,loose_dog=3
+CYC 774180 9 2 2 9 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 774180 10 2 2 8 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 774180 11 1 1 9 cat_dash=3,loose_dog=5
+CYC 774180 12 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 774180 13 2 2 8 loose_dog=3,cat_dash=3
+CYC 774180 14 2 2 9 loose_dog=5,cat_dash=2
+CYC 774211 2 2 2 11 loose_dog=4,cat_dash=5
+CYC 774211 3 2 2 10 charging_dog=2,loose_dog=4,cat_dash=2
+CYC 774211 4 1 1 11 cat_dash=4,loose_dog=6
+CYC 774211 5 2 2 12 charging_dog=1,loose_dog=5,cat_dash=4
+CYC 774211 6 3 3 9 cat_dash=5,loose_dog=1
+CYC 774211 7 2 2 9 cat_dash=2,loose_dog=5
+CYC 774211 8 1 1 10 cat_dash=4,loose_dog=5
+CYC 774211 9 2 2 10 loose_dog=4,cat_dash=4
+CYC 774211 10 2 2 9 loose_dog=4,cat_dash=3
+CYC 774211 11 1 1 10 loose_dog=5,cat_dash=4
+CYC 774211 12 1 1 8 loose_dog=5,cat_dash=2
+CYC 774211 13 3 3 9 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 774211 14 2 2 9 loose_dog=4,cat_dash=3
+CYC 774242 2 1 1 11 loose_dog=6,cat_dash=4
+CYC 774242 3 3 3 12 charging_dog=2,loose_dog=3,cat_dash=4
+CYC 774242 4 3 3 11 cat_dash=4,loose_dog=4
+CYC 774242 5 3 3 11 loose_dog=4,cat_dash=4
+CYC 774242 6 2 2 10 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 774242 7 2 2 9 charging_dog=1,loose_dog=5,cat_dash=1
+CYC 774242 8 1 1 10 loose_dog=6,cat_dash=3
+CYC 774242 9 1 1 9 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 774242 10 3 3 10 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 774242 11 1 1 8 charging_dog=1,cat_dash=2,loose_dog=4
+CYC 774242 12 2 2 9 loose_dog=4,cat_dash=3
+CYC 774242 13 2 2 10 loose_dog=5,cat_dash=3
+CYC 774242 14 3 3 11 loose_dog=5,cat_dash=3
+CYC 774273 2 3 3 11 loose_dog=5,cat_dash=3
+CYC 774273 3 3 3 12 charging_dog=2,loose_dog=3,cat_dash=4
+CYC 774273 4 2 2 11 cat_dash=5,loose_dog=4
+CYC 774273 5 1 1 10 cat_dash=5,loose_dog=4
+CYC 774273 6 3 3 10 loose_dog=4,cat_dash=3
+CYC 774273 7 3 3 9 cat_dash=3,loose_dog=3
+CYC 774273 8 1 1 9 loose_dog=5,cat_dash=3
+CYC 774273 9 1 1 8 cat_dash=4,loose_dog=3
+CYC 774273 10 1 1 8 loose_dog=6,cat_dash=1
+CYC 774273 11 0 0 10 charging_dog=1,loose_dog=5,cat_dash=4
+CYC 774273 12 1 1 10 loose_dog=6,cat_dash=3
+CYC 774273 13 2 2 9 loose_dog=4,cat_dash=3
+CYC 774273 14 1 1 8 cat_dash=3,loose_dog=4
+CYC 774304 2 3 3 11 cat_dash=4,loose_dog=4
+CYC 774304 3 1 1 11 charging_dog=3,loose_dog=4,cat_dash=3
+CYC 774304 4 3 3 11 loose_dog=4,cat_dash=4
+CYC 774304 5 2 2 11 cat_dash=3,loose_dog=6
+CYC 774304 6 2 2 10 loose_dog=4,cat_dash=4
+CYC 774304 7 2 2 10 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 774304 8 3 3 9 cat_dash=2,loose_dog=4
+CYC 774304 9 1 1 10 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 774304 10 2 2 10 loose_dog=5,cat_dash=3
+CYC 774304 11 1 1 9 cat_dash=3,loose_dog=5
+CYC 774304 12 2 2 10 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 774304 13 2 2 10 loose_dog=6,cat_dash=2
+CYC 774304 14 2 2 8 loose_dog=3,cat_dash=3
+CYC 774335 2 2 2 10 loose_dog=4,cat_dash=4
+CYC 774335 3 2 2 11 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 774335 4 2 2 9 cat_dash=4,loose_dog=3
+CYC 774335 5 3 3 11 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 774335 6 2 2 10 cat_dash=4,loose_dog=4
+CYC 774335 7 1 1 8 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 774335 8 1 1 9 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 774335 9 2 2 9 cat_dash=3,loose_dog=4
+CYC 774335 10 2 2 8 charging_dog=1,cat_dash=2,loose_dog=3
+CYC 774335 11 1 1 8 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 774335 12 2 2 10 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 774335 13 2 2 8 cat_dash=3,loose_dog=3
+CYC 774335 14 0 0 8 cat_dash=4,loose_dog=4
+CYC 774366 2 2 2 10 loose_dog=4,cat_dash=4
+CYC 774366 3 2 2 11 charging_dog=2,loose_dog=3,cat_dash=4
+CYC 774366 4 1 1 11 charging_dog=1,loose_dog=5,cat_dash=4
+CYC 774366 5 2 2 11 cat_dash=3,loose_dog=6
+CYC 774366 6 2 2 8 loose_dog=4,cat_dash=2
+CYC 774366 7 2 2 10 loose_dog=6,cat_dash=2
+CYC 774366 8 2 2 9 loose_dog=4,cat_dash=3
+CYC 774366 9 2 2 9 charging_dog=1,loose_dog=2,cat_dash=4
+CYC 774366 10 1 1 9 cat_dash=5,loose_dog=3
+CYC 774366 11 3 3 9 loose_dog=4,cat_dash=2
+CYC 774366 12 3 3 9 cat_dash=3,loose_dog=3
+CYC 774366 13 1 1 8 cat_dash=4,loose_dog=3
+CYC 774366 14 3 3 10 loose_dog=5,cat_dash=2
+CYC 774397 2 1 1 10 loose_dog=6,cat_dash=3
+CYC 774397 3 3 3 11 charging_dog=3,cat_dash=3,loose_dog=2
+CYC 774397 4 3 3 10 cat_dash=3,loose_dog=4
+CYC 774397 5 2 2 12 charging_dog=1,loose_dog=4,cat_dash=5
+CYC 774397 6 0 0 9 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 774397 7 2 2 8 loose_dog=3,cat_dash=3
+CYC 774397 8 2 2 8 loose_dog=4,cat_dash=2
+CYC 774397 9 3 3 10 cat_dash=4,loose_dog=3
+CYC 774397 10 0 0 8 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 774397 11 2 2 10 cat_dash=4,loose_dog=4
+CYC 774397 12 1 1 8 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 774397 13 0 0 8 cat_dash=4,loose_dog=4
+CYC 774397 14 3 3 8 cat_dash=4,loose_dog=1
+CYC 774428 2 3 3 12 loose_dog=5,cat_dash=4
+CYC 774428 3 3 3 11 charging_dog=3,loose_dog=3,cat_dash=2
+CYC 774428 4 3 3 10 loose_dog=4,cat_dash=3
+CYC 774428 5 2 2 12 charging_dog=1,loose_dog=6,cat_dash=3
+CYC 774428 6 2 2 10 cat_dash=4,loose_dog=4
+CYC 774428 7 2 2 8 cat_dash=2,loose_dog=4
+CYC 774428 8 3 3 9 cat_dash=3,loose_dog=3
+CYC 774428 9 3 3 11 cat_dash=3,loose_dog=5
+CYC 774428 10 2 2 10 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 774428 11 0 0 9 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 774428 12 1 1 9 cat_dash=5,loose_dog=3
+CYC 774428 13 3 3 9 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 774428 14 3 3 10 cat_dash=3,loose_dog=4
+CYC 774459 2 3 3 11 loose_dog=5,cat_dash=3
+CYC 774459 3 3 3 12 charging_dog=2,loose_dog=2,cat_dash=5
+CYC 774459 4 2 2 11 loose_dog=4,cat_dash=5
+CYC 774459 5 3 3 11 cat_dash=5,loose_dog=3
+CYC 774459 6 2 2 9 cat_dash=3,loose_dog=4
+CYC 774459 7 1 1 9 loose_dog=4,cat_dash=4
+CYC 774459 8 2 2 9 loose_dog=4,cat_dash=3
+CYC 774459 9 2 2 9 loose_dog=4,cat_dash=3
+CYC 774459 10 2 2 8 cat_dash=4,loose_dog=2
+CYC 774459 11 1 1 9 cat_dash=5,loose_dog=3
+CYC 774459 12 2 2 10 loose_dog=5,cat_dash=3
+CYC 774459 13 1 1 9 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 774459 14 2 2 9 cat_dash=2,loose_dog=5
+CYC 774490 2 2 2 11 cat_dash=3,loose_dog=6
+CYC 774490 3 1 1 12 charging_dog=3,loose_dog=5,cat_dash=3
+CYC 774490 4 2 2 10 charging_dog=1,loose_dog=5,cat_dash=2
+CYC 774490 5 3 3 11 loose_dog=3,cat_dash=5
+CYC 774490 6 3 3 9 cat_dash=4,loose_dog=2
+CYC 774490 7 3 3 9 loose_dog=4,cat_dash=2
+CYC 774490 8 2 2 8 loose_dog=4,cat_dash=2
+CYC 774490 9 2 2 8 cat_dash=3,loose_dog=3
+CYC 774490 10 1 1 9 cat_dash=4,loose_dog=4
+CYC 774490 11 2 2 9 charging_dog=1,cat_dash=2,loose_dog=4
+CYC 774490 12 3 3 9 charging_dog=1,loose_dog=4,cat_dash=1
+CYC 774490 13 2 2 9 loose_dog=4,cat_dash=3
+CYC 774490 14 3 3 9 loose_dog=3,cat_dash=3
+CYC 774521 2 2 2 10 loose_dog=4,cat_dash=4
+CYC 774521 3 2 2 11 charging_dog=3,loose_dog=4,cat_dash=2
+CYC 774521 4 3 3 11 loose_dog=5,cat_dash=3
+CYC 774521 5 2 2 11 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 774521 6 2 2 10 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 774521 7 2 2 8 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 774521 8 2 2 9 loose_dog=2,cat_dash=5
+CYC 774521 9 3 3 9 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 774521 10 1 1 8 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 774521 11 1 1 10 loose_dog=5,cat_dash=4
+CYC 774521 12 2 2 8 loose_dog=2,cat_dash=4
+CYC 774521 13 2 2 9 cat_dash=4,loose_dog=3
+CYC 774521 14 1 1 9 cat_dash=3,loose_dog=5
+CYC 774552 2 3 3 11 cat_dash=3,loose_dog=5
+CYC 774552 3 1 1 12 charging_dog=2,cat_dash=3,loose_dog=6
+CYC 774552 4 3 3 10 loose_dog=4,cat_dash=3
+CYC 774552 5 2 2 11 cat_dash=4,loose_dog=5
+CYC 774552 6 3 3 10 loose_dog=4,cat_dash=3
+CYC 774552 7 1 1 9 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 774552 8 2 2 9 loose_dog=5,cat_dash=2
+CYC 774552 9 2 2 9 cat_dash=3,loose_dog=4
+CYC 774552 10 2 2 9 loose_dog=4,cat_dash=3
+CYC 774552 11 1 1 10 cat_dash=5,loose_dog=4
+CYC 774552 12 1 1 9 charging_dog=1,loose_dog=5,cat_dash=2
+CYC 774552 13 2 2 9 cat_dash=4,loose_dog=3
+CYC 774552 14 3 3 10 cat_dash=3,loose_dog=4
+CYC 774583 2 2 2 11 cat_dash=3,loose_dog=6
+CYC 774583 3 2 2 11 charging_dog=2,loose_dog=3,cat_dash=4
+CYC 774583 4 3 3 13 cat_dash=4,loose_dog=6
+CYC 774583 5 3 3 10 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 774583 6 2 2 8 cat_dash=4,loose_dog=2
+CYC 774583 7 1 1 8 loose_dog=4,cat_dash=3
+CYC 774583 8 2 2 9 cat_dash=4,loose_dog=3
+CYC 774583 9 2 2 9 loose_dog=3,cat_dash=4
+CYC 774583 10 2 2 8 charging_dog=1,loose_dog=4,cat_dash=1
+CYC 774583 11 3 3 10 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 774583 12 3 3 9 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 774583 13 3 3 9 loose_dog=4,cat_dash=2
+CYC 774583 14 2 2 10 cat_dash=4,loose_dog=4
+CYC 774614 2 1 1 9 loose_dog=4,cat_dash=4
+CYC 774614 3 1 1 11 charging_dog=3,loose_dog=4,cat_dash=3
+CYC 774614 4 1 1 9 loose_dog=5,cat_dash=3
+CYC 774614 5 2 2 11 cat_dash=4,loose_dog=5
+CYC 774614 6 3 3 10 loose_dog=3,cat_dash=4
+CYC 774614 7 2 2 9 loose_dog=5,cat_dash=2
+CYC 774614 8 2 2 9 cat_dash=4,loose_dog=3
+CYC 774614 9 2 2 10 loose_dog=5,cat_dash=3
+CYC 774614 10 2 2 10 charging_dog=1,loose_dog=5,cat_dash=2
+CYC 774614 11 2 2 8 cat_dash=4,loose_dog=2
+CYC 774614 12 2 2 9 loose_dog=4,cat_dash=3
+CYC 774614 13 1 1 9 loose_dog=4,cat_dash=4
+CYC 774614 14 2 2 8 cat_dash=4,loose_dog=2
+CYC 774645 2 2 2 13 loose_dog=6,cat_dash=5
+CYC 774645 3 3 3 12 charging_dog=2,loose_dog=4,cat_dash=3
+CYC 774645 4 1 1 10 loose_dog=5,cat_dash=4
+CYC 774645 5 2 2 13 cat_dash=5,loose_dog=6
+CYC 774645 6 2 2 9 loose_dog=4,cat_dash=3
+CYC 774645 7 2 2 8 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 774645 8 3 3 9 cat_dash=4,loose_dog=2
+CYC 774645 9 1 1 8 loose_dog=2,cat_dash=5
+CYC 774645 10 2 2 10 loose_dog=5,cat_dash=3
+CYC 774645 11 2 2 9 cat_dash=3,loose_dog=4
+CYC 774645 12 2 2 7 loose_dog=5
+CYC 774645 13 2 2 10 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 774645 14 3 3 8 loose_dog=4,cat_dash=1
+CYC 774676 2 3 3 9 loose_dog=3,cat_dash=3
+CYC 774676 3 2 2 12 charging_dog=2,loose_dog=3,cat_dash=5
+CYC 774676 4 3 3 10 loose_dog=2,cat_dash=5
+CYC 774676 5 2 2 10 cat_dash=5,loose_dog=3
+CYC 774676 6 2 2 9 cat_dash=4,loose_dog=3
+CYC 774676 7 2 2 9 loose_dog=6,cat_dash=1
+CYC 774676 8 3 3 9 cat_dash=3,loose_dog=3
+CYC 774676 9 2 2 10 loose_dog=4,cat_dash=4
+CYC 774676 10 0 0 7 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 774676 11 3 3 11 loose_dog=4,cat_dash=4
+CYC 774676 12 2 2 10 cat_dash=3,loose_dog=5
+CYC 774676 13 2 2 9 loose_dog=4,cat_dash=3
+CYC 774676 14 2 2 11 cat_dash=4,loose_dog=5
+CYC 774708 2 3 3 12 loose_dog=4,cat_dash=5
+CYC 774708 3 3 3 13 charging_dog=2,loose_dog=5,cat_dash=3
+CYC 774708 4 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 774708 5 2 2 12 loose_dog=5,cat_dash=5
+CYC 774708 6 2 2 8 charging_dog=1,cat_dash=2,loose_dog=3
+CYC 774708 7 2 2 9 cat_dash=3,loose_dog=4
+CYC 774708 8 3 3 10 loose_dog=4,cat_dash=3
+CYC 774708 9 3 3 10 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 774708 10 1 1 9 loose_dog=5,cat_dash=3
+CYC 774708 11 2 2 9 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 774708 12 2 2 9 cat_dash=5,loose_dog=2
+CYC 774708 13 1 1 8 cat_dash=3,loose_dog=4
+CYC 774708 14 1 1 8 loose_dog=3,cat_dash=4
+CYC 774738 2 1 1 12 loose_dog=6,cat_dash=5
+CYC 774738 3 2 2 10 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 774738 4 2 2 10 loose_dog=5,cat_dash=3
+CYC 774738 5 3 3 10 loose_dog=4,cat_dash=3
+CYC 774738 6 1 1 8 charging_dog=1,loose_dog=5,cat_dash=1
+CYC 774738 7 1 1 10 loose_dog=5,cat_dash=4
+CYC 774738 8 3 3 9 loose_dog=2,cat_dash=4
+CYC 774738 9 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 774738 10 0 0 9 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 774738 11 1 1 9 cat_dash=3,loose_dog=5
+CYC 774738 12 1 1 8 cat_dash=4,loose_dog=3
+CYC 774738 13 3 3 10 cat_dash=5,loose_dog=2
+CYC 774738 14 2 2 10 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 774769 2 3 3 11 cat_dash=3,loose_dog=5
+CYC 774769 3 3 3 11 charging_dog=2,loose_dog=4,cat_dash=2
+CYC 774769 4 3 3 11 loose_dog=5,cat_dash=3
+CYC 774769 5 1 1 11 cat_dash=5,loose_dog=5
+CYC 774769 6 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 774769 7 1 1 9 cat_dash=5,loose_dog=3
+CYC 774769 8 3 3 9 cat_dash=4,loose_dog=2
+CYC 774769 9 3 3 9 loose_dog=4,cat_dash=2
+CYC 774769 10 3 3 9 cat_dash=4,loose_dog=2
+CYC 774769 11 2 2 8 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 774769 12 3 3 10 loose_dog=4,cat_dash=3
+CYC 774769 13 1 1 9 loose_dog=4,cat_dash=4
+CYC 774769 14 0 0 8 loose_dog=5,cat_dash=3
+CYC 774800 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 774800 3 2 2 12 charging_dog=3,loose_dog=4,cat_dash=3
+CYC 774800 4 2 2 10 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 774800 5 3 3 11 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 774800 6 2 2 10 loose_dog=4,cat_dash=4
+CYC 774800 7 2 2 9 cat_dash=3,loose_dog=4
+CYC 774800 8 1 1 9 cat_dash=3,loose_dog=5
+CYC 774800 9 2 2 8 loose_dog=4,cat_dash=2
+CYC 774800 10 2 2 10 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 774800 11 2 2 10 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 774800 12 1 1 9 cat_dash=3,loose_dog=5
+CYC 774800 13 3 3 10 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 774800 14 2 2 9 loose_dog=4,cat_dash=3
+CYC 774831 2 3 3 11 cat_dash=3,loose_dog=5
+CYC 774831 3 1 1 12 charging_dog=3,loose_dog=5,cat_dash=3
+CYC 774831 4 2 2 12 cat_dash=5,loose_dog=5
+CYC 774831 5 3 3 11 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 774831 6 2 2 9 cat_dash=5,loose_dog=2
+CYC 774831 7 3 3 9 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 774831 8 1 1 9 loose_dog=5,cat_dash=3
+CYC 774831 9 1 1 10 loose_dog=5,cat_dash=4
+CYC 774831 10 0 0 9 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 774831 11 2 2 8 cat_dash=3,loose_dog=3
+CYC 774831 12 2 2 9 loose_dog=4,cat_dash=3
+CYC 774831 13 1 1 8 cat_dash=2,loose_dog=5
+CYC 774831 14 1 1 8 loose_dog=4,cat_dash=3
+CYC 774862 2 1 1 11 loose_dog=5,cat_dash=5
+CYC 774862 3 3 3 11 charging_dog=2,cat_dash=3,loose_dog=3
+CYC 774862 4 0 0 11 loose_dog=6,cat_dash=5
+CYC 774862 5 2 2 11 cat_dash=3,loose_dog=6
+CYC 774862 6 3 3 10 loose_dog=5,cat_dash=2
+CYC 774862 7 1 1 9 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 774862 8 2 2 8 loose_dog=4,cat_dash=2
+CYC 774862 9 3 3 9 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 774862 10 1 1 9 cat_dash=2,loose_dog=6
+CYC 774862 11 1 1 9 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 774862 12 2 2 10 loose_dog=4,cat_dash=4
+CYC 774862 13 2 2 9 loose_dog=3,cat_dash=4
+CYC 774862 14 1 1 9 loose_dog=4,cat_dash=4
+CYC 774893 2 3 3 12 cat_dash=4,loose_dog=5
+CYC 774893 3 2 2 12 charging_dog=2,loose_dog=5,cat_dash=3
+CYC 774893 4 3 3 11 loose_dog=4,cat_dash=4
+CYC 774893 5 2 2 11 charging_dog=1,cat_dash=5,loose_dog=3
+CYC 774893 6 2 2 10 cat_dash=5,loose_dog=3
+CYC 774893 7 2 2 10 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 774893 8 1 1 7 loose_dog=2,cat_dash=4
+CYC 774893 9 2 2 9 loose_dog=4,cat_dash=3
+CYC 774893 10 1 1 9 cat_dash=4,loose_dog=4
+CYC 774893 11 3 3 10 loose_dog=4,cat_dash=3
+CYC 774893 12 2 2 10 cat_dash=4,loose_dog=4
+CYC 774893 13 2 2 10 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 774893 14 2 2 9 charging_dog=1,cat_dash=2,loose_dog=4
+CYC 774924 2 2 2 10 cat_dash=4,loose_dog=4
+CYC 774924 3 2 2 11 charging_dog=2,loose_dog=5,cat_dash=2
+CYC 774924 4 2 2 10 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 774924 5 1 1 10 loose_dog=6,cat_dash=3
+CYC 774924 6 3 3 9 cat_dash=3,loose_dog=3
+CYC 774924 7 2 2 9 loose_dog=3,cat_dash=4
+CYC 774924 8 2 2 9 cat_dash=3,loose_dog=4
+CYC 774924 9 2 2 10 loose_dog=5,cat_dash=3
+CYC 774924 10 3 3 10 loose_dog=5,cat_dash=2
+CYC 774924 11 2 2 9 cat_dash=5,loose_dog=2
+CYC 774924 12 2 2 9 cat_dash=3,loose_dog=4
+CYC 774924 13 1 1 9 cat_dash=5,loose_dog=3
+CYC 774924 14 3 3 10 loose_dog=5,cat_dash=2
+CYC 774955 2 2 2 10 loose_dog=5,cat_dash=3
+CYC 774955 3 3 3 13 charging_dog=3,cat_dash=2,loose_dog=5
+CYC 774955 4 2 2 10 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 774955 5 2 2 10 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 774955 6 2 2 8 cat_dash=3,loose_dog=3
+CYC 774955 7 2 2 10 loose_dog=5,cat_dash=3
+CYC 774955 8 1 1 10 cat_dash=4,loose_dog=5
+CYC 774955 9 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 774955 10 1 1 9 cat_dash=3,loose_dog=5
+CYC 774955 11 3 3 9 cat_dash=2,loose_dog=4
+CYC 774955 12 3 3 9 loose_dog=4,cat_dash=2
+CYC 774955 13 0 0 9 cat_dash=4,loose_dog=5
+CYC 774955 14 2 2 9 cat_dash=2,loose_dog=5
+CYC 774986 2 2 2 11 loose_dog=6,cat_dash=3
+CYC 774986 3 3 3 12 charging_dog=3,loose_dog=4,cat_dash=2
+CYC 774986 4 2 2 12 charging_dog=1,loose_dog=5,cat_dash=4
+CYC 774986 5 2 2 11 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 774986 6 1 1 8 loose_dog=4,cat_dash=3
+CYC 774986 7 3 3 9 cat_dash=2,loose_dog=4
+CYC 774986 8 2 2 9 loose_dog=3,cat_dash=4
+CYC 774986 9 2 2 9 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 774986 10 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 774986 11 1 1 9 loose_dog=4,cat_dash=4
+CYC 774986 12 2 2 10 loose_dog=5,cat_dash=3
+CYC 774986 13 2 2 9 loose_dog=5,cat_dash=2
+CYC 774986 14 2 2 9 cat_dash=4,loose_dog=3
+CYC 775018 2 3 3 11 loose_dog=5,cat_dash=3
+CYC 775018 3 3 3 11 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 775018 4 3 3 12 loose_dog=5,cat_dash=4
+CYC 775018 5 3 3 10 cat_dash=4,loose_dog=3
+CYC 775018 6 2 2 10 cat_dash=4,loose_dog=4
+CYC 775018 7 3 3 9 loose_dog=3,cat_dash=3
+CYC 775018 8 3 3 10 cat_dash=4,loose_dog=3
+CYC 775018 9 3 3 10 cat_dash=3,loose_dog=4
+CYC 775018 10 3 3 10 cat_dash=4,loose_dog=3
+CYC 775018 11 3 3 10 charging_dog=1,loose_dog=5,cat_dash=1
+CYC 775018 12 3 3 9 loose_dog=3,cat_dash=3
+CYC 775018 13 3 3 10 cat_dash=3,loose_dog=4
+CYC 775018 14 2 2 9 loose_dog=5,cat_dash=2
+CYC 775048 2 3 3 10 loose_dog=6,cat_dash=1
+CYC 775048 3 3 3 11 charging_dog=2,cat_dash=3,loose_dog=3
+CYC 775048 4 2 2 11 loose_dog=6,cat_dash=3
+CYC 775048 5 1 1 11 cat_dash=5,loose_dog=5
+CYC 775048 6 1 1 8 charging_dog=1,loose_dog=5,cat_dash=1
+CYC 775048 7 2 2 9 loose_dog=5,cat_dash=2
+CYC 775048 8 1 1 9 loose_dog=6,cat_dash=2
+CYC 775048 9 0 0 9 charging_dog=1,cat_dash=3,loose_dog=5
+CYC 775048 10 2 2 10 loose_dog=4,cat_dash=4
+CYC 775048 11 2 2 8 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 775048 12 2 2 10 cat_dash=3,loose_dog=5
+CYC 775048 13 2 2 8 loose_dog=3,cat_dash=3
+CYC 775048 14 1 1 9 loose_dog=5,cat_dash=3
+CYC 775079 2 2 2 10 cat_dash=3,loose_dog=5
+CYC 775079 3 3 3 10 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 775079 4 3 3 12 cat_dash=4,loose_dog=5
+CYC 775079 5 2 2 11 loose_dog=6,cat_dash=3
+CYC 775079 6 2 2 8 charging_dog=1,cat_dash=3,loose_dog=2
+CYC 775079 7 2 2 9 loose_dog=5,cat_dash=2
+CYC 775079 8 2 2 9 loose_dog=4,cat_dash=3
+CYC 775079 9 2 2 9 loose_dog=5,cat_dash=2
+CYC 775079 10 2 2 9 cat_dash=2,loose_dog=5
+CYC 775079 11 1 1 8 cat_dash=3,loose_dog=4
+CYC 775079 12 3 3 9 loose_dog=4,cat_dash=2
+CYC 775079 13 3 3 10 loose_dog=5,cat_dash=2
+CYC 775079 14 2 2 10 cat_dash=3,loose_dog=5
+CYC 775110 2 2 2 10 loose_dog=5,cat_dash=3
+CYC 775110 3 3 3 12 charging_dog=2,cat_dash=4,loose_dog=3
+CYC 775110 4 2 2 10 cat_dash=4,loose_dog=4
+CYC 775110 5 3 3 12 cat_dash=5,loose_dog=4
+CYC 775110 6 1 1 8 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 775110 7 3 3 9 loose_dog=6
+CYC 775110 8 2 2 8 cat_dash=2,loose_dog=4
+CYC 775110 9 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 775110 10 2 2 9 loose_dog=5,cat_dash=2
+CYC 775110 11 1 1 9 cat_dash=5,loose_dog=3
+CYC 775110 12 2 2 9 loose_dog=3,cat_dash=4
+CYC 775110 13 1 1 9 loose_dog=3,cat_dash=5
+CYC 775110 14 3 3 10 loose_dog=5,cat_dash=2
+CYC 775141 2 3 3 11 loose_dog=4,cat_dash=4
+CYC 775141 3 2 2 12 charging_dog=2,loose_dog=5,cat_dash=3
+CYC 775141 4 3 3 10 cat_dash=2,loose_dog=5
+CYC 775141 5 2 2 10 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 775141 6 1 1 9 loose_dog=5,cat_dash=3
+CYC 775141 7 1 1 9 cat_dash=3,loose_dog=5
+CYC 775141 8 1 1 9 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 775141 9 2 2 9 loose_dog=5,cat_dash=2
+CYC 775141 10 1 1 10 loose_dog=6,cat_dash=3
+CYC 775141 11 1 1 8 loose_dog=5,cat_dash=2
+CYC 775141 12 2 2 9 loose_dog=3,cat_dash=4
+CYC 775141 13 0 0 9 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 775141 14 2 2 10 cat_dash=5,loose_dog=3
+CYC 775172 2 3 3 12 cat_dash=4,loose_dog=5
+CYC 775172 3 1 1 11 charging_dog=3,loose_dog=4,cat_dash=3
+CYC 775172 4 2 2 12 charging_dog=1,loose_dog=5,cat_dash=4
+CYC 775172 5 0 0 10 charging_dog=1,cat_dash=4,loose_dog=5
+CYC 775172 6 2 2 10 cat_dash=4,loose_dog=4
+CYC 775172 7 2 2 8 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 775172 8 3 3 10 loose_dog=4,cat_dash=3
+CYC 775172 9 2 2 9 loose_dog=3,cat_dash=4
+CYC 775172 10 1 1 8 cat_dash=3,loose_dog=4
+CYC 775172 11 2 2 9 charging_dog=1,loose_dog=2,cat_dash=4
+CYC 775172 12 1 1 9 charging_dog=1,loose_dog=2,cat_dash=5
+CYC 775172 13 3 3 8 cat_dash=4,loose_dog=1
+CYC 775172 14 2 2 8 loose_dog=4,cat_dash=2
+CYC 775203 2 2 2 10 loose_dog=4,cat_dash=4
+CYC 775203 3 1 1 10 charging_dog=3,cat_dash=3,loose_dog=3
+CYC 775203 4 3 3 12 charging_dog=1,cat_dash=3,loose_dog=5
+CYC 775203 5 1 1 10 loose_dog=5,cat_dash=4
+CYC 775203 6 1 1 9 loose_dog=4,cat_dash=4
+CYC 775203 7 3 3 11 loose_dog=5,cat_dash=3
+CYC 775203 8 2 2 9 cat_dash=3,loose_dog=4
+CYC 775203 9 2 2 9 cat_dash=4,loose_dog=3
+CYC 775203 10 1 1 8 loose_dog=4,cat_dash=3
+CYC 775203 11 3 3 8 charging_dog=1,loose_dog=4
+CYC 775203 12 1 1 10 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 775203 13 2 2 9 loose_dog=3,cat_dash=4
+CYC 775203 14 2 2 10 loose_dog=4,cat_dash=4
+CYC 775234 2 3 3 10 cat_dash=4,loose_dog=3
+CYC 775234 3 1 1 10 charging_dog=2,cat_dash=4,loose_dog=3
+CYC 775234 4 2 2 11 loose_dog=4,cat_dash=5
+CYC 775234 5 3 3 11 loose_dog=4,cat_dash=4
+CYC 775234 6 2 2 9 cat_dash=4,loose_dog=3
+CYC 775234 7 1 1 9 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 775234 8 1 1 9 cat_dash=4,loose_dog=4
+CYC 775234 9 2 2 8 loose_dog=4,cat_dash=2
+CYC 775234 10 2 2 9 loose_dog=4,cat_dash=3
+CYC 775234 11 1 1 9 cat_dash=3,loose_dog=5
+CYC 775234 12 2 2 9 loose_dog=4,cat_dash=3
+CYC 775234 13 3 3 10 charging_dog=1,loose_dog=2,cat_dash=4
+CYC 775234 14 1 1 9 cat_dash=4,loose_dog=4
+CYC 775266 2 2 2 10 loose_dog=5,cat_dash=3
+CYC 775266 3 2 2 13 charging_dog=3,cat_dash=4,loose_dog=4
+CYC 775266 4 1 1 10 cat_dash=4,loose_dog=5
+CYC 775266 5 3 3 10 cat_dash=3,loose_dog=4
+CYC 775266 6 2 2 10 loose_dog=4,cat_dash=4
+CYC 775266 7 3 3 10 loose_dog=5,cat_dash=2
+CYC 775266 8 2 2 9 loose_dog=5,cat_dash=2
+CYC 775266 9 1 1 9 cat_dash=4,loose_dog=4
+CYC 775266 10 2 2 10 charging_dog=1,loose_dog=5,cat_dash=2
+CYC 775266 11 2 2 10 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 775266 12 3 3 10 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 775266 13 3 3 10 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 775266 14 3 3 8 cat_dash=2,loose_dog=3
+CYC 775297 2 2 2 11 cat_dash=4,loose_dog=5
+CYC 775297 3 3 3 12 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 775297 4 3 3 11 loose_dog=3,cat_dash=5
+CYC 775297 5 3 3 11 cat_dash=3,loose_dog=5
+CYC 775297 6 2 2 10 loose_dog=6,cat_dash=2
+CYC 775297 7 2 2 9 loose_dog=4,cat_dash=3
+CYC 775297 8 2 2 9 loose_dog=4,cat_dash=3
+CYC 775297 9 2 2 9 cat_dash=2,loose_dog=5
+CYC 775297 10 2 2 10 loose_dog=5,cat_dash=3
+CYC 775297 11 2 2 10 loose_dog=4,cat_dash=4
+CYC 775297 12 3 3 11 cat_dash=4,loose_dog=4
+CYC 775297 13 1 1 9 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 775297 14 2 2 9 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 775327 2 3 3 10 cat_dash=2,loose_dog=5
+CYC 775327 3 3 3 11 charging_dog=2,loose_dog=4,cat_dash=2
+CYC 775327 4 3 3 10 loose_dog=5,cat_dash=2
+CYC 775327 5 3 3 12 loose_dog=5,cat_dash=4
+CYC 775327 6 3 3 9 loose_dog=3,cat_dash=3
+CYC 775327 7 2 2 9 loose_dog=5,cat_dash=2
+CYC 775327 8 1 1 8 charging_dog=1,cat_dash=5,loose_dog=1
+CYC 775327 9 1 1 10 charging_dog=1,cat_dash=4,loose_dog=4
+CYC 775327 10 2 2 9 loose_dog=3,cat_dash=4
+CYC 775327 11 3 3 11 cat_dash=4,loose_dog=4
+CYC 775327 12 3 3 10 cat_dash=4,loose_dog=3
+CYC 775327 13 1 1 10 loose_dog=5,cat_dash=4
+CYC 775327 14 3 3 9 cat_dash=3,loose_dog=3
+CYC 775358 2 3 3 12 loose_dog=5,cat_dash=4
+CYC 775358 3 2 2 11 charging_dog=2,cat_dash=3,loose_dog=4
+CYC 775358 4 3 3 11 loose_dog=4,cat_dash=4
+CYC 775358 5 2 2 12 loose_dog=6,cat_dash=4
+CYC 775358 6 2 2 8 charging_dog=1,cat_dash=4,loose_dog=1
+CYC 775358 7 3 3 11 loose_dog=5,cat_dash=3
+CYC 775358 8 1 1 9 cat_dash=3,loose_dog=5
+CYC 775358 9 1 1 9 loose_dog=4,cat_dash=4
+CYC 775358 10 3 3 10 cat_dash=3,loose_dog=4
+CYC 775358 11 2 2 8 charging_dog=1,cat_dash=2,loose_dog=3
+CYC 775358 12 2 2 10 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 775358 13 1 1 9 cat_dash=4,loose_dog=4
+CYC 775358 14 3 3 9 loose_dog=3,cat_dash=3
+CYC 775389 2 3 3 10 loose_dog=4,cat_dash=3
+CYC 775389 3 2 2 12 charging_dog=3,cat_dash=3,loose_dog=4
+CYC 775389 4 2 2 11 loose_dog=5,cat_dash=4
+CYC 775389 5 2 2 10 loose_dog=5,cat_dash=3
+CYC 775389 6 1 1 9 loose_dog=5,cat_dash=3
+CYC 775389 7 3 3 9 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 775389 8 2 2 10 charging_dog=1,loose_dog=3,cat_dash=4
+CYC 775389 9 2 2 10 loose_dog=4,cat_dash=4
+CYC 775389 10 1 1 11 cat_dash=4,loose_dog=6
+CYC 775389 11 2 2 9 loose_dog=4,cat_dash=3
+CYC 775389 12 2 2 9 charging_dog=1,loose_dog=5,cat_dash=1
+CYC 775389 13 2 2 9 cat_dash=2,loose_dog=5
+CYC 775389 14 2 2 8 charging_dog=1,cat_dash=2,loose_dog=3
+CYC 775420 2 3 3 12 loose_dog=6,cat_dash=3
+CYC 775420 3 2 2 11 charging_dog=3,cat_dash=1,loose_dog=5
+CYC 775420 4 2 2 11 cat_dash=4,loose_dog=5
+CYC 775420 5 3 3 12 loose_dog=5,cat_dash=4
+CYC 775420 6 0 0 8 cat_dash=4,loose_dog=4
+CYC 775420 7 0 0 10 loose_dog=6,cat_dash=4
+CYC 775420 8 0 0 9 charging_dog=1,cat_dash=3,loose_dog=5
+CYC 775420 9 2 2 9 cat_dash=4,loose_dog=3
+CYC 775420 10 2 2 9 loose_dog=4,cat_dash=3
+CYC 775420 11 2 2 10 loose_dog=5,cat_dash=3
+CYC 775420 12 2 2 9 loose_dog=5,cat_dash=2
+CYC 775420 13 1 1 9 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 775420 14 1 1 9 cat_dash=4,loose_dog=4
+CYC 775451 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 775451 3 2 2 11 charging_dog=3,loose_dog=2,cat_dash=4
+CYC 775451 4 2 2 12 loose_dog=6,cat_dash=4
+CYC 775451 5 1 1 10 cat_dash=4,loose_dog=5
+CYC 775451 6 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 775451 7 3 3 11 cat_dash=5,loose_dog=3
+CYC 775451 8 2 2 10 loose_dog=4,cat_dash=4
+CYC 775451 9 2 2 9 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 775451 10 2 2 10 charging_dog=1,loose_dog=5,cat_dash=2
+CYC 775451 11 3 3 10 loose_dog=3,cat_dash=4
+CYC 775451 12 2 2 9 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 775451 13 1 1 9 cat_dash=5,loose_dog=3
+CYC 775451 14 3 3 8 loose_dog=3,cat_dash=2
+CYC 775482 2 2 2 10 loose_dog=5,cat_dash=3
+CYC 775482 3 2 2 12 charging_dog=3,loose_dog=3,cat_dash=4
+CYC 775482 4 3 3 12 charging_dog=1,loose_dog=5,cat_dash=3
+CYC 775482 5 2 2 11 loose_dog=5,cat_dash=4
+CYC 775482 6 2 2 8 loose_dog=4,cat_dash=2
+CYC 775482 7 3 3 10 loose_dog=3,cat_dash=4
+CYC 775482 8 3 3 8 charging_dog=1,loose_dog=3,cat_dash=1
+CYC 775482 9 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 775482 10 2 2 8 cat_dash=2,loose_dog=4
+CYC 775482 11 1 1 8 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 775482 12 2 2 8 cat_dash=3,loose_dog=3
+CYC 775482 13 1 1 9 loose_dog=4,cat_dash=4
+CYC 775482 14 3 3 9 charging_dog=1,cat_dash=2,loose_dog=3
+CYC 775513 2 3 3 10 loose_dog=5,cat_dash=2
+CYC 775513 3 2 2 11 charging_dog=2,cat_dash=2,loose_dog=5
+CYC 775513 4 2 2 12 charging_dog=1,loose_dog=4,cat_dash=5
+CYC 775513 5 3 3 12 cat_dash=4,loose_dog=5
+CYC 775513 6 2 2 8 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 775513 7 2 2 9 cat_dash=3,loose_dog=4
+CYC 775513 8 2 2 9 cat_dash=3,loose_dog=4
+CYC 775513 9 3 3 9 loose_dog=4,cat_dash=2
+CYC 775513 10 3 3 10 cat_dash=3,loose_dog=4
+CYC 775513 11 2 2 10 cat_dash=4,loose_dog=4
+CYC 775513 12 2 2 10 cat_dash=4,loose_dog=4
+CYC 775513 13 2 2 8 cat_dash=4,loose_dog=2
+CYC 775513 14 1 1 8 loose_dog=3,cat_dash=4
+CYC 775545 2 1 1 12 cat_dash=5,loose_dog=6
+CYC 775545 3 2 2 11 charging_dog=3,cat_dash=2,loose_dog=4
+CYC 775545 4 3 3 11 loose_dog=6,cat_dash=2
+CYC 775545 5 3 3 10 charging_dog=1,loose_dog=5,cat_dash=1
+CYC 775545 6 2 2 8 loose_dog=3,cat_dash=3
+CYC 775545 7 1 1 9 loose_dog=4,cat_dash=4
+CYC 775545 8 1 1 10 cat_dash=4,loose_dog=5
+CYC 775545 9 1 1 8 charging_dog=1,cat_dash=4,loose_dog=2
+CYC 775545 10 3 3 10 cat_dash=4,loose_dog=3
+CYC 775545 11 1 1 8 charging_dog=1,cat_dash=3,loose_dog=3
+CYC 775545 12 2 2 9 loose_dog=3,cat_dash=4
+CYC 775545 13 2 2 9 loose_dog=4,cat_dash=3
+CYC 775545 14 2 2 9 loose_dog=5,cat_dash=2
+CYC 775575 2 2 2 11 loose_dog=5,cat_dash=4
+CYC 775575 3 2 2 13 charging_dog=2,cat_dash=4,loose_dog=5
+CYC 775575 4 3 3 12 loose_dog=4,cat_dash=5
+CYC 775575 5 2 2 10 cat_dash=3,loose_dog=5
+CYC 775575 6 1 1 8 loose_dog=3,cat_dash=4
+CYC 775575 7 1 1 9 loose_dog=4,cat_dash=4
+CYC 775575 8 1 1 9 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 775575 9 2 2 9 cat_dash=5,loose_dog=2
+CYC 775575 10 2 2 9 loose_dog=4,cat_dash=3
+CYC 775575 11 3 3 9 charging_dog=1,cat_dash=2,loose_dog=3
+CYC 775575 12 2 2 9 cat_dash=3,loose_dog=4
+CYC 775575 13 2 2 9 loose_dog=5,cat_dash=2
+CYC 775575 14 3 3 9 cat_dash=2,loose_dog=4
+CYC 775606 2 2 2 10 loose_dog=4,cat_dash=4
+CYC 775606 3 1 1 13 charging_dog=3,cat_dash=4,loose_dog=5
+CYC 775606 4 3 3 12 loose_dog=5,cat_dash=4
+CYC 775606 5 2 2 11 cat_dash=4,loose_dog=5
+CYC 775606 6 2 2 9 loose_dog=4,cat_dash=3
+CYC 775606 7 2 2 10 loose_dog=4,cat_dash=4
+CYC 775606 8 2 2 9 cat_dash=2,loose_dog=5
+CYC 775606 9 2 2 9 loose_dog=4,cat_dash=3
+CYC 775606 10 2 2 8 loose_dog=3,cat_dash=3
+CYC 775606 11 2 2 10 cat_dash=3,loose_dog=5
+CYC 775606 12 3 3 10 loose_dog=4,cat_dash=3
+CYC 775606 13 2 2 9 cat_dash=3,loose_dog=4
+CYC 775606 14 3 3 9 charging_dog=1,loose_dog=2,cat_dash=3
+CYC 775637 2 3 3 11 loose_dog=4,cat_dash=4
+CYC 775637 3 1 1 11 charging_dog=1,loose_dog=5,cat_dash=4
+CYC 775637 4 2 2 11 cat_dash=5,loose_dog=4
+CYC 775637 5 2 2 10 cat_dash=3,loose_dog=5
+CYC 775637 6 2 2 9 cat_dash=5,loose_dog=2
+CYC 775637 7 3 3 9 cat_dash=4,loose_dog=2
+CYC 775637 8 2 2 9 cat_dash=4,loose_dog=3
+CYC 775637 9 2 2 8 loose_dog=5,cat_dash=1
+CYC 775637 10 1 1 10 loose_dog=6,cat_dash=3
+CYC 775637 11 2 2 9 cat_dash=1,loose_dog=6
+CYC 775637 12 2 2 7 charging_dog=1,cat_dash=1,loose_dog=3
+CYC 775637 13 1 1 10 cat_dash=5,loose_dog=4
+CYC 775637 14 2 2 10 charging_dog=1,cat_dash=4,loose_dog=3
+CYC 775668 2 3 3 11 loose_dog=5,cat_dash=3
+CYC 775668 3 3 3 12 charging_dog=3,loose_dog=2,cat_dash=4
+CYC 775668 4 1 1 11 loose_dog=6,cat_dash=4
+CYC 775668 5 2 2 11 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 775668 6 2 2 8 charging_dog=1,loose_dog=3,cat_dash=2
+CYC 775668 7 2 2 9 loose_dog=4,cat_dash=3
+CYC 775668 8 0 0 8 cat_dash=4,loose_dog=4
+CYC 775668 9 2 2 9 charging_dog=1,loose_dog=4,cat_dash=2
+CYC 775668 10 1 1 9 charging_dog=1,cat_dash=2,loose_dog=5
+CYC 775668 11 2 2 9 cat_dash=4,loose_dog=3
+CYC 775668 12 1 1 9 loose_dog=4,cat_dash=4
+CYC 775668 13 2 2 10 cat_dash=3,loose_dog=5
+CYC 775668 14 2 2 9 cat_dash=4,loose_dog=3
+CYC 775699 2 3 3 11 cat_dash=4,loose_dog=4
+CYC 775699 3 2 2 12 charging_dog=3,loose_dog=2,cat_dash=5
+CYC 775699 4 2 2 10 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 775699 5 3 3 13 loose_dog=6,cat_dash=4
+CYC 775699 6 3 3 9 loose_dog=3,cat_dash=3
+CYC 775699 7 2 2 10 cat_dash=4,loose_dog=4
+CYC 775699 8 3 3 11 charging_dog=1,cat_dash=3,loose_dog=4
+CYC 775699 9 1 1 8 charging_dog=1,loose_dog=2,cat_dash=4
+CYC 775699 10 1 1 10 charging_dog=1,loose_dog=4,cat_dash=4
+CYC 775699 11 2 2 9 cat_dash=3,loose_dog=4
+CYC 775699 12 2 2 10 cat_dash=3,loose_dog=5
+CYC 775699 13 2 2 9 charging_dog=1,loose_dog=3,cat_dash=3
+CYC 775699 14 3 3 10 loose_dog=3,cat_dash=4
+CYC 775730 2 3 3 11 cat_dash=3,loose_dog=5
+CYC 775730 3 2 2 13 charging_dog=3,cat_dash=4,loose_dog=4
+CYC 775730 4 3 3 11 loose_dog=5,cat_dash=3
+CYC 775730 5 1 1 10 loose_dog=5,cat_dash=4
+CYC 775730 6 1 1 9 loose_dog=5,cat_dash=3
+CYC 775730 7 3 3 10 loose_dog=4,cat_dash=3
+CYC 775730 8 1 1 9 charging_dog=1,loose_dog=4,cat_dash=3
+CYC 775730 9 2 2 8 loose_dog=4,cat_dash=2
+CYC 775730 10 2 2 9 loose_dog=4,cat_dash=3
+CYC 775730 11 3 3 8 loose_dog=4,cat_dash=1
+CYC 775730 12 2 2 10 loose_dog=3,cat_dash=5
+CYC 775730 13 3 3 10 loose_dog=5,cat_dash=2
+CYC 775730 14 2 2 10 cat_dash=3,loose_dog=5
+-- pelican_cyclists_per_run.gd 3283656 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/pelican_cyclists_per_run.gd. Not a green build.
+tools/test.sh probes/pelican_cyclists_per_run.gd  3181.52s user 15.73s system 96% cpu 55:11.02 total

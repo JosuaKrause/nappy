@@ -366,8 +366,9 @@ const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 ##   vertically), plus that margin, plus the ground the gap closes while the badge rises — a figure
 ##   `ResistanceDirector.badge_line()` computes per row, since it depends on the row's own
 ##   `outer_radius` as well as its speed. 311px clears the vertical line and not the sideways one for
-##   either row, so the director starts it within a cone of straight above or below her; where no
-##   such start has a clear run at her, it comes along her own street from the side instead
+##   either row, so the director starts it within a cone of straight above or below her — at a
+##   front door from across the street first, at least this far out — and where no such start has
+##   a clear run at her, it comes along her own street from the side instead
 ##   (`ResistanceDirector._draw_arrival_position()`, `beside_distance()`), and walking away outlasts
 ##   it there.
 ## - **Standing still, it lunges no sooner than `PURSUIT_MIN_NOTICE` (1.5s) after it appears.** The
@@ -1242,6 +1243,28 @@ const WALKER_BODY_SIDESTEP_TILES := 4
 ## she physically takes up. Either may move without the other.
 const PLAYER_BODY_RADIUS := 14.0
 
+## How far into a building the straight line from a source to her has to reach before the building
+## stands between them and the source's excitement stops reaching her, in px measured from the
+## nearest open ground — `CityMap.wall_between()`. *(plaid-wombat, inbox #554: "the blocking should
+## happen in the middle of the wall (or one tile deep)"; inbox #568: "half a tile was only supposed
+## to be done if the wall is only one tile wide otherwise it should be one tile".)*
+##
+## **One tile, wherever the building is thicker than one tile.** So a line that clips a corner, runs
+## along a face or crosses only a building's outer tile blocks nothing, and a building two tiles
+## thick blocks a line across it only along its middle and not within a tile of an open end of it
+## — see `CityMap.wall_between()`. It has to stay **at most `TILE_SIZE`**, the
+## depth `CityMap.wall_between()` can answer from a tile's eight neighbours alone, and at least
+## `THIN_WALL_SHIELD_DEPTH`. `tests/test_wall_shield.gd` holds both.
+const WALL_SHIELD_DEPTH := float(TILE_SIZE)
+
+## The same depth inside a wall only one tile thick, which never has a point a whole tile from open
+## ground: **half a tile, its middle**, so a line across it is still blocked there, square or
+## slanted, anywhere but within half a tile of an open end of it. It has to stay **over
+## `PLAYER_BODY_RADIUS`**, or a pram whose body pokes into a thin wall's edge is shielded by its own
+## overlap, and **at most half a tile**, or a one-tile wall could never block anything.
+## `tests/test_wall_shield.gd` holds both.
+const THIN_WALL_SHIELD_DEPTH := TILE_SIZE * 0.5
+
 ## Centre-to-centre distance at which the player and a pedestrian are touching.
 ##
 ## It has to be **under half a lane spacing**, and that is the whole of why it is 14 rather than a
@@ -1559,6 +1582,25 @@ func offscreen_boundary(heading: Vector2) -> float:
 func min_offscreen_boundary() -> float:
 	return VIEW_HALF_EXTENT.y
 
+# The page's counter counts encounters (`EncounterWatch`, docs/TELEMETRY.md, "The page counts
+# visits"). None of these four changes anything a player can feel: they decide only what is sent.
+
+## How long an event instance has to have been off screen, in seconds, before coming back counts as
+## a new encounter rather than the one it left. *(misty-newt, the player: "I would define the gap as
+## left the screen and encountered again at a later time (eg 5s). this should also apply to seen.")*
+const ENCOUNTER_GAP := 5.0
+## The share of what is drawn for an instance that has to be inside the view for it to count as
+## seen: a sliver at the edge does not. *(misty-newt: "(fully; or reasonably) visible on screen
+## (just a part or too far off the edge doesn't count)".)*
+const ENCOUNTER_SEEN_SHARE := 0.8
+## How much of a full meter an exciting instance has to land on her within one encounter for the
+## encounter to be meaningful — the player's "influence of the event reached a certain threshold".
+const ENCOUNTER_INFLUENCE_POINTS := METER_MAX * 0.1
+## A run that starts again less than this many seconds after she stopped running is the same bout
+## of running. *(misty-newt: "we can count the number of running excluding gaps smaller than
+## 10s".)*
+const RUN_BOUT_GAP := 10.0
+
 ## The default seconds a row travelling toward her has to still be off screen once it is created, at
 ## the speed the gap is actually closing. *(2026-09-07: "events that go towards the player (biker /
 ## pursuing dog) should at least be 200ms off screen with a warning.")*
@@ -1594,6 +1636,47 @@ const AHEAD_MIN_SPEED := 40.0
 ## Seconds between two `AHEAD` events, so the day's allowance is spread over the walk rather
 ## than spent in the first ten seconds. The director rolls within this band.
 const AHEAD_INTERVAL := Vector2(11.0, 26.0)
+
+## Marbles per unit of `EventDef.weight` in the bag the director draws her route's events from
+## (`EventDirector`, `MarbleBag.in_proportion()`), rounded, at least one a row. *(olive-koala,
+## statement 2: "events should use the marble bag approach as well. that way we can control what
+## the player sees on their route".)* The bag is the stretch over which the mix is exact, so it is
+## sized to about a day's worth of what she meets: at 2 the rows' weights (2.5, 1.5 and 3.0) make a
+## bag of 14 — 16 on day 3, with `ROUTE_BAG_MARBLES_OF`'s dogs — against the ten or so a whole day
+## of walking at `AHEAD_INTERVAL` hands out (`tests/probes/olive_badger_route_mix.gd` counts them),
+## and every weight comes out whole.
+const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
+
+## Rows whose marbles in her route's bag are set here rather than by `ROUTE_BAG_MARBLES_PER_WEIGHT`
+## times their weight, because the weight is not only the bag's: the dawn's weighted roll reads it
+## on every day the row is placed. *(inbox #566 in feathery-stork: "if we want to change the probability then we can
+## change the bag -- I'd say we could do 2 dogs -- we don't need the charging dog that often and in
+## 17 rolls there are two guaranteed ones".)* `charging_dog` is in the bag only on day 3, the one
+## day it is director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`)
+## and takes none of these, so with the lesson and these two `max_per_day`'s 3 rarely binds.
+const ROUTE_BAG_MARBLES_OF := {"charging_dog": 2}
+
+## How many of the events placed on her route after day 6's mark a man shouting is one of: the
+## route's bag is rigged (`MarbleBag.rig()`) with a bag of this many marbles, one `homeless_yeller`
+## and the rest drawn from the bag she was drawing from. *(olive-koala, statement 2: "after touching
+## the mark a marble bag with 1/3 chance of yeller should be put in so the yeller is guaranteed to
+## encounter a yeller in the next three events" · inbox #561 in coral-bunny, on the size of a rigged bag: "x
+## defines how soon we want to get the guaranteed event", and, told how sparse the route's events
+## are: "maybe let's make the other rigged bags smaller, too".)* The second of the next two: at
+## `AHEAD_INTERVAL`, within a minute of walking.
+const TASK_CONTACT_WITHIN_THE_NEXT := 2
+
+## The same for day 11: once she has read its mark, a second loudspeaker mast is put on her route
+## within this many events, beside the one near the mark the task points at first. *(inbox #561 in coral-bunny:
+## "day 11 is going to be a x=3", then "let's make the other rigged bags smaller".)*
+const MAST_WITHIN_THE_NEXT := 2
+
+## The same for each of the return leg's patrols (`RETURN_PATROLS_PER_ACT`): rigged into a bag of
+## this many as the one before it is handed out, so they come one after another inside the leg.
+## *(inbox #561 in coral-bunny, of the return patrols: "they will need rigged bags".)* Two, with
+## `RETURN_PATROL_INTERVAL` between handouts, is a patrol every 18-32s of walking, which lands one or
+## two inside a return leg rather than all of them.
+const RETURN_PATROL_WITHIN_THE_NEXT := 2
 
 ## Extra `police_patrol` rows the return leg owes in acts III and IV, one entry per act —
 ## `Tuning.act_for_day()` is 1-based, so `RETURN_PATROLS_PER_ACT[act - 1]`. Acts I and II carry

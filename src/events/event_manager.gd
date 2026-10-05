@@ -195,6 +195,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	_hard_failed = false
 	_struck_by = ""
 	_day = day
+	_encounters.day = day
 	_consumed = consumed_one_shots
 	_walking_the_finale = false
 	# The corridor the city grew this morning, before it placed its closures off it. Passed rather
@@ -331,7 +332,8 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 					_siting.fronts = _city.poster_walls().fronts()
 			# The first attempt's one-time scans, done here rather than mid-walk. See `prepare()`.
 			_siting.prepare(plan.def, _everything_but(plan))
-	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"), _siting)
+	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"), _siting,
+			GameState.resistance_progress)
 	stream_around(focus)
 
 ## Clears whatever was here and takes the escape's whole plan as given.
@@ -377,6 +379,7 @@ func start_recipe(plans: Array[EventScheduler.Planned], day: int, focus: Vector2
 		if plan.is_placed():
 			_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 	_day = day
+	_encounters.day = day
 	_walking_the_finale = finale
 	_recipe_plan = true
 
@@ -402,6 +405,7 @@ func clear() -> void:
 	_pending.clear()
 	_pelican_rng = null
 	_unseen_pelicans.clear()
+	_encounters.end_day()
 	_broadcast_clock = 0.0
 
 ## Brings into the world everything within reach of a point, and takes away what has gone out
@@ -669,9 +673,11 @@ func _ride_as_a_pelican(instance: EventInstance) -> void:
 ## day in a run, so watching it costs nothing on the rest. Emptied by `clear()`.
 var _unseen_pelicans: Array = []
 
-## `EventBus.pelican_sighted` for each pelican on its first frame on screen — the same box
-## `_summon_what_has_been_sighted()` asks for the fire, `_is_on_screen()` — and then never again for
-## that pelican. Telemetry only: it decides nothing and changes nothing gameplay reads.
+## `EventBus.pelican_sighted` for each pelican on its first frame properly on screen — the same test
+## an encounter's seen makes, `Tuning.ENCOUNTER_SEEN_SHARE` of its drawn box visible to her
+## (`_visible`, `VisibleView`), so `pelican-seen` and `seen-pelican` answer the same question — and
+## then never again for that pelican. Telemetry only: it decides nothing and changes nothing gameplay
+## reads.
 func _report_the_pelicans_in_view() -> void:
 	if _unseen_pelicans.is_empty():
 		return
@@ -680,11 +686,49 @@ func _report_the_pelicans_in_view() -> void:
 		if not is_instance_valid(pelican) or (pelican as EventInstance).is_finished:
 			continue
 		var instance := pelican as EventInstance
-		if _is_on_screen(instance.global_position):
+		var box := instance.drawn_box()
+		var world := Rect2(box.position + instance.global_position, box.size)
+		if _visible.share_of(world) >= Tuning.ENCOUNTER_SEEN_SHARE:
 			EventBus.pelican_sighted.emit(instance)
 		else:
 			still_unseen.append(instance)
 	_unseen_pelicans = still_unseen
+
+## The page's counter's encounters and bouts of running — see `EncounterWatch`. Telemetry only: it
+## reads and decides nothing gameplay reads.
+var _encounters := EncounterWatch.new()
+
+## Asks `_encounters` about this frame, while a day is being played: not behind the title screen,
+## which runs the city with her stood aside out of the `player` group, and not on the escape, which
+## is not a day and has `nappy-escape-*` of its own.
+func _watch_the_encounters(delta: float) -> void:
+	if _walking_the_finale or not _player.is_in_group("player"):
+		return
+	var stroller := _player as Stroller
+	var running := stroller != null and stroller.run_excess_ratio() > 0.0
+	_encounters.tick(delta, _instances, _visible, _player.global_position, running)
+
+## What she can see this frame, for the page's counter alone — the encounters and `pelican-seen`.
+## Set once a frame by `_look_through_the_camera()`.
+var _visible := VisibleView.new()
+
+## Tells `_visible` this frame's view and scheme: the camera's view, `Tuning.VIEW_HALF_EXTENT` about
+## the centre of the screen, which her look-ahead moves off her a little, and whether the on-screen
+## controls are the joystick scheme, whose rings and buttons cover the view's bottom corners
+## *(inbox #581, the player: "yes, everything should follow this (and treat it depending on the
+## input mode)")*.
+func _look_through_the_camera() -> void:
+	var stroller := _player as Stroller
+	var centre := stroller.camera_screen_center() if stroller else _player.global_position
+	if _controls == null or not is_instance_valid(_controls):
+		_controls = get_tree().get_first_node_in_group(HelpText.CONTROLS_GROUP) as TouchControls
+	var joystick := _controls != null and is_instance_valid(_controls) \
+			and _controls.controls_mode() == ControlsMode.Mode.JOYSTICK
+	_visible.look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
+
+## The on-screen controls, found once — `null` where nothing built them (a rig, a test), which is
+## the tap scheme's whole view.
+var _controls: TouchControls = null
 
 ## What the run log and the page's counter call the event whose lethal reach ended today
 ## (`EventInstance.logged_name()` — `pelican` for a pelican, otherwise its row's id), or "" when no
@@ -817,11 +861,12 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	return plan
 
 ## She has crossed a district door: let out on its far side after the inspection
-## (`_release_finished_door_detentions()`), or walked through its line (`_watch_the_door_lines()`).
-## `at` is the body of the door that saw it and `axis` the street's own axis, which every body of
-## one door shares, so a listener can tell which door it was. Day 9's task is completed on it
-## (`ResistanceDirector._on_door_crossed()`).
-signal door_crossed(at: Vector2, axis: Vector2)
+## (`_release_finished_door_detentions()`, `inspected` true), or walked through its line under a
+## raised boom (`_watch_the_door_lines()`, `inspected` false, which sets the door's own guard on her
+## as well). `at` is the body of the door that saw it and `axis` the street's own axis, which every
+## body of one door shares, so a listener can tell which door it was. Day 9's task is completed on
+## it either way, and sends its trap only after an inspection (`ResistanceDirector._on_door_crossed()`).
+signal door_crossed(at: Vector2, axis: Vector2, inspected: bool)
 
 ## Silences one mast by id, for the rest of the day — a mast still stands once silenced, with no
 ## arcs and no field, so this sets `Planned.silenced` and its live instance's own mirror rather
@@ -1072,7 +1117,9 @@ func _tick_the_events(delta: float) -> void:
 		if not _recipe_plan:
 			_place_what_is_owed_ahead(delta)
 		_summon_what_has_been_sighted()
+		_look_through_the_camera()
 		_report_the_pelicans_in_view()
+		_watch_the_encounters(delta)
 		_run_the_warnings(delta, _player.global_position)
 		_tell_them_where_she_is()
 		_warn_about_the_ground_she_is_on()
@@ -1276,11 +1323,14 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	var body := _player as CharacterBody2D
 	if not body:
 		return
-	var due := _director.due(delta, body.global_position, body.velocity)
+	var due := _director.due(delta, body.global_position, body.velocity, _plans)
 	if due.is_empty():
 		return
 	var def := due[0] as EventDef
 	var path := due[1] as PackedVector2Array
+	if due.size() > 2:
+		_put_down_on_her_route(due[2] as EventScheduler.Planned, body)
+		return
 	if def.warns_before_it_exists():
 		_warn_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
 		return
@@ -1296,6 +1346,45 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	Telemetry.note("ahead", "%s %s %.0fpx in front of her at %s" % [
 		def.id, verb, lead,
 		TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+
+## A place a marble from her route's bag named — the man shouting a rigged bag puts on it — sited by
+## the director ahead of her on the branch she is walking (`EventDirector._place_on_her_route()`).
+## It joins the day's plan with the bookkeeping a dawn placement had: its body recorded per tile, the
+## way `queue_a_mast()` records a mast's, and it streams in like any planned row once she walks on.
+func _put_down_on_her_route(plan: EventScheduler.Planned, body: Node2D) -> void:
+	# A mast is a mast like the one `queue_a_mast()` adds: it broadcasts on the one clock, is
+	# silenced by `silence_mast()` and counts for `silence_all_masts()`.
+	if plan.def.id == "loudspeaker":
+		plan.mast_id = EventScheduler.added_mast_id(plan.position)
+	_plans.append(plan)
+	_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
+	# Where, because nothing else records it: the siting depends on the walk she took.
+	Telemetry.note("ahead", "%s is put on her route %.0fpx ahead of her at %s, %s of where she is at %s"
+			% [plan.def.id, plan.position.distance_to(body.global_position),
+			TelemetryLog.tile(_map.world_to_tile(plan.position)),
+			_heading_name((body as CharacterBody2D).velocity.normalized()),
+			TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+
+## **Rigs her route so `ids` are among the next `size` events placed on it** — see
+## `EventDirector.rig_her_route()` and `MarbleBag.rig()`. A place among them is sited ahead of her
+## by the day's placement context, which is built here if the day had none, and its first scans are
+## done now rather than on the frame it is sited. Answers the rigged bag's marbles.
+func rig_her_route(ids: Array[String], size: int) -> Array:
+	# A rig that never started a day has no route to rig, and building it a placement context for
+	# nothing would grow a route tree to no end.
+	if not _director.route_bag():
+		return []
+	if not _siting:
+		_siting = EventScheduler.WalkSiting.new(_day, _map, _day_tree if _day_tree \
+				else RouteTree.for_day(_map, _day), GameState.settled_this_act(), _day_doors)
+		if _city and _city.poster_walls():
+			_siting.fronts = _city.poster_walls().fronts()
+	var rigged := _director.rig_her_route(ids, size, GameState.resistance_progress, _siting)
+	for id in ids:
+		var row := _director.route_row(id)
+		if row and row.spawn_mode_on(_day) == EventDef.SpawnMode.MAP:
+			_siting.prepare(row, _plans)
+	return rigged
 
 ## A row the director sited down her own line, warned first: the badge goes up at once, its place
 ## follows her just off screen in `direction` on a sidewalk or a square (`PendingWarning.
@@ -1343,6 +1432,10 @@ func _site_what_is_on_her_way(delta: float) -> void:
 	for plan in moved:
 		_map.release_obstruction(plan.get_instance_id())
 		_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
+		# A mast's id is its foot (`EventScheduler.added_mast_id()`), so a mast moved before it was
+		# ever in the world is named by where it now stands.
+		if plan.mast_id != "":
+			plan.mast_id = EventScheduler.added_mast_id(plan.position)
 		# Where and why, because nothing else records it: the siting depends on the walk she took
 		# and no seed reproduces it from outside. The same `ahead` entry the director's crossings
 		# write, for the same reason.
@@ -1667,7 +1760,7 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 		body.show_after_inspection()
 		body.release_camera_focus()
 		_latch_everything_she_was_let_out_into(released_at)
-		door_crossed.emit(instance.global_position, axis)
+		door_crossed.emit(instance.global_position, axis, true)
 		Telemetry.note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
 			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
 			instance.def.detain_seconds, _compass_of(axis, released_along)])
@@ -1757,7 +1850,7 @@ func _watch_the_door_lines() -> void:
 	if not crossed:
 		return
 	_walked_under += 1
-	door_crossed.emit(crossed.global_position, crossed.facing_now())
+	door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 	Telemetry.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
 		crossed.def.id, TelemetryLog.tile(_map.world_to_tile(crossed.global_position)),
 		_heading_name(here - was),
@@ -1805,7 +1898,11 @@ func _set_a_guard_on_her(crossed: EventInstance, here: Vector2) -> void:
 ## hold starts gives up too, since nothing here asks whether it is over — the smallest reading of
 ## "the whole pursuit has been accomplished" once she is inside a hut of her own accord. The
 ## roadblock's hunting guard and the escape's masked pursuer are never `_guard_after_her`, so a hold
-## never reaches them.
+## never reaches them — and neither is the robber a done task sends after her
+## (`ResistanceDirector._set_the_trap_on_her()`), on day 9 the one sent the moment the inspection
+## lets her through: a hut is not a hiding place from him, and stepping back into one with him after
+## her holds her where he can catch her. *(2026-10-04, the player: "you shouldn't try to cheat it by
+## going back in the hut -- that should be fatal by the robber".)*
 func _end_the_guard_for_a_hold() -> void:
 	if is_instance_valid(_guard_after_her) \
 			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving:

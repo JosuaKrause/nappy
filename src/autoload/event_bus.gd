@@ -103,6 +103,23 @@ signal pursuit_began(id: String)
 ## visits".
 signal pursuit_ended(id: String, shaken_off: bool)
 
+# Encounters and bouts of running, for the page's counter — `EncounterWatch`, which `EventManager`
+# asks once a physics frame, is the one emitter of all three. `day` is the day they happened on,
+# carried rather than read from `GameState` because an influence that waited is sent as late as the
+# next day's start. `name` is `EventInstance.logged_name()`: the row's own `def.id`, or `pelican`.
+# Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
+
+## An encounter's instance properly on screen for the first time in that encounter — once per
+## encounter.
+signal encounter_seen(day: int, name: String)
+## An encounter became meaningful — once per encounter at most. `seen` is whether it was seen in
+## that encounter: a meaningful encounter is held until it is seen, and sent with `seen` false only
+## once it is over without having been.
+signal encounter_influenced(day: int, name: String, seen: bool)
+## She began running after at least `Tuning.RUN_BOUT_GAP` of not running, or for the first time in
+## the day.
+signal run_bout_began(day: int)
+
 # The pelican's own moments, the one rider in about four hundred drawn as a pelican
 # (`EventInstance.is_pelican`). *(Inbox #527 in azure-tapir, the player: "I explicitly asked for specific pelican
 # telemetry. when the pelican spawns, when it's on screen, and when it's hitting the player. it
