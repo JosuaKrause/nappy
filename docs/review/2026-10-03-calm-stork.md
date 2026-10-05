@@ -9,9 +9,7 @@ their source and separate action checks.
 Judge whether pedestrians feel consistently numerous throughout the choice, bird and
 dog scenes, including the side streets. The bird flock occupies an industrial block
 surrounded by ordinary side streets. The dog scene's foreground tree stands across
-the road, leaving the player clear. The title walk is inside the park near its edge,
-with the road visible. These use existing game objects and art.
+the road, leaving the player clear. These use existing game objects and art.
 
 The power-station examples and scenes 7–10 are accepted. This review asks about the
-revised four compositions only. Final movie ordering, captions, timing and loaded-render
-reproducibility remain [M204, the trailer cut](../todo/2026-09-25-M204/README.md).
+revised four compositions only. The trailer itself is [M204](../decisions/2026-09-25-M204.md).
