@@ -94,6 +94,10 @@ failure fails the command, and a sparse pass never claims to have checked the om
 A tool's own header and `--help` are still the source of truth for its exact flags; this table
 says what it is *for*, not its full usage.
 
+**Never `git stash` in an agent worktree.** The stash is one stack shared by every worktree of
+the repository, so a pop can apply a sibling agent's stash; test another head in a temporary
+`git worktree add --detach <path> <sha>` and set work aside with a WIP commit (**orchestrating**).
+
 **A `git grep` with neither `-I` nor a text-only pathspec is denied, not run, and so is a mention
 of the words.** `.claude/hooks/git-grep-guard.sh` is a `PreToolUse` hook rather than a catalogued
 tool: it fires on every `Bash` and `Monitor` call (and, through `tools/codex-hooks.py`, on
