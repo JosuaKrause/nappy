@@ -5,13 +5,13 @@
   "setup": {"tutorial_complete": true, "day": 14, "parent": "mother", "player": {"at": "start", "facing": "east", "sleep": 100},
     "progression": {"escape_part": "city", "blackout": true},
     "events": [{"name": "guards", "row": "roadblock", "at": "guards"}]},
-  "playback": {"walk": "1e2W", "duration": 3, "capture_at": 2, "camera": {"zoom": 1.35},
-    "observations": [{"tick": 57, "subject": "player", "condition": "running"},
-      {"tick": 60, "subject": "player", "condition": "carrying"},
-      {"tick": 60, "subject": "guards", "condition": "pursuing"},
-      {"tick": 60, "subject": "player", "condition": "running"},
-      {"tick": 62, "subject": "guards", "condition": "pursuing"},
-      {"tick": 62, "subject": "guards", "condition": "visible"},
-      {"tick": 62, "subject": "player", "condition": "running"},
-      {"tick": 62, "subject": "player", "condition": "carrying"}]}
+  "playback": {"walk": "0.7e0.4w1.15W", "duration": 2.25, "capture_at": 1.25, "camera": {"zoom": 1.35},
+    "observations": [{"tick": 38, "subject": "player", "condition": "carrying"},
+      {"tick": 38, "subject": "guards", "condition": "visible"},
+      {"tick": 38, "subject": "guards", "condition": "moving"},
+      {"tick": 38, "subject": "player", "condition": "running"},
+      {"tick": 67, "subject": "guards", "condition": "visible"},
+      {"tick": 67, "subject": "guards", "condition": "moving"},
+      {"tick": 67, "subject": "player", "condition": "running"},
+      {"tick": 67, "subject": "player", "condition": "carrying"}]}
 }

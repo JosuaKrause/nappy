@@ -448,6 +448,56 @@ visible_motion_check() {
     fi
 }
 
+# Keeps five native frames around the retained cut's first frame. A post-fade contact sheet can show
+# that an entrance looks smooth, but only these excluded-lead-in frames prove the actor and camera
+# had already settled before the editor began the shot. The build directory is ignored; source
+# control never receives these captures.
+write_cut_entry_evidence() {
+    local name="$1" dir="$2" out="$OUT_DIR/evidence/$name/cut-entry"
+    local start frame i=0 last_path last_frame actual_offset actual_seconds clamped
+    local fifth second_fifth one_frame_seconds
+    start="$(awk -v a="$(shot_field "$name" in 0.5)" -v f="$FPS" \
+        'BEGIN { printf "%d\n", int(a * f + 0.5) }')"
+    fifth="$(awk -v f="$FPS" 'BEGIN { printf "%d\n", int(0.2 * f + 0.5) }')"
+    second_fifth="$(awk -v f="$FPS" 'BEGIN { printf "%d\n", int(0.4 * f + 0.5) }')"
+    one_frame_seconds="$(awk -v f="$FPS" 'BEGIN { printf "%.9f\n", -1 / f }')"
+    local offsets=($((-fifth)) -1 0 "$fifth" "$second_fifth")
+    local requested_seconds=(-0.2 "$one_frame_seconds" 0 0.2 0.4)
+    last_path="$(printf '%s\n' "$dir"/frame*.png | tail -1)"
+    last_frame="${last_path##*frame}"; last_frame="${last_frame%.png}"
+    last_frame=$(( 10#$last_frame ))
+    rm -rf "$out"; mkdir -p "$out"
+    for offset in "${offsets[@]}"; do
+        frame=$(( start + offset ))
+        clamped=false
+        if (( frame < 0 )); then frame=0; clamped=true; fi
+        if (( frame > last_frame )); then frame="$last_frame"; clamped=true; fi
+        actual_offset=$(( frame - start ))
+        actual_seconds="$(awk -v n="$actual_offset" -v f="$FPS" \
+            'BEGIN { printf "%.9f\n", n / f }')"
+        cp "$(printf '%s/frame%08d.png' "$dir" "$frame")" "$out/sample-$i.png"
+        jq -nc --arg file "sample-$i.png" --argjson requested_seconds "${requested_seconds[$i]}" \
+            --argjson requested_frames "$offset" --argjson source_frame "$frame" \
+            --argjson actual_frames "$actual_offset" --argjson actual_seconds "$actual_seconds" \
+            --argjson clamped "$clamped" \
+            '{file:$file,requested_offset_seconds:$requested_seconds,
+              requested_offset_frames:$requested_frames,source_frame:$source_frame,
+              actual_offset_frames:$actual_frames,actual_offset_seconds:$actual_seconds,
+              clamped:$clamped}' >> "$out/samples.jsonl"
+        i=$(( i + 1 ))
+    done
+    jq -s --arg name "$name" --argjson fps "$FPS" --argjson retained_frame "$start" \
+        '{shot:$name,fps:$fps,retained_frame:$retained_frame,samples:.}' \
+        "$out/samples.jsonl" > "$out/index.json"
+    rm "$out/samples.jsonl"
+    ffmpeg -hide_banner -loglevel error -y \
+        -i "$out/sample-0.png" -i "$out/sample-1.png" -i "$out/sample-2.png" \
+        -i "$out/sample-3.png" -i "$out/sample-4.png" \
+        -filter_complex \
+        '[0:v]scale=256:144[a];[1:v]scale=256:144[b];[2:v]scale=256:144[c];[3:v]scale=256:144[d];[4:v]scale=256:144[e];[a][b][c][d][e]hstack=inputs=5[v]' \
+        -map '[v]' -frames:v 1 "$out/contact-sheet.png"
+}
+
 # Encodes shot $1's cut out of the frames in $2 into $3: trimmed to [in, in + length], faded in
 # from and out to black, preceded by `gap` seconds of black and silence.
 encode_shot() {
@@ -811,6 +861,7 @@ case "$MODE" in
         else
             render_frames "$TARGET" "$WORK/frames"
             movie_evidence "$WORK/frames" "$OUT_DIR/evidence/$TARGET" "$FPS" "$TARGET"
+            write_cut_entry_evidence "$TARGET" "$WORK/frames"
             encode_shot "$TARGET" "$WORK/frames" "$WORK/00.mkv"
             rm -rf "$WORK/frames"
         fi
@@ -828,6 +879,7 @@ case "$MODE" in
             else
                 render_frames "$name" "$WORK/frames"
                 movie_evidence "$WORK/frames" "$OUT_DIR/evidence/$name" "$FPS" "$name"
+                write_cut_entry_evidence "$name" "$WORK/frames"
                 encode_shot "$name" "$WORK/frames" "$part"
                 rm -rf "$WORK/frames"
             fi
