@@ -1154,10 +1154,12 @@ heading has to point into the postered wall — at least thirty degrees off its 
 (`PosterWalls.PRESS_INTO`), so a diagonal counts — while her feet are at its face
 (`PosterWalls.PRESS_REACH`, a few pixels past where the pram stops her), for 0.4 seconds
 (`PosterWalls.PRESS_TO_TEAR`). Walking past, even drifting into the wall, tears nothing; a push can
-still happen by accident, which is how it is found. What is read is her steering rather than her
-velocity, since the wall stops the one and not the other. A diagonal slides her along the wall, so
-a push held along a papered wall tears a sheet every 0.4 seconds while she is in front of an
-intact one.
+still happen by accident, which is how it is found, and nothing teaches it: tearing is an easter
+egg, taught by no hint, tutorial or prompt anywhere. What is read is her steering rather than
+her velocity, since the wall stops the one and not the other. A diagonal slides her along the wall,
+and **once a push has torn its first sheet, every intact sheet she slides in front of tears at
+once** while it is held: a push held along a papered wall strips it. Letting go, turning out of the
+wall or stepping back from its face ends the push, and the next one takes the 0.4 seconds again.
 
 The sheet shows one of the three tears and stays torn until a crew, or a dawn, pastes that wall
 again. **A tear costs nothing on the meter and counts for nothing**: it is a gimmick, judged by

@@ -491,6 +491,7 @@ func _save_game_state() -> Dictionary:
 		"completed": GameState.completed_resistance_steps.duplicate(),
 		"failed": GameState.failed_resistance_steps.duplicate(),
 		"scars": GameState.scars.duplicate(true), "sabotage": GameState.sabotage_done,
+		"male": GameState.player_is_male,
 	}
 
 func _restore_game_state(saved: Dictionary) -> void:
@@ -504,6 +505,7 @@ func _restore_game_state(saved: Dictionary) -> void:
 	GameState.failed_resistance_steps.assign(saved["failed"])
 	GameState.scars.assign(saved["scars"])
 	GameState.sabotage_done = saved["sabotage"]
+	GameState.player_is_male = saved["male"]
 
 ## One kept frame starting at `start` and lasting `length`, of which `spent` went to `bucket`.
 func _drive(ledger: FrameLedger, start: int, length: int, bucket: int, spent: int) -> void:
