@@ -802,10 +802,10 @@ measurement is under `docs/evidence/m159-frame-record-2026-10-04/`.
 The game's own `_draw()` overrides each start with `if FrameRecord.on:` and one call that adds 1
 to a per-kind count, so off they pay one static read each. That is acceptable where the timing
 wrap's read was not, because of how often it runs: a frame runs about twenty `_draw()` calls (the
-per-kind means add up to 17.5 to 20.3 a frame in the three desktop records; the retained canvas
+per-kind means add up to 17.6 to 20.3 a frame in the three desktop records; the retained canvas
 items redraw only when something changes) against some 270 timed bodies, and the most in one
 frame was 275, once. One guarded counter costs about 130ns more than the same body without it in
-GDScript's own interpreter (`drew_cost.gd`, off), so about 3µs a frame, and 37µs in the worst
+GDScript's own interpreter (`drew_cost.gd`, off), so about 3µs a frame, and 36µs in the worst
 frame, against a mean frame of 7.9ms. The desktop's full runs with the record off agree: the
 branch's median of six runs is 7.957ms against the base's 7.901ms, inside the runs' own spread
 (`docs/evidence/m159-draw-split-2026-10-04/`).

@@ -7,7 +7,8 @@ extends Node
 ## Built by `main` under `--frame-record` or the page's `?framerecord=1` (`DevFlags.
 ## frame_record_requested()`). It marks the engine's phases for `FrameLedger`: its own physics and
 ## process callbacks run first in their step (`PRIORITY_FIRST`), a child's process callback runs
-## last (`PRIORITY_LAST`), and the renderer's post-draw callback ends the drawing. The named
+## last (`PRIORITY_LAST`), the renderer's pre-draw callback ends `draw` and its post-draw callback
+## ends `render`. The named
 ## systems mark themselves through `FrameRecord`.
 ##
 ## **On the web, a button the page itself draws saves the record** through the browser's own

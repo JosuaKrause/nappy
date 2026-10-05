@@ -98,7 +98,7 @@ a little: the machine's state moves a run's mean frame by half a millisecond or 
   engine that started and ended between two samples would not have been seen. The measured runs are the eighteen accepted, non-warmup ones.
 - **Order.** The run order is the `label`'s number (`runs.tsv`, `started`): in each set a warmup per
   condition, then rounds r1 to r3 rotating the condition order.
-- **Footprint.** Six files in this folder (about 85KB): `README.md`, `analyse.py`, `drew_cost.gd`,
+- **Footprint.** Eight files in this folder (about 94KB): `README.md`, `analyse.py`, `drew_cost.gd`,
   `runs.tsv` (every capture, one row each, 8KB) and each set's `provenance.json` and
   `results.json`. The captures' traces and the six record-on records stay in scratch; the numbers
   taken from them are the columns of `runs.tsv`.

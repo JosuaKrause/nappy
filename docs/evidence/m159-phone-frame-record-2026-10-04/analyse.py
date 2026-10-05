@@ -224,6 +224,8 @@ def over_time(rows: list[Row]) -> None:
                 for r in rows
                 if r["day"] == 1 and low <= r["player_y"] < high and earliest <= seconds(rows, r) < latest
             ]
+            if not rs:
+                continue  # a recording of another route need not pass through every band
             out.append(
                 (
                     f"{low}-{high}",
