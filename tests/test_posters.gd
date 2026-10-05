@@ -396,13 +396,14 @@ func _test_a_held_push_tears_every_sheet_she_slides_past(t) -> void:
 	t.check(torn_count.call() == 1, "and tears once it has passed")
 
 	# The push a player makes: a diagonal held while walking into the wall, never stopping. She
-	# slides at the diagonal's share of her walking speed, so the 0.4s covers about 26px: entering
-	# the wall 20px into the first cell, that sheet is slid past before it elapses and escapes, the
-	# second tears, and every sheet after it comes down as she reaches it.
+	# slides at the speed the other checks here use, so the 0.4s covers about 37px, more than a
+	# 32px cell: entering the wall 20px into the first cell, that sheet is slid past before it
+	# elapses and escapes, the second tears, and every sheet after it comes down as she reaches it
+	# (the old rule restarted the count after each tear and so skipped every second one).
 	paste_all.call()
 	walls._sliding = false
 	walls._pressed_for = 0.0
-	var slide_speed := speed * diagonal.x
+	var slide_speed := speed
 	var x := rect.position.x + 20.0
 	for i in ceili((float(sheets) * Tuning.TILE_SIZE) / slide_speed / step):
 		walls._push_to_tear(step, Vector2(x, y), diagonal)
