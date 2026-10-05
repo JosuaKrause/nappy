@@ -1258,9 +1258,10 @@ const WALL_SHIELD_DEPTH := float(TILE_SIZE)
 
 ## The same depth inside a wall only one tile thick, which never has a point a whole tile from open
 ## ground: **half a tile, its middle**, so a line across it is still blocked there, square or
-## slanted, anywhere but within half a tile of an open end of it. It has to stay **over `PLAYER_BODY_RADIUS`**, or a pram whose body pokes into a thin
-## wall's edge is shielded by its own overlap, and **at most half a tile**, or a one-tile wall could
-## never block anything. `tests/test_wall_shield.gd` holds both.
+## slanted, anywhere but within half a tile of an open end of it. It has to stay **over
+## `PLAYER_BODY_RADIUS`**, or a pram whose body pokes into a thin wall's edge is shielded by its own
+## overlap, and **at most half a tile**, or a one-tile wall could never block anything.
+## `tests/test_wall_shield.gd` holds both.
 const THIN_WALL_SHIELD_DEPTH := TILE_SIZE * 0.5
 
 ## Centre-to-centre distance at which the player and a pedestrian are touching.
