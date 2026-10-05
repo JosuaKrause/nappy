@@ -63,7 +63,7 @@
     },
     {
       "name": "birds",
-      "recipe": "scene-recipes/trailer-birds.json",
+      "recipe": "scene-recipes/trailer-birds-staged.json",
       "motion": true,
       "in": 1.2,
       "length": 4.2,

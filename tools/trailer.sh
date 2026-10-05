@@ -38,8 +38,8 @@ set -euo pipefail
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SHOTS_FILE="$PROJECT_DIR/tools/trailer/shots.json"
-OUT_DIR="$PROJECT_DIR/build/trailer"
+SHOTS_FILE="${TRAILER_SHOTS:-$PROJECT_DIR/tools/trailer/shots.json}"
+OUT_DIR="${TRAILER_OUT:-$PROJECT_DIR/build/trailer}"
 # shellcheck source=tools/lib_dev_flags.sh
 source "$PROJECT_DIR/tools/lib_dev_flags.sh"
 # shellcheck source=tools/lib_movie_evidence.sh

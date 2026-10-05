@@ -120,7 +120,9 @@ installed: the recipe selects its own events. `progression.blackout` turns
 off the street signals. Supported escape pins are trucks, abduction, roadblocks and explosions.
 
 `playback` accepts a timed `walk` script (the same syntax as `--walk`), `duration` in seconds,
-`capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`, `landscape_margin`), `caption`,
+`capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`, `landscape_margin`), `settled_camera` (true: the camera starts settled on her with its look-ahead,
+which the trailer needs so no movie shows it travelling in; the default leaves its smoothing as
+play has it, which the task scenes' observations are written against), `caption`,
 `title` and `observations`. `landscape_margin` grows only the zoom-out's final framing around the
 finite map. In a full-city scene, exterior ground remains unwalkable and loads only when the camera
 can see it. Each observation has a physics `tick`, named `subject` and `condition`:

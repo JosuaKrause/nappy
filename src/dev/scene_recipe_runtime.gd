@@ -236,7 +236,8 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 		for actor: Dictionary in setup.actors:
 			if not background.get("uniform_walkers", false) or actor.kind != "walker":
 				errors.append("background crowd accepts only pinned walkers with uniform_walkers enabled")
-	_keys(playback, ["walk", "duration", "capture_at", "camera", "caption", "title", "observations"],
+	_keys(playback, ["walk", "duration", "capture_at", "camera", "caption", "title", "observations",
+			"settled_camera"],
 			"playback", errors)
 	_number(playback.get("duration", 5), "playback.duration", 1.0 / 60.0, 240, errors)
 	if not errors.is_empty():
@@ -822,7 +823,8 @@ func begin() -> void:
 	# reset its smoothed screen centre once the player's camera owns the viewport, which is true
 	# here. Settle that state before the excluded moving lead-in begins so a movie never records the
 	# camera travelling from its boot position toward an already-moving actor.
-	_settle_starting_camera()
+	if data.get("playback", {}).get("settled_camera", false):
+		_settle_starting_camera()
 	var playback: Dictionary = data.get("playback", {})
 	var camera: Dictionary = playback.get("camera", {})
 	DevRig.apply_zoom(get_viewport().get_camera_2d(), float(camera.get("zoom", 1)))
