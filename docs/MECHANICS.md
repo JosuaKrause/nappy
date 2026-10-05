@@ -1217,6 +1217,13 @@ street, so its one-second badge is the whole of its warning.
 `Tuning.validate_event()` asserts this on load, and `tests/test_events.gd` checks it over
 the whole catalogue, so an unfair event fails loudly rather than quietly ruining a run.
 
+**The contract is for the things that telegraph.** A thing telegraphs its coming only if it goes
+fast, comes toward her, and carries a heavy penalty — it can end the day or hit her hard
+(PLAYTEST-145, statements 18-23; inbox #598: "the telegraphing rule was about heavy penalty not
+*only* lethal"). One that does not — the loose dog and the cat — is outside the screen-edge badge,
+warning-first placement and this contract rather than exempted from them, and is met as it comes
+(`docs/EVENTS.md`, "What telegraphs").
+
 ## Calm zones, and what every other ground does
 
 Parks, quiet squares, forests and courtyards are `CALM` tiles. Inside them:

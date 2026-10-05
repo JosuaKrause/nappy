@@ -637,17 +637,18 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 ## row, the noise for a loud one. The warning was the telegraph, so the thing it warned of is created
 ## past it.
 ##
-## Asked of the game's own path on a real city, every `TOWARD_PLAYER` row warned first: the
-## director's warning (`EventManager._warn_down_her_line()`), run frame by frame with her standing on
-## the arterial's sidewalk (`_run_the_warnings()`), and the instance it creates
-## (`spawn_warned()`). On its first frame it is not telegraphing, its field is undamped, and a lethal
-## row is lethal at its own centre.
+## Asked of the game's own path on a real city, every `TOWARD_PLAYER` row on foot: for one that
+## telegraphs, the director's warning (`EventManager._warn_down_her_line()`), run frame by frame with
+## her standing on the arterial's sidewalk (`_run_the_warnings()`), and the instance it creates
+## (`spawn_warned()`); for one that does not (`loose_dog`), the instance created at once with no
+## warning (`_send_down_her_line()`). On its first frame it is not telegraphing, its field is
+## undamped, and a lethal row is lethal at its own centre.
 func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 	_start(Tuning.RUN_TAUGHT_DAY + 2)
 	var map := _city.map
 	var checked: Array[String] = []
 	for def in EventCatalogue.all():
-		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER or not def.warns_before_it_exists():
+		if not def.comes_down_her_line():
 			continue
 		checked.append(def.id)
 		var her := CrowdLanes.arterial_pavement(map)
@@ -656,16 +657,27 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 				break
 			her.y += Tuning.TILE_SIZE
 		var before := _city.events.instances().duplicate()
-		_city.events._warn_down_her_line(def, her, Vector2.UP)
+		var warnings_before := _city.events.pending_warnings().size()
+		if def.warns_before_it_exists():
+			_city.events._warn_down_her_line(def, her, Vector2.UP)
+		else:
+			_city.events._send_down_her_line(def, her, Vector2.UP)
+			t.check(_city.events.pending_warnings().size() == warnings_before,
+					"'%s' does not telegraph: no warning goes up for it" % def.id)
 		var arrived: EventInstance = null
 		var waited := 0.0
+		for instance in _city.events.instances():
+			if instance.def.id == def.id and not before.has(instance):
+				arrived = instance
+		t.check(def.warns_before_it_exists() or arrived != null,
+				"'%s' is created at once, the frame it is sent" % def.id)
 		while arrived == null and waited < def.telegraph_time + 5.0:
 			_city.events._run_the_warnings(WALK_STEP, her)
 			waited += WALK_STEP
 			for instance in _city.events.instances():
 				if instance.def.id == def.id and not before.has(instance):
 					arrived = instance
-		t.check(arrived != null, "'%s' is warned of down her line and then created" % def.id)
+		t.check(arrived != null, "'%s' is sent down her line and created" % def.id)
 		if not arrived:
 			continue
 		t.check(not arrived.is_telegraphing() and arrived._notice_damping() == 1.0,
@@ -676,7 +688,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 					"and '%s', declared hard_fail, is lethal from its first frame" % def.id)
 		_city.events.retire(arrived)
 	for id in ["cyclist", "loose_dog"]:
-		t.check(checked.has(id), "'%s' is among the rows warned down her line (%s)"
+		t.check(checked.has(id), "'%s' is among the rows sent down her line (%s)"
 				% [id, ", ".join(checked)])
 
 ## Paints one disc of ground into a `blocked` set, the way the day's own reachability questions do.

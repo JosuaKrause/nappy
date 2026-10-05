@@ -84,8 +84,12 @@ func run(t) -> void:
 			overs.append("never" if result["lead"] == INF else "%+.2f" % (result["lead"] - floor_s))
 			if answer == Answer.TOWARD and result["created_at"] != INF:
 				exists = "%.2f" % result["created_at"]
-		print("| `%s` | %s | %s | %s | %s | %s | %.2f | %s |" % [encounter["def"].id,
-				encounter["how"], cells[0], cells[1], cells[2], exists, floor_s, " / ".join(overs)])
+		# A row that does not telegraph (`EventDef.telegraphs`) is outside the contract: no floor.
+		var telegraphs: bool = encounter["def"].telegraphs
+		print("| `%s` | %s | %s | %s | %s | %s | %s | %s |" % [encounter["def"].id,
+				encounter["how"], cells[0], cells[1], cells[2], exists,
+				"%.2f" % floor_s if telegraphs else "outside",
+				" / ".join(overs) if telegraphs else "—"])
 	_print_the_gold_timing(edge)
 	edge.free()
 	t.check(true, "zz_m207 warning lead probe ran")
@@ -248,9 +252,19 @@ static func encounters() -> Array[Dictionary]:
 			"path": PackedVector2Array([streamed_from, streamed_from + Vector2(0.0, 4000.0)]),
 			"her": Vector2(Tuning.TILE_SIZE * 1.5, 0.0), "heading": up, "warm": 0.0})
 
-	# Warned of before they exist. `loose_dog` and `cyclist`: `EventManager._warn_down_her_line()`,
-	# the place just off screen down her line, created on a route back down it past her.
-	for id: String in ["loose_dog", "cyclist"]:
+	# `loose_dog` does not telegraph: sent down her line unannounced (`EventManager.
+	# _send_down_her_line()`), created at once just out of sight, its telegraph spent.
+	var loose := EventCatalogue.by_id("loose_dog")
+	for heading: Vector2 in [up, right]:
+		var place := PendingWarning.down_her_line(null, loose, Vector2.ZERO, heading)
+		list.append({"def": loose, "how": "unannounced, down her line, %s" % _axis(heading),
+				"path": PendingWarning.route_down_her_line(null, place, Vector2.ZERO, heading),
+				"her": Vector2.ZERO, "heading": heading, "warm": 0.0,
+				"age": EventManager.age_when_warned(loose)})
+
+	# Warned of before it exists. `cyclist`: `EventManager._warn_down_her_line()`, the place just
+	# out of sight down her line, created on a route back down it past her.
+	for id: String in ["cyclist"]:
 		var def := EventCatalogue.by_id(id)
 		for heading: Vector2 in [up, right]:
 			var where := func(her: Vector2) -> Vector2:
@@ -370,6 +384,8 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 	var spawn: Vector2 = encounter.get("spawn", path[0] if path.size() > 0 else Vector2.ZERO)
 	var instance := EventInstance.new()
 	instance.setup(def, spawn, path)
+	if encounter.has("age"):
+		instance.resume(float(encounter["age"]), 0.0)
 	var her: Vector2 = encounter["her"]
 	var heading: Vector2 = encounter["heading"]
 	var velocity := heading * Tuning.WALK_SPEED

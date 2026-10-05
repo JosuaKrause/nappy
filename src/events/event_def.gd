@@ -414,7 +414,7 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ##   the road, `EventDirector._toward_her_on_the_road()`): seconds of closing beyond the edge of the
 ##   view where it is created (`Tuning.offscreen_lead()`).
 ##
-## A non-pursuer warned of before it exists (`cyclist`, `loose_dog`, the fire engine, day 13's
+## A non-pursuer warned of before it exists (`cyclist`, the fire engine, day 13's
 ## column) does not read it: its badge is its `telegraph_time` (`warned_for()`), and it is placed just
 ## out of sight.
 ##
@@ -436,6 +436,16 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## `Tuning.OFFSCREEN_WARNING_MIN` rather than to a floor worked out from its field and speed, and its
 ## badge alone to `Tuning.WARNING_ALONE_MAX`.
 @export var warned_first := false
+
+## Whether this row telegraphs its coming. *(PLAYTEST-145: "telegraphing is for things that go fast
+## *and* are dangerous" · "go fast and towards the player" · "loose dog, cat don't need
+## telegraphing"; inbox #598: "the telegraphing rule was about heavy penalty not *only* lethal".)* A
+## thing telegraphs only if it goes fast, comes toward her, and carries a heavy penalty — it can end
+## the day or hit her hard. **One that does not is outside the screen-edge badge, warning-first
+## placement and the telegraph fairness contract, rather than exempted from them**: nothing announces
+## it before she can see it, and it is met as it comes. `loose_dog` and `cat_dash` are the two that
+## do not; every other row is as built.
+@export var telegraphs := true
 
 ## Moves along a path at `speed` px/s. The scheduler builds the path.
 @export var mobile := false
@@ -1218,7 +1228,7 @@ func validate() -> bool:
 	# field reaches that far would be created already on her on the one heading and moment the
 	# director cannot avoid, which is the one thing "she gets close and it arrives" cannot mean.
 	if spawn_mode == SpawnMode.TOWARD_PLAYER:
-		var floor_lead := PendingWarning.least_distance() if warns_before_it_exists() \
+		var floor_lead := PendingWarning.least_distance() if comes_down_her_line() \
 				else Tuning.min_offscreen_lead(speed + Tuning.WALK_SPEED, offscreen_notice)
 		if outer_radius >= floor_lead:
 			push_error("event '%s' comes toward the player with a %.0fpx field, at or past the "
@@ -1302,6 +1312,10 @@ func validate() -> bool:
 		# rule says nothing about it and `validate_pursuit` is the contract instead. What its
 		# telegraph has to buy is the moment of *noticing*, which is checked there.
 		return true
+	# A thing that does not telegraph its coming is outside the telegraph contract rather than an
+	# exemption from it: the contract is about things that need telegraphing (`telegraphs`).
+	if not telegraphs:
+		return true
 	if warns_before_it_exists():
 		return Tuning.validate_warning(id, warning_time(), minimum_telegraph())
 	return Tuning.validate_event(id, warning_time(), inner_radius, outer_radius, hard_fail,
@@ -1311,7 +1325,7 @@ func validate() -> bool:
 ##
 ## **A row warned of before it exists (`warns_before_it_exists()`) is owed
 ## `Tuning.OFFSCREEN_WARNING_MIN`**, a flat second to react, whatever its field and its speed — the
-## cyclist, the loose dog, the fire engine and day 13's column alike. *(PLAYTEST-145: "I don't like
+## cyclist, the fire engine and day 13's column alike. *(PLAYTEST-145: "I don't like
 ## that the warning is tied to the size of the field or the speed" · "1s is time needed to react to
 ## something"; busy-quail, inbox #569: "1s warning should be enough -- there is enough screen space
 ## to cross".)* Its place follows her until it exists, so walking during the badge does not take her
@@ -1380,15 +1394,21 @@ func warned_for() -> float:
 
 ## Whether this row is warned of before it exists rather than created at once: its screen-edge
 ## badge goes up with nothing in the world, and its instance is created where the badge points once
-## `warned_for()` is over — see `PendingWarning`. Two kinds are: a `TOWARD_PLAYER` row on foot
-## (`cyclist`, `loose_dog`), which the director warns of down her line, and a row flagged
+## `warned_for()` is over — see `PendingWarning`. Two kinds are: a `TOWARD_PLAYER` row on foot that
+## `telegraphs` (`cyclist`), which the director warns of down her line, and a row flagged
 ## `warned_first` (the fire engine, the resistance's two pursuers, and the copies of day 13's column
 ## and of `charging_dog` sent down her heading), which the caller that sends it warns of. A
 ## road-going `TOWARD_PLAYER` copy (`police_patrol`'s return leg) is created at once instead —
 ## see docs/EVENTS.md, "Everything arrives from off screen", for why it is not warned first.
 func warns_before_it_exists() -> bool:
-	return warned_first or (spawn_mode == SpawnMode.TOWARD_PLAYER
-			and not placement.has(GameEnums.TileType.ROAD))
+	return warned_first or (comes_down_her_line() and telegraphs)
+
+## Whether the director sends this row down her own line on foot — a `TOWARD_PLAYER` row whose
+## ground is not the road (`cyclist`, `loose_dog`): created just out of sight on her sidewalk
+## (`PendingWarning.down_her_line()`), under a warning first when it `telegraphs`, at once when it
+## does not.
+func comes_down_her_line() -> bool:
+	return spawn_mode == SpawnMode.TOWARD_PLAYER and not placement.has(GameEnums.TileType.ROAD)
 
 ## A copy of this row that enters the world only under a warning that runs first
 ## (`warned_first`), for a row warned of that is otherwise placed some other way — day 13's column of

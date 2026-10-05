@@ -25,7 +25,7 @@ extends RefCounted
 ## badge goes down and nothing comes. A second is the most it may be up alone, so it does not wait
 ## for ground the way a longer warning could.
 ##
-## Each kind of place below answers "its ground" differently: a cyclist or a loose dog on a sidewalk
+## Each kind of place below answers "its ground" differently: a cyclist on a sidewalk
 ## (`down_her_line()`), a pursuer sent down her heading on anything walkable (`along_her_heading()`),
 ## the fire engine on the road on its way to the fire (`on_its_route()`), the day-13 column in its lane
 ## of the main road (`in_its_lane()`); the resistance's trap is placed by `ResistanceDirector`'s own.

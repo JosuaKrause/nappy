@@ -34,7 +34,7 @@ extends Control
 ##
 ## **And a warning can be up before its thing exists.** A source that also answers
 ## `pending_warnings() -> Array[PendingWarning]` — `EventManager` does — has things on their way
-## that are not in the world yet: a cyclist, a loose dog, the day-3 dog, the fire engine, day 13's
+## that are not in the world yet: a cyclist, the day-3 dog, the fire engine, day 13's
 ## column, the resistance's own robber and guard. Each gets its badge from the moment its warning goes
 ## up, pointing at the place it will come from, which moves only with her, for the at most one second
 ## the warning runs (`PendingWarning`). *(PLAYTEST-145: "the warning appears by itself with a
@@ -315,6 +315,10 @@ func _is_worth_an_arrow(instance: EventInstance) -> bool:
 ## `_is_worth_an_arrow()` asked of a row rather than of a live instance, which is all it reads —
 ## and all a warning with nothing in the world yet has to ask it about.
 func _is_worth_an_arrow_for(def: EventDef) -> bool:
+	# A thing that does not telegraph its coming (`EventDef.telegraphs`: the loose dog, the cat) is
+	# outside the badge altogether — met as it comes, not announced.
+	if not def.telegraphs:
+		return false
 	# If there is no silhouette to put in the badge there is nothing to *say*, and an arrow that
 	# only says "something" is an anxiety rather than a warning. Nothing lethal or fast is
 	# currently in that position, and this is here so that adding one is a decision.

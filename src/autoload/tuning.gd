@@ -1943,10 +1943,10 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## to react to something" · "the 2.9 is not important"; busy-quail, inbox #569: "1s warning should be
 ## enough -- there is enough screen space to cross".)* `EventDef.minimum_telegraph()` answers it for
 ## every non-pursuer warned of before it exists (`EventDef.warns_before_it_exists()`: the cyclist,
-## the loose dog, the fire engine, day 13's column), whose place follows her until it exists, so the
+## the fire engine, day 13's column), whose place follows her until it exists, so the
 ## walk out of its field that `required_telegraph_time()` prices is not a walk she can take during
-## the badge; a pursuer is owed `PURSUIT_MIN_NOTICE` of visible approach, and every other row the
-## minimum its field sets.
+## the badge; a pursuer is owed `PURSUIT_MIN_NOTICE` of visible approach, every other row the
+## minimum its field sets, and a row that does not telegraph (`EventDef.telegraphs`) none.
 const OFFSCREEN_WARNING_MIN := 1.0
 ## The longest a screen-edge badge is up alone, with nothing in the world, before the thing it warns
 ## of is placed just out of sight where it points (`PendingWarning`). *(calm-kestrel, inbox #559: "it

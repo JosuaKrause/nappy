@@ -318,6 +318,10 @@ static func _cat_dash() -> EventDef:
 	def.shape = GroundShape.point(7.0)
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
+	# It does not telegraph its coming *(PLAYTEST-145: "loose dog, cat don't need telegraphing")*:
+	# no screen-edge badge, no warning first, outside the telegraph contract (`EventDef.telegraphs`).
+	# It still holds before it dashes, which is the cat's own behaviour, not a warning owed.
+	def.telegraphs = false
 	def.intensity = 17.0
 	def.inner_radius = 30.0
 	def.outer_radius = 120.0
@@ -958,11 +962,13 @@ static func _burnt_shell() -> EventDef:
 ## warning instead, run with nothing in the world (`PendingWarning`), and the dog is created just out
 ## of sight with it spent, at its own intensity. Nothing about the field moved for this.
 ##
-## **Its `telegraph_time` is a second, `Tuning.WARNING_ALONE_MAX`**, the most a badge is up alone
-## *(busy-quail, inbox #569: "1s warning should be enough")*; its 190px forward reach already covers
-## her where it is created closest (180px, on the view's short axis), so that second is its whole
-## warning before it charges her (`EventDef.warning_time()`), against the flat
-## `Tuning.OFFSCREEN_WARNING_MIN` every warning first is owed.
+## **It does not telegraph its coming** *(PLAYTEST-145: "loose dog, cat don't need telegraphing";
+## inbox #598: a thing telegraphs only if it goes fast, comes toward her and carries a heavy penalty)*:
+## no screen-edge badge and no warning first (`EventDef.telegraphs`). The director sends it down her
+## own sidewalk and it is created at once just out of sight there (`PendingWarning.down_her_line()`,
+## `EventManager._send_down_her_line()`), its `telegraph_time` already spent, on the point of its beat
+## that has it reach her at its loudest (`EventManager.age_when_warned()`), so a pass costs what it
+## did under a warning. It is outside the telegraph contract rather than exempted from it.
 ##
 ## No change to placement: `TOWARD_PLAYER` costs more than the walk-through table alone suggests
 ## already, since the whole point of the row is that she dodges rather than walks the line.
@@ -977,8 +983,9 @@ static func _loose_dog() -> EventDef:
 	def.intensity = 39.0
 	def.inner_radius = 30.0
 	def.outer_radius = 140.0
-	# Its badge alone, before it exists — see above.
+	# Spent before it is ever met (see above); it decides only where its beat starts.
 	def.telegraph_time = Tuning.WARNING_ALONE_MAX
+	def.telegraphs = false
 	def.pulse_period = 2.2
 	def.mobile = true
 	def.speed = 132.0

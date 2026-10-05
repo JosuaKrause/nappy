@@ -951,7 +951,7 @@ func pending_warnings() -> Array[PendingWarning]:
 # seconds (never longer than 2s) without placing anything then place the object immediately off
 # screen so it will immediately start coming on the screen turning off the warning"; busy-quail,
 # inbox #569: "1s warning should be enough".)* Everything that arrives from off screen under the
-# screen-edge badge comes through here: `cyclist` and `loose_dog` from the director, and
+# screen-edge badge comes through here: `cyclist` from the director, and
 # `charging_dog` when the director sends it down her heading; the fire engine from the fire it was
 # called to; day 13's column from `ResistanceHappenings`; and the resistance's own two pursuers from
 # `ResistanceDirector`, the moment she has done a task.
@@ -995,7 +995,8 @@ func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> 
 		_ride_as_a_pelican(instance)
 	return instance
 
-## How old a non-pursuer warned of before it exists is when it is created: its telegraph spent, and,
+## How old a non-pursuer warned of before it exists — or sent down her line unannounced, the loose
+## dog — is when it is created: its telegraph spent, and,
 ## for a mover that pulses (`loose_dog`), on to the point of its beat that has it reach her, walking
 ## into it from where it is created closest (`PendingWarning.least_distance()`), at the loud of its
 ## beat. **Its warning's length does not decide which beat it meets her on**: the pulse runs on its
@@ -1011,7 +1012,7 @@ static func age_when_warned(def: EventDef) -> float:
 	return loud_on_her + ceilf((spent - loud_on_her) / def.pulse_period - 0.001) * def.pulse_period
 
 ## `def` as a row warned of before it exists (`EventDef.warns_before_it_exists()`): itself when it
-## already is one — `cyclist`, `loose_dog`, the fire engine, the resistance's two pursuers — and
+## already is one — `cyclist`, the fire engine, the resistance's two pursuers — and
 ## otherwise its `EventDef.as_warned_first()` copy, which is how day 13's column of
 ## `military_convoy`, a row the day otherwise plans as a place, and `charging_dog` sent down her
 ## heading, a row that waits on a tile from the day after it teaches the run, are held to what a
@@ -1360,6 +1361,9 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	if def.warns_before_it_exists():
 		_warn_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
 		return
+	if def.comes_down_her_line():
+		_send_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
+		return
 	if def.pursues:
 		_warn_down_her_heading(def, body.global_position, path[0])
 		return
@@ -1440,6 +1444,24 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	var warning := warn_first(def, her, where, arrive)
 	if warning:
 		warning.is_pelican = pelican
+
+## A row the director sends down her own line that does not telegraph its coming (`loose_dog`,
+## `EventDef.telegraphs`): no badge and no warning, so it is created at once just out of sight down
+## her line on its own ground (`PendingWarning.down_her_line()`, against what she can see), with its
+## telegraph spent at the age a warned row would have (`age_when_warned()`), so it meets her the same.
+## Nothing is created where there is no such ground, or its route would come through a region door;
+## the director has already spent the moment either way.
+func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
+	var place := PendingWarning.down_her_line(_map, def, her, direction, _visible)
+	if place == Vector2.INF:
+		return
+	var path := PendingWarning.route_down_her_line(_map, place, her, direction)
+	if not _director.clear_of_the_doors(path, def):
+		return
+	var instance := _spawn_unplanned(def, path[0], path)
+	instance.resume(age_when_warned(def), 0.0)
+	Telemetry.note("ahead", "%s comes at her from %.0fpx in front of her at %s, unannounced"
+			% [def.id, place.distance_to(her), TelemetryLog.tile(_map.world_to_tile(her))])
 
 ## A pursuer the director sends at her down her heading — `charging_dog`, on the day it teaches the
 ## run and when it is sprinkled into a later one — warned first *(M226, PLAYTEST-145: "the new system
