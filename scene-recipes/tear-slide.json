@@ -1,0 +1,73 @@
+{
+ "version": 1,
+ "name": "A held push along a papered wall tears every sheet",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "start": {
+   "world": [
+    1668,
+    2262
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 8,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "north"
+  },
+  "posters": [
+   {
+    "at": [
+     1680,
+     2256
+    ],
+    "kind": "rules"
+   },
+   {
+    "at": [
+     1712,
+     2256
+    ],
+    "kind": "curfew"
+   },
+   {
+    "at": [
+     1744,
+     2256
+    ],
+    "kind": "rules"
+   },
+   {
+    "at": [
+     1776,
+     2256
+    ],
+    "kind": "leader"
+   }
+  ]
+ },
+ "playback": {
+  "walk": "2.6@45@",
+  "duration": 2.6,
+  "capture_at": 0.3,
+  "camera": {
+   "zoom": 1.5
+  },
+  "observations": [
+   {
+    "tick": 3,
+    "subject": "player",
+    "condition": "moving"
+   }
+  ]
+ }
+}

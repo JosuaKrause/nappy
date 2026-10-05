@@ -80,7 +80,8 @@ const FIRST_PASTE_AFTER := 0.8
 
 ## How long her heading has to press into a postered wall before the sheet tears — long enough that
 ## brushing past does not tear, short enough that a push made by accident does, which is how the
-## gimmick is found. Taste, open to overturn.
+## gimmick is found (it is taught nowhere). Only the first sheet of a push waits this long; see
+## `_push_to_tear()`. Taste, open to overturn.
 const PRESS_TO_TEAR := 0.4
 ## How far into the wall her heading has to point to be a push: the sine of the angle it makes with
 ## the wall's line. A half is thirty degrees, so a diagonal into the wall (forty-five) pushes, and
@@ -116,6 +117,9 @@ var _jobs: Dictionary = {}
 var _player: Stroller = null
 ## Seconds her heading has pressed into a postered sheet without a break. See `_push_to_tear()`.
 var _pressed_for := 0.0
+## Whether the push held now has already torn a sheet, so every intact sheet she slides in front of
+## tears at once. See `_push_to_tear()`.
+var _sliding := false
 ## The bag the run's tears draw from, rebuilt from `PosterState.tears` whenever it disagrees with
 ## the run — a save loaded, a lost day given back, a new run. See `_the_bag()`.
 var _bag: MarbleBag = null
@@ -175,6 +179,7 @@ func start_day(day: int, tree: RouteTree) -> void:
 	_day_running = true
 	_jobs.clear()
 	_pressed_for = 0.0
+	_sliding = false
 	var state := GameState.posters
 	var corridor := Corridor.of(tree) if tree else null
 	for dawn in range(maxi(state.pasted_through + 1, FIRST_DAY), day + 1):
@@ -360,23 +365,29 @@ func _job_for(tile: Vector2i) -> Dictionary:
 ## seconds; the sheet she is in front of then tears. `steering` is the input she is being steered
 ## by rather than her velocity, because a wall stops the second and not the first.
 ##
-## A diagonal slides her along the wall, so the count carries across the cells of it while she keeps
-## pushing, runs only while she is in front of an intact sheet, and starts again after each tear:
-## a push held along a papered wall tears a sheet every `PRESS_TO_TEAR` seconds rather than one
-## per cell she crosses. Letting go, or turning out of the wall, starts it again.
+## A diagonal slides her along the wall. The first sheet of a push takes `PRESS_TO_TEAR` seconds,
+## the count running only while she is in front of an intact sheet; once it has torn, every next
+## intact sheet she comes in front of tears at once while the push is held, so a push held along a
+## papered wall strips every sheet she slides past. Letting go, turning out of the wall or stepping
+## back from its face (or off its sidewalk) ends the push, and the next one takes the time again.
 ##
 ## A tear costs nothing and counts for nothing; what it can do is bring a patrol — see `_tear()`.
 func _push_to_tear(delta: float, at: Vector2, steering: Vector2) -> void:
 	var tile := _map.world_to_tile(at)
 	if not _by_tile.has(tile) or not _presses_into_the_wall(tile, at, steering):
 		_pressed_for = 0.0
+		_sliding = false
 		return
 	if not GameState.posters.has_intact_sheet(tile):
+		return
+	if _sliding:
+		_tear(tile)
 		return
 	_pressed_for += delta
 	if _pressed_for < PRESS_TO_TEAR:
 		return
 	_pressed_for = 0.0
+	_sliding = true
 	_tear(tile)
 
 ## Whether a heading `steering` from `at`, on the front tile `tile`, pushes into its wall. Every
