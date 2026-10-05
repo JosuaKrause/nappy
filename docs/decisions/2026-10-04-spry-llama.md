@@ -5,7 +5,7 @@
 them?" · "mostly I'm interested in the ratio of interacted/seen" · "we can count the number of
 running excluding gaps smaller than 10s".)*
 
-**What was built.** Three new GoatCounter names per day, `nappy-day-N-seen-<event>`,
+**What was built** (PR #578). Three new GoatCounter names per day, `nappy-day-N-seen-<event>`,
 `nappy-day-N-influenced-<event>` and `nappy-day-N-influenced-unseen-<event>`, and
 `nappy-day-N-ran`, all listed in `docs/TELEMETRY.md`, "The page counts visits".
 
