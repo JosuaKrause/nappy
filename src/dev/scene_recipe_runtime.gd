@@ -683,23 +683,15 @@ func _inside_extent(at: Vector2) -> bool:
 ## `setup.route_bag`: the director owes her route the recipe's marbles, drawn from its rigged bag
 ## by the game's own rules (`EventDirector.start_recipe_route()`). A scene with no route bag keeps
 ## the director silent, as every scene without one always has.
-##
-## `EventManager` starts a recipe's day with its director told nothing is owed and its owed-ahead
-## step switched off (`start_recipe()`), and has no public way to switch it back; this switches its
-## `_recipe_plan` off and starts the director's route through the manager's own director.
 func _start_the_route(setup: Dictionary) -> void:
 	if not setup.has("route_bag"):
 		return
 	var bag: Dictionary = setup.route_bag
 	var marbles: Array = bag.get("marbles", [])
 	var pre_bag: Array = bag.get("pre_bag", [])
-	var director: EventDirector = _city.events._director
-	director.start_recipe_route(marbles, pre_bag,
-			int(bag.get("owed", marbles.size() + pre_bag.size())),
-			float(bag.get("first_after", -1.0)), GameState.resistance_progress)
-	_city.events._recipe_plan = false
-	manifest["route_bag"] = {"marbles": marbles.size(), "pre_bag": pre_bag,
-			"owed": director.owed()}
+	var owed := _city.events.start_recipe_route(marbles, pre_bag,
+			int(bag.get("owed", marbles.size() + pre_bag.size())), float(bag.get("first_after", -1.0)))
+	manifest["route_bag"] = {"marbles": marbles.size(), "pre_bag": pre_bag, "owed": owed}
 
 ## Keep only named production structures. The context plan supplies eligibility and geometry,
 ## never permission to install unrelated walls or checkpoint actors throughout the scene.

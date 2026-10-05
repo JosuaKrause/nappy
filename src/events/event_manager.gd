@@ -1953,3 +1953,14 @@ func _check_hard_fails() -> void:
 				EventBus.pelican_struck_her.emit(instance)
 			EventBus.hard_fail_triggered.emit(instance.def.id)
 			return
+
+## **A scene's route, from the bag its recipe rigs** (`setup.route_bag`, `docs/SCENE_RECIPES.md`).
+## A recipe's day starts with nothing owed and the owed-ahead step off (`start_recipe()`); this
+## switches the step back on and hands the director the recipe's bag to draw her route's events
+## from by its own rules (`EventDirector.start_recipe_route()`). Answers how many events her route
+## is now owed.
+func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: float) -> int:
+	_recipe_plan = false
+	_director.start_recipe_route(marbles, pre_bag, owed, first_after,
+			GameState.resistance_progress)
+	return _director.owed()
