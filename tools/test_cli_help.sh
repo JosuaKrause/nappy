@@ -204,12 +204,18 @@ assert_exit "shot.sh --help"       zero ./tools/shot.sh --help
 assert_exit "trailer.sh --help"    zero ./tools/trailer.sh --help
 assert_exit "trailer.sh -h"        zero ./tools/trailer.sh -h
 trailer_list="$(./tools/trailer.sh --list)"
+trailer_rows="$(printf '%s\n' "$trailer_list" | awk 'NR > 1 && $1 != "total" { print $1, $2 }')"
+trailer_expected_rows="$(jq -r '.shots[] | "\(.name) \(.kind // "scene")"' tools/trailer/shots.json)"
+trailer_reported_total="$(printf '%s\n' "$trailer_list" | awk '/^total / { sub(/s$/, "", $2); print $2 }')"
+trailer_expected_total="$(jq -r '[.shots[] | (.gap // 0) + .length] | add' tools/trailer/shots.json)"
+trailer_max="$(jq -r '.max_seconds' tools/trailer/shots.json)"
 checks=$(( checks + 1 ))
-if [[ "$trailer_list" == *"hook       card"* && "$trailer_list" == *"title      card"* \
-    && "$trailer_list" == *"total 26.45s of 30s"* ]]; then
-    echo "ok   trailer.sh --list includes editorial cards and the complete cut duration"
+if [[ "$trailer_rows" == "$trailer_expected_rows" ]] \
+    && awk -v reported="$trailer_reported_total" -v expected="$trailer_expected_total" \
+        -v maximum="$trailer_max" 'BEGIN { exit !((reported - expected)^2 < 0.0001 && reported <= maximum) }'; then
+    echo "ok   trailer.sh --list reports every configured shot and a cut within its maximum"
 else
-    echo "FAIL trailer.sh --list omitted its cards or complete duration" >&2
+    echo "FAIL trailer.sh --list disagrees with its shot list or exceeds its maximum" >&2
     failures=$(( failures + 1 ))
 fi
 assert_exit "record.sh --help"     zero ./tools/record.sh --help

@@ -31,7 +31,7 @@ prints numbers, an assertion in a suite, or a `check.sh` boot beats a screenshot
 is not a picture. When a picture genuinely is the question, take it once with everything you need
 already in the flags rather than iterating live.
 
-**A hidden window is not drawn, so a capture draws its own frame.** On macOS the main loop skips its
+**A hidden window is not drawn, so a still or movie draws its own current frame.** On macOS the main loop skips its
 draw step while no window of the process passes the system's occlusion test — covered by another
 app's opaque window, or minimized, and by the same test on another Space or behind a locked screen
 — and the game runs on in real time underneath: the walk goes on, the HUD's fps readout still shows
@@ -41,8 +41,8 @@ covers it depends on the window in front: an ordinary opaque window over it does
 shows through may not. A capture that only waited for the render loop's next frame would wait for
 ever there, and the run would end on `[Main] a rig's own wall-clock limit ... passed` however
 often it was retried.
-`AutoScreenshot.drawn_frame()` (`src/dev/auto_screenshot.gd`) is what every capture under `src/`
-waits on — `shot.sh`'s still, `--quit-when-still`, and the telemetry's stills and `snapshot_burst`
+`AutoScreenshot.drawn_frame()` (`src/dev/auto_screenshot.gd`) is what every still and burst under
+`src/` waits on — `shot.sh`'s still, `--quit-when-still`, and the telemetry's stills and `snapshot_burst`
 bursts, which `tests/test_auto_screenshot.gd` holds by failing on a bare wait for the render loop's
 frame anywhere under `src/` — and when the window cannot be drawn it draws that frame on demand
 with `RenderingServer.force_draw()`. Of the probes, `tests/probes/scenery_animation_runtime.gd`
@@ -51,6 +51,16 @@ purpose, since the engine's warmup draw is what it measures, so it wants its win
 forced still shows the same frame an uncovered window gives — the same scene and moment, not a
 pixel-identical file, since two ordinary runs of one seed already differ — and its
 `[AutoScreenshot] wrote` line ends "(window not visible, so this frame was drawn on demand)".
+
+**A timed Godot movie carrying `--after` needs that answer on every covered frame, not only at the
+final capture.** The simulation and a scene-recipe manifest keep advancing while an occluded movie
+window repeats its last viewport texture, so a complete manifest cannot prove that recorded action
+is visible. Its recording `AutoScreenshot` node schedules an on-demand draw from `_process()` when
+`DisplayServer.window_can_draw()` is false; the deferred call runs after the current frame's ordinary
+updates, at the boundary where the visible render loop reads them. A trailer shot that promises
+visible action marks `motion: true`; `tools/trailer.sh` rejects a selected cut with more than half a
+second of identical consecutive PNGs before it encodes or deletes them. Check those raw-frame hashes
+as well as the manifest when a movie is evidence of motion.
 
 **So a capture needs a display server from the machine, and not a visible window.** Covered and
 minimized windows are the two cases photographed through the forced frame; another Space and a

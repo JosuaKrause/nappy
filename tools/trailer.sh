@@ -99,7 +99,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-for tool in jq ffmpeg fc-match; do
+for tool in jq; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "trailer.sh: $tool not found on PATH" >&2
         exit 127
@@ -155,8 +155,10 @@ schema_errors="$(jq -r '
                 (.card.font_size | num) and .card.font_size > 0
             then empty
             else "\($n): scene shots need a recipe; card shots need text and font_size" end),
-        (if (keys - ["name","kind","recipe","card","ending","length","in","gap","fade_in","fade_out"] | length) == 0
+        (if (keys - ["name","kind","recipe","card","ending","motion","length","in","gap","fade_in","fade_out"] | length) == 0
             then empty else "\($n): unknown shot field (setup and playback belong in the recipe)" end),
+        (if .motion == null or (.motion | type) == "boolean" then empty
+            else "\($n): motion must be true or false" end),
         (if .ending == null then empty
             elif $kind == "scene" and (.ending | type) == "object" and
                 (.ending | keys - ["at","line","url","line_font_size","url_font_size"] | length) == 0 and
@@ -259,6 +261,13 @@ if [[ "$MODE" == "list" ]]; then
     echo "total ${total_seconds}s of ${MAX_SECONDS}s"
     exit 0
 fi
+
+for tool in ffmpeg fc-match; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "trailer.sh: $tool not found on PATH" >&2
+        exit 127
+    fi
+done
 
 if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT" >&2
@@ -393,6 +402,36 @@ render_frames() {
         echo "trailer.sh: '$name' wrote too few frames (no $(basename "$last"))" >&2
         return 1
     fi
+    visible_motion_check "$name" "$dir"
+}
+
+# A manifest proves that the recipe advanced; this proves that the selected pixels did too. The
+# half-second ceiling permits a deliberate held pose while rejecting the stale viewport texture a
+# covered macOS movie-writer window otherwise repeats for the rest of a live scene.
+visible_motion_check() {
+    local name="$1" dir="$2"
+    [[ "$(shot_field "$name" motion false)" == true ]] || return 0
+    local start count end frame file hash previous="" run=0 longest=0
+    start="$(awk -v a="$(shot_field "$name" in 0.5)" -v f="$FPS" \
+        'BEGIN { printf "%d\n", int(a * f + 0.5) }')"
+    count="$(awk -v a="$(shot_field "$name" length)" -v f="$FPS" \
+        'BEGIN { printf "%d\n", int(a * f + 0.5) }')"
+    end=$(( start + count ))
+    for (( frame=start; frame<end; frame++ )); do
+        file="$(printf '%s/frame%08d.png' "$dir" "$frame")"
+        hash="$(shasum -a 256 < "$file" | awk '{print $1}')"
+        if [[ "$hash" == "$previous" ]]; then
+            run=$(( run + 1 ))
+        else
+            run=1
+            previous="$hash"
+        fi
+        (( run > longest )) && longest="$run"
+    done
+    if (( longest > FPS / 2 )); then
+        echo "trailer.sh: '$name' has $longest consecutive identical selected frames; its visible motion froze" >&2
+        return 1
+    fi
 }
 
 # Encodes shot $1's cut out of the frames in $2 into $3: trimmed to [in, in + length], faded in
@@ -430,11 +469,18 @@ encode_shot() {
         video_filters+="x=(w-text_w)/2:y=h*0.165:alpha='min(1\\,max(0\\,(t-${ending_at})/0.45))'"
     fi
     video_filters+=",fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out}"
-    video_filters+=",tpad=start_duration=${gap}:color=black,format=yuv420p"
+    local video_graph="[0:v]${video_filters},format=yuv420p[v];"
+    if awk -v g="$gap" 'BEGIN { exit !(g > 0) }'; then
+        # A separate finite black source keeps the gap in the video timeline. `tpad` after
+        # `trim=end_frame` is silently cut back to the image sequence's input duration by ffmpeg's
+        # output sync, even while the padded audio retains it.
+        video_graph="color=c=black:s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${gap}[gapv];\
+[0:v]${video_filters}[shotv];[gapv][shotv]concat=n=2:v=1:a=0,format=yuv420p[v];"
+    fi
     ffmpeg -hide_banner -loglevel error -y \
         -framerate "$FPS" -start_number "$start" -i "$dir/frame%08d.png" "${audio[@]}" \
         -filter_complex "\
-[0:v]${video_filters}[v];\
+${video_graph}\
 [1:a]atrim=start=${in}:duration=${length},asetpts=PTS-STARTPTS,aformat=sample_rates=48000:channel_layouts=stereo,\
 afade=t=in:st=0:d=${fade_in},afade=t=out:st=${out_start}:d=${fade_out},\
 adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[a]" \

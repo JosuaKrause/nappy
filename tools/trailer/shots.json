@@ -41,12 +41,14 @@
     {
       "name": "choice",
       "recipe": "scene-recipes/trailer-choice.json",
+      "motion": true,
       "in": 0,
       "length": 6.2
     },
     {
       "name": "birds",
       "recipe": "scene-recipes/trailer-birds.json",
+      "motion": true,
       "in": 0,
       "length": 2,
       "gap": 0.25
@@ -54,6 +56,7 @@
     {
       "name": "dog",
       "recipe": "scene-recipes/trailer-dog.json",
+      "motion": true,
       "in": 0,
       "length": 2.6,
       "gap": 0.25
@@ -68,6 +71,7 @@
     {
       "name": "trucks",
       "recipe": "scene-recipes/trailer-trucks.json",
+      "motion": true,
       "in": 0.3,
       "length": 1,
       "gap": 0.3
@@ -75,6 +79,7 @@
     {
       "name": "gatehouse",
       "recipe": "scene-recipes/trailer-gatehouse.json",
+      "motion": true,
       "in": 0.3,
       "length": 1,
       "gap": 0.3
@@ -82,6 +87,7 @@
     {
       "name": "chase",
       "recipe": "scene-recipes/trailer-chase.json",
+      "motion": true,
       "in": 1.4,
       "length": 1,
       "gap": 0.3
@@ -89,6 +95,7 @@
     {
       "name": "city",
       "recipe": "scene-recipes/trailer-city.json",
+      "motion": true,
       "in": 0,
       "length": 7,
       "gap": 0.3,

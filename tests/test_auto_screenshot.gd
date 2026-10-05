@@ -400,6 +400,14 @@ func _test_the_scan_finds_a_bare_wait_on_the_render_loop(t) -> void:
 	t.check(_bare_render_loop_waits("\t## await RenderingServer.frame_post_draw\n").is_empty(),
 		"a doc comment naming the wait is not a wait")
 
+func _test_only_a_covered_recording_needs_an_on_demand_frame(t) -> void:
+	t.check(AutoScreenshot.recording_frame_needs_force(true, false),
+		"a covered movie-writer window needs a current viewport texture")
+	t.check(not AutoScreenshot.recording_frame_needs_force(true, true),
+		"a visible recording keeps the engine's ordinary draw path")
+	t.check(not AutoScreenshot.recording_frame_needs_force(false, false),
+		"covering an ordinary game does not install the movie-writer workaround")
+
 ## Every capture under `src/` waits through `drawn_frame()`, so a hidden rig still photographs.
 func _test_no_capture_under_src_waits_on_the_render_loop_alone(t) -> void:
 	var scripts := _scripts_under("res://src")
