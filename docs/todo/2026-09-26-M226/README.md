@@ -34,27 +34,23 @@ means they are not to stay there either. The player, asked whether to keep PR #3
 the dog's own timing immediately: "A, remove the exemption." Both rows keep their built numbers
 until this milestone lands.
 
-**Every off-screen warning is at most two seconds, with nothing placed, then the thing placed just
-off screen** ([calm-kestrel](../../playtests/2026-10-04-calm-kestrel.md), inbox #559, 2026-10-04):
+**Every off-screen warning is at most one second, with nothing placed, then the thing placed just
+off screen** ([calm-kestrel](../../playtests/2026-10-04-calm-kestrel.md), inbox #559, and
+[busy-quail](../../playtests/2026-10-04-busy-quail.md), inbox #569, 2026-10-04):
 
 > the offscreen spawning is still bad for all offscreen warnings it should *always* show the warning for x seconds (never longer than 2s) without placing anything then place the object immediately off screen so it will immediately start coming on the screen turning off the warning. the warnings right now are way too long and they jump around wildly
 
-So for everything warned from off screen (the pursuers, the trap robbers, the cyclist, the fire
-engine, the column): the badge shows alone for at most two seconds, nothing in the world; then the
-thing is placed just off screen where the badge points, so it comes into view at once and the badge
-goes off. The fire engine's 6.27s warning and every other badge longer than two seconds goes.
-
-**How the two fit, as filed:** the two-second ceiling is on the badge shown with nothing placed;
-what follows once the thing is placed and visibly closing is the gold timing's on-screen part (the
-day-3 dog's 4.5s of visible closing and 3s chase), which the ceiling does not shorten. That is the
-reading that keeps both of the player's statements; the other reading, that the whole warning
-including the visible closing fits in two seconds, would overturn the gold timing and is not taken
-without asking the player.
-
-**The badge alone is one second** ([busy-quail](../../playtests/2026-10-04-busy-quail.md), inbox #569,
-said of the trap robber's 2.0s notice):
-
 > 1s warning should be enough -- there is enough screen space to cross -- let's apply that to the others as well
 
-So the two-second ceiling above is one second, for every off-screen arrival.
+So for everything warned from off screen (the pursuers, the trap robbers, the cyclist, the fire
+engine, the column): the badge shows alone for at most one second, nothing in the world; then the
+thing is placed just off screen where the badge points, so it comes into view at once and the badge
+goes off. The fire engine's 6.27s warning and every other badge longer than one second goes. A notice
+already shorter, such as the day-3 dog's 0.5s (`offscreen_notice`), is not lengthened.
 
+**How this fits the gold timing, as filed:** the one-second ceiling is on the badge shown with nothing
+placed; what follows once the thing is placed and visibly closing is the gold timing's on-screen part
+(the day-3 dog's 4.5s of visible closing and 3s chase), which the ceiling does not shorten. That is the
+reading that keeps both of the player's statements; the other reading, that the whole warning
+including the visible closing fits in the ceiling, would overturn the gold timing and is not taken
+without asking the player.
