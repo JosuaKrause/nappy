@@ -203,6 +203,15 @@ assert_exit "run.sh --help"        zero ./tools/run.sh --help
 assert_exit "shot.sh --help"       zero ./tools/shot.sh --help
 assert_exit "trailer.sh --help"    zero ./tools/trailer.sh --help
 assert_exit "trailer.sh -h"        zero ./tools/trailer.sh -h
+trailer_list="$(./tools/trailer.sh --list)"
+checks=$(( checks + 1 ))
+if [[ "$trailer_list" == *"hook       card"* && "$trailer_list" == *"title      card"* \
+    && "$trailer_list" == *"total 26.45s of 30s"* ]]; then
+    echo "ok   trailer.sh --list includes editorial cards and the complete cut duration"
+else
+    echo "FAIL trailer.sh --list omitted its cards or complete duration" >&2
+    failures=$(( failures + 1 ))
+fi
 assert_exit "record.sh --help"     zero ./tools/record.sh --help
 assert_exit "record.sh -h"         zero ./tools/record.sh -h
 assert_exit "stats.sh --help"      zero ./tools/stats.sh --help
