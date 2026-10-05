@@ -81,8 +81,8 @@ could choose (about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk from home,
 `ResistanceDirector.NEIGHBOR_CLEAR_OF_HER`, 400px, or more from her where she reads the mark, which
 the draw runs when she does); it is the one target drawn
 from the whole city rather than placed near the mark or standing in a fixed place. Everything the
-task brings comes with it: the target and any event it is or rides on, the guard robbers at the
-mark and the target, and the pursuer a handed-over note or package sets on her. What the day brings
+task brings comes with it: the target and any event it is or rides on, the guard robber at the
+mark (and a roadblock's own guard), and the robber or guard a done task sends from off screen. What the day brings
 besides the task does not: the neighbor walking to work, the raid, the market and the column stay
 out, and day 12's park still closes once its swing is reached. The task's observation names are
 `mark` (named from the start), and, once she has read the mark, `task` (its contact, where the red
@@ -175,10 +175,10 @@ scene's headless assertion, in `tools/scene-recipes.sh`, checks at the first tic
 unread, no arrow is drawn and she stands outside the mark's notice, walks the recorded route to the
 mark and checks that reading it completed the mark and offered the task, the arrow ends on the target
 (or that none is drawn), the target is out of her view and at its stated distance, then walks on and
-checks that reaching the target completed the task. The guard robbers stand where the day puts them, and the walks keep out of their notice
-except on day 9, where the inspection lets her out within the door's guard's notice and he catches
-her moments later, after the assertion; add `--invincible` to play a scene without a robber ending
-it.
+checks that reaching the target completed the task. The mark's robber stands where the day puts him and the walks keep out of his notice; once a
+target is done, the robber or guard the task sends comes from off screen as in a played day and
+catches her a little after the scene's last assertion; add `--invincible` to play on without a robber
+ending it.
 
 `station-door-corner.json` is for the question whether the station's door is touched from the far
 outer corners of the two sidewalk tiles in front of it (`ResistanceDirector.DOOR_REACH`, 50.6px,
