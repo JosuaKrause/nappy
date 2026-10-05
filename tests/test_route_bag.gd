@@ -3,7 +3,7 @@ extends RefCounted
 ##
 ## Holds what a run cannot show at a glance: that a bag put in front of another leaves the one it
 ## interrupted exactly as it was, that rigging a bag makes and loses no marble but the ensured one
-## (inbox #561: "you will be left with two initialized bags: 1 with x elements and one with n-x+1
+## (inbox #561 in coral-bunny: "you will be left with two initialized bags: 1 with x elements and one with n-x+1
 ## elements"), that an inner bag of n marbles gives n events and is gone, that a stretch of her
 ## route the length of a bag has the rows' own mix, that day 3's lesson is still first and paid for
 ## by nothing in the bag, and that after day 6's and day 11's marks the task's row is one of the next
@@ -119,7 +119,7 @@ func _test_a_spaced_rig_comes_after_its_bag_and_no_sooner(t) -> void:
 		t.check(sorted == expected, ("seed %d: with the dog's own marble taken out, the bags " +
 				"between them hold the ordinary set exactly") % seed_value)
 
-## A marble that is itself a bag *(inbox #561; asked whether a drawn bag marble goes back at once or
+## A marble that is itself a bag *(inbox #561 in coral-bunny; asked whether a drawn bag marble goes back at once or
 ## with the next outer fill: "The inner bag becomes empty after n draws")*: drawing it draws from
 ## it and it goes straight back into the outer bag, and an inner bag of n marbles gives exactly n
 ## events and is then never drawn again — not by this outer bag and not by any later fill. A bag
@@ -224,8 +224,8 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
 
 ## Day 3's lesson through the director: on a real day's plan the dog is the first thing she meets,
 ## at `LESSON_DELAY`, out of a rigged bag of one in front of the route's bag, and the ordinary bag
-## after it still holds every dog marble it was filled with. *(inbox #561: "keep it first" · inbox
-## #566: "but the first dog is a rigged bag with only one entry that is separate from anything that
+## after it still holds every dog marble it was filled with. *(inbox #561 in coral-bunny: "keep it first" · inbox
+## #566 in feathery-stork: "but the first dog is a rigged bag with only one entry that is separate from anything that
 ## comes after" · "the lesson is not paid for".)*
 func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY

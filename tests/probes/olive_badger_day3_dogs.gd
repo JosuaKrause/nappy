@@ -1,7 +1,7 @@
 extends RefCounted
 ## Measurement probe for olive-badger: how many charging dogs she meets on day 3, now that the
 ## lesson is a rigged bag of one in front of the route's bag and the ordinary bag holds
-## `Tuning.ROUTE_BAG_MARBLES_OF` dogs (inbox #566). Not a suite: it prints rather than asserting, so
+## `Tuning.ROUTE_BAG_MARBLES_OF` dogs (inbox #566 in feathery-stork). Not a suite: it prints rather than asserting, so
 ## it lives under `tests/probes/`, where the runner never discovers it, and runs only by name:
 ##
 ##     tools/test.sh probes/olive_badger_day3_dogs.gd

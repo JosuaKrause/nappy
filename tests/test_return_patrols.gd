@@ -103,7 +103,7 @@ func _test_pacing_switches_after_the_return_is_owed(t) -> void:
 				"after the return, %.2fs is inside RETURN_PATROL_INTERVAL %s"
 				% [interval, Tuning.RETURN_PATROL_INTERVAL])
 
-## *(inbox #561: "The return patrols in acts III and IV are added at the back of the route queue --
+## *(inbox #561 in coral-bunny: "The return patrols in acts III and IV are added at the back of the route queue --
 ## the marble bag approach will properly fix this" · "they will need rigged bags".)* On a real act
 ## IV day, whose dawn bought dozens of route events, the return's patrols are not left behind them:
 ## each comes within `Tuning.RETURN_PATROL_WITHIN_THE_NEXT` events of the return or of the patrol

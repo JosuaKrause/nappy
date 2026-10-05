@@ -235,10 +235,10 @@ func _take_the_forced_row() -> void:
 ## Two things, and only on that day: the pursuit is moved to the head of the owed list, and the
 ## first interval is cut to a lesson rather than an ambush. `LESSON_DELAY` is far enough in that
 ## she is walking and off the doorstep — the director will not site anything while she is standing
-## still — and early enough that it is the first thing that happens to her. *(inbox #561, asked
+## still — and early enough that it is the first thing that happens to her. *(inbox #561 in coral-bunny, asked
 ## whether the lesson should come after a bag of five: "keep it first".)*
 ##
-## **The lesson is a rigged bag of one, and it is not paid for.** *(inbox #566: "but the first dog
+## **The lesson is a rigged bag of one, and it is not paid for.** *(inbox #566 in feathery-stork: "but the first dog
 ## is a rigged bag with only one entry that is separate from anything that comes after" · "the
 ## lesson is not paid for. why would it be? that's not how the marble bag works".)* A bag holding
 ## only the dog goes in front of the route's bag (`MarbleBag.rig()` at a size of one takes nothing
@@ -722,7 +722,7 @@ var _patrol_bag_left := 0
 ## **Each return patrol is a rigged bag** of `Tuning.RETURN_PATROL_WITHIN_THE_NEXT` marbles, the
 ## patrol and the rest drawn from the bag she was drawing from, and the next is rigged once that bag
 ## has been handed out — so each comes within its own bag's events and two never come back to back
-## unless the second bag starts with what the first ended on. *(inbox #561: "The return patrols in acts III and IV are added at the back of the
+## unless the second bag starts with what the first ended on. *(inbox #561 in coral-bunny: "The return patrols in acts III and IV are added at the back of the
 ## route queue -- the marble bag approach will properly fix this" · "they will need rigged
 ## bags".)* Behind the day's own events, the dozens the dawn buys and the pacing never drains, they
 ## would never come; rigged, each one comes within that many events of the last.

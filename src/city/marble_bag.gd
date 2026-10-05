@@ -20,7 +20,7 @@ extends RefCounted
 ## **pre-bag** is the first such bag, put in front before the first draw: the tears' one "no
 ## pursuit" marble, so the run's first tear is always safe.
 ##
-## **A marble may itself be a bag.** *(inbox #561: "a marble in a bag is itself a bag. when its drawn
+## **A marble may itself be a bag.** *(inbox #561 in coral-bunny: "a marble in a bag is itself a bag. when its drawn
 ## the bag marble gets drawn from and produces the actual event then the bag marble gets placed bag
 ## in the outer bag. this makes it very unlikely that two events from the inner bag happen right
 ## after each other" · asked whether a drawn bag marble goes back at once or with the next outer
@@ -147,7 +147,7 @@ func put_in_front(marbles: Array) -> void:
 	_picked = -1
 	_queue.push_front(marbles.duplicate())
 
-## **Rigs the next `size` draws to hold `ensured`.** *(inbox #561: "when creating a new / rigged
+## **Rigs the next `size` draws to hold `ensured`.** *(inbox #561 in coral-bunny: "when creating a new / rigged
 ## marble bag -- let's say you want to spawn in a yeller next: create a new marble bag with x
 ## holdings place the ensured item in the bag fill the remaining x-1 items by *drawing* from the
 ## currently active bag. x defines how soon we want to get the guaranteed event" · "you will be
@@ -164,7 +164,7 @@ func rig(ensured: Array, size: int) -> void:
 	put_in_front(ensured + _take(size - ensured.size(), []))
 
 ## **Rigs `ensured` to come after the next `before` draws and no sooner** — the two-bag shape, for an
-## ensured marble that must not be met early. *(inbox #561: "day 3 have a 5 bag then a 1 bag with
+## ensured marble that must not be met early. *(inbox #561 in coral-bunny: "day 3 have a 5 bag then a 1 bag with
 ## the dog" · "if you need guaranteed spacing use the day 3 trick otherwise just do the rigged bag
 ## directly".)* A bag of `before` marbles taken out of the bag being drawn from, none of them one of
 ## `ensured`, goes in front of a bag of `ensured`, in front of what is left. Like `rig()`, nothing

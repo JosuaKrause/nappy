@@ -1607,7 +1607,7 @@ const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
 
 ## Rows whose marbles in her route's bag are set here rather than by `ROUTE_BAG_MARBLES_PER_WEIGHT`
 ## times their weight, because the weight is not only the bag's: the dawn's weighted roll reads it
-## on every day the row is placed. *(inbox #566: "if we want to change the probability then we can
+## on every day the row is placed. *(inbox #566 in feathery-stork: "if we want to change the probability then we can
 ## change the bag -- I'd say we could do 2 dogs -- we don't need the charging dog that often and in
 ## 17 rolls there are two guaranteed ones".)* `charging_dog` is in the bag only on day 3, the one
 ## day it is director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`)
@@ -1618,20 +1618,20 @@ const ROUTE_BAG_MARBLES_OF := {"charging_dog": 2}
 ## route's bag is rigged (`MarbleBag.rig()`) with a bag of this many marbles, one `homeless_yeller`
 ## and the rest drawn from the bag she was drawing from. *(olive-koala, statement 2: "after touching
 ## the mark a marble bag with 1/3 chance of yeller should be put in so the yeller is guaranteed to
-## encounter a yeller in the next three events" · inbox #561, on the size of a rigged bag: "x
+## encounter a yeller in the next three events" · inbox #561 in coral-bunny, on the size of a rigged bag: "x
 ## defines how soon we want to get the guaranteed event", and, told how sparse the route's events
 ## are: "maybe let's make the other rigged bags smaller, too".)* The second of the next two: at
 ## `AHEAD_INTERVAL`, within a minute of walking.
 const TASK_CONTACT_WITHIN_THE_NEXT := 2
 
 ## The same for day 11: once she has read its mark, a second loudspeaker mast is put on her route
-## within this many events, beside the one near the mark the task points at first. *(inbox #561:
+## within this many events, beside the one near the mark the task points at first. *(inbox #561 in coral-bunny:
 ## "day 11 is going to be a x=3", then "let's make the other rigged bags smaller".)*
 const MAST_WITHIN_THE_NEXT := 2
 
 ## The same for each of the return leg's patrols (`RETURN_PATROLS_PER_ACT`): rigged into a bag of
 ## this many as the one before it is handed out, so they come one after another inside the leg.
-## *(inbox #561, of the return patrols: "they will need rigged bags".)* Two, with
+## *(inbox #561 in coral-bunny, of the return patrols: "they will need rigged bags".)* Two, with
 ## `RETURN_PATROL_INTERVAL` between handouts, is a patrol every 18-32s of walking, which lands one or
 ## two inside a return leg rather than all of them.
 const RETURN_PATROL_WITHIN_THE_NEXT := 2

@@ -2313,7 +2313,7 @@ func _on_contact_completed(step_index: int) -> void:
 ## **After a mark, the task's own row is rigged onto her route** — the man shouting on day 6 and a
 ## loudspeaker mast on day 11. *(olive-koala, statement 2: "right now the first mark I almost never
 ## see a yeller. after touching the mark a marble bag with 1/3 chance of yeller should be put in so
-## the yeller is guaranteed to encounter a yeller in the next three events" · inbox #561: "day 11 is
+## the yeller is guaranteed to encounter a yeller in the next three events" · inbox #561 in coral-bunny: "day 11 is
 ## going to be a x=3", then "let's make the other rigged bags smaller, too".)* The route's bag is
 ## rigged with a bag of `Tuning.TASK_CONTACT_WITHIN_THE_NEXT` (`MAST_WITHIN_THE_NEXT` for the mast)
 ## marbles, the row and the rest drawn from the bag she was drawing from
@@ -2321,7 +2321,7 @@ func _on_contact_completed(step_index: int) -> void:
 ## walking. It is **besides** the contact `_begin_step()` placed near the mark, never instead of it:
 ## the man shouting is a look-alike the any-instance contact follows her onto
 ## (`_follow_her_between_look_alikes()`), and the mast is a second one on her way while the task's
-## arrow points at the one near the mark first (inbox #561: "let it point to the closest one first").
+## arrow points at the one near the mark first (inbox #561 in coral-bunny: "let it point to the closest one first").
 func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 	if not task or not _city or not _city.events:
 		return
