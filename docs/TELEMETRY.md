@@ -120,6 +120,38 @@ The events:
   (`EventManager._check_hard_fails()`). The cyclist's contact does those two different things to
   her — its field fills the meter, its reach ends the day — so each is an event of its own. A
   `pelican-hit` is sent just ahead of the day's own `lost-hard-fail-pelican`.
+- `nappy-day-N-seen-<event>` / `nappy-day-N-influenced-<event>` /
+  `nappy-day-N-influenced-unseen-<event>` — her encounters with the day's events, counted per
+  instance, so the reading influenced ÷ seen says how often each event appears and whether players
+  avoid it or ignore it *([misty-newt](playtests/2026-10-04-misty-newt.md), the player: "mostly I'm
+  interested in the ratio of interacted/seen")*. `<event>` is a catalogue row's id hyphenated
+  (`charging-dog`), or `pelican` for a pelican, never `cyclist`; ordinary walkers and cars send
+  none. `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
+  `EventManager` while a day is played (not behind the title, not on the escape), decides each:
+  - **An encounter** is one instance's time on screen: it opens the first frame any of what is
+    drawn for it is inside the view (`EventInstance.drawn_box()`, its own picture stretched over
+    the run a spread covers, against `Tuning.VIEW_HALF_EXTENT` about the camera's centre) or it
+    lands something on her from off screen, and it is over once the instance has been neither for
+    `Tuning.ENCOUNTER_GAP` (5s). Coming back sooner is the same encounter; a different instance is
+    always another.
+  - **`seen`**, at most once per encounter: the first frame `Tuning.ENCOUNTER_SEEN_SHARE` (80%) of
+    the instance's drawn box is inside the view, so a sliver at the edge, its halo or its badge does
+    not count. A row that draws nothing of its own (`playground`, `curfew_announce`) is never seen.
+  - **`influenced`**, at most once per encounter, the first frame it is meaningful: for a row whose
+    field excites her, `Tuning.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed on her within
+    the encounter (`EventInstance.landed_ever`); for a row that does not, her inside its lethal
+    reach or its hold, or it chasing her (`EventInstance.is_chasing()`). Every row in the catalogue
+    that can end the day, chase or hold her also excites her, so the second rule reaches none today.
+  - **`influenced-unseen`** is a meaningful encounter she never saw: an influence before the
+    encounter is seen waits, goes out as `influenced` the moment the instance is seen, and as
+    `influenced-unseen` once the encounter is over without it (or the next day starts, under the day
+    it happened on), so influenced ÷ seen counts only what she could see.
+  `tools/goatcounter.sh --encounters` prints the three per event type with the ratio, overall and by
+  day. `seen-fire` and `pelican-seen` above stay as they are beside these.
+- `nappy-day-N-ran` — a bout of her running, sent as it begins: she runs (`Stroller.run_excess_ratio()`
+  above 0, faster than walking pace) after `Tuning.RUN_BOUT_GAP` (10s) or more without running, or
+  for the first time in the day (`EncounterWatch`). *(misty-newt: "we can count the number of running
+  excluding gaps smaller than 10s".)*
 - `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark
   actually noticed (`ResistanceDirector._track_sight_and_reposition()`, within `SEEN_DISTANCE` and
   on screen for `SEEN_DWELL_SECONDS`), touched, or untouched when the day it belongs to ends. The
@@ -146,7 +178,8 @@ The events:
 Every signal named above that exists purely for this page — `day_lost_to`, `event_sighted`,
 `event_lit_unmet`, `city_gone_dark`, `escape_city_entered`, `pursuit_began`, `pursuit_ended`,
 `resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent`, `pelican_spawned`,
-`pelican_sighted`, `pelican_excited_her`, `pelican_struck_her` — is listen-only: it rolls no RNG and
+`pelican_sighted`, `pelican_excited_her`, `pelican_struck_her`, `encounter_seen`,
+`encounter_influenced`, `run_bout_began` — is listen-only: it rolls no RNG and
 changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so, the style the
 existing `escape_*` signals already use.
 
