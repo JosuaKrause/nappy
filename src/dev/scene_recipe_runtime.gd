@@ -264,7 +264,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if not check is Dictionary:
 				errors.append("playback.observations entries must be objects")
 				continue
-			_keys(check, ["tick", "subject", "condition", "at", "distance"], "observation", errors)
+			_keys(check, ["tick", "subject", "condition", "at", "distance", "half"], "observation", errors)
 			_number(check.get("tick"), "observation.tick", 0,
 					float(playback.get("duration", 5)) * Engine.physics_ticks_per_second, errors, true)
 			var subject: Variant = check.get("subject")
@@ -278,6 +278,12 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 					and not subject in ["mark", "task"]:
 				errors.append("observation.condition %s asks about the task's mark or target"
 						% check.get("condition"))
+			if check.get("condition") == "clear_of_both_views":
+				if not SceneRecipe.tuple(check.get("half"), 2, false) or float(check.half[0]) <= 0.0 \
+						or float(check.half[1]) <= 0.0:
+					errors.append("observation.half: clear_of_both_views needs [half width, half height] in px")
+			elif check.has("half"):
+				errors.append("observation.half belongs to clear_of_both_views")
 			if check.get("condition") in ["near", "beyond"]:
 				_position(check.get("at"), "observation.at", errors)
 				_number(check.get("distance"), "observation.distance", 0, 10000, errors)
@@ -285,14 +291,14 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 
 ## The observation conditions, in the order `docs/SCENE_RECIPES.md` names them.
 const CONDITIONS := ["visible", "moving", "running", "carrying", "pursuing", "near", "beyond",
-		"off_screen", "offered", "done", "arrowed", "unarrowed"]
+		"off_screen", "clear_of_both_views", "offered", "done", "arrowed", "unarrowed"]
 ## An observation subject naming no actor but the first live instance of a catalogue row: what an
 ## event summons rather than what the recipe placed, such as the `fire_truck` a seen
 ## `burning_building` calls in.
 const ROW_SUBJECT := "row:"
 
-## `setup.task`: the day's own resistance step, its mark where `mark` puts it and read as the scene
-## begins (`ResistanceDirector.start_recipe_task()`). The days with a mark take `mark`; the last
+## `setup.task`: the day's own resistance step, its mark where `mark` puts it and unread until she
+## touches it (`ResistanceDirector.start_recipe_task()`). The days with a mark take `mark`; the last
 ## night has no mark and takes none; `neighbor` pins day 10's neighbor's start and nothing else.
 ## Names `mark`, `task` (the contact, where the red arrow ends) and, for a task that rides a body —
 ## the man shouting, the van, the burnt shell, the neighbor, a roadblock — `rider`, for the
@@ -489,8 +495,10 @@ func install(city: City, player: Stroller, baby: Baby,
 
 ## `setup.task`, started once her own camera is the one on screen: the boot camera is gone by
 ## `begin()` and is still current during `install()`, and where the task is placed asks what she
-## can see from where she read the mark. The last night is offered only once the goal is met, so a
-## day-14 scene starts with it met. False, with the scene stopped, when the director refused it.
+## can see from where she reads the mark, which is later: the mark stands unread and the task is
+## placed when she touches it (`_bind_task_names()`). The last night is offered only once the goal
+## is met, so a day-14 scene starts with it met. False, with the scene stopped, when the director
+## refused it.
 func _start_the_task() -> bool:
 	if not data.get("setup", {}).has("task"):
 		return true
@@ -516,20 +524,48 @@ func _start_the_task() -> bool:
 		write_manifest()
 		get_tree().quit(1)
 		return false
+	_task_from = mark if mark != Vector2.INF else _player.global_position
+	manifest["task"] = {"mark": [mark.x, mark.y] if mark != Vector2.INF else null}
+	_bind_task_names()
+	return true
+
+## Where the task's distance is measured from: the mark, or on the last night where she starts.
+var _task_from := Vector2.INF
+
+## Names what the director offers now. A mark stands unread as `mark` until she touches it; the
+## task it unlocks is placed at that touch, so `task` and `rider` are named from the tick after,
+## and the manifest records where the target was put and which way the arrow points. Called every
+## tick, so an observation finds the task however late she reads the mark. A placement the
+## director refuses stops the scene.
+func _bind_task_names() -> void:
+	if not _resistance or not data.get("setup", {}).has("task") or manifest.get("setup_failed", false):
+		return
+	var contact: ContactPoint = _resistance._contact
 	if _resistance._read_mark:
 		named["mark"] = _resistance._read_mark
-	named["task"] = _resistance._contact
+	elif contact and contact.step.is_pickup and not contact.is_done:
+		named["mark"] = contact
+		return
+	if not contact or contact.step.is_pickup:
+		manifest["setup_failed"] = true
+		for problem in _resistance.scene_task_errors():
+			print("[SceneRecipe] " + problem)
+		print("[SceneRecipe] setup.task: the mark's task has nowhere to go in this scene")
+		write_manifest()
+		_active = false
+		get_tree().quit(1)
+		return
+	if named.get("task") == contact:
+		return
+	named["task"] = contact
 	if _resistance._rider:
 		named["rider"] = _resistance._rider
 	var step := _resistance.current_step()
 	var target := _resistance.contact_position()
-	var from := mark if mark != Vector2.INF else _player.global_position
 	var arrow := _resistance.red_arrow_target()
-	manifest["task"] = {"step": step.index, "title": step.title,
-			"mark": [mark.x, mark.y] if mark != Vector2.INF else null,
-			"target": [target.x, target.y], "distance": snappedf(from.distance_to(target), 0.01),
-			"arrow": [arrow.x, arrow.y] if arrow != Vector2.INF else null}
-	return true
+	manifest.task.merge({"step": step.index, "title": step.title,
+			"target": [target.x, target.y], "distance": snappedf(_task_from.distance_to(target), 0.01),
+			"arrow": [arrow.x, arrow.y] if arrow != Vector2.INF else null, "read_tick": tick})
 
 ## The army column is a production happening, whose close-spaced trucks deliberately do not use
 ## unrelated catalogue-event spacing. Start its real formation at the authored main-road point.
@@ -930,6 +966,7 @@ func snapshot() -> Dictionary:
 	return result
 
 func _observe() -> void:
+	_bind_task_names()
 	for check: Dictionary in _observations:
 		if int(check.tick) != tick:
 			continue
@@ -960,6 +997,9 @@ func _observe() -> void:
 				"off_screen":
 					passed = not _box_on_screen(actor.global_position,
 							ResistanceDirector.TASK_HALF_EXTENT)
+				"clear_of_both_views":
+					passed = not _box_in_either_view(actor.global_position,
+							Vector2(float(check.half[0]), float(check.half[1])))
 				"offered":
 					passed = actor is ContactPoint and not actor.is_done and _resistance != null \
 							and _resistance._contact == actor
@@ -974,6 +1014,9 @@ func _observe() -> void:
 		var record := check.duplicate(true)
 		record["passed"] = passed
 		record["state"] = snapshot().get(check.subject, {})
+		if is_instance_valid(_player):
+			record["player_at"] = [snappedf(_player.global_position.x, 0.01),
+					snappedf(_player.global_position.y, 0.01)]
 		if actor and not named.has(check.subject):
 			record["state"] = {"position": [snappedf(actor.global_position.x, 0.0001),
 					snappedf(actor.global_position.y, 0.0001)]}
@@ -1013,6 +1056,22 @@ func _box_on_screen(centre: Vector2, half: Vector2) -> bool:
 	for corner: Vector2 in [centre, centre + half, centre - half, centre + Vector2(half.x, -half.y),
 			centre + Vector2(-half.x, half.y)]:
 		if view.has_point(transform * corner):
+			return true
+	return false
+
+## Whether any part of a box `half` either side of `centre` is inside the world her camera shows
+## in the landscape window or in the rotated, portrait presentation of the same game
+## (`ScreenOrientation`: 1280x720 turned into 720x1280, the same zoom), both centred on where the
+## camera looks: the world 640x360 wide in one and 360x640 in the other at zoom 2.
+func _box_in_either_view(centre: Vector2, half: Vector2) -> bool:
+	var camera := get_viewport().get_camera_2d()
+	var looking := camera.get_screen_center_position() if camera else _player.global_position
+	var zoom := camera.zoom.x if camera else 1.0
+	var landscape := ScreenOrientation.DESIGN_SIZE / zoom
+	var portrait := ScreenOrientation.ROTATED_SIZE / zoom
+	var box := Rect2(centre - half, half * 2.0)
+	for size: Vector2 in [landscape, portrait]:
+		if Rect2(looking - size * 0.5, size).intersects(box):
 			return true
 	return false
 

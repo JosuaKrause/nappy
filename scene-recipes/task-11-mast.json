@@ -1,13 +1,17 @@
 {
-  "version": 1, "name": "Day 11: a mast put up where her path first reaches 576px", "seed": 11,
+  "version": 1, "name": "Day 11: a mast put up where her path first reaches 576px, read on a walk from the unread mark", "seed": 11,
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
-  "anchors": {"mark": {"tile": [92, 69]}},
-  "setup": {"tutorial_complete": true, "day": 11, "parent": "mother", "player": {"at": "mark", "facing": "south"}, "task": {"mark": "mark"}},
-  "playback": {"walk": "0.35s1.04w3.48s1.39e1.39s3.48e8.0n1.39e", "duration": 21.5, "capture_at": 20.0,
-    "observations": [{"tick": 1, "subject": "task", "condition": "offered"},
-      {"tick": 1, "subject": "task", "condition": "arrowed"},
-      {"tick": 1, "subject": "task", "condition": "off_screen"},
-      {"tick": 1, "subject": "task", "condition": "beyond", "at": "mark", "distance": 576},
-      {"tick": 1, "subject": "task", "condition": "near", "at": "mark", "distance": 608},
-      {"tick": 630, "subject": "task", "condition": "done"}]}
+  "anchors": {"mark": {"tile": [92, 69]}, "start": {"tile": [87, 70]}},
+  "setup": {"tutorial_complete": true, "day": 11, "parent": "mother", "player": {"at": "start", "facing": "east"}, "task": {"mark": "mark"}},
+  "playback": {"walk": "1.74e1.04w3.48s1.39e1.39s3.48e8.0n1.39e", "duration": 22.9, "capture_at": 21.4,
+    "observations": [{"tick": 1, "subject": "mark", "condition": "offered"},
+      {"tick": 1, "subject": "mark", "condition": "unarrowed"},
+      {"tick": 1, "subject": "player", "condition": "beyond", "at": "mark", "distance": 150},
+      {"tick": 60, "subject": "mark", "condition": "done"},
+      {"tick": 60, "subject": "task", "condition": "offered"},
+      {"tick": 60, "subject": "task", "condition": "arrowed"},
+      {"tick": 60, "subject": "task", "condition": "off_screen"},
+      {"tick": 60, "subject": "task", "condition": "beyond", "at": "mark", "distance": 540},
+      {"tick": 60, "subject": "task", "condition": "near", "at": "mark", "distance": 644},
+      {"tick": 672, "subject": "task", "condition": "done"}]}
 }

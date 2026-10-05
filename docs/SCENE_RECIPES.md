@@ -69,22 +69,28 @@ simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direc
 `speed`; production lane, ground, speed and car-gap checks apply.
 
 `task: {"mark":"mark"}` starts the day's own resistance task, the way a played day does, with
-the chalk mark at the named position and read as the scene begins: its words are announced, the
-task it unlocks is placed from where she stands by the director's own placement, and it is on offer
-with its red arrow from the first frame. The mark has to stand where a day's mark can, the centre
+the chalk mark at the named position, **unread** as the scene begins, and her start a short walk
+from it: touching the mark reads it, its words are announced and the task it unlocks is placed from
+where she stands then by the director's own placement, with its red arrow from that moment. Before
+she reads it no task is on offer and no arrow is drawn. The mark has to stand where a day's mark can, the centre
 of an alley mouth's tile on open ground reachable from home; a mark anywhere else is refused, never
 moved. Days 6 to 13 take `mark`; day 14's task, the power station's front door, has no mark and
 takes `task: {}`, and the scene starts with the resistance goal met, since the last night is
 offered only then. `neighbor` pins day 10's neighbor's start to a sidewalk tile the day's own draw
 could choose (about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk from home, and
-`ResistanceDirector.NEIGHBOR_CLEAR_OF_HER`, 400px, or more from her); it is the one target drawn
+`ResistanceDirector.NEIGHBOR_CLEAR_OF_HER`, 400px, or more from her where she reads the mark, which
+the draw runs when she does); it is the one target drawn
 from the whole city rather than placed near the mark or standing in a fixed place. Everything the
 task brings comes with it: the target and any event it is or rides on, the guard robbers at the
 mark and the target, and the pursuer a handed-over note or package sets on her. What the day brings
 besides the task does not: the neighbor walking to work, the raid, the market and the column stay
 out, and day 12's park still closes once its swing is reached. The task's observation names are
-`mark`, `task` (its contact, where the red arrow ends) and `rider` for a task riding a body: the man
-shouting, the van, the burnt shell, the neighbor and a roadblock.
+`mark` (named from the start), and, once she has read the mark, `task` (its contact, where the red
+arrow ends) and `rider` for a task riding a body: the man shouting, the van, the burnt shell, the
+neighbor and a roadblock. An observation of `task` or `rider` belongs after the walk has reached the
+mark, so one before it finds nothing and fails; the manifest's `task` records the tick she read the
+mark (`read_tick`), where the target was put and where the arrow points. A task the director has
+nowhere to place, once she has read the mark, stops the scene with the director's reasons.
 
 `column: {"at":[1904,2064],"direction":"north"}` starts the real three-truck army formation
 in its actual main-road lane. Its ordinary formation spacing and rear-truck stopping logic
@@ -116,7 +122,9 @@ off the street signals. Supported escape pins are trucks, abduction, roadblocks 
 `observations`. Each observation has a physics `tick`, named `subject` and `condition`:
 `visible`, `moving`, `running`, `carrying`, `pursuing`, `near` or `beyond` with `at` and
 `distance` (at most or at least that far), `off_screen` (no part of a box three tiles either side
-and four up and down, `ResistanceDirector.TASK_HALF_EXTENT`, is in the picture), and for `mark` or
+and four up and down, `ResistanceDirector.TASK_HALF_EXTENT`, is in the picture), `clear_of_both_views` with `half` (`[half width, half height]` in px: no part
+of that box round the subject is in the world the camera shows in the landscape window or in the
+rotated portrait presentation, 640x360 and 360x640 at the game's zoom), and for `mark` or
 `task` alone `offered`, `done`, `arrowed` (the red arrow ends on it) and `unarrowed` (no red arrow
 is drawn). A `subject` of `row:<catalogue id>` names the first live instance of that row, for what
 an event summons rather than what the recipe placed.
@@ -128,7 +136,7 @@ change that clock. Failed observations and interrupted gameplay exit unsuccessfu
 ## The task scenes
 
 One scene per day whose task names a target, days 6 to 14, puts that target at the least distance
-the task allows from the mark, which also tests that it is put out of her view
+the task allows from where she reads the mark, which also tests that it is put out of her view
 *(the player, inbox #502: "in the scene we can use the minimum distance which in turn also serves
 as test whether it will be properly off screen")*. Days 6, 7, 8, 11 and 13 leave the placement to
 the director, which puts the target where a path from her first reaches the 576px circle round her
@@ -137,29 +145,37 @@ next tile out from the circle. Day 8's burnt building stands there for a run wit
 door a tile or two behind the shell. The targets whose place is fixed — day 9's district door, day
 12's swing and day 14's station door — have no such rule, so their scenes put the mark or her start
 just past that same circle. Day 10's neighbor starts at their own least distance, 400px from her.
-Every scene here shares one context city (`context_seed` 1917501) and run seed 11, with
-no background crowd, so a scene starts the same way every time.
+Days 6 to 13 start her a walk from the mark, about 160px (5 tiles along a street, outside the 150px
+`ResistanceDirector.SEEN_DISTANCE` in which she notices a mark) and with a clear way to it, on a
+street whose own first tiles are open ground; the mark is unread and no task is on offer until her
+walk touches it *(the player, inbox #555: "make them not start *on* the mark", answered "Unread,
+walk to it")*. She reads it up to the mark's 36px reach away, so the target stands its distance
+from where she read it, and the assertions measure from the mark with that 36px of slack. The
+routes keep out of the robber's notice at the mark and, where the straight way to the target runs
+past him, go round. Every scene here shares one context city (`context_seed` 1917501) and run seed
+11, with no background crowd, so a scene starts the same way every time.
 
 | Recipe | Day and target | She starts | The target, as the scene asserts it |
 |---|---|---|---|
-| `task-06-note.json` | 6, a note for the man shouting | at the mark | the man shouting, 576–608px out; no arrow, since any of them answers |
-| `task-07-package.json` | 7, the package at the van | at the mark | the van, 576–608px out |
-| `task-08-burnt-shell.json` | 8, the burnt building | at the mark | the shell 576–608px out, the arrow on the door behind it |
-| `task-09-crossing.json` | 9, the crossing | at the mark | the named district door's gatehouse, 576–640px out; done by crossing the door |
-| `task-10-neighbor.json` | 10, warning the neighbor | at the mark | the neighbor, 400–416px out, walking home |
-| `task-11-mast.json` | 11, silencing a mast | at the mark | a mast put up for the task, 576–608px out |
-| `task-12-swing.json` | 12, the swing | at the mark | the swing's base, 576–640px out |
-| `task-13-roadblock.json` | 13, into a roadblock's band | at the mark | the roadblock, 576–608px out; no arrow |
+| `task-06-note.json` | 6, a note for the man shouting | 5 tiles west of the mark, on the street, the mark unread | the man shouting, 576–608px out; no arrow, since any of them answers |
+| `task-07-package.json` | 7, the package at the van | 5 tiles west of the mark, on the street, the mark unread | the van, 576–608px out |
+| `task-08-burnt-shell.json` | 8, the burnt building | 5 tiles west of the mark, on the street, the mark unread | the shell 576–608px out, the arrow on the door behind it |
+| `task-09-crossing.json` | 9, the crossing | 5 tiles west of the mark, the mark unread | the named district door's gatehouse, 576–640px out; done by crossing the door |
+| `task-10-neighbor.json` | 10, warning the neighbor | 5 tiles east of the mark on the street above it, the mark unread | the neighbor, 400px or more from where she reads the mark (about 455px from it), walking home |
+| `task-11-mast.json` | 11, silencing a mast | 5 tiles west of the mark, on the street, the mark unread | a mast put up for the task, 576–608px out |
+| `task-12-swing.json` | 12, the swing | 5 tiles east of the mark on the street below it, the mark unread | the swing's base, 576–640px out |
+| `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles west of the mark, on the street, the mark unread | the roadblock, 576–608px out; no arrow |
 | `task-14-last-night.json` | 14, the station's front door | on the sidewalk west of it | the door on the facade, 576–640px out |
 | `station-door-corner.json` | 14, the station's front door | on the far outer corner of its sidewalk | the door, 57.7px away, outside its 50.6px reach |
-| `fire-truck.json` | 3, the fire and the engine it calls in | at the doorstep | the fire out of her view, 432px west; the engine parked at the kerb in front of it |
+| `fire-truck.json` | 3, the fire and the engine it calls in | on the sidewalk 496px east of the fire | the whole burning building, smoke included, out of both the landscape and the portrait view at the first tick; the engine parked at the kerb in front of it |
 
 Play one with `tools/run.sh --recipe scene-recipes/task-07-package.json` and walk to the target,
 following the red arrow where there is one; the summary after a won day reloads the scene. Each
-scene's headless assertion, in `tools/scene-recipes.sh`, checks at the first tick that the task is
-on offer, the arrow ends on the target (or that none is drawn), the target is out of her view and
-at its stated distance, then walks the recorded route and checks that reaching the target completed
-the task. The guard robbers stand where the day puts them, and the walks keep out of their notice
+scene's headless assertion, in `tools/scene-recipes.sh`, checks at the first tick that the mark is
+unread, no arrow is drawn and she stands outside the mark's notice, walks the recorded route to the
+mark and checks that reading it completed the mark and offered the task, the arrow ends on the target
+(or that none is drawn), the target is out of her view and at its stated distance, then walks on and
+checks that reaching the target completed the task. The guard robbers stand where the day puts them, and the walks keep out of their notice
 except on day 9, where the inspection lets her out within the door's guard's notice and he catches
 her moments later, after the assertion; add `--invincible` to play a scene without a robber ending
 it.
@@ -168,7 +184,10 @@ it.
 outer corners of the two sidewalk tiles in front of it (`ResistanceDirector.DOOR_REACH`, 50.6px,
 against the corners' 57.7px): she starts on the west corner, where the door is not touched, and one
 step east touches it. The east corner is 100px from the door's guard, so standing on it wakes him.
-`fire-truck.json` starts on day 3 with `burning_building` named and nothing else: once she has seen
+`fire-truck.json` starts on day 3 with `burning_building` named and nothing else, her start 496px
+east of the fire, so that its lot, its rise and its smoke are out of both the landscape and the
+portrait view at the first frame *(the player, inbox #557: "the
+fire truck scene starts too close to the start -- the building is already on screen")*: once she has seen
 the fire, its own `spawns_on_sight` calls the `fire_truck` in from off screen exactly as a played
 day does, and the engine parks at the kerb in front of the fire for the rest of the day.
 
