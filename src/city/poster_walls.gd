@@ -54,16 +54,19 @@ const KIND_WEIGHTS := [
 		PosterArt.Kind.RULES: 0.5, PosterArt.Kind.CURFEW: 0.5},
 ]
 ## Share of the walls each dawn works, per act, on the streets the day's routes run along and off
-## them. "Sparse at first and denser towards the end", and in act III and IV most of it on "the
-## streets she uses most" — which are the day's own routes, the one reading of that a morning can
-## make. A front faces an east-west street and the main road runs north-south, so act IV's "most
-## walls on a main street" is read as the routes too. Taste, open to overturn.
-const DAWN_SHARE_ON_ROUTES := [0.0, 0.10, 0.30, 0.45]
-const DAWN_SHARE_OFF_ROUTES := [0.0, 0.06, 0.08, 0.12]
+## them. Denser towards the end, and weighted to "the streets she uses most" — which are the day's
+## own routes, the one reading of that a morning can make. A front faces an east-west street and
+## the main road runs north-south, so act IV's "most walls on a main street" is read as the routes
+## too. Raised after a playtest ("on the first day with posters it's very hard to find one --
+## increase the probability throughout"): measured along the routes she walks (`tests/probes/
+## merry_elk_poster_density.gd`), the first poster day leaves a sheet in view along most of
+## every route; `tests/test_posters.gd` pins the floor. Taste, open to overturn.
+const DAWN_SHARE_ON_ROUTES := [0.0, 0.55, 0.65, 0.80]
+const DAWN_SHARE_OFF_ROUTES := [0.0, 0.30, 0.35, 0.40]
 ## Extra share of the walls the first morning of each act beyond the first works, on top of the
 ## above: day 4 is the city's first posters ("some are already up that first morning"), day 8 the
 ## uniform sheets going up edge to edge, day 12 the wanted notice. On the routes and off them alike.
-const ACT_MORNING_SHARE := 0.10
+const ACT_MORNING_SHARE := 0.25
 ## Share of new sheets pasted over an older one that leave it showing, offset, rather than
 ## covering it exactly. The exception: "if it's visibly over pasted for all of them then it will
 ## look weird" (PLAYTEST-123, statement 33). Taste, open to overturn.
@@ -77,7 +80,8 @@ const FIRST_PASTE_AFTER := 0.8
 
 ## How long her heading has to press into a postered wall before the sheet tears — long enough that
 ## brushing past does not tear, short enough that a push made by accident does, which is how the
-## gimmick is found. Taste, open to overturn.
+## gimmick is found (it is taught nowhere). Only the first sheet of a push waits this long; see
+## `_push_to_tear()`. Taste, open to overturn.
 const PRESS_TO_TEAR := 0.4
 ## How far into the wall her heading has to point to be a push: the sine of the angle it makes with
 ## the wall's line. A half is thirty degrees, so a diagonal into the wall (forty-five) pushes, and
@@ -113,6 +117,9 @@ var _jobs: Dictionary = {}
 var _player: Stroller = null
 ## Seconds her heading has pressed into a postered sheet without a break. See `_push_to_tear()`.
 var _pressed_for := 0.0
+## Whether the push held now has already torn a sheet, so every intact sheet she slides in front of
+## tears at once. See `_push_to_tear()`.
+var _sliding := false
 ## The bag the run's tears draw from, rebuilt from `PosterState.tears` whenever it disagrees with
 ## the run — a save loaded, a lost day given back, a new run. See `_the_bag()`.
 var _bag: MarbleBag = null
@@ -172,6 +179,7 @@ func start_day(day: int, tree: RouteTree) -> void:
 	_day_running = true
 	_jobs.clear()
 	_pressed_for = 0.0
+	_sliding = false
 	var state := GameState.posters
 	var corridor := Corridor.of(tree) if tree else null
 	for dawn in range(maxi(state.pasted_through + 1, FIRST_DAY), day + 1):
@@ -251,20 +259,17 @@ static func _kind_for(day: int, rng: RandomNumberGenerator) -> int:
 			break
 	return chosen
 
-## How many of a wall's `cells` one working covers: one or two in act II ("a wall here and there,
-## one or two sheets on it"), the whole wall for the uniform sheet ("whole walls, edge to edge"),
-## at least half of it in act IV ("dense"). Always consumes one value.
+## How many of a wall's `cells` one working covers: two to four in acts II and III, the whole wall
+## for the uniform sheet ("whole walls, edge to edge"), at least half of it in act IV ("dense"). Always consumes one value.
 static func _sheets_for(kind: int, act: int, cells: int, rng: RandomNumberGenerator) -> int:
 	var roll := rng.randi_range(0, 1 << 16)
 	if kind == PosterArt.Kind.UNIFORM:
 		return cells
-	var low := 1
-	var high := 2
+	var low := 2
+	var high := 4
 	if act >= 4:
 		low = ceili(cells * 0.5)
 		high = cells
-	elif act == 3:
-		high = 3
 	low = clampi(low, 1, cells)
 	high = clampi(high, low, cells)
 	return low + roll % (high - low + 1)
@@ -360,23 +365,29 @@ func _job_for(tile: Vector2i) -> Dictionary:
 ## seconds; the sheet she is in front of then tears. `steering` is the input she is being steered
 ## by rather than her velocity, because a wall stops the second and not the first.
 ##
-## A diagonal slides her along the wall, so the count carries across the cells of it while she keeps
-## pushing, runs only while she is in front of an intact sheet, and starts again after each tear:
-## a push held along a papered wall tears a sheet every `PRESS_TO_TEAR` seconds rather than one
-## per cell she crosses. Letting go, or turning out of the wall, starts it again.
+## A diagonal slides her along the wall. The first sheet of a push takes `PRESS_TO_TEAR` seconds,
+## the count running only while she is in front of an intact sheet; once it has torn, every next
+## intact sheet she comes in front of tears at once while the push is held, so a push held along a
+## papered wall strips every sheet she slides past. Letting go, turning out of the wall or stepping
+## back from its face (or off its sidewalk) ends the push, and the next one takes the time again.
 ##
 ## A tear costs nothing and counts for nothing; what it can do is bring a patrol — see `_tear()`.
 func _push_to_tear(delta: float, at: Vector2, steering: Vector2) -> void:
 	var tile := _map.world_to_tile(at)
 	if not _by_tile.has(tile) or not _presses_into_the_wall(tile, at, steering):
 		_pressed_for = 0.0
+		_sliding = false
 		return
 	if not GameState.posters.has_intact_sheet(tile):
+		return
+	if _sliding:
+		_tear(tile)
 		return
 	_pressed_for += delta
 	if _pressed_for < PRESS_TO_TEAR:
 		return
 	_pressed_for = 0.0
+	_sliding = true
 	_tear(tile)
 
 ## Whether a heading `steering` from `at`, on the front tile `tile`, pushes into its wall. Every

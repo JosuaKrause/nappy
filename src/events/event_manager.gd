@@ -706,7 +706,8 @@ func _watch_the_encounters(delta: float) -> void:
 		return
 	var stroller := _player as Stroller
 	var running := stroller != null and stroller.run_excess_ratio() > 0.0
-	_encounters.tick(delta, _instances, _visible, _player.global_position, running)
+	_encounters.tick(delta, _instances, _visible, _player.global_position, running,
+			_hold_that_would_begin)
 
 ## What she can see this frame, for the page's counter alone — the encounters and `pelican-seen`.
 ## Set once a frame by `_look_through_the_camera()`.
@@ -1637,37 +1638,7 @@ func _check_detentions() -> void:
 		return
 	_release_finished_door_detentions(body)
 	_update_door_release_latches(body)
-	# **One hold at a time, and it is not the same rule as the one below.** That one settles a tie
-	# inside a single frame; this one settles the *next* frame, where the body that captured her is
-	# skipped as already chatting and the next one along is free to start a hold of its own on top.
-	# A door's three bodies stand a tile apart and all three reach her in the middle of it, so the
-	# gate took her in, the hut took her in again a frame later, and the two released her in turn —
-	# the second reading the position the first had teleported her to, and charging her
-	# `Tuning.CHAT_EXCITEMENT` twice for one crossing. Asked of the instances rather than of
-	# `Stroller.is_detained()`, because a hold and the input lock it sets run on two clocks that can
-	# end a frame apart, and it is the hold that owns the release.
-	for instance in _instances:
-		if instance.is_chatting():
-			return
-	var nearest: EventInstance = null
-	var nearest_range := INF
-	for instance in _instances:
-		if instance.def.detain_seconds <= 0.0 or instance.is_finished or instance.is_leaving:
-			continue
-		if instance.is_chatting():
-			continue
-		if not instance.def.redetains and instance.has_chatted():
-			continue
-		var latch: ReleaseLatch = _door_release_latches.get(instance)
-		if latch and latch.holds():
-			continue
-		if instance.def.redetains and _on_a_booms_carriageway(instance, body.global_position):
-			continue
-		var range_to := instance.global_position.distance_to(body.global_position)
-		if range_to > instance.def.detain_distance() or range_to >= nearest_range:
-			continue
-		nearest = instance
-		nearest_range = range_to
+	var nearest := _hold_that_would_begin(body.global_position)
 	if not nearest:
 		return
 	nearest.start_chat()
@@ -1691,6 +1662,44 @@ func _check_detentions() -> void:
 		nearest.def.detain_seconds,
 		"awake" if nearest.baby_awake else "asleep",
 		("+%.0f" % Tuning.CHAT_EXCITEMENT) if nearest.baby_awake else "+0 (asleep)"])
+
+## The instance whose hold would begin on this frame with her at `at`, or null: the test
+## `_check_detentions()` makes, here so that `EncounterWatch` asks the very same question (a pure
+## read: it starts nothing). Nothing when a hold is already running, and otherwise the nearest of
+## the instances that may take her in.
+func _hold_that_would_begin(at: Vector2) -> EventInstance:
+	# **One hold at a time, and it is not the same rule as the one below.** That one settles a tie
+	# inside a single frame; this one settles the *next* frame, where the body that captured her is
+	# skipped as already chatting and the next one along is free to start a hold of its own on top.
+	# A door's three bodies stand a tile apart and all three reach her in the middle of it, so the
+	# gate took her in, the hut took her in again a frame later, and the two released her in turn —
+	# the second reading the position the first had teleported her to, and charging her
+	# `Tuning.CHAT_EXCITEMENT` twice for one crossing. Asked of the instances rather than of
+	# `Stroller.is_detained()`, because a hold and the input lock it sets run on two clocks that can
+	# end a frame apart, and it is the hold that owns the release.
+	for instance in _instances:
+		if instance.is_chatting():
+			return null
+	var nearest: EventInstance = null
+	var nearest_range := INF
+	for instance in _instances:
+		if instance.def.detain_seconds <= 0.0 or instance.is_finished or instance.is_leaving:
+			continue
+		if instance.is_chatting():
+			continue
+		if not instance.def.redetains and instance.has_chatted():
+			continue
+		var latch: ReleaseLatch = _door_release_latches.get(instance)
+		if latch and latch.holds():
+			continue
+		if instance.def.redetains and _on_a_booms_carriageway(instance, at):
+			continue
+		var range_to := instance.global_position.distance_to(at)
+		if range_to > instance.def.detain_distance() or range_to >= nearest_range:
+			continue
+		nearest = instance
+		nearest_range = range_to
+	return nearest
 
 ## Whether `at` is on the carriageway spanned by the boom of the door `door_body` stands in — a
 ## live `lifts_for_traffic` instance on the same cross-street line (its own `facing_now()` axis),

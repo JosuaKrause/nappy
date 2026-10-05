@@ -2199,11 +2199,14 @@ Top-down camera with a fake vertical extrusion:
   alley or a park carries none, and neither does her home block or the power station. Nothing is
   up before day 4, the first day poster crews appear. From then every dawn pastes a share of the
   walls from the day's own `posters` stream, more of it on the streets the day's routes run along,
-  so some sheets are already up that first morning and each day's walls add to the last: sparse
-  in act II (the rules and the leader's portrait, the curfew sheet among them from day 6), whole
-  walls of the dark uniform sheet from day 8, and from day 12 the wanted notice and the portrait
-  nearly everywhere. A new sheet on an old one mostly covers it exactly; a quarter of the time the
-  older one shows beneath, offset enough to read as pasted over. What is on the walls is run state
+  so many sheets are already up that first morning and each day's walls add to the last: two to
+  four sheets on a worked wall in act II (the rules and the leader's portrait, the curfew sheet
+  among them from day 6), whole walls of the dark uniform sheet from day 8, and from day 12 the
+  wanted notice and the portrait nearly everywhere. The rates are set against what she sees along
+  her routes: on the first poster day a sheet is in view along most of every route, which
+  `tests/test_posters.gd` pins as a floor for that day and for the last. A new sheet on an old one
+  mostly covers it exactly; a quarter of the time the older one shows beneath, offset enough to
+  read as pasted over. What is on the walls is run state
   (`GameState.posters`, a `PosterState`): it is saved, and a lost day gives it back like the rest
   of what the attempt spent, so the retry's dawn pastes the same sheets again. A burnt front shows
   none. Nothing takes a sheet down but her: pushing against the wall tears it (`docs/MECHANICS.md`,
