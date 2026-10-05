@@ -371,8 +371,8 @@ the same daily walk route, now empty of everything the player learned to avoid.
 
 ### Good — resistance complete + day 14 sabotage
 
-She hands the key over at the station's door and walks away, and nothing happens. Then, once the
-station is out of sight, the city goes dark around her in one frame: every lit window, every
+She hands the key over at the station's door and walks away with someone sent after her; the
+lights stay on until the station is out of sight. Then the city goes dark around her in one frame: every lit window, every
 traffic light, the station's own hall. The loudspeakers cut out mid-sentence — the first real
 silence in the run, and it is mechanical rather than described: the masts have no power of their
 own, so the blackout stops every one of them at once (`Blackout`, through
