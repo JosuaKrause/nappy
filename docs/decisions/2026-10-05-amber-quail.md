@@ -25,6 +25,3 @@ with `test_finale` any more; the explicit suite list is the reproduction.
 
 **Chosen while building, open to overturn:** the section is restored in each of the two tests,
 not once in the suite's `run()`.
-
-Several suites have no measured cost in `tests/suite_costs.txt`, so the shard plan places them at
-the default; `tools/test.sh --record-costs` would bring it up to date.
