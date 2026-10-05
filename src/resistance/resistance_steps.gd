@@ -130,8 +130,8 @@ const NARROW_KINDS: Array[TargetKind] = [TargetKind.DOOR, TargetKind.PARK_SWING,
 		TargetKind.STATION_DOOR]
 
 ## Whether more than one place can answer `step` at once, so the red arrow has a choice to make:
-## the any-instance tasks (the man shouting, a roadblock) and day 11's mast, whose task takes any
-## live mast. Every other task is one place and its arrow has nothing to choose.
+## the any-instance tasks (the man shouting, a roadblock) and day 11's mast, whose task takes the mast
+## near the mark or the one rigged onto her route. Every other task is one place and its arrow has nothing to choose.
 static func answers_at_several_places(step: Step) -> bool:
 	return step != null and not step.is_pickup \
 			and (not step.is_one_place or step.target_kind == TargetKind.MAST)

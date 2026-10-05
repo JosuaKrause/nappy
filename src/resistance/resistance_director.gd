@@ -316,6 +316,8 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	_step = step
 	_arrow_key = null
 	_arrow_clock = 0.0
+	_near_mast_id = ""
+	_masts_at_the_mark = {}
 	if not _step:
 		return
 
@@ -360,6 +362,14 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			push_warning("resistance step %d has nowhere to go in this city" % _step.index)
 		_step = null
 		return
+
+	# Day 11's two masts that answer the task: this one, near the mark, and the one rigged onto her
+	# route (`_rig_her_route_for()`), which is any mast the day puts down after this moment.
+	if _step.target_kind == ResistanceSteps.TargetKind.MAST and _city and _city.events:
+		_near_mast_id = _mast_id
+		for plan in _city.events.plans():
+			if plan.mast_id != "":
+				_masts_at_the_mark[plan.mast_id] = true
 
 	# The contact this replaces is only ever the mark she has just read, activating the task right
 	# behind it in this same call (`start_day()` clears everything else first). It stays standing
@@ -2551,6 +2561,8 @@ func _clear() -> void:
 	_mast_id = ""
 	_arrow_key = null
 	_arrow_clock = 0.0
+	_near_mast_id = ""
+	_masts_at_the_mark = {}
 	_lingering_rider = null
 	_lingering_remaining = 0.0
 
@@ -2604,7 +2616,7 @@ func pointable_objective() -> Vector2:
 ## `contact_position()`, which every one of them is.
 ##
 ## **Where several places answer the task** (`ResistanceSteps.answers_at_several_places()`: every live
-## man shouting, every live roadblock, every live mast) the tip is the closest by walking distance
+## man shouting, every live roadblock, and day 11's two masts) the tip is the closest by walking distance
 ## (`retarget_the_arrow()`), not the one the contact happened to be placed on.
 func red_arrow_target() -> Vector2:
 	var step := current_step()
@@ -2637,6 +2649,11 @@ const ARROW_SEARCH_TILES := 8000
 ## What the red arrow points at right now for a task several places answer: the `EventInstance` of
 ## a man shouting or a roadblock, or the mast id of a mast. Null before the first choice.
 var _arrow_key: Variant = null
+## Day 11: the mast the task was placed at near the mark, and the ids of every mast the day had
+## when it was placed. A mast put down after that is the one rigged onto her route
+## (`_rig_her_route_for()`), the only other mast that answers the task.
+var _near_mast_id := ""
+var _masts_at_the_mark := {}
 var _arrow_clock := 0.0
 
 ## Where `_arrow_key` stands now, or `Vector2.INF` when nothing is chosen or it is gone.
@@ -2667,11 +2684,14 @@ func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
 					"reach": _reach_distance(instance)})
 	return found
 
-## Whether `plan` is a live mast the task can take: the same offer `_place_at_a_mast()` makes — a
+## Whether `plan` is one of the two masts that answer day 11's task — the one placed near the mark
+## or the one rigged onto her route, and no other mast — and is a live mast the task can take: the same offer `_place_at_a_mast()` makes — a
 ## placed, unsilenced mast off the home block whose foot has legal, unobstructed ground beside it
 ## that is reachable from home — so the arrow never moves the task onto a mast she cannot touch.
 func _mast_answers(plan: EventScheduler.Planned, walled_alleys: Array[Rect2i]) -> bool:
 	if plan.mast_id == "" or plan.def.id != MAST_ROW or plan.silenced or not plan.is_placed():
+		return false
+	if plan.mast_id != _near_mast_id and (_near_mast_id == "" or _masts_at_the_mark.has(plan.mast_id)):
 		return false
 	var foot := _map.world_to_tile(plan.position)
 	if _map.is_closed(foot) or _map.is_on_home_block(foot):

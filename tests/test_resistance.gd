@@ -100,6 +100,7 @@ func run(t) -> void:
 	_test_the_arrow_chooses_by_walking_distance_not_straight_line(t)
 	_test_the_arrow_switches_as_another_target_becomes_closer(t)
 	_test_a_single_target_arrow_stays_on_its_contact(t)
+	_test_only_the_near_mast_and_the_routed_mast_answer_day_eleven(t)
 	_test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
 	_test_the_swings_touch_is_the_ellipse_at_its_base(t)
 	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
@@ -4256,6 +4257,42 @@ func _test_the_arrow_switches_as_another_target_becomes_closer(t) -> void:
 			t.check(director.red_arrow_target().distance_to(west.global_position) < 1.0,
 					"walking away from the task the arrow jumps to the closest on the other side")
 		player.free()
+		director.free())
+
+## Day 11 has two masts that answer the task: the one near the mark and the one rigged onto her
+## route. Any other mast neither answers nor moves the contact.
+func _test_only_the_near_mast_and_the_routed_mast_answer_day_eleven(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var read := _read_the_mark_on(t, 11, SEED)
+		var director: ResistanceDirector = read[0]
+		var step := director.current_step()
+		var near := director._mast_id
+		t.check(step != null and near != "", "day 11's task is on offer at a mast")
+		var keys: Array = []
+		for c in director._arrow_candidates(step):
+			keys.append(c["key"])
+		t.check(keys == [near], "with no mast put on her route only the one near the mark answers")
+		var others: Array[String] = []
+		for plan in _city.events.plans():
+			if plan.mast_id != "" and plan.mast_id != near and plan.def.id == "loudspeaker":
+				others.append(plan.mast_id)
+		director.retarget_the_arrow()
+		t.check(director._mast_id == near, "and the contact stays on it, however many masts stand")
+		# A mast put down after the mark was read stands for the one rigged onto her route.
+		var routed := ""
+		for id in others:
+			director._masts_at_the_mark.erase(id)
+			keys = []
+			for c in director._arrow_candidates(step):
+				keys.append(c["key"])
+			if id in keys:
+				routed = id
+				break
+			director._masts_at_the_mark[id] = true
+		if routed != "":
+			t.check(keys.size() == 2 and near in keys, "the mast put down after the mark answers too")
+		(read[2] as Stroller).free()
 		director.free())
 
 ## A single-target task keeps its arrow on its contact exactly, retargeting or not.
