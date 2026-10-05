@@ -3007,8 +3007,7 @@ func _has_left_the_field() -> bool:
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
 	var at := _along()
-	var beyond := _room_beyond_the_map()
-	if at < -beyond or at > limit + beyond:
+	if at < -_room_beyond_the_map(false) or at > limit + _room_beyond_the_map(true):
 		return true
 
 	# Across the axis first: a street the box has stopped reaching at all. This is not the rare
@@ -3050,10 +3049,30 @@ func _has_left_the_field() -> bool:
 ## carries on through the border: `City._paint_outside_the_map` puts road out there at the spine's
 ## own width and nowhere else, and `CityEdge` is the tunnel and the bridge standing over it.
 ## Walkers keep the tile for the same reason — the pavements do not carry on, only the road does.
-func _room_beyond_the_map() -> float:
+##
+## **And on the spine the two ends differ, because what is out there differs.** North is a tunnel:
+## a car goes out of existence once its whole body is inside the mouth (`TUNNEL_ROOM`), never
+## driving on across the mountain over it, and comes into existence at the same depth, emerging
+## from the dark. South is a bridge whose deck runs `BRIDGE_RUN` out over the water, so a car
+## stays on the deck for as long as any view could show it.
+func _room_beyond_the_map(south: bool) -> float:
 	if kind != Kind.CAR or not _map.is_main_road(_vertical, _corridor):
 		return Tuning.TILE_SIZE
-	return Tuning.OUT_OF_SIGHT
+	return _spine_room(south)
+
+## How far past the map's north edge a car on the spine exists: the depth of the tunnel's dark
+## opening (`CityEdge.TUNNEL_DEPTH_TILES`, opaque at its far end) plus half a car, so the car's
+## rear is inside the dark before the car stops existing and its nose is not yet past it when the
+## car comes into existence.
+const TUNNEL_ROOM := float(CityEdge.TUNNEL_DEPTH_TILES * Tuning.TILE_SIZE) \
+		+ Tuning.CAR_STRIKE_HALF_LENGTH
+
+## How far past the map's south edge a car on the spine exists: the length of the bridge deck
+## (`CityEdge.BRIDGE_RUN`) less a car, so it is never driving off the end of the deck.
+const BRIDGE_RUN := CityEdge.BRIDGE_DECK_PX - 2.0 * Tuning.CAR_STRIKE_HALF_LENGTH
+
+func _spine_room(south: bool) -> float:
+	return BRIDGE_RUN if south else TUNNEL_ROOM
 
 ## How far past the true edge a **fresh** recycle may land — stricter than `_room_beyond_the_map`,
 ## which also governs how far a *departing* agent may overrun before it disappears.
@@ -3067,10 +3086,10 @@ func _room_beyond_the_map() -> float:
 ## grants it. `_room_beyond_the_map` itself is unchanged and still the departure rule; this is
 ## the same question asked of the other end of the journey, with a different answer for everybody
 ## the tunnel and the bridge are not for.
-func _entry_room() -> float:
+func _entry_room(south: bool) -> float:
 	if kind != Kind.CAR or not _map.is_main_road(_vertical, _corridor):
 		return 0.0
-	return Tuning.OUT_OF_SIGHT
+	return _spine_room(south)
 
 ## How far this kind's own drawn picture reaches past `_along()`, along this axis, in the
 ## direction a plain edge lies — read off the baked region's own native size and the same anchor
@@ -3178,7 +3197,7 @@ func _recycle() -> void:
 		# what this kind may stand on, and the near-`ENTRY_SPREAD` band mid-map is untouched because
 		# there the cap is never the smaller number.
 		var reach := ENTRY_SPREAD
-		var beyond := _entry_room()
+		var beyond := _entry_room(_direction < 0.0)
 		if _direction > 0.0:
 			reach = minf(reach, bounds.x + beyond)
 		else:
@@ -3265,12 +3284,12 @@ func _take_the_placement(taken: Array) -> void:
 func _keep_within_the_room_beyond_the_map() -> void:
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
-	var beyond := _entry_room()
-	if beyond <= 0.0:
+	var north := _entry_room(false)
+	if north <= 0.0:
 		var clearance := _entry_picture_clearance()
 		_set_along(clampf(_along(), clearance, limit - clearance))
 		return
-	_set_along(clampf(_along(), -beyond, limit + beyond))
+	_set_along(clampf(_along(), -north, limit + _entry_room(true)))
 
 ## Drops a **recycled** car in behind whatever is already in its lane, when the entry point it
 ## rolled is not free. Nothing at all if it landed somewhere free, which is almost always.
@@ -3335,13 +3354,13 @@ func _has_room_here() -> bool:
 ## past the edge, the roll also has to leave room for the picture on the near side of it —
 ## `_within_the_map_with_room_for_its_picture()` is that second question.
 func _entry_band_fits() -> bool:
-	var beyond := _entry_room()
-	if beyond <= 0.0:
+	var north := _entry_room(false)
+	if north <= 0.0:
 		return _within_the_map_with_room_for_its_picture()
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
 	var at := _along()
-	return at >= -beyond and at <= limit + beyond
+	return at >= -north and at <= limit + _entry_room(true)
 
 # ---------------------------------------------------------------- drawing ---
 

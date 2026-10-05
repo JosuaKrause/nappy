@@ -181,7 +181,7 @@ func _counterfactual(city: City, t) -> void:
 				var tile := Vector2i(x, y)
 				var inside := x >= 0 and y >= 0 and x < city.map.size.x and y < city.map.size.y
 				var source_id := GroundTiles.source_for(city.map, tile, 1) if inside \
-					else city._border_source(x, y, City.OUTSIDE_DEPTH_TILES)
+					else city._border_source(x, y)
 				if source_id >= 0 and source_id != GroundTiles.WATER:
 					layer.set_cell(tile, source_id, GroundLayers.atlas_coords_for(
 						source_id, city.map.seed_used, tile, source.tile_set))

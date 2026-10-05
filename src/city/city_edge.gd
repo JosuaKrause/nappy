@@ -60,6 +60,11 @@ const MOUNTAIN := &"tiles/mountain"
 ## and above the portal there is only rock.
 const TUNNEL_DEPTH_TILES := 2
 
+## How far the bridge deck runs south of the map, in px: a view that asks for the water beyond
+## the border still sees the deck carrying on between its parapets, and a car on the spine
+## stays on it (`CrowdAgent.BRIDGE_RUN`) for as long as any view could show it.
+const BRIDGE_DECK_PX := 1280.0
+
 ## The height of one step of the darkening ramp, in px. A quarter of a tile, so the road goes
 ## into the dark as a gradient rather than in two jumps, and a car's own length spans several
 ## steps — it is visibly darker at the front than at the back while it is going in.
@@ -97,11 +102,27 @@ func _draw() -> void:
 		Kind.TUNNEL_DARK:
 			_swallow_the_road()
 		Kind.BRIDGE:
-			_blit(BRIDGE, Vector2(-0.5, 0.0))
+			_lay_the_deck()
 		Kind.ROAD_EAST:
 			_blit(ROAD_ON, Vector2(0.0, -0.5))
 		_:
 			_blit(ROAD_ON, Vector2(-1.0, -0.5))
+
+## The deck, laid end to end for `BRIDGE_DECK_PX`: one picture is a block long, and a view past the
+## border shows the road carrying on over the water, so the deck never stops short of the frame.
+func _lay_the_deck() -> void:
+	var texture := AtlasLibrary.region(BRIDGE)
+	var extent := texture.get_size()
+	var rows := int(ceil(BRIDGE_DECK_PX / extent.y))
+	for row in rows:
+		draw_texture_rect(texture, Rect2(Vector2(-extent.x * 0.5, extent.y * row), extent), false)
+
+## The deck's own stretch for the residency test, in place of the 512px square every other
+## structure uses: without it the deck would unload while its far end is still in view.
+func scenery_bounds() -> Rect2:
+	if kind != Kind.BRIDGE:
+		return super.scenery_bounds()
+	return Rect2(global_position + Vector2(-128.0, -256.0), Vector2(256.0, BRIDGE_DECK_PX + 256.0))
 
 ## The carriageway darkening a step at a time as it runs into the portal's opening.
 ##

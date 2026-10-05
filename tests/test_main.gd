@@ -752,9 +752,13 @@ func _test_the_overview_is_landscape_to_every_edge(t) -> void:
 	t.check(city.scenery_ground_source(Vector2i(lo.x, hi.y)) == GroundTiles.WATER \
 			and city.scenery_ground_source(hi) == GroundTiles.WATER,
 			"south owns both overview corners as water")
-	t.check(city.scenery_ground_source(Vector2i(south_spine_x,
-			city.map.size.y + City.OUTSIDE_DEPTH_TILES)) == GroundTiles.WATER,
-			"the southern bridge ends at the authored border depth")
+	for depth in [City.OUTSIDE_DEPTH_TILES, City.OUTSIDE_DEPTH_TILES * 4]:
+		t.check(city.scenery_ground_source(Vector2i(south_spine_x,
+				city.map.size.y + depth)) != GroundTiles.WATER,
+				"the southern bridge's road carries on %d tiles out, to the edge of any view" % depth)
+	t.check(city.scenery_ground_source(Vector2i(south_spine_x - 2,
+			city.map.size.y + City.OUTSIDE_DEPTH_TILES * 4)) == GroundTiles.WATER,
+			"the water either side of the bridge goes on too")
 
 	city.free()
 	GameState.play_seconds = 0.0

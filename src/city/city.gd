@@ -1510,8 +1510,8 @@ func _composed_ground_tile_set() -> TileSet:
 ## border instead of being buried in it — see `_spawn_spine_exits`, and `CityEdge._swallow_the_road`
 ## for the road going into the dark. Take the exceptions away and `CityEdge`'s whole sentence — *the
 ## city goes on and this is how you would leave it* — is a tunnel mouth set into a cliff with no
-## road reaching it. **The two exceptions are not the same depth.** The bridge carries the road the
-## whole width of the band, because a deck is in the open; the tunnel carries it only as far as the
+## road reaching it. **The two exceptions are not the same depth.** The bridge carries the road as
+## far as any view asks (the deck is `CityEdge.BRIDGE_DECK_PX` long), because a deck is in the open; the tunnel carries it only as far as the
 ## portal's opening (`CityEdge.TUNNEL_DEPTH_TILES`), because past the mouth the road is inside the
 ## mountain and what is on top of it is rock.
 ##
@@ -1520,7 +1520,7 @@ func _composed_ground_tile_set() -> TileSet:
 ## and `CityMap` is untouched, so the walkable set and every guarantee stated over it are identical
 ## tile for tile. The boundary wall is still what stops her.
 func _paint_outside_the_map(tile: Vector2i) -> int:
-	return _border_source(tile.x, tile.y, OUTSIDE_DEPTH_TILES)
+	return _border_source(tile.x, tile.y)
 
 ## Which border tile belongs at an outside cell. Each side is written as *what you meet, in order,
 ## walking away from the last kerb*, and how far out of the city a tile is is what indexes it.
@@ -1539,14 +1539,14 @@ func _paint_outside_the_map(tile: Vector2i) -> int:
 ## and deliberately does not, is anything *at* the corner: no headland, no bay, no new terrain.
 ##
 ## The order below is the whole rule. North first, then south, then whatever is left.
-func _border_source(x: int, y: int, depth: int) -> int:
+func _border_source(x: int, y: int) -> int:
 	var north := -y
 	var south := y - (map.size.y - 1)
 	var west := -x
 	var east := x - (map.size.x - 1)
 
 	if _leaves_by_the_spine(x):
-		var on_to_the_bridge := south > 0 and south <= depth
+		var on_to_the_bridge := south > 0
 		var into_the_tunnel := north > 0 and north <= CityEdge.TUNNEL_DEPTH_TILES
 		if on_to_the_bridge or into_the_tunnel:
 			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)), _day)
