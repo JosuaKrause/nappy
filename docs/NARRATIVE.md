@@ -146,21 +146,25 @@ that through the day before the last night:
 
 | Day | Task | Reached by | Arrow |
 | --- | --- | --- | --- |
-| 6 | A note for a stranger | Hand it to whichever `homeless_yeller` she walks up to — several are live at once and look alike, and coming near one and walking on commits her to nothing, so there is no wrong one to single out first. | any instance |
+| 6 | A note for a stranger | Hand it to whichever `homeless_yeller` she walks up to — several are live at once and look alike, and coming near one and walking on commits her to nothing, so there is no wrong one to single out first. | red, on the closest by walking distance |
 | 7 | The package | The delivery van's own drop, touched from any side of the van. Picking it up makes the pram heavier for the rest of the day. | red |
 | 8 | The burnt shell | The building this run's own day-3 fire burned, wherever in the city it stands, the arrow ending on its door, and the drawing left from the near half of the sidewalk in front of it. Only a run that recorded no day-3 scar at all has one burnt for the task, on a front the fire could have caught on near the mark, the moment her mark is read. | red |
 | 9 | The crossing | Crossing one of that day's own region doors to its other side, in either direction — let through after the inspection or walking through — the first day the wall stands at all. The arrow ends on one of the door's two gatehouses, drawn by the day; standing at it does nothing. | red |
 | 10 | Warn the neighbor | The neighbor, out in the city and walking home, by the red arrow that follows them: about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk from her door when the mark is touched. Reached first, the neighbor runs; reaching the door first, they are taken, and from the next morning the wanted notice crosses their face out. | red, with a deadline |
-| 11 | Silence a mast | The foot of one live loudspeaker mast near the mark, drawn among those she can reach; when none is near, a new mast the day puts up near the mark, out of her view. Its field makes the approach cost while it broadcasts, so the skill is reaching it between broadcasts; reaching it puts its lamp out, and it stays quiet for the rest of the run. | red |
+| 11 | Silence a mast | The foot of one live loudspeaker mast near the mark, drawn among those she can reach; when none is near, a new mast the day puts up near the mark, out of her view. Its field makes the approach cost while it broadcasts, so the skill is reaching it between broadcasts; reaching it puts its lamp out, and it stays quiet for the rest of the run. Any live mast answers it. | red, on the closest by walking distance |
 | 12 | The swing | The swing on the playground of one specific park: her body touching the ellipse at the frame's base, where the arrow ends. | red |
-| 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's gatehouse — rather than round it. | any instance |
+| 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's gatehouse — rather than round it. | red, on the closest by walking distance |
 | 14 | The last night | The power station's front door, offered only once the goal is met, the arrow ending on the door and touched from the sidewalk in front of it as day 8's door is. Touching it is the sabotage. | red |
 
 **Two kinds of task.** One any live instance of the right thing answers — the man shouting, a
-roadblock — and gets no arrow: approaching any of them is still the cost, and whichever one she
-reaches is the right one. The rest are one place, and get the red arrow, `HomeArrow`'s own form
-in a color of its own (`Palette.TASK_ARROW`) — a decided exception to *no quest log or marker for
-the resistance*, narrowed to a task with exactly one place to be.
+roadblock, and a loudspeaker mast — and the rest are one place. **Every task has the red arrow**
+(`HomeArrow`'s own form in a color of its own, `Palette.TASK_ARROW`), a decided exception to *no
+quest log or marker for the resistance* *(2026-10-04, [busy-quail](playtests/2026-10-04-busy-quail.md),
+inbox #562: "yeah let's just always do arrows")*. Where several places answer, the arrow points at
+the closest by walking distance along her path, never straight-line, and moves to another when it
+becomes closer by four tiles of walking — also when she ignores the task and walks on. It is chosen
+twice a second from a breadth-first walk over the ground she can walk, which stops four tiles past the
+first target it reaches.
 
 **A task is near its mark.** The man shouting the task puts in the street, the van, a roadblock
 and the building burnt for a run with no day-3 fire stand where one of her paths from where she
@@ -286,7 +290,7 @@ ending is the one ending nobody is simply told about.
 
 ### Feedback
 
-There is no quest log and no marker beyond the red arrow's own narrow exception above. In the
+There is no quest log and no marker beyond the red arrow above. In the
 world a mark is a chalk mark on an alley wall, drawn *under* everything that stands on it, found
 by walking past it. **The task is announced at the mark and nowhere else**: the instant she
 touches it, its own words flash where the walking and running lessons do, and then the HUD

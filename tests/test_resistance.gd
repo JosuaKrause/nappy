@@ -95,7 +95,11 @@ func run(t) -> void:
 	_test_the_market_is_found_gone(t)
 	_test_the_park_closes_in_front_of_her_and_stays_taken(t)
 	_test_the_column_comes_down_the_main_road(t)
-	_test_the_red_arrow_only_ever_points_at_a_one_place_task(t)
+	_test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t)
+	_test_an_arrow_exists_on_every_task_day(t)
+	_test_the_arrow_chooses_by_walking_distance_not_straight_line(t)
+	_test_the_arrow_switches_as_another_target_becomes_closer(t)
+	_test_a_single_target_arrow_stays_on_its_contact(t)
 	_test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
 	_test_the_swings_touch_is_the_ellipse_at_its_base(t)
 	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
@@ -4092,10 +4096,9 @@ func _warning_for(events: EventManager, id: String) -> PendingWarning:
 
 # ----------------------------------------------------------------- red arrow ---
 
-## Two "any instance" tasks (the man shouting, a roadblock) earn no arrow; every other built
-## perform step is one place and does. A mark never earns one either way, whichever task it
-## unlocks.
-func _test_the_red_arrow_only_ever_points_at_a_one_place_task(t) -> void:
+## Every built perform step earns the red arrow, the "any instance" ones (the man shouting, a
+## roadblock) included. A mark never earns one, whichever task it unlocks.
+func _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		var mark_only := _director(t)
@@ -4104,8 +4107,9 @@ func _test_the_red_arrow_only_ever_points_at_a_one_place_task(t) -> void:
 		mark_only.free()
 
 		var yeller := _director_on_the_yeller_perform(t)
-		t.check(yeller.red_arrow_target() == Vector2.INF,
-				"the yeller is any instance, so it earns no arrow")
+		t.check(yeller.red_arrow_target() != Vector2.INF
+				and yeller.red_arrow_target() == yeller._rider.global_position,
+				"the yeller is any instance and earns the arrow too, on the man shouting")
 		yeller.free()
 
 		GameState.completed_resistance_steps = _completed_through(2)
@@ -4123,6 +4127,149 @@ func _test_the_red_arrow_only_ever_points_at_a_one_place_task(t) -> void:
 		van._contact._complete()
 		t.check(task != null and van.red_arrow_target() == Vector2.INF,
 				"and it goes out once she has reached it")
+		van.free())
+
+## plush-moose: an arrow exists on every task day, the any-instance days (6 and 13) and day 11's
+## masts included, from the moment the mark is read, and the last night's from dawn.
+func _test_an_arrow_exists_on_every_task_day(t) -> void:
+	var saved_scars := GameState.scars.duplicate()
+	var saved_state := GameState.city_state
+	var saved_progress := GameState.resistance_progress
+	var saved_sabotage := GameState.sabotage_done
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		for day: int in range(6, Tuning.RUN_LENGTH_DAYS + 1):
+			GameState.scars = []
+			GameState.resistance_progress = Tuning.RESISTANCE_GOAL \
+					if day == Tuning.RUN_LENGTH_DAYS else 0
+			GameState.sabotage_done = false
+			var read := _read_the_mark_on(t, day, SEED) if day != Tuning.RUN_LENGTH_DAYS \
+					else _start_the_finale(t, SEED)
+			var director: ResistanceDirector = read[0]
+			var step := director.current_step()
+			t.check(step != null and not step.is_pickup,
+					"day %d: the task is on offer" % day)
+			t.check(director.red_arrow_target() != Vector2.INF,
+					"day %d: and it has the red arrow" % day)
+			(read[2] as Stroller).free()
+			director.free())
+	GameState.scars = saved_scars
+	GameState.city_state = saved_state
+	GameState.resistance_progress = saved_progress
+	GameState.sabotage_done = saved_sabotage
+
+## The top-left tile of a straight run of walkable, unobstructed tiles `before` tiles to its left
+## and `after` to its right, for building a constructed case, or (-1, -1).
+func _open_run_for(director: ResistanceDirector, before: int, after: int) -> Vector2i:
+	director._ensure_reachability()
+	var map := _city.map
+	for y in range(8, map.size.y - 8):
+		for x in range(before + 1, map.size.x - after - 1):
+			var open := true
+			for dx in range(-before, after + 1):
+				var tile := Vector2i(x + dx, y)
+				if not map.is_walkable(tile) or director._reach_blocked.has(tile):
+					open = false
+					break
+			if open:
+				return Vector2i(x, y)
+	return Vector2i(-1, -1)
+
+## Day 6 on the test city with every man shouting but the ones this test puts in retired, and a
+## rig of her at `here`: `[director, her rig, tile]`, the tile the open run is centred on.
+func _yeller_arrow_case(t, before: int, after: int) -> Array:
+	var director := _director_on_the_yeller_perform(t)
+	for instance in _city.events.instances():
+		if instance.def.id == "homeless_yeller":
+			_city.events.retire(instance)
+	director._rider = null
+	var tile := _open_run_for(director, before, after)
+	var player := _rig_player(t, _city.map.tile_to_world(tile))
+	return [director, player, tile]
+
+func _put_a_yeller(tile: Vector2i) -> EventInstance:
+	return _city.events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
+			_city.map.tile_to_world(tile))
+
+## plush-moose, "closest here always means path closeness not crow closeness": a wall of closed
+## ground between her and the man who is nearer as the crow flies sends the arrow to the farther
+## one she can walk to.
+func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var made := _yeller_arrow_case(t, 15, 8)
+		var director: ResistanceDirector = made[0]
+		var player: Stroller = made[1]
+		var here: Vector2i = made[2]
+		t.check(here.x >= 0, "the test city has an open run to build the case on")
+		if here.x >= 0:
+			var near_by_crow := _put_a_yeller(here + Vector2i(6, 0))
+			var near_by_path := _put_a_yeller(here + Vector2i(-14, 0))
+			t.check(player.global_position.distance_to(near_by_crow.global_position)
+					< player.global_position.distance_to(near_by_path.global_position),
+					"the one beyond the wall is the nearer as the crow flies")
+			director.retarget_the_arrow()
+			t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) < 1.0,
+					"with nothing between them the arrow points at the nearer one")
+			# A wall of closed ground two tiles beyond her, far longer than the detour allowance.
+			for dy in range(-30, 31):
+				director._reach_blocked[here + Vector2i(3, dy)] = true
+			director._arrow_key = null
+			director.retarget_the_arrow()
+			t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
+					"behind a wall the arrow points at the one she can walk to sooner")
+			t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) > 100.0,
+					"and not at the nearer as the crow flies")
+		player.free()
+		director.free())
+
+## plush-moose, "might switch if another closest one comes close": as she walks the arrow moves to
+## whichever target has become closer along her path, with a hold of `ARROW_HOLD_TILES` so two
+## about-as-near ones do not make it flicker, and the tick moves it by itself.
+func _test_the_arrow_switches_as_another_target_becomes_closer(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var made := _yeller_arrow_case(t, 15, 15)
+		var director: ResistanceDirector = made[0]
+		var player: Stroller = made[1]
+		var here: Vector2i = made[2]
+		t.check(here.x >= 0, "the test city has an open run to build the case on")
+		if here.x >= 0:
+			var west := _put_a_yeller(here + Vector2i(-6, 0))
+			var east := _put_a_yeller(here + Vector2i(14, 0))
+			director.retarget_the_arrow()
+			t.check(director.red_arrow_target().distance_to(west.global_position) < 1.0,
+					"standing at the start the arrow points at the closer one")
+			# Walking east: the other becomes closer by more than the hold, and the tick moves it.
+			player.global_position = _city.map.tile_to_world(here + Vector2i(8, 0))
+			director._process(ResistanceDirector.ARROW_RETARGET_SECONDS)
+			t.check(director.red_arrow_target().distance_to(east.global_position) < 1.0,
+					"walking toward the other one, the arrow switches to it")
+			# Back to a spot about as near to both: it stays where it is.
+			player.global_position = _city.map.tile_to_world(here + Vector2i(4, 0))
+			director.retarget_the_arrow()
+			t.check(director.red_arrow_target().distance_to(east.global_position) < 1.0,
+					"about as near to both, it does not flicker back")
+			# Ignoring the task and walking on west: it goes back to the first.
+			player.global_position = _city.map.tile_to_world(here + Vector2i(-4, 0))
+			director.retarget_the_arrow()
+			t.check(director.red_arrow_target().distance_to(west.global_position) < 1.0,
+					"walking away from the task the arrow jumps to the closest on the other side")
+		player.free()
+		director.free())
+
+## A single-target task keeps its arrow on its contact exactly, retargeting or not.
+func _test_a_single_target_arrow_stays_on_its_contact(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		GameState.completed_resistance_steps = _completed_through(2)
+		var van := _director(t)
+		van.start_day(7, _rng(7, "resistance"), 300.0)
+		van._on_contact_completed(3)
+		van.retarget_the_arrow()
+		t.check(van.red_arrow_target() == van.contact_position()
+				and van.red_arrow_target() != Vector2.INF,
+				"the van has the one arrow, on its contact")
 		van.free())
 
 ## feathery-marmot, "the arrow ends on the item" — *"the red arrows should point to the actual item
