@@ -970,11 +970,14 @@ outcomes* rather than the same outcome at two prices:
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
 | Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
-| Bounded | gives up after its own `duration` — `PURSUIT_TIME` for every row but two, `PURSUIT_TIME × 2` for the resistance's `robber_giving_chase` and `van_guard_giving_chase`, whose short notice (`PURSUIT_MIN_NOTICE` plus a stated margin) buys a longer chase instead of a longer wait before either exists — **or** after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, because a run is priced per second and an unbounded chase is a loss however well it is played |
+| Bounded | gives up after its own `duration` — `PURSUIT_TIME` for every row, the resistance's `robber_giving_chase` and `van_guard_giving_chase` reading the day-3 dog's own — **or** after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, because a run is priced per second and an unbounded chase is a loss however well it is played |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
-telegraphs, unlike a row warned of before it exists (the fire engine, sited by a screen-edge badge
-with nothing in the world until its telegraph is spent). A pursuer that stands still while it
+telegraphs. One sent at her from off screen — the day-3 dog, the resistance's robber and guard — is
+warned of first like everything that arrives from off screen, but its badge alone is its own half
+second (`EventDef.offscreen_notice`), not its telegraph: it is then placed just out of sight with
+the whole approach still to run, where a non-pursuer warned first (the fire engine) spends its
+telegraph as the badge, with nothing in the world. A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
 owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
@@ -1205,10 +1208,11 @@ event, or one slower than the player (a dog walker at 32 px/s), only has to be w
 clearing the falloff band is enough. Something faster than the player cannot be outwalked at all; it sweeps its entire outer
 radius along the street, and the only escape is getting off its line, so it must give enough
 warning to clear the *full* radius. A row warned of before it exists is held to a different floor
-instead: the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s) from its screen-edge badge to the earliest
-it can reach her, since its place follows her and there is no field to walk out of during the
-badge. The fire engine, warned first this way, is created with its field already on her when she
-is on its street; its `telegraph_time` is 6.27s, well past that floor.
+instead: the flat `Tuning.OFFSCREEN_WARNING_MIN` (a second) from its screen-edge badge to the
+earliest it can reach her, since its place follows her and there is no field to walk out of during
+the badge, and its badge alone is at most `Tuning.WARNING_ALONE_MAX` (a second). The fire engine,
+warned first this way, is created just out of sight with its field already on her when she is on its
+street, so its one-second badge is the whole of its warning.
 
 `Tuning.validate_event()` asserts this on load, and `tests/test_events.gd` checks it over
 the whole catalogue, so an unfair event fails loudly rather than quietly ruining a run.

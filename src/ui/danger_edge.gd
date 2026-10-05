@@ -34,11 +34,15 @@ extends Control
 ##
 ## **And a warning can be up before its thing exists.** A source that also answers
 ## `pending_warnings() -> Array[PendingWarning]` — `EventManager` does — has things on their way
-## that are not in the world yet: a cyclist, a loose dog, the fire engine, day 13's column. Each
-## gets its badge from the moment its warning goes up, pointing at the place it will come from, for
-## as long as the warning runs (`PendingWarning`). *(PLAYTEST-145: "the warning appears by itself
-## with a reasonable position and when the time is right the object is spawned in at that location
-## just offscreen.")* Nothing about it is measured: the warning is the claim that it is coming.
+## that are not in the world yet: a cyclist, a loose dog, the day-3 dog, the fire engine, day 13's
+## column, the resistance's own robber and guard. Each gets its badge from the moment its warning goes
+## up, pointing at the place it will come from, which moves only with her, for the at most one second
+## the warning runs (`PendingWarning`). *(PLAYTEST-145: "the warning appears by itself with a
+## reasonable position and when the time is right the object is spawned in at that location just
+## offscreen"; calm-kestrel, inbox #559: "place the object immediately off screen so it will
+## immediately start coming on the screen turning off the warning".)* Nothing about it is measured:
+## the warning is the claim that it is coming. Then the thing exists just out of sight and keeps the
+## badge (`EventInstance.came_under_a_warning`) until she can see it, which is as soon as it moves.
 
 ## How far in from each screen edge the chevrons sit, as left/top/right/bottom. Asymmetric
 ## because the screen is: the clock and the run header are along the top, and the two meters and
@@ -196,11 +200,11 @@ func _measure(delta: float) -> void:
 			state = _watch[id]
 		else:
 			# **A thing that arrives under its own warning keeps the badge it already had.** It is
-			# created just off screen by its notice, inside `SCREEN_MARGIN`, where a fresh thing
-			# would not raise one; and it starts with no measured approach. Without this its badge
-			# would go down the frame it exists and stay down until it came into view — the one
-			# stretch of its approach the warning was for. So it starts closing at its own speed,
-			# already raised, and the margin waits until it has been seen once.
+			# created just out of sight, inside `SCREEN_MARGIN`, where a fresh thing would not raise
+			# one; and it starts with no measured approach. Without this its badge would flicker off
+			# for the frames before it comes into view. So it starts closing at its own speed (a
+			# pursuer's at its pursuing speed), already raised, and the margin waits until it has been
+			# seen once.
 			var warned := instance.came_under_a_warning
 			var own_speed := instance.def.pursue_speed if instance.def.pursues else instance.def.speed
 			state = {"was": at, "approach": own_speed if warned else 0.0,
@@ -322,13 +326,13 @@ func _is_worth_an_arrow_for(def: EventDef) -> bool:
 	# appears and vanishes in the same second as the thing walks into view — and takes away the
 	# moment, which is the whole row. Its fairness is paid in geometry.
 	#
-	# **A pursuer is the exception, because it is no longer a moment once it is sited off screen.**
-	# `charging_dog` carries `spawn_mode == AHEAD_OF_PLAYER` for the same siting the director gives
-	# every other crossing row, but `EventDirector` now sites it outside the view and lets it close
-	# in — so for as long as it is off screen it is exactly the thing this function exists to
-	# announce, and the moment it crosses into view the ordinary "no badge for what is already
-	# visible" filter in `_measure()` takes over. A row sited close and gone in three seconds still
-	# has nothing to announce; a row sited off screen and coming does.
+	# **A pursuer is the exception, because it is no longer a moment once it is sent from off
+	# screen.** `charging_dog` carries `spawn_mode == AHEAD_OF_PLAYER` for the same siting the
+	# director gives every other crossing row, but it is warned of first and then placed just out
+	# of sight to close in — so its badge is exactly what this function exists to raise, and the
+	# moment it comes into view the ordinary "no badge for what is already visible" filter in
+	# `_measure()` takes over. A row sited close and gone in three seconds still has nothing to
+	# announce; a row sent from off screen and coming does.
 	#
 	# **`TOWARD_PLAYER` is the opposite case and falls through on purpose.** It is a road, not an
 	# ambush — she is meant to see it coming and choose a side or a turn before it arrives — so the

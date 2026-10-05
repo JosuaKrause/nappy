@@ -24,6 +24,9 @@ func run(t) -> void:
 	_test_a_pursuer_is_sited_where_it_can_be_seen(t)
 	_test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 	_test_the_cyclist_is_warned_shortly_before_he_arrives(t)
+	_test_the_day_3_dog_keeps_its_gold_timing(t)
+	_test_the_resistances_pursuers_are_fitted_to_the_dog(t)
+	_test_every_pursuer_sent_from_off_screen_is_warned_first(t)
 	_test_a_retried_day_is_the_same_day(t)
 	_test_the_run_is_always_taught(t)
 	_test_a_paced_event_walks_a_beat(t)
@@ -97,19 +100,19 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 	instance.free()
 	return result
 
-## Where the encounter actually starts, in px: where the director sites something that comes at her,
-## or just inside the trigger for something that has been standing there.
+## Where the encounter actually starts, in px: where something sent at her from off screen is
+## created, or just inside the trigger for something that has been standing there.
 ##
-## The director's own siting depends on the heading she happens to be walking
-## (`Tuning.offscreen_lead(heading, closing_speed, def.offscreen_notice)`), so this asks for the
-## worst case over every heading rather than one of them — `Tuning.min_offscreen_lead()`, the
-## vertical axis plus the row's own notice of closing at its `pursue_speed` against `WALK_SPEED`,
-## which is the least ground the contract can ever rely on. A rig checked against a more generous
-## heading would pass on an encounter the game can still produce on a worse one.
+## A pursuer sent at her — the day-3 dog, the resistance's own two — is warned of first and created
+## just out of sight (`PendingWarning`), which depends on the way it comes and on what she can see,
+## so this asks for the worst case over every heading and either control scheme rather than one of
+## them — `PendingWarning.least_distance()`, the view's half height, which is the least ground the
+## contract can ever rely on. A rig checked against a more generous heading would pass on an
+## encounter the game can still produce on a worse one.
 func _sited_at(def: EventDef) -> float:
 	if def.pursues_within > 0.0:
 		return def.pursues_within - 10.0
-	return Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED, def.offscreen_notice)
+	return PendingWarning.least_distance()
 
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.
@@ -307,22 +310,20 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 ## **A pursuer has to be sited where it actually closes on her rather than backing away.**
 ##
 ## Two things have to agree and neither knows about the other: the stand-off is where it stops, and
-## the director decides where it starts. If the stand-off ever grows past the least the director
-## could ever site it at — `Tuning.min_offscreen_lead()`, the worst case over every heading she
-## might be walking — a pursuer *backs away* through its own telegraph instead of closing, which is
-## a dog that visibly reverses down the street in front of her.
+## the warning decides where it starts. If the stand-off ever grows past the least it could ever be
+## created at — `PendingWarning.least_distance()`, the worst case over every heading she might be
+## walking and either control scheme — a pursuer *backs away* through its own telegraph instead of
+## closing, which is a dog that visibly reverses down the street in front of her.
 ##
-## The relationship is asserted rather than left as a coincidence: a change to the stand-off, to
-## `VIEW_HALF_EXTENT` or to `OFFSCREEN_NOTICE` has moved these numbers before without anybody
-## checking they still agree.
+## The relationship is asserted rather than left as a coincidence: a change to the stand-off or to
+## `VIEW_HALF_EXTENT` has moved these numbers before without anybody checking they still agree.
 func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 	for def in EventCatalogue.all():
 		# Sited beside her by construction, which is what its own stand-off rule answers.
 		if not def.pursues or def.sets_off_beside_her:
 			continue
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
-		var floor_lead := Tuning.min_offscreen_lead(def.pursue_speed + Tuning.WALK_SPEED,
-				def.offscreen_notice)
+		var floor_lead := PendingWarning.least_distance()
 		t.check(standoff < floor_lead,
 				"'%s' stands off at %.0fpx, inside the %.0fpx it is sited at even on the worst axis"
 				% [def.id, standoff, floor_lead])
@@ -342,7 +343,8 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 ## `EventInstance.is_lethal_at()` returns false for the whole of `is_telegraphing()` — so a
 ## `TOWARD_PLAYER` row that reached her before its own telegraph ended would ride straight through,
 ## declared lethal and never once able to fire. Such a row's telegraph is its warning, run before it
-## exists (`PendingWarning`), and it is created with that telegraph spent; this walks the warning and
+## exists (`PendingWarning`, at most `Tuning.WARNING_ALONE_MAX`), and it is created with that
+## telegraph spent; this walks the warning and
 ## the arrival together, at the instance level, rather than trusting the construction.
 ##
 ## Walks every `hard_fail` `TOWARD_PLAYER` row in the catalogue rather than naming `cyclist`, so a
@@ -358,7 +360,7 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 		var her := Vector2.ZERO
 		var was_lethal := false
 		var elapsed := 0.0
-		while elapsed < def.telegraph_time + 5.0:
+		while elapsed < def.warned_for() + 5.0:
 			her.x += Tuning.WALK_SPEED * STEP
 			elapsed += STEP
 			if arrived.is_empty():
@@ -387,45 +389,46 @@ static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector
 		var path := PendingWarning.route_down_her_line(null, place, at, direction)
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
-		instance.resume(def.telegraph_time, 0.0)
+		instance.resume(EventManager.age_when_warned(def), 0.0)
 		arrived.append(instance)
 		return true
 	var warning := PendingWarning.new(def, where, arrive)
-	warning.follow(her)
+	warning.put_up(her)
 	return warning
 
-## How far over the contract's floor the cyclist's warning may run, walking into him, and still be
-## *shortly* before he arrives. Half a second is about three strides — enough for frame timing, and
-## well short of the extra second she spent watching him close from off screen when "most of the
-## time you're already gone when anything happens".
-const CYCLIST_WARNING_OVER_THE_FLOOR := 0.5
-
-## **The cyclist is warned by himself first, and arrives where the warning pointed, shortly after.**
-## *(2026-09-25: "I feel the same with the biker. it gets warned too early so most of the time you're
-## already gone when anything happens." · PLAYTEST-145: "the warning appears by itself with a
-## reasonable position and when the time is right the object is spawned in at that location just
-## offscreen" · "the biker needs to stay on the sidewalk".)*
+## **The cyclist is warned by himself first, for at most a second, and then comes into view at once
+## where the warning pointed.** *(2026-09-25: "I feel the same with the biker. it gets warned too
+## early so most of the time you're already gone when anything happens." · PLAYTEST-145: "the
+## warning appears by itself with a reasonable position and when the time is right the object is
+## spawned in at that location just offscreen" · "the biker needs to stay on the sidewalk";
+## calm-kestrel, inbox #559: "show the warning for x seconds (never longer than 2s) without placing
+## anything then place the object immediately off screen so it will immediately start coming on the
+## screen turning off the warning ... they jump around wildly"; busy-quail, inbox #569: "1s warning
+## should be enough".)*
 ##
 ## On the real map, with the warning held the way `EventManager` holds one (`warn_first()`,
 ## `_run_the_warnings()`) and read by a real `DangerEdge`, while she walks up her sidewalk and steps
 ## out onto the carriageway and back:
 ##
-## - **the badge is up with nothing in the world**;
-## - **the place stays on a sidewalk and just off screen the whole time**, and never nearer her than
-##   the distance ahead it started at, so walking on does not bring him sooner;
-## - **he is created no sooner than his `telegraph_time`, where the badge pointed, off screen, with
-##   his telegraph spent**.
+## - **the badge is up with nothing in the world**, for no more than `Tuning.WARNING_ALONE_MAX`;
+## - **the badge holds still**: its place keeps the same offset from her every frame, so it moves
+##   only with her own walking and never jumps to another piece of ground;
+## - **he is created once his second is up, on a sidewalk, wholly out of sight, with his telegraph
+##   spent**, and he comes into sight as soon as he moves — or, where the ground just out of sight is
+##   a cross street's carriageway and his sidewalk is beyond it, as soon as he has ridden that far —
+##   which takes the badge down.
 ##
 ## Then, walked by `M207Lead.measure()` (`tests/probes/m207_warning_lead.gd`, the probe that prints
 ## every warned row's lead) on open ground on both axes: **from the badge to his reach, walking into
-## him, is at least the contract's floor**, exactly his warning and then his approach from just off
-## screen, and standing still he still reaches her no sooner than the floor. **And on the narrower
-## axis that is not much more than the floor.**
+## him, is at least the contract's floor**, exactly his second and then his approach from just out of
+## sight, and standing still he still reaches her no sooner than the floor.
 func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 	var def := EventCatalogue.by_id("cyclist")
+	t.check(def.warned_for() <= Tuning.WARNING_ALONE_MAX,
+			"his badge is up alone for %.2fs, at most %.2fs" % [def.warned_for(), Tuning.WARNING_ALONE_MAX])
 	var map := _map()
 	# Her own kerb-side sidewalk beside the arterial, walking north from a point where the place just
-	# off screen ahead of her is on a sidewalk too rather than in the carriageway of a cross street.
+	# out of sight ahead of her is on a sidewalk too rather than in the carriageway of a cross street.
 	var her := CrowdLanes.arterial_pavement(map)
 	for _tile in map.size.y / 2:
 		if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
@@ -438,15 +441,19 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 	var edge := DangerEdge.new()
 	t.add_child(edge)
 	edge.setup(manager, player)
+	manager.visible_view().look(VisibleView.around(her).view, false)
 	var created: Array[EventInstance] = []
 	var where := func(at: Vector2) -> Vector2:
-		return PendingWarning.down_her_line(map, def, at, Vector2.UP)
+		return PendingWarning.down_her_line(map, def, at, Vector2.UP, VisibleView.around(at))
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var path := PendingWarning.route_down_her_line(map, place, at, Vector2.UP)
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
-		instance.resume(def.telegraph_time, 0.0)
+		instance.came_under_a_warning = true
+		instance.resume(EventManager.age_when_warned(def), 0.0)
 		created.append(instance)
+		# In the manager's own list, so the edge measures him as the game's own badge does.
+		manager._instances.append(instance)
 		return true
 	var warning := manager.warn_first(def, her, where, arrive)
 	t.check(warning != null, "the cyclist's warning goes up on the sidewalk she is walking")
@@ -459,62 +466,67 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		badged = badged or badge["id"] == "cyclist"
 	t.check(badged and created.is_empty(), "its badge is up with nothing in the world yet")
 
-	var ahead := Tuning.offscreen_lead(Vector2.UP, def.speed + Tuning.WALK_SPEED,
-			def.offscreen_notice)
 	var ground := [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
+	var offset := warning.place - her
 	var elapsed := 0.0
 	var looked := 0
-	var off_its_ground := 0
-	var on_screen := 0
-	var moved := 0
-	var nearer := 0
-	var was := warning.place
-	var pointed := warning.place
+	var jumped := 0
 	var came_at := INF
-	while elapsed < def.telegraph_time + 3.0:
+	while elapsed < Tuning.WARNING_ALONE_MAX + 1.0:
 		# North up the sidewalk, then a stride out onto the carriageway and back.
 		var step := Vector2.UP
-		if elapsed > 0.6 and elapsed <= 1.2:
+		if elapsed > 0.3 and elapsed <= 0.6:
 			step = Vector2.RIGHT
-		elif elapsed > 1.2 and elapsed <= 1.8:
+		elif elapsed > 0.6 and elapsed <= 0.9:
 			step = Vector2.LEFT
 		her += step * Tuning.WALK_SPEED * STEP
-		pointed = warning.place
+		manager.visible_view().look(VisibleView.around(her).view, false)
 		manager._run_the_warnings(STEP, her)
 		elapsed += STEP
 		if not created.is_empty():
 			came_at = elapsed
 			break
 		looked += 1
-		if not ground.has(map.tile_at(map.world_to_tile(warning.place))):
-			off_its_ground += 1
-		if not PendingWarning.is_off_screen(warning.place - her, warning.closing_speed(),
-				def.offscreen_notice):
-			on_screen += 1
-		if warning.place != was:
-			moved += 1
-		if (warning.place - her).dot(Vector2.UP) < ahead - 0.5:
-			nearer += 1
-		was = warning.place
-	t.check(looked > 0 and moved > 0,
-			"it was watched (%d frames) and it moved with her (%d)" % [looked, moved])
-	t.check(off_its_ground == 0,
-			"and its place stayed on a sidewalk the whole time (%d frames off it)" % off_its_ground)
-	t.check(on_screen == 0,
-			"and just off screen the whole time (%d frames on it)" % on_screen)
-	t.check(nearer == 0,
-			"and never nearer her than the %.0fpx ahead it started at (%d frames nearer)"
-			% [ahead, nearer])
-	t.check(created.size() == 1 and came_at >= def.telegraph_time,
-			"he is created once his %.2fs warning is over (%.2fs)" % [def.telegraph_time, came_at])
+		if not (warning.place - her).is_equal_approx(offset):
+			jumped += 1
+	t.check(looked > 0 and jumped == 0,
+			"it was watched (%d frames) and its place kept its offset from her every frame (%d not)"
+			% [looked, jumped])
+	t.check(created.size() == 1 and came_at <= Tuning.WARNING_ALONE_MAX + 2.0 * STEP,
+			"he is created once his %.2fs badge is over (%.2fs)" % [def.warned_for(), came_at])
 	if created.size() == 1:
 		var bike := created[0]
-		t.close_to(bike.global_position.distance_to(warning.place), 0.0,
-				"where the badge pointed", 0.5)
-		t.check(PendingWarning.is_off_screen(bike.global_position - her,
-				def.speed + Tuning.WALK_SPEED, def.offscreen_notice),
-				"off screen by his own notice")
+		var view := VisibleView.around(her)
+		t.check(ground.has(map.tile_at(map.world_to_tile(bike.global_position))),
+				"on a sidewalk")
+		t.check(PendingWarning.is_out_of_sight(view, def, her, bike.global_position),
+				"wholly out of sight the frame he exists")
 		t.check(not bike.is_telegraphing(), "with his telegraph already spent, so he can end the day")
+		var into_sight := INF
+		var gone := INF
+		var since := 0.0
+		player.global_position = her
+		while since < 1.0 and (into_sight == INF or gone == INF):
+			bike._process(STEP)
+			since += STEP
+			edge._measure(STEP)
+			var box := bike.drawn_box()
+			if into_sight == INF and manager.visible_view().sees_any(
+					Rect2(bike.global_position + box.position, box.size)):
+				into_sight = since
+			var still_badged := false
+			for badge in edge.announcing():
+				still_badged = still_badged or badge["id"] == "cyclist"
+			if gone == INF and not still_badged:
+				gone = since
+		# At once from just out of sight; where its ground is further — the carriageway of a cross
+		# street just out of sight, so the far sidewalk — as soon as he has ridden the difference.
+		var just_out := PendingWarning.just_out_of_sight(view, def, her, Vector2.UP)
+		var further := maxf(0.0, (bike.path[0] - just_out).dot(Vector2.UP))
+		t.check(into_sight <= further / def.speed + 3.0 * STEP,
+				"and he comes into sight as soon as he has ridden the %.0fpx his ground put him past "
+				% further + "just out of sight (%.2fs after he exists)" % into_sight)
+		t.check(gone < 0.5, "and the badge goes down as he does (%.2fs)" % gone)
 	for instance in created:
 		instance.free()
 	edge.free()
@@ -536,14 +548,14 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		t.check(toward["lead"] >= floor_s,
 				"cyclist (%s): walking into him she is warned %.2fs ahead, at least the %.2fs floor"
 				% [encounter["how"], toward["lead"], floor_s])
-		# What the walk measures is the contract's own figure on this axis: his warning, then his
-		# approach from just off screen to his reach. The horizontal axis adds only the wider view.
+		# What the walk measures is the contract's own figure on this axis: his second, then his
+		# approach from just out of sight to his reach. The horizontal axis adds only the wider view.
 		var heading: Vector2 = encounter["heading"]
 		var closing := row.speed + Tuning.WALK_SPEED
-		var predicted := row.telegraph_time + (Tuning.offscreen_lead(heading, closing,
-				row.offscreen_notice) - row.lethal_reach()) / closing
+		var created_at := PendingWarning.down_her_line(null, row, Vector2.ZERO, heading).length()
+		var predicted := row.warned_for() + (created_at - row.lethal_reach()) / closing
 		t.close_to(toward["lead"], predicted,
-				"cyclist (%s): which is his warning and then his approach from just off screen"
+				"cyclist (%s): which is his second and then his approach from just out of sight"
 				% encounter["how"], 3.0 * STEP)
 		var stood := M207Lead.measure(encounter, M207Lead.Answer.STAND, probe_edge)
 		t.check(stood["lead"] < INF and stood["lead"] >= floor_s,
@@ -551,11 +563,102 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 				% [encounter["how"], stood["lead"]])
 		probe_edge.free()
 	t.check(walked >= 2, "the cyclist was walked on both axes (%d)" % walked)
-	# And the tightest of them — the contract's own figure, on the narrower axis of the view — is
-	# shortly before he arrives rather than long before it.
-	t.check(def.warning_time() <= def.minimum_telegraph() + CYCLIST_WARNING_OVER_THE_FLOOR,
-			"his warning, %.2fs from the badge to his reach, is at most %.1fs over the %.2fs floor"
-			% [def.warning_time(), CYCLIST_WARNING_OVER_THE_FLOOR, def.minimum_telegraph()])
+
+## **The day-3 dog keeps its gold timing, warned first.** *(PLAYTEST-145: "the pursuit dog timing
+## from the day 3 lesson is the correct timing ... the new system should be made to work to retain
+## that timing for the pursuing dog" · "this is the gold timing with warning time and onscreen
+## pursuing time seen as correct".)* Its numbers are the lesson and fail this test if they move: a
+## half-second badge alone (`offscreen_notice`), never lengthened to the one-second ceiling, a 4.5s
+## approach (`telegraph_time`) and a `Tuning.PURSUIT_TIME` chase at 130px/s.
+##
+## Then walked as she meets it (`M207Lead.gold()`, the probe's own walk, on both axes and her three
+## answers): the badge is up alone for exactly its half second; it is created just out of sight and
+## the first of it is in sight within a few frames; walking away, the whole of its approach is spent
+## in sight before its chase starts, and the chase she then sees is no longer than its own; and
+## walking away from it straight down her line loses. Walking away along the wide axis outlasts it,
+## as it always has (the probe's own table, `tools/test.sh probes/m207_warning_lead.gd`).
+func _test_the_day_3_dog_keeps_its_gold_timing(t) -> void:
+	var dog := EventCatalogue.by_id("charging_dog")
+	t.close_to(dog.offscreen_notice, 0.5, "the day-3 dog's badge alone is half a second", 0.001)
+	t.close_to(dog.telegraph_time, 4.5, "its approach is 4.5s", 0.001)
+	t.close_to(dog.duration, Tuning.PURSUIT_TIME, "its chase is the pursuit's own", 0.001)
+	t.close_to(Tuning.PURSUIT_TIME, 3.0, "which is three seconds", 0.001)
+	t.close_to(dog.pursue_speed, 130.0, "at 130px/s", 0.001)
+	var sent := EventManager.as_warned(dog)
+	t.check(sent.warns_before_it_exists() and is_equal_approx(sent.warned_for(), dog.offscreen_notice)
+			and sent.warned_for() < Tuning.WARNING_ALONE_MAX,
+			"sent at her, it is warned first for its own half second, under the one-second ceiling")
+	var edge := DangerEdge.new()
+	for encounter in M207Lead.gold_encounters():
+		var def: EventDef = encounter["def"]
+		if def.id != "charging_dog":
+			continue
+		for answer: M207Lead.Answer in M207Lead.ANSWERS:
+			var how := "%s, answer %d" % [encounter["how"], answer]
+			var met := M207Lead.gold(encounter, answer, edge)
+			t.close_to(met["created_at"], dog.offscreen_notice, "%s: the badge alone is its half second"
+					% how, 2.0 * STEP)
+			t.check(met["box_seen_at"] - met["created_at"] <= 3.0 * STEP,
+					"%s: created just out of sight, the first of it is in sight at once (%.2fs)"
+					% [how, met["box_seen_at"] - met["created_at"]])
+			t.check(met["chase_for"] <= dog.duration + STEP,
+					"%s: the chase she sees is no longer than its own (%.2fs)" % [how, met["chase_for"]])
+			if answer == M207Lead.Answer.AWAY:
+				t.check(met["chase_at"] - met["box_seen_at"] >= dog.telegraph_time - 3.0 * STEP,
+						"%s: walking away, its whole %.1fs approach is in sight before it chases (%.2fs)"
+						% [how, dog.telegraph_time, met["chase_at"] - met["box_seen_at"]])
+				if encounter["heading"] == Vector2.UP:
+					t.check(met["caught"], "%s: and walking away down her line loses (%s)"
+							% [how, met["ends"]])
+			else:
+				t.check(met["caught"], "%s: walking into it or standing still is caught (%s)"
+						% [how, met["ends"]])
+	edge.free()
+
+## **The resistance's own pursuers are fitted to the day-3 dog.** *(M137's timing fork, the player:
+## "A, remove the exemption", so `robber_giving_chase` and `van_guard_giving_chase` are warned first
+## and fitted to the dog's gold timing; busy-quail, inbox #569: "1s warning should be enough ... let's
+## apply that to the others as well".)* Both read the dog's own badge alone, approach and chase, and
+## from above her — the start the director prefers — walking away loses, standing still and walking
+## into him are caught, the same as the dog's.
+func _test_the_resistances_pursuers_are_fitted_to_the_dog(t) -> void:
+	var dog := EventCatalogue.by_id("charging_dog")
+	var edge := DangerEdge.new()
+	for id: String in ["robber_giving_chase", "van_guard_giving_chase"]:
+		var def := EventCatalogue.by_id(id)
+		t.check(def.warns_before_it_exists(), "'%s' is warned of before it exists" % id)
+		t.check(is_equal_approx(def.offscreen_notice, dog.offscreen_notice)
+				and is_equal_approx(def.telegraph_time, dog.telegraph_time)
+				and is_equal_approx(def.duration, dog.duration),
+				"'%s' reads the dog's own %.1fs badge, %.1fs approach and %.1fs chase (%.1f, %.1f, %.1f)"
+				% [id, dog.offscreen_notice, dog.telegraph_time, dog.duration, def.offscreen_notice,
+				def.telegraph_time, def.duration])
+		for encounter in M207Lead.gold_encounters():
+			if encounter["def"].id != id or encounter["heading"] != Vector2.UP:
+				continue
+			for answer: M207Lead.Answer in M207Lead.ANSWERS:
+				var met := M207Lead.gold(encounter, answer, edge)
+				t.check(met["caught"], "'%s' from above, answer %d: caught (%s)" % [id, answer, met["ends"]])
+				t.close_to(met["created_at"], def.offscreen_notice,
+						"'%s': its badge is alone for the dog's half second" % id, 2.0 * STEP)
+	edge.free()
+
+## **Nothing comes at her from off screen unwarned.** *(PLAYTEST-145: "all offscreen events should
+## work like that".)* Every pursuer that is sent rather than met — no trigger to wait on, and not
+## set off beside her at a door — is warned of first: the resistance's own two by their rows, and the
+## day-3 dog by the copy `EventManager.as_warned()` makes as the director sends it. Each one's badge
+## alone is at most `Tuning.WARNING_ALONE_MAX`.
+func _test_every_pursuer_sent_from_off_screen_is_warned_first(t) -> void:
+	var sent := 0
+	for def in EventCatalogue.all():
+		if not def.pursues or def.pursues_within > 0.0 or def.sets_off_beside_her:
+			continue
+		sent += 1
+		var warned := EventManager.as_warned(def)
+		t.check(warned.warns_before_it_exists() and warned.warned_for() <= Tuning.WARNING_ALONE_MAX,
+				"'%s' is warned first, its badge alone %.2fs, at most %.2fs"
+				% [def.id, warned.warned_for(), Tuning.WARNING_ALONE_MAX])
+	t.check(sent >= 3, "the dog and the resistance's two are among them (%d)" % sent)
 
 ## **A retried day is the same day.** *(M39, playtest 10 finding 5: "the tutorial dog on day 3 only
 ## appeared once (I died) then it didn't appear again.")*

@@ -366,10 +366,10 @@ func _header_text() -> String:
 	lines.append("**A row that comes at her is met the moment it is created, its telegraph " +
 			"already spent.** A `TOWARD_PLAYER` row (`loose_dog`, `cyclist`) is not on a tile: its " +
 			"screen-edge warning goes up with nothing in the world, runs for its `telegraph_time`, " +
-			"and the row is then created just off screen down her own line " +
+			"and the row is then created just out of sight down her own line " +
 			"(`EventManager.spawn_warned()`), coming at her at its own intensity. So its pass is " +
 			"simulated from that creation, at the closest it can be made on any heading " +
-			"(`Tuning.min_offscreen_lead()` at its speed plus `Tuning.WALK_SPEED`, so the figure " +
+			"(`PendingWarning.least_distance()`, the view's half height, so the figure " +
 			"does not depend on which way a walk was going), moving as it moves. Such a row is " +
 			"measured once rather than averaged over 8 pulse phases: its pulse starts where its " +
 			"warning did, so how far through the beat it is when it reaches her is fixed by the " +

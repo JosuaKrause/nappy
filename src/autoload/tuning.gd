@@ -335,53 +335,28 @@ const RESISTANCE_GOAL := 5
 ## still meet them on their way in from anywhere she found the mark. A curfew day is 180s.
 const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 
-## How far from her a task's own trap starts (`ResistanceDirector._set_the_trap_on_her()`,
-## `EventCatalogue._robber_giving_chase()` and `_van_guard_giving_chase()`): the trap of a perform
-## step comes to her rather than waiting at the contact, awake from its first frame and off screen.
-## Shared by both rows the director can spawn, so it has to clear both their contracts, not the
-## robber's alone.
+## The furthest above or below her a task's own trap may start (`ResistanceDirector.
+## _draw_arrival_position()`, `EventCatalogue._robber_giving_chase()` and `_van_guard_giving_chase()`):
+## the trap of a perform step comes to her rather than waiting at the contact, warned of first and then
+## created just out of sight of her, awake from its first frame. Shared by both rows the director can
+## send, so it has to hold for both their catches, not the robber's alone.
 ##
 ## **It is the furthest start a walker still loses from — for whichever row has the tighter catch.**
 ## Walking directly away, the gap closes at `pursue_speed` less `WALK_SPEED` (130 − 92 = 38px/s) for
 ## either row (`Tuning.HEAT_HUNTS_SPEED`, the same figure `_alley_robbery()` hardcodes), and each has
-## its notice plus its chase — `telegraph_time` 2.0s and `duration` 6.0s on both rows — to close it
-## to its own catch. **The robber catches two pixels tighter than the van's guard**, 26px against
-## the guard's 28px (`MASKED_MAN_REACH`, `door_guard`'s own reach), so his row is the one this
-## constant is stated over: with half a second of the notice-plus-chase kept as margin,
-## 26 + 38 × (2.0 + 6.0 − 0.5) = **311px**. At the guard's own 28px catch the same arithmetic would
-## allow 313px, so 311px leaves the guard a hair more margin than his own row alone would need —
-## the price of one constant serving two rows is that it is stated over whichever is less forgiving.
-## A smaller robber catch than 26px would pull it under the guard's own floor: his badge line is
-## 305px vertically, and `tests/test_resistance.gd` asks for a cone of more than 10° above and below
-## her that is past it, which 311px leaves at about 11°.
-## Any further and a player who simply walks away outlasts whichever row is watching, which is the
-## one answer a pursuit may not accept.
+## its approach plus its chase — the day-3 dog's own 4.5s and 3.0s, which both rows read off its row
+## — to close it to its own catch. **The robber catches two pixels tighter than the van's guard**,
+## 26px against the guard's 28px (`MASKED_MAN_REACH`, `door_guard`'s own reach), so his row is the
+## one this constant is stated over: with half a second of the approach-plus-chase kept as margin,
+## 26 + 38 × (4.5 + 3.0 − 0.5) = **292px**. A start just out of sight above or below her is nearer
+## than that within `ResistanceDirector.ARRIVAL_CONE` of straight up or down, with the camera on her
+## or led toward him (`tests/test_resistance.gd` holds both), so the director draws its bearings
+## there and keeps any start past this for the sideways fallback.
 ##
-## **Two floors it has to clear, and both are held by `tests/test_resistance.gd` for each row:**
-##
-## - **The screen-edge badge is up before it is on screen.** `DangerEdge` raises one only for a
-##   thing `SCREEN_MARGIN` (130 screen px, 65px of world at zoom 2) outside the view, and only once
-##   its smoothed measure of its approach has risen. So it has to start past the view's half-extent,
-##   plus the camera's lead toward it (`Stroller.CAMERA_LOOK_AHEAD`, 46px sideways and 32px
-##   vertically), plus that margin, plus the ground the gap closes while the badge rises — a figure
-##   `ResistanceDirector.badge_line()` computes per row, since it depends on the row's own
-##   `outer_radius` as well as its speed. 311px clears the vertical line and not the sideways one for
-##   either row, so the director starts it within a cone of straight above or below her — at a
-##   front door from across the street first, at least this far out — and where no such start has
-##   a clear run at her, it comes along her own street from the side instead
-##   (`ResistanceDirector._draw_arrival_position()`, `beside_distance()`), and walking away outlasts
-##   it there.
-## - **Standing still, it lunges no sooner than `PURSUIT_MIN_NOTICE` (1.5s) after it appears.** The
-##   lunge fires at the row's own stand-off, `pursuit_standoff(130, reach)` — 116px for the robber,
-##   whose lunge is measured from 38px (`EventDef.lunge_reach`) while his catch is 26px, 106px for
-##   the guard's 28px — so the start has to be at least stand-off plus 130 × 1.5 = 311px for the
-##   robber, 301px for the guard. 311px meets the robber's exactly: **his lunge is as far out as the
-##   walk-away ceiling above lets it be**, and a lunge further out would need a start this constant
-##   cannot reach without giving up the half second.
-##
-## Not `OUT_OF_SIGHT` (420px) plus a notice: from that far a walker escapes unless the chase ran
-## past the 6.0s `Tuning.validate_pursuit()` allows either pursuer.
-const TRAP_ARRIVAL_DISTANCE := 311.0
+## **Beside her it cannot hold**: the view is wide, so a start just out of sight to her side is about
+## 340px off, and walking straight away from there outlasts him — the price of a start the wider view
+## needs, taken only where no start above or below her has a clear run at her.
+const TRAP_ARRIVAL_DISTANCE := 292.0
 
 ## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
 ## way. Chosen, not measured, and open to overturn once the late days are timed (M184).
@@ -1563,10 +1538,11 @@ const VIEW_HALF_EXTENT := Vector2(320.0, 180.0)
 
 ## Distance from her to the edge of the view along `heading` — a ray to the edge of the
 ## `VIEW_HALF_EXTENT` box, the same arithmetic `DangerEdge._distance_to_edge` already draws the
-## screen-edge badge with. Anything that arrives from off screen — a pursuer the director sites, or
-## the place a warning holds for a thing not yet in the world (`PendingWarning`) — is at least this
-## far out, so it starts genuinely off screen whichever way she is walking rather than only on the
-## one axis a flat number happened to cover.
+## screen-edge badge with, from her rather than from the camera. A thing created at once from off
+## screen — a patrol down the road — is at least this far out, so it starts genuinely off screen
+## whichever way she is walking rather than only on the one axis a flat number happened to cover. A
+## thing warned of first is placed by what she can see instead (`VisibleView.clear_of_sight()`),
+## which is the camera's view and the controls' corners.
 func offscreen_boundary(heading: Vector2) -> float:
 	var boundary := INF
 	if not is_zero_approx(heading.x):
@@ -1576,8 +1552,10 @@ func offscreen_boundary(heading: Vector2) -> float:
 	return boundary
 
 ## The least `offscreen_boundary()` can be for any heading — the vertical axis, since 180 is
-## smaller than the 320 the horizontal one gives. What a fairness check needs when it has no
-## particular heading to ask about: `EventDef.validate()` checks a row's own geometry against the
+## smaller than the 320 the horizontal one gives — and the floor under where anything warned of
+## first is placed (`PendingWarning.least_distance()`), which a covered corner of the joystick scheme
+## would otherwise bring nearer on a shallow way down to one side. What a fairness check needs when it
+## has no particular heading to ask about: `EventDef.validate()` checks a row's own geometry against the
 ## worst case the director could ever site it in, not the case a given walk happens to produce.
 func min_offscreen_boundary() -> float:
 	return VIEW_HALF_EXTENT.y
@@ -1601,9 +1579,12 @@ const ENCOUNTER_INFLUENCE_POINTS := METER_MAX * 0.1
 ## 10s".)*
 const RUN_BOUT_GAP := 10.0
 
-## The default seconds a row travelling toward her has to still be off screen once it is created, at
-## the speed the gap is actually closing. *(2026-09-07: "events that go towards the player (biker /
-## pursuing dog) should at least be 200ms off screen with a warning.")*
+## The default seconds of notice a row gives from off screen (`EventDef.offscreen_notice`): for a
+## row created at once — a patrol sent down the road — the seconds it still has to be off screen
+## once it is created, at the speed the gap is actually closing. *(2026-09-07: "events that go
+## towards the player (biker / pursuing dog) should at least be 200ms off screen with a warning.")*
+## A row warned of before it exists is placed just out of sight instead (`PendingWarning`), and a
+## pursuer warned first reads its own notice as its badge alone.
 ##
 ## **Per-row rather than universal**, since playtest 34 asked for two rows to move in opposite
 ## directions on the same day: `charging_dog` needs more of it (finding 2) and `cyclist` needs less
@@ -1611,9 +1592,10 @@ const RUN_BOUT_GAP := 10.0
 ## as the default every row gets unless it overrides.
 const OFFSCREEN_NOTICE := 0.2
 
-## How far out along `heading` something that travels toward her starts — a pursuer the director
-## sites, or the place a warning holds for a thing not yet created (`PendingWarning`): outside the
-## view (`offscreen_boundary()`) and `notice` seconds further still, at `closing_speed`.
+## How far out along `heading` something that travels toward her and is created at once starts — a
+## patrol the director sends down the road: outside the view (`offscreen_boundary()`) and `notice`
+## seconds further still, at `closing_speed`. Something warned of before it exists is placed just
+## out of sight instead (`PendingWarning.just_out_of_sight()`).
 ##
 ## **`closing_speed` is the row's own speed plus `WALK_SPEED`, not the row's speed alone** — she is
 ## usually walking into it, so the gap between the siting and the boundary closes at both speeds
@@ -1937,30 +1919,11 @@ const CHARGING_DOG_SPRINKLE_CHANCE := 0.25
 ## stand-off therefore costs 1/38 s of chase, which is why a **narrower** stand-off is what buys a
 ## shorter one.
 ##
-## **Two rows carve out this ceiling rather than fall below it: `robber_giving_chase` and
-## `van_guard_giving_chase` run `duration` at `PURSUIT_TIME × 2` (6.0s) each**, and
-## `tests/test_events_costs.gd` names both as the exception to every other pursuer's own ceiling.
-## The trade is the opposite one from the paragraph above: PLAYTEST-140, statement 2, found a long
-## telegraph itself the problem ("12.9s is a long warning to the point where nothing really happens
-## anymore"), so both rows spend the budget as a short notice (`PURSUIT_MIN_NOTICE` plus a stated
-## margin) and a long chase instead of a long notice and the 3.0s every other pursuer keeps — the
-## doubled chase is what still catches a player who walks away the instant either appears. A
-## runner sheds either row in `PURSUIT_SHAKEN_OFF`'s own 0.35s of running, never before he is
-## `PURSUIT_MIN_NOTICE` (1.5s) old — the doubled duration buys nothing there, since the sprint
-## cost above is paid only by however long she actually runs. Standing still, he catches her in
-## about 2s (`_robber_giving_chase()`'s own doc), which loses the day rather than costing meter,
-## before the doubled duration's extra seconds even begin.
-##
-## **What the doubling buys is seconds 5–8 of his life**, and a walker pays for that time in his
-## field, and, from the usual start, with the short sprint that sheds him. From the beside start
-## (Fork 2 in the decision record), the guard's 120px field never reaches a walker who left the
-## moment he appeared — his ~476px start closes to only ~172px over the whole 8.0s — and the
-## robber's 200px field reaches her only for about the last second, at its weak far edge. From
-## the usual `TRAP_ARRIVAL_DISTANCE` (311px) start above or below her, though — the rarer beside
-## start is the exception, not the rule — she is inside the robber's field from about 3s onward:
-## a 3.0s chase, every other pursuer's own ceiling, would have freed her at 5.0s, well before his
-## 26px catch at 7.5s, so the doubled 6.0s chase is what makes her keep paying his field until she
-## runs, and then pay the sprint cost above to shed him before the catch.
+## **Every pursuer holds this ceiling exactly**, the resistance's own `robber_giving_chase` and
+## `van_guard_giving_chase` included: both read the day-3 dog's own approach and chase, fitted to
+## its gold timing *(PLAYTEST-145: "the pursuit dog timing from the day 3 lesson is the correct
+## timing. other timings should be adjusted to fit that")*, and `tests/test_events_costs.gd` holds
+## every pursuer's `duration` to it.
 const PURSUIT_TIME := 3.0
 
 ## And the least a pursuer's speed may differ from either of hers.
@@ -1975,22 +1938,26 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## emitting `TELEGRAPH_INTENSITY_FRACTION`, but cannot yet end the day.
 ##
 ## The least warning anything that arrives from off screen is owed, from its screen-edge badge to
-## the earliest it can reach her — flat, and not worked out from its field or its speed. *(2026-09-26,
-## the player: "to a human 100ms feels instant, 1s is time needed to react to something, 2.9s is a
-## fair time to react and *think* about what to do. so I'd file mark that as the minimum.")*
-## `EventDef.minimum_telegraph()` answers it for every row warned of before it exists
-## (`EventDef.warns_before_it_exists()`: the cyclist, the fire engine, day 13's column), whose place
-## follows her until it exists, so the walk out of its field that `required_telegraph_time()` prices
-## is not a walk she can take during the badge; every other row keeps the minimum its field sets.
-const OFFSCREEN_WARNING_MIN := 2.9
-## Rows warned of before they exist that are held to their field's minimum
-## (`required_telegraph_time()`) instead of `OFFSCREEN_WARNING_MIN`. A placeholder list an earlier
-## build added, not something the player asked for: it holds `loose_dog` (2.40s from its badge to
-## its reach, a 2.25s `telegraph_time`, under the flat minimum) until M226, the pursuing dog keeps
-## its day-3 timing and the other warnings fit it, decides what its warning is. The player's own
-## words are that its warning may be short, since it is "not lethal and relatively low impact"
-## (PLAYTEST-145, statement 11), and whether it needs one at all is open (statements 17-18).
-const OFFSCREEN_WARNING_MIN_EXEMPT: Array[String] = ["loose_dog"]
+## the earliest it can reach her — flat, and not worked out from its field or its speed: a second,
+## the player's time to react. *(PLAYTEST-145: "to a human 100ms feels instant, 1s is time needed
+## to react to something" · "the 2.9 is not important"; busy-quail, inbox #569: "1s warning should be
+## enough -- there is enough screen space to cross".)* `EventDef.minimum_telegraph()` answers it for
+## every non-pursuer warned of before it exists (`EventDef.warns_before_it_exists()`: the cyclist,
+## the loose dog, the fire engine, day 13's column), whose place follows her until it exists, so the
+## walk out of its field that `required_telegraph_time()` prices is not a walk she can take during
+## the badge; a pursuer is owed `PURSUIT_MIN_NOTICE` of visible approach, and every other row the
+## minimum its field sets.
+const OFFSCREEN_WARNING_MIN := 1.0
+## The longest a screen-edge badge is up alone, with nothing in the world, before the thing it warns
+## of is placed just out of sight where it points (`PendingWarning`). *(calm-kestrel, inbox #559: "it
+## should *always* show the warning for x seconds (never longer than 2s) without placing anything
+## then place the object immediately off screen so it will immediately start coming on the screen
+## turning off the warning"; busy-quail, inbox #569: "1s warning should be enough -- there is enough
+## screen space to cross -- let's apply that to the others as well".)* A ceiling, not a length: a row
+## whose own is already shorter keeps it, as the day-3 dog keeps its half second
+## (`EventDef.offscreen_notice`). `EventDef.validate()` refuses a row warned of first whose badge
+## alone (`EventDef.warned_for()`) is longer.
+const WARNING_ALONE_MAX := 1.0
 
 ## A pursuer's telegraph is the **approach**: it exists and visibly closes on her the whole time it
 ## telegraphs, unlike a row warned of before it exists (the fire engine, sited by a screen-edge
@@ -2386,8 +2353,8 @@ func validate_event(id: String, warning: float, inner_radius: float,
 
 ## The same contract for a row warned of before it exists, whose minimum is not its geometry's:
 ## `warning` (`EventDef.warning_time()`, from its badge to its reach) against `minimum`
-## (`EventDef.minimum_telegraph()`: `OFFSCREEN_WARNING_MIN`, or for the one exempt row its field's
-## minimum). Pushes an error and returns false if it is short.
+## (`EventDef.minimum_telegraph()`: `OFFSCREEN_WARNING_MIN`). Pushes an error and returns false if it
+## is short.
 func validate_warning(id: String, warning: float, minimum: float) -> bool:
 	if warning + 0.001 < minimum:
 		push_error("Unfair event '%s': warned %.2fs before it can reach her < required %.2fs"

@@ -485,14 +485,14 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 		# `_warn_down_her_line()` and `spawn_warned()`.
 		if def.warns_before_it_exists():
 			var direction := (path[0] - path[1]).normalized()
-			for i in int(ceil(def.telegraph_time / STEP)):
+			for i in int(ceil(def.warned_for() / STEP)):
 				at += north * STEP
 			path = PendingWarning.route_down_her_line(map,
 					PendingWarning.down_her_line(map, def, at, direction), at, direction)
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
 		if def.warns_before_it_exists():
-			instance.resume(def.telegraph_time, 0.0)
+			instance.resume(EventManager.age_when_warned(def), 0.0)
 		t.add_child(instance)
 		instance.set_process(false)
 

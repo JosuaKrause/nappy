@@ -947,12 +947,18 @@ func pending_warnings() -> Array[PendingWarning]:
 # ------------------------------------------------------- the warning comes first ---
 # *(PLAYTEST-145: "how offscreen warnings and placements should work is that the warning appears by
 # itself with a reasonable position and when the time is right the object is spawned in at that
-# location just offscreen.")* Everything that arrives from off screen under the screen-edge badge
-# comes through here: `cyclist` and `loose_dog` from the director, the fire engine from the fire it
-# was called to, and day 13's column from `ResistanceHappenings`.
+# location just offscreen."; calm-kestrel, inbox #559: "it should *always* show the warning for x
+# seconds (never longer than 2s) without placing anything then place the object immediately off
+# screen so it will immediately start coming on the screen turning off the warning"; busy-quail,
+# inbox #569: "1s warning should be enough".)* Everything that arrives from off screen under the
+# screen-edge badge comes through here: `cyclist` and `loose_dog` from the director, and
+# `charging_dog` when the director sends it down her heading; the fire engine from the fire it was
+# called to; day 13's column from `ResistanceHappenings`; and the resistance's own two pursuers from
+# `ResistanceDirector`, the moment she has done a task.
 
-## Puts up a warning for `def` with nothing in the world yet, at the place `where` gives for her
-## standing at `her`, and hands `arrive` the place once the row's own `telegraph_time` is over — see
+## Puts up a warning for `def` with nothing in the world yet, pointing where `where` gives for her
+## standing at `her`, and once its badge has been up alone for the row's own `warned_for()` — at
+## most `Tuning.WARNING_ALONE_MAX` — asks `where` again and hands `arrive` the place — see
 ## `PendingWarning` for both callables. Returns the warning, or null when `where` has no place for it
 ## on the thing's own ground right now, in which case nothing is up and the caller asks again later.
 ##
@@ -961,14 +967,18 @@ func pending_warnings() -> Array[PendingWarning]:
 func warn_first(def: EventDef, her: Vector2, where: Callable,
 		arrive: Callable) -> PendingWarning:
 	var warning := PendingWarning.new(as_warned(def), where, arrive)
-	if not warning.follow(her):
+	if not warning.put_up(her):
 		return null
 	_pending.append(warning)
 	return warning
 
-## Creates `def` on `path` with its telegraph already spent, for a row whose warning ran before it
-## existed: from its first frame it is what it is after its telegraph — lethal, for a `hard_fail`
-## row, and at its own intensity for a loud one.
+## Creates `def` on `path`, for a row whose warning ran before it existed, placed where the warning
+## pointed just out of sight. A non-pursuer is created with its telegraph already spent, since the
+## warning was its telegraph: from its first frame it is what it is after it — lethal, for a
+## `hard_fail` row, and at its own intensity for a loud one. **A pursuer is created with its
+## telegraph still to run**, since a pursuer's telegraph is its approach, the sight of it closing that
+## she is owed (`Tuning.PURSUIT_MIN_NOTICE`), and its warning was only the badge before it
+## (`EventDef.warned_for()`, its `offscreen_notice`).
 ##
 ## **`came_under_a_warning` is set before `resume()`**, which reads it: a resume otherwise restores
 ## an instance streamed back in, and takes a pursuer that never waits to have begun its chase
@@ -979,20 +989,39 @@ func warn_first(def: EventDef, her: Vector2, where: Callable,
 func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> EventInstance:
 	var instance := _spawn_unplanned(as_warned(def), path[0], path)
 	instance.came_under_a_warning = true
-	instance.resume(def.telegraph_time, 0.0)
+	if not def.pursues:
+		instance.resume(age_when_warned(def), 0.0)
 	if pelican and def.look == EventDef.Look.CYCLIST:
 		_ride_as_a_pelican(instance)
 	return instance
 
+## How old a non-pursuer warned of before it exists is when it is created: its telegraph spent, and,
+## for a mover that pulses (`loose_dog`), on to the point of its beat that has it reach her, walking
+## into it from where it is created closest (`PendingWarning.least_distance()`), at the loud of its
+## beat. **Its warning's length does not decide which beat it meets her on**: the pulse runs on its
+## age, so without this a warning cut to a second has it created at the loud of its beat and pass her
+## at the quiet, which halves what a pass costs (`docs/COSTS.md`, `tests/probes/m174_pass.gd`,
+## which creates it at this same age).
+static func age_when_warned(def: EventDef) -> float:
+	var spent := def.telegraph_time
+	if def.pulse_period <= 0.0 or not def.mobile or def.speed <= 0.0:
+		return spent
+	var flight := PendingWarning.least_distance() / (def.speed + Tuning.WALK_SPEED)
+	var loud_on_her := def.pulse_period * 0.5 - flight
+	return loud_on_her + ceilf((spent - loud_on_her) / def.pulse_period - 0.001) * def.pulse_period
+
 ## `def` as a row warned of before it exists (`EventDef.warns_before_it_exists()`): itself when it
-## already is one — `cyclist`, `loose_dog`, the fire engine — and otherwise its
-## `EventDef.as_warned_first()` copy, which is how day 13's column of `military_convoy`, a row the
-## day otherwise plans as a place, is held to the minimum a warning first owes.
+## already is one — `cyclist`, `loose_dog`, the fire engine, the resistance's two pursuers — and
+## otherwise its `EventDef.as_warned_first()` copy, which is how day 13's column of
+## `military_convoy`, a row the day otherwise plans as a place, and `charging_dog` sent down her
+## heading, a row that waits on a tile from the day after it teaches the run, are held to what a
+## warning first owes.
 static func as_warned(def: EventDef) -> EventDef:
 	return def if def.warns_before_it_exists() else def.as_warned_first()
 
 ## Moves every warning's place with her, standing at `here`, and creates what is due. Run every
-## frame there is a player.
+## frame there is a player. A warning withdrawn — its ground had no place for the thing when its
+## time was up — says so in the run log and hands its caller the chance to ask again.
 func _run_the_warnings(delta: float, here: Vector2) -> void:
 	if _pending.is_empty():
 		return
@@ -1000,6 +1029,12 @@ func _run_the_warnings(delta: float, here: Vector2) -> void:
 	for warning in _pending:
 		if not warning.tick(delta, here):
 			still_up.append(warning)
+		elif warning.withdrawn:
+			Telemetry.note("ahead", "%s's warning is withdrawn after %.2fs: nowhere out of sight to "
+					% [warning.logged_name(), warning.shown] + "put it at %s"
+					% TelemetryLog.tile(_map.world_to_tile(here)))
+			if warning.on_withdrawn.is_valid():
+				warning.on_withdrawn.call()
 	_pending = still_up
 
 # ------------------------------------------------------------ WorldContext ---
@@ -1151,7 +1186,7 @@ func _summon_what_has_been_sighted() -> void:
 		if not _sight_reported.get(plan, false):
 			_sight_reported[plan] = true
 			EventBus.event_sighted.emit(plan.def.id)
-		if _summon_the_sighted_row(plan.def, plan.live.global_position):
+		if _summon_the_sighted_row(plan.def, plan.live.global_position, plan):
 			_sighted[plan] = true
 
 ## Warns of the row `source.spawns_on_sight` names, coming along `at`'s own street to `at` — `at`
@@ -1164,10 +1199,12 @@ func _summon_what_has_been_sighted() -> void:
 ##
 ## **Warned first, like everything else that arrives from off screen** (`warn_first()`): the badge
 ## goes up the moment the fire is seen, with no engine in the world, pointing up the road it will
-## come down; its place stays on that road, on its way to the fire, just off screen from her
-## (`PendingWarning.on_its_route()`), and the engine is created there when its `telegraph_time` is
-## over and drives to the kerb (`where_the_summoned_row_stops()`), where it parks.
-func _summon_the_sighted_row(source: EventDef, at: Vector2) -> bool:
+## come down, and once its second is up the engine is created on that road, on its way to the fire,
+## just out of sight from her (`PendingWarning.on_its_route()`), and drives to the kerb
+## (`where_the_summoned_row_stops()`), where it parks. A warning withdrawn for want of road out of
+## sight is summoned again (`PendingWarning.on_withdrawn`).
+func _summon_the_sighted_row(source: EventDef, at: Vector2,
+		sighted_by: EventScheduler.Planned = null) -> bool:
 	var summoned := EventCatalogue.by_id(source.spawns_on_sight)
 	if not summoned:
 		push_error("event '%s' summons unknown '%s' on sight" % [source.id, source.spawns_on_sight])
@@ -1185,11 +1222,13 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2) -> bool:
 		var reach := _road_left(road_at, heading)
 		var travel := -heading
 		var where := func(standing: Vector2) -> Vector2:
-			return PendingWarning.on_its_route(summoned, standing, road_at, travel, reach)
+			return PendingWarning.on_its_route(summoned, standing, road_at, travel, reach, _visible)
 		var arrive := func(place: Vector2, _standing: Vector2) -> bool:
 			spawn_warned(summoned, PackedVector2Array([place, road_at]))
 			return true
-		if warn_first(summoned, her, where, arrive):
+		var warning := warn_first(summoned, her, where, arrive)
+		if warning:
+			warning.on_withdrawn = func() -> void: _sighted.erase(sighted_by)
 			return true
 	return false
 
@@ -1321,6 +1360,9 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	if def.warns_before_it_exists():
 		_warn_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
 		return
+	if def.pursues:
+		_warn_down_her_heading(def, body.global_position, path[0])
+		return
 	_spawn_unplanned(def, path[0], path)
 	# The distance it was actually sited at rather than the constant. A pursuer is sited beyond its
 	# own stand-off and a cat at `AHEAD_LEAD_DISTANCE`, so printing the constant makes every
@@ -1373,20 +1415,19 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 			_siting.prepare(row, _plans)
 	return rigged
 
-## A row the director sited down her own line, warned first: the badge goes up at once, its place
-## follows her just off screen in `direction` on a sidewalk or a square (`PendingWarning.
-## down_her_line()`), and the thing is created there down her line once its telegraph is over.
+## A row the director sited down her own line, warned first: the badge goes up at once, pointing just
+## out of sight in `direction` on a sidewalk or a square (`PendingWarning.down_her_line()`), and once
+## its second is up the thing is created where that now is, down her line.
 ##
 ## **The route is asked of the region doors again when it is created**, the same refusal
-## `EventDirector.due()` makes when it sites one — the place has moved with her since, and a
-## cyclist coming through a door's gap is exactly what that refuses. A refusal keeps the warning
-## up and asks again next frame.
+## `EventDirector.due()` makes when it sites one — she has walked on since, and a cyclist coming
+## through a door's gap is exactly what that refuses. A refusal withdraws the warning.
 func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
 	# Rolled as the warning goes up rather than when the rider is created, so the badge's own lines
 	# in the run log already name the pelican — see `rolls_a_pelican()`.
 	var pelican := rolls_a_pelican(def)
 	var where := func(at: Vector2) -> Vector2:
-		return PendingWarning.down_her_line(_map, def, at, direction)
+		return PendingWarning.down_her_line(_map, def, at, direction, _visible)
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var path := PendingWarning.route_down_her_line(_map, place, at, direction)
 		if not _director.clear_of_the_doors(path, def):
@@ -1399,6 +1440,25 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	var warning := warn_first(def, her, where, arrive)
 	if warning:
 		warning.is_pelican = pelican
+
+## A pursuer the director sends at her down her heading — `charging_dog`, on the day it teaches the
+## run and when it is sprinkled into a later one — warned first *(M226, PLAYTEST-145: "the new system
+## should be made to work to retain that timing for the pursuing dog")*: its badge is up alone for its
+## own `offscreen_notice` (the dog's half second), pointing down the way `sited` lies from her, and it
+## is then created just out of sight that way on walkable ground (`PendingWarning.
+## along_her_heading()`), its telegraph — the approach she watches — still to run.
+func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void:
+	var direction := (sited - her).normalized()
+	if direction == Vector2.ZERO:
+		return
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.along_her_heading(_map, def, at, direction, _visible)
+	var arrive := func(place: Vector2, at: Vector2) -> bool:
+		spawn_warned(def, PackedVector2Array([place]))
+		Telemetry.note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
+				% [def.id, place.distance_to(at), TelemetryLog.tile(_map.world_to_tile(at))])
+		return true
+	warn_first(def, her, where, arrive)
 
 ## The other half of the director's day: a place the day budgeted and left unsited, put on a
 ## building face ahead of her once her heading for the day is clear. Day 3's fire is the only row
