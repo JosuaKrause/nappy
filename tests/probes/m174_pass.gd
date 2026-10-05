@@ -42,19 +42,19 @@ extends RefCounted
 ## **A row she walks up to and a row that comes at her are met at two different points of their own
 ## lives, and each is priced at its own.** A `MAP` row was placed at dawn: by the time she reaches
 ## it its telegraph is hours over, which is what the warm-up below reproduces. A `TOWARD_PLAYER`
-## row on foot is warned of before it exists — its screen-edge badge runs for its `telegraph_time`
-## with nothing in the world (`PendingWarning`) — and is created just out of sight with that
-## telegraph already spent, down her own line, coming at her at its own intensity.
+## row on foot is created just off screen down her own line with its telegraph already spent —
+## after its screen-edge warning when it telegraphs (the cyclist), at once when it does not (the
+## loose dog) — coming at her at its own intensity.
 ##
 ## So a `TOWARD_PLAYER` row is spawned here the way `EventManager.spawn_warned()` creates it: its
 ## telegraph spent, `PendingWarning.least_distance()` away — the closest it is ever created, since a
 ## figure in `docs/COSTS.md` may not depend on which way a particular walk was going — and closing at
 ## both speeds because she is walking into it.
 ##
-## **Such a row has no free pulse phase and is measured once rather than averaged.** Its pulse
-## starts where its warning started, so how far through the beat it is when it reaches her is fixed
-## by the warning and the flight, not by when she happened to arrive. Averaging eight phases onto it
-## would be averaging over something the game does not vary.
+## **Such a row has no free pulse phase and is measured once rather than averaged.** It is created
+## at the age that has it reach her at the loud of its beat (`EventManager.age_when_warned()`), so how
+## far through the beat it is when it reaches her is fixed, not by when she happened to arrive.
+## Averaging eight phases onto it would be averaging over something the game does not vary.
 
 const STEP := 1.0 / 60.0
 ## Same offsets for every row, "0 where possible" plus the width a sidewalk band and a crossed

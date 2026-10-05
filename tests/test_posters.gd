@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_the_marble_bag_is_exact_and_reproducible(t)
 	_test_a_push_tears_and_walking_past_does_not(t)
 	_test_a_sent_patrol_comes_down_her_street_and_moves_nothing_else(t)
+	_test_a_crew_under_a_covered_corner_does_not_paste(t)
 	GameState.run_seed = _saved_seed
 	GameState.posters.restore(_saved_posters)
 
@@ -219,6 +220,44 @@ func _test_the_marble_bag_is_exact_and_reproducible(t) -> void:
 ## letting go before the time is up does not. Then the tears' marbles: the run's first is safe,
 ## one in each ten after it sends a patrol, and a lost day gives the tears back so the retry draws
 ## the same marbles again.
+## **A crew under a corner the joystick's controls cover does not paste** (dappled-swan's
+## the-sightings, the filer's reading that a crew's pasting is a sighting): a `poster_crew` standing on
+## a front, with the day's own visible area laid so the crew is only under the left corner, pastes
+## nothing in the joystick scheme over several of `PosterWalls.PASTE_EVERY`, and pastes in the tap
+## scheme with the same view.
+func _test_a_crew_under_a_covered_corner_does_not_paste(t) -> void:
+	var map := CityGenerator.generate(SEEDS[0])
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+	GameState.run_seed = SEEDS[0]
+	GameState.posters.reset()
+	var walls := city.poster_walls()
+	var tiles: Array = walls.fronts().keys()
+	tiles.sort()
+	t.check(not tiles.is_empty(), "there is a front for a crew to stand at")
+	if tiles.is_empty():
+		city.free()
+		return
+	var tile: Vector2i = tiles[0]
+	var at := map.tile_to_world(tile)
+	var crew := city.events.spawn_extra(EventCatalogue.by_id("poster_crew"), at)
+	walls._day_running = true
+	walls._day = 5
+	var corner := VisibleView.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
+	var view := Rect2(at - corner * 0.5 - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	for joystick: bool in [true, false]:
+		walls._jobs.clear()
+		city.events.visible_view().look(view, joystick)
+		for i in 4:
+			walls._work_the_crews(PosterWalls.PASTE_EVERY)
+		var pasted: int = int(walls._jobs[tile]["pasted"]) if walls._jobs.has(tile) else 0
+		t.check((pasted == 0) == joystick,
+				"%s scheme: a crew only under the left corner pasted %d sheets"
+				% ["joystick" if joystick else "tap", pasted])
+	city.events.retire(crew)
+	city.free()
+
 func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 	var map := CityGenerator.generate(SEEDS[0])
 	var city: City = CITY_SCENE.instantiate()

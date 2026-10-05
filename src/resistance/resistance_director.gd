@@ -54,9 +54,10 @@ const NOTICE_RADIUS := 400.0
 ## constraint is the *shorter* axis: at 150, any point inside the circle is on screen on **every**
 ## bearing, not merely a favourable one — the corner case a distance under the wider, 320px
 ## sideways half-extent would still have let through, sitting right at the top or bottom edge with
-## little sideways offset. That makes "well inside the view" a geometric guarantee rather than a
-## typical case, which is what makes `_sight.call(at)` below redundant whenever this already holds
-## and left in anyway, for a rig whose `_sight` answers something other than the real screen.
+## little sideways offset. That makes "well inside the camera's view" a geometric guarantee rather
+## than a typical case. It is not a guarantee of being in sight: in the joystick scheme a mark down
+## and to one side within 150px can be under a corner its controls cover, which is what
+## `_sight.call(at)` below (the visible area) answers, so the dwell does not run there.
 ## Felt, open to overturn against a played day.
 const SEEN_DISTANCE := 150.0
 
@@ -820,9 +821,12 @@ func _view_from(her: Vector2) -> VisibleView:
 ## inspected at — on day 9 she is let out 54px past the door's line, where a start straight above,
 ## below or beside her is often on the door's far side.
 ##
-## **Above or below her by preference, no further than `Tuning.TRAP_ARRIVAL_DISTANCE`** — the
-## furthest start a walker still loses from — since the view is shorter that way and a start there
-## is nearer. Straight up and straight down first, in an order the day's RNG picks, then
+## **The badge's own bearing first, when it is asked again** (`prefer`): once the badge has been up,
+## he is created along the way it pointed if that start still qualifies — at a front door too, ahead
+## of the search across the street — so he comes from where the badge said.
+##
+## **Above or below her by preference**, since the view is shorter that way and a start there is
+## nearer. Straight up and straight down first, in an order the day's RNG picks, then
 ## `TRAP_DRAW_LIMIT` bearings within `ARRIVAL_CONE` of either.
 ##
 ## **A clear run at her is what decides it**, since he chases in a straight line
@@ -831,23 +835,33 @@ func _view_from(her: Vector2) -> VisibleView:
 ## run from above or below — she is on a street that runs sideways, with no crossing street near
 ## enough — and at a front door with no start across the street, where the building stands straight
 ## above her (`tests/probes/grassy_goose_target_traps.gd` measures how often), **he comes along her
-## own street**, straight left or right just out of sight, further than the walk-away ceiling, so
-## from there walking directly away outlasts his notice and chase, which is the price of a start the
-## wider view needs; standing still or walking into him is still caught. Only when neither has a
-## clear run does the first legal start of all of them stand in, and then he may never reach her.
+## own street**, straight left or right just out of sight. Only when neither has a clear run does the
+## first legal start of all of them stand in, and then he may never reach her.
+##
+## **He arrives chasing** (`EventDef.arrives_chasing`, amendment 7 of M226), so from any start here
+## walking straight away outlasts his `Tuning.PURSUIT_TIME` chase at the 38px/s walking leaves him
+## (`tools/test.sh probes/m207_warning_lead.gd` prints it); standing still or walking into him is
+## caught.
 func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: EventDef,
 		front_door := false, prefer := Vector2.ZERO) -> Array:
 	var view := _view_from(her)
 	var walled_alleys := _walled_alleys()
 	var beside := beside_distance(view, def, her)
 	var boundary := _boundary_bodies_near(her, beside)
+	if prefer != Vector2.ZERO:
+		var kept := PendingWarning.just_out_of_sight(view, def, her, prefer)
+		if is_legal_ground(_map, _map.world_to_tile(kept), walled_alleys) \
+				and not (_sight.is_valid() and _sight.call(kept)) \
+				and not _runs_through_the_boundary(kept, her, boundary):
+			if _a_clear_run(kept, her):
+				return [kept, true, is_zero_approx(prefer.y), false]
+			if front_door and kept.y > her.y and _his_walk_reaches_her(kept, her, beside, boundary):
+				return [kept, false, false, true]
 	if front_door:
 		var across := _across_the_street(her, def, walled_alleys, boundary, view)
 		if across != Vector2.INF:
 			return [across, _a_clear_run(across, her), false, true]
 	var bearings: Array[Vector2] = []
-	if prefer != Vector2.ZERO:
-		bearings.append(prefer)
 	var up := PI / 2.0 if rng.randf() < 0.5 else -PI / 2.0
 	bearings.append(Vector2.RIGHT.rotated(up))
 	bearings.append(Vector2.RIGHT.rotated(-up))
@@ -861,9 +875,6 @@ func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: Event
 	for bearing in bearings:
 		var candidate := PendingWarning.just_out_of_sight(view, def, her, bearing)
 		var sideways := is_zero_approx(bearing.y)
-		if not sideways and candidate.distance_to(her) > Tuning.TRAP_ARRIVAL_DISTANCE \
-				and bearing != prefer:
-			continue
 		var tile := _map.world_to_tile(candidate)
 		if not is_legal_ground(_map, tile, walled_alleys):
 			continue
@@ -878,10 +889,8 @@ func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: Event
 	return [fallback, false, false, false]
 
 ## How far either side of straight up or straight down `_draw_arrival_position()` draws a start's
-## bearing, in radians. Chosen, not measured: within it a start just out of sight on the view's short
-## axis is no further than `Tuning.TRAP_ARRIVAL_DISTANCE` for either pursuer the director sends, with
-## the camera led toward him (`tests/test_resistance.gd` holds that), so walking straight away from
-## any of them still loses.
+## bearing, in radians. Chosen, not measured: a start just out of sight within it is nearer her than
+## one beside her, since the view is shorter than it is wide.
 const ARRIVAL_CONE := PI / 6.0
 
 ## Whether `step`'s target is a door on a building's front — the burnt building's (day 8) or the

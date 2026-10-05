@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_the_fire_burns_where_her_walk_put_it(t)
 	_test_the_fire_she_did_not_choose_leaves_her_a_way_out(t)
 	_test_the_engine_waits_on_its_road_to_the_fire(t)
+	_test_the_fire_under_a_covered_corner_is_not_sighted(t)
 	_test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t)
 	_test_a_fire_that_was_never_lit_was_not_spent(t)
 	_test_a_won_day_with_the_fire_unmet_still_burns(t)
@@ -774,6 +775,42 @@ func _a_route_out(day: int, outward := true) -> PackedVector2Array:
 ## empty for a point off the tree. What "on the path" means, asked of a placement.
 func _branches_on(day: int, position: Vector2) -> Array[int]:
 	return _days_tree(day).branches_on(_city.map.world_to_tile(position))
+
+## **The fire under a corner the joystick's controls cover is not sighted** (dappled-swan's
+## the-sightings): with the burning building standing only under the left corner, the day's own
+## visible area in the joystick scheme sends no `seen-fire` and summons no engine; in the tap scheme,
+## the same view and the same fire, it does both.
+func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
+	_start(Tuning.RUN_TAUGHT_DAY)
+	var events := _city.events
+	var def := EventCatalogue.by_id("burning_building")
+	var at := CrowdLanes.arterial_pavement(_city.map)
+	var sighted: Array[String] = []
+	var on_sighted := func(id: String) -> void: sighted.append(id)
+	EventBus.event_sighted.connect(on_sighted)
+	# The view whose left corner holds the fire's point: the corner's middle is (-224, 108) world px
+	# off the view's centre at zoom 2.
+	var corner := VisibleView.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
+	var view := Rect2(at - corner * 0.5 - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	for joystick: bool in [true, false]:
+		var plan := EventScheduler.Planned.new(def, at)
+		var instance := EventInstance.new()
+		instance.setup(def, at)
+		_city.add_child(instance)
+		plan.live = instance
+		events._plans.append(plan)
+		sighted.clear()
+		var warnings_before := events.pending_warnings().size()
+		events._visible.look(view, joystick)
+		events._summon_what_has_been_sighted()
+		var summoned := events.pending_warnings().size() > warnings_before
+		t.check(sighted.has("burning_building") != joystick and summoned != joystick,
+				"%s scheme: the fire under the left corner is %s" % ["joystick" if joystick else "tap",
+				"neither sighted nor sends for the engine" if joystick else "sighted, and sends for the engine"])
+		events._plans.erase(plan)
+		events._pending.clear()
+		instance.free()
+	EventBus.event_sighted.disconnect(on_sighted)
 
 func _fire_plan() -> EventScheduler.Planned:
 	for plan in _city.events.plans():

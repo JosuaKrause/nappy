@@ -335,29 +335,6 @@ const RESISTANCE_GOAL := 5
 ## still meet them on their way in from anywhere she found the mark. A curfew day is 180s.
 const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 
-## The furthest above or below her a task's own trap may start (`ResistanceDirector.
-## _draw_arrival_position()`, `EventCatalogue._robber_giving_chase()` and `_van_guard_giving_chase()`):
-## the trap of a perform step comes to her rather than waiting at the contact, warned of first and then
-## created just out of sight of her, awake from its first frame. Shared by both rows the director can
-## send, so it has to hold for both their catches, not the robber's alone.
-##
-## **It is the furthest start a walker still loses from — for whichever row has the tighter catch.**
-## Walking directly away, the gap closes at `pursue_speed` less `WALK_SPEED` (130 − 92 = 38px/s) for
-## either row (`Tuning.HEAT_HUNTS_SPEED`, the same figure `_alley_robbery()` hardcodes), and each has
-## its approach plus its chase — the day-3 dog's own 4.5s and 3.0s, which both rows read off its row
-## — to close it to its own catch. **The robber catches two pixels tighter than the van's guard**,
-## 26px against the guard's 28px (`MASKED_MAN_REACH`, `door_guard`'s own reach), so his row is the
-## one this constant is stated over: with half a second of the approach-plus-chase kept as margin,
-## 26 + 38 × (4.5 + 3.0 − 0.5) = **292px**. A start just out of sight above or below her is nearer
-## than that within `ResistanceDirector.ARRIVAL_CONE` of straight up or down, with the camera on her
-## or led toward him (`tests/test_resistance.gd` holds both), so the director draws its bearings
-## there and keeps any start past this for the sideways fallback.
-##
-## **Beside her it cannot hold**: the view is wide, so a start just out of sight to her side is about
-## 340px off, and walking straight away from there outlasts him — the price of a start the wider view
-## needs, taken only where no start above or below her has a clear run at her.
-const TRAP_ARRIVAL_DISTANCE := 292.0
-
 ## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
 ## way. Chosen, not measured, and open to overturn once the late days are timed (M184).
 ##
@@ -1903,28 +1880,18 @@ const RUN_TAUGHT_DAY := 3
 ## day" reads as a mean nearer two than one, so 0.25 is the choice.
 const CHARGING_DOG_SPRINKLE_CHANCE := 0.25
 
-## How long a pursuer keeps coming once it turns lethal, before it gives up.
-##
-## Bounded by the cost of the answer, not by the fiction: at `EXCITEMENT_FROM_RUNNING` a sprint is
-## fourteen points a second, so a six-second chase is most of the meter and being *made* to run
-## would be being made to lose.
-##
-## It is the cap on **doing nothing**. A player who answers is out of it well before the clock is,
-## because `PURSUIT_SHAKEN_OFF` ends the chase when she has beaten it; a player who does not is
-## caught, which is the point.
-##
-## It cannot fall much below this, and the constraint is worth knowing before reaching for it:
-## walking away must still lose *inside the chase*, so the chase has to be long enough to close the
-## stand-off at `pursue_speed - WALK_SPEED` — 38px/s against the day-3 dog. Every extra pixel of
-## stand-off therefore costs 1/38 s of chase, which is why a **narrower** stand-off is what buys a
-## shorter one.
-##
-## **Every pursuer holds this ceiling exactly**, the resistance's own `robber_giving_chase` and
-## `van_guard_giving_chase` included: both read the day-3 dog's own approach and chase, fitted to
-## its gold timing *(PLAYTEST-145: "the pursuit dog timing from the day 3 lesson is the correct
-## timing. other timings should be adjusted to fit that")*, and `tests/test_events_costs.gd` holds
-## every pursuer's `duration` to it.
-const PURSUIT_TIME := 3.0
+## How long a pursuer keeps coming once it turns lethal, before it gives up on her: **a long cap,
+## not an end she can walk out of**. *(Amendment 8 of M226, the player: "pursuers should never (or a
+## long time) stop pursuing if she walks -- that will make it impossible to walk away".)* Walking
+## away loses by construction: the pursuer is faster than a walk, and it keeps coming for longer than
+## any start it can be given takes to close at the 38px/s walking leaves it (from just off screen to
+## her side, about 340px, that is under 9s). Running is what ends a chase, at `PURSUIT_SHAKEN_OFF`'s
+## rate, so the sprint is priced by how soon she runs, never by this clock. A long cap rather than
+## none, so a pursuer stood against a wall it cannot get round lets go in the end rather than
+## charging her from behind it for the rest of the day. Every pursuer holds it: the day-3 dog, the
+## resistance's sent robber and guard, the waiting robber and guard, the masked man, and what hunts at
+## heat (`tests/test_events_costs.gd`).
+const PURSUIT_TIME := 30.0
 
 ## And the least a pursuer's speed may differ from either of hers.
 ##
@@ -2049,8 +2016,9 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 ##   nothing — she strolls away and the run key stays a trap.
 ## - **Running must win.** Slower than `RUN_SPEED` by the same margin, or it is not a lesson, it
 ##   is a death sentence with a keypress attached.
-## - **It must let go.** A chase with no end is a chase she cannot afford: running is priced per
-##   second, so an unbounded one is a loss however well it is played.
+## - **It must let go in the end**, within `PURSUIT_TIME` (a long cap, amendment 8 of M226), so a
+##   pursuer stuck against a wall does not charge her for the rest of the day. Running ends it long
+##   before, at `PURSUIT_SHAKEN_OFF`'s rate, so the cap is never what a runner pays for.
 ## - **Running has to open more than the radius that ends the day**, over the whole chase. Otherwise
 ##   running is the correct answer and still not enough.
 ## - **The notice is the sight of it coming**, and there has to be at least `PURSUIT_MIN_NOTICE` of

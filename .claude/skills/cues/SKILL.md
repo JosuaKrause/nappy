@@ -31,10 +31,10 @@ coming* are claims about the thing's own course.
   is coming rather than that something is — **for the things that telegraph**: a thing telegraphs
   its coming only if it goes fast, comes toward her, and carries a heavy penalty, ending the day or a
   heavy hit *(PLAYTEST-145, statements 18-23; inbox #598: "the telegraphing rule was about heavy
-  penalty not *only* lethal")*. One that does not — the loose dog and the cat
-  (`EventDef.telegraphs`) — is outside the badge and warning-first placement rather than exempted
-  from them. Which borderline rows the rule keeps is still open; until it is settled they badge as
-  built
+  penalty not *only* lethal")*. One that does not (`EventDef.telegraphs`) — the loose dog and the
+  cat, the player's own — is outside the badge and warning-first placement rather than exempted
+  from them, as are `alley_mouse`, `pigeon_flock` and `police_patrol` by the rule's numbers
+  (`docs/EVENTS.md`, "What telegraphs")
 - above the **player**, a flashing exclamation mark for a soon-to-be-bad spot, doubled and red for
   danger already on her
 - over the **pram**, the only cue that is not about the world — four states of the baby herself

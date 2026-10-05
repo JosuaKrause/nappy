@@ -260,8 +260,11 @@ func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
 		if not def.telegraphs and not quiet.has(def.id):
 			quiet.append(def.id)
 	quiet.sort()
-	t.check(quiet == ["cat_dash", "loose_dog"],
-			"and every other row telegraphs as built (not telegraphing: %s)" % ", ".join(quiet))
+	# Amendment 9 of M226: the rule applied to every row by its numbers — the alley mouse dashes across
+	# its alley, the pigeons go up where she walks in, and the patrol is slower than a walk; none
+	# comes at her fast with a heavy penalty.
+	t.check(quiet == ["alley_mouse", "cat_dash", "loose_dog", "pigeon_flock", "police_patrol"],
+			"and these are the rows that do not telegraph, every other row does (%s)" % ", ".join(quiet))
 	edge.free()
 
 ## **`as_warned_first()` carries `solid_parts` across by hand, the way every other copy of a row

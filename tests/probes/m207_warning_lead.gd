@@ -64,8 +64,11 @@ const LIMIT := 30.0
 ## so a screen margin is half as many world px.
 const ZOOM := 2.0
 
-enum Answer { TOWARD, STAND, AWAY }
+enum Answer { TOWARD, STAND, AWAY, RUN }
 const ANSWERS := [Answer.TOWARD, Answer.STAND, Answer.AWAY]
+## The gold timing's answers: her three, and running away the moment she is warned, the one that has
+## to escape a pursuer (amendment 8 of M226).
+const GOLD_ANSWERS := [Answer.TOWARD, Answer.STAND, Answer.AWAY, Answer.RUN]
 
 func run(t) -> void:
 	var edge := DangerEdge.new()
@@ -100,26 +103,28 @@ func run(t) -> void:
 # time seen as correct".)* M226 measures the day-3 dog's breakdown as she meets it, and the two
 # pursuers the resistance sends after her, which are fitted to it, before and after.
 
-## Prints the gold timing: for each pursuer sent at her from off screen, and each of her three
-## answers, the seconds from the first warning she can see (`warned_at` is zero) to the thing
-## existing, to it first being in view, and to its chase starting (its telegraph over, by the clock or
-## by its lunge); the chase she then sees, from its start to the catch or to its end; and how much of
-## that chase it is in view.
+## Prints the gold timing in the player's terms *(inbox #598: "the chase is what happens on screen
+## -- if the dog was placed off screen and it took a moment to come on screen that is not counted as
+## chase" · "off screen doesn't count toward the timing it only counts towards the warning timing")*:
+## for each pursuer sent at her from off screen and each of her three answers, seconds from the first
+## warning she can see to the pursuer first **visible** (anything it draws in view,
+## `EventInstance.footprint_of()`), to its **lunge** (its telegraph over, by the clock or by its
+## stand-off), and to it **catching her**; then the **warning**, which is the time until it is
+## visible, and the **chase**, from the lunge to the catch.
 static func _print_the_gold_timing(edge: DangerEdge) -> void:
 	print("\n== M226: the gold timing, seconds from the first warning ==")
-	print("| pursuer | answer | badge alone | in view at | chase at | chase she sees | of it in view "
-			+ "| how it ends |")
-	print("|---|---|---|---|---|---|---|---|")
-	# "in view at" is the pursuer's own point; the first of its drawn box is in view at most a few
-	# frames after it is created (`tests/test_events_pursuit.gd` holds that).
+	print("| pursuer | answer | visible | lunges | catches her | warning | chase |")
+	print("|---|---|---|---|---|---|---|")
 	for encounter in gold_encounters():
-		for answer: Answer in ANSWERS:
+		for answer: Answer in GOLD_ANSWERS:
 			var result := gold(encounter, answer, edge)
-			print("| `%s`, %s | %s | %s | %s | %s | %s | %s | %s |" % [encounter["def"].id,
-					encounter["how"], ["walking toward", "standing", "walking away"][answer],
-					_seconds(result["created_at"]), _seconds(result["seen_at"]),
-					_seconds(result["chase_at"]), _seconds(result["chase_for"]),
-					_seconds(result["chase_seen"]), result["ends"]])
+			var caught: bool = result["caught"]
+			print("| `%s`, %s | %s | %s | %s | %s | %s | %s |" % [encounter["def"].id,
+					encounter["how"], ["walking toward", "standing", "walking away", "running away"][answer],
+					_seconds(result["seen_at"]), _seconds(result["chase_at"]),
+					_seconds(result["caught_at"]) if caught else str(result["ends"]),
+					_seconds(result["seen_at"]),
+					_seconds(result["caught_at"] - result["chase_at"]) if caught else "—"])
 
 static func _seconds(value: float) -> String:
 	return "—" if value == INF else "%.2f" % value
@@ -139,7 +144,7 @@ static func gold_encounters() -> Array[Dictionary]:
 		list.append({"def": def, "how": "from beside", "heading": Vector2.RIGHT})
 	return list
 
-## One pursuer met with one answer: `{created_at, seen_at, chase_at, chase_for, chase_seen, ends}`,
+## One pursuer met with one answer: `{created_at, seen_at, point_seen_at, chase_at, caught_at, ...}`,
 ## seconds from the first warning, `INF` where it never happened. The badge goes up with nothing in
 ## the world (the first warning) and she answers on that frame; once the badge's own time is up the
 ## pursuer is created just out of sight along her heading (`PendingWarning.along_her_heading()` on
@@ -149,8 +154,8 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 	var def: EventDef = encounter["def"]
 	var heading: Vector2 = encounter["heading"]
 	var her := Vector2.ZERO
-	var result := {"created_at": INF, "seen_at": INF, "box_seen_at": INF, "chase_at": INF,
-			"chase_for": INF, "chase_seen": 0.0, "ends": "30s", "caught": false}
+	var result := {"created_at": INF, "seen_at": INF, "point_seen_at": INF, "chase_at": INF,
+			"chase_for": INF, "chase_seen": 0.0, "ends": "30s", "caught": false, "caught_at": INF}
 	var instance: EventInstance = null
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.along_her_heading(null, def, at, heading)
@@ -159,6 +164,10 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 		var created := EventInstance.new()
 		created.setup(def, place, PackedVector2Array())
 		created.came_under_a_warning = true
+		# Created as `EventManager.spawn_warned()` creates it: one that arrives chasing (the
+		# resistance's sent robber and guard) with its telegraph spent.
+		if def.arrives_chasing:
+			created.resume(EventManager.age_when_warned(def), 0.0)
 		made.append(created)
 		return true
 	var warning := PendingWarning.new(def, where, arrive)
@@ -180,17 +189,17 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 				result["created_at"] = clock - warned_at
 			continue
 		instance.player_at = her
-		instance.player_running = false
+		instance.player_running = answer == Answer.RUN
 		instance._process(STEP)
 		var at := instance.global_position
 		var in_view := _in_view(at - her, 0.0)
 		var since := clock - warned_at
-		if in_view and result["seen_at"] == INF:
-			result["seen_at"] = since
-		var box := EventInstance.box_of(def)
-		if result["box_seen_at"] == INF \
+		if in_view and result["point_seen_at"] == INF:
+			result["point_seen_at"] = since
+		var box := EventInstance.footprint_of(def)
+		if result["seen_at"] == INF \
 				and VisibleView.around(her).sees_any(Rect2(at + box.position, box.size)):
-			result["box_seen_at"] = since
+			result["seen_at"] = since
 		if result["chase_at"] == INF and not instance.is_telegraphing():
 			result["chase_at"] = since
 		if result["chase_at"] != INF and in_view:
@@ -198,6 +207,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 		if instance.is_lethal_at(her):
 			result["ends"] = "caught at %.2f" % since
 			result["caught"] = true
+			result["caught_at"] = since
 			break
 		if instance.is_finished or instance.is_leaving:
 			result["ends"] = "gave up at %.2f" % since if instance.gave_up else "left at %.2f" % since
@@ -493,6 +503,8 @@ static func _answered(answer: Answer, heading: Vector2) -> Vector2:
 			return Vector2.ZERO
 		Answer.AWAY:
 			return -heading * Tuning.WALK_SPEED
+		Answer.RUN:
+			return -heading * Tuning.RUN_SPEED
 	return heading * Tuning.WALK_SPEED
 
 static func _in_view(offset: Vector2, margin: float) -> bool:

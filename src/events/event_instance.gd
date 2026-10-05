@@ -1013,15 +1013,43 @@ func drawn_box() -> Rect2:
 
 ## The box a row's own picture fills standing on its feet at the origin — `drawn_box()` before an
 ## instance exists, and without the run a spread covers, which only an instance's own street decides.
-## What a thing arriving from off screen is placed just out of sight by (`VisibleView.
-## clear_of_sight()`), since nothing of it may be seen on the frame it exists. Empty for a row that
-## draws nothing of its own.
+## Empty for a row that draws nothing of its own.
 static func box_of(row: EventDef) -> Rect2:
 	var icon := icon_for(row.look)
 	if icon.is_empty():
 		return Rect2()
 	var size := _native_size(icon)
 	return Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+
+## **Everything a row can put on the screen**, standing on its feet at the origin, whichever way it
+## faces: the union of every picture its look can draw (`family_sources()` — a cyclist coming down
+## the screen draws its front view, not the side view its badge shows), its body shadow (a disc of
+## its shape's radius at its feet), the loose dog's trailing lead, the bob and the excitement halo's
+## rim (`EntityHalo.HALO_MARGIN`). What a thing arriving from off screen is placed wholly outside the
+## camera's view by (`PendingWarning.just_out_of_sight()`), so nothing of it shows on the frame it
+## exists *(amendment 6 of M226, the player: "I don't want any pop in")*. Empty for a row that draws
+## nothing of its own.
+static func footprint_of(row: EventDef) -> Rect2:
+	var box := Rect2()
+	var any := false
+	for picture in family_sources(row.look):
+		var size := _native_size(picture)
+		if size.x <= 0.0 or size.y <= 0.0:
+			continue
+		var one := Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+		box = one if not any else box.merge(one)
+		any = true
+	if not any:
+		return box_of(row)
+	if row.draws_body_shadow and row.shape != null:
+		var r := row.obstructs_radius if row.obstructs_radius > 0.0 else row.shape.radius
+		box = box.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
+	if row.look == EventDef.Look.LOOSE_DOG:
+		box = box.merge(Rect2(-LOOSE_LEAD_REACH, -8.0, LOOSE_LEAD_REACH * 2.0, 8.0))
+	return box.grow(BOB_HEIGHT + EntityHalo.HALO_MARGIN)
+
+## How far the loose dog's slack lead trails behind it, in px — `_draw_loose_dog()`'s own reach.
+const LOOSE_LEAD_REACH := 26.0
 
 var _drawn_box := Rect2()
 var _drawn_box_known := false
@@ -4104,7 +4132,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 ## the span it owns and the reason to cross the street. Here the same lead trails on the ground
 ## behind one body, and the difference between the two pictures is the whole event.
 func _draw_loose_dog(canvas: CanvasItem = self) -> void:
-	var behind := Vector2(26.0 if _heading_is_west() else -26.0, 0.0)
+	var behind := Vector2(LOOSE_LEAD_REACH if _heading_is_west() else -LOOSE_LEAD_REACH, 0.0)
 	_draw_body_shadow(canvas)
 	# On the ground and slack, not held up at hip height. Nobody is holding it. The lead's own
 	# offset stays a plain east/west span — a composite the picture underneath it does not own,

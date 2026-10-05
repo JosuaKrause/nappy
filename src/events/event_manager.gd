@@ -384,6 +384,7 @@ func start_recipe(plans: Array[EventScheduler.Planned], day: int, focus: Vector2
 	_recipe_plan = true
 
 func clear() -> void:
+	_pursuer_owed = null
 	for instance in _instances:
 		instance.queue_free()
 	_instances.clear()
@@ -978,7 +979,8 @@ func warn_first(def: EventDef, her: Vector2, where: Callable,
 ## `hard_fail` row, and at its own intensity for a loud one. **A pursuer is created with its
 ## telegraph still to run**, since a pursuer's telegraph is its approach, the sight of it closing that
 ## she is owed (`Tuning.PURSUIT_MIN_NOTICE`), and its warning was only the badge before it
-## (`EventDef.warned_for()`, its `offscreen_notice`).
+## (`EventDef.warned_for()`, its `offscreen_notice`) — unless it `arrives_chasing` (the resistance's
+## sent robber and guard), which is created with its telegraph spent, chasing from its first frame.
 ##
 ## **`came_under_a_warning` is set before `resume()`**, which reads it: a resume otherwise restores
 ## an instance streamed back in, and takes a pursuer that never waits to have begun its chase
@@ -989,7 +991,7 @@ func warn_first(def: EventDef, her: Vector2, where: Callable,
 func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> EventInstance:
 	var instance := _spawn_unplanned(as_warned(def), path[0], path)
 	instance.came_under_a_warning = true
-	if not def.pursues:
+	if not def.pursues or def.arrives_chasing:
 		instance.resume(age_when_warned(def), 0.0)
 	if pelican and def.look == EventDef.Look.CYCLIST:
 		_ride_as_a_pelican(instance)
@@ -1350,6 +1352,12 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	var body := _player as CharacterBody2D
 	if not body:
 		return
+	if _pursuer_owed and body.velocity.length() >= Tuning.AHEAD_MIN_SPEED:
+		var owed := _pursuer_owed
+		_pursuer_owed = null
+		_warn_down_her_heading(owed, body.global_position,
+				body.global_position + body.velocity.normalized())
+		return
 	var due := _director.due(delta, body.global_position, body.velocity, _plans)
 	if due.is_empty():
 		return
@@ -1467,8 +1475,9 @@ func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 ## run and when it is sprinkled into a later one — warned first *(M226, PLAYTEST-145: "the new system
 ## should be made to work to retain that timing for the pursuing dog")*: its badge is up alone for its
 ## own `offscreen_notice` (the dog's half second), pointing down the way `sited` lies from her, and it
-## is then created just out of sight that way on walkable ground (`PendingWarning.
-## along_her_heading()`), its telegraph — the approach she watches — still to run.
+## is then created just off screen that way on walkable ground (`PendingWarning.
+## along_her_heading()`), its telegraph — the approach she watches — still to run. With nowhere to
+## stand then, or now, it is owed again (`_pursuer_owed`) and the run log says so.
 func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void:
 	var direction := (sited - her).normalized()
 	if direction == Vector2.ZERO:
@@ -1480,7 +1489,20 @@ func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void
 		Telemetry.note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
 				% [def.id, place.distance_to(at), TelemetryLog.tile(_map.world_to_tile(at))])
 		return true
-	warn_first(def, her, where, arrive)
+	var warning := warn_first(def, her, where, arrive)
+	if warning:
+		warning.on_withdrawn = func() -> void: _pursuer_owed = def
+		return
+	# Nowhere off screen to stand down her heading: the lesson is not lost, it is owed again on
+	# her next frame of walking (`_place_what_is_owed_ahead()`).
+	_pursuer_owed = def
+	Telemetry.note("ahead", "%s has nowhere off screen to stand down her heading at %s; owed again"
+			% [def.id, TelemetryLog.tile(_map.world_to_tile(her))])
+
+## A pursuer the director sent that found nowhere off screen to stand, or whose warning was
+## withdrawn: tried again, down her heading as it is then, the next frame she is walking. Null when
+## none is owed. The day-3 lesson is the one this keeps from being lost.
+var _pursuer_owed: EventDef = null
 
 ## The other half of the director's day: a place the day budgeted and left unsited, put on a
 ## building face ahead of her once her heading for the day is clear. Day 3's fire is the only row

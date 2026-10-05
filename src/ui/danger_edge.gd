@@ -150,6 +150,15 @@ func view() -> VisibleView:
 func sees(world_position: Vector2, margin := 0.0) -> bool:
 	return view().sees(world_position, margin * world_per_screen_px())
 
+## Whether she can see any of `instance`: the point it stands at, or any of what it draws
+## (`EventInstance.drawn_box()`). Coming into sight is the badge's job done by the thing itself, so the
+## badge goes off the moment the first of it shows, not only once its feet do.
+func _shows(instance: EventInstance) -> bool:
+	if sees(instance.global_position):
+		return true
+	var box := instance.drawn_box()
+	return box.has_area() and view().sees_any(Rect2(instance.global_position + box.position, box.size))
+
 ## World px per design-space screen px at the camera's zoom: the world the view shows across the
 ## design box's width.
 static func world_per_screen_px() -> float:
@@ -223,7 +232,7 @@ func _measure(delta: float) -> void:
 		# without it a thing hovering on the boundary trades places with its own badge every
 		# frame. It has to be well outside the view to raise one, and keeps it until it is
 		# properly in view.
-		if sees(at):
+		if _shows(instance):
 			state["seen"] = true
 		var margin: float = SCREEN_MARGIN if state["seen"] else 0.0
 		if _is_worth_an_arrow(instance) and announces(approach, gap) \
@@ -240,7 +249,7 @@ func _measure(delta: float) -> void:
 		# Coming on screen is not a lapse in the condition to be held through — it is the badge's
 		# job being done by the thing itself — so it is filtered here, after the hold and not
 		# inside it.
-		if hold > 0.0 and not sees(at):
+		if hold > 0.0 and not _shows(instance):
 			# Sorted by *when it arrives* rather than by how near it is, because that is what
 			# `MOST_AT_ONCE` is choosing between: three badges is a warning and the one worth
 			# keeping is the one that gets here first, which a slow thing standing closer is not.

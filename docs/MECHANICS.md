@@ -970,14 +970,15 @@ outcomes* rather than the same outcome at two prices:
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
 | Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
-| Bounded | gives up after its own `duration` — `PURSUIT_TIME` for every row, the resistance's `robber_giving_chase` and `van_guard_giving_chase` reading the day-3 dog's own — **or** after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, because a run is priced per second and an unbounded chase is a loss however well it is played |
+| Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
-telegraphs. One sent at her from off screen — the day-3 dog, the resistance's robber and guard — is
-warned of first like everything that arrives from off screen, but its badge alone is its own half
-second (`EventDef.offscreen_notice`), not its telegraph: it is then placed just out of sight with
-the whole approach still to run, where a non-pursuer warned first (the fire engine) spends its
-telegraph as the badge, with nothing in the world. A pursuer that stands still while it
+telegraphs. One sent at her from off screen is warned of first like everything that arrives from off
+screen, its badge alone its own half second (`EventDef.offscreen_notice`): the day-3 dog is then
+placed just off screen with the whole approach still to run, where a non-pursuer warned first (the
+fire engine) spends its telegraph as the badge, with nothing in the world; the resistance's robber
+and guard arrive already chasing (`EventDef.arrives_chasing`: "the proximity rule is only for
+standing robbers"), so for them the badge is the whole of the notice. A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
 owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
@@ -1220,7 +1221,8 @@ the whole catalogue, so an unfair event fails loudly rather than quietly ruining
 **The contract is for the things that telegraph.** A thing telegraphs its coming only if it goes
 fast, comes toward her, and carries a heavy penalty — it can end the day or hit her hard
 (PLAYTEST-145, statements 18-23; inbox #598: "the telegraphing rule was about heavy penalty not
-*only* lethal"). One that does not — the loose dog and the cat — is outside the screen-edge badge,
+*only* lethal"). One that does not — the loose dog and the cat, the alley mouse, the pigeons, the
+patrol — is outside the screen-edge badge,
 warning-first placement and this contract rather than exempted from them, and is met as it comes
 (`docs/EVENTS.md`, "What telegraphs").
 
@@ -1262,10 +1264,11 @@ are the ones that cost you the baby's calm.
 
 A resistance pickup's chalk mark follows her rather than sitting still: it counts as noticed
 only once she has been within `ResistanceDirector.SEEN_DISTANCE` (150px, kept under the
-visible world's own 180px vertical half-extent so the point is on screen on every bearing
-rather than only a favourable one — never right at the screen's own edge) of it, in sight —
-what she can see, `VisibleView`, so not while it is under a corner the joystick scheme's controls
-cover — continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough, for long
+visible world's own 180px vertical half-extent so the point is inside the camera's view on every
+bearing rather than only a favourable one — never right at the screen's own edge) of it, and in
+sight — what she can see, `VisibleView`: in the tap scheme that is every point within 150px, and in
+the joystick scheme a mark down and to one side can be under a corner its controls cover, where it
+is not in sight and its dwell does not run — continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough, for long
 enough, that walking past it rather than to it is a choice, not the instant its tile merely
 swept across the camera on the way to somewhere else. Until then, walking more than
 `ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable

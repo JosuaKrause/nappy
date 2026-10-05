@@ -204,7 +204,9 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 	for def in EventCatalogue.all():
 		# A pursuer that sets off beside her is never sited by the director, so this rig's geometry
 		# is not its own; `tests/test_checkpoints.gd` walks `door_guard` at a door instead.
-		if not def.pursues or def.sets_off_beside_her:
+		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
+		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
+		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing:
 			continue
 		pursuers += 1
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
@@ -268,7 +270,9 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 	for def in EventCatalogue.all():
 		# Sited beside her rather than by the director — see `_test_a_pursuer_leaves_room_to_answer`.
-		if not def.pursues or def.sets_off_beside_her:
+		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
+		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
+		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing:
 			continue
 		var at_once := _answer_rig(def, 0.0)
 		t.check(not at_once["caught"],
@@ -320,7 +324,9 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 	for def in EventCatalogue.all():
 		# Sited beside her by construction, which is what its own stand-off rule answers.
-		if not def.pursues or def.sets_off_beside_her:
+		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
+		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
+		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing:
 			continue
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 		var floor_lead := PendingWarning.least_distance()
@@ -510,7 +516,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 			bike._process(STEP)
 			since += STEP
 			edge._measure(STEP)
-			var box := bike.drawn_box()
+			var box := EventInstance.footprint_of(def)
 			if into_sight == INF and manager.visible_view().sees_any(
 					Rect2(bike.global_position + box.position, box.size)):
 				into_sight = since
@@ -526,7 +532,8 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		t.check(into_sight <= further / def.speed + 3.0 * STEP,
 				"and he comes into sight as soon as he has ridden the %.0fpx his ground put him past "
 				% further + "just out of sight (%.2fs after he exists)" % into_sight)
-		t.check(gone < 0.5, "and the badge goes down as he does (%.2fs)" % gone)
+		t.check(gone <= into_sight + 0.2,
+				"and the badge goes down as he comes into sight (%.2fs, in sight at %.2fs)" % [gone, into_sight])
 	for instance in created:
 		instance.free()
 	edge.free()
@@ -564,83 +571,92 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		probe_edge.free()
 	t.check(walked >= 2, "the cyclist was walked on both axes (%d)" % walked)
 
-## **The day-3 dog keeps its gold timing, warned first.** *(PLAYTEST-145: "the pursuit dog timing
-## from the day 3 lesson is the correct timing ... the new system should be made to work to retain
-## that timing for the pursuing dog" · "this is the gold timing with warning time and onscreen
-## pursuing time seen as correct".)* Its numbers are the lesson and fail this test if they move: a
-## half-second badge alone (`offscreen_notice`), never lengthened to the one-second ceiling, a 4.5s
-## approach (`telegraph_time`) and a `Tuning.PURSUIT_TIME` chase at 130px/s.
-##
-## Then walked as she meets it (`M207Lead.gold()`, the probe's own walk, on both axes and her three
-## answers): the badge is up alone for exactly its half second; it is created just out of sight and
-## the first of it is in sight within a few frames; walking away, the whole of its approach is spent
-## in sight before its chase starts, and the chase she then sees is no longer than its own; and
-## walking away from it straight down her line loses. Walking away along the wide axis outlasts it,
-## as it always has (the probe's own table, `tools/test.sh probes/m207_warning_lead.gd`).
+## **The day-3 dog keeps its gold timing, in the player's terms.** *(PLAYTEST-145: "the pursuit dog
+## timing from the day 3 lesson is the correct timing ... this is the gold timing with warning time
+## and onscreen pursuing time seen as correct"; inbox #598: "the chase is what happens on screen" ·
+## "off screen doesn't count toward the timing it only counts towards the warning timing" · "0.53 is
+## a good warning time -- the chase on screen didn't change at all".)* Per answer, the **warning** is
+## the time from the first warning she can see (the badge) to the dog first visible (anything it
+## draws in view), and the **chase** is from its lunge to the catch. Its numbers stay as built — a
+## half-second badge alone (`offscreen_notice`), a 4.5s approach (`telegraph_time`) and a chase at
+## 130px/s that does not give up on a walker (`Tuning.PURSUIT_TIME`, a long cap; amendment 8: "pursuers
+## should never (or a long time) stop pursuing if she walks") — and so does what she meets: walked as
+## she meets it (`M207Lead.gold()`, the probe's own walk, straight down her line), the warning is the
+## half-second badge in all three answers and the chase is the lesson's own, 0.35s walking into it,
+## 0.60s standing and 2.05s walking away, which loses; running away the moment she is warned escapes
+## it, which is the lesson. A later change to its placement, to the camera or to its numbers fails
+## here.
 func _test_the_day_3_dog_keeps_its_gold_timing(t) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
 	t.close_to(dog.offscreen_notice, 0.5, "the day-3 dog's badge alone is half a second", 0.001)
 	t.close_to(dog.telegraph_time, 4.5, "its approach is 4.5s", 0.001)
 	t.close_to(dog.duration, Tuning.PURSUIT_TIME, "its chase is the pursuit's own", 0.001)
-	t.close_to(Tuning.PURSUIT_TIME, 3.0, "which is three seconds", 0.001)
+	# Amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks".
+	t.check(Tuning.PURSUIT_TIME >= 30.0, "which is a long cap, not an end a walk outlasts (%.0fs)"
+			% Tuning.PURSUIT_TIME)
 	t.close_to(dog.pursue_speed, 130.0, "at 130px/s", 0.001)
 	var sent := EventManager.as_warned(dog)
 	t.check(sent.warns_before_it_exists() and is_equal_approx(sent.warned_for(), dog.offscreen_notice)
-			and sent.warned_for() < Tuning.WARNING_ALONE_MAX,
-			"sent at her, it is warned first for its own half second, under the one-second ceiling")
+			and sent.warned_for() <= Tuning.WARNING_ALONE_MAX,
+			"sent at her, it is warned first for its own half second, within the one-second ceiling")
+	var chases := {M207Lead.Answer.TOWARD: 0.35, M207Lead.Answer.STAND: 0.60,
+			M207Lead.Answer.AWAY: 2.05}
 	var edge := DangerEdge.new()
 	for encounter in M207Lead.gold_encounters():
 		var def: EventDef = encounter["def"]
-		if def.id != "charging_dog":
+		if def.id != "charging_dog" or encounter["heading"] != Vector2.UP:
 			continue
-		for answer: M207Lead.Answer in M207Lead.ANSWERS:
+		for answer: M207Lead.Answer in M207Lead.GOLD_ANSWERS:
 			var how := "%s, answer %d" % [encounter["how"], answer]
 			var met := M207Lead.gold(encounter, answer, edge)
-			t.close_to(met["created_at"], dog.offscreen_notice, "%s: the badge alone is its half second"
-					% how, 2.0 * STEP)
-			t.check(met["box_seen_at"] - met["created_at"] <= 3.0 * STEP,
-					"%s: created just out of sight, the first of it is in sight at once (%.2fs)"
-					% [how, met["box_seen_at"] - met["created_at"]])
-			t.check(met["chase_for"] <= dog.duration + STEP,
-					"%s: the chase she sees is no longer than its own (%.2fs)" % [how, met["chase_for"]])
-			if answer == M207Lead.Answer.AWAY:
-				t.check(met["chase_at"] - met["box_seen_at"] >= dog.telegraph_time - 3.0 * STEP,
-						"%s: walking away, its whole %.1fs approach is in sight before it chases (%.2fs)"
-						% [how, dog.telegraph_time, met["chase_at"] - met["box_seen_at"]])
-				if encounter["heading"] == Vector2.UP:
-					t.check(met["caught"], "%s: and walking away down her line loses (%s)"
-							% [how, met["ends"]])
-			else:
-				t.check(met["caught"], "%s: walking into it or standing still is caught (%s)"
-						% [how, met["ends"]])
+			if answer == M207Lead.Answer.RUN:
+				# Amendment 8 of M226: walking cannot outlast it, so running is what escapes.
+				t.check(not met["caught"] and str(met["ends"]).begins_with("gave up"),
+						"%s: running away the moment she is warned escapes it (%s)" % [how, met["ends"]])
+				continue
+			t.close_to(met["seen_at"], dog.offscreen_notice,
+					"%s: the warning, badge to visible, is its half second (%.2fs)" % [how, met["seen_at"]],
+					0.1)
+			t.check(met["caught"], "%s: and it catches her (%s)" % [how, met["ends"]])
+			if met["caught"]:
+				var chase: float = met["caught_at"] - met["chase_at"]
+				t.close_to(chase, chases[answer],
+						"%s: the chase, lunge to catch, is the lesson's %.2fs (%.2fs)"
+						% [how, chases[answer], chase], 0.05)
 	edge.free()
 
-## **The resistance's own pursuers are fitted to the day-3 dog.** *(M137's timing fork, the player:
-## "A, remove the exemption", so `robber_giving_chase` and `van_guard_giving_chase` are warned first
-## and fitted to the dog's gold timing; busy-quail, inbox #569: "1s warning should be enough ... let's
-## apply that to the others as well".)* Both read the dog's own badge alone, approach and chase, and
-## from above her — the start the director prefers — walking away loses, standing still and walking
-## into him are caught, the same as the dog's.
+## **The resistance's own pursuers are warned first like the day-3 dog, and arrive chasing.** *(M137's
+## timing fork, the player: "A, remove the exemption"; amendment 7 of M226: "why would the robber walk
+## towards her when it spawns as pursuing robber? the proximity rule is only for standing robbers".)*
+## Both read the dog's own half-second badge and `Tuning.PURSUIT_TIME` chase, and are created with no
+## closing-in: from above her — the start the director prefers — standing still and walking into him
+## are caught. Walking away is measured and printed rather than asserted (the player asked to be
+## told, not for a tuning).
 func _test_the_resistances_pursuers_are_fitted_to_the_dog(t) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
 	var edge := DangerEdge.new()
 	for id: String in ["robber_giving_chase", "van_guard_giving_chase"]:
 		var def := EventCatalogue.by_id(id)
-		t.check(def.warns_before_it_exists(), "'%s' is warned of before it exists" % id)
+		t.check(def.warns_before_it_exists() and def.arrives_chasing,
+				"'%s' is warned of before it exists and arrives chasing" % id)
 		t.check(is_equal_approx(def.offscreen_notice, dog.offscreen_notice)
-				and is_equal_approx(def.telegraph_time, dog.telegraph_time)
 				and is_equal_approx(def.duration, dog.duration),
-				"'%s' reads the dog's own %.1fs badge, %.1fs approach and %.1fs chase (%.1f, %.1f, %.1f)"
-				% [id, dog.offscreen_notice, dog.telegraph_time, dog.duration, def.offscreen_notice,
-				def.telegraph_time, def.duration])
+				"'%s' reads the dog's own %.1fs badge and %.1fs chase (%.1f, %.1f)"
+				% [id, dog.offscreen_notice, dog.duration, def.offscreen_notice, def.duration])
 		for encounter in M207Lead.gold_encounters():
 			if encounter["def"].id != id or encounter["heading"] != Vector2.UP:
 				continue
 			for answer: M207Lead.Answer in M207Lead.ANSWERS:
 				var met := M207Lead.gold(encounter, answer, edge)
-				t.check(met["caught"], "'%s' from above, answer %d: caught (%s)" % [id, answer, met["ends"]])
 				t.close_to(met["created_at"], def.offscreen_notice,
 						"'%s': its badge is alone for the dog's half second" % id, 2.0 * STEP)
+				t.check(met["chase_at"] <= met["created_at"] + 2.0 * STEP,
+						"'%s', answer %d: chasing from the frame he exists" % [id, answer])
+				if answer == M207Lead.Answer.AWAY:
+					print("      %s from above, walking straight away: %s" % [id, met["ends"]])
+				else:
+					t.check(met["caught"], "'%s' from above, answer %d: caught (%s)"
+							% [id, answer, met["ends"]])
 	edge.free()
 
 ## **Nothing comes at her from off screen unwarned.** *(PLAYTEST-145: "all offscreen events should

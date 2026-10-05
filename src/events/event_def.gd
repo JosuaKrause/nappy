@@ -437,14 +437,27 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## badge alone to `Tuning.WARNING_ALONE_MAX`.
 @export var warned_first := false
 
+## Whether a pursuer warned of before it exists is created already chasing her — its telegraph spent
+## the moment it exists, with no closing-in to a stand-off — rather than spending its telegraph
+## visibly closing on her. *(Amendment 7 of M226, the player: "why would the robber walk towards her
+## when it spawns as pursuing robber? the proximity rule is only for standing robbers.")* The
+## resistance's sent `robber_giving_chase` and `van_guard_giving_chase`: their warning is the badge
+## alone (`warned_for()`), and from their first frame they chase. The day-3 dog does not: its
+## approach is the lesson.
+@export var arrives_chasing := false
+
 ## Whether this row telegraphs its coming. *(PLAYTEST-145: "telegraphing is for things that go fast
 ## *and* are dangerous" · "go fast and towards the player" · "loose dog, cat don't need
 ## telegraphing"; inbox #598: "the telegraphing rule was about heavy penalty not *only* lethal".)* A
 ## thing telegraphs only if it goes fast, comes toward her, and carries a heavy penalty — it can end
 ## the day or hit her hard. **One that does not is outside the screen-edge badge, warning-first
 ## placement and the telegraph fairness contract, rather than exempted from them**: nothing announces
-## it before she can see it, and it is met as it comes. `loose_dog` and `cat_dash` are the two that
-## do not; every other row is as built.
+## it before she can see it, and it is met as it comes. False on the movers the rule leaves out:
+## `loose_dog` and `cat_dash` (the player's own), `alley_mouse` (across its alley, not at her),
+## `pigeon_flock` (goes up where she walks in) and `police_patrol` (slower than a walk, never ends the
+## day). **A row that stands still keeps it**: it does not come, so there is no coming to telegraph,
+## and what it owes is its in-world telegraph before it is at full strength — a lorry backing in, a
+## firefight, a raid — which the contract keeps holding.
 @export var telegraphs := true
 
 ## Moves along a path at `speed` px/s. The scheduler builds the path.

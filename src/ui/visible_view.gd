@@ -8,8 +8,7 @@ extends RefCounted
 ## everything should follow this (and treat it depending on the input mode)".)*
 ##
 ## **The one answer to "can she see it"**, for everything that asks: the screen-edge badge, which is
-## up for a thing until she can see it (`DangerEdge`); where a thing arriving from off screen is
-## placed, just out of sight (`clear_of_sight()`, `PendingWarning`, the resistance's trap); the fire's
+## up for a thing until she can see it (`DangerEdge`); the fire's
 ## sighting, which summons the engine (`EventManager._summon_what_has_been_sighted()`); a chalk mark
 ## counting as noticed and every other "has she seen this" of the resistance's (`ResistanceDirector`,
 ## handed `sees()` by `main`); the poster crews' pasting (`PosterWalls._work_the_crews()`); and the
@@ -22,8 +21,12 @@ extends RefCounted
 ## with its button inward of it, so each corner's rectangle runs from the screen's own side to the
 ## far edge of its run button, and from the top of its ring (`TouchControls.STOP_RADIUS` above the
 ## focus) to the bottom of the screen. In `TAP` nothing is drawn there and the whole view counts. A
-## covered corner is out of sight, so a thing standing in one is off screen: its badge stays up, and
-## a thing placed just out of sight may be placed in one (`clear_of_sight()`).
+## covered corner is out of sight, so a thing standing in one is off screen: its badge stays up.
+##
+## **Placing a thing is not a "has she seen it" question.** A thing arriving from off screen is placed
+## wholly outside the camera's whole view, corners included (`PendingWarning.seen_from()` asks
+## `clear_of_sight()` of this view with no corners laid on it) *(amendment 6 of M226, the player: "I
+## don't want any pop in")*: a thing placed under a corner would still be drawn there.
 ##
 ## The corners are worked out from `TouchControls`' own constants in the 1280x720 design box and
 ## scaled onto the view, so moving a ring or a button moves what it covers.
@@ -106,14 +109,15 @@ func sees_any(rect: Rect2) -> bool:
 	return share_of(rect) > 0.0
 
 ## **Just out of sight**: the least distance along `direction` (unit) from `from` at which a thing
-## whose drawn box is `box` — relative to its feet, `EventInstance.box_of()` — is wholly out of sight,
-## never less than `at_least`. So a thing placed there is not seen on the frame it exists and comes
-## into sight as soon as it moves toward her. A covered corner counts as out of sight, so in the
-## joystick scheme a way that crosses one ends at its edge rather than at the view's.
+## whose drawn box is `box` — relative to its feet — is wholly out of sight, never less than
+## `at_least`. A covered corner counts as out of sight, so in the joystick scheme a way that crosses
+## one ends at its edge rather than at the view's; asked of a view with no corners (what placement
+## asks, `PendingWarning.seen_from()`), it is the edge of the camera's whole view.
 ##
 ## The view's own edge first, worked out per side; then, in the joystick scheme, the nearer
 ## distances are walked in `SIGHT_STEP` steps from `at_least`, for the one place a corner can make
-## nearer than the view's edge. A thing with no box is a point.
+## nearer than the view's edge (which is why placement asks a view with no corners). A thing with no
+## box is a point.
 func clear_of_sight(from: Vector2, direction: Vector2, box: Rect2, at_least := 0.0) -> float:
 	var out := _leaves_the_view(from, direction, box, at_least)
 	if not joystick or out <= at_least:
@@ -121,7 +125,7 @@ func clear_of_sight(from: Vector2, direction: Vector2, box: Rect2, at_least := 0
 	var d := at_least
 	while d < out:
 		if not sees_any(_box_at(from + direction * d, box)):
-			return d
+			return minf(d + CLEAR_MARGIN, out)
 		d += SIGHT_STEP
 	return out
 
@@ -143,7 +147,11 @@ func _leaves_the_view(from: Vector2, direction: Vector2, box: Rect2, at_least: f
 		best = minf(best, (view.end.y - shape.position.y - from.y) / direction.y)
 	elif direction.y < 0.0:
 		best = minf(best, (view.position.y - shape.end.y - from.y) / direction.y)
-	return maxf(best, at_least)
+	return maxf(best + CLEAR_MARGIN, at_least)
+
+## How far past the edge "wholly out of sight" is, in world px: one, so a box whose edge would sit
+## exactly on the view's edge is not shown by a rounding.
+const CLEAR_MARGIN := 1.0
 
 static func _box_at(feet: Vector2, box: Rect2) -> Rect2:
 	if not box.has_area():

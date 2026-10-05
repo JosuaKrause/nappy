@@ -36,6 +36,7 @@ func run(t) -> void:
 	_test_a_guard_never_lands_within_his_own_reach_of_her(t)
 	_test_a_relocated_mark_and_its_guard_are_placed_off_screen(t)
 	_test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t)
+	_test_a_mark_under_a_covered_corner_is_not_noticed(t)
 	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_the_guard_moves_with_the_mark_into_its_new_alley(t)
@@ -948,6 +949,34 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
 func _box_on_screen(centre: Vector2, half: Vector2, her: Vector2) -> bool:
 	return absf(centre.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x + half.x \
 			and absf(centre.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y + half.y
+
+## **A mark under a corner the joystick's controls cover is not in sight**, so its dwell does not run
+## (dappled-swan, inbox #581: "use that everywhere where visibility is concerned -- for the other
+## mode those rectangles *do* count"). She stands within `SEEN_DISTANCE` of the mark with it down and
+## to her left, under the left corner, for longer than `SEEN_DWELL_SECONDS`, asked through the day's
+## own visible area as `main` wires it: in the joystick scheme it is not noticed, in the tap scheme it
+## is.
+func _test_a_mark_under_a_covered_corner_is_not_noticed(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		for joystick: bool in [true, false]:
+			var director := _director(t)
+			director.start_day(6, _rng(6, "resistance"), 300.0)
+			var mark_at := director.contact_position()
+			# The mark down and to her left, inside the left corner's rectangle and within reach.
+			var her := mark_at + Vector2(135.0, -50.0)
+			var view := VisibleView.around(her, joystick)
+			director.set_sight(view.sees)
+			var player := _rig_player(t, her)
+			for i in ceili((ResistanceDirector.SEEN_DWELL_SECONDS + 0.5) / STEP):
+				director._process(STEP)
+			t.check(mark_at.distance_to(her) <= ResistanceDirector.SEEN_DISTANCE
+					and director._seen != joystick,
+					"%s scheme: a mark %.0fpx off under the left corner is %s"
+					% ["joystick" if joystick else "tap", mark_at.distance_to(her),
+					"not noticed" if joystick else "noticed"])
+			player.free()
+			director.free())
 
 ## The other half of the same rule: near enough, for long enough, that walking away is a choice.
 func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> void:
@@ -2007,7 +2036,7 @@ func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
 ## night's at dawn, adds none to the street — and doing it sends `robber_giving_chase` from off
 ## screen on the same terms as the man shouting's note, checked on each target's own ground (a
 ## door on a facade, a crossing in a region wall, a mast's foot, a swing in a park, the station's
-## door): past the badge line, never on her real screen, on legal ground, with a way at her that
+## door): warned first, then just off screen, on legal ground, with a way at her that
 ## never runs through a district door, awake from his first frame, and catching her where she stands
 ## if she does nothing. Day 9's is measured from where the inspection lets her out, 54px past the
 ## door's line beside the gatehouse that held her, on each side in turn
@@ -2167,10 +2196,11 @@ func _the_screen_round(her: Vector2) -> Callable:
 ## What every trap owes from the moment it is sent, on the real city. **Warned first**: the moment she
 ## does it a warning for `row_id` is up with nothing in the world, and stays up alone for the row's own
 ## `EventDef.warned_for()`, at most `Tuning.WARNING_ALONE_MAX`; run out with her standing where she
-## did it, `director._trap` is then a `row_id` started **just out of sight** of her (his drawn box
-## clear of the view about her) — above or below her no further than `Tuning.TRAP_ARRIVAL_DISTANCE`,
-## or beside her along her street, or at a front door from across the street, below her — on legal
-## ground, never waiting, and coming at her from his first frame. **His run at her never crosses a
+## did it, `director._trap` is then a `row_id` started **just off screen** (everything he draws
+## outside the camera's view about her) — above or below her, or beside her along her street, or at a
+## front door from across the street, below her — on legal ground, never waiting, already chasing
+## (amendment 7: "the proximity rule is only for standing robbers"), and coming at her from his first
+## frame. **His run at her never crosses a
 ## district door's line**, asked here of each door body the way `EventManager._watch_the_door_lines()`
 ## asks it of her own steps (`EventManager.where_she_crossed()`), not through the director's own
 ## refusal. **A straight walkable run at her is a preference, not a guarantee**
@@ -2202,9 +2232,11 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 	var sideways := absf(start.y - her.y) < 0.5
 	var across := front_door and start.y > her.y and dist <= beside + 0.5 \
 			and director._his_walk_reaches_her(start, her, beside, boundary)
-	t.check(dist <= Tuning.TRAP_ARRIVAL_DISTANCE + 0.5 or sideways or across,
-			"%s: above or below her within %.0fpx, beside her, or across the street (%.1fpx, at %v)"
-			% [label, Tuning.TRAP_ARRIVAL_DISTANCE, dist, start - her])
+	var cone := absf(absf((start - her).angle()) - PI / 2.0) <= ResistanceDirector.ARRIVAL_CONE + 0.01
+	t.check(cone or sideways or across,
+			"%s: above or below her within the cone, beside her, or across the street (%.1fpx, at %v)"
+			% [label, dist, start - her])
+	t.check(not chaser.is_telegraphing(), "%s: already chasing, with no closing-in first" % label)
 	t.check(PendingWarning.is_out_of_sight(view, chaser.def, her, start),
 			"%s: wholly out of sight the frame he exists" % label)
 	var through_a_door := false
@@ -2350,19 +2382,24 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 			director.free())
 	GameState.completed_resistance_alley_tiles = saved_tiles
 
-## **He is warned of before he exists, the warning is short, and walking away from above or below
-## still loses.** The distance's own derivation as relationships first, then a bare robber walked
-## from each start the director draws — just out of sight straight above and below her and at the
-## edges of `ResistanceDirector.ARRIVAL_CONE`, and the along-her-street start beside her — the
-## moment he is created there, his badge already spent:
+## **He is warned of before he exists, the warning is short, and he arrives chasing.** *(Amendment 7
+## of M226, the player: "why would the robber walk towards her when it spawns as pursuing robber? the
+## proximity rule is only for standing robbers.")* A bare robber walked from each start the director
+## draws — just off screen straight above and below her and at the edges of
+## `ResistanceDirector.ARRIVAL_CONE`, and the along-her-street start beside her — the moment he is
+## created there, his badge already spent and his telegraph with it:
 ##
 ## - **standing where she did it**, she is caught;
-## - **walking into him**, his lunge leaves her the whole stand-off (`Tuning.pursuit_standoff()`),
-##   and turning to run `Tuning.PURSUIT_REACTION` after his badge rises gets her away;
-## - **walking away** loses from above or below, which is what `Tuning.TRAP_ARRIVAL_DISTANCE` is for
-##   — and from beside her it outlasts him, the cost of that start, held here so the director's doc
-##   stays true;
+## - **walking into him**, she is caught, and turning to run `Tuning.PURSUIT_REACTION` after his badge
+##   rises gets her away;
+## - **walking away** is measured and printed, not asserted: his `Tuning.PURSUIT_TIME` chase at the
+##   38px/s walking leaves him is not long enough to close the distance from just off screen, and the
+##   player asked for the answer, not a tuning to force one;
 ## - **running** the moment he appears ends it.
+##
+## The tall-osprey floor (standing still, a robber lunges no sooner than `Tuning.PURSUIT_MIN_NOTICE`
+## after he appears) is a standing robber's, a mark's guard waiting in his alley, whom this build does
+## not touch; a sent one has no closing-in for it to bound.
 func _test_the_robber_after_her_is_announced_before_he_can_catch_her(t) -> void:
 	_assert_a_trap_row_is_announced_before_it_can_catch_her(t, "robber_giving_chase")
 
@@ -2376,31 +2413,11 @@ func _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t) -> vo
 ## for both.
 func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> void:
 	var def := EventCatalogue.by_id(id)
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
-	var walker_closes := def.pursue_speed - Tuning.WALK_SPEED
-	t.check(def.warns_before_it_exists() and def.warned_for() <= Tuning.WARNING_ALONE_MAX,
-			"he is warned of before he exists, for %.2fs alone" % def.warned_for())
-	t.check((Tuning.TRAP_ARRIVAL_DISTANCE - def.lethal_reach()) / walker_closes
-			<= def.telegraph_time + def.duration - 0.5,
-			"a walker who leaves the moment he appears %.0fpx off is caught with half a second of chase "
-			% Tuning.TRAP_ARRIVAL_DISTANCE + "to spare")
-	# Every start the director draws above or below her is within that, with the camera on her or
-	# led toward him by her look-ahead, the furthest it is ever led.
+	t.check(def.warns_before_it_exists() and def.warned_for() <= Tuning.WARNING_ALONE_MAX
+			and def.arrives_chasing,
+			"he is warned of before he exists, for %.2fs alone, and arrives chasing" % def.warned_for())
 	var her := Vector2.ZERO
-	var furthest := 0.0
-	for way: Vector2 in [Vector2.UP, Vector2.DOWN]:
-		for angle: float in [-ResistanceDirector.ARRIVAL_CONE, 0.0, ResistanceDirector.ARRIVAL_CONE]:
-			var bearing := way.rotated(angle)
-			var lead := Vector2(bearing.x, bearing.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
-			for view: VisibleView in [VisibleView.around(her), VisibleView.around(her + lead)]:
-				furthest = maxf(furthest,
-						PendingWarning.just_out_of_sight(view, def, her, bearing).distance_to(her))
-	t.check(furthest <= Tuning.TRAP_ARRIVAL_DISTANCE,
-			"every start above or below her within the %.0f-degree cone is at most %.0fpx off (%.0fpx)"
-			% [rad_to_deg(ResistanceDirector.ARRIVAL_CONE), Tuning.TRAP_ARRIVAL_DISTANCE, furthest])
 	var view_on_her := VisibleView.around(her)
-	t.check(ResistanceDirector.beside_distance(view_on_her, def, her) > Tuning.TRAP_ARRIVAL_DISTANCE,
-			"and beside her the view is wide enough that walking away outlasts him there")
 	var edge_of_cone := ResistanceDirector.ARRIVAL_CONE - 0.001
 	var starts: Array[Vector2] = [
 			PendingWarning.just_out_of_sight(view_on_her, def, her, Vector2.DOWN),
@@ -2409,17 +2426,13 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 			PendingWarning.just_out_of_sight(view_on_her, def, her, Vector2.UP.rotated(-edge_of_cone)),
 			PendingWarning.just_out_of_sight(view_on_her, def, her, Vector2.RIGHT)]
 	for start in starts:
-		var beside := absf(start.y) < 0.5
 		t.check(PendingWarning.is_out_of_sight(view_on_her, def, her, start),
-				"from %v: wholly out of sight the frame he exists" % start)
+				"from %v: wholly off screen the frame he exists" % start)
 		var stood := _walk_the_trap(def, start, 0.0)
 		t.check(stood["caught_at"] < INF,
 				"from %v: standing still is caught (%.2fs)" % [start, stood["caught_at"]])
-
 		var into := _walk_the_trap(def, start, Tuning.WALK_SPEED)
 		t.check(into["caught_at"] < INF, "from %v: walking into him is caught" % start)
-		t.close_to(into["at_the_lunge"], standoff,
-				"from %v: and his lunge leaves her the whole stand-off" % start, 8.0)
 		# The badge went up `warned_for()` before he exists, so a turn `PURSUIT_REACTION` after the
 		# badge is that much less after he appears.
 		var turned := _walk_the_trap(def, start, Tuning.WALK_SPEED,
@@ -2427,25 +2440,18 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 		t.check(turned["caught_at"] == INF and turned["gave_up"],
 				"from %v: walking into him and turning to run %.1fs after the badge gets away"
 				% [start, Tuning.PURSUIT_REACTION])
-
 		var away := _walk_the_trap(def, start, -Tuning.WALK_SPEED)
-		if beside:
-			t.check(away["caught_at"] == INF,
-					"from %v, beside her: walking directly away outlasts him, as documented" % start)
-		else:
-			t.check(away["caught_at"] < INF,
-					"from %v: walking away from him is not enough (%s)"
-					% [start, "caught at %.2fs" % away["caught_at"] if away["caught_at"] < INF
-					else "he gave up first"])
-
+		print("      %s from %v (%.0fpx): walking straight away %s" % [id, start, start.length(),
+				"is caught at %.2fs" % away["caught_at"] if away["caught_at"] < INF
+				else "outlasts his chase"])
 		var ran := _walk_the_trap(def, start, -Tuning.RUN_SPEED)
 		t.check(ran["caught_at"] == INF and ran["gave_up"],
 				"from %v: running from him ends it" % start)
 
 ## Walks her at `speed` along the line to `start` — positive toward him, negative away — against a
 ## bare instance of `def` (`robber_giving_chase` or `van_guard_giving_chase`) created at `start`
-## from her, the moment his warning is over, his own approach still to run (`EventManager.
-## spawn_warned()`). A walk is under way when he appears (the handover does not stop her); a run
+## from her, the moment his warning is over, as `EventManager.spawn_warned()` creates him: already
+## chasing. A walk is under way when he appears (the handover does not stop her); a run
 ## gets up to speed at `Tuning.ACCELERATION`. `turn_to_run_after`, if given, reverses her into a run
 ## away from him that many seconds after he appears.
 func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_after := INF) -> Dictionary:
@@ -2453,6 +2459,8 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 	var robber := EventInstance.new()
 	robber.setup(def, start)
 	robber.came_under_a_warning = true
+	if def.arrives_chasing:
+		robber.resume(EventManager.age_when_warned(def), 0.0)
 	var result := {"caught_at": INF, "at_the_lunge": INF, "lunged_at": INF, "gave_up": false}
 	var her := Vector2.ZERO
 	var velocity := speed if absf(speed) <= Tuning.WALK_SPEED else 0.0
