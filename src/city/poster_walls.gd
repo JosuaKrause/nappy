@@ -59,8 +59,8 @@ const KIND_WEIGHTS := [
 ## the main road runs north-south, so act IV's "most walls on a main street" is read as the routes
 ## too. Raised after a playtest ("on the first day with posters it's very hard to find one --
 ## increase the probability throughout"): measured along the routes she walks (`tests/probes/
-## merry_elk_poster_density.gd`), the first poster day leaves a sheet in view on about six route
-## steps in ten and every route passes at least two. Taste, open to overturn.
+## merry_elk_poster_density.gd`), the first poster day leaves a sheet in view along most of
+## every route; `tests/test_posters.gd` pins the floor. Taste, open to overturn.
 const DAWN_SHARE_ON_ROUTES := [0.0, 0.55, 0.65, 0.80]
 const DAWN_SHARE_OFF_ROUTES := [0.0, 0.30, 0.35, 0.40]
 ## Extra share of the walls the first morning of each act beyond the first works, on top of the

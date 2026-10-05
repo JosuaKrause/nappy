@@ -11,11 +11,18 @@ extends RefCounted
 ##   route     mean distinct sheets a whole route passes in view
 ##   worst     fewest distinct sheets any route passes, over all seeds
 ##   bare      share of routes passing fewer than 3 sheets
+##   underfoot sheets whose sidewalk tile is on the route: the ones a push could tear
 ## Run: tools/test.sh probes/merry_elk_poster_density.gd   (prints MERRY_ELK lines)
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS := [4242, 90210, 7, 31337, 555, 1234, 98765, 2024]
 const BARE_BELOW := 3
+const POSTER_VIEW := preload("res://tests/fixtures/poster_view.gd")
+## The chance that one sheet underfoot is torn by accident on a walk. Not measured: an assumed
+## figure, so the table reads as pursuits per walk for that guess; the before/after ratio is the
+## finding and does not depend on it.
+const ACCIDENT_SHARE := 0.10
+const PURSUIT_PER_TEAR := 0.1
 
 func run(t) -> void:
 	var saved_seed := GameState.run_seed
@@ -47,6 +54,12 @@ func run(t) -> void:
 			bare += 1 if n < BARE_BELOW else 0
 			worst = mini(worst, n)
 			sum += n
+		var under := 0.0
+		for n: int in r["underfoot"]:
+			under += n
+		under /= maxi(1, (r["underfoot"] as Array).size())
+		print("MERRY_ELK_TEARS day %2d  underfoot per route %5.1f  tears/walk %4.2f  pursuits/walk %5.3f"
+				% [day, under, under * ACCIDENT_SHARE, under * ACCIDENT_SHARE * PURSUIT_PER_TEAR])
 		print("MERRY_ELK day %2d  city %6.1f  view %5.2f  empty %5.1f%%  route %5.1f  worst %3d  bare %5.1f%%"
 				% [day, float(r["city"]) / SEEDS.size(), float(r["view_sum"]) / maxi(1, int(r["cells"])),
 				100.0 * float(r["empty"]) / maxi(1, int(r["cells"])), sum / maxi(1, routes.size()),
@@ -57,28 +70,14 @@ func run(t) -> void:
 
 func _measure(city: City, map: CityMap, day: int, rows: Dictionary) -> void:
 	if not rows.has(day):
-		rows[day] = {"city": 0, "view_sum": 0, "cells": 0, "empty": 0, "route_counts": []}
+		rows[day] = {"city": 0, "view_sum": 0, "cells": 0, "empty": 0, "route_counts": [],
+				"underfoot": []}
 	var r: Dictionary = rows[day]
-	var sheets: Array[Vector2] = []
 	for tile: Vector2i in GameState.posters.cells:
-		if GameState.posters.has_intact_sheet(tile):
-			sheets.append(map.tile_to_world(tile) + Vector2(0, -Tuning.TILE_SIZE * 0.5))
-	r["city"] = int(r["city"]) + sheets.size()
-	var tree := city.route_tree()
-	if tree == null:
-		return
-	for branch in tree.branches:
-		for route in branch.routes:
-			var seen := {}
-			for cell: Vector2i in route:
-				var at := map.tile_to_world(cell * ReachabilityGrid.CELL + Vector2i.ONE)
-				var here := 0
-				for i in sheets.size():
-					var d := (sheets[i] - at).abs()
-					if d.x <= Tuning.VIEW_HALF_EXTENT.x and d.y <= Tuning.VIEW_HALF_EXTENT.y:
-						here += 1
-						seen[i] = true
-				r["view_sum"] = int(r["view_sum"]) + here
-				r["cells"] = int(r["cells"]) + 1
-				r["empty"] = int(r["empty"]) + (1 if here == 0 else 0)
-			(r["route_counts"] as Array).append(seen.size())
+		r["city"] = int(r["city"]) + (1 if GameState.posters.has_intact_sheet(tile) else 0)
+	var w: Dictionary = POSTER_VIEW.walk(city, map)
+	r["view_sum"] = int(r["view_sum"]) + int(w["view_sum"])
+	r["cells"] = int(r["cells"]) + int(w["cells"])
+	r["empty"] = int(r["empty"]) + int(w["cells"]) - int(w["with_sheet"])
+	(r["route_counts"] as Array).append_array(w["routes"])
+	(r["underfoot"] as Array).append_array(w["underfoot"])

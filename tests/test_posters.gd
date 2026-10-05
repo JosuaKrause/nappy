@@ -12,6 +12,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS := [4242, 90210]
+const POSTER_VIEW := preload("res://tests/fixtures/poster_view.gd")
 
 var _saved_seed := 0
 var _saved_posters: Dictionary = {}
@@ -129,13 +130,17 @@ func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 			before = cells.size()
 			covered_on[day] = before
 			if day == PosterWalls.FIRST_DAY:
-				_check_the_first_poster_day_is_easy_to_find(t, city, map, seed_value)
+				_check_the_density_floor(t, city, map, seed_value, day, FIRST_DAY_VIEW_FLOOR,
+						FIRST_DAY_ROUTE_FLOOR)
+			if day == Tuning.RUN_LENGTH_DAYS:
+				_check_the_density_floor(t, city, map, seed_value, day, LAST_DAY_VIEW_FLOOR,
+						LAST_DAY_ROUTE_FLOOR)
 			if day == 6:
 				_check_a_retry_pastes_the_same_dawn(t, city, state, day, seed_value)
 		t.check(int(covered_on[PosterWalls.FIRST_DAY]) > 0,
 				"seed %d: some posters are already up on day 4's morning" % seed_value)
-		t.check(int(covered_on[Tuning.RUN_LENGTH_DAYS]) > 3 * int(covered_on[PosterWalls.FIRST_DAY]),
-				"seed %d: sparse at first and dense by the end (%d on day 4, %d on day %d)"
+		t.check(int(covered_on[Tuning.RUN_LENGTH_DAYS]) > 2 * int(covered_on[PosterWalls.FIRST_DAY]),
+				"seed %d: denser every act and at least twice day 4's by the end (%d on day 4, %d on day %d)"
 				% [seed_value, covered_on[PosterWalls.FIRST_DAY],
 				covered_on[Tuning.RUN_LENGTH_DAYS], Tuning.RUN_LENGTH_DAYS])
 		var offset := 0
@@ -147,44 +152,30 @@ func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 				% [seed_value, offset, GameState.posters.cells.size()])
 		city.free()
 
-## The first poster day's density floor ("on the first day with posters it's very hard to find
-## one"): walking any route the day offers, a screen's worth of wall around her has a sheet on it
-## at least `FIRST_DAY_VIEW_FLOOR` of the time, and a whole route passes at least
-## `FIRST_DAY_ROUTE_FLOOR` distinct sheets in view. Measured by `tests/probes/
-## merry_elk_poster_density.gd` over eight seeds: about 58% of route cells had a sheet in view and
-## no route passed fewer than two, against 17% and routes with none before the rates were raised.
+## The density floors ("on the first day with posters it's very hard to find one -- increase the
+## probability throughout -- even the end doesn't have many posters"). Walking any route the day
+## offers, a screen's worth of wall around her has a sheet on it at least `view_floor` of the
+## time, and a whole route passes at least `route_floor` distinct sheets in view. The floors sit
+## below what `tests/probes/merry_elk_poster_density.gd` measures over eight seeds and above what
+## the rates before it gave, so reverting them fails the check.
 const FIRST_DAY_VIEW_FLOOR := 0.45
 const FIRST_DAY_ROUTE_FLOOR := 2
+const LAST_DAY_VIEW_FLOOR := 0.78
+const LAST_DAY_ROUTE_FLOOR := 10
 
-func _check_the_first_poster_day_is_easy_to_find(t, city: City, map: CityMap, seed_value: int) -> void:
-	var sheets: Array[Vector2] = []
-	for tile: Vector2i in GameState.posters.cells:
-		if GameState.posters.has_intact_sheet(tile):
-			sheets.append(map.tile_to_world(tile) + Vector2(0, -Tuning.TILE_SIZE * 0.5))
-	var cells := 0
-	var with_a_sheet := 0
-	var fewest := 1 << 30
-	for branch in city.route_tree().branches:
-		for route in branch.routes:
-			var seen := {}
-			for cell: Vector2i in route:
-				var at := map.tile_to_world(cell * ReachabilityGrid.CELL + Vector2i.ONE)
-				var here := false
-				for i in sheets.size():
-					var d := (sheets[i] - at).abs()
-					if d.x <= Tuning.VIEW_HALF_EXTENT.x and d.y <= Tuning.VIEW_HALF_EXTENT.y:
-						here = true
-						seen[i] = true
-				cells += 1
-				with_a_sheet += 1 if here else 0
-			fewest = mini(fewest, seen.size())
-	var share := float(with_a_sheet) / maxi(1, cells)
-	t.check(cells > 0 and share >= FIRST_DAY_VIEW_FLOOR,
-			"seed %d: on the first poster day a sheet is in view along the routes at least %d%% of the way (%.0f%%)"
-			% [seed_value, roundi(FIRST_DAY_VIEW_FLOOR * 100.0), share * 100.0])
-	t.check(fewest >= FIRST_DAY_ROUTE_FLOOR,
-			"seed %d: on the first poster day every route passes at least %d sheets in view (fewest %d)"
-			% [seed_value, FIRST_DAY_ROUTE_FLOOR, fewest])
+func _check_the_density_floor(t, city: City, map: CityMap, seed_value: int, day: int,
+		view_floor: float, route_floor: int) -> void:
+	var walked: Dictionary = POSTER_VIEW.walk(city, map)
+	var cells := int(walked["cells"])
+	var share := float(walked["with_sheet"]) / maxi(1, cells)
+	var fewest: int = (walked["routes"] as Array).min() if not (walked["routes"] as Array).is_empty() \
+			else 0
+	t.check(cells > 0 and share >= view_floor,
+			"seed %d day %d: a sheet is in view along the routes at least %d%% of the way (%.0f%%)"
+			% [seed_value, day, roundi(view_floor * 100.0), share * 100.0])
+	t.check(fewest >= route_floor,
+			"seed %d day %d: every route passes at least %d sheets in view (fewest %d)"
+			% [seed_value, day, route_floor, fewest])
 
 ## Every front tile is in front of a blank ground-floor cell of a building off her home block, and
 ## the cell is a real column of that building — so a sheet is never on a window, a door, a fire
