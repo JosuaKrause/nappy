@@ -23,5 +23,11 @@ before the fix and passes after. `./tools/test.sh --shard 4/4` no longer reprodu
 the shard plan has moved with `tests/suite_costs.txt`, so none of the three suites shares a shard
 with `test_finale` any more; the explicit suite list is the reproduction.
 
+**A second leak of the same kind**, found by the review snapshotting every `GameState` field around
+each suite: `tests/test_frame_record.gd`'s real-`main` test starts a run, and `GameState.start_run()`
+rolls `player_is_male` from a fresh seed, so the suite left a random parent behind for every suite
+after it, wrong about half the time. Its save-and-restore of the run state now carries that field
+too. A suite that boots a real `main` restores everything `start_run()` writes.
+
 **Chosen while building, open to overturn:** the section is restored in each of the two tests,
 not once in the suite's `run()`.
