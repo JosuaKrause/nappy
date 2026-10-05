@@ -22,7 +22,6 @@ penalty" (inbox #598 in [olive-hedgehog](../../playtests/2026-10-05-olive-hedgeh
 fire truck is warned from off screen like every other thing so warned: the badge alone for at most
 one second, then the truck placed just out of sight.
 
-**The band is the player's**, for right after the release (inbox #591 in
-[olive-hedgehog](../../playtests/2026-10-05-olive-hedgehog.md), of this entry with pebbly-ibis,
+**The band is the player's**, for right after the release (inbox #591 in [olive-hedgehog](../../playtests/2026-10-05-olive-hedgehog.md), of this entry with pebbly-ibis,
 olive-badger's forced cases and sandy-ferret): "queue those items as immediately now after the
 release (but don't start them this session)".

@@ -17,8 +17,7 @@ off-screen warning rework lands) and asked whether the guardsman replaces the po
 
 > the poster tear marble bag is a completely separate marble bag than the event marbles. nothing influences across them. the pursuer is not a scheduled event. it is instant! policemen get switched to guardman on day 9.
 
-On pursuers generally, about PR #597 (M226, one-second off-screen warnings; inbox #598 in the same
-playtest):
+On pursuers generally, about PR #597 (M226, one-second off-screen warnings; inbox #598 in [olive-hedgehog](../../playtests/2026-10-05-olive-hedgehog.md)):
 
 > pursuers should never (or a long time)  stop pursuing if she walks -- that will make it impossible to walk away.
 

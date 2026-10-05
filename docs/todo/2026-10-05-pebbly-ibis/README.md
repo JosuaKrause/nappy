@@ -5,8 +5,7 @@ priority: now
 [feathery-lynx](../../playtests/2026-10-05-feathery-lynx.md) files inbox #575, said in a
 conversation about the marble bags. It builds on the marble bag that olive-badger (what she meets
 on her route is drawn from a marble bag, PR #565) has merged. **The band `now` is the player's**,
-for right after the release (inbox #591 in
-[olive-hedgehog](../../playtests/2026-10-05-olive-hedgehog.md), of this entry with jolly-hare,
+for right after the release (inbox #591 in [olive-hedgehog](../../playtests/2026-10-05-olive-hedgehog.md), of this entry with jolly-hare,
 olive-badger's forced cases and sandy-ferret): "queue those items as immediately now after the
 release (but don't start them this session)".
 
