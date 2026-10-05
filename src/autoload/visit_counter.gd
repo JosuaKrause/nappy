@@ -49,6 +49,11 @@ extends Node
 ## - `nappy-day-N-dog-chased` / `nappy-day-N-dog-shaken` / `nappy-day-N-dog-outlasted` —
 ##   `charging_dog` starts chasing, and how the chase ended without catching her. A caught chase is
 ##   `nappy-day-N-lost-hard-fail-charging-dog` instead, off the pair above.
+## - `nappy-day-N-seen-<event>` / `nappy-day-N-influenced-<event>` /
+##   `nappy-day-N-influenced-unseen-<event>` — one encounter with an event instance properly on
+##   screen, meaningful, or meaningful without ever being seen, each at most once per encounter
+##   (`EncounterWatch`). `<event>` is the row's id hyphenated, or `pelican`.
+## - `nappy-day-N-ran` — a bout of her running begun (`EncounterWatch`).
 ## - `nappy-day-N-pelican-spawned` / `nappy-day-N-pelican-seen` / `nappy-day-N-pelican-excited` /
 ##   `nappy-day-N-pelican-hit` — the one cyclist in about four hundred drawn as a pelican: created,
 ##   first on screen, its field's first share of her meter, and its lethal reach covering her, each
@@ -84,6 +89,9 @@ func _ready() -> void:
 	EventBus.city_gone_dark.connect(_on_city_gone_dark)
 	EventBus.pursuit_began.connect(_on_pursuit_began)
 	EventBus.pursuit_ended.connect(_on_pursuit_ended)
+	EventBus.encounter_seen.connect(_on_encounter_seen)
+	EventBus.encounter_influenced.connect(_on_encounter_influenced)
+	EventBus.run_bout_began.connect(_on_run_bout_began)
 	EventBus.pelican_spawned.connect(_on_pelican_spawned)
 	EventBus.pelican_sighted.connect(_on_pelican_sighted)
 	EventBus.pelican_excited_her.connect(_on_pelican_excited_her)
@@ -346,6 +354,23 @@ func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
 	if id != "charging_dog":
 		return
 	_send_event(_day_event_name(GameState.day, "dog-shaken" if shaken_off else "dog-outlasted"))
+
+## An encounter's `name` (`EventInstance.logged_name()`) as a name's last part: hyphenated the way
+## every other id in a name is, `charging_dog` -> `charging-dog`.
+static func _encounter_suffix(kind: String, name: String) -> String:
+	return "%s-%s" % [kind, name.replace("_", "-")]
+
+func _on_encounter_seen(day: int, name: String) -> void:
+	_send_event(_day_event_name(day, _encounter_suffix("seen", name)))
+
+## `influenced-unseen` for an encounter that was never seen, so influenced ÷ seen counts only the
+## encounters she could see.
+func _on_encounter_influenced(day: int, name: String, seen: bool) -> void:
+	var kind := "influenced" if seen else "influenced-unseen"
+	_send_event(_day_event_name(day, _encounter_suffix(kind, name)))
+
+func _on_run_bout_began(day: int) -> void:
+	_send_event(_day_event_name(day, "ran"))
 
 ## The pelican's own four moments *(inbox #527 in azure-tapir, the player: "when the pelican spawns, when it's on
 ## screen, and when it's hitting the player. it must appear as its own entry")*. Each signal fires

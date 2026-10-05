@@ -113,13 +113,53 @@ The events:
   entry *(inbox #527 in [azure-tapir](playtests/2026-10-04-azure-tapir.md), the player: "when the pelican spawns, when it's on screen, and when it's
   hitting the player. it must appear as its own entry and it needs to be more granular than
   standard event telemetry")*, each once per pelican: created where its warning pointed
-  (`EventManager.spawn_warned()`); its first frame on screen
-  (`EventManager._report_the_pelicans_in_view()`, the same box the fire's `seen-fire` is measured
-  in); the first share of her meter its field lands, inside its 90px
+  (`EventManager.spawn_warned()`); its first frame properly on screen
+  (`EventManager._report_the_pelicans_in_view()`, the same test as an encounter's `seen` below:
+  80% of its drawn box visible to her, `VisibleView`); the first share of her meter its field lands, inside its 90px
   (`EventInstance.accumulate_landed()`); and its lethal reach, 33px, covering her
   (`EventManager._check_hard_fails()`). The cyclist's contact does those two different things to
   her — its field fills the meter, its reach ends the day — so each is an event of its own. A
   `pelican-hit` is sent just ahead of the day's own `lost-hard-fail-pelican`.
+- `nappy-day-N-seen-<event>` / `nappy-day-N-influenced-<event>` /
+  `nappy-day-N-influenced-unseen-<event>` — her encounters with the day's events, counted per
+  instance, so the reading influenced ÷ seen says how often each event appears and whether players
+  avoid it or ignore it *([misty-newt](playtests/2026-10-04-misty-newt.md), the player: "mostly I'm
+  interested in the ratio of interacted/seen")*. `<event>` is a catalogue row's id hyphenated
+  (`charging-dog`), or `pelican` for a pelican, never `cyclist`; ordinary walkers and cars send
+  none. `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
+  `EventManager` while a day is played (not behind the title, not on the escape), decides each:
+  - **What she can see** is `VisibleView.visible_share()` (`src/ui/visible_view.gd`): the share of
+    a world rectangle inside the camera's view, `Tuning.VIEW_HALF_EXTENT` about its centre, less, in
+    the joystick scheme, the two bottom corners its controls cover — each from the screen's side to
+    the far edge of its run button, and from the top of its ring down *(inbox #581, the player:
+    "remove the area at the bottom left and right up to the top of the joystick circle and
+    horizontal extent of the speed button ... for the other mode those rectangles *do* count")*.
+    `pelican-seen` asks it too. Nothing gameplay decides by asks it yet.
+  - **An encounter** is one instance's time on screen: it opens the first frame any of what is
+    drawn for it is visible (`EventInstance.drawn_box()`, its own picture stretched over the run a
+    spread covers) or it lands something on her from off screen, and it is over once the instance has been neither for
+    `Tuning.ENCOUNTER_GAP` (5s). Coming back sooner is the same encounter; a different instance is
+    always another.
+  - **`seen`**, at most once per encounter: the first frame `Tuning.ENCOUNTER_SEEN_SHARE` (80%) of
+    the instance's drawn box is visible, so a sliver at the edge, a thing under the joystick's
+    controls, its halo or its badge does not count. A row that draws nothing of its own (`playground`, `curfew_announce`) is never seen.
+  - **`influenced`**, at most once per encounter, the first frame it is meaningful, the same for
+    every row: `Tuning.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed on her within the
+    encounter (`EventInstance.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or her
+    inside its lethal reach or its hold *(inbox #577, the player: "let's count chases and catches as
+    influenced always")*. A static row that can do none of these — a fallen tree, a skip — still
+    sends `seen` ("the static things question was meant for telemetry. we need to record seen for
+    them") and is never influenced.
+  - **`influenced-unseen`** is a meaningful encounter she never saw: an influence before the
+    encounter is seen waits, goes out as `influenced` the moment the instance is seen, and as
+    `influenced-unseen` once the encounter is over without it (or the next day starts, under the day
+    it happened on), so influenced ÷ seen counts only what she could see.
+  `tools/goatcounter.sh --encounters` prints the three per event type with the ratio, overall and by
+  day. `seen-fire` and `pelican-seen` above stay as they are beside these.
+- `nappy-day-N-ran` — a bout of her running, sent as it begins: she runs (`Stroller.run_excess_ratio()`
+  above 0, faster than walking pace) after `Tuning.RUN_BOUT_GAP` (10s) or more without running, or
+  for the first time in the day (`EncounterWatch`). *(misty-newt: "we can count the number of running
+  excluding gaps smaller than 10s".)*
 - `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark
   actually noticed (`ResistanceDirector._track_sight_and_reposition()`, within `SEEN_DISTANCE` and
   on screen for `SEEN_DWELL_SECONDS`), touched, or untouched when the day it belongs to ends. The
@@ -146,7 +186,8 @@ The events:
 Every signal named above that exists purely for this page — `day_lost_to`, `event_sighted`,
 `event_lit_unmet`, `city_gone_dark`, `escape_city_entered`, `pursuit_began`, `pursuit_ended`,
 `resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent`, `pelican_spawned`,
-`pelican_sighted`, `pelican_excited_her`, `pelican_struck_her` — is listen-only: it rolls no RNG and
+`pelican_sighted`, `pelican_excited_her`, `pelican_struck_her`, `encounter_seen`,
+`encounter_influenced`, `run_bout_began` — is listen-only: it rolls no RNG and
 changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so, the style the
 existing `escape_*` signals already use.
 
