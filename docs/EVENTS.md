@@ -1135,7 +1135,9 @@ still apply to it, since a crew closes nothing. **Not a set piece**: it is not s
 and not lit at dusk if she never met it. Once in the world, `PosterWalls` has it paste the wall it
 stands at, a sheet every `PosterWalls.PASTE_EVERY` seconds while it is inside her view, with its
 brush raised on alternate frames (`poster_crew_back_b.svg`), and the wall keeps its sheets for the
-rest of the run. Its field and its cost are unchanged. `tools/test.sh
+rest of the run. How many sheets it pastes is the dawn's own rule for a worked wall
+(`PosterWalls._sheets_for()`: two to four in acts II and III), so a crew in view for a few
+seconds papers most of its wall. Its field and its cost are unchanged. `tools/test.sh
 probes/m180_crews_on_her_way.gd` walks the day's routes and prints how many crews were sited, met
 and how much they pasted.
 
