@@ -1,7 +1,7 @@
 # grassy-newt — A held push tears every sheet she slides past · 2026-10-05 · not from an entry
 
 
-Inbox #591, said in a session on 2026-10-05: "I never tore a poster by accident. even when doing it
+Inbox #591 in [olive-hedgehog](../playtests/2026-10-05-olive-hedgehog.md), said in a session on 2026-10-05: "I never tore a poster by accident. even when doing it
 on purpose I have to make sure to tap for each poster in a row just walking by with diagonal held
 only tears every second poster -- not sure if it actually should be this way". Offered three ways
 for tearing to work, the player chose "option 1 for tearing": once she pushes, every sheet she

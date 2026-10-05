@@ -148,7 +148,7 @@ The events:
     encounter (`EventInstance.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or it
     catching her or beginning a hold of her *(inbox #577, the player: "let's count chases and catches
     as influenced always")*. A catch and a hold are the game's own tests, called and not copied
-    *(inbox #586, the player: "use the real catch code")*: `EventInstance.is_lethal_at()`, so a cyclist
+    *(inbox #586 in [olive-hedgehog](playtests/2026-10-05-olive-hedgehog.md), the player: "use the real catch code")*: `EventInstance.is_lethal_at()`, so a cyclist
     or lorry still only warned or waiting, a finished row, or a pursuer within reach through a wall
     is no catch; and `EventManager._hold_that_would_begin()`, so a hold counts the frame it would
     start and only for the one instance that would take her in. Both are pure reads. A pursuer is

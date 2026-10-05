@@ -1,7 +1,7 @@
 # pebbly-pelican — tools/goatcounter.sh pages with one comma-joined exclude list · 2026-10-05 · not from an entry
 
 
-Inbox #595, said in a session on 2026-10-05: "looks like you need to fix goatcounter." What had
+Inbox #595 in [olive-hedgehog](../playtests/2026-10-05-olive-hedgehog.md), said in a session on 2026-10-05: "looks like you need to fix goatcounter." What had
 failed: `tools/goatcounter.sh --check` worked with the `.env` key, but `--raw` and the per-day
 funnel over 30 and 60 days ended with "network error reaching GoatCounter: Remote end closed
 connection without response".
