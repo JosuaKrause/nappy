@@ -1048,7 +1048,7 @@ build_selected_mix() {
     local resolved_scores="$final_dir/resolved-scores.json"
     local resolved_final="$final_dir/resolved-final-score.json"
     local selected raw score check_raw check_score bass_raw bass bass_check_raw bass_check
-    local ending_raw ending ending_check_raw ending_check manifest provenance
+    local ending_raw ending ending_check_raw ending_check manifest provenance mixed_audio
     local game_gain output score_mean score_peak bass_mean bass_peak ending_mean ending_peak mix_mean mix_peak
     mkdir -p "$final_dir"
     printf '%s\n' "$RESOLVED_SCORES" > "$resolved_scores"
@@ -1061,6 +1061,7 @@ build_selected_mix() {
     bass_check_raw="$WORK/event-bass-raw-check.wav"; bass_check="$WORK/event-bass-score-check.wav"
     ending_raw="$final_dir/score-ending-raw.wav"; ending="$final_dir/score-ending.wav"
     ending_check_raw="$WORK/score-ending-raw-check.wav"; ending_check="$WORK/score-ending-check.wav"
+    mixed_audio="$WORK/selected-mix.wav"
     build_score_once "$selected" "$raw" "$score" "$resolved_scores"
     build_score_once "$selected" "$check_raw" "$check_score" "$resolved_scores"
     build_bass_once "$bass_raw" "$bass" "$resolved_final"
@@ -1085,7 +1086,9 @@ build_selected_mix() {
 [3:a]aformat=sample_rates=48000:channel_layouts=stereo[ending];\
 [game][glass][bass][ending]amix=inputs=4:duration=longest:normalize=0,\
 alimiter=limit=0.92,atrim=duration=${total_seconds}[a]" \
-        -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -movflags +faststart "$output"
+        -map "[a]" -c:a pcm_s16le "$mixed_audio"
+    ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$mixed_audio" \
+        -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -movflags +faststart "$output"
     score_mean="$(volume_stat "$score" mean_volume)"; score_peak="$(volume_stat "$score" max_volume)"
     bass_mean="$(volume_stat "$bass" mean_volume)"; bass_peak="$(volume_stat "$bass" max_volume)"
     ending_mean="$(volume_stat "$ending" mean_volume)"; ending_peak="$(volume_stat "$ending" max_volume)"
