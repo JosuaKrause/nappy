@@ -570,6 +570,15 @@ else
 fi
 # A successful engine exit and passing manifest must not hide its diagnostics, on either
 # the action or screenshot path. The capture stub writes the still and provenance too.
+# Exercise the real runner and shot wrapper without depending on this checkout's baked art:
+# the no-Godot Linux gate has no atlas cache, and its engine stub cannot repair one. Only that
+# unrelated prerequisite is stubbed; flag validation, process supervision and log checks stay real.
+recipe_project="$work_dir/recipe-project"
+mkdir -p "$recipe_project/tools" "$recipe_project/src/dev"
+cp tools/scene-recipes.sh tools/shot.sh tools/lib_dev_flags.sh tools/lib_disk_headroom.sh "$recipe_project/tools/"
+cp src/dev/dev_flags.gd "$recipe_project/src/dev/"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$recipe_project/tools/bake-atlases.sh"
+chmod +x "$recipe_project/tools/bake-atlases.sh"
 recipe_stub="$work_dir/recipe-stub.sh"
 cat > "$recipe_stub" <<'EOF'
 #!/usr/bin/env bash
@@ -599,13 +608,15 @@ for diagnostic in 'ERROR: denied' 'SCRIPT ERROR: failed' 'Parse Error: invalid';
         checks=$((checks + 1))
         if NAPPY_RECIPE_TEST_ERROR="$diagnostic" NAPPY_RECIPE_TEST_PATH="$action_path" \
                 NAPPY_RECIPE_TEST_LOG="$work_dir/recipe-run.log" GODOT="$recipe_stub" \
-                ./tools/scene-recipes.sh --recipe "$work_dir/relative.json" \
+                "$recipe_project/tools/scene-recipes.sh" --recipe "$work_dir/relative.json" \
                 --output "$work_dir/recipe-diagnostic" --screenshots > "$work_dir/diagnostic.log" 2>&1; then
             echo "FAIL scene-recipes accepts $action_path $diagnostic" >&2
             failures=$((failures + 1))
         elif ! grep -qE 'scene assertions failed:|scene capture engine error:' "$work_dir/diagnostic.log"; then
             echo "FAIL scene-recipes rejected $action_path for the wrong reason" >&2
             cat "$work_dir/diagnostic.log" >&2
+            [[ ! -f "$work_dir/recipe-diagnostic/relative-start-capture.log" ]] || \
+                cat "$work_dir/recipe-diagnostic/relative-start-capture.log" >&2
             failures=$((failures + 1))
         else
             echo "ok   scene-recipes rejects $action_path $diagnostic despite exit 0"
