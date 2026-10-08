@@ -117,13 +117,13 @@ tools still load the plain JSON from the source checkout. A real release-style W
 `85f0ee3e5814c0bff7f7a561265f24048ce7ef9a` contains 336 files and zero development recipes;
 the previously published package has 352 files and 22 recipes. The compact listings, exact
 commands and both package hashes are retained in the authored-scene evidence folder. Neither
-whole package nor export/template scratch is kept. This verification does not publish a new
-release; the live v0.25.5 package remains the old one until a later release.
+whole package nor export/template scratch is kept. These audits did not publish a release;
+the v0.25.5 measurement describes the published package inspected at that time.
 
 CI on `f35292439b7e1eb308e23576b0c02838b31cef08` passes, including both browser jobs and the
-full game checks. Final integration with the trailer's recording/camera changes and a usable
-motion capture remain required by the queue; the failed covered-window movie is not recast as
-a pass.
+full game checks. That checkpoint did not include final integration with the trailer's
+recording/camera changes or a usable motion capture. The failed covered-window movie remains
+a failed counterexample.
 
 ## Derived geometry and camera observations · 2026-10-08
 
@@ -148,15 +148,15 @@ same offset is visible. The actual transform also supplies the view orientation.
 At source `07c2221f5514671e32d90655ee53350cbe79e527`, the focused scene suite passes 42 checks,
 the all-stretch crowd suite passes 147, and ordinary ground-floor/visible-view suites pass
 31,869, each with zero failures and a clean exit. Import/boot, lint and diff checks pass.
-These repairs need an independent delta review; they do not complete the separate trailer
-integration or moving-capture gates.
+These bounded repairs do not establish trailer integration or moving capture. The independent
+delta review below checks their source and remaining geometry behavior.
 
 The delta review confirms the height repair and camera behavior, including a portrait
 transform, but finds the courtyard-tint repair incomplete. In the day-14 recipe, editing
 visible lot `[118,34,13,4]` to variant `123456789` leaves its tint at `3792558343`, selected
 from hidden, unlisted context lot `[118,48,22,8]`. Applying authored values before sharing
 is insufficient when the sharing pass still chooses its source outside the visible authored
-members. This remaining defect stays in the construction item for correction and review.
+members. This counterexample requires the further construction correction below.
 
 Source `6669a4c67e2a0436f599a364355559247030ea6f` makes a partial authored courtyard use
 its first shown, authored member in canonical building-rectangle order as the shared-tint
@@ -168,5 +168,44 @@ rule; this small authoring convention is documented in CITY and remains open to 
 The real-City regression requires both visible members and checks their actual tint and
 individual variants. The focused scene suite passes 46 checks and the ordinary ground-floor
 suite passes 31,807, with zero failures; import/boot, lint and diff checks pass. No native
-capture or whole-game local suite accompanies this bounded repair. The remaining queue
-holds trailer integration and motion evidence, with independent review still required.
+capture or whole-game local suite accompanies this bounded repair. Trailer integration and
+motion evidence are separate from those checks.
+
+## Trailer integration and covered-window motion · 2026-10-08
+
+Merge `751b61c5389dc8af0ae404ee87d36ddf2bbea1c1` combines the authored scenes with main
+`af405524a0ab998b7962ce1c70a889e32e28cf63`, including the trailer camera and task arrows.
+The two textual conflicts retain both the fixed/settled camera and asleep/awake/near-player
+observations from main, and the authored scene's moving-crowd and rendered-body observations.
+Distance validation and crowd-only key validation remain separate, so a near-player
+observation cannot silently accept a walkers or cars field.
+
+Authored stretches and recipe exteriors both have unlimited camera bounds. The scenery
+lookup rejects authored void before applying any exterior or outside-map landscape. Ordinary
+player cameras start synchronized and clear their limits, while authored interiors retain
+their bounds. Stretch crowd entry checks the complete view and the final queued position;
+a visible end produces a turn or wait. Ordinary traffic retains its hidden tunnel and bridge
+entry depths. The two saved day-6 and day-13 recipes pass their exact arrow assertions.
+
+The first native covered-window recording after integration still fails: its 584 frames
+contain only five rendered states, including one 457-frame, 7.62-second repeat. Deferring
+the recording-only forced draw misses the movie writer's capture boundary. Source
+`4e8ec04e3dfaff91347ae576d9efb0e9f8f0baa5` calls the draw synchronously only when recording
+and the window cannot draw. Visible recordings and non-recording play use the ordinary path.
+
+The repeat at that clean source renders all 584 frames at 60 FPS over 9.73 seconds, with
+every adjacent whole-frame hash different. Its twelve observations pass with no violation;
+the route event first appears at physics tick 181, and visible moving activity changes from
+three walkers and no car to five walkers and one car. The decoded early, middle and late
+frames show the player, camera and crowd moving as the task is offered and completed.
+The [evidence folder](../evidence/azure-beaver-authored-scenes-2026-10-08/README.md) retains
+the selected frames, complete hashes, settings, manifest, engine log and failed counterexample.
+This is motion proof for one covered-window day-7 playback, not every scene or every possible
+crowd entry. The ordinary free-play questions remain in the scene review.
+
+The combined focused Godot run passes 102,141 checks with no failures across the scene,
+crowd, ground, camera, recording, main and resistance suites. After the synchronous-draw
+correction, the focused recording suite passes 207 checks. Import/boot, lint, the 334 CLI-help
+checks, both saved recipe assertions and whitespace checks pass. The full game suite remains
+CI's gate. The completed construction and integration item leaves the queue; the human
+free-play review is retained.
