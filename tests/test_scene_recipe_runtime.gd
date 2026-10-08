@@ -30,8 +30,27 @@ func _ready() -> void:
 		add_child(runtime)
 		var from := Camera2D.new()
 		from.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+		from.position = Vector2(320, 240)
+		from.position_smoothing_enabled = true
 		add_child(from)
 		from.make_current()
+		var player := Stroller.new()
+		player.facing = Vector2.RIGHT
+		runtime._player = player
+		runtime._settle_starting_camera()
+		var settled_current := from.is_current()
+		var settled_centre := from.get_screen_center_position()
+		var frame_offset := Vector2(200, 0)
+		runtime._install_fixed_camera(frame_offset)
+		var fixed := runtime._fixed_camera
+		from.position += Vector2(200, 100)
+		player.free()
+		runtime._player = null
+		if not settled_current or from.offset != Vector2(Stroller.CAMERA_LOOK_AHEAD, 0) \
+				or not fixed.is_current() or fixed.position != settled_centre + frame_offset \
+				or fixed.zoom != from.zoom:
+			get_tree().quit(18)
+			return
 		var zoom := ZoomOutCamera.new()
 		runtime.add_child(zoom)
 		runtime._zoom = zoom
@@ -95,7 +114,7 @@ func run(t) -> void:
 
 func _test_schema(t) -> void:
 	var valid := {"setup": {"day": 1, "parent": "mother"},
-			"playback": {"duration": 2, "walk": "0.5s0.5E1p"}}
+			"playback": {"duration": 2, "walk": "0.5s0.5E1p", "camera": {"fixed": true}}}
 	t.check(SceneRecipeRuntime.validate_runtime(valid).is_empty(), "valid optional runtime defaults are accepted")
 	var mixed := {"setup": {"background": {"crowd": true, "uniform_walkers": true},
 			"actors": [{"name": "walker", "kind": "walker", "at": [0, 0], "direction": "north"}]}}
@@ -137,6 +156,9 @@ func _test_schema(t) -> void:
 		{"playback": {"walk": "1q"}},
 		{"playback": {"duration": "two"}},
 		{"playback": {"camera": {"zoom": 0}}},
+		{"playback": {"camera": {"fixed": "yes"}}},
+		{"playback": {"camera": {"fixed_offset": [200, 0]}}},
+		{"playback": {"camera": {"fixed": true, "fixed_offset": [200]}}},
 		{"playback": {"caption": false}},
 		{"playback": {"observations": [{"tick": -1, "subject": "player", "condition": "moving"}]}},
 		{"playback": {"observations": [{"tick": 1, "subject": "unknown", "condition": "moving"}]}},
@@ -223,7 +245,8 @@ func _test_real_argv_and_failure(t) -> void:
 					"one-tick input moves once, observes after the world, and completes the final tick")
 		elif mode == "camera":
 			t.check(status == 0 and text_output.contains("CAPTURE_CAMERA_FROZEN"),
-					"capture freezes camera at the shared physics tick even when idle time advances")
+					"capture freezes camera at the shared physics tick even when idle time advances: %s"
+					% text_output)
 		else:
 			t.check(status == 0 and text_output.contains("RECIPE_FLAGS_OK"),
 					"%s recipe reads real argv, keeps the intended input mode and disables saves" % mode)

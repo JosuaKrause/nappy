@@ -149,6 +149,13 @@ Every agent prompt contains, explicitly:
   them in the PR description as images with commit-pinned URLs, as **committing** says.
   A local file link is not a delivered visual review. Showing an attempt does not authorize
   runtime installation.
+  **A delivered review file stays byte-for-byte unchanged.** Render into job-owned scratch,
+  wait for its writer to finish, then copy the completed artifact to a new versioned delivery
+  filename and record its hash. Once the player has a link, no render or copy overwrites that
+  file: further attempts get new filenames. Independent work can continue while the player
+  reviews it, but it cannot change the artifact being reviewed. Label an attempt's actual
+  verification limits; an existing file and plausible stream metadata do not prove its audio
+  or picture matches the requested result.
 - **Forks come back, never guessed.** If the design is ambiguous, or two recorded instructions
   conflict, the agent implements the unambiguous part and states the fork precisely in its report.
   Where the design is merely silent on a small detail, it chooses the smallest implementation

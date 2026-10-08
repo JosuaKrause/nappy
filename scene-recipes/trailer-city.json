@@ -4,7 +4,13 @@
   "anchors": {"start": "doorstep"},
   "setup": {"tutorial_complete": true, "day": 1, "parent": "mother", "player": {"at": "start", "facing": "south"},
     "background": {"crowd": true, "crowd_scope": "city"}},
-  "playback": {"walk": "5.3p", "duration": 5.3, "capture_at": 5, "camera": {"zoom_out": 4, "zoom_delay": 0.5},
-    "observations": [{"tick": 15, "subject": "player", "condition": "visible"},
-      {"tick": 150, "subject": "player", "condition": "visible"}]}
+  "playback": {"settled_camera": true, "walk": "0.3s9.7e", "duration": 10, "capture_at": 6,
+    "camera": {"zoom_out": 4, "zoom_delay": 1.5, "landscape_margin": 512},
+    "observations": [{"tick": 15, "subject": "player", "condition": "moving"},
+      {"tick": 30, "subject": "player", "condition": "moving"},
+      {"tick": 45, "subject": "player", "condition": "moving"},
+      {"tick": 90, "subject": "player", "condition": "moving"},
+      {"tick": 180, "subject": "player", "condition": "visible"},
+      {"tick": 225, "subject": "player", "condition": "moving"},
+      {"tick": 237, "subject": "player", "condition": "near", "at": [3250, 2750], "distance": 60}]}
 }

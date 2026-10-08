@@ -24,6 +24,7 @@ var _duration_ticks := 0
 var _active := false
 var _capture_tick := -1
 var _zoom: ZoomOutCamera
+var _fixed_camera: Camera2D
 var _last_positions: Dictionary = {}
 var _resistance: ResistanceDirector
 
@@ -236,7 +237,8 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 		for actor: Dictionary in setup.actors:
 			if not background.get("uniform_walkers", false) or actor.kind != "walker":
 				errors.append("background crowd accepts only pinned walkers with uniform_walkers enabled")
-	_keys(playback, ["walk", "duration", "capture_at", "camera", "caption", "title", "observations"],
+	_keys(playback, ["walk", "duration", "capture_at", "camera", "caption", "title", "observations",
+			"settled_camera"],
 			"playback", errors)
 	_number(playback.get("duration", 5), "playback.duration", 1.0 / 60.0, 240, errors)
 	if not errors.is_empty():
@@ -253,10 +255,19 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 		errors.append("playback.camera must be an object")
 	else:
 		var camera: Dictionary = playback.get("camera", {})
-		_keys(camera, ["zoom", "zoom_out", "zoom_delay"], "playback.camera", errors)
+		_keys(camera, ["zoom", "zoom_out", "zoom_delay", "landscape_margin", "fixed", "fixed_offset"],
+				"playback.camera", errors)
+		if not camera.get("fixed", false) is bool:
+			errors.append("playback.camera.fixed must be boolean")
+		if camera.has("fixed_offset") and (not camera.get("fixed", false) \
+				or not SceneRecipe.tuple(camera.fixed_offset, 2, false)):
+			errors.append("playback.camera.fixed_offset requires fixed true and [x,y] numbers")
 		for key in camera:
+			if key in ["fixed", "fixed_offset"]:
+				continue
 			_number(camera[key], "playback.camera." + key,
-					0 if key == "zoom_delay" else 0.001, 240, errors)
+					0 if key in ["zoom_delay", "landscape_margin"] else 0.001,
+					4096 if key == "landscape_margin" else 240, errors)
 	if not playback.get("observations", []) is Array:
 		errors.append("playback.observations must be an array")
 	else:
@@ -287,10 +298,13 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if check.get("condition") in ["near", "beyond"]:
 				_position(check.get("at"), "observation.at", errors)
 				_number(check.get("distance"), "observation.distance", 0, 10000, errors)
+			elif check.get("condition") == "near_player":
+				_number(check.get("distance"), "observation.distance", 0, 10000, errors)
 	return errors
 
 ## The observation conditions, in the order `docs/SCENE_RECIPES.md` names them.
-const CONDITIONS := ["visible", "moving", "running", "carrying", "pursuing", "near", "beyond",
+const CONDITIONS := ["visible", "moving", "running", "carrying", "asleep", "awake", "pursuing", "near", "beyond",
+		"near_player",
 		"off_screen", "clear_of_both_views", "offered", "done", "arrowed", "unarrowed"]
 ## An observation subject naming no actor but the first live instance of a catalogue row: what an
 ## event summons rather than what the recipe placed, such as the `fire_truck` a seen
@@ -813,16 +827,26 @@ func begin() -> void:
 		return
 	if not scripted:
 		return
+	# `install()` positions the player while the boot camera is still current. Camera2D can only
+	# reset its smoothed screen centre once the player's camera owns the viewport, which is true
+	# here. Settle that state before the excluded moving lead-in begins so a movie never records the
+	# camera travelling from its boot position toward an already-moving actor.
+	if data.get("playback", {}).get("settled_camera", false):
+		_settle_starting_camera()
 	var playback: Dictionary = data.get("playback", {})
 	var camera: Dictionary = playback.get("camera", {})
 	DevRig.apply_zoom(get_viewport().get_camera_2d(), float(camera.get("zoom", 1)))
+	if camera.get("fixed", false):
+		var offset: Array = camera.get("fixed_offset", [0, 0])
+		_install_fixed_camera(Vector2(float(offset[0]), float(offset[1])))
 	if camera.has("zoom_out"):
 		var zoom := ZoomOutCamera.new()
 		_zoom = zoom
 		zoom.simulation_clock = elapsed
 		add_child(zoom)
-		zoom.setup(get_viewport().get_camera_2d(), _city.map.tile_rect_to_world(
-				Rect2i(Vector2i.ZERO, _city.map.size)), get_viewport().get_visible_rect().size,
+		var bounds := _city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, _city.map.size)).grow(
+				float(camera.get("landscape_margin", 0)))
+		zoom.setup(get_viewport().get_camera_2d(), bounds, get_viewport().get_visible_rect().size,
 				float(camera.zoom_out), float(camera.get("zoom_delay", 0)))
 	var title := TrailerText.build(str(playback.get("caption", "")), str(playback.get("title", "")))
 	if title:
@@ -830,6 +854,37 @@ func begin() -> void:
 	_active = true
 	_observe()
 	_apply_input()
+
+func _settle_starting_camera() -> void:
+	var starting_camera := get_viewport().get_camera_2d()
+	if not starting_camera or not _player:
+		return
+	starting_camera.offset = Vector2(_player.facing.x,
+			_player.facing.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	starting_camera.force_update_scroll()
+	starting_camera.reset_smoothing()
+	starting_camera.reset_physics_interpolation()
+	starting_camera.force_update_scroll()
+
+## Holds a scripted scene on the exact view it begins with. A camera of its own leaves the
+## stroller's ordinary follow untouched, so free play and every recipe without `camera.fixed`
+## keep the same look-ahead and smoothing behavior.
+func _install_fixed_camera(offset := Vector2.ZERO) -> void:
+	var starting_camera := get_viewport().get_camera_2d()
+	if not starting_camera:
+		return
+	starting_camera.force_update_scroll()
+	var fixed := Camera2D.new()
+	fixed.name = "FixedRecipeCamera"
+	fixed.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	fixed.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	fixed.position = starting_camera.get_screen_center_position() + offset
+	fixed.rotation = starting_camera.global_rotation
+	fixed.zoom = starting_camera.zoom
+	add_child(fixed)
+	fixed.make_current()
+	fixed.force_update_scroll()
+	_fixed_camera = fixed
 
 func _physics_process(_delta: float) -> void:
 	if not _active:
@@ -984,10 +1039,20 @@ func _observe() -> void:
 					passed = actor is Stroller and actor.current_speed() > Tuning.WALK_SPEED
 				"carrying":
 					passed = actor is Stroller and actor.carrying
+				"asleep", "awake":
+					# The baby's own state, the one `Baby` sets by the game's sleep rule and the
+					# pram's zzz is drawn from -- never a recipe-authored indicator.
+					var baby := actor.get_node_or_null("Baby") as Baby if actor is Stroller else null
+					passed = baby != null and (baby.state == GameEnums.BabyState.ASLEEP) \
+							== (check.condition == "asleep")
 				"pursuing":
 					passed = actor is EventInstance and actor.def.pursues \
 							and not actor.is_telegraphing() and not actor.is_waiting() \
 							and not actor.is_finished and not actor.is_leaving
+				"near_player":
+					# What ties one actor to her: a pursuer that closes on her stays this close.
+					passed = is_instance_valid(_player) and actor.global_position.distance_to(
+							_player.global_position) <= float(check.distance)
 				"near", "beyond":
 					var errors: Array[String] = []
 					var target := position_of(check.at, errors)

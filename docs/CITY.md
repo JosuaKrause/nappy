@@ -22,7 +22,7 @@ The city is a grid of **blocks** separated by **streets**.
 - `STREET_WIDTH` = 6 tiles: sidewalk (2) | road (2) | sidewalk (2)
 - `CITY_BLOCKS` = 11 × 11 blocks
 - Total: 160 × 160 tiles, or 5120 px square at a 32 px tile
-- Plus a border one block deep **outside** the map — water, forest or mountainside depending on the
+- Plus a border of land **outside** the map, painted for as far as any view asks — water, forest or mountainside depending on the
   side — which is art rather than ground. See "The edge of the world"
 
 **Odd on both axes, and that is a constraint.** An odd lattice has a middle block, and the home goes
@@ -1816,12 +1816,14 @@ is loud, and the reason a park is quiet.
   events — arriving at the crowd, which does not otherwise need it: a recycle happens at the edge
   of a box nowhere near anything she can see, and the three holes in the boundary are exactly where
   that is not true. **The two ends of a journey answer differently, on purpose.** A car on the
-  spine going north or south may overrun the map by `OUT_OF_SIGHT` on the way out, and everybody
-  else keeps a tile — `CrowdAgent._room_beyond_the_map` — because a departure happens off-screen
-  almost always, and a tile of slack there is never seen. A fresh arrival is not: it can be the
+  spine heading north goes out of existence once its whole body is inside the tunnel's dark
+  (`CrowdAgent.TUNNEL_ROOM`), heading south it stays on the deck (`CrowdAgent.BRIDGE_RUN`), and
+  everybody else keeps a tile — `CrowdAgent._room_beyond_the_map` — because a departure happens
+  off-screen almost always, and a tile of slack there is never seen. A fresh arrival is not: it can be the
   very first frame on screen, at the plain boundary itself, if she is standing there. So
   `CrowdAgent._entry_room` grants an ordinary walker or car **no** room past the true edge at all —
-  only a car on the spine keeps `OUT_OF_SIGHT` — and the roll that picks where a recycle lands is
+  only a car on the spine keeps room, and it is put out of sight: in the tunnel's dark and under
+  its roof, or on the deck beyond the camera's reach (`CrowdAgent._hide_the_spine_entry`) — and the roll that picks where a recycle lands is
   kept inside that room from the start rather than rolled the full entry band and rejected
   afterwards, so nobody appears standing on the mountain, the forest or the water and walks in.
   **No room past the edge is not the same guarantee as room for the picture on the near side of
@@ -2004,12 +2006,13 @@ an invisible wall.
   sounds reasonable and draws a diagonal**: the place where two distances are equal is a 45° line,
   which is not what a coastline or a mountain does. Deliberately no headland, no bay and no new
   terrain, and `--spawn corner:nw|ne|sw|se` is how it is looked at.
-- **The camera may see past the boundary.** Clamped to the last walkable tile, the edge goes on
-  looking like a wall however much is built out there.
+- **The camera may see past the boundary.** The city camera has no limits and keeps her centered,
+  so the land past the edge is painted for whatever view asks (ground residency follows the view);
+  stopping the camera at the last walkable tile would make the edge look like a wall.
 - **The spine leaves by a tunnel north and a bridge south**, so the city ends because the land does
   rather than because the map stops. They are lethal for the reason every stretch of carriageway is
   lethal; the danger needs nothing of its own. The two are not the same depth: the bridge carries
-  the road the whole width of the band, and the tunnel carries it only as far as the portal's
+  the road as far as any view asks (`CityEdge.BRIDGE_DECK_PX`), and the tunnel carries it only as far as the portal's
   opening (`CityEdge.TUNNEL_DEPTH_TILES`), fading to dark inside the mouth, with mountain painted
   above the portal both under and over the traffic so a leaving car is never seen on the rock.
 - **There is no east or west exit, and there is no east-west main road.** There is one main road

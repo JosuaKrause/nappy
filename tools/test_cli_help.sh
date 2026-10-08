@@ -203,6 +203,20 @@ assert_exit "run.sh --help"        zero ./tools/run.sh --help
 assert_exit "shot.sh --help"       zero ./tools/shot.sh --help
 assert_exit "trailer.sh --help"    zero ./tools/trailer.sh --help
 assert_exit "trailer.sh -h"        zero ./tools/trailer.sh -h
+trailer_list="$(./tools/trailer.sh --list)"
+trailer_rows="$(printf '%s\n' "$trailer_list" | awk 'NR > 1 && $1 != "total" { print $1, $2 }')"
+trailer_expected_rows="$(jq -r '.shots[] | "\(.name) \(.kind // "scene")"' tools/trailer/shots.json)"
+trailer_reported_total="$(printf '%s\n' "$trailer_list" | awk '/^total / { sub(/s$/, "", $2); print $2 }')"
+trailer_expected_total="$(jq -r '[.shots[] | (.gap // 0) + .length] | add' tools/trailer/shots.json)"
+checks=$(( checks + 1 ))
+if [[ "$trailer_rows" == "$trailer_expected_rows" ]] \
+    && awk -v reported="$trailer_reported_total" -v expected="$trailer_expected_total" \
+        'BEGIN { exit !((reported - expected)^2 < 0.0001) }'; then
+    echo "ok   trailer.sh --list reports every configured shot and the cut's total"
+else
+    echo "FAIL trailer.sh --list disagrees with its shot list" >&2
+    failures=$(( failures + 1 ))
+fi
 assert_exit "record.sh --help"     zero ./tools/record.sh --help
 assert_exit "record.sh -h"         zero ./tools/record.sh -h
 assert_exit "stats.sh --help"      zero ./tools/stats.sh --help
@@ -254,6 +268,8 @@ assert_exit "trailer.sh --shot (missing name)" nonzero ./tools/trailer.sh --shot
 assert_exit "trailer.sh --check-load (missing name)" nonzero ./tools/trailer.sh --check-load
 assert_exit "trailer.sh --validate --shot (combined)" nonzero ./tools/trailer.sh --validate --shot choice
 assert_exit "trailer.sh --list --shot (combined)" nonzero ./tools/trailer.sh --list --shot choice
+assert_exit "trailer.sh --list --auditions (combined)" nonzero ./tools/trailer.sh --list --auditions
+assert_exit "trailer.sh --selected --selected-remix (combined)" nonzero ./tools/trailer.sh --selected --selected-remix
 assert_exit "record.sh --bogus"       nonzero ./tools/record.sh --bogus
 assert_exit "record.sh (no flags)"    nonzero ./tools/record.sh
 assert_exit "record.sh --this-is-not-a-dev-flag" nonzero ./tools/record.sh --this-is-not-a-dev-flag

@@ -299,6 +299,21 @@ func _ready() -> void:
 	if _tap_at != Vector2.INF:
 		_send_tap_once_the_camera_has_positioned()
 
+## Keeps Godot's movie writer supplied with a current viewport texture when macOS occludes its
+## no-focus window. Physics and `_process()` continue under occlusion, but the ordinary render loop
+## stops drawing; without this call the writer repeats the last texture while the recipe advances.
+## `_process()` schedules the draw through the deferred queue, after every node's ordinary update
+## and at the boundary where the visible render loop would consume their state. A visible recording
+## stays on the engine's render path, and non-recording runs never force a draw.
+func _draw_covered_recording_frame() -> void:
+	if recording_frame_needs_force(DevFlags.recording(), DisplayServer.window_can_draw()):
+		RenderingServer.call_deferred("force_draw", false)
+
+## The recording-only gate above as a pure question, so the scope contract can be checked without
+## opening a real window in the headless suite.
+static func recording_frame_needs_force(recording: bool, window_can_draw: bool) -> bool:
+	return recording and not window_can_draw
+
 ## Presses `direction` through the same call the real touch scheme drives —
 ## `TouchControls._set_axis()` on both axes, at `direction`'s own fractional strength, rather than
 ## `Input.action_press()` on a single `move_*` action. A diagonal step needs both axes pressed at
@@ -366,6 +381,7 @@ func _process(delta: float) -> void:
 		if not press["done"] and _elapsed >= float(press["at"]):
 			press["done"] = true
 			_tap(String(press["what"]))
+	_draw_covered_recording_frame()
 	if _elapsed < _seconds_to_wait:
 		return
 	set_process(false)

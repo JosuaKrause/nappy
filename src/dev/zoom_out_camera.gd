@@ -3,8 +3,8 @@ extends Node
 ## `--zoom-out <seconds> [delay]`: the trailer's last shot, *"a zoom out from her doorstep to show
 ## the full buzzling city (to give a hint of the scale)"* (PLAYTEST-139). Holds on her own camera
 ## for `delay`, then pulls a camera of its own back over `seconds` from exactly where hers was
-## looking to the framing `--overview` uses — the whole of `City.camera_bounds()` in the window —
-## and holds there.
+## looking to the framing its caller supplies — `City.camera_bounds()` for the dev flag, or the
+## saved scene's map plus its explicitly authored landscape margin — and holds there.
 ##
 ## **The one camera move in the trailer, and a dev rig's rather than the game's.** Her own camera
 ## (`scenes/player/stroller.tscn`) is untouched: this builds a second `Camera2D` under `main`, the

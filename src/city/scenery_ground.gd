@@ -53,13 +53,13 @@ static func bounds(key: Vector2i) -> Rect2:
 
 func keys_in(view: Rect2) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
-	var extent := Rect2(Vector2.ZERO, _city.map.world_size()).grow(
-			City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)
-	var clipped := view if _city.map.recipe_exterior else view.intersection(extent)
-	if not clipped.has_area():
+	# Ground residency follows whatever view asks, including the player's own camera, which has
+	# no limits and so shows the landscape past the city's edge. Keeping it view-driven avoids a
+	# permanently allocated world-sized backdrop.
+	if not view.has_area():
 		return result
-	var lo := Vector2i((clipped.position / CHUNK_PX).floor())
-	var hi := Vector2i((clipped.end / CHUNK_PX).ceil())
+	var lo := Vector2i((view.position / CHUNK_PX).floor())
+	var hi := Vector2i((view.end / CHUNK_PX).ceil())
 	for y in range(lo.y, hi.y):
 		for x in range(lo.x, hi.x):
 			result.append(Vector2i(x, y))
