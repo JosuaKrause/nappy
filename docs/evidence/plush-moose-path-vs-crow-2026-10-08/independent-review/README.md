@@ -90,7 +90,8 @@ git diff --exit-code -- src/resistance/resistance_director.gd
 ```
 
 Keep the new results in their fresh output directory. After both patches are reversed and
-owned processes stop, remove only the two copied probe files, then remove the clean scratch
+owned processes stop, remove the two copied probe files and their generated `.gd.uid`
+sidecars, then remove the clean scratch
 worktree through `git -C "$proof_repo" worktree remove "$scratch"` from outside it. A dirty
 checkout is retained for inspection, never force-removed.
 
