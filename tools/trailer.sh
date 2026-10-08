@@ -716,8 +716,8 @@ afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=dura
         frame_c="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[1]' "$SHOTS_FILE")"
         frame_b="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[2]' "$SHOTS_FILE")"
         # The three original-resolution carrying drawings have different transparent margins.
-        # Their selected family is registered by the visible figure, then each equal-height upper
-        # body is revealed behind the two panes. A-C-B-C is the approved carrying cycle.
+        # Register the visible figures at equal height inside one clipped, dark room aperture.
+        # The 4.4-second A-C-B-C cycle gets a gentle 6px/2.2s bob; only the figure fades in.
         ffmpeg -hide_banner -loglevel error -y \
             -f lavfi -i "color=c=${CARD_BACKGROUND}:s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${length}" \
             -f lavfi -i "anullsrc=r=48000:cl=stereo" \
@@ -726,19 +726,21 @@ afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=dura
             -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$frame_b" \
             -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$frame" \
             -filter_complex "\
-[0:v]drawbox=x=72:y=145:w=7:h=360:color=${ACCENT}:t=fill,\
-drawtext=fontfile='${FONT_FILE}':textfile='${text_file}':fontsize=${font_size}:fontcolor=${PAPER}:line_spacing=12:x=100:y=165,\
-drawtext=fontfile='${FONT_FILE}':textfile='${subtitle_file}':fontsize=${subtitle_size}:fontcolor=${PAPER}@0.86:line_spacing=8:x=100:y=425,\
-drawbox=x=620:y=0:w=660:h=720:color=0x59453d:t=fill,\
-drawgrid=width=96:height=32:thickness=2:color=0x332820@0.45[card];\
-[2:v]crop=131:371:107:21,scale=-1:600:flags=lanczos,format=rgba,pad=282:600:(ow-iw)/2:0:color=black@0,crop=282:396:0:0[a];\
-[3:v]crop=203:607:169:61,scale=-1:600:flags=lanczos,format=rgba,pad=282:600:(ow-iw)/2:0:color=black@0,crop=282:396:0:0[c];\
-[4:v]crop=131:357:107:8,scale=-1:600:flags=lanczos,format=rgba,pad=282:600:(ow-iw)/2:0:color=black@0,crop=282:396:0:0[b];\
-[card][a]overlay=x=839:y=165:enable='between(mod(t\,2.2)\,0\,0.55)'[wa];\
-[wa][c]overlay=x=839:y=165:enable='between(mod(t\,2.2)\,0.55\,1.10)+between(mod(t\,2.2)\,1.65\,2.2)'[wc];\
-[wc][b]overlay=x=839:y=165:enable='between(mod(t\,2.2)\,1.10\,1.65)'[wb];\
+[0:v]drawbox=x=620:y=0:w=660:h=720:color=0x59453d:t=fill,\
+drawgrid=width=96:height=32:thickness=2:color=0x332820@0.45,\
+drawbox=x=48:y=145:w=7:h=360:color=${ACCENT}:t=fill,\
+drawtext=fontfile='${FONT_FILE}':textfile='${text_file}':fontsize=${font_size}:fontcolor=${PAPER}:line_spacing=12:x=72:y=165,\
+drawtext=fontfile='${FONT_FILE}':textfile='${subtitle_file}':fontsize=${subtitle_size}:fontcolor=${PAPER}@0.86:line_spacing=8:x=72:y=425[card];\
+[2:v]crop=131:371:107:21,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[a];\
+[3:v]crop=203:607:169:61,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[c];\
+[4:v]crop=131:357:107:8,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[b];\
+color=c=0x101018:s=282x396:r=${FPS}:d=${length}[room];\
+[room][a]overlay=x=(W-w)/2:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,0\,1.10)'[wa];\
+[wa][c]overlay=x=(W-w)/2:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,1.10\,2.20)+between(t\,3.30\,4.40)'[wc];\
+[wc][b]overlay=x=(W-w)/2:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,2.20\,3.30)'[aperture];\
+[card][aperture]overlay=x=839:y=165:shortest=1[behind];\
 [5:v]scale=960:960:flags=lanczos[window];\
-[wb][window]overlay=x=500:y=-120:shortest=1:format=auto,\
+[behind][window]overlay=x=500:y=-120:shortest=1:format=auto,\
 fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out},\
 tpad=start_duration=${gap}:color=black,format=yuv420p[v];\
 [1:a]atrim=duration=${length},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${fade_in},\
