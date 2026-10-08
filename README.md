@@ -86,7 +86,10 @@ See `docs/MECHANICS.md`, "Saving and resuming".
 game's frame-locked movie writer, then adds the shot list's dark editorial cards, tracked logo, captions over the footage, ending copy
 and deterministic oscillator score before joining them with the captured game audio. Run
 `tools/trailer.sh --list` to inspect the cut, `--validate` to check its recipes headlessly,
-or `--shot choice` to record one scene. The cut uses the selected westward birds scene,
+`--shot choice` to record one scene, or `--auditions` to capture one clean game-audio base and
+build the three original scores in `tools/trailer/scores.json` against that same picture. A later
+score-only audition run reuses the matching retained base. Its local `index.html` switches one
+player between the choices and can jump to the military turn. The cut uses the selected westward birds scene,
 `trailer-birds.json`, and the park-only circular walk in `trailer-park-circle.json`.
 Each recipe owns its setup and scripted action;
 the shot list owns the cut timing and editorial treatment. Only normal scenes enter the trailer,

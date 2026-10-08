@@ -255,12 +255,15 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 		errors.append("playback.camera must be an object")
 	else:
 		var camera: Dictionary = playback.get("camera", {})
-		_keys(camera, ["zoom", "zoom_out", "zoom_delay", "landscape_margin", "fixed"],
+		_keys(camera, ["zoom", "zoom_out", "zoom_delay", "landscape_margin", "fixed", "fixed_offset"],
 				"playback.camera", errors)
 		if not camera.get("fixed", false) is bool:
 			errors.append("playback.camera.fixed must be boolean")
+		if camera.has("fixed_offset") and (not camera.get("fixed", false) \
+				or not SceneRecipe.tuple(camera.fixed_offset, 2, false)):
+			errors.append("playback.camera.fixed_offset requires fixed true and [x,y] numbers")
 		for key in camera:
-			if key == "fixed":
+			if key in ["fixed", "fixed_offset"]:
 				continue
 			_number(camera[key], "playback.camera." + key,
 					0 if key in ["zoom_delay", "landscape_margin"] else 0.001,
@@ -834,7 +837,8 @@ func begin() -> void:
 	var camera: Dictionary = playback.get("camera", {})
 	DevRig.apply_zoom(get_viewport().get_camera_2d(), float(camera.get("zoom", 1)))
 	if camera.get("fixed", false):
-		_install_fixed_camera()
+		var offset: Array = camera.get("fixed_offset", [0, 0])
+		_install_fixed_camera(Vector2(float(offset[0]), float(offset[1])))
 	if camera.has("zoom_out"):
 		var zoom := ZoomOutCamera.new()
 		_zoom = zoom
@@ -865,7 +869,7 @@ func _settle_starting_camera() -> void:
 ## Holds a scripted scene on the exact view it begins with. A camera of its own leaves the
 ## stroller's ordinary follow untouched, so free play and every recipe without `camera.fixed`
 ## keep the same look-ahead and smoothing behavior.
-func _install_fixed_camera() -> void:
+func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 	var starting_camera := get_viewport().get_camera_2d()
 	if not starting_camera:
 		return
@@ -874,7 +878,7 @@ func _install_fixed_camera() -> void:
 	fixed.name = "FixedRecipeCamera"
 	fixed.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	fixed.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	fixed.position = starting_camera.get_screen_center_position()
+	fixed.position = starting_camera.get_screen_center_position() + offset
 	fixed.rotation = starting_camera.global_rotation
 	fixed.zoom = starting_camera.zoom
 	add_child(fixed)

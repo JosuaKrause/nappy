@@ -5,6 +5,7 @@
 #   tools/trailer.sh --shot choice    # one shot alone     -> build/trailer/shot-choice.mp4
 #   tools/trailer.sh --check choice   # render it twice and compare every frame's hash
 #   tools/trailer.sh --check all      # the same for every shot
+#   tools/trailer.sh --auditions      # one clean capture, then three score mixes
 #   tools/trailer.sh --list           # print the shot list and render nothing
 #
 # PLAYTEST-139: "we can use recordings from a frame locked game. the trailer will be a set of
@@ -39,6 +40,7 @@ set -euo pipefail
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SHOTS_FILE="${TRAILER_SHOTS:-$PROJECT_DIR/tools/trailer/shots.json}"
+SCORES_FILE="${TRAILER_SCORES:-$PROJECT_DIR/tools/trailer/scores.json}"
 OUT_DIR="${TRAILER_OUT:-$PROJECT_DIR/build/trailer}"
 # shellcheck source=tools/lib_dev_flags.sh
 source "$PROJECT_DIR/tools/lib_dev_flags.sh"
@@ -49,7 +51,7 @@ source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 
 usage() {
     cat <<EOF
-usage: tools/trailer.sh [--help|-h] [--list | --validate | --shot NAME | --check NAME|all | --check-load NAME|all]
+usage: tools/trailer.sh [--help|-h] [--list | --validate | --auditions | --shot NAME | --check NAME|all | --check-load NAME|all]
 
 Renders the trailer from tools/trailer/shots.json: gameplay shots through Godot's movie writer,
 frame-locked, at the game's own resolution with its audio; editorial cards and the deterministic
@@ -57,6 +59,8 @@ oscillator score through ffmpeg; then fades, mixes, joins and encodes them. Fram
 soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer/, gitignored).
 
   (no flag)        render every shot and join them into TRAILER_OUT/trailer.mp4
+  --auditions      capture one clean game-audio base, then build three complete score mixes in
+                   TRAILER_OUT; a matching retained base is reused on later score-only runs
   --shot NAME      render one shot alone into TRAILER_OUT/shot-NAME.mp4
   --check NAME     render the shot twice and compare every frame's hash; exits non-zero on a
                    difference inside the shot's cut
@@ -67,6 +71,7 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
 
 Environment:
   TRAILER_SHOTS    use another shot-list JSON (default: tools/trailer/shots.json)
+  TRAILER_SCORES   use another score-list JSON (default: tools/trailer/scores.json)
   TRAILER_OUT      output directory (default: build/trailer)
 
 Disk: frames stay on disk until each shot is encoded, so this refuses to start unless the volume
@@ -89,7 +94,7 @@ TARGET=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --help|-h) usage; exit 0 ;;
-        --list|--validate)
+        --list|--validate|--auditions)
             [[ "$MODE" == "all" ]] || { echo "$1 cannot be combined with --$MODE" >&2; usage >&2; exit 1; }
             MODE="${1#--}"; shift ;;
         --shot|--check|--check-load)
@@ -111,6 +116,10 @@ for tool in jq; do
 done
 if [[ ! -f "$SHOTS_FILE" ]]; then
     echo "trailer.sh: no shot list at ${SHOTS_FILE#"$PROJECT_DIR"/}" >&2
+    exit 1
+fi
+if [[ "$MODE" == auditions && ! -f "$SCORES_FILE" ]]; then
+    echo "trailer.sh: no audition score list at ${SCORES_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
 
@@ -152,12 +161,15 @@ schema_errors="$(jq -r '
             then empty
             elif $kind == "card" and (.recipe == null) and (.in == null) and
                 (.card | type) == "object" and
-                (.card | keys - ["text","font_size","subtitle","subtitle_font_size","asset"] | length) == 0 and
+                (.card | keys - ["text","font_size","subtitle","subtitle_font_size","asset","layout","illustration"] | length) == 0 and
                 (((.card.asset | type) == "string" and (.card.asset | test("^art/[a-z0-9/_-]+\\.png$")) and
                     .card.text == null and .card.font_size == null and .card.subtitle == null and
-                    .card.subtitle_font_size == null) or
+                    .card.subtitle_font_size == null and .card.layout == null and .card.illustration == null) or
                  ((.card.text | type) == "string" and (.card.text | length) > 0 and
                     (.card.font_size | num) and .card.font_size > 0 and .card.asset == null and
+                    ((.card.layout == null and .card.illustration == null) or
+                     (.card.layout == "split" and (.card.illustration | type) == "string" and
+                      (.card.illustration | test("^art/[a-z0-9/_-]+\\.png$")))) and
                     ((.card.subtitle == null and .card.subtitle_font_size == null) or
                      ((.card.subtitle | type) == "string" and (.card.subtitle | length) > 0 and
                       (.card.subtitle_font_size | num) and .card.subtitle_font_size > 0))))
@@ -194,6 +206,47 @@ if [[ -n "$schema_errors" ]]; then
     echo "trailer.sh: ${SHOTS_FILE#"$PROJECT_DIR"/} is malformed:" >&2
     printf '  %s\n' "$schema_errors" >&2
     exit 1
+fi
+
+if [[ "$MODE" == auditions ]]; then
+    score_errors="$(jq -r '
+        def num: type == "number";
+        (if (keys - ["game_gain","target_mean_db","peak_ceiling_db","options"] | length) == 0
+            then empty else "unknown top-level score field" end),
+        (if (.game_gain | num) and .game_gain >= 0 and .game_gain <= 1 then empty
+            else "game_gain must be between zero and one" end),
+        (if (.target_mean_db | num) and .target_mean_db >= -60 and .target_mean_db <= -18
+            then empty else "target_mean_db must be between -60 and -18" end),
+        (if (.peak_ceiling_db | num) and .peak_ceiling_db >= -24 and .peak_ceiling_db <= -3
+            then empty else "peak_ceiling_db must be between -24 and -3" end),
+        (if (.options | type) == "array" and (.options | length) == 3 then empty
+            else "options must contain exactly three scores" end),
+        ((.options // [])[] |
+            (.id // "?") as $id |
+            (if (keys - ["id","label","description","events"] | length) == 0
+                then empty else "\($id): unknown option field" end),
+            (if (.id | type) == "string" and (.id | test("^[a-z0-9-]+$"))
+                then empty else "an option id must use lower-case letters and dashes" end),
+            (if all([.label,.description][]; type == "string" and length > 0)
+                then empty else "\($id): label and description are required" end),
+            (if (.events | type) == "array" and (.events | length) > 0 and all(.events[];
+                (keys - ["shot","offset","duration","frequency","gain","texture"] | length) == 0 and
+                (.shot | type) == "string" and (.offset | num) and .offset >= 0 and
+                (.duration | num) and .duration > 0 and (.frequency | num) and .frequency > 0 and
+                (.gain | num) and .gain > 0 and .gain <= 1 and
+                (.texture | IN("pluck","glass","pulse","drone","tick")))
+                then empty else "\($id): events are malformed" end)
+        ),
+        (if ([.options[]?.id] | length) == ([.options[]?.id] | unique | length)
+            then empty else "two score options share an id" end)
+    ' "$SCORES_FILE" 2>&1)" || {
+        echo "trailer.sh: ${SCORES_FILE#"$PROJECT_DIR"/} is not valid JSON" >&2; exit 1;
+    }
+    if [[ -n "$score_errors" ]]; then
+        echo "trailer.sh: ${SCORES_FILE#"$PROJECT_DIR"/} is malformed:" >&2
+        printf '  %s\n' "$score_errors" >&2
+        exit 1
+    fi
 fi
 
 FPS="$(jq -r '.fps' "$SHOTS_FILE")"
@@ -234,6 +287,28 @@ shot_render_seconds() {
 
 total_seconds="$(jq -r '[.shots[] | (.gap // 0) + .length] | add' "$SHOTS_FILE" |
     awk '{ printf "%.2f\n", $1 }')"
+RESOLVED_SCORES=""
+if [[ "$MODE" == auditions ]]; then
+    RESOLVED_SCORES="$(jq -n --slurpfile cut "$SHOTS_FILE" --slurpfile scores "$SCORES_FILE" '
+        (reduce $cut[0].shots[] as $shot ({elapsed:0,starts:{}};
+            .starts[$shot.name] = (.elapsed + ($shot.gap // 0)) |
+            .elapsed += (($shot.gap // 0) + $shot.length))) as $timeline |
+        $scores[0] + {
+            total_seconds:$timeline.elapsed,
+            military_start:$timeline.starts.trucks,
+            options: [$scores[0].options[] |
+                . + {events: [.events[] |
+                    . + {at: ($timeline.starts[.shot] + .offset)}]}]
+        }
+    ')"
+    if ! jq -e --argjson total "$total_seconds" '
+        ((.total_seconds - $total) | fabs) < 0.001 and
+        all(.options[].events[]; (.at | type) == "number" and .at + .duration <= $total + 0.001)
+    ' <<< "$RESOLVED_SCORES" >/dev/null; then
+        echo "trailer.sh: an audition cue names no shot or finishes outside the cut" >&2
+        exit 1
+    fi
+fi
 if ! jq -e --argjson total "$total_seconds" '
     all(.score.notes[]; .at + .duration <= $total) and
     all(.shots[] | select(.ending != null); .ending.at < .length) and
@@ -329,7 +404,7 @@ while IFS= read -r asset; do
         echo "trailer.sh: editorial card asset is absent or untracked: $asset" >&2
         exit 1
     fi
-done < <(jq -r '.shots[].card.asset? // empty' "$SHOTS_FILE")
+done < <(jq -r '.shots[].card | (.asset? // empty), (.illustration? // empty)' "$SHOTS_FILE")
 
 # The baked atlas pages, repaired the way tools/shot.sh repairs them -- see its own comment.
 if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
@@ -614,25 +689,45 @@ afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=dura
             -c:a pcm_s16le "$out"
         return
     fi
-    local font_size subtitle subtitle_size text_file subtitle_file
+    local font_size subtitle subtitle_size text_file subtitle_file layout illustration
     font_size="$(shot_nested_field "$name" card font_size)"
     subtitle="$(shot_nested_field "$name" card subtitle)"
     subtitle_size="$(shot_nested_field "$name" card subtitle_font_size)"
+    layout="$(shot_nested_field "$name" card layout)"
+    illustration="$(shot_nested_field "$name" card illustration)"
     text_file="$WORK/card-${name}.txt"
     subtitle_file="$WORK/card-${name}-subtitle.txt"
     shot_nested_field "$name" card text > "$text_file"
     [[ "$subtitle" == null ]] || printf '%s\n' "$subtitle" > "$subtitle_file"
-    local card_filters="drawtext=fontfile='${FONT_FILE}':textfile='${text_file}':"
-    card_filters+="fontsize=${font_size}:fontcolor=${PAPER}:x=(w-text_w)/2:y=h*0.29"
+    local card_filters=""
+    if [[ "$layout" == split ]]; then
+        # A short muted-red rule anchors the left-aligned copy while the existing sleeping
+        # stroller illustration carries the other half of the opening composition.
+        card_filters="drawbox=x=88:y=145:w=7:h=360:color=${ACCENT}:t=fill,"
+        card_filters+="drawtext=fontfile='${FONT_FILE}':textfile='${text_file}':"
+        card_filters+="fontsize=${font_size}:fontcolor=${PAPER}:line_spacing=12:x=116:y=165"
+    else
+        card_filters="drawtext=fontfile='${FONT_FILE}':textfile='${text_file}':"
+        card_filters+="fontsize=${font_size}:fontcolor=${PAPER}:x=(w-text_w)/2:y=h*0.29"
+    fi
     if [[ "$subtitle" != null ]]; then
         card_filters+=",drawtext=fontfile='${FONT_FILE}':textfile='${subtitle_file}':"
-        card_filters+="fontsize=${subtitle_size}:fontcolor=${PAPER}@0.86:x=(w-text_w)/2:y=h*0.63"
+        if [[ "$layout" == split ]]; then
+            card_filters+="fontsize=${subtitle_size}:fontcolor=${PAPER}@0.86:line_spacing=8:x=116:y=425"
+        else
+            card_filters+="fontsize=${subtitle_size}:fontcolor=${PAPER}@0.86:x=(w-text_w)/2:y=h*0.63"
+        fi
+    fi
+    local illustration_input=() illustration_graph="[0:v]${card_filters}[composed]"
+    if [[ "$illustration" != null ]]; then
+        illustration_input=(-loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$illustration")
+        illustration_graph="[0:v]${card_filters}[card];[2:v]scale=510:510:flags=lanczos[art];[card][art]overlay=x=720:y=105:shortest=1:format=auto[composed]"
     fi
     ffmpeg -hide_banner -loglevel error -y \
         -f lavfi -i "color=c=${CARD_BACKGROUND}:s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${length}" \
-        -f lavfi -i "anullsrc=r=48000:cl=stereo" \
+        -f lavfi -i "anullsrc=r=48000:cl=stereo" "${illustration_input[@]}" \
         -filter_complex "\
-[0:v]${card_filters},fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out},\
+${illustration_graph};[composed]fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out},\
 tpad=start_duration=${gap}:color=black,format=yuv420p[v];\
 [1:a]atrim=duration=${length},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${fade_in},\
 afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[a]" \
@@ -673,6 +768,150 @@ join_shots() {
             -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
             -c:a aac -b:a 192k -movflags +faststart "$OUTPUT"
     fi
+}
+
+# Joins one shared picture-and-game-audio source for score auditions. PCM keeps the retained game
+# stem clean; every option below copies this exact video stream and changes only the final audio.
+join_clean_base() {
+    local inputs=() streams="" i=0
+    for f in "$@"; do
+        inputs+=(-i "$f")
+        streams+="[$i:v][$i:a]"
+        i=$(( i + 1 ))
+    done
+    mkdir -p "$OUT_DIR/source"
+    ffmpeg -hide_banner -loglevel error -y "${inputs[@]}" \
+        -filter_complex "${streams}concat=n=${i}:v=1:a=1[v][a]" \
+        -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
+        -c:a pcm_s16le "$OUT_DIR/source/base.mkv"
+}
+
+# Hash only inputs that can alter the retained picture/game-audio base. Score-only edits therefore
+# reuse it, while a recipe, runtime source, card layout, asset or project-setting change recaptures.
+audition_source_signature() {
+    {
+        jq -S 'del(.score)' "$SHOTS_FILE"
+        while IFS= read -r file; do
+            shasum -a 256 "$PROJECT_DIR/$file"
+        done < <(git -C "$PROJECT_DIR" ls-files src art project.godot scene-recipes tools/trailer.sh)
+    } | shasum -a 256 | awk '{print $1}'
+}
+
+volume_stat() {
+    local file="$1" key="$2" filter="${3:-volumedetect}"
+    ffmpeg -hide_banner -nostats -i "$file" -af "$filter" -f null - 2>&1 |
+        sed -n "s/.*${key}: *\([^ ]*\).*/\1/p" | tail -1
+}
+
+score_expression() {
+    local id="$1" expression="" at duration frequency gain texture phase envelope voice
+    while IFS=$'\t' read -r at duration frequency gain texture; do
+        phase="2*PI*${frequency}*(t-${at})"
+        envelope="pow(sin(PI*(t-${at})/${duration})\\,2)"
+        case "$texture" in
+            pluck) voice="(sin(${phase})+0.22*sin(2*${phase}))*${envelope}" ;;
+            glass) voice="(sin(${phase})+0.32*sin(2.01*${phase})+0.12*sin(4.07*${phase}))*${envelope}" ;;
+            pulse) voice="(sin(${phase})+0.18*sin(3*${phase}))*${envelope}" ;;
+            drone) voice="(sin(${phase})+0.16*sin(0.5*${phase}))*(0.82+0.18*sin(2*PI*0.37*t))*${envelope}" ;;
+            tick) voice="(sin(${phase})+0.25*sin(3*${phase}))*exp(-8*(t-${at})/${duration})*sin(PI*(t-${at})/${duration})" ;;
+        esac
+        [[ -z "$expression" ]] || expression+="+"
+        expression+="if(between(t\\,${at}\\,$(awk -v a="$at" -v d="$duration" 'BEGIN {printf "%.6f", a+d}'))\\,${gain}*${voice}\\,0)"
+    done < <(jq -r --arg id "$id" '.options[] | select(.id == $id) | .events[] |
+        [.at,.duration,.frequency,.gain,.texture] | @tsv' <<< "$RESOLVED_SCORES")
+    printf '%s\n' "$expression"
+}
+
+build_score_once() {
+    local id="$1" raw="$2" score="$3" expression raw_mean raw_peak target ceiling wanted room adjust
+    expression="$(score_expression "$id")"
+    ffmpeg -hide_banner -loglevel error -y \
+        -f lavfi -i "aevalsrc=exprs='${expression}|${expression}':s=48000:d=${total_seconds}:c=stereo" \
+        -af "afade=t=in:st=0:d=0.12,afade=t=out:st=$(awk -v d="$total_seconds" 'BEGIN {print d-0.25}'):d=0.25" \
+        -c:a pcm_s16le "$raw"
+    raw_mean="$(volume_stat "$raw" mean_volume)"
+    raw_peak="$(volume_stat "$raw" max_volume)"
+    target="$(jq -r '.target_mean_db' <<< "$RESOLVED_SCORES")"
+    ceiling="$(jq -r '.peak_ceiling_db' <<< "$RESOLVED_SCORES")"
+    wanted="$(awk -v target="$target" -v mean="$raw_mean" 'BEGIN {printf "%.4f", target-mean}')"
+    room="$(awk -v ceiling="$ceiling" -v peak="$raw_peak" 'BEGIN {printf "%.4f", ceiling-peak}')"
+    adjust="$(awk -v wanted="$wanted" -v room="$room" 'BEGIN {printf "%.4f", wanted<room?wanted:room}')"
+    ffmpeg -hide_banner -loglevel error -y -i "$raw" -af "volume=${adjust}dB" -c:a pcm_s16le "$score"
+}
+
+build_auditions() {
+    local base="$OUT_DIR/source/base.mkv" id label description raw score check_raw check_score
+    local score_mean score_peak mix_mean mix_peak start_peak end_peak game_gain military_start
+    game_gain="$(jq -r '.game_gain' <<< "$RESOLVED_SCORES")"
+    military_start="$(jq -r '.military_start' <<< "$RESOLVED_SCORES")"
+    : > "$WORK/audition-options.jsonl"
+    while IFS=$'\t' read -r id label description; do
+        raw="$OUT_DIR/source/${id}-raw.wav"
+        score="$OUT_DIR/source/${id}-score.wav"
+        check_raw="$WORK/${id}-raw-check.wav"
+        check_score="$WORK/${id}-score-check.wav"
+        build_score_once "$id" "$raw" "$score"
+        build_score_once "$id" "$check_raw" "$check_score"
+        if [[ "$(shasum -a 256 < "$score")" != "$(shasum -a 256 < "$check_score")" ]]; then
+            echo "trailer.sh: score '$id' did not rebuild to identical bytes" >&2
+            return 1
+        fi
+        score_mean="$(volume_stat "$score" mean_volume)"
+        score_peak="$(volume_stat "$score" max_volume)"
+        start_peak="$(volume_stat "$score" max_volume 'atrim=duration=0.05,volumedetect')"
+        end_peak="$(volume_stat "$score" max_volume "atrim=start=$(awk -v d="$total_seconds" 'BEGIN {print d-0.05}'),volumedetect")"
+        if ! awk -v start="$start_peak" -v end="$end_peak" 'BEGIN {exit !(start <= -80 && end <= -80)}'; then
+            echo "trailer.sh: score '$id' is not silent at both file boundaries" >&2
+            return 1
+        fi
+        ffmpeg -hide_banner -loglevel error -y -i "$base" -i "$score" \
+            -filter_complex "[0:a]volume=${game_gain}[game];[1:a]aformat=sample_rates=48000:channel_layouts=stereo[music];\
+[game][music]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.92[a]" \
+            -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -movflags +faststart \
+            "$OUT_DIR/${id}.mp4"
+        mix_mean="$(volume_stat "$OUT_DIR/${id}.mp4" mean_volume)"
+        mix_peak="$(volume_stat "$OUT_DIR/${id}.mp4" max_volume)"
+        jq -nc --arg id "$id" --arg label "$label" --arg description "$description" \
+            --arg file "${id}.mp4" --arg score_file "source/${id}-score.wav" \
+            --arg score_sha256 "$(shasum -a 256 < "$score" | awk '{print $1}')" \
+            --arg mix_sha256 "$(shasum -a 256 < "$OUT_DIR/${id}.mp4" | awk '{print $1}')" \
+            --argjson score_mean_db "${score_mean%dB}" --argjson score_peak_db "${score_peak%dB}" \
+            --argjson mix_mean_db "${mix_mean%dB}" --argjson mix_peak_db "${mix_peak%dB}" \
+            --argjson boundaries_silent true --argjson deterministic_pcm true \
+            '{id:$id,label:$label,description:$description,file:$file,score_file:$score_file,
+              score_sha256:$score_sha256,mix_sha256:$mix_sha256,score_mean_db:$score_mean_db,
+              score_peak_db:$score_peak_db,mix_mean_db:$mix_mean_db,mix_peak_db:$mix_peak_db,
+              boundaries_silent:$boundaries_silent,deterministic_pcm:$deterministic_pcm}' \
+            >> "$WORK/audition-options.jsonl"
+    done < <(jq -r '.options[] | [.id,.label,.description] | @tsv' <<< "$RESOLVED_SCORES")
+    jq -s --arg base "source/base.mkv" \
+        --arg base_sha256 "$(shasum -a 256 < "$base" | awk '{print $1}')" \
+        --arg scores_sha256 "$(shasum -a 256 < "$SCORES_FILE" | awk '{print $1}')" \
+        --argjson game_gain "$game_gain" --argjson military_start "$military_start" \
+        --argjson duration "$total_seconds" \
+        '{base:$base,base_sha256:$base_sha256,scores_sha256:$scores_sha256,
+          duration_seconds:$duration,military_start_seconds:$military_start,game_gain:$game_gain,
+          synthesis:"original deterministic oscillators with per-event envelopes; no samples",
+          checks:"PCM score rebuilt twice; boundaries silent; peaks measured after encode",
+          options:.}' "$WORK/audition-options.jsonl" > "$OUT_DIR/auditions.json"
+    local options_json
+    options_json="$(jq -c '[.options[] | {id,label,description,file}]' "$OUT_DIR/auditions.json")"
+    cat > "$OUT_DIR/index.html" <<EOF
+<!doctype html>
+<meta charset="utf-8">
+<title>Nappy trailer music auditions</title>
+<style>
+body{margin:0;background:#17171b;color:#d8c4a3;font:18px Georgia,serif}main{max-width:960px;margin:40px auto;padding:0 24px}h1{font-size:42px;margin-bottom:8px}.choices{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}button{font:18px Georgia,serif;padding:12px 18px;border:1px solid #a54c3f;background:#332820;color:#f3e6cf;cursor:pointer}button.active{background:#a54c3f}video{width:100%;background:#000}#description{min-height:28px}.jump{margin-top:14px}
+</style>
+<main><h1>Trailer music auditions</h1><p>Choose one score, then play the shared cut.</p><div class="choices" id="choices"></div><p id="description"></p><video id="player" controls preload="metadata"></video><button class="jump" id="jump">Jump to the military turn</button></main>
+<script>
+const options=${options_json}; const military=${military_start}; const player=document.querySelector('#player');
+const choices=document.querySelector('#choices'); const description=document.querySelector('#description');
+function choose(option,button){player.pause();player.src=option.file;player.load();description.textContent=option.description;document.querySelectorAll('.choices button').forEach(b=>b.classList.remove('active'));button.classList.add('active')}
+options.forEach((option,index)=>{const button=document.createElement('button');button.textContent=option.label;button.onclick=()=>choose(option,button);choices.append(button);if(index===0)choose(option,button)});
+document.querySelector('#jump').onclick=()=>{player.currentTime=military};
+</script>
+EOF
 }
 
 check_shot() {
@@ -900,6 +1139,47 @@ case "$MODE" in
         fi
         join_shots false "$WORK/00.mkv"
         echo "wrote ${OUTPUT#"$PROJECT_DIR"/}"
+        ;;
+    auditions)
+        mkdir -p "$OUT_DIR/source"
+        printf '%s\n' "$RESOLVED_SCORES" > "$OUT_DIR/source/resolved-scores.json"
+        cp "$SCORES_FILE" "$OUT_DIR/source/scores.json"
+        source_signature="$(audition_source_signature)"
+        reuse_base=false
+        if [[ -f "$OUT_DIR/source/base.mkv" && -f "$OUT_DIR/source/base-settings.json" ]] \
+                && [[ "$(jq -r '.source_signature // ""' "$OUT_DIR/source/base-settings.json")" == "$source_signature" ]]; then
+            reuse_base=true
+            echo "reusing the matching retained clean game-audio base" >&2
+        fi
+        if [[ "$reuse_base" == false ]]; then
+            encoded=()
+            i=0
+            for name in "${SHOT_NAMES[@]}"; do
+                part="$(printf '%s/%02d.mkv' "$WORK" "$i")"
+                if [[ "$(shot_kind "$name")" == card ]]; then
+                    encode_card "$name" "$part"
+                else
+                    render_frames "$name" "$WORK/frames"
+                    movie_evidence "$WORK/frames" "$OUT_DIR/evidence/$name" "$FPS" "$name"
+                    write_cut_entry_evidence "$name" "$WORK/frames"
+                    encode_shot "$name" "$WORK/frames" "$part"
+                    rm -rf "$WORK/frames"
+                fi
+                encoded+=("$part")
+                i=$(( i + 1 ))
+            done
+            join_clean_base "${encoded[@]}"
+            jq -n --arg source_signature "$source_signature" \
+                --arg sha256 "$(shasum -a 256 < "$OUT_DIR/source/base.mkv" | awk '{print $1}')" \
+                --arg shots_sha256 "$(shasum -a 256 < "$SHOTS_FILE" | awk '{print $1}')" \
+                --argjson duration "$total_seconds" --argjson fps "$FPS" \
+                '{source_signature:$source_signature,sha256:$sha256,shots_sha256:$shots_sha256,
+                  duration_seconds:$duration,fps:$fps,audio:"captured game audio, PCM s16le",
+                  video:"shared H.264 picture used unchanged by every audition"}' \
+                > "$OUT_DIR/source/base-settings.json"
+        fi
+        build_auditions
+        echo "wrote three score auditions and comparison page under ${OUT_DIR#"$PROJECT_DIR"/}"
         ;;
     all)
         OUTPUT="$OUT_DIR/trailer.mp4"

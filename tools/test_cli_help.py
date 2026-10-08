@@ -75,6 +75,7 @@ class CliHelpTests(unittest.TestCase):
         for name in ("trailer.sh", "record.sh", "lib_dev_flags.sh", "lib_movie_evidence.sh", "lib_disk_headroom.sh"):
             shutil.copy2(TOOLS / name, root / "tools" / name)
         shutil.copy2(TOOLS / "trailer" / "shots.json", root / "tools" / "trailer" / "shots.json")
+        shutil.copy2(TOOLS / "trailer" / "scores.json", root / "tools" / "trailer" / "scores.json")
         shutil.copy2(PROJECT_ROOT / "project.godot", root / "project.godot")
         flag_source = (PROJECT_ROOT / "src" / "dev" / "dev_flags.gd").read_text()
         marker = "## END_DEV_FLAG_TABLE"
@@ -95,10 +96,13 @@ class CliHelpTests(unittest.TestCase):
         for shot in shots["shots"]:
             if "recipe" in shot:
                 (root / shot["recipe"]).write_text('{"playback":{"duration":10}}\n')
-            elif asset := shot["card"].get("asset"):
-                destination = root / asset
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(PROJECT_ROOT / asset, destination)
+            else:
+                for asset in (shot["card"].get("asset"), shot["card"].get("illustration")):
+                    if not asset:
+                        continue
+                    destination = root / asset
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(PROJECT_ROOT / asset, destination)
         bake = root / "tools" / "bake-atlases.sh"
         bake.write_text("#!/bin/sh\nexit 0\n")
         bake.chmod(0o755)
@@ -166,6 +170,19 @@ class CliHelpTests(unittest.TestCase):
             result = subprocess.run([str(script), "--shot", "choice"], env=env, text=True, capture_output=True)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("not the family asked for", result.stderr)
+            self.assertFalse((root / "calls").exists())
+
+    def test_trailer_rejects_malformed_audition_scores_before_recording(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script, env = self.recipe_trailer_fixture(root)
+            scores = root / "tools" / "trailer" / "scores.json"
+            payload = json.loads(scores.read_text())
+            payload["options"][0]["events"][0]["texture"] = "sample"
+            scores.write_text(json.dumps(payload))
+            result = subprocess.run([str(script), "--auditions"], env=env, text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("events are malformed", result.stderr)
             self.assertFalse((root / "calls").exists())
 
     def test_trailer_refuses_fixture_and_preflight_failure_before_recording(self) -> None:

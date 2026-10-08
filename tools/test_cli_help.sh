@@ -268,6 +268,7 @@ assert_exit "trailer.sh --shot (missing name)" nonzero ./tools/trailer.sh --shot
 assert_exit "trailer.sh --check-load (missing name)" nonzero ./tools/trailer.sh --check-load
 assert_exit "trailer.sh --validate --shot (combined)" nonzero ./tools/trailer.sh --validate --shot choice
 assert_exit "trailer.sh --list --shot (combined)" nonzero ./tools/trailer.sh --list --shot choice
+assert_exit "trailer.sh --list --auditions (combined)" nonzero ./tools/trailer.sh --list --auditions
 assert_exit "record.sh --bogus"       nonzero ./tools/record.sh --bogus
 assert_exit "record.sh (no flags)"    nonzero ./tools/record.sh
 assert_exit "record.sh --this-is-not-a-dev-flag" nonzero ./tools/record.sh --this-is-not-a-dev-flag

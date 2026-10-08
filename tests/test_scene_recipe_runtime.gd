@@ -40,13 +40,14 @@ func _ready() -> void:
 		runtime._settle_starting_camera()
 		var settled_current := from.is_current()
 		var settled_centre := from.get_screen_center_position()
-		runtime._install_fixed_camera()
+		var frame_offset := Vector2(200, 0)
+		runtime._install_fixed_camera(frame_offset)
 		var fixed := runtime._fixed_camera
 		from.position += Vector2(200, 100)
 		player.free()
 		runtime._player = null
 		if not settled_current or from.offset != Vector2(Stroller.CAMERA_LOOK_AHEAD, 0) \
-				or not fixed.is_current() or fixed.position != settled_centre \
+				or not fixed.is_current() or fixed.position != settled_centre + frame_offset \
 				or fixed.zoom != from.zoom:
 			get_tree().quit(18)
 			return
@@ -156,6 +157,8 @@ func _test_schema(t) -> void:
 		{"playback": {"duration": "two"}},
 		{"playback": {"camera": {"zoom": 0}}},
 		{"playback": {"camera": {"fixed": "yes"}}},
+		{"playback": {"camera": {"fixed_offset": [200, 0]}}},
+		{"playback": {"camera": {"fixed": true, "fixed_offset": [200]}}},
 		{"playback": {"caption": false}},
 		{"playback": {"observations": [{"tick": -1, "subject": "player", "condition": "moving"}]}},
 		{"playback": {"observations": [{"tick": 1, "subject": "unknown", "condition": "moving"}]}},

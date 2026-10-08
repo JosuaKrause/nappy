@@ -39,8 +39,9 @@
     {
       "name": "hook",
       "kind": "card",
-      "card": {"text": "She won't settle inside.", "font_size": 84,
-        "subtitle": "Just a walk, until she sleeps.", "subtitle_font_size": 36},
+      "card": {"text": "She won't settle\ninside.", "font_size": 76,
+        "subtitle": "Just a walk,\nuntil she sleeps.", "subtitle_font_size": 38,
+        "layout": "split", "illustration": "art/icon_stroller_640.png"},
       "length": 4.4
     },
     {
