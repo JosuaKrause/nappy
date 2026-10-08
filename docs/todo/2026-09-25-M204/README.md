@@ -7,7 +7,8 @@ priority: now
 
 [PLAYTEST-139](../../playtests/PLAYTEST-139.md) holds the whole design, statements 1–10.
 
-The remaining [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
+The [B/C window and quieter ending](window-bc-and-quiet-ending.md) follow the player's review
+of the third full cut. The separate [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
 the ordinary screenshot command's escape flags and stays deferred. The trailer's design,
 camera correction and presentation choices are recorded in
 [M204, the trailer from saved scenes](../../decisions/2026-09-25-M204.md).
