@@ -12,5 +12,20 @@ The local approved trailer remains the master; this change does not render or re
 
 The thumbnail endpoint returns a 1280×720 image showing the trailer's title card. Its visible
 contents and the exact destination video ID are checked, and the documentation lint and
-whitespace checks pass. The request is implemented directly in this documentation PR, so
+whitespace checks pass. The request is implemented directly in this PR, so
 no unfinished queue item or additional human playtest is created.
+
+## The flag documentation check consumes its input safely
+
+The README PR's Linux check reports three documented flags as missing: `--walk`, `--flee`
+and `--press`. Each false result follows `printf: write error: Broken pipe`. The check pipes
+the complete Dev flags section into `grep -qF`; grep can exit after finding a match while
+printf is still writing, and `pipefail` turns that successful search into a failure.
+
+Source `5606a3284c55b8ded7a5d3431c7a0bb92ce434ba` supplies the same section to grep with a
+Bash here-string. This preserves literal flag matching and rejection of a missing flag,
+without a producer process that can receive SIGPIPE. The existing CLI shell suite passes
+332 checks with no failures; separate large-section present/missing cases, Bash syntax,
+lint and whitespace checks pass. No game behavior changes. The
+[retained failure excerpt](../evidence/readme-trailer-cli-2026-10-08.txt) records the exact
+CI messages that prompted this one-line correction.
