@@ -43,6 +43,7 @@ func run(t) -> void:
 	_test_the_restart_hold_drops_its_pressed_fill_once_the_sweep_starts(t)
 	_test_mode_button_pressed_and_hovered_drive_the_stylebox(t)
 	_test_hover_lights_up_the_button_under_the_mouse(t)
+	_test_button_catches_and_hover_are_radial_when_rotated(t)
 	_test_the_pause_hint_and_body_match_the_platform(t)
 	_test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t)
 	_test_the_buttons_show_on_every_device(t)
@@ -61,6 +62,49 @@ func run(t) -> void:
 	t.get_tree().paused = was_paused
 
 ## The trap, stated as an assertion so that reaching for `.visible` again fails loudly.
+func _test_button_catches_and_hover_are_radial_when_rotated(t) -> void:
+	var window: Window = t.get_window()
+	var old_size := window.size
+	for rotated in [false, true]:
+		window.size = Vector2i(720, 1280) if rotated else Vector2i(1280, 720)
+		for scene: PackedScene in [TITLE, PAUSE, SUMMARY]:
+			var screen: CanvasLayer = scene.instantiate()
+			t.add_child(screen)
+			screen.set("_touch", true)
+			screen.visible = true
+			ScreenOrientation.apply_to_layer(screen, rotated)
+			var title := screen as TitleScreen
+			var button: ModeButton
+			if title:
+				button = title._joystick_button
+				title._tap_button.position = Vector2(900.0, 400.0)
+			else:
+				button = screen.get("_restart_button") as ModeButton
+				(screen.get("_buttons") as Control).visible = true
+			button.position = Vector2(300.0, 400.0)
+			button.size = Vector2(92.0, 92.0)
+			var center := button.get_global_rect().get_center()
+			var radius := button.size.x * 0.5
+			for offset: Vector2 in [Vector2.RIGHT * radius * 1.049,
+					Vector2.RIGHT * radius * 1.051, Vector2.ONE * radius * 0.9]:
+				var expected := offset.length() < radius * 1.05
+				var presented := ScreenOrientation.to_presented_space(center + offset, rotated)
+				screen.call("_update_hover", presented)
+				t.check(button._hovered_look == expected,
+						"screen hover follows the circle, including rotated margins and square corners")
+				var event := _touch_at(presented, true)
+				var caught: bool = screen.call("_handle_mode_button_press" if title
+						else "_handle_restart_touch", event)
+				t.check(caught == expected, "button press agrees with radial hover")
+				if title and caught:
+					t.get_tree().process_frame.emit()
+					t.get_tree().process_frame.emit()
+				elif caught:
+					screen.call("_handle_restart_touch", _touch_at(Vector2.ZERO, false))
+					t.check(not button.is_held(), "restart release outside the disc still ends its hold")
+			screen.free()
+	window.size = old_size
+
 func _test_a_canvas_layer_is_always_visible(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
@@ -281,7 +325,7 @@ func _test_every_walking_key_begins_the_run(t) -> void:
 ## should also solve the issue with the missing title screen since the only way to start the game
 ## will be clicking on one of the buttons".)* Positions are set directly rather than read after a
 ## frame of container sorting, the same reason `_test_the_restart_button_is_a_hold` gives for doing
-## the same on the pause screen — `catch_rect()` still answers off whatever rect is actually set.
+## the same on the pause screen — `contains_design_point()` still answers off whatever rect is actually set.
 ##
 ## Acknowledged two frames ahead of itself, the same as every other button that fires and closes
 ## its own screen — see `TitleScreen._acknowledge_and_begin()` for why, and
@@ -300,7 +344,7 @@ func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
 	title._tap_button.position = Vector2(700.0, 400.0)
 	title._tap_button.size = Vector2(92.0, 92.0)
 
-	var joystick_at: Vector2 = title._joystick_button.catch_rect().get_center()
+	var joystick_at: Vector2 = title._joystick_button.get_global_rect().get_center()
 	title._unhandled_input(_touch_at(joystick_at, true))
 	t.check(started_modes.is_empty(), "the press is acknowledged before it is acted on")
 	t.get_tree().process_frame.emit()
@@ -308,7 +352,7 @@ func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
 	t.check(started_modes == [ControlsMode.Mode.JOYSTICK],
 			"pressing the joystick button starts a run in Mode.JOYSTICK")
 
-	var tap_at: Vector2 = title._tap_button.catch_rect().get_center()
+	var tap_at: Vector2 = title._tap_button.get_global_rect().get_center()
 	title._unhandled_input(_touch_at(tap_at, true))
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
@@ -336,7 +380,7 @@ func _test_a_real_touch_on_a_title_button_reaches_the_title_screen(t) -> void:
 	title._joystick_button.position = Vector2(300.0, 400.0)
 	title._joystick_button.size = Vector2(92.0, 92.0)
 
-	var at: Vector2 = title._joystick_button.catch_rect().get_center()
+	var at: Vector2 = title._joystick_button.get_global_rect().get_center()
 	var touch := InputEventScreenTouch.new()
 	touch.position = at
 	touch.pressed = true
@@ -586,7 +630,7 @@ func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
 	title._tap_button.size = Vector2(92.0, 92.0)
 
 	var over_joystick := InputEventMouseMotion.new()
-	over_joystick.position = title._joystick_button.catch_rect().get_center()
+	over_joystick.position = title._joystick_button.get_global_rect().get_center()
 	title._unhandled_input(over_joystick)
 	t.check((title._joystick_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
 				== Palette.BUTTON_HOVER,
@@ -613,7 +657,7 @@ func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
 	pause._continue_button.size = Vector2(92.0, 92.0)
 
 	var over_continue := InputEventMouseMotion.new()
-	over_continue.position = pause._continue_button.catch_rect().get_center()
+	over_continue.position = pause._continue_button.get_global_rect().get_center()
 	pause._unhandled_input(over_continue)
 	t.check((pause._continue_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
 				== Palette.BUTTON_HOVER,
@@ -737,7 +781,7 @@ func _test_the_buttons_show_on_every_device(t) -> void:
 ## **The trap this milestone's own design names**: a touch anywhere already means *carry on*, so a
 ## press that lands on the restart button has to be caught before that catch-all or it would both
 ## start a hold and immediately close the screen underneath it. Driven through `_unhandled_input`
-## directly with events shaped at the restart button's own `catch_rect()` centre, the same way
+## directly with events shaped at the restart button's own `contains_design_point()` centre, the same way
 ## every other touch test in this file drives a real propagated-looking event rather than calling
 ## the hold logic by name.
 func _test_the_restart_button_is_a_hold(t) -> void:
@@ -759,7 +803,7 @@ func _test_the_restart_button_is_a_hold(t) -> void:
 	pause._restart_button.position = Vector2(500.0, 400.0)
 	pause._restart_button.size = Vector2(92.0, 108.0)
 
-	var at: Vector2 = pause._restart_button.catch_rect().get_center()
+	var at: Vector2 = pause._restart_button.get_global_rect().get_center()
 	pause._unhandled_input(_touch_at(at, true))
 	t.check(pause._restart_button.is_held_by(0), "landing on the restart button starts a hold")
 	t.check(resumed[0] == 0, "and does not also read as carrying on")
@@ -1116,7 +1160,7 @@ func _test_the_summary_restart_button_is_a_hold(t) -> void:
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 
-	var at: Vector2 = summary._restart_button.catch_rect().get_center()
+	var at: Vector2 = summary._restart_button.get_global_rect().get_center()
 	summary._unhandled_input(_touch_at(at, true))
 	t.check(summary._restart_button.is_held_by(0), "landing on the restart button starts a hold")
 	t.check(continued[0] == 0, "and does not also read as continuing")

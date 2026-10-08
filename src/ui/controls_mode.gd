@@ -1,16 +1,12 @@
 class_name ControlsMode
 extends RefCounted
-## Which of the two aiming origins `TouchControls` measures a press from — not two mechanisms any
-## more, since the drag stick and the destination-walking tap are both gone (see `docs/DECISIONS.md`
-## under M82). Both modes share everything else: one press sets a direction, held until the next
-## press changes it; a double press runs; a held pointer re-aims. They differ in **where** a press is
-## measured from, and `JOYSTICK` also draws run buttons:
+## The player's choice of aiming origin. Both modes lock a heading from a press, run on a double
+## press and re-aim while dragging.
 ##
-## - `JOYSTICK` aims from the nearer of `TouchControls.FOCUS_LEFT`/`FOCUS_RIGHT`, draws both focal
-##   circles and a run button beside each (a press that begins on one holds run until it lifts), and
-##   is stopped by a press on a focus or in the stop band down the middle of the screen.
-## - `TAP` aims from her own world position, draws nothing, and is stopped by a press within
-##   `TouchControls.STOP_RADIUS` of her.
+## - JOYSTICK aims from the nearer focus. Steering selects that ring and the other becomes Run.
+##   Run keeps its side after release; steering from the other half swaps them. A press beginning
+##   on Run holds it until release, while the active focus and middle band stop steering.
+## - TAP aims from her world position, stopping within TouchControls.TAP_STOP_RADIUS of her.
 ##
 ## **Neither is tied to a device.** *(2026-09-07, the player: "both modes for in both settings so
 ## let's let the player choose instead of forcing one ... independent of whether tap is available".)*

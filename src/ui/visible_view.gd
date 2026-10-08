@@ -6,12 +6,9 @@ extends RefCounted
 ## right up to the top of the joystick circle and horizontal extent of the speed button -- use that
 ## everywhere where visibility is concerned -- for the other mode those rectangles *do* count".)*
 ##
-## **The covered corners exist only in `ControlsMode.Mode.JOYSTICK`**, the scheme that draws the
-## two focal rings and their run buttons (`TouchControls._draw()`). Each bottom corner holds one ring
-## with its button inward of it, so each corner's rectangle runs from the screen's own side to the
-## far edge of its run button, and from the top of its ring (`TouchControls.STOP_RADIUS` above the
-## focus) to the bottom of the screen. In `TAP` nothing is drawn there and the whole view counts.
-##
+## The covered corners exist only in joystick mode. Each focus carries either a steering ring
+## or an equally sized Run disc, so swapping sides does not change the covered footprint.
+## Each rectangle runs from its screen edge to the disc's far edge, and from its top downward.
 ## The corners are worked out from `TouchControls`' own constants in the 1280x720 design box and
 ## scaled onto the view, so moving a ring or a button moves what it covers. The view is the world
 ## the camera shows, whose corners are the design box's own whether or not a portrait window
@@ -48,20 +45,17 @@ func look(at_view: Rect2, joystick_in_force: bool) -> void:
 func share_of(rect: Rect2) -> float:
 	return _share(rect, view, joystick, _left, _right)
 
-## The left covered corner, in the design box: from its side to the outer edge of the left run
-## button, from the top of the left ring down.
+## The left covered corner includes the painted ring or Run disc, never its invisible catch.
 static func covered_left() -> Rect2:
-	var top := TouchControls.FOCUS_LEFT.y - TouchControls.STOP_RADIUS
-	var right := TouchControls.RUN_CENTRE_LEFT.x + TouchControls.RUN_RADIUS
+	var top := TouchControls.FOCUS_LEFT.y - TouchControls.RUN_RADIUS
+	var right := TouchControls.FOCUS_LEFT.x + TouchControls.RUN_RADIUS
 	return Rect2(0.0, top, right, ScreenOrientation.DESIGN_SIZE.y - top)
 
-## The right covered corner, in the design box: the mirror of `covered_left()` about the right ring
-## and button.
+## The right covered corner mirrors the same disc footprint.
 static func covered_right() -> Rect2:
-	var top := TouchControls.FOCUS_RIGHT.y - TouchControls.STOP_RADIUS
-	var left := TouchControls.RUN_CENTRE_RIGHT.x - TouchControls.RUN_RADIUS
+	var top := TouchControls.FOCUS_RIGHT.y - TouchControls.RUN_RADIUS
+	var left := TouchControls.FOCUS_RIGHT.x - TouchControls.RUN_RADIUS
 	return Rect2(left, top, ScreenOrientation.DESIGN_SIZE.x - left, ScreenOrientation.DESIGN_SIZE.y - top)
-
 ## The share, 0 to 1, of `rect` (world space) the player can see in `view` (the world the camera
 ## shows), leaving out the covered corners when `joystick` is the scheme in force. 0 for a rectangle
 ## with no area. The two corners never overlap each other, so what they cover of `rect` is a plain

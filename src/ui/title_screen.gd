@@ -257,8 +257,8 @@ func _unhandled_input(event: InputEvent) -> void:
 ## `mouse_entered`/`mouse_exited` exactly as it silences a click — nothing native is left to ask.
 func _update_hover(position: Vector2) -> void:
 	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
-	_joystick_button.set_hovered(_joystick_button.catch_rect().has_point(at))
-	_tap_button.set_hovered(_tap_button.catch_rect().has_point(at))
+	_joystick_button.set_hovered(_joystick_button.contains_design_point(at))
+	_tap_button.set_hovered(_tap_button.contains_design_point(at))
 
 ## The four `move_*` actions — `WASD` and the arrows both, since each is bound to all four. Asked
 ## as a loop over the action list rather than four `or`ed `is_action_pressed()` calls, so a fifth
@@ -271,7 +271,7 @@ static func _is_a_walk_key(event: InputEvent) -> bool:
 			return true
 	return false
 
-## A press landing inside `_joystick_button.catch_rect()` or `_tap_button.catch_rect()` — read by
+## A press landing inside `_joystick_button.contains_design_point()` or `_tap_button.contains_design_point()` — read by
 ## raw touch or mouse position, the way `PauseScreen._handle_restart_touch()` and
 ## `DaySummary._handle_restart_touch()` already read theirs, rather than through `Button.pressed`:
 ## `ModeButton._ready()` sets `mouse_filter = MOUSE_FILTER_IGNORE` on every symbol, so Godot's GUI
@@ -302,11 +302,11 @@ func _handle_mode_button_press(event: InputEvent) -> bool:
 	if not pressed:
 		return false
 	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
-	if _joystick_button.catch_rect().has_point(at):
+	if _joystick_button.contains_design_point(at):
 		get_viewport().set_input_as_handled()
 		_acknowledge_and_begin(ControlsMode.Mode.JOYSTICK, _joystick_button)
 		return true
-	if _tap_button.catch_rect().has_point(at):
+	if _tap_button.contains_design_point(at):
 		get_viewport().set_input_as_handled()
 		_acknowledge_and_begin(ControlsMode.Mode.TAP, _tap_button)
 		return true
