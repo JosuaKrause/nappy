@@ -13,6 +13,12 @@ show through the opening, with the window frame in front. Use the actual matchin
 the full-resolution source artwork; a generic window or enlarged small runtime sprite does
 not fulfill the request. Keep the frames consistently aligned as they cycle.
 
+[Freckled-bunny](../../playtests/2026-10-08-freckled-bunny.md) approves the window direction
+and requests the remaining corrections: keep all text visible in front of the facade; make
+the room behind the glass dark; move her gently up and down using the animation frames;
+fade her and the baby in over one second. Lower them so the baby's bottom is roughly one
+brick-height above the sill. Deliver the full trailer with all changes for the next review.
+
 **Proposed, not asked for:** offer one developed intro-slide composition and three original
 minimalist score options against the same movie, with an easy way to compare their military
 passages. Keep the
