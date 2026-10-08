@@ -1,4 +1,38 @@
-# spotted-osprey — Pelican diagonal comparison
+# spotted-osprey — Pelican depth and diagonal comparisons
+
+## Current source candidate
+
+`candidate-2-1x.png` and `candidate-2-6x.png` show only the current candidate. Every cell is
+labeled: northeast, southeast and east, each in A/B pedal phases; the second row contains
+their northwest, southwest and west mirrors. The native sheet preserves each source pixel;
+the enlarged sheet rasterizes at 6×. Side-view feet and diagonal feet share the same baseline.
+
+The far leg is behind the red bicycle tubes and the near leg is in front in all six sources.
+Both northeast wing roots are covered by the torso; only their forward reaches toward the
+handlebars emerge from its front silhouette. This is the concrete visual proposal answering
+plaid-kestrel, not approval of the anatomy. The southeast second eye is preserved.
+
+The sources, `current.gd`, `label-current.py` and these two images are committed together.
+The renderer uses Godot 4.7.2's SVG parser; Pillow adds cell labels without resampling art.
+Reproduce from the commit that adds the candidate-2 images, reachable through
+`git fetch origin refs/pull/605/head`, with `$GODOT` naming the engine:
+
+```sh
+pelican_current=$(mktemp -d)
+mkdir -p "$pelican_current/project" "$pelican_current/render"
+printf 'config_version=5\n' > "$pelican_current/project/project.godot"
+"$GODOT" --headless --path "$pelican_current/project" --script \
+    "$PWD/docs/evidence/pelican-diagonals-2026-10-07/current.gd" -- \
+    "$PWD/art/events" "$pelican_current/render"
+uv run python docs/evidence/pelican-diagonals-2026-10-07/label-current.py \
+    "$pelican_current/render" "$pelican_current"
+```
+
+## First-attempt evidence
+
+The comparisons and runtime burst below document the first attempt's source revision, not
+the current candidate. Its visual review is in the spotted-osprey decision record and
+plaid-kestrel playtest. Keep these earlier images as plain links when presenting the candidate.
 
 The source sheets compare northeast and southeast anatomy in both pedal phases. Each column
 is, from left to right: northeast A, northeast B, southeast A, southeast B. The top row is the
@@ -8,8 +42,8 @@ sources at six times native size. The gray background is a neutral sheet, not ga
 
 These are source previews made with Godot 4.7.2's SVG parser, not runtime captures or approval.
 The unchanged bicycle, canvas and bottom-center (20,44) anchor provide registration between
-frames. The near wing follows the northeast body's side and the far wing is hidden by its
-back. The southeast far eye is smaller, above the bill root. Knees point forward in both phases;
+frames. In this source revision, the near wing follows the northeast body's side and the far
+wing is hidden by its back. The southeast far eye is smaller, above the bill root. Knees point forward in both phases;
 the far shins use the side-view family's darker orange to separate the legs.
 
 The baseline is commit `420dcd96671432422f5cc6d80e220c1826ca1d70`. The repaired art is
@@ -31,7 +65,7 @@ done
     "$pelican_out/baseline" "$PWD/art/events" "$pelican_out/render"
 ```
 
-## Runtime burst
+## First-attempt runtime burst
 
 `runtime.mp4` is a timing-preserving clip of 36 frames over 2.923 seconds, collected through
 Godot 4.7.2's desktop Compatibility renderer on Apple M2. `runtime-burst.json` retains the

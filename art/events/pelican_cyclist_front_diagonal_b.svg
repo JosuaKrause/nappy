@@ -8,14 +8,15 @@
      Canvas 40x44, the cyclist's own for this view; bottom-centre ground anchor (20,44). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="44" viewBox="0 0 40 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <ellipse cx="8" cy="29" rx="4.5" ry="6" fill="none" stroke="#221f28" stroke-width="1.6"/><ellipse cx="29" cy="37" rx="4.5" ry="6" fill="none" stroke="#221f28" stroke-width="1.6"/>
+  <!-- The far leg is behind the bicycle tubes; the near leg is in front. -->
+  <path d="M20.4 24.2 L25.6 29.4 L23.2 34" fill="none" stroke="#3b2d32" stroke-width="2"/>
+  <path d="M20.4 24.2 L25.6 29.4 L23.2 34" fill="none" stroke="#b8683a" stroke-width="1.1"/>
+  <path d="M22.4 33.3 L25.8 34.2 L25.6 35.5 L24.2 35.7 L22.4 34.7 Z" fill="#e0843a" stroke-width="0.6"/>
   <path d="M8 29 L15 24 L20 33 L8 29 M15 24 L28 28 L20 33 L29 37 L28 24" fill="none" stroke="#c4503c" stroke-width="1.8"/>
   <!-- Each leg bends forward from its hip, with the ankle resting on its pedal. -->
   <path d="M16.2 24.6 L21.6 27 L19 31.4" fill="none" stroke="#3b2d32" stroke-width="2"/>
   <path d="M16.2 24.6 L21.6 27 L19 31.4" fill="none" stroke="#e0843a" stroke-width="1.1"/>
   <path d="M18.2 30.7 L21.6 31.6 L21.4 32.9 L20.0 33.1 L18.2 32.1 Z" fill="#e0843a" stroke-width="0.6"/>
-  <path d="M20.4 24.2 L25.6 29.4 L23.2 34" fill="none" stroke="#3b2d32" stroke-width="2"/>
-  <path d="M20.4 24.2 L25.6 29.4 L23.2 34" fill="none" stroke="#b8683a" stroke-width="1.1"/>
-  <path d="M22.4 33.3 L25.8 34.2 L25.6 35.5 L24.2 35.7 L22.4 34.7 Z" fill="#e0843a" stroke-width="0.6"/>
   <path d="M22 14.4 C25.6 15.8 28.6 19.4 30.4 23 L27.6 24.2 C26.2 21.4 24 18.6 21.4 16.8 Z" fill="#ddd5c6"/>
   <path d="M13.6 17 L9.8 15.6 L9.4 17.8 L12.8 19.8 Z" fill="#ebe5d8"/>
   <clipPath id="pelican-body"><path d="M12.2 21.4 C11.6 15.8 15.2 11.8 20 11.8 C24.2 11.8 26.4 15.2 25.8 19.4 C25.2 23.6 21.8 26.6 17.4 26.4 C14.4 26.2 12.6 24.2 12.2 21.4 Z"/></clipPath>
