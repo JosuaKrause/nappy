@@ -857,8 +857,16 @@ audition_source_signature() {
 
 volume_stat() {
     local file="$1" key="$2" filter="${3:-volumedetect}"
-    ffmpeg -hide_banner -nostats -i "$file" -af "$filter" -f null - 2>&1 |
+    ffmpeg -hide_banner -nostats -i "$file" -map 0:a:0 -af "$filter" -f null - 2>&1 |
         sed -n "s/.*${key}: *\([^ ]*\).*/\1/p" | tail -1
+}
+
+require_finite_level() {
+    local label="$1" value="$2"
+    if ! [[ "$value" =~ ^-?[0-9]+([.][0-9]+)?$ ]]; then
+        echo "trailer.sh: could not measure a finite $label level (got '${value:-no value}')" >&2
+        return 1
+    fi
 }
 
 build_score_once() {
@@ -908,6 +916,10 @@ build_auditions() {
             "$OUT_DIR/${id}.mp4"
         mix_mean="$(volume_stat "$OUT_DIR/${id}.mp4" mean_volume)"
         mix_peak="$(volume_stat "$OUT_DIR/${id}.mp4" max_volume)"
+        require_finite_level "$id score mean" "$score_mean" || return 1
+        require_finite_level "$id score peak" "$score_peak" || return 1
+        require_finite_level "$id mix mean" "$mix_mean" || return 1
+        require_finite_level "$id mix peak" "$mix_peak" || return 1
         jq -nc --arg id "$id" --arg label "$label" --arg description "$description" \
             --arg file "${id}.mp4" --arg score_file "source/${id}-score.wav" \
             --arg score_sha256 "$(shasum -a 256 < "$score" | awk '{print $1}')" \
