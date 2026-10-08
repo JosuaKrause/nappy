@@ -21,7 +21,7 @@
     {"label": "army chase fades in", "shot": "chase", "offset": 0.0, "duration": 1.6, "frequency": 61.74, "gain": 0.74, "texture": "weight"}
   ],
   "ending_events": [
-    {"label": "Glass Alarm closing dyad low voice", "shot": "city", "offset": 6.9, "duration": 1.75, "frequency": 493.88, "gain": 0.34, "texture": "glass"},
-    {"label": "Glass Alarm closing dyad high voice", "shot": "city", "offset": 6.9, "duration": 1.75, "frequency": 523.25, "gain": 0.30, "texture": "glass"}
+    {"label": "Glass Alarm closing dyad low voice", "shot": "city", "offset": 6.9, "duration": 1.8, "frequency": 493.88, "gain": 0.34, "texture": "glass-tail"},
+    {"label": "Glass Alarm closing dyad high voice", "shot": "city", "offset": 6.9, "duration": 1.8, "frequency": 523.25, "gain": 0.30, "texture": "glass-tail"}
   ]
 }

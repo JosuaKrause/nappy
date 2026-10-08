@@ -313,7 +313,7 @@ if [[ "$MODE" == selected-reuse || "$MODE" == selected-remix ]]; then
             all([.label,.shot][]; type == "string" and length > 0) and
             (.offset | num) and .offset >= 0 and (.duration | num) and .duration > 0 and
             (.frequency | num) and .frequency > 0 and (.gain | num) and .gain > 0 and .gain <= 1 and
-            .texture == "glass") then empty else "ending events are malformed" end)
+            .texture == "glass-tail") then empty else "ending events are malformed" end)
     ' "$FINAL_SCORE_FILE" 2>&1)" || {
         echo "trailer.sh: ${FINAL_SCORE_FILE#"$PROJECT_DIR"/} is not valid JSON" >&2; exit 1;
     }

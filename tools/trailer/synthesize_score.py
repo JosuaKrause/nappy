@@ -41,6 +41,12 @@ def oscillator(texture: str, phase: float, local_time: float, absolute_time: flo
         return (math.sin(phase) + 0.22 * math.sin(2.0 * phase)) * envelope
     if texture == "glass":
         return (math.sin(phase) + 0.32 * math.sin(2.01 * phase) + 0.12 * math.sin(4.07 * phase)) * envelope
+    if texture == "glass-tail":
+        attack = min(1.0, local_time / 0.12)
+        release = min(1.0, max(0.0, duration - local_time) / 0.18)
+        held_envelope = attack * attack * (3.0 - 2.0 * attack)
+        held_envelope *= release * release * (3.0 - 2.0 * release)
+        return (math.sin(phase) + 0.32 * math.sin(2.01 * phase) + 0.12 * math.sin(4.07 * phase)) * held_envelope
     if texture == "pulse":
         return (math.sin(phase) + 0.18 * math.sin(3.0 * phase)) * envelope
     if texture == "drone":
