@@ -12,9 +12,10 @@ frames. The near wing follows the northeast body's side and the far wing is hidd
 back. The southeast far eye is smaller, above the bill root. Knees point forward in both phases;
 the far shins use the side-view family's darker orange to separate the legs.
 
-The baseline is commit `420dcd96`. Current sources and collector are in the same commit as
-these images; inspect that commit with `git log --diff-filter=A -- comparison-6x.png` from this
-folder. Both source revisions are reachable through this pull request's durable head ref.
+The baseline is commit `420dcd96671432422f5cc6d80e220c1826ca1d70`. The repaired art is
+`734a41c06dbcf8b6cd950f9225e177138cae4f5b`, which also contains these sheets and their renderer.
+Fetch the durable ref with `git fetch origin refs/pull/605/head` before checking out either
+revision in a fresh clone. For the runtime collector as well, check out the fetched PR head.
 
 To rerender from the repository root with the repair checked out, use a fresh scratch folder:
 
@@ -30,5 +31,41 @@ done
     "$pelican_out/baseline" "$PWD/art/events" "$pelican_out/render"
 ```
 
-Retained: two sheets and the source renderer. Individual duplicate rasters and routine check
-logs stay in job scratch. Runtime evidence is separate from what these source sheets establish.
+## Runtime burst
+
+`runtime.mp4` is a timing-preserving clip of 36 frames over 2.923 seconds, collected through
+Godot 4.7.2's desktop Compatibility renderer on Apple M2. `runtime-burst.json` retains the
+original frame times and pedal phases; `runtime-still.png` is its first frame. Columns are
+northeast, southeast, northwest, southwest. Both pedal phases occur for every rider.
+
+This is a controlled fixture of real `EventInstance` nodes following four diagonal routes,
+using their production movement, gait selection, SVG atlas textures, painter order and draw
+path. The 2× parent scale equals the normal camera zoom. Each carrier follows its rider to
+keep it visible; the gray background has no city, player, collisions, spawns or cost model.
+It establishes runtime view selection and frame transitions, not natural route frequency or
+gameplay fairness. No seed applies to the fixed routes. `--no-save --invincible` are present.
+
+Art/runtime source revision: `734a41c06dbcf8b6cd950f9225e177138cae4f5b`. The collector is the
+checked-in `runtime.gd`, SHA-256
+`3cece3537d06cf2eaadfbe9e55b3740ac0de676d4e2e36a613be16bc433d38a6`, alongside `runtime.tscn`.
+The capture runs with only these two evidence files uncommitted; production code and art match
+that revision. The first launch adds `--quit-after 900` and exits before the two-second warmup:
+that engine flag counts frames. The retained run uses the collector's 12-second wall-clock
+deadline and completes without engine errors. A source-render launch without filesystem
+permission reports blocked Godot log writes; the permission-enabled rerun completes cleanly.
+
+Rerun from a checkout of the fetched PR head, with `$GODOT` naming the engine:
+
+```sh
+./tools/check.sh
+pelican_run=$(mktemp -d)
+PELICAN_CAPTURE_OUTPUT="$pelican_run" "$GODOT" --path "$PWD" --resolution 640x240 \
+    --disable-vsync res://docs/evidence/pelican-diagonals-2026-10-07/runtime.tscn -- \
+    --no-save --invincible
+./tools/clip.sh "$pelican_run" "$pelican_run/runtime.mp4"
+```
+
+Retained: two source sheets, their renderer, the runtime collector and scene, a short clip,
+one still and the burst timing/phase record. Individual duplicate rasters, the other raw burst
+frames and routine check logs stay out. The clip and original timing/phase record carry the
+motion claim, and the still provides a directly embeddable runtime-scale view.
