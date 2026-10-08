@@ -401,8 +401,9 @@ func _maybe_the_column(her: Vector2) -> void:
 	var near := absf(her.x - _spine_x()) <= Tuning.COLUMN_WITHIN
 	if not (near and _walked >= EventDirector.ON_HER_WAY_AFTER) and _elapsed < Tuning.COLUMN_BY:
 		return
-	_column_owed = false
-	send_the_column(her)
+	# Still owed when the lane has no place off screen for it yet (she is at the road's very end):
+	# asked again as she moves.
+	_column_owed = send_the_column(her) == null
 
 ## The main road's middle, across it.
 func _spine_x() -> float:
@@ -445,8 +446,9 @@ func send_the_column(her: Vector2) -> PendingWarning:
 		_bring_the_column(def, place, at, lane_x, going, top, bottom)
 		return true
 	var warning := _city.events.warn_first(def, her, where, arrive)
-	Telemetry.note("contact", "a column of %d trucks is coming down the main road %s" % [
-		Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north"])
+	if warning:
+		Telemetry.note("contact", "a column of %d trucks is coming down the main road %s" % [
+			Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north"])
 	return warning
 
 ## Creates the column's trucks, front first, the front one at `place` and the rest behind it up the

@@ -2392,10 +2392,10 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 ## - **standing where she did it**, she is caught;
 ## - **walking into him**, she is caught, and turning to run `Tuning.PURSUIT_REACTION` after his badge
 ##   rises gets her away;
-## - **walking away** is measured and printed, not asserted: his `Tuning.PURSUIT_TIME` chase at the
-##   38px/s walking leaves him is not long enough to close the distance from just off screen, and the
-##   player asked for the answer, not a tuning to force one;
-## - **running** the moment he appears ends it.
+## - **walking away** is caught from every start, beside her included — no pursuer gives up on a
+##   walker (amendment 8: `Tuning.PURSUIT_TIME` is a long cap), so walking has to lose;
+## - **running** ends it, once he has been in her sight for `Tuning.PURSUIT_MIN_NOTICE`
+##   (`EventInstance.notice_age()`), never before she has seen him.
 ##
 ## The tall-osprey floor (standing still, a robber lunges no sooner than `Tuning.PURSUIT_MIN_NOTICE`
 ## after he appears) is a standing robber's, a mark's guard waiting in his alley, whom this build does
@@ -2441,9 +2441,9 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 				"from %v: walking into him and turning to run %.1fs after the badge gets away"
 				% [start, Tuning.PURSUIT_REACTION])
 		var away := _walk_the_trap(def, start, -Tuning.WALK_SPEED)
-		print("      %s from %v (%.0fpx): walking straight away %s" % [id, start, start.length(),
-				"is caught at %.2fs" % away["caught_at"] if away["caught_at"] < INF
-				else "outlasts his chase"])
+		t.check(away["caught_at"] < INF,
+				"from %v (%.0fpx): walking straight away is caught (%.2fs)"
+				% [start, start.length(), away["caught_at"]])
 		var ran := _walk_the_trap(def, start, -Tuning.RUN_SPEED)
 		t.check(ran["caught_at"] == INF and ran["gave_up"],
 				"from %v: running from him ends it" % start)
@@ -2474,6 +2474,9 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 		her += bearing * velocity * STEP
 		robber.player_at = her
 		robber.player_running = absf(velocity) > Tuning.WALK_SPEED
+		var box := robber.drawn_box()
+		robber.in_sight = VisibleView.around(her).sees_any(
+				Rect2(robber.global_position + box.position, box.size))
 		robber._process(STEP)
 		elapsed += STEP
 		var offset := robber.global_position - her

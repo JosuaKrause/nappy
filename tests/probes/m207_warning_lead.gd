@@ -190,6 +190,10 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 			continue
 		instance.player_at = her
 		instance.player_running = answer == Answer.RUN
+		# What `EventManager._tell_them_where_she_is()` tells a pursuer that arrives chasing.
+		var seen_box := instance.drawn_box()
+		instance.in_sight = VisibleView.around(her).sees_any(
+				Rect2(instance.global_position + seen_box.position, seen_box.size))
 		instance._process(STEP)
 		var at := instance.global_position
 		var in_view := _in_view(at - her, 0.0)

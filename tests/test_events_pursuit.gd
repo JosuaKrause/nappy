@@ -652,11 +652,8 @@ func _test_the_resistances_pursuers_are_fitted_to_the_dog(t) -> void:
 						"'%s': its badge is alone for the dog's half second" % id, 2.0 * STEP)
 				t.check(met["chase_at"] <= met["created_at"] + 2.0 * STEP,
 						"'%s', answer %d: chasing from the frame he exists" % [id, answer])
-				if answer == M207Lead.Answer.AWAY:
-					print("      %s from above, walking straight away: %s" % [id, met["ends"]])
-				else:
-					t.check(met["caught"], "'%s' from above, answer %d: caught (%s)"
-							% [id, answer, met["ends"]])
+				t.check(met["caught"], "'%s' from above, answer %d: caught (%s)"
+						% [id, answer, met["ends"]])
 	edge.free()
 
 ## **Nothing comes at her from off screen unwarned.** *(PLAYTEST-145: "all offscreen events should

@@ -178,7 +178,7 @@ func _test_catalogue_is_fair(t) -> void:
 	for def in defs:
 		t.check(def.id != "", "every event has an id")
 		t.check(def.validate(), "event '%s' gives the player time to walk clear" % def.id)
-		if def.kind != GameEnums.EventKind.AMBIENT and def.telegraphs:
+		if def.kind != GameEnums.EventKind.AMBIENT and (def.telegraphs or not def.comes_down_her_line()):
 			t.check(def.warning_time() + 0.001 >= def.minimum_telegraph(),
 					"event '%s' warns %.2fs before it can reach her >= minimum %.2fs"
 					% [def.id, def.warning_time(), def.minimum_telegraph()])
@@ -249,7 +249,13 @@ func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
 		t.check(not def.telegraphs and not def.warns_before_it_exists()
 				and not edge._is_worth_an_arrow_for(def),
 				"'%s' does not telegraph: no warning first and no screen-edge badge" % id)
-		t.check(def.validate(), "and '%s' is outside the telegraph contract rather than failing it" % id)
+		t.check(def.validate(), "and '%s' gives what the contract still asks of it" % id)
+	# The rows that stand until she walks in keep the contract for their in-world telegraph.
+	for id: String in ["cat_dash", "alley_mouse", "pigeon_flock", "police_patrol"]:
+		var row := EventCatalogue.by_id(id)
+		t.check(not row.telegraphs and row.warning_time() + 0.001 >= row.minimum_telegraph(),
+				"'%s' does not telegraph its coming, and its in-world telegraph (%.2fs) still clears "
+				% [id, row.warning_time()] + "the contract's %.2fs" % row.minimum_telegraph())
 	t.check(EventCatalogue.by_id("loose_dog").comes_down_her_line(),
 			"the loose dog still comes down her own sidewalk, created at once just out of sight")
 	var truck := EventCatalogue.by_id("fire_truck")

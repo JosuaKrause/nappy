@@ -2051,7 +2051,8 @@ static func _robber_giving_chase() -> EventDef:
 	# The day-3 dog's own timing, read off its row: its badge alone, its approach and its chase.
 	var dog := _charging_dog()
 	def.offscreen_notice = dog.offscreen_notice
-	def.telegraph_time = dog.telegraph_time
+	# No telegraph: he arrives already chasing (`arrives_chasing`).
+	def.telegraph_time = 0.0
 	def.duration = dog.duration
 	def.warned_first = true
 	def.arrives_chasing = true
@@ -2103,7 +2104,8 @@ static func _van_guard_giving_chase() -> EventDef:
 	# The day-3 dog's own timing, read off its row, as the robber's is.
 	var dog := _charging_dog()
 	def.offscreen_notice = dog.offscreen_notice
-	def.telegraph_time = dog.telegraph_time
+	# No telegraph: he arrives already chasing (`arrives_chasing`).
+	def.telegraph_time = 0.0
 	def.duration = dog.duration
 	def.warned_first = true
 	def.arrives_chasing = true

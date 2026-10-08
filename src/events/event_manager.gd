@@ -1692,6 +1692,10 @@ func _tell_them_where_she_is() -> void:
 		instance.player_at = _player.global_position
 		instance.player_running = running
 		instance.baby_awake = awake
+		if instance.def.arrives_chasing:
+			var box := instance.drawn_box()
+			instance.in_sight = _visible.sees(instance.global_position) or (box.has_area()
+					and _visible.sees_any(Rect2(instance.global_position + box.position, box.size)))
 		instance.outranked_by_a_stronger_barrier = \
 				instance.def.barrier_structure and instance != strongest
 

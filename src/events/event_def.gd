@@ -437,9 +437,10 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## badge alone to `Tuning.WARNING_ALONE_MAX`.
 @export var warned_first := false
 
-## Whether a pursuer warned of before it exists is created already chasing her — its telegraph spent
-## the moment it exists, with no closing-in to a stand-off — rather than spending its telegraph
-## visibly closing on her. *(Amendment 7 of M226, the player: "why would the robber walk towards her
+## Whether a pursuer warned of before it exists is created already chasing her — with no telegraph
+## (`telegraph_time` 0) and no closing-in to a stand-off — rather than spending its telegraph
+## visibly closing on her. Its notice is its badge alone, then `Tuning.PURSUIT_MIN_NOTICE` of being in
+## her sight before a run may shake it off (`EventInstance.notice_age()`). *(Amendment 7 of M226, the player: "why would the robber walk towards her
 ## when it spawns as pursuing robber? the proximity rule is only for standing robbers.")* The
 ## resistance's sent `robber_giving_chase` and `van_guard_giving_chase`: their warning is the badge
 ## alone (`warned_for()`), and from their first frame they chase. The day-3 dog does not: its
@@ -450,14 +451,14 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## *and* are dangerous" · "go fast and towards the player" · "loose dog, cat don't need
 ## telegraphing"; inbox #598: "the telegraphing rule was about heavy penalty not *only* lethal".)* A
 ## thing telegraphs only if it goes fast, comes toward her, and carries a heavy penalty — it can end
-## the day or hit her hard. **One that does not is outside the screen-edge badge, warning-first
-## placement and the telegraph fairness contract, rather than exempted from them**: nothing announces
-## it before she can see it, and it is met as it comes. False on the movers the rule leaves out:
-## `loose_dog` and `cat_dash` (the player's own), `alley_mouse` (across its alley, not at her),
-## `pigeon_flock` (goes up where she walks in) and `police_patrol` (slower than a walk, never ends the
-## day). **A row that stands still keeps it**: it does not come, so there is no coming to telegraph,
-## and what it owes is its in-world telegraph before it is at full strength — a lorry backing in, a
-## firefight, a raid — which the contract keeps holding.
+## the day or hit her hard. **One that does not is outside the screen-edge badge and warning-first
+## placement, rather than exempted from them**: nothing announces its coming before she can see it,
+## and it is met as it comes. False on `loose_dog` and `cat_dash` (the player's own), `alley_mouse`
+## (across its alley, not at her), `pigeon_flock` (goes up where she walks in) and `police_patrol`
+## (slower than a walk, never ends the day). **The telegraph contract still holds its in-world
+## telegraph** — the cat's crouch, the mouse's and the flock's wait, the patrol's approach — as it
+## holds a standing row's (a lorry backing in, a firefight, a raid). Only the loose dog, met with its
+## telegraph already spent, has none for the contract to hold (`validate()`).
 @export var telegraphs := true
 
 ## Moves along a path at `speed` px/s. The scheduler builds the path.
@@ -1309,8 +1310,15 @@ func validate() -> bool:
 		push_error("Unfair pursuit '%s': its lunge is measured from %.0fpx, inside its own %.0fpx catch"
 				% [id, lunge_reach, lethal_reach()])
 		return false
+	# The notice a pursuer shows: its telegraph, the approach she watches — or, for one that arrives
+	# already chasing, the `Tuning.PURSUIT_MIN_NOTICE` of being in her sight before a run may shake
+	# it off (`EventInstance.notice_age()`), after a badge alone; it has no telegraph to show.
+	if arrives_chasing and not (pursues and warns_before_it_exists() and warned_for() > 0.0):
+		push_error("event '%s' arrives chasing but is not a pursuer warned of first" % id)
+		return false
+	var notice := Tuning.PURSUIT_MIN_NOTICE if arrives_chasing else telegraph_time
 	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, lethal_reach(),
-			telegraph_time, pursues_within, outer_radius, standoff_reach()):
+			notice, pursues_within, outer_radius, standoff_reach()):
 		return false
 	# The day-switched trigger is a second shape of the same contract and nothing else exercises
 	# it: `EventCatalogue.all()` validates every *heat* shape of every row, but the day axis is
@@ -1325,9 +1333,12 @@ func validate() -> bool:
 		# rule says nothing about it and `validate_pursuit` is the contract instead. What its
 		# telegraph has to buy is the moment of *noticing*, which is checked there.
 		return true
-	# A thing that does not telegraph its coming is outside the telegraph contract rather than an
-	# exemption from it: the contract is about things that need telegraphing (`telegraphs`).
-	if not telegraphs:
+	# A thing that does not telegraph its coming loses only the coming's telegraph — the badge and
+	# warning first. Its in-world telegraph, where it has one, is still held by the contract: a flock
+	# or a mouse standing until she walks in owes it like the lorry does. The one row with none is
+	# the loose dog, sent down her line and met with its telegraph already spent
+	# (`EventManager._send_down_her_line()`), which has no in-world telegraph to hold.
+	if not telegraphs and comes_down_her_line():
 		return true
 	if warns_before_it_exists():
 		return Tuning.validate_warning(id, warning_time(), minimum_telegraph())

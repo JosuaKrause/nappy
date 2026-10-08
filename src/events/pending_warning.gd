@@ -250,11 +250,17 @@ const ROUTE_STEP := Tuning.TILE_SIZE * 0.25
 ## Where a column in one lane of a road running north-south at `lane_x`, driving `going` (+1 south,
 ## -1 north), is created: level with her along the road, just out of sight up it — the lane's own
 ## column of the view, whatever street she is on. Held on the map (`top` to `bottom`), since the main
-## road leaves the map by a tunnel and a bridge and a place the map cannot hold starts at its edge.
+## road leaves the map by a tunnel and a bridge and a place the map cannot hold starts at its edge —
+## and where holding it there would bring the front truck into view, `Vector2.INF`: she is too near
+## the road's end for it to come from there unseen, so the warning has no place (or is withdrawn)
+## rather than a truck appearing on screen.
 static func in_its_lane(row: EventDef, her: Vector2, lane_x: float, going: float, top: float,
 		bottom: float, in_view: VisibleView = null) -> Vector2:
 	var view := seen_from(in_view, her)
 	var toward_her := Vector2(0.0, -going)
 	var level := Vector2(lane_x, her.y)
 	var out := view.clear_of_sight(level, toward_her, EventInstance.footprint_of(row), least_distance())
-	return Vector2(lane_x, clampf(her.y + toward_her.y * out, top, bottom))
+	var at := Vector2(lane_x, clampf(her.y + toward_her.y * out, top, bottom))
+	if at.y != her.y + toward_her.y * out and not is_out_of_sight(view, row, her, at):
+		return Vector2.INF
+	return at
