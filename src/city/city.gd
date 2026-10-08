@@ -64,9 +64,9 @@ const HOME_BUILDING_WALL_ROWS := 4
 ## constant only has to be something that cap can act on.
 const HOME_FLANKING_WALL_ROWS := 2
 const BOUNDARY_THICKNESS := 64.0
-## How deep the framed border band outside the finite map is, in tiles, which is also how far the
-## southern bridge carries its road over the water. The unwalkable landscape beneath and beyond
-## that band is streamed to whichever view asks for it, the player's camera included.
+## How deep the framed border band outside the finite map is, in tiles. The southern bridge's
+## road and the unwalkable landscape beneath and beyond that band are drawn wherever the view
+## asks for them, the player's camera included.
 const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
 
 ## The layer for the one thing drawn *over* the entities: the dark inside the tunnel, which has to
