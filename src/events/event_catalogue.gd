@@ -2008,8 +2008,7 @@ static func _alley_robbery() -> EventDef:
 ## resistance's own pursuers come off the "not warned first" exception, the player's "A, remove the
 ## exemption")*. **And he arrives already chasing** (`arrives_chasing`) *(amendment 7 of M226, the
 ## player: "why would the robber walk towards her when it spawns as pursuing robber? the proximity
-## rule is only for standing robbers")*: no closing-in to a stand-off, his telegraph spent the moment
-## he exists.
+## rule is only for standing robbers")*: no closing-in to a stand-off and no telegraph to spend.
 ##
 ## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
 ## (16 over 26–200px), his 130px/s, his 26px catch and the 116px lunge (`lunge_reach`), his
@@ -2017,8 +2016,8 @@ static func _alley_robbery() -> EventDef:
 ## request — **no trigger** (`pursues_within` 0), so he is never `is_waiting()` — and his timing:
 ## the day-3 dog's badge and chase, read off `_charging_dog()`. His chase does not give up on a walker
 ## (`Tuning.PURSUIT_TIME`, a long cap; amendment 8: "pursuers should never (or a long time) stop
-## pursuing if she walks"); running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) ends him as it ends every
-## chase.
+## pursuing if she walks"); running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) shakes him off only after
+## `Tuning.PURSUIT_MIN_NOTICE` has passed since first entering her visible area.
 ##
 ## What that leaves her, from just off screen above her (`tests/probes/m207_warning_lead.gd`'s gold
 ## timing, counted from the badge): standing still he catches her at about 1.8s, walking into him at

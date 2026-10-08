@@ -386,6 +386,7 @@ func start_recipe(plans: Array[EventScheduler.Planned], day: int, focus: Vector2
 func clear() -> void:
 	_pursuer_owed = null
 	_pursuer_retry_in = 0.0
+	_pursuer_failure_logged = false
 	for instance in _instances:
 		instance.queue_free()
 	_instances.clear()
@@ -1495,19 +1496,23 @@ func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void
 		return true
 	var warning := warn_first(def, her, where, arrive)
 	if warning:
+		_pursuer_failure_logged = false
 		warning.on_withdrawn = func() -> void: _owe_pursuer_again(def)
 		return
 	# Nowhere off screen to stand down her heading: the lesson is not lost, it is owed again on
 	# the next placement retry (`_place_what_is_owed_ahead()`).
 	_owe_pursuer_again(def)
-	Telemetry.note("ahead", "%s has nowhere off screen to stand down her heading at %s; owed again"
-			% [def.id, TelemetryLog.tile(_map.world_to_tile(her))])
+	if not _pursuer_failure_logged:
+		_pursuer_failure_logged = true
+		Telemetry.note("ahead", "%s has nowhere off screen to stand down her heading at %s; owed again"
+				% [def.id, TelemetryLog.tile(_map.world_to_tile(her))])
 
 ## A pursuer the director sent that found nowhere off screen to stand, or whose warning was
 ## withdrawn: tried again down her current heading after a second of walking, the director's own
 ## cadence for a failed placement. Null when none is owed; keeps the day-3 lesson from being lost.
 var _pursuer_owed: EventDef = null
 var _pursuer_retry_in := 0.0
+var _pursuer_failure_logged := false
 
 func _owe_pursuer_again(def: EventDef) -> void:
 	_pursuer_owed = def

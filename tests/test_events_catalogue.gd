@@ -240,8 +240,8 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
 ## don't need telegraphing"; inbox #598: "the telegraphing rule was about heavy penalty not *only*
 ## lethal" · "fire truck has heavy penalty".)* A thing telegraphs only if it goes fast, comes toward
 ## her and carries a heavy penalty — it can end the day or hit her hard. Neither of these two does:
-## no screen-edge badge, no warning first, and outside the telegraph contract rather than exempted
-## from it, while the fire engine, which can hit her hard, keeps its badge and its warning first.
+## no screen-edge badge and no warning first; the cat still owes its in-world crouch, while the
+## fire engine, which can hit her hard, keeps its badge and its warning first.
 func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
 	var edge := DangerEdge.new()
 	for id: String in ["loose_dog", "cat_dash"]:
