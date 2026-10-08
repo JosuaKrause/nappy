@@ -1,5 +1,4 @@
 priority: now
-after: 2026-10-04-spry-llama
 after: 2026-09-26-M226
 
 # dappled-swan — What she can see leaves out the touch-control corners, everywhere · filed 2026-10-05
@@ -31,14 +30,14 @@ events):
   player's "speed button"). In the tap mode those corners count, so it is the whole view.
 - It follows the input mode the player is in.
 
-**What exists.** PR #578 (spry-llama) builds the area as one function,
+**What exists.** The area is one function,
 `VisibleView.visible_share()` in `src/ui/visible_view.gd`: the share of a world rect inside the
-view, less, in the joystick mode, two rects each running from the screen's side to the far edge of
-that corner's run button and from the top of its joystick ring down, worked out from
-`TouchControls`' own constants, since both bottom corners carry a ring and a run button; in the tap
-mode the whole view. It is used for the counter's seen test and for the pelican's `pelican-seen`,
-which PR #578 also moves onto it, and this entry waits on it (`after: 2026-10-04-spry-llama`). The rest of the game asks one of two other tests, neither of
-which knows the corners:
+view, less, in the joystick mode, two rects each running from the screen's side to the far edge
+of its focal disc and from that disc's top down, worked out from `TouchControls`' own constants.
+Each focus shows either its joystick or the same-size Run disc, as
+[round-gecko](../../decisions/2026-10-07-round-gecko.md) records. In tap mode the whole view counts.
+The counter's seen test and the pelican's `pelican-seen` use this area. The rest of the game asks
+one of two other tests, neither of which knows the corners:
 
 - `DangerEdge.is_on_screen(world_position, margin)`, a point against the screen rect in design
   space, rotation-aware, optionally grown by a margin in screen pixels;
