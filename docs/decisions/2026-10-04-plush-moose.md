@@ -45,3 +45,30 @@ build on a shared machine):
 
 Not verified: a picture of day 11 with several masts (a scene cannot yet author a mast the day
 counts); the day-11 test covers several masts answering.
+
+## Completion review fixes and evidence · 2026-10-08
+
+The day-11 regression leaves both the contact and the arrow at the near mast, places her
+beside a third eligible live mast, and drives the ordinary process/contact callbacks. It
+checks that following her between masts moves the task to the one she touches, completes
+the task and silences and scars that mast. Day 13's protest cue reads the same destination
+as the red arrow, so both point at the selected roadblock. The accessor remains read-only.
+The day-11, palette, narrative, probe and human-review wording now describes those rules;
+the task-6 and task-13 scene table claims only that the target is arrowed at its assertion,
+without claiming that the first closest-path sweep has finished then. Debug output is removed.
+
+The [new day-6 evidence](../evidence/plush-moose-path-vs-crow-2026-10-08/README.md) retains
+a recipe and still with both candidates visible. At the measured stable retarget, the
+unselected man is 434.10 pixels away in a straight line and 26 walking tiles away; the
+selected man is 589.27 pixels away in a straight line and 23 walking tiles away. This is
+the disagreement the earlier pictures did not establish. The picture shows the selection;
+the production path-field measurement supports the route-length claim. A separate
+multiple-mast picture is not required by the final review; the live task regression covers
+that behavior.
+
+The GitHub update at a0be789d merges main 7f3f26dc automatically into a492b983. Main's
+warning placement, whole-camera visibility and persistent Run controls remain alongside
+the arrow selection. The author checks resistance director/contact behavior, the shared UI
+and narrative rules after that merge. Import/boot, lint, the focused resistance and protest
+suites, the companion recipe assertions and whitespace checks pass. Full-suite CI and an
+independent review remain the merge gates.

@@ -15,3 +15,26 @@ Reproduce the still with:
 ```sh
 ./tools/shot.sh docs/evidence/plush-moose-path-vs-crow-2026-10-08/day06-path-vs-crow.png 3.0 --recipe docs/evidence/plush-moose-path-vs-crow-2026-10-08/day06-path-vs-crow.json --recipe-mode scripted --no-save --invincible --player-view
 ```
+
+## Retained diagnostics and verification limits
+
+`measurement-diagnostic.log` and `measurement-manifest.json` retain the actual numeric
+measurement. It used temporary `PR588_MEASURE` instrumentation after candidate collection:
+one production `ArrowField` per target was swept to completion, then the live straight-line
+distance and walking length were printed. That temporary patch was not retained, so the
+measurement command alone cannot reproduce the printout from the committed source. The
+diagnostic recipe hash predates the final timing/assertion revision of the companion recipe;
+its actor geometry is recorded in the manifest.
+
+Both that log and the first uninstrumented `assertion.log` contain sandbox errors opening
+Godot's user log and system certificates. They are retained diagnostics, not clean passing
+verification, even though the old wrapper printed PASS. `assertion-manifest.json` retains
+the assertions that run reported. The later `clean-assertion.log` and
+`clean-assertion-manifest.json` come from the final companion recipe with normal permissions:
+the same assertion command above, with output `/private/tmp/nappy588-clean-assertion`, at
+HEAD `9fe6c905e7733e7c44ee80df423a00b29184b505` with only parent documentation/evidence edits
+pending. That run passes, completes playback and contains no engine errors.
+
+The day-11 regression passes in the focused resistance suite. The author did not run the
+deletion mutation; its expected failure follows from control-flow inspection and is an
+explicit target of independent review, not a measured before/after claim here.
