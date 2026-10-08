@@ -7,11 +7,11 @@ priority: now
 
 [PLAYTEST-139](../../playtests/PLAYTEST-139.md) holds the whole design, statements 1–10.
 
-The [B/C window and quieter ending](window-bc-and-quiet-ending.md) follow the player's review
-of the third full cut. The separate [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
+The [single-frame opening and natural ending](window-a-and-natural-ending.md) follow the
+player's movie review. The separate [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
 the ordinary screenshot command's escape flags and stays deferred. The trailer's design,
 camera correction and presentation choices are recorded in
 [M204, the trailer from saved scenes](../../decisions/2026-09-25-M204.md).
-The [movie review](../../review/2026-09-25-M204.md) asks the player to judge the corrected
-full cut with Glass Alarm, including the window placement, independent appearance and scene
-fades, added bass and ending.
+The [movie review](../../review/2026-09-25-M204.md) asks the player to judge the full cut
+with Glass Alarm, including the window placement, independent appearance and scene fades,
+added bass and natural ending.
