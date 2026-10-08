@@ -8,9 +8,10 @@ The ordinary streamed convoy is not a warning-first encounter and is not changed
 ## Sources and collector
 
 - Before: `f494956ebc95395f1c848d53b9fc42702aba9c15`, the same baseline as the PR's gold table.
-- Now: `122817cd347c44cfe9e8c680aa82231cc67950cc`.
+- Current gameplay: `2e21417e96deb1bcf6d69e20690612585c8ecca9`, with the collector below
+  added as measurement instrumentation. No gameplay file differs from that revision.
 - Collector: [m226_arrival_timing.gd](../../../tests/probes/m226_arrival_timing.gd), identical bytes on
-  both revisions, SHA256 `9813879b0e81cdb8cc722953ca1de0adc19a8a59eb30233d591e6b544a7e075a`.
+  both revisions, SHA256 `75110083456d9db340b7fb61211e4b238d24d9023c3b7439ee82354bd45442fb`.
 - Engine: Godot 4.7.2 stable, macOS Apple M2, headless; 60Hz simulated steps, 30-second limit.
 - The before checkout has no tracked modifications. Only the collector and its generated UID
   are temporarily added. Its unrelated `tear_pursuit.gd` and UID are preserved byte for byte.
@@ -20,7 +21,9 @@ The collector reuses each revision's own `m207_warning_lead.gd` encounter factor
 `PendingWarning`, `EventInstance`, and `DangerEdge._measure()/announcing()`. Thus “badge removed”
 is observed from the actual badge consumer, not inferred from a visibility helper. The camera
 is centered on her, 640×360 world pixels, tap mode. She responds instantly at the start by
-walking toward, standing, or walking away, at the game's own walking speed. There is no city,
+walking toward, standing, or walking away, at the game's own walking speed. Cyclist/pelican,
+loose dog and fire engine use both axes; the engine's horizontal fixture quarter-turns the
+existing vertical fixture. The column uses its actual vertical main-road lane. There is no city,
 collision, crowd, camera smoothing, input acceleration or active excitement halo in this probe.
 
 “Drawn entry” is the first intersection of the whole camera with an individual current drawing
@@ -36,7 +39,7 @@ space between a separated caret and body is counted as a drawing.
 All times are seconds, rounded to three decimals; the sampling interval is 0.0167 seconds.
 [Before output](before.txt) and [current output](after.txt) record all four raw timestamps for
 every case: badge start, creation, first drawn entry and badge removal. Each run completes with
-25 checks and no failures.
+28 checks and no failures.
 
 Badge start is 0 for every warned case. The current loose dog instead exists at time 0 and
 never raises a badge. “Badge alone” below is creation minus badge start; “badge removed” is
@@ -62,12 +65,15 @@ measured from the same encounter start, so it includes any continuation after cr
 | pelican / horizontal | toward | 2.133 → 1.000 | 0.133 → 0.033 | 2.333 → 1.033 |
 | pelican / horizontal | standing | 2.133 → 1.000 | 0.200 → 0.050 | 2.450 → 1.050 |
 | pelican / horizontal | away | 2.133 → 1.000 | 0.433 → 0.117 | 2.850 → 1.117 |
-| fire_truck / road to fire | toward | 6.283 → 1.000 | 0.183 → 0.100 | 6.500 → 1.133 |
-| fire_truck / road to fire | standing | 6.283 → 1.000 | 0.267 → 0.150 | 6.600 → 1.200 |
-| fire_truck / road to fire | away | 6.283 → 1.000 | never → 0.267 | 7.550 → 1.383 |
+| fire_truck / vertical | toward | 6.283 → 1.000 | 0.183 → 0.100 | 6.500 → 1.133 |
+| fire_truck / vertical | standing | 6.283 → 1.000 | 0.267 → 0.150 | 6.600 → 1.200 |
+| fire_truck / vertical | away | 6.283 → 1.000 | never → 0.267 | 7.550 → 1.383 |
 | military_convoy / day 13 lane | toward | 4.433 → 1.000 | 0.167 → 0.117 | 4.650 → 1.167 |
 | military_convoy / day 13 lane | standing | 4.433 → 1.000 | 0.267 → 0.200 | 4.800 → 1.283 |
 | military_convoy / day 13 lane | away | 4.433 → 1.000 | 1.150 → 0.833 | 5.950 → 2.200 |
+| fire_truck / horizontal | toward | 6.283 → 1.000 | 0.100 → 0.033 | 6.483 → 1.033 |
+| fire_truck / horizontal | standing | 6.283 → 1.000 | 0.133 → 0.050 | 6.583 → 1.050 |
+| fire_truck / horizontal | away | 6.283 → 1.000 | never → 0.100 | 7.550 → 1.100 |
 
 The engine's old walking-away route parks without its drawing entering the camera during the
 30-second observation; its badge nevertheless goes away at 7.550 seconds. This is an observed

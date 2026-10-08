@@ -21,13 +21,16 @@ Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
 | pelican | warned, down her line, horizontal | toward | 0.000 | 2.133 | 2.267 | 2.333 | 0.133 |
 | pelican | warned, down her line, horizontal | standing | 0.000 | 2.133 | 2.333 | 2.450 | 0.200 |
 | pelican | warned, down her line, horizontal | away | 0.000 | 2.133 | 2.567 | 2.850 | 0.433 |
-| fire_truck | warned, on its road to the fire | toward | 0.000 | 6.283 | 6.467 | 6.500 | 0.183 |
-| fire_truck | warned, on its road to the fire | standing | 0.000 | 6.283 | 6.550 | 6.600 | 0.267 |
-| fire_truck | warned, on its road to the fire | away | 0.000 | 6.283 | — | 7.550 | never |
+| fire_truck | warned, on its road to the fire, vertical | toward | 0.000 | 6.283 | 6.467 | 6.500 | 0.183 |
+| fire_truck | warned, on its road to the fire, vertical | standing | 0.000 | 6.283 | 6.550 | 6.600 | 0.267 |
+| fire_truck | warned, on its road to the fire, vertical | away | 0.000 | 6.283 | — | 7.550 | never |
 | military_convoy | day 13's column, warned in its lane | toward | 0.000 | 4.433 | 4.600 | 4.650 | 0.167 |
 | military_convoy | day 13's column, warned in its lane | standing | 0.000 | 4.433 | 4.700 | 4.800 | 0.267 |
 | military_convoy | day 13's column, warned in its lane | away | 0.000 | 4.433 | 5.583 | 5.950 | 1.150 |
--- m226_arrival_timing.gd         141 ms
+| fire_truck | warned, on its road to the fire, horizontal | toward | 0.000 | 6.283 | 6.383 | 6.483 | 0.100 |
+| fire_truck | warned, on its road to the fire, horizontal | standing | 0.000 | 6.283 | 6.417 | 6.583 | 0.133 |
+| fire_truck | warned, on its road to the fire, horizontal | away | 0.000 | 6.283 | — | 7.550 | never |
+-- m226_arrival_timing.gd         502 ms
 
-25 checks, 0 failures
+28 checks, 0 failures
 PARTIAL RUN — only suites matching probes/m226_arrival_timing.gd. Not a green build.

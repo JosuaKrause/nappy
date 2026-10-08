@@ -19,10 +19,25 @@ class Source extends Node:
 
 func run(t) -> void:
 	var factory: Object = load("res://tests/probes/m207_warning_lead.gd").new()
+	var encounters: Array[Dictionary] = factory.encounters()
+	# The engine can use either road axis; the column's actual main-road lane is vertical.
+	for encounter: Dictionary in encounters.duplicate():
+		var row: EventDef = encounter["def"]
+		if row.id != "fire_truck":
+			continue
+		encounter["how"] += ", vertical"
+		# Rotate the factory's (-48,150) kerb and southbound travel through a quarter turn.
+		var kerb := Vector2(-150.0, -Tuning.TILE_SIZE * 1.5)
+		var where := func(her: Vector2) -> Vector2:
+			return PendingWarning.on_its_route(row, her, kerb, Vector2.LEFT, 4000.0)
+		var route := func(place: Vector2, _her: Vector2) -> PackedVector2Array:
+			return PackedVector2Array([place, kerb])
+		encounters.append(factory._warned(row, "warned, on its road to the fire, horizontal",
+				where, route, Vector2.RIGHT))
 	print("| row | geometry | answer | badge start | created | drawn entry | badge removed | entry minus creation |")
 	print("|---|---|---|---|---|---|---|---|")
 	var count := 0
-	for encounter: Dictionary in factory.encounters():
+	for encounter: Dictionary in encounters:
 		var def: EventDef = encounter["def"]
 		if def.id not in IDS or (def.id == "military_convoy" and not encounter.get("warned", false)):
 			continue
@@ -37,7 +52,7 @@ func run(t) -> void:
 						seconds(float(row.entry) - float(row.created)) if row.entry != INF else "never"])
 				t.check(row.created != INF, "arrival collector actually creates %s" % def.id)
 				count += 1
-	t.check(count == 24, "both variants and axes plus engine/column cover 24 encounters")
+	t.check(count == 27, "both variants, both road axes and the vertical column cover 27 encounters")
 
 static func seconds(value: float) -> String:
 	return "—" if not is_finite(value) else "%.3f" % value
