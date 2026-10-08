@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_one_barrier_costs_less_than_the_hold_it_stands_at(t)
 	_test_catalogue_is_fair(t)
 	_test_a_warning_first_is_owed_a_flat_minimum(t)
+	_test_the_loose_dog_and_the_cat_do_not_telegraph(t)
 	_test_as_warned_first_carries_solid_parts_too(t)
 	_test_spread_classification_follows_every_look_and_copy(t)
 	_test_a_spread_body_fits_the_ground_it_stands_on(t)
@@ -177,7 +178,7 @@ func _test_catalogue_is_fair(t) -> void:
 	for def in defs:
 		t.check(def.id != "", "every event has an id")
 		t.check(def.validate(), "event '%s' gives the player time to walk clear" % def.id)
-		if def.kind != GameEnums.EventKind.AMBIENT:
+		if def.kind != GameEnums.EventKind.AMBIENT and (def.telegraphs or not def.comes_down_her_line()):
 			t.check(def.warning_time() + 0.001 >= def.minimum_telegraph(),
 					"event '%s' warns %.2fs before it can reach her >= minimum %.2fs"
 					% [def.id, def.warning_time(), def.minimum_telegraph()])
@@ -190,24 +191,33 @@ func _test_catalogue_is_fair(t) -> void:
 			"the playground is ambient, so its zero telegraph is intended")
 
 ## **Every row warned of before it exists is owed the same flat minimum, whatever its field and its
-## speed.** *(PLAYTEST-145: "I don't like that the warning is tied to the size of the field or the
-## speed" · "all offscreen events should work like that".)* Asked of every such row — the catalogue's
-## own (`cyclist`, the fire engine) and day 13's column, the copy of `military_convoy` that
-## `EventManager.as_warned()` makes of it — and asked as a relation: widening its field and speeding
-## it up leaves its `minimum_telegraph()` where it was, at `Tuning.OFFSCREEN_WARNING_MIN`. `loose_dog`
-## is held to its field's minimum instead, through `Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`, a list an
-## earlier build added; whether it keeps that, or needs no warning at all, is open under M226, the
-## pursuing dog keeps its day-3 timing and the other warnings fit it.
+## speed, and its badge is up alone for at most a second.** *(PLAYTEST-145: "I don't like that the
+## warning is tied to the size of the field or the speed" · "all offscreen events should work like
+## that"; busy-quail, inbox #569: "1s warning should be enough -- let's apply that to the others as
+## well".)* Asked of every such row — the catalogue's own (`cyclist`, the fire engine,
+## the resistance's two pursuers) and the copies `EventManager.as_warned()` makes of day 13's column
+## and of the day-3 dog — and asked as a relation: widening a non-pursuer's field and speeding it up
+## leaves its `minimum_telegraph()` where it was, at `Tuning.OFFSCREEN_WARNING_MIN`. Every one's badge
+## alone (`EventDef.warned_for()`) is at most `Tuning.WARNING_ALONE_MAX`, and the column's copy cuts
+## the planned convoy's in-world telegraph to it rather than carrying it over.
 func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
 	var warned: Array[EventDef] = []
 	for def in EventCatalogue.all():
-		if def.warns_before_it_exists() and not Tuning.OFFSCREEN_WARNING_MIN_EXEMPT.has(def.id):
+		if def.warns_before_it_exists():
 			warned.append(def)
-	var column := EventManager.as_warned(EventCatalogue.by_id("military_convoy"))
+	var convoy := EventCatalogue.by_id("military_convoy")
+	var column := EventManager.as_warned(convoy)
 	warned.append(column)
+	warned.append(EventManager.as_warned(EventCatalogue.by_id("charging_dog")))
 	var ids: Array[String] = []
 	for def in warned:
 		ids.append(def.id)
+		t.check(def.warned_for() <= Tuning.WARNING_ALONE_MAX + 0.001,
+				"'%s' is warned of %.2fs before it exists, at most the %.2fs ceiling"
+				% [def.id, def.warned_for(), Tuning.WARNING_ALONE_MAX])
+		t.check(def.validate(), "and '%s' gives what it owes" % def.id)
+		if def.pursues:
+			continue
 		var wider: EventDef = def.duplicate()
 		wider.shape = def.shape
 		wider.outer_radius *= 1.5
@@ -217,13 +227,51 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
 				("'%s' is warned first and owed %.2fs, and %.2fs with a field half as wide again "
 				% [def.id, def.minimum_telegraph(), wider.minimum_telegraph()])
 				+ "and half as fast again: the flat %.2fs either way" % Tuning.OFFSCREEN_WARNING_MIN)
-		t.check(def.validate(), "and '%s' gives it" % def.id)
-	for id in ["cyclist", "fire_truck", "military_convoy"]:
+	for id in ["cyclist", "fire_truck", "military_convoy", "charging_dog",
+			"robber_giving_chase", "van_guard_giving_chase"]:
 		t.check(ids.has(id), "'%s' is among the rows warned first (%s)" % [id, ", ".join(ids)])
-	var dog := EventCatalogue.by_id("loose_dog")
-	t.check(dog.warns_before_it_exists() and dog.minimum_telegraph() < Tuning.OFFSCREEN_WARNING_MIN,
-			"'loose_dog' is warned first and keeps its field's %.2fs, under the flat minimum"
-			% dog.minimum_telegraph())
+	t.check(is_equal_approx(column.telegraph_time, Tuning.WARNING_ALONE_MAX)
+			and convoy.telegraph_time > Tuning.WARNING_ALONE_MAX,
+			"the column's badge is cut to the ceiling (%.2fs) and the planned convoy keeps its %.2fs"
+			% [column.telegraph_time, convoy.telegraph_time])
+
+## **The loose dog and the cat do not telegraph their coming.** *(PLAYTEST-145: "telegraphing is for
+## things that go fast *and* are dangerous" · "go fast and towards the player" · "loose dog, cat
+## don't need telegraphing"; inbox #598: "the telegraphing rule was about heavy penalty not *only*
+## lethal" · "fire truck has heavy penalty".)* A thing telegraphs only if it goes fast, comes toward
+## her and carries a heavy penalty — it can end the day or hit her hard. Neither of these two does:
+## no screen-edge badge and no warning first; the cat still owes its in-world crouch, while the
+## fire engine, which can hit her hard, keeps its badge and its warning first.
+func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
+	var edge := DangerEdge.new()
+	for id: String in ["loose_dog", "cat_dash"]:
+		var def := EventCatalogue.by_id(id)
+		t.check(not def.telegraphs and not def.warns_before_it_exists()
+				and not edge._is_worth_an_arrow_for(def),
+				"'%s' does not telegraph: no warning first and no screen-edge badge" % id)
+		t.check(def.validate(), "and '%s' gives what the contract still asks of it" % id)
+	# The rows that stand until she walks in keep the contract for their in-world telegraph.
+	for id: String in ["cat_dash", "alley_mouse", "pigeon_flock", "police_patrol"]:
+		var row := EventCatalogue.by_id(id)
+		t.check(not row.telegraphs and row.warning_time() + 0.001 >= row.minimum_telegraph(),
+				"'%s' does not telegraph its coming, and its in-world telegraph (%.2fs) still clears "
+				% [id, row.warning_time()] + "the contract's %.2fs" % row.minimum_telegraph())
+	t.check(EventCatalogue.by_id("loose_dog").comes_down_her_line(),
+			"the loose dog still comes down her own sidewalk, created at once just out of sight")
+	var truck := EventCatalogue.by_id("fire_truck")
+	t.check(truck.telegraphs and truck.warns_before_it_exists() and edge._is_worth_an_arrow_for(truck),
+			"the fire engine, a heavy penalty, keeps its badge and its warning first")
+	var quiet: Array[String] = []
+	for def in EventCatalogue.all():
+		if not def.telegraphs and not quiet.has(def.id):
+			quiet.append(def.id)
+	quiet.sort()
+	# Amendment 9 of M226: the rule applied to every row by its numbers — the alley mouse dashes across
+	# its alley, the pigeons go up where she walks in, and the patrol is slower than a walk; none
+	# comes at her fast with a heavy penalty.
+	t.check(quiet == ["alley_mouse", "cat_dash", "loose_dog", "pigeon_flock", "police_patrol"],
+			"and these are the rows that do not telegraph, every other row does (%s)" % ", ".join(quiet))
+	edge.free()
 
 ## **`as_warned_first()` carries `solid_parts` across by hand, the way every other copy of a row
 ## does** (`at_heat()`, `EventScheduler._for_day()`, `EventCatalogue.neighbor_heading_home()`,

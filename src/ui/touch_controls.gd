@@ -1,112 +1,24 @@
 class_name TouchControls
 extends Control
-## The one control scheme a pointer drives, in either of two chosen modes, and the pause button
-## it draws.
+## Pointer steering, a hold-to-run disc opposite the last steering side, and pause.
 ##
-## A press — a finger, or a mouse click, on any device — sets a direction that is locked in and
-## walked with nothing held down until the next press changes it, or stops her instead if it lands
-## close enough to the right ground; a double press sets the direction and holds `run` until the
-## next press changes or releases it. See `set_direction()`, `_stop()` and `is_double_tap()` — that
-## half of this file used to be `TapControls`, a second node with nothing to draw, and is folded in
-## here because it needs something to draw now: the pause button, and in `Mode.JOYSTICK` a run
-## button beside each focal point.
+## A tap or drag locks a unit heading until the next steering action. In joystick mode, either
+## half chooses its focus; the unused focus becomes Run. Release preserves that side choice:
+## "steering can also be done by tapping so we shouldn't immediately reset" (2026-10-07).
+## Both rings show until a pointer chooses. Keys change the heading, never the chosen side.
 ##
-## **`Mode.JOYSTICK` draws a run button beside each focal point, and running lasts exactly as long
-## as a finger holds one.** *(2026-10-03, the player, note #434: "for joystick mode a dedicated run
-## button (one on each side next to the joystick) would make running much more precise and easier.
-## the button should not trigger when moving the finger over it from navigation and holding the
-## button and navigating should work correctly. also the double tap should still work since mouse
-## only navigation would otherwise break.")* This is not the held `RUN` circle at (1150, 500) that
-## PLAYTEST-28 deleted along with the drag stick (2026-09-06: "double press keeps running") coming
-## back as the only way to run: the double press stays as it was, and a button is the second way to
-## the same `run` action, held by the other hand while one steers. A button takes only a press that
-## *begins* on it — `_on_pointer()` is the one place that grabs it, so a steering finger that slides
-## across a button was never a press there and keeps steering — and holds `run` until that same
-## finger lifts — the last finger on either button, so handing it from one thumb to the other keeps
-## the run (`_run_touches`, `_run_held`) — without ever touching the heading, the drag in flight or
-## the double-tap clock. `_run_active` (a double press's latch) and `_run_held` are two separate
-## reasons to hold `run`, and either one alone keeps it down. Running lasting only while the button
-## is held is the filer's proposal rather than their words and is open to overturn.
+## Only a press beginning on Run owns a run hold. Each pointer retains its role until release,
+## even when later steering swaps the visible sides. A double press independently latches run.
+## The middle stop band permits a drag to retarget on leaving it. Dead zones do not grow with
+## button catches. Tap mode instead aims from the player's world position.
 ##
-## **Two things decide different questions here, and only one of them is about the mode.**
-## `_touch` (`TouchInput.available()`) is a hardware fact: whether this device has touch hardware
-## of its own, read once the same way `hud._debug` is. It answers exactly one question, in
-## `_input()` — whether a real `InputEventScreenTouch` is on offer at all, and therefore whether a
-## same-instant emulated `InputEventMouseButton` from that same finger has to be ignored rather
-## than read as a second, doubling press (`_test_a_touch_devices_own_emulated_click_is_ignored`).
-## It decides **nothing** about where a heading is measured from any more.
-##
-## **`_mode` (`ControlsMode.Mode`) is the player's own choice, set once from outside through
-## `set_mode()` — see that function's own doc — and it is what `_on_tap()`, `_on_drag()` and
-## `_draw()` actually branch on.** *(2026-09-07, the player: "joystick is the two focal point mode
-## and tap is the mouse mode. both modes for in both settings so let's let the player choose
-## instead of forcing one ... independent of whether tap is available".)* A touchscreen set to
-## `TAP` aims from her own world position exactly as a mouse always has; a mouse set to `JOYSTICK`
-## aims from a fixed focal point exactly as a real finger does. See `ControlsMode` for what each
-## mode means and why neither is tied to a device.
-##
-## **`Mode.JOYSTICK` aims from whichever of the two fixed focal points, `FOCUS_LEFT` (240, 480) or
-## `FOCUS_RIGHT` (1040, 480) in the 1280x720 design box, is nearer the press** — see `nearer_focus()`
-## and `_on_tap()`'s own doc for the coordinate-space trip a focus has to take to become a world
-## heading. **Both focal points are drawn, always, with a knob at the heading she is actually
-## walking** — a ring at `STOP_RADIUS` with the knob at `current_heading()`, read straight off
-## `Input.get_vector()` rather than off this node's own locked-in `_direction`, so a real key
-## overriding a stale press shows up on both circles exactly as a fresh press would — see
-## `_draw_focus_circles()`'s own doc. *(2026-09-27, playtest olive-koala statement 6: "the onscreen
-## controls should show the selected direction on both sides always. when using hands and when
-## using the keyboard".)* A press within `STOP_RADIUS` of either focus stops her too, and so does
-## one in the stop band down the middle of the screen, or a held pointer dragged into either — see
-## `is_on_a_focus()`, `is_in_stop_band()` and `_on_drag()`. **A drag that leaves the band re-picks
-## which focus its heading is measured from, for whichever side it left on** — see
-## `_drag_origin_focus`'s own doc for why crossing the band is safe to retarget on where a bare
-## `nearer_focus()` on every motion event was not.
-##
-## **`Mode.TAP` aims from her own world position instead, and draws nothing, and the 2026-09-27
-## item does not reach it.** The player's words ask both *sides* to agree, which is a `JOYSTICK`
-## question: `TAP` has one aiming origin, her, not two to keep in step, so there is nothing a second
-## drawn point could disagree with. A press within `TAP_STOP_RADIUS` of her stops her; the band and
-## the focal circles do not exist in this mode at all.
-## *(Playtest 29 finding 6, on why a real touch in `JOYSTICK` mode no longer stops on a press near
-## her own position: the camera sits on her, so her own screen position already is the band's own
-## centre line, and covering that ground twice made a drag crossing her by accident stop her by
-## surprise — see `_on_tap()`'s own doc.)* Held down and moved, a pointer in either mode keeps
-## re-aiming: the heading updates continuously until it lifts, always at one speed, never a partial
-## vector — see `_on_drag()`'s own doc for why that is not the deleted drag stick returning.
-##
-## **A real key on the arrows or WASD resets whatever a click, tap or drag last locked in, so the
-## keys steer alone from that frame.** See `_yield_to_the_keyboard()`'s own doc for the mechanism
-## and the ordering trap it exists to avoid — a naive release of the same action a key press just
-## set would cancel the key rather than the stale click.
-##
-## **The pause button is not that kind of control.** `main._unhandled_input()` reads
-## `event.is_action_pressed("pause")` off the propagated *event*, not off polled state, so
-## `Input.action_press(&"pause")` would set the state and be heard by nothing — the same trap
-## `AutoScreenshot._tap()` already names in its own comment for exactly this action. See
-## `_send_pause_action()`.
-##
-## **Drawn on every device, and only while a day is actually being walked.** *(2026-09-06: "I
-## specifically said that now all controls are treated the same across platforms so the buttons
-## should show in *every* environment.")* `get_tree().paused` is the one fact the title screen, the
-## pause and the between-days summary all set, and checking it here is what keeps the button off
-## every one of those three screens without a wire from `main` telling it so on each. A
-## keyboard-and-mouse desktop draws it too, now that a click sets a direction or stops her the same
-## way a finger does: pressing the corner presses the button there exactly as it does on a phone,
-## so the corner is subtracted from the aiming surface on every device that shows the button rather
-## than only a touch one — see `_on_pointer()`'s own doc for that consequence.
-##
-## `process_mode` stays `ALWAYS`, like the three screens it has to disappear under: a `PAUSABLE`
-## node stops running the instant the tree pauses, which is one frame too late to let go of
-## whatever direction was pressed when the pause landed. Every action this holds is force-released
-## the moment the tree pauses, for any reason, so a finger still down when a day ends is never
-## still down once the next one begins.
+## Raw input is shared by mouse and touch; emulated mouse events are ignored on touch devices.
+## ALWAYS processing releases input when paused, hidden or ending a day. Pause restores the
+## locked heading and chosen side, but never resurrects a held finger.
 
-## Smaller than the run buttons (`RUN_RADIUS`, 34px) this file also draws: it is pressed once a day
-## at most, so it does not want the same reach into the walking hand's own space.
+## The pause disc's painted radius, smaller than the joystick-sized Run disc.
 const PAUSE_RADIUS := 26.0
-## As generous as `RUN_CATCH_RADIUS`'s own 46px, for the same reason a thumb does not land on a button to the pixel — and also the radius
-## a *release* has to land inside to fire, so a thumb that lands wrong can slide off and lift
-## without stopping the day. See `_on_pointer()`.
-const PAUSE_CATCH_RADIUS := 46.0
+const PAUSE_CATCH_RADIUS := PAUSE_RADIUS * ButtonGeometry.CATCH_SCALE
 ## Top right, in the corner both `DangerEdge` and `HomeArrow` keep clear on purpose rather than in
 ## front of them: `DangerEdge.MARGIN` (104/116/104/148, left/top/right/bottom) never draws a chevron
 ## closer to this corner than (1176, 116), and `HomeArrow.MARGIN` (96px, uniform) never draws its
@@ -196,25 +108,14 @@ const TAP_STOP_CENTRE_LIFT := Stroller.FIGURE_HEIGHT / 2.0
 const FOCUS_LEFT := Vector2(240.0, 480.0)
 const FOCUS_RIGHT := Vector2(1040.0, 480.0)
 
-## The run buttons' size and where each stands: 110px *inward* from its own focal point, toward the
-## middle of the screen, on the same row — the left one at (350, 480) and the right one at (930, 480)
-## in the 1280x720 design box. *(2026-10-03, the player, quiet-yak, inbox #477, asked which of four spots —
-## outward, inward, below, above — the buttons should take: "Inward".)* **What the spot takes away:**
-## a press 64-156px out of a ring toward the middle (a +/-25 degree wedge, due east of the left ring
-## and due west of the right one) is a run hold, not the heading "walk toward the middle". **What it
-## is clear of:** the `DangerEdge` badge strips (x=104 and x=1176), the home/task arrow strips (x=96
-## and x=1184), the touch HUD meters column and the pause button, and it ends 196px short of the stop
-## band. The ring reaches 48px (`STOP_RADIUS`) and a button's catch circle starts 64px out, so a
-## heading pressed at the ring's rim cannot land on a button. Both are authored in
-## design space like the foci.
-const RUN_OFFSET := 110.0
-const RUN_CENTRE_LEFT := Vector2(FOCUS_LEFT.x + RUN_OFFSET, FOCUS_LEFT.y)
-const RUN_CENTRE_RIGHT := Vector2(FOCUS_RIGHT.x - RUN_OFFSET, FOCUS_RIGHT.y)
-const RUN_RADIUS := 34.0
-## Generous for the reason `PAUSE_CATCH_RADIUS` is: a thumb does not land on a button to the pixel.
-## Below `RUN_OFFSET - STOP_RADIUS` (62px) so the catch never reaches the focal ring.
-const RUN_CATCH_RADIUS := 46.0
-
+## The joystick ring's stroke reaches one pixel beyond its unchanged stop radius. Run matches
+## that visible outer edge, rather than the SVG's transparent texture bounds.
+const FOCUS_STROKE_WIDTH := 2.0
+const RUN_RADIUS := STOP_RADIUS + FOCUS_STROKE_WIDTH * 0.5
+const RUN_CATCH_RADIUS := RUN_RADIUS * ButtonGeometry.CATCH_SCALE
+## Both pause.svg and run.svg paint to radius 62.5 on a 128px square.
+const _ICON_PAINTED_RADIUS := 62.5
+const _ICON_HALF_SIZE := 64.0
 ## The knob `_draw_focus_circles()` offsets from each focus, at rest. Sized off `PAUSE_RADIUS`'s
 ## own third — small enough that a knob pressed out to `STOP_RADIUS * 0.6` still sits well inside
 ## its own ring rather than crowding the rim.
@@ -236,11 +137,19 @@ var _touch := TouchInput.available()
 ## this node already exists.
 var _mode := ControlsMode.Mode.TAP
 
+## Retained across pointer release and pause; unset until a pointer chooses a steering side.
+var _steering_focus := Vector2.INF
+
 ## Sets the aiming origin a press and a drag measure their heading from — the one seam `main` uses
 ## to hand this node the player's own choice, since nothing here can read a title screen's button
 ## press on its own. `queue_redraw()` because `_draw()` only re-runs on request and the focal
 ## circles (`_draw_focus_circles()`) exist only in `Mode.JOYSTICK`.
 func set_mode(mode: ControlsMode.Mode) -> void:
+	if mode != _mode:
+		_release_all()
+		_steering_focus = Vector2.INF
+		_direction_before_pause = Vector2.ZERO
+		_run_before_pause = false
 	_mode = mode
 	if mode != ControlsMode.Mode.JOYSTICK:
 		# The buttons exist only in `JOYSTICK`; a finger still down on one must not keep running on.
@@ -369,6 +278,11 @@ func _ready() -> void:
 	# see `ScreenOrientation.pin_to_design_box()`.
 	ScreenOrientation.pin_to_design_box(self)
 	visible = false
+	visibility_changed.connect(_on_visibility_changed)
+
+func _on_visibility_changed() -> void:
+	if not is_visible_in_tree():
+		_release_all()
 
 ## The pause button's own visibility, gated on pause only — every device shows it now, not only a
 ## touch one. Any pause landing, on any device, force-releases whatever direction and `run` were
@@ -584,6 +498,8 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 	_drag_origin_focus = focus
 	_drag_in_band = is_in_stop_band(design)
 	_drag_run = double
+	if not _drag_in_band:
+		_steering_focus = focus
 	if is_on_a_focus(design) or is_in_stop_band(design):
 		_stop()
 		return
@@ -645,11 +561,16 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 			_stop()
 			return
 		if is_on_a_focus(design):
+			if _drag_in_band:
+				_drag_origin_focus = nearer_focus(design)
+				_drag_in_band = false
+			_steering_focus = _drag_origin_focus
 			_stop()
 			return
 		if _drag_in_band:
 			_drag_origin_focus = nearer_focus(design)
 			_drag_in_band = false
+		_steering_focus = _drag_origin_focus
 		set_direction(world, _drag_run, _focus_world(_drag_origin_focus))
 		return
 	if _near_her(world):
@@ -707,15 +628,18 @@ func _stop() -> void:
 		Input.action_press(&"run")
 	queue_redraw()
 
-## Which run button's catch circle `design_position` (already in design space) lands in, as that
-## button's centre, or `Vector2.INF` for neither. Pure and static like `nearer_focus()`, so the
-## geometry is testable with no viewport.
-static func run_button_at(design_position: Vector2) -> Vector2:
-	for centre in [RUN_CENTRE_LEFT, RUN_CENTRE_RIGHT]:
-		if design_position.distance_to(centre) <= RUN_CATCH_RADIUS:
-			return centre
-	return Vector2.INF
+## The displayed Run center, or no button until steering chooses a side.
+func run_button_center() -> Vector2:
+	if _mode != ControlsMode.Mode.JOYSTICK or _steering_focus == Vector2.INF:
+		return Vector2.INF
+	return FOCUS_RIGHT if _steering_focus == FOCUS_LEFT else FOCUS_LEFT
 
+## Only the displayed disc catches a new run press. Motion never calls this.
+func run_button_at(design_position: Vector2) -> Vector2:
+	var center := run_button_center()
+	if center != Vector2.INF and ButtonGeometry.contains(design_position, center, RUN_RADIUS):
+		return center
+	return Vector2.INF
 ## Lets go of a run button's hold. `run` itself stays down if a double press's latch still wants it.
 func _let_go_of_the_run_button() -> void:
 	var was_held := _run_held
@@ -832,8 +756,7 @@ static func is_on_a_focus(design_position: Vector2) -> bool:
 ## `ScreenOrientation.DESIGN_SIZE.x / 2.0` (640 in the 1280x720 design box) rather than a bare
 ## 640, so this stays correct if the design box's own width ever does not. **Not drawn** —
 ## *(2026-09-07: "the band doesn't get drawn and yes it's the diameter in size".)* the two focal
-## circles are what item 2 asked for by name, and stay the only things this scheme draws besides
-## the pause button.
+## circles and Run disc make the selected steering side visible without drawing the stop band.
 ##
 ## **Asked for the focus sticky for the whole drag · overturned to re-picking it on 2026-09-07,
 ## because the band this constant governs turns a crossing into a discrete, already-stopped event
@@ -994,57 +917,23 @@ func _draw_pause_button() -> void:
 	var held := _pause_touch != -1
 	if held:
 		draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Palette.BUTTON_PRESSED)
-	var size := Vector2(PAUSE_RADIUS, PAUSE_RADIUS) * 2.0
+	var size := Vector2.ONE * PAUSE_RADIUS * 2.0 * _ICON_HALF_SIZE / _ICON_PAINTED_RADIUS
 	draw_texture_rect(AtlasLibrary.region(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
 
-## The two run buttons, beside the focal points — a region of the baked `ui` page sourced from
-## `art/ui/run.svg`, drawn the way `_draw_pause_button()` draws its own: one overall alpha for idle
-## against held, and `Palette.BUTTON_PRESSED` behind the glyph while a finger holds one. Both buttons
-## light together, since either one holds the same `run` action.
+## One Run disc replaces the unused ring. A held pointer keeps owning Run if steering swaps it.
 func _draw_run_buttons() -> void:
-	var held := _run_held
-	var size := Vector2(RUN_RADIUS, RUN_RADIUS) * 2.0
-	for centre in [RUN_CENTRE_LEFT, RUN_CENTRE_RIGHT]:
-		if held:
-			draw_circle(centre, RUN_RADIUS, Palette.BUTTON_PRESSED)
-		# `run.svg`'s chevrons point up on both buttons: a chevron pointing sideways, now that the
-		# buttons sit toward the middle, would read as "walk that way". (Open to overturn: a glyph
-		# with no direction at all.)
-		draw_texture_rect(AtlasLibrary.region(_RUN_ICON), Rect2(centre - size * 0.5, size), false,
-				Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
+	var center := run_button_center()
+	if center == Vector2.INF:
+		return
+	if _run_held:
+		draw_circle(center, RUN_RADIUS, Palette.BUTTON_PRESSED)
+	var size := Vector2.ONE * RUN_RADIUS * 2.0 * _ICON_HALF_SIZE / _ICON_PAINTED_RADIUS
+	draw_texture_rect(AtlasLibrary.region(_RUN_ICON), Rect2(center - size * 0.5, size), false,
+			Color(1.0, 1.0, 1.0, 1.0 if _run_held else 0.7))
 
-## Both focal points, always, in `Mode.JOYSTICK` — M83 drew nothing for them and left *whether they
-## can be found by feel* as the played question the next report would answer; the answer is no.
-## *(2026-09-07: "show the control circles again on both sides so the user can see what is
-## currently locked in.")*
-##
-## **What is drawn is the heading she is actually walking, not only this node's own last press.**
-## *(2026-09-27, playtest olive-koala statement 6: "the onscreen controls should show the selected
-## direction on both sides always. when using hands and when using the keyboard".)* The knob's
-## offset is `current_heading(_rig)`, read straight off `Input.get_vector()` — the same call
-## `Stroller._physics_process()` makes off these four actions — rather than off `_direction`, this
-## node's own locked-in press: a real key overriding a stale click (`_yield_to_the_keyboard()`)
-## changes what `Input.get_vector()` reports immediately, with nothing routed through this file at
-## all, so reading it fresh here is what makes a keyboard-set heading show up on both circles
-## exactly as a fresh press would, rather than reading as centred while she visibly walks. `_rig` is
-## fetched here the same lazy way `_on_tap()`/`set_direction()` already do, since a mode can be set
-## to `JOYSTICK` and drawn before any press has ever asked for the player group. Read identically off
-## either circle: there is one heading locked in, not one per focus, so the two always agree.
-## Centred (no offset) reads as *stopped*; a knob toward the rim reads as *walking that way*;
-## brighter and larger while `run` is held, since a hold on the run action is as much a part of
-## "what is locked in" as the heading is.
-##
-## **And centred while she is detained**, a conversation or a capture, even with a key still held —
-## `current_heading()`'s own doc has the reasoning; a key kept down through one used to swing the
-## knob toward it while she stood locked in place, disagreeing with the one thing she was actually
-## doing.
-##
-## **Primitives, not an SVG, and that is the cues rule's own exception rather than a violation of
-## it.** A knob whose offset is a continuous function of the current heading cannot be a static
-## asset any more than `ModeButton`'s own hold-progress sweep can — see that class's comment for the
-## same call made there: "a fill that is not a drawing of anything is not a picture." This ring and
-## its knob are that shape, not a glyph's.
+## Each available steering ring shows the actual heading, including keyboard steering and
+## detention. Run replaces only the unused ring after a pointer selects a side.
 func _draw_focus_circles() -> void:
 	if not _rig:
 		_rig = get_tree().get_first_node_in_group("player") as Node2D
@@ -1053,7 +942,10 @@ func _draw_focus_circles() -> void:
 	var knob_colour := Color(1.0, 1.0, 1.0, 1.0 if running else 0.8)
 	var offset := current_heading(_rig) * (STOP_RADIUS * 0.6)
 	for focus in [FOCUS_LEFT, FOCUS_RIGHT]:
-		draw_arc(focus, STOP_RADIUS, 0.0, TAU, 48, Color(1.0, 1.0, 1.0, 0.35), 2.0, true)
+		if focus == run_button_center():
+			continue
+		draw_arc(focus, STOP_RADIUS, 0.0, TAU, 48, Color(1.0, 1.0, 1.0, 0.35),
+				FOCUS_STROKE_WIDTH, true)
 		draw_circle(focus + offset, knob_radius, knob_colour)
 
 ## The heading she is actually walking this instant, whichever of the two doors set it: a press or

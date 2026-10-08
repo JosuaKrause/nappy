@@ -1,0 +1,10 @@
+Use case: precise-object-edit
+Asset type: high-resolution source for a small 2D game sprite
+Primary request: Remove only the dark horizontal stroller handle and its two small rounded side mounts that run across the base of the closed cream hood in Image 1.
+Input images: Image 1 is the edit target and the authoritative accepted stroller drawing.
+Subject: The same compact navy bassinet stroller seen straight from the closed-hood end.
+Style/medium: Preserve the exact hand-inked comic illustration, line weight, palette, texture, highlights, shadow shapes, proportions, and frontal projection already present in Image 1.
+Composition/framing: Preserve the exact stroller size, position, wheel placement, ground line, transparent canvas, and straight-on viewpoint.
+Reconstruction: Where the removed handle and mounts exposedly cross the stroller, continue only the cream hood's lower fabric edge and the navy bassinet's upper rim/material that are already implied immediately around the bar. Make the repair visually seamless at both high resolution and downscaled sprite size.
+Constraints: Change only the handle and the pixels it covered. Keep the hood silhouette and seams, bassinet body, both wheels and axle details, colors, alpha edges, canvas, empty transparent background, lighting, and every other approved detail unchanged. No new objects, no restyling, no baby, no text, no watermark.
+Avoid: handle remnants, a replacement bar, altered wheel geometry, changed hood contour, changed body width, shifted or resized stroller, opaque or checkerboard background.

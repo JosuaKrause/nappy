@@ -1,0 +1,9 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+-- test_resistance.gd          369342 ms
+
+FAIL  warning expiry keeps the actual drawing outside the moved WHOLE camera
+FAIL  warning expiry keeps the actual drawing outside the moved WHOLE camera
+60107 checks, 2 failures
+PARTIAL RUN — only suites matching resistance. Not a green build.

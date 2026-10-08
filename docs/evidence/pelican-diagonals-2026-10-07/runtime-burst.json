@@ -1,0 +1,384 @@
+{
+  "arguments": [
+    "res://docs/evidence/pelican-diagonals-2026-10-07/runtime.tscn"
+  ],
+  "context": "Controlled routes; real EventInstance process and drawing; 2x normal camera scale; carriers follow riders. NE, SE, NW, SW.",
+  "duration_seconds": 2.922898,
+  "engine": {
+    "build": "official",
+    "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+    "hex": 263938,
+    "major": 4,
+    "minor": 7,
+    "patch": 2,
+    "status": "stable",
+    "string": "4.7.2-stable (official)",
+    "timestamp": 0
+  },
+  "frames": [
+    {
+      "elapsed_seconds": 0.000818000000000207,
+      "file": "frame-000.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 0.0842209999999999,
+      "file": "frame-001.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 0.167427,
+      "file": "frame-002.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 0.251044,
+      "file": "frame-003.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 0.334301,
+      "file": "frame-004.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 0.417384,
+      "file": "frame-005.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 0.50093,
+      "file": "frame-006.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 0.584034,
+      "file": "frame-007.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 0.667147,
+      "file": "frame-008.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 0.750849,
+      "file": "frame-009.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 0.834283,
+      "file": "frame-010.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 0.917387,
+      "file": "frame-011.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 1.000672,
+      "file": "frame-012.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 1.084342,
+      "file": "frame-013.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 1.167741,
+      "file": "frame-014.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 1.250599,
+      "file": "frame-015.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 1.334352,
+      "file": "frame-016.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 1.417596,
+      "file": "frame-017.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 1.500675,
+      "file": "frame-018.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 1.584243,
+      "file": "frame-019.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 1.667407,
+      "file": "frame-020.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 1.750761,
+      "file": "frame-021.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 1.834138,
+      "file": "frame-022.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 1.917597,
+      "file": "frame-023.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 2.00111,
+      "file": "frame-024.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 2.084058,
+      "file": "frame-025.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 2.167212,
+      "file": "frame-026.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 2.25098,
+      "file": "frame-027.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 2.334282,
+      "file": "frame-028.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 2.417156,
+      "file": "frame-029.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 2.500912,
+      "file": "frame-030.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 2.584124,
+      "file": "frame-031.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 2.667345,
+      "file": "frame-032.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 2.75079,
+      "file": "frame-033.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "elapsed_seconds": 2.834057,
+      "file": "frame-034.png",
+      "pedal_b": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "elapsed_seconds": 2.917732,
+      "file": "frame-035.png",
+      "pedal_b": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  ],
+  "reason": "frame_cap",
+  "schema_version": 1,
+  "status": "complete",
+  "target_fps": 12
+}

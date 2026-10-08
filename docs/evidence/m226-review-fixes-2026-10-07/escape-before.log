@@ -1,0 +1,21 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FAIL from (0.000000, 263.250000): running shakes him off before either catch or crying
+FAIL from (0.000000, 263.250000): the actual awake Baby pays an affordable 100.00 points for running
+FAIL from (0.000000, -196.500000): running shakes him off before either catch or crying
+FAIL from (0.000000, -196.500000): the actual awake Baby pays an affordable 100.00 points for running
+FAIL from (-151.559799, 263.116547): running shakes him off before either catch or crying
+FAIL from (-151.559799, 263.116547): the actual awake Baby pays an affordable 100.00 points for running
+FAIL from (-113.110603, -196.366516): running shakes him off before either catch or crying
+FAIL from (-113.110603, -196.366516): the actual awake Baby pays an affordable 100.00 points for running
+FAIL from (344.500000, 0.000000): the immediate run escapes while he remains offscreen
+FAIL from (0.000000, 263.250000): running shakes him off before either catch or crying
+FAIL from (0.000000, 263.250000): the actual awake Baby pays an affordable 100.00 points for running
+FAIL from (0.000000, -196.500000): running shakes him off before either catch or crying
+FAIL from (0.000000, -196.500000): the actual awake Baby pays an affordable 100.00 points for running
+FAIL from (-151.559799, 263.116547): running shakes him off before either catch or crying
+FAIL from (-151.559799, 263.116547): the actual awake Baby pays an affordable 100.00 points for running
+FAIL from (-113.110603, -196.366516): running shakes him off before either catch or crying
+FAIL from (-113.110603, -196.366516): the actual awake Baby pays an affordable 100.00 points for running
+FAIL from (345.500000, 0.000000): the immediate run escapes while he remains offscreen
+Focused regression checks=94 failures=18

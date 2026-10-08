@@ -980,11 +980,11 @@ func _roll_interval() -> float:
 ## everything else, and whatever keeps the lesson forceful now has to come from somewhere other than
 ## siting it too close to see coming — an open question, not one this function answers.
 ##
-## The arithmetic that used to cap the siting no longer applies: the lunge is still fired by
-## **proximity** (see `EventInstance._lunged`), but the notice a player gets is no longer "how much
-## ground lies between the siting and the stand-off while both are on screen" — the screen-edge
-## badge (`DangerEdge`) now carries the notice for the whole of the offscreen approach, and the
-## on-screen closing to the stand-off is what it always was.
+## **The site is a direction and a check, not where the pursuer is created.** `EventManager` warns
+## of it first (`EventManager._warn_down_her_heading()`, M226): its badge is up alone for its own
+## `offscreen_notice`, pointing down the way this site lies from her, and it is then created just out
+## of sight that way on walkable ground (`PendingWarning.along_her_heading()`), its approach still to
+## run. The lunge is still fired by **proximity** (see `EventInstance._lunged`).
 ##
 ## **This function only ever sites `charging_dog` on `Tuning.RUN_TAUGHT_DAY`.** Every day after,
 ## `EventDef.spawn_mode_on()` answers `MAP` instead of `AHEAD_OF_PLAYER` for that row, so
@@ -1022,8 +1022,8 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## **The place is just off screen, whatever the row's telegraph.** *(2026-09-07: "bikers / unleashed
 ## dogs all pop in in front of the player instead of starting off screen", and "events that go
 ## towards the player (biker / pursuing dog) should at least be 200ms off screen with a warning".)*
-## `PendingWarning.down_her_line()` puts it `Tuning.offscreen_lead(heading, def.speed +
-## Tuning.WALK_SPEED, def.offscreen_notice)` out along her heading, on a sidewalk or a square.
+## `PendingWarning.down_her_line()` puts it just out of sight along her heading, on a sidewalk or a
+## square.
 ## *(PLAYTEST-145: "I don't like that the warning is tied to the size of the field or the speed.")*
 ## The warning is the row's own `telegraph_time`, spent before the thing exists, so nothing about
 ## where it is sited has to outlast it.

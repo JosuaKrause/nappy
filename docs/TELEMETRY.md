@@ -92,9 +92,10 @@ The events:
   something drives `day_ended` without first driving `day_lost_to` for the same day, which nothing
   in `main.gd`'s own wiring does — still sends the bare `lost-crying` / `lost-hard-fail` rather than
   nothing.
-- `nappy-day-3-seen-fire` — the first frame the burning building is on screen, whether or not the
+- `nappy-day-3-seen-fire` — the first frame the burning building is in sight, whether or not the
   warning for the fire engine it summons can be put up yet
-  (`EventManager._summon_what_has_been_sighted()`).
+  (`EventManager._summon_what_has_been_sighted()`): the point it stands at inside what she can see
+  (`VisibleView.sees()`), so not while it is only under a covered corner in the joystick scheme.
 - `nappy-day-3-fire-unmet` — a won day 3 on which the fire was never met and was lit off her path
   at dusk (`EventManager.light_what_she_never_met()`).
 - `nappy-day-14-blackout` — the city goes dark, whether or not a mast was silenced
@@ -131,10 +132,13 @@ The events:
   - **What she can see** is `VisibleView.visible_share()` (`src/ui/visible_view.gd`): the share of
     a world rectangle inside the camera's view, `Tuning.VIEW_HALF_EXTENT` about its centre, less, in
     the joystick scheme, the two bottom corners its controls cover — each from the screen's side to
-    the far edge of its run button, and from the top of its ring down *(inbox #581, the player:
+    the far edge of its focal disc, and from its painted top down. A ring and Run share the same
+    footprint, so choosing a steering side does not move these corners *(inbox #581, the player:
     "remove the area at the bottom left and right up to the top of the joystick circle and
     horizontal extent of the speed button ... for the other mode those rectangles *do* count")*.
-    `pelican-seen` asks it too. Nothing gameplay decides by asks it yet.
+    `pelican-seen` asks it too, and so does everything gameplay decides by what she can see: the
+    screen-edge badge, where a thing from off screen is placed, the fire's sighting, a chalk mark's
+    notice and the poster crews ("yes, everything should follow this").
   - **An encounter** is one instance's time on screen: it opens the first frame any of what is
     drawn for it is visible (`EventInstance.drawn_box()`, its own picture stretched over the run a
     spread covers) or it lands something on her from off screen, and it is over once the instance has been neither for
@@ -145,10 +149,16 @@ The events:
     controls, its halo or its badge does not count. A row that draws nothing of its own (`playground`, `curfew_announce`) is never seen.
   - **`influenced`**, at most once per encounter, the first frame it is meaningful, the same for
     every row: `Tuning.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed on her within the
-    encounter (`EventInstance.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or her
-    inside its lethal reach or its hold *(inbox #577, the player: "let's count chases and catches as
-    influenced always")*. A static row that can do none of these — a fallen tree, a skip — still
-    sends `seen` ("the static things question was meant for telemetry. we need to record seen for
+    encounter (`EventInstance.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or it
+    catching her or beginning a hold of her *(inbox #577, the player: "let's count chases and catches
+    as influenced always")*. A catch and a hold are the game's own tests, called and not copied
+    *(inbox #586 in [olive-hedgehog](playtests/2026-10-05-olive-hedgehog.md), the player: "use the real catch code")*: `EventInstance.is_lethal_at()`, so a cyclist
+    or lorry still only warned or waiting, a finished row, or a pursuer within reach through a wall
+    is no catch; and `EventManager._hold_that_would_begin()`, so a hold counts the frame it would
+    start and only for the one instance that would take her in. Both are pure reads. A pursuer is
+    chasing from the first frame after its telegraph, and a chase counts, so a guard with a wall
+    between them still counts as influenced — through the chase, not the catch. A static row that
+    can do none of these — a fallen tree, a skip — still sends `seen` ("the static things question was meant for telemetry. we need to record seen for
     them") and is never influenced.
   - **`influenced-unseen`** is a meaningful encounter she never saw: an influence before the
     encounter is seen waits, goes out as `influenced` the moment the instance is seen, and as
@@ -162,7 +172,7 @@ The events:
   excluding gaps smaller than 10s".)*
 - `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark
   actually noticed (`ResistanceDirector._track_sight_and_reposition()`, within `SEEN_DISTANCE` and
-  on screen for `SEEN_DWELL_SECONDS`), touched, or untouched when the day it belongs to ends. The
+  in sight — `VisibleView.sees()`, so not under a covered corner — for `SEEN_DWELL_SECONDS`), touched, or untouched when the day it belongs to ends. The
   mark/task split reads `ResistanceSteps.Step.is_pickup` off the resistance's own data.
 - `nappy-day-N-task-done` / `nappy-day-N-task-skipped` — each perform step done, and each a day
   ended without: a perform step reached but not finished. A chalk mark sends `mark-*` above

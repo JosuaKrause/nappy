@@ -12,6 +12,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS := [4242, 90210]
+const POSTER_VIEW := preload("res://tests/fixtures/poster_view.gd")
 
 var _saved_seed := 0
 var _saved_posters: Dictionary = {}
@@ -25,7 +26,9 @@ func run(t) -> void:
 	_test_the_walls_fill_the_way_the_run_asks(t)
 	_test_the_marble_bag_is_exact_and_reproducible(t)
 	_test_a_push_tears_and_walking_past_does_not(t)
+	_test_a_held_push_tears_every_sheet_she_slides_past(t)
 	_test_a_sent_patrol_comes_down_her_street_and_moves_nothing_else(t)
+	_test_a_crew_under_a_covered_corner_does_not_paste(t)
 	GameState.run_seed = _saved_seed
 	GameState.posters.restore(_saved_posters)
 
@@ -128,12 +131,18 @@ func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 					% [seed_value, day, before, cells.size()])
 			before = cells.size()
 			covered_on[day] = before
+			if day == PosterWalls.FIRST_DAY:
+				_check_the_density_floor(t, city, map, seed_value, day, FIRST_DAY_VIEW_FLOOR,
+						FIRST_DAY_ROUTE_FLOOR)
+			if day == Tuning.RUN_LENGTH_DAYS:
+				_check_the_density_floor(t, city, map, seed_value, day, LAST_DAY_VIEW_FLOOR,
+						LAST_DAY_ROUTE_FLOOR)
 			if day == 6:
 				_check_a_retry_pastes_the_same_dawn(t, city, state, day, seed_value)
 		t.check(int(covered_on[PosterWalls.FIRST_DAY]) > 0,
 				"seed %d: some posters are already up on day 4's morning" % seed_value)
-		t.check(int(covered_on[Tuning.RUN_LENGTH_DAYS]) > 3 * int(covered_on[PosterWalls.FIRST_DAY]),
-				"seed %d: sparse at first and dense by the end (%d on day 4, %d on day %d)"
+		t.check(int(covered_on[Tuning.RUN_LENGTH_DAYS]) > 2 * int(covered_on[PosterWalls.FIRST_DAY]),
+				"seed %d: denser every act and at least twice day 4's by the end (%d on day 4, %d on day %d)"
 				% [seed_value, covered_on[PosterWalls.FIRST_DAY],
 				covered_on[Tuning.RUN_LENGTH_DAYS], Tuning.RUN_LENGTH_DAYS])
 		var offset := 0
@@ -144,6 +153,31 @@ func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 				"seed %d: some sheets show an older one beneath, and most do not (%d of %d)"
 				% [seed_value, offset, GameState.posters.cells.size()])
 		city.free()
+
+## The density floors ("on the first day with posters it's very hard to find one -- increase the
+## probability throughout -- even the end doesn't have many posters"). Walking any route the day
+## offers, a screen's worth of wall around her has a sheet on it at least `view_floor` of the
+## time, and a whole route passes at least `route_floor` distinct sheets in view. The floors sit
+## below what `tests/probes/merry_elk_poster_density.gd` measures over eight seeds and above what
+## the rates before it gave, so reverting them fails the check.
+const FIRST_DAY_VIEW_FLOOR := 0.45
+const FIRST_DAY_ROUTE_FLOOR := 2
+const LAST_DAY_VIEW_FLOOR := 0.78
+const LAST_DAY_ROUTE_FLOOR := 10
+
+func _check_the_density_floor(t, city: City, map: CityMap, seed_value: int, day: int,
+		view_floor: float, route_floor: int) -> void:
+	var walked: Dictionary = POSTER_VIEW.walk(city, map)
+	var cells := int(walked["cells"])
+	var share := float(walked["with_sheet"]) / maxi(1, cells)
+	var fewest: int = (walked["routes"] as Array).min() if not (walked["routes"] as Array).is_empty() \
+			else 0
+	t.check(cells > 0 and share >= view_floor,
+			"seed %d day %d: a sheet is in view along the routes at least %d%% of the way (%.0f%%)"
+			% [seed_value, day, roundi(view_floor * 100.0), share * 100.0])
+	t.check(fewest >= route_floor,
+			"seed %d day %d: every route passes at least %d sheets in view (fewest %d)"
+			% [seed_value, day, route_floor, fewest])
 
 ## Every front tile is in front of a blank ground-floor cell of a building off her home block, and
 ## the cell is a real column of that building — so a sheet is never on a window, a door, a fire
@@ -219,6 +253,44 @@ func _test_the_marble_bag_is_exact_and_reproducible(t) -> void:
 ## letting go before the time is up does not. Then the tears' marbles: the run's first is safe,
 ## one in each ten after it sends a patrol, and a lost day gives the tears back so the retry draws
 ## the same marbles again.
+## **A crew under a corner the joystick's controls cover does not paste** (dappled-swan's
+## the-sightings, the filer's reading that a crew's pasting is a sighting): a `poster_crew` standing on
+## a front, with the day's own visible area laid so the crew is only under the left corner, pastes
+## nothing in the joystick scheme over several of `PosterWalls.PASTE_EVERY`, and pastes in the tap
+## scheme with the same view.
+func _test_a_crew_under_a_covered_corner_does_not_paste(t) -> void:
+	var map := CityGenerator.generate(SEEDS[0])
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+	GameState.run_seed = SEEDS[0]
+	GameState.posters.reset()
+	var walls := city.poster_walls()
+	var tiles: Array = walls.fronts().keys()
+	tiles.sort()
+	t.check(not tiles.is_empty(), "there is a front for a crew to stand at")
+	if tiles.is_empty():
+		city.free()
+		return
+	var tile: Vector2i = tiles[0]
+	var at := map.tile_to_world(tile)
+	var crew := city.events.spawn_extra(EventCatalogue.by_id("poster_crew"), at)
+	walls._day_running = true
+	walls._day = 5
+	var corner := VisibleView.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
+	var view := Rect2(at - corner * 0.5 - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	for joystick: bool in [true, false]:
+		walls._jobs.clear()
+		city.events.visible_view().look(view, joystick)
+		for i in 4:
+			walls._work_the_crews(PosterWalls.PASTE_EVERY)
+		var pasted: int = int(walls._jobs[tile]["pasted"]) if walls._jobs.has(tile) else 0
+		t.check((pasted == 0) == joystick,
+				"%s scheme: a crew only under the left corner pasted %d sheets"
+				% ["joystick" if joystick else "tap", pasted])
+	city.events.retire(crew)
+	city.free()
+
 func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 	var map := CityGenerator.generate(SEEDS[0])
 	var city: City = CITY_SCENE.instantiate()
@@ -314,6 +386,113 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 	t.check(folded[0] == 1,
 			"a second marble while the patrol is on its way is the same patrol, told to the counter once")
 	city.events._director._sent = null
+	city.free()
+
+# ---------------------------------------------------------------- the slide ---
+
+## A push held along a wall of intact sheets: the first takes `PRESS_TO_TEAR`, then every next sheet
+## tears as she comes in front of it, at the speed a diagonal slides her (the old once-per-timer
+## rule skipped a sheet in two at this speed: each tear left the next cell's count to start from
+## zero). Letting go re-arms the wait; walking past without a push tears nothing; and each sheet
+## torn draws its own marble.
+func _test_a_held_push_tears_every_sheet_she_slides_past(t) -> void:
+	var map := CityGenerator.generate(SEEDS[0])
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+	GameState.run_seed = SEEDS[0]
+	GameState.posters.reset()
+	var walls := city.poster_walls()
+	walls._day_running = true
+	var run: Array[Vector2i] = []
+	for index in walls.wall_count():
+		var cells: Array = walls._walls[index]["tiles"]
+		if cells.size() > run.size():
+			run.assign(cells)
+	t.check(run.size() >= 3, "there is a wall of at least three cells to slide along (%d)" % run.size())
+	if run.size() < 3:
+		city.free()
+		return
+	# The longest stretch of cells that touch, from the wall's west end.
+	var sheets := 1
+	while sheets < mini(run.size(), 6) and run[sheets].x == run[sheets - 1].x + 1:
+		sheets += 1
+	var rect := map.tile_rect_to_world(Rect2i(run[0], Vector2i.ONE))
+	var face := rect.position.y
+	var y := face + Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS
+	var step := 1.0 / 60.0
+	var speed := 92.0
+	var paste_all := func() -> void:
+		GameState.posters.reset()
+		for i in sheets:
+			GameState.posters.paste(run[i], PosterArt.Kind.RULES, false, 1)
+	var torn_count := func() -> int:
+		var n := 0
+		for i in sheets:
+			if GameState.posters.is_torn(run[i]):
+				n += 1
+		return n
+	# Slides from the west end of the run, `seconds` of walking at `steering`; returns the x reached.
+	var slide := func(steering: Vector2, from_x: float, seconds: float) -> float:
+		var x := from_x
+		for i in ceili(seconds / step):
+			walls._push_to_tear(step, Vector2(x, y), steering)
+			x += speed * step
+		return x
+	var start_x := rect.position.x + 1.0
+	var span := (float(sheets) * Tuning.TILE_SIZE) / speed
+	t.check(sheets >= 3, "the cells slid along touch (%d)" % sheets)
+
+	paste_all.call()
+	slide.call(Vector2.RIGHT, start_x, span)
+	t.check(torn_count.call() == 0, "walking the whole wall without a push tears nothing")
+
+	paste_all.call()
+	var diagonal := Vector2(1.0, -1.0).normalized()
+	# She stops against the first sheet until it gives, then slides on with the push held.
+	var stood := PosterWalls.PRESS_TO_TEAR + 0.05
+	for i in ceili(stood / step):
+		walls._push_to_tear(step, Vector2(start_x, y), diagonal)
+	slide.call(diagonal, start_x, span - 0.1)
+	t.check(torn_count.call() == sheets, "a diagonal held along %d adjacent sheets tears all of them (%d)"
+			% [sheets, torn_count.call()])
+	t.check(GameState.posters.tears == sheets, "and draws one marble for each (%d)" % GameState.posters.tears)
+
+	paste_all.call()
+	walls._sliding = false
+	walls._pressed_for = 0.0
+	slide.call(diagonal, start_x, PosterWalls.PRESS_TO_TEAR * 0.75)
+	t.check(torn_count.call() == 0, "the first sheet of a push still waits for the time")
+	slide.call(diagonal, start_x, PosterWalls.PRESS_TO_TEAR * 0.5)
+	t.check(torn_count.call() == 1, "and tears once it has passed")
+
+	# The push a player makes: a diagonal held while walking into the wall, never stopping. She
+	# slides at the speed the other checks here use, so the 0.4s covers about 37px, more than a
+	# 32px cell: entering the wall 20px into the first cell, that sheet is slid past before it
+	# elapses and escapes, the second tears, and every sheet after it comes down as she reaches it
+	# (the old rule restarted the count after each tear and so skipped every second one).
+	paste_all.call()
+	walls._sliding = false
+	walls._pressed_for = 0.0
+	var slide_speed := speed
+	var x := rect.position.x + 20.0
+	for i in ceili((float(sheets) * Tuning.TILE_SIZE) / slide_speed / step):
+		walls._push_to_tear(step, Vector2(x, y), diagonal)
+		x += slide_speed * step
+	t.check(GameState.posters.has_intact_sheet(run[0]),
+			"the sheet she was already past when the time elapsed escapes the first tear")
+	var rest_torn := true
+	for i in range(1, sheets):
+		rest_torn = rest_torn and GameState.posters.is_torn(run[i])
+	t.check(rest_torn, "and every sheet after the first tear comes down as she reaches it")
+	t.check(GameState.posters.tears == sheets - 1, "one marble each (%d)" % GameState.posters.tears)
+
+	# Letting go re-arms the wait: the next sheet she stands before takes the time again.
+	GameState.posters.paste(run[0], PosterArt.Kind.RULES, false, 1)
+	walls._push_to_tear(step, Vector2(start_x, y), Vector2.ZERO)
+	t.check(not walls._sliding, "letting go ends the slide")
+	walls._push_to_tear(step, Vector2(start_x, y), diagonal)
+	t.check(GameState.posters.has_intact_sheet(run[0]), "and the next push waits for the time again")
 	city.free()
 
 # ---------------------------------------------------------------- the patrol ---
