@@ -15,3 +15,9 @@ lifted ("no cap"). [Quiet-wombat](../../playtests/2026-10-07-quiet-wombat.md) re
 improvements: it starts at the player instead of racing there from the origin. This reported
 bug puts the entry in `now`; the separate [standalone screenshot
 investigation](standalone-escape-screenshot.md) stays deferred until after the camera work.
+
+[Silky-egret](../../playtests/2026-10-07-silky-egret.md) selects `current`, the westward birds
+sequence, over `trailer-birds-staged`. Deliver one local trailer using that choice after the
+camera correction, for the player to review; recover the unfinished Claude work before editing.
+Start recordings earlier with the scenes unchanged and a moving lead-in. Extend the intro slide,
+title card and final fully zoomed-out hold by two seconds each.
