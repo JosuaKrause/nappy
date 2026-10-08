@@ -38,3 +38,23 @@ endpoint, not evidence that standing beside the van is safe.
 
 The trailer and task-arrow integration is separate from this preview; these pictures do
 not claim to show those pending PRs.
+
+`covered-movie-*` records a failed motion capture at clean source
+`f1ac0061e43800360715c6458433aad6f7eec760`, using:
+
+```sh
+tools/record.sh --out azure-beaver-day7.mp4 --recipe scene-recipes/task-07-package.json --recipe-mode scripted
+```
+
+The simulation completed every assertion without engine errors, but visual inspection found
+frozen movie frames: one PNG hash repeats 456 times and another 124 times. The selected
+decoded frames at approximately 0.5 and 8.5 seconds show the resulting jump. Settings and
+raw frame hashes preserve provenance; the whole movie remains local. This is a capture
+failure, not crowd-motion evidence. The trailer's covered-window drawing correction must
+be integrated before repeating the short motion proof.
+
+`fire-truck-crying.json` and its one-line run-log excerpt retain a separate failure at that
+same clean source. `tools/scene-recipes.sh --output /tmp/all-saved-scenes` stops on the
+unchanged full-city fire-truck recipe: its waiting route reaches excitement 100 and loses
+to crying at tick 261, before the required truck arrival observations. This result does
+not affect the ten passing stretch playbacks; it prevents claiming every saved recipe passes.
