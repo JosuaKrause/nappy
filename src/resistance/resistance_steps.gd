@@ -47,13 +47,15 @@ class Step extends RefCounted:
 	## up. "" for a pickup and for the kinds that compute a bare point, none of which name a row.
 	var task_event_id := ""
 	var target_kind := TargetKind.EVENT
-	## True for a one-place task: the red arrow points at it from the moment the mark is
-	## touched until it is done, and its contact is never subject to
-	## `ResistanceDirector._follow_her_between_look_alikes()`'s retargeting. False for the two
-	## tasks any live instance answers (the man shouting, a roadblock), which earn no arrow and
-	## retarget onto whichever instance she is within reach of, so the one she hands it to is the
-	## one that counts. Unused by a pickup, which never draws the arrow; true for the finale, whose
-	## door is one place.
+	## True for a one-place task: its rider or point is fixed for the day, and its contact is never
+	## subject to `ResistanceDirector._follow_her_between_look_alikes()`'s retargeting. False for
+	## the two tasks any live instance answers (the man shouting, a roadblock), which retarget onto
+	## whichever instance she is within reach of, so the one she hands it to is the one that counts.
+	## **Every task draws the red arrow**, one-place or not; where several places answer it points
+	## at the closest by walking distance (`ResistanceDirector.red_arrow_target()`). Day 11's mast
+	## is one-place by this flag (its contact is a bare point, not a rider) and still answers at any
+	## live mast (`answers_at_several_places()`).
+	## Unused by a pickup, which never draws the arrow; true for the finale, whose door is one place.
 	var is_one_place := true
 	## Fraction of the day after which the step is gone for good. 0 means no deadline, which is
 	## every task in the calendar: day 10's deadline is the neighbor's own walk home, not a clock.
@@ -128,6 +130,14 @@ static func swing_day() -> int:
 ## tile type or a rider — and so the kinds `narrow_target_on()` answers for.
 const NARROW_KINDS: Array[TargetKind] = [TargetKind.DOOR, TargetKind.PARK_SWING,
 		TargetKind.STATION_DOOR]
+
+## Whether more than one place can answer `step` at once, so the red arrow has a choice to make:
+## the any-instance tasks (the man shouting, a roadblock) and day 11's mast, whose task any live
+## mast answers (`ResistanceDirector._mast_answers()`). Every other task is one place and its
+## arrow has nothing to choose.
+static func answers_at_several_places(step: Step) -> bool:
+	return step != null and not step.is_pickup \
+			and (not step.is_one_place or step.target_kind == TargetKind.MAST)
 
 ## Whether `step`'s contact is a bare point this director computes from today's city rather than
 ## a rider — the narrow kinds and a mast's foot. A mast is not narrow: six of them stand across the
@@ -307,10 +317,11 @@ static func _build() -> Array[Step]:
 		_perform(10, "Warn the neighbor", 10, "neighbor", [GameEnums.TileType.SIDEWALK], true,
 				TargetKind.NEIGHBOR, false, "your neighbor, on the way home"),
 
-		# Day 11 · silence a loudspeaker mast — one place, red arrow. She reaches its foot, as she
-		# touches a mark, and it stays quiet for the rest of the run; its field makes the approach
-		# cost while it broadcasts, so timing it between broadcasts is the skill. The rehearsal:
-		# a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own.
+		# Day 11 · silence any live loudspeaker mast, with the red arrow on the closest on foot. She
+		# reaches its foot, as she touches a mark, and it stays quiet for the rest of the run; its
+		# field makes the approach cost while it broadcasts, so timing it between broadcasts is the
+		# skill. The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no
+		# power of their own.
 		_mark(11, "Another mark", 11,
 				"Silence the loudspeaker mast. The wire is at its foot."),
 		_perform(12, "Silence a mast", 11, "", [], true, TargetKind.MAST, false,

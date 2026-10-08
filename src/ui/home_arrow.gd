@@ -1,7 +1,7 @@
 class_name HomeArrow
 extends Control
 ## Points the way home while the baby is asleep — and, from a second instance under `Hud`'s own
-## `TaskArrow` node, the way to a one-place resistance task.
+## `TaskArrow` node, the way to today's resistance task, every task once its mark is read.
 ##
 ## The home use is only ever shown during the return phase. The rest of the game is about
 ## knowing the city; this is about not losing a won day to a wrong turn while carrying a
@@ -28,7 +28,7 @@ var target := Vector2.INF
 var active := false
 
 ## Which color this instance draws in — `Palette.HOME_ARROW` for the return-home use,
-## `Palette.TASK_ARROW` for the second instance a one-place resistance task points with. Set
+## `Palette.TASK_ARROW` for the second instance a resistance task points with. Set
 ## once, from `Hud._ready()`, never per-frame.
 var colour := Palette.HOME_ARROW
 ## The word shown once `target` is on screen — "home" for the return-home arrow, "task" for the

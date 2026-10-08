@@ -1,0 +1,25 @@
+ERROR: Failed to open 'user://logs/godot2026-10-08T00.24.24.log'.
+   at: copy (core/io/dir_access.cpp:429)
+ERROR: Failed to open log file for writing: user://logs/godot.log
+   at: rotate_file (core/io/logger.cpp:169)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: Condition "ret != noErr" is true. Returning: ""
+   at: get_system_ca_certificates (platform/macos/os_macos.mm:1035)
+[GameState] run started, seed=11
+[Main] 9 atlas pages held from startup in 25 ms
+[Main] city generated in 43 ms (seed 1917501)
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[SceneRecipe] manifest {"anchors":{"mark":[2960.0,2224.0],"start":[2800.0,2256.0]},"authored_posters":[],"bounds":[0,0,160,160],"checks":["construction_schema","production_choice_predicates","whole_visible_footprints","full_context_guarantees"],"choices":{"context_seed":1917501.0},"classification":"normal","context_seed":1917501,"engine":"4.7.2-stable (official)","expected_violations":[],"initial_activity":{"moving_crowd":0,"visible_cars":0,"visible_events":{},"visible_walkers":0,"walker_streets":{},"walkers_left":0,"walkers_right":0},"initial_actors":{"mark":{"done":false,"position":[2960.0,2224.0]},"nearer_by_crow_distance":{"position":[3440.0,2384.0],"pursuing":false,"row":"homeless_yeller","telegraphing":true},"player":{"carrying":false,"gait_frame":1,"position":[2800.0,2256.0],"speed":0.0}},"initial_crowd":{"cars":0,"moving":0,"moving_cars":0,"quadrants":{"ne":{"cars":0,"moving":0,"moving_cars":0,"total":0,"walkers":0},"nw":{"cars":0,"moving":0,"moving_cars":0,"total":0,"walkers":0},"se":{"cars":0,"moving":0,"moving_cars":0,"total":0,"walkers":0},"sw":{"cars":0,"moving":0,"moving_cars":0,"total":0,"walkers":0}},"scope":"local","total":0,"walkers":0},"installed_events":[{"facing":[1.0,0.0],"position":[3440.0,2384.0],"row":"homeless_yeller"}],"observations":[],"physics_ticks_per_second":30,"playback_complete":false,"recipe":"plush-moose evidence: day 6 chooses the shorter walk over the nearer crow distance","recipe_sha256":"83c9d3ae1ed3d8529a81b1b4e2f203a04b544eee9f2cb75cee7c1fc18f1fe6a8","scope":"full","seed":11,"setup":{"day":6.0,"events":[{"at":[3440.0,2384.0],"name":"nearer_by_crow_distance","row":"homeless_yeller"}],"parent":"mother","player":{"at":"start","facing":"east"},"task":{"mark":"mark"},"tutorial_complete":true},"task":{"mark":[2960.0,2224.0]},"violations":[]}
+PR588 target=505094869366 here=(2961.199, 2256.0) at=(3376.0, 2384.0) crow=434.10 walk=26
+PR588 target=532173296619 here=(2961.199, 2256.0) at=(3344.0, 1808.0) crow=589.27 walk=23
+PR588 target=505094869366 here=(2961.199, 2256.0) at=(3366.5, 2384.0) crow=425.03 walk=26
+PR588 target=532173296619 here=(2961.199, 2256.0) at=(3344.0, 1808.0) crow=589.27 walk=23
+PR588 target=505094869366 here=(2961.199, 2256.0) at=(3360.5, 2384.0) crow=419.32 walk=26
+PR588 target=532173296619 here=(2961.199, 2256.0) at=(3344.0, 1808.0) crow=589.27 walk=23
+PR588 target=505094869366 here=(2961.199, 2256.0) at=(3357.0, 2384.0) crow=415.98 walk=26
+PR588 target=532173296619 here=(2961.199, 2256.0) at=(3344.0, 1808.0) crow=589.27 walk=23
+PR588 target=505094869366 here=(2961.199, 2256.0) at=(3345.0, 2384.0) crow=404.58 walk=26
+PR588 target=532173296619 here=(2961.199, 2256.0) at=(3344.0, 1808.0) crow=589.27 walk=23
+PR588 target=505094869366 here=(2961.199, 2256.0) at=(3329.5, 2384.0) crow=389.91 walk=26
+PR588 target=532173296619 here=(2961.199, 2256.0) at=(3344.0, 1808.0) crow=589.27 walk=23

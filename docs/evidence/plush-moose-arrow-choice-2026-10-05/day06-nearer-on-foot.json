@@ -1,0 +1,59 @@
+{
+ "version": 1,
+ "name": "plush-moose evidence: day 6, a second man shouting put in at (99,74), whose beat up the street brings him nearer on foot than the task's own man to the north-east",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "mark": {
+   "tile": [
+    92,
+    69
+   ]
+  },
+  "start": {
+   "tile": [
+    87,
+    70
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 6,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "east"
+  },
+  "task": {
+   "mark": "mark"
+  },
+  "events": [
+   {
+    "name": "second",
+    "row": "homeless_yeller",
+    "at": [
+     3184,
+     2384
+    ]
+   }
+  ]
+ },
+ "playback": {
+  "walk": "1.74e2.09w8.0n5.91e4.6s",
+  "duration": 23.0,
+  "capture_at": 2.6,
+  "observations": [
+   {
+    "tick": 60,
+    "subject": "task",
+    "condition": "offered"
+   }
+  ]
+ }
+}

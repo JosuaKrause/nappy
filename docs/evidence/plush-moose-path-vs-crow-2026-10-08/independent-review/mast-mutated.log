@@ -1,0 +1,11 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+-- review588_mast.gd             4127 ms
+
+FAIL  following her between masts moves the task to the one she actually touches
+FAIL  touching the third mast completes the task
+FAIL  and silences the mast she touched, not the near or the routed one ({ "mast_5": false, "added-4912-1072": false, "added-16-4592": false })
+FAIL  and the one scar is that mast's foot
+9 checks, 4 failures
+PARTIAL RUN — only suites matching probes/review588_mast.gd. Not a green build.

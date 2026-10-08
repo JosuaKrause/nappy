@@ -124,9 +124,9 @@ func _test_plain_pose_on_a_mark_step(t) -> void:
 	)
 
 ## *(2026-09-11, the player: "but the other tasks are not as easy and need pointing.")* A perform
-## step's own contact — already placed by `ResistanceDirector._begin_step()`, M78's rules
-## untouched — is exactly what a protester points at, activated the moment the mark it belongs to
-## is touched rather than waiting for a `start_day()` that does not come until tomorrow.
+## step activates the protester's objective the moment the mark it belongs to is touched rather
+## than waiting for a `start_day()` that does not come until tomorrow. Before the first arrow field
+## settles, that objective is the contact `_begin_step()` already placed.
 func _test_pointing_pose_on_a_perform_step(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
@@ -139,7 +139,7 @@ func _test_pointing_pose_on_a_perform_step(t) -> void:
 		var objective := director.pointable_objective()
 		t.check(objective != Vector2.INF, "a perform step gives a protester somewhere to point")
 		t.check(objective == director.contact_position(),
-				"exactly the step's own contact, never a placement or a move of its own")
+				"before its first arrow choice, it is the step's own contact")
 
 		var texture := EventInstance._protester_texture(objective + Vector2(0.0, 300.0), objective)
 		t.check(texture != EventInstance.PROTESTER,
