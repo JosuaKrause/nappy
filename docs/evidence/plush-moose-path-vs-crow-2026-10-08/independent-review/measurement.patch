@@ -1,0 +1,22 @@
+diff --git i/src/resistance/resistance_director.gd w/src/resistance/resistance_director.gd
+index bc1977b4..5772c35f 100644
+--- i/src/resistance/resistance_director.gd
++++ w/src/resistance/resistance_director.gd
+@@ -2807,6 +2807,17 @@ func retarget_the_arrow() -> void:
+ 			var alone: Array[Dictionary] = [target]
+ 			if not _swept_for(own_newest, alone, versions):
+ 				_arrow_own_next = ArrowField.start(_map, alone, versions)
++	if _arrow_nearest and _arrow_nearest.done and step.day == 6:
++		var review_here := _player_position()
++		var review_tile := _map.world_to_tile(review_here)
++		for target in found:
++			var review_targets: Array[Dictionary] = [target]
++			var review_field := ArrowField.start(_map, review_targets, versions)
++			while not review_field.done:
++				review_field.advance(_map, _ground_for_the_arrow(), 1000000)
++			print("REVIEW588 elapsed=%.3f player=%s target=%s selected=%s crow=%.3f walk=%d" % [
++					_elapsed, review_here, target["at"], _same_key(target["key"], _arrow_key),
++					review_here.distance_to(target["at"]), review_field.length_at(review_tile)])
+ 
+ ## The key `retarget_the_arrow()` points the arrow at from `found`, or null to leave it: see there.
+ func _choose_the_arrow(found: Array[Dictionary]) -> Variant:
