@@ -97,7 +97,13 @@ class CliHelpTests(unittest.TestCase):
             if "recipe" in shot:
                 (root / shot["recipe"]).write_text('{"playback":{"duration":10}}\n')
             else:
-                for asset in (shot["card"].get("asset"), shot["card"].get("illustration")):
+                assets = [
+                    shot["card"].get("asset"),
+                    shot["card"].get("illustration"),
+                    shot["card"].get("frame"),
+                    *shot["card"].get("animation", []),
+                ]
+                for asset in assets:
                     if not asset:
                         continue
                     destination = root / asset
@@ -132,7 +138,11 @@ class CliHelpTests(unittest.TestCase):
         )
         font_match.chmod(0o755)
         subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
-        subprocess.run(["git", "-C", str(root), "add", "scene-recipes", "art"], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-C", str(root), "add", "scene-recipes", "art", "tools/trailer/window"],
+            check=True,
+            capture_output=True,
+        )
         env = dict(os.environ, GODOT=str(stub), RECIPE_CALLS=str(root / "calls"))
         env["PATH"] = str(font_bin) + os.pathsep + env["PATH"]
         env["RECIPE_RESULT"] = json.dumps({"classification": "normal", "scope": "bounded", "bounds": [0, 0, 12, 12]})

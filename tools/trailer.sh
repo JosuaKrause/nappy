@@ -161,15 +161,24 @@ schema_errors="$(jq -r '
             then empty
             elif $kind == "card" and (.recipe == null) and (.in == null) and
                 (.card | type) == "object" and
-                (.card | keys - ["text","font_size","subtitle","subtitle_font_size","asset","layout","illustration"] | length) == 0 and
+                (.card | keys - ["text","font_size","subtitle","subtitle_font_size","asset","layout","illustration","frame","animation"] | length) == 0 and
                 (((.card.asset | type) == "string" and (.card.asset | test("^art/[a-z0-9/_-]+\\.png$")) and
                     .card.text == null and .card.font_size == null and .card.subtitle == null and
-                    .card.subtitle_font_size == null and .card.layout == null and .card.illustration == null) or
+                    .card.subtitle_font_size == null and .card.layout == null and .card.illustration == null and
+                    .card.frame == null and .card.animation == null) or
                  ((.card.text | type) == "string" and (.card.text | length) > 0 and
                     (.card.font_size | num) and .card.font_size > 0 and .card.asset == null and
-                    ((.card.layout == null and .card.illustration == null) or
+                    ((.card.layout == null and .card.illustration == null and .card.frame == null and
+                      .card.animation == null) or
                      (.card.layout == "split" and (.card.illustration | type) == "string" and
-                      (.card.illustration | test("^art/[a-z0-9/_-]+\\.png$")))) and
+                      (.card.illustration | test("^art/[a-z0-9/_-]+\\.png$")) and
+                      .card.frame == null and .card.animation == null) or
+                     (.card.layout == "window" and .card.illustration == null and
+                      (.card.frame | type) == "string" and
+                      (.card.frame | test("^tools/trailer/window/[a-z0-9-]+\\.png$")) and
+                      (.card.animation | type) == "array" and (.card.animation | length) == 3 and
+                      all(.card.animation[];
+                        type == "string" and test("^tools/trailer/window/[a-z0-9-]+\\.png$")))) and
                     ((.card.subtitle == null and .card.subtitle_font_size == null) or
                      ((.card.subtitle | type) == "string" and (.card.subtitle | length) > 0 and
                       (.card.subtitle_font_size | num) and .card.subtitle_font_size > 0))))
@@ -404,7 +413,8 @@ while IFS= read -r asset; do
         echo "trailer.sh: editorial card asset is absent or untracked: $asset" >&2
         exit 1
     fi
-done < <(jq -r '.shots[].card | (.asset? // empty), (.illustration? // empty)' "$SHOTS_FILE")
+done < <(jq -r '.shots[].card | (.asset? // empty), (.illustration? // empty),
+    (.frame? // empty), (.animation[]? // empty)' "$SHOTS_FILE")
 
 # The baked atlas pages, repaired the way tools/shot.sh repairs them -- see its own comment.
 if ! "$PROJECT_DIR/tools/bake-atlases.sh" --check >/dev/null 2>&1; then
@@ -699,6 +709,44 @@ afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=dura
     subtitle_file="$WORK/card-${name}-subtitle.txt"
     shot_nested_field "$name" card text > "$text_file"
     [[ "$subtitle" == null ]] || printf '%s\n' "$subtitle" > "$subtitle_file"
+    if [[ "$layout" == window ]]; then
+        local frame frame_a frame_c frame_b
+        frame="$(shot_nested_field "$name" card frame)"
+        frame_a="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[0]' "$SHOTS_FILE")"
+        frame_c="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[1]' "$SHOTS_FILE")"
+        frame_b="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[2]' "$SHOTS_FILE")"
+        # The three original-resolution carrying drawings have different transparent margins.
+        # Their selected family is registered by the visible figure, then each equal-height upper
+        # body is revealed behind the two panes. A-C-B-C is the approved carrying cycle.
+        ffmpeg -hide_banner -loglevel error -y \
+            -f lavfi -i "color=c=${CARD_BACKGROUND}:s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${length}" \
+            -f lavfi -i "anullsrc=r=48000:cl=stereo" \
+            -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$frame_a" \
+            -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$frame_c" \
+            -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$frame_b" \
+            -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$frame" \
+            -filter_complex "\
+[0:v]drawbox=x=72:y=145:w=7:h=360:color=${ACCENT}:t=fill,\
+drawtext=fontfile='${FONT_FILE}':textfile='${text_file}':fontsize=${font_size}:fontcolor=${PAPER}:line_spacing=12:x=100:y=165,\
+drawtext=fontfile='${FONT_FILE}':textfile='${subtitle_file}':fontsize=${subtitle_size}:fontcolor=${PAPER}@0.86:line_spacing=8:x=100:y=425,\
+drawbox=x=620:y=0:w=660:h=720:color=0x59453d:t=fill,\
+drawgrid=width=96:height=32:thickness=2:color=0x332820@0.45[card];\
+[2:v]crop=131:371:107:21,scale=-1:600:flags=lanczos,format=rgba,pad=282:600:(ow-iw)/2:0:color=black@0,crop=282:396:0:0[a];\
+[3:v]crop=203:607:169:61,scale=-1:600:flags=lanczos,format=rgba,pad=282:600:(ow-iw)/2:0:color=black@0,crop=282:396:0:0[c];\
+[4:v]crop=131:357:107:8,scale=-1:600:flags=lanczos,format=rgba,pad=282:600:(ow-iw)/2:0:color=black@0,crop=282:396:0:0[b];\
+[card][a]overlay=x=839:y=165:enable='between(mod(t\,2.2)\,0\,0.55)'[wa];\
+[wa][c]overlay=x=839:y=165:enable='between(mod(t\,2.2)\,0.55\,1.10)+between(mod(t\,2.2)\,1.65\,2.2)'[wc];\
+[wc][b]overlay=x=839:y=165:enable='between(mod(t\,2.2)\,1.10\,1.65)'[wb];\
+[5:v]scale=960:960:flags=lanczos[window];\
+[wb][window]overlay=x=500:y=-120:shortest=1:format=auto,\
+fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out},\
+tpad=start_duration=${gap}:color=black,format=yuv420p[v];\
+[1:a]atrim=duration=${length},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${fade_in},\
+afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[aout]" \
+            -map "[v]" -map "[aout]" -r "$FPS" -c:v libx264 -preset veryfast -crf 12 \
+            -c:a pcm_s16le "$out"
+        return
+    fi
     local card_filters=""
     if [[ "$layout" == split ]]; then
         # A short muted-red rule anchors the left-aligned copy while the existing sleeping
@@ -793,7 +841,7 @@ audition_source_signature() {
         jq -S 'del(.score)' "$SHOTS_FILE"
         while IFS= read -r file; do
             shasum -a 256 "$PROJECT_DIR/$file"
-        done < <(git -C "$PROJECT_DIR" ls-files src art project.godot scene-recipes tools/trailer.sh)
+        done < <(git -C "$PROJECT_DIR" ls-files src art project.godot scene-recipes tools/trailer.sh tools/trailer/window)
     } | shasum -a 256 | awk '{print $1}'
 }
 

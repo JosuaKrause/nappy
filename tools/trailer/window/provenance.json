@@ -1,0 +1,23 @@
+{
+  "purpose": "Trailer-only close-up of the mother's own apartment window",
+  "runtime_art_changed": false,
+  "window": {
+    "source": "art/buildings/window_lit.svg",
+    "source_sha256": "9e2f7b6a81c3c336bafdbe7386ca83a9b5a2b2a2d73aab89cf5bc80ed60af514",
+    "derived_source": "tools/trailer/window/apartment-window-frame.svg",
+    "derived_png": "tools/trailer/window/apartment-window-frame.png",
+    "render": "Godot Image.load_svg_from_string at scale 30",
+    "note": "The production plain lit casement geometry is unchanged; the pane fills are translucent so the approved figure can sit behind its frame."
+  },
+  "carrying_frames": {
+    "history_commit": "7f194d73",
+    "history_root": "docs/evidence/comic-carrying-hip-motion-2026-09-12/registered/extracted",
+    "order": ["mother-carrying-front-a.png", "mother-carrying-front-c.png", "mother-carrying-front-b.png", "mother-carrying-front-c.png"],
+    "sha256": {
+      "mother-carrying-front-a.png": "6674b8cea6b6828937928b2545d1860fbf1f6589ddc9f6b7237dbfc716863788",
+      "mother-carrying-front-c.png": "bb02801cf9d500b55a7943e8979ee0ac4d944c133c528fc5a71c533a520dcca8",
+      "mother-carrying-front-b.png": "8356134208d0fcb0ae0537f33cdfa2b9fdb08d1b7d7592166cb966c0571450a4"
+    },
+    "note": "These are the selected family's original-resolution RGBA extracted cells, before their 24x46 runtime registration. Each frame is fitted to equal full-figure height before the common upper-body aperture crop."
+  }
+}
