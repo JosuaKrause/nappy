@@ -177,7 +177,10 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 	var velocity := _answered(answer, heading)
 	var clock := 0.0
 	var warned_at := 0.0
-	while clock < LIMIT:
+	# A runner can keep a sent pursuer unseen until the existing long cap. Include the badge
+	# before that cap, so the measurement observes the ending rather than cutting off early.
+	var limit := maxf(LIMIT, def.warned_for() + def.telegraph_time + def.duration + 1.0)
+	while clock < limit:
 		her += velocity * STEP
 		clock += STEP
 		if instance == null:
