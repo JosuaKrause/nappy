@@ -2,7 +2,7 @@ class_name SceneRecipe
 extends RefCounted
 ## Construction schema only. Runtime validates setup and playback before exposing a scene.
 
-static func load_file(path: String) -> Dictionary:
+static func load_file(path: String, drafting := false) -> Dictionary:
 	var errors: Array[String] = []
 	if not FileAccess.file_exists(path):
 		errors.append("recipe.file: cannot read %s" % path)
@@ -15,12 +15,12 @@ static func load_file(path: String) -> Dictionary:
 		errors.append("recipe.schema: root must be an object")
 		return {"data": {}, "errors": errors}
 	var data: Dictionary = parser.data
-	return {"data": data, "errors": validate(data)}
+	return {"data": data, "errors": validate(SceneRecipeDraft.base_of(data) if drafting else data)}
 
 static func validate(data: Dictionary) -> Array[String]:
 	var errors: Array[String] = []
 	_keys(data, ["version", "name", "seed", "kind", "classification", "expected_violations",
-			"extent", "city", "anchors", "setup", "playback"], "recipe", errors)
+			"extent", "city", "anchors", "setup", "playback", "stretch", "draft", "context"], "recipe", errors)
 	if not integer(data.get("version")) or int(data.get("version", 0)) != 1:
 		errors.append("recipe.version: expected 1")
 	if not data.get("name") is String or str(data.get("name", "")).strip_edges().is_empty():
@@ -42,15 +42,31 @@ static func validate(data: Dictionary) -> Array[String]:
 			seen[code] = true
 		if data.get("classification", "normal") == "normal" and not expected.is_empty():
 			errors.append("recipe.expected_violations: normal scenes cannot waive checks")
-	for field in ["extent", "city", "anchors", "setup", "playback"]:
+	for field in ["extent", "city", "anchors", "setup", "playback", "stretch", "draft", "context"]:
 		if not data.get(field, {}) is Dictionary:
 			errors.append("recipe.%s: expected an object" % field)
 	if not errors.is_empty():
 		return errors
 	var extent: Dictionary = data.get("extent", {})
 	_keys(extent, ["scope", "bounds"], "extent", errors)
-	if extent.get("scope") not in ["full", "bounded"]:
-		errors.append("extent.scope: expected full or bounded")
+	if extent.get("scope") not in ["full", "bounded", "stretch"]:
+		errors.append("extent.scope: expected full, bounded or stretch")
+	if (extent.get("scope") == "stretch") != data.has("stretch"):
+		errors.append("stretch: a stretch scope and a stretch object come together")
+	elif data.has("stretch"):
+		_validate_stretch(data.stretch, errors)
+		if not data.has("context"):
+			errors.append("context: a stretch requires explicit saved city context; draft it first")
+		else:
+			errors.append_array(RecipeCityContext.validate(data.context))
+	elif data.has("context"):
+		errors.append("context: saved city context belongs to a stretch")
+	if data.get("draft", {}) is Dictionary:
+		_keys(data.get("draft", {}), ["include"], "draft", errors)
+		var include: Variant = data.get("draft", {}).get("include", [])
+		if not include is Array or not (include as Array).all(
+				func(tile: Variant) -> bool: return tuple(tile, 2, true)):
+			errors.append("draft.include: a list of tiles [x, y] whose ground the draft adds")
 	if extent.get("scope") == "bounded":
 		if not tuple(extent.get("bounds"), 4, true):
 			errors.append("extent.bounds: expected [x,y,width,height] in integer tiles")
@@ -59,7 +75,7 @@ static func validate(data: Dictionary) -> Array[String]:
 			if not bounds.has_area() or not Rect2i(Vector2i.ZERO, CityMap.map_tiles()).encloses(bounds):
 				errors.append("extent.bounds: expected positive bounds inside the city lattice")
 	elif extent.has("bounds"):
-		errors.append("extent.bounds: full scope has implicit complete city bounds")
+		errors.append("extent.bounds: only a bounded scope has bounds")
 	var city: Dictionary = data.get("city", {})
 	_keys(city, ["context_seed", "main_road", "precincts", "lots", "layouts", "dead_ends", "power_station", "closures", "tree_moves"], "city", errors)
 	if not city.get("tree_moves", []) is Array:
@@ -173,6 +189,91 @@ static func validate(data: Dictionary) -> Array[String]:
 			if anchor.has("side") and not anchor.has("junction"):
 				errors.append("anchors.%s.side: requires a junction" % key)
 	return errors
+
+## The tile type names a stretch lists its tiles under, lowercased from `GameEnums.TileType`.
+static func tile_type_names() -> Array[String]:
+	var names: Array[String] = []
+	for key: String in GameEnums.TileType:
+		names.append(key.to_lower())
+	return names
+
+## The prop kinds a stretch places, lowercased from `Prop.Kind` but for the street tree, which a
+## stretch lists under `trees` so drawing, collision and event clearance share its placement.
+static func prop_kind_names() -> Array[String]:
+	var names: Array[String] = []
+	for key: String in Prop.Kind:
+		if key != "STREET_TREE":
+			names.append(key.to_lower())
+	return names
+
+## The litter a stretch places, by the picture's own name (`Litter.TEXTURES`, `props/litter_cup`
+## as `cup`).
+static func litter_names() -> Array[String]:
+	var names: Array[String] = []
+	for texture in Litter.TEXTURES:
+		names.append(str(texture).trim_prefix("props/litter_"))
+	return names
+
+## The shape of `stretch` (`docs/SCENE_RECIPES.md`, "The task scenes"); whether each piece fits the
+## saved context and authored extent is `RecipeCityBuilder`'s to say.
+static func _validate_stretch(stretch: Dictionary, errors: Array[String]) -> void:
+	_keys(stretch, ["tiles", "buildings", "trees", "props", "litter", "cracks"], "stretch", errors)
+	var tiles: Variant = stretch.get("tiles")
+	if not tiles is Dictionary or (tiles as Dictionary).is_empty():
+		errors.append("stretch.tiles: expected an object of tile type -> [y, x_from, x_to] runs")
+	else:
+		for type: Variant in tiles:
+			if not type in tile_type_names() or type == "building":
+				errors.append("stretch.tiles.%s: not a walkable tile type" % type)
+			elif not tiles[type] is Array:
+				errors.append("stretch.tiles.%s: expected an array of runs" % type)
+			else:
+				for run: Variant in tiles[type]:
+					if not tuple(run, 3, true) or int(run[1]) > int(run[2]):
+						errors.append("stretch.tiles.%s: a run is [y, x_from, x_to] with x_from <= x_to" % type)
+	for field in ["buildings", "trees", "props", "litter", "cracks"]:
+		if not stretch.get(field, []) is Array:
+			errors.append("stretch.%s: expected an array" % field)
+	if not errors.is_empty():
+		return
+	var districts: Array[String] = []
+	for key: String in GameEnums.BlockPurpose:
+		districts.append(key.to_lower())
+	var conditions: Array[String] = []
+	for key: String in Building.Condition:
+		conditions.append(key.to_lower())
+	for building: Variant in stretch.get("buildings", []):
+		if not building is Dictionary:
+			errors.append("stretch.buildings: expected objects")
+			continue
+		_keys(building, ["lot", "district", "variant", "height", "condition"], "stretch.buildings", errors)
+		if not tuple(building.get("lot"), 4, true) or not building.get("district") in districts \
+				or not integer(building.get("variant")) or not integer(building.get("height")) \
+				or int(building.get("height", 0)) < 1 or not building.get("condition") in conditions:
+			errors.append("stretch.buildings: requires lot [x,y,w,h], a district, an integer variant, a height in tiles and a condition")
+	for tree: Variant in stretch.get("trees", []):
+		if not tuple(tree, 2, true):
+			errors.append("stretch.trees: a street tree is its pit tile [x,y]")
+	for prop: Variant in stretch.get("props", []):
+		if not prop is Dictionary:
+			errors.append("stretch.props: expected objects")
+			continue
+		_keys(prop, ["kind", "at", "variant", "scale"], "stretch.props", errors)
+		if not prop.get("kind") in prop_kind_names() or not tuple(prop.get("at"), 2, false) \
+				or not integer(prop.get("variant", 0)) or not (prop.get("scale", 1.0) is float
+				or prop.get("scale", 1.0) is int) or float(prop.get("scale", 1.0)) <= 0.0:
+			errors.append("stretch.props: requires a kind, at [x,y], an integer variant and a positive scale")
+	for litter: Variant in stretch.get("litter", []):
+		if not litter is Dictionary:
+			errors.append("stretch.litter: expected objects")
+			continue
+		_keys(litter, ["kind", "at"], "stretch.litter", errors)
+		if not litter.get("kind") in litter_names() or not tuple(litter.get("at"), 2, false):
+			errors.append("stretch.litter: requires a kind (%s) and at [x,y]" % ", ".join(litter_names()))
+	for crack: Variant in stretch.get("cracks", []):
+		if not tuple(crack, 4, true) or int(crack[2]) < 0 or int(crack[2]) > 2 \
+				or int(crack[3]) < 0 or int(crack[3]) > 1:
+			errors.append("stretch.cracks: a crack is [x, y, level 0-2, pattern 0-1]")
 
 static func integer(value: Variant) -> bool:
 	return (value is int or value is float) and is_finite(float(value)) and float(value) == floor(float(value))

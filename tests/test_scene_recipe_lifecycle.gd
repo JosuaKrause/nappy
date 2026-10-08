@@ -89,6 +89,21 @@ func _ready() -> void:
 		if not await walk_to(return_at):
 			return
 		print("RECIPE_BOUNDARY_RETURN_OK")
+	if map.has_stretch():
+		# The void round a stretch is a wall: she walks at the nearest of its cut-off streets and
+		# never stands on a tile the scene does not have.
+		var edge := nearest_cut_off(map, map.world_to_tile(player.global_position))
+		if edge == Vector2i(-1, -1):
+			fail("stretch scene has no street running into the void")
+			return
+		for frame in 150:
+			press(player.global_position.direction_to(map.tile_to_world(edge)))
+			await get_tree().physics_frame
+			if not map.in_stretch(map.world_to_tile(player.global_position)):
+				fail("she walked off the stretch into the void at %s" % player.global_position)
+				return
+		press(Vector2.ZERO)
+		print("RECIPE_STRETCH_EDGE_OK")
 	if recipe.data.get("kind", "city") == "escape":
 		# Perturb a real actor as well as walking the player, so a retry that only moves
 		# the player cannot pass because a stationary guard happens to remain at its start.
@@ -174,6 +189,24 @@ func exterior_path(map: CityMap, start: Vector2i) -> Array[Vector2i]:
 				pending.append(next)
 	return []
 
+## The cut-off tile (`CityMap.is_cut_off()`) nearest `start` through the stretch's own tiles, or
+## `(-1, -1)` when none is reached.
+func nearest_cut_off(map: CityMap, start: Vector2i) -> Vector2i:
+	var pending: Array[Vector2i] = [start]
+	var seen := {start: true}
+	var cursor := 0
+	while cursor < pending.size():
+		var tile := pending[cursor]
+		cursor += 1
+		for offset: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + offset
+			if map.is_cut_off(next):
+				return next
+			if not seen.has(next) and map.in_stretch(next):
+				seen[next] = true
+				pending.append(next)
+	return Vector2i(-1, -1)
+
 func fail(message: String) -> void:
 	press(Vector2.ZERO)
 	print("RECIPE_LIFECYCLE_FAILED " + message)
@@ -211,6 +244,9 @@ func run(t) -> void:
 		if loaded.data.get("extent", {}).get("scope") == "bounded":
 			t.check(free.output.contains("RECIPE_BOUNDARY_RETURN_OK"),
 					"%s permits physical exit and return without resetting" % filename)
+		if loaded.data.get("extent", {}).get("scope") == "stretch":
+			t.check(free.output.contains("RECIPE_STRETCH_EDGE_OK"),
+					"%s keeps her on its stretch at the void's edge" % filename)
 		t.check(free.output.contains("RECIPE_RETRY_OK"),
 				"%s real summary continuation or escape retry restores authored day and actors" % filename)
 		tested += 1

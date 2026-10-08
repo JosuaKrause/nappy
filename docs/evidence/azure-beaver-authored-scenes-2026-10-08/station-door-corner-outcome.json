@@ -1,0 +1,160 @@
+{
+  "recipe": "The station door from the far outer corner of its sidewalk, 57.7px out",
+  "recipe_sha256": "f835b454c60f93fa79e2279cfa0b2cc0e9fe0af908b4cf48e2ce46aeeec6e4a3",
+  "engine": "4.7.2-stable (official)",
+  "physics_ticks_per_second": 30,
+  "playback_complete": true,
+  "stopped_tick": null,
+  "playback_error": null,
+  "observations": [
+    {
+      "condition": "offered",
+      "passed": true,
+      "player_at": [
+        3871.22,
+        928.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3904.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 1.0
+    },
+    {
+      "condition": "arrowed",
+      "passed": true,
+      "player_at": [
+        3871.22,
+        928.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3904.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 1.0
+    },
+    {
+      "at": "door",
+      "condition": "beyond",
+      "distance": 57.6,
+      "passed": true,
+      "player_at": [
+        3871.22,
+        928.0
+      ],
+      "state": {
+        "carrying": false,
+        "gait_frame": 0,
+        "position": [
+          3871.2222,
+          928.0
+        ],
+        "speed": 23.3333
+      },
+      "subject": "player",
+      "tick": 1.0
+    },
+    {
+      "condition": "crowd",
+      "passed": true,
+      "player_at": [
+        3770.03,
+        928.0
+      ],
+      "state": {
+        "carrying": false,
+        "gait_frame": 1,
+        "position": [
+          3770.0327,
+          928.0
+        ],
+        "speed": 92.0
+      },
+      "subject": "player",
+      "tick": 150.0,
+      "walkers": 2.0
+    },
+    {
+      "condition": "offered",
+      "passed": true,
+      "player_at": [
+        3865.23,
+        928.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3904.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 209.0
+    },
+    {
+      "at": "door",
+      "condition": "beyond",
+      "distance": 57.6,
+      "passed": true,
+      "player_at": [
+        3865.23,
+        928.0
+      ],
+      "state": {
+        "carrying": false,
+        "gait_frame": 1,
+        "position": [
+          3865.2322,
+          928.0
+        ],
+        "speed": 0.0
+      },
+      "subject": "player",
+      "tick": 209.0
+    },
+    {
+      "condition": "done",
+      "passed": true,
+      "player_at": [
+        3900.7,
+        928.0
+      ],
+      "state": {
+        "done": true,
+        "position": [
+          3904.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 225.0
+    },
+    {
+      "condition": "appeared",
+      "first_in_the_picture": 199,
+      "passed": true,
+      "player_at": [
+        3900.7,
+        928.0
+      ],
+      "state": {
+        "position": [
+          3988.6865,
+          1072.0
+        ]
+      },
+      "subject": "row:cat_dash",
+      "tick": 239.0
+    }
+  ],
+  "in_the_void": null,
+  "seen_to_jump": null
+}

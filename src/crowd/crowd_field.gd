@@ -24,9 +24,14 @@ extends RefCounted
 ## is the whole of `_grown_for` below.
 var centre := Vector2.ZERO:
 	set(at):
-		centre = map.world_size() * 0.5 if city_view and map else at
-		radius = maxf(map.world_size().x, map.world_size().y) * 0.5 \
-				if city_view and map else _grown_for(at)
+		_looking_at = at
+		if not _stretch_box.has_area():
+			centre = map.world_size() * 0.5 if city_view and map else at
+			radius = maxf(map.world_size().x, map.world_size().y) * 0.5 \
+					if city_view and map else _grown_for(at)
+			return
+		centre = _stretch_box.get_center()
+		radius = maxf(_stretch_box.size.x, _stretch_box.size.y) * 0.5 + Tuning.TILE_SIZE
 ## Half-extent of the box. Read by everything that places or recycles an agent; never set from
 ## outside, because it is a function of where the centre is.
 var radius := Tuning.CROWD_FIELD_RADIUS
@@ -36,10 +41,81 @@ var map: CityMap
 var city_view := false
 ## Authored scenes may give every pedestrian corridor equal weight; cars keep the street hierarchy.
 var uniform_walkers := false
+## Where the camera is looking: the point the box is asked to centre on, which a stretch's box
+## does not follow. See `looking_at()`.
+var _looking_at := Vector2.ZERO
+## A task scene's stretch, as a world rectangle round all of it, or empty. **The box is the whole
+## stretch and does not move**: the scene's crowd is the street she walks, all of it, for the whole
+## scene, so nobody leaves the box and nobody is recycled for being far from her — they are
+## recycled where the street stops, at its ends (`stretch_ends`).
+var _stretch_box := Rect2()
+## Where a stretch's streets run into the void, as the places the crowd enters it:
+## `{"vertical", "corridor", "along", "direction"}`, the lane's axis, its corridor, the tile along
+## it at the very end, and the way into the stretch. See `stretch_ends_of()`.
+var stretch_ends: Array[Dictionary] = []
 
 func _init(city_map: CityMap, at := Vector2.ZERO) -> void:
 	map = city_map
 	centre = at
+
+func has_stretch() -> bool:
+	return _stretch_box.has_area()
+
+## Puts the box over the map's stretch and reads its ends (`CityMap.stretch`): the crowd of a task
+## scene walks the stretch and nothing else.
+func use_stretch() -> void:
+	var box := Rect2i()
+	for y in map.size.y:
+		for x in map.size.x:
+			if map.in_stretch(Vector2i(x, y)):
+				box = Rect2i(x, y, 1, 1) if not box.has_area() else box.expand(Vector2i(x, y)) \
+						.expand(Vector2i(x + 1, y + 1))
+	_stretch_box = map.tile_rect_to_world(box)
+	stretch_ends = stretch_ends_of(map)
+	centre = _looking_at
+
+## Where the camera is looking: the box's own centre, except on a stretch, whose box stays put while
+## the camera follows her. What "out of view" is measured from (`CrowdAgent._out_of_view()`).
+func looking_at() -> Vector2:
+	return _looking_at if has_stretch() else centre
+
+## **The places a stretch's crowd enters it: every lane end where one of its streets runs into the
+## void.** *(azure-beaver: "walkers and cars recycled at the stretch's ends".)* A row of a corridor
+## whose next tile along it is cut off (`CityMap.is_cut_off()` — ground in the witness, void in the
+## scene) is an end, entered the other way. A street that ends at a building is a wall, not an end,
+## and nobody enters there. Nor is a junction's own arm into the void: a walker or a car entered there
+## would cross the box and be gone again in a few strides, so an end needs more of the stretch
+## behind it than a junction is wide.
+static func stretch_ends_of(stretch_map: CityMap) -> Array[Dictionary]:
+	var ends: Array[Dictionary] = []
+	var seen := {}
+	for y in stretch_map.size.y:
+		for x in stretch_map.size.x:
+			var tile := Vector2i(x, y)
+			if not stretch_map.in_stretch(tile):
+				continue
+			for vertical: bool in [true, false]:
+				var cross: int = tile.x if vertical else tile.y
+				if CityMap.corridor_offset(cross) < 0:
+					continue
+				var step := Vector2i.DOWN if vertical else Vector2i.RIGHT
+				for outward: int in [-1, 1]:
+					if not stretch_map.is_cut_off(tile + step * outward):
+						continue
+					var run := 0
+					while run <= Tuning.STREET_WIDTH and stretch_map.in_stretch(tile - step * outward * (run + 1)):
+						run += 1
+					if run < Tuning.STREET_WIDTH:
+						continue
+					var along: int = tile.y if vertical else tile.x
+					var corridor := CityMap.junction_index(cross)
+					var key := Vector4i(int(vertical), corridor, along, -outward)
+					if seen.has(key):
+						continue
+					seen[key] = true
+					ends.append({"vertical": vertical, "corridor": corridor, "along": along,
+							"direction": float(-outward)})
+	return ends
 
 ## Half-extent that keeps the amount of **city** in the box the same wherever she is standing.
 ##

@@ -1,0 +1,27 @@
+Published artifact: v0.25.5 Web PCK
+PCK SHA-256: b3631f86ceeaeccc1720fd29be0fd3cc4ae15dadfd63340e42ff2264aa03ba90
+Audit command: tools/audit-pck.sh --list <downloaded-v0.25.5-pck>
+Audit result: 352 files; 22 development recipe paths
+
+scene-recipes/fire-truck.json
+scene-recipes/power-station-hall.json
+scene-recipes/power-station-yard.json
+scene-recipes/station-door-corner.json
+scene-recipes/task-06-note.json
+scene-recipes/task-07-package.json
+scene-recipes/task-08-burnt-shell.json
+scene-recipes/task-09-crossing.json
+scene-recipes/task-10-neighbor.json
+scene-recipes/task-11-mast.json
+scene-recipes/task-12-swing.json
+scene-recipes/task-13-roadblock.json
+scene-recipes/task-14-last-night.json
+scene-recipes/tear-slide.json
+scene-recipes/trailer-birds.json
+scene-recipes/trailer-chase.json
+scene-recipes/trailer-choice.json
+scene-recipes/trailer-city.json
+scene-recipes/trailer-dog.json
+scene-recipes/trailer-gatehouse.json
+scene-recipes/trailer-title.json
+scene-recipes/trailer-trucks.json

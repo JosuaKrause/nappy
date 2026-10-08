@@ -2761,6 +2761,15 @@ func _ground_for_the_arrow() -> PackedInt32Array:
 	var ground := PackedInt32Array()
 	ground.resize(width * _map.size.y)
 	ground.fill(ArrowField.UNREACHED)
+	# The authored scene's void is BUILDING to every live walking query. ArrowField reads the
+	# saved context's raw tile array for its inner loop, so put that same boundary into the ground
+	# it receives rather than letting the red arrow measure a route the player cannot walk.
+	if _map.stretch_active:
+		for y in _map.size.y:
+			for x in _map.size.x:
+				var tile := Vector2i(x, y)
+				if not _map.in_stretch(tile):
+					ground[y * width + x] = ArrowField.BLOCKED
 	for blocked: Dictionary in [_map.closed_tiles, _map.soft_sealed_tiles, _map.obstructed_tiles]:
 		for tile: Vector2i in blocked:
 			if _map.in_bounds(tile):

@@ -163,6 +163,8 @@ func _test_schema(t) -> void:
 		{"playback": {"observations": [{"tick": -1, "subject": "player", "condition": "moving"}]}},
 		{"playback": {"observations": [{"tick": 1, "subject": "unknown", "condition": "moving"}]}},
 		{"playback": {"observations": [{"tick": 1, "subject": "player", "condition": "teleporting"}]}},
+		{"playback": {"observations": [{"tick": 1, "subject": "player", "condition": "near_player",
+			"distance": 32, "walkers": 1}]}},
 		{"playback": {"unsupported": true}},
 	]
 	for recipe in invalid:

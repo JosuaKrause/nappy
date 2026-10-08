@@ -2191,11 +2191,13 @@ Top-down camera with a fake vertical extrusion:
   its first roof row, so the two roofs run into each other with no lip on either side.
   `Building.roof_cell_edges()` is the one place a roof cell's lips are decided. A covered piece
   with no roof rows of its own is the one courtyard seam that still caps, since nothing of its own
-  carries on above the extension. Every piece of the lot takes the first piece's tint
-  (`Building.tint_variant`, wall and roof alike), since four tints read as four buildings; the
-  tint is a field of its own rather than a shared `variant`, which seeds every other roll a
-  building makes. The ordinary front-and-back case (two genuinely separate buildings) keeps both
-  lips and its own colour, since that step is the real, visible one.
+  carries on above the extension. Every piece of the lot takes one tint (`Building.tint_variant`,
+  wall and roof alike), since four tints read as four buildings. An ordinary city takes its first
+  piece's tint; an authored stretch that shows only part of the courtyard takes the first authored
+  piece in the same rectangle order, so hidden context cannot choose the visible colour. The tint
+  is a field of its own rather than a shared `variant`, which seeds every other roll a building
+  makes. The ordinary front-and-back case (two genuinely separate buildings) keeps both lips and
+  its own colour, since that step is the real, visible one.
 - **Posters go on that blank wall and nowhere else, one row to a front** (`PosterWalls`). A cell
   carries one only if the sidewalk tile in front of it is the north sidewalk of an east-west
   street — the front is a lot's south face, the one face the city draws — so a lot facing an

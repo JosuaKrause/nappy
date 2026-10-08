@@ -1,0 +1,156 @@
+{
+  "recipe": "Day 14: the power station's front door, 593px from where she starts",
+  "recipe_sha256": "67a4608997c150a0c9bc596e8ab49c6ec17e1ca64704367883191f6f670a5da9",
+  "engine": "4.7.2-stable (official)",
+  "physics_ticks_per_second": 30,
+  "playback_complete": true,
+  "stopped_tick": null,
+  "playback_error": null,
+  "observations": [
+    {
+      "condition": "offered",
+      "passed": true,
+      "player_at": [
+        3312.78,
+        912.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3904.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 1.0
+    },
+    {
+      "condition": "arrowed",
+      "passed": true,
+      "player_at": [
+        3312.78,
+        912.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3904.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 1.0
+    },
+    {
+      "condition": "off_screen",
+      "passed": true,
+      "player_at": [
+        3312.78,
+        912.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3904.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 1.0
+    },
+    {
+      "at": "start",
+      "condition": "beyond",
+      "distance": 576.0,
+      "passed": true,
+      "player_at": [
+        3312.78,
+        912.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3904.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 1.0
+    },
+    {
+      "at": "start",
+      "condition": "near",
+      "distance": 640.0,
+      "passed": true,
+      "player_at": [
+        3312.78,
+        912.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3904.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 1.0
+    },
+    {
+      "condition": "crowd",
+      "passed": true,
+      "player_at": [
+        3491.47,
+        912.0
+      ],
+      "state": {
+        "carrying": false,
+        "gait_frame": 2,
+        "position": [
+          3491.4658,
+          912.0
+        ],
+        "speed": 92.0
+      },
+      "subject": "player",
+      "tick": 60.0,
+      "walkers": 2.0
+    },
+    {
+      "condition": "done",
+      "passed": true,
+      "player_at": [
+        3887.2,
+        912.0
+      ],
+      "state": {
+        "done": true,
+        "position": [
+          3904.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 200.0
+    },
+    {
+      "condition": "appeared",
+      "first_in_the_picture": 178,
+      "passed": true,
+      "player_at": [
+        3887.2,
+        912.0
+      ],
+      "state": {
+        "position": [
+          3921.7188,
+          984.0
+        ]
+      },
+      "subject": "row:cat_dash",
+      "tick": 209.0
+    }
+  ],
+  "in_the_void": null,
+  "seen_to_jump": null
+}

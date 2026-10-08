@@ -302,12 +302,13 @@ func _ready() -> void:
 ## Keeps Godot's movie writer supplied with a current viewport texture when macOS occludes its
 ## no-focus window. Physics and `_process()` continue under occlusion, but the ordinary render loop
 ## stops drawing; without this call the writer repeats the last texture while the recipe advances.
-## `_process()` schedules the draw through the deferred queue, after every node's ordinary update
-## and at the boundary where the visible render loop would consume their state. A visible recording
-## stays on the engine's render path, and non-recording runs never force a draw.
+## `_process()` requests the draw directly after every node's ordinary update. Deferring this call
+## leaves it behind the movie writer's capture boundary: a covered native run advances its recipe
+## while hundreds of output frames repeat the last texture. A visible recording stays on the
+## engine's render path, and non-recording runs never force a draw.
 func _draw_covered_recording_frame() -> void:
 	if recording_frame_needs_force(DevFlags.recording(), DisplayServer.window_can_draw()):
-		RenderingServer.call_deferred("force_draw", false)
+		RenderingServer.force_draw(false)
 
 ## The recording-only gate above as a pure question, so the scope contract can be checked without
 ## opening a real window in the headless suite.

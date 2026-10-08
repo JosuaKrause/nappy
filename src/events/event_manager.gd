@@ -2066,3 +2066,17 @@ func _check_hard_fails() -> void:
 				EventBus.pelican_struck_her.emit(instance)
 			EventBus.hard_fail_triggered.emit(instance.def.id)
 			return
+
+## **A scene's route, from the bag its recipe rigs** (`setup.route_bag`, `docs/SCENE_RECIPES.md`).
+## A recipe's day starts with nothing owed and with everything the director does while she walks
+## switched off (`start_recipe()`, `_recipe_plan`). This hands the director the recipe's bag to draw
+## her route's events from by its own rules (`EventDirector.start_recipe_route()`) and switches all
+## of it back on, as a played day has it: the events owed ahead of her (`_place_what_is_owed_ahead()`),
+## the places a marble or the day leaves for her walk to site (`_site_what_is_on_her_way()`), and,
+## once the baby sleeps and the walk home begins, the act III and IV return patrols
+## (`_owe_the_return()`). Answers how many events her route is now owed.
+func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: float) -> int:
+	_recipe_plan = false
+	_director.start_recipe_route(marbles, pre_bag, owed, first_after,
+			GameState.resistance_progress)
+	return _director.owed()

@@ -241,19 +241,20 @@ if [[ $status -ne 0 ]]; then
 fi
 
 # What the pack carries that should not be in it: anything under tests/, a reference to that
-# excluded tree retained by the class cache or another plain packed resource, a baked constituent
-# -- a member picture, its .import sidecar or the imported .ctex -- or a page no group in the
-# pack's own regions.json names. --fatal, so any fails the export rather than being reported into
-# a log nobody reads.
+# excluded test tree retained by the class cache or another plain packed resource, a development
+# scene recipe, a baked constituent -- a member picture, its .import sidecar or the imported .ctex
+# -- or a page no group in the pack's own regions.json names. --fatal, so any fails the export
+# rather than being reported into a log nobody reads.
 # It is the last gate rather than the first because it can only be asked of the artefact: the
 # question is what the export actually wrote, not what the tree says it should have.
 echo
 echo "== package audit =="
 if ! "$PROJECT_DIR/tools/audit-pck.sh" --fatal "$VERSIONED_DIR/index.pck"; then
     echo >&2
-    echo "FAILED: the export carries development-only tests or pictures that should have" >&2
-    echo "ceased to exist in the build. A test path or reference means the Web preset's" >&2
-    echo "exclusion left a direct resource or literal reference behind. An atlas constituent means" >&2
+    echo "FAILED: the export carries development-only recipes, tests or pictures that should" >&2
+    echo "have ceased to exist in the build. A recipe or test path, or a test reference, means" >&2
+    echo "the Web preset's exclusion left a direct resource or literal reference behind." >&2
+    echo "An atlas constituent means" >&2
     echo "something under assets/ still names one, or a page outlived its group -- run" >&2
     echo "tools/bake-atlases.sh --check." >&2
     exit 1

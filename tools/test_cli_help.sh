@@ -99,6 +99,65 @@ assert_exit "scene-recipes.sh --help" zero ./tools/scene-recipes.sh --help
 assert_exit "scene-recipes.sh -h" zero ./tools/scene-recipes.sh -h
 assert_exit "scene-recipes.sh unknown" nonzero ./tools/scene-recipes.sh --not-a-flag
 assert_exit "scene-recipes.sh missing value" nonzero ./tools/scene-recipes.sh --recipe
+assert_exit "scene-draft.sh --help" zero ./tools/scene-draft.sh --help
+assert_exit "scene-draft.sh -h" zero ./tools/scene-draft.sh -h
+assert_exit "scene-draft.sh unknown" nonzero ./tools/scene-draft.sh --not-a-flag
+assert_exit "scene-draft.sh missing value" nonzero ./tools/scene-draft.sh --recipe
+assert_exit "scene-draft.sh no destination" nonzero ./tools/scene-draft.sh --recipe scene-recipes/task-07-package.json
+assert_exit "scene-draft.sh two destinations" nonzero ./tools/scene-draft.sh --recipe scene-recipes/task-07-package.json --in-place --output "$work_dir/draft.json"
+
+# A crashed coverage pass and a body still in the void never overwrite an author's recipe.
+# This stub runs the actual three-round shell workflow without launching the engine.
+draft_stub="$work_dir/draft-stub.sh"
+cat > "$draft_stub" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+draft=""
+manifest=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --recipe-draft) draft="$2"; shift 2 ;;
+        --recipe-manifest) manifest="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+if [[ -n "$draft" ]]; then
+    cp "$NAPPY_DRAFT_TEST_SOURCE" "$draft"
+elif [[ -n "$manifest" ]]; then
+    case "$NAPPY_DRAFT_TEST_CASE" in
+        crash) exit 9 ;;
+        missing) exit 0 ;;
+        error) echo 'SCRIPT ERROR: coverage crashed'; exit 0 ;;
+        incomplete) echo '{"playback_complete":false}' > "$manifest" ;;
+        included) echo '{"playback_complete":true,"in_the_void":[{"tile":[20,20]}]}' > "$manifest" ;;
+        rounds)
+            round=0
+            [[ ! -f "$NAPPY_DRAFT_TEST_STATE" ]] || round="$(cat "$NAPPY_DRAFT_TEST_STATE")"
+            round=$((round + 1))
+            echo "$round" > "$NAPPY_DRAFT_TEST_STATE"
+            printf '{"playback_complete":true,"in_the_void":[{"tile":[%d,20]}]}' "$((20 + round))" > "$manifest" ;;
+    esac
+fi
+EOF
+chmod +x "$draft_stub"
+printf '{"draft":{"include":[[20,20]]},"playback":{"observations":[]}}\n' > "$work_dir/draft-input.json"
+for failure_case in crash missing error incomplete included rounds; do
+    checks=$((checks + 1))
+    destination="$work_dir/draft-$failure_case.json"
+    printf 'keep the authored file\n' > "$destination"
+    if NAPPY_DRAFT_TEST_SOURCE="$work_dir/draft-input.json" NAPPY_DRAFT_TEST_CASE="$failure_case" \
+            NAPPY_DRAFT_TEST_STATE="$work_dir/round-count" GODOT="$draft_stub" \
+            ./tools/scene-draft.sh --recipe "$work_dir/draft-input.json" --output "$destination" \
+            >"$work_dir/draft-$failure_case.log" 2>&1 \
+            || [[ "$(cat "$destination")" != 'keep the authored file' ]] \
+            || [[ ! -s "$destination.rejected" ]]; then
+        echo "FAIL scene-draft.sh must reject $failure_case and retain the draft" >&2
+        cat "$work_dir/draft-$failure_case.log" >&2
+        failures=$((failures + 1))
+    else
+        echo "ok   scene-draft.sh rejects $failure_case and preserves the authored file"
+    fi
+done
 assert_exit "measure-ground-frames.sh --help" zero ./tools/measure-ground-frames.sh --help
 assert_exit "measure-ground-frames.sh -h" zero ./tools/measure-ground-frames.sh -h
 assert_exit "measure-ground-frames.sh unknown" nonzero ./tools/measure-ground-frames.sh --not-a-flag
@@ -525,6 +584,76 @@ else
     echo "FAIL caller-relative recipe or failure diagnostic: $relative_output" >&2
     failures=$(( failures + 1 ))
 fi
+# A successful engine exit and passing manifest must not hide its diagnostics, on either
+# the action or screenshot path. The capture stub writes the still and provenance too.
+# Exercise the real runner and shot wrapper without depending on this checkout's baked art:
+# the no-Godot Linux gate has no atlas cache, and its engine stub cannot repair one. Only that
+# unrelated prerequisite is stubbed; flag validation, process supervision and log checks stay real.
+recipe_project="$work_dir/recipe-project"
+mkdir -p "$recipe_project/tools" "$recipe_project/src/dev"
+cp tools/scene-recipes.sh tools/shot.sh tools/lib_dev_flags.sh tools/lib_disk_headroom.sh "$recipe_project/tools/"
+cp src/dev/dev_flags.gd "$recipe_project/src/dev/"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$recipe_project/tools/bake-atlases.sh"
+chmod +x "$recipe_project/tools/bake-atlases.sh"
+recipe_stub="$work_dir/recipe-stub.sh"
+cat > "$recipe_stub" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+capture=false
+manifest=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --recipe-manifest) manifest="$2"; shift 2 ;;
+        --screenshot) capture=true; touch "$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+[[ -z "$manifest" ]] || echo '{"playback_complete":true,"observations":[{"passed":true}]}' > "$manifest"
+if $capture; then
+    touch "$NAPPY_RECIPE_TEST_LOG"
+    echo "[Telemetry] $NAPPY_RECIPE_TEST_LOG"
+fi
+if [[ "$NAPPY_RECIPE_TEST_PATH" == action ]] || $capture; then
+    echo "$NAPPY_RECIPE_TEST_ERROR"
+fi
+exit 0
+EOF
+chmod +x "$recipe_stub"
+for diagnostic in 'ERROR: denied' 'SCRIPT ERROR: failed' 'Parse Error: invalid'; do
+    for action_path in action capture; do
+        checks=$((checks + 1))
+        if NAPPY_RECIPE_TEST_ERROR="$diagnostic" NAPPY_RECIPE_TEST_PATH="$action_path" \
+                NAPPY_RECIPE_TEST_LOG="$work_dir/recipe-run.log" GODOT="$recipe_stub" \
+                "$recipe_project/tools/scene-recipes.sh" --recipe "$work_dir/relative.json" \
+                --output "$work_dir/recipe-diagnostic" --screenshots > "$work_dir/diagnostic.log" 2>&1; then
+            echo "FAIL scene-recipes accepts $action_path $diagnostic" >&2
+            failures=$((failures + 1))
+        elif ! grep -qE 'scene assertions failed:|scene capture engine error:' "$work_dir/diagnostic.log"; then
+            echo "FAIL scene-recipes rejected $action_path for the wrong reason" >&2
+            cat "$work_dir/diagnostic.log" >&2
+            [[ ! -f "$work_dir/recipe-diagnostic/relative-start-capture.log" ]] || \
+                cat "$work_dir/recipe-diagnostic/relative-start-capture.log" >&2
+            failures=$((failures + 1))
+        else
+            echo "ok   scene-recipes rejects $action_path $diagnostic despite exit 0"
+        fi
+    done
+done
+source "$root/tools/lib_movie_evidence.sh"
+for scope in bounded full stretch unknown; do
+    printf '{"classification":"normal","scope":"%s","bounds":[0,0,10,10]}' "$scope" > "$work_dir/movie.json"
+    checks=$((checks + 1))
+    movie_manifest_check "$work_dir/movie.json" > "$work_dir/movie-check.log" 2>&1
+    status=$?
+    if { [[ "$scope" == unknown ]] && [[ "$status" -ne 0 ]]; } \
+            || { [[ "$scope" != unknown ]] && [[ "$status" -eq 0 ]]; }; then
+        echo "ok   movie manifest checks scope $scope"
+    else
+        echo "FAIL movie manifest scope $scope returned $status" >&2
+        failures=$((failures + 1))
+    fi
+done
+
 # rig_kill_after_movie_seconds only reads --after/--day-length out of the argv it is given --
 # passing it a bare number (tools/trailer.sh once did: `rig_kill_after_movie_seconds "$after"`)
 # silently falls back to the day's own length times RIG_MOVIE_SLOWDOWN, killing a hung Godot after
@@ -621,7 +750,8 @@ check_that "test.sh refuses a TEST_SHARD_TIMEOUT_S that is not whole seconds bef
 # what stops a parser failure or an unconditional rejection from satisfying the case vacuously.
 clean_pack="$work_dir/audit-clean.pck"
 dirty_pack="$work_dir/audit-tests.pck"
-python3 - "$clean_pack" "$dirty_pack" <<'PY'
+recipe_pack="$work_dir/audit-recipes.pck"
+python3 - "$clean_pack" "$dirty_pack" "$recipe_pack" <<'PY'
 import hashlib
 import struct
 import sys
@@ -669,6 +799,10 @@ write_pack(
         ),
     ],
 )
+write_pack(
+    sys.argv[3],
+    production + [("scene-recipes/task-06-note.json", b'{"version":1}\n')],
+)
 PY
 
 out="$(./tools/audit-pck.sh --fatal "$clean_pack" 2>&1)"
@@ -679,6 +813,10 @@ out="$(./tools/audit-pck.sh --fatal "$dirty_pack" 2>&1)"
 status=$?
 check_that "audit-pck.sh rejects test remaps, probes and a class-cache reference in the pack" \
     '[[ $status -ne 0 && "$out" == *"2 test paths, 1 other files referring to tests"* && "$out" == *"test path: tests/probes/export_probe.tscn"* && "$out" == *"test reference: .godot/global_script_class_cache.cfg"* ]]'
+out="$(./tools/audit-pck.sh --fatal "$recipe_pack" 2>&1)"
+status=$?
+check_that "audit-pck.sh rejects a development scene recipe actually present in the pack" \
+    '[[ $status -ne 0 && "$out" == *"1 development recipe paths"* && "$out" == *"development recipe: scene-recipes/task-06-note.json"* ]]'
 
 made="$(cd "$names_repo" && ./tools/new-name.sh --date 2026-09-27 todo "Stars for nerves" 2>/dev/null)"
 check_that "new-name.sh takes the one pair not already used, in any folder, whatever its date" \

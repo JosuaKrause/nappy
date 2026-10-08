@@ -81,6 +81,7 @@ extends RefCounted
 ##   --recipe-mode   1
 ##   --recipe-validate 0
 ##   --recipe-manifest 1
+##   --recipe-draft  1
 ## END_DEV_FLAG_TABLE
 ##
 ## Which of the flags above mark a run as a **rig** rather than a person at the keyboard — the

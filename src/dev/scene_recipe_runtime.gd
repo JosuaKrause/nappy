@@ -27,12 +27,20 @@ var _zoom: ZoomOutCamera
 var _fixed_camera: Camera2D
 var _last_positions: Dictionary = {}
 var _resistance: ResistanceDirector
+## A draft run's record of the walk (`--recipe-draft`), or null.
+var _draft: SceneRecipeDraft
+## The recipe as its file has it, which a draft run writes its stretch into; `data` is the copy it
+## plays (`SceneRecipeDraft.base_of()`).
+var _written: Dictionary = {}
 
 static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
-	var loaded := SceneRecipe.load_file(path)
+	var loaded := SceneRecipe.load_file(path, "--recipe-draft" in args)
 	if not loaded.errors.is_empty():
 		return loaded
 	var recipe: Dictionary = loaded.data
+	var written := recipe
+	if "--recipe-draft" in args:
+		recipe = SceneRecipeDraft.base_of(recipe)
 	var errors := validate_runtime(recipe)
 	for flag in OWNED_FLAGS:
 		if flag in args:
@@ -47,10 +55,13 @@ static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
 		errors.append("--recipe-mode must be free or scripted")
 	if mode == "free" and ("--walk" in args or "--after" in args or "--screenshot" in args):
 		errors.append("free play cannot have scripted input or a capture deadline")
+	if "--recipe-draft" in args and mode != "scripted":
+		errors.append("--recipe-draft walks the recipe's own route, so it needs --recipe-mode scripted")
 	if not errors.is_empty():
 		return {"data": recipe, "errors": errors}
 	var result := RecipeCityBuilder.build(recipe)
 	result.data = recipe
+	result.written = written
 	return result
 
 static func validate_runtime(recipe: Dictionary) -> Array[String]:
@@ -59,7 +70,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	var playback: Dictionary = recipe.get("playback", {})
 	_keys(setup, ["day", "parent", "player", "background", "progression", "events", "actors",
 			"signal_time", "column", "tutorial_complete", "posters", "roof_fixtures",
-			"seals", "gates", "barriers", "task"], "setup", errors)
+			"seals", "gates", "barriers", "task", "route_bag"], "setup", errors)
 	if not setup.get("tutorial_complete", false) is bool:
 		errors.append("setup.tutorial_complete must be boolean")
 	_number(setup.get("day", 1), "setup.day", 1, 14, errors, true)
@@ -92,9 +103,10 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	if background.get("crowd_scope", "player") == "city" and (
 			not background.get("crowd", false) or recipe.get("extent", {}).get("scope", "") != "full"):
 		errors.append("setup.background.crowd_scope city requires crowd and full extent")
-	if recipe.get("extent", {}).get("scope", "") == "bounded" and (
+	if recipe.get("extent", {}).get("scope", "") in ["bounded", "stretch"] and (
 			background.get("crowd", false)):
-		errors.append("bounded scenes require authored actors/events; random background activity needs full extent")
+		errors.append("bounded and stretch scenes require authored actors/events; random background activity needs full extent")
+	_validate_route_bag(recipe, errors)
 	var progression: Dictionary = setup.get("progression", {})
 	_keys(progression, ["blackout", "escape_part"], "setup.progression", errors)
 	if not progression.get("blackout", false) is bool:
@@ -275,7 +287,8 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if not check is Dictionary:
 				errors.append("playback.observations entries must be objects")
 				continue
-			_keys(check, ["tick", "subject", "condition", "at", "distance", "half"], "observation", errors)
+			_keys(check, ["tick", "subject", "condition", "at", "distance", "half", "walkers", "cars"],
+					"observation", errors)
 			_number(check.get("tick"), "observation.tick", 0,
 					float(playback.get("duration", 5)) * Engine.physics_ticks_per_second, errors, true)
 			var subject: Variant = check.get("subject")
@@ -300,12 +313,20 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 				_number(check.get("distance"), "observation.distance", 0, 10000, errors)
 			elif check.get("condition") == "near_player":
 				_number(check.get("distance"), "observation.distance", 0, 10000, errors)
+			if check.get("condition") == "crowd":
+				if subject != "player":
+					errors.append("observation.condition crowd asks about the picture round the player")
+				for key in ["walkers", "cars"]:
+					_number(check.get(key, 0), "observation." + key, 0, 1000, errors, true)
+			elif check.has("walkers") or check.has("cars"):
+				errors.append("observation.walkers and cars belong to crowd")
 	return errors
 
 ## The observation conditions, in the order `docs/SCENE_RECIPES.md` names them.
 const CONDITIONS := ["visible", "moving", "running", "carrying", "asleep", "awake", "pursuing", "near", "beyond",
 		"near_player",
-		"off_screen", "clear_of_both_views", "offered", "done", "arrowed", "unarrowed"]
+		"off_screen", "clear_of_both_views", "offered", "done", "arrowed", "unarrowed", "appeared",
+		"crowd"]
 ## An observation subject naming no actor but the first live instance of a catalogue row: what an
 ## event summons rather than what the recipe placed, such as the `fire_truck` a seen
 ## `burning_building` calls in.
@@ -354,6 +375,39 @@ static func _validate_task(recipe: Dictionary, names: Dictionary, errors: Array[
 			ResistanceSteps.TargetKind.SCAR, ResistanceSteps.TargetKind.NEIGHBOR]:
 		names["rider"] = true
 
+## `setup.route_bag`: what she meets on her route, drawn by the director from a bag the recipe rigs
+## (`EventDirector.start_recipe_route()`). `marbles` fills the ordinary bag, `pre_bag` is drawn from
+## first, `owed` is how many events the route is owed (both bags' marbles by default), and
+## `first_after` the seconds of walking before the first is due (the ordinary roll by default).
+## Every marble names a row the director sites on the scene's day.
+static func _validate_route_bag(recipe: Dictionary, errors: Array[String]) -> void:
+	var setup: Dictionary = recipe.get("setup", {})
+	if not setup.has("route_bag"):
+		return
+	if not setup.route_bag is Dictionary:
+		errors.append("setup.route_bag must be an object")
+		return
+	var bag: Dictionary = setup.route_bag
+	_keys(bag, ["marbles", "pre_bag", "owed", "first_after"], "setup.route_bag", errors)
+	var day := int(setup.get("day", 1))
+	for field in ["marbles", "pre_bag"]:
+		if not bag.get(field, []) is Array:
+			errors.append("setup.route_bag.%s must be an array of catalogue ids" % field)
+			continue
+		for id: Variant in bag.get(field, []):
+			var def := EventCatalogue.by_id(str(id)) if id is String else null
+			var mode := def.spawn_mode_on(day) if def else EventDef.SpawnMode.MAP
+			if not def or not def.available_on(day) or not mode in [
+					EventDef.SpawnMode.AHEAD_OF_PLAYER, EventDef.SpawnMode.TOWARD_PLAYER]:
+				errors.append("setup.route_bag.%s: %s is not a row the director sites on day %d"
+						% [field, id, day])
+	if bag.get("marbles", []) is Array and (bag.get("marbles", []) as Array).is_empty():
+		errors.append("setup.route_bag.marbles: the ordinary bag needs a marble")
+	if bag.has("owed"):
+		_number(bag.owed, "setup.route_bag.owed", 0, 1000, errors, true)
+	if bag.has("first_after"):
+		_number(bag.first_after, "setup.route_bag.first_after", 0, 600, errors)
+
 static func _keys(object: Dictionary, allowed: Array, where: String, errors: Array[String]) -> void:
 	for key: Variant in object:
 		if not key in allowed:
@@ -378,7 +432,10 @@ static func _position(value: Variant, where: String, errors: Array[String]) -> v
 
 func configure(result: Dictionary, scripted_mode: bool) -> void:
 	data = result.data
+	_written = result.get("written", result.data)
 	built = result
+	if "--recipe-draft" in DevFlags.active_args():
+		_draft = SceneRecipeDraft.new()
 	manifest = result.manifest.duplicate(true)
 	scripted = scripted_mode
 	manifest["recipe"] = data.get("name", "")
@@ -439,8 +496,7 @@ func install(city: City, player: Stroller, baby: Baby,
 	var at := position_of(setup.get("player", {}).get("at", "doorstep"), errors)
 	if not errors.is_empty():
 		return errors
-	var exterior := map.recipe_exterior
-	map.recipe_exterior = false
+	var edges := map.witness_only()
 	if not map.is_open(map.world_to_tile(at)) or not _inside_extent(at):
 		errors.append("setup.player.at must be open ground inside the authored extent")
 	var background: Dictionary = setup.get("background", {})
@@ -448,9 +504,10 @@ func install(city: City, player: Stroller, baby: Baby,
 	var plans := _event_plans(at, errors)
 	city.events.start_recipe(plans, GameState.day, at, data.get("kind", "city") == "escape")
 	city.refresh_street_trees()
-	map.recipe_exterior = exterior
+	map.restore_edges(edges)
 	if not errors.is_empty():
 		return errors
+	_start_the_route(setup)
 	for entry: Dictionary in setup.get("events", []):
 		for plan in city.events._plans:
 			if plan.get_meta("recipe_name", "") == entry.name:
@@ -487,6 +544,8 @@ func install(city: City, player: Stroller, baby: Baby,
 			errors.append("actor %s: %s" % [entry.name, placed.error])
 		else:
 			named[entry.name] = placed.actor
+	if map.has_stretch():
+		city.crowd.use_stretch()
 	city.signals.elapsed = float(setup.get("signal_time", 0))
 	if setup.get("progression", {}).get("blackout", false):
 		city.signals.powered = false
@@ -528,9 +587,14 @@ func _start_the_task() -> bool:
 			camera.force_update_scroll()
 		if GameState.is_final_day():
 			GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+		# The day's task is planned over the whole witness, as a played day plans it: the mark's
+		# "reachable from home" and the guard's place are questions about the city, and a stretch's
+		# void would answer every one of them no.
+		var edges := _city.map.witness_only()
 		errors = _resistance.start_recipe_task(GameState.day,
 				GameState.day_rng(GameState.day, "resistance"), DevRig.day_length(GameState.day),
 				mark, neighbor)
+		_city.map.restore_edges(edges)
 	if not errors.is_empty():
 		manifest["setup_failed"] = true
 		for problem in errors:
@@ -626,7 +690,22 @@ func _install_posters(entries: Array, errors: Array[String]) -> void:
 
 func _inside_extent(at: Vector2) -> bool:
 	var map: CityMap = built.map
+	if map.has_stretch():
+		return map.in_stretch(map.world_to_tile(at))
 	return not map.recipe_bounds.has_area() or map.recipe_bounds.has_point(map.world_to_tile(at))
+
+## `setup.route_bag`: the director owes her route the recipe's marbles, drawn from its rigged bag
+## by the game's own rules (`EventDirector.start_recipe_route()`). A scene with no route bag keeps
+## the director silent, as every scene without one always has.
+func _start_the_route(setup: Dictionary) -> void:
+	if not setup.has("route_bag"):
+		return
+	var bag: Dictionary = setup.route_bag
+	var marbles: Array = bag.get("marbles", [])
+	var pre_bag: Array = bag.get("pre_bag", [])
+	var owed := _city.events.start_recipe_route(marbles, pre_bag,
+			int(bag.get("owed", marbles.size() + pre_bag.size())), float(bag.get("first_after", -1.0)))
+	manifest["route_bag"] = {"marbles": marbles.size(), "pre_bag": pre_bag, "owed": owed}
 
 ## Keep only named production structures. The context plan supplies eligibility and geometry,
 ## never permission to install unrelated walls or checkpoint actors throughout the scene.
@@ -673,6 +752,11 @@ func _select_structures(errors: Array[String]) -> void:
 	region.alley_walls.clear()
 
 func _segment_inside_extent(segment: StreetNetwork.Segment) -> bool:
+	if _city.map.has_stretch():
+		for tile in _city.map.rect_tiles(segment.tile_rect()):
+			if not _city.map.in_stretch(tile):
+				return false
+		return true
 	return not _city.map.recipe_bounds.has_area() \
 			or _city.map.recipe_bounds.encloses(segment.tile_rect())
 
@@ -902,6 +986,13 @@ func _physics_process(_delta: float) -> void:
 	_observe()
 	if not _active:
 		return
+	_watch_the_void()
+	_watch_the_crowd()
+	if _draft:
+		var step := _resistance.current_step() if _resistance else null
+		var walking_home: Node2D = named.get("rider") if step and not step.is_pickup \
+				and step.target_kind == ResistanceSteps.TargetKind.NEIGHBOR else null
+		_draft.record(_player, _city, walking_home if is_instance_valid(walking_home) else null)
 	if _capture_tick >= 0 and tick >= _capture_tick:
 		prepare_capture()
 		return
@@ -912,6 +1003,9 @@ func _physics_process(_delta: float) -> void:
 		manifest["final_actors"] = snapshot()
 		_record_crowd("final_crowd")
 		write_manifest()
+		if _draft:
+			get_tree().quit(_write_the_draft())
+			return
 		get_tree().quit(0)
 		return
 	_apply_input()
@@ -1023,15 +1117,26 @@ func snapshot() -> Dictionary:
 func _observe() -> void:
 	_bind_task_names()
 	for check: Dictionary in _observations:
+		if check.condition == "appeared" and not _appeared.has(check.subject):
+			var watched := subject_of(str(check.subject))
+			if watched and _she_can_see(watched):
+				_appeared[check.subject] = tick
+	for check: Dictionary in _observations:
 		if int(check.tick) != tick:
 			continue
 		var actor := subject_of(str(check.subject))
 		var passed := actor != null
-		if passed:
+		if check.condition == "appeared":
+			# Asked of the past, so the subject may be gone by now: a cat that crossed and left.
+			passed = _appeared.has(check.subject)
+		elif passed:
 			match check.condition:
 				"visible":
-					var point := get_viewport().get_canvas_transform() * actor.global_position
-					passed = get_viewport().get_visible_rect().grow(-20).has_point(point)
+					passed = _in_the_picture(actor.global_position)
+				"crowd":
+					var moving := _moving_in_the_picture()
+					passed = moving.walkers >= int(check.get("walkers", 0)) \
+							and moving.cars >= int(check.get("cars", 0))
 				"moving":
 					passed = _last_positions.has(check.subject) and actor.global_position.distance_to(
 							_last_positions[check.subject]) > 0.01
@@ -1078,6 +1183,8 @@ func _observe() -> void:
 					passed = _resistance != null and _resistance.red_arrow_target() == Vector2.INF
 		var record := check.duplicate(true)
 		record["passed"] = passed
+		if check.condition == "appeared" and passed:
+			record["first_in_the_picture"] = _appeared[check.subject]
 		record["state"] = snapshot().get(check.subject, {})
 		if is_instance_valid(_player):
 			record["player_at"] = [snappedf(_player.global_position.x, 0.01),
@@ -1086,7 +1193,9 @@ func _observe() -> void:
 			record["state"] = {"position": [snappedf(actor.global_position.x, 0.0001),
 					snappedf(actor.global_position.y, 0.0001)]}
 		manifest.observations.append(record)
-		if not passed:
+		if not passed and _draft:
+			print("[SceneRecipe] draft: unmet on the whole city, walked on: " + JSON.stringify(record))
+		elif not passed:
 			print("[SceneRecipe] unmet observation: " + JSON.stringify(record))
 			write_manifest()
 			_active = false
@@ -1100,6 +1209,54 @@ func _observe() -> void:
 			var summoned := subject_of(label)
 			if summoned:
 				_last_positions[label] = summoned.global_position
+
+## The subjects an `appeared` observation asks about that have been in the picture, and the first
+## tick each was: a route event the rigged bag hands out comes when the director's pacing and siting
+## say, so a scene asks that she saw it by a tick rather than at one. In the picture, not merely in
+## the world: a cat sited ahead of her that crouches out of view and never runs is an event she
+## never meets, and the scene would be as empty as it looks.
+var _appeared := {}
+
+## Whether a world point is in the picture, a margin inside its edges.
+func _in_the_picture(at: Vector2) -> bool:
+	return get_viewport().get_visible_rect().grow(-20).has_point(
+			get_viewport().get_canvas_transform() * at)
+
+## Whether any of the actor's drawing is visible (a tile-sized box for other named actors):
+## the actual viewport transformed back through the current camera, less the corners the joystick
+## scheme's controls cover. Taking all four corners follows zoom and the quarter-turn used for a
+## portrait presentation; using the actor's drawn box keeps this the same overlap question the
+## page's encounter counter asks of what she meets.
+func _she_can_see(actor: Node2D) -> bool:
+	var at := actor.global_position
+	var controls := get_tree().get_first_node_in_group(HelpText.CONTROLS_GROUP) as TouchControls
+	var joystick := controls != null and controls.controls_mode() == ControlsMode.Mode.JOYSTICK
+	var box: Rect2 = actor.drawn_box() if actor is EventInstance else Rect2(-Vector2.ONE * 16, Vector2.ONE * 32)
+	box.position += at
+	return VisibleView.visible_share(box, _camera_world_rect(), joystick) > 0.0
+
+## The axis-aligned world rectangle the camera currently draws. The game's presentation is either
+## unturned or a quarter-turn, so the inverse-transformed viewport corners still bound the exact
+## world rectangle; expanding from every corner also avoids assuming which one becomes its top-left.
+func _camera_world_rect() -> Rect2:
+	var screen := get_viewport().get_visible_rect()
+	var to_world := get_viewport().get_canvas_transform().affine_inverse()
+	var top_left := to_world * screen.position
+	var world := Rect2(top_left, Vector2.ZERO)
+	world = world.expand(to_world * Vector2(screen.end.x, screen.position.y))
+	world = world.expand(to_world * screen.end)
+	world = world.expand(to_world * Vector2(screen.position.x, screen.end.y))
+	return world
+
+## How many walkers and cars are moving in the picture now.
+func _moving_in_the_picture() -> Dictionary:
+	var counts := {"walkers": 0, "cars": 0}
+	if not _city or not _city.crowd:
+		return counts
+	for agent in _city.crowd.agents():
+		if not agent.velocity().is_zero_approx() and _in_the_picture(agent.global_position):
+			counts["cars" if agent.kind == CrowdAgent.Kind.CAR else "walkers"] += 1
+	return counts
 
 ## The node an observation names: a named actor, or for `row:<id>` the first live, unfinished
 ## instance of that catalogue row in the world. Null when there is none.
@@ -1139,6 +1296,86 @@ func _box_in_either_view(centre: Vector2, half: Vector2) -> bool:
 		if Rect2(looking - size * 0.5, size).intersects(box):
 			return true
 	return false
+
+## Every body the scene put in the world to wait on ground the stretch omits
+## (`CityMap.is_void()`) — a guard placed while she walks, standing where the whole city has a
+## street and the scene has none — with its tile and row: the manifest's `in_the_void`, which
+## `tools/scene-draft.sh` adds to the next draft (`draft.include`) so that nothing waiting for her
+## stands in the void. Checked each tick until a body is recorded: a pursuer on its way to her
+## from off screen comes down streets the scene does not have and is not one of these.
+var _in_the_void := {}
+
+func _watch_the_void() -> void:
+	if not _city or not _city.map.has_stretch():
+		return
+	for instance in _city.events.instances():
+		if _in_the_void.has(instance):
+			continue
+		var tile := _city.map.world_to_tile(instance.global_position)
+		if instance.is_waiting() and _city.map.is_void(tile):
+			_in_the_void[instance] = true
+			var found: Array = manifest.get("in_the_void", [])
+			found.append({"tile": [tile.x, tile.y], "row": instance.def.id, "tick": tick})
+			manifest["in_the_void"] = found
+
+## Where each of the crowd stood last tick, to catch one that leaves or enters in view.
+var _crowd_was := {}
+## How far a walker's or a car's picture reaches past its centre, for `_watch_the_crowd()`: a tile,
+## a car's half length and its shadow. Less than the room an agent keeps when it leaves
+## (`CrowdAgent.ENTRY_PICTURE_ROOM`), since the camera moves on between the frame it left on and the
+## tick that asks.
+const PICTURE_REACH := float(Tuning.TILE_SIZE)
+
+## **Nothing in a stretch's crowd appears or vanishes where she can see it** *(the player's rule,
+## PR #597)*: a walker or car that moves further in one tick than any of them walks or drives — a
+## recycle — while it stood, or now stands, in either view (`CrowdAgent._beyond_every_view()`) is
+## recorded in the manifest's `seen_to_jump`, which `tests/test_scene_recipe_stretch_crowd.gd` holds
+## empty over every stretch scene.
+func _watch_the_crowd() -> void:
+	if not _city or not _city.map.has_stretch() or not _city.crowd:
+		return
+	for agent in _city.crowd.agents():
+		var at := agent.global_position
+		if _crowd_was.has(agent):
+			var was: Vector2 = _crowd_was[agent]
+			if was.distance_to(at) > 2.0 * Tuning.TILE_SIZE \
+					and not (agent._beyond_every_view(was, PICTURE_REACH)
+					and agent._beyond_every_view(at, PICTURE_REACH)):
+				var jumps: Array = manifest.get("seen_to_jump", [])
+				jumps.append({"tick": tick, "from": [snappedf(was.x, 0.1), snappedf(was.y, 0.1)],
+						"to": [snappedf(at.x, 0.1), snappedf(at.y, 0.1)],
+						"kind": "car" if agent.kind == CrowdAgent.Kind.CAR else "walker"})
+				manifest["seen_to_jump"] = jumps
+		_crowd_was[agent] = at
+
+## `--recipe-draft FILE`: the stretch the walk just took, written as a recipe (`SceneRecipeDraft`).
+## Answers the exit code.
+func _write_the_draft() -> int:
+	var problems: Array[String] = []
+	var pinned: Array[Vector2] = []
+	var errors: Array[String] = []
+	for field: String in data.get("setup", {}).get("task", {}):
+		pinned.append(position_of(data.setup.task[field], errors))
+	var drafted := _draft.compose(_written, _city, start_position(), pinned, problems)
+	for problem in problems:
+		print("[SceneRecipe] draft: " + problem)
+	var path := DevFlags._word_after("--recipe-draft")
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if not file:
+		print("[SceneRecipe] cannot write the draft: " + path)
+		return 1
+	file.store_string(SceneRecipeDraft.to_json(drafted) + "\n")
+	file.close()
+	var stretch: Dictionary = drafted.stretch
+	var tiles := 0
+	for type: String in stretch.tiles:
+		for run: Array in stretch.tiles[type]:
+			tiles += int(run[2]) - int(run[1]) + 1
+	print("[SceneRecipe] draft written to %s: %d tiles, %d buildings, %d street trees, %d props, %d litter, %d cracks, %d posters, %d walkers and cars"
+			% [path, tiles, stretch.buildings.size(), stretch.trees.size(), stretch.props.size(),
+			stretch.litter.size(), stretch.cracks.size(), drafted.setup.posters.size(),
+			drafted.setup.actors.size()])
+	return 0
 
 func write_manifest() -> void:
 	var path := DevFlags._word_after("--recipe-manifest")

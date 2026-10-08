@@ -218,14 +218,18 @@ func build(city_map: CityMap) -> void:
 	# their geometry from this source as they become resident.
 	var shown_rects: Array[Rect2i] = []
 	for footprint in map.building_rects:
-		if not map.recipe_exterior or map.recipe_bounds.encloses(footprint):
+		if _recipe_shows_building(footprint):
 			shown_rects.append(footprint)
+	if map.has_stretch():
+		_building_shadows.falls_on = map.in_stretch
 	_building_shadows.set_buildings(shown_rects)
 	if _recipe_contains(map.home_world_position()):
 		_spawn_home()
 	_spawn_street_trees()
 	_spawn_boundary()
-	if not map.recipe_exterior:
+	if map.has_stretch():
+		_spawn_the_void_edge()
+	elif not map.recipe_exterior:
 		_spawn_the_edge_of_the_city()
 	signals = TrafficSignals.new(map)
 	_spawn_signal_heads()
@@ -482,7 +486,17 @@ func _home_door_building() -> Building:
 ## rebuilt in `_dress_blocks()`, unlike a park's trees, because a street tree belongs to the
 ## street's own frontage rather than to what the block behind it currently is.
 func _spawn_street_trees() -> void:
+	var edges := map.witness_only()
 	var planted_trees := StreetTrees.planted(map)
+	map.restore_edges(edges)
+	if map.has_stretch():
+		# Only the stretch's own trees and their pits: a pit drawn out in the void is ground. The
+		# authored tree positions supply drawing, pits and clearance from one list.
+		var shown: Array[StreetTrees.Planted] = []
+		for planted_tree in planted_trees:
+			if _recipe_contains(planted_tree.position):
+				shown.append(planted_tree)
+		planted_trees = shown
 	_decals.set_street_tree_pits(planted_trees, map)
 	for planted_tree in planted_trees:
 		if not _recipe_contains(planted_tree.position):
@@ -620,6 +634,10 @@ func _spawn_signal_heads() -> void:
 				scenery.register(light)
 
 func _spawn_buildings() -> void:
+	# A stretch's buildings are measured against the city they were cut from — which of their
+	# columns a neighbouring roof covers, how far a roof reaches over an alley — rather than
+	# against the void round the stretch, which would read every edge of it as more building.
+	var edges := map.witness_only()
 	var door_x_range := _door_world_x_range()
 	var buildings: Array[Building] = []
 	for rect in map.building_rects:
@@ -634,6 +652,11 @@ func _spawn_buildings() -> void:
 		building.district = map.starting_purpose(_block_of(rect))
 		building.height = _height_for(rect, rect.size.y)
 		building.lot = rect
+		# A stretch's authored values are the inputs to its geometry, not a repaint after it: the
+		# height decides the roof extension a touching lot needs, and the variant decides the tint
+		# shared by pieces of one courtyard. Ordinary generated cities have no listed values, so
+		# this changes nothing for them.
+		_draw_as_the_recipe_says(building)
 		# Every lot on the home block is hers — the door's own notch carves no `Building` of its
 		# own, so this is every wall standing around it.
 		building.is_home_building = _block_of(rect) == map.home_block
@@ -649,7 +672,7 @@ func _spawn_buildings() -> void:
 		_dress_the_power_station(building, rect)
 		buildings.append(building)
 	# Coverage and the roof extension it needs both read every lot's own `wall_tiles()`, fixed by
-	# the exports above alone, so both run before any of them enters the tree — see
+	# the generated or authored values above, so both run before any of them enters the tree — see
 	# `_covered_ground_cols()` and `_assign_roof_extensions()`. Never asked of her own building
 	# (`covered_ground_cols` stays empty) — her own building's front is the one the player knows
 	# as home and stays as it is, and the home block's own doorstep already exempts it from the
@@ -660,8 +683,9 @@ func _spawn_buildings() -> void:
 	var courtyard_of := _courtyard_lot_of(map.building_rects)
 	_assign_roof_extensions(buildings, courtyard_of)
 	_share_courtyard_tint(buildings, courtyard_of)
+	map.restore_edges(edges)
 	for building in buildings:
-		if map.recipe_exterior and not map.recipe_bounds.encloses(building.lot):
+		if not _recipe_shows_building(building.lot):
 			building.free()
 			continue
 		# Their own layer, under the entities — see the note at the top of this file. They still
@@ -790,12 +814,22 @@ func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int
 		if buildings[i].covered_ground_cols != reached[i]:
 			buildings[i].covered_ground_cols = reached[i]
 
-## Gives every piece of one courtyard lot the tint of its first piece (`Building.tint_variant`), so
-## the rectangles a courtyard is cut into read as the one building they are rather than as three
-## or four neighbours. A tint rather than a shared `variant`, which would share every other roll the
-## building makes too. `courtyard_of` is `_courtyard_lot_of()`'s answer for `map.building_rects`.
+## Gives every piece of one courtyard lot one tint (`Building.tint_variant`), so the rectangles a
+## courtyard is cut into read as the one building they are rather than as three or four neighbours.
+## An ordinary city takes the first piece's variant, as before. A stretch may show only part of a
+## complete-context courtyard, so its first authored piece in the same canonical rectangle order
+## supplies the tint instead; a hidden witness piece must not choose the visible colour. A tint
+## rather than a shared `variant`, which would erase the other authored rolls the buildings keep.
+## `courtyard_of` is `_courtyard_lot_of()`'s answer for `map.building_rects`.
 func _share_courtyard_tint(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var first_variant := {}
+	if map.has_stretch():
+		for i in buildings.size():
+			var lot := courtyard_of[i]
+			if lot < 0 or first_variant.has(lot) \
+					or not _recipe_shows_building(buildings[i].lot):
+				continue
+			first_variant[lot] = buildings[i].variant
 	for i in buildings.size():
 		var lot := courtyard_of[i]
 		if lot < 0:
@@ -918,17 +952,21 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 ## Recipe activity is installed by its runtime after this shared day presentation. The
 ## explicit construction witness supplies global route/region context without randomly
 ## scheduling new closures over the authored composition.
+##
+## **A stretch pastes no dawn**: its posters are the recipe's own (`setup.posters`), so the walls are
+## marked pasted through today before the day starts and nothing the seed would paste appears.
 func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -> void:
 	start_finale(state, day)
-	var exterior := map.recipe_exterior
-	map.recipe_exterior = false
+	var edges := map.witness_only()
 	_tree = RouteTree.for_day(map, day)
 	_region_plan = RegionPlanner.plan_day(map, day, _tree)
-	map.recipe_exterior = exterior
+	map.restore_edges(edges)
 	_closures = map.recipe_closures.duplicate()
 	map.close_streets(_closures)
 	for closure in _closures:
 		_spawn_closure(closure)
+	if map.has_stretch():
+		GameState.posters.pasted_through = maxi(GameState.posters.pasted_through, day)
 	_posters.start_day(day, _tree)
 
 ## The same city, dressed for the escape: everything `start_day()` does except grow a day's
@@ -1154,16 +1192,31 @@ func _dress_blocks(state: CityState) -> void:
 	for prop in _props:
 		prop.queue_free()
 	_props.clear()
-	for block: Vector2i in map.block_plans:
-		var purpose := state.purpose_of(map.block_plans, block)
-		_dress_block(block, purpose)
-	_dress_precincts()
-	_place_garbage_sacks()
+	if map.has_stretch():
+		_dress_the_stretch()
+	else:
+		for block: Vector2i in map.block_plans:
+			var purpose := state.purpose_of(map.block_plans, block)
+			_dress_block(block, purpose)
+		_dress_precincts()
+		_place_garbage_sacks()
 	for building in _buildings:
-		building.condition = _condition_for(
-				state.purpose_of(map.block_plans, _block_of(building.lot)))
+		var listed: Dictionary = map.stretch_buildings.get(building.lot, {})
+		building.condition = int(listed.condition) as Building.Condition if not listed.is_empty() \
+				else _condition_for(state.purpose_of(map.block_plans, _block_of(building.lot)))
 		building.day = _day
 	mark_the_burnt_frontage()
+
+## A stretch's props are its recipe's (`CityMap.stretch_props`): every tree, swing frame, bollard
+## and sack where the recipe puts it, in place of the rolls a day's blocks and streets would make.
+func _dress_the_stretch() -> void:
+	for listed in map.stretch_props:
+		var prop := Prop.new()
+		prop.kind = int(listed.kind) as Prop.Kind
+		prop.position = listed.at
+		prop.variant = int(listed.variant)
+		prop.scale_factor = float(listed.scale)
+		_add_prop(prop)
 
 ## Forces the one `Building` behind day 3's fire to `Building.Condition.BURNT`, overriding
 ## whatever its own block's purpose just set above — *"the building is what needs to be burnt, not
@@ -1404,14 +1457,14 @@ func _add_prop(prop: Node2D) -> void:
 ## (`scenery_ground_source()`). The rectangle is the map grown by the band painted outside it,
 ## less the reach a glance toward a corner costs.
 func camera_bounds() -> Rect2:
-	if map.recipe_exterior:
+	if map.recipe_exterior or map.has_stretch():
 		return Rect2(-100000000, -100000000, 200000000, 200000000)
 	var depth := OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE)
 	return Rect2(Vector2.ZERO, map.world_size()).grow(depth - Stroller.CAMERA_LOOK_AHEAD)
 
 ## Walls just outside the map, so the player cannot walk off the edge of the world.
 func _spawn_boundary() -> void:
-	if map.recipe_exterior:
+	if map.recipe_exterior or map.has_stretch():
 		return
 	var extent := map.world_size()
 	var t := BOUNDARY_THICKNESS
@@ -1458,6 +1511,8 @@ func _home_scenery_view() -> Rect2:
 ## Current source, independent of residency. Border and route paint use this same answer
 ## at boot, on approach, after a closure, and when a distant chunk returns.
 func scenery_ground_source(tile: Vector2i) -> int:
+	if map.has_stretch() and not map.in_stretch(tile):
+		return -1
 	if map.recipe_exterior and not map.recipe_bounds.has_point(tile):
 		return GroundTiles.ALLEY
 	if tile.x < 0 or tile.y < 0 or tile.x >= map.size.x or tile.y >= map.size.y:
@@ -1471,10 +1526,84 @@ func scenery_ground_source(tile: Vector2i) -> int:
 	return source
 
 func _recipe_contains(at: Vector2) -> bool:
+	if map.has_stretch():
+		return map.in_stretch(map.world_to_tile(at))
 	return not map.recipe_exterior or map.recipe_bounds.has_point(map.world_to_tile(at))
+
+## Whether a building on `lot` is shown: every one in a city, those inside a bounded recipe's
+## rectangle, and in a stretch only the recipe's own (`CityMap.stretch_buildings`).
+func _recipe_shows_building(lot: Rect2i) -> bool:
+	if map.has_stretch():
+		return map.stretch_buildings.has(lot)
+	return not map.recipe_exterior or map.recipe_bounds.encloses(lot)
+
+## Applies a stretch building's listed district, variant and wall height before any derived
+## geometry or shared tint is computed, so a change to the seed roll cannot change either the
+## handcrafted building or a roof joined to it. Nothing for any other city.
+func _draw_as_the_recipe_says(building: Building) -> void:
+	var listed: Dictionary = map.stretch_buildings.get(building.lot, {})
+	if listed.is_empty():
+		return
+	building.district = int(listed.district) as GameEnums.BlockPurpose
+	building.variant = int(listed.variant)
+	building.height = float(listed.height) * Tuning.TILE_SIZE
+
+## The walls round a stretch, where the void meets one of its tiles and no building of its own
+## stands: a body on every such tile, one row of them at a time, so she, a pursuer and a nudge from
+## the crowd all stop at the edge of the scene the way they stop at a frontage. Nothing is drawn.
+func _spawn_the_void_edge() -> void:
+	var walled := {}
+	for lot: Rect2i in map.stretch_buildings:
+		for tile in map.rect_tiles(lot):
+			walled[tile] = true
+	var edge := {}
+	for y in map.size.y:
+		for x in map.size.x:
+			var tile := Vector2i(x, y)
+			if not map.in_stretch(tile):
+				continue
+			for dy in range(-1, 2):
+				for dx in range(-1, 2):
+					var beside := tile + Vector2i(dx, dy)
+					if not map.in_stretch(beside) and not walled.has(beside):
+						edge[beside] = true
+	var body := StaticBody2D.new()
+	body.name = "VoidEdge"
+	var rows := {}
+	for tile: Vector2i in edge:
+		if not rows.has(tile.y):
+			rows[tile.y] = []
+		(rows[tile.y] as Array).append(tile.x)
+	for y: int in rows:
+		var xs: Array = rows[y]
+		xs.sort()
+		var start: int = xs[0]
+		var last: int = xs[0]
+		for i in range(1, xs.size() + 1):
+			if i < xs.size() and int(xs[i]) == last + 1:
+				last = xs[i]
+				continue
+			var run := map.tile_rect_to_world(Rect2i(start, y, last - start + 1, 1))
+			var shape := CollisionShape2D.new()
+			var rectangle := RectangleShape2D.new()
+			rectangle.size = run.size
+			shape.shape = rectangle
+			shape.position = run.get_center()
+			body.add_child(shape)
+			if i < xs.size():
+				start = xs[i]
+				last = xs[i]
+	add_child(body)
 
 func _recipe_litter(day: int) -> Array[Litter.Placed]:
 	var shown: Array[Litter.Placed] = []
+	if map.has_stretch():
+		for listed in map.stretch_litter:
+			var entry := Litter.Placed.new()
+			entry.position = listed.at
+			entry.texture_index = int(listed.texture)
+			shown.append(entry)
+		return shown
 	for placed in Litter.placed(map, day):
 		if _recipe_contains(placed.position):
 			shown.append(placed)

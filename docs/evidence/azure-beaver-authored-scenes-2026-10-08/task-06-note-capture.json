@@ -1,0 +1,710 @@
+{
+	"anchors": {
+		"mark": [
+			2960.0,
+			2224.0
+		],
+		"start": [
+			2800.0,
+			2256.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"capture_activity": {
+		"moving_crowd": 5,
+		"visible_cars": 0,
+		"visible_events": {
+			"homeless_yeller": 1
+		},
+		"visible_walkers": 5,
+		"walker_streets": {
+			"v6": {
+				"moving": 5,
+				"walkers": 5
+			}
+		},
+		"walkers_left": 3,
+		"walkers_right": 2
+	},
+	"capture_actors": {
+		"car_1": {
+			"position": [
+				2800.0,
+				1946.0085
+			]
+		},
+		"mark": {
+			"done": true,
+			"position": [
+				2960.0,
+				2224.0
+			]
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2734.1814,
+				1715.2693
+			],
+			"speed": 0.0
+		},
+		"rider": {
+			"position": [
+				2704.0,
+				1712.0
+			],
+			"pursuing": false,
+			"row": "homeless_yeller",
+			"telegraphing": false
+		},
+		"task": {
+			"done": true,
+			"position": [
+				2704.0,
+				1712.0
+			]
+		},
+		"walker_1": {
+			"position": [
+				2824.0,
+				1821.5776
+			]
+		},
+		"walker_10": {
+			"position": [
+				2696.0,
+				1671.736
+			]
+		},
+		"walker_11": {
+			"position": [
+				2696.0,
+				1969.5796
+			]
+		},
+		"walker_2": {
+			"position": [
+				2824.0,
+				2016.4911
+			]
+		},
+		"walker_3": {
+			"position": [
+				2824.0,
+				1902.7529
+			]
+		},
+		"walker_4": {
+			"position": [
+				2744.0,
+				1687.4169
+			]
+		},
+		"walker_5": {
+			"position": [
+				2765.0732,
+				2248.0
+			]
+		},
+		"walker_6": {
+			"position": [
+				2771.2971,
+				2296.0
+			]
+		},
+		"walker_7": {
+			"position": [
+				2824.0,
+				2262.4304
+			]
+		},
+		"walker_8": {
+			"position": [
+				2696.0,
+				1808.5123
+			]
+		},
+		"walker_9": {
+			"position": [
+				2696.0,
+				1708.1539
+			]
+		}
+	},
+	"capture_camera": {
+		"position": [
+			2734.18139648438,
+			1715.26928710938
+		],
+		"zoom": 2.0
+	},
+	"capture_crowd": {
+		"cars": 1,
+		"moving": 12,
+		"moving_cars": 1,
+		"quadrants": {
+			"ne": {
+				"cars": 1,
+				"moving": 12,
+				"moving_cars": 1,
+				"total": 12,
+				"walkers": 11
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 12,
+		"walkers": 11
+	},
+	"capture_tick": 315,
+	"checks": [
+		"construction_schema",
+		"explicit_city_context",
+		"authored_placements"
+	],
+	"classification": "normal",
+	"context_sha256": "4f0d2a7ffeefae6c7415da8fd6273193cadfb90b8243a32bc38cfa01a5496fd8",
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"initial_activity": {
+		"moving_crowd": 4,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 4,
+		"walker_streets": {
+			"h5": {
+				"moving": 4,
+				"walkers": 4
+			}
+		},
+		"walkers_left": 2,
+		"walkers_right": 2
+	},
+	"initial_actors": {
+		"car_1": {
+			"position": [
+				2712.8899,
+				1456.0
+			]
+		},
+		"mark": {
+			"done": false,
+			"position": [
+				2960.0,
+				2224.0
+			]
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				2800.0,
+				2256.0
+			],
+			"speed": 0.0
+		},
+		"walker_1": {
+			"position": [
+				2741.78,
+				1352.0
+			]
+		},
+		"walker_10": {
+			"position": [
+				2829.97,
+				2296.0
+			]
+		},
+		"walker_11": {
+			"position": [
+				3001.6399,
+				2296.0
+			]
+		},
+		"walker_2": {
+			"position": [
+				2798.73,
+				1480.0
+			]
+		},
+		"walker_3": {
+			"position": [
+				2872.0,
+				1544.4399
+			]
+		},
+		"walker_4": {
+			"position": [
+				2744.0,
+				1706.04
+			]
+		},
+		"walker_5": {
+			"position": [
+				2744.0,
+				1794.63
+			]
+		},
+		"walker_6": {
+			"position": [
+				2762.1699,
+				1928.0
+			]
+		},
+		"walker_7": {
+			"position": [
+				2757.8799,
+				1976.0
+			]
+		},
+		"walker_8": {
+			"position": [
+				2726.8701,
+				2296.0
+			]
+		},
+		"walker_9": {
+			"position": [
+				2774.1799,
+				2296.0
+			]
+		}
+	},
+	"initial_crowd": {
+		"cars": 1,
+		"moving": 12,
+		"moving_cars": 1,
+		"quadrants": {
+			"ne": {
+				"cars": 1,
+				"moving": 12,
+				"moving_cars": 1,
+				"total": 12,
+				"walkers": 11
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 12,
+		"walkers": 11
+	},
+	"installed_events": [],
+	"observations": [
+		{
+			"condition": "offered",
+			"passed": true,
+			"player_at": [
+				2800.77,
+				2255.93
+			],
+			"state": {
+				"done": false,
+				"position": [
+					2960.0,
+					2224.0
+				]
+			},
+			"subject": "mark",
+			"tick": 1.0
+		},
+		{
+			"condition": "unarrowed",
+			"passed": true,
+			"player_at": [
+				2800.77,
+				2255.93
+			],
+			"state": {
+				"done": false,
+				"position": [
+					2960.0,
+					2224.0
+				]
+			},
+			"subject": "mark",
+			"tick": 1.0
+		},
+		{
+			"at": "mark",
+			"condition": "beyond",
+			"distance": 150.0,
+			"passed": true,
+			"player_at": [
+				2800.77,
+				2255.93
+			],
+			"state": {
+				"carrying": false,
+				"gait_frame": 0,
+				"position": [
+					2800.7749,
+					2255.9321
+				],
+				"speed": 23.3333
+			},
+			"subject": "player",
+			"tick": 1.0
+		},
+		{
+			"condition": "done",
+			"passed": true,
+			"player_at": [
+				2958.87,
+				2253.29
+			],
+			"state": {
+				"done": true,
+				"position": [
+					2960.0,
+					2224.0
+				]
+			},
+			"subject": "mark",
+			"tick": 60.0
+		},
+		{
+			"condition": "offered",
+			"passed": true,
+			"player_at": [
+				2958.87,
+				2253.29
+			],
+			"state": {
+				"done": false,
+				"position": [
+					2704.0,
+					1712.0
+				]
+			},
+			"subject": "task",
+			"tick": 60.0
+		},
+		{
+			"condition": "unarrowed",
+			"passed": true,
+			"player_at": [
+				2958.87,
+				2253.29
+			],
+			"state": {
+				"done": false,
+				"position": [
+					2704.0,
+					1712.0
+				]
+			},
+			"subject": "task",
+			"tick": 60.0
+		},
+		{
+			"condition": "off_screen",
+			"passed": true,
+			"player_at": [
+				2958.87,
+				2253.29
+			],
+			"state": {
+				"done": false,
+				"position": [
+					2704.0,
+					1712.0
+				]
+			},
+			"subject": "task",
+			"tick": 60.0
+		},
+		{
+			"at": "mark",
+			"condition": "beyond",
+			"distance": 540.0,
+			"passed": true,
+			"player_at": [
+				2958.87,
+				2253.29
+			],
+			"state": {
+				"done": false,
+				"position": [
+					2704.0,
+					1712.0
+				]
+			},
+			"subject": "task",
+			"tick": 60.0
+		},
+		{
+			"at": "mark",
+			"condition": "near",
+			"distance": 644.0,
+			"passed": true,
+			"player_at": [
+				2958.87,
+				2253.29
+			],
+			"state": {
+				"done": false,
+				"position": [
+					2704.0,
+					1712.0
+				]
+			},
+			"subject": "task",
+			"tick": 60.0
+		},
+		{
+			"cars": 1.0,
+			"condition": "crowd",
+			"passed": true,
+			"player_at": [
+				2734.18,
+				2203.0
+			],
+			"state": {
+				"carrying": false,
+				"gait_frame": 1,
+				"position": [
+					2734.1814,
+					2203.0
+				],
+				"speed": 92.0
+			},
+			"subject": "player",
+			"tick": 150.0,
+			"walkers": 2.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": false,
+	"recipe": "Day 6: a note for the man shouting where her path first reaches 576px, read on a walk from the unread mark",
+	"recipe_sha256": "29e3bc4f5cd07338de0e8615fac272a288473abda57b3697acbdd54b49d45d60",
+	"route_bag": {
+		"marbles": 14,
+		"owed": 14,
+		"pre_bag": [
+			"cat_dash"
+		]
+	},
+	"scope": "stretch",
+	"seed": 11,
+	"setup": {
+		"actors": [
+			{
+				"at": [
+					2712.89,
+					1456.0
+				],
+				"direction": "east",
+				"kind": "car",
+				"name": "car_1",
+				"speed": 174.7845
+			},
+			{
+				"at": [
+					2741.78,
+					1352.0
+				],
+				"direction": "west",
+				"kind": "walker",
+				"name": "walker_1",
+				"speed": 65.4764
+			},
+			{
+				"at": [
+					2798.73,
+					1480.0
+				],
+				"direction": "east",
+				"kind": "walker",
+				"name": "walker_2",
+				"speed": 71.7361
+			},
+			{
+				"at": [
+					2872.0,
+					1544.44
+				],
+				"direction": "north",
+				"kind": "walker",
+				"name": "walker_3",
+				"speed": 60.555
+			},
+			{
+				"at": [
+					2744.0,
+					1706.04
+				],
+				"direction": "north",
+				"kind": "walker",
+				"name": "walker_4",
+				"speed": 59.5907
+			},
+			{
+				"at": [
+					2744.0,
+					1794.63
+				],
+				"direction": "north",
+				"kind": "walker",
+				"name": "walker_5",
+				"speed": 46.7079
+			},
+			{
+				"at": [
+					2762.17,
+					1928.0
+				],
+				"direction": "west",
+				"kind": "walker",
+				"name": "walker_6",
+				"speed": 64.7956
+			},
+			{
+				"at": [
+					2757.88,
+					1976.0
+				],
+				"direction": "east",
+				"kind": "walker",
+				"name": "walker_7",
+				"speed": 64.6934
+			},
+			{
+				"at": [
+					2726.87,
+					2296.0
+				],
+				"direction": "west",
+				"kind": "walker",
+				"name": "walker_8",
+				"speed": 47.703
+			},
+			{
+				"at": [
+					2774.18,
+					2296.0
+				],
+				"direction": "west",
+				"kind": "walker",
+				"name": "walker_9",
+				"speed": 61.2157
+			},
+			{
+				"at": [
+					2829.97,
+					2296.0
+				],
+				"direction": "west",
+				"kind": "walker",
+				"name": "walker_10",
+				"speed": 69.9873
+			},
+			{
+				"at": [
+					3001.64,
+					2296.0
+				],
+				"direction": "west",
+				"kind": "walker",
+				"name": "walker_11",
+				"speed": 57.975
+			}
+		],
+		"day": 6.0,
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "east"
+		},
+		"posters": [],
+		"route_bag": {
+			"first_after": 3.0,
+			"marbles": [
+				"cat_dash",
+				"cat_dash",
+				"cat_dash",
+				"cat_dash",
+				"cat_dash",
+				"loose_dog",
+				"loose_dog",
+				"loose_dog",
+				"loose_dog",
+				"loose_dog",
+				"loose_dog",
+				"cyclist",
+				"cyclist",
+				"cyclist"
+			],
+			"owed": 14.0,
+			"pre_bag": [
+				"cat_dash"
+			]
+		},
+		"task": {
+			"mark": "mark"
+		},
+		"tutorial_complete": true
+	},
+	"task": {
+		"arrow": null,
+		"distance": 572.43,
+		"mark": [
+			2960.0,
+			2224.0
+		],
+		"read_tick": 48,
+		"step": 2,
+		"target": [
+			2704.0,
+			1712.0
+		],
+		"title": "A note for a stranger"
+	},
+	"violations": []
+}

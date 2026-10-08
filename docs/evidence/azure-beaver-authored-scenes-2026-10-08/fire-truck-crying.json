@@ -1,0 +1,92 @@
+{
+  "recipe": "Day 3: the burning building, out of view at the start, and the fire engine it calls in once she sees it",
+  "recipe_sha256": "b23634aa213019cb2a12426c5cfa8ae7f629c414971497b8e0a2ac022b0a70f5",
+  "engine": "4.7.2-stable (official)",
+  "physics_ticks_per_second": 30,
+  "playback_complete": false,
+  "stopped_tick": 261,
+  "playback_error": "gameplay paused before the authored action completed",
+  "final_actors": {
+    "fire": {
+      "position": [
+        2128.0,
+        2704.0
+      ],
+      "pursuing": false,
+      "row": "burning_building",
+      "telegraphing": false
+    },
+    "player": {
+      "carrying": false,
+      "gait_frame": 1,
+      "position": [
+        2367.7346,
+        2704.0
+      ],
+      "speed": 0.0
+    }
+  },
+  "observations": [
+    {
+      "condition": "off_screen",
+      "passed": true,
+      "player_at": [
+        2623.22,
+        2704.0
+      ],
+      "state": {
+        "position": [
+          2128.0,
+          2704.0
+        ],
+        "pursuing": false,
+        "row": "burning_building",
+        "telegraphing": true
+      },
+      "subject": "fire",
+      "tick": 1.0
+    },
+    {
+      "condition": "clear_of_both_views",
+      "half": [
+        160.0,
+        480.0
+      ],
+      "passed": true,
+      "player_at": [
+        2623.22,
+        2704.0
+      ],
+      "state": {
+        "position": [
+          2128.0,
+          2704.0
+        ],
+        "pursuing": false,
+        "row": "burning_building",
+        "telegraphing": true
+      },
+      "subject": "fire",
+      "tick": 1.0
+    },
+    {
+      "condition": "visible",
+      "passed": true,
+      "player_at": [
+        2370.93,
+        2704.0
+      ],
+      "state": {
+        "position": [
+          2128.0,
+          2704.0
+        ],
+        "pursuing": false,
+        "row": "burning_building",
+        "telegraphing": false
+      },
+      "subject": "fire",
+      "tick": 84.0
+    }
+  ]
+}

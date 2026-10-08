@@ -23,6 +23,64 @@ var recipe_frame_locked := false
 var recipe_diagnostics: Array[String] = []
 var recipe_closures: Array[RoadClosure] = []
 var recipe_tree_moves := {}
+## Saved dawn ground and tree positions for an authored scene. Empty dawn ground means ordinary
+## generated play. Repainting the authored day never replaces manual placement with block carves.
+var recipe_dawn_tiles := PackedByteArray()
+var recipe_trees: Array[Vector2i] = []
+## A task scene's **stretch**: the tiles of the streets she walks, read off the recipe
+## (`docs/SCENE_RECIPES.md`, "The task scenes"), one byte per tile, 1 inside it. Empty for every
+## other city. While `stretch_active` is on, every single-tile question — `tile_at()`,
+## `is_street()`, `is_walkable()` — answers a tile outside it as `BUILDING`: the void, which is
+## drawn as nothing and walked into by nobody, so whatever is placed while she walks stands on the
+## streets the scene has. A distance measured by walking (`walk_field_from()`) and the dawn's plans
+## (`witness_only()`: the route tree, the regions, the task's mark) read the explicit saved context
+## underneath, with authored placements overlaid — questions such as how far day 10's neighbor
+## walks home need the topology beyond the visible stretch too.
+var stretch := PackedByteArray()
+## Whether the stretch is what the single-tile questions answer. On for the scene; switched off by
+## `witness_only()` while a whole-city rule is stated.
+var stretch_active := false
+## The recipe's own cracks, tile -> `Vector2i(level, pattern)`, which `GroundTiles` draws in a
+## stretch in place of its seeded roll; a tile not listed is uncracked.
+var stretch_cracks := {}
+## The recipe's buildings, lot `Rect2i` -> `{"district", "variant", "height", "condition"}`: the
+## only buildings a stretch builds, each drawn as the recipe says rather than as the seed rolls it.
+var stretch_buildings := {}
+## The recipe's props, `[{"kind", "at", "variant", "scale"}]`, which a stretch stands in place of
+## the dressing a day's blocks and streets would roll.
+var stretch_props: Array[Dictionary] = []
+## The recipe's litter, `[{"at", "texture"}]`, in place of `Litter.placed()`'s roll.
+var stretch_litter: Array[Dictionary] = []
+
+func has_stretch() -> bool:
+	return not stretch.is_empty()
+
+## Whether `tile` is one of the stretch's own tiles, whatever `stretch_active` says.
+func in_stretch(tile: Vector2i) -> bool:
+	return in_bounds(tile) and stretch[tile.y * size.x + tile.x] == 1
+
+## Whether `tile` is the void round a stretch: outside it while the stretch is what is shown.
+func is_void(tile: Vector2i) -> bool:
+	return stretch_active and not in_stretch(tile)
+
+## Whether `tile` is ground the stretch cut off: walkable in its saved context, void in the
+## scene — the end of one of its streets rather than a wall it runs into.
+func is_cut_off(tile: Vector2i) -> bool:
+	return stretch_active and in_bounds(tile) and not in_stretch(tile) \
+			and _WALKABLE[tiles[tile.y * size.x + tile.x]] == 1
+
+## Switches the scene's own edges off — a bounded recipe's exterior and a stretch's void — so a
+## rule stated over the whole lattice reads the saved spatial context, and answers what to hand
+## `restore_edges()` once it is done.
+func witness_only() -> Array[bool]:
+	var was: Array[bool] = [recipe_exterior, stretch_active]
+	recipe_exterior = false
+	stretch_active = false
+	return was
+
+func restore_edges(was: Array[bool]) -> void:
+	recipe_exterior = was[0]
+	stretch_active = was[1]
 ## Block coordinate -> BlockPlan. The arc each block may travel, fixed at generation.
 ##
 ## Keyed by the block that **anchors a lot**, which is not always one block: a four-block calm zone
@@ -581,6 +639,8 @@ func in_bounds(tile: Vector2i) -> bool:
 	return tile.x >= 0 and tile.y >= 0 and tile.x < size.x and tile.y < size.y
 
 func tile_at(tile: Vector2i) -> GameEnums.TileType:
+	if stretch_active and not in_stretch(tile):
+		return GameEnums.TileType.BUILDING
 	if recipe_exterior and not recipe_bounds.has_point(tile):
 		return GameEnums.TileType.ALLEY
 	if not in_bounds(tile):
@@ -733,9 +793,10 @@ func _reaches_the_middle_of(tile: Vector2i, from: Vector2, delta: Vector2, depth
 
 ## `is_walkable()` for the tile at (`x`, `y`), read straight off the grid: the line walk above asks
 ## it for every tile a segment crosses, and most cross no building at all, so the one call stands
-## for `is_walkable()`'s three. A recipe's exterior still goes through `tile_at()`.
+## for `is_walkable()`'s three. A recipe's exterior and a stretch's void still go through
+## `tile_at()`.
 func _open(x: int, y: int) -> bool:
-	if recipe_exterior:
+	if recipe_exterior or stretch_active:
 		return is_walkable(Vector2i(x, y))
 	return x >= 0 and y >= 0 and x < size.x and y < size.y \
 			and _WALKABLE[tiles[y * size.x + x]] == 1
@@ -989,6 +1050,18 @@ func block_at(world_position: Vector2) -> Vector2i:
 ## all plan around it. A shut area's ground is left exactly as its purpose paints it — it stays
 ## calm, walkable ground; only `fenced_park`, if one is chosen today, is actually closed.
 func repaint(state: CityState) -> void:
+	if not recipe_dawn_tiles.is_empty():
+		tiles = recipe_dawn_tiles.duplicate()
+		_tiles_by_type.clear()
+		closed_tiles.clear()
+		shut_calm.clear()
+		_shut_tiles.clear()
+		_fenced_tiles.clear()
+		fenced_park = Vector2i(-1, -1)
+		fenced_park_act = 0
+		_recompute_calm(state)
+		_shut_the_spent_calm(state)
+		return
 	# Two passes, and the split is what makes a four-block calm zone possible: one lot's ground
 	# now covers blocks that are not its own, so a single pass that cleared each lot immediately
 	# before painting it would have whichever block came later in the dictionary punch a

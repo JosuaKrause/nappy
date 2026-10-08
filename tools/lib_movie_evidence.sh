@@ -6,7 +6,7 @@ movie_manifest_check() {
     local manifest="$1" normal="${2:-false}"
     [[ -s "$manifest" ]] || { echo "missing scene manifest: $manifest" >&2; return 1; }
     if ! jq -e 'type == "object" and (.classification == "normal" or .classification == "fixture")
-        and (.scope == "bounded" or .scope == "full")
+        and (.scope == "bounded" or .scope == "full" or .scope == "stretch")
         and (.bounds | type == "array" and length == 4 and all(.[]; type == "number"))' \
         "$manifest" >/dev/null; then
         echo "invalid scene classification in $manifest" >&2; return 1

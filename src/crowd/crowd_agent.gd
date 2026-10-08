@@ -667,7 +667,29 @@ func _is_in_a_pocket() -> bool:
 func _out_of_view() -> bool:
 	if not field:
 		return true
-	return position.distance_to(field.centre) > Tuning.OUT_OF_SIGHT
+	if field.has_stretch():
+		return _beyond_every_view(position)
+	return position.distance_to(field.looking_at()) > Tuning.OUT_OF_SIGHT
+
+## **On a stretch, the camera's own view, in both presentations, with a body's room round it.** A
+## stretch's ends are often in the picture — the street runs into the void a few tiles from her — so
+## the radius a played day recycles beyond is not enough: nothing may appear or vanish where she can
+## see it *(the player's rule, PR #597)*. True when no part of a body standing at `at` (`room`
+## either side, a car's length and more by default, `ENTRY_PICTURE_ROOM`) is inside the world the
+## camera shows in the landscape window or in the turned portrait one, both centred where the camera
+## looks. With no camera — a rig that steps agents by hand — the played day's radius answers.
+func _beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
+	var camera := get_viewport().get_camera_2d() if is_inside_tree() else null
+	if not camera:
+		return at.distance_to(field.looking_at()) > Tuning.OUT_OF_SIGHT
+	var size := Vector2(maxf(ScreenOrientation.DESIGN_SIZE.x, ScreenOrientation.ROTATED_SIZE.x),
+			maxf(ScreenOrientation.DESIGN_SIZE.y, ScreenOrientation.ROTATED_SIZE.y)) / camera.zoom
+	var offset := (at - camera.get_screen_center_position()).abs()
+	return offset.x > size.x * 0.5 + room or offset.y > size.y * 0.5 + room
+
+## How far past a body's centre its picture may reach, for `_beyond_every_view()`: two tiles, more than
+## a car's half length and its shadow.
+const ENTRY_PICTURE_ROOM := 2.0 * Tuning.TILE_SIZE
 
 ## Whether a tile's own street segment is shut to this agent the way a hard blocker is: held for
 ## today (`CityMap.is_held_at` — a hard seal's segment, a region wall, a closure, or the streets
@@ -963,6 +985,10 @@ func _process(delta: float) -> void:
 		_consider_turning()
 		_advance_walker_gait(delta)
 	_look_ahead()
+	if field.has_stretch() and _walks_off_the_stretch() and _out_of_view():
+		_recycle()
+		_redraw_if_the_picture_changed()
+		return
 	if _blocked_in <= _acts_on_a_barrier_within():
 		_divert(delta)
 	# A car with no road either way goes when nobody is looking, which is the rule a body a pocket
@@ -2273,6 +2299,13 @@ func _look_ahead() -> void:
 	_blocked_in = LOOKAHEAD_TILES + 1
 	var step := (Vector2i.DOWN if _vertical else Vector2i.RIGHT) * int(signf(_direction))
 	for i in range(1, LOOKAHEAD_TILES + 1):
+		# A stretch's street goes on into the void as far as anybody on it knows: out of her view the
+		# agent walks to its end and leaves the scene there (`_walks_off_the_stretch()`). In her view
+		# the end is a wall like any other — a walker turns round at it and a car turns off before
+		# it or waits — since nothing may vanish where she can see it.
+		var ahead := here + step * i
+		if _map.is_cut_off(ahead) and _beyond_every_view(_map.tile_to_world(ahead)):
+			break
 		if _cannot_go_on(_vertical, here + step * i):
 			_blocked_in = i
 			return
@@ -3214,6 +3247,14 @@ func _recycle() -> void:
 	# answer — and draws it here, before the rolls below, for the reason `_draw_the_door_answer()`
 	# gives: the entry point is checked against ground this walker may actually walk.
 	_draw_the_door_answer()
+	if field.has_stretch():
+		# Whatever asked for the recycle — the end of a street, the edge of the field, a pocket —
+		# nothing vanishes in her view: in it the agent turns round where it is instead.
+		if not _out_of_view():
+			_turn_round()
+			return
+		_enter_at_a_stretch_end()
+		return
 	var legal: Array = []
 	for _attempt in 6:
 		_choose_lane(_rng.randf())
@@ -3267,6 +3308,78 @@ func _recycle() -> void:
 		# `world_to_tile` always floors away — so the clamp's own top has to give up a whole
 		# pixel or it can land exactly on the line and read as out of bounds again.
 		_set_along(clampf(_along(), 0.0, limit - 1.0))
+
+## Whether this agent is about to step off the end of a stretch's street into the void: the tile
+## half a tile ahead of it, along its lane, is ground the stretch cut off (`CityMap.is_cut_off()`).
+## A wall is not this — a street that ends at a building is turned at as everywhere else. It leaves
+## there only out of her view (`_out_of_view()`); in it the end is a wall.
+func _walks_off_the_stretch() -> bool:
+	var ahead := Vector2(_lane_centre, _along()) if _vertical else Vector2(_along(), _lane_centre)
+	ahead += (Vector2.DOWN if _vertical else Vector2.RIGHT) * signf(_direction) * Tuning.TILE_SIZE * 0.5
+	return _map.is_cut_off(_map.world_to_tile(ahead))
+
+## **A recycle on a stretch: in at one of its ends, out of her view.** *(azure-beaver, proposed and
+## built: "walkers and cars recycled at the stretch's ends".)* The scene's crowd is the street she
+## walks and nothing beyond it exists, so an agent that walks off one end comes back in at an end,
+## rolled from the field's own ends (`CrowdField.stretch_ends`) that are out of every view
+## (`_beyond_every_view()`), heading in: a car on the lane that drives that way, a walker on any
+## lane its footway has there, each at its ordinary speed. The same ground and room a recycle
+## anywhere asks for are asked here, for a handful of rolls, including the final queue position.
+## With no accepted entry, or every end in view, it turns
+## round where it is, at the end it left by, which is out of view or it would not have left.
+func _enter_at_a_stretch_end() -> void:
+	var before := _placement_taken()
+	var ends: Array[Dictionary] = []
+	for end in field.stretch_ends:
+		var along := (float(end.along) + 0.5) * Tuning.TILE_SIZE
+		var across := (float(end.corridor) * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
+				* Tuning.TILE_SIZE
+		if _beyond_every_view(Vector2(across, along) if end.vertical else Vector2(along, across)):
+			ends.append(end)
+	if ends.is_empty():
+		_turn_round()
+		return
+	for _attempt in 8:
+		var end: Dictionary = ends[_rng.randi_range(0, ends.size() - 1)]
+		_vertical = end.vertical
+		_corridor = end.corridor
+		_direction = end.direction
+		var along_tile: int = end.along
+		if kind == Kind.CAR:
+			_lane = CrowdLanes.road_lane(_vertical, _direction)
+			_speed = _rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
+		else:
+			var offsets := CrowdLanes.walkable_offsets(_map, _vertical, _corridor, along_tile)
+			if offsets.is_empty():
+				continue
+			_lane = offsets[_rng.randi_range(0, offsets.size() - 1)]
+			_speed = _rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y)
+		_cruise = _speed
+		_set_along((along_tile + 0.5) * Tuning.TILE_SIZE)
+		_lane_centre = _lane_centre_here()
+		_set_cross(_lane_centre)
+		_junction = -1
+		_turn = null
+		_turn_run_up = 0.0
+		_turn_back_hold = 0.0
+		_forget_the_detour()
+		if not _stands_on_a_street() or _is_in_a_pocket() or not _has_room_here():
+			continue
+		_join_the_back_of_the_queue()
+		_settle_junction()
+		# The lane can lie nearer the picture than the street's middle, and joining a queue can
+		# move it again. Check the final placement, not merely the candidate street end.
+		if not _beyond_every_view(position) or not _stands_on_a_street():
+			continue
+		_claim_the_road_here()
+		gap_ahead = INF
+		junction_hold = INF
+		gate_hold = INF
+		return
+	# No accepted entry is no teleport. The original point was already off camera; turn there.
+	_take_the_placement(before)
+	_turn_round()
+	_claim_the_road_here()
 
 ## The lane and the spot one placement roll settled on, kept so that a later roll which turns out
 ## worse can be given the earlier one back.

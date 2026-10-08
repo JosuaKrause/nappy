@@ -1,6 +1,6 @@
 class_name RecipeCityBuilder
 extends RefCounted
-## A single constructive attempt with exact choices and an explicit global witness.
+## Loads authored stretches directly; constructs other scopes with exact choices and a global witness.
 ## Never searches whole-city seeds and never moves a requested placement after construction.
 
 static func build(data: Dictionary) -> Dictionary:
@@ -8,6 +8,8 @@ static func build(data: Dictionary) -> Dictionary:
 	var result := {"map": null, "anchors": {}, "errors": errors, "manifest": {}}
 	if not errors.is_empty():
 		return result
+	if data.extent.scope == "stretch":
+		return _build_authored(data, errors)
 	var choices: Dictionary = data.city
 	var purpose_counts := {}
 	var zones := 0
@@ -118,8 +120,10 @@ static func build(data: Dictionary) -> Dictionary:
 			if side.begins_with("south"):
 				tile.y += Tuning.STREET_WIDTH - 1
 			at = map.tile_to_world(tile)
-		if not bounds.has_point(map.world_to_tile(at)):
-			errors.append("anchor.extent: %s lies outside the authored bounds" % name)
+		if not bounds.has_point(map.world_to_tile(at)) \
+				or (map.has_stretch() and not _on_the_stretch(map, map.world_to_tile(at))):
+			errors.append("anchor.extent: %s lies outside the authored %s" % [name,
+					"stretch" if map.has_stretch() else "bounds"])
 		anchors[name] = at
 	if not errors.is_empty():
 		return result
@@ -134,6 +138,125 @@ static func build(data: Dictionary) -> Dictionary:
 	if violations.is_empty():
 		result.manifest.checks.append("full_context_guarantees")
 	return result
+
+## An authored scene has no generation step. Its saved context supplies off-camera topology;
+## visible tile, lot and tree lists are authoritative and feed the same map every rule reads.
+static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictionary:
+	var map := RecipeCityContext.restore(data.context)
+	var result := {"map": null, "anchors": {}, "errors": errors, "manifest": {}}
+	var stretch: Dictionary = data.stretch
+	map.stretch.resize(map.size.x * map.size.y)
+	for type_name: String in stretch.tiles:
+		var type: int = GameEnums.TileType[type_name.to_upper()]
+		for run: Array in stretch.tiles[type_name]:
+			for x in range(int(run[1]), int(run[2]) + 1):
+				var tile := Vector2i(x, int(run[0]))
+				if not map.in_bounds(tile):
+					errors.append("stretch.tiles: %s outside the map" % tile)
+					continue
+				var index := tile.y * map.size.x + tile.x
+				if map.stretch[index] != 0:
+					errors.append("stretch.tiles: %s listed twice" % tile)
+				map.stretch[index] = 1
+				map.tiles[index] = type
+	# The saved context's fronting lots are not a second authority for the visible buildings.
+	# Remove them, then install precisely the authored list, including a moved or newly added lot.
+	var retained: Array[Rect2i] = []
+	for lot in map.building_rects:
+		if not _fronts_the_stretch(map, lot):
+			retained.append(lot)
+	map.building_rects = retained
+	for listed: Dictionary in stretch.get("buildings", []):
+		var lot := SceneRecipe.rect(listed.lot)
+		if not Rect2i(Vector2i.ZERO, map.size).encloses(lot) or not lot.has_area():
+			errors.append("stretch.buildings: lot outside the map or empty")
+			continue
+		if not _fronts_the_stretch(map, lot):
+			errors.append("stretch.buildings: lot %s does not front the stretch" % lot)
+		for tile in map.rect_tiles(lot):
+			if map.in_stretch(tile):
+				errors.append("stretch.buildings: lot overlaps authored ground at %s" % tile)
+		map.fill_rect(lot, GameEnums.TileType.BUILDING)
+		map.building_rects.append(lot)
+		map.stretch_buildings[lot] = {"district": GameEnums.BlockPurpose[str(listed.district).to_upper()],
+				"variant": int(listed.variant), "height": int(listed.height),
+				"condition": Building.Condition[str(listed.condition).to_upper()]}
+	var trees: Array[Vector2i] = []
+	for tile in map.recipe_trees:
+		if not map.in_stretch(tile):
+			trees.append(tile)
+	for listed: Array in stretch.get("trees", []):
+		var tile := RecipeCityContext.point(listed)
+		if not map.in_stretch(tile) or not map.is_walkable(tile) \
+				or not StreetNetwork.segment_containing(tile) or trees.has(tile):
+			errors.append("stretch.trees: duplicate tree or no street ground at %s" % tile)
+		else:
+			trees.append(tile)
+	map.recipe_trees = trees
+	for listed: Dictionary in stretch.get("props", []):
+		var at := Vector2(float(listed.at[0]), float(listed.at[1]))
+		if not map.in_stretch(map.world_to_tile(at)):
+			errors.append("stretch.props: placement outside the stretch")
+		map.stretch_props.append({"kind": Prop.Kind[str(listed.kind).to_upper()], "at": at,
+				"variant": int(listed.get("variant", 0)), "scale": float(listed.get("scale", 1.0))})
+	for listed: Dictionary in stretch.get("litter", []):
+		var at := Vector2(float(listed.at[0]), float(listed.at[1]))
+		if not map.in_stretch(map.world_to_tile(at)):
+			errors.append("stretch.litter: placement outside the stretch")
+		map.stretch_litter.append({"at": at, "texture": SceneRecipe.litter_names().find(str(listed.kind))})
+	for crack: Array in stretch.get("cracks", []):
+		var tile := Vector2i(int(crack[0]), int(crack[1]))
+		if not map.in_stretch(tile):
+			errors.append("stretch.cracks: placement outside the stretch")
+		map.stretch_cracks[tile] = Vector2i(int(crack[2]), int(crack[3]))
+	map.recipe_dawn_tiles = map.tiles.duplicate()
+	_plan_closures(data, map, errors)
+	map.stretch_active = true
+	for label: String in data.get("anchors", {}):
+		var spec: Variant = data.anchors[label]
+		var at := Vector2.ZERO
+		if spec is String:
+			at = map.doorstep_world_position() if spec == "doorstep" else map.power_station_door_position()
+		elif spec.has("world"):
+			at = Vector2(float(spec.world[0]), float(spec.world[1]))
+		elif spec.has("tile"):
+			at = map.tile_to_world(RecipeCityContext.point(spec.tile))
+		else:
+			var tile := RecipeCityContext.point(spec.junction) * CityMap.period()
+			if str(spec.side).ends_with("east"):
+				tile.x += Tuning.STREET_WIDTH - 1
+			if str(spec.side).begins_with("south"):
+				tile.y += Tuning.STREET_WIDTH - 1
+			at = map.tile_to_world(tile)
+		if not _on_the_stretch(map, map.world_to_tile(at)):
+			errors.append("anchor.extent: %s outside the stretch" % label)
+		result.anchors[label] = at
+	if not errors.is_empty():
+		return result
+	result.map = map
+	result.manifest = {"classification": data.get("classification", "normal"), "scope": "stretch",
+			"bounds": [0, 0, map.size.x, map.size.y], "seed": int(data.seed),
+			"checks": ["construction_schema", "explicit_city_context", "authored_placements"],
+			"expected_violations": [], "violations": [], "context_sha256":
+			JSON.stringify(data.context, "", true).sha256_text()}
+	return result
+
+## Whether a stretch scene can name `tile`: one of its own tiles, or a tile of a building it lists —
+## a door on a facade (`power_station_door`) is part of the building, not of the street.
+static func _on_the_stretch(map: CityMap, tile: Vector2i) -> bool:
+	if map.in_stretch(tile):
+		return true
+	for lot: Rect2i in map.stretch_buildings:
+		if lot.has_point(tile):
+			return true
+	return false
+
+## Whether a lot touches the stretch, a tile beside one of its own tiles or across a corner from it.
+static func _fronts_the_stretch(map: CityMap, lot: Rect2i) -> bool:
+	for tile in map.rect_tiles(lot.grow(1)):
+		if map.in_stretch(tile):
+			return true
+	return false
 
 static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]) -> void:
 	var pins: Array = data.city.get("closures", [])

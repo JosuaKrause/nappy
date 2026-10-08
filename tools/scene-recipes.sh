@@ -8,8 +8,9 @@ usage: tools/scene-recipes.sh [--help|-h] [--recipe FILE] [--output DIR] [--scre
 
 Run every saved scene (or each repeated --recipe FILE) through its headless scripted assertions.
 Write logs and manifests to --output DIR (default build/scene-recipes).
---screenshots also uses shot.sh at playback.capture_at seconds after the full simulation
-and movement begin. Retains the relevant still, action/capture manifests and small logs only.
+--screenshots also uses shot.sh twice per scene: NAME-start.png a tenth of a second in, and
+NAME.png at playback.capture_at seconds after the full simulation and movement begin.
+Retains the relevant stills, action/capture manifests and small logs only.
 Example: tools/scene-recipes.sh --screenshots
 EOF
 }
@@ -45,7 +46,10 @@ headroom_job=scene-recipe
 $screenshots && headroom_job=scene-capture
 headroom_hint=""
 [[ ${#recipes[@]} -gt 1 ]] && headroom_hint="run fewer recipes, each named with --recipe FILE"
-headroom_preflight tools/scene-recipes.sh "$output" "$headroom_hint" "$headroom_job:${#recipes[@]}" || exit 1
+# Two stills a scene with --screenshots, its start and its capture moment.
+headroom_jobs=${#recipes[@]}
+$screenshots && headroom_jobs=$(( ${#recipes[@]} * 2 ))
+headroom_preflight tools/scene-recipes.sh "$output" "$headroom_hint" "$headroom_job:$headroom_jobs" || exit 1
 mkdir -p "$output"
 output="$(cd "$output" && pwd)"
 cd "$root"
@@ -62,7 +66,9 @@ for file in "${recipes[@]}"; do
         echo "scene failed: $file (log: $output/$name.log)" >&2
         exit 1
     fi
-    if ! jq -e '.playback_complete == true and all(.observations[]; .passed == true)' \
+    if grep -qE 'SCRIPT ERROR|Parse Error|^ERROR:' "$output/$name.log" || ! jq -e \
+        '.playback_complete == true and all(.observations[]; .passed == true)
+         and ((.in_the_void // []) | length == 0) and ((.seen_to_jump // []) | length == 0)' \
         "$output/$name.json" >/dev/null; then
         echo "scene assertions failed: $file (manifest: $output/$name.json; log: $output/$name.log)" >&2
         exit 1
@@ -73,16 +79,25 @@ for file in "${recipes[@]}"; do
             echo "invalid capture time: $file (log: $output/$name.log)" >&2
             exit 1
         fi
-        if ! "$root/tools/shot.sh" "$output/$name.png" "$after" \
-            --recipe "$file" --recipe-mode scripted --player-view --no-save \
-            --recipe-manifest "$output/$name-capture.json" >"$output/$name-capture.log" 2>&1; then
-            echo "scene capture failed: $file (log: $output/$name-capture.log)" >&2
-            exit 1
-        fi
-        run_log="$(sed -n 's/^\[Telemetry\] //p' "$output/$name-capture.log")"
-        if [[ -z "$run_log" || ! -f "$run_log" ]]; then
-            echo "scene capture has no complete telemetry provenance: $file (log: $output/$name-capture.log)" >&2
-            exit 1
-        fi
+        for still in "start:0.1" "late:$after"; do
+            at="${still#*:}"
+            stem="$name"
+            [[ "${still%%:*}" == start ]] && stem="$name-start"
+            if ! "$root/tools/shot.sh" "$output/$stem.png" "$at" \
+                --recipe "$file" --recipe-mode scripted --player-view --no-save \
+                --recipe-manifest "$output/$stem-capture.json" >"$output/$stem-capture.log" 2>&1; then
+                echo "scene capture failed: $file (log: $output/$stem-capture.log)" >&2
+                exit 1
+            fi
+            if grep -qE 'SCRIPT ERROR|Parse Error|^ERROR:' "$output/$stem-capture.log"; then
+                echo "scene capture engine error: $file (log: $output/$stem-capture.log)" >&2
+                exit 1
+            fi
+            run_log="$(sed -n 's/^\[Telemetry\] //p' "$output/$stem-capture.log")"
+            if [[ -z "$run_log" || ! -f "$run_log" ]]; then
+                echo "scene capture has no complete telemetry provenance: $file (log: $output/$stem-capture.log)" >&2
+                exit 1
+            fi
+        done
     fi
 done
