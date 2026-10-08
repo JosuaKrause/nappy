@@ -10,9 +10,7 @@ The assistant is recovering the unfinished trailer work and correcting startup c
 > also the bird sequence (walking west) is correct -- there was an attempt to change it but it looked worse. can you create one version locally and I can review?
 
 > there might be a claude agent workspace with halfway changes for the trailer PR
-
-The player identifies the outstanding choice explicitly:
-
+>
 > I'm referring to
 >
 > The birds choice (current vs trailer-birds-staged) is the player's after the merge.
