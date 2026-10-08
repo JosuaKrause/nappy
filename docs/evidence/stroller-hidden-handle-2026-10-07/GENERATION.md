@@ -40,3 +40,20 @@ cmp /private/tmp/stroller-hidden-handle-rebuild/pram_front.png \
 versions. The southeast and southwest stroller pixels remain governed by the southern wheel
 arrangement recipe; their side handles are perspective details rather than the reported dark bar
 across the cardinal south hood.
+
+## Runtime still
+
+`runtime-south.png` is a 1280×720 capture of commit
+`2166bfe92d6be1e4431aefd71217cd6b50b72141` at two seconds into day 1, seed 4242. The rig walks
+south under `--invincible`, so the stroller uses the runtime cardinal-south atlas region at normal
+camera scale while the day stays open long enough for the capture:
+
+```sh
+./tools/shot.sh /private/tmp/nappy-stroller-handle/runtime-south.png 2 \
+  --seed 4242 --walk south --invincible
+```
+
+The still confirms that the baked runtime view hides the cross-hood handle at game scale and keeps
+the stroller grounded ahead of the mother. It does not establish turn animation, non-south
+facings, or player approval. The run's other automatic artifacts are unrelated to this static
+visual claim and stay in scratch space.
