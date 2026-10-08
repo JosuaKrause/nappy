@@ -902,8 +902,10 @@ join_shots() {
         inputs+=(-f lavfi -i "aevalsrc=exprs='${score_expression}|${score_expression}':s=48000:d=${total_seconds}:c=stereo")
         ffmpeg -hide_banner -loglevel error -y "${inputs[@]}" \
             -filter_complex "${streams}concat=n=${i}:v=1:a=1[joinedv][gamea];\
-[gamea]volume=${game_gain}[gamebed];[${score_index}:a]aformat=sample_rates=48000:channel_layouts=stereo[score];\
-[gamebed][score]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.92[a]" \
+[gamea]volume=${game_gain},apad,atrim=duration=${total_seconds}[gamebed];\
+[${score_index}:a]aformat=sample_rates=48000:channel_layouts=stereo[score];\
+[gamebed][score]amix=inputs=2:duration=longest:normalize=0,\
+alimiter=limit=0.92:latency=1,atrim=duration=${total_seconds}[a]" \
             -map "[joinedv]" -map "[a]" -r "$FPS" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
             -c:a aac -b:a 192k -movflags +faststart "$OUTPUT"
     else
@@ -1077,11 +1079,12 @@ build_selected_mix() {
     fi
     game_gain="$(jq -r '.game_gain' <<< "$RESOLVED_SCORES")"
     ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$score" -i "$bass" -i "$ending" \
-        -filter_complex "[0:a]volume=${game_gain}[game];\
+        -filter_complex "[0:a]volume=${game_gain},apad,atrim=duration=${total_seconds}[game];\
 [1:a]aformat=sample_rates=48000:channel_layouts=stereo[glass];\
 [2:a]aformat=sample_rates=48000:channel_layouts=stereo[bass];\
 [3:a]aformat=sample_rates=48000:channel_layouts=stereo[ending];\
-[game][glass][bass][ending]amix=inputs=4:duration=first:normalize=0,alimiter=limit=0.92[a]" \
+[game][glass][bass][ending]amix=inputs=4:duration=longest:normalize=0,\
+alimiter=limit=0.92:latency=1,atrim=duration=${total_seconds}[a]" \
         -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -movflags +faststart "$output"
     score_mean="$(volume_stat "$score" mean_volume)"; score_peak="$(volume_stat "$score" max_volume)"
     bass_mean="$(volume_stat "$bass" mean_volume)"; bass_peak="$(volume_stat "$bass" max_volume)"
@@ -1138,7 +1141,8 @@ build_selected_mix() {
             capture_revision:$retained_capture_revision,
             reused_intervals:[{start:$intervals.hook.end,end:$intervals.dog.start},
               {start:$intervals.dog.end,end:$duration}]},
-          selected_base:{file:$selected_base,sha256:$selected_base_sha256,audio:"PCM game audio"},
+          selected_base:{file:$selected_base,sha256:$selected_base_sha256,
+            audio:"PCM game audio padded with silence to the picture duration before score mixing"},
           score:{name:"Glass Alarm",sha256:$score_sha256,mean_db:$score_mean_db,peak_db:$score_peak_db,
             preservation:"rebuilt byte-identically to the selected audition before bass was added"},
           additive_bass:{sha256:$bass_sha256,mean_db:$bass_mean_db,peak_db:$bass_peak_db,cues:$bass_cues},
@@ -1174,8 +1178,10 @@ build_auditions() {
             return 1
         fi
         ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$score" \
-            -filter_complex "[0:a]volume=${game_gain}[game];[1:a]aformat=sample_rates=48000:channel_layouts=stereo[music];\
-[game][music]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.92[a]" \
+            -filter_complex "[0:a]volume=${game_gain},apad,atrim=duration=${total_seconds}[game];\
+[1:a]aformat=sample_rates=48000:channel_layouts=stereo[music];\
+[game][music]amix=inputs=2:duration=longest:normalize=0,\
+alimiter=limit=0.92:latency=1,atrim=duration=${total_seconds}[a]" \
             -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -movflags +faststart \
             "$OUT_DIR/${id}.mp4"
         mix_mean="$(volume_stat "$OUT_DIR/${id}.mp4" mean_volume)"
