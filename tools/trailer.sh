@@ -284,13 +284,15 @@ if [[ "$MODE" == selected* ]]; then
     final_score_errors="$(jq -r '
         def num: type == "number";
         (if (keys - ["version","base_option","output","source_base","source_settings",
-            "source_base_sha256","remix_base","remix_base_sha256","base_score_sha256","base_score_pcm_sha256",
+            "source_base_sha256","remix_base","remix_base_sha256","base_score_sha256",
+            "base_score_raw_pcm_sha256","base_score_pcm_sha256",
             "bass_target_mean_db","bass_peak_ceiling_db","bass_events",
             "ending_target_mean_db","ending_peak_ceiling_db","ending_events"] | length) == 0 then empty
             else "unknown selected-score field" end),
         (if .version == 1 then empty else "version must be 1" end),
         (if all([.base_option,.output,.source_base,.source_settings,.source_base_sha256,
-            .remix_base,.remix_base_sha256,.base_score_sha256,.base_score_pcm_sha256][]; type == "string" and length > 0) then empty
+            .remix_base,.remix_base_sha256,.base_score_sha256,.base_score_raw_pcm_sha256,
+            .base_score_pcm_sha256][]; type == "string" and length > 0) then empty
             else "selected score paths, ids and hashes are required" end),
         (if (.output | test("^[a-z0-9-]+\\.mp4$")) and
             (.source_base | test("^[a-z0-9/_-]+\\.mkv$")) and
@@ -1104,7 +1106,7 @@ build_selected_mix() {
     local resolved_final="$final_dir/resolved-final-score.json"
     local selected raw score check_raw check_score bass_raw bass bass_check_raw bass_check
     local ending_raw ending ending_check_raw ending_check manifest provenance mixed_audio retained_provenance='{}'
-    local game_gain output score_mean score_peak bass_mean bass_peak ending_mean ending_peak mix_mean mix_peak
+    local game_gain output raw_score_mean score_mean score_peak bass_mean bass_peak ending_mean ending_peak mix_mean mix_peak
     mkdir -p "$final_dir"
     printf '%s\n' "$RESOLVED_SCORES" > "$resolved_scores"
     printf '%s\n' "$RESOLVED_FINAL" > "$resolved_final"
@@ -1129,18 +1131,36 @@ build_selected_mix() {
         echo "trailer.sh: selected score, additive bass or ending did not rebuild to identical bytes" >&2
         return 1
     fi
-    # WAV files carry the host's FFmpeg encoder tag. Pin the selected samples themselves so
-    # a fresh host may change that tag, but never one sample of the selected composition.
-    local raw_score_pcm_sha score_pcm_sha expected_score_pcm_sha
+    # Pin the synthesized samples before FFmpeg applies the score's level. FFmpeg versions can
+    # round that gain differently, while the composition feeding it must remain sample-identical.
+    local raw_score_pcm_sha expected_raw_score_pcm_sha score_pcm_sha expected_score_pcm_sha score_target score_ceiling
     raw_score_pcm_sha="$(ffmpeg -hide_banner -nostdin -loglevel error -i "$raw" -map 0:a:0 -f s16le - |
         shasum -a 256 | awk '{print $1}')"
     score_pcm_sha="$(ffmpeg -hide_banner -nostdin -loglevel error -i "$score" -map 0:a:0 -f s16le - | shasum -a 256 | awk '{print $1}')"
+    expected_raw_score_pcm_sha="$(jq -r '.base_score_raw_pcm_sha256' "$FINAL_SCORE_FILE")"
     expected_score_pcm_sha="$(jq -r '.base_score_pcm_sha256' "$FINAL_SCORE_FILE")"
-    if [[ "$score_pcm_sha" != "$expected_score_pcm_sha" ]]; then
-        echo "trailer.sh: rebuilt Glass Alarm PCM differs from the score the player selected" >&2
+    if [[ "$raw_score_pcm_sha" != "$expected_raw_score_pcm_sha" ]]; then
+        echo "trailer.sh: synthesized Glass Alarm PCM differs from the score the player selected" >&2
         echo "  raw synthesized PCM SHA256: $raw_score_pcm_sha" >&2
+        echo "  expected raw PCM SHA256:    $expected_raw_score_pcm_sha" >&2
         echo "  normalized PCM SHA256:      $score_pcm_sha" >&2
-        echo "  expected normalized SHA256: $expected_score_pcm_sha" >&2
+        echo "  historical normalized SHA256: $expected_score_pcm_sha" >&2
+        return 1
+    fi
+    raw_score_mean="$(volume_stat "$raw" mean_volume)"
+    score_mean="$(volume_stat "$score" mean_volume)"; score_peak="$(volume_stat "$score" max_volume)"
+    score_target="$(jq -r '.target_mean_db' <<< "$RESOLVED_SCORES")"
+    score_ceiling="$(jq -r '.peak_ceiling_db' <<< "$RESOLVED_SCORES")"
+    for pair in "raw score mean:$raw_score_mean" "score mean:$score_mean" "score peak:$score_peak"; do
+        require_finite_level "${pair%%:*}" "${pair#*:}" || return 1
+    done
+    if ! awk -v actual="${score_mean%dB}" -v target="$score_target" '
+            BEGIN {difference=actual-target; if (difference < 0) difference=-difference; exit !(difference <= 0.11)}'; then
+        echo "trailer.sh: normalized Glass Alarm mean is ${score_mean}dB, expected ${score_target}dB" >&2
+        return 1
+    fi
+    if ! awk -v actual="${score_peak%dB}" -v ceiling="$score_ceiling" 'BEGIN {exit !(actual <= ceiling + 0.11)}'; then
+        echo "trailer.sh: normalized Glass Alarm peak ${score_peak}dB exceeds ${score_ceiling}dB" >&2
         return 1
     fi
     game_gain="$(jq -r '.game_gain' <<< "$RESOLVED_SCORES")"
@@ -1154,7 +1174,6 @@ alimiter=limit=0.92[a]" \
         -map "[a]" -c:a pcm_s16le "$mixed_audio"
     ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$mixed_audio" \
         -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -movflags +faststart "$output"
-    score_mean="$(volume_stat "$score" mean_volume)"; score_peak="$(volume_stat "$score" max_volume)"
     bass_mean="$(volume_stat "$bass" mean_volume)"; bass_peak="$(volume_stat "$bass" max_volume)"
     ending_mean="$(volume_stat "$ending" mean_volume)"; ending_peak="$(volume_stat "$ending" max_volume)"
     mix_mean="$(volume_stat "$output" mean_volume)"; mix_peak="$(volume_stat "$output" max_volume)"
@@ -1212,6 +1231,7 @@ alimiter=limit=0.92[a]" \
         --arg selected_base "$FINAL_SOURCE_REL/selected-base.mkv" \
         --arg selected_base_sha256 "$(shasum -a 256 < "$base" | awk '{print $1}')" \
         --arg score_sha256 "$(shasum -a 256 < "$score" | awk '{print $1}')" \
+        --arg score_raw_pcm_sha256 "$raw_score_pcm_sha" \
         --arg score_pcm_sha256 "$score_pcm_sha" \
         --arg bass_sha256 "$(shasum -a 256 < "$bass" | awk '{print $1}')" \
         --arg ending_sha256 "$(shasum -a 256 < "$ending" | awk '{print $1}')" \
@@ -1230,8 +1250,9 @@ alimiter=limit=0.92[a]" \
           assembly_revision:$revision,assembly_tree:$tree,
           selected_base:{file:$selected_base,sha256:$selected_base_sha256,
             audio:"PCM game audio padded with silence to the picture duration before score mixing"},
-          score:{name:"Glass Alarm",sha256:$score_sha256,pcm_sha256:$score_pcm_sha256,mean_db:$score_mean_db,peak_db:$score_peak_db,
-            preservation:"PCM samples rebuilt byte-identically to the selected audition before bass was added; WAV encoder tags may vary"},
+          score:{name:"Glass Alarm",sha256:$score_sha256,raw_pcm_sha256:$score_raw_pcm_sha256,
+            pcm_sha256:$score_pcm_sha256,mean_db:$score_mean_db,peak_db:$score_peak_db,
+            preservation:"synthesized PCM rebuilds sample-identically; host FFmpeg gain rounding and WAV encoder tags may vary"},
           additive_bass:{sha256:$bass_sha256,mean_db:$bass_mean_db,peak_db:$bass_peak_db,cues:$bass_cues},
           additive_ending:{sha256:$ending_sha256,mean_db:$ending_mean_db,peak_db:$ending_peak_db,cues:$ending_cues,
             preservation:"the selected Glass Alarm file remains byte-identical; this matching dyad is a separate layer"},

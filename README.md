@@ -92,11 +92,13 @@ score-only audition run reuses the matching retained base. To build the selected
 from a fresh checkout, run `TRAILER_OUT=build/trailer/fresh tools/trailer.sh --selected`.
 It captures the tracked scenes, builds Glass Alarm with additive bass and the closing dyad from
 `tools/trailer/final-score.json`, and records fresh capture and editorial provenance. No historical
-movie or ignored build artifact is required. The selected score's PCM sample hash is checked;
-host-specific WAV encoder tags may differ. The unflagged command retains the shot list's draft score.
+movie or ignored build artifact is required. The selected score's synthesized PCM sample hash is
+checked before normalization; its target level and peak ceiling are checked after normalization.
+Host-specific gain rounding and WAV encoder tags may differ. The unflagged command retains the
+shot list's draft score.
 When compatible historical footage is available, `--selected-reuse` refuses any retained-base mismatch,
 renders the hook, dog and title replacements named by that final composition, and layers its
-additive event cues over the byte-identical selected score. `--selected-remix` reuses the
+additive event cues over the source-identical selected score. `--selected-remix` reuses the
 verified selected base and rebuilds only the editorial cards and audio, with no gameplay capture.
 Selected outputs refuse an existing movie or manifest; use a new output name or fresh output
 directory for another review. The completed PCM mix stays beside its source stems for comparison
