@@ -17,6 +17,14 @@ screen-edge badge (on while the thing is out of sight), the chalk mark counting 
 fire's sighting (and the fire engine's summons), the poster crews' pasting, and the counter's seen.
 Joystick-scheme tests cover each.
 
+**Reconciled with round-gecko's controls (PR #603).** Main's
+`7916dfc0b6131c686436d197055b0255ab9bb357` changes each focal position to a joystick or a same-size
+Run disc, with no separate inward Run button. The covered corner reaches from the screen side
+to that focal disc's far edge and from its top down, using `TouchControls`' shared geometry.
+The old queue README's geometry update is retained here while the completed queue entry stays
+deleted. [Round-gecko](2026-10-07-round-gecko.md) records the persistent side selection; the two
+disc positions keep the covered extent independent of which hand is steering.
+
 **Off screen is not visible.** Spawning goes wholly outside the camera's whole view, corners
 included (M226's no pop-in); the corners are left out only for what she can see.
 

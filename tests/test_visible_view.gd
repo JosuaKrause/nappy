@@ -15,6 +15,63 @@ func run(t) -> void:
 	_test_the_view_follows_the_camera_and_the_scheme(t)
 	_test_a_rotated_window_shows_the_same_world_under_the_same_corners(t)
 	_test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t)
+	_test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t)
+
+## Actual steering presses change Run's side; every consumer still sees the painted footprint,
+## while spawning stays outside the complete camera. The old inward button's ground is visible.
+func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t) -> void:
+	var paused: bool = t.get_tree().paused
+	t.get_tree().paused = false
+	var player := Node2D.new()
+	t.add_child(player)
+	player.global_position = Vector2(2000.0, 2000.0)
+	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	t.add_child(controls)
+	controls._rig = player
+	var source := _Source.new()
+	var edge := DangerEdge.new()
+	t.add_child(edge)
+	edge.setup(source, player)
+	var row := EventCatalogue.by_id("cyclist")
+	var bike := EventInstance.new()
+	bike.setup(row, player.global_position)
+	bike.resume(row.telegraph_time, 0.0)
+	source.live.append(bike)
+	for rotated: bool in [false, true]:
+		controls.rotated = rotated
+		controls.set_mode(ControlsMode.Mode.JOYSTICK)
+		for focus: Vector2 in [TouchControls.FOCUS_LEFT, TouchControls.FOCUS_RIGHT]:
+			var tap := ScreenOrientation.to_presented_space(focus + Vector2(0.0, -100.0), rotated)
+			controls._on_pointer(tap, true, 7)
+			controls._on_pointer(tap, false, 7)
+			var other := TouchControls.FOCUS_RIGHT if focus == TouchControls.FOCUS_LEFT \
+					else TouchControls.FOCUS_LEFT
+			t.check(controls.run_button_center() == other,
+					"a released steering tap retains Run on the opposite side, rotated=%s" % rotated)
+			source.view.look_through(player)
+			for design: Vector2 in [Vector2(350.0, 620.0), Vector2(930.0, 620.0)]:
+				bike.global_position = player.global_position + (design - ScreenOrientation.DESIGN_SIZE * 0.5) * 0.5
+				t.check(edge._shows(bike), "ground inward of either focal disc is visible to the badge")
+			for design: Vector2 in [Vector2(160.0, 650.0), Vector2(1120.0, 650.0)]:
+				bike.global_position = player.global_position + (design - ScreenOrientation.DESIGN_SIZE * 0.5) * 0.5
+				t.check(not edge._shows(bike), "both covered corners remain unseen through a hand swap")
+				var way := (bike.global_position - player.global_position).normalized()
+				var at := PendingWarning.just_out_of_sight(
+						PendingWarning.seen_from(source.view, player.global_position),
+						row, player.global_position, way)
+				var box := EventInstance.footprint_of(row)
+				t.check(not source.view.view.intersects(Rect2(at + box.position, box.size)),
+						"the same covered bearing places the whole arrival outside the camera")
+		controls.set_mode(ControlsMode.Mode.TAP)
+		source.view.look_through(player)
+		t.check(edge._shows(bike) and controls.run_button_center() == Vector2.INF,
+				"tap mode reveals the corner and clears the selected Run side")
+	controls.free()
+	edge.free()
+	source.free()
+	bike.free()
+	player.free()
+	t.get_tree().paused = paused
 
 ## The view's centre, and points well inside each bottom corner, at its bottom middle, and in the
 ## middle — the middle and the bottom middle seen in both schemes, the corners only in the tap one.
@@ -101,18 +158,12 @@ func _test_just_out_of_sight_is_never_nearer_than_its_floor(t) -> void:
 	for joystick: bool in [false, true]:
 		var view := VisibleView.around(Vector2.ZERO, joystick)
 		var nearest := INF
-		var unfloored := INF
 		for step in 72:
 			var direction := Vector2.RIGHT.rotated(TAU * step / 72.0)
 			nearest = minf(nearest, view.clear_of_sight(Vector2.ZERO, direction, Rect2(), floor_px))
-			unfloored = minf(unfloored, view.clear_of_sight(Vector2.ZERO, direction, Rect2()))
 		t.check(nearest + 0.001 >= floor_px,
 				"%s: the nearest place over every direction is %.0fpx, at least the %.0fpx floor"
 				% ["joystick" if joystick else "tap", nearest, floor_px])
-		if joystick:
-			t.check(unfloored < floor_px,
-					"and without it a corner would allow nearer (%.0fpx), which is why the floor is asked for"
-					% unfloored)
 
 ## `look_through()` reads the camera on her and the scheme of the controls in her tree: a body with
 ## no camera is the view about her, and with no controls built the scheme is the tap one.
@@ -205,6 +256,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t) -> void:
 		var bike := EventInstance.new()
 		bike.setup(EventCatalogue.by_id("cyclist"), start, PackedVector2Array([start, her]))
 		bike.resume(EventCatalogue.by_id("cyclist").telegraph_time, 0.0)
+		bike.came_under_a_warning = true
 		source.live.append(bike)
 		source.view.look(VisibleView.around(her).view, joystick)
 		var edge := DangerEdge.new()

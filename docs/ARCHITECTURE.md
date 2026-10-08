@@ -348,26 +348,33 @@ debug flags").
 
 `TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme, and the two modes
 disagree about where a heading is measured from. `Mode.TAP` sets a direction toward its own world
-position, aimed from wherever she currently stands, and a press within `STOP_RADIUS` of her stops
+position, aimed from wherever she currently stands, and a press within `TAP_STOP_RADIUS` of her stops
 her instead. `Mode.JOYSTICK` instead aims from whichever of two fixed points, `FOCUS_LEFT` or
-`FOCUS_RIGHT`, is nearer the press — each drawn as a ring at `STOP_RADIUS` with a knob at the
+`FOCUS_RIGHT`, is nearer the press — each available ring at `STOP_RADIUS` has a knob at the
 currently-held direction — and is stopped by a press on either focus or in a band down the middle
 of the screen (`is_in_stop_band()`) rather than by a press near her own position, which does not
 stop her in this mode at all. Either way the direction locked in is walked with nothing held down
 until the next press changes it, and a double press holds `run` until the next press changes or
-releases it. `Mode.JOYSTICK` also draws a run button 110px inward of each focus
-(`RUN_CENTRE_LEFT`, `RUN_CENTRE_RIGHT`, caught within `RUN_CATCH_RADIUS`, below the distance to the
-ring): `_on_pointer()` grabs one only for a press that begins on it, tracks every finger on a button in
-`_run_touches`, and holds `run` (`_run_held`) until the last of them lifts, without making the press a heading, so a
-steering drag that slides over a button never presses it. `_run_held` and the double press's
-`_run_active` are two independent reasons for `run` to be down. Held down and moved, a finger or a mouse button keeps re-aiming continuously —
-`_on_drag()` — always at one speed, since `set_direction()` always normalises and no input path may
-press a vector shorter than one. It also draws a pause button top right, shown only when
-`get_tree().paused` is false, which keeps it off the title, the pause and the between-days summary
-without a wire from `main` telling it so on each: that flag is the one thing all three already set.
-`PauseScreen` and `DaySummary` also handle a touch or a left click directly alongside `ui_accept`
-(through `TouchInput.is_press()`), so either advances each of them the way `space` does —
-`TitleScreen` does not, since only its two buttons may begin a run by pointer.
+releases it. In joystick mode, `_steering_focus` records the last side chosen by a pointer tap
+or drag, independently of `_drag_pointer_index`: lifting the pointer clears its drag ownership,
+not the selected side. `run_button_center()` puts Run at the opposite focus, or returns no disc
+until a side is chosen. A mode change clears the selection; pause preserves it.
+`_on_pointer()` acquires Run only on a press beginning on that displayed disc, tracking its
+owners in `_run_touches` until release even if steering changes the disc's side.
+`_run_held` and the double press's `_run_active` independently hold the same run action.
+A steering drag never acquires Run by crossing its disc, and leaving the stop band re-picks the
+steering focus. `set_direction()` always normalizes, so every steering path gives a full-speed
+heading. Pause, hiding controls, and mode changes release pointer holds.
+
+`ButtonGeometry` shares the 1.05 visible-radius multiplier for button catches. Run's painted
+radius matches the steering ring including its stroke; the texture rectangle compensates for
+the SVG's transparent border. Pause uses the same compensation. `ModeButton.contains_design_point()`
+tests the round disc after undoing the control transform; title, pause and summary screens use it
+for both hover and press after converting presented coordinates to design coordinates.
+Joystick dead zones do not use this multiplier.
+The pause button shows only during a running day. `PauseScreen` and `DaySummary` also handle
+background presses through `TouchInput.is_press()`, so a press away from restart continues;
+`TitleScreen` requires a press on one of its two mode buttons.
 
 A press or a drag computes a heading — `(target - origin)`, normalised — and presses it through
 `_set_axis()`, one signed value onto a pair of opposite actions. There is no target and nothing to
@@ -383,10 +390,9 @@ band, are asked in **design space** instead, through `ScreenOrientation.to_desig
 that is where "half the screen" and "the middle of the screen" mean what they say — the chosen
 focus then makes the same design→presented→world trip a raw touch's own position already takes, in
 reverse, before it can be subtracted from or used as the heading's own origin. **The pause button's
-own corner and the run buttons are the other places this remap is needed**: a touch there is subtracted from the aiming
-surface, but only while the button is actually showing, against the fixed `PAUSE_CENTRE` (or, in joystick mode, `RUN_CENTRE_LEFT` and `RUN_CENTRE_RIGHT`) — a mouse
-click never needs the remap for anything else, since the button (and so the corner) is drawn for it
-too now that every device shows the same pair of controls.
+own corner and the Run disc are other places this remap is needed**: a new press there is
+subtracted from the aiming surface while the controls are drawn, against `PAUSE_CENTRE` or
+the currently displayed `run_button_center()`. Mouse clicks use the same path.
 
 A real touch device emulates a mouse click from every tap it makes, so every mouse branch in
 `TouchControls`, `TitleScreen`, `PauseScreen` and `DaySummary` is gated on `not TouchInput.available()`

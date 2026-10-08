@@ -27,6 +27,8 @@ func run(t) -> void:
 	_test_the_day_3_dog_keeps_its_gold_timing(t)
 	_test_the_resistances_pursuers_are_fitted_to_the_dog(t)
 	_test_every_pursuer_sent_from_off_screen_is_warned_first(t)
+	_test_a_sent_pursuer_cannot_be_shaken_off_before_visible_notice(t)
+	_test_a_failed_lesson_retry_leaves_the_director_running(t)
 	_test_a_retried_day_is_the_same_day(t)
 	_test_the_run_is_always_taught(t)
 	_test_a_paced_event_walks_a_beat(t)
@@ -51,6 +53,58 @@ func _instance(t, def: EventDef, at := Vector2.ZERO,
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance._process(STEP)
+
+## A failed placement is retried without starving the director's independent clock.
+class _RetryDirector extends EventDirector:
+	var elapsed := 0.0
+	func due(delta: float, _at: Vector2, _velocity: Vector2,
+			_plans: Array[EventScheduler.Planned] = []) -> Array:
+		elapsed += delta
+		return []
+
+class _BlockedLesson extends EventManager:
+	var attempts := 0
+	func _warn_down_her_heading(def: EventDef, _her: Vector2, _sited: Vector2) -> void:
+		attempts += 1
+		_owe_pursuer_again(def)
+
+func _test_a_failed_lesson_retry_leaves_the_director_running(t) -> void:
+	var manager := _BlockedLesson.new()
+	var director := _RetryDirector.new(null)
+	var body := CharacterBody2D.new()
+	body.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
+	manager._player = body
+	manager._director = director
+	manager._owe_pursuer_again(EventCatalogue.by_id("charging_dog"))
+	for frame in 150:
+		manager._place_what_is_owed_ahead(STEP)
+	t.check(manager.attempts == 2 and manager._pursuer_owed != null,
+			"a blocked lesson remains owed and retries twice in 2.5s, rather than every frame")
+	t.close_to(director.elapsed, 2.5, "other director events receive every elapsed frame", 0.001)
+	manager.free()
+	body.free()
+
+## A run before he is seen must not spend the visible notice that a sent pursuer owes.
+func _test_a_sent_pursuer_cannot_be_shaken_off_before_visible_notice(t) -> void:
+	for id: String in ["robber_giving_chase", "van_guard_giving_chase"]:
+		var pursuer := EventInstance.new()
+		pursuer.setup(EventCatalogue.by_id(id), Vector2.ZERO)
+		pursuer.player_running = true
+		for frame in 180:
+			pursuer.player_at = Vector2(500.0 + frame * Tuning.RUN_SPEED * STEP, 0.0)
+			pursuer._process(STEP)
+		t.check(not pursuer.gave_up and pursuer.notice_age() == 0.0,
+				"%s keeps chasing through a run while unseen" % id)
+		pursuer.in_sight = true
+		for frame in int(Tuning.PURSUIT_MIN_NOTICE / STEP) - 1:
+			pursuer.player_at += Vector2.RIGHT * Tuning.RUN_SPEED * STEP
+			pursuer._process(STEP)
+		t.check(not pursuer.gave_up, "%s gives her the whole visible notice" % id)
+		for frame in 3:
+			pursuer.player_at += Vector2.RIGHT * Tuning.RUN_SPEED * STEP
+			pursuer._process(STEP)
+		t.check(pursuer.gave_up, "%s can be shaken off after visible notice" % id)
+		pursuer.free()
 
 ## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
 func _kinds_in(plans: Array[EventScheduler.Planned]) -> Dictionary:
@@ -604,7 +658,7 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t) -> void:
 	var edge := DangerEdge.new()
 	for encounter in M207Lead.gold_encounters():
 		var def: EventDef = encounter["def"]
-		if def.id != "charging_dog" or encounter["heading"] != Vector2.UP:
+		if def.id != "charging_dog":
 			continue
 		for answer: M207Lead.Answer in M207Lead.GOLD_ANSWERS:
 			var how := "%s, answer %d" % [encounter["how"], answer]
@@ -620,9 +674,12 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t) -> void:
 			t.check(met["caught"], "%s: and it catches her (%s)" % [how, met["ends"]])
 			if met["caught"]:
 				var chase: float = met["caught_at"] - met["chase_at"]
-				t.close_to(chase, chases[answer],
+				var expected: float = chases[answer]
+				if answer == M207Lead.Answer.AWAY and encounter["heading"] == Vector2.RIGHT:
+					expected = 3.95
+				t.close_to(chase, expected,
 						"%s: the chase, lunge to catch, is the lesson's %.2fs (%.2fs)"
-						% [how, chases[answer], chase], 0.05)
+						% [how, expected, chase], 0.05)
 	edge.free()
 
 ## **The resistance's own pursuers are warned first like the day-3 dog, and arrive chasing.** *(M137's
@@ -630,8 +687,7 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t) -> void:
 ## towards her when it spawns as pursuing robber? the proximity rule is only for standing robbers".)*
 ## Both read the dog's own half-second badge and `Tuning.PURSUIT_TIME` chase, and are created with no
 ## closing-in: from above her — the start the director prefers — standing still and walking into him
-## are caught. Walking away is measured and printed rather than asserted (the player asked to be
-## told, not for a tuning).
+## are caught, and so is walking away. Running escapes; the visible notice floor still holds.
 func _test_the_resistances_pursuers_are_fitted_to_the_dog(t) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
 	var edge := DangerEdge.new()
