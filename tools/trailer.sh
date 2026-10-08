@@ -303,9 +303,11 @@ if [[ "$MODE" == selected* ]]; then
             then empty else "bass_target_mean_db must be between -60 and -18" end),
         (if (.bass_peak_ceiling_db | num) and .bass_peak_ceiling_db >= -24 and .bass_peak_ceiling_db <= -3
             then empty else "bass_peak_ceiling_db must be between -24 and -3" end),
-        (if (.ending_target_mean_db | num) and .ending_target_mean_db >= -60 and .ending_target_mean_db <= -18
+        (if (.ending_events | length) == 0 or
+            ((.ending_target_mean_db | num) and .ending_target_mean_db >= -60 and .ending_target_mean_db <= -18)
             then empty else "ending_target_mean_db must be between -60 and -18" end),
-        (if (.ending_peak_ceiling_db | num) and .ending_peak_ceiling_db >= -24 and .ending_peak_ceiling_db <= -3
+        (if (.ending_events | length) == 0 or
+            ((.ending_peak_ceiling_db | num) and .ending_peak_ceiling_db >= -24 and .ending_peak_ceiling_db <= -3)
             then empty else "ending_peak_ceiling_db must be between -24 and -3" end),
         (if (.bass_events | type) == "array" and (.bass_events | length) > 0 and all(.bass_events[];
             (keys - ["label","shot","offset","duration","frequency","gain","texture"] | length) == 0 and
@@ -313,7 +315,7 @@ if [[ "$MODE" == selected* ]]; then
             (.offset | num) and .offset >= 0 and (.duration | num) and .duration > 0 and
             (.frequency | num) and .frequency > 0 and (.gain | num) and .gain > 0 and .gain <= 1 and
             .texture == "weight") then empty else "bass events are malformed" end),
-        (if (.ending_events | type) == "array" and (.ending_events | length) > 0 and all(.ending_events[];
+        (if (.ending_events | type) == "array" and all(.ending_events[];
             (keys - ["label","shot","offset","duration","frequency","gain","texture"] | length) == 0 and
             all([.label,.shot][]; type == "string" and length > 0) and
             (.offset | num) and .offset >= 0 and (.duration | num) and .duration > 0 and
@@ -840,7 +842,7 @@ adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[a]" \
         frame_b="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[1]' "$SHOTS_FILE")"
         # The original-resolution carrying drawings have different transparent margins. Register
         # their visible figures at equal height inside one clipped, dark room aperture, with the
-        # figure's center on the center of the window's left half. The 4.4-second B-C-B-C cycle gets
+        # figure's center on the center of the window's left half. Original frame A alone gets
         # a gentle 6px/2.2s bob; only the figure fades in. The baby blanket's bottom,
         # rather than the full figure's bounds, clears the visible lower pane by a brick.
         ffmpeg -hide_banner -loglevel error -y \
@@ -856,11 +858,11 @@ drawbox=x=0:y=0:w=620:h=720:color=${CARD_BACKGROUND}:t=fill,\
 drawbox=x=48:y=145:w=7:h=360:color=${ACCENT}:t=fill,\
 drawtext=fontfile='${FONT_FILE}':textfile='${text_file}':fontsize=${font_size}:fontcolor=${PAPER}:line_spacing=12:x=72:y=165,\
 drawtext=fontfile='${FONT_FILE}':textfile='${subtitle_file}':fontsize=${subtitle_size}:fontcolor=${PAPER}@0.86:line_spacing=8:x=72:y=425[card];\
-[2:v]crop=131:357:107:8,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[b];\
-[3:v]crop=203:607:169:61,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[c];\
+[2:v]crop=131:371:107:21,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[a];\
+[3:v]crop=131:371:107:21,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[a2];\
 color=c=0x101018:s=282x396:r=${FPS}:d=${length}[room];\
-[room][b]overlay=x=W/4-w/2:y='94+6*sin(2*PI*t/2.2)':enable='lt(mod(t\,2.2)\,1.1)'[wb];\
-[wb][c]overlay=x=W/4-w/2:y='94+6*sin(2*PI*t/2.2)':enable='gte(mod(t\,2.2)\,1.1)'[aperture];\
+[room][a]overlay=x=W/4-w/2:y='94+6*sin(2*PI*t/2.2)':enable='lt(mod(t\,2.2)\,1.1)'[wa];\
+[wa][a2]overlay=x=W/4-w/2:y='94+6*sin(2*PI*t/2.2)':enable='gte(mod(t\,2.2)\,1.1)'[aperture];\
 [card][aperture]overlay=x=839:y=165:shortest=1[behind];\
 [4:v]scale=960:960:flags=lanczos[window];\
 [behind][window]overlay=x=500:y=-120:shortest=1:format=auto,\
@@ -1106,6 +1108,7 @@ build_selected_mix() {
     local resolved_final="$final_dir/resolved-final-score.json"
     local selected raw score check_raw check_score bass_raw bass bass_check_raw bass_check
     local ending_raw ending ending_check_raw ending_check manifest provenance mixed_audio retained_provenance='{}'
+    local has_ending ending_sha=""
     local game_gain output raw_score_mean score_mean score_peak bass_mean bass_peak ending_mean ending_peak mix_mean mix_peak
     mkdir -p "$final_dir"
     printf '%s\n' "$RESOLVED_SCORES" > "$resolved_scores"
@@ -1119,15 +1122,22 @@ build_selected_mix() {
     ending_raw="$final_dir/score-ending-raw.wav"; ending="$final_dir/score-ending.wav"
     ending_check_raw="$WORK/score-ending-raw-check.wav"; ending_check="$WORK/score-ending-check.wav"
     mixed_audio="$final_dir/selected-mix.wav"
+    has_ending="$(jq -r '.options[1].events | length > 0' <<< "$RESOLVED_FINAL")"
     build_score_once "$selected" "$raw" "$score" "$resolved_scores"
     build_score_once "$selected" "$check_raw" "$check_score" "$resolved_scores"
     build_bass_once "$bass_raw" "$bass" "$resolved_final"
     build_bass_once "$bass_check_raw" "$bass_check" "$resolved_final"
-    build_ending_once "$ending_raw" "$ending" "$resolved_final"
-    build_ending_once "$ending_check_raw" "$ending_check" "$resolved_final"
+    if [[ "$has_ending" == true ]]; then
+        build_ending_once "$ending_raw" "$ending" "$resolved_final"
+        build_ending_once "$ending_check_raw" "$ending_check" "$resolved_final"
+    fi
     if [[ "$(shasum -a 256 < "$score")" != "$(shasum -a 256 < "$check_score")" \
-            || "$(shasum -a 256 < "$bass")" != "$(shasum -a 256 < "$bass_check")" \
-            || "$(shasum -a 256 < "$ending")" != "$(shasum -a 256 < "$ending_check")" ]]; then
+            || "$(shasum -a 256 < "$bass")" != "$(shasum -a 256 < "$bass_check")" ]]; then
+        echo "trailer.sh: selected score, additive bass or ending did not rebuild to identical bytes" >&2
+        return 1
+    fi
+    if [[ "$has_ending" == true ]] \
+            && [[ "$(shasum -a 256 < "$ending")" != "$(shasum -a 256 < "$ending_check")" ]]; then
         echo "trailer.sh: selected score, additive bass or ending did not rebuild to identical bytes" >&2
         return 1
     fi
@@ -1164,24 +1174,44 @@ build_selected_mix() {
         return 1
     fi
     game_gain="$(jq -r '.game_gain' <<< "$RESOLVED_SCORES")"
-    ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$score" -i "$bass" -i "$ending" \
-        -filter_complex "[0:a]volume=${game_gain},apad,atrim=duration=${total_seconds}[game];\
+    if [[ "$has_ending" == true ]]; then
+        ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$score" -i "$bass" -i "$ending" \
+            -filter_complex "[0:a]volume=${game_gain},apad,atrim=duration=${total_seconds}[game];\
 [1:a]aformat=sample_rates=48000:channel_layouts=stereo[glass];\
 [2:a]aformat=sample_rates=48000:channel_layouts=stereo[bass];\
 [3:a]aformat=sample_rates=48000:channel_layouts=stereo[ending];\
 [game][glass][bass][ending]amix=inputs=4:duration=longest:normalize=0,\
 alimiter=limit=0.92[a]" \
-        -map "[a]" -c:a pcm_s16le "$mixed_audio"
+            -map "[a]" -c:a pcm_s16le "$mixed_audio"
+    else
+        ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$score" -i "$bass" \
+            -filter_complex "[0:a]volume=${game_gain},apad,atrim=duration=${total_seconds}[game];\
+[1:a]aformat=sample_rates=48000:channel_layouts=stereo[glass];\
+[2:a]aformat=sample_rates=48000:channel_layouts=stereo[bass];\
+[game][glass][bass]amix=inputs=3:duration=longest:normalize=0,\
+alimiter=limit=0.92[a]" \
+            -map "[a]" -c:a pcm_s16le "$mixed_audio"
+    fi
     ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$mixed_audio" \
         -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -movflags +faststart "$output"
     bass_mean="$(volume_stat "$bass" mean_volume)"; bass_peak="$(volume_stat "$bass" max_volume)"
-    ending_mean="$(volume_stat "$ending" mean_volume)"; ending_peak="$(volume_stat "$ending" max_volume)"
+    if [[ "$has_ending" == true ]]; then
+        ending_mean="$(volume_stat "$ending" mean_volume)"; ending_peak="$(volume_stat "$ending" max_volume)"
+        ending_sha="$(shasum -a 256 < "$ending" | awk '{print $1}')"
+    else
+        ending_mean=null; ending_peak=null
+    fi
     mix_mean="$(volume_stat "$output" mean_volume)"; mix_peak="$(volume_stat "$output" max_volume)"
     for pair in "score mean:$score_mean" "score peak:$score_peak" "bass mean:$bass_mean" \
-            "bass peak:$bass_peak" "ending mean:$ending_mean" "ending peak:$ending_peak" \
+            "bass peak:$bass_peak" \
             "mix mean:$mix_mean" "mix peak:$mix_peak"; do
         require_finite_level "${pair%%:*}" "${pair#*:}" || return 1
     done
+    if [[ "$has_ending" == true ]]; then
+        for pair in "ending mean:$ending_mean" "ending peak:$ending_peak"; do
+            require_finite_level "${pair%%:*}" "${pair#*:}" || return 1
+        done
+    fi
     if [[ "$MODE" == selected ]]; then
         provenance="$(jq -n --arg revision "$(git -C "$PROJECT_DIR" rev-parse HEAD)" \
             --arg tree "$(git -C "$PROJECT_DIR" rev-parse HEAD^{tree})" \
@@ -1234,7 +1264,7 @@ alimiter=limit=0.92[a]" \
         --arg score_raw_pcm_sha256 "$raw_score_pcm_sha" \
         --arg score_pcm_sha256 "$score_pcm_sha" \
         --arg bass_sha256 "$(shasum -a 256 < "$bass" | awk '{print $1}')" \
-        --arg ending_sha256 "$(shasum -a 256 < "$ending" | awk '{print $1}')" \
+        --arg ending_sha256 "$ending_sha" \
         --arg revision "$(git -C "$PROJECT_DIR" rev-parse HEAD)" \
         --arg tree "$(git -C "$PROJECT_DIR" rev-parse HEAD^{tree})" \
         --argjson duration "$total_seconds" \
@@ -1254,8 +1284,10 @@ alimiter=limit=0.92[a]" \
             pcm_sha256:$score_pcm_sha256,mean_db:$score_mean_db,peak_db:$score_peak_db,
             preservation:"synthesized PCM rebuilds sample-identically; host FFmpeg gain rounding and WAV encoder tags may vary"},
           additive_bass:{sha256:$bass_sha256,mean_db:$bass_mean_db,peak_db:$bass_peak_db,cues:$bass_cues},
-          additive_ending:{sha256:$ending_sha256,mean_db:$ending_mean_db,peak_db:$ending_peak_db,cues:$ending_cues,
-            preservation:"the selected Glass Alarm file remains byte-identical; this matching dyad is a separate layer"},
+          additive_ending:(if ($ending_cues | length) == 0 then null else
+            {sha256:$ending_sha256,mean_db:$ending_mean_db,peak_db:$ending_peak_db,cues:$ending_cues,
+              preservation:"the selected Glass Alarm file remains byte-identical; this matching dyad is a separate layer"} end),
+          natural_ending:"the selected Glass Alarm final note decays without an additive closing layer",
           final_mix:{mean_db:$mix_mean_db,peak_db:$mix_peak_db,limiter:0.92}} + $provenance + $retained_provenance' \
         > "$manifest"
 }

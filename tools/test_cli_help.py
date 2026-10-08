@@ -386,23 +386,17 @@ class CliHelpTests(unittest.TestCase):
             self.assertEqual((root / "calls").read_text().count("--write-movie"), 1)
             source = output / "experiments/selected-fixture/source"
             self.assertEqual((source / "glass-alarm-score.wav").read_bytes(), expected_score.read_bytes())
-            game, glass, bass, ending, mixed = [
-                pcm(source / name)
-                for name in (
-                    "selected-base.mkv",
-                    "glass-alarm-score.wav",
-                    "event-bass-score.wav",
-                    "score-ending.wav",
-                    "selected-mix.wav",
-                )
-            ]
+            stem_names = ["selected-base.mkv", "glass-alarm-score.wav", "event-bass-score.wav"]
+            if manifest["additive_ending"] is not None:
+                stem_names.append("score-ending.wav")
+            game, glass, bass, *optional, mixed = [pcm(source / name) for name in (*stem_names, "selected-mix.wav")]
 
-            # No sample reaches the limiter ceiling, so independently sum all four stems and
+            # No sample reaches the limiter ceiling, so independently sum every active stem and
             # its automatic output gain. Fit its short look-ahead once, then check every cue.
             game_gain = float(scores["game_gain"])
 
             def expected(index: int) -> float:
-                return (game[index] * game_gain + glass[index] + bass[index] + ending[index]) / 0.92
+                return (game[index] * game_gain + glass[index] + bass[index] + sum(x[index] for x in optional)) / 0.92
 
             at = round(38.1 * 48000) * 2
             delay = min(
@@ -413,7 +407,8 @@ class CliHelpTests(unittest.TestCase):
                 error = max(abs(mixed[at + i + delay * 2] - expected(at + i)) for i in range(400))
                 self.assertLess(error, 3, (at_seconds, error))
             decoded = pcm(output / "selected-fixture.mp4")
-            for at_seconds in (8.4, 15.7, 27.2, 35.7, 37.0, 38.2, 47.5, 47.8):
+            tail_times = (47.5, 47.8) if manifest["additive_ending"] is not None else (46.0, 46.6)
+            for at_seconds in (8.4, 15.7, 27.2, 35.7, 37.0, 38.2, *tail_times):
                 at, count = round(at_seconds * 48000) * 2, 4800
                 pcm_rms = math.sqrt(sum(x * x for x in mixed[at : at + count]) / count)
                 aac_rms = math.sqrt(sum(x * x for x in decoded[at : at + count]) / count)
