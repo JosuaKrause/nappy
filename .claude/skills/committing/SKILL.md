@@ -360,8 +360,10 @@ evidence commit exists — `git rev-parse HEAD` — and if the evidence is amend
 GitHub-hosted attachments are an alternative to committed media: dragging an image or video into
 the PR text box uploads it and supplies its URL. GitHub also documents `--attach` for PR creation,
 editing and comments in [Attaching files with GitHub CLI](https://docs.github.com/en/github-cli/github-cli/attaching-files-with-github-cli).
-Check that the installed CLI and the required agent identity support that route before using it;
-otherwise the player can upload through the browser. Attachment uploads follow the same identity
+Check that the installed CLI and the required agent identity support that route before using it.
+The [CLI upload token allowlist](https://github.com/cli/cli/blob/2c7ec97fddb8da331803e18e8c33395a3b6537ee/internal/attachments/client.go#L65-L79)
+excludes the GitHub App installation tokens this repository's bots use; changing app permissions
+does not enable that CLI route. The player can upload through the browser. Attachment uploads follow the same identity
 and publication authorization rules as other PR writes, and issue writes still use `tools/inbox.py`.
 
 ## Reviewing a pull request
