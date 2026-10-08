@@ -1064,7 +1064,7 @@ func _observe() -> void:
 	for check: Dictionary in _observations:
 		if check.condition == "appeared" and not _appeared.has(check.subject):
 			var watched := subject_of(str(check.subject))
-			if watched and _she_can_see(watched.global_position):
+			if watched and _she_can_see(watched):
 				_appeared[check.subject] = tick
 	for check: Dictionary in _observations:
 		if int(check.tick) != tick:
@@ -1160,12 +1160,14 @@ func _in_the_picture(at: Vector2) -> bool:
 ## Whether she can see anything of a thing standing at `at` (a tile-sized box at its feet):
 ## `VisibleView`'s area, the camera's view less the corners the joystick scheme's controls cover,
 ## the same question the page's encounter counter asks of what she meets.
-func _she_can_see(at: Vector2) -> bool:
+func _she_can_see(actor: Node2D) -> bool:
+	var at := actor.global_position
 	var centre := _player.camera_screen_center() if is_instance_valid(_player) else at
 	var controls := get_tree().get_first_node_in_group(HelpText.CONTROLS_GROUP) as TouchControls
 	var joystick := controls != null and controls.controls_mode() == ControlsMode.Mode.JOYSTICK
-	var half := Vector2.ONE * Tuning.TILE_SIZE * 0.5
-	return VisibleView.visible_share(Rect2(at - half, half * 2.0),
+	var box: Rect2 = actor.drawn_box() if actor is EventInstance else Rect2(-Vector2.ONE * 16, Vector2.ONE * 32)
+	box.position += at
+	return VisibleView.visible_share(box,
 			Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), joystick) > 0.0
 
 ## How many walkers and cars are moving in the picture now.
@@ -1231,9 +1233,9 @@ func _watch_the_void() -> void:
 	for instance in _city.events.instances():
 		if _in_the_void.has(instance):
 			continue
-		_in_the_void[instance] = true
 		var tile := _city.map.world_to_tile(instance.global_position)
-		if instance.is_waiting() and _city.map.is_cut_off(tile):
+		if instance.is_waiting() and _city.map.is_void(tile):
+			_in_the_void[instance] = true
 			var found: Array = manifest.get("in_the_void", [])
 			found.append({"tile": [tile.x, tile.y], "row": instance.def.id, "tick": tick})
 			manifest["in_the_void"] = found

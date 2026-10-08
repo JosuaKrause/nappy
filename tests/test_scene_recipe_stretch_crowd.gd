@@ -20,6 +20,7 @@ func run(t) -> void:
 		var output: Array = []
 		var status := OS.execute(OS.get_executable_path(), PackedStringArray([
 			"--headless", "--path", ProjectSettings.globalize_path("res://"), "--fixed-fps", "60",
+			"--quit-after", str(ceili(float(data.playback.duration) * 60.0) + 600),
 			"--", "--recipe", path, "--recipe-mode", "scripted", "--no-save", "--no-telemetry",
 			"--recipe-manifest", ProjectSettings.globalize_path(manifest_path)]), output, true)
 		var parser := JSON.new()
@@ -31,11 +32,14 @@ func run(t) -> void:
 		var manifest: Dictionary = parser.data
 		var unmet: Array = (manifest.get("observations", []) as Array).filter(
 				func(record: Dictionary) -> bool: return not record.passed)
-		t.check(status == 0 and manifest.get("playback_complete", false) and unmet.is_empty(),
+		var engine_failed := "\n".join(output).contains("ERROR:")
+		t.check(status == 0 and not engine_failed and manifest.get("playback_complete", false) and unmet.is_empty(),
 				"%s plays to its end with every observation met: %s\n%s" % [filename, unmet,
 					"\n".join(output) if status != 0 else str(manifest.get("playback_error", ""))])
 		var jumps: Array = manifest.get("seen_to_jump", [])
 		t.check(jumps.is_empty(), "%s: nobody appears or vanishes in her view: %s" % [filename, jumps])
+		t.check(manifest.get("in_the_void", []).is_empty(),
+				"%s: no waiting body is left outside authored ground" % filename)
 		var asks_an_event := (data.playback.observations as Array).any(
 				func(check: Dictionary) -> bool: return check.condition == "appeared")
 		t.check(asks_an_event, "%s asks that she sees a route event" % filename)

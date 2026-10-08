@@ -3280,6 +3280,7 @@ func _walks_off_the_stretch() -> bool:
 ## back of the queue at the last one it rolled, as anywhere else. With every end in view it turns
 ## round where it is, at the end it left by, which is out of view or it would not have left.
 func _enter_at_a_stretch_end() -> void:
+	var before := _placement_taken()
 	var ends: Array[Dictionary] = []
 	for end in field.stretch_ends:
 		var along := (float(end.along) + 0.5) * Tuning.TILE_SIZE
@@ -3301,6 +3302,8 @@ func _enter_at_a_stretch_end() -> void:
 			_speed = _rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
 		else:
 			var offsets := CrowdLanes.walkable_offsets(_map, _vertical, _corridor, along_tile)
+			if offsets.is_empty():
+				continue
 			_lane = offsets[_rng.randi_range(0, offsets.size() - 1)]
 			_speed = _rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y)
 		_cruise = _speed
@@ -3312,14 +3315,23 @@ func _enter_at_a_stretch_end() -> void:
 		_turn_run_up = 0.0
 		_turn_back_hold = 0.0
 		_forget_the_detour()
-		if _stands_on_a_street() and not _is_in_a_pocket() and _has_room_here():
-			break
-	_join_the_back_of_the_queue()
-	_settle_junction()
+		if not _stands_on_a_street() or _is_in_a_pocket() or not _has_room_here():
+			continue
+		_join_the_back_of_the_queue()
+		_settle_junction()
+		# The lane can lie nearer the picture than the street's middle, and joining a queue can
+		# move it again. Check the final placement, not merely the candidate street end.
+		if not _beyond_every_view(position) or not _stands_on_a_street():
+			continue
+		_claim_the_road_here()
+		gap_ahead = INF
+		junction_hold = INF
+		gate_hold = INF
+		return
+	# No accepted entry is no teleport. The original point was already off camera; turn there.
+	_take_the_placement(before)
+	_turn_round()
 	_claim_the_road_here()
-	gap_ahead = INF
-	junction_hold = INF
-	gate_hold = INF
 
 ## The lane and the spot one placement roll settled on, kept so that a later roll which turns out
 ## worse can be given the earlier one back.

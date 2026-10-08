@@ -114,10 +114,24 @@ static func validate(data: Dictionary) -> Array[String]:
 		return errors
 	if point(data.size) != CityMap.map_tiles():
 		errors.append("context.size: must fit the street lattice")
+	var bounds := Rect2i(Vector2i.ZERO, CityMap.map_tiles())
+	var block_bounds := Rect2i(Vector2i.ZERO, Tuning.CITY_BLOCKS)
+	if not block_bounds.has_point(point(data.home_block)) \
+			or int(data.main_road) < 0 or int(data.main_road) > Tuning.CITY_BLOCKS.x:
+		errors.append("context: home block or main road outside the lattice")
+	for field: String in RECTS:
+		var rect := SceneRecipe.rect(data[field])
+		if rect.size.x < 0 or rect.size.y < 0 or (rect.has_area() and not bounds.encloses(rect)):
+			errors.append("context.%s: rectangle outside map" % field)
 	for field: String in RECT_LISTS + ["zones", "precincts"]:
 		for value: Variant in data[field]:
 			if not SceneRecipe.tuple(value, 4, true):
 				errors.append("context.%s: expected integer quadruples" % field)
+			elif field != "precincts":
+				var rect := SceneRecipe.rect(value)
+				var limit := block_bounds if field == "zones" else bounds
+				if not rect.has_area() or not limit.encloses(rect):
+					errors.append("context.%s: rectangle outside its lattice" % field)
 	for field: String in SETS:
 		for value: Variant in data[field]:
 			if not SceneRecipe.tuple(value, 3, true) or not StreetNetwork.by_key(key_of(value)):
@@ -125,10 +139,15 @@ static func validate(data: Dictionary) -> Array[String]:
 	for tree: Variant in data.trees:
 		if not SceneRecipe.tuple(tree, 2, true):
 			errors.append("context.trees: expected tile pairs")
+		elif not bounds.has_point(point(tree)) or not StreetNetwork.segment_containing(point(tree)):
+			errors.append("context.trees: tile outside a street")
 	for field: String in ["region_of_junction", "region_has_calm"]:
 		for value: Variant in data[field]:
 			if not SceneRecipe.integer(value):
 				errors.append("context.%s: expected integers" % field)
+			elif (field == "region_of_junction" and (int(value) < -1 or int(value) >= Tuning.REGION_COUNT)) \
+					or (field == "region_has_calm" and int(value) not in [0, 1]):
+				errors.append("context.%s: invalid region value" % field)
 	if data.region_of_junction.size() != (Tuning.CITY_BLOCKS.x + 1) * (Tuning.CITY_BLOCKS.y + 1) \
 			or data.region_has_calm.size() != Tuning.REGION_COUNT:
 		errors.append("context.regions: wrong lattice dimensions")
@@ -139,6 +158,8 @@ static func validate(data: Dictionary) -> Array[String]:
 				continue
 			if field == "built_over" and not SceneRecipe.tuple(entry.get("rect"), 4, true):
 				errors.append("context.built_over: expected tile rectangle")
+			if not StreetNetwork.by_key(key_of(entry.segment)):
+				errors.append("context.%s: invalid segment" % field)
 			if field == "boundary_wall_at_a" and not entry.get("at_a") is bool:
 				errors.append("context.boundary_wall_at_a: expected boolean")
 	var seen := {}

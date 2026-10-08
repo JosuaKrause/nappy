@@ -23,6 +23,32 @@ func run(t) -> void:
 	_test_the_draft_takes_whole_streets(t, witness)
 	_test_the_route_bag(t, map, data)
 	_test_the_city_draws_the_stretch_alone(t, map)
+	_test_appeared_requires_sight(t)
+
+func _test_appeared_requires_sight(t) -> void:
+	var runtime := SceneRecipeRuntime.new()
+	var recipe := {"playback": {"duration": 1, "observations": [
+			{"tick": 20, "subject": "event", "condition": "appeared"}]}}
+	runtime.configure({"data": recipe, "manifest": {}, "anchors": {}}, true)
+	t.add_child(runtime)
+	runtime.set_physics_process(false)
+	var player := Stroller.new()
+	var camera := Camera2D.new()
+	player.add_child(camera)
+	player._camera = camera
+	runtime._player = player
+	var event := Node2D.new()
+	runtime.add_child(event)
+	runtime.named["event"] = event
+	event.position = Vector2(10000, 10000)
+	runtime._observe()
+	t.check(not runtime._appeared.has("event"),
+			"an existing event that never enters the camera does not satisfy appeared")
+	event.position = Vector2.ZERO
+	runtime._observe()
+	t.check(runtime._appeared.has("event"), "the same event counts once it enters view")
+	player.free()
+	runtime.free()
 
 func _test_the_stretch_is_the_only_ground(t, map: CityMap, witness: CityMap) -> void:
 	t.check(map.has_stretch() and map.stretch_active, "the scene's map shows its stretch")

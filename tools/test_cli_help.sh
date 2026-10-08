@@ -105,6 +105,59 @@ assert_exit "scene-draft.sh unknown" nonzero ./tools/scene-draft.sh --not-a-flag
 assert_exit "scene-draft.sh missing value" nonzero ./tools/scene-draft.sh --recipe
 assert_exit "scene-draft.sh no destination" nonzero ./tools/scene-draft.sh --recipe scene-recipes/task-07-package.json
 assert_exit "scene-draft.sh two destinations" nonzero ./tools/scene-draft.sh --recipe scene-recipes/task-07-package.json --in-place --output "$work_dir/draft.json"
+
+# A crashed coverage pass and a body still in the void never overwrite an author's recipe.
+# This stub runs the actual three-round shell workflow without launching the engine.
+draft_stub="$work_dir/draft-stub.sh"
+cat > "$draft_stub" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+draft=""
+manifest=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --recipe-draft) draft="$2"; shift 2 ;;
+        --recipe-manifest) manifest="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+if [[ -n "$draft" ]]; then
+    cp "$NAPPY_DRAFT_TEST_SOURCE" "$draft"
+elif [[ -n "$manifest" ]]; then
+    case "$NAPPY_DRAFT_TEST_CASE" in
+        crash) exit 9 ;;
+        missing) exit 0 ;;
+        error) echo 'SCRIPT ERROR: coverage crashed'; exit 0 ;;
+        incomplete) echo '{"playback_complete":false}' > "$manifest" ;;
+        included) echo '{"playback_complete":true,"in_the_void":[{"tile":[20,20]}]}' > "$manifest" ;;
+        rounds)
+            round=0
+            [[ ! -f "$NAPPY_DRAFT_TEST_STATE" ]] || round="$(cat "$NAPPY_DRAFT_TEST_STATE")"
+            round=$((round + 1))
+            echo "$round" > "$NAPPY_DRAFT_TEST_STATE"
+            printf '{"playback_complete":true,"in_the_void":[{"tile":[%d,20]}]}' "$((20 + round))" > "$manifest" ;;
+    esac
+fi
+EOF
+chmod +x "$draft_stub"
+printf '{"draft":{"include":[[20,20]]},"playback":{"observations":[]}}\n' > "$work_dir/draft-input.json"
+for failure_case in crash missing error incomplete included rounds; do
+    checks=$((checks + 1))
+    destination="$work_dir/draft-$failure_case.json"
+    printf 'keep the authored file\n' > "$destination"
+    if NAPPY_DRAFT_TEST_SOURCE="$work_dir/draft-input.json" NAPPY_DRAFT_TEST_CASE="$failure_case" \
+            NAPPY_DRAFT_TEST_STATE="$work_dir/round-count" GODOT="$draft_stub" \
+            ./tools/scene-draft.sh --recipe "$work_dir/draft-input.json" --output "$destination" \
+            >"$work_dir/draft-$failure_case.log" 2>&1 \
+            || [[ "$(cat "$destination")" != 'keep the authored file' ]] \
+            || [[ ! -s "$destination.rejected" ]]; then
+        echo "FAIL scene-draft.sh must reject $failure_case and retain the draft" >&2
+        cat "$work_dir/draft-$failure_case.log" >&2
+        failures=$((failures + 1))
+    else
+        echo "ok   scene-draft.sh rejects $failure_case and preserves the authored file"
+    fi
+done
 assert_exit "measure-ground-frames.sh --help" zero ./tools/measure-ground-frames.sh --help
 assert_exit "measure-ground-frames.sh -h" zero ./tools/measure-ground-frames.sh -h
 assert_exit "measure-ground-frames.sh unknown" nonzero ./tools/measure-ground-frames.sh --not-a-flag

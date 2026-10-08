@@ -61,31 +61,36 @@ cp "$recipe" "$work/input.json"
 # --invincible: it walks the whole city, where a guard the stretch never puts out may catch her, and
 # only the tiles she walks are wanted from it.
 for round in 1 2 3; do
+    rm -f "$work/draft.json"
     "$GODOT" --headless --path "$root" --fixed-fps 60 -- \
         --recipe "$work/input.json" --recipe-mode scripted --recipe-draft "$work/draft.json" \
         --invincible --no-save --no-telemetry >"$work/draft.log" 2>&1 &
     pid=$!
-    if ! wait_or_kill "$pid" 120 || [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]] || [[ ! -s "$work/draft.json" ]]; then
+    if ! wait_or_kill "$pid" 120 || [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]] || [[ ! -s "$work/draft.json" ]] \
+            || grep -qE 'SCRIPT ERROR|^ERROR:' "$work/draft.log"; then
         cat "$work/draft.log" >&2
         echo "scene-draft.sh: the walk did not complete, so nothing was drafted: $recipe" >&2
         exit 1
     fi
     rm -f "$work/scene.json"
+    # Ground coverage needs the whole walk, including what happens after an unmet observation or
+    # a task's pursuing guard catches her. Assertions are checked on the final authored scene.
+    jq '.playback.observations = []' "$work/draft.json" >"$work/coverage.json"
     "$GODOT" --headless --path "$root" --fixed-fps 60 -- \
-        --recipe "$work/draft.json" --recipe-mode scripted --recipe-manifest "$work/scene.json" \
-        --no-save --no-telemetry >"$work/scene.log" 2>&1 &
+        --recipe "$work/coverage.json" --recipe-mode scripted --recipe-manifest "$work/scene.json" \
+        --invincible --no-save --no-telemetry >"$work/scene.log" 2>&1 &
     pid=$!
     # A scene whose own observations go unmet still says where it put its guards, and the author
     # fixes the walk after; one that crashed, hung or wrote no manifest says nothing, and the draft
     # is kept aside rather than written as if it had answered.
     wait_or_kill "$pid" 120 || true
-    if [[ "${WAIT_OR_KILL_STATUS:-1}" -ne 0 ]] && ! grep -q '^\[SceneRecipe\] unmet observation' "$work/scene.log"; then
+    if [[ "${WAIT_OR_KILL_STATUS:-1}" -ne 0 ]]; then
         crashed=true
     else
         crashed=false
     fi
     if $crashed || grep -qE 'SCRIPT ERROR|^ERROR:' "$work/scene.log" \
-            || ! void="$(jq -ec '[.in_the_void // [] | .[].tile]' "$work/scene.json" 2>/dev/null)"; then
+            || ! void="$(jq -ec 'select(.playback_complete == true) | [.in_the_void // [] | .[].tile]' "$work/scene.json" 2>/dev/null)"; then
         cat "$work/scene.log" >&2
         cp "$work/draft.json" "$output.rejected"
         echo "scene-draft.sh: round $round's play of the draft crashed or wrote no manifest; the draft is kept at $output.rejected" >&2

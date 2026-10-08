@@ -66,7 +66,9 @@ for file in "${recipes[@]}"; do
         echo "scene failed: $file (log: $output/$name.log)" >&2
         exit 1
     fi
-    if ! jq -e '.playback_complete == true and all(.observations[]; .passed == true)' \
+    if grep -qE 'SCRIPT ERROR|^ERROR:' "$output/$name.log" || ! jq -e \
+        '.playback_complete == true and all(.observations[]; .passed == true)
+         and ((.in_the_void // []) | length == 0) and ((.seen_to_jump // []) | length == 0)' \
         "$output/$name.json" >/dev/null; then
         echo "scene assertions failed: $file (manifest: $output/$name.json; log: $output/$name.log)" >&2
         exit 1

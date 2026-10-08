@@ -38,7 +38,7 @@
   },
   "playback": {
     "walk": "1.74@85@5.91w",
-    "duration": 10.4,
+    "duration": 9.74,
     "capture_at": 8.7,
     "observations": [
       {"tick":1,"subject":"mark","condition":"offered"},
@@ -51,7 +51,7 @@
       {"tick":60,"subject":"task","condition":"beyond","at":"mark","distance":540},
       {"tick":60,"subject":"task","condition":"near","at":"mark","distance":644},
       {"tick":292,"subject":"task","condition":"done"},
-      {"tick":311,"subject":"row:cat_dash","condition":"appeared"},
+      {"tick":292,"subject":"row:cat_dash","condition":"appeared"},
       {"tick":150,"subject":"player","condition":"crowd","walkers":2,"cars":1}
     ]
   },
