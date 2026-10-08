@@ -964,7 +964,7 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t) -> void:
 			director.start_day(6, _rng(6, "resistance"), 300.0)
 			var mark_at := director.contact_position()
 			# The mark down and to her left, inside the left corner's rectangle and within reach.
-			var her := mark_at + Vector2(135.0, -50.0)
+			var her := mark_at + Vector2(180.0, -45.0)
 			var view := VisibleView.around(her, joystick)
 			director.set_sight(view.sees)
 			var player := _rig_player(t, her)
@@ -2445,8 +2445,10 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 				"from %v (%.0fpx): walking straight away is caught (%.2fs)"
 				% [start, start.length(), away["caught_at"]])
 		var ran := _walk_the_trap(def, start, -Tuning.RUN_SPEED)
-		t.check(ran["caught_at"] == INF and ran["gave_up"],
-				"from %v: running from him ends it" % start)
+		t.check(ran["caught_at"] == INF and ran["ended"],
+				"from %v: running escapes until he gives up after notice or reaches his long cap" % start)
+		t.check(not ran["gave_up"] or ran["notice"] >= Tuning.PURSUIT_MIN_NOTICE,
+				"from %v: a run only shakes him off after the visible notice" % start)
 
 ## Walks her at `speed` along the line to `start` — positive toward him, negative away — against a
 ## bare instance of `def` (`robber_giving_chase` or `van_guard_giving_chase`) created at `start`
@@ -2461,7 +2463,8 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 	robber.came_under_a_warning = true
 	if def.arrives_chasing:
 		robber.resume(EventManager.age_when_warned(def), 0.0)
-	var result := {"caught_at": INF, "at_the_lunge": INF, "lunged_at": INF, "gave_up": false}
+	var result := {"caught_at": INF, "at_the_lunge": INF, "lunged_at": INF, "gave_up": false,
+			"ended": false, "notice": 0.0}
 	var her := Vector2.ZERO
 	var velocity := speed if absf(speed) <= Tuning.WALK_SPEED else 0.0
 	var elapsed := 0.0
@@ -2489,6 +2492,8 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 			break
 		if robber.gave_up or robber.is_finished or robber.is_leaving:
 			result["gave_up"] = robber.gave_up
+			result["ended"] = true
+			result["notice"] = robber.notice_age()
 			break
 	robber.free()
 	return result
