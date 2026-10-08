@@ -19,6 +19,7 @@ func run(t) -> void:
 	_test_the_stretch_is_the_only_ground(t, map, witness)
 	_test_the_arrow_stays_on_the_stretch(t, map)
 	_test_saved_layout_is_independent(t, data)
+	_test_authored_building_values_drive_live_joins(t, data)
 	_test_the_schema(t, data)
 	_test_the_crowd_enters_at_the_ends(t, map)
 	_test_the_draft_takes_whole_streets(t, witness)
@@ -179,6 +180,38 @@ func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
 	(twice.stretch.tiles.road as Array).append((twice.stretch.tiles.road as Array)[0])
 	t.check("\n".join(RecipeCityBuilder.build(twice).errors).contains("listed twice"),
 			"a tile listed twice is refused")
+
+## Authored values are construction inputs, not a visual override applied after construction. The
+## day-7 rear lot touches the two-column front lot: making its wall four rows high makes the live
+## front roof extend four rows to meet it.
+func _test_authored_building_values_drive_live_joins(t, day_seven: Dictionary) -> void:
+	var edited := day_seven.duplicate(true)
+	var back_lot := Rect2i(90, 56, 2, 6)
+	var front_lot := Rect2i(90, 62, 2, 8)
+	for spec: Dictionary in edited.stretch.buildings:
+		if SceneRecipe.rect(spec.lot) == back_lot:
+			spec.height = 4
+	var built := RecipeCityBuilder.build(edited)
+	t.check(built.errors.is_empty(), "the adjacent-height edit builds: %s" % [built.errors])
+	if built.errors.is_empty():
+		var city: City = CITY_SCENE.instantiate()
+		t.add_child(city)
+		city.build(built.map)
+		var back: Building = null
+		var front: Building = null
+		for building: Building in city.buildings():
+			if building.lot == back_lot:
+				back = building
+			elif building.lot == front_lot:
+				front = building
+		t.check(back != null and front != null,
+				"both pieces of the edited day-7 join stand in the live City")
+		if back != null and front != null:
+			var expected_extension: Array[int] = [4, 4]
+			t.check(back.wall_tiles() == 4 and front.roof_extension_rows == expected_extension,
+					"the front roof reaches the edited four-row rear wall: %s"
+					% [front.roof_extension_rows])
+		city.free()
 
 func _test_the_schema(t, data: Dictionary) -> void:
 	var bare := data.duplicate(true)

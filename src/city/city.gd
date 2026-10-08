@@ -651,6 +651,11 @@ func _spawn_buildings() -> void:
 		building.district = map.starting_purpose(_block_of(rect))
 		building.height = _height_for(rect, rect.size.y)
 		building.lot = rect
+		# A stretch's authored values are the inputs to its geometry, not a repaint after it: the
+		# height decides the roof extension a touching lot needs, and the variant decides the tint
+		# shared by pieces of one courtyard. Ordinary generated cities have no listed values, so
+		# this changes nothing for them.
+		_draw_as_the_recipe_says(building)
 		# Every lot on the home block is hers — the door's own notch carves no `Building` of its
 		# own, so this is every wall standing around it.
 		building.is_home_building = _block_of(rect) == map.home_block
@@ -666,7 +671,7 @@ func _spawn_buildings() -> void:
 		_dress_the_power_station(building, rect)
 		buildings.append(building)
 	# Coverage and the roof extension it needs both read every lot's own `wall_tiles()`, fixed by
-	# the exports above alone, so both run before any of them enters the tree — see
+	# the generated or authored values above, so both run before any of them enters the tree — see
 	# `_covered_ground_cols()` and `_assign_roof_extensions()`. Never asked of her own building
 	# (`covered_ground_cols` stays empty) — her own building's front is the one the player knows
 	# as home and stays as it is, and the home block's own doorstep already exempts it from the
@@ -682,7 +687,6 @@ func _spawn_buildings() -> void:
 		if not _recipe_shows_building(building.lot):
 			building.free()
 			continue
-		_draw_as_the_recipe_says(building)
 		# Their own layer, under the entities — see the note at the top of this file. They still
 		# y-sort against each other, which costs nothing and keeps two lots that share a block
 		# boundary stacking the way the eye expects.
@@ -1539,9 +1543,9 @@ func _recipe_shows_building(lot: Rect2i) -> bool:
 		return map.stretch_buildings.has(lot)
 	return not map.recipe_exterior or map.recipe_bounds.encloses(lot)
 
-## A stretch's building drawn as its recipe lists it — district, variant and wall height — rather
-## than as the seed rolls them, so a change to the roll does not change a handcrafted scene.
-## Nothing for any other city.
+## Applies a stretch building's listed district, variant and wall height before any derived
+## geometry or shared tint is computed, so a change to the seed roll cannot change either the
+## handcrafted building or a roof joined to it. Nothing for any other city.
 func _draw_as_the_recipe_says(building: Building) -> void:
 	var listed: Dictionary = map.stretch_buildings.get(building.lot, {})
 	if listed.is_empty():
