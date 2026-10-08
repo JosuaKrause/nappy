@@ -1,0 +1,223 @@
+{
+  "recipe": "Day 12: the swing, 581px from the mark, read on a walk from the unread mark",
+  "recipe_sha256": "8e0128a83de8c6ad237b3057474837e91398f9b14d5ec9c7a9ea1ea958b0c5e7",
+  "engine": "4.7.2-stable (official)",
+  "physics_ticks_per_second": 30,
+  "playback_complete": true,
+  "stopped_tick": null,
+  "playback_error": null,
+  "observations": [
+    {
+      "condition": "offered",
+      "passed": true,
+      "player_at": [
+        1807.22,
+        3600.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          1648.0,
+          3568.0
+        ]
+      },
+      "subject": "mark",
+      "tick": 1.0
+    },
+    {
+      "condition": "unarrowed",
+      "passed": true,
+      "player_at": [
+        1807.22,
+        3600.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          1648.0,
+          3568.0
+        ]
+      },
+      "subject": "mark",
+      "tick": 1.0
+    },
+    {
+      "at": "mark",
+      "condition": "beyond",
+      "distance": 150.0,
+      "passed": true,
+      "player_at": [
+        1807.22,
+        3600.0
+      ],
+      "state": {
+        "carrying": false,
+        "gait_frame": 0,
+        "position": [
+          1807.2222,
+          3600.0
+        ],
+        "speed": 23.3333
+      },
+      "subject": "player",
+      "tick": 1.0
+    },
+    {
+      "condition": "done",
+      "passed": true,
+      "player_at": [
+        1650.41,
+        3602.3
+      ],
+      "state": {
+        "done": true,
+        "position": [
+          1648.0,
+          3568.0
+        ]
+      },
+      "subject": "mark",
+      "tick": 60.0
+    },
+    {
+      "condition": "offered",
+      "passed": true,
+      "player_at": [
+        1650.41,
+        3602.3
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          1168.0,
+          3896.0
+        ]
+      },
+      "subject": "task",
+      "tick": 60.0
+    },
+    {
+      "condition": "arrowed",
+      "passed": true,
+      "player_at": [
+        1650.41,
+        3602.3
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          1168.0,
+          3896.0
+        ]
+      },
+      "subject": "task",
+      "tick": 60.0
+    },
+    {
+      "condition": "off_screen",
+      "passed": true,
+      "player_at": [
+        1650.41,
+        3602.3
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          1168.0,
+          3896.0
+        ]
+      },
+      "subject": "task",
+      "tick": 60.0
+    },
+    {
+      "at": "mark",
+      "condition": "beyond",
+      "distance": 540.0,
+      "passed": true,
+      "player_at": [
+        1650.41,
+        3602.3
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          1168.0,
+          3896.0
+        ]
+      },
+      "subject": "task",
+      "tick": 60.0
+    },
+    {
+      "at": "mark",
+      "condition": "near",
+      "distance": 676.0,
+      "passed": true,
+      "player_at": [
+        1650.41,
+        3602.3
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          1168.0,
+          3896.0
+        ]
+      },
+      "subject": "task",
+      "tick": 60.0
+    },
+    {
+      "condition": "crowd",
+      "passed": true,
+      "player_at": [
+        1374.41,
+        3602.3
+      ],
+      "state": {
+        "carrying": false,
+        "gait_frame": 2,
+        "position": [
+          1374.413,
+          3602.3018
+        ],
+        "speed": 92.0
+      },
+      "subject": "player",
+      "tick": 150.0,
+      "walkers": 2.0
+    },
+    {
+      "condition": "done",
+      "passed": true,
+      "player_at": [
+        1151.85,
+        3893.23
+      ],
+      "state": {
+        "done": true,
+        "position": [
+          1168.0,
+          3896.0
+        ]
+      },
+      "subject": "task",
+      "tick": 347.0
+    },
+    {
+      "condition": "appeared",
+      "first_in_the_picture": 178,
+      "passed": true,
+      "player_at": [
+        1151.85,
+        3893.23
+      ],
+      "state": {},
+      "subject": "row:cat_dash",
+      "tick": 356.0
+    }
+  ],
+  "in_the_void": null,
+  "seen_to_jump": null
+}

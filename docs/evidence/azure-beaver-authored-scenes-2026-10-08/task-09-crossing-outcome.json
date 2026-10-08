@@ -1,0 +1,241 @@
+{
+  "recipe": "Day 9: crossing the district door, its gatehouse 602px from the mark, read on a walk from the unread mark",
+  "recipe_sha256": "20254ad9518c1160cc6b8e528fd808ac218259b7e09326057e5fcffa1072134e",
+  "engine": "4.7.2-stable (official)",
+  "physics_ticks_per_second": 30,
+  "playback_complete": true,
+  "stopped_tick": null,
+  "playback_error": null,
+  "observations": [
+    {
+      "condition": "offered",
+      "passed": true,
+      "player_at": [
+        3184.78,
+        304.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3344.0,
+          304.0
+        ]
+      },
+      "subject": "mark",
+      "tick": 1.0
+    },
+    {
+      "condition": "unarrowed",
+      "passed": true,
+      "player_at": [
+        3184.78,
+        304.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3344.0,
+          304.0
+        ]
+      },
+      "subject": "mark",
+      "tick": 1.0
+    },
+    {
+      "at": "mark",
+      "condition": "beyond",
+      "distance": 150.0,
+      "passed": true,
+      "player_at": [
+        3184.78,
+        304.0
+      ],
+      "state": {
+        "carrying": false,
+        "gait_frame": 0,
+        "position": [
+          3184.7778,
+          304.0
+        ],
+        "speed": 23.3333
+      },
+      "subject": "player",
+      "tick": 1.0
+    },
+    {
+      "condition": "done",
+      "passed": true,
+      "player_at": [
+        3341.69,
+        303.94
+      ],
+      "state": {
+        "done": true,
+        "position": [
+          3344.0,
+          304.0
+        ]
+      },
+      "subject": "mark",
+      "tick": 60.0
+    },
+    {
+      "condition": "offered",
+      "passed": true,
+      "player_at": [
+        3341.69,
+        303.94
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3168.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 60.0
+    },
+    {
+      "condition": "arrowed",
+      "passed": true,
+      "player_at": [
+        3341.69,
+        303.94
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3168.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 60.0
+    },
+    {
+      "condition": "off_screen",
+      "passed": true,
+      "player_at": [
+        3341.69,
+        303.94
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3168.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 60.0
+    },
+    {
+      "at": "mark",
+      "condition": "beyond",
+      "distance": 540.0,
+      "passed": true,
+      "player_at": [
+        3341.69,
+        303.94
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3168.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 60.0
+    },
+    {
+      "at": "mark",
+      "condition": "near",
+      "distance": 676.0,
+      "passed": true,
+      "player_at": [
+        3341.69,
+        303.94
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3168.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 60.0
+    },
+    {
+      "cars": 1.0,
+      "condition": "crowd",
+      "passed": true,
+      "player_at": [
+        3216.05,
+        547.16
+      ],
+      "state": {
+        "carrying": false,
+        "gait_frame": 1,
+        "position": [
+          3216.0544,
+          547.1634
+        ],
+        "speed": 92.0
+      },
+      "subject": "player",
+      "tick": 420.0,
+      "walkers": 2.0
+    },
+    {
+      "condition": "offered",
+      "passed": true,
+      "player_at": [
+        3200.0,
+        841.87
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3168.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 532.0
+    },
+    {
+      "condition": "done",
+      "passed": true,
+      "player_at": [
+        3199.99,
+        978.53
+      ],
+      "state": {
+        "done": true,
+        "position": [
+          3168.0,
+          880.0
+        ]
+      },
+      "subject": "task",
+      "tick": 596.0
+    },
+    {
+      "condition": "appeared",
+      "first_in_the_picture": 185,
+      "passed": true,
+      "player_at": [
+        3199.99,
+        978.53
+      ],
+      "state": {},
+      "subject": "row:cat_dash",
+      "tick": 596.0
+    }
+  ],
+  "in_the_void": null,
+  "seen_to_jump": null
+}

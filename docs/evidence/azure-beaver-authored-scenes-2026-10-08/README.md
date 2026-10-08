@@ -1,16 +1,23 @@
 # Authored street scenes
 
-The day 7 start and later stills show the explicitly loaded stretch, its unread mark,
-pedestrians, wear, posters, traffic and task. They use clean source
-`91de3882b50b292aa705d116836beea811640a1f`, Godot 4.7.2, run seed 11, and the
+The ten pairs of start and later stills show the explicitly loaded task and station
+stretches, their pedestrians, day wear and task targets. They use clean source
+`deb809f1f5ec342521139868eb336908192f99d8`, Godot 4.7.2, run seed 11, and the
 recipe hashes and exact capture ticks in the adjacent manifests. These stills establish
 layout and visible contents; they do not establish smooth motion or absence of pop-in.
 The automated crowd check plays all ten stretches and observes every recycle separately.
+The adjacent `*-outcome.json` files retain the passing observations, completion and empty
+void/jump reports from each headless playback. Capture logs contain no engine errors.
+Every pair was visually inspected; images retain whole frames, including HUD and void.
 
 Capture command, from that checkout:
 
 ```sh
-tools/scene-recipes.sh --recipe scene-recipes/task-07-package.json --output /tmp/scene-preview --screenshots
+recipes=()
+for file in scene-recipes/task-*.json scene-recipes/station-door-corner.json; do
+    recipes+=(--recipe "$file")
+done
+tools/scene-recipes.sh "${recipes[@]}" --output /tmp/scene-preview --screenshots
 ```
 
 Fetch the durable PR ref before checking out a recorded source revision:

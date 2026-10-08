@@ -12,17 +12,10 @@
 	"authored_posters": [
 		{
 			"at": [
-				2480.0,
-				2256.0
+				3344.0,
+				1808.0
 			],
-			"kind": "rules"
-		},
-		{
-			"at": [
-				2512.0,
-				2256.0
-			],
-			"kind": "rules"
+			"kind": "curfew"
 		}
 	],
 	"bounds": [
@@ -32,31 +25,36 @@
 		160
 	],
 	"capture_activity": {
-		"moving_crowd": 7,
+		"moving_crowd": 4,
 		"visible_cars": 1,
 		"visible_events": {
-			"delivery_van": 1,
-			"van_guard_giving_chase": 1
+			"loudspeaker": 1
 		},
-		"visible_walkers": 6,
+		"visible_walkers": 3,
 		"walker_streets": {
-			"h5": {
-				"moving": 5,
-				"walkers": 5
-			},
-			"v5": {
+			"h4": {
 				"moving": 1,
 				"walkers": 1
+			},
+			"v7": {
+				"moving": 2,
+				"walkers": 2
 			}
 		},
-		"walkers_left": 1,
-		"walkers_right": 5
+		"walkers_left": 2,
+		"walkers_right": 1
 	},
 	"capture_actors": {
 		"car_1": {
 			"position": [
-				2364.6091,
-				2320.0
+				3097.0476,
+				2768.0
+			]
+		},
+		"car_2": {
+			"position": [
+				3248.0,
+				2010.2581
 			]
 		},
 		"mark": {
@@ -68,110 +66,101 @@
 		},
 		"player": {
 			"carrying": false,
-			"gait_frame": 1,
+			"gait_frame": 2,
 			"position": [
-				2459.1646,
-				2263.3489
+				3378.791,
+				1967.1251
 			],
-			"speed": 0.0
-		},
-		"rider": {
-			"position": [
-				2416.0,
-				2256.0
-			],
-			"pursuing": false,
-			"row": "delivery_van",
-			"telegraphing": false
+			"speed": 92.0
 		},
 		"task": {
-			"done": true,
+			"done": false,
 			"position": [
-				2416.0,
-				2256.0
+				3440.0,
+				1936.0
 			]
 		},
 		"walker_1": {
 			"position": [
-				2557.2715,
-				2376.0
+				3320.0,
+				1831.2795
 			]
 		},
 		"walker_2": {
 			"position": [
-				2877.0769,
-				2248.0
+				3439.0344,
+				1928.0
 			]
 		},
 		"walker_3": {
 			"position": [
-				2279.0566,
-				2257.3167
+				3327.0,
+				2119.1738
 			]
 		},
 		"walker_4": {
 			"position": [
-				2970.9424,
-				2296.0
+				2723.021,
+				2696.0
 			]
 		},
 		"walker_5": {
 			"position": [
-				2724.2354,
-				2376.0
+				2872.0,
+				2259.2441
 			]
 		},
 		"walker_6": {
 			"position": [
-				2466.4482,
-				2376.0
+				3192.0,
+				2168.5283
 			]
 		},
 		"walker_7": {
 			"position": [
-				2424.0,
-				2272.0
+				2696.0,
+				2326.6545
 			]
 		},
 		"walker_8": {
 			"position": [
-				2492.3257,
-				2424.0
+				3192.0,
+				2520.9802
 			]
 		}
 	},
 	"capture_camera": {
 		"position": [
-			2459.16455078125,
-			2263.34887695312
+			3378.791015625,
+			1967.12512207031
 		],
 		"zoom": 2.0
 	},
 	"capture_crowd": {
-		"cars": 1,
-		"moving": 9,
-		"moving_cars": 1,
+		"cars": 2,
+		"moving": 10,
+		"moving_cars": 2,
 		"quadrants": {
 			"ne": {
-				"cars": 0,
-				"moving": 3,
-				"moving_cars": 0,
-				"total": 3,
-				"walkers": 3
+				"cars": 1,
+				"moving": 8,
+				"moving_cars": 1,
+				"total": 8,
+				"walkers": 7
 			},
 			"nw": {
-				"cars": 1,
-				"moving": 6,
-				"moving_cars": 1,
-				"total": 6,
-				"walkers": 5
-			},
-			"se": {
 				"cars": 0,
 				"moving": 0,
 				"moving_cars": 0,
 				"total": 0,
 				"walkers": 0
+			},
+			"se": {
+				"cars": 1,
+				"moving": 2,
+				"moving_cars": 1,
+				"total": 2,
+				"walkers": 1
 			},
 			"sw": {
 				"cars": 0,
@@ -182,38 +171,39 @@
 			}
 		},
 		"scope": "local",
-		"total": 9,
+		"total": 10,
 		"walkers": 8
 	},
-	"capture_tick": 261,
+	"capture_tick": 642,
 	"checks": [
 		"construction_schema",
 		"explicit_city_context",
 		"authored_placements"
 	],
 	"classification": "normal",
-	"context_sha256": "4f0d2a7ffeefae6c7415da8fd6273193cadfb90b8243a32bc38cfa01a5496fd8",
+	"context_sha256": "f53a0df1a6563b28a6d19a7b8c3ba562308999e3007312e205591bfa945ddb30",
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"initial_activity": {
-		"moving_crowd": 3,
+		"moving_crowd": 0,
 		"visible_cars": 0,
 		"visible_events": {},
-		"visible_walkers": 3,
-		"walker_streets": {
-			"h5": {
-				"moving": 3,
-				"walkers": 3
-			}
-		},
-		"walkers_left": 2,
-		"walkers_right": 1
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
 	},
 	"initial_actors": {
 		"car_1": {
 			"position": [
-				2250.75,
-				2352.0
+				3216.0,
+				2012.99
+			]
+		},
+		"car_2": {
+			"position": [
+				2860.6499,
+				2800.0
 			]
 		},
 		"mark": {
@@ -234,77 +224,77 @@
 		},
 		"walker_1": {
 			"position": [
-				2404.29,
-				2248.0
+				3425.6101,
+				1800.0
 			]
 		},
 		"walker_2": {
 			"position": [
-				2434.96,
-				2248.0
+				3720.0,
+				1833.59
 			]
 		},
 		"walker_3": {
 			"position": [
-				2654.1799,
-				2248.0
+				3272.0,
+				2116.8101
 			]
 		},
 		"walker_4": {
 			"position": [
-				2345.21,
-				2296.0
+				3292.8899,
+				2248.0
 			]
 		},
 		"walker_5": {
 			"position": [
-				2242.26,
-				2376.0
+				3262.96,
+				2296.0
 			]
 		},
 		"walker_6": {
 			"position": [
-				2807.01,
-				2376.0
+				3272.0,
+				2394.2
 			]
 		},
 		"walker_7": {
 			"position": [
-				2424.0,
-				2394.4399
+				3192.0,
+				2447.3101
 			]
 		},
 		"walker_8": {
 			"position": [
-				2691.4099,
-				2424.0
+				3144.0,
+				2523.04
 			]
 		}
 	},
 	"initial_crowd": {
-		"cars": 1,
-		"moving": 9,
-		"moving_cars": 1,
+		"cars": 2,
+		"moving": 10,
+		"moving_cars": 2,
 		"quadrants": {
 			"ne": {
-				"cars": 0,
-				"moving": 3,
-				"moving_cars": 0,
-				"total": 3,
-				"walkers": 3
+				"cars": 1,
+				"moving": 9,
+				"moving_cars": 1,
+				"total": 9,
+				"walkers": 8
 			},
 			"nw": {
-				"cars": 1,
-				"moving": 6,
-				"moving_cars": 1,
-				"total": 6,
-				"walkers": 5
-			},
-			"se": {
 				"cars": 0,
 				"moving": 0,
 				"moving_cars": 0,
 				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 1,
+				"moving": 1,
+				"moving_cars": 1,
+				"total": 1,
 				"walkers": 0
 			},
 			"sw": {
@@ -316,7 +306,7 @@
 			}
 		},
 		"scope": "local",
-		"total": 9,
+		"total": 10,
 		"walkers": 8
 	},
 	"installed_events": [],
@@ -325,8 +315,8 @@
 			"condition": "offered",
 			"passed": true,
 			"player_at": [
-				2800.77,
-				2255.93
+				2800.78,
+				2256.0
 			],
 			"state": {
 				"done": false,
@@ -342,8 +332,8 @@
 			"condition": "unarrowed",
 			"passed": true,
 			"player_at": [
-				2800.77,
-				2255.93
+				2800.78,
+				2256.0
 			],
 			"state": {
 				"done": false,
@@ -361,15 +351,15 @@
 			"distance": 150.0,
 			"passed": true,
 			"player_at": [
-				2800.77,
-				2255.93
+				2800.78,
+				2256.0
 			],
 			"state": {
 				"carrying": false,
 				"gait_frame": 0,
 				"position": [
-					2800.7749,
-					2255.9321
+					2800.7778,
+					2256.0
 				],
 				"speed": 23.3333
 			},
@@ -380,8 +370,8 @@
 			"condition": "done",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2957.69,
+				2256.0
 			],
 			"state": {
 				"done": true,
@@ -397,14 +387,14 @@
 			"condition": "offered",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2957.69,
+				2256.0
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					3440.0,
+					1936.0
 				]
 			},
 			"subject": "task",
@@ -414,14 +404,14 @@
 			"condition": "arrowed",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2957.69,
+				2256.0
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					3440.0,
+					1936.0
 				]
 			},
 			"subject": "task",
@@ -431,14 +421,14 @@
 			"condition": "off_screen",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2957.69,
+				2256.0
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					3440.0,
+					1936.0
 				]
 			},
 			"subject": "task",
@@ -450,14 +440,14 @@
 			"distance": 540.0,
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2957.69,
+				2256.0
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					3440.0,
+					1936.0
 				]
 			},
 			"subject": "task",
@@ -469,14 +459,14 @@
 			"distance": 644.0,
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2957.69,
+				2256.0
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					3440.0,
+					1936.0
 				]
 			},
 			"subject": "task",
@@ -487,27 +477,27 @@
 			"condition": "crowd",
 			"passed": true,
 			"player_at": [
-				2684.17,
-				2263.19
+				3208.45,
+				2702.67
 			],
 			"state": {
 				"carrying": false,
-				"gait_frame": 1,
+				"gait_frame": 2,
 				"position": [
-					2684.1702,
-					2263.1936
+					3208.4531,
+					2702.6682
 				],
 				"speed": 92.0
 			},
 			"subject": "player",
-			"tick": 150.0,
+			"tick": 345.0,
 			"walkers": 2.0
 		}
 	],
 	"physics_ticks_per_second": 30,
 	"playback_complete": false,
-	"recipe": "Day 7: the package at the van where her path first reaches 576px, read on a walk from the unread mark",
-	"recipe_sha256": "ac5e964bb06a4057ac716f6ebde20d5b6c6de3dfc2c429b0eba72cea0d80869d",
+	"recipe": "Day 11: a mast put up where her path first reaches 576px, read on a walk from the unread mark",
+	"recipe_sha256": "5265039bc4a60bb54545c3c5750c7988f1c1efd994b986cc35fdb51577ca304a",
 	"route_bag": {
 		"marbles": 14,
 		"owed": 14,
@@ -521,96 +511,106 @@
 		"actors": [
 			{
 				"at": [
-					2250.75,
-					2352.0
+					3216.0,
+					2012.99
+				],
+				"direction": "south",
+				"kind": "car",
+				"name": "car_1",
+				"speed": 172.6716
+			},
+			{
+				"at": [
+					2860.65,
+					2800.0
 				],
 				"direction": "east",
 				"kind": "car",
-				"name": "car_1",
-				"speed": 182.4326
+				"name": "car_2",
+				"speed": 134.9993
 			},
 			{
 				"at": [
-					2404.29,
-					2248.0
+					3425.61,
+					1800.0
 				],
-				"direction": "west",
+				"direction": "east",
 				"kind": "walker",
 				"name": "walker_1",
-				"speed": 66.6712
+				"speed": 71.8092
 			},
 			{
 				"at": [
-					2434.96,
-					2248.0
+					3720.0,
+					1833.59
 				],
-				"direction": "east",
+				"direction": "north",
 				"kind": "walker",
 				"name": "walker_2",
-				"speed": 68.0652
+				"speed": 69.1051
 			},
 			{
 				"at": [
-					2654.18,
-					2248.0
+					3272.0,
+					2116.81
 				],
-				"direction": "east",
+				"direction": "north",
 				"kind": "walker",
 				"name": "walker_3",
-				"speed": 66.936
+				"speed": 48.7341
 			},
 			{
 				"at": [
-					2345.21,
-					2296.0
+					3292.89,
+					2248.0
 				],
 				"direction": "east",
 				"kind": "walker",
 				"name": "walker_4",
-				"speed": 71.9687
+				"speed": 58.3675
 			},
 			{
 				"at": [
-					2242.26,
-					2376.0
+					3262.96,
+					2296.0
 				],
 				"direction": "east",
 				"kind": "walker",
 				"name": "walker_5",
-				"speed": 55.4344
+				"speed": 47.2204
 			},
 			{
 				"at": [
-					2807.01,
-					2376.0
+					3272.0,
+					2394.2
 				],
-				"direction": "east",
+				"direction": "south",
 				"kind": "walker",
 				"name": "walker_6",
-				"speed": 48.6087
+				"speed": 70.0292
 			},
 			{
 				"at": [
-					2424.0,
-					2394.44
+					3192.0,
+					2447.31
 				],
-				"direction": "north",
+				"direction": "south",
 				"kind": "walker",
 				"name": "walker_7",
-				"speed": 71.732
+				"speed": 57.5996
 			},
 			{
 				"at": [
-					2691.41,
-					2424.0
+					3144.0,
+					2523.04
 				],
-				"direction": "east",
+				"direction": "south",
 				"kind": "walker",
 				"name": "walker_8",
-				"speed": 58.9632
+				"speed": 69.4173
 			}
 		],
-		"day": 7.0,
+		"day": 11.0,
 		"parent": "mother",
 		"player": {
 			"at": "start",
@@ -619,17 +619,10 @@
 		"posters": [
 			{
 				"at": [
-					2480.0,
-					2256.0
+					3344.0,
+					1808.0
 				],
-				"kind": "rules"
-			},
-			{
-				"at": [
-					2512.0,
-					2256.0
-				],
-				"kind": "rules"
+				"kind": "curfew"
 			}
 		],
 		"route_bag": {
@@ -662,21 +655,21 @@
 	},
 	"task": {
 		"arrow": [
-			2416.0,
-			2256.0
+			3440.0,
+			1936.0
 		],
-		"distance": 544.94,
+		"distance": 559.77,
 		"mark": [
 			2960.0,
 			2224.0
 		],
-		"read_tick": 48,
-		"step": 4,
+		"read_tick": 49,
+		"step": 12,
 		"target": [
-			2416.0,
-			2256.0
+			3440.0,
+			1936.0
 		],
-		"title": "The package"
+		"title": "Silence a mast"
 	},
 	"violations": []
 }

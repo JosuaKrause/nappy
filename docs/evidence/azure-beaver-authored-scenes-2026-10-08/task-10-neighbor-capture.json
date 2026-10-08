@@ -1,28 +1,67 @@
 {
 	"anchors": {
 		"mark": [
-			2960.0,
-			2224.0
+			2128.0,
+			4688.0
+		],
+		"neighbor": [
+			1840.0,
+			4336.0
 		],
 		"start": [
-			2800.0,
-			2256.0
+			2288.0,
+			4656.0
 		]
 	},
 	"authored_posters": [
 		{
 			"at": [
-				2480.0,
-				2256.0
+				2000.0,
+				4496.0
 			],
-			"kind": "rules"
+			"kind": "uniform"
 		},
 		{
 			"at": [
-				2512.0,
-				2256.0
+				2032.0,
+				4496.0
 			],
-			"kind": "rules"
+			"kind": "uniform"
+		},
+		{
+			"at": [
+				2064.0,
+				4496.0
+			],
+			"kind": "uniform"
+		},
+		{
+			"at": [
+				2128.0,
+				4496.0
+			],
+			"kind": "uniform"
+		},
+		{
+			"at": [
+				2160.0,
+				4496.0
+			],
+			"kind": "uniform"
+		},
+		{
+			"at": [
+				2192.0,
+				4496.0
+			],
+			"kind": "uniform"
+		},
+		{
+			"at": [
+				2224.0,
+				4496.0
+			],
+			"kind": "uniform"
 		}
 	],
 	"bounds": [
@@ -32,139 +71,144 @@
 		160
 	],
 	"capture_activity": {
-		"moving_crowd": 7,
+		"moving_crowd": 3,
 		"visible_cars": 1,
-		"visible_events": {
-			"delivery_van": 1,
-			"van_guard_giving_chase": 1
-		},
-		"visible_walkers": 6,
+		"visible_events": {},
+		"visible_walkers": 2,
 		"walker_streets": {
-			"h5": {
-				"moving": 5,
-				"walkers": 5
-			},
-			"v5": {
-				"moving": 1,
-				"walkers": 1
+			"v4": {
+				"moving": 2,
+				"walkers": 2
 			}
 		},
-		"walkers_left": 1,
-		"walkers_right": 5
+		"walkers_left": 2,
+		"walkers_right": 0
 	},
 	"capture_actors": {
 		"car_1": {
 			"position": [
-				2364.6091,
-				2320.0
+				1872.0,
+				4165.5957
 			]
 		},
 		"mark": {
 			"done": true,
 			"position": [
-				2960.0,
-				2224.0
+				2128.0,
+				4688.0
 			]
 		},
 		"player": {
 			"carrying": false,
-			"gait_frame": 1,
+			"gait_frame": 2,
 			"position": [
-				2459.1646,
-				2263.3489
+				1826.2854,
+				4159.9961
 			],
-			"speed": 0.0
+			"speed": 92.0
 		},
 		"rider": {
 			"position": [
-				2416.0,
-				2256.0
+				1840.0,
+				3932.5229
 			],
 			"pursuing": false,
-			"row": "delivery_van",
+			"row": "neighbor",
 			"telegraphing": false
 		},
 		"task": {
-			"done": true,
+			"done": false,
 			"position": [
-				2416.0,
-				2256.0
+				1840.0,
+				3932.5229
 			]
 		},
 		"walker_1": {
 			"position": [
-				2557.2715,
-				2376.0
+				1792.0,
+				4270.894
+			]
+		},
+		"walker_10": {
+			"position": [
+				1976.0,
+				4343.7988
 			]
 		},
 		"walker_2": {
 			"position": [
-				2877.0769,
-				2248.0
+				1856.0,
+				4423.1685
 			]
 		},
 		"walker_3": {
 			"position": [
-				2279.0566,
-				2257.3167
+				2004.8518,
+				4664.0
 			]
 		},
 		"walker_4": {
 			"position": [
-				2970.9424,
-				2296.0
+				1848.0,
+				3831.9419
 			]
 		},
 		"walker_5": {
 			"position": [
-				2724.2354,
-				2376.0
+				2393.178,
+				4664.0
 			]
 		},
 		"walker_6": {
 			"position": [
-				2466.4482,
-				2376.0
+				1848.0,
+				3672.2036
 			]
 		},
 		"walker_7": {
 			"position": [
-				2424.0,
-				2272.0
+				2246.355,
+				4488.0
 			]
 		},
 		"walker_8": {
 			"position": [
-				2492.3257,
-				2424.0
+				1800.0,
+				3988.8074
+			]
+		},
+		"walker_9": {
+			"position": [
+				2404.1018,
+				4664.0
 			]
 		}
 	},
 	"capture_camera": {
 		"position": [
-			2459.16455078125,
-			2263.34887695312
+			1826.28540039062,
+			4159.99609375
 		],
 		"zoom": 2.0
 	},
 	"capture_crowd": {
 		"cars": 1,
-		"moving": 9,
+		"moving": 11,
 		"moving_cars": 1,
 		"quadrants": {
 			"ne": {
 				"cars": 0,
-				"moving": 3,
+				"moving": 0,
 				"moving_cars": 0,
-				"total": 3,
-				"walkers": 3
+				"total": 0,
+				"walkers": 0
 			},
 			"nw": {
-				"cars": 1,
-				"moving": 6,
-				"moving_cars": 1,
-				"total": 6,
-				"walkers": 5
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
 			},
 			"se": {
 				"cars": 0,
@@ -174,25 +218,25 @@
 				"walkers": 0
 			},
 			"sw": {
-				"cars": 0,
-				"moving": 0,
-				"moving_cars": 0,
-				"total": 0,
-				"walkers": 0
+				"cars": 1,
+				"moving": 11,
+				"moving_cars": 1,
+				"total": 11,
+				"walkers": 10
 			}
 		},
 		"scope": "local",
-		"total": 9,
-		"walkers": 8
+		"total": 11,
+		"walkers": 10
 	},
-	"capture_tick": 261,
+	"capture_tick": 312,
 	"checks": [
 		"construction_schema",
 		"explicit_city_context",
 		"authored_placements"
 	],
 	"classification": "normal",
-	"context_sha256": "4f0d2a7ffeefae6c7415da8fd6273193cadfb90b8243a32bc38cfa01a5496fd8",
+	"context_sha256": "f53a0df1a6563b28a6d19a7b8c3ba562308999e3007312e205591bfa945ddb30",
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"initial_activity": {
@@ -201,104 +245,120 @@
 		"visible_events": {},
 		"visible_walkers": 3,
 		"walker_streets": {
-			"h5": {
-				"moving": 3,
-				"walkers": 3
+			"h10": {
+				"moving": 1,
+				"walkers": 1
+			},
+			"v4": {
+				"moving": 2,
+				"walkers": 2
 			}
 		},
-		"walkers_left": 2,
-		"walkers_right": 1
+		"walkers_left": 3,
+		"walkers_right": 0
 	},
 	"initial_actors": {
 		"car_1": {
 			"position": [
-				2250.75,
-				2352.0
+				1904.0,
+				3640.75
 			]
 		},
 		"mark": {
 			"done": false,
 			"position": [
-				2960.0,
-				2224.0
+				2128.0,
+				4688.0
 			]
 		},
 		"player": {
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2800.0,
-				2256.0
+				2288.0,
+				4656.0
 			],
 			"speed": 0.0
 		},
 		"walker_1": {
 			"position": [
-				2404.29,
-				2248.0
+				1848.0,
+				3630.0701
+			]
+		},
+		"walker_10": {
+			"position": [
+				1976.0,
+				4658.6299
 			]
 		},
 		"walker_2": {
 			"position": [
-				2434.96,
-				2248.0
+				1848.0,
+				3668.6599
 			]
 		},
 		"walker_3": {
 			"position": [
-				2654.1799,
-				2248.0
+				1848.0,
+				4151.2998
 			]
 		},
 		"walker_4": {
 			"position": [
-				2345.21,
-				2296.0
+				1848.0,
+				4317.21
 			]
 		},
 		"walker_5": {
 			"position": [
-				2242.26,
-				2376.0
+				1976.0,
+				4360.3398
 			]
 		},
 		"walker_6": {
 			"position": [
-				2807.01,
-				2376.0
+				1848.0,
+				4361.6299
 			]
 		},
 		"walker_7": {
 			"position": [
-				2424.0,
-				2394.4399
+				1976.0,
+				4479.1699
 			]
 		},
 		"walker_8": {
 			"position": [
-				2691.4099,
-				2424.0
+				1995.75,
+				4488.0
+			]
+		},
+		"walker_9": {
+			"position": [
+				1800.0,
+				4624.1099
 			]
 		}
 	},
 	"initial_crowd": {
 		"cars": 1,
-		"moving": 9,
+		"moving": 11,
 		"moving_cars": 1,
 		"quadrants": {
 			"ne": {
 				"cars": 0,
-				"moving": 3,
+				"moving": 0,
 				"moving_cars": 0,
-				"total": 3,
-				"walkers": 3
+				"total": 0,
+				"walkers": 0
 			},
 			"nw": {
-				"cars": 1,
-				"moving": 6,
-				"moving_cars": 1,
-				"total": 6,
-				"walkers": 5
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
 			},
 			"se": {
 				"cars": 0,
@@ -308,16 +368,16 @@
 				"walkers": 0
 			},
 			"sw": {
-				"cars": 0,
-				"moving": 0,
-				"moving_cars": 0,
-				"total": 0,
-				"walkers": 0
+				"cars": 1,
+				"moving": 11,
+				"moving_cars": 1,
+				"total": 11,
+				"walkers": 10
 			}
 		},
 		"scope": "local",
-		"total": 9,
-		"walkers": 8
+		"total": 11,
+		"walkers": 10
 	},
 	"installed_events": [],
 	"observations": [
@@ -325,14 +385,14 @@
 			"condition": "offered",
 			"passed": true,
 			"player_at": [
-				2800.77,
-				2255.93
+				2287.22,
+				4656.0
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2960.0,
-					2224.0
+					2128.0,
+					4688.0
 				]
 			},
 			"subject": "mark",
@@ -342,14 +402,14 @@
 			"condition": "unarrowed",
 			"passed": true,
 			"player_at": [
-				2800.77,
-				2255.93
+				2287.22,
+				4656.0
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2960.0,
-					2224.0
+					2128.0,
+					4688.0
 				]
 			},
 			"subject": "mark",
@@ -361,15 +421,15 @@
 			"distance": 150.0,
 			"passed": true,
 			"player_at": [
-				2800.77,
-				2255.93
+				2287.22,
+				4656.0
 			],
 			"state": {
 				"carrying": false,
 				"gait_frame": 0,
 				"position": [
-					2800.7749,
-					2255.9321
+					2287.2222,
+					4656.0
 				],
 				"speed": 23.3333
 			},
@@ -380,14 +440,14 @@
 			"condition": "done",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2109.37,
+				4649.75
 			],
 			"state": {
 				"done": true,
 				"position": [
-					2960.0,
-					2224.0
+					2128.0,
+					4688.0
 				]
 			},
 			"subject": "mark",
@@ -397,14 +457,14 @@
 			"condition": "offered",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2109.37,
+				4649.75
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					1840.0,
+					4319.1143
 				]
 			},
 			"subject": "task",
@@ -414,14 +474,14 @@
 			"condition": "arrowed",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2109.37,
+				4649.75
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					1840.0,
+					4319.1143
 				]
 			},
 			"subject": "task",
@@ -431,14 +491,14 @@
 			"condition": "off_screen",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2109.37,
+				4649.75
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					1840.0,
+					4319.1143
 				]
 			},
 			"subject": "task",
@@ -447,17 +507,17 @@
 		{
 			"at": "mark",
 			"condition": "beyond",
-			"distance": 540.0,
+			"distance": 364.0,
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2109.37,
+				4649.75
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					1840.0,
+					4319.1143
 				]
 			},
 			"subject": "task",
@@ -466,17 +526,17 @@
 		{
 			"at": "mark",
 			"condition": "near",
-			"distance": 644.0,
+			"distance": 480.0,
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				2109.37,
+				4649.75
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					1840.0,
+					4319.1143
 				]
 			},
 			"subject": "task",
@@ -487,27 +547,44 @@
 			"condition": "crowd",
 			"passed": true,
 			"player_at": [
-				2684.17,
-				2263.19
+				1826.29,
+				4196.8
 			],
 			"state": {
 				"carrying": false,
 				"gait_frame": 1,
 				"position": [
-					2684.1702,
-					2263.1936
+					1826.2854,
+					4196.7988
 				],
 				"speed": 92.0
 			},
 			"subject": "player",
-			"tick": 150.0,
+			"tick": 300.0,
 			"walkers": 2.0
+		},
+		{
+			"condition": "offered",
+			"passed": true,
+			"player_at": [
+				1826.29,
+				4160.0
+			],
+			"state": {
+				"done": false,
+				"position": [
+					1840.0,
+					3932.5229
+				]
+			},
+			"subject": "task",
+			"tick": 312.0
 		}
 	],
 	"physics_ticks_per_second": 30,
 	"playback_complete": false,
-	"recipe": "Day 7: the package at the van where her path first reaches 576px, read on a walk from the unread mark",
-	"recipe_sha256": "ac5e964bb06a4057ac716f6ebde20d5b6c6de3dfc2c429b0eba72cea0d80869d",
+	"recipe": "Day 10: warning the neighbor, who starts 400px or more from her on their walk home, read on a walk from the unread mark",
+	"recipe_sha256": "f977c8dea1f4b76227a01336d8213cee716d11819b17086423b898700c8fed1d",
 	"route_bag": {
 		"marbles": 14,
 		"owed": 14,
@@ -521,115 +598,170 @@
 		"actors": [
 			{
 				"at": [
-					2250.75,
-					2352.0
+					1904.0,
+					3640.75
 				],
-				"direction": "east",
+				"direction": "north",
 				"kind": "car",
 				"name": "car_1",
-				"speed": 182.4326
+				"speed": 180.4859
 			},
 			{
 				"at": [
-					2404.29,
-					2248.0
-				],
-				"direction": "west",
-				"kind": "walker",
-				"name": "walker_1",
-				"speed": 66.6712
-			},
-			{
-				"at": [
-					2434.96,
-					2248.0
-				],
-				"direction": "east",
-				"kind": "walker",
-				"name": "walker_2",
-				"speed": 68.0652
-			},
-			{
-				"at": [
-					2654.18,
-					2248.0
-				],
-				"direction": "east",
-				"kind": "walker",
-				"name": "walker_3",
-				"speed": 66.936
-			},
-			{
-				"at": [
-					2345.21,
-					2296.0
-				],
-				"direction": "east",
-				"kind": "walker",
-				"name": "walker_4",
-				"speed": 71.9687
-			},
-			{
-				"at": [
-					2242.26,
-					2376.0
-				],
-				"direction": "east",
-				"kind": "walker",
-				"name": "walker_5",
-				"speed": 55.4344
-			},
-			{
-				"at": [
-					2807.01,
-					2376.0
-				],
-				"direction": "east",
-				"kind": "walker",
-				"name": "walker_6",
-				"speed": 48.6087
-			},
-			{
-				"at": [
-					2424.0,
-					2394.44
+					1848.0,
+					3630.07
 				],
 				"direction": "north",
 				"kind": "walker",
-				"name": "walker_7",
-				"speed": 71.732
+				"name": "walker_1",
+				"speed": 52.3623
 			},
 			{
 				"at": [
-					2691.41,
-					2424.0
+					1848.0,
+					3668.66
 				],
-				"direction": "east",
+				"direction": "south",
+				"kind": "walker",
+				"name": "walker_2",
+				"speed": 72.5562
+			},
+			{
+				"at": [
+					1848.0,
+					4151.3
+				],
+				"direction": "south",
+				"kind": "walker",
+				"name": "walker_3",
+				"speed": 62.1091
+			},
+			{
+				"at": [
+					1848.0,
+					4317.21
+				],
+				"direction": "north",
+				"kind": "walker",
+				"name": "walker_4",
+				"speed": 46.6656
+			},
+			{
+				"at": [
+					1976.0,
+					4360.34
+				],
+				"direction": "south",
+				"kind": "walker",
+				"name": "walker_5",
+				"speed": 66.2562
+			},
+			{
+				"at": [
+					1848.0,
+					4361.63
+				],
+				"direction": "north",
+				"kind": "walker",
+				"name": "walker_6",
+				"speed": 66.2991
+			},
+			{
+				"at": [
+					1976.0,
+					4479.17
+				],
+				"direction": "south",
+				"kind": "walker",
+				"name": "walker_7",
+				"speed": 59.897
+			},
+			{
+				"at": [
+					1995.75,
+					4488.0
+				],
+				"direction": "west",
 				"kind": "walker",
 				"name": "walker_8",
-				"speed": 58.9632
+				"speed": 64.5376
+			},
+			{
+				"at": [
+					1800.0,
+					4624.11
+				],
+				"direction": "south",
+				"kind": "walker",
+				"name": "walker_9",
+				"speed": 57.5724
+			},
+			{
+				"at": [
+					1976.0,
+					4658.63
+				],
+				"direction": "south",
+				"kind": "walker",
+				"name": "walker_10",
+				"speed": 72.8687
 			}
 		],
-		"day": 7.0,
+		"day": 10.0,
 		"parent": "mother",
 		"player": {
 			"at": "start",
-			"facing": "east"
+			"facing": "west"
 		},
 		"posters": [
 			{
 				"at": [
-					2480.0,
-					2256.0
+					2000.0,
+					4496.0
 				],
-				"kind": "rules"
+				"kind": "uniform"
 			},
 			{
 				"at": [
-					2512.0,
-					2256.0
+					2032.0,
+					4496.0
 				],
-				"kind": "rules"
+				"kind": "uniform"
+			},
+			{
+				"at": [
+					2064.0,
+					4496.0
+				],
+				"kind": "uniform"
+			},
+			{
+				"at": [
+					2128.0,
+					4496.0
+				],
+				"kind": "uniform"
+			},
+			{
+				"at": [
+					2160.0,
+					4496.0
+				],
+				"kind": "uniform"
+			},
+			{
+				"at": [
+					2192.0,
+					4496.0
+				],
+				"kind": "uniform"
+			},
+			{
+				"at": [
+					2224.0,
+					4496.0
+				],
+				"kind": "uniform"
 			}
 		],
 		"route_bag": {
@@ -656,27 +788,28 @@
 			]
 		},
 		"task": {
-			"mark": "mark"
+			"mark": "mark",
+			"neighbor": "neighbor"
 		},
 		"tutorial_complete": true
 	},
 	"task": {
 		"arrow": [
-			2416.0,
-			2256.0
+			1840.0,
+			4336.0
 		],
-		"distance": 544.94,
+		"distance": 454.81,
 		"mark": [
-			2960.0,
-			2224.0
+			2128.0,
+			4688.0
 		],
-		"read_tick": 48,
-		"step": 4,
+		"read_tick": 49,
+		"step": 10,
 		"target": [
-			2416.0,
-			2256.0
+			1840.0,
+			4336.0
 		],
-		"title": "The package"
+		"title": "Warn the neighbor"
 	},
 	"violations": []
 }

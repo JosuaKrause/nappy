@@ -1,30 +1,15 @@
 {
 	"anchors": {
 		"mark": [
-			2960.0,
-			2224.0
+			3344.0,
+			304.0
 		],
 		"start": [
-			2800.0,
-			2256.0
+			3184.0,
+			304.0
 		]
 	},
-	"authored_posters": [
-		{
-			"at": [
-				2480.0,
-				2256.0
-			],
-			"kind": "rules"
-		},
-		{
-			"at": [
-				2512.0,
-				2256.0
-			],
-			"kind": "rules"
-		}
-	],
+	"authored_posters": [],
 	"bounds": [
 		0,
 		0,
@@ -32,139 +17,132 @@
 		160
 	],
 	"capture_activity": {
-		"moving_crowd": 7,
-		"visible_cars": 1,
+		"moving_crowd": 3,
+		"visible_cars": 0,
 		"visible_events": {
-			"delivery_van": 1,
-			"van_guard_giving_chase": 1
+			"alley_robbery": 1,
+			"cat_dash": 1
 		},
-		"visible_walkers": 6,
+		"visible_walkers": 3,
 		"walker_streets": {
-			"h5": {
-				"moving": 5,
-				"walkers": 5
-			},
-			"v5": {
-				"moving": 1,
-				"walkers": 1
+			"h1": {
+				"moving": 3,
+				"walkers": 3
 			}
 		},
 		"walkers_left": 1,
-		"walkers_right": 5
+		"walkers_right": 2
 	},
 	"capture_actors": {
 		"car_1": {
 			"position": [
-				2364.6091,
-				2320.0
+				3248.0,
+				581.5756
+			]
+		},
+		"car_2": {
+			"position": [
+				3248.0,
+				911.5712
 			]
 		},
 		"mark": {
 			"done": true,
 			"position": [
-				2960.0,
-				2224.0
+				3344.0,
+				304.0
 			]
 		},
 		"player": {
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2459.1646,
-				2263.3489
+				3573.853,
+				462.1062
 			],
-			"speed": 0.0
-		},
-		"rider": {
-			"position": [
-				2416.0,
-				2256.0
-			],
-			"pursuing": false,
-			"row": "delivery_van",
-			"telegraphing": false
+			"speed": 1.3333
 		},
 		"task": {
-			"done": true,
+			"done": false,
 			"position": [
-				2416.0,
-				2256.0
+				3168.0,
+				880.0
 			]
 		},
 		"walker_1": {
 			"position": [
-				2557.2715,
-				2376.0
+				3388.1079,
+				456.0
 			]
 		},
 		"walker_2": {
 			"position": [
-				2877.0769,
-				2248.0
+				3144.0,
+				505.6084
 			]
 		},
 		"walker_3": {
 			"position": [
-				2279.0566,
-				2257.3167
+				3320.0,
+				1013.9875
 			]
 		},
 		"walker_4": {
 			"position": [
-				2970.9424,
-				2296.0
+				3272.0,
+				1063.6132
 			]
 		},
 		"walker_5": {
 			"position": [
-				2724.2354,
-				2376.0
+				3144.0,
+				125.1547
 			]
 		},
 		"walker_6": {
 			"position": [
-				2466.4482,
-				2376.0
+				3708.0903,
+				584.0
 			]
 		},
 		"walker_7": {
 			"position": [
-				2424.0,
-				2272.0
+				3718.3489,
+				632.0
 			]
 		},
 		"walker_8": {
 			"position": [
-				2492.3257,
-				2424.0
+				3320.0,
+				911.6508
 			]
 		}
 	},
 	"capture_camera": {
 		"position": [
-			2459.16455078125,
-			2263.34887695312
+			3573.85302734375,
+			462.106231689453
 		],
 		"zoom": 2.0
 	},
 	"capture_crowd": {
-		"cars": 1,
+		"cars": 2,
 		"moving": 9,
 		"moving_cars": 1,
 		"quadrants": {
 			"ne": {
-				"cars": 0,
-				"moving": 3,
-				"moving_cars": 0,
-				"total": 3,
-				"walkers": 3
+				"cars": 2,
+				"moving": 9,
+				"moving_cars": 1,
+				"total": 10,
+				"walkers": 8
 			},
 			"nw": {
-				"cars": 1,
-				"moving": 6,
-				"moving_cars": 1,
-				"total": 6,
-				"walkers": 5
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
 			},
 			"se": {
 				"cars": 0,
@@ -182,123 +160,135 @@
 			}
 		},
 		"scope": "local",
-		"total": 9,
+		"total": 10,
 		"walkers": 8
 	},
-	"capture_tick": 261,
+	"capture_tick": 276,
 	"checks": [
 		"construction_schema",
 		"explicit_city_context",
 		"authored_placements"
 	],
 	"classification": "normal",
-	"context_sha256": "4f0d2a7ffeefae6c7415da8fd6273193cadfb90b8243a32bc38cfa01a5496fd8",
+	"context_sha256": "f53a0df1a6563b28a6d19a7b8c3ba562308999e3007312e205591bfa945ddb30",
 	"engine": "4.7.2-stable (official)",
 	"expected_violations": [],
 	"initial_activity": {
 		"moving_crowd": 3,
 		"visible_cars": 0,
-		"visible_events": {},
+		"visible_events": {
+			"alley_robbery": 1
+		},
 		"visible_walkers": 3,
 		"walker_streets": {
-			"h5": {
-				"moving": 3,
-				"walkers": 3
+			"h0": {
+				"moving": 2,
+				"walkers": 2
+			},
+			"v7": {
+				"moving": 1,
+				"walkers": 1
 			}
 		},
-		"walkers_left": 2,
-		"walkers_right": 1
+		"walkers_left": 0,
+		"walkers_right": 3
 	},
 	"initial_actors": {
 		"car_1": {
 			"position": [
-				2250.75,
-				2352.0
+				3664.0,
+				465.94
+			]
+		},
+		"car_2": {
+			"position": [
+				3664.3401,
+				528.0
 			]
 		},
 		"mark": {
 			"done": false,
 			"position": [
-				2960.0,
-				2224.0
+				3344.0,
+				304.0
 			]
 		},
 		"player": {
 			"carrying": false,
 			"gait_frame": 1,
 			"position": [
-				2800.0,
-				2256.0
+				3184.0,
+				304.0
 			],
 			"speed": 0.0
 		},
 		"walker_1": {
 			"position": [
-				2404.29,
-				2248.0
+				3277.3401,
+				184.0
 			]
 		},
 		"walker_2": {
 			"position": [
-				2434.96,
-				2248.0
+				3305.45,
+				184.0
 			]
 		},
 		"walker_3": {
 			"position": [
-				2654.1799,
-				2248.0
+				3320.0,
+				347.48
 			]
 		},
 		"walker_4": {
 			"position": [
-				2345.21,
-				2296.0
+				3640.0,
+				553.86
 			]
 		},
 		"walker_5": {
 			"position": [
-				2242.26,
-				2376.0
+				3172.24,
+				584.0
 			]
 		},
 		"walker_6": {
 			"position": [
-				2807.01,
-				2376.0
+				3270.04,
+				584.0
 			]
 		},
 		"walker_7": {
 			"position": [
-				2424.0,
-				2394.4399
+				3270.4399,
+				632.0
 			]
 		},
 		"walker_8": {
 			"position": [
-				2691.4099,
-				2424.0
+				3272.0,
+				705.56
 			]
 		}
 	},
 	"initial_crowd": {
-		"cars": 1,
-		"moving": 9,
-		"moving_cars": 1,
+		"cars": 2,
+		"moving": 10,
+		"moving_cars": 2,
 		"quadrants": {
 			"ne": {
-				"cars": 0,
-				"moving": 3,
-				"moving_cars": 0,
-				"total": 3,
-				"walkers": 3
+				"cars": 2,
+				"moving": 10,
+				"moving_cars": 2,
+				"total": 10,
+				"walkers": 8
 			},
 			"nw": {
-				"cars": 1,
-				"moving": 6,
-				"moving_cars": 1,
-				"total": 6,
-				"walkers": 5
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
 			},
 			"se": {
 				"cars": 0,
@@ -316,23 +306,57 @@
 			}
 		},
 		"scope": "local",
-		"total": 9,
+		"total": 10,
 		"walkers": 8
 	},
-	"installed_events": [],
+	"installed_events": [
+		{
+			"facing": [
+				0.0,
+				1.0
+			],
+			"position": [
+				3168.0,
+				880.0
+			],
+			"row": "checkpoint_hut"
+		},
+		{
+			"facing": [
+				0.0,
+				1.0
+			],
+			"position": [
+				3232.0,
+				880.0
+			],
+			"row": "checkpoint_gate"
+		},
+		{
+			"facing": [
+				0.0,
+				1.0
+			],
+			"position": [
+				3296.0,
+				880.0
+			],
+			"row": "checkpoint_hut"
+		}
+	],
 	"observations": [
 		{
 			"condition": "offered",
 			"passed": true,
 			"player_at": [
-				2800.77,
-				2255.93
+				3184.78,
+				304.0
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2960.0,
-					2224.0
+					3344.0,
+					304.0
 				]
 			},
 			"subject": "mark",
@@ -342,14 +366,14 @@
 			"condition": "unarrowed",
 			"passed": true,
 			"player_at": [
-				2800.77,
-				2255.93
+				3184.78,
+				304.0
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2960.0,
-					2224.0
+					3344.0,
+					304.0
 				]
 			},
 			"subject": "mark",
@@ -361,15 +385,15 @@
 			"distance": 150.0,
 			"passed": true,
 			"player_at": [
-				2800.77,
-				2255.93
+				3184.78,
+				304.0
 			],
 			"state": {
 				"carrying": false,
 				"gait_frame": 0,
 				"position": [
-					2800.7749,
-					2255.9321
+					3184.7778,
+					304.0
 				],
 				"speed": 23.3333
 			},
@@ -380,14 +404,14 @@
 			"condition": "done",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				3341.69,
+				303.94
 			],
 			"state": {
 				"done": true,
 				"position": [
-					2960.0,
-					2224.0
+					3344.0,
+					304.0
 				]
 			},
 			"subject": "mark",
@@ -397,14 +421,14 @@
 			"condition": "offered",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				3341.69,
+				303.94
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					3168.0,
+					880.0
 				]
 			},
 			"subject": "task",
@@ -414,14 +438,14 @@
 			"condition": "arrowed",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				3341.69,
+				303.94
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					3168.0,
+					880.0
 				]
 			},
 			"subject": "task",
@@ -431,14 +455,14 @@
 			"condition": "off_screen",
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				3341.69,
+				303.94
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					3168.0,
+					880.0
 				]
 			},
 			"subject": "task",
@@ -450,14 +474,14 @@
 			"distance": 540.0,
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				3341.69,
+				303.94
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					3168.0,
+					880.0
 				]
 			},
 			"subject": "task",
@@ -466,48 +490,27 @@
 		{
 			"at": "mark",
 			"condition": "near",
-			"distance": 644.0,
+			"distance": 676.0,
 			"passed": true,
 			"player_at": [
-				2959.25,
-				2253.23
+				3341.69,
+				303.94
 			],
 			"state": {
 				"done": false,
 				"position": [
-					2416.0,
-					2256.0
+					3168.0,
+					880.0
 				]
 			},
 			"subject": "task",
 			"tick": 60.0
-		},
-		{
-			"cars": 1.0,
-			"condition": "crowd",
-			"passed": true,
-			"player_at": [
-				2684.17,
-				2263.19
-			],
-			"state": {
-				"carrying": false,
-				"gait_frame": 1,
-				"position": [
-					2684.1702,
-					2263.1936
-				],
-				"speed": 92.0
-			},
-			"subject": "player",
-			"tick": 150.0,
-			"walkers": 2.0
 		}
 	],
 	"physics_ticks_per_second": 30,
 	"playback_complete": false,
-	"recipe": "Day 7: the package at the van where her path first reaches 576px, read on a walk from the unread mark",
-	"recipe_sha256": "ac5e964bb06a4057ac716f6ebde20d5b6c6de3dfc2c429b0eba72cea0d80869d",
+	"recipe": "Day 9: crossing the district door, its gatehouse 602px from the mark, read on a walk from the unread mark",
+	"recipe_sha256": "20254ad9518c1160cc6b8e528fd808ac218259b7e09326057e5fcffa1072134e",
 	"route_bag": {
 		"marbles": 14,
 		"owed": 14,
@@ -521,119 +524,123 @@
 		"actors": [
 			{
 				"at": [
-					2250.75,
-					2352.0
+					3664.0,
+					465.94
 				],
-				"direction": "east",
+				"direction": "south",
 				"kind": "car",
 				"name": "car_1",
-				"speed": 182.4326
+				"speed": 137.1088
 			},
 			{
 				"at": [
-					2404.29,
-					2248.0
+					3664.34,
+					528.0
+				],
+				"direction": "west",
+				"kind": "car",
+				"name": "car_2",
+				"speed": 157.2672
+			},
+			{
+				"at": [
+					3277.34,
+					184.0
+				],
+				"direction": "east",
+				"kind": "walker",
+				"name": "walker_1",
+				"speed": 52.5036
+			},
+			{
+				"at": [
+					3305.45,
+					184.0
 				],
 				"direction": "west",
 				"kind": "walker",
-				"name": "walker_1",
-				"speed": 66.6712
-			},
-			{
-				"at": [
-					2434.96,
-					2248.0
-				],
-				"direction": "east",
-				"kind": "walker",
 				"name": "walker_2",
-				"speed": 68.0652
+				"speed": 68.5999
 			},
 			{
 				"at": [
-					2654.18,
-					2248.0
+					3320.0,
+					347.48
 				],
-				"direction": "east",
+				"direction": "south",
 				"kind": "walker",
 				"name": "walker_3",
-				"speed": 66.936
+				"speed": 72.4543
 			},
 			{
 				"at": [
-					2345.21,
-					2296.0
+					3640.0,
+					553.86
 				],
-				"direction": "east",
+				"direction": "south",
 				"kind": "walker",
 				"name": "walker_4",
-				"speed": 71.9687
+				"speed": 60.1146
 			},
 			{
 				"at": [
-					2242.26,
-					2376.0
+					3172.24,
+					584.0
 				],
-				"direction": "east",
+				"direction": "west",
 				"kind": "walker",
 				"name": "walker_5",
-				"speed": 55.4344
+				"speed": 51.4183
 			},
 			{
 				"at": [
-					2807.01,
-					2376.0
+					3270.04,
+					584.0
 				],
 				"direction": "east",
 				"kind": "walker",
 				"name": "walker_6",
-				"speed": 48.6087
+				"speed": 55.4495
 			},
 			{
 				"at": [
-					2424.0,
-					2394.44
-				],
-				"direction": "north",
-				"kind": "walker",
-				"name": "walker_7",
-				"speed": 71.732
-			},
-			{
-				"at": [
-					2691.41,
-					2424.0
+					3270.44,
+					632.0
 				],
 				"direction": "east",
 				"kind": "walker",
+				"name": "walker_7",
+				"speed": 54.3255
+			},
+			{
+				"at": [
+					3272.0,
+					705.56
+				],
+				"direction": "south",
+				"kind": "walker",
 				"name": "walker_8",
-				"speed": 58.9632
+				"speed": 48.1196
 			}
 		],
-		"day": 7.0,
+		"day": 9.0,
+		"gates": [
+			{
+				"segment": [
+					7.0,
+					1.0,
+					1.0
+				]
+			}
+		],
 		"parent": "mother",
 		"player": {
 			"at": "start",
 			"facing": "east"
 		},
-		"posters": [
-			{
-				"at": [
-					2480.0,
-					2256.0
-				],
-				"kind": "rules"
-			},
-			{
-				"at": [
-					2512.0,
-					2256.0
-				],
-				"kind": "rules"
-			}
-		],
+		"posters": [],
 		"route_bag": {
-			"first_after": 3.0,
+			"first_after": 6.0,
 			"marbles": [
 				"cat_dash",
 				"cat_dash",
@@ -662,21 +669,21 @@
 	},
 	"task": {
 		"arrow": [
-			2416.0,
-			2256.0
+			3168.0,
+			880.0
 		],
-		"distance": 544.94,
+		"distance": 602.29,
 		"mark": [
-			2960.0,
-			2224.0
+			3344.0,
+			304.0
 		],
-		"read_tick": 48,
-		"step": 4,
+		"read_tick": 42,
+		"step": 8,
 		"target": [
-			2416.0,
-			2256.0
+			3168.0,
+			880.0
 		],
-		"title": "The package"
+		"title": "The crossing"
 	},
 	"violations": []
 }
