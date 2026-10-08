@@ -4,6 +4,13 @@ leg pairs so the rider sits astride the bicycle: the far leg is behind the frame
 leg in front, with coherent hips, knees, feet and pedal contact in both phases. Check their
 western mirrors too. The southeast second eye remains part of the repair.
 
+Apply [dappled-dolphin](../../playtests/2026-10-07-dappled-dolphin.md) to candidate 2 specifically:
+the northeast leg currently in front in frame B belongs behind the bicycle frame. Keep that
+leg's identity and depth consistent across A/B, and move its frame-A attachment to match
+frame B. In the east-facing view, the near leg must cover the vertical frame bar where the
+pedals attach. Inspect the A/B transition as well as the isolated pictures; a painter-order
+change that swaps the two legs between poses does not satisfy the repair.
+
 **Proposed, not asked for:** stage the SVG painter order as far leg, bicycle frame, near leg,
 and hide the northeast wing roots behind the back silhouette so only the forward reach is
 visible. The alternative is adjusting the pose without that clear depth separation; this

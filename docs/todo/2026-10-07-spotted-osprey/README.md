@@ -8,3 +8,7 @@ judges the first attempt: "north eastern's arms are still on its back. the legs 
 front of the bike for both directions", then adds the east-facing view: "let's fix that one, too".
 The open PR retains this correction; the [record](../../decisions/2026-10-07-spotted-osprey.md)
 holds the attempt and its evidence. The work is [straddle-the-frame.md](straddle-the-frame.md).
+
+[Dappled-dolphin](../../playtests/2026-10-07-dappled-dolphin.md) identifies the next correction:
+northeast A/B must retain each leg's side of the bike and match its hip attachment; the
+east-facing near leg must pass in front of the vertical bar at the pedals.
