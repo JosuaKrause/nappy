@@ -33,6 +33,51 @@ uv run python docs/evidence/pelican-diagonals-2026-10-07/label-current.py \
     "$pelican_current/render" "$pelican_current" --candidate 4
 ```
 
+## Current runtime evidence
+
+`candidate-4-runtime.mp4` shows 36 frames over 2.925106 seconds, at normal 2× camera scale.
+The columns are NE, SE, E, NW, SW and W. `candidate-4-runtime.json` retains original timing and
+pedal-phase values: every rider shows both phases, with 27 captured phase changes.
+`candidate-4-runtime.png` is the first frame for a directly embeddable view.
+
+This uses production `EventInstance` movement, gait selection and rendering on six fixed
+routes. Carriers follow their riders to keep the feet visible. It establishes runtime
+layering and frame transitions, not city placement, route frequency, collision or cost.
+The 940×240 fixture has a neutral background and no player. No random seed applies.
+Godot 4.7.2 desktop Compatibility runs on Apple M2, with `--no-save --invincible` and a
+12-second collector deadline backed by a 20-second external deadline. No engine errors or
+warnings occur in this capture.
+
+The artwork and production sources are commit `c02d6a70f066ea05b7d2543ee80d46f1b6889602`.
+Only the evidence collector and scene are uncommitted at capture time: `runtime-current.gd`
+has SHA-256 `2f760a40cefbf6018a68bcd6937e6a7d8f68fd27c96fb5c79dc4284746e62d3e`.
+Fetch `refs/pull/605/head` before checking out the commit that adds these runtime artifacts.
+With that checkout, rerun from its root and set `$GODOT` to the engine:
+
+```sh
+./tools/check.sh
+pelican_run=$(mktemp -d)
+source tools/lib_disk_headroom.sh
+headroom_preflight pelican-burst "$pelican_run" "36 bounded frames" shot:36 || exit 1
+source tools/lib_dev_flags.sh
+PELICAN_CAPTURE_OUTPUT="$pelican_run" "$GODOT" --path "$PWD" --resolution 940x240 \
+    --disable-vsync res://docs/evidence/pelican-diagonals-2026-10-07/runtime-current.tscn -- \
+    --no-save --invincible &
+pelican_pid=$!
+wait_or_kill "$pelican_pid" 20 || exit 1
+test "$WAIT_OR_KILL_STATUS" -eq 0
+./tools/clip.sh "$pelican_run" "$pelican_run/runtime.mp4"
+```
+
+Retained for this run: short clip, original timing/phase record, one still and the collector
+with its scene. The other raw frames and generic engine output are redundant and stay out.
+XML, source geometry/depth checks, import/boot and doc lint pass. The labeler passes ruff.
+The Python gate's other suites pass; three disk-headroom assertions fail under the sandbox
+because Apple's git launcher writes `xcrun_db` inside a temporary directory expected empty.
+Running `/usr/bin/git --version` with a fresh `TMPDIR` reproduces that external write.
+The focused `tools/test_disk_headroom.py` suite passes without the sandbox, with its existing
+one skipped test. No tooling source changes are part of this repair.
+
 ## Third-attempt evidence
 
 `candidate-3-1x.png` and `candidate-3-6x.png` document source revision
