@@ -51,7 +51,7 @@ source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 
 usage() {
     cat <<EOF
-usage: tools/trailer.sh [--help|-h] [--list | --validate | --auditions | --shot NAME | --check NAME|all | --check-load NAME|all]
+usage: tools/trailer.sh [--help|-h] [--list | --validate | --auditions | --auditions-reuse | --shot NAME | --check NAME|all | --check-load NAME|all]
 
 Renders the trailer from tools/trailer/shots.json: gameplay shots through Godot's movie writer,
 frame-locked, at the game's own resolution with its audio; editorial cards and the deterministic
@@ -61,6 +61,8 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
   (no flag)        render every shot and join them into TRAILER_OUT/trailer.mp4
   --auditions      capture one clean game-audio base, then build three complete score mixes in
                    TRAILER_OUT; a matching retained base is reused on later score-only runs
+  --auditions-reuse  build the three mixes only when a compatible retained base exists; refuse
+                     a mismatch without opening a recording window
   --shot NAME      render one shot alone into TRAILER_OUT/shot-NAME.mp4
   --check NAME     render the shot twice and compare every frame's hash; exits non-zero on a
                    difference inside the shot's cut
@@ -94,7 +96,7 @@ TARGET=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --help|-h) usage; exit 0 ;;
-        --list|--validate|--auditions)
+        --list|--validate|--auditions|--auditions-reuse)
             [[ "$MODE" == "all" ]] || { echo "$1 cannot be combined with --$MODE" >&2; usage >&2; exit 1; }
             MODE="${1#--}"; shift ;;
         --shot|--check|--check-load)
@@ -118,7 +120,7 @@ if [[ ! -f "$SHOTS_FILE" ]]; then
     echo "trailer.sh: no shot list at ${SHOTS_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
-if [[ "$MODE" == auditions && ! -f "$SCORES_FILE" ]]; then
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse ]] && [[ ! -f "$SCORES_FILE" ]]; then
     echo "trailer.sh: no audition score list at ${SCORES_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
@@ -217,7 +219,7 @@ if [[ -n "$schema_errors" ]]; then
     exit 1
 fi
 
-if [[ "$MODE" == auditions ]]; then
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse ]]; then
     score_errors="$(jq -r '
         def num: type == "number";
         (if (keys - ["game_gain","target_mean_db","peak_ceiling_db","options"] | length) == 0
@@ -297,7 +299,7 @@ shot_render_seconds() {
 total_seconds="$(jq -r '[.shots[] | (.gap // 0) + .length] | add' "$SHOTS_FILE" |
     awk '{ printf "%.2f\n", $1 }')"
 RESOLVED_SCORES=""
-if [[ "$MODE" == auditions ]]; then
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse ]]; then
     RESOLVED_SCORES="$(jq -n --slurpfile cut "$SHOTS_FILE" --slurpfile scores "$SCORES_FILE" '
         (reduce $cut[0].shots[] as $shot ({elapsed:0,starts:{}};
             .starts[$shot.name] = (.elapsed + ($shot.gap // 0)) |
@@ -470,6 +472,7 @@ render_seconds_total="$(for name in "${targets[@]}"; do
     shot_render_seconds "$name"
 done |
     awk '{ s += $1 } END { printf "%d\n", (s == int(s)) ? s : int(s) + 1 }')"
+[[ "$MODE" == auditions-reuse ]] && render_seconds_total=0
 if [[ "$render_seconds_total" -gt 0 ]]; then
     headroom_preflight tools/trailer.sh "$WORK" \
         "render fewer shots: --shot NAME renders one, and the shot list's lengths set the rest" \
@@ -1191,7 +1194,7 @@ case "$MODE" in
         join_shots false "$WORK/00.mkv"
         echo "wrote ${OUTPUT#"$PROJECT_DIR"/}"
         ;;
-    auditions)
+    auditions|auditions-reuse)
         mkdir -p "$OUT_DIR/source"
         printf '%s\n' "$RESOLVED_SCORES" > "$OUT_DIR/source/resolved-scores.json"
         cp "$SCORES_FILE" "$OUT_DIR/source/scores.json"
@@ -1206,6 +1209,10 @@ case "$MODE" in
             echo "reusing the matching retained clean game-audio base" >&2
         fi
         if [[ "$reuse_base" == false ]]; then
+            if [[ "$MODE" == auditions-reuse ]]; then
+                echo "trailer.sh: retained clean audition base is absent or incompatible; refusing to recapture in --auditions-reuse mode" >&2
+                exit 1
+            fi
             encoded=()
             i=0
             for name in "${SHOT_NAMES[@]}"; do

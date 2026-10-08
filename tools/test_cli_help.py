@@ -172,6 +172,23 @@ class CliHelpTests(unittest.TestCase):
             calls = (root / "calls").read_text().splitlines()
             self.assertTrue(any("--write-movie" in call and "--after 10.000" in call for call in calls))
 
+    def test_trailer_reuse_mode_never_records_without_a_compatible_base(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script, env = self.recipe_trailer_fixture(root)
+            result = subprocess.run(
+                [str(script), "--auditions-reuse"],
+                env=env,
+                text=True,
+                capture_output=True,
+                timeout=20,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("refusing to recapture", result.stderr)
+            calls = (root / "calls").read_text().splitlines()
+            self.assertTrue(calls)
+            self.assertTrue(all("--write-movie" not in call for call in calls))
+
     def test_trailer_rejects_font_substitution_before_recording(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
