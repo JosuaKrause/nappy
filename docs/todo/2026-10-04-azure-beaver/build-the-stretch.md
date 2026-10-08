@@ -1,13 +1,14 @@
-**Finish the scenes as fully editable recipes.** Load each task scene from its explicit data
-without running city generation or checking a seed-generated witness. Tiles, fronting buildings,
-trees, deterioration, posters, starting people and cars are editable in the recipe. Keep enough
-explicit context for the day's ordinary task, route and event rules to answer; do not weaken
-those rules to make a scene pass. A generator change must not change or reject an unchanged
-saved scene. A seed may still produce a first draft through the drafting tool.
+**Finish integration and review of the editable scenes.** Preserve the explicit-data loader:
+tiles, fronting buildings, trees, deterioration, posters, starting people and cars are editable
+without city generation or a seed-generated witness. Ordinary task, route and event rules still
+apply, and an unchanged saved scene remains independent of generator changes.
 
-Finish every outstanding PR #592 review finding: an event actually enters view in each scene;
-start and later stills demonstrate each stretch; walkers and cars enter and leave outside the
-whole camera or turn visibly at the end; assertions fail for unseen events and escaped bodies;
-the drafting tool fails on a crashed round. Reconcile the trailer's camera and landscape changes
-and task arrows when they land. Keep normal play unchanged, update the scene documentation and
-retain the recipes and meaningful evidence with provenance.
+Reconcile the trailer's camera, landscape and covered-window recording changes with the task
+arrows when they land. Preserve both the full authored stretch and the arrows' path-based
+selection and any eligible day-11 mast. Capture a short moving sequence after the recording
+fix is integrated; the retained covered-window attempt is frozen and cannot establish motion.
+Verify crowd entry and exit happen outside the whole camera or as visible turns at the ends.
+
+Reconcile the decision record and human review questions with the actual recipes and evidence.
+Finish the independent PR review, including the visible-event assertions, start/later stills,
+explicit-edit regressions and Linux capture-fixture check. Keep ordinary play unchanged.

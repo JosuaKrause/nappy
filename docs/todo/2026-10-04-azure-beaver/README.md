@@ -13,11 +13,13 @@ It includes people, wear and events so it is a useful test of a real day.
 question: "Finish fully handcrafted layouts now (Recommended)". Finish that design inside
 PR #592; the generated-layout alternative is not selected.
 
-The recipes contain explicit stretch data, actors and route bags, but runtime construction
-still generates a context city and checks that the listed tiles, lots and trees match it.
-That dependency must be removed: a seed is an optional drafting input, not a runtime source
-of scene placement. The existing review also requires visible events, start and later
-pictures, and no crowd appearing or disappearing in view at the stretch ends.
+The recipes load explicit map context and editable stretch placements. A seed is an optional
+drafting input, not a runtime source of scene placement. Final integration with the trailer
+and task arrows, motion evidence and review remain in [build the stretch](build-the-stretch.md).
+
+[pebbly-hare](../../playtests/2026-10-08-pebbly-hare.md), inbox #622, asks whether scene
+recipes are ignored in production. They are present in the published package. The proposed
+exclusion and local-loading checks are in [development recipe packaging](development-recipe-packaging.md).
 
 The [decision record](../../decisions/2026-10-04-azure-beaver.md) retains the partial work and
 the rejected generated-city dependency. Ordinary generated play keeps its existing behavior.
