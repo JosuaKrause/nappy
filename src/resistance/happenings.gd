@@ -383,10 +383,10 @@ func _close_a_ring(delta: float) -> void:
 ## point level with her once she comes within `Tuning.COLUMN_WITHIN` of the main road — or at
 ## `Tuning.COLUMN_BY` into the day wherever she is, when it passes out of her sight. Each truck is
 ## the catalogue's own row with its own telegraph contract, and the column arrives the way
-## everything from off screen does (`EventManager.warn_first()`): its badge goes up first, pointing
-## up the main road, its place stays in its lane level with her and just off screen
-## (`PendingWarning.in_its_lane()`), and the trucks are created there, their telegraph spent, once
-## the row's `telegraph_time` is over, and drive on past her.
+## everything from off screen does (`EventManager.warn_first()`): its badge goes up first, alone for
+## at most `Tuning.WARNING_ALONE_MAX`, pointing up the main road, and the trucks are then created in
+## their lane level with her and just out of sight (`PendingWarning.in_its_lane()`), their telegraph
+## spent, and drive on past her.
 ##
 ## **What it leaves is the barricade** its rear truck stops at, out of her sight beyond where she
 ## stood — or, where nothing beyond her will do, short of her on the stretch it drives in on — the
@@ -401,8 +401,9 @@ func _maybe_the_column(her: Vector2) -> void:
 	var near := absf(her.x - _spine_x()) <= Tuning.COLUMN_WITHIN
 	if not (near and _walked >= EventDirector.ON_HER_WAY_AFTER) and _elapsed < Tuning.COLUMN_BY:
 		return
-	_column_owed = false
-	send_the_column(her)
+	# Still owed when the lane has no place off screen for it yet (she is at the road's very end):
+	# asked again as she moves.
+	_column_owed = send_the_column(her) == null
 
 ## The main road's middle, across it.
 func _spine_x() -> float:
@@ -419,8 +420,9 @@ func send_the_column(her: Vector2) -> PendingWarning:
 	var going := 1.0 if _rng.randf() < 0.5 else -1.0
 	var top := Tuning.TILE_SIZE * 0.5
 	var bottom := _map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
-	var lead := Tuning.offscreen_lead(Vector2(0.0, -going), def.speed + Tuning.WALK_SPEED,
-			def.offscreen_notice)
+	# About as far up the lane as the front truck is created, just out of sight: the view's half
+	# height and the truck's own picture.
+	var lead := PendingWarning.least_distance() + EventInstance.box_of(def).size.y
 	var past := Tuning.OUT_OF_SIGHT + def.field_reach()
 	# From the end with room for its place behind her and a stop beyond her, when only one end has
 	# it; with neither, from the end with more road behind her. The spine leaves the map by a tunnel
@@ -438,13 +440,15 @@ func send_the_column(her: Vector2) -> PendingWarning:
 				going = -going
 	var lane_x := CrowdLanes.lane_centre(_map.main_road, CrowdLanes.road_lane(true, going))
 	var where := func(at: Vector2) -> Vector2:
-		return PendingWarning.in_its_lane(def, at, lane_x, going, top, bottom)
+		return PendingWarning.in_its_lane(def, at, lane_x, going, top, bottom,
+				_city.events.visible_view())
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		_bring_the_column(def, place, at, lane_x, going, top, bottom)
 		return true
 	var warning := _city.events.warn_first(def, her, where, arrive)
-	Telemetry.note("contact", "a column of %d trucks is coming down the main road %s" % [
-		Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north"])
+	if warning:
+		Telemetry.note("contact", "a column of %d trucks is coming down the main road %s" % [
+			Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north"])
 	return warning
 
 ## Creates the column's trucks, front first, the front one at `place` and the rest behind it up the

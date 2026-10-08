@@ -1,0 +1,15 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+      fire out: sited 20.1s in, 1956px ahead, first seen 47.6s later
+      fire home again: sited 18.0s in, 1490px ahead, first seen 18.2s later
+      the engine is created 429px from her after 1.03s of badge, its field reaching her 0.03s later
+-- test_event_manager.gd        41885 ms
+-- test_events_catalogue.gd     14886 ms
+-- test_events_costs.gd         48504 ms
+-- test_no_pop_in.gd             3515 ms
+-- test_resistance.gd          357484 ms
+-- test_visible_view.gd            27 ms
+
+97795 checks, 0 failures
+PARTIAL RUN — only suites matching resistance, event_manager, no_pop_in, visible_view, events_catalogue, events_costs. Not a green build.

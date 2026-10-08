@@ -5,9 +5,10 @@ extends RefCounted
 ## can see to the earliest moment the thing can reach her**, for the three answers she can give the
 ## instant she sees it — keep walking into it, stop, or turn round and walk away — against the floor
 ## the row's own fairness contract sets (`EventDef.minimum_telegraph()`:
-## `Tuning.OFFSCREEN_WARNING_MIN` for a row warned of before it exists, `loose_dog` excepted,
+## `Tuning.OFFSCREEN_WARNING_MIN` for a non-pursuer warned of before it exists,
 ## `Tuning.required_telegraph_time()` for an ordinary row, `Tuning.PURSUIT_MIN_NOTICE` for a
-## pursuer). Not a suite: it prints a table rather than asserting one, so it lives under
+## pursuer). A second table is M226's gold timing, the day-3 dog's breakdown as she meets it and the
+## resistance's two pursuers fitted to it (`gold()`). Not a suite: it prints a table rather than asserting one, so it lives under
 ## `tests/probes/`, where the runner never discovers it, and runs only by name:
 ##
 ##     tools/test.sh probes/m207_warning_lead.gd
@@ -20,11 +21,13 @@ extends RefCounted
 ## **The rig.** A real `EventInstance` of the catalogue's own def, never added to a tree, ticked at
 ## 60Hz beside her with `player_at` told to it every frame the way `EventManager` does. Open ground,
 ## no map: a straight street with nothing in it, so nothing but the row's own warning, siting and
-## speed decides the numbers. A row that is **warned of before it exists** — the cyclist, the loose
-## dog, the fire engine, day 13's column — is a real `PendingWarning` first, with the same place
-## function the game gives it (`PendingWarning.down_her_line()`, `on_its_route()`, `in_its_lane()`)
-## and nothing in the world; the instance is created where it points once the warning is over, its
-## telegraph spent, the way `EventManager.spawn_warned()` creates it. Every other row is placed the
+## speed decides the numbers. A row that is **warned of before it exists** — the cyclist, the
+## day-3 dog, the fire engine, day 13's column — is a real `PendingWarning` first, with the
+## same place function the game gives it (`PendingWarning.down_her_line()`, `along_her_heading()`,
+## `on_its_route()`, `in_its_lane()`, each with the camera on her) and nothing in the world; the
+## instance is created where it then points, just out of sight, once its badge alone is over, the way
+## `EventManager.spawn_warned()` creates it: a non-pursuer with its telegraph spent, a pursuer with
+## its approach still to run unless it arrives chasing. Every other row is placed the
 ## way the game places it — where `EventDirector` sites it, where a waiting row stands, where a
 ## `MAP` mover streams in.
 ##
@@ -61,8 +64,11 @@ const LIMIT := 30.0
 ## so a screen margin is half as many world px.
 const ZOOM := 2.0
 
-enum Answer { TOWARD, STAND, AWAY }
+enum Answer { TOWARD, STAND, AWAY, RUN }
 const ANSWERS := [Answer.TOWARD, Answer.STAND, Answer.AWAY]
+## The gold timing's answers: her three, and running away the moment she is warned, the one that has
+## to escape a pursuer (amendment 8 of M226).
+const GOLD_ANSWERS := [Answer.TOWARD, Answer.STAND, Answer.AWAY, Answer.RUN]
 
 func run(t) -> void:
 	var edge := DangerEdge.new()
@@ -81,10 +87,138 @@ func run(t) -> void:
 			overs.append("never" if result["lead"] == INF else "%+.2f" % (result["lead"] - floor_s))
 			if answer == Answer.TOWARD and result["created_at"] != INF:
 				exists = "%.2f" % result["created_at"]
-		print("| `%s` | %s | %s | %s | %s | %s | %.2f | %s |" % [encounter["def"].id,
-				encounter["how"], cells[0], cells[1], cells[2], exists, floor_s, " / ".join(overs)])
+		# A row that does not telegraph (`EventDef.telegraphs`) is outside the contract: no floor.
+		var telegraphs: bool = encounter["def"].telegraphs
+		print("| `%s` | %s | %s | %s | %s | %s | %s | %s |" % [encounter["def"].id,
+				encounter["how"], cells[0], cells[1], cells[2], exists,
+				"%.2f" % floor_s if telegraphs else "outside",
+				" / ".join(overs) if telegraphs else "—"])
+	_print_the_gold_timing(edge)
 	edge.free()
 	t.check(true, "zz_m207 warning lead probe ran")
+
+# ------------------------------------------------------------------- the gold timing ---
+# *(PLAYTEST-145: "the 2.9 is not important. what is important is the timing breakdown for the
+# pursuing dog during the tutorial -- this is the gold timing with warning time and onscreen pursuing
+# time seen as correct".)* M226 measures the day-3 dog's breakdown as she meets it, and the two
+# pursuers the resistance sends after her, which are fitted to it, before and after.
+
+## Prints the gold timing in the player's terms *(inbox #598: "the chase is what happens on screen
+## -- if the dog was placed off screen and it took a moment to come on screen that is not counted as
+## chase" · "off screen doesn't count toward the timing it only counts towards the warning timing")*:
+## for each pursuer sent at her from off screen and each of her three answers, seconds from the first
+## warning she can see to the pursuer first **visible** (anything it draws in view,
+## `EventInstance.footprint_of()`), to its **lunge** (its telegraph over, by the clock or by its
+## stand-off), and to it **catching her**; then the **warning**, which is the time until it is
+## visible, and the **chase**, from the lunge to the catch.
+static func _print_the_gold_timing(edge: DangerEdge) -> void:
+	print("\n== M226: the gold timing, seconds from the first warning ==")
+	print("| pursuer | answer | visible | lunges | catches her | warning | chase |")
+	print("|---|---|---|---|---|---|---|")
+	for encounter in gold_encounters():
+		for answer: Answer in GOLD_ANSWERS:
+			var result := gold(encounter, answer, edge)
+			var caught: bool = result["caught"]
+			print("| `%s`, %s | %s | %s | %s | %s | %s | %s |" % [encounter["def"].id,
+					encounter["how"], ["walking toward", "standing", "walking away", "running away"][answer],
+					_seconds(result["seen_at"]), _seconds(result["chase_at"]),
+					_seconds(result["caught_at"]) if caught else str(result["ends"]),
+					_seconds(result["seen_at"]),
+					_seconds(result["caught_at"] - result["chase_at"]) if caught else "—"])
+
+static func _seconds(value: float) -> String:
+	return "—" if value == INF else "%.2f" % value
+
+## The pursuers M226 times: the day-3 dog, sent down her heading, and the two the resistance sends
+## after her from above and from beside, as the game sends each — warned first, the badge alone for
+## the row's own `EventDef.warned_for()`, then created just out of sight that way on open ground,
+## with the camera on her.
+static func gold_encounters() -> Array[Dictionary]:
+	var list: Array[Dictionary] = []
+	var dog := EventManager.as_warned(EventCatalogue.by_id("charging_dog"))
+	for heading: Vector2 in [Vector2.UP, Vector2.RIGHT]:
+		list.append({"def": dog, "how": "day 3, %s" % _axis(heading), "heading": heading})
+	for id: String in ["robber_giving_chase", "van_guard_giving_chase"]:
+		var def := EventCatalogue.by_id(id)
+		list.append({"def": def, "how": "from above", "heading": Vector2.UP})
+		list.append({"def": def, "how": "from beside", "heading": Vector2.RIGHT})
+	return list
+
+## One pursuer met with one answer: `{created_at, seen_at, point_seen_at, chase_at, caught_at, ...}`,
+## seconds from the first warning, `INF` where it never happened. The badge goes up with nothing in
+## the world (the first warning) and she answers on that frame; once the badge's own time is up the
+## pursuer is created just out of sight along her heading (`PendingWarning.along_her_heading()` on
+## open ground, as the game places the day-3 dog, and the resistance's own pursuers where nothing is
+## in the way). The dog's approach still runs; a sent robber or guard arrives chasing.
+static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dictionary:
+	var def: EventDef = encounter["def"]
+	var heading: Vector2 = encounter["heading"]
+	var her := Vector2.ZERO
+	var result := {"created_at": INF, "seen_at": INF, "point_seen_at": INF, "chase_at": INF,
+			"chase_for": INF, "chase_seen": 0.0, "ends": "30s", "caught": false, "caught_at": INF}
+	var instance: EventInstance = null
+	var where := func(at: Vector2) -> Vector2:
+		return PendingWarning.along_her_heading(null, def, at, heading)
+	var made: Array[EventInstance] = []
+	var arrive := func(place: Vector2, _at: Vector2) -> bool:
+		var created := EventInstance.new()
+		created.setup(def, place, PackedVector2Array())
+		created.came_under_a_warning = true
+		# Created as `EventManager.spawn_warned()` creates it: one that arrives chasing (the
+		# resistance's sent robber and guard) with its telegraph spent.
+		if def.arrives_chasing:
+			created.resume(EventManager.age_when_warned(def), 0.0)
+		made.append(created)
+		return true
+	var warning := PendingWarning.new(def, where, arrive)
+	if not warning.put_up(her) or not edge._is_worth_an_arrow_for(def):
+		result["ends"] = "no badge"
+		return result
+	var velocity := _answered(answer, heading)
+	var clock := 0.0
+	var warned_at := 0.0
+	# Include the badge before the long cap so even a chase that never catches her has an ending.
+	var limit := maxf(LIMIT, def.warned_for() + def.telegraph_time + def.duration + 1.0)
+	while clock < limit:
+		her += velocity * STEP
+		clock += STEP
+		if instance == null:
+			if warning.tick(STEP, her):
+				if made.is_empty():
+					result["ends"] = "withdrawn"
+					break
+				instance = made[0]
+				result["created_at"] = clock - warned_at
+			continue
+		instance.player_at = her
+		instance.player_running = answer == Answer.RUN
+		instance._process(STEP)
+		var at := instance.global_position
+		var in_view := _in_view(at - her, 0.0)
+		var since := clock - warned_at
+		if in_view and result["point_seen_at"] == INF:
+			result["point_seen_at"] = since
+		var box := EventInstance.footprint_of(def)
+		if result["seen_at"] == INF \
+				and VisibleView.around(her).sees_any(Rect2(at + box.position, box.size)):
+			result["seen_at"] = since
+		if result["chase_at"] == INF and not instance.is_telegraphing():
+			result["chase_at"] = since
+		if result["chase_at"] != INF and in_view:
+			result["chase_seen"] = float(result["chase_seen"]) + STEP
+		if instance.is_lethal_at(her):
+			result["ends"] = "caught at %.2f" % since
+			result["caught"] = true
+			result["caught_at"] = since
+			break
+		if instance.is_finished or instance.is_leaving:
+			result["ends"] = "gave up at %.2f" % since if instance.gave_up else "left at %.2f" % since
+			break
+	if result["chase_at"] != INF:
+		result["chase_for"] = clock - warned_at - float(result["chase_at"])
+	for created in made:
+		created.free()
+	return result
 
 static func _cell(result: Dictionary) -> String:
 	if result["warned_at"] == INF:
@@ -130,9 +264,19 @@ static func encounters() -> Array[Dictionary]:
 			"path": PackedVector2Array([streamed_from, streamed_from + Vector2(0.0, 4000.0)]),
 			"her": Vector2(Tuning.TILE_SIZE * 1.5, 0.0), "heading": up, "warm": 0.0})
 
-	# Warned of before they exist. `loose_dog` and `cyclist`: `EventManager._warn_down_her_line()`,
-	# the place just off screen down her line, created on a route back down it past her.
-	for id: String in ["loose_dog", "cyclist"]:
+	# `loose_dog` does not telegraph: sent down her line unannounced (`EventManager.
+	# _send_down_her_line()`), created at once just out of sight, its telegraph spent.
+	var loose := EventCatalogue.by_id("loose_dog")
+	for heading: Vector2 in [up, right]:
+		var place := PendingWarning.down_her_line(null, loose, Vector2.ZERO, heading)
+		list.append({"def": loose, "how": "unannounced, down her line, %s" % _axis(heading),
+				"path": PendingWarning.route_down_her_line(null, place, Vector2.ZERO, heading),
+				"her": Vector2.ZERO, "heading": heading, "warm": 0.0,
+				"age": EventManager.age_when_warned(loose)})
+
+	# Warned of before it exists. `cyclist`: `EventManager._warn_down_her_line()`, the place just
+	# out of sight down her line, created on a route back down it past her.
+	for id: String in ["cyclist"]:
 		var def := EventCatalogue.by_id(id)
 		for heading: Vector2 in [up, right]:
 			var where := func(her: Vector2) -> Vector2:
@@ -171,16 +315,18 @@ static func encounters() -> Array[Dictionary]:
 			"spawn": Vector2.ZERO, "her": Vector2(0.0, flock.pursues_within + 200.0),
 			"heading": up, "warm": 0.0})
 
-	# `charging_dog`: day 3's own, sited by the director `offscreen_lead()` ahead of her at its
-	# `pursue_speed`; and every later day's, a `MAP` row waiting for her
-	# (`EventScheduler._for_day()`).
+	# `charging_dog`: day 3's own, sent by the director down her heading and warned first
+	# (`EventManager._warn_down_her_heading()`), created just out of sight with its approach still to
+	# run; and every later day's, a `MAP` row waiting for her (`EventScheduler._for_day()`).
 	var dog := EventCatalogue.by_id("charging_dog")
+	var sent_dog := EventManager.as_warned(dog)
 	for heading: Vector2 in [up, right]:
-		var lead := Tuning.offscreen_lead(heading, dog.pursue_speed + Tuning.WALK_SPEED,
-				dog.offscreen_notice)
-		list.append({"def": dog, "how": "day 3, director, ahead of her, %s" % _axis(heading),
-				"path": PackedVector2Array(), "spawn": heading * lead,
-				"her": Vector2.ZERO, "heading": heading, "warm": 0.0})
+		var dog_where := func(her: Vector2) -> Vector2:
+			return PendingWarning.along_her_heading(null, sent_dog, her, heading)
+		var dog_route := func(place: Vector2, _her: Vector2) -> PackedVector2Array:
+			return PackedVector2Array([place])
+		list.append(_warned(sent_dog, "day 3, warned, down her heading, %s" % _axis(heading),
+				dog_where, dog_route, heading))
 	var later_dog := EventScheduler._for_day(dog, Tuning.RUN_TAUGHT_DAY + 1)
 	list.append({"def": later_dog, "how": "day 4 on, waits for her", "path": PackedVector2Array(),
 			"spawn": Vector2.ZERO, "her": Vector2(0.0, later_dog.pursues_within + 200.0),
@@ -250,6 +396,8 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 	var spawn: Vector2 = encounter.get("spawn", path[0] if path.size() > 0 else Vector2.ZERO)
 	var instance := EventInstance.new()
 	instance.setup(def, spawn, path)
+	if encounter.has("age"):
+		instance.resume(float(encounter["age"]), 0.0)
 	var her: Vector2 = encounter["her"]
 	var heading: Vector2 = encounter["heading"]
 	var velocity := heading * Tuning.WALK_SPEED
@@ -309,11 +457,13 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 		var path: PackedVector2Array = route.call(place, at)
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
-		instance.resume(def.telegraph_time, 0.0)
+		instance.came_under_a_warning = true
+		if not def.pursues:
+			instance.resume(EventManager.age_when_warned(def), 0.0)
 		created.append(instance)
 		return true
 	var warning := PendingWarning.new(def, encounter["where"], arrive)
-	if not warning.follow(her) or not edge._is_worth_an_arrow_for(def):
+	if not warning.put_up(her) or not edge._is_worth_an_arrow_for(def):
 		result["why"] = "no badge"
 		return result
 	result["warned_at"] = 0.0
@@ -355,6 +505,8 @@ static func _answered(answer: Answer, heading: Vector2) -> Vector2:
 			return Vector2.ZERO
 		Answer.AWAY:
 			return -heading * Tuning.WALK_SPEED
+		Answer.RUN:
+			return -heading * Tuning.RUN_SPEED
 	return heading * Tuning.WALK_SPEED
 
 static func _in_view(offset: Vector2, margin: float) -> bool:

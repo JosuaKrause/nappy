@@ -295,22 +295,23 @@ func _physics_process(delta: float) -> void:
 		_player = get_tree().get_first_node_in_group("player") as Stroller
 		if not _player:
 			return
-	_work_the_crews(delta, _player.global_position)
+	_work_the_crews(delta)
 	_push_to_tear(delta, _player.global_position, _player.steering)
 
 ## Every poster crew in the world pastes the wall it stands at, one sheet every `PASTE_EVERY`
-## seconds while it is inside her view, starting with the cell in front of it and working outward,
+## seconds while she can see it (`EventManager.sees()`, the one answer to what she can see: the
+## camera's view less, in the joystick scheme, the corners its controls cover), starting with the
+## cell in front of it and working outward,
 ## then any torn sheet on the same wall. One kind per crew, from its own stream: the day and where
 ## it stands. A crew that has finished stands and works on, and its wall keeps what it pasted.
-func _work_the_crews(delta: float, at: Vector2) -> void:
+func _work_the_crews(delta: float) -> void:
 	for instance in _city.events.instances():
 		if not is_instance_valid(instance) or instance.def.id != "poster_crew":
 			continue
 		var tile := _map.world_to_tile(instance.global_position)
 		if not _by_tile.has(tile):
 			continue
-		var offset := (instance.global_position - at).abs()
-		if offset.x > Tuning.VIEW_HALF_EXTENT.x or offset.y > Tuning.VIEW_HALF_EXTENT.y:
+		if not _city.events.sees(instance.global_position):
 			continue
 		if not _jobs.has(tile):
 			_jobs[tile] = _job_for(tile)

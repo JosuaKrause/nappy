@@ -995,12 +995,11 @@ func drawn_box() -> Rect2:
 	if _drawn_box_known:
 		return _drawn_box
 	_drawn_box_known = true
-	var icon := icon_for(def.look)
-	if icon.is_empty():
+	var box := box_of(def)
+	if not box.has_area():
 		_drawn_box = Rect2()
 		return _drawn_box
-	var size := _native_size(icon)
-	var box := Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+	var size := box.size
 	var half := maxf(11.0, def.obstructs_radius)
 	if def.has_a_spread and _spread_vertical:
 		box = box.merge(Rect2(-size.x * 0.5, -half, size.x, half * 2.0))
@@ -1011,6 +1010,51 @@ func drawn_box() -> Rect2:
 		box = box.grow(def.flock_spread)
 	_drawn_box = box
 	return _drawn_box
+
+## The box a row's own picture fills standing on its feet at the origin — `drawn_box()` before an
+## instance exists, and without the run a spread covers, which only an instance's own street decides.
+## Empty for a row that draws nothing of its own.
+static func box_of(row: EventDef) -> Rect2:
+	var icon := icon_for(row.look)
+	if icon.is_empty():
+		return Rect2()
+	var size := _native_size(icon)
+	return Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+
+## **Everything a row can put on the screen**, standing on its feet at the origin, whichever way it
+## faces: the union of every picture its look can draw (`family_sources()` — a cyclist coming down
+## the screen draws its front view, not the side view its badge shows), its body shadow (a disc of
+## its shape's radius at its feet), the loose dog's trailing lead, the bob and the excitement halo's
+## rim (`EntityHalo.HALO_MARGIN`). What a thing arriving from off screen is placed wholly outside the
+## camera's view by (`PendingWarning.just_out_of_sight()`), so nothing of it shows on the frame it
+## exists *(amendment 6 of M226, the player: "I don't want any pop in")*. And for a row that can be
+## marked — anything with a field or a lethal reach — the danger caret above its feet at its tallest
+## (`largest_mark_rect()`), which stands well above the picture. Empty for a row that draws nothing
+## of its own.
+static func footprint_of(row: EventDef) -> Rect2:
+	var box := Rect2()
+	var any := false
+	for picture in family_sources(row.look):
+		var size := _native_size(picture)
+		if size.x <= 0.0 or size.y <= 0.0:
+			continue
+		var one := Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+		box = one if not any else box.merge(one)
+		any = true
+	if not any:
+		return box_of(row)
+	if row.draws_body_shadow and row.shape != null:
+		var r := row.obstructs_radius if row.obstructs_radius > 0.0 else row.shape.radius
+		box = box.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
+	if row.look == EventDef.Look.LOOSE_DOG:
+		box = box.merge(Rect2(-LOOSE_LEAD_REACH, -8.0, LOOSE_LEAD_REACH * 2.0, 8.0))
+	box = box.grow(BOB_HEIGHT + EntityHalo.HALO_MARGIN)
+	if row.intensity > 0.0 or row.hard_fail:
+		box = box.merge(largest_mark_rect().grow_individual(0.0, BOB_HEIGHT, 0.0, 0.0))
+	return box
+
+## How far the loose dog's slack lead trails behind it, in px — `_draw_loose_dog()`'s own reach.
+const LOOSE_LEAD_REACH := 26.0
 
 var _drawn_box := Rect2()
 var _drawn_box_known := false
@@ -1854,8 +1898,8 @@ var _lunged := false
 ## why a pursuer can force a run at all. A telegraph it spends standing still is a head start she
 ## can simply walk away with: at `pursue_speed` against `WALK_SPEED` it closes about 56px a
 ## second, so two seconds of politeness hands her more ground than the entire chase can take
-## back. The notice is *the sight of it coming*, and `Tuning.PURSUIT_MIN_NOTICE` is how much of
-## that she is owed before it is allowed to end her day.
+## back. An ordinary pursuer's notice is *the sight of it coming*, and `Tuning.PURSUIT_MIN_NOTICE`
+## bounds its approach. A sent pursuer instead arrives chasing after its offscreen badge alone.
 ##
 ## **But it closes to a stand-off and holds it, rather than arriving.** The paragraph above buys the
 ## notice in seconds and says nothing about *where* the pursuer spends them: sited across her line a
@@ -1871,8 +1915,9 @@ var _lunged := false
 ## **And it gives up when it is being outrun, not when a gap has reached a size.** The pursuer is
 ## faster than a walk and slower than a run by construction, so "the gap is opening" is a statement
 ## the player can only make by running — which is why it can carry the whole of the design. Walking
-## away cannot end a chase at any distance, and running away always ends one in
-## `Tuning.PURSUIT_SHAKEN_OFF` seconds regardless of how big the thing chasing her is.
+## away cannot end a chase at any distance. Sustained running ends one after
+## `Tuning.PURSUIT_SHAKEN_OFF` seconds, once an ordinary pursuer's approach notice floor is met;
+## a sent pursuer can be shaken off while still offscreen.
 ##
 ## A pursuer may also be a **place** before it is a moment: something that raises the meter on
 ## sight, and comes for her if she gets close. While
@@ -1922,10 +1967,11 @@ func _chase(delta: float) -> void:
 	else:
 		_outrun_for = 0.0
 	_last_range = range_to_her
-	# `PURSUIT_MIN_NOTICE` is the floor under it, so a chase can never be over before it was a
-	# threat: a player already running when it lunges would otherwise shake off a thing that never
-	# got to say what it was.
-	if _outrun_for >= Tuning.PURSUIT_SHAKEN_OFF and chase_age() >= Tuning.PURSUIT_MIN_NOTICE:
+	# An ordinary pursuer keeps its approach notice. A sent pursuer already warned with its badge:
+	# running counts while it is still offscreen, too (tall-owl: "starting to run while he's
+	# offscreen still counts towards the shaking off timer? sure").
+	var may_give_up := def.arrives_chasing or chase_age() >= Tuning.PURSUIT_MIN_NOTICE
+	if _outrun_for >= Tuning.PURSUIT_SHAKEN_OFF and may_give_up:
 		gave_up = true
 		_be_done()
 		return
@@ -3664,6 +3710,56 @@ func _draw_mark() -> void:
 		Sprites.draw_caret(self, at - Vector2(0.0, MARK_WIDTH * scale * 0.85),
 				MARK_WIDTH * scale, mark_colour())
 
+## The rectangle, in this node's own space, the caret `_draw_mark()` would draw this frame — its one
+## or two chevrons at their swell, outline included — or an empty one when no mark is wanted. The
+## same arithmetic the drawing does, so a test can ask what is actually drawn.
+func mark_rect() -> Rect2:
+	if not wants_a_mark():
+		return Rect2()
+	var swell := mark_swell()
+	var width := MARK_WIDTH * (0.55 + 0.45 * swell)
+	var at := Vector2(0.0, -(MARK_HEIGHT + 10.0 * swell))
+	var top := at.y - width * 0.8
+	if _caret_strength() == 2:
+		top -= width * 0.85
+	var outline := 1.0
+	return Rect2(-width - outline, top - outline, (width + outline) * 2.0,
+			at.y + width * 0.5 + outline - (top - outline))
+
+## The largest rectangle `mark_rect()` can ever be, in a row's own space: the doubled caret at full
+## swell, outline included — what `footprint_of()` keeps off screen for a row that can be marked.
+static func largest_mark_rect() -> Rect2:
+	var top := -(MARK_HEIGHT + 10.0) - MARK_WIDTH * 0.8 - MARK_WIDTH * 0.85 - 1.0
+	var bottom := -(MARK_HEIGHT + 10.0) + MARK_WIDTH * 0.5 + 1.0
+	return Rect2(-MARK_WIDTH - 1.0, top, (MARK_WIDTH + 1.0) * 2.0, bottom - top)
+
+## The rectangle, in this node's own space, of what it draws this frame: its picture (the box of
+## every picture its look can draw, since which view is drawn turns with its heading), its shadow at
+## its feet, and its danger caret as `_draw_mark()` would draw it now (`mark_rect()`, which asks the
+## instance's own projection of her). What `tests/test_no_pop_in.gd` checks against the view on a
+## thing's first frame: the caret is measured from the drawing's own numbers, not from
+## `footprint_of()`'s worst case, so a footprint that leaves it out fails there.
+func drawn_rect_now() -> Rect2:
+	var rect := drawn_box()
+	for picture in family_sources(def.look):
+		var size := _native_size(picture)
+		if size.x > 0.0 and size.y > 0.0:
+			rect = rect.merge(Rect2(-size.x * 0.5, -size.y, size.x, size.y))
+	if def.draws_body_shadow and def.shape != null:
+		var r := def.obstructs_radius if def.obstructs_radius > 0.0 else def.shape.radius
+		rect = rect.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
+	if def.look == EventDef.Look.LOOSE_DOG:
+		var behind := LOOSE_LEAD_REACH if _heading_is_west() else -LOOSE_LEAD_REACH
+		rect = rect.merge(Rect2(Vector2(minf(behind, 0.0), -8.0),
+				Vector2(absf(behind), 6.0)).grow(1.0))
+	rect.position.y += _current_bob()
+	if _halo != null:
+		rect = rect.grow(EntityHalo.HALO_MARGIN)
+	var mark := mark_rect()
+	if mark.has_area():
+		rect = rect.merge(mark)
+	return rect
+
 ## The single body-drawing entry point `_draw()` calls for the primary render and `EntityHalo`
 ## calls, repeatedly at a ring of offsets, for the halo — see `_build_halo()`. Gating it here
 ## rather than only in `_draw()` is what actually hides an alley post's own halo during its hold:
@@ -4093,7 +4189,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 ## the span it owns and the reason to cross the street. Here the same lead trails on the ground
 ## behind one body, and the difference between the two pictures is the whole event.
 func _draw_loose_dog(canvas: CanvasItem = self) -> void:
-	var behind := Vector2(26.0 if _heading_is_west() else -26.0, 0.0)
+	var behind := Vector2(LOOSE_LEAD_REACH if _heading_is_west() else -LOOSE_LEAD_REACH, 0.0)
 	_draw_body_shadow(canvas)
 	# On the ground and slack, not held up at hip height. Nobody is holding it. The lead's own
 	# offset stays a plain east/west span — a composite the picture underneath it does not own,

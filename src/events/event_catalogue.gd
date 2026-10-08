@@ -318,6 +318,10 @@ static func _cat_dash() -> EventDef:
 	def.shape = GroundShape.point(7.0)
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
+	# It does not telegraph its coming *(PLAYTEST-145: "loose dog, cat don't need telegraphing")*:
+	# no screen-edge badge, no warning first, outside the telegraph contract (`EventDef.telegraphs`).
+	# It still holds before it dashes, which is the cat's own behaviour, not a warning owed.
+	def.telegraphs = false
 	def.intensity = 17.0
 	def.inner_radius = 30.0
 	def.outer_radius = 120.0
@@ -408,6 +412,10 @@ static func _cat_dash() -> EventDef:
 static func _alley_mouse() -> EventDef:
 	var def := EventDef.new()
 	def.id = "alley_mouse"
+	# It does not telegraph its coming (`EventDef.telegraphs`, amendment 9 of M226): 200px/s, but it
+	# dashes across its alley rather than at her, and costs about an eighth of the meter to walk
+	# through; no badge, outside the telegraph contract.
+	def.telegraphs = false
 	def.display_name = "Mouse"
 	def.look = EventDef.Look.MOUSE
 	def.shape = GroundShape.point(4.0)
@@ -792,12 +800,13 @@ static func _fire_truck() -> EventDef:
 	def.intensity = 26.0
 	def.inner_radius = 70.0
 	def.outer_radius = 340.0
-	# The engine's whole warning: the badge goes up the moment the fire is seen and the engine is
-	# created just off screen on its road when this is over — see
-	# `EventManager._summon_the_sighted_row()`. Warned first, so the contract holds it to the flat
-	# `Tuning.OFFSCREEN_WARNING_MIN`, which this clears by a wide margin; fitting it to the pursuing
-	# dog's day-3 timing is M226 in `docs/TODO.md`.
-	def.telegraph_time = 6.27
+	# The engine's whole warning: the badge goes up alone the moment the fire is seen and the engine
+	# is created just out of sight on its road when this is over — see
+	# `EventManager._summon_the_sighted_row()`. A second, `Tuning.WARNING_ALONE_MAX`, the most a badge
+	# is up with nothing in the world *(busy-quail, inbox #569: "1s warning should be enough -- let's
+	# apply that to the others as well")*; its field already covers her where it is created, so that
+	# second is the whole of what the contract's flat `Tuning.OFFSCREEN_WARNING_MIN` measures.
+	def.telegraph_time = Tuning.WARNING_ALONE_MAX
 	def.warned_first = true
 	def.mobile = true
 	def.speed = 190.0
@@ -954,13 +963,16 @@ static func _burnt_shell() -> EventDef:
 ## keep things in relation to each other".)* A telegraph damps a row to
 ## `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15) because *this has not started yet*, and a dog met
 ## inside its own telegraph is behind her before it is ever at 39. Its telegraph is its screen-edge
-## warning instead, run with nothing in the world (`PendingWarning`), and the dog is created just off
-## screen with it spent, at its own intensity. Nothing about the field moved for this.
+## warning instead, run with nothing in the world (`PendingWarning`), and the dog is created just out
+## of sight with it spent, at its own intensity. Nothing about the field moved for this.
 ##
-## **Its `telegraph_time` is 2.25s**, and with the 0.15s the dog takes from where it is created
-## closest (225px on the vertical axis) until its 190px forward reach is on her walking into it, the
-## badge is up 2.40s before it charges her, against the 2.07s its field asks
-## (`EventDef.warning_time()`).
+## **It does not telegraph its coming** *(PLAYTEST-145: "loose dog, cat don't need telegraphing";
+## inbox #598: a thing telegraphs only if it goes fast, comes toward her and carries a heavy penalty)*:
+## no screen-edge badge and no warning first (`EventDef.telegraphs`). The director sends it down her
+## own sidewalk and it is created at once just out of sight there (`PendingWarning.down_her_line()`,
+## `EventManager._send_down_her_line()`), its `telegraph_time` already spent, on the point of its beat
+## that has it reach her at its loudest (`EventManager.age_when_warned()`), so a pass costs what it
+## did under a warning. It is outside the telegraph contract rather than exempted from it.
 ##
 ## No change to placement: `TOWARD_PLAYER` costs more than the walk-through table alone suggests
 ## already, since the whole point of the row is that she dodges rather than walks the line.
@@ -975,10 +987,9 @@ static func _loose_dog() -> EventDef:
 	def.intensity = 39.0
 	def.inner_radius = 30.0
 	def.outer_radius = 140.0
-	# Faster than a walk, so the escape distance is the forward reach: `outer_radius ·
-	# Tuning.field_scale(e)` at 132px/s (e = 0.264) is 190px, 2.07s, plus the margin the row already
-	# carried.
-	def.telegraph_time = 2.25
+	# Spent before it is ever met (see above); it decides only where its beat starts.
+	def.telegraph_time = Tuning.WARNING_ALONE_MAX
+	def.telegraphs = false
 	def.pulse_period = 2.2
 	def.mobile = true
 	def.speed = 132.0
@@ -1183,6 +1194,10 @@ static func _leaf_blower() -> EventDef:
 static func _pigeon_flock() -> EventDef:
 	var def := EventDef.new()
 	def.id = "pigeon_flock"
+	# It does not telegraph its coming (`EventDef.telegraphs`, amendment 9 of M226): the birds go up
+	# where she walks in rather than coming at her, and they cannot end the day; no badge, outside the
+	# telegraph contract.
+	def.telegraphs = false
 	def.display_name = "Pigeons"
 	def.look = EventDef.Look.BIRDS
 	# A flock has no single body — each bird casts its own shadow at its own faded radius (see
@@ -1247,18 +1262,17 @@ static func _pigeon_flock() -> EventDef:
 ##
 ## **He is warned of before he exists.** *(PLAYTEST-145: "the warning appears by itself with a
 ## reasonable position and when the time is right the object is spawned in at that location just
-## offscreen".)* The director's siting puts up a screen-edge badge with nothing in the world, its
-## place following her just off screen down her line on a sidewalk (`PendingWarning.down_her_line()`),
-## and he is created there when his `telegraph_time` is over, with that telegraph spent — so he is
-## lethal from his first frame, and `EventInstance.is_lethal_at()` refusing a running telegraph never
-## lets him ride through her harmless. *(2026-09-07: "also a biker hit should be lethal.")*
+## offscreen".)* The director's siting puts up a screen-edge badge with nothing in the world, pointing
+## down her line, and when his `telegraph_time` is over he is created just out of sight there on a
+## sidewalk (`PendingWarning.down_her_line()`), with that telegraph spent — so he is lethal from his
+## first frame, and `EventInstance.is_lethal_at()` refusing a running telegraph never lets him ride
+## through her harmless. *(2026-09-07: "also a biker hit should be lethal.")*
 ##
 ## The fairness contract does the work: from the badge to his reach, walking into him, she is owed
-## the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s) every warning from off screen is owed, which is what
-## `EventDef.warning_time()` measures. `EventDef.validate()` also refuses a field that reaches where he is created closest,
-## `Tuning.min_offscreen_lead(speed + WALK_SPEED)` (231px at this row's 165px/s — 180 for the
-## vertical axis plus 51 for 200ms of closing), which would already be on her the moment he existed;
-## 90 sits far under it.
+## the flat `Tuning.OFFSCREEN_WARNING_MIN` (1.0s) every warning from off screen is owed, which is what
+## `EventDef.warning_time()` measures. `EventDef.validate()` also refuses a field that reaches where he
+## is created closest, `PendingWarning.least_distance()` (180px, the view's short axis), which would
+## already be on her the moment he existed; 90 sits far under it.
 ##
 ## **`inner_radius` is 33px, not the 26 a bike's own width would suggest.** *(Playtest 25, finding
 ## 7: "biker currently is also basically inconsequential. when hit it should be dayending" — and the
@@ -1288,13 +1302,14 @@ static func _cyclist() -> EventDef:
 	def.intensity = 18.0
 	def.inner_radius = 33.0
 	def.outer_radius = 90.0
-	# His warning, run before he exists: the screen-edge badge goes up with nothing in the world
-	# and he is created just off screen when it is over (`PendingWarning`). What the contract holds
-	# is the badge-to-reach time, `EventDef.warning_time()`, against the flat
-	# `Tuning.OFFSCREEN_WARNING_MIN` (2.9s): this, plus 0.77s for him to close from where he is
-	# created closest (`Tuning.min_offscreen_lead()`, 231px) to his 33px reach at 257px/s with her
-	# walking into him — 2.90s, the smallest hundredth that clears it.
-	def.telegraph_time = 2.13
+	# His warning, run before he exists: the screen-edge badge goes up alone, with nothing in the
+	# world, for a second, `Tuning.WARNING_ALONE_MAX` *(busy-quail, inbox #569: "1s warning should be
+	# enough -- there is enough screen space to cross")*, and he is created just out of sight when it
+	# is over (`PendingWarning`). What the contract holds is the badge-to-reach time,
+	# `EventDef.warning_time()`, against the flat `Tuning.OFFSCREEN_WARNING_MIN`: this, plus 0.57s for
+	# him to close from where he is created closest (180px) to his 33px reach at 257px/s with her
+	# walking into him.
+	def.telegraph_time = Tuning.WARNING_ALONE_MAX
 	def.mobile = true
 	def.speed = 165.0
 	def.hard_fail = true
@@ -1495,7 +1510,7 @@ static func _chatting_mother() -> EventDef:
 ## `RUN_TAUGHT_DAY` this row is two things at once, both already-authored shapes rather than new
 ## ones: `EventScheduler` places it on a tile like `alley_robbery`, waiting inside its own field for
 ## her (`pursues_within_after_first_day`, below); and `EventDirector` now and then still sends the
-## day-3 shape itself — off screen, already noticing her, no tip —
+## day-3 shape itself — warned first from off screen, already noticing her, no tip —
 ## `Tuning.CHARGING_DOG_SPRINKLE_CHANCE` of the time on a day it is eligible. One `EventDef` answers
 ## both, since neither changes what the row *is*, only whether she is routed into it or walks into
 ## it while going about her day.
@@ -1538,22 +1553,21 @@ static func _charging_dog() -> EventDef:
 	# `EventScheduler._for_day()` is where a `MAP` placement past the switch gets a copy carrying
 	# this instead of the authored 0.0 — see `EventDef.pursues_within_on()`.
 	def.pursues_within_after_first_day = 130.0
-	# The chase proper, once it can end the day. `Tuning.PURSUIT_TIME` is the cap and the reason
-	# for it is the price of running, not the fiction — `tests/test_events.gd` holds every pursuer
-	# to this exact ceiling rather than `validate_pursuit`'s looser one, so this is not a lever a
-	# further siting may reach for; `telegraph_time` below is.
+	# The chase proper, once it can end the day: `Tuning.PURSUIT_TIME`, a long cap rather than an end
+	# a walk can outlast (amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if
+	# she walks"). Running is what ends it, at `Tuning.PURSUIT_SHAKEN_OFF`'s rate.
 	def.duration = Tuning.PURSUIT_TIME
-	# Its whole notice, spent visibly closing. Comfortably over `PURSUIT_MIN_NOTICE`, and longer than
-	# every other pursuer's own reasoning would suggest — see `offscreen_notice` below for why a
-	# further siting needs a longer telegraph to spend it in.
+	# Its approach, spent visibly closing once it is placed just out of sight — the gold timing's
+	# on-screen part *(PLAYTEST-145: "the pursuit dog timing from the day 3 lesson is the correct
+	# timing")*, which `tests/test_events_pursuit.gd` fails on if it moves. Comfortably over
+	# `PURSUIT_MIN_NOTICE`: walking away, the lunge never fires (she keeps opening the gap it closes
+	# to), so the chase starts when this runs out, and this and `duration` are what catch a walker.
 	def.telegraph_time = 4.5
 	def.pursues = true
 	def.pursue_speed = 130.0
-	# How far outside the view it starts. See `EventDef.offscreen_notice` for the reasoning behind
-	# 0.5 — a playtest-measured notice, well up from the catalogue default. `telegraph_time` above is
-	# what pays for the longer approach: closing the worst-case gap at the rate walking away still
-	# loses by (`pursue_speed` - `WALK_SPEED` = 38px/s) takes about 7.0s, inside the 7.5s
-	# `telegraph_time` + `duration` gives it.
+	# Its badge alone, sent at her down her heading, before it is placed just out of sight
+	# (`EventDef.warned_for()`): half a second, the gold timing's off-screen part, under the one-second
+	# ceiling and not lengthened to it. See `EventDef.offscreen_notice` for where 0.5 came from.
 	def.offscreen_notice = 0.5
 	# And it trots off rather than blinking out — *nothing vanishes while you are looking at it*, and
 	# a dog that gives up in front of her and then is not there says the chase was never real.
@@ -1578,6 +1592,11 @@ static func _charging_dog() -> EventDef:
 static func _police_patrol() -> EventDef:
 	var def := EventDef.new()
 	def.id = "police_patrol"
+	# It does not telegraph its coming (`EventDef.telegraphs`, amendment 9 of M226): 74px/s is slower
+	# than a walk and it never ends the day (a pass costs about 3 points); no badge, outside the
+	# telegraph contract. Its copies — the return's and a torn poster's down the road, and the
+	# investigating one at heat — carry it with them.
+	def.telegraphs = false
 	def.display_name = "Patrol"
 	def.look = EventDef.Look.POLICE_CAR
 	def.shape = GroundShape.point(19.0)
@@ -1934,10 +1953,12 @@ static func _alley_robbery() -> EventDef:
 	# **The lunge is further out than the catch**: 38px + 130px/s × `PURSUIT_REACTION` = 116px, while
 	# the catch is 26px. The stand-off is stated over `lunge_reach` rather than the catch, so the room
 	# between his lunge and his catch is 116 − 26 = 90px rather than the 78 it would be if the lunge
-	# followed the catch. 116px is as far out as the trap row that copies this one can lunge from:
-	# `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) must be at least stand-off + 130 × `PURSUIT_MIN_NOTICE`,
-	# and it cannot grow past 311px without cutting into the half second of chase a walker who leaves
-	# is caught with (see that constant's doc). (The player, 2026-10-04: "116px, keep every rule".)
+	# followed the catch. *(Azure-tapir, inbox #526: asked whether to keep the stand-off, lengthen the
+	# lunge or shrink the catch, "116px, keep every rule" — tall-osprey's record. The rule that
+	# answer kept beside the 116px, that standing still he lunges no sooner than
+	# `Tuning.PURSUIT_MIN_NOTICE` after he appears, is a standing robber's: this one, waiting in his
+	# alley. The sent robber the resistance's trap reads off this row arrives already chasing
+	# (`_robber_giving_chase()`), so it has no closing-in for the floor to bound.)*
 	def.lunge_reach = 38.0
 	# Wider than the trigger, and that is the contract rather than a taste: he may not notice her from
 	# outside his own field, because the meter is the only thing that says a stranger in an alley is
@@ -1977,39 +1998,37 @@ static func _alley_robbery() -> EventDef:
 ## Every task but the van's, the roadblock's and the neighbor's sends him
 ## (`ResistanceDirector.sets_a_trap_on_her()`): the man shouting's note, the burnt building's door,
 ## the district door, a mast's foot, the swing and the last night's front door. Nothing places
-## it but `ResistanceDirector._set_the_trap_on_her()`, `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) from
-## her on walkable ground outside the view: `SCRIPTED` on day 0, the day nobody plays, so the roll,
-## the stream and the budget never reach it — `EventDef.validate()` refuses a pursuer with no
-## trigger on any other terms.
+## it but `ResistanceDirector._set_the_trap_on_her()`: `SCRIPTED` on day 0, the day nobody plays, so
+## the roll, the stream and the budget never reach it — `EventDef.validate()` refuses a pursuer with
+## no trigger on any other terms.
+##
+## **Warned first** (`warned_first`): the screen-edge badge is up alone, with nothing in the world,
+## for the dog's half second (`offscreen_notice`), pointing where he will come from, and he is then
+## created just off screen that way (`PendingWarning`), above or below her by preference *(M226: the
+## resistance's own pursuers come off the "not warned first" exception, the player's "A, remove the
+## exemption")*. **And he arrives already chasing** (`arrives_chasing`) *(amendment 7 of M226, the
+## player: "why would the robber walk towards her when it spawns as pursuing robber? the proximity
+## rule is only for standing robbers")*: no closing-in to a stand-off and no telegraph to spend.
 ##
 ## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
-## (16 over 26–200px), his 130px/s, his 26px catch and the 116px lunge (`lunge_reach`), his `hard_fail` and the way he walks off once
-## he has lost her. What differs is the whole of the request — **no trigger** (`pursues_within` 0),
-## so he is never `is_waiting()` and his notice and chase are clocked from the frame he exists —
-## and the split of his time between notice and chase.
+## (16 over 26–200px), his 130px/s, his 26px catch and the 116px lunge (`lunge_reach`), his
+## `hard_fail` and the way he walks off once he has lost her. What differs is the whole of the
+## request — **no trigger** (`pursues_within` 0), so he is never `is_waiting()` — and his timing:
+## the day-3 dog's badge and chase, read off `_charging_dog()`. His chase does not give up on a walker
+## (`Tuning.PURSUIT_TIME`, a long cap; amendment 8: "pursuers should never (or a long time) stop
+## pursuing if she walks"); running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) shakes him off,
+## including while he is still offscreen.
 ##
-## **A short notice and a long chase.** *(PLAYTEST-140, statement 2: a warning comes shortly before
-## its danger, "not so early that nothing happens by the time it does".)* `telegraph_time` is
-## `Tuning.PURSUIT_MIN_NOTICE` (1.5s), the least `Tuning.validate_pursuit()` accepts, plus half a
-## second of margin, so he may end her day 2.0s after he appears. Walking away still has to lose, so the
-## time that walking away needs is put into `duration` instead: `Tuning.PURSUIT_TIME` × 2 = 6.0s, the
-## longest chase `validate_pursuit()` allows, and `Tuning.TRAP_ARRIVAL_DISTANCE` is the furthest start
-## a walker loses from inside the 8.0s the two make. Running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s)
-## any time after the least notice ends him as it ends every chase, so the longer chase costs a
-## runner nothing; it is the cap on walking away and on standing still. He and `van_guard_giving_
-## chase` are the two pursuers whose chase is longer than `Tuning.PURSUIT_TIME`, and
-## `tests/test_events_costs.gd` names both as such.
-##
-## What that leaves her: standing still, he lunges from his stand-off about 1.5s after he appears
-## and reaches her about 0.7s later; walking into him, the lunge comes sooner and still at his
-## stand-off; walking directly away, he closes at 38px/s and catches her about 7.5s after he
-## appeared; running for `PURSUIT_SHAKEN_OFF` shakes him off. After the note, the man she just
-## left also keeps shouting, and charging her, for
-## `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover (M205) — longer
-## than this row's own 2.0s notice, so his field is still live for the whole of it whichever way
-## she answers, and standing still is caught before the man would have stopped shouting on his
-## own. Whether shouting-plus-chasing at once is more than a walker should answer is
-## `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not settled here.
+## What that leaves her, from just off screen above her (`tests/probes/m207_warning_lead.gd`'s gold
+## timing, counted from the badge): standing still he catches her at about 1.8s, walking into him at
+## about 1.3s, walking straight away at about 5.0s (about 8.9s from beside her, where the view is
+## wide); running away the moment she is warned, he gives up within a second. After the note, the man
+## she just left also keeps shouting, and charging her, for
+## `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover (M205), so his field
+## is still live while the robber comes whichever way she answers, and standing still is caught before
+## the man would have stopped shouting on his own. Whether shouting-plus-chasing at once is more than
+## a walker should answer is `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not
+## settled here.
 ##
 ## **His own look, `ROBBER_GIVING_CHASE`, drawing the alley robber's own pictures**, the way
 ## `door_guard` draws a roadblock's guard: he never waits, so it is only ever the lunge, and the
@@ -2028,8 +2047,14 @@ static func _robber_giving_chase() -> EventDef:
 	def.inner_radius = alley.inner_radius
 	def.lunge_reach = alley.lunge_reach
 	def.outer_radius = alley.outer_radius
-	def.telegraph_time = Tuning.PURSUIT_MIN_NOTICE + 0.5
-	def.duration = Tuning.PURSUIT_TIME * 2.0
+	# The day-3 dog's own timing, read off its row: its badge alone, its approach and its chase.
+	var dog := _charging_dog()
+	def.offscreen_notice = dog.offscreen_notice
+	# No telegraph: he arrives already chasing (`arrives_chasing`).
+	def.telegraph_time = 0.0
+	def.duration = dog.duration
+	def.warned_first = true
+	def.arrives_chasing = true
 	def.pursues = true
 	def.pursue_speed = alley.pursue_speed
 	def.departs_at = alley.departs_at
@@ -2040,9 +2065,9 @@ static func _robber_giving_chase() -> EventDef:
 ## at her from off screen the moment she hands the van's package over.** *(PLAYTEST-144, statement
 ## 15, the player: "After the van (day 7) a guard chases her; after the man shouting, the robber,
 ## which is fine only if he starts off screen.")* Nothing places it but
-## `ResistanceDirector._set_the_trap_on_her()`, on the same
-## terms as `robber_giving_chase` — `Tuning.TRAP_ARRIVAL_DISTANCE` from her on walkable ground
-## outside the view, `SCRIPTED` on day 0 so the roll, the stream and the budget never reach it.
+## `ResistanceDirector._set_the_trap_on_her()`, on the same terms as `robber_giving_chase` — warned
+## first, then created just out of sight of her on walkable ground, `SCRIPTED` on day 0 so the roll,
+## the stream and the budget never reach it.
 ##
 ## **The door guard, read off his row rather than copied**: his shape, his field (18 over a
 ## 28–120px band — `MASKED_MAN_REACH` inside `door_guard`'s own 120px), his `hard_fail`, and
@@ -2057,20 +2082,10 @@ static func _robber_giving_chase() -> EventDef:
 ## street with nowhere to be once he has lost her, so he walks off at the robber's own 100px/s
 ## rather than standing where he gave up.
 ##
-## **No trigger, and the same short notice and long chase as the robber row**: `pursues_within`
-## stays 0.0, so he is never `is_waiting()`; `telegraph_time` is `Tuning.PURSUIT_MIN_NOTICE` plus
-## half a second, `duration` is `Tuning.PURSUIT_TIME` × 2 — identical to `robber_giving_chase`,
-## since nothing about the notice or the chase length is the picture's to change.
-##
-## **`Tuning.TRAP_ARRIVAL_DISTANCE` is stated over the tighter of the two catches, which is the
-## robber's (26px against this guard's 28px).** With the same 38px/s a walker opens on either
-## (130px/s pursue speed less `WALK_SPEED`), "a walker who leaves the moment it appears is still
-## caught, with half a second of chase to spare" only holds for both rows if the constant is
-## measured against whichever catch is tighter (see `Tuning.TRAP_ARRIVAL_DISTANCE`'s own doc); this
-## guard keeps the same contract with two pixels more margin than his own row alone would need. His
-## field is also 80px narrower (120px against 200px), which only moves where the screen-edge badge
-## can rise, never the arrival distance. `tests/test_resistance.gd` holds the relationship for this
-## row rather than assuming the robber's own numbers carry over unchecked.
+## **No trigger, and the robber row's own timing**: `pursues_within` stays 0.0, so he is never
+## `is_waiting()`; he is warned first for the dog's half second, arrives already chasing
+## (`arrives_chasing`) and does not give up on a walker (`Tuning.PURSUIT_TIME`) — identical to
+## `robber_giving_chase`, since nothing about the timing is the picture's to change.
 static func _van_guard_giving_chase() -> EventDef:
 	var guard := _door_guard()
 	var alley := _alley_robbery()
@@ -2085,8 +2100,14 @@ static func _van_guard_giving_chase() -> EventDef:
 	def.intensity = guard.intensity
 	def.inner_radius = guard.inner_radius
 	def.outer_radius = guard.outer_radius
-	def.telegraph_time = Tuning.PURSUIT_MIN_NOTICE + 0.5
-	def.duration = Tuning.PURSUIT_TIME * 2.0
+	# The day-3 dog's own timing, read off its row, as the robber's is.
+	var dog := _charging_dog()
+	def.offscreen_notice = dog.offscreen_notice
+	# No telegraph: he arrives already chasing (`arrives_chasing`).
+	def.telegraph_time = 0.0
+	def.duration = dog.duration
+	def.warned_first = true
+	def.arrives_chasing = true
 	def.pursues = true
 	def.pursue_speed = guard.pursue_speed
 	def.departs_at = alley.departs_at
@@ -2160,7 +2181,8 @@ static func _military_convoy() -> EventDef:
 	# As a place the day planned, faster than a walk, so the escape distance is the forward reach:
 	# `outer_radius · Tuning.field_scale(e)` at 120px/s (e = 0.24) is 395px, 4.29s, plus the margin
 	# the row already carried. Day 13's column is this row warned first
-	# (`EventManager.as_warned()`), and that copy is held to the flat `Tuning.OFFSCREEN_WARNING_MIN`.
+	# (`EventManager.as_warned()`): that copy's badge alone is cut to `Tuning.WARNING_ALONE_MAX`, and
+	# it is held to the flat `Tuning.OFFSCREEN_WARNING_MIN`.
 	def.telegraph_time = 4.43
 	def.mobile = true
 	def.speed = 120.0

@@ -72,53 +72,77 @@ because nothing checks a route around a thing with no tile.
 
 **For a row warned of before it exists, "becomes visible" is its badge**, and the contract holds
 `EventDef.warning_time()` — the badge to the earliest it can reach her — against
-`minimum_telegraph()`, which for such a row is the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s, the
-player's time to react and think), never a figure worked out from its field or speed — the fire
-engine and day 13's column included, whose place follows her so a walk out of their field is not
-one she can take during the badge. `loose_dog` is held to its field's minimum instead, through
-`Tuning.OFFSCREEN_WARNING_MIN_EXEMPT`, a list an earlier build added rather than something the
-player asked for; the player's own words are that its warning may be short, since it is *"not
-lethal and relatively low impact"* (PLAYTEST-145, statement 11), and whether it needs a warning at
-all is open under M226, the pursuing dog keeps its day-3 timing and the other warnings fit it
-(PLAYTEST-145, statements 17-18).
+`minimum_telegraph()`, which for such a non-pursuer is the flat `Tuning.OFFSCREEN_WARNING_MIN` (a
+second, the player's time to react), never a figure worked out from its field or speed — the fire
+engine and day 13's column included, whose place follows her so a walk out of their
+field is not one she can take during the badge. A pursuer warned first is held to
+`validate_pursuit` like every pursuer: its telegraph is the approach she watches once it exists.
+A sent robber or guard instead arrives chasing, with no approach: its notice is its badge alone.
+Running while it is offscreen counts toward `PURSUIT_SHAKEN_OFF`, so it can be shaken off before
+it becomes visible ([tall-owl](../../../docs/playtests/2026-10-07-tall-owl.md)).
+`EventDef.validate()` requires that badge and validates its chase without inventing an approach.
+Standing robbers and the day-3 dog's approach keep their separate notice floor. Verify escape
+with the actual Baby meter: reaching the pursuit cap after the baby cries is a lost day.
 
-## Everything from off screen is warned first, and spawns where it points
+## What telegraphs
+
+**A thing telegraphs its coming only if it goes fast, comes toward her, and carries a heavy penalty
+— it can end the day or hit her hard.** *(PLAYTEST-145, statements 18-23; inbox #598: "the
+telegraphing rule was about heavy penalty not *only* lethal" · "fire truck has heavy penalty".)* A
+thing that does not telegraph its coming is **outside** the screen-edge badge and warning-first
+placement: `EventDef.telegraphs` is false. Its in-world telegraph still satisfies the fairness
+contract, including the waiting flock and mouse. Only the loose dog, met with its telegraph already
+spent, has no in-world telegraph to validate. A heavy hit is a quarter of the meter or more in one
+pass. By that, `loose_dog` (created at once just off screen down her sidewalk), `cat_dash`,
+`alley_mouse`, `pigeon_flock` and `police_patrol` do not telegraph; the cyclist, the fire engine,
+the column and the planned convoy, and every pursuer do. A row that stands still has no coming to
+telegraph and keeps its in-world telegraph inside the contract. `docs/EVENTS.md`, "What telegraphs",
+has each row's numbers. Do not turn a row's telegraphing off to make a contract pass: whether it
+telegraphs is the rule's question, not the contract's.
+
+## Everything from off screen is warned first, for at most a second, and is placed just out of sight
 
 *(PLAYTEST-145: "the warning appears by itself with a reasonable position and when the time is
-right the object is spawned in at that location just offscreen".)* A row that arrives from off
-screen under the screen-edge badge — `cyclist` and `loose_dog`, the fire engine, day 13's column,
-each a row `warns_before_it_exists()` answers true for (the engine flagged `warned_first` on its
-row, the column's copy made so by `EventManager.as_warned()`, which every warning goes through) —
-is a `PendingWarning` first (`EventManager.warn_first()`): nothing in the world, the badge up at once, its place following her each frame just off screen
-(`Tuning.offscreen_lead()` along its own ray) **on ground that makes sense for the thing** — a
-sidewalk for the bike and the dog, the road on its way to the fire for the engine, its lane for the
-column — moved sideways or further out to reach that ground, never nearer. When its own
-`telegraph_time` is over the thing is created there with that telegraph spent
-(`EventManager.spawn_warned()`).
+right the object is spawned in at that location just offscreen"; calm-kestrel, inbox #559: "never
+longer than 2s ... place the object immediately off screen so it will immediately start coming on
+the screen turning off the warning ... they jump around wildly"; busy-quail, inbox #569: "1s warning
+should be enough".)* A row that arrives from off screen under the screen-edge badge — `cyclist`,
+`charging_dog` sent down her heading, the fire engine, the resistance's own
+`robber_giving_chase` and `van_guard_giving_chase`, day 13's column, each a row
+`warns_before_it_exists()` answers true for (flagged `warned_first` on its row, or made so by
+`EventManager.as_warned()`, which every warning goes through) — is a `PendingWarning` first
+(`EventManager.warn_first()`): nothing in the world, the badge up at once for the row's own
+`EventDef.warned_for()`, **at most `Tuning.WARNING_ALONE_MAX`** (`validate()` refuses longer), its
+place fixed against her so the badge moves only with her walking and never jumps. Then the thing is
+created **just off screen** where its ground has a place for it from where she is by then
+(`PendingWarning.just_out_of_sight()`: everything it can draw, `EventInstance.footprint_of()`,
+wholly outside the camera's whole view, corners included, never nearer than
+`PendingWarning.least_distance()`) — **no pop-in** *(amendment 6 of M226: "I don't want any pop
+in")*, and `tests/test_no_pop_in.gd` holds it — a sidewalk for the bike, walkable ground down her
+heading for the day-3 dog, the road on its way to the fire for the engine, its lane for the column,
+the director's own rules for the trap. A non-pursuer is created with its telegraph spent
+(`EventManager.spawn_warned()`); **a pursuer with its telegraph still to run**, since its telegraph
+is its approach — except one that `arrives_chasing` (the resistance's sent robber and guard: "the
+proximity rule is only for standing robbers"). Where its ground has no place when the second is up,
+the warning is withdrawn; a withdrawn day-3 dog is owed again.
 
 **The warning time is the row's own number.** *(PLAYTEST-145: "I don't like that the warning is
 tied to the size of the field or the speed.")* Nothing about where a thing is created may be
-derived from its telegraph, and a row's telegraph is not shortened by shrinking its field. A thing
-is never created closer than just off screen by its notice: with no sensible ground, the place holds
-and the thing waits.
+derived from its telegraph, and a row's telegraph is not shortened by shrinking its field.
 
-**Not warned first yet: the pursuer, which M226 warns first.** A director-sited pursuer
-(`charging_dog`), whose telegraph is its stand-off approach, and the resistance's own
-director-sent pursuers (`robber_giving_chase`, `van_guard_giving_chase`), whose telegraph is a
-short notice instead, are all still built the way `charging_dog` was before warning first —
-created at once, closing under a screen-edge badge, no `PendingWarning`; warning all three first
-while keeping the dog's day-3 timing and fitting the other two to it is M226, the pursuing dog
-keeps its day-3 timing (`docs/TODO.md`). A patrol sent down the road and a `MAP` mover
-(`military_convoy`) are not warned first, and are not to be: under the player's rule a thing
-telegraphs only if it goes fast, can end the day and comes toward her (PLAYTEST-145, statements
-19-24), and neither can end the day. As built they still telegraph in the world as they did before
-warning first — the patrol's `telegraph_time` 1.97s with no badge (74px/s is slower than a walk),
-the convoy's 4.43s with a badge (120px/s is faster than one) — and the fairness contract checks
-both like every row; restating the cues rule and the contract for what needs telegraphing, and what
-these do instead, is M226. The fire engine and day 13's column, which this build still warns first,
-stop telegraphing under that same later rule. **Do not add a row to this exception, and do not cite
-it as the reason something else is not warned first.** What stands in the way of it is
-`docs/EVENTS.md`, "Everything arrives from off screen".
+**The day-3 dog keeps its gold timing, in the player's terms**: the warning is badge to visible
+(its half second), the chase is lunge to catch (0.35s, 0.60s and 2.05s walking into it, standing and
+walking away). `tests/test_events_pursuit.gd` fails if either moves. **No pursuer gives up on a
+walker** *(amendment 8: "pursuers should never (or a long time) stop pursuing if she walks")*: every
+chase lasts `Tuning.PURSUIT_TIME`, a long cap (30s), so walking away loses by construction; running
+ends it at `PURSUIT_SHAKEN_OFF`'s rate.
+
+**Not warned first: a patrol sent down the road and a `MAP` mover** (`military_convoy`). The patrol
+does not telegraph its coming at all (slower than a walk, never ends the day); the planned convoy
+telegraphs in the world (4.43s, with a badge because 120px/s is faster than a walk) as a place the
+day planned, not something sent at her. **Do not add a row to this list, and do not cite it as the
+reason something else is not warned first.** What stands in the way of it is `docs/EVENTS.md`,
+"Everything arrives from off screen".
 
 ## The contract is per event and the player experiences the sum
 
