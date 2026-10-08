@@ -24,6 +24,7 @@ var _duration_ticks := 0
 var _active := false
 var _capture_tick := -1
 var _zoom: ZoomOutCamera
+var _fixed_camera: Camera2D
 var _last_positions: Dictionary = {}
 var _resistance: ResistanceDirector
 
@@ -254,9 +255,13 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 		errors.append("playback.camera must be an object")
 	else:
 		var camera: Dictionary = playback.get("camera", {})
-		_keys(camera, ["zoom", "zoom_out", "zoom_delay", "landscape_margin"],
+		_keys(camera, ["zoom", "zoom_out", "zoom_delay", "landscape_margin", "fixed"],
 				"playback.camera", errors)
+		if not camera.get("fixed", false) is bool:
+			errors.append("playback.camera.fixed must be boolean")
 		for key in camera:
+			if key == "fixed":
+				continue
 			_number(camera[key], "playback.camera." + key,
 					0 if key in ["zoom_delay", "landscape_margin"] else 0.001,
 					4096 if key == "landscape_margin" else 240, errors)
@@ -828,6 +833,8 @@ func begin() -> void:
 	var playback: Dictionary = data.get("playback", {})
 	var camera: Dictionary = playback.get("camera", {})
 	DevRig.apply_zoom(get_viewport().get_camera_2d(), float(camera.get("zoom", 1)))
+	if camera.get("fixed", false):
+		_install_fixed_camera()
 	if camera.has("zoom_out"):
 		var zoom := ZoomOutCamera.new()
 		_zoom = zoom
@@ -854,6 +861,26 @@ func _settle_starting_camera() -> void:
 	starting_camera.reset_smoothing()
 	starting_camera.reset_physics_interpolation()
 	starting_camera.force_update_scroll()
+
+## Holds a scripted scene on the exact view it begins with. A camera of its own leaves the
+## stroller's ordinary follow untouched, so free play and every recipe without `camera.fixed`
+## keep the same look-ahead and smoothing behavior.
+func _install_fixed_camera() -> void:
+	var starting_camera := get_viewport().get_camera_2d()
+	if not starting_camera:
+		return
+	starting_camera.force_update_scroll()
+	var fixed := Camera2D.new()
+	fixed.name = "FixedRecipeCamera"
+	fixed.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	fixed.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	fixed.position = starting_camera.get_screen_center_position()
+	fixed.rotation = starting_camera.global_rotation
+	fixed.zoom = starting_camera.zoom
+	add_child(fixed)
+	fixed.make_current()
+	fixed.force_update_scroll()
+	_fixed_camera = fixed
 
 func _physics_process(_delta: float) -> void:
 	if not _active:

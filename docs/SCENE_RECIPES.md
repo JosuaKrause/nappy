@@ -125,7 +125,8 @@ installed: the recipe selects its own events. `progression.blackout` turns
 off the street signals. Supported escape pins are trucks, abduction, roadblocks and explosions.
 
 `playback` accepts a timed `walk` script (the same syntax as `--walk`), `duration` in seconds,
-`capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`, `landscape_margin`), `settled_camera` (true: the camera starts settled on her with its look-ahead,
+`capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`, `landscape_margin`, and
+`fixed`, which holds a scripted scene on its starting view), `settled_camera` (true: the camera starts settled on her with its look-ahead,
 which the trailer needs before its moving lead-in; all cameras start at the placed player,
 and this option additionally initializes the directional look-ahead), `caption`,
 `title` and `observations`. `landscape_margin` grows only the zoom-out's final framing around the

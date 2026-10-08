@@ -9,7 +9,7 @@
       {"at": [1744, 2256], "kind": "curfew"}, {"at": [1776, 2256], "kind": "wanted"},
       {"at": [2000, 2256], "kind": "leader"}, {"at": [2064, 2256], "kind": "uniform"},
       {"at": [2096, 2256], "kind": "rules"}],
-    "column": {"at": [1904, 2248], "direction": "north"}},
+    "column": {"at": [1904, 2312], "direction": "north"}},
   "playback": {"settled_camera": true, "walk": "2s", "duration": 2, "capture_at": 1.25, "camera": {"zoom": 0.85},
     "observations": [{"tick": 24, "subject": "player", "condition": "moving"},
       {"tick": 24, "subject": "truck_1", "condition": "moving"},

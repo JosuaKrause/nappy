@@ -39,9 +39,15 @@ func _ready() -> void:
 		runtime._player = player
 		runtime._settle_starting_camera()
 		var settled_current := from.is_current()
+		var settled_centre := from.get_screen_center_position()
+		runtime._install_fixed_camera()
+		var fixed := runtime._fixed_camera
+		from.position += Vector2(200, 100)
 		player.free()
 		runtime._player = null
-		if not settled_current or from.offset != Vector2(Stroller.CAMERA_LOOK_AHEAD, 0):
+		if not settled_current or from.offset != Vector2(Stroller.CAMERA_LOOK_AHEAD, 0) \
+				or not fixed.is_current() or fixed.position != settled_centre \
+				or fixed.zoom != from.zoom:
 			get_tree().quit(18)
 			return
 		var zoom := ZoomOutCamera.new()
@@ -107,7 +113,7 @@ func run(t) -> void:
 
 func _test_schema(t) -> void:
 	var valid := {"setup": {"day": 1, "parent": "mother"},
-			"playback": {"duration": 2, "walk": "0.5s0.5E1p"}}
+			"playback": {"duration": 2, "walk": "0.5s0.5E1p", "camera": {"fixed": true}}}
 	t.check(SceneRecipeRuntime.validate_runtime(valid).is_empty(), "valid optional runtime defaults are accepted")
 	var mixed := {"setup": {"background": {"crowd": true, "uniform_walkers": true},
 			"actors": [{"name": "walker", "kind": "walker", "at": [0, 0], "direction": "north"}]}}
@@ -149,6 +155,7 @@ func _test_schema(t) -> void:
 		{"playback": {"walk": "1q"}},
 		{"playback": {"duration": "two"}},
 		{"playback": {"camera": {"zoom": 0}}},
+		{"playback": {"camera": {"fixed": "yes"}}},
 		{"playback": {"caption": false}},
 		{"playback": {"observations": [{"tick": -1, "subject": "player", "condition": "moving"}]}},
 		{"playback": {"observations": [{"tick": 1, "subject": "unknown", "condition": "moving"}]}},
