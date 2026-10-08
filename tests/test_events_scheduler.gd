@@ -423,9 +423,9 @@ func _test_fire_truck_is_never_scheduled(t) -> void:
 ## warning is walked the way `EventManager` runs it: its place is the one
 ## `PendingWarning.on_its_route()` gives (what `EventManager._summon_the_sighted_row()` hands the
 ## warning), and the engine is created there with its telegraph spent, as `spawn_warned()` does.
-## What holds: the place is up the road from the kerb and off screen by the engine's own notice when
-## it is created, and **from the badge to the earliest its field reaches her is at least the row's
-## own minimum** (`EventDef.minimum_telegraph()`).
+## What holds: the place is up the road from the kerb and wholly out of sight when it is created, its
+## badge alone was at most `Tuning.WARNING_ALONE_MAX`, and **from the badge to the earliest its field
+## reaches her is at least the row's own minimum** (`EventDef.minimum_telegraph()`).
 ##
 ## Its forward reach (548px) is deeper than the view is from her, so on its street she is inside its
 ## field from its first frame, and the warning before it exists is the whole of what she is owed.
@@ -452,23 +452,23 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 			created.append(instance)
 			return true
 		var warning := PendingWarning.new(truck, where, arrive)
-		if not warning.follow(her):
+		if not warning.put_up(her):
 			wrong.append("no place for its warning with her %.0fpx up from the kerb"
 					% her.distance_to(kerb))
 			continue
-		var place := warning.place
-		while created.is_empty() and warning.shown < truck.telegraph_time + 5.0:
-			place = warning.place
+		while created.is_empty() and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
 			warning.tick(STEP, her)
 		if created.is_empty():
 			wrong.append("never created with her %.0fpx up from the kerb" % her.distance_to(kerb))
 			continue
 		var engine := created[0]
-		if (place - kerb).dot(travel) >= 0.0:
+		var place := engine.global_position
+		if warning.shown > Tuning.WARNING_ALONE_MAX + STEP + 0.001:
+			wrong.append("its badge was up alone %.2fs" % warning.shown)
+		elif (place - kerb).dot(travel) >= 0.0:
 			wrong.append("created at the kerb or past it at %v" % place)
-		elif not PendingWarning.is_off_screen(place - her, warning.closing_speed(),
-				truck.offscreen_notice):
-			wrong.append("created on screen at %v with her at %v" % [place, her])
+		elif not PendingWarning.is_out_of_sight(VisibleView.around(her), truck, her, place):
+			wrong.append("created in sight at %v with her at %v" % [place, her])
 		var to_reach := 0.0
 		while engine.contribution_at(her) <= 0.0 and to_reach < 10.0:
 			engine.player_at = her
@@ -482,7 +482,7 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 		engine.free()
 	t.check(checked > 0 and wrong.is_empty(),
 			("from all %d positions up to %.0fpx up its street, the engine is created up its road "
-			% [checked, worst_sight]) + "off screen and reaches her no sooner than its minimum "
+			% [checked, worst_sight]) + "out of sight and reaches her no sooner than its minimum "
 			+ "after the badge%s" % ("" if wrong.is_empty() else ": " + wrong[0]))
 
 func _test_along_street_paths_stay_in_bounds(t) -> void:

@@ -403,35 +403,63 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## stream is spent exactly as it always was, and only the walk's siting reads this.
 @export var pastes_a_front := false
 
-## Seconds of closing this row needs beyond the screen edge where it is created — sited by
-## `EventDirector`, or where a warning for it points (`PendingWarning`) — `Tuning.OFFSCREEN_NOTICE`
-## (0.2) unless a row overrides it. `AHEAD_OF_PLAYER` pursuers, `TOWARD_PLAYER` rows, the fire engine
-## and day 13's column read it; a `MAP` row is placed at dawn and never asks.
+## Seconds of notice this row gives from off screen before it can be seen — `Tuning.OFFSCREEN_NOTICE`
+## (0.2) unless a row overrides it. Two readings, by how the row arrives:
 ##
-## **Per-row because two rows needed to move in opposite directions on the same day.**
-## *(2026-09-07: "pursuing dog is still too short notice", "while biker is now too long notice".)*
-## `charging_dog` sets this to 0.5: at its 130px/s pursuing (222px/s closing against `WALK_SPEED`),
-## the default 0.2 buys only 44px of approach — playtest 20 measured a 1.5s chase as the shortest
-## one that ended in evasion and 0.8-0.9s as the two that killed her, so 0.5 is sized to close from
-## its worst-case siting to `Tuning.pursuit_standoff()` (104px) in under a second at the combined
-## closing speed she usually gives it, well clear of the 0.8-0.9s that failed.
+## - **A pursuer warned of before it exists** (`charging_dog` sent at her on the day it teaches the
+##   run, the resistance's own `robber_giving_chase` and `van_guard_giving_chase`): its badge, up
+##   alone with nothing in the world, before it is placed just out of sight
+##   (`warned_for()`). Its `telegraph_time` is then the approach she watches.
+## - **A row created at once from off screen** (the patrol a torn poster or the return sends down
+##   the road, `EventDirector._toward_her_on_the_road()`): seconds of closing beyond the edge of the
+##   view where it is created (`Tuning.offscreen_lead()`).
 ##
-## **A further siting needs a longer `telegraph_time` to spend it in**, or a player who only walks
-## can outlast the row's own budget before it ever gets to catch her — `duration` stays at
-## `Tuning.PURSUIT_TIME` (`tests/test_events_costs.gd` holds every pursuer but `robber_giving_chase`
-## and `van_guard_giving_chase` to that exact ceiling), so the room has to come from the telegraph
-## instead. See that field on the same row for the arithmetic.
-## `cyclist` is left at the default: his warning is his `telegraph_time`, run before he exists, and
-## this is only how far off screen he is then created.
+## A non-pursuer warned of before it exists (`cyclist`, the fire engine, day 13's
+## column) does not read it: its badge is its `telegraph_time` (`warned_for()`), and it is placed just
+## out of sight.
+##
+## **`charging_dog` sets this to 0.5**, its day-3 timing: it used to be the half second it closed off
+## screen under its badge, sized from playtest 20's measured chases (1.5s the shortest that ended in
+## evasion, 0.8-0.9s the two that killed her) *(2026-09-07: "pursuing dog is still too short
+## notice")*, and is now the half second its badge is up alone before it is placed, which M226 keeps
+## rather than lengthens *(PLAYTEST-145: "the pursuit dog timing from the day 3 lesson is the correct
+## timing")*. The resistance's two pursuers read the dog's own, fitted to it.
 @export var offscreen_notice := Tuning.OFFSCREEN_NOTICE
 
 ## Whether this row, whatever its `spawn_mode`, only ever enters the world under a warning that runs
-## before it exists (`EventManager.warn_first()`): the fire engine, which the fire summons, and the
-## copy of `military_convoy` day 13's column is made of (`as_warned_first()`, which
-## `EventManager.as_warned()` makes of any row that comes through a warning first). Read by
+## before it exists (`EventManager.warn_first()`): the fire engine, which the fire summons, the
+## resistance's own `robber_giving_chase` and `van_guard_giving_chase`, and the copies
+## `as_warned_first()` makes of a row that is otherwise placed some other way — day 13's column of
+## `military_convoy`, and `charging_dog` sent at her down her heading — which
+## `EventManager.as_warned()` makes of any row that comes through a warning first. Read by
 ## `warns_before_it_exists()`, and so by the fairness contract, which holds such a row to the flat
-## `Tuning.OFFSCREEN_WARNING_MIN` rather than to a floor worked out from its field and speed.
+## `Tuning.OFFSCREEN_WARNING_MIN` rather than to a floor worked out from its field and speed, and its
+## badge alone to `Tuning.WARNING_ALONE_MAX`.
 @export var warned_first := false
+
+## Whether a pursuer warned of before it exists is created already chasing her — with no telegraph
+## (`telegraph_time` 0) and no closing-in to a stand-off — rather than spending its telegraph
+## visibly closing on her. Its notice is its badge alone; running while it is still offscreen counts
+## toward shaking it off. *(Amendment 7 of M226, the player: "why would the robber walk towards her
+## when it spawns as pursuing robber? the proximity rule is only for standing robbers.")* The
+## resistance's sent `robber_giving_chase` and `van_guard_giving_chase`: their warning is the badge
+## alone (`warned_for()`), and from their first frame they chase. The day-3 dog does not: its
+## approach is the lesson.
+@export var arrives_chasing := false
+
+## Whether this row telegraphs its coming. *(PLAYTEST-145: "telegraphing is for things that go fast
+## *and* are dangerous" · "go fast and towards the player" · "loose dog, cat don't need
+## telegraphing"; inbox #598: "the telegraphing rule was about heavy penalty not *only* lethal".)* A
+## thing telegraphs only if it goes fast, comes toward her, and carries a heavy penalty — it can end
+## the day or hit her hard. **One that does not is outside the screen-edge badge and warning-first
+## placement, rather than exempted from them**: nothing announces its coming before she can see it,
+## and it is met as it comes. False on `loose_dog` and `cat_dash` (the player's own), `alley_mouse`
+## (across its alley, not at her), `pigeon_flock` (goes up where she walks in) and `police_patrol`
+## (slower than a walk, never ends the day). **The telegraph contract still holds its in-world
+## telegraph** — the cat's crouch, the mouse's and the flock's wait, the patrol's approach — as it
+## holds a standing row's (a lorry backing in, a firefight, a raid). Only the loose dog, met with its
+## telegraph already spent, has none for the contract to hold (`validate()`).
+@export var telegraphs := true
 
 ## Moves along a path at `speed` px/s. The scheduler builds the path.
 @export var mobile := false
@@ -876,8 +904,7 @@ func lethal_reach() -> float:
 ## distance that leaves her `PURSUIT_REACTION` of the pursuer's own approach. Shrinking only the
 ## robber's catch (tall-osprey: *"the capture zone"* is the catch) would drag the stand-off in with it
 ## and keep the room between lunge and catch at 78px whatever the catch; set to 38px it puts his
-## lunge at 116px against a 26px catch, 90px of room, the furthest his trap row's arrival distance
-## allows (`Tuning.TRAP_ARRIVAL_DISTANCE`).
+## lunge at 116px against a 26px catch, 90px of room.
 @export var lunge_reach := 0.0
 
 ## What `Tuning.pursuit_standoff()` is stated over for this row: `lunge_reach` where it sets one, the
@@ -1208,15 +1235,15 @@ func validate() -> bool:
 	if solid_once_it_starts and telegraph_time <= 0.0:
 		push_error("event '%s' waits for a notice it does not have before it becomes solid" % id)
 		return false
-	# A `TOWARD_PLAYER` row is created at least `Tuning.offscreen_lead(heading, closing_speed,
-	# offscreen_notice)` in front of her, where its warning points, which is never less than
-	# `Tuning.min_offscreen_lead()` at the row's own closing speed (its `speed` plus `WALK_SPEED`,
-	# since she is usually walking into it) and its own notice, whatever she is facing — so a row
-	# whose own field reaches that far would be created already on her on the one heading and
-	# moment the director cannot avoid, which is the one thing "she gets close and it arrives"
-	# cannot mean.
+	# A `TOWARD_PLAYER` row is created at least `PendingWarning.least_distance()` from her when it is
+	# warned of first — just out of sight, never nearer than the view's half height, whatever she is
+	# facing and in either control scheme — and at least `Tuning.min_offscreen_lead()` at its own
+	# closing speed and notice when it is created at once (a patrol down the road). So a row whose own
+	# field reaches that far would be created already on her on the one heading and moment the
+	# director cannot avoid, which is the one thing "she gets close and it arrives" cannot mean.
 	if spawn_mode == SpawnMode.TOWARD_PLAYER:
-		var floor_lead := Tuning.min_offscreen_lead(speed + Tuning.WALK_SPEED, offscreen_notice)
+		var floor_lead := PendingWarning.least_distance() if comes_down_her_line() \
+				else Tuning.min_offscreen_lead(speed + Tuning.WALK_SPEED, offscreen_notice)
 		if outer_radius >= floor_lead:
 			push_error("event '%s' comes toward the player with a %.0fpx field, at or past the "
 					% [id, outer_radius] + "%.0fpx it is created at on the worst axis: it would arrive "
@@ -1273,12 +1300,23 @@ func validate() -> bool:
 					+ ("sit inside its own field (inner %.0f <= outer %.0f)"
 					% [inner_radius, outer_radius]))
 			return false
+	# *(busy-quail, inbox #569: "1s warning should be enough".)* A badge up alone is up for at most
+	# `Tuning.WARNING_ALONE_MAX`, whatever the row.
+	if warns_before_it_exists() and warned_for() > Tuning.WARNING_ALONE_MAX + 0.001:
+		push_error("event '%s' is warned of %.2fs before it exists, longer than the %.2fs a badge may be "
+				% [id, warned_for(), Tuning.WARNING_ALONE_MAX] + "up alone")
+		return false
 	if pursues and lunge_is_inside_the_catch():
 		push_error("Unfair pursuit '%s': its lunge is measured from %.0fpx, inside its own %.0fpx catch"
 				% [id, lunge_reach, lethal_reach()])
 		return false
+	# A sent pursuer warns with its badge and starts chasing immediately. Only an ordinary
+	# pursuer has an approach whose notice duration the pursuit validator must check.
+	if arrives_chasing and not (pursues and warns_before_it_exists() and warned_for() > 0.0):
+		push_error("event '%s' arrives chasing but is not a pursuer warned of first" % id)
+		return false
 	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, lethal_reach(),
-			telegraph_time, pursues_within, outer_radius, standoff_reach()):
+			telegraph_time, pursues_within, outer_radius, standoff_reach(), arrives_chasing):
 		return false
 	# The day-switched trigger is a second shape of the same contract and nothing else exercises
 	# it: `EventCatalogue.all()` validates every *heat* shape of every row, but the day axis is
@@ -1293,6 +1331,13 @@ func validate() -> bool:
 		# rule says nothing about it and `validate_pursuit` is the contract instead. What its
 		# telegraph has to buy is the moment of *noticing*, which is checked there.
 		return true
+	# A thing that does not telegraph its coming loses only the coming's telegraph — the badge and
+	# warning first. Its in-world telegraph, where it has one, is still held by the contract: a flock
+	# or a mouse standing until she walks in owes it like the lorry does. The one row with none is
+	# the loose dog, sent down her line and met with its telegraph already spent
+	# (`EventManager._send_down_her_line()`), which has no in-world telegraph to hold.
+	if not telegraphs and comes_down_her_line():
+		return true
 	if warns_before_it_exists():
 		return Tuning.validate_warning(id, warning_time(), minimum_telegraph())
 	return Tuning.validate_event(id, warning_time(), inner_radius, outer_radius, hard_fail,
@@ -1301,21 +1346,19 @@ func validate() -> bool:
 ## Shortest warning this row may fairly give — held against `warning_time()`.
 ##
 ## **A row warned of before it exists (`warns_before_it_exists()`) is owed
-## `Tuning.OFFSCREEN_WARNING_MIN`**, a flat time to react and think, whatever its field and its
-## speed — the cyclist, the fire engine and day 13's column alike. *(PLAYTEST-145: "I don't like
-## that the warning is tied to the size of the field or the speed" · "all offscreen events should
-## work like that".)* Its place follows her until it exists, so walking during the badge does not
-## take her out of its field, and a floor worked out from the walk out of that field would buy
-## nothing. `loose_dog` is held to its field's minimum through
-## `Tuning.OFFSCREEN_WARNING_MIN_EXEMPT` until M226, the pursuing dog keeps its day-3 timing and
-## the other warnings fit it, decides what its warning is. Every other row is owed the time to walk
-## out of its own field, `Tuning.required_telegraph_time()`.
+## `Tuning.OFFSCREEN_WARNING_MIN`**, a flat second to react, whatever its field and its speed — the
+## cyclist, the fire engine and day 13's column alike. *(PLAYTEST-145: "I don't like
+## that the warning is tied to the size of the field or the speed" · "1s is time needed to react to
+## something"; busy-quail, inbox #569: "1s warning should be enough -- there is enough screen space
+## to cross".)* Its place follows her until it exists, so walking during the badge does not take her
+## out of its field, and a floor worked out from the walk out of that field would buy nothing. Every
+## other row is owed the time to walk out of its own field, `Tuning.required_telegraph_time()`.
 ##
 ## A pursuer's is a different quantity and is stated in `Tuning.PURSUIT_MIN_NOTICE`: the ordinary
 ## rule buys the time to walk out of a *field*, and there is no walking out of something that
 ## follows. What its telegraph buys is the time to see it coming and change what you are doing.
 func minimum_telegraph() -> float:
-	if warns_before_it_exists() and not Tuning.OFFSCREEN_WARNING_MIN_EXEMPT.has(id):
+	if warns_before_it_exists() and not pursues:
 		return Tuning.OFFSCREEN_WARNING_MIN
 	if pursues:
 		return Tuning.PURSUIT_MIN_NOTICE
@@ -1349,36 +1392,54 @@ func ahead_of_player_lead() -> float:
 ## appears, and nothing it does inside the telegraph can end the day or charge her at full strength.
 ##
 ## **For a row warned of before it exists** (`warns_before_it_exists()`) **it is its badge to its
-## reach**: the whole `telegraph_time`, run with nothing in the world, plus the time the thing then
-## takes to reach her from where it is created. Created closest on the vertical axis —
-## `Tuning.min_offscreen_lead()` at its own speed plus a walk and its own `offscreen_notice` — and
-## reaching her with her walking into it: at its lethal reach for a `hard_fail` row, which is when
-## it can end the day, and at its field's forward reach for any other, which is when it charges
-## her. A field that already covers her where it is created adds nothing.
+## reach**: its badge alone (`warned_for()`), with nothing in the world, plus the time the thing then
+## takes to reach her from where it is created. Created closest — `PendingWarning.least_distance()`,
+## just out of sight on the view's short axis — and reaching her with her walking into it: at its
+## lethal reach for a `hard_fail` row, which is when it can end the day, and at its field's forward
+## reach for any other, which is when it charges her. A field that already covers her where it is
+## created adds nothing.
 func warning_time() -> float:
 	if not warns_before_it_exists():
 		return telegraph_time
 	var closing := speed + Tuning.WALK_SPEED
 	var reach := lethal_reach() if hard_fail else field_reach()
-	var created_at := Tuning.min_offscreen_lead(closing, offscreen_notice)
-	return telegraph_time + maxf(0.0, created_at - reach) / closing
+	var created_at := PendingWarning.least_distance()
+	return warned_for() + maxf(0.0, created_at - reach) / closing
+
+## How long this row's badge is up alone, with nothing in the world, before it is placed just out of
+## sight (`PendingWarning`) — for a row warned of before it exists. A pursuer's is its
+## `offscreen_notice`, since its `telegraph_time` is the approach she then watches; anything else's is
+## its `telegraph_time`, run before it exists and spent when it is created. `validate()` holds it to
+## `Tuning.WARNING_ALONE_MAX`.
+func warned_for() -> float:
+	return offscreen_notice if pursues else telegraph_time
 
 ## Whether this row is warned of before it exists rather than created at once: its screen-edge
 ## badge goes up with nothing in the world, and its instance is created where the badge points once
-## `telegraph_time` is over — see `PendingWarning`. Two kinds are: a `TOWARD_PLAYER` row on foot
-## (`cyclist`, `loose_dog`), which the director warns of down her line, and a row flagged
-## `warned_first` (the fire engine, day 13's column), which the caller that summons it warns of. A
+## `warned_for()` is over — see `PendingWarning`. Two kinds are: a `TOWARD_PLAYER` row on foot that
+## `telegraphs` (`cyclist`), which the director warns of down her line, and a row flagged
+## `warned_first` (the fire engine, the resistance's two pursuers, and the copies of day 13's column
+## and of `charging_dog` sent down her heading), which the caller that sends it warns of. A
 ## road-going `TOWARD_PLAYER` copy (`police_patrol`'s return leg) is created at once instead —
-## see docs/EVENTS.md, "Everything arrives from off screen", for why it is not warned first yet.
+## see docs/EVENTS.md, "Everything arrives from off screen", for why it is not warned first.
 func warns_before_it_exists() -> bool:
-	return warned_first or (spawn_mode == SpawnMode.TOWARD_PLAYER
-			and not placement.has(GameEnums.TileType.ROAD))
+	return warned_first or (comes_down_her_line() and telegraphs)
+
+## Whether the director sends this row down her own line on foot — a `TOWARD_PLAYER` row whose
+## ground is not the road (`cyclist`, `loose_dog`): created just out of sight on her sidewalk
+## (`PendingWarning.down_her_line()`), under a warning first when it `telegraphs`, at once when it
+## does not.
+func comes_down_her_line() -> bool:
+	return spawn_mode == SpawnMode.TOWARD_PLAYER and not placement.has(GameEnums.TileType.ROAD)
 
 ## A copy of this row that enters the world only under a warning that runs first
 ## (`warned_first`), for a row warned of that is otherwise placed some other way — day 13's column of
-## `military_convoy`, whose ordinary row is a `MAP` place the day plans at dawn
-## (`EventManager.as_warned()`). The copy is validated as it is made, so it is held to the flat
-## minimum a warning first owes.
+## `military_convoy`, whose ordinary row is a `MAP` place the day plans at dawn, and `charging_dog`
+## sent at her down her heading, whose ordinary row waits on a tile from the day after it teaches the
+## run (`EventManager.as_warned()`). Its badge alone is its own, at most
+## `Tuning.WARNING_ALONE_MAX`: a non-pursuer's `telegraph_time` is cut to it (the column's 4.43s,
+## which the planned convoy keeps in the world), and a pursuer keeps its `offscreen_notice`. The copy
+## is validated as it is made, so it is held to the flat minimum a warning first owes.
 func as_warned_first() -> EventDef:
 	var variant: EventDef = duplicate()
 	# `shape` and `solid_parts` are carried across by hand, as every copy of a row does (see
@@ -1387,6 +1448,8 @@ func as_warned_first() -> EventDef:
 	variant.shape = shape
 	variant.solid_parts = solid_parts
 	variant.warned_first = true
+	if not pursues:
+		variant.telegraph_time = minf(telegraph_time, Tuning.WARNING_ALONE_MAX)
 	variant.validate()
 	return variant
 

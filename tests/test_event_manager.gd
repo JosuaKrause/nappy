@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_the_fire_burns_where_her_walk_put_it(t)
 	_test_the_fire_she_did_not_choose_leaves_her_a_way_out(t)
 	_test_the_engine_waits_on_its_road_to_the_fire(t)
+	_test_the_fire_under_a_covered_corner_is_not_sighted(t)
 	_test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t)
 	_test_a_fire_that_was_never_lit_was_not_spent(t)
 	_test_a_won_day_with_the_fire_unmet_still_burns(t)
@@ -491,6 +492,10 @@ func _walker(t, at: Vector2) -> Stroller:
 	# Set here rather than left to the engine: a camera built in code under physics interpolation is
 	# overridden to the physics callback with a warning, and a warning in a test run is a failure.
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	# Never the current camera: a rig walked by hand never runs a frame for its camera to work out
+	# where it is drawing from, so what she can see (`VisibleView.look_through()`) is about her,
+	# `Stroller.camera_screen_center()`'s own answer for a camera that is not current.
+	camera.enabled = false
 	rig.add_child(camera)
 	t.add_child(rig)
 	rig.set_physics_process(false)
@@ -528,14 +533,17 @@ func _walk(rig: Stroller, route: PackedVector2Array, until := Callable()) -> Vec
 			return heading
 	return heading
 
-## **The engine's warning waits on its road, on its way to the fire.** *(PLAYTEST-145: "the spawn
-## point follows her but must keep making sense. the firetruck needs to stay on the road traveling
-## to the fire".)* She walks out and sees the fire, which puts the engine's warning up with no engine
-## in the world; then she keeps walking — on along the day's route, and back the way she came —
-## while it runs. Every frame, its place is on the carriageway, on the line of the fire's own street
-## through the kerb it stops at, up the road from that kerb rather than past it, level with her or
-## further up rather than between her and the fire, and just off screen by the engine's own notice. Then the engine is created where the place last was and is given the
-## route down to the kerb.
+## **The engine's badge holds still for its second, and the engine is then created on its road, on
+## its way to the fire, just out of sight.** *(PLAYTEST-145: "the spawn point follows her but must
+## keep making sense. the firetruck needs to stay on the road traveling to the fire"; calm-kestrel,
+## inbox #559: "show the warning for x seconds (never longer than 2s) without placing anything then
+## place the object immediately off screen ... they jump around wildly"; busy-quail, inbox #569:
+## "1s warning should be enough".)* She walks out and sees the fire, which puts the engine's warning up
+## with no engine in the world; then she keeps walking on along the day's route while it runs. Every
+## frame its badge keeps the same offset from her, moving only with her; once its second is up the
+## engine is created on the carriageway, on the line of the fire's own street through the kerb it
+## stops at, up the road from that kerb rather than past it, level with her or further up rather than
+## between her and the fire, and wholly out of sight — and is given the route down to the kerb.
 func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 	var scars_before := GameState.scars.duplicate()
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
@@ -546,7 +554,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 	_walk_clock = 0.0
 	if plan:
 		_walk(rig, route,
-				func() -> bool: return plan.is_placed() and _city.events._is_on_screen(plan.position))
+				func() -> bool: return plan.is_placed() and _city.events.sees(plan.position))
 	var warning: PendingWarning = null
 	for pending in _city.events.pending_warnings():
 		if pending.def.id == "fire_truck":
@@ -557,50 +565,49 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 		_city.events.stream_radius = INF
 		GameState.scars = scars_before
 		return
+	t.check(warning.left <= Tuning.WARNING_ALONE_MAX, "its badge is up alone for at most a second")
 	var stop := EventManager.where_the_summoned_row_stops(_city.map, plan.position)
-	var up_the_road := (warning.place - stop).normalized()
-	var across := Vector2(-up_the_road.y, up_the_road.x)
+	var offset := warning.offset
 	var looked := [0]
-	var wrong: Array[String] = []
-	var last := [warning.place]
+	var jumped := [0]
+	var her_at := [rig.global_position]
 	var watch := func() -> bool:
+		her_at[0] = rig.global_position
 		if not _city.events.pending_warnings().has(warning):
 			return true
 		looked[0] += 1
-		last[0] = warning.place
-		var from_the_kerb := warning.place - stop
-		if absf(from_the_kerb.dot(across)) > 0.5:
-			wrong.append("off the line of its street at %v" % warning.place)
-		elif from_the_kerb.dot(up_the_road) <= 0.0:
-			wrong.append("past the fire's kerb at %v" % warning.place)
-		elif from_the_kerb.dot(up_the_road) \
-				< (rig.global_position - stop).dot(up_the_road) - 0.5:
-			wrong.append("between her and the fire at %v with her at %v"
-					% [warning.place, rig.global_position])
-		elif not Tile.is_road(_city.map.tile_type_at_world(warning.place)):
-			wrong.append("off the carriageway at %v" % warning.place)
-		elif not PendingWarning.is_off_screen(warning.place - rig.global_position,
-				warning.closing_speed(), warning.def.offscreen_notice):
-			wrong.append("on screen at %v with her at %v" % [warning.place, rig.global_position])
+		if not (warning.place - rig.global_position).is_equal_approx(offset):
+			jumped[0] += 1
 		return false
-	# On along the route for half the warning, then back the way she came.
-	_walk_clock = WALK_SECONDS - warning.left * 0.5
-	_walk(rig, route, watch)
-	var back := route.duplicate()
-	back.reverse()
 	_walk_clock = 0.0
-	_walk(rig, back, watch)
-	t.check(looked[0] > 0 and wrong.is_empty(),
-			"its place stays on its road, on its way to the fire, just off screen, for all %d frames%s"
-			% [looked[0], "" if wrong.is_empty() else ": " + wrong[0]])
+	_walk(rig, route, watch)
+	t.check(looked[0] > 0 and jumped[0] == 0,
+			"its badge keeps its offset from her for all %d frames it is up (%d not)"
+			% [looked[0], jumped[0]])
+	t.check(not warning.withdrawn, "and it is not withdrawn")
 	var engine: EventInstance = null
 	for instance in _city.events.instances():
 		if instance.def.id == "fire_truck":
 			engine = instance
-	t.check(engine != null, "and the engine is created once the warning is over")
+	t.check(engine != null, "and the engine is created once its second is over")
 	if engine:
-		t.close_to(engine.path[0].distance_to(last[0]), 0.0,
-				"where the warning last pointed", Tuning.WALK_SPEED * WALK_STEP + 1.0)
+		var at := engine.path[0]
+		var up_the_road := (at - stop).normalized()
+		var across := Vector2(-up_the_road.y, up_the_road.x)
+		var from_the_kerb := at - stop
+		var wrong: Array[String] = []
+		if absf(from_the_kerb.dot(across)) > 0.5:
+			wrong.append("off the line of its street")
+		if from_the_kerb.dot(up_the_road) <= 0.0:
+			wrong.append("past the fire's kerb")
+		if from_the_kerb.dot(up_the_road) < (her_at[0] - stop).dot(up_the_road) - 0.5:
+			wrong.append("between her and the fire")
+		if not Tile.is_road(_city.map.tile_type_at_world(at)):
+			wrong.append("off the carriageway")
+		if not PendingWarning.is_out_of_sight(VisibleView.around(her_at[0]), engine.def, her_at[0], at):
+			wrong.append("in sight")
+		t.check(wrong.is_empty(), "created at %v with her at %v: on its road, on its way to the fire, "
+				% [at, her_at[0]] + "just out of sight%s" % ("" if wrong.is_empty() else " — " + ", ".join(wrong)))
 		t.close_to(engine.path[engine.path.size() - 1].distance_to(stop), 0.0,
 				"and it drives to the kerb across from the fire", 1.0)
 	rig.free()
@@ -631,17 +638,18 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 ## row, the noise for a loud one. The warning was the telegraph, so the thing it warned of is created
 ## past it.
 ##
-## Asked of the game's own path on a real city, every `TOWARD_PLAYER` row warned first: the
-## director's warning (`EventManager._warn_down_her_line()`), run frame by frame with her standing on
-## the arterial's sidewalk (`_run_the_warnings()`), and the instance it creates
-## (`spawn_warned()`). On its first frame it is not telegraphing, its field is undamped, and a lethal
-## row is lethal at its own centre.
+## Asked of the game's own path on a real city, every `TOWARD_PLAYER` row on foot: for one that
+## telegraphs, the director's warning (`EventManager._warn_down_her_line()`), run frame by frame with
+## her standing on the arterial's sidewalk (`_run_the_warnings()`), and the instance it creates
+## (`spawn_warned()`); for one that does not (`loose_dog`), the instance created at once with no
+## warning (`_send_down_her_line()`). On its first frame it is not telegraphing, its field is
+## undamped, and a lethal row is lethal at its own centre.
 func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 	_start(Tuning.RUN_TAUGHT_DAY + 2)
 	var map := _city.map
 	var checked: Array[String] = []
 	for def in EventCatalogue.all():
-		if def.spawn_mode != EventDef.SpawnMode.TOWARD_PLAYER or not def.warns_before_it_exists():
+		if not def.comes_down_her_line():
 			continue
 		checked.append(def.id)
 		var her := CrowdLanes.arterial_pavement(map)
@@ -650,16 +658,27 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 				break
 			her.y += Tuning.TILE_SIZE
 		var before := _city.events.instances().duplicate()
-		_city.events._warn_down_her_line(def, her, Vector2.UP)
+		var warnings_before := _city.events.pending_warnings().size()
+		if def.warns_before_it_exists():
+			_city.events._warn_down_her_line(def, her, Vector2.UP)
+		else:
+			_city.events._send_down_her_line(def, her, Vector2.UP)
+			t.check(_city.events.pending_warnings().size() == warnings_before,
+					"'%s' does not telegraph: no warning goes up for it" % def.id)
 		var arrived: EventInstance = null
 		var waited := 0.0
+		for instance in _city.events.instances():
+			if instance.def.id == def.id and not before.has(instance):
+				arrived = instance
+		t.check(def.warns_before_it_exists() or arrived != null,
+				"'%s' is created at once, the frame it is sent" % def.id)
 		while arrived == null and waited < def.telegraph_time + 5.0:
 			_city.events._run_the_warnings(WALK_STEP, her)
 			waited += WALK_STEP
 			for instance in _city.events.instances():
 				if instance.def.id == def.id and not before.has(instance):
 					arrived = instance
-		t.check(arrived != null, "'%s' is warned of down her line and then created" % def.id)
+		t.check(arrived != null, "'%s' is sent down her line and created" % def.id)
 		if not arrived:
 			continue
 		t.check(not arrived.is_telegraphing() and arrived._notice_damping() == 1.0,
@@ -670,7 +689,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 					"and '%s', declared hard_fail, is lethal from its first frame" % def.id)
 		_city.events.retire(arrived)
 	for id in ["cyclist", "loose_dog"]:
-		t.check(checked.has(id), "'%s' is among the rows warned down her line (%s)"
+		t.check(checked.has(id), "'%s' is among the rows sent down her line (%s)"
 				% [id, ", ".join(checked)])
 
 ## Paints one disc of ground into a `blocked` set, the way the day's own reachability questions do.
@@ -757,6 +776,42 @@ func _a_route_out(day: int, outward := true) -> PackedVector2Array:
 func _branches_on(day: int, position: Vector2) -> Array[int]:
 	return _days_tree(day).branches_on(_city.map.world_to_tile(position))
 
+## **The fire under a corner the joystick's controls cover is not sighted** (dappled-swan's
+## the-sightings): with the burning building standing only under the left corner, the day's own
+## visible area in the joystick scheme sends no `seen-fire` and summons no engine; in the tap scheme,
+## the same view and the same fire, it does both.
+func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
+	_start(Tuning.RUN_TAUGHT_DAY)
+	var events := _city.events
+	var def := EventCatalogue.by_id("burning_building")
+	var at := CrowdLanes.arterial_pavement(_city.map)
+	var sighted: Array[String] = []
+	var on_sighted := func(id: String) -> void: sighted.append(id)
+	EventBus.event_sighted.connect(on_sighted)
+	# The view whose left corner holds the fire's point: the corner's middle is (-224, 108) world px
+	# off the view's centre at zoom 2.
+	var corner := VisibleView.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
+	var view := Rect2(at - corner * 0.5 - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	for joystick: bool in [true, false]:
+		var plan := EventScheduler.Planned.new(def, at)
+		var instance := EventInstance.new()
+		instance.setup(def, at)
+		_city.add_child(instance)
+		plan.live = instance
+		events._plans.append(plan)
+		sighted.clear()
+		var warnings_before := events.pending_warnings().size()
+		events._visible.look(view, joystick)
+		events._summon_what_has_been_sighted()
+		var summoned := events.pending_warnings().size() > warnings_before
+		t.check(sighted.has("burning_building") != joystick and summoned != joystick,
+				"%s scheme: the fire under the left corner is %s" % ["joystick" if joystick else "tap",
+				"neither sighted nor sends for the engine" if joystick else "sighted, and sends for the engine"])
+		events._plans.erase(plan)
+		events._pending.clear()
+		instance.free()
+	EventBus.event_sighted.disconnect(on_sighted)
+
 func _fire_plan() -> EventScheduler.Planned:
 	for plan in _city.events.plans():
 		if plan.def.id == "burning_building":
@@ -817,8 +872,8 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 		t.check(siting != null and siting.still_ahead_of(sited_from, heading, plan.position),
 				"walking %s: and it is ahead of her along the branch she is walking" % leg)
 		var seen_at := -1.0
-		_walk(rig, route, func() -> bool: return _city.events._is_on_screen(plan.position))
-		if _city.events._is_on_screen(plan.position):
+		_walk(rig, route, func() -> bool: return _city.events.sees(plan.position))
+		if _city.events.sees(plan.position):
 			seen_at = _walk_clock
 		t.check(seen_at >= 0.0,
 				"walking %s: and continuing along the route brings it into view (%.1fs in)"
@@ -903,8 +958,8 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 	var rig := _walker(t, route[0])
 	_walk_clock = 0.0
 	_walk(rig, route,
-			func() -> bool: return plan.is_placed() and _city.events._is_on_screen(plan.position))
-	t.check(plan.is_placed() and _city.events._is_on_screen(plan.position),
+			func() -> bool: return plan.is_placed() and _city.events.sees(plan.position))
+	t.check(plan.is_placed() and _city.events.sees(plan.position),
 			"she walks out and finds the fire")
 	if not plan.is_placed():
 		rig.free()
@@ -940,9 +995,9 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		if warning.def.id != "fire_truck":
 			continue
 		engines += 1
-		t.check(PendingWarning.is_off_screen(warning.place - rig.global_position,
-				warning.closing_speed(), warning.def.offscreen_notice),
-				"and its badge points just off screen, where it will come from")
+		t.check(PendingWarning.is_out_of_sight(VisibleView.around(rig.global_position), warning.def,
+				rig.global_position, warning.place),
+				"and its badge points just out of sight, where it will come from")
 		# **It is aimed at where the fire actually is**, which is the half a runtime siting could
 		# break: the route is built from the live instance's position when it is first seen, and a
 		# plan stops being movable at its first stream-in, so the two can never be a fire that moved
@@ -956,8 +1011,10 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		var before := _city.events.instances().size()
 		var her_at := rig.global_position
 		while _city.events.pending_warnings().has(warning) \
-				and warning.shown < warning.def.telegraph_time + 5.0:
+				and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
 			_city.events._run_the_warnings(WALK_STEP, her_at)
+		t.check(warning.shown <= Tuning.WARNING_ALONE_MAX + WALK_STEP + 0.001,
+				"its badge is up alone for %.2fs, at most a second" % warning.shown)
 		var arrived: EventInstance = null
 		for instance in _city.events.instances():
 			if instance.def.id == "fire_truck":
@@ -971,9 +1028,9 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 			# warning before it existed, and that is what is held — at least the row's own minimum
 			# (`EventDef.minimum_telegraph()`), from the badge to the first frame its field reaches
 			# her (or, for a lethal row, its lethal reach does).
-			t.check(PendingWarning.is_off_screen(arrived.global_position - her_at,
-					warning.closing_speed(), warning.def.offscreen_notice),
-					"and it is created just off screen (%.0fpx from her)"
+			t.check(PendingWarning.is_out_of_sight(VisibleView.around(her_at), arrived.def, her_at,
+					arrived.global_position),
+					"and it is created just out of sight (%.0fpx from her)"
 					% arrived.global_position.distance_to(her_at))
 			var to_reach := 0.0
 			var reaches := func() -> bool:

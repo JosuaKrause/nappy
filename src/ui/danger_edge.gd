@@ -34,11 +34,15 @@ extends Control
 ##
 ## **And a warning can be up before its thing exists.** A source that also answers
 ## `pending_warnings() -> Array[PendingWarning]` — `EventManager` does — has things on their way
-## that are not in the world yet: a cyclist, a loose dog, the fire engine, day 13's column. Each
-## gets its badge from the moment its warning goes up, pointing at the place it will come from, for
-## as long as the warning runs (`PendingWarning`). *(PLAYTEST-145: "the warning appears by itself
-## with a reasonable position and when the time is right the object is spawned in at that location
-## just offscreen.")* Nothing about it is measured: the warning is the claim that it is coming.
+## that are not in the world yet: a cyclist, the day-3 dog, the fire engine, day 13's
+## column, the resistance's own robber and guard. Each gets its badge from the moment its warning goes
+## up, pointing at the place it will come from, which moves only with her, for the at most one second
+## the warning runs (`PendingWarning`). *(PLAYTEST-145: "the warning appears by itself with a
+## reasonable position and when the time is right the object is spawned in at that location just
+## offscreen"; calm-kestrel, inbox #559: "place the object immediately off screen so it will
+## immediately start coming on the screen turning off the warning".)* Nothing about it is measured:
+## the warning is the claim that it is coming. Then the thing exists just out of sight and keeps the
+## badge (`EventInstance.came_under_a_warning`) until she can see it, which is as soon as it moves.
 
 ## How far in from each screen edge the chevrons sit, as left/top/right/bottom. Asymmetric
 ## because the screen is: the clock and the run header are along the top, and the two meters and
@@ -79,23 +83,29 @@ const HOLD := 0.8
 ## frame's difference is mostly noise at these distances; this is the same smoothing the badge
 ## would otherwise need three of.
 const SMOOTHING := 6.0
-## How far outside the view something has to be before it is worth a badge, in screen px. A
-## thing sitting on the boundary would otherwise trade places with its own badge every frame:
-## off screen, badge up, badge draws it back into mind, on screen, badge gone. Once one is up it
-## is kept until the thing is properly in view, which is the same hysteresis `HOLD` gives the
-## closing test and for the same reason.
+## How far out of sight something has to be before it is worth a badge, in screen px. A thing
+## sitting on the boundary would otherwise trade places with its own badge every frame: off screen,
+## badge up, badge draws it back into mind, on screen, badge gone. Once one is up it is kept until
+## the thing is properly in sight, which is the same hysteresis `HOLD` gives the closing test and
+## for the same reason. Asked of what she can see (`VisibleView.sees()`), in world px at the
+## camera's zoom: past the view's edge, and into a covered corner.
 const SCREEN_MARGIN := 130.0
 
 ## Whether `main` has decided a portrait touch window is presenting rotated. Set from outside —
 ## see `TouchControls.rotated`'s own doc. This control is pinned to `ScreenOrientation.DESIGN_SIZE`
 ## regardless of rotation (see `main._add_danger_edge()`), so a raw canvas-space position has to
-## come back through `ScreenOrientation.to_design_space()` before it is usable as a local
-## coordinate here.
+## come back through `ScreenOrientation.to_design_space()` before it is drawn here. What is in
+## sight needs no such turn: `VisibleView` asks it of the world box the camera shows, the same
+## whichever way the window presents it.
 var rotated := false
 
 ## The event source — see `setup()`.
 var _events: Node
 var _player: Node2D
+## What she can see, when the event source does not keep the day's own (`EventManager.
+## visible_view()`): the escape's building, whose source is `InteriorEvents`. Looked through once a
+## frame from her camera.
+var _own_view := VisibleView.new()
 ## Per live instance: where it was last frame, its smoothed approach speed, how long its badge is
 ## still owed, and the generation it was last touched on. Keyed by instance id and mutated in
 ## place — see `_measure()` — so an event that streams out drops out of this the frame after it
@@ -126,6 +136,33 @@ func setup(events: Node, player: Node2D) -> void:
 ## `EventInstance` to the analyser.
 func _live() -> Array[EventInstance]:
 	return _events.instances()
+
+## What she can see this frame: the day's own view where the event source keeps one
+## (`EventManager.visible_view()`), so the badge and everything else that asks agree on it frame for
+## frame, and otherwise this edge's own, looked through from her camera.
+func view() -> VisibleView:
+	if _events and _events.has_method("visible_view"):
+		return _events.visible_view()
+	return _own_view
+
+## Whether something at `world_position` is in sight (`VisibleView.sees()`), counting `margin`
+## screen px past the edge as in sight as well — the one test the badge asks.
+func sees(world_position: Vector2, margin := 0.0) -> bool:
+	return view().sees(world_position, margin * world_per_screen_px())
+
+## Whether she can see any of `instance`: the point it stands at, or any of what it draws
+## (`EventInstance.drawn_box()`). Coming into sight is the badge's job done by the thing itself, so the
+## badge goes off the moment the first of it shows, not only once its feet do.
+func _shows(instance: EventInstance) -> bool:
+	if sees(instance.global_position):
+		return true
+	var box := instance.drawn_box()
+	return box.has_area() and view().sees_any(Rect2(instance.global_position + box.position, box.size))
+
+## World px per design-space screen px at the camera's zoom: the world the view shows across the
+## design box's width.
+static func world_per_screen_px() -> float:
+	return Tuning.VIEW_HALF_EXTENT.x * 2.0 / ScreenOrientation.DESIGN_SIZE.x
 
 ## The warnings that are up for something not in the world yet, or none for a source that has no
 ## such thing (`InteriorEvents`).
@@ -159,6 +196,8 @@ func _measure(delta: float) -> void:
 		return
 	var here := _player.global_position
 	_watch_generation += 1
+	if not (_events.has_method("visible_view")):
+		_own_view.look_through(_player)
 
 	for instance in _live():
 		if instance.is_finished:
@@ -170,13 +209,14 @@ func _measure(delta: float) -> void:
 			state = _watch[id]
 		else:
 			# **A thing that arrives under its own warning keeps the badge it already had.** It is
-			# created just off screen by its notice, inside `SCREEN_MARGIN`, where a fresh thing
-			# would not raise one; and it starts with no measured approach. Without this its badge
-			# would go down the frame it exists and stay down until it came into view — the one
-			# stretch of its approach the warning was for. So it starts closing at its own speed,
-			# already raised, and the margin waits until it has been seen once.
+			# created just out of sight, inside `SCREEN_MARGIN`, where a fresh thing would not raise
+			# one; and it starts with no measured approach. Without this its badge would flicker off
+			# for the frames before it comes into view. So it starts closing at its own speed (a
+			# pursuer's at its pursuing speed), already raised, and the margin waits until it has been
+			# seen once.
 			var warned := instance.came_under_a_warning
-			state = {"was": at, "approach": instance.def.speed if warned else 0.0,
+			var own_speed := instance.def.pursue_speed if instance.def.pursues else instance.def.speed
+			state = {"was": at, "approach": own_speed if warned else 0.0,
 					"hold": HOLD if warned else 0.0, "seen": not warned}
 			_watch[id] = state
 		# The event's own approach: how much closer *it* got to where she is standing now. Both
@@ -192,11 +232,11 @@ func _measure(delta: float) -> void:
 		# without it a thing hovering on the boundary trades places with its own badge every
 		# frame. It has to be well outside the view to raise one, and keeps it until it is
 		# properly in view.
-		if is_on_screen(at):
+		if _shows(instance):
 			state["seen"] = true
 		var margin: float = SCREEN_MARGIN if state["seen"] else 0.0
 		if _is_worth_an_arrow(instance) and announces(approach, gap) \
-				and not is_on_screen(at, margin):
+				and not sees(at, margin):
 			hold = HOLD
 		else:
 			hold = maxf(0.0, hold - delta)
@@ -209,7 +249,7 @@ func _measure(delta: float) -> void:
 		# Coming on screen is not a lapse in the condition to be held through — it is the badge's
 		# job being done by the thing itself — so it is filtered here, after the hold and not
 		# inside it.
-		if hold > 0.0 and not is_on_screen(at):
+		if hold > 0.0 and not _shows(instance):
 			# Sorted by *when it arrives* rather than by how near it is, because that is what
 			# `MOST_AT_ONCE` is choosing between: three badges is a warning and the one worth
 			# keeping is the one that gets here first, which a slow thing standing closer is not.
@@ -246,18 +286,6 @@ static func approach_speed(was: Vector2, now: Vector2, player: Vector2, delta: f
 ## announcing. Pulled out so a test can ask the question without a viewport.
 static func announces(approach: float, gap: float) -> bool:
 	return approach >= CLOSING_SPEED and gap <= approach * LEAD_TIME
-
-## Whether something is in view, optionally counting a band `margin` px beyond the edge as in
-## view as well. In screen pixels, because that is the question — the world is drawn scaled.
-##
-## Public because it is the one rotation-aware "is this world point on screen" test the game
-## has: `ResistanceDirector.set_sight()` is wired to it from `main` rather than growing a
-## second one, since a chalk mark asks exactly this question of itself every frame it is
-## unseen.
-func is_on_screen(world_position: Vector2, margin: float = 0.0) -> bool:
-	var at := ScreenOrientation.to_design_space(
-			get_viewport().get_canvas_transform() * world_position, rotated)
-	return Rect2(Vector2.ZERO, size).grow(margin).has_point(at)
 
 ## What is on the edge of the screen right now: `{id, distance, approach}` per badge, nearest
 ## arrival first. For the telemetry observer, which has to be able to say what she was warned
@@ -296,6 +324,10 @@ func _is_worth_an_arrow(instance: EventInstance) -> bool:
 ## `_is_worth_an_arrow()` asked of a row rather than of a live instance, which is all it reads —
 ## and all a warning with nothing in the world yet has to ask it about.
 func _is_worth_an_arrow_for(def: EventDef) -> bool:
+	# A thing that does not telegraph its coming (`EventDef.telegraphs`: the loose dog, the cat) is
+	# outside the badge altogether — met as it comes, not announced.
+	if not def.telegraphs:
+		return false
 	# If there is no silhouette to put in the badge there is nothing to *say*, and an arrow that
 	# only says "something" is an anxiety rather than a warning. Nothing lethal or fast is
 	# currently in that position, and this is here so that adding one is a decision.
@@ -307,13 +339,13 @@ func _is_worth_an_arrow_for(def: EventDef) -> bool:
 	# appears and vanishes in the same second as the thing walks into view — and takes away the
 	# moment, which is the whole row. Its fairness is paid in geometry.
 	#
-	# **A pursuer is the exception, because it is no longer a moment once it is sited off screen.**
-	# `charging_dog` carries `spawn_mode == AHEAD_OF_PLAYER` for the same siting the director gives
-	# every other crossing row, but `EventDirector` now sites it outside the view and lets it close
-	# in — so for as long as it is off screen it is exactly the thing this function exists to
-	# announce, and the moment it crosses into view the ordinary "no badge for what is already
-	# visible" filter in `_measure()` takes over. A row sited close and gone in three seconds still
-	# has nothing to announce; a row sited off screen and coming does.
+	# **A pursuer is the exception, because it is no longer a moment once it is sent from off
+	# screen.** `charging_dog` carries `spawn_mode == AHEAD_OF_PLAYER` for the same siting the
+	# director gives every other crossing row, but it is warned of first and then placed just out
+	# of sight to close in — so its badge is exactly what this function exists to raise, and the
+	# moment it comes into view the ordinary "no badge for what is already visible" filter in
+	# `_measure()` takes over. A row sited close and gone in three seconds still has nothing to
+	# announce; a row sent from off screen and coming does.
 	#
 	# **`TOWARD_PLAYER` is the opposite case and falls through on purpose.** It is a road, not an
 	# ambush — she is meant to see it coming and choose a side or a turn before it arrives — so the

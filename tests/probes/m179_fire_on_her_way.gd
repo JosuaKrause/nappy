@@ -161,7 +161,7 @@ func _follow(city: City, rig: Stroller, route: PackedVector2Array, plan: EventSc
 			if not was_placed and plan.is_placed():
 				state["sited_at"] = state["clock"]
 				state["lead"] = plan.position.distance_to(here)
-			if plan.is_placed() and city.events._is_on_screen(plan.position):
+			if plan.is_placed() and city.events.sees(plan.position):
 				state["seen_at"] = state["clock"]
 				return
 			toward = route[i] - rig.global_position
@@ -386,6 +386,9 @@ func _walker(t, at: Vector2) -> Stroller:
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	# Never the current camera: a rig walked by hand never runs a frame for its camera to work out
+	# where it is drawing from, so what she can see (`EventManager.sees()`) is about her.
+	camera.enabled = false
 	rig.add_child(camera)
 	t.add_child(rig)
 	rig.set_physics_process(false)

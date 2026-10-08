@@ -976,13 +976,18 @@ outcomes* rather than the same outcome at two prices:
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
 | Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
-| Bounded | gives up after its own `duration` — `PURSUIT_TIME` for every row but two, `PURSUIT_TIME × 2` for the resistance's `robber_giving_chase` and `van_guard_giving_chase`, whose short notice (`PURSUIT_MIN_NOTICE` plus a stated margin) buys a longer chase instead of a longer wait before either exists — **or** after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, because a run is priced per second and an unbounded chase is a loss however well it is played |
+| Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
-telegraphs, unlike a row warned of before it exists (the fire engine, sited by a screen-edge badge
-with nothing in the world until its telegraph is spent). A pursuer that stands still while it
+telegraphs. One sent at her from off screen is warned of first like everything that arrives from off
+screen, its badge alone its own half second (`EventDef.offscreen_notice`): the day-3 dog is then
+placed just off screen with the whole approach still to run, where a non-pursuer warned first (the
+fire engine) spends its telegraph as the badge, with nothing in the world; the resistance's robber
+and guard arrive already chasing (`EventDef.arrives_chasing`: "the proximity rule is only for
+standing robbers"). Running while a sent pursuer is offscreen counts toward the same
+`PURSUIT_SHAKEN_OFF` timer; he need not become visible before she can shake him off. A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
-owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
+owed by an ordinary pursuer is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
 
 **And it stops at walls.** A chase is a straight line at whatever is chasing her, and nothing about
@@ -1213,13 +1218,23 @@ event, or one slower than the player (a dog walker at 32 px/s), only has to be w
 clearing the falloff band is enough. Something faster than the player cannot be outwalked at all; it sweeps its entire outer
 radius along the street, and the only escape is getting off its line, so it must give enough
 warning to clear the *full* radius. A row warned of before it exists is held to a different floor
-instead: the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s) from its screen-edge badge to the earliest
-it can reach her, since its place follows her and there is no field to walk out of during the
-badge. The fire engine, warned first this way, is created with its field already on her when she
-is on its street; its `telegraph_time` is 6.27s, well past that floor.
+instead: the flat `Tuning.OFFSCREEN_WARNING_MIN` (a second) from its screen-edge badge to the
+earliest it can reach her, since its place follows her and there is no field to walk out of during
+the badge, and its badge alone is at most `Tuning.WARNING_ALONE_MAX` (a second). The fire engine,
+warned first this way, is created just out of sight with its field already on her when she is on its
+street, so its one-second badge is the whole of its warning.
 
 `Tuning.validate_event()` asserts this on load, and `tests/test_events.gd` checks it over
 the whole catalogue, so an unfair event fails loudly rather than quietly ruining a run.
+
+**Coming warnings and in-world telegraphs have distinct contracts.** A thing telegraphs its coming only if it goes
+fast, comes toward her, and carries a heavy penalty — it can end the day or hit her hard
+(PLAYTEST-145, statements 18-23; inbox #598: "the telegraphing rule was about heavy penalty not
+*only* lethal"). One that does not — the loose dog and the cat, the alley mouse, the pigeons, the
+patrol — is outside the screen-edge badge and warning-first placement, and is met as it comes.
+Its in-world telegraph still satisfies the fairness contract: the cat's crouch, the mouse's and
+flock's wait, and the patrol's approach. Only the loose dog, met with its telegraph already spent,
+has none to validate (`docs/EVENTS.md`, "What telegraphs").
 
 ## Calm zones, and what every other ground does
 
@@ -1259,9 +1274,11 @@ are the ones that cost you the baby's calm.
 
 A resistance pickup's chalk mark follows her rather than sitting still: it counts as noticed
 only once she has been within `ResistanceDirector.SEEN_DISTANCE` (150px, kept under the
-visible world's own 180px vertical half-extent so the point is on screen on every bearing
-rather than only a favourable one — never right at the screen's own edge) of it, on screen,
-continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough, for long
+visible world's own 180px vertical half-extent so the point is inside the camera's view on every
+bearing rather than only a favourable one — never right at the screen's own edge) of it, and in
+sight — what she can see, `VisibleView`: in the tap scheme that is every point within 150px, and in
+the joystick scheme a mark down and to one side can be under a corner its controls cover, where it
+is not in sight and its dwell does not run — continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough, for long
 enough, that walking past it rather than to it is a choice, not the instant its tile merely
 swept across the camera on the way to somewhere else. Until then, walking more than
 `ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
