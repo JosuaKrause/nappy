@@ -1488,6 +1488,13 @@ func _new_boot_camera(ground: Vector2) -> Camera2D:
 func _retire_the_boot_camera() -> void:
 	_boot_camera.free()
 	_boot_camera = null
+	if _player:
+		var camera: Camera2D = _player.get_node("Camera2D")
+		# A dormant camera has no current target in movie mode. Read the placed transform
+		# before resetting smoothing, then publish that center before the first drawn frame.
+		camera.force_update_scroll()
+		camera.reset_smoothing()
+		camera.force_update_scroll()
 
 ## Takes every baked page this boot will ever need, inside a named loading window, and holds it
 ## for the life of the process. *(PLAYTEST-109: "we cannot start loading something in the frame we

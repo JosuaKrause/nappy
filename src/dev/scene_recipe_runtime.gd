@@ -850,7 +850,9 @@ func _settle_starting_camera() -> void:
 		return
 	starting_camera.offset = Vector2(_player.facing.x,
 			_player.facing.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	starting_camera.force_update_scroll()
 	starting_camera.reset_smoothing()
+	starting_camera.reset_physics_interpolation()
 	starting_camera.force_update_scroll()
 
 func _physics_process(_delta: float) -> void:

@@ -18,6 +18,7 @@ const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const SEED := 4242
 
 func run(t) -> void:
+	_test_boot_camera_handoff_starts_at_the_player(t)
 	_test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	_test_the_readout_flag_shows_it_on_a_release_build(t)
 	_test_the_debug_mode_note_only_exists_when_requested(t)
@@ -50,6 +51,57 @@ func run(t) -> void:
 	_test_return_window_needs_a_departure(t)
 	_test_return_window_is_off_under_the_override(t)
 	_test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t)
+
+## Read the camera's actual screen center before any process tick can hide a bad handoff.
+func _test_boot_camera_handoff_starts_at_the_player(t) -> void:
+	var interpolated: bool = t.get_tree().physics_interpolation
+	for mode in [true, false]:
+		t.get_tree().physics_interpolation = mode
+		_check_boot_camera_handoff(t)
+	t.get_tree().physics_interpolation = interpolated
+
+func _check_boot_camera_handoff(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	var boot := Camera2D.new()
+	boot.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	boot.position = Vector2(2400, 2600)
+	t.add_child(boot)
+	boot.make_current()
+	main._boot_camera = boot
+	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
+	var player: Stroller = packed.instantiate()
+	t.add_child(player)
+	player.set_physics_process(false)
+	main._player = player
+	var destination := Vector2(1800, 1400)
+	player.reset_at(destination, Vector2.RIGHT)
+	main._retire_the_boot_camera()
+	var camera: Camera2D = player.get_node("Camera2D")
+	print("CAMERA_HANDOFF player=%s screen=%s target=%s" % [player.global_position,
+			camera.get_screen_center_position(), camera.get_target_position()])
+	t.check(camera.is_current() and camera.get_screen_center_position().is_equal_approx(destination),
+			"boot handoff starts on the placed player before any smoothing frame")
+	t.check(camera.position_smoothing_enabled, "boot handoff preserves normal follow smoothing")
+	var runtime := SceneRecipeRuntime.new()
+	t.add_child(runtime)
+	runtime._player = player
+	runtime._settle_starting_camera()
+	print("CAMERA_SETTLED interpolation=%s screen=%s offset=%s" % [
+			t.get_tree().physics_interpolation, camera.get_screen_center_position(), camera.offset])
+	t.check(camera.get_screen_center_position().is_equal_approx(
+			destination + Vector2(Stroller.CAMERA_LOOK_AHEAD, 0)),
+			"a settled recipe starts at the actual player with its authored facing lead")
+	runtime.free()
+	player.set_camera_limits(Rect2(1000, 1000, 1600, 1200))
+	player.reset_at(Vector2(1500, 1500))
+	camera.force_update_scroll()
+	t.check(camera.limit_left == 1000 and camera.limit_bottom == 2200,
+			"a placed interior player keeps the room's camera limits")
+	player.clear_camera_limits()
+	t.check(camera.limit_left < 0 and camera.limit_right > 100000,
+			"returning outdoors removes the interior's camera limits")
+	player.free()
+	main.free()
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
