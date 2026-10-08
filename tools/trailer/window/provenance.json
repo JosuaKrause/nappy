@@ -1,6 +1,16 @@
 {
   "purpose": "Trailer-only close-up of the mother's own apartment window",
   "runtime_art_changed": false,
+  "placement": {
+    "aperture_origin": [839, 165],
+    "aperture_size": [282, 396],
+    "figure_x": "W/4-w/2, unchanged for each pose",
+    "figure_y": "94+6*sin(2*PI*t/2.2)",
+    "registered_height": 600,
+    "visible_pane_bottom_y": 550,
+    "baby_blanket_source_bottom_y": {"a": 176, "b": 163},
+    "note": "The blanket silhouette, not the whole mother's alpha bounds, clears the visible pane. A reaches its low point at 2.75s; B reaches its lowest selected position at 1.10s and 3.30s. Figure alpha alone fades over one second; screen transitions are independent."
+  },
   "window": {
     "source": "art/buildings/window_lit.svg",
     "source_sha256": "9e2f7b6a81c3c336bafdbe7386ca83a9b5a2b2a2d73aab89cf5bc80ed60af514",

@@ -7,7 +7,7 @@
 #   tools/trailer.sh --check all      # the same for every shot
 #   tools/trailer.sh --auditions      # one clean capture, then three score mixes
 #   tools/trailer.sh --selected-reuse # replace changed shots in the retained base, then final mix
-#   tools/trailer.sh --selected-remix # replace only the intro in that selected base; never recapture
+#   tools/trailer.sh --selected-remix # replace editorial cards in that selected base; never recapture
 #   tools/trailer.sh --list           # print the shot list and render nothing
 #
 # PLAYTEST-139: "we can use recordings from a frame locked game. the trailer will be a set of
@@ -68,7 +68,7 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
                      a mismatch without opening a recording window
   --selected-reuse  render only the changed hook and dog shots, replace those intervals in the
                     exact retained audition base, and build the selected Glass Alarm cut
-  --selected-remix  render only the changed hook, replace it in the exact prior selected base,
+  --selected-remix  render the hook and unfaded title in the exact prior selected base,
                     and rebuild the selected mix; refuse a mismatch rather than recapture
   --shot NAME      render one shot alone into TRAILER_OUT/shot-NAME.mp4
   --check NAME     render the shot twice and compare every frame's hash; exits non-zero on a
@@ -322,6 +322,12 @@ if [[ "$MODE" == selected-reuse || "$MODE" == selected-remix ]]; then
         printf '  %s\n' "$final_score_errors" >&2
         exit 1
     fi
+    selected_output="$(jq -r '.output' "$FINAL_SCORE_FILE")"
+    FINAL_SOURCE_REL="experiments/${selected_output%.mp4}/source"
+    if [[ -e "$OUT_DIR/$selected_output" || -e "$OUT_DIR/${selected_output%.mp4}.json" ]]; then
+        echo "trailer.sh: selected delivery already exists; choose a new output filename or a fresh TRAILER_OUT, never overwrite a review movie" >&2
+        exit 1
+    fi
 fi
 
 FPS="$(jq -r '.fps' "$SHOTS_FILE")"
@@ -393,7 +399,7 @@ if [[ "$MODE" == selected-reuse || "$MODE" == selected-remix ]]; then
             .elapsed += (($shot.gap // 0) + $shot.length))) as $timeline |
         $final[0] + {
             total_seconds:$timeline.elapsed,
-            replacement_intervals:{hook:$timeline.parts.hook,dog:$timeline.parts.dog},
+            replacement_intervals:{hook:$timeline.parts.hook,dog:$timeline.parts.dog,title:$timeline.parts.title},
             options:[
                 {id:"event-bass",events:[$final[0].bass_events[] |
                     . + {at:($timeline.starts[.shot] + .offset)}]},
@@ -536,8 +542,8 @@ TREE_BEFORE="$(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null || true)"
 # Validate the game's resolved normal classification before opening any movie window.
 targets=("${SHOT_NAMES[@]}")
 [[ -z "$TARGET" || "$TARGET" == all ]] || targets=("$TARGET")
-[[ "$MODE" != selected-reuse ]] || targets=(hook dog)
-[[ "$MODE" != selected-remix ]] || targets=(hook)
+[[ "$MODE" != selected-reuse ]] || targets=(hook dog title)
+[[ "$MODE" != selected-remix ]] || targets=(hook title)
 mkdir -p "$WORK/preflight"
 recipe_count=0
 for name in "${targets[@]}"; do
@@ -698,6 +704,18 @@ write_cut_entry_evidence() {
         -map '[v]' -frames:v 1 "$out/contact-sheet.png"
 }
 
+# Zero means no fade, not ffmpeg's duration=0 (which falls back to its default frame/sample count).
+transition_filters() {
+    local prefix="$1" fade_in="$2" fade_out="$3" out_start="$4"
+    printf '%snull' "$prefix"
+    if awk -v d="$fade_in" 'BEGIN { exit !(d > 0) }'; then
+        printf ',%sfade=t=in:st=0:d=%s' "$prefix" "$fade_in"
+    fi
+    if awk -v d="$fade_out" 'BEGIN { exit !(d > 0) }'; then
+        printf ',%sfade=t=out:st=%s:d=%s' "$prefix" "$out_start" "$fade_out"
+    fi
+}
+
 # Encodes shot $1's cut out of the frames in $2 into $3: trimmed to [in, in + length], faded in
 # from and out to black, preceded by `gap` seconds of black and silence.
 encode_shot() {
@@ -746,7 +764,9 @@ encode_shot() {
         video_filters+="fontsize=${url_size}:fontcolor=${INK}:box=1:boxcolor=${PAPER}@0.82:boxborderw=11:"
         video_filters+="x=(w-text_w)/2:y=h*0.165:alpha='min(1\\,max(0\\,(t-${ending_at})/0.45))'"
     fi
-    video_filters+=",fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out}"
+    video_filters+=",$(transition_filters '' "$fade_in" "$fade_out" "$out_start")"
+    local audio_fades
+    audio_fades="$(transition_filters a "$fade_in" "$fade_out" "$out_start")"
     local video_graph="[0:v]${video_filters},format=yuv420p[v];"
     if awk -v g="$gap" 'BEGIN { exit !(g > 0) }'; then
         # A separate finite black source keeps the gap in the video timeline. `tpad` after
@@ -760,7 +780,7 @@ encode_shot() {
         -filter_complex "\
 ${video_graph}\
 [1:a]atrim=start=${in}:duration=${length},asetpts=PTS-STARTPTS,aformat=sample_rates=48000:channel_layouts=stereo,\
-afade=t=in:st=0:d=${fade_in},afade=t=out:st=${out_start}:d=${fade_out},\
+${audio_fades},\
 adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[a]" \
         -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset veryfast -crf 12 \
         -c:a pcm_s16le "$out"
@@ -779,6 +799,9 @@ encode_card() {
     out_start="$(awk -v l="$length" -v o="$fade_out" 'BEGIN { printf "%.4f\n", l - o }')"
     total="$(awk -v l="$length" -v g="$gap" 'BEGIN { printf "%.4f\n", l + g }')"
     gap_ms="$(awk -v g="$gap" 'BEGIN { printf "%d\n", int(g * 1000 + 0.5) }')"
+    local video_fades audio_fades
+    video_fades="$(transition_filters '' "$fade_in" "$fade_out" "$out_start")"
+    audio_fades="$(transition_filters a "$fade_in" "$fade_out" "$out_start")"
     asset="$(shot_nested_field "$name" card asset)"
     if [[ "$asset" != null ]]; then
         ffmpeg -hide_banner -loglevel error -y \
@@ -787,10 +810,10 @@ encode_card() {
             -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$asset" \
             -filter_complex "\
 [0:v][2:v]overlay=x=(W-w)/2:y=(H-h)/2:shortest=1:format=auto,\
-fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out},\
+${video_fades},\
 tpad=start_duration=${gap}:color=black,format=yuv420p[v];\
-[1:a]atrim=duration=${length},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${fade_in},\
-afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[a]" \
+[1:a]atrim=duration=${length},asetpts=PTS-STARTPTS,${audio_fades},\
+adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[a]" \
             -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset veryfast -crf 12 \
             -c:a pcm_s16le "$out"
         return
@@ -813,7 +836,8 @@ afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=dura
         # The original-resolution carrying drawings have different transparent margins. Register
         # their visible figures at equal height inside one clipped, dark room aperture, with the
         # figure's center on the center of the window's left half. The 4.4-second A-B-A-B cycle gets
-        # a gentle 6px/2.2s bob; only the figure fades in.
+        # a gentle 6px/2.2s bob; only the figure fades in. The baby blanket's bottom,
+        # rather than the full figure's bounds, clears the visible lower pane by a brick.
         ffmpeg -hide_banner -loglevel error -y \
             -f lavfi -i "color=c=${CARD_BACKGROUND}:s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${length}" \
             -f lavfi -i "anullsrc=r=48000:cl=stereo" \
@@ -830,15 +854,15 @@ drawtext=fontfile='${FONT_FILE}':textfile='${subtitle_file}':fontsize=${subtitle
 [2:v]crop=131:371:107:21,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[a];\
 [3:v]crop=131:357:107:8,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[b];\
 color=c=0x101018:s=282x396:r=${FPS}:d=${length}[room];\
-[room][a]overlay=x=W/4-w/2:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,0\,1.10)+between(t\,2.20\,3.30)'[wa];\
-[wa][b]overlay=x=W/4-w/2:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,1.10\,2.20)+between(t\,3.30\,4.40)'[aperture];\
+[room][a]overlay=x=W/4-w/2:y='94+6*sin(2*PI*t/2.2)':enable='lt(mod(t\,2.2)\,1.1)'[wa];\
+[wa][b]overlay=x=W/4-w/2:y='94+6*sin(2*PI*t/2.2)':enable='gte(mod(t\,2.2)\,1.1)'[aperture];\
 [card][aperture]overlay=x=839:y=165:shortest=1[behind];\
 [4:v]scale=960:960:flags=lanczos[window];\
 [behind][window]overlay=x=500:y=-120:shortest=1:format=auto,\
-fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out},\
+${video_fades},\
 tpad=start_duration=${gap}:color=black,format=yuv420p[v];\
-[1:a]atrim=duration=${length},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${fade_in},\
-afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[aout]" \
+[1:a]atrim=duration=${length},asetpts=PTS-STARTPTS,${audio_fades},\
+adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[aout]" \
             -map "[v]" -map "[aout]" -r "$FPS" -c:v libx264 -preset veryfast -crf 12 \
             -c:a pcm_s16le "$out"
         return
@@ -871,10 +895,10 @@ afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=dura
         -f lavfi -i "color=c=${CARD_BACKGROUND}:s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${length}" \
         -f lavfi -i "anullsrc=r=48000:cl=stereo" "${illustration_input[@]}" \
         -filter_complex "\
-${illustration_graph};[composed]fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out},\
+${illustration_graph};[composed]${video_fades},\
 tpad=start_duration=${gap}:color=black,format=yuv420p[v];\
-[1:a]atrim=duration=${length},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${fade_in},\
-afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[a]" \
+[1:a]atrim=duration=${length},asetpts=PTS-STARTPTS,${audio_fades},\
+adelay=${gap_ms}:all=1,apad,atrim=duration=${total}[a]" \
         -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset veryfast -crf 12 \
         -c:a pcm_s16le "$out"
 }
@@ -1009,42 +1033,48 @@ build_ending_once() {
 # Replaces only the two changed shot intervals. The middle and tail are decoded from the retained
 # e29585da base, never recaptured; the selected-cut manifest records all four sources and hashes.
 assemble_selected_base() {
-    local retained="$1" hook="$2" dog="$3" output="$4" hook_end dog_start dog_end
+    local retained="$1" hook="$2" dog="$3" title="$4" output="$5" hook_end dog_start title_end
     hook_end="$(jq -r '.replacement_intervals.hook.end' <<< "$RESOLVED_FINAL")"
     dog_start="$(jq -r '.replacement_intervals.dog.start' <<< "$RESOLVED_FINAL")"
-    dog_end="$(jq -r '.replacement_intervals.dog.end' <<< "$RESOLVED_FINAL")"
+    title_end="$(jq -r '.replacement_intervals.title.end' <<< "$RESOLVED_FINAL")"
     ffmpeg -hide_banner -nostdin -loglevel error -y \
-        -i "$retained" -i "$hook" -i "$dog" \
+        -i "$retained" -i "$hook" -i "$dog" -i "$title" \
         -filter_complex "\
 [1:v]setpts=PTS-STARTPTS[hookv];[1:a]asetpts=PTS-STARTPTS[hooka];\
 [0:v]trim=start=${hook_end}:end=${dog_start},setpts=PTS-STARTPTS[midv];\
 [0:a]atrim=start=${hook_end}:end=${dog_start},asetpts=PTS-STARTPTS[mida];\
 [2:v]setpts=PTS-STARTPTS[dogv];[2:a]asetpts=PTS-STARTPTS[doga];\
-[0:v]trim=start=${dog_end},setpts=PTS-STARTPTS[tailv];\
-[0:a]atrim=start=${dog_end},asetpts=PTS-STARTPTS[taila];\
-[hookv][hooka][midv][mida][dogv][doga][tailv][taila]concat=n=4:v=1:a=1[v][a]" \
+[3:v]setpts=PTS-STARTPTS[titlev];[3:a]asetpts=PTS-STARTPTS[titlea];\
+[0:v]trim=start=${title_end},setpts=PTS-STARTPTS[tailv];\
+[0:a]atrim=start=${title_end},asetpts=PTS-STARTPTS[taila];\
+[hookv][hooka][midv][mida][dogv][doga][titlev][titlea][tailv][taila]concat=n=5:v=1:a=1[v][a]" \
         -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
         -c:a pcm_s16le "$output"
 }
 
-# Replaces only the opening card in the exact prior selected base. That base already contains the
+# Replaces the opening and title cards in the exact prior selected base. That base contains the
 # accepted staged dog chase and all unchanged gameplay, so this path cannot open a game window or
 # silently turn a score/intro revision into a new capture.
 assemble_remix_base() {
-    local retained="$1" hook="$2" output="$3" hook_end
+    local retained="$1" hook="$2" title="$3" output="$4" hook_end title_start title_end
     hook_end="$(jq -r '.replacement_intervals.hook.end' <<< "$RESOLVED_FINAL")"
-    ffmpeg -hide_banner -nostdin -loglevel error -y -i "$retained" -i "$hook" \
+    title_start="$(jq -r '.replacement_intervals.title.start' <<< "$RESOLVED_FINAL")"
+    title_end="$(jq -r '.replacement_intervals.title.end' <<< "$RESOLVED_FINAL")"
+    ffmpeg -hide_banner -nostdin -loglevel error -y -i "$retained" -i "$hook" -i "$title" \
         -filter_complex "\
 [1:v]setpts=PTS-STARTPTS[hookv];[1:a]asetpts=PTS-STARTPTS[hooka];\
-[0:v]trim=start=${hook_end},setpts=PTS-STARTPTS[tailv];\
-[0:a]atrim=start=${hook_end},asetpts=PTS-STARTPTS[taila];\
-[hookv][hooka][tailv][taila]concat=n=2:v=1:a=1[v][a]" \
+[0:v]trim=start=${hook_end}:end=${title_start},setpts=PTS-STARTPTS[midv];\
+[0:a]atrim=start=${hook_end}:end=${title_start},asetpts=PTS-STARTPTS[mida];\
+[2:v]setpts=PTS-STARTPTS[titlev];[2:a]asetpts=PTS-STARTPTS[titlea];\
+[0:v]trim=start=${title_end},setpts=PTS-STARTPTS[tailv];\
+[0:a]atrim=start=${title_end},asetpts=PTS-STARTPTS[taila];\
+[hookv][hooka][midv][mida][titlev][titlea][tailv][taila]concat=n=4:v=1:a=1[v][a]" \
         -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
         -c:a pcm_s16le "$output"
 }
 
 build_selected_mix() {
-    local base="$1" final_dir="$OUT_DIR/experiments/final-v2/source"
+    local base="$1" final_dir="$OUT_DIR/$FINAL_SOURCE_REL"
     local resolved_scores="$final_dir/resolved-scores.json"
     local resolved_final="$final_dir/resolved-final-score.json"
     local selected raw score check_raw check_score bass_raw bass bass_check_raw bass_check
@@ -1061,7 +1091,7 @@ build_selected_mix() {
     bass_check_raw="$WORK/event-bass-raw-check.wav"; bass_check="$WORK/event-bass-score-check.wav"
     ending_raw="$final_dir/score-ending-raw.wav"; ending="$final_dir/score-ending.wav"
     ending_check_raw="$WORK/score-ending-raw-check.wav"; ending_check="$WORK/score-ending-check.wav"
-    mixed_audio="$WORK/selected-mix.wav"
+    mixed_audio="$final_dir/selected-mix.wav"
     build_score_once "$selected" "$raw" "$score" "$resolved_scores"
     build_score_once "$selected" "$check_raw" "$check_score" "$resolved_scores"
     build_bass_once "$bass_raw" "$bass" "$resolved_final"
@@ -1104,23 +1134,28 @@ alimiter=limit=0.92[a]" \
             --arg source_sha "$(jq -r '.remix_base_sha256' "$FINAL_SCORE_FILE")" \
             --arg source_revision "$(jq -r '.assembly_revision' "$OUT_DIR/trailer-glass-alarm-final.json")" \
             --arg hook_sha "$(shasum -a 256 < "$WORK/selected-hook.mkv" | awk '{print $1}')" \
+            --arg title_sha "$(shasum -a 256 < "$WORK/selected-title.mkv" | awk '{print $1}')" \
             --argjson intervals "$(jq '.replacement_intervals' <<< "$RESOLVED_FINAL")" \
             --argjson duration "$total_seconds" \
             '{remix_source:{file:$source,sha256:$source_sha,assembly_revision:$source_revision,
-                reused_interval:{start:$intervals.hook.end,end:$duration}},
-              replacements:{hook:{interval:$intervals.hook,sha256:$hook_sha}}}')"
+                reused_intervals:[{start:$intervals.hook.end,end:$intervals.title.start},
+                  {start:$intervals.title.end,end:$duration}]},
+              replacements:{hook:{interval:$intervals.hook,sha256:$hook_sha},
+                title:{interval:$intervals.title,sha256:$title_sha}}}')"
     else
         provenance="$(jq -n \
             --arg hook_sha "$(shasum -a 256 < "$WORK/selected-hook.mkv" | awk '{print $1}')" \
             --arg dog_sha "$(shasum -a 256 < "$WORK/selected-dog.mkv" | awk '{print $1}')" \
+            --arg title_sha "$(shasum -a 256 < "$WORK/selected-title.mkv" | awk '{print $1}')" \
             --argjson intervals "$(jq '.replacement_intervals' <<< "$RESOLVED_FINAL")" \
             '{replacements:{hook:{interval:$intervals.hook,sha256:$hook_sha},
-                dog:{interval:$intervals.dog,sha256:$dog_sha}}}')"
+                dog:{interval:$intervals.dog,sha256:$dog_sha},
+                title:{interval:$intervals.title,sha256:$title_sha}}}')"
     fi
     manifest="${output%.mp4}.json"
     jq -n --arg output "$(basename "$output")" \
         --arg output_sha256 "$(shasum -a 256 < "$output" | awk '{print $1}')" \
-        --arg selected_base "experiments/final-v2/source/selected-base.mkv" \
+        --arg selected_base "$FINAL_SOURCE_REL/selected-base.mkv" \
         --arg selected_base_sha256 "$(shasum -a 256 < "$base" | awk '{print $1}')" \
         --arg retained_base "$(jq -r '.source_base' "$FINAL_SCORE_FILE")" \
         --arg retained_base_sha256 "$(jq -r '.source_base_sha256' "$FINAL_SCORE_FILE")" \
@@ -1143,7 +1178,7 @@ alimiter=limit=0.92[a]" \
           retained_base:{file:$retained_base,sha256:$retained_base_sha256,
             capture_revision:$retained_capture_revision,
             reused_intervals:[{start:$intervals.hook.end,end:$intervals.dog.start},
-              {start:$intervals.dog.end,end:$duration}]},
+              {start:$intervals.title.end,end:$duration}]},
           selected_base:{file:$selected_base,sha256:$selected_base_sha256,
             audio:"PCM game audio padded with silence to the picture duration before score mixing"},
           score:{name:"Glass Alarm",sha256:$score_sha256,mean_db:$score_mean_db,peak_db:$score_peak_db,
@@ -1477,15 +1512,16 @@ case "$MODE" in
             exit 1
         fi
         encode_card hook "$WORK/selected-hook.mkv"
+        encode_card title "$WORK/selected-title.mkv"
         render_frames dog "$WORK/frames"
         movie_evidence "$WORK/frames" "$OUT_DIR/experiments/final/evidence/dog" "$FPS" selected
         write_cut_entry_evidence dog "$WORK/frames"
         encode_shot dog "$WORK/frames" "$WORK/selected-dog.mkv"
         rm -rf "$WORK/frames"
-        mkdir -p "$OUT_DIR/experiments/final-v2/source"
+        mkdir -p "$OUT_DIR/$FINAL_SOURCE_REL"
         assemble_selected_base "$retained_base" "$WORK/selected-hook.mkv" "$WORK/selected-dog.mkv" \
-            "$OUT_DIR/experiments/final-v2/source/selected-base.mkv"
-        build_selected_mix "$OUT_DIR/experiments/final-v2/source/selected-base.mkv"
+            "$WORK/selected-title.mkv" "$OUT_DIR/$FINAL_SOURCE_REL/selected-base.mkv"
+        build_selected_mix "$OUT_DIR/$FINAL_SOURCE_REL/selected-base.mkv"
         echo "wrote ${OUT_DIR#"$PROJECT_DIR"/}/$(jq -r '.output' "$FINAL_SCORE_FILE") from the retained base plus the changed hook and dog shots"
         ;;
     selected-remix)
@@ -1502,11 +1538,12 @@ case "$MODE" in
             exit 1
         fi
         encode_card hook "$WORK/selected-hook.mkv"
-        mkdir -p "$OUT_DIR/experiments/final-v2/source"
-        assemble_remix_base "$remix_base" "$WORK/selected-hook.mkv" \
-            "$OUT_DIR/experiments/final-v2/source/selected-base.mkv"
-        build_selected_mix "$OUT_DIR/experiments/final-v2/source/selected-base.mkv"
-        echo "wrote ${OUT_DIR#"$PROJECT_DIR"/}/$(jq -r '.output' "$FINAL_SCORE_FILE") from the exact prior selected base plus the changed hook"
+        encode_card title "$WORK/selected-title.mkv"
+        mkdir -p "$OUT_DIR/$FINAL_SOURCE_REL"
+        assemble_remix_base "$remix_base" "$WORK/selected-hook.mkv" "$WORK/selected-title.mkv" \
+            "$OUT_DIR/$FINAL_SOURCE_REL/selected-base.mkv"
+        build_selected_mix "$OUT_DIR/$FINAL_SOURCE_REL/selected-base.mkv"
+        echo "wrote ${OUT_DIR#"$PROJECT_DIR"/}/$(jq -r '.output' "$FINAL_SCORE_FILE") from the exact prior selected base plus the changed editorial cards"
         ;;
     auditions|auditions-reuse)
         mkdir -p "$OUT_DIR/source"

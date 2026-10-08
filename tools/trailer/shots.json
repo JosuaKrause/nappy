@@ -44,7 +44,8 @@
         "layout": "window", "frame": "tools/trailer/window/apartment-window-frame.png",
         "animation": ["tools/trailer/window/mother-carrying-front-a.png",
           "tools/trailer/window/mother-carrying-front-b.png"]},
-      "length": 4.4
+      "length": 4.4,
+      "fade_in": 0
     },
     {
       "name": "walk",
@@ -95,7 +96,9 @@
       "kind": "card",
       "card": {"asset": "art/logo.png"},
       "length": 4.4,
-      "gap": 0.35
+      "gap": 0.35,
+      "fade_in": 0,
+      "fade_out": 0
     },
     {
       "name": "trucks",

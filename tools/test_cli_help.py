@@ -194,6 +194,54 @@ class CliHelpTests(unittest.TestCase):
                     self.assertTrue(calls)
                 self.assertTrue(all("--write-movie" not in call for call in calls))
 
+    def test_trailer_zero_fades_keep_title_visible_from_first_to_last_frame(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script, env = self.recipe_trailer_fixture(root)
+            (root / ".gitignore").write_text("build/\n")
+            result = subprocess.run([str(script), "--shot", "title"], env=env, capture_output=True, timeout=60)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            decoded = subprocess.run(
+                [
+                    "ffmpeg",
+                    "-v",
+                    "error",
+                    "-i",
+                    str(root / "build/trailer/shot-title.mp4"),
+                    "-vf",
+                    "scale=1:1,format=gray",
+                    "-f",
+                    "rawvideo",
+                    "-",
+                ],
+                check=True,
+                capture_output=True,
+                timeout=20,
+            ).stdout
+            shots = json.loads((root / "tools/trailer/shots.json").read_text())
+            title = next(shot for shot in shots["shots"] if shot["name"] == "title")
+            gap_frames = round(title["gap"] * shots["fps"])
+            self.assertLess(max(decoded[:gap_frames]), 2)
+            visible = decoded[gap_frames:]
+            self.assertGreater(min(visible), 10)
+            self.assertLessEqual(max(visible) - min(visible), 2, "title still has a fade")
+            self.assertFalse((root / "calls").exists(), "editorial render launched the engine")
+
+    def test_trailer_selected_delivery_is_never_overwritten(self) -> None:
+        for mode in ("--selected-reuse", "--selected-remix"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                script, env = self.recipe_trailer_fixture(root)
+                final = json.loads((root / "tools/trailer/final-score.json").read_text())
+                delivered = root / "build/trailer" / final["output"]
+                delivered.parent.mkdir(parents=True)
+                delivered.write_bytes(b"the movie the player is reviewing")
+                result = subprocess.run([str(script), mode], env=env, capture_output=True, timeout=20)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(b"selected delivery already exists", result.stderr)
+                self.assertEqual(delivered.read_bytes(), b"the movie the player is reviewing")
+                self.assertFalse((root / "calls").exists())
+
     def test_trailer_rejects_font_substitution_before_recording(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

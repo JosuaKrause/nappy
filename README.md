@@ -90,8 +90,14 @@ and deterministic oscillator score before joining them with the captured game au
 build the three original scores in `tools/trailer/scores.json` against that same picture. A later
 score-only audition run reuses the matching retained base. After a score is selected,
 `--selected-reuse` reads `tools/trailer/final-score.json`, refuses any retained-base mismatch,
-renders only the hook and dog replacements named by that final composition, and layers its
-additive event cues over the byte-identical selected score. Its local `index.html` switches one
+renders the hook, dog and title replacements named by that final composition, and layers its
+additive event cues over the byte-identical selected score. `--selected-remix` reuses the
+verified selected base and rebuilds only the editorial cards and audio, with no gameplay capture.
+Selected outputs refuse an existing movie or manifest; use a new output name or fresh output
+directory for another review. The completed PCM mix stays beside its source stems for comparison
+with decoded delivery audio. The opening background starts immediately, the mother independently
+fades in over one second, and the main title has no fades. Gameplay scenes fade both out and in
+through black, including the final shot's fade-out. The auditions' local `index.html` switches one
 player between the choices and can jump to the military turn. The cut uses the selected westward birds scene,
 `trailer-birds.json`, and the park-only circular walk in `trailer-park-circle.json`.
 Each recipe owns its setup and scripted action;
