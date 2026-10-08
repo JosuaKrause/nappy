@@ -7,6 +7,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SCENE := "res://scene-recipes/task-07-package.json"
+const PARTIAL_COURTYARD_SCENE := "res://scene-recipes/task-14-last-night.json"
 
 func run(t) -> void:
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
@@ -20,6 +21,7 @@ func run(t) -> void:
 	_test_the_arrow_stays_on_the_stretch(t, map)
 	_test_saved_layout_is_independent(t, data)
 	_test_authored_building_values_drive_live_joins(t, data)
+	_test_authored_partial_courtyard_controls_live_tint(t)
 	_test_the_schema(t, data)
 	_test_the_crowd_enters_at_the_ends(t, map)
 	_test_the_draft_takes_whole_streets(t, witness)
@@ -255,6 +257,46 @@ func _test_authored_building_values_drive_live_joins(t, day_seven: Dictionary) -
 			t.check(back.wall_tiles() == 4 and front.roof_extension_rows == expected_extension,
 					"the front roof reaches the edited four-row rear wall: %s"
 					% [front.roof_extension_rows])
+		city.free()
+
+## A stretch keeps the complete courtyard as hidden context but draws only its authored members.
+## The first visible task-14 member therefore supplies their shared tint; the hidden context's
+## earlier member cannot override it, and the second visible member retains its own authored roll.
+func _test_authored_partial_courtyard_controls_live_tint(t) -> void:
+	var edited: Dictionary = SceneRecipe.load_file(PARTIAL_COURTYARD_SCENE).data.duplicate(true)
+	var tint_source_lot := Rect2i(118, 34, 13, 4)
+	var visible_sibling_lot := Rect2i(132, 34, 8, 4)
+	var authored_variant := 123456789
+	var sibling_variant := -1
+	for spec: Dictionary in edited.stretch.buildings:
+		var lot := SceneRecipe.rect(spec.lot)
+		if lot == tint_source_lot:
+			spec.variant = authored_variant
+		elif lot == visible_sibling_lot:
+			sibling_variant = int(spec.variant)
+	var built := RecipeCityBuilder.build(edited)
+	t.check(built.errors.is_empty(), "the partial-courtyard edit builds: %s" % [built.errors])
+	if built.errors.is_empty():
+		var city: City = CITY_SCENE.instantiate()
+		t.add_child(city)
+		city.build(built.map)
+		var tint_source: Building = null
+		var visible_sibling: Building = null
+		for building: Building in city.buildings():
+			if building.lot == tint_source_lot:
+				tint_source = building
+			elif building.lot == visible_sibling_lot:
+				visible_sibling = building
+		t.check(tint_source != null and visible_sibling != null,
+				"both authored pieces of task 14's partial courtyard stand in the live City")
+		if tint_source != null and visible_sibling != null:
+			t.check(tint_source.variant == authored_variant
+					and visible_sibling.variant == sibling_variant,
+					"each visible piece keeps its own authored variant")
+			t.check(tint_source.tint_variant == authored_variant
+					and visible_sibling.tint_variant == authored_variant,
+					("the first visible piece controls the partial courtyard's live tint: %s, %s")
+					% [tint_source.tint_variant, visible_sibling.tint_variant])
 		city.free()
 
 func _test_the_schema(t, data: Dictionary) -> void:

@@ -813,12 +813,22 @@ func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int
 		if buildings[i].covered_ground_cols != reached[i]:
 			buildings[i].covered_ground_cols = reached[i]
 
-## Gives every piece of one courtyard lot the tint of its first piece (`Building.tint_variant`), so
-## the rectangles a courtyard is cut into read as the one building they are rather than as three
-## or four neighbours. A tint rather than a shared `variant`, which would share every other roll the
-## building makes too. `courtyard_of` is `_courtyard_lot_of()`'s answer for `map.building_rects`.
+## Gives every piece of one courtyard lot one tint (`Building.tint_variant`), so the rectangles a
+## courtyard is cut into read as the one building they are rather than as three or four neighbours.
+## An ordinary city takes the first piece's variant, as before. A stretch may show only part of a
+## complete-context courtyard, so its first authored piece in the same canonical rectangle order
+## supplies the tint instead; a hidden witness piece must not choose the visible colour. A tint
+## rather than a shared `variant`, which would erase the other authored rolls the buildings keep.
+## `courtyard_of` is `_courtyard_lot_of()`'s answer for `map.building_rects`.
 func _share_courtyard_tint(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var first_variant := {}
+	if map.has_stretch():
+		for i in buildings.size():
+			var lot := courtyard_of[i]
+			if lot < 0 or first_variant.has(lot) \
+					or not _recipe_shows_building(buildings[i].lot):
+				continue
+			first_variant[lot] = buildings[i].variant
 	for i in buildings.size():
 		var lot := courtyard_of[i]
 		if lot < 0:
