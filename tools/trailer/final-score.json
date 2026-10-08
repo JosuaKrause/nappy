@@ -13,7 +13,7 @@
   "bass_target_mean_db": -31.0,
   "bass_peak_ceiling_db": -12.0,
   "ending_target_mean_db": -41.0,
-  "ending_peak_ceiling_db": -15.0,
+  "ending_peak_ceiling_db": -21.0,
   "bass_events": [
     {"label": "leaf blower visible at scene fade-in", "shot": "choice", "offset": 0.0, "duration": 2.1, "frequency": 65.41, "gain": 0.58, "texture": "weight"},
     {"label": "pigeon flock visible at scene fade-in", "shot": "birds", "offset": 0.0, "duration": 2.1, "frequency": 58.27, "gain": 0.58, "texture": "weight"},
