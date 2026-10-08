@@ -86,11 +86,9 @@ See `docs/MECHANICS.md`, "Saving and resuming".
 game's frame-locked movie writer, then adds the shot list's dark editorial cards, tracked logo, captions over the footage, ending copy
 and deterministic oscillator score before joining them with the captured game audio. Run
 `tools/trailer.sh --list` to inspect the cut, `--validate` to check its recipes headlessly,
-or `--shot choice` to record one scene. Two birds scenes are kept while the choice is pending:
-`trailer-birds.json` (the cut in `shots.json`) and `trailer-birds-staged.json` (the original street
-staging, the flock on his way and the industrial building, with a park at the one legal lot west of
-it, block (2,1), which is off screen from the walk); the variant renders with
-`TRAILER_SHOTS=tools/trailer/shots-birds-staged.json TRAILER_OUT=build/trailer-birds-staged tools/trailer.sh`. Each recipe owns its setup and scripted action;
+or `--shot choice` to record one scene. The cut uses the selected westward birds scene,
+`trailer-birds.json`, and the park-only circular walk in `trailer-park-circle.json`.
+Each recipe owns its setup and scripted action;
 the shot list owns the cut timing and editorial treatment. Only normal scenes enter the trailer,
 with their authored extent and validation scope preserved in the resolved manifest. The editor
 reads the native viewport size from `project.godot`, resolves the named font through fontconfig

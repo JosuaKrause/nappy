@@ -37,6 +37,11 @@ with a settled camera; its observations check what the cut shows, at the ticks i
 a trailer scene is re-staged, its observations are rewritten to the new staging, rather than the
 staging bent back to satisfy an old observation: the checks follow the trailer.
 
+The trailer uses `trailer-birds.json`, the selected westward walk into the park.
+`trailer-park-circle.json` bounds its scene to park tiles and trees south of a large park's
+playground. The mother completes the loop within the retained shot; streets, buildings and
+the playground remain outside the authored extent.
+
 ## Activity and playback
 
 `setup` accepts `day`, `parent` (`mother` or `father`), `player` (`at`, cardinal `facing`,
@@ -121,8 +126,8 @@ off the street signals. Supported escape pins are trucks, abduction, roadblocks 
 
 `playback` accepts a timed `walk` script (the same syntax as `--walk`), `duration` in seconds,
 `capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`, `landscape_margin`), `settled_camera` (true: the camera starts settled on her with its look-ahead,
-which the trailer needs so no movie shows it travelling in; the default leaves its smoothing as
-play has it, which the task scenes' observations are written against), `caption`,
+which the trailer needs before its moving lead-in; all cameras start at the placed player,
+and this option additionally initializes the directional look-ahead), `caption`,
 `title` and `observations`. `landscape_margin` grows only the zoom-out's final framing around the
 finite map. In a full-city scene, exterior ground remains unwalkable and loads only when the camera
 can see it. Each observation has a physics `tick`, named `subject` and `condition`:

@@ -54,10 +54,10 @@ usage: tools/trailer.sh [--help|-h] [--list | --validate | --shot NAME | --check
 Renders the trailer from tools/trailer/shots.json: gameplay shots through Godot's movie writer,
 frame-locked, at the game's own resolution with its audio; editorial cards and the deterministic
 oscillator score through ffmpeg; then fades, mixes, joins and encodes them. Frames are deleted as
-soon as each shot is encoded. Output goes to build/trailer/ (gitignored).
+soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer/, gitignored).
 
-  (no flag)        render every shot and join them into build/trailer/trailer.mp4
-  --shot NAME      render one shot alone into build/trailer/shot-NAME.mp4
+  (no flag)        render every shot and join them into TRAILER_OUT/trailer.mp4
+  --shot NAME      render one shot alone into TRAILER_OUT/shot-NAME.mp4
   --check NAME     render the shot twice and compare every frame's hash; exits non-zero on a
                    difference inside the shot's cut
   --check all      the same for every shot in the list
@@ -65,12 +65,16 @@ soon as each shot is encoded. Output goes to build/trailer/ (gitignored).
   --validate       headlessly validate every recipe; never open a recording window
   --list           print the shot list (name, kind, source, length, gap); render nothing
 
+Environment:
+  TRAILER_SHOTS    use another shot-list JSON (default: tools/trailer/shots.json)
+  TRAILER_OUT      output directory (default: build/trailer)
+
 Disk: frames stay on disk until each shot is encoded, so this refuses to start unless the volume
 holding \$TMPDIR has the record-second estimate (tools/lib_disk_headroom.sh) free for every game
 second of the shots asked for (an upper bound, as only one shot's frames exist at a time), and warns
 when that leaves less than the reserve. A stale atlas repair is checked the same way.
 
-Checks retain hashes, manifests and settings in build/trailer/checks/. Simulation observations
+Checks retain hashes, manifests and settings in TRAILER_OUT/checks/. Simulation observations
 and audio must match too; editorial cards compare decoded frame and silence hashes. Equality applies only to
 the recorded engine, assets, ffmpeg/font, and settings named by the retained manifests.
 

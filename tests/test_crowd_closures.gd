@@ -1379,6 +1379,7 @@ func _test_cars_do_not_drive_on_across_the_mountain(t) -> void:
 		_city.crowd.start_day(1, _rng(40 + i), at)
 		i += 1
 		var furthest_north := 0.0
+		var departing_north := 0.0
 		var furthest_south := 0.0
 		var seen_past_the_edge := 0
 		for frame in int(round(60.0 / STEP)):
@@ -1388,12 +1389,17 @@ func _test_cars_do_not_drive_on_across_the_mountain(t) -> void:
 				if agent.kind != CrowdAgent.Kind.CAR:
 					continue
 				furthest_north = maxf(furthest_north, -agent.position.y)
+				if agent.heading().y < 0.0:
+					departing_north = maxf(departing_north, -agent.position.y)
 				furthest_south = maxf(furthest_south, agent.position.y - size.y)
 				if agent.position.y < 0.0 or agent.position.y > size.y:
 					seen_past_the_edge += 1
 		t.check(furthest_north <= CrowdAgent.TUNNEL_ENTRY_ROOM + Tuning.CAR_STRIKE_HALF_LENGTH,
-				"%s: no car drives on north of the portal's dark opening (furthest %.0fpx)"
+				"%s: arrivals stay beneath the tunnel roof (furthest %.0fpx)"
 				% [name, furthest_north])
+		t.check(departing_north <= CrowdAgent.TUNNEL_ROOM + Tuning.CAR_STRIKE_HALF_LENGTH,
+				"%s: departures vanish inside the dark before reaching the mountain (%.0fpx)"
+				% [name, departing_north])
 		t.check(furthest_south <= CityEdge.BRIDGE_DECK_PX,
 				"%s: no car leaves the bridge deck (furthest %.0fpx)" % [name, furthest_south])
 		t.check(seen_past_the_edge > 0, "%s: cars were past the edge, so the check is not vacuous"

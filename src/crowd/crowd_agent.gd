@@ -3063,16 +3063,16 @@ func _has_left_the_field() -> bool:
 func _room_beyond_the_map(south: bool) -> float:
 	if kind != Kind.CAR or not _map.is_main_road(_vertical, _corridor):
 		return Tuning.TILE_SIZE
-	return _spine_room(south)
+	return BRIDGE_RUN if south else TUNNEL_ROOM
 
-## How far past the map's north edge a car heading out of the tunnel exists: the depth of the
+## How far past the map's north edge a car departing into the tunnel exists: the depth of the
 ## dark opening (`CityEdge.TUNNEL_DEPTH_TILES`, opaque at its far end) plus half a car, so the
 ## car's rear is inside the dark before the car stops existing.
 const TUNNEL_ROOM := float(CityEdge.TUNNEL_DEPTH_TILES * Tuning.TILE_SIZE) \
 		+ Tuning.CAR_STRIKE_HALF_LENGTH
 
 ## How far past the map's south edge a car on the spine exists: the length of the bridge deck
-## (`CityEdge.BRIDGE_RUN`) less a car, so it is never driving off the end of the deck.
+## (`CityEdge.BRIDGE_DECK_PX`) less a car, so it is never driving off the end of the deck.
 const BRIDGE_RUN := CityEdge.BRIDGE_DECK_PX - 2.0 * Tuning.CAR_STRIKE_HALF_LENGTH
 
 ## How far past the north edge a car coming out of the tunnel may be put: the roof over the
@@ -3104,18 +3104,16 @@ func _hide_the_spine_entry() -> void:
 	elif _direction < 0.0 and at > limit:
 		_set_along(maxf(at, limit + BRIDGE_ENTRY_MIN))
 
-## How far past the true edge a **fresh** recycle may land — stricter than `_room_beyond_the_map`,
-## which also governs how far a *departing* agent may overrun before it disappears.
+## How far past the true edge a **fresh** recycle may land. Departures have their own room in
+## `_room_beyond_the_map`: ordinary agents get one tile, northbound cars stop inside the dark.
 ##
 ## **A departure's tile of slack is never seen**: it happens at the edge of the field's own box,
 ## hundreds of pixels from the camera, so the one frame it is a tile into the scree changes
 ## nothing anybody is looking at. An entry is the one placement that can be the very first frame
 ## on screen, and the plain boundary is exactly where a player standing at the edge of the map is
-## looking — so an ordinary walker or car may not land past it at all, and only a car on the spine,
-## arriving through the tunnel or off the bridge, keeps the room `_room_beyond_the_map` already
-## grants it. `_room_beyond_the_map` itself is unchanged and still the departure rule; this is
-## the same question asked of the other end of the journey, with a different answer for everybody
-## the tunnel and the bridge are not for.
+## looking — so an ordinary walker or car may not land past it at all. A car arriving on the
+## spine instead lands beneath the tunnel roof or on the bridge deck, where the entry placement
+## can keep its complete picture out of the player's view until it moves into sight.
 func _entry_room(south: bool) -> float:
 	if kind != Kind.CAR or not _map.is_main_road(_vertical, _corridor):
 		return 0.0

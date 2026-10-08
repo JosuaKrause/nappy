@@ -1,0 +1,17 @@
+{
+  "version": 1, "name": "A circle among park trees as the baby falls asleep", "seed": 11,
+  "extent": {"scope": "bounded", "bounds": [20, 59, 22, 11]},
+  "city": {"context_seed": 1917501, "lots": [{"blocks": [1, 3, 2, 2], "purpose": "park"}]},
+  "anchors": {"start": {"world": [870, 1994]}},
+  "setup": {"tutorial_complete": true, "day": 1, "parent": "mother",
+    "player": {"at": "start", "facing": "east", "sleep": 73}},
+  "playback": {"settled_camera": true,
+    "walk": "1e0.6@90@0.6@135@0.6@180@0.6@225@0.6@270@0.6@315@0.6@0@0.6@45@0.3e",
+    "duration": 6.1, "capture_at": 4, "camera": {"zoom": 2.4},
+    "observations": [{"tick": 30, "subject": "player", "condition": "moving"},
+      {"tick": 60, "subject": "player", "condition": "awake"},
+      {"tick": 110, "subject": "player", "condition": "asleep"},
+      {"tick": 174, "subject": "player", "condition": "asleep"},
+      {"tick": 174, "subject": "player", "condition": "moving"},
+      {"tick": 174, "subject": "player", "condition": "near", "at": [962, 1994], "distance": 10}]}
+}

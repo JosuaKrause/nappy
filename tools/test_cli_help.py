@@ -114,9 +114,23 @@ class CliHelpTests(unittest.TestCase):
             "done\n"
         )
         stub.chmod(0o755)
+        font_bin = root / "font-bin"
+        font_bin.mkdir()
+        font = root / "fixture-font.ttf"
+        font.write_bytes(b"font placeholder: the engine stub rejects rendering")
+        font_match = font_bin / "fc-match"
+        font_match.write_text(
+            "#!/bin/sh\n"
+            'case "$2" in\n'
+            '  *family*) printf "%s\\n" "${RECIPE_FONT_FAMILY:-$3}" ;;\n'
+            f'  *) printf "%s\\n" "{font}" ;;\n'
+            "esac\n"
+        )
+        font_match.chmod(0o755)
         subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
         subprocess.run(["git", "-C", str(root), "add", "scene-recipes", "art"], check=True, capture_output=True)
         env = dict(os.environ, GODOT=str(stub), RECIPE_CALLS=str(root / "calls"))
+        env["PATH"] = str(font_bin) + os.pathsep + env["PATH"]
         env["RECIPE_RESULT"] = json.dumps({"classification": "normal", "scope": "bounded", "bounds": [0, 0, 12, 12]})
         return root / "tools" / "trailer.sh", env
 
@@ -127,7 +141,8 @@ class CliHelpTests(unittest.TestCase):
             result = subprocess.run([str(script), "--validate"], env=env, text=True, capture_output=True, timeout=20)
             self.assertEqual(result.returncode, 0, result.stderr)
             calls = (root / "calls").read_text().splitlines()
-            self.assertEqual(len(calls), 7)
+            shots = json.loads((root / "tools" / "trailer" / "shots.json").read_text())["shots"]
+            self.assertEqual(len(calls), sum("recipe" in shot for shot in shots))
             self.assertTrue(all("--headless" in call and "--write-movie" not in call for call in calls))
             manifest = json.loads((root / "build" / "trailer" / "validation" / "choice.json").read_text())
             self.assertEqual(manifest["scope"], "bounded")
@@ -142,6 +157,16 @@ class CliHelpTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             calls = (root / "calls").read_text().splitlines()
             self.assertTrue(any("--write-movie" in call and "--after 10.000" in call for call in calls))
+
+    def test_trailer_rejects_font_substitution_before_recording(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script, env = self.recipe_trailer_fixture(root)
+            env["RECIPE_FONT_FAMILY"] = "Wrong Font"
+            result = subprocess.run([str(script), "--shot", "choice"], env=env, text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("not the family asked for", result.stderr)
+            self.assertFalse((root / "calls").exists())
 
     def test_trailer_refuses_fixture_and_preflight_failure_before_recording(self) -> None:
         for failure in ("fixture", "engine", "missing_scope"):
