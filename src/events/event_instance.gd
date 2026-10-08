@@ -3769,6 +3769,13 @@ func drawn_rect_now() -> Rect2:
 	if def.draws_body_shadow and def.shape != null:
 		var r := def.obstructs_radius if def.obstructs_radius > 0.0 else def.shape.radius
 		rect = rect.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
+	if def.look == EventDef.Look.LOOSE_DOG:
+		var behind := LOOSE_LEAD_REACH if _heading_is_west() else -LOOSE_LEAD_REACH
+		rect = rect.merge(Rect2(Vector2(minf(behind, 0.0), -8.0),
+				Vector2(absf(behind), 6.0)).grow(1.0))
+	rect.position.y += _current_bob()
+	if _halo != null:
+		rect = rect.grow(EntityHalo.HALO_MARGIN)
 	var mark := mark_rect()
 	if mark.has_area():
 		rect = rect.merge(mark)

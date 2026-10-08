@@ -433,8 +433,9 @@ now too long notice")*: `Tuning.OFFSCREEN_NOTICE` (0.2s) is the default, and `ch
 **A sent robber arrives already chasing.** *(Amendment 7 of M226, the player: "why would the robber
 walk towards her when it spawns as pursuing robber? the proximity rule is only for standing
 robbers".)* The resistance's `robber_giving_chase` and `van_guard_giving_chase` read the dog's own
-half-second badge, are created just off screen with their telegraph spent (`EventDef.arrives_chasing`)
-and chase from their first frame. The tall-osprey floor — standing still, a robber lunges no sooner
+half-second badge, are created just off screen with no closing-in telegraph (`EventDef.arrives_chasing`)
+and chase from their first frame. Running may shake them off only after `PURSUIT_MIN_NOTICE`
+seconds from first entering her visible area. The tall-osprey floor — standing still, a robber lunges no sooner
 than `Tuning.PURSUIT_MIN_NOTICE` after he appears — is a standing robber's (`alley_robbery`, waiting
 in his alley), not theirs.
 
@@ -450,7 +451,7 @@ exists so a pursuer stuck against a wall lets go in the end.
   once**, `Tuning.offscreen_lead()` ahead of her, and telegraphs on its way in (1.97s) with no badge:
   the badge goes only to something lethal or faster than a walk, and a patrol is neither (slower
   than a walk, never `hard_fail` at any heat). It does not telegraph its coming ("What telegraphs"),
-  so it is outside the telegraph contract too.
+  and its in-world approach still meets the telegraph contract.
 - **A `MAP` mover** — `military_convoy` on an ordinary day from 13, the escape's trucks — **is a
   place the day planned at dawn** and streams in at `Tuning.EVENT_STREAM_RADIUS`, telegraphing in the
   world (4.43s) with a badge because 120px/s is faster than a walk, and the fairness contract checks
