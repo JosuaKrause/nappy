@@ -11,6 +11,11 @@ frame B. In the east-facing view, the near leg must cover the vertical frame bar
 pedals attach. Inspect the A/B transition as well as the isolated pictures; a painter-order
 change that swaps the two legs between poses does not satisfy the repair.
 
+[Jolly-puffin](../../playtests/2026-10-07-jolly-puffin.md) makes the full depth order explicit:
+in northeast, southeast and east, the far leg is behind every part of the frame and both wheels,
+and the near leg is in front of every part of the frame and both wheels. Apply this to A/B and
+the western mirrors, preserving the leg identities and attachment correction from candidate 3.
+
 **Proposed, not asked for:** stage the SVG painter order as far leg, bicycle frame, near leg,
 and hide the northeast wing roots behind the back silhouette so only the forward reach is
 visible. The alternative is adjusting the pose without that clear depth separation; this
