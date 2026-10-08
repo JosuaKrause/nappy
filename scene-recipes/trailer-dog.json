@@ -4,7 +4,7 @@
     "tree_moves": [{"from": [50, 74], "to": [50, 71]}]},
   "anchors": {"start": {"world": [1536, 2384]}, "dog": {"world": [1967, 2384]}},
   "setup": {"tutorial_complete": true, "day": 3, "parent": "mother",
-    "player": {"at": "start", "facing": "east", "sleep": 100, "excitement": 37},
+    "player": {"at": "start", "facing": "east", "sleep": 100, "excitement": 47},
     "background": {"crowd": true, "uniform_walkers": true, "walker_multiplier": 2},
     "actors": [
       {"name": "left_walk_1", "kind": "walker", "at": [1400, 2240], "direction": "south"},
