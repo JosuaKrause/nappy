@@ -55,10 +55,12 @@ pixel-identical file, since two ordinary runs of one seed already differ — and
 **A timed Godot movie carrying `--after` needs that answer on every covered frame, not only at the
 final capture.** The simulation and a scene-recipe manifest keep advancing while an occluded movie
 window repeats its last viewport texture, so a complete manifest cannot prove that recorded action
-is visible. Its recording `AutoScreenshot` node schedules an on-demand draw from `_process()` when
-`DisplayServer.window_can_draw()` is false; the deferred call runs after the current frame's ordinary
-updates, at the boundary where the visible render loop reads them. A trailer shot that promises
-visible action marks `motion: true`; `tools/trailer.sh` rejects a selected cut with more than half a
+is visible. Its recording `AutoScreenshot` node calls `RenderingServer.force_draw(false)`
+synchronously from `_process()` when `DisplayServer.window_can_draw()` is false. That draw must
+finish before the movie writer captures the viewport texture; a deferred call can miss that
+boundary and leave stale frames in the movie. Visible recordings and non-recording runs use the
+ordinary render path. A trailer shot that promises visible action marks `motion: true`;
+`tools/trailer.sh` rejects a selected cut with more than half a
 second of identical consecutive PNGs before it encodes or deletes them. Check those raw-frame hashes
 as well as the manifest when a movie is evidence of motion.
 
