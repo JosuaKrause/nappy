@@ -811,10 +811,9 @@ afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=dura
         frame_a="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[0]' "$SHOTS_FILE")"
         frame_b="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[1]' "$SHOTS_FILE")"
         # The original-resolution carrying drawings have different transparent margins. Register
-        # their visible figures at equal height inside one clipped, dark room aperture. The retained
-        # approved still puts the alpha bounds 15px right of the later centred audition, so both
-        # frames restore that exact offset. The 4.4-second A-B-A-B cycle gets a gentle 6px/2.2s bob;
-        # only the figure fades in.
+        # their visible figures at equal height inside one clipped, dark room aperture, with the
+        # figure's center on the center of the window's left half. The 4.4-second A-B-A-B cycle gets
+        # a gentle 6px/2.2s bob; only the figure fades in.
         ffmpeg -hide_banner -loglevel error -y \
             -f lavfi -i "color=c=${CARD_BACKGROUND}:s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${length}" \
             -f lavfi -i "anullsrc=r=48000:cl=stereo" \
@@ -831,8 +830,8 @@ drawtext=fontfile='${FONT_FILE}':textfile='${subtitle_file}':fontsize=${subtitle
 [2:v]crop=131:371:107:21,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[a];\
 [3:v]crop=131:357:107:8,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[b];\
 color=c=0x101018:s=282x396:r=${FPS}:d=${length}[room];\
-[room][a]overlay=x=(W-w)/2+15:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,0\,1.10)+between(t\,2.20\,3.30)'[wa];\
-[wa][b]overlay=x=(W-w)/2+15:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,1.10\,2.20)+between(t\,3.30\,4.40)'[aperture];\
+[room][a]overlay=x=W/4-w/2:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,0\,1.10)+between(t\,2.20\,3.30)'[wa];\
+[wa][b]overlay=x=W/4-w/2:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,1.10\,2.20)+between(t\,3.30\,4.40)'[aperture];\
 [card][aperture]overlay=x=839:y=165:shortest=1[behind];\
 [4:v]scale=960:960:flags=lanczos[window];\
 [behind][window]overlay=x=500:y=-120:shortest=1:format=auto,\
