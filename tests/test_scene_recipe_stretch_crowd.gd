@@ -32,7 +32,8 @@ func run(t) -> void:
 		var unmet: Array = (manifest.get("observations", []) as Array).filter(
 				func(record: Dictionary) -> bool: return not record.passed)
 		t.check(status == 0 and manifest.get("playback_complete", false) and unmet.is_empty(),
-				"%s plays to its end with every observation met: %s" % [filename, unmet])
+				"%s plays to its end with every observation met: %s\n%s" % [filename, unmet,
+					"\n".join(output) if status != 0 else str(manifest.get("playback_error", ""))])
 		var jumps: Array = manifest.get("seen_to_jump", [])
 		t.check(jumps.is_empty(), "%s: nobody appears or vanishes in her view: %s" % [filename, jumps])
 		var asks_an_event := (data.playback.observations as Array).any(

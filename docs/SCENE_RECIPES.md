@@ -176,6 +176,7 @@ stands along its edge, so she, a pursuer and a nudge from the crowd stop there a
 
 | Field | What it holds |
 |---|---|
+| `context` | explicit off-camera topology: row runs `[type, length]`, block arcs and layouts, home and station, regions, lots and trees; no generated witness |
 | `stretch.tiles` | tile type name → `[y, x_from, x_to]` runs: every tile of the stretch, by the type it is |
 | `stretch.buildings` | `{lot, district, variant, height, condition}`: each building fronting the stretch (a lot beside or across a corner from one of its tiles), drawn with that district, variant, wall height in tiles and condition |
 | `stretch.trees` | the pit tile `[x, y]` of each street tree on the stretch |
@@ -186,25 +187,18 @@ stands along its edge, so she, a pursuer and a nudge from the crowd stop there a
 | `setup.actors` | its starting walkers and cars |
 | `setup.route_bag` | what she meets on her route, rigged |
 
-**The construction witness still states the day's rules.** The route tree, the regions, the
-task's mark and the guard at it are planned over the whole city `city.context_seed` builds, and a
-distance measured by walking (day 10's neighbor's way home) reads it too, since those are
-questions about the city the stretch was cut from. So the witness has to be that city: every
-listed tile must be the type the witness has there, every listed building a lot it builds, and the
-street trees on the stretch exactly its own. A witness that disagrees is refused by name
-(`stretch.witness`, `stretch.buildings`, `stretch.trees`) rather than drawn over, so a generator
-change that moves a stretch's own ground stops the scene and asks for a new draft.
+**The saved `context` states the day's spatial rules.** It contains explicit tile rows, block
+arcs and layouts, districts, region boundaries, the home and station, building footprints and
+street trees. Runtime restores those lists directly, then overlays `stretch.tiles`,
+`stretch.buildings` and `stretch.trees` as the authority for the visible scene. Every placement
+is editable. A tile edit survives daily repainting; a moved building supplies its new collider
+and roof footprint; an added tree supplies its pit and event clearance. Malformed data and
+placements outside the declared stretch fail with a named error.
 
-**So not everything in a stretch can be edited by hand.** Its tiles, its building lots and its
-street trees cannot: they must be the witness's, and an edit to any of them is refused. What can
-be: each building's district, variant, wall height and condition, the props, litter, cracks and
-posters, the starting walkers and cars, the route bag, the walk and the observations, and the
-tiles `draft.include` adds when the stretch is drafted again. And some of what the scene shows
-still follows the generator without a check: whether a street end is open ground beyond (an end
-the crowd leaves and enters by) or a building (a wall), read off the witness tile just past it; how
-far a building's roof reaches over its neighbours, measured against the witness's lots; and the
-route tree, the regions and the mark's guard, planned over the whole witness. A generator change
-there changes the scene without stopping it.
+The ordinary route, region, task and event planners read that explicit map. Saved scenes never
+run city generation and never compare their layout with a generated witness. `city.context_seed`
+and its construction choices are drafting inputs only for stretches; changing them cannot
+move or reject a saved layout. Runtime seed still controls event draws and moving actors.
 
 **While she walks, the stretch is the whole world.** Every other question about the ground answers
 a void tile as a wall, so the task's target is placed by the director's own rule on the streets the
@@ -245,8 +239,7 @@ her walk touches it *(the player, inbox #555: "make them not start *on* the mark
 "Unread, walk to it")*. She reads it up to the mark's 36px reach away, so the target stands its
 distance from where she read it, and the assertions measure from the mark with that 36px of slack.
 The routes keep out of the robber's notice at the mark and, where the straight way to the target
-runs past him, go round. Every scene shares one context city (`context_seed` 1917501) and run seed
-11, so a scene starts the same way every time.
+runs past him, go round. Each scene saves its own explicit context and uses run seed 11, so it starts the same way every time.
 
 Every task scene's route bag is the day's own ordinary bag with a cat in front of it, and each scene
 asserts that she saw the cat (`appeared`) and that walkers, and on days 6 to 11 a car, are moving
@@ -308,7 +301,7 @@ day does, and the engine parks at the kerb in front of the fire for the rest of 
 
 The root has `version: 1`, a nonempty `name`, integer `seed`, `extent`, `city`, and optional
 `anchors`, `setup`, `playback`, `kind` (`city` or `escape`), `classification` (`normal` or
-`fixture`), `expected_violations`, and `stretch` (with a stretch scope, and only then; "The task
+`fixture`), `expected_violations`, and `stretch` with its required explicit `context` (with a stretch scope, and only then; "The task
 scenes" says what it holds). Unknown construction fields fail. Unsupported requests
 are errors, never nearest-position substitutions.
 
@@ -318,7 +311,7 @@ full extent; the default `"player"` keeps the ordinary moving field. Recipe mani
 initial, final and captured population and moving-car counts in each city quadrant. This is an
 authored presentation choice for the bustling-city scene; ordinary game density is unchanged.
 
-`seed` belongs to the runtime and background activity. The required `city.context_seed` fixes
+`seed` belongs to the runtime and background activity. For full and bounded scenes, the required `city.context_seed` fixes
 the independent construction witness. The generator makes exactly one attempt with that
 context; a failed attempt reports its diagnostic rather than searching other city seeds.
 Required choices enter the production stage that owns them, before painting or derived

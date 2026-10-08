@@ -1,7 +1,7 @@
 extends RefCounted
 ## A task scene's stretch (`docs/SCENE_RECIPES.md`, "The task scenes"): the recipe's tiles are the
-## only ground, the void beyond is no ground and a wall, the construction witness has to agree with
-## the recipe or the scene is refused, the crowd enters and leaves at the stretch's ends, and the
+## only ground, the void beyond is no ground and a wall, authored edits survive save/load and daily
+## repainting independently of generation, the crowd enters and leaves at the stretch's ends, and the
 ## director draws her route's events from the bag the recipe rigs. The scenes' own walks are
 ## `tools/scene-recipes.sh`'s.
 
@@ -11,13 +11,13 @@ const SCENE := "res://scene-recipes/task-07-package.json"
 func run(t) -> void:
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	var built := RecipeCityBuilder.build(data)
-	t.check(built.errors.is_empty(), "day 7's stretch builds on its witness: %s" % [built.errors])
+	t.check(built.errors.is_empty(), "day 7's stretch loads explicit context: %s" % [built.errors])
 	if not built.errors.is_empty():
 		return
 	var map: CityMap = built.map
 	var witness: CityMap = RecipeCityBuilder.build(SceneRecipeDraft.base_of(data)).map
 	_test_the_stretch_is_the_only_ground(t, map, witness)
-	_test_a_witness_that_disagrees_is_refused(t, data)
+	_test_saved_layout_is_independent(t, data)
 	_test_the_schema(t, data)
 	_test_the_crowd_enters_at_the_ends(t, map)
 	_test_the_draft_takes_whole_streets(t, witness)
@@ -52,25 +52,64 @@ func _test_the_stretch_is_the_only_ground(t, map: CityMap, witness: CityMap) -> 
 	t.check(map.stretch_active and map.tile_at(outside) == GameEnums.TileType.BUILDING,
 			"and the void is back once it is done")
 
-func _test_a_witness_that_disagrees_is_refused(t, data: Dictionary) -> void:
+func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
+	var original := RecipeCityBuilder.build(data)
+	var changed_seed := data.duplicate(true)
+	changed_seed.city.context_seed = 1
+	changed_seed.city.layouts = []
+	var independent := RecipeCityBuilder.build(changed_seed)
+	t.check(independent.errors.is_empty() and independent.map.tiles == original.map.tiles,
+			"changing drafting inputs cannot regenerate or reject a saved layout")
+	var malformed := data.duplicate(true)
+	malformed.context.tiles[0] = [["sidewalk", -1]]
+	t.check(not RecipeCityBuilder.build(malformed).errors.is_empty(),
+			"a malformed context fails before restoring its tile array")
 	var drifted := data.duplicate(true)
 	var runs: Dictionary = drifted.stretch.tiles
 	var road: Array = runs.road
 	var moved: Array = road.pop_back()
 	(runs.sidewalk as Array).append(moved)
-	var refused := RecipeCityBuilder.build(drifted)
-	t.check("\n".join(refused.errors).contains("stretch.witness"),
-			"a tile the witness has as another type is refused, not drawn over: %s" % [refused.errors])
-	var no_lot := data.duplicate(true)
-	(no_lot.stretch.buildings as Array).append({"lot": [0, 0, 3, 3], "district": "residential",
-			"variant": 1, "height": 1, "condition": "lived_in"})
-	t.check("\n".join(RecipeCityBuilder.build(no_lot).errors).contains("the witness builds no lot"),
-			"a building the witness does not build is refused")
+	# Round-trip through the same JSON representation an author saves, then build a real City.
+	var parser := JSON.new()
+	t.check(parser.parse(SceneRecipeDraft.to_json(drifted)) == OK, "manual edit serializes")
+	var edited := RecipeCityBuilder.build(parser.data)
+	t.check(edited.errors.is_empty(), "manual tile edit loads: %s" % [edited.errors])
+	if edited.errors.is_empty():
+		var map: CityMap = edited.map
+		var tile := Vector2i(int(moved[1]), int(moved[0]))
+		var state := CityState.new()
+		state.begin_day(map.block_plans, 7)
+		map.repaint(state)
+		t.check(map.tile_at(tile) == GameEnums.TileType.SIDEWALK,
+				"authored ground survives dawn repaint")
+		var city: City = CITY_SCENE.instantiate()
+		t.add_child(city)
+		city.build(map)
+		city.start_finale(state, 7)
+		t.check(map.tile_at(tile) == GameEnums.TileType.SIDEWALK,
+				"the real finale/day preparation also keeps the manual ground")
+		city.free()
+	var building := data.duplicate(true)
+	var first: Dictionary = building.stretch.buildings[0]
+	first.lot[1] = int(first.lot[1]) + 1
+	first.lot[3] = int(first.lot[3]) - 1
+	first.height = int(first.height) + 1
+	var rebuilt := RecipeCityBuilder.build(building)
+	t.check(rebuilt.errors.is_empty() and rebuilt.map.building_rects.has(SceneRecipe.rect(first.lot)),
+			"a resized lot becomes the live building footprint without matching a generator: %s" % [rebuilt.errors])
 	var tree := data.duplicate(true)
-	(tree.stretch.trees as Array).append([(tree.stretch.tiles.road as Array)[0][1],
-			(tree.stretch.tiles.road as Array)[0][0]])
-	t.check("\n".join(RecipeCityBuilder.build(tree).errors).contains("stretch.trees"),
-			"a street tree the witness does not plant is refused")
+	var run: Array = tree.stretch.tiles.sidewalk[0]
+	var planted := Vector2i(int(run[1]), int(run[0]))
+	while not StreetNetwork.segment_containing(planted) and planted.x < int(run[2]):
+		planted.x += 1
+	tree.stretch.trees = [[planted.x, planted.y]]
+	var treed := RecipeCityBuilder.build(tree)
+	t.check(treed.errors.is_empty(), "manually planted tree loads: %s" % [treed.errors])
+	if treed.errors.is_empty():
+		var shown := StreetTrees.planted(treed.map).filter(func(item: StreetTrees.Planted) -> bool:
+			return treed.map.in_stretch(item.tile))
+		t.check(shown.size() == 1 and shown[0].tile == planted,
+				"the authored tree list supplies the same placement used by drawing and clearance")
 	var twice := data.duplicate(true)
 	(twice.stretch.tiles.road as Array).append((twice.stretch.tiles.road as Array)[0])
 	t.check("\n".join(RecipeCityBuilder.build(twice).errors).contains("listed twice"),
@@ -88,7 +127,7 @@ func _test_the_schema(t, data: Dictionary) -> void:
 	var prop := data.duplicate(true)
 	(prop.stretch.props as Array).append({"kind": "street_tree", "at": [0, 0]})
 	t.check("\n".join(SceneRecipe.validate(prop)).contains("stretch.props"),
-			"a street tree is listed under trees, where the witness is asked about it")
+			"a street tree is listed under trees, the shared placement source")
 	var crowd := data.duplicate(true)
 	crowd.setup["background"] = {"crowd": true}
 	t.check("\n".join(SceneRecipeRuntime.validate_runtime(crowd)).contains("authored actors"),

@@ -70,11 +70,11 @@ for round in 1 2 3; do
         echo "scene-draft.sh: the walk did not complete, so nothing was drafted: $recipe" >&2
         exit 1
     fi
+    rm -f "$work/scene.json"
     "$GODOT" --headless --path "$root" --fixed-fps 60 -- \
         --recipe "$work/draft.json" --recipe-mode scripted --recipe-manifest "$work/scene.json" \
         --no-save --no-telemetry >"$work/scene.log" 2>&1 &
     pid=$!
-    rm -f "$work/scene.json"
     # A scene whose own observations go unmet still says where it put its guards, and the author
     # fixes the walk after; one that crashed, hung or wrote no manifest says nothing, and the draft
     # is kept aside rather than written as if it had answered.
@@ -93,8 +93,8 @@ for round in 1 2 3; do
     fi
     grep '^\[SceneRecipe\] unmet observation' "$work/scene.log" | sed 's/^/scene-draft.sh: the draft as a scene: /' >&2 || true
     new="$(jq -c --argjson void "$void" '($void - (.draft.include // [])) | unique' "$work/input.json")"
-    [[ "$new" == "[]" ]] && break
-    if [[ "$round" == 3 ]]; then
+    [[ "$void" == "[]" ]] && break
+    if [[ "$round" == 3 || "$new" == "[]" ]]; then
         cp "$work/draft.json" "$output.rejected"
         echo "scene-draft.sh: after three rounds the scene still puts guards on cut-off ground at $new; the draft is kept at $output.rejected" >&2
         exit 1

@@ -2,7 +2,7 @@ class_name SceneRecipe
 extends RefCounted
 ## Construction schema only. Runtime validates setup and playback before exposing a scene.
 
-static func load_file(path: String) -> Dictionary:
+static func load_file(path: String, drafting := false) -> Dictionary:
 	var errors: Array[String] = []
 	if not FileAccess.file_exists(path):
 		errors.append("recipe.file: cannot read %s" % path)
@@ -15,12 +15,12 @@ static func load_file(path: String) -> Dictionary:
 		errors.append("recipe.schema: root must be an object")
 		return {"data": {}, "errors": errors}
 	var data: Dictionary = parser.data
-	return {"data": data, "errors": validate(data)}
+	return {"data": data, "errors": validate(SceneRecipeDraft.base_of(data) if drafting else data)}
 
 static func validate(data: Dictionary) -> Array[String]:
 	var errors: Array[String] = []
 	_keys(data, ["version", "name", "seed", "kind", "classification", "expected_violations",
-			"extent", "city", "anchors", "setup", "playback", "stretch", "draft"], "recipe", errors)
+			"extent", "city", "anchors", "setup", "playback", "stretch", "draft", "context"], "recipe", errors)
 	if not integer(data.get("version")) or int(data.get("version", 0)) != 1:
 		errors.append("recipe.version: expected 1")
 	if not data.get("name") is String or str(data.get("name", "")).strip_edges().is_empty():
@@ -42,7 +42,7 @@ static func validate(data: Dictionary) -> Array[String]:
 			seen[code] = true
 		if data.get("classification", "normal") == "normal" and not expected.is_empty():
 			errors.append("recipe.expected_violations: normal scenes cannot waive checks")
-	for field in ["extent", "city", "anchors", "setup", "playback", "stretch", "draft"]:
+	for field in ["extent", "city", "anchors", "setup", "playback", "stretch", "draft", "context"]:
 		if not data.get(field, {}) is Dictionary:
 			errors.append("recipe.%s: expected an object" % field)
 	if not errors.is_empty():
@@ -55,6 +55,12 @@ static func validate(data: Dictionary) -> Array[String]:
 		errors.append("stretch: a stretch scope and a stretch object come together")
 	elif data.has("stretch"):
 		_validate_stretch(data.stretch, errors)
+		if not data.has("context"):
+			errors.append("context: a stretch requires explicit saved city context; draft it first")
+		else:
+			errors.append_array(RecipeCityContext.validate(data.context))
+	elif data.has("context"):
+		errors.append("context: saved city context belongs to a stretch")
 	if data.get("draft", {}) is Dictionary:
 		_keys(data.get("draft", {}), ["include"], "draft", errors)
 		var include: Variant = data.get("draft", {}).get("include", [])
@@ -192,7 +198,7 @@ static func tile_type_names() -> Array[String]:
 	return names
 
 ## The prop kinds a stretch places, lowercased from `Prop.Kind` but for the street tree, which a
-## stretch lists under `trees` because the witness has to agree where each one stands.
+## stretch lists under `trees` so drawing, collision and event clearance share its placement.
 static func prop_kind_names() -> Array[String]:
 	var names: Array[String] = []
 	for key: String in Prop.Kind:

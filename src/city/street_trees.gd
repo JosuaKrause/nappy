@@ -145,6 +145,17 @@ static func runs(map: CityMap) -> Array[Run]:
 ## street: the spacing accumulator crosses the junction between two blocks of the same run.
 static func planted(map: CityMap) -> Array[Planted]:
 	var found: Array[Planted] = []
+	if not map.recipe_dawn_tiles.is_empty():
+		for tile in map.recipe_trees:
+			var segment := StreetNetwork.segment_containing(tile)
+			if not segment:
+				continue
+			var tree := Planted.new()
+			tree.tile = tile
+			tree.position = map.tile_to_world(tile)
+			tree.segment_key = segment.key()
+			found.append(tree)
+		return found
 	var door_tile := _door_tile(map)
 	for run in runs(map):
 		for offset in _CURB_OFFSETS:

@@ -11,12 +11,9 @@ extends RefCounted
 ## afresh but its route bag, which is the author's rigging rather than a fact about where the
 ## stretch runs.
 ##
-## **The scene draws what this writes, and still builds the whole city behind it** (the
-## construction witness, `RecipeCityBuilder._cut_the_stretch()`): the day's rules are planned over
-## that city, and the tiles, building lots and street trees written here must stay the city's own —
-## an author can change a building's look, the props, litter, cracks, posters, crowd, route bag,
-## walk and observations, and widen the stretch through `draft.include`, but not edit a tile, move a
-## lot or plant a tree.
+## The saved context holds the off-camera topology the daily rules need. Loading a stretch
+## restores it directly and overlays the authored visible placements; no generation runs and no
+## tile, lot or tree is compared with a generated witness.
 ##
 ## **The stretch is the streets she walks** *(asked how wide "the path" is, the player chose "The
 ## streets she walks": every tile of the street segments along her route from start to mark to
@@ -45,12 +42,14 @@ var _walked := {}
 ## The tiles as the day began, before anything the walk set off repainted them — day 12's park
 ## closing behind the swing — since the stretch lists the ground the scene starts on.
 var _dawn_tiles := PackedByteArray()
+var _context := {}
 
 ## A recipe as the draft plays it: the whole witness, with nothing the draft writes. Its stretch,
 ## starting population, posters and route bag are what the draft is about to write again.
 static func base_of(recipe: Dictionary) -> Dictionary:
 	var base := recipe.duplicate(true)
 	base.erase("stretch")
+	base.erase("context")
 	base["extent"] = {"scope": "full"}
 	var setup: Dictionary = base.get("setup", {})
 	for drafted in ["actors", "posters", "route_bag"]:
@@ -65,6 +64,7 @@ var _at_the_start := {}
 func record(player: Node2D, city: City, neighbor: Node2D) -> void:
 	if _dawn_tiles.is_empty():
 		_dawn_tiles = city.map.tiles.duplicate()
+		_context = RecipeCityContext.capture(city.map)
 		for instance in city.events.instances():
 			_at_the_start[city.map.world_to_tile(instance.global_position)] = true
 	_walked[city.map.world_to_tile(player.global_position)] = true
@@ -131,6 +131,7 @@ func compose(recipe: Dictionary, city: City, start: Vector2, pinned: Array[Vecto
 	var drafted := recipe.duplicate(true)
 	drafted["extent"] = {"scope": "stretch"}
 	drafted["stretch"] = stretch
+	drafted["context"] = _context
 	var setup: Dictionary = drafted.get("setup", {})
 	setup["posters"] = _posters(map, ground)
 	setup["actors"] = _starting_crowd(city, ground, start, problems)

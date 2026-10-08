@@ -33,7 +33,7 @@ var _draft: SceneRecipeDraft
 var _written: Dictionary = {}
 
 static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
-	var loaded := SceneRecipe.load_file(path)
+	var loaded := SceneRecipe.load_file(path, "--recipe-draft" in args)
 	if not loaded.errors.is_empty():
 		return loaded
 	var recipe: Dictionary = loaded.data
