@@ -80,3 +80,18 @@ same retreat route and the original tick-294 movement check, the engine is alrea
 the camera while she retreats (`fire-truck-outside-view.json`); both movement and visibility
 are checked together at the earlier observed tick 114 in the final recipe. Those trials use
 the runtime from `f337560a`, with the recipe under edit; their exact recipe hashes are retained.
+
+## Production package audit
+
+`published-v0.25.5-recipes.txt` is the complete development-recipe path subset found by
+`tools/audit-pck.sh --list` in the published v0.25.5 Web PCK. The inspected PCK has SHA-256
+`b3631f86ceeaeccc1720fd29be0fd3cc4ae15dadfd63340e42ff2264aa03ba90` and contains 22
+paths under `scene-recipes/`. The downloaded PCK was removed after this compact path list and
+hash were retained.
+
+`recipe-packaging-audit.txt` records the same audit against a release-style Web export from
+clean source `85f0ee3e5814c0bff7f7a561265f24048ce7ef9a`. Its PCK has SHA-256
+`5d7a07109451ad171c07f10c1d3738b351ea6f9104be7e8586e68a7f4046651d`; the fatal audit
+passes with zero development recipe paths. This proves the exported package excludes the
+inputs. The local recipe loader is checked separately against the plain JSON files in the
+source checkout.

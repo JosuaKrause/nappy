@@ -1,0 +1,10 @@
+Source revision: 85f0ee3e5814c0bff7f7a561265f24048ce7ef9a
+Export command: RELEASE_TAG=pr592-recipe-exclusion ./tools/export-web.sh release
+PCK SHA-256: 5d7a07109451ad171c07f10c1d3738b351ea6f9104be7e8586e68a7f4046651d
+
+pack: build/web/pr592-recipe-exclusion/index.pck
+      336 files, 0 development recipe paths, 0 test paths, 0 other files referring to tests
+      731 atlas members, 0 of them still in the pack
+      11 baked pages, 0 of them named by no group
+
+Result: tools/audit-pck.sh --fatal exited 0.
