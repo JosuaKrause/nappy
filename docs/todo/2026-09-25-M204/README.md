@@ -7,9 +7,7 @@ priority: now
 
 [PLAYTEST-139](../../playtests/PLAYTEST-139.md) holds the whole design, statements 1–10.
 
-The [fresh render route](selected-render-from-source.md) must reproduce the selected movie
-from the checked-in scenes and music settings without requiring retained historical captures.
-The separate [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
+The remaining [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
 the ordinary screenshot command's escape flags and stays deferred. The trailer's design,
 camera correction and presentation choices are recorded in
 [M204, the trailer from saved scenes](../../decisions/2026-09-25-M204.md).
