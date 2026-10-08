@@ -26,5 +26,9 @@ city; it proves frame selection and transitions, not natural route frequency. Th
 records the premature first capture and clean rerun. Nine evidence files occupy 265,652 bytes.
 No gameplay tests are added for the artwork-only correction.
 
-The queue item is completed in this PR. The remaining visual judgment is in
-[the diagonal-pose review](../review/2026-10-07-spotted-osprey.md).
+**First attempt rejected, 2026-10-07.** [Plaid-kestrel](../playtests/2026-10-07-plaid-kestrel.md)
+says the northeast arms still sit on the back and both legs are in front of the bicycle,
+including the east-facing view. The technical checks above did not establish the requested
+anatomy. The correction stays in this PR and returns to the spotted-osprey queue item with
+east/west side views included. The new attempt must distinguish the legs' depth relative to
+the frame and keep the northeast wing roots off the visible back.
