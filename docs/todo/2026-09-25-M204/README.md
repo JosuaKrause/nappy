@@ -10,7 +10,8 @@ priority: now
 [Polite-pelican](../../playtests/2026-10-07-polite-pelican.md) approves the current pacing and
 asks for a more interesting intro slide and further minimalist music experiments, with danger
 and tension through the military scenes after the title card. The
-[intro and music options](intro-slide-and-music.md) are the active work.
+[intro and music options](intro-slide-and-music.md) and
+[truck placement and dog camera](truck-placement-and-dog-camera.md) are the active work.
 
 The separate [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
 the ordinary screenshot command's escape flags and stays deferred. The trailer's design and
