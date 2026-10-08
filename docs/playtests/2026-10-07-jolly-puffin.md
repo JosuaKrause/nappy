@@ -13,3 +13,8 @@ southeast and east A/B, and their western mirrors.
 > same for all three directions
 
 > and leg in front of the frame needs to be in front of all parts of the frame and wheels
+
+After seeing candidate 4 at c02d6a70f066ea05b7d2543ee80d46f1b6889602, with the whole bicycle
+between the legs in northeast, southeast and east A/B and their western mirrors:
+
+> 605 looks good now
