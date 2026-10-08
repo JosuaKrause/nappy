@@ -11,7 +11,8 @@ The far leg is behind both wheels and every bicycle tube, and the near leg is in
 all those parts in all six sources. The southeast handlebars also precede the near-leg draw.
 Both northeast wing roots are covered by the torso; only their forward reaches toward the
 handlebars emerge from its front silhouette. This is the concrete visual proposal answering
-jolly-puffin, not approval of the anatomy. The southeast second eye is preserved.
+jolly-puffin. The player approves candidate 4 in that playtest: "605 looks good now".
+The southeast second eye is preserved.
 The northeast far leg keeps hip (16,23.6) as its foot changes from the right pedal position
 in A to the left one in B; the near leg keeps hip (20.2,23) and the opposite pedal position.
 Both east-facing near phases share hip (16,25), with the shin or raised foot covering the
