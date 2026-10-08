@@ -27,6 +27,10 @@ disc positions keep the covered extent independent of which hand is steering.
 Actual touch controls exercise tap steering, release without resetting the side, a hand swap,
 and rotation through the visibility consumers. The old fixture treated a deferred-freed control
 as live and left its input mode behind; it now frees each fixture before the next is constructed.
+The [production corner evidence](../evidence/dappled-swan-covered-corner-2026-10-07/README.md)
+shows the same dog with its badge inside the covered rectangle and without it after emergence.
+Its independent observation retains the nominal-box versus selected-drawing boundary difference;
+the capture establishes these states, not exact pixel timing or smoothness.
 
 **Off screen is not visible.** Spawning goes wholly outside the camera's whole view, corners
 included (M226's no pop-in); the corners are left out only for what she can see.
