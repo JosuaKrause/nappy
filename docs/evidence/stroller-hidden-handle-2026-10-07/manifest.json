@@ -1,0 +1,65 @@
+{
+  "generator": "built-in image_gen.imagegen",
+  "prompt_sha256": "c2e17c2df2b3cb6490fbaad07454e86053f94d5d5c913bb5af319b90e077db70",
+  "generated_source": "docs/evidence/stroller-hidden-handle-2026-10-07/generated-pram-back-no-handle.png",
+  "generated_source_sha256": "87f955752307f2c71b5846b673ad8f66667ae5009449b2a495657df425ba34bc",
+  "generated_source_size": [
+    972,
+    1618
+  ],
+  "source_atlas": "docs/evidence/comic-rig-2026-09-12/pram-atlas-background-corrected.png",
+  "source_cell": [
+    434,
+    0,
+    869,
+    724
+  ],
+  "source_cell_role": "upstream pram_back; installed as runtime south pram_front",
+  "registered_output": "art/illustrated/svg-transfer/rig/pram_front.png",
+  "registered_sha256": "c248d814556b36edbfb1024a5e083fe47fa68070a8b20102d4aa61c6ad32e677",
+  "registration_script_sha256": "35496960e77d65b2f4d359f389dfa8c3ece55538e2cb8546b174f818ffc4205d",
+  "registration": {
+    "name": "pram_back",
+    "size": [
+      30,
+      30
+    ],
+    "generated_art_bounds": [
+      0,
+      0,
+      711,
+      924
+    ],
+    "svg_8x_occupancy_bounds": [
+      12,
+      12,
+      228,
+      240
+    ],
+    "registered_alpha_bounds": [
+      1,
+      0,
+      28,
+      30
+    ],
+    "source_alpha_bounds": [
+      1,
+      1,
+      29,
+      30
+    ],
+    "ground_line_preserved": true,
+    "generated_alpha_preserved": true,
+    "aspect_ratio_preserved": true,
+    "fit_scale": 0.24675324675324675
+  },
+  "unchanged_context": {
+    "north_sha256": "c2e711adf9942321ac903168f696795219e6f6f02a93cdc9be307b841fdfb440",
+    "southeast_sha256": "e60f151730e0ef0e56e9f42a088f32aa5105caf8c8d340453569aa6fb256dc63",
+    "southwest": "runtime horizontal mirror of southeast"
+  },
+  "tool_versions": {
+    "python": "3.14.7",
+    "pillow": "12.3.0"
+  }
+}
