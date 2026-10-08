@@ -7,8 +7,10 @@ priority: now
 
 [PLAYTEST-139](../../playtests/PLAYTEST-139.md) holds the whole design, statements 1–10.
 
-[Sunny-marten](../../playtests/2026-10-08-sunny-marten.md) selects Glass Alarm and asks for
-[window and dog-sleep corrections](selected-score-and-final-corrections.md) to the full cut.
+[Speckled-hedgehog](../../playtests/2026-10-08-speckled-hedgehog.md) finds that the window's
+horizontal restoration is still wrong, the added bass is inaudible and the score cuts off
+before the ending. These [remaining corrections](selected-score-and-final-corrections.md)
+belong in the trailer before its next full review.
 
 The separate [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
 the ordinary screenshot command's escape flags and stays deferred. The trailer's design and

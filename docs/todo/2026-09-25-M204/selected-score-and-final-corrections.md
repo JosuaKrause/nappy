@@ -1,23 +1,17 @@
-[Sunny-marten](../../playtests/2026-10-08-sunny-marten.md) selects Glass Alarm as the score.
-Use it for the next full trailer and preserve the other approved pacing, scene composition
-and source artwork.
+[Speckled-hedgehog](../../playtests/2026-10-08-speckled-hedgehog.md) rejects the attempted
+horizontal restoration. Recover the actual earlier composition the player approved and
+compare the same animation frame against it. Do not infer success from a small offset or
+an alpha-bounds calculation. Preserve the approved lower placement and brick gap, solid left
+background, gentle bob, one-second fade, and currently selected A/B frames. If the earlier
+reference cannot be recovered, ask for the intended horizontal position instead of guessing.
 
-Add drawn-out deep bass notes over the existing Glass Alarm music at the on-screen event
-beats. The player explicitly names the moment she starts running from the dog and the fade-in
-of each of the three army scenes. Keep the existing score and add this layer, with its cues
-derived from the actual scene timing and with enough mix headroom.
+Keep the selected Glass Alarm music through the visible ending, with a deliberate finish
+that does not cut off while the shot is still on screen. Make the additional drawn-out bass
+notes clearly audible over the score at the event beats from
+[sunny-marten](../../playtests/2026-10-08-sunny-marten.md), including the real dog-run start
+and each of the three army fade-ins. Preserve the existing composition beneath them. Measured
+levels establish headroom, not whether the player can hear a low-frequency note; make the
+audition judgeable on ordinary listening equipment and retain its meaningful mix comparison.
 
-Restore the mother's previous horizontal placement inside the window, as shown before the
-latest full audition centered her. Keep the approved lower vertical placement and brick-height
-gap above the sill. Remove frame C from this scene; animate with A and B while retaining the
-gentle bob and one-second fade. The left side behind the words uses only its solid background
-color, with no brick or wall texture. The facade around the actual window stays intact.
-
-In the centered fixed-camera dog shot, the baby is asleep through the approach and the first
-half of the chase, then wakes roughly halfway through the chase before the mother leaves the
-screen. Preserve her route, speed, full exit and fade into the title. Use the scene's initial
-baby state and ordinary game behavior; verify the visible sleeping and waking moments in the
-full cut. Do not change ordinary gameplay tuning to stage the shot.
-
-Render the changed intro and dog segment and assemble the complete Glass Alarm version,
-reusing unchanged footage with accurate source provenance. The full movie is the next review.
+Deliver the corrected complete movie. Keep the other approved pacing and the baby's new
+sleep/wake timing in the dog scene. Reuse unchanged footage and retain accurate provenance.
