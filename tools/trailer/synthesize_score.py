@@ -19,6 +19,11 @@ FADE_IN_SECONDS: Final = 0.12
 FADE_OUT_SECONDS: Final = 0.25
 
 
+def stable_sin(value: float) -> float:
+    """Discard host libm noise far below one PCM16 sample."""
+    return round(math.sin(value), 12)
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Synthesize one option from trailer.sh's resolved score JSON.",
@@ -36,22 +41,22 @@ def number(value: object, label: str) -> float:
 
 
 def oscillator(texture: str, phase: float, local_time: float, absolute_time: float, duration: float) -> float:
-    envelope = math.sin(math.pi * local_time / duration) ** 2
+    envelope = stable_sin(math.pi * local_time / duration) ** 2
     if texture == "pluck":
-        return (math.sin(phase) + 0.22 * math.sin(2.0 * phase)) * envelope
+        return (stable_sin(phase) + 0.22 * stable_sin(2.0 * phase)) * envelope
     if texture == "glass":
-        return (math.sin(phase) + 0.32 * math.sin(2.01 * phase) + 0.12 * math.sin(4.07 * phase)) * envelope
+        return (stable_sin(phase) + 0.32 * stable_sin(2.01 * phase) + 0.12 * stable_sin(4.07 * phase)) * envelope
     if texture == "glass-tail":
         attack = min(1.0, local_time / 0.12)
         release = min(1.0, max(0.0, duration - local_time) / 0.18)
         held_envelope = attack * attack * (3.0 - 2.0 * attack)
         held_envelope *= release * release * (3.0 - 2.0 * release)
-        return (math.sin(phase) + 0.32 * math.sin(2.01 * phase) + 0.12 * math.sin(4.07 * phase)) * held_envelope
+        return (stable_sin(phase) + 0.32 * stable_sin(2.01 * phase) + 0.12 * stable_sin(4.07 * phase)) * held_envelope
     if texture == "pulse":
-        return (math.sin(phase) + 0.18 * math.sin(3.0 * phase)) * envelope
+        return (stable_sin(phase) + 0.18 * stable_sin(3.0 * phase)) * envelope
     if texture == "drone":
-        movement = 0.82 + 0.18 * math.sin(2.0 * math.pi * 0.37 * absolute_time)
-        return (math.sin(phase) + 0.16 * math.sin(0.5 * phase)) * movement * envelope
+        movement = 0.82 + 0.18 * stable_sin(2.0 * math.pi * 0.37 * absolute_time)
+        return (stable_sin(phase) + 0.16 * stable_sin(0.5 * phase)) * movement * envelope
     if texture == "weight":
         # Keep the fundamental for weight, but put enough energy in the second and third
         # harmonics for the cue to survive ordinary speakers. A short attack and long, nearly
@@ -61,17 +66,17 @@ def oscillator(texture: str, phase: float, local_time: float, absolute_time: flo
         release = min(1.0, max(0.0, duration - local_time) / 0.42)
         held_envelope = attack * attack * (3.0 - 2.0 * attack)
         held_envelope *= release * release * (3.0 - 2.0 * release)
-        movement = 0.92 + 0.08 * math.sin(2.0 * math.pi * 0.31 * absolute_time)
+        movement = 0.92 + 0.08 * stable_sin(2.0 * math.pi * 0.31 * absolute_time)
         return (
-            (0.74 * math.sin(phase) + 0.58 * math.sin(2.0 * phase) + 0.30 * math.sin(3.0 * phase))
+            (0.74 * stable_sin(phase) + 0.58 * stable_sin(2.0 * phase) + 0.30 * stable_sin(3.0 * phase))
             * movement
             * held_envelope
         )
     if texture == "tick":
         return (
-            (math.sin(phase) + 0.25 * math.sin(3.0 * phase))
+            (stable_sin(phase) + 0.25 * stable_sin(3.0 * phase))
             * math.exp(-8.0 * local_time / duration)
-            * math.sin(math.pi * local_time / duration)
+            * stable_sin(math.pi * local_time / duration)
         )
     raise ValueError(f"unknown texture: {texture}")
 

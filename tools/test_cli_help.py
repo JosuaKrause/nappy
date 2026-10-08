@@ -72,6 +72,7 @@ class CliHelpTests(unittest.TestCase):
 
         (root / "tools" / "trailer").mkdir(parents=True)
         (root / "src" / "dev").mkdir(parents=True)
+        (root / "src" / "autoload").mkdir(parents=True)
         (root / "scene-recipes").mkdir()
         for name in ("trailer.sh", "record.sh", "lib_dev_flags.sh", "lib_movie_evidence.sh", "lib_disk_headroom.sh"):
             shutil.copy2(TOOLS / name, root / "tools" / name)
@@ -79,6 +80,7 @@ class CliHelpTests(unittest.TestCase):
         shutil.copy2(TOOLS / "trailer" / "scores.json", root / "tools" / "trailer" / "scores.json")
         shutil.copy2(TOOLS / "trailer" / "final-score.json", root / "tools" / "trailer" / "final-score.json")
         shutil.copy2(PROJECT_ROOT / "project.godot", root / "project.godot")
+        shutil.copy2(PROJECT_ROOT / "src" / "autoload" / "tuning.gd", root / "src" / "autoload" / "tuning.gd")
         flag_source = (PROJECT_ROOT / "src" / "dev" / "dev_flags.gd").read_text()
         marker = "## END_DEV_FLAG_TABLE"
         self.assertIn(marker, flag_source)
@@ -374,6 +376,7 @@ class CliHelpTests(unittest.TestCase):
             self.assertFalse(output.exists())
             result = subprocess.run([str(script), "--selected"], env=env, capture_output=True, timeout=120)
             self.assertEqual(result.returncode, 0, result.stderr.decode())
+            self.assertNotIn(b"No such file or directory", result.stderr)
             manifest = json.loads((output / "selected-fixture.json").read_text())
             self.assertNotIn("retained_base", manifest)
             self.assertNotIn("remix_source", manifest)

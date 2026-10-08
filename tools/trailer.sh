@@ -1131,10 +1131,16 @@ build_selected_mix() {
     fi
     # WAV files carry the host's FFmpeg encoder tag. Pin the selected samples themselves so
     # a fresh host may change that tag, but never one sample of the selected composition.
-    local score_pcm_sha
+    local raw_score_pcm_sha score_pcm_sha expected_score_pcm_sha
+    raw_score_pcm_sha="$(ffmpeg -hide_banner -nostdin -loglevel error -i "$raw" -map 0:a:0 -f s16le - |
+        shasum -a 256 | awk '{print $1}')"
     score_pcm_sha="$(ffmpeg -hide_banner -nostdin -loglevel error -i "$score" -map 0:a:0 -f s16le - | shasum -a 256 | awk '{print $1}')"
-    if [[ "$score_pcm_sha" != "$(jq -r '.base_score_pcm_sha256' "$FINAL_SCORE_FILE")" ]]; then
+    expected_score_pcm_sha="$(jq -r '.base_score_pcm_sha256' "$FINAL_SCORE_FILE")"
+    if [[ "$score_pcm_sha" != "$expected_score_pcm_sha" ]]; then
         echo "trailer.sh: rebuilt Glass Alarm PCM differs from the score the player selected" >&2
+        echo "  raw synthesized PCM SHA256: $raw_score_pcm_sha" >&2
+        echo "  normalized PCM SHA256:      $score_pcm_sha" >&2
+        echo "  expected normalized SHA256: $expected_score_pcm_sha" >&2
         return 1
     fi
     game_gain="$(jq -r '.game_gain' <<< "$RESOLVED_SCORES")"
