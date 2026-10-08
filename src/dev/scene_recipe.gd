@@ -215,7 +215,7 @@ static func litter_names() -> Array[String]:
 	return names
 
 ## The shape of `stretch` (`docs/SCENE_RECIPES.md`, "The task scenes"); whether each piece fits the
-## construction witness is `RecipeCityBuilder`'s to say.
+## saved context and authored extent is `RecipeCityBuilder`'s to say.
 static func _validate_stretch(stretch: Dictionary, errors: Array[String]) -> void:
 	_keys(stretch, ["tiles", "buildings", "trees", "props", "litter", "cracks"], "stretch", errors)
 	var tiles: Variant = stretch.get("tiles")

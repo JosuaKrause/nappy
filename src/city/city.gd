@@ -491,7 +491,7 @@ func _spawn_street_trees() -> void:
 	map.restore_edges(edges)
 	if map.has_stretch():
 		# Only the stretch's own trees and their pits: a pit drawn out in the void is ground. The
-		# recipe lists the same trees (`RecipeCityBuilder` refuses a witness that disagrees).
+		# authored tree positions supply drawing, pits and clearance from one list.
 		var shown: Array[StreetTrees.Planted] = []
 		for planted_tree in planted_trees:
 			if _recipe_contains(planted_tree.position):
