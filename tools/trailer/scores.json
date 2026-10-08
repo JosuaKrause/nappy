@@ -1,0 +1,80 @@
+{
+  "game_gain": 0.82,
+  "target_mean_db": -34.0,
+  "peak_ceiling_db": -9.0,
+  "options": [
+    {
+      "id": "low-signal",
+      "label": "Low Signal",
+      "description": "Sparse, dry notes give way to a low advancing pulse.",
+      "events": [
+        {"shot": "hook", "offset": 0.35, "duration": 0.72, "frequency": 220.00, "gain": 0.70, "texture": "pluck"},
+        {"shot": "hook", "offset": 1.42, "duration": 0.82, "frequency": 329.63, "gain": 0.56, "texture": "pluck"},
+        {"shot": "hook", "offset": 2.68, "duration": 1.02, "frequency": 246.94, "gain": 0.52, "texture": "pluck"},
+        {"shot": "walk", "offset": 0.45, "duration": 1.30, "frequency": 196.00, "gain": 0.42, "texture": "pluck"},
+        {"shot": "choice", "offset": 1.10, "duration": 1.30, "frequency": 164.81, "gain": 0.46, "texture": "pluck"},
+        {"shot": "choice", "offset": 4.60, "duration": 1.15, "frequency": 196.00, "gain": 0.40, "texture": "pluck"},
+        {"shot": "birds", "offset": 1.15, "duration": 1.35, "frequency": 220.00, "gain": 0.38, "texture": "pluck"},
+        {"shot": "park-sleep", "offset": 1.75, "duration": 1.55, "frequency": 329.63, "gain": 0.40, "texture": "pluck"},
+        {"shot": "dog", "offset": 0.10, "duration": 2.35, "frequency": 110.00, "gain": 0.52, "texture": "pulse"},
+        {"shot": "trucks", "offset": 0.00, "duration": 0.60, "frequency": 55.00, "gain": 0.92, "texture": "pulse"},
+        {"shot": "trucks", "offset": 0.42, "duration": 0.58, "frequency": 61.74, "gain": 0.86, "texture": "pulse"},
+        {"shot": "gatehouse", "offset": 0.00, "duration": 0.64, "frequency": 55.00, "gain": 0.94, "texture": "pulse"},
+        {"shot": "gatehouse", "offset": 0.46, "duration": 0.54, "frequency": 73.42, "gain": 0.84, "texture": "pulse"},
+        {"shot": "chase", "offset": 0.00, "duration": 0.62, "frequency": 55.00, "gain": 0.98, "texture": "pulse"},
+        {"shot": "chase", "offset": 0.38, "duration": 0.62, "frequency": 77.78, "gain": 0.90, "texture": "pulse"},
+        {"shot": "city", "offset": 0.15, "duration": 2.20, "frequency": 146.83, "gain": 0.42, "texture": "pluck"},
+        {"shot": "city", "offset": 3.10, "duration": 2.25, "frequency": 220.00, "gain": 0.36, "texture": "pluck"},
+        {"shot": "city", "offset": 5.65, "duration": 2.35, "frequency": 293.66, "gain": 0.32, "texture": "pluck"}
+      ]
+    },
+    {
+      "id": "glass-alarm",
+      "label": "Glass Alarm",
+      "description": "Fragile chimes turn into close, uneasy intervals.",
+      "events": [
+        {"shot": "hook", "offset": 0.25, "duration": 1.40, "frequency": 440.00, "gain": 0.50, "texture": "glass"},
+        {"shot": "hook", "offset": 1.55, "duration": 1.55, "frequency": 659.25, "gain": 0.42, "texture": "glass"},
+        {"shot": "hook", "offset": 2.95, "duration": 1.20, "frequency": 493.88, "gain": 0.44, "texture": "glass"},
+        {"shot": "walk", "offset": 0.60, "duration": 1.65, "frequency": 392.00, "gain": 0.36, "texture": "glass"},
+        {"shot": "choice", "offset": 0.85, "duration": 1.80, "frequency": 329.63, "gain": 0.38, "texture": "glass"},
+        {"shot": "choice", "offset": 4.10, "duration": 1.75, "frequency": 440.00, "gain": 0.34, "texture": "glass"},
+        {"shot": "birds", "offset": 0.75, "duration": 1.85, "frequency": 523.25, "gain": 0.35, "texture": "glass"},
+        {"shot": "park-sleep", "offset": 1.55, "duration": 2.15, "frequency": 659.25, "gain": 0.34, "texture": "glass"},
+        {"shot": "dog", "offset": 0.15, "duration": 2.25, "frequency": 293.66, "gain": 0.42, "texture": "glass"},
+        {"shot": "trucks", "offset": 0.00, "duration": 1.00, "frequency": 73.42, "gain": 0.70, "texture": "glass"},
+        {"shot": "trucks", "offset": 0.00, "duration": 1.00, "frequency": 77.78, "gain": 0.66, "texture": "glass"},
+        {"shot": "gatehouse", "offset": 0.00, "duration": 1.00, "frequency": 82.41, "gain": 0.72, "texture": "glass"},
+        {"shot": "gatehouse", "offset": 0.00, "duration": 1.00, "frequency": 87.31, "gain": 0.68, "texture": "glass"},
+        {"shot": "chase", "offset": 0.00, "duration": 1.00, "frequency": 92.50, "gain": 0.76, "texture": "glass"},
+        {"shot": "chase", "offset": 0.00, "duration": 1.00, "frequency": 98.00, "gain": 0.70, "texture": "glass"},
+        {"shot": "city", "offset": 0.20, "duration": 2.40, "frequency": 392.00, "gain": 0.34, "texture": "glass"},
+        {"shot": "city", "offset": 3.35, "duration": 2.10, "frequency": 523.25, "gain": 0.32, "texture": "glass"},
+        {"shot": "city", "offset": 5.80, "duration": 2.10, "frequency": 659.25, "gain": 0.28, "texture": "glass"}
+      ]
+    },
+    {
+      "id": "held-breath",
+      "label": "Held Breath",
+      "description": "A restrained held tone tightens under irregular high ticks.",
+      "events": [
+        {"shot": "hook", "offset": 0.20, "duration": 3.85, "frequency": 110.00, "gain": 0.38, "texture": "drone"},
+        {"shot": "walk", "offset": 0.10, "duration": 2.75, "frequency": 130.81, "gain": 0.28, "texture": "drone"},
+        {"shot": "choice", "offset": 0.15, "duration": 6.30, "frequency": 123.47, "gain": 0.30, "texture": "drone"},
+        {"shot": "birds", "offset": 0.10, "duration": 3.85, "frequency": 146.83, "gain": 0.26, "texture": "drone"},
+        {"shot": "park-sleep", "offset": 0.15, "duration": 4.75, "frequency": 164.81, "gain": 0.25, "texture": "drone"},
+        {"shot": "dog", "offset": 0.00, "duration": 2.65, "frequency": 98.00, "gain": 0.42, "texture": "drone"},
+        {"shot": "trucks", "offset": 0.00, "duration": 3.60, "frequency": 55.00, "gain": 0.64, "texture": "drone"},
+        {"shot": "trucks", "offset": 0.00, "duration": 3.60, "frequency": 77.78, "gain": 0.47, "texture": "drone"},
+        {"shot": "trucks", "offset": 0.12, "duration": 0.16, "frequency": 1174.66, "gain": 0.72, "texture": "tick"},
+        {"shot": "trucks", "offset": 0.63, "duration": 0.13, "frequency": 1318.51, "gain": 0.68, "texture": "tick"},
+        {"shot": "gatehouse", "offset": 0.18, "duration": 0.15, "frequency": 1244.51, "gain": 0.74, "texture": "tick"},
+        {"shot": "gatehouse", "offset": 0.81, "duration": 0.12, "frequency": 1396.91, "gain": 0.66, "texture": "tick"},
+        {"shot": "chase", "offset": 0.24, "duration": 0.14, "frequency": 1318.51, "gain": 0.76, "texture": "tick"},
+        {"shot": "chase", "offset": 0.72, "duration": 0.16, "frequency": 1480.00, "gain": 0.72, "texture": "tick"},
+        {"shot": "city", "offset": 0.10, "duration": 3.70, "frequency": 130.81, "gain": 0.29, "texture": "drone"},
+        {"shot": "city", "offset": 3.55, "duration": 4.55, "frequency": 164.81, "gain": 0.27, "texture": "drone"}
+      ]
+    }
+  ]
+}

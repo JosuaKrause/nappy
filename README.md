@@ -83,20 +83,50 @@ See `docs/MECHANICS.md`, "Saving and resuming".
 ## Dev flags
 
 `tools/trailer.sh` records the saved scenes referenced by `tools/trailer/shots.json` through the
-game's frame-locked movie writer, then trims, fades and joins them with game audio. Run
+game's frame-locked movie writer, then adds the shot list's dark editorial cards, tracked logo, captions over the footage, ending copy
+and deterministic oscillator score before joining them with the captured game audio. Run
 `tools/trailer.sh --list` to inspect the cut, `--validate` to check its recipes headlessly,
-or `--shot choice` to record one scene. Each recipe owns its setup and scripted action;
-the shot list owns the cut timing. Only normal scenes enter the trailer, with their authored
-extent and validation scope preserved in the resolved manifest.
+`--shot choice` to record one scene, or `--auditions` to capture one clean game-audio base and
+build the three original scores in `tools/trailer/scores.json` against that same picture. A later
+score-only audition run reuses the matching retained base. To build the selected full composition
+from a fresh checkout, run `TRAILER_OUT=build/trailer/fresh tools/trailer.sh --selected`.
+It captures the tracked scenes, builds Glass Alarm with additive event bass from
+`tools/trailer/final-score.json`, and lets the score's final note decay without an added closing
+layer. It records fresh capture and editorial provenance. No historical
+movie or ignored build artifact is required. The selected score's synthesized PCM sample hash is
+checked before normalization; its target level and peak ceiling are checked after normalization.
+Host-specific gain rounding and WAV encoder tags may differ. The unflagged command retains the
+shot list's draft score.
+When compatible historical footage is available, `--selected-reuse` refuses any retained-base mismatch,
+renders the hook, dog and title replacements named by that final composition, and layers its
+additive event cues over the source-identical selected score. `--selected-remix` reuses the
+verified selected base and rebuilds only the editorial cards and audio, with no gameplay capture.
+Selected outputs refuse an existing movie or manifest; use a new output name or fresh output
+directory for another review. The completed PCM mix stays beside its source stems for comparison
+with decoded delivery audio. The opening background starts immediately, the mother independently
+fades in across the full 4.4-second intro, and the main title has no fades. Gameplay scenes fade
+both out and in through black, including the final shot's fade-out. The auditions' local `index.html` switches one
+player between the choices and can jump to the military turn. The cut uses the selected westward birds scene,
+`trailer-birds.json`, and the park-only circular walk in `trailer-park-circle.json`.
+Each recipe owns its setup and scripted action;
+the shot list owns the cut timing and editorial treatment. Only normal scenes enter the trailer,
+with their authored extent and validation scope preserved in the resolved manifest. The editor
+reads the native viewport size from `project.godot`, resolves the named font through fontconfig
+(a font that resolves to a different family stops the render with an error, never a substitute;
+`--validate` renders nothing and needs neither ffmpeg nor a font), and records the exact font, ffmpeg, source hashes and dimensions in
+`build/trailer/editorial-settings.json` beside the local video.
 
 `tools/record.sh --recipe scene-recipes/trailer-choice.json` records a recipe in scripted mode.
 It also records ordinary rigs, such as `tools/record.sh --route calm,home --seed 4242`.
-Videos and temporary frames stay under ignored build output. Recordings retain compact frame
+Videos and temporary frames stay under ignored build output. A render is the same every time
+by construction: fixed recipes and seeds, the recipe's own simulation clock, the movie writer's fixed
+frame rate, and an editor whose inputs (font, ffmpeg, shot list) are recorded. Recordings retain compact frame
 hashes, manifests and settings beside the video. `tools/trailer.sh --check all` compares two
-renders of each shot, including their simulation observations and audio; `--check-load all`
-compares an ordinary render with one under a CPU load worker. Results remain under
-`build/trailer/checks/`. Matching frames establish repeatability for the recorded recipe,
-revision, assets, engine and settings.
+renders of each gameplay shot, including their simulation observations and audio, compares the
+editorial cards, then composes both retained passes and compares the decoded ending overlays,
+score and final mix; `--check-load all` makes the second pass under a CPU load worker. Results
+remain under `build/trailer/checks/`. Matching frames establish repeatability for the recorded
+recipe, revision, assets, engine, editor and settings.
 
 Everything after `--` is passed to the game, gated behind a debug build so none of it does
 anything in an exported release:

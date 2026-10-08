@@ -42,6 +42,7 @@ ENTRY_POINTS = (
     "codex-hooks.py",
     "goatcounter.py",
     "synthesize-sfx.py",
+    "trailer/synthesize_score.py",
     "split-scenes.py",
     "migrate-queue.py",
     "convert-queue-edits.py",
@@ -71,11 +72,15 @@ class CliHelpTests(unittest.TestCase):
 
         (root / "tools" / "trailer").mkdir(parents=True)
         (root / "src" / "dev").mkdir(parents=True)
+        (root / "src" / "autoload").mkdir(parents=True)
         (root / "scene-recipes").mkdir()
         for name in ("trailer.sh", "record.sh", "lib_dev_flags.sh", "lib_movie_evidence.sh", "lib_disk_headroom.sh"):
             shutil.copy2(TOOLS / name, root / "tools" / name)
         shutil.copy2(TOOLS / "trailer" / "shots.json", root / "tools" / "trailer" / "shots.json")
+        shutil.copy2(TOOLS / "trailer" / "scores.json", root / "tools" / "trailer" / "scores.json")
+        shutil.copy2(TOOLS / "trailer" / "final-score.json", root / "tools" / "trailer" / "final-score.json")
         shutil.copy2(PROJECT_ROOT / "project.godot", root / "project.godot")
+        shutil.copy2(PROJECT_ROOT / "src" / "autoload" / "tuning.gd", root / "src" / "autoload" / "tuning.gd")
         flag_source = (PROJECT_ROOT / "src" / "dev" / "dev_flags.gd").read_text()
         marker = "## END_DEV_FLAG_TABLE"
         self.assertIn(marker, flag_source)
@@ -93,7 +98,21 @@ class CliHelpTests(unittest.TestCase):
         (root / "src" / "dev" / "dev_flags.gd").write_text(flag_source.replace(marker, additions + marker))
         shots = json.loads((root / "tools" / "trailer" / "shots.json").read_text())
         for shot in shots["shots"]:
-            (root / shot["recipe"]).write_text('{"playback":{"duration":10}}\n')
+            if "recipe" in shot:
+                (root / shot["recipe"]).write_text('{"playback":{"duration":10}}\n')
+            else:
+                assets = [
+                    shot["card"].get("asset"),
+                    shot["card"].get("illustration"),
+                    shot["card"].get("frame"),
+                    *shot["card"].get("animation", []),
+                ]
+                for asset in assets:
+                    if not asset:
+                        continue
+                    destination = root / asset
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(PROJECT_ROOT / asset, destination)
         bake = root / "tools" / "bake-atlases.sh"
         bake.write_text("#!/bin/sh\nexit 0\n")
         bake.chmod(0o755)
@@ -109,9 +128,27 @@ class CliHelpTests(unittest.TestCase):
             "done\n"
         )
         stub.chmod(0o755)
+        font_bin = root / "font-bin"
+        font_bin.mkdir()
+        font = root / "fixture-font.ttf"
+        font.write_bytes(b"font placeholder: the engine stub rejects rendering")
+        font_match = font_bin / "fc-match"
+        font_match.write_text(
+            "#!/bin/sh\n"
+            'case "$2" in\n'
+            '  *family*) printf "%s\\n" "${RECIPE_FONT_FAMILY:-$3}" ;;\n'
+            f'  *) printf "%s\\n" "{font}" ;;\n'
+            "esac\n"
+        )
+        font_match.chmod(0o755)
         subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
-        subprocess.run(["git", "-C", str(root), "add", "scene-recipes"], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-C", str(root), "add", "scene-recipes", "art", "tools/trailer/window"],
+            check=True,
+            capture_output=True,
+        )
         env = dict(os.environ, GODOT=str(stub), RECIPE_CALLS=str(root / "calls"))
+        env["PATH"] = str(font_bin) + os.pathsep + env["PATH"]
         env["RECIPE_RESULT"] = json.dumps({"classification": "normal", "scope": "bounded", "bounds": [0, 0, 12, 12]})
         return root / "tools" / "trailer.sh", env
 
@@ -122,7 +159,8 @@ class CliHelpTests(unittest.TestCase):
             result = subprocess.run([str(script), "--validate"], env=env, text=True, capture_output=True, timeout=20)
             self.assertEqual(result.returncode, 0, result.stderr)
             calls = (root / "calls").read_text().splitlines()
-            self.assertEqual(len(calls), 8)
+            shots = json.loads((root / "tools" / "trailer" / "shots.json").read_text())["shots"]
+            self.assertEqual(len(calls), sum("recipe" in shot for shot in shots))
             self.assertTrue(all("--headless" in call and "--write-movie" not in call for call in calls))
             manifest = json.loads((root / "build" / "trailer" / "validation" / "choice.json").read_text())
             self.assertEqual(manifest["scope"], "bounded")
@@ -137,6 +175,303 @@ class CliHelpTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             calls = (root / "calls").read_text().splitlines()
             self.assertTrue(any("--write-movie" in call and "--after 10.000" in call for call in calls))
+
+    def test_trailer_reuse_mode_never_records_without_a_compatible_base(self) -> None:
+        for mode in ("--auditions-reuse", "--selected-reuse", "--selected-remix"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                script, env = self.recipe_trailer_fixture(root)
+                result = subprocess.run(
+                    [str(script), mode],
+                    env=env,
+                    text=True,
+                    capture_output=True,
+                    timeout=20,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("refusing to recapture", result.stderr)
+                calls_path = root / "calls"
+                calls = calls_path.read_text().splitlines() if calls_path.exists() else []
+                if mode != "--selected-remix":
+                    self.assertTrue(calls)
+                self.assertTrue(all("--write-movie" not in call for call in calls))
+
+    def test_trailer_zero_fades_keep_title_visible_from_first_to_last_frame(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script, env = self.recipe_trailer_fixture(root)
+            (root / ".gitignore").write_text("build/\n")
+            result = subprocess.run([str(script), "--shot", "title"], env=env, capture_output=True, timeout=60)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            decoded = subprocess.run(
+                [
+                    "ffmpeg",
+                    "-v",
+                    "error",
+                    "-i",
+                    str(root / "build/trailer/shot-title.mp4"),
+                    "-vf",
+                    "scale=1:1,format=gray",
+                    "-f",
+                    "rawvideo",
+                    "-",
+                ],
+                check=True,
+                capture_output=True,
+                timeout=20,
+            ).stdout
+            shots = json.loads((root / "tools/trailer/shots.json").read_text())
+            title = next(shot for shot in shots["shots"] if shot["name"] == "title")
+            gap_frames = round(title["gap"] * shots["fps"])
+            self.assertLess(max(decoded[:gap_frames]), 2)
+            visible = decoded[gap_frames:]
+            self.assertGreater(min(visible), 10)
+            self.assertLessEqual(max(visible) - min(visible), 2, "title still has a fade")
+            self.assertFalse((root / "calls").exists(), "editorial render launched the engine")
+
+    def test_trailer_selected_delivery_is_never_overwritten(self) -> None:
+        for mode in ("--selected", "--selected-reuse", "--selected-remix"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                script, env = self.recipe_trailer_fixture(root)
+                final = json.loads((root / "tools/trailer/final-score.json").read_text())
+                delivered = root / "build/trailer" / final["output"]
+                delivered.parent.mkdir(parents=True)
+                delivered.write_bytes(b"the movie the player is reviewing")
+                result = subprocess.run([str(script), mode], env=env, capture_output=True, timeout=20)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(b"selected delivery already exists", result.stderr)
+                self.assertEqual(delivered.read_bytes(), b"the movie the player is reviewing")
+                self.assertFalse((root / "calls").exists())
+
+    def test_trailer_selected_from_empty_output_builds_actual_selected_mix(self) -> None:
+        self.check_trailer_selected_mix(with_ending=False)
+
+    def test_trailer_selected_with_optional_ending_has_consistent_provenance_and_mix(self) -> None:
+        self.check_trailer_selected_mix(with_ending=True)
+
+    def check_trailer_selected_mix(self, *, with_ending: bool) -> None:
+        """Stub the engine boundary only; run real frames, score synthesis, mixing and AAC."""
+        import array
+        import re
+        import shutil
+
+        def ffmpeg(*args: str) -> bytes:
+            return subprocess.run(
+                ["ffmpeg", "-nostdin", "-hide_banner", *args],
+                check=True,
+                capture_output=True,
+                timeout=30,
+            ).stdout
+
+        def pcm(path: Path) -> array.array[int]:
+            samples = array.array("h")
+            samples.frombytes(
+                ffmpeg("-v", "error", "-i", str(path), "-vn", "-ac", "2", "-ar", "48000", "-f", "s16le", "-")
+            )
+            return samples
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script, env = self.recipe_trailer_fixture(root)
+            (root / ".gitignore").write_text("build/\ncalls\n")
+            shutil.copy2(TOOLS / "trailer/synthesize_score.py", root / "tools/trailer/synthesize_score.py")
+            # Keep every shot name and timing so the real selected music/cues resolve unchanged.
+            # One synthetic moving scene proves the capture route; cheap cards stand in for the
+            # other pictures, whose composition this routing regression does not judge.
+            shots_file = root / "tools/trailer/shots.json"
+            shots = json.loads(shots_file.read_text())
+            shots["fps"] = 20
+            starts: dict[str, float] = {}
+            elapsed = 0.0
+            for shot in shots["shots"]:
+                starts[shot["name"]] = elapsed + shot.get("gap", 0)
+                elapsed = starts[shot["name"]] + shot["length"]
+                if shot["name"] != "dog":
+                    for key in ("recipe", "motion", "captions", "ending", "in"):
+                        shot.pop(key, None)
+                    shot.update(kind="card", card={"asset": "art/logo.png"})
+            shots_file.write_text(json.dumps(shots))
+            project = root / "project.godot"
+            project.write_text(re.sub(r"(window/size/viewport_(?:width|height)=)\d+", r"\g<1>64", project.read_text()))
+            stub = root / "godot-stub"
+            stub.write_text(
+                f"#!{sys.executable}\n"
+                "import json, os, subprocess, sys\nfrom pathlib import Path\n"
+                "args=sys.argv[1:]\n"
+                "if '--version' in args: print('synthetic movie fixture'); sys.exit(0)\n"
+                "with open(os.environ['RECIPE_CALLS'],'a') as f: f.write(' '.join(args)+'\\n')\n"
+                "manifest=json.loads(os.environ['RECIPE_RESULT'])\n"
+                "manifest.update(playback_complete=True,observations=[{'passed':True}])\n"
+                "Path(args[args.index('--recipe-manifest')+1]).write_text(json.dumps(manifest))\n"
+                "if '--headless' in args: sys.exit(0)\n"
+                "folder=Path(args[args.index('--write-movie')+1]).parent\n"
+                "subprocess.run(['ffmpeg','-v','error','-f','lavfi','-i',"
+                "'testsrc2=size=64x64:rate=20:duration=10','-start_number','0',str(folder/'frame%08d.png')],check=True)\n"
+                "subprocess.run(['ffmpeg','-v','error','-f','lavfi','-i',"
+                "'sine=frequency=997:sample_rate=48000:duration=10','-af','volume=0.08',"
+                "'-ac','2','-c:a','pcm_s16le',str(folder/'frame.wav')],check=True)\n"
+            )
+            stub.chmod(0o755)
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(root),
+                    "-c",
+                    "user.name=Fixture",
+                    "-c",
+                    "user.email=fixture@example.test",
+                    "commit",
+                    "-qm",
+                    "fixture",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            # Compute the expected selected score from the actual recipe. WAV container encoder
+            # tags vary between host ffmpeg releases, so do not pin this fixture to a host's tag.
+            scores = json.loads((root / "tools/trailer/scores.json").read_text())
+            option = next(option for option in scores["options"] if option["id"] == "glass-alarm")
+            resolved = {
+                "total_seconds": elapsed,
+                "options": [
+                    {
+                        "id": "glass-alarm",
+                        "events": [
+                            event | {"at": starts[event["shot"]] + event["offset"]} for event in option["events"]
+                        ],
+                    }
+                ],
+            }
+            reference = root / "reference.json"
+            reference.write_text(json.dumps(resolved))
+            raw, expected_score = root / "raw.wav", root / "expected.wav"
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(TOOLS / "trailer/synthesize_score.py"),
+                    "--resolved",
+                    str(reference),
+                    "--option",
+                    "glass-alarm",
+                    "--output",
+                    str(raw),
+                ],
+                check=True,
+                capture_output=True,
+            )
+            levels = subprocess.run(
+                ["ffmpeg", "-hide_banner", "-i", str(raw), "-af", "volumedetect", "-f", "null", "-"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stderr
+            mean = re.search(r"mean_volume: (-?[\d.]+)", levels)
+            peak = re.search(r"max_volume: (-?[\d.]+)", levels)
+            assert mean and peak
+            gain = min(scores["target_mean_db"] - float(mean[1]), scores["peak_ceiling_db"] - float(peak[1]))
+            ffmpeg(
+                "-v", "error", "-i", str(raw), "-af", f"volume={gain:.4f}dB", "-c:a", "pcm_s16le", str(expected_score)
+            )
+            final_file = root / "tools/trailer/final-score.json"
+            final = json.loads(final_file.read_text())
+            final.update(output="selected-fixture.mp4")
+            final["ending_events"] = []
+            if with_ending:
+                final.update(ending_target_mean_db=-35.0, ending_peak_ceiling_db=-15.0)
+                final["ending_events"] = [
+                    {
+                        "label": "fixture closing dyad",
+                        "shot": "city",
+                        "offset": 6.9,
+                        "duration": 1.8,
+                        "frequency": frequency,
+                        "gain": gain,
+                        "texture": "glass-tail",
+                    }
+                    for frequency, gain in ((493.88, 0.34), (523.25, 0.30))
+                ]
+            final_file.write_text(json.dumps(final))
+            output = root / "build/trailer"
+            self.assertFalse(output.exists())
+            result = subprocess.run([str(script), "--selected"], env=env, capture_output=True, timeout=120)
+            self.assertEqual(result.returncode, 0, result.stderr.decode())
+            self.assertNotIn(b"No such file or directory", result.stderr)
+            manifest = json.loads((output / "selected-fixture.json").read_text())
+            self.assertNotIn("retained_base", manifest)
+            self.assertNotIn("remix_source", manifest)
+            self.assertEqual([scene["shot"] for scene in manifest["fresh_capture"]["scenes"]], ["dog"])
+            self.assertFalse((output / final["source_base"]).exists())
+            self.assertFalse((output / final["remix_base"]).exists())
+            self.assertEqual((root / "calls").read_text().count("--write-movie"), 1)
+            source = output / "experiments/selected-fixture/source"
+            if with_ending:
+                self.assertIsNone(manifest["natural_ending"])
+                ending = manifest["additive_ending"]
+                self.assertIsInstance(ending, dict)
+                self.assertEqual(len(ending["cues"]), len(final["ending_events"]))
+                self.assertEqual(
+                    ending["sha256"], hashlib.sha256((source / "score-ending.wav").read_bytes()).hexdigest()
+                )
+                for cue, event in zip(ending["cues"], final["ending_events"], strict=True):
+                    self.assertEqual(cue["at"], starts[event["shot"]] + event["offset"])
+            else:
+                self.assertIsNone(manifest["additive_ending"])
+                self.assertIn("without an additive closing layer", manifest["natural_ending"])
+                self.assertFalse((source / "score-ending.wav").exists())
+            self.assertEqual((source / "glass-alarm-score.wav").read_bytes(), expected_score.read_bytes())
+            stem_names = ["selected-base.mkv", "glass-alarm-score.wav", "event-bass-score.wav"]
+            if manifest["additive_ending"] is not None:
+                stem_names.append("score-ending.wav")
+            game, glass, bass, *optional, mixed = [pcm(source / name) for name in (*stem_names, "selected-mix.wav")]
+
+            # No sample reaches the limiter ceiling, so independently sum every active stem and
+            # its automatic output gain. Fit its short look-ahead once, then check every cue.
+            game_gain = float(scores["game_gain"])
+
+            def expected(index: int) -> float:
+                return (game[index] * game_gain + glass[index] + bass[index] + sum(x[index] for x in optional)) / 0.92
+
+            at = round(38.1 * 48000) * 2
+            delay = min(
+                range(480), key=lambda lag: sum(abs(mixed[at + i + lag * 2] - expected(at + i)) for i in range(400))
+            )
+            for at_seconds in (8.4, 15.7, 27.2, 35.7, 37.0, 38.2, 47.5):
+                at = round(at_seconds * 48000) * 2
+                error = max(abs(mixed[at + i + delay * 2] - expected(at + i)) for i in range(400))
+                self.assertLess(error, 3, (at_seconds, error))
+            decoded = pcm(output / "selected-fixture.mp4")
+            tail_times = (47.5, 47.8) if manifest["additive_ending"] is not None else (46.0, 46.6)
+            for at_seconds in (8.4, 15.7, 27.2, 35.7, 37.0, 38.2, *tail_times):
+                at, count = round(at_seconds * 48000) * 2, 4800
+                pcm_rms = math.sqrt(sum(x * x for x in mixed[at : at + count]) / count)
+                aac_rms = math.sqrt(sum(x * x for x in decoded[at : at + count]) / count)
+                self.assertGreater(pcm_rms, 10, at_seconds)
+                self.assertLess(abs(20 * math.log10(aac_rms / pcm_rms)), 0.5, at_seconds)
+
+    def test_trailer_rejects_font_substitution_before_recording(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script, env = self.recipe_trailer_fixture(root)
+            env["RECIPE_FONT_FAMILY"] = "Wrong Font"
+            result = subprocess.run([str(script), "--shot", "choice"], env=env, text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("not the family asked for", result.stderr)
+            self.assertFalse((root / "calls").exists())
+
+    def test_trailer_rejects_malformed_audition_scores_before_recording(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            script, env = self.recipe_trailer_fixture(root)
+            scores = root / "tools" / "trailer" / "scores.json"
+            payload = json.loads(scores.read_text())
+            payload["options"][0]["events"][0]["texture"] = "sample"
+            scores.write_text(json.dumps(payload))
+            result = subprocess.run([str(script), "--auditions"], env=env, text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("events are malformed", result.stderr)
+            self.assertFalse((root / "calls").exists())
 
     def test_trailer_refuses_fixture_and_preflight_failure_before_recording(self) -> None:
         for failure in ("fixture", "engine", "missing_scope"):

@@ -33,10 +33,11 @@ fixtures. No artwork or gameplay object type is added.
 
 The father approaches horizontally toward the standard vertical checkpoint, including
 its real huts, guards and traffic-operated boom. The dog scene selects only the charging
-dog and contains no water-main break. The chase uses the actual finale controller,
-carrying state and pursuing guards. Its capture records carrying speed 168px/s at the
-existing animation's contact stride; the still establishes pose, while movement and
-pursuit observations establish action. Walking and running share the production carrying
+dog and contains no water-main break. The chase uses the actual finale controller and
+carrying state, with one guard closing in his ordinary notice state. Its capture records
+carrying speed 168px/s at the existing animation's contact stride; the still establishes pose,
+while movement, visibility and proximity observations establish the shot's action. They do
+not establish an active pursuing phase. Walking and running share the production carrying
 pictures with different cadence. The final scene zooms from her doorstep to the whole
 active city, with moving walkers and cars checked in every quadrant.
 

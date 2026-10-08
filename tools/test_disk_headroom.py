@@ -10,6 +10,7 @@ must warn and carry on.
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -257,6 +258,7 @@ class ToolRefusalTests(HeadroomFixture):
         tmp = Path(tempfile.mkdtemp(prefix="trailer-tmp-", dir=self.root))
         stub = {key: fixture_env[key] for key in ("GODOT", "RECIPE_CALLS", "RECIPE_RESULT")}
         env = {**self.env, **stub, "TMPDIR": str(tmp)}
+        env["PATH"] = str(repo / "font-bin") + os.pathsep + env["PATH"]
         return script, tmp, env
 
     def run_trailer(self, script: Path, env: dict[str, str], *arguments: str) -> subprocess.CompletedProcess[str]:
@@ -273,8 +275,10 @@ class ToolRefusalTests(HeadroomFixture):
     def test_trailer_counts_the_summed_render_seconds_of_the_shots_asked_for(self) -> None:
         if shutil.which("jq") is None:
             self.skipTest("trailer.sh needs jq on PATH before its preflight")
-        # The fixture's recipes each run 10 game seconds, so one shot is 10 and the list is 80.
-        for arguments, seconds in ((("--shot", "choice"), 10), ((), 80)):
+        # Each fixture recipe runs 10 seconds; editorial cards need no engine frames.
+        shots = json.loads((ROOT / "tools" / "trailer" / "shots.json").read_text())["shots"]
+        full_seconds = 10 * sum("recipe" in shot for shot in shots)
+        for arguments, seconds in ((("--shot", "choice"), 10), ((), full_seconds)):
             with self.subTest(arguments=arguments):
                 script, tmp, env = self.trailer_fixture()
                 result = self.run_trailer(script, env, *arguments)

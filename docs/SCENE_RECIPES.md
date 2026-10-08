@@ -38,8 +38,15 @@ The default is 0.5 seconds. A still shows composition; the headless observations
 The trailer shot list's existing `in` is a separate adjustable recording cut-in: the recording
 simulates from setup, then trims the picture and audio to that time. `capture_at` chooses a
 screenshot moment, not a recording duration or a reset of the movement clock.
-The action scenes check movement at their configured cut-in ticks; the title and initial
-doorstep framing deliberately start at time zero.
+A trailer scene walks through an excluded lead-in, so its first retained frame is already moving
+with a settled camera; its observations check what the cut shows, at the ticks it shows it. When
+a trailer scene is re-staged, its observations are rewritten to the new staging, rather than the
+staging bent back to satisfy an old observation: the checks follow the trailer.
+
+The trailer uses `trailer-birds.json`, the selected westward walk into the park.
+`trailer-park-circle.json` bounds its scene to park tiles and trees south of a large park's
+playground. The mother completes the loop within the retained shot; streets, buildings and
+the playground remain outside the authored extent.
 
 ## Activity and playback
 
@@ -137,20 +144,28 @@ installed: the recipe selects its own events. `progression.blackout` turns
 off the street signals. Supported escape pins are trucks, abduction, roadblocks and explosions.
 
 `playback` accepts a timed `walk` script (the same syntax as `--walk`), `duration` in seconds,
-`capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`), `caption`, `title` and
-`observations`. Each observation has a physics `tick`, named `subject` and `condition`:
-`visible`, `moving`, `running`, `carrying`, `pursuing`, `near` or `beyond` with `at` and
-`distance` (at most or at least that far), `appeared` (she has seen the subject — some of a tile at its feet
-inside `VisibleView`'s area, the camera's view less the corners the joystick scheme covers — at some
-tick up to this one, for a route event that comes when the director's pacing says rather than at a
-known tick), `crowd` with `walkers` and `cars` (asked of `player`: at least that many walkers and
-cars are moving in the picture), `off_screen` (no part of a box three tiles either side
+`capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`, `landscape_margin`, and
+`fixed`, which holds a scripted scene on its starting view, and optional `fixed_offset: [x,y]`,
+which shifts that held view in world pixels), `settled_camera` (true: the camera starts settled on her with its look-ahead,
+which the trailer needs before its moving lead-in; all cameras start at the placed player,
+and this option additionally initializes the directional look-ahead), `caption`,
+`title` and `observations`. `landscape_margin` grows only the zoom-out's final framing around the
+finite map. In a full-city scene, exterior ground remains unwalkable and loads only when the camera
+can see it. Each observation has a physics `tick`, named `subject` and `condition`:
+`visible`, `moving`, `running`, `carrying`, `asleep` or `awake` (the baby's own state, which draws the
+pram's zzz), `pursuing`, `near` or `beyond` with `at` and
+`distance` (at most or at least that far), or `near_player` with `distance` (the subject is at most
+that far from her), `off_screen` (no part of a box three tiles either side
 and four up and down, `ResistanceDirector.TASK_HALF_EXTENT`, is in the picture), `clear_of_both_views` with `half` (`[half width, half height]` in px: no part
 of that box round the subject is in the world the camera shows in the landscape window or in the
 rotated portrait presentation, 640x360 and 360x640 at the game's zoom), and for `mark` or
 `task` alone `offered`, `done`, `arrowed` (the red arrow ends on it) and `unarrowed` (no red arrow
-is drawn). A `subject` of `row:<catalogue id>` names the first live instance of that row, for what
-an event summons rather than what the recipe placed.
+is drawn). `appeared` says the subject's rendered body has overlapped the live camera viewport,
+excluding the corners covered by joystick controls, at some tick up to this one; it lets a recipe
+check a route event whose arrival follows the director's pacing rather than a fixed tick. `crowd`,
+asked of `player`, takes `walkers` and `cars` and requires at least that many of each to be moving
+in the picture. A `subject` of `row:<catalogue id>` names the first live instance of that row, for
+what an event summons rather than what the recipe placed.
 The manifest records the engine's physics rate (30 Hz in this project); render FPS does not
 change that clock. Failed observations and interrupted gameplay exit unsuccessfully.
 `--recipe-validate` builds and checks the initial live setup, then exits;

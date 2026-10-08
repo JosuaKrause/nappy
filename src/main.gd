@@ -432,7 +432,7 @@ func _ready() -> void:
 
 	_player = _make_player()
 	_city.add_entity(_player)
-	_player.set_camera_limits(_city.camera_bounds())
+	_player.clear_camera_limits()
 	_baby = _player.get_node("Baby")
 
 	_hud = HUD.instantiate()
@@ -850,7 +850,7 @@ func _build_the_finale_city() -> void:
 		_player.slope_dir_at = Callable()
 		_player.get_parent().remove_child(_player)
 		_city.add_entity(_player)
-	_player.set_camera_limits(_city.camera_bounds())
+	_player.clear_camera_limits()
 	# The **tiles** the chains end on rather than the points `CityEdge` draws its pictures at: the
 	# portal's own face is anchored on the map edge, past the last ground she can stand on, so a
 	# reach measured from it would have to be wide enough to cover the difference and would then
@@ -1488,6 +1488,13 @@ func _new_boot_camera(ground: Vector2) -> Camera2D:
 func _retire_the_boot_camera() -> void:
 	_boot_camera.free()
 	_boot_camera = null
+	if _player:
+		var camera: Camera2D = _player.get_node("Camera2D")
+		# A dormant camera has no current target in movie mode. Read the placed transform
+		# before resetting smoothing, then publish that center before the first drawn frame.
+		camera.force_update_scroll()
+		camera.reset_smoothing()
+		camera.force_update_scroll()
 
 ## Takes every baked page this boot will ever need, inside a named loading window, and holds it
 ## for the life of the process. *(PLAYTEST-109: "we cannot start loading something in the frame we

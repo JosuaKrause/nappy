@@ -18,6 +18,7 @@ const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const SEED := 4242
 
 func run(t) -> void:
+	_test_boot_camera_handoff_starts_at_the_player(t)
 	_test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	_test_the_readout_flag_shows_it_on_a_release_build(t)
 	_test_the_debug_mode_note_only_exists_when_requested(t)
@@ -33,7 +34,8 @@ func run(t) -> void:
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
 	_test_no_interior_exists_outside_a_debug_build(t)
 	_test_play_seconds_only_advances_while_the_world_moves(t)
-	_test_the_border_reaches_the_window_from_every_corner(t)
+	_test_the_unclamped_view_at_every_corner_is_painted(t)
+	_test_the_overview_is_landscape_to_every_edge(t)
 	_test_no_focus_pause_from_args(t)
 	_test_no_focus_pause_from_query(t)
 	_test_focus_lost_opens_the_pause_during_a_played_day(t)
@@ -49,6 +51,57 @@ func run(t) -> void:
 	_test_return_window_needs_a_departure(t)
 	_test_return_window_is_off_under_the_override(t)
 	_test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t)
+
+## Read the camera's actual screen center before any process tick can hide a bad handoff.
+func _test_boot_camera_handoff_starts_at_the_player(t) -> void:
+	var interpolated: bool = t.get_tree().physics_interpolation
+	for mode in [true, false]:
+		t.get_tree().physics_interpolation = mode
+		_check_boot_camera_handoff(t)
+	t.get_tree().physics_interpolation = interpolated
+
+func _check_boot_camera_handoff(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
+	var boot := Camera2D.new()
+	boot.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	boot.position = Vector2(2400, 2600)
+	t.add_child(boot)
+	boot.make_current()
+	main._boot_camera = boot
+	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
+	var player: Stroller = packed.instantiate()
+	t.add_child(player)
+	player.set_physics_process(false)
+	main._player = player
+	var destination := Vector2(1800, 1400)
+	player.reset_at(destination, Vector2.RIGHT)
+	main._retire_the_boot_camera()
+	var camera: Camera2D = player.get_node("Camera2D")
+	print("CAMERA_HANDOFF player=%s screen=%s target=%s" % [player.global_position,
+			camera.get_screen_center_position(), camera.get_target_position()])
+	t.check(camera.is_current() and camera.get_screen_center_position().is_equal_approx(destination),
+			"boot handoff starts on the placed player before any smoothing frame")
+	t.check(camera.position_smoothing_enabled, "boot handoff preserves normal follow smoothing")
+	var runtime := SceneRecipeRuntime.new()
+	t.add_child(runtime)
+	runtime._player = player
+	runtime._settle_starting_camera()
+	print("CAMERA_SETTLED interpolation=%s screen=%s offset=%s" % [
+			t.get_tree().physics_interpolation, camera.get_screen_center_position(), camera.offset])
+	t.check(camera.get_screen_center_position().is_equal_approx(
+			destination + Vector2(Stroller.CAMERA_LOOK_AHEAD, 0)),
+			"a settled recipe starts at the actual player with its authored facing lead")
+	runtime.free()
+	player.set_camera_limits(Rect2(1000, 1000, 1600, 1200))
+	player.reset_at(Vector2(1500, 1500))
+	camera.force_update_scroll()
+	t.check(camera.limit_left == 1000 and camera.limit_bottom == 2200,
+			"a placed interior player keeps the room's camera limits")
+	player.clear_camera_limits()
+	t.check(camera.limit_left < 0 and camera.limit_right > 100000,
+			"returning outdoors removes the interior's camera limits")
+	player.free()
+	main.free()
 
 ## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
@@ -670,23 +723,20 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	GameState.sabotage_done = saved_sabotage
 	GameState.play_seconds = 0.0
 
-## M120: the border band the camera may see (`City.camera_bounds()`) has to reach exactly as far
-## as `_paint_outside_the_map()` painted it, in every direction a look-ahead glance can push the
-## drawn view — not only wherever `Camera2D.limit_*` alone would stop it.
+## The player's camera has no limits, so at each map corner the view is centered on her, the
+## look-ahead is added toward the corner, and the ground has to be painted under all of it through
+## the view-driven residency. Fails if residency were clipped back to the border band, since the
+## view then reaches past the band on the east and west sides (the view is wider than the band).
 ##
-## Computed rather than driven through a real windowed `Camera2D`: engine-internal clamping and
-## smoothing run once a frame through the rendering server, which nothing in this synchronous
-## headless suite steps. The check instead does the same arithmetic Godot's own clamp does —
-## `position` held inside `limit_left..limit_right` less half the visible view, `Stroller.
-## CAMERA_LOOK_AHEAD` added on top the way `_camera.offset` is, unclamped — for the worst-case
-## glance at each of the four corners, and reads the actual static `TileMapLayer` cells plus the
-## independently drawn south-water cells rather than re-deriving what should be there.
-func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
+## Computed rather than driven through a real windowed `Camera2D`: engine-internal smoothing runs
+## once a frame through the rendering server, which nothing in this synchronous headless suite
+## steps. The check reads the actual static `TileMapLayer` cells plus the independently drawn
+## south-water cells rather than re-deriving what should be there.
+func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 
-	var bounds := city.camera_bounds()
 	var half := Tuning.VIEW_HALF_EXTENT
 	var lead := Stroller.CAMERA_LOOK_AHEAD
 	var size := city.map.world_size()
@@ -694,20 +744,16 @@ func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
 		"nw": Vector2(0.0, 0.0), "ne": Vector2(size.x, 0.0),
 		"sw": Vector2(0.0, size.y), "se": Vector2(size.x, size.y),
 	}
+	var beyond_the_band := false
 	for name in corners:
 		var toward: Vector2 = corners[name]
-		# Where `Camera2D.limit_*` alone would hold `position`: as close to the corner as the
-		# clamp allows, which `City.camera_bounds()` already keeps flush with the painted band on
-		# the two sides a square viewport does not out-reach.
-		var clamped := Vector2(
-				clampf(toward.x, bounds.position.x + half.x, bounds.end.x - half.x),
-				clampf(toward.y, bounds.position.y + half.y, bounds.end.y - half.y))
-		# The look-ahead lead a glance straight at this corner adds on top, unclamped — the whole
-		# reach on whichever axis a facing may point purely along.
 		var glance := Vector2(
 				lead if toward.x > size.x * 0.5 else -lead,
 				lead if toward.y > size.y * 0.5 else -lead)
-		var window := Rect2(clamped + glance - half, half * 2.0)
+		var window := Rect2(toward + glance - half, half * 2.0)
+		var band := Rect2(Vector2.ZERO, size).grow(
+				City.OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE))
+		beyond_the_band = beyond_the_band or not band.encloses(window)
 		city.scenery.update(window, true)
 		var lo := city.map.world_to_tile(window.position)
 		var hi := city.map.world_to_tile(window.end - Vector2.ONE)
@@ -721,6 +767,50 @@ func _test_the_border_reaches_the_window_from_every_corner(t) -> void:
 		t.check(unpainted == 0,
 				"corner %s: every cell the window can show is painted (%d unpainted of %d)"
 				% [name, unpainted, (hi.x - lo.x + 1) * (hi.y - lo.y + 1)])
+
+	t.check(beyond_the_band, "a corner view reaches past the band, so the check is not vacuous")
+	city.free()
+	GameState.play_seconds = 0.0
+
+## The trailer overview grows the finite city by one authored landscape margin. Its added east and
+## west columns are forest, while the north and south bands own their corners and the bridge's
+## road carries on to any depth.
+func _test_the_overview_is_landscape_to_every_edge(t) -> void:
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+
+	var bounds := city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, city.map.size)).grow(512.0)
+	var viewport := Vector2(
+			ProjectSettings.get_setting("display/window/size/viewport_width"),
+			ProjectSettings.get_setting("display/window/size/viewport_height"))
+	var zoom := ZoomOutCamera.overview_zoom(bounds, viewport)
+	var size := viewport / zoom
+	var view := Rect2(bounds.get_center() - size / 2.0, size)
+	var lo := city.map.world_to_tile(view.position)
+	var hi := city.map.world_to_tile(view.end - Vector2.ONE)
+	var middle_y := city.map.size.y / 2
+	var south_spine_x := city.map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH
+	var keys := city._ground.keys_in(view)
+
+	t.check(keys.has(SceneryGround.key_for(lo)) and keys.has(SceneryGround.key_for(hi)),
+			"overview residency covers both far landscape corners")
+	t.check(city.scenery_ground_source(Vector2i(lo.x, middle_y)) == GroundTiles.FOREST \
+			and city.scenery_ground_source(Vector2i(hi.x, middle_y)) == GroundTiles.FOREST,
+			"overview's wide east and west columns remain forest")
+	t.check(city.scenery_ground_source(lo) == GroundTiles.MOUNTAIN \
+			and city.scenery_ground_source(Vector2i(hi.x, lo.y)) == GroundTiles.MOUNTAIN,
+			"north owns both overview corners as mountain")
+	t.check(city.scenery_ground_source(Vector2i(lo.x, hi.y)) == GroundTiles.WATER \
+			and city.scenery_ground_source(hi) == GroundTiles.WATER,
+			"south owns both overview corners as water")
+	for depth in [City.OUTSIDE_DEPTH_TILES, City.OUTSIDE_DEPTH_TILES * 4]:
+		t.check(city.scenery_ground_source(Vector2i(south_spine_x,
+				city.map.size.y + depth)) != GroundTiles.WATER,
+				"the southern bridge's road carries on %d tiles out, to the edge of any view" % depth)
+	t.check(city.scenery_ground_source(Vector2i(south_spine_x - 2,
+			city.map.size.y + City.OUTSIDE_DEPTH_TILES * 4)) == GroundTiles.WATER,
+			"the water either side of the bridge goes on too")
 
 	city.free()
 	GameState.play_seconds = 0.0

@@ -64,8 +64,9 @@ const HOME_BUILDING_WALL_ROWS := 4
 ## constant only has to be something that cap can act on.
 const HOME_FLANKING_WALL_ROWS := 2
 const BOUNDARY_THICKNESS := 64.0
-## How deep the ring of frontages outside the map is, in tiles. A block, so the far side of a
-## boundary street is the same depth of building as both sides of every other street.
+## How deep the framed border band outside the finite map is, in tiles. The southern bridge's
+## road and the unwalkable landscape beneath and beyond that band are drawn wherever the view
+## asks for them, the player's camera included.
 const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
 
 ## The layer for the one thing drawn *over* the entities: the dark inside the tunnel, which has to
@@ -1449,25 +1450,12 @@ func _add_prop(prop: Node2D) -> void:
 	if prop is ScenerySprite:
 		scenery.register(prop)
 
-## How far the camera may see. The map, plus the band of land painted outside it, less the reach
-## a glance toward the corner costs.
-##
-## **Not the map exactly**, or the boundary looks like a wall however much is built out there: the
-## camera would stop at the last walkable tile, so the far side of a boundary street — and the
-## tunnel the spine leaves by — would be drawn every frame and never once on screen. She still
-## cannot *walk* past the boundary; she can see that there is something past it.
-##
-## **And not the painted depth exactly either.** `Camera2D.limit_*` only clamps `position`;
-## `Stroller._update_camera()`'s look-ahead is `_camera.offset`, added on top and unclamped, so
-## facing along an edge pushes the drawn view `Stroller.CAMERA_LOOK_AHEAD` past wherever `position`
-## was held to. On the north and south sides that overrun still lands inside the painted band —
-## `Tuning.VIEW_HALF_EXTENT.y` (180px) leaves 76px of the eight-tile depth spare. East and west have
-## none to give: `VIEW_HALF_EXTENT.x` (320px) already exceeds it, so `position` is already clamped
-## flush with the painted edge before any lead is added, and the full look-ahead shows past it —
-## measured, the missing column the border paints but the window still shows black beyond.
-## Reserving the look-ahead from the clamp itself, uniformly, costs the same slack on every side
-## instead of only the two that happened to have room for it, which is what leaves every side
-## reaching exactly as deep as the paint does.
+## The framing of the whole city plus its border band, for the cameras that look at the city
+## rather than follow her: the `--overview` view, the dev rig and the trailer's zoom-out. The
+## player's own camera has no limits, so it follows her centered with the look-ahead wherever she
+## stands, and the ground past the edge is painted for whatever view asks
+## (`scenery_ground_source()`). The rectangle is the map grown by the band painted outside it,
+## less the reach a glance toward a corner costs.
 func camera_bounds() -> Rect2:
 	if map.recipe_exterior or map.has_stretch():
 		return Rect2(-100000000, -100000000, 200000000, 200000000)
@@ -1527,10 +1515,6 @@ func scenery_ground_source(tile: Vector2i) -> int:
 		return -1
 	if map.recipe_exterior and not map.recipe_bounds.has_point(tile):
 		return GroundTiles.ALLEY
-	var depth := OUTSIDE_DEPTH_TILES
-	if tile.x < -depth or tile.y < -depth or tile.x >= map.size.x + depth \
-			or tile.y >= map.size.y + depth:
-		return -1
 	if tile.x < 0 or tile.y < 0 or tile.x >= map.size.x or tile.y >= map.size.y:
 		return _paint_outside_the_map(tile)
 	var source := GroundTiles.source_for(map, tile, _day)
@@ -1635,10 +1619,9 @@ func _composed_ground_tile_set() -> TileSet:
 
 ## What the city stops at, on each of its four sides.
 ##
-## The tilemap is painted over `map.size` and no further, so without this everything the camera can
-## see outside the map stands on the clear colour. Painting it by continuing the edge outward cures
-## the black and leaves the wrong answer standing: more city, receding into a camera limit, on
-## every side.
+## The resident tilemap covers only the current view. Outside the finite city, this continues the
+## landscape far enough for that view without continuing the city itself: no roads, walkable cells
+## or collision are added.
 ##
 ## **The border is the land, and each side says a different thing about why the city ends:**
 ##
@@ -1656,8 +1639,8 @@ func _composed_ground_tile_set() -> TileSet:
 ## border instead of being buried in it — see `_spawn_spine_exits`, and `CityEdge._swallow_the_road`
 ## for the road going into the dark. Take the exceptions away and `CityEdge`'s whole sentence — *the
 ## city goes on and this is how you would leave it* — is a tunnel mouth set into a cliff with no
-## road reaching it. **The two exceptions are not the same depth.** The bridge carries the road the
-## whole width of the band, because a deck is in the open; the tunnel carries it only as far as the
+## road reaching it. **The two exceptions are not the same depth.** The bridge carries the road as
+## far as any view asks (the deck is `CityEdge.BRIDGE_DECK_PX` long), because a deck is in the open; the tunnel carries it only as far as the
 ## portal's opening (`CityEdge.TUNNEL_DEPTH_TILES`), because past the mouth the road is inside the
 ## mountain and what is on top of it is rock.
 ##
@@ -1666,7 +1649,7 @@ func _composed_ground_tile_set() -> TileSet:
 ## and `CityMap` is untouched, so the walkable set and every guarantee stated over it are identical
 ## tile for tile. The boundary wall is still what stops her.
 func _paint_outside_the_map(tile: Vector2i) -> int:
-	return _border_source(tile.x, tile.y, OUTSIDE_DEPTH_TILES)
+	return _border_source(tile.x, tile.y)
 
 ## Which border tile belongs at an outside cell. Each side is written as *what you meet, in order,
 ## walking away from the last kerb*, and how far out of the city a tile is is what indexes it.
@@ -1685,14 +1668,14 @@ func _paint_outside_the_map(tile: Vector2i) -> int:
 ## and deliberately does not, is anything *at* the corner: no headland, no bay, no new terrain.
 ##
 ## The order below is the whole rule. North first, then south, then whatever is left.
-func _border_source(x: int, y: int, depth: int) -> int:
+func _border_source(x: int, y: int) -> int:
 	var north := -y
 	var south := y - (map.size.y - 1)
 	var west := -x
 	var east := x - (map.size.x - 1)
 
 	if _leaves_by_the_spine(x):
-		var on_to_the_bridge := south > 0 and south <= depth
+		var on_to_the_bridge := south > 0
 		var into_the_tunnel := north > 0 and north <= CityEdge.TUNNEL_DEPTH_TILES
 		if on_to_the_bridge or into_the_tunnel:
 			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)), _day)
