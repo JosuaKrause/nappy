@@ -33,15 +33,13 @@ The main title card is the Nappy card after the dog scene; the apartment window 
 slide. The movie has no opening fade-in, the title card has no fades, and the ending fades out.
 
 The assistant asks whether "both cases" means both A-to-B/B-to-A window-animation changes or
-the gameplay-scene transitions. The player answers:
-
-> fade in/out I was talking about was the transition between scenes. this has nothing to do with the player or animation frame choices
-
-It also asks whether the mother's previously requested one-second fade remains while the
+the gameplay-scene transitions. It also asks whether the mother's previously requested one-second fade remains while the
 background and text start immediately, or whether she too is fully visible on the first
 frame. The options are "Keep only the mother’s fade-in" and "Everything visible immediately".
-The player selects:
+The player's two answers, in question order:
 
+> fade in/out I was talking about was the transition between scenes. this has nothing to do with the player or animation frame choices
+>
 > Keep only the mother’s fade-in
 
 Scene transitions fade out and in, the video opens immediately, the title card has neither
