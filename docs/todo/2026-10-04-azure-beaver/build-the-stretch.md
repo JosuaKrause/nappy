@@ -3,6 +3,12 @@ tiles, fronting buildings, trees, deterioration, posters, starting people and ca
 without city generation or a seed-generated witness. Ordinary task, route and event rules still
 apply, and an unchanged saved scene remains independent of generator changes.
 
+Apply authored building district, variant and height before deriving neighboring roof joins
+and courtyard tint. A height edit must rebuild the actual adjacent roof geometry, not leave
+it based on the draft's former height. Make the visible-event observation use the current
+camera and viewport: different zoom and portrait views must not certify an offscreen event
+or miss one actually in view. Retain meaningful regressions for both review findings.
+
 Reconcile the trailer's camera, landscape and covered-window recording changes when it lands.
 Preserve both the full authored stretch and the arrows' path-based
 selection and any eligible day-11 mast. Capture a short moving sequence after the recording
