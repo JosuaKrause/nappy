@@ -70,6 +70,17 @@ thing just out of sight — which is why this entry waits on it.
 
 The one item is [the-pursuer-on-foot.md](the-pursuer-on-foot.md).
 
+**Re-report from playing:** [azure-koala](../../playtests/2026-10-07-azure-koala.md), finding 7,
+files inbox #601 in the same `now` band:
+
+> police cars chasing the player behave like running people (instead of... cars) but are at least no lethal. pursuing police should rather use the police sprite instead
+
+The on-foot replacement is owned here rather than by a second design. The new report says
+police pursuits generally, not specifically a torn poster: identify the triggering pursuit at
+pickup and cover any additional affected police pursuit, or record its separate owner explicitly.
+"at least no lethal" describes the car in the report; the catch consequence remains the open
+question in the item, not an agreed lethal replacement.
+
 **The `after: 2026-09-26-M226` line is the filer's ordering, not the player's.** The player did not
 say this waits on M226; the filer put it behind M226 (PR #597) because the pursuer is to be warned
 and placed the way M226 warns and places every pursuer from off screen (the first proposal below).
