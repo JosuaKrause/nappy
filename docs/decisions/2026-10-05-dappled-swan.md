@@ -34,6 +34,9 @@ the capture establishes these states, not exact pixel timing or smoothness.
 
 **Off screen is not visible.** Spawning goes wholly outside the camera's whole view, corners
 included (M226's no pop-in); the corners are left out only for what she can see.
+At warning expiry, the trap recomputes against that whole camera even if only the camera moved
+during the badge. The tap and joystick regressions exercise the expiry callback itself, so a
+cached placement outside an earlier view cannot appear inside the current one.
 
 **Chosen while building, open to overturn:** the fire's sighting stays a point test against the area;
 the poster crews' pasting counts as a sighting; streaming and residency keep the whole view.
