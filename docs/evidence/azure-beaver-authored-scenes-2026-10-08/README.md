@@ -36,8 +36,8 @@ game's 30 physics ticks per second), with both task completion and the seen-cat 
 checked there. The ordinary warning, chase and loss behavior is unchanged. This is a scene
 endpoint, not evidence that standing beside the van is safe.
 
-The trailer and task-arrow integration is separate from this preview; these pictures do
-not claim to show those pending PRs.
+These preview stills predate the integrated trailer camera and task-arrow behavior; their
+claim remains the authored layout and visible contents recorded above.
 
 `covered-movie-*` records a failed motion capture at clean source
 `f1ac0061e43800360715c6458433aad6f7eec760`, using:
@@ -50,8 +50,27 @@ The simulation completed every assertion without engine errors, but visual inspe
 frozen movie frames: one PNG hash repeats 456 times and another 124 times. The selected
 decoded frames at approximately 0.5 and 8.5 seconds show the resulting jump. Settings and
 raw frame hashes preserve provenance; the whole movie remains local. This is a capture
-failure, not crowd-motion evidence. The trailer's covered-window drawing correction must
-be integrated before repeating the short motion proof.
+failure, not crowd-motion evidence. It is retained beside the successful repeat as the
+counterexample that the recording correction has to change.
+
+`motion-day7-*` records that successful repeat at clean source
+`4e8ec04e3dfaff91347ae576d9efb0e9f8f0baa5`, while the native game window was covered by
+another opaque application, using:
+
+```sh
+tools/record.sh --out azure-beaver-day7-motion-after-580-direct.mp4 --recipe scene-recipes/task-07-package.json --recipe-mode scripted
+```
+
+Godot rendered all 584 frames at 60 FPS for a 9.73-second movie. Every adjacent frame has a
+different whole-frame SHA-256 hash, so the longest identical run is one frame (0.017 seconds),
+and visual inspection of the selected 0.5-, 4.5- and 8.5-second frames shows the player, camera
+and crowd in different positions as the mark becomes the van task and the van is reached. The
+manifest completes all twelve observations without a violation: the visible moving activity
+changes from three walkers and no car initially to five walkers and one car finally, and the
+route event first appears at physics tick 181. Settings, all frame hashes, the resolved manifest
+and the engine log preserve provenance; the whole movie remains local at
+`build/records/azure-beaver-day7-motion-after-580-direct.mp4`. This proves continuous motion for
+this one covered-window day 7 playback; it does not claim a moving review of every authored scene.
 
 `fire-truck-crying.json` and its one-line run-log excerpt retain a separate failure at that
 same clean source. `tools/scene-recipes.sh --output /tmp/all-saved-scenes` stops on the
