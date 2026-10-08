@@ -734,7 +734,8 @@ check_that "test.sh refuses a TEST_SHARD_TIMEOUT_S that is not whole seconds bef
 # what stops a parser failure or an unconditional rejection from satisfying the case vacuously.
 clean_pack="$work_dir/audit-clean.pck"
 dirty_pack="$work_dir/audit-tests.pck"
-python3 - "$clean_pack" "$dirty_pack" <<'PY'
+recipe_pack="$work_dir/audit-recipes.pck"
+python3 - "$clean_pack" "$dirty_pack" "$recipe_pack" <<'PY'
 import hashlib
 import struct
 import sys
@@ -782,6 +783,10 @@ write_pack(
         ),
     ],
 )
+write_pack(
+    sys.argv[3],
+    production + [("scene-recipes/task-06-note.json", b'{"version":1}\n')],
+)
 PY
 
 out="$(./tools/audit-pck.sh --fatal "$clean_pack" 2>&1)"
@@ -792,6 +797,10 @@ out="$(./tools/audit-pck.sh --fatal "$dirty_pack" 2>&1)"
 status=$?
 check_that "audit-pck.sh rejects test remaps, probes and a class-cache reference in the pack" \
     '[[ $status -ne 0 && "$out" == *"2 test paths, 1 other files referring to tests"* && "$out" == *"test path: tests/probes/export_probe.tscn"* && "$out" == *"test reference: .godot/global_script_class_cache.cfg"* ]]'
+out="$(./tools/audit-pck.sh --fatal "$recipe_pack" 2>&1)"
+status=$?
+check_that "audit-pck.sh rejects a development scene recipe actually present in the pack" \
+    '[[ $status -ne 0 && "$out" == *"1 development recipe paths"* && "$out" == *"development recipe: scene-recipes/task-06-note.json"* ]]'
 
 made="$(cd "$names_repo" && ./tools/new-name.sh --date 2026-09-27 todo "Stars for nerves" 2>/dev/null)"
 check_that "new-name.sh takes the one pair not already used, in any folder, whatever its date" \

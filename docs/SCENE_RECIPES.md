@@ -6,6 +6,11 @@ the map, resolved world anchors, diagnostics and a construction manifest. The ru
 `setup` and `playback` separately before starting gameplay; construction acceptance alone does
 not certify events, actors or a promised playback moment.
 
+The `scene-recipes/` directory is local development input. Its `.gdignore` keeps the JSON files
+available to the scene tools through `FileAccess` while excluding them from Godot's imported
+resource set, and the Web export excludes the directory explicitly. `tools/audit-pck.sh --fatal`
+checks the built package itself and fails if any development recipe path is present.
+
 Validity means the explicit checks already performed by city construction pass. The builder
 reuses those checks; it does not prove that some ordinary seed produces an arbitrary complete
 arrangement or invent additional generation-probability requirements.

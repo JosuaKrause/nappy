@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# List an exported pack and report every test resource or baked constituent still inside it.
+# List an exported pack and report every development recipe, test resource or baked constituent
+# still inside it.
 #
 #   tools/audit-pck.sh                       # the newest build/web/*/index.pck
 #   tools/audit-pck.sh path/to/index.pck     # a pack by name
@@ -13,7 +14,9 @@
 # as members here too: a picture only one bake mode draws is still an authoring source, and no
 # pack may carry one whichever mode wrote its page.
 #
-# It asks three questions of a pack. **Is anything under tests/ in it**, including scripts,
+# It asks four questions of a pack. **Is anything under scene-recipes/ in it** — those authored
+# demonstrations are development inputs, never runtime game data. **Is anything under tests/ in
+# it**, including scripts,
 # scenes, probes and remaps. **Does a file elsewhere in the pack still refer to res://tests/** --
 # especially the global class cache or another plain packed resource the path filter did not
 # remove. The exported-runtime boot checks compatibility that this literal-reference audit cannot.
@@ -39,10 +42,10 @@ usage() {
     cat <<'EOF'
 usage: tools/audit-pck.sh [--help|-h] [--fatal] [--list] [pack]
 
-Lists an exported .pck and reports what should not be in it: every path under tests/, every
-packed file that still refers to res://tests/, every picture that is a member of an atlas group
-and is still there -- as its own source, its .import sidecar or its imported .ctex copy -- and
-every baked page the pack's own regions.json names no group for.
+Lists an exported .pck and reports what should not be in it: every path under scene-recipes/ or
+tests/, every packed file that still refers to res://tests/, every picture that is a member of an
+atlas group and is still there -- as its own source, its .import sidecar or its imported .ctex copy
+-- and every baked page the pack's own regions.json names no group for.
 Reports only and exits 0 unless --fatal is given.
 
   pack      the .pck to read; defaults to the newest build/web/*/index.pck
@@ -193,6 +196,7 @@ if want_list:
 # point back into the excluded tree. This does not claim to inspect arbitrary compiled bytecode;
 # the exported-runtime boot is the compatibility check for the package as a whole.
 test_paths = sorted(name for name in inside if name.startswith("tests/"))
+recipe_paths = sorted(name for name in inside if name.startswith("scene-recipes/"))
 test_references = sorted(
     name for name, contents in inside.items()
     if not name.startswith("tests/") and b"res://tests/" in contents
@@ -242,8 +246,8 @@ if groups is not None:
 # /tmp printed relative to the project root is seven `..` segments nobody can read.
 shown = os.path.relpath(pack_path, root)
 print("pack: %s" % (pack_path if shown.startswith("..") else shown))
-print("      %d files, %d test paths, %d other files referring to tests"
-      % (len(inside), len(test_paths), len(test_references)))
+print("      %d files, %d development recipe paths, %d test paths, %d other files referring to tests"
+      % (len(inside), len(recipe_paths), len(test_paths), len(test_references)))
 print("      %d atlas members, %d of them still in the pack"
       % (len(members), len(hits)))
 if groups is None:
@@ -252,6 +256,8 @@ else:
     print("      %d baked pages, %d of them named by no group" % (len(groups), len(unnamed)))
 for name in unnamed:
     print("      orphan page: %s" % name)
+for name in recipe_paths[:5]:
+    print("      development recipe: %s" % name)
 for name in test_paths[:5]:
     print("      test path: %s" % name)
 for name in test_references[:5]:
@@ -268,6 +274,8 @@ if hits and fatal:
     sys.exit("FAILED: %d baked constituents are still in the pack" % len(hits))
 if unnamed and fatal:
     sys.exit("FAILED: %d baked page files in the pack belong to no group" % len(unnamed))
+if recipe_paths and fatal:
+    sys.exit("FAILED: %d development scene recipes are still in the pack" % len(recipe_paths))
 if (test_paths or test_references) and fatal:
     sys.exit("FAILED: %d test paths and %d other packed files referring to tests"
              % (len(test_paths), len(test_references)))
