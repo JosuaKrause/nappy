@@ -157,3 +157,16 @@ visible lot `[118,34,13,4]` to variant `123456789` leaves its tint at `379255834
 from hidden, unlisted context lot `[118,48,22,8]`. Applying authored values before sharing
 is insufficient when the sharing pass still chooses its source outside the visible authored
 members. This remaining defect stays in the construction item for correction and review.
+
+Source `6669a4c67e2a0436f599a364355559247030ea6f` makes a partial authored courtyard use
+its first shown, authored member in canonical building-rectangle order as the shared-tint
+source. Hidden context members cannot select the visible color. In the concrete day-14
+case, both visible members now receive tint `123456789`, while each keeps its own authored
+variant for its other details. Ordinary generated cities keep their complete courtyard's
+first-piece choice. Selecting the first authored member preserves the one-tint courtyard
+rule; this small authoring convention is documented in CITY and remains open to correction.
+The real-City regression requires both visible members and checks their actual tint and
+individual variants. The focused scene suite passes 46 checks and the ordinary ground-floor
+suite passes 31,807, with zero failures; import/boot, lint and diff checks pass. No native
+capture or whole-game local suite accompanies this bounded repair. The remaining queue
+holds trailer integration and motion evidence, with independent review still required.
