@@ -7,6 +7,7 @@
 #   tools/trailer.sh --check all      # the same for every shot
 #   tools/trailer.sh --auditions      # one clean capture, then three score mixes
 #   tools/trailer.sh --selected-reuse # replace changed shots in the retained base, then final mix
+#   tools/trailer.sh --selected-remix # replace only the intro in that selected base; never recapture
 #   tools/trailer.sh --list           # print the shot list and render nothing
 #
 # PLAYTEST-139: "we can use recordings from a frame locked game. the trailer will be a set of
@@ -53,7 +54,7 @@ source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 
 usage() {
     cat <<EOF
-usage: tools/trailer.sh [--help|-h] [--list | --validate | --auditions | --auditions-reuse | --selected-reuse | --shot NAME | --check NAME|all | --check-load NAME|all]
+usage: tools/trailer.sh [--help|-h] [--list | --validate | --auditions | --auditions-reuse | --selected-reuse | --selected-remix | --shot NAME | --check NAME|all | --check-load NAME|all]
 
 Renders the trailer from tools/trailer/shots.json: gameplay shots through Godot's movie writer,
 frame-locked, at the game's own resolution with its audio; editorial cards and the deterministic
@@ -67,6 +68,8 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
                      a mismatch without opening a recording window
   --selected-reuse  render only the changed hook and dog shots, replace those intervals in the
                     exact retained audition base, and build the selected Glass Alarm cut
+  --selected-remix  render only the changed hook, replace it in the exact prior selected base,
+                    and rebuild the selected mix; refuse a mismatch rather than recapture
   --shot NAME      render one shot alone into TRAILER_OUT/shot-NAME.mp4
   --check NAME     render the shot twice and compare every frame's hash; exits non-zero on a
                    difference inside the shot's cut
@@ -102,7 +105,7 @@ TARGET=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --help|-h) usage; exit 0 ;;
-        --list|--validate|--auditions|--auditions-reuse|--selected-reuse)
+        --list|--validate|--auditions|--auditions-reuse|--selected-reuse|--selected-remix)
             [[ "$MODE" == "all" ]] || { echo "$1 cannot be combined with --$MODE" >&2; usage >&2; exit 1; }
             MODE="${1#--}"; shift ;;
         --shot|--check|--check-load)
@@ -126,15 +129,15 @@ if [[ ! -f "$SHOTS_FILE" ]]; then
     echo "trailer.sh: no shot list at ${SHOTS_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse ]] && [[ ! -f "$SCORES_FILE" ]]; then
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse || "$MODE" == selected-remix ]] && [[ ! -f "$SCORES_FILE" ]]; then
     echo "trailer.sh: no audition score list at ${SCORES_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
-if [[ "$MODE" == selected-reuse && ! -f "$FINAL_SCORE_FILE" ]]; then
+if [[ ( "$MODE" == selected-reuse || "$MODE" == selected-remix ) && ! -f "$FINAL_SCORE_FILE" ]]; then
     echo "trailer.sh: no selected score at ${FINAL_SCORE_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse ]] && ! command -v uv >/dev/null 2>&1; then
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse || "$MODE" == selected-remix ]] && ! command -v uv >/dev/null 2>&1; then
     echo "trailer.sh: uv not found on PATH; score auditions use the project Python environment" >&2
     exit 127
 fi
@@ -233,7 +236,7 @@ if [[ -n "$schema_errors" ]]; then
     exit 1
 fi
 
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse ]]; then
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse || "$MODE" == selected-remix ]]; then
     score_errors="$(jq -r '
         def num: type == "number";
         (if (keys - ["game_gain","target_mean_db","peak_ceiling_db","options"] | length) == 0
@@ -274,31 +277,43 @@ if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-
     fi
 fi
 
-if [[ "$MODE" == selected-reuse ]]; then
+if [[ "$MODE" == selected-reuse || "$MODE" == selected-remix ]]; then
     final_score_errors="$(jq -r '
         def num: type == "number";
         (if (keys - ["version","base_option","output","source_base","source_settings",
-            "source_base_sha256","base_score_sha256","bass_target_mean_db",
-            "bass_peak_ceiling_db","bass_events"] | length) == 0 then empty
+            "source_base_sha256","remix_base","remix_base_sha256","base_score_sha256",
+            "bass_target_mean_db","bass_peak_ceiling_db","bass_events",
+            "ending_target_mean_db","ending_peak_ceiling_db","ending_events"] | length) == 0 then empty
             else "unknown selected-score field" end),
         (if .version == 1 then empty else "version must be 1" end),
         (if all([.base_option,.output,.source_base,.source_settings,.source_base_sha256,
-            .base_score_sha256][]; type == "string" and length > 0) then empty
+            .remix_base,.remix_base_sha256,.base_score_sha256][]; type == "string" and length > 0) then empty
             else "selected score paths, ids and hashes are required" end),
         (if (.output | test("^[a-z0-9-]+\\.mp4$")) and
             (.source_base | test("^[a-z0-9/_-]+\\.mkv$")) and
-            (.source_settings | test("^[a-z0-9/_-]+\\.json$")) then empty
+            (.source_settings | test("^[a-z0-9/_-]+\\.json$")) and
+            (.remix_base | test("^[a-z0-9/_-]+\\.mkv$")) then empty
             else "selected score paths are malformed" end),
         (if (.bass_target_mean_db | num) and .bass_target_mean_db >= -60 and .bass_target_mean_db <= -18
             then empty else "bass_target_mean_db must be between -60 and -18" end),
         (if (.bass_peak_ceiling_db | num) and .bass_peak_ceiling_db >= -24 and .bass_peak_ceiling_db <= -3
             then empty else "bass_peak_ceiling_db must be between -24 and -3" end),
+        (if (.ending_target_mean_db | num) and .ending_target_mean_db >= -60 and .ending_target_mean_db <= -18
+            then empty else "ending_target_mean_db must be between -60 and -18" end),
+        (if (.ending_peak_ceiling_db | num) and .ending_peak_ceiling_db >= -24 and .ending_peak_ceiling_db <= -3
+            then empty else "ending_peak_ceiling_db must be between -24 and -3" end),
         (if (.bass_events | type) == "array" and (.bass_events | length) > 0 and all(.bass_events[];
             (keys - ["label","shot","offset","duration","frequency","gain","texture"] | length) == 0 and
             all([.label,.shot][]; type == "string" and length > 0) and
             (.offset | num) and .offset >= 0 and (.duration | num) and .duration > 0 and
             (.frequency | num) and .frequency > 0 and (.gain | num) and .gain > 0 and .gain <= 1 and
-            .texture == "drone") then empty else "bass events are malformed" end)
+            .texture == "weight") then empty else "bass events are malformed" end),
+        (if (.ending_events | type) == "array" and (.ending_events | length) > 0 and all(.ending_events[];
+            (keys - ["label","shot","offset","duration","frequency","gain","texture"] | length) == 0 and
+            all([.label,.shot][]; type == "string" and length > 0) and
+            (.offset | num) and .offset >= 0 and (.duration | num) and .duration > 0 and
+            (.frequency | num) and .frequency > 0 and (.gain | num) and .gain > 0 and .gain <= 1 and
+            .texture == "glass") then empty else "ending events are malformed" end)
     ' "$FINAL_SCORE_FILE" 2>&1)" || {
         echo "trailer.sh: ${FINAL_SCORE_FILE#"$PROJECT_DIR"/} is not valid JSON" >&2; exit 1;
     }
@@ -349,7 +364,7 @@ total_seconds="$(jq -r '[.shots[] | (.gap // 0) + .length] | add' "$SHOTS_FILE" 
     awk '{ printf "%.2f\n", $1 }')"
 RESOLVED_SCORES=""
 RESOLVED_FINAL=""
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse ]]; then
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse || "$MODE" == selected-remix ]]; then
     RESOLVED_SCORES="$(jq -n --slurpfile cut "$SHOTS_FILE" --slurpfile scores "$SCORES_FILE" '
         (reduce $cut[0].shots[] as $shot ({elapsed:0,starts:{}};
             .starts[$shot.name] = (.elapsed + ($shot.gap // 0)) |
@@ -370,7 +385,7 @@ if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-
         exit 1
     fi
 fi
-if [[ "$MODE" == selected-reuse ]]; then
+if [[ "$MODE" == selected-reuse || "$MODE" == selected-remix ]]; then
     RESOLVED_FINAL="$(jq -n --slurpfile cut "$SHOTS_FILE" --slurpfile final "$FINAL_SCORE_FILE" '
         (reduce $cut[0].shots[] as $shot ({elapsed:0,starts:{},parts:{}};
             .parts[$shot.name] = {start:.elapsed,end:(.elapsed + ($shot.gap // 0) + $shot.length)} |
@@ -379,8 +394,12 @@ if [[ "$MODE" == selected-reuse ]]; then
         $final[0] + {
             total_seconds:$timeline.elapsed,
             replacement_intervals:{hook:$timeline.parts.hook,dog:$timeline.parts.dog},
-            options:[{id:"event-bass",events:[$final[0].bass_events[] |
-                . + {at:($timeline.starts[.shot] + .offset)}]}]
+            options:[
+                {id:"event-bass",events:[$final[0].bass_events[] |
+                    . + {at:($timeline.starts[.shot] + .offset)}]},
+                {id:"score-ending",events:[$final[0].ending_events[] |
+                    . + {at:($timeline.starts[.shot] + .offset)}]}
+            ]
         }
     ')"
     if ! jq -e --argjson total "$total_seconds" --slurpfile scores "$SCORES_FILE" '
@@ -518,6 +537,7 @@ TREE_BEFORE="$(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null || true)"
 targets=("${SHOT_NAMES[@]}")
 [[ -z "$TARGET" || "$TARGET" == all ]] || targets=("$TARGET")
 [[ "$MODE" != selected-reuse ]] || targets=(hook dog)
+[[ "$MODE" != selected-remix ]] || targets=(hook)
 mkdir -p "$WORK/preflight"
 recipe_count=0
 for name in "${targets[@]}"; do
@@ -969,6 +989,22 @@ build_bass_once() {
         -af "volume=${adjust}dB" -c:a pcm_s16le "$score"
 }
 
+build_ending_once() {
+    local raw="$1" score="$2" resolved="$3" raw_mean raw_peak target ceiling wanted room adjust
+    uv run python "$PROJECT_DIR/tools/trailer/synthesize_score.py" \
+        --resolved "$resolved" --option score-ending --output "$raw" </dev/null
+    raw_mean="$(volume_stat "$raw" mean_volume)"
+    raw_peak="$(volume_stat "$raw" max_volume)"
+    target="$(jq -r '.ending_target_mean_db' <<< "$RESOLVED_FINAL")"
+    ceiling="$(jq -r '.ending_peak_ceiling_db' <<< "$RESOLVED_FINAL")"
+    wanted="$(awk -v target="$target" -v mean="$raw_mean" 'BEGIN {printf "%.4f", target-mean}')"
+    room="$(awk -v ceiling="$ceiling" -v peak="$raw_peak" 'BEGIN {printf "%.4f", ceiling-peak}')"
+    adjust="$(awk -v wanted="$wanted" -v room="$room" \
+        'BEGIN {if (wanted < room) printf "%.4f", wanted; else printf "%.4f", room}')"
+    ffmpeg -hide_banner -nostdin -loglevel error -y -i "$raw" \
+        -af "volume=${adjust}dB" -c:a pcm_s16le "$score"
+}
+
 # Replaces only the two changed shot intervals. The middle and tail are decoded from the retained
 # e29585da base, never recaptured; the selected-cut manifest records all four sources and hashes.
 assemble_selected_base() {
@@ -990,12 +1026,29 @@ assemble_selected_base() {
         -c:a pcm_s16le "$output"
 }
 
+# Replaces only the opening card in the exact prior selected base. That base already contains the
+# accepted staged dog chase and all unchanged gameplay, so this path cannot open a game window or
+# silently turn a score/intro revision into a new capture.
+assemble_remix_base() {
+    local retained="$1" hook="$2" output="$3" hook_end
+    hook_end="$(jq -r '.replacement_intervals.hook.end' <<< "$RESOLVED_FINAL")"
+    ffmpeg -hide_banner -nostdin -loglevel error -y -i "$retained" -i "$hook" \
+        -filter_complex "\
+[1:v]setpts=PTS-STARTPTS[hookv];[1:a]asetpts=PTS-STARTPTS[hooka];\
+[0:v]trim=start=${hook_end},setpts=PTS-STARTPTS[tailv];\
+[0:a]atrim=start=${hook_end},asetpts=PTS-STARTPTS[taila];\
+[hookv][hooka][tailv][taila]concat=n=2:v=1:a=1[v][a]" \
+        -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
+        -c:a pcm_s16le "$output"
+}
+
 build_selected_mix() {
-    local base="$1" final_dir="$OUT_DIR/experiments/final/source"
+    local base="$1" final_dir="$OUT_DIR/experiments/final-v2/source"
     local resolved_scores="$final_dir/resolved-scores.json"
     local resolved_final="$final_dir/resolved-final-score.json"
     local selected raw score check_raw check_score bass_raw bass bass_check_raw bass_check
-    local game_gain output score_mean score_peak bass_mean bass_peak mix_mean mix_peak
+    local ending_raw ending ending_check_raw ending_check manifest provenance
+    local game_gain output score_mean score_peak bass_mean bass_peak ending_mean ending_peak mix_mean mix_peak
     mkdir -p "$final_dir"
     printf '%s\n' "$RESOLVED_SCORES" > "$resolved_scores"
     printf '%s\n' "$RESOLVED_FINAL" > "$resolved_final"
@@ -1005,13 +1058,18 @@ build_selected_mix() {
     check_raw="$WORK/${selected}-raw-check.wav"; check_score="$WORK/${selected}-score-check.wav"
     bass_raw="$final_dir/event-bass-raw.wav"; bass="$final_dir/event-bass-score.wav"
     bass_check_raw="$WORK/event-bass-raw-check.wav"; bass_check="$WORK/event-bass-score-check.wav"
+    ending_raw="$final_dir/score-ending-raw.wav"; ending="$final_dir/score-ending.wav"
+    ending_check_raw="$WORK/score-ending-raw-check.wav"; ending_check="$WORK/score-ending-check.wav"
     build_score_once "$selected" "$raw" "$score" "$resolved_scores"
     build_score_once "$selected" "$check_raw" "$check_score" "$resolved_scores"
     build_bass_once "$bass_raw" "$bass" "$resolved_final"
     build_bass_once "$bass_check_raw" "$bass_check" "$resolved_final"
+    build_ending_once "$ending_raw" "$ending" "$resolved_final"
+    build_ending_once "$ending_check_raw" "$ending_check" "$resolved_final"
     if [[ "$(shasum -a 256 < "$score")" != "$(shasum -a 256 < "$check_score")" \
-            || "$(shasum -a 256 < "$bass")" != "$(shasum -a 256 < "$bass_check")" ]]; then
-        echo "trailer.sh: selected score or additive bass did not rebuild to identical bytes" >&2
+            || "$(shasum -a 256 < "$bass")" != "$(shasum -a 256 < "$bass_check")" \
+            || "$(shasum -a 256 < "$ending")" != "$(shasum -a 256 < "$ending_check")" ]]; then
+        echo "trailer.sh: selected score, additive bass or ending did not rebuild to identical bytes" >&2
         return 1
     fi
     if [[ "$(shasum -a 256 < "$score" | awk '{print $1}')" != "$(jq -r '.base_score_sha256' "$FINAL_SCORE_FILE")" ]]; then
@@ -1019,36 +1077,61 @@ build_selected_mix() {
         return 1
     fi
     game_gain="$(jq -r '.game_gain' <<< "$RESOLVED_SCORES")"
-    ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$score" -i "$bass" \
+    ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$score" -i "$bass" -i "$ending" \
         -filter_complex "[0:a]volume=${game_gain}[game];\
 [1:a]aformat=sample_rates=48000:channel_layouts=stereo[glass];\
 [2:a]aformat=sample_rates=48000:channel_layouts=stereo[bass];\
-[game][glass][bass]amix=inputs=3:duration=first:normalize=0,alimiter=limit=0.92[a]" \
+[3:a]aformat=sample_rates=48000:channel_layouts=stereo[ending];\
+[game][glass][bass][ending]amix=inputs=4:duration=first:normalize=0,alimiter=limit=0.92[a]" \
         -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -movflags +faststart "$output"
     score_mean="$(volume_stat "$score" mean_volume)"; score_peak="$(volume_stat "$score" max_volume)"
     bass_mean="$(volume_stat "$bass" mean_volume)"; bass_peak="$(volume_stat "$bass" max_volume)"
+    ending_mean="$(volume_stat "$ending" mean_volume)"; ending_peak="$(volume_stat "$ending" max_volume)"
     mix_mean="$(volume_stat "$output" mean_volume)"; mix_peak="$(volume_stat "$output" max_volume)"
     for pair in "score mean:$score_mean" "score peak:$score_peak" "bass mean:$bass_mean" \
-            "bass peak:$bass_peak" "mix mean:$mix_mean" "mix peak:$mix_peak"; do
+            "bass peak:$bass_peak" "ending mean:$ending_mean" "ending peak:$ending_peak" \
+            "mix mean:$mix_mean" "mix peak:$mix_peak"; do
         require_finite_level "${pair%%:*}" "${pair#*:}" || return 1
     done
+    if [[ "$MODE" == selected-remix ]]; then
+        provenance="$(jq -n \
+            --arg source "$(jq -r '.remix_base' "$FINAL_SCORE_FILE")" \
+            --arg source_sha "$(jq -r '.remix_base_sha256' "$FINAL_SCORE_FILE")" \
+            --arg source_revision "$(jq -r '.assembly_revision' "$OUT_DIR/trailer-glass-alarm-final.json")" \
+            --arg hook_sha "$(shasum -a 256 < "$WORK/selected-hook.mkv" | awk '{print $1}')" \
+            --argjson intervals "$(jq '.replacement_intervals' <<< "$RESOLVED_FINAL")" \
+            --argjson duration "$total_seconds" \
+            '{remix_source:{file:$source,sha256:$source_sha,assembly_revision:$source_revision,
+                reused_interval:{start:$intervals.hook.end,end:$duration}},
+              replacements:{hook:{interval:$intervals.hook,sha256:$hook_sha}}}')"
+    else
+        provenance="$(jq -n \
+            --arg hook_sha "$(shasum -a 256 < "$WORK/selected-hook.mkv" | awk '{print $1}')" \
+            --arg dog_sha "$(shasum -a 256 < "$WORK/selected-dog.mkv" | awk '{print $1}')" \
+            --argjson intervals "$(jq '.replacement_intervals' <<< "$RESOLVED_FINAL")" \
+            '{replacements:{hook:{interval:$intervals.hook,sha256:$hook_sha},
+                dog:{interval:$intervals.dog,sha256:$dog_sha}}}')"
+    fi
+    manifest="${output%.mp4}.json"
     jq -n --arg output "$(basename "$output")" \
         --arg output_sha256 "$(shasum -a 256 < "$output" | awk '{print $1}')" \
-        --arg selected_base "experiments/final/source/selected-base.mkv" \
+        --arg selected_base "experiments/final-v2/source/selected-base.mkv" \
         --arg selected_base_sha256 "$(shasum -a 256 < "$base" | awk '{print $1}')" \
         --arg retained_base "$(jq -r '.source_base' "$FINAL_SCORE_FILE")" \
         --arg retained_base_sha256 "$(jq -r '.source_base_sha256' "$FINAL_SCORE_FILE")" \
         --arg retained_capture_revision "$(jq -r '.capture_revision' "$OUT_DIR/$(jq -r '.source_settings' "$FINAL_SCORE_FILE")")" \
-        --arg hook_sha256 "$(shasum -a 256 < "$WORK/selected-hook.mkv" | awk '{print $1}')" \
-        --arg dog_sha256 "$(shasum -a 256 < "$WORK/selected-dog.mkv" | awk '{print $1}')" \
         --arg score_sha256 "$(shasum -a 256 < "$score" | awk '{print $1}')" \
         --arg bass_sha256 "$(shasum -a 256 < "$bass" | awk '{print $1}')" \
+        --arg ending_sha256 "$(shasum -a 256 < "$ending" | awk '{print $1}')" \
         --arg revision "$(git -C "$PROJECT_DIR" rev-parse HEAD)" \
         --arg tree "$(git -C "$PROJECT_DIR" rev-parse HEAD^{tree})" \
         --argjson duration "$total_seconds" --argjson intervals "$(jq '.replacement_intervals' <<< "$RESOLVED_FINAL")" \
         --argjson bass_cues "$(jq '.options[0].events' <<< "$RESOLVED_FINAL")" \
+        --argjson ending_cues "$(jq '.options[1].events' <<< "$RESOLVED_FINAL")" \
+        --argjson provenance "$provenance" \
         --argjson score_mean_db "${score_mean%dB}" --argjson score_peak_db "${score_peak%dB}" \
         --argjson bass_mean_db "${bass_mean%dB}" --argjson bass_peak_db "${bass_peak%dB}" \
+        --argjson ending_mean_db "${ending_mean%dB}" --argjson ending_peak_db "${ending_peak%dB}" \
         --argjson mix_mean_db "${mix_mean%dB}" --argjson mix_peak_db "${mix_peak%dB}" \
         '{output:$output,output_sha256:$output_sha256,duration_seconds:$duration,
           assembly_revision:$revision,assembly_tree:$tree,
@@ -1056,14 +1139,14 @@ build_selected_mix() {
             capture_revision:$retained_capture_revision,
             reused_intervals:[{start:$intervals.hook.end,end:$intervals.dog.start},
               {start:$intervals.dog.end,end:$duration}]},
-          replacements:{hook:{interval:$intervals.hook,sha256:$hook_sha256},
-            dog:{interval:$intervals.dog,sha256:$dog_sha256}},
           selected_base:{file:$selected_base,sha256:$selected_base_sha256,audio:"PCM game audio"},
           score:{name:"Glass Alarm",sha256:$score_sha256,mean_db:$score_mean_db,peak_db:$score_peak_db,
             preservation:"rebuilt byte-identically to the selected audition before bass was added"},
           additive_bass:{sha256:$bass_sha256,mean_db:$bass_mean_db,peak_db:$bass_peak_db,cues:$bass_cues},
-          final_mix:{mean_db:$mix_mean_db,peak_db:$mix_peak_db,limiter:0.92}}' \
-        > "$OUT_DIR/trailer-glass-alarm-final.json"
+          additive_ending:{sha256:$ending_sha256,mean_db:$ending_mean_db,peak_db:$ending_peak_db,cues:$ending_cues,
+            preservation:"the selected Glass Alarm file remains byte-identical; this matching dyad is a separate layer"},
+          final_mix:{mean_db:$mix_mean_db,peak_db:$mix_peak_db,limiter:0.92}} + $provenance' \
+        > "$manifest"
 }
 
 build_auditions() {
@@ -1391,11 +1474,31 @@ case "$MODE" in
         write_cut_entry_evidence dog "$WORK/frames"
         encode_shot dog "$WORK/frames" "$WORK/selected-dog.mkv"
         rm -rf "$WORK/frames"
-        mkdir -p "$OUT_DIR/experiments/final/source"
+        mkdir -p "$OUT_DIR/experiments/final-v2/source"
         assemble_selected_base "$retained_base" "$WORK/selected-hook.mkv" "$WORK/selected-dog.mkv" \
-            "$OUT_DIR/experiments/final/source/selected-base.mkv"
-        build_selected_mix "$OUT_DIR/experiments/final/source/selected-base.mkv"
+            "$OUT_DIR/experiments/final-v2/source/selected-base.mkv"
+        build_selected_mix "$OUT_DIR/experiments/final-v2/source/selected-base.mkv"
         echo "wrote ${OUT_DIR#"$PROJECT_DIR"/}/$(jq -r '.output' "$FINAL_SCORE_FILE") from the retained base plus the changed hook and dog shots"
+        ;;
+    selected-remix)
+        remix_base="$OUT_DIR/$(jq -r '.remix_base' "$FINAL_SCORE_FILE")"
+        expected_remix_sha="$(jq -r '.remix_base_sha256' "$FINAL_SCORE_FILE")"
+        if [[ ! -f "$remix_base" || ! -f "$OUT_DIR/trailer-glass-alarm-final.json" ]]; then
+            echo "trailer.sh: selected remix requires the retained selected base and its manifest; refusing to recapture unchanged footage" >&2
+            exit 1
+        fi
+        actual_remix_sha="$(shasum -a 256 < "$remix_base" | awk '{print $1}')"
+        manifest_remix_sha="$(jq -r '.selected_base.sha256 // ""' "$OUT_DIR/trailer-glass-alarm-final.json")"
+        if [[ "$actual_remix_sha" != "$expected_remix_sha" || "$manifest_remix_sha" != "$expected_remix_sha" ]]; then
+            echo "trailer.sh: prior selected base does not match its remix contract; refusing to recapture unchanged footage" >&2
+            exit 1
+        fi
+        encode_card hook "$WORK/selected-hook.mkv"
+        mkdir -p "$OUT_DIR/experiments/final-v2/source"
+        assemble_remix_base "$remix_base" "$WORK/selected-hook.mkv" \
+            "$OUT_DIR/experiments/final-v2/source/selected-base.mkv"
+        build_selected_mix "$OUT_DIR/experiments/final-v2/source/selected-base.mkv"
+        echo "wrote ${OUT_DIR#"$PROJECT_DIR"/}/$(jq -r '.output' "$FINAL_SCORE_FILE") from the exact prior selected base plus the changed hook"
         ;;
     auditions|auditions-reuse)
         mkdir -p "$OUT_DIR/source"

@@ -175,7 +175,7 @@ class CliHelpTests(unittest.TestCase):
             self.assertTrue(any("--write-movie" in call and "--after 10.000" in call for call in calls))
 
     def test_trailer_reuse_mode_never_records_without_a_compatible_base(self) -> None:
-        for mode in ("--auditions-reuse", "--selected-reuse"):
+        for mode in ("--auditions-reuse", "--selected-reuse", "--selected-remix"):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 script, env = self.recipe_trailer_fixture(root)
@@ -188,8 +188,10 @@ class CliHelpTests(unittest.TestCase):
                 )
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("refusing to recapture", result.stderr)
-                calls = (root / "calls").read_text().splitlines()
-                self.assertTrue(calls)
+                calls_path = root / "calls"
+                calls = calls_path.read_text().splitlines() if calls_path.exists() else []
+                if mode != "--selected-remix":
+                    self.assertTrue(calls)
                 self.assertTrue(all("--write-movie" not in call for call in calls))
 
     def test_trailer_rejects_font_substitution_before_recording(self) -> None:

@@ -46,6 +46,21 @@ def oscillator(texture: str, phase: float, local_time: float, absolute_time: flo
     if texture == "drone":
         movement = 0.82 + 0.18 * math.sin(2.0 * math.pi * 0.37 * absolute_time)
         return (math.sin(phase) + 0.16 * math.sin(0.5 * phase)) * movement * envelope
+    if texture == "weight":
+        # Keep the fundamental for weight, but put enough energy in the second and third
+        # harmonics for the cue to survive ordinary speakers. A short attack and long, nearly
+        # level body read as one held note instead of the old sin-squared swell disappearing
+        # beneath the selected score.
+        attack = min(1.0, local_time / 0.10)
+        release = min(1.0, max(0.0, duration - local_time) / 0.42)
+        held_envelope = attack * attack * (3.0 - 2.0 * attack)
+        held_envelope *= release * release * (3.0 - 2.0 * release)
+        movement = 0.92 + 0.08 * math.sin(2.0 * math.pi * 0.31 * absolute_time)
+        return (
+            (0.74 * math.sin(phase) + 0.58 * math.sin(2.0 * phase) + 0.30 * math.sin(3.0 * phase))
+            * movement
+            * held_envelope
+        )
     if texture == "tick":
         return (
             (math.sin(phase) + 0.25 * math.sin(3.0 * phase))
