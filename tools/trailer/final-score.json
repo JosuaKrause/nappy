@@ -1,7 +1,7 @@
 {
   "version": 1,
   "base_option": "glass-alarm",
-  "output": "trailer-glass-alarm-final-v5.mp4",
+  "output": "trailer-glass-alarm-final-v6.mp4",
   "source_base": "experiments/source/base-e29585da.mkv",
   "source_settings": "experiments/source/base-e29585da-settings.json",
   "source_base_sha256": "3a705981dfc756932b1045474c174b46a56a7a43003302efd49a511c40801516",

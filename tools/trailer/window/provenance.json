@@ -9,7 +9,7 @@
     "registered_height": 600,
     "visible_pane_bottom_y": 550,
     "baby_blanket_source_bottom_y": {"a": 176},
-    "note": "The blanket silhouette, not the whole mother's alpha bounds, clears the visible pane. A reaches its low point at 0.55s and 2.75s. Figure alpha alone fades over one second; screen transitions are independent."
+    "note": "The blanket silhouette, not the whole mother's alpha bounds, clears the visible pane. A reaches its low point at 0.55s and 2.75s. Figure alpha alone fades across the opening card's full duration; screen transitions are independent."
   },
   "window": {
     "source": "art/buildings/window_lit.svg",
