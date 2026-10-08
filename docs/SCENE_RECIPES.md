@@ -296,6 +296,9 @@ portrait view at the first frame *(the player, inbox #557: "the
 fire truck scene starts too close to the start -- the building is already on screen")*: once she has seen
 the fire, its own `spawns_on_sight` calls the `fire_truck` in from off screen exactly as a played
 day does, and the engine parks at the kerb in front of the fire for the rest of the day.
+The scripted walk turns north after seeing the fire, then returns partway south to watch the
+parked engine from farther away. It shows the moving engine during that retreat and manages
+the ordinary noise exposure by walking; standing beside the engine remains dangerous.
 
 ## Construction schema
 

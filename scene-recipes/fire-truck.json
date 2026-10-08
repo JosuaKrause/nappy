@@ -3,11 +3,12 @@
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
   "anchors": {"fire": {"world": [2128, 2704]}, "kerb": {"world": [2128, 2768]}, "start": {"world": [2624, 2704]}},
   "setup": {"tutorial_complete": true, "day": 3, "parent": "mother", "player": {"at": "start", "facing": "west"}, "events": [{"name": "fire", "row": "burning_building", "at": "fire"}]},
-  "playback": {"walk": "2.8w", "duration": 13.8, "capture_at": 12.8,
+  "playback": {"walk": "2.8w2.5n1.7s", "duration": 13.8, "capture_at": 12.8,
     "observations": [{"tick": 1, "subject": "fire", "condition": "off_screen"},
       {"tick": 1, "subject": "fire", "condition": "clear_of_both_views", "half": [160, 480]},
       {"tick": 84, "subject": "fire", "condition": "visible"},
+      {"tick": 114, "subject": "row:fire_truck", "condition": "visible"},
+      {"tick": 114, "subject": "row:fire_truck", "condition": "moving"},
       {"tick": 294, "subject": "row:fire_truck", "condition": "visible"},
-      {"tick": 294, "subject": "row:fire_truck", "condition": "moving"},
       {"tick": 414, "subject": "row:fire_truck", "condition": "near", "at": "kerb", "distance": 24}]}
 }
