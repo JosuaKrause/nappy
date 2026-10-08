@@ -14,12 +14,9 @@ question: "Finish fully handcrafted layouts now (Recommended)". Finish that desi
 PR #592; the generated-layout alternative is not selected.
 
 The recipes load explicit map context and editable stretch placements. A seed is an optional
-drafting input, not a runtime source of scene placement. Final integration with the trailer
-and task arrows, motion evidence and review remain in [build the stretch](build-the-stretch.md).
+drafting input, not a runtime source of scene placement. Final integration with the trailer,
+motion evidence and review remain in [build the stretch](build-the-stretch.md).
 
-[pebbly-hare](../../playtests/2026-10-08-pebbly-hare.md), inbox #622, asks whether scene
-recipes are ignored in production. They are present in the published package. The proposed
-exclusion and local-loading checks are in [development recipe packaging](development-recipe-packaging.md).
-
-The [decision record](../../decisions/2026-10-04-azure-beaver.md) retains the partial work and
-the rejected generated-city dependency. Ordinary generated play keeps its existing behavior.
+The [decision record](../../decisions/2026-10-04-azure-beaver.md) explains the explicit-data
+layout, the rejected generated-city dependency and development recipe packaging. Ordinary
+generated play keeps its existing behavior.
