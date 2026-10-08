@@ -1,0 +1,13 @@
+diff --git i/src/resistance/resistance_director.gd w/src/resistance/resistance_director.gd
+index bc1977b4..e7731497 100644
+--- i/src/resistance/resistance_director.gd
++++ w/src/resistance/resistance_director.gd
+@@ -2208,7 +2208,7 @@ func _process(delta: float) -> void:
+ 			retarget_the_arrow()
+ 		_sweep_the_arrow_fields(ARROW_SWEEP_TILES_PER_FRAME)
+ 		if _step.target_kind == ResistanceSteps.TargetKind.MAST:
+-			_follow_her_between_masts()
++			pass # Review mutation: suppress the live nonarrowed-mast handoff.
+ 	if _step.deadline_fraction <= 0.0 or _day_length <= 0.0:
+ 		return
+ 	if _elapsed / _day_length < _step.deadline_fraction:

@@ -1,0 +1,8 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+-- review588_arrows.gd          18501 ms
+-- test_protest.gd                728 ms
+
+62 checks, 0 failures
+PARTIAL RUN — only suites matching probes/review588_arrows.gd, protest. Not a green build.

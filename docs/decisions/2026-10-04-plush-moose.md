@@ -72,3 +72,13 @@ the arrow selection. The author checks resistance director/contact behavior, the
 and narrative rules after that merge. Import/boot, lint, the focused resistance and protest
 suites, the companion recipe assertions and whitespace checks pass. Full-suite CI and an
 independent review remain the merge gates.
+
+The independent review then runs the exact live-mast test at b0dfe0bc: nine checks pass;
+suppressing only the production `_follow_her_between_masts()` call fails four, covering
+handoff, completion, silencing and the scar. Its clean measurement on the final day-6 recipe
+selects the man 23 walking tiles away over the one 26 tiles away, even though the latter is
+closer by crow distance. At the first retarget the pacing man's crow distance is 424.556px;
+the different sampling moment explains the difference from the author's 434.10px value.
+The [compact reproduction package](../evidence/plush-moose-path-vs-crow-2026-10-08/independent-review/README.md)
+retains the drivers, mutation, measurement patch and results. Focused arrow/protest checks
+and the final uninstrumented recipe pass without engine diagnostics.

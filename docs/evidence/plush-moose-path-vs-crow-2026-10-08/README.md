@@ -36,6 +36,9 @@ the same assertion command above, with output `/private/tmp/nappy588-clean-asser
 HEAD `9fe6c905e7733e7c44ee80df423a00b29184b505` with only parent documentation/evidence edits
 pending. That run passes, completes playback and contains no engine errors.
 
-The day-11 regression passes in the focused resistance suite. The author did not run the
-deletion mutation; its expected failure follows from control-flow inspection and is an
-explicit target of independent review, not a measured before/after claim here.
+The independent review's [reproduction package](independent-review/README.md) retains the
+actual day-11 deletion mutation, focused arrow checks and a clean measurement against the
+final recipe. The exact mast test passes before the mutation and fails four checks after
+only the production handoff call is suppressed. The independent walking-distance result
+reproduces the 26-versus-23 ordering; the moving man's crow distance differs with sampling
+time. The author's earlier unrun mutation claim is not used as evidence.

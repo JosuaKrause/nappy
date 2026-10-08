@@ -1,0 +1,40 @@
+{
+  "recipe_sha256": "af2a68153f64536a2df83441ce30b53e39ff40f0d9c19a1063e3c2f2cba6c4ad",
+  "playback_complete": true,
+  "observations": [
+    {
+      "condition": "offered",
+      "passed": true,
+      "player_at": [
+        2961.2,
+        2256.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3344.0,
+          1808.0
+        ]
+      },
+      "subject": "task",
+      "tick": 60.0
+    },
+    {
+      "condition": "arrowed",
+      "passed": true,
+      "player_at": [
+        2961.2,
+        2256.0
+      ],
+      "state": {
+        "done": false,
+        "position": [
+          3344.0,
+          1808.0
+        ]
+      },
+      "subject": "task",
+      "tick": 90.0
+    }
+  ]
+}
