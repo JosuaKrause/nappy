@@ -407,6 +407,11 @@ The [stroller view recipe](evidence/stroller-view-assignment-2026-09-12/GENERATI
 final illustrated facing contract: N/NE/NW show the baby and canopy opening; S/SE/SW show the
 outside of the hood; E/W retain the original side image. These names mean travel direction.
 Rebuild from frozen originals; do not swap the runtime textures again based on source filenames.
+The [south-facing handle repair](evidence/stroller-hidden-handle-2026-10-07/GENERATION.md) removes
+the cross-hood handle from the illustrated cardinal south view at its retained high-resolution
+source, then registers the result to the existing 30×30 canvas and bottom ground anchor. The
+runtime `pram_front.svg` remains the baby-visible opposite source concept; the travel-direction
+mapping determines which illustrated source supplies south.
 The [north-diagonal contact recipe](evidence/stroller-diagonal-contact-2026-09-12/GENERATION.md)
 records the downward NE/NW correction across all pushing poses. The continuous adjustment vanishes
 at cardinal directions and throughout the southern half; SE/SW grounding takes priority over
