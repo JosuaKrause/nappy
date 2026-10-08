@@ -1,9 +1,9 @@
-[Speckled-hedgehog](../../playtests/2026-10-08-speckled-hedgehog.md) rejects the attempted
-horizontal restoration. Recover the actual earlier composition the player approved and
-compare the same animation frame against it. Do not infer success from a small offset or
-an alpha-bounds calculation. Preserve the approved lower placement and brick gap, solid left
-background, gentle bob, one-second fade, and currently selected A/B frames. If the earlier
-reference cannot be recovered, ask for the intended horizontal position instead of guessing.
+[Grassy-stork](../../playtests/2026-10-08-grassy-stork.md) specifies the horizontal placement:
+"she should be on the horizontal center on the left half of the window. and use only A and B
+frame". Center her in the window's left half and animate only A and B. This directly resolves
+the placement rejected in [speckled-hedgehog](../../playtests/2026-10-08-speckled-hedgehog.md).
+Preserve the approved lower placement and brick gap, solid left background, gentle bob and
+one-second fade. Verify the actual decoded composition against the left window pane.
 
 Keep the selected Glass Alarm music through the visible ending, with a deliberate finish
 that does not cut off while the shot is still on screen. Make the additional drawn-out bass

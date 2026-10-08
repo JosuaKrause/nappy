@@ -11,6 +11,8 @@ priority: now
 horizontal restoration is still wrong, the added bass is inaudible and the score cuts off
 before the ending. These [remaining corrections](selected-score-and-final-corrections.md)
 belong in the trailer before its next full review.
+[Grassy-stork](../../playtests/2026-10-08-grassy-stork.md) specifies the intended position:
+center her horizontally in the left half of the window, using only frames A and B.
 
 The separate [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
 the ordinary screenshot command's escape flags and stays deferred. The trailer's design and
