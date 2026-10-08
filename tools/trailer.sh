@@ -1287,7 +1287,8 @@ alimiter=limit=0.92[a]" \
           additive_ending:(if ($ending_cues | length) == 0 then null else
             {sha256:$ending_sha256,mean_db:$ending_mean_db,peak_db:$ending_peak_db,cues:$ending_cues,
               preservation:"the selected Glass Alarm file remains byte-identical; this matching dyad is a separate layer"} end),
-          natural_ending:"the selected Glass Alarm final note decays without an additive closing layer",
+          natural_ending:(if ($ending_cues | length) == 0 then
+            "the selected Glass Alarm final note decays without an additive closing layer" else null end),
           final_mix:{mean_db:$mix_mean_db,peak_db:$mix_peak_db,limiter:0.92}} + $provenance + $retained_provenance' \
         > "$manifest"
 }
@@ -1604,7 +1605,7 @@ case "$MODE" in
         render_parts
         join_clean_base "$OUT_DIR/$FINAL_SOURCE_REL/selected-base.mkv" "${encoded[@]}"
         build_selected_mix "$OUT_DIR/$FINAL_SOURCE_REL/selected-base.mkv"
-        write_editorial_settings "selected Glass Alarm, additive bass and closing dyad from tools/trailer/final-score.json"
+        write_editorial_settings "selected Glass Alarm with additive layers specified by tools/trailer/final-score.json"
         echo "wrote ${OUT_DIR#"$PROJECT_DIR"/}/$(jq -r '.output' "$FINAL_SCORE_FILE") from the tracked scene recipes and selected composition"
         ;;
     selected-reuse)

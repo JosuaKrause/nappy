@@ -245,6 +245,12 @@ class CliHelpTests(unittest.TestCase):
                 self.assertFalse((root / "calls").exists())
 
     def test_trailer_selected_from_empty_output_builds_actual_selected_mix(self) -> None:
+        self.check_trailer_selected_mix(with_ending=False)
+
+    def test_trailer_selected_with_optional_ending_has_consistent_provenance_and_mix(self) -> None:
+        self.check_trailer_selected_mix(with_ending=True)
+
+    def check_trailer_selected_mix(self, *, with_ending: bool) -> None:
         """Stub the engine boundary only; run real frames, score synthesis, mixing and AAC."""
         import array
         import re
@@ -371,6 +377,21 @@ class CliHelpTests(unittest.TestCase):
             final_file = root / "tools/trailer/final-score.json"
             final = json.loads(final_file.read_text())
             final.update(output="selected-fixture.mp4")
+            final["ending_events"] = []
+            if with_ending:
+                final.update(ending_target_mean_db=-35.0, ending_peak_ceiling_db=-15.0)
+                final["ending_events"] = [
+                    {
+                        "label": "fixture closing dyad",
+                        "shot": "city",
+                        "offset": 6.9,
+                        "duration": 1.8,
+                        "frequency": frequency,
+                        "gain": gain,
+                        "texture": "glass-tail",
+                    }
+                    for frequency, gain in ((493.88, 0.34), (523.25, 0.30))
+                ]
             final_file.write_text(json.dumps(final))
             output = root / "build/trailer"
             self.assertFalse(output.exists())
@@ -385,6 +406,20 @@ class CliHelpTests(unittest.TestCase):
             self.assertFalse((output / final["remix_base"]).exists())
             self.assertEqual((root / "calls").read_text().count("--write-movie"), 1)
             source = output / "experiments/selected-fixture/source"
+            if with_ending:
+                self.assertIsNone(manifest["natural_ending"])
+                ending = manifest["additive_ending"]
+                self.assertIsInstance(ending, dict)
+                self.assertEqual(len(ending["cues"]), len(final["ending_events"]))
+                self.assertEqual(
+                    ending["sha256"], hashlib.sha256((source / "score-ending.wav").read_bytes()).hexdigest()
+                )
+                for cue, event in zip(ending["cues"], final["ending_events"], strict=True):
+                    self.assertEqual(cue["at"], starts[event["shot"]] + event["offset"])
+            else:
+                self.assertIsNone(manifest["additive_ending"])
+                self.assertIn("without an additive closing layer", manifest["natural_ending"])
+                self.assertFalse((source / "score-ending.wav").exists())
             self.assertEqual((source / "glass-alarm-score.wav").read_bytes(), expected_score.read_bytes())
             stem_names = ["selected-base.mkv", "glass-alarm-score.wav", "event-bass-score.wav"]
             if manifest["additive_ending"] is not None:
