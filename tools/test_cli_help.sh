@@ -546,7 +546,7 @@ source "$root/tools/lib_dev_flags.sh"
 readme_section="$(sed -n '/^## Dev flags$/,/^## /p' "$root/README.md" | sed '$d')"
 while read -r flag; do
     checks=$(( checks + 1 ))
-    if printf '%s' "$readme_section" | grep -qF -- "$flag"; then
+    if grep -qF -- "$flag" <<<"$readme_section"; then
         echo "ok   README documents $flag"
     else
         echo "FAIL $flag is in dev_flags.gd's DEV_FLAG_TABLE but not in README.md's Dev flags section" >&2
