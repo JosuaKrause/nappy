@@ -28,17 +28,12 @@ func run(t) -> void:
 	_test_appeared_requires_sight(t)
 
 func _test_appeared_requires_sight(t) -> void:
-	var runtime := SceneRecipeRuntime.new()
+	var ordinary := _visibility_rig(t, 1.0)
+	var runtime: SceneRecipeRuntime = ordinary.runtime
+	var camera: Camera2D = ordinary.camera
 	var recipe := {"playback": {"duration": 1, "observations": [
 			{"tick": 20, "subject": "event", "condition": "appeared"}]}}
 	runtime.configure({"data": recipe, "manifest": {}, "anchors": {}}, true)
-	t.add_child(runtime)
-	runtime.set_physics_process(false)
-	var player := Stroller.new()
-	var camera := Camera2D.new()
-	player.add_child(camera)
-	player._camera = camera
-	runtime._player = player
 	var event := Node2D.new()
 	runtime.add_child(event)
 	runtime.named["event"] = event
@@ -48,9 +43,58 @@ func _test_appeared_requires_sight(t) -> void:
 			"an existing event that never enters the camera does not satisfy appeared")
 	event.position = Vector2.ZERO
 	runtime._observe()
-	t.check(runtime._appeared.has("event"), "the same event counts once it enters view")
-	player.free()
-	runtime.free()
+	t.check(runtime._appeared.has("event") and runtime._she_can_see(event),
+			"at the default camera zoom, the same event counts once it enters view")
+	(ordinary.viewport as SubViewport).free()
+	# At zoom 4, this 32px body sits wholly beyond the real 160px half-width although it remains
+	# inside `Tuning.VIEW_HALF_EXTENT.x` (320px), the stale constant this regression replaces.
+	var close := _visibility_rig(t, 4.0)
+	runtime = close.runtime
+	camera = close.camera
+	event = Node2D.new()
+	runtime.add_child(event)
+	event.position = camera.get_screen_center_position() + Vector2(250.0, 0.0)
+	var half_view := runtime.get_viewport().get_visible_rect().size / camera.zoom / 2.0
+	t.check(event.position.x - 16.0 > camera.get_screen_center_position().x + half_view.x
+			and not runtime._she_can_see(event),
+			("at zoom 4, an actor wholly outside the actual %.0fpx camera half-width does not count "
+			+ "(world view %s)") % [half_view.x, runtime._camera_world_rect()])
+	(close.viewport as SubViewport).free()
+	var wide := _visibility_rig(t, 0.5)
+	runtime = wide.runtime
+	camera = wide.camera
+	event = Node2D.new()
+	runtime.add_child(event)
+	event.position = camera.get_screen_center_position() + Vector2(250.0, 0.0)
+	half_view = runtime.get_viewport().get_visible_rect().size / camera.zoom / 2.0
+	t.check(event.position.x + 16.0 < camera.get_screen_center_position().x + half_view.x
+			and runtime._she_can_see(event),
+			"zoomed out, that same actor counts when the actual camera includes its body")
+	(wide.viewport as SubViewport).free()
+
+## A runtime and current camera in their own 1280x720 viewport, with `zoom` fixed before the camera
+## enters the tree. Camera2D applies a changed zoom on its next process step; separate synchronous
+## rigs let the headless unit test inspect each real canvas transform without advancing the tree.
+func _visibility_rig(t, zoom: float) -> Dictionary:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	t.add_child(viewport)
+	var player := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	camera.zoom = Vector2.ONE * zoom
+	player.add_child(camera)
+	player._camera = camera
+	viewport.add_child(player)
+	player.set_physics_process(false)
+	camera.make_current()
+	camera.force_update_scroll()
+	var runtime := SceneRecipeRuntime.new()
+	viewport.add_child(runtime)
+	runtime.set_physics_process(false)
+	runtime._player = player
+	return {"viewport": viewport, "player": player, "camera": camera, "runtime": runtime}
 
 func _test_the_stretch_is_the_only_ground(t, map: CityMap, witness: CityMap) -> void:
 	t.check(map.has_stretch() and map.stretch_active, "the scene's map shows its stretch")
