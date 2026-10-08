@@ -978,7 +978,8 @@ screen, its badge alone its own half second (`EventDef.offscreen_notice`): the d
 placed just off screen with the whole approach still to run, where a non-pursuer warned first (the
 fire engine) spends its telegraph as the badge, with nothing in the world; the resistance's robber
 and guard arrive already chasing (`EventDef.arrives_chasing`: "the proximity rule is only for
-standing robbers"), so for them the badge is the whole of the notice. A pursuer that stands still while it
+standing robbers"), then owe `PURSUIT_MIN_NOTICE` seconds from first entering her visible area
+before running may shake them off. A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
 owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
@@ -1220,13 +1221,14 @@ street, so its one-second badge is the whole of its warning.
 `Tuning.validate_event()` asserts this on load, and `tests/test_events.gd` checks it over
 the whole catalogue, so an unfair event fails loudly rather than quietly ruining a run.
 
-**The contract is for the things that telegraph.** A thing telegraphs its coming only if it goes
+**Coming warnings and in-world telegraphs have distinct contracts.** A thing telegraphs its coming only if it goes
 fast, comes toward her, and carries a heavy penalty — it can end the day or hit her hard
 (PLAYTEST-145, statements 18-23; inbox #598: "the telegraphing rule was about heavy penalty not
 *only* lethal"). One that does not — the loose dog and the cat, the alley mouse, the pigeons, the
-patrol — is outside the screen-edge badge,
-warning-first placement and this contract rather than exempted from them, and is met as it comes
-(`docs/EVENTS.md`, "What telegraphs").
+patrol — is outside the screen-edge badge and warning-first placement, and is met as it comes.
+Its in-world telegraph still satisfies the fairness contract: the cat's crouch, the mouse's and
+flock's wait, and the patrol's approach. Only the loose dog, met with its telegraph already spent,
+has none to validate (`docs/EVENTS.md`, "What telegraphs").
 
 ## Calm zones, and what every other ground does
 

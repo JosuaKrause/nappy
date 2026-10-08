@@ -77,15 +77,19 @@ second, the player's time to react), never a figure worked out from its field or
 engine and day 13's column included, whose place follows her so a walk out of their
 field is not one she can take during the badge. A pursuer warned first is held to
 `validate_pursuit` like every pursuer: its telegraph is the approach she watches once it exists.
+A sent robber or guard instead arrives chasing, with no approach: its minimum notice is
+`PURSUIT_MIN_NOTICE` from first entering her visible area before running may shake it off.
+`EventDef.validate()` checks that visible notice, not a telegraph spent before creation.
 
 ## What telegraphs
 
 **A thing telegraphs its coming only if it goes fast, comes toward her, and carries a heavy penalty
 — it can end the day or hit her hard.** *(PLAYTEST-145, statements 18-23; inbox #598: "the
 telegraphing rule was about heavy penalty not *only* lethal" · "fire truck has heavy penalty".)* A
-thing that does not telegraph is **outside** the screen-edge badge, warning-first placement and the
-telegraph fairness contract, not exempted from them: `EventDef.telegraphs` false, and
-`validate()` and `DangerEdge` leave it alone. A heavy hit is a quarter of the meter or more in one
+thing that does not telegraph its coming is **outside** the screen-edge badge and warning-first
+placement: `EventDef.telegraphs` is false. Its in-world telegraph still satisfies the fairness
+contract, including the waiting flock and mouse. Only the loose dog, met with its telegraph already
+spent, has no in-world telegraph to validate. A heavy hit is a quarter of the meter or more in one
 pass. By that, `loose_dog` (created at once just off screen down her sidewalk), `cat_dash`,
 `alley_mouse`, `pigeon_flock` and `police_patrol` do not telegraph; the cyclist, the fire engine,
 the column and the planned convoy, and every pursuer do. A row that stands still has no coming to

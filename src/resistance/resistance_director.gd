@@ -808,7 +808,7 @@ func _view_from(her: Vector2) -> VisibleView:
 ## comes from across the street at a front door (`_across_the_street()`). `prefer`, when given, is a
 ## bearing tried before any other: the one his badge already points along.
 ##
-## **At a front door, across the street first** (`front_door` — the burnt building's, the
+## **At a front door, across the street first when choosing the badge's bearing** (`front_door` — the burnt building's, the
 ## station's: `is_at_a_front_door()`). *(2026-10-04, the player, asked "at a front door, prefer a
 ## start on the far side of the street that's out of view and has a walkable way to you; if there's
 ## none, fall back to today's rule. Is that what you mean?": "yes, to your proposal about front
@@ -839,9 +839,8 @@ func _view_from(her: Vector2) -> VisibleView:
 ## first legal start of all of them stand in, and then he may never reach her.
 ##
 ## **He arrives chasing** (`EventDef.arrives_chasing`, amendment 7 of M226), so from any start here
-## walking straight away outlasts his `Tuning.PURSUIT_TIME` chase at the 38px/s walking leaves him
-## (`tools/test.sh probes/m207_warning_lead.gd` prints it); standing still or walking into him is
-## caught.
+## walking straight away is caught within his long `Tuning.PURSUIT_TIME` cap, as are standing still
+## and walking into him (`tools/test.sh probes/m207_warning_lead.gd` measures each answer).
 func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: EventDef,
 		front_door := false, prefer := Vector2.ZERO) -> Array:
 	var view := _view_from(her)

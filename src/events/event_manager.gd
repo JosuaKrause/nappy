@@ -385,6 +385,7 @@ func start_recipe(plans: Array[EventScheduler.Planned], day: int, focus: Vector2
 
 func clear() -> void:
 	_pursuer_owed = null
+	_pursuer_retry_in = 0.0
 	for instance in _instances:
 		instance.queue_free()
 	_instances.clear()
@@ -1354,11 +1355,13 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	if not body:
 		return
 	if _pursuer_owed and body.velocity.length() >= Tuning.AHEAD_MIN_SPEED:
-		var owed := _pursuer_owed
-		_pursuer_owed = null
-		_warn_down_her_heading(owed, body.global_position,
-				body.global_position + body.velocity.normalized())
-		return
+		_pursuer_retry_in -= delta
+		if _pursuer_retry_in <= 0.0:
+			var owed := _pursuer_owed
+			_pursuer_owed = null
+			_warn_down_her_heading(owed, body.global_position,
+					body.global_position + body.velocity.normalized())
+	# A dog waiting for legal ground never stops the director's other clocks or due events.
 	var due := _director.due(delta, body.global_position, body.velocity, _plans)
 	if due.is_empty():
 		return
@@ -1492,18 +1495,23 @@ func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void
 		return true
 	var warning := warn_first(def, her, where, arrive)
 	if warning:
-		warning.on_withdrawn = func() -> void: _pursuer_owed = def
+		warning.on_withdrawn = func() -> void: _owe_pursuer_again(def)
 		return
 	# Nowhere off screen to stand down her heading: the lesson is not lost, it is owed again on
-	# her next frame of walking (`_place_what_is_owed_ahead()`).
-	_pursuer_owed = def
+	# the next placement retry (`_place_what_is_owed_ahead()`).
+	_owe_pursuer_again(def)
 	Telemetry.note("ahead", "%s has nowhere off screen to stand down her heading at %s; owed again"
 			% [def.id, TelemetryLog.tile(_map.world_to_tile(her))])
 
 ## A pursuer the director sent that found nowhere off screen to stand, or whose warning was
-## withdrawn: tried again, down her heading as it is then, the next frame she is walking. Null when
-## none is owed. The day-3 lesson is the one this keeps from being lost.
+## withdrawn: tried again down her current heading after a second of walking, the director's own
+## cadence for a failed placement. Null when none is owed; keeps the day-3 lesson from being lost.
 var _pursuer_owed: EventDef = null
+var _pursuer_retry_in := 0.0
+
+func _owe_pursuer_again(def: EventDef) -> void:
+	_pursuer_owed = def
+	_pursuer_retry_in = 1.0
 
 ## The other half of the director's day: a place the day budgeted and left unsited, put on a
 ## building face ahead of her once her heading for the day is clear. Day 3's fire is the only row
