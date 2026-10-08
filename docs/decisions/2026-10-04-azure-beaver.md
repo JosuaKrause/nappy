@@ -47,3 +47,12 @@ generation does. Open to overturn.
 
 Not verified: free play in each scene in a window. On days 6–8 the rigged cat is sited inside a
 building lot and never runs into view, as it does on the whole city.
+
+## The player chooses full handcrafted layouts
+
+On 2026-10-08, [mossy-marmot](../playtests/2026-10-08-mossy-marmot.md), inbox #618,
+recorded the request to finish every open PR. Asked whether to complete independent layouts
+inside this PR or retain the generated layout and handcraft later, the player selected
+"Finish fully handcrafted layouts now (Recommended)". This rejects the generated-city
+dependency described above. The unfinished construction work is retained in azure-beaver's
+queue item until the scene loads explicit data without a generated witness.
