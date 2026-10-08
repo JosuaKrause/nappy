@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "base_option": "glass-alarm",
+  "output": "trailer-glass-alarm-final.mp4",
+  "source_base": "experiments/source/base-e29585da.mkv",
+  "source_settings": "experiments/source/base-e29585da-settings.json",
+  "source_base_sha256": "3a705981dfc756932b1045474c174b46a56a7a43003302efd49a511c40801516",
+  "base_score_sha256": "1fae037952f28b051176fe8cb7443f68eb5532ea3238d37018cc150a0f1f5e40",
+  "bass_target_mean_db": -37.0,
+  "bass_peak_ceiling_db": -14.0,
+  "bass_events": [
+    {"label": "leaf blower visible at scene fade-in", "shot": "choice", "offset": 0.0, "duration": 1.8, "frequency": 49.00, "gain": 0.54, "texture": "drone"},
+    {"label": "pigeon flock visible at scene fade-in", "shot": "birds", "offset": 0.0, "duration": 1.8, "frequency": 43.65, "gain": 0.54, "texture": "drone"},
+    {"label": "mother starts running from the dog", "shot": "dog", "offset": 1.25, "duration": 2.2, "frequency": 41.20, "gain": 0.62, "texture": "drone"},
+    {"label": "army trucks fade in", "shot": "trucks", "offset": 0.0, "duration": 1.15, "frequency": 36.71, "gain": 0.64, "texture": "drone"},
+    {"label": "gatehouse soldiers fade in", "shot": "gatehouse", "offset": 0.0, "duration": 1.15, "frequency": 38.89, "gain": 0.64, "texture": "drone"},
+    {"label": "army chase fades in", "shot": "chase", "offset": 0.0, "duration": 1.6, "frequency": 41.20, "gain": 0.68, "texture": "drone"}
+  ]
+}

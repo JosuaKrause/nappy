@@ -88,7 +88,10 @@ and deterministic oscillator score before joining them with the captured game au
 `tools/trailer.sh --list` to inspect the cut, `--validate` to check its recipes headlessly,
 `--shot choice` to record one scene, or `--auditions` to capture one clean game-audio base and
 build the three original scores in `tools/trailer/scores.json` against that same picture. A later
-score-only audition run reuses the matching retained base. Its local `index.html` switches one
+score-only audition run reuses the matching retained base. After a score is selected,
+`--selected-reuse` reads `tools/trailer/final-score.json`, refuses any retained-base mismatch,
+renders only the hook and dog replacements named by that final composition, and layers its
+additive event cues over the byte-identical selected score. Its local `index.html` switches one
 player between the choices and can jump to the military turn. The cut uses the selected westward birds scene,
 `trailer-birds.json`, and the park-only circular walk in `trailer-park-circle.json`.
 Each recipe owns its setup and scripted action;

@@ -3,7 +3,8 @@
   "extent": {"scope": "full"}, "city": {"context_seed": 1917501,
     "tree_moves": [{"from": [50, 74], "to": [50, 71]}]},
   "anchors": {"start": {"world": [1536, 2384]}, "dog": {"world": [1967, 2384]}},
-  "setup": {"tutorial_complete": true, "day": 3, "parent": "mother", "player": {"at": "start", "facing": "east"},
+  "setup": {"tutorial_complete": true, "day": 3, "parent": "mother",
+    "player": {"at": "start", "facing": "east", "sleep": 100, "excitement": 37},
     "background": {"crowd": true, "uniform_walkers": true, "walker_multiplier": 2},
     "actors": [
       {"name": "left_walk_1", "kind": "walker", "at": [1400, 2240], "direction": "south"},
@@ -31,5 +32,7 @@
       {"tick": 56, "subject": "left_walk_5", "condition": "moving"},
       {"tick": 56, "subject": "left_walk_6", "condition": "moving"},
       {"tick": 56, "subject": "left_walk_7", "condition": "moving"},
+      {"tick": 96, "subject": "player", "condition": "asleep"},
+      {"tick": 112, "subject": "player", "condition": "awake"},
       {"tick": 149, "subject": "player", "condition": "off_screen"}]}
 }

@@ -43,7 +43,6 @@
         "subtitle": "Just a walk,\nuntil she sleeps.", "subtitle_font_size": 38,
         "layout": "window", "frame": "tools/trailer/window/apartment-window-frame.png",
         "animation": ["tools/trailer/window/mother-carrying-front-a.png",
-          "tools/trailer/window/mother-carrying-front-c.png",
           "tools/trailer/window/mother-carrying-front-b.png"]},
       "length": 4.4
     },

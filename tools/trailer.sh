@@ -6,6 +6,7 @@
 #   tools/trailer.sh --check choice   # render it twice and compare every frame's hash
 #   tools/trailer.sh --check all      # the same for every shot
 #   tools/trailer.sh --auditions      # one clean capture, then three score mixes
+#   tools/trailer.sh --selected-reuse # replace changed shots in the retained base, then final mix
 #   tools/trailer.sh --list           # print the shot list and render nothing
 #
 # PLAYTEST-139: "we can use recordings from a frame locked game. the trailer will be a set of
@@ -41,6 +42,7 @@ GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SHOTS_FILE="${TRAILER_SHOTS:-$PROJECT_DIR/tools/trailer/shots.json}"
 SCORES_FILE="${TRAILER_SCORES:-$PROJECT_DIR/tools/trailer/scores.json}"
+FINAL_SCORE_FILE="${TRAILER_FINAL_SCORE:-$PROJECT_DIR/tools/trailer/final-score.json}"
 OUT_DIR="${TRAILER_OUT:-$PROJECT_DIR/build/trailer}"
 # shellcheck source=tools/lib_dev_flags.sh
 source "$PROJECT_DIR/tools/lib_dev_flags.sh"
@@ -51,7 +53,7 @@ source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 
 usage() {
     cat <<EOF
-usage: tools/trailer.sh [--help|-h] [--list | --validate | --auditions | --auditions-reuse | --shot NAME | --check NAME|all | --check-load NAME|all]
+usage: tools/trailer.sh [--help|-h] [--list | --validate | --auditions | --auditions-reuse | --selected-reuse | --shot NAME | --check NAME|all | --check-load NAME|all]
 
 Renders the trailer from tools/trailer/shots.json: gameplay shots through Godot's movie writer,
 frame-locked, at the game's own resolution with its audio; editorial cards and the deterministic
@@ -63,6 +65,8 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
                    TRAILER_OUT; a matching retained base is reused on later score-only runs
   --auditions-reuse  build the three mixes only when a compatible retained base exists; refuse
                      a mismatch without opening a recording window
+  --selected-reuse  render only the changed hook and dog shots, replace those intervals in the
+                    exact retained audition base, and build the selected Glass Alarm cut
   --shot NAME      render one shot alone into TRAILER_OUT/shot-NAME.mp4
   --check NAME     render the shot twice and compare every frame's hash; exits non-zero on a
                    difference inside the shot's cut
@@ -74,6 +78,7 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
 Environment:
   TRAILER_SHOTS    use another shot-list JSON (default: tools/trailer/shots.json)
   TRAILER_SCORES   use another score-list JSON (default: tools/trailer/scores.json)
+  TRAILER_FINAL_SCORE  use another selected-score JSON (default: tools/trailer/final-score.json)
   TRAILER_OUT      output directory (default: build/trailer)
 
 Disk: frames stay on disk until each shot is encoded, so this refuses to start unless the volume
@@ -97,7 +102,7 @@ TARGET=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --help|-h) usage; exit 0 ;;
-        --list|--validate|--auditions|--auditions-reuse)
+        --list|--validate|--auditions|--auditions-reuse|--selected-reuse)
             [[ "$MODE" == "all" ]] || { echo "$1 cannot be combined with --$MODE" >&2; usage >&2; exit 1; }
             MODE="${1#--}"; shift ;;
         --shot|--check|--check-load)
@@ -121,11 +126,15 @@ if [[ ! -f "$SHOTS_FILE" ]]; then
     echo "trailer.sh: no shot list at ${SHOTS_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse ]] && [[ ! -f "$SCORES_FILE" ]]; then
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse ]] && [[ ! -f "$SCORES_FILE" ]]; then
     echo "trailer.sh: no audition score list at ${SCORES_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse ]] && ! command -v uv >/dev/null 2>&1; then
+if [[ "$MODE" == selected-reuse && ! -f "$FINAL_SCORE_FILE" ]]; then
+    echo "trailer.sh: no selected score at ${FINAL_SCORE_FILE#"$PROJECT_DIR"/}" >&2
+    exit 1
+fi
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse ]] && ! command -v uv >/dev/null 2>&1; then
     echo "trailer.sh: uv not found on PATH; score auditions use the project Python environment" >&2
     exit 127
 fi
@@ -183,7 +192,7 @@ schema_errors="$(jq -r '
                      (.card.layout == "window" and .card.illustration == null and
                       (.card.frame | type) == "string" and
                       (.card.frame | test("^tools/trailer/window/[a-z0-9-]+\\.png$")) and
-                      (.card.animation | type) == "array" and (.card.animation | length) == 3 and
+                      (.card.animation | type) == "array" and (.card.animation | length) == 2 and
                       all(.card.animation[];
                         type == "string" and test("^tools/trailer/window/[a-z0-9-]+\\.png$")))) and
                     ((.card.subtitle == null and .card.subtitle_font_size == null) or
@@ -224,7 +233,7 @@ if [[ -n "$schema_errors" ]]; then
     exit 1
 fi
 
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse ]]; then
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse ]]; then
     score_errors="$(jq -r '
         def num: type == "number";
         (if (keys - ["game_gain","target_mean_db","peak_ceiling_db","options"] | length) == 0
@@ -261,6 +270,41 @@ if [[ "$MODE" == auditions || "$MODE" == auditions-reuse ]]; then
     if [[ -n "$score_errors" ]]; then
         echo "trailer.sh: ${SCORES_FILE#"$PROJECT_DIR"/} is malformed:" >&2
         printf '  %s\n' "$score_errors" >&2
+        exit 1
+    fi
+fi
+
+if [[ "$MODE" == selected-reuse ]]; then
+    final_score_errors="$(jq -r '
+        def num: type == "number";
+        (if (keys - ["version","base_option","output","source_base","source_settings",
+            "source_base_sha256","base_score_sha256","bass_target_mean_db",
+            "bass_peak_ceiling_db","bass_events"] | length) == 0 then empty
+            else "unknown selected-score field" end),
+        (if .version == 1 then empty else "version must be 1" end),
+        (if all([.base_option,.output,.source_base,.source_settings,.source_base_sha256,
+            .base_score_sha256][]; type == "string" and length > 0) then empty
+            else "selected score paths, ids and hashes are required" end),
+        (if (.output | test("^[a-z0-9-]+\\.mp4$")) and
+            (.source_base | test("^[a-z0-9/_-]+\\.mkv$")) and
+            (.source_settings | test("^[a-z0-9/_-]+\\.json$")) then empty
+            else "selected score paths are malformed" end),
+        (if (.bass_target_mean_db | num) and .bass_target_mean_db >= -60 and .bass_target_mean_db <= -18
+            then empty else "bass_target_mean_db must be between -60 and -18" end),
+        (if (.bass_peak_ceiling_db | num) and .bass_peak_ceiling_db >= -24 and .bass_peak_ceiling_db <= -3
+            then empty else "bass_peak_ceiling_db must be between -24 and -3" end),
+        (if (.bass_events | type) == "array" and (.bass_events | length) > 0 and all(.bass_events[];
+            (keys - ["label","shot","offset","duration","frequency","gain","texture"] | length) == 0 and
+            all([.label,.shot][]; type == "string" and length > 0) and
+            (.offset | num) and .offset >= 0 and (.duration | num) and .duration > 0 and
+            (.frequency | num) and .frequency > 0 and (.gain | num) and .gain > 0 and .gain <= 1 and
+            .texture == "drone") then empty else "bass events are malformed" end)
+    ' "$FINAL_SCORE_FILE" 2>&1)" || {
+        echo "trailer.sh: ${FINAL_SCORE_FILE#"$PROJECT_DIR"/} is not valid JSON" >&2; exit 1;
+    }
+    if [[ -n "$final_score_errors" ]]; then
+        echo "trailer.sh: ${FINAL_SCORE_FILE#"$PROJECT_DIR"/} is malformed:" >&2
+        printf '  %s\n' "$final_score_errors" >&2
         exit 1
     fi
 fi
@@ -304,7 +348,8 @@ shot_render_seconds() {
 total_seconds="$(jq -r '[.shots[] | (.gap // 0) + .length] | add' "$SHOTS_FILE" |
     awk '{ printf "%.2f\n", $1 }')"
 RESOLVED_SCORES=""
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse ]]; then
+RESOLVED_FINAL=""
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse ]]; then
     RESOLVED_SCORES="$(jq -n --slurpfile cut "$SHOTS_FILE" --slurpfile scores "$SCORES_FILE" '
         (reduce $cut[0].shots[] as $shot ({elapsed:0,starts:{}};
             .starts[$shot.name] = (.elapsed + ($shot.gap // 0)) |
@@ -322,6 +367,28 @@ if [[ "$MODE" == auditions || "$MODE" == auditions-reuse ]]; then
         all(.options[].events[]; (.at | type) == "number" and .at + .duration <= $total + 0.001)
     ' <<< "$RESOLVED_SCORES" >/dev/null; then
         echo "trailer.sh: an audition cue names no shot or finishes outside the cut" >&2
+        exit 1
+    fi
+fi
+if [[ "$MODE" == selected-reuse ]]; then
+    RESOLVED_FINAL="$(jq -n --slurpfile cut "$SHOTS_FILE" --slurpfile final "$FINAL_SCORE_FILE" '
+        (reduce $cut[0].shots[] as $shot ({elapsed:0,starts:{},parts:{}};
+            .parts[$shot.name] = {start:.elapsed,end:(.elapsed + ($shot.gap // 0) + $shot.length)} |
+            .starts[$shot.name] = (.elapsed + ($shot.gap // 0)) |
+            .elapsed += (($shot.gap // 0) + $shot.length))) as $timeline |
+        $final[0] + {
+            total_seconds:$timeline.elapsed,
+            replacement_intervals:{hook:$timeline.parts.hook,dog:$timeline.parts.dog},
+            options:[{id:"event-bass",events:[$final[0].bass_events[] |
+                . + {at:($timeline.starts[.shot] + .offset)}]}]
+        }
+    ')"
+    if ! jq -e --argjson total "$total_seconds" --slurpfile scores "$SCORES_FILE" '
+        ((.total_seconds - $total) | fabs) < 0.001 and
+        (.base_option as $selected | any($scores[0].options[]; .id == $selected)) and
+        all(.options[].events[]; (.at | type) == "number" and .at + .duration <= $total + 0.001)
+    ' <<< "$RESOLVED_FINAL" >/dev/null; then
+        echo "trailer.sh: the selected score, replacement intervals or bass cues do not fit the cut" >&2
         exit 1
     fi
 fi
@@ -450,6 +517,7 @@ TREE_BEFORE="$(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null || true)"
 # Validate the game's resolved normal classification before opening any movie window.
 targets=("${SHOT_NAMES[@]}")
 [[ -z "$TARGET" || "$TARGET" == all ]] || targets=("$TARGET")
+[[ "$MODE" != selected-reuse ]] || targets=(hook dog)
 mkdir -p "$WORK/preflight"
 recipe_count=0
 for name in "${targets[@]}"; do
@@ -718,36 +786,35 @@ afade=t=out:st=${out_start}:d=${fade_out},adelay=${gap_ms}:all=1,apad,atrim=dura
     shot_nested_field "$name" card text > "$text_file"
     [[ "$subtitle" == null ]] || printf '%s\n' "$subtitle" > "$subtitle_file"
     if [[ "$layout" == window ]]; then
-        local frame frame_a frame_c frame_b
+        local frame frame_a frame_b
         frame="$(shot_nested_field "$name" card frame)"
         frame_a="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[0]' "$SHOTS_FILE")"
-        frame_c="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[1]' "$SHOTS_FILE")"
-        frame_b="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[2]' "$SHOTS_FILE")"
-        # The three original-resolution carrying drawings have different transparent margins.
-        # Register the visible figures at equal height inside one clipped, dark room aperture.
-        # The 4.4-second A-C-B-C cycle gets a gentle 6px/2.2s bob; only the figure fades in.
+        frame_b="$(jq -r --arg n "$name" '.shots[] | select(.name == $n) | .card.animation[1]' "$SHOTS_FILE")"
+        # The original-resolution carrying drawings have different transparent margins. Register
+        # their visible figures at equal height inside one clipped, dark room aperture. The retained
+        # approved still puts the alpha bounds 15px right of the later centred audition, so both
+        # frames restore that exact offset. The 4.4-second A-B-A-B cycle gets a gentle 6px/2.2s bob;
+        # only the figure fades in.
         ffmpeg -hide_banner -loglevel error -y \
             -f lavfi -i "color=c=${CARD_BACKGROUND}:s=${WIDTH}x${HEIGHT}:r=${FPS}:d=${length}" \
             -f lavfi -i "anullsrc=r=48000:cl=stereo" \
             -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$frame_a" \
-            -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$frame_c" \
             -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$frame_b" \
             -loop 1 -framerate "$FPS" -t "$length" -i "$PROJECT_DIR/$frame" \
             -filter_complex "\
 [0:v]drawbox=x=620:y=0:w=660:h=720:color=0x59453d:t=fill,\
 drawgrid=width=96:height=32:thickness=2:color=0x332820@0.45,\
+drawbox=x=0:y=0:w=620:h=720:color=${CARD_BACKGROUND}:t=fill,\
 drawbox=x=48:y=145:w=7:h=360:color=${ACCENT}:t=fill,\
 drawtext=fontfile='${FONT_FILE}':textfile='${text_file}':fontsize=${font_size}:fontcolor=${PAPER}:line_spacing=12:x=72:y=165,\
 drawtext=fontfile='${FONT_FILE}':textfile='${subtitle_file}':fontsize=${subtitle_size}:fontcolor=${PAPER}@0.86:line_spacing=8:x=72:y=425[card];\
 [2:v]crop=131:371:107:21,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[a];\
-[3:v]crop=203:607:169:61,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[c];\
-[4:v]crop=131:357:107:8,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[b];\
+[3:v]crop=131:357:107:8,scale=-1:600:flags=lanczos,format=rgba,fade=t=in:st=0:d=1:alpha=1[b];\
 color=c=0x101018:s=282x396:r=${FPS}:d=${length}[room];\
-[room][a]overlay=x=(W-w)/2:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,0\,1.10)'[wa];\
-[wa][c]overlay=x=(W-w)/2:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,1.10\,2.20)+between(t\,3.30\,4.40)'[wc];\
-[wc][b]overlay=x=(W-w)/2:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,2.20\,3.30)'[aperture];\
+[room][a]overlay=x=(W-w)/2+15:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,0\,1.10)+between(t\,2.20\,3.30)'[wa];\
+[wa][b]overlay=x=(W-w)/2+15:y='170+6*sin(2*PI*t/2.2)':enable='between(t\,1.10\,2.20)+between(t\,3.30\,4.40)'[aperture];\
 [card][aperture]overlay=x=839:y=165:shortest=1[behind];\
-[5:v]scale=960:960:flags=lanczos[window];\
+[4:v]scale=960:960:flags=lanczos[window];\
 [behind][window]overlay=x=500:y=-120:shortest=1:format=auto,\
 fade=t=in:st=0:d=${fade_in},fade=t=out:st=${out_start}:d=${fade_out},\
 tpad=start_duration=${gap}:color=black,format=yuv420p[v];\
@@ -870,9 +937,10 @@ require_finite_level() {
 }
 
 build_score_once() {
-    local id="$1" raw="$2" score="$3" raw_mean raw_peak target ceiling wanted room adjust
+    local id="$1" raw="$2" score="$3" resolved="${4:-$OUT_DIR/source/resolved-scores.json}"
+    local raw_mean raw_peak target ceiling wanted room adjust
     uv run python "$PROJECT_DIR/tools/trailer/synthesize_score.py" \
-        --resolved "$OUT_DIR/source/resolved-scores.json" --option "$id" --output "$raw" </dev/null
+        --resolved "$resolved" --option "$id" --output "$raw" </dev/null
     raw_mean="$(volume_stat "$raw" mean_volume)"
     raw_peak="$(volume_stat "$raw" max_volume)"
     target="$(jq -r '.target_mean_db' <<< "$RESOLVED_SCORES")"
@@ -883,6 +951,119 @@ build_score_once() {
         'BEGIN {if (wanted < room) printf "%.4f", wanted; else printf "%.4f", room}')"
     ffmpeg -hide_banner -nostdin -loglevel error -y -i "$raw" \
         -af "volume=${adjust}dB" -c:a pcm_s16le "$score"
+}
+
+build_bass_once() {
+    local raw="$1" score="$2" resolved="$3" raw_mean raw_peak target ceiling wanted room adjust
+    uv run python "$PROJECT_DIR/tools/trailer/synthesize_score.py" \
+        --resolved "$resolved" --option event-bass --output "$raw" </dev/null
+    raw_mean="$(volume_stat "$raw" mean_volume)"
+    raw_peak="$(volume_stat "$raw" max_volume)"
+    target="$(jq -r '.bass_target_mean_db' <<< "$RESOLVED_FINAL")"
+    ceiling="$(jq -r '.bass_peak_ceiling_db' <<< "$RESOLVED_FINAL")"
+    wanted="$(awk -v target="$target" -v mean="$raw_mean" 'BEGIN {printf "%.4f", target-mean}')"
+    room="$(awk -v ceiling="$ceiling" -v peak="$raw_peak" 'BEGIN {printf "%.4f", ceiling-peak}')"
+    adjust="$(awk -v wanted="$wanted" -v room="$room" \
+        'BEGIN {if (wanted < room) printf "%.4f", wanted; else printf "%.4f", room}')"
+    ffmpeg -hide_banner -nostdin -loglevel error -y -i "$raw" \
+        -af "volume=${adjust}dB" -c:a pcm_s16le "$score"
+}
+
+# Replaces only the two changed shot intervals. The middle and tail are decoded from the retained
+# e29585da base, never recaptured; the selected-cut manifest records all four sources and hashes.
+assemble_selected_base() {
+    local retained="$1" hook="$2" dog="$3" output="$4" hook_end dog_start dog_end
+    hook_end="$(jq -r '.replacement_intervals.hook.end' <<< "$RESOLVED_FINAL")"
+    dog_start="$(jq -r '.replacement_intervals.dog.start' <<< "$RESOLVED_FINAL")"
+    dog_end="$(jq -r '.replacement_intervals.dog.end' <<< "$RESOLVED_FINAL")"
+    ffmpeg -hide_banner -nostdin -loglevel error -y \
+        -i "$retained" -i "$hook" -i "$dog" \
+        -filter_complex "\
+[1:v]setpts=PTS-STARTPTS[hookv];[1:a]asetpts=PTS-STARTPTS[hooka];\
+[0:v]trim=start=${hook_end}:end=${dog_start},setpts=PTS-STARTPTS[midv];\
+[0:a]atrim=start=${hook_end}:end=${dog_start},asetpts=PTS-STARTPTS[mida];\
+[2:v]setpts=PTS-STARTPTS[dogv];[2:a]asetpts=PTS-STARTPTS[doga];\
+[0:v]trim=start=${dog_end},setpts=PTS-STARTPTS[tailv];\
+[0:a]atrim=start=${dog_end},asetpts=PTS-STARTPTS[taila];\
+[hookv][hooka][midv][mida][dogv][doga][tailv][taila]concat=n=4:v=1:a=1[v][a]" \
+        -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
+        -c:a pcm_s16le "$output"
+}
+
+build_selected_mix() {
+    local base="$1" final_dir="$OUT_DIR/experiments/final/source"
+    local resolved_scores="$final_dir/resolved-scores.json"
+    local resolved_final="$final_dir/resolved-final-score.json"
+    local selected raw score check_raw check_score bass_raw bass bass_check_raw bass_check
+    local game_gain output score_mean score_peak bass_mean bass_peak mix_mean mix_peak
+    mkdir -p "$final_dir"
+    printf '%s\n' "$RESOLVED_SCORES" > "$resolved_scores"
+    printf '%s\n' "$RESOLVED_FINAL" > "$resolved_final"
+    selected="$(jq -r '.base_option' "$FINAL_SCORE_FILE")"
+    output="$OUT_DIR/$(jq -r '.output' "$FINAL_SCORE_FILE")"
+    raw="$final_dir/${selected}-raw.wav"; score="$final_dir/${selected}-score.wav"
+    check_raw="$WORK/${selected}-raw-check.wav"; check_score="$WORK/${selected}-score-check.wav"
+    bass_raw="$final_dir/event-bass-raw.wav"; bass="$final_dir/event-bass-score.wav"
+    bass_check_raw="$WORK/event-bass-raw-check.wav"; bass_check="$WORK/event-bass-score-check.wav"
+    build_score_once "$selected" "$raw" "$score" "$resolved_scores"
+    build_score_once "$selected" "$check_raw" "$check_score" "$resolved_scores"
+    build_bass_once "$bass_raw" "$bass" "$resolved_final"
+    build_bass_once "$bass_check_raw" "$bass_check" "$resolved_final"
+    if [[ "$(shasum -a 256 < "$score")" != "$(shasum -a 256 < "$check_score")" \
+            || "$(shasum -a 256 < "$bass")" != "$(shasum -a 256 < "$bass_check")" ]]; then
+        echo "trailer.sh: selected score or additive bass did not rebuild to identical bytes" >&2
+        return 1
+    fi
+    if [[ "$(shasum -a 256 < "$score" | awk '{print $1}')" != "$(jq -r '.base_score_sha256' "$FINAL_SCORE_FILE")" ]]; then
+        echo "trailer.sh: rebuilt Glass Alarm differs from the score the player selected" >&2
+        return 1
+    fi
+    game_gain="$(jq -r '.game_gain' <<< "$RESOLVED_SCORES")"
+    ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$score" -i "$bass" \
+        -filter_complex "[0:a]volume=${game_gain}[game];\
+[1:a]aformat=sample_rates=48000:channel_layouts=stereo[glass];\
+[2:a]aformat=sample_rates=48000:channel_layouts=stereo[bass];\
+[game][glass][bass]amix=inputs=3:duration=first:normalize=0,alimiter=limit=0.92[a]" \
+        -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -movflags +faststart "$output"
+    score_mean="$(volume_stat "$score" mean_volume)"; score_peak="$(volume_stat "$score" max_volume)"
+    bass_mean="$(volume_stat "$bass" mean_volume)"; bass_peak="$(volume_stat "$bass" max_volume)"
+    mix_mean="$(volume_stat "$output" mean_volume)"; mix_peak="$(volume_stat "$output" max_volume)"
+    for pair in "score mean:$score_mean" "score peak:$score_peak" "bass mean:$bass_mean" \
+            "bass peak:$bass_peak" "mix mean:$mix_mean" "mix peak:$mix_peak"; do
+        require_finite_level "${pair%%:*}" "${pair#*:}" || return 1
+    done
+    jq -n --arg output "$(basename "$output")" \
+        --arg output_sha256 "$(shasum -a 256 < "$output" | awk '{print $1}')" \
+        --arg selected_base "experiments/final/source/selected-base.mkv" \
+        --arg selected_base_sha256 "$(shasum -a 256 < "$base" | awk '{print $1}')" \
+        --arg retained_base "$(jq -r '.source_base' "$FINAL_SCORE_FILE")" \
+        --arg retained_base_sha256 "$(jq -r '.source_base_sha256' "$FINAL_SCORE_FILE")" \
+        --arg retained_capture_revision "$(jq -r '.capture_revision' "$OUT_DIR/$(jq -r '.source_settings' "$FINAL_SCORE_FILE")")" \
+        --arg hook_sha256 "$(shasum -a 256 < "$WORK/selected-hook.mkv" | awk '{print $1}')" \
+        --arg dog_sha256 "$(shasum -a 256 < "$WORK/selected-dog.mkv" | awk '{print $1}')" \
+        --arg score_sha256 "$(shasum -a 256 < "$score" | awk '{print $1}')" \
+        --arg bass_sha256 "$(shasum -a 256 < "$bass" | awk '{print $1}')" \
+        --arg revision "$(git -C "$PROJECT_DIR" rev-parse HEAD)" \
+        --arg tree "$(git -C "$PROJECT_DIR" rev-parse HEAD^{tree})" \
+        --argjson duration "$total_seconds" --argjson intervals "$(jq '.replacement_intervals' <<< "$RESOLVED_FINAL")" \
+        --argjson bass_cues "$(jq '.options[0].events' <<< "$RESOLVED_FINAL")" \
+        --argjson score_mean_db "${score_mean%dB}" --argjson score_peak_db "${score_peak%dB}" \
+        --argjson bass_mean_db "${bass_mean%dB}" --argjson bass_peak_db "${bass_peak%dB}" \
+        --argjson mix_mean_db "${mix_mean%dB}" --argjson mix_peak_db "${mix_peak%dB}" \
+        '{output:$output,output_sha256:$output_sha256,duration_seconds:$duration,
+          assembly_revision:$revision,assembly_tree:$tree,
+          retained_base:{file:$retained_base,sha256:$retained_base_sha256,
+            capture_revision:$retained_capture_revision,
+            reused_intervals:[{start:$intervals.hook.end,end:$intervals.dog.start},
+              {start:$intervals.dog.end,end:$duration}]},
+          replacements:{hook:{interval:$intervals.hook,sha256:$hook_sha256},
+            dog:{interval:$intervals.dog,sha256:$dog_sha256}},
+          selected_base:{file:$selected_base,sha256:$selected_base_sha256,audio:"PCM game audio"},
+          score:{name:"Glass Alarm",sha256:$score_sha256,mean_db:$score_mean_db,peak_db:$score_peak_db,
+            preservation:"rebuilt byte-identically to the selected audition before bass was added"},
+          additive_bass:{sha256:$bass_sha256,mean_db:$bass_mean_db,peak_db:$bass_peak_db,cues:$bass_cues},
+          final_mix:{mean_db:$mix_mean_db,peak_db:$mix_peak_db,limiter:0.92}}' \
+        > "$OUT_DIR/trailer-glass-alarm-final.json"
 }
 
 build_auditions() {
@@ -1189,6 +1370,32 @@ case "$MODE" in
         fi
         join_shots false "$WORK/00.mkv"
         echo "wrote ${OUTPUT#"$PROJECT_DIR"/}"
+        ;;
+    selected-reuse)
+        retained_base="$OUT_DIR/$(jq -r '.source_base' "$FINAL_SCORE_FILE")"
+        retained_settings="$OUT_DIR/$(jq -r '.source_settings' "$FINAL_SCORE_FILE")"
+        expected_base_sha="$(jq -r '.source_base_sha256' "$FINAL_SCORE_FILE")"
+        if [[ ! -f "$retained_base" || ! -f "$retained_settings" ]]; then
+            echo "trailer.sh: selected cut requires the retained audition base and settings; refusing to recapture unchanged footage" >&2
+            exit 1
+        fi
+        actual_base_sha="$(shasum -a 256 < "$retained_base" | awk '{print $1}')"
+        settings_base_sha="$(jq -r '.sha256 // ""' "$retained_settings")"
+        if [[ "$actual_base_sha" != "$expected_base_sha" || "$settings_base_sha" != "$expected_base_sha" ]]; then
+            echo "trailer.sh: retained audition base does not match its selected-cut contract; refusing to recapture unchanged footage" >&2
+            exit 1
+        fi
+        encode_card hook "$WORK/selected-hook.mkv"
+        render_frames dog "$WORK/frames"
+        movie_evidence "$WORK/frames" "$OUT_DIR/experiments/final/evidence/dog" "$FPS" selected
+        write_cut_entry_evidence dog "$WORK/frames"
+        encode_shot dog "$WORK/frames" "$WORK/selected-dog.mkv"
+        rm -rf "$WORK/frames"
+        mkdir -p "$OUT_DIR/experiments/final/source"
+        assemble_selected_base "$retained_base" "$WORK/selected-hook.mkv" "$WORK/selected-dog.mkv" \
+            "$OUT_DIR/experiments/final/source/selected-base.mkv"
+        build_selected_mix "$OUT_DIR/experiments/final/source/selected-base.mkv"
+        echo "wrote ${OUT_DIR#"$PROJECT_DIR"/}/$(jq -r '.output' "$FINAL_SCORE_FILE") from the retained base plus the changed hook and dog shots"
         ;;
     auditions|auditions-reuse)
         mkdir -p "$OUT_DIR/source"
