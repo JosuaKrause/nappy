@@ -1,0 +1,33 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+| row | geometry | answer | badge start | created | drawn entry | badge removed | entry minus creation |
+|---|---|---|---|---|---|---|---|
+| loose_dog | warned, down her line, vertical | toward | 0.000 | 2.267 | 2.467 | 2.467 | 0.200 |
+| loose_dog | warned, down her line, vertical | standing | 0.000 | 2.267 | 2.600 | 2.617 | 0.333 |
+| loose_dog | warned, down her line, vertical | away | 0.000 | 2.267 | 3.300 | 3.400 | 1.033 |
+| loose_dog | warned, down her line, horizontal | toward | 0.000 | 2.267 | 2.417 | 2.467 | 0.150 |
+| loose_dog | warned, down her line, horizontal | standing | 0.000 | 2.267 | 2.517 | 2.617 | 0.250 |
+| loose_dog | warned, down her line, horizontal | away | 0.000 | 2.267 | 3.017 | 3.400 | 0.750 |
+| cyclist | warned, down her line, vertical | toward | 0.000 | 2.133 | 2.333 | 2.333 | 0.200 |
+| cyclist | warned, down her line, vertical | standing | 0.000 | 2.133 | 2.433 | 2.450 | 0.300 |
+| cyclist | warned, down her line, vertical | away | 0.000 | 2.133 | 2.800 | 2.850 | 0.667 |
+| pelican | warned, down her line, vertical | toward | 0.000 | 2.133 | 2.333 | 2.333 | 0.200 |
+| pelican | warned, down her line, vertical | standing | 0.000 | 2.133 | 2.433 | 2.450 | 0.300 |
+| pelican | warned, down her line, vertical | away | 0.000 | 2.133 | 2.800 | 2.850 | 0.667 |
+| cyclist | warned, down her line, horizontal | toward | 0.000 | 2.133 | 2.267 | 2.333 | 0.133 |
+| cyclist | warned, down her line, horizontal | standing | 0.000 | 2.133 | 2.333 | 2.450 | 0.200 |
+| cyclist | warned, down her line, horizontal | away | 0.000 | 2.133 | 2.567 | 2.850 | 0.433 |
+| pelican | warned, down her line, horizontal | toward | 0.000 | 2.133 | 2.267 | 2.333 | 0.133 |
+| pelican | warned, down her line, horizontal | standing | 0.000 | 2.133 | 2.333 | 2.450 | 0.200 |
+| pelican | warned, down her line, horizontal | away | 0.000 | 2.133 | 2.567 | 2.850 | 0.433 |
+| fire_truck | warned, on its road to the fire | toward | 0.000 | 6.283 | 6.467 | 6.500 | 0.183 |
+| fire_truck | warned, on its road to the fire | standing | 0.000 | 6.283 | 6.550 | 6.600 | 0.267 |
+| fire_truck | warned, on its road to the fire | away | 0.000 | 6.283 | — | 7.550 | never |
+| military_convoy | day 13's column, warned in its lane | toward | 0.000 | 4.433 | 4.600 | 4.650 | 0.167 |
+| military_convoy | day 13's column, warned in its lane | standing | 0.000 | 4.433 | 4.700 | 4.800 | 0.267 |
+| military_convoy | day 13's column, warned in its lane | away | 0.000 | 4.433 | 5.583 | 5.950 | 1.150 |
+-- m226_arrival_timing.gd         141 ms
+
+25 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m226_arrival_timing.gd. Not a green build.
