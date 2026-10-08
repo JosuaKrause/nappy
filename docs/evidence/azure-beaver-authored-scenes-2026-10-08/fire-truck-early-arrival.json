@@ -1,0 +1,104 @@
+{
+  "recipe": "Day 3: the burning building, out of view at the start, and the fire engine it calls in once she sees it",
+  "recipe_sha256": "1c81ff8634422875e021e71326b059995cb400ea301d0b2b1e5a187e61919b11",
+  "engine": "4.7.2-stable (official)",
+  "physics_ticks_per_second": 30,
+  "playback_complete": false,
+  "stopped_tick": null,
+  "playback_error": null,
+  "observations": [
+    {
+      "condition": "off_screen",
+      "passed": true,
+      "player_at": [
+        2623.22,
+        2704.0
+      ],
+      "state": {
+        "position": [
+          2128.0,
+          2704.0
+        ],
+        "pursuing": false,
+        "row": "burning_building",
+        "telegraphing": true
+      },
+      "subject": "fire",
+      "tick": 1.0
+    },
+    {
+      "condition": "clear_of_both_views",
+      "half": [
+        160.0,
+        480.0
+      ],
+      "passed": true,
+      "player_at": [
+        2623.22,
+        2704.0
+      ],
+      "state": {
+        "position": [
+          2128.0,
+          2704.0
+        ],
+        "pursuing": false,
+        "row": "burning_building",
+        "telegraphing": true
+      },
+      "subject": "fire",
+      "tick": 1.0
+    },
+    {
+      "condition": "visible",
+      "passed": true,
+      "player_at": [
+        2370.93,
+        2704.0
+      ],
+      "state": {
+        "position": [
+          2128.0,
+          2704.0
+        ],
+        "pursuing": false,
+        "row": "burning_building",
+        "telegraphing": false
+      },
+      "subject": "fire",
+      "tick": 84.0
+    },
+    {
+      "condition": "visible",
+      "passed": true,
+      "player_at": [
+        2363.85,
+        2619.53
+      ],
+      "state": {
+        "position": [
+          2128.0,
+          2768.0
+        ]
+      },
+      "subject": "row:fire_truck",
+      "tick": 294.0
+    },
+    {
+      "condition": "moving",
+      "passed": false,
+      "player_at": [
+        2363.85,
+        2619.53
+      ],
+      "state": {
+        "position": [
+          2128.0,
+          2768.0
+        ]
+      },
+      "subject": "row:fire_truck",
+      "tick": 294.0
+    }
+  ]
+}

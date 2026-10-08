@@ -57,4 +57,26 @@ be integrated before repeating the short motion proof.
 same clean source. `tools/scene-recipes.sh --output /tmp/all-saved-scenes` stops on the
 unchanged full-city fire-truck recipe: its waiting route reaches excitement 100 and loses
 to crying at tick 261, before the required truck arrival observations. This result does
-not affect the ten passing stretch playbacks; it prevents claiming every saved recipe passes.
+not affect the ten passing stretch playbacks.
+
+`fire-truck-repaired.json` records the corrected full-city scene at clean source
+`9dd9f1bfc4debf38539ead27801fbb84d4319db7`, run with:
+
+```sh
+tools/scene-recipes.sh --recipe scene-recipes/fire-truck.json --output /tmp/fire-truck-final
+```
+
+The route keeps its 2.8 seconds west toward the fire, then walks north for 2.5 seconds and
+returns south for 1.7 seconds. She stops about 84 pixels north of the old waiting position,
+after retreating farther during the loud approach. Ordinary danger remains active. The scene
+completes at tick 414, with the initial fire checks unchanged, the engine both visible and
+moving at tick 114, visible again at tick 294, and at its exact kerb at tick 414. Duration
+13.8 seconds and capture time 12.8 seconds are unchanged. There is no invincibility, initial
+meter adjustment or gameplay change. This is headless action evidence; no new picture is claimed.
+
+The two small intermediate manifests retain why the approach assertion changed. With the
+same retreat route and the original tick-294 movement check, the engine is already parked
+(`fire-truck-early-arrival.json`). A visibility check at tick 120 finds its center just outside
+the camera while she retreats (`fire-truck-outside-view.json`); both movement and visibility
+are checked together at the earlier observed tick 114 in the final recipe. Those trials use
+the runtime from `f337560a`, with the recipe under edit; their exact recipe hashes are retained.
