@@ -885,7 +885,8 @@ build_score_once() {
     ceiling="$(jq -r '.peak_ceiling_db' <<< "$RESOLVED_SCORES")"
     wanted="$(awk -v target="$target" -v mean="$raw_mean" 'BEGIN {printf "%.4f", target-mean}')"
     room="$(awk -v ceiling="$ceiling" -v peak="$raw_peak" 'BEGIN {printf "%.4f", ceiling-peak}')"
-    adjust="$(awk -v wanted="$wanted" -v room="$room" 'BEGIN {printf "%.4f", wanted<room?wanted:room}')"
+    adjust="$(awk -v wanted="$wanted" -v room="$room" \
+        'BEGIN {if (wanted < room) printf "%.4f", wanted; else printf "%.4f", room}')"
     ffmpeg -hide_banner -loglevel error -y -i "$raw" -af "volume=${adjust}dB" -c:a pcm_s16le "$score"
 }
 
