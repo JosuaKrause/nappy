@@ -28,6 +28,7 @@ tools/shot.sh "$capture_dir/cat.png" 8 --no-save --invincible --seed 4242 --day 
 
 The original run folder names and complete burst timing sidecars are retained for ancestry.
 Only the two relevant PNGs are retained; the sidecars also name unretained frames. Full bursts,
-ordinary boot output, and the final automatic screenshots remain scratch evidence. Capture
+ordinary boot output, and the final automatic screenshots are discarded after the retained
+copies are verified. Capture
 hardware: macOS Apple M2, Godot 4.7.2, native Compatibility renderer. The window was covered;
 the capture path drew the selected frames on demand. No image is edited or annotated.
