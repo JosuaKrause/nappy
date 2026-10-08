@@ -11,7 +11,9 @@ priority: now
 asks for a more interesting intro slide and further minimalist music experiments, with danger
 and tension through the military scenes after the title card. The
 [intro and music options](intro-slide-and-music.md) and
-[truck placement and dog camera](truck-placement-and-dog-camera.md) are the active work.
+[centered dog exit](centered-dog-exit.md) are the active work. The
+[apartment-window composition](intro-slide-and-music.md) follows the player's detailed
+[olive-egret instructions](../../playtests/2026-10-07-olive-egret.md).
 
 The separate [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
 the ordinary screenshot command's escape flags and stays deferred. The trailer's design and
