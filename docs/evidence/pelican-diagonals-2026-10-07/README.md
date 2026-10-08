@@ -2,23 +2,24 @@
 
 ## Current source candidate
 
-`candidate-3-1x.png` and `candidate-3-6x.png` show only the current candidate. Every cell is
+`candidate-4-1x.png` and `candidate-4-6x.png` show only the current candidate. Every cell is
 labeled: northeast, southeast and east, each in A/B pedal phases; the second row contains
 their northwest, southwest and west mirrors. The native sheet preserves each source pixel;
 the enlarged sheet rasterizes at 6×. Side-view feet and diagonal feet share the same baseline.
 
-The far leg is behind the red bicycle tubes and the near leg is in front in all six sources.
+The far leg is behind both wheels and every bicycle tube, and the near leg is in front of
+all those parts in all six sources. The southeast handlebars also precede the near-leg draw.
 Both northeast wing roots are covered by the torso; only their forward reaches toward the
 handlebars emerge from its front silhouette. This is the concrete visual proposal answering
-dappled-dolphin, not approval of the anatomy. The southeast second eye is preserved.
+jolly-puffin, not approval of the anatomy. The southeast second eye is preserved.
 The northeast far leg keeps hip (16,23.6) as its foot changes from the right pedal position
 in A to the left one in B; the near leg keeps hip (20.2,23) and the opposite pedal position.
 Both east-facing near phases share hip (16,25), with the shin or raised foot covering the
-vertical pedal bar. These are leg geometry changes as well as painter-order changes.
+vertical pedal bar. Candidate 4 preserves all candidate-3 geometry and changes painter order.
 
 The sources, `current.gd`, `label-current.py` and these two images are committed together.
 The renderer uses Godot 4.7.2's SVG parser; Pillow adds cell labels without resampling art.
-Reproduce from the commit that adds the candidate-3 images, reachable through
+Reproduce from the commit that adds the candidate-4 images, reachable through
 `git fetch origin refs/pull/605/head`, with `$GODOT` naming the engine:
 
 ```sh
@@ -29,14 +30,20 @@ printf 'config_version=5\n' > "$pelican_current/project/project.godot"
     "$PWD/docs/evidence/pelican-diagonals-2026-10-07/current.gd" -- \
     "$PWD/art/events" "$pelican_current/render"
 uv run python docs/evidence/pelican-diagonals-2026-10-07/label-current.py \
-    "$pelican_current/render" "$pelican_current" --candidate 3
+    "$pelican_current/render" "$pelican_current" --candidate 4
 ```
+
+## Third-attempt evidence
+
+`candidate-3-1x.png` and `candidate-3-6x.png` document source revision
+`9c431ff96b903d8602e1865526ec8a56e6000389`. The source-render command and labeler at that revision
+take `--candidate 3`. Jolly-puffin records the remaining wheel-depth correction.
 
 ## Second-attempt evidence
 
 `candidate-2-1x.png` and `candidate-2-6x.png` document source revision
 `a45b6e7da648b19c335df9e8aaa3327858bbadc0`. To reproduce that proposal, check out that revision
-and use the same source-render command and labeler without `--candidate 3`. The
+and use the same source-render command and labeler without a candidate option. The
 dappled-dolphin playtest records the remaining leg-identity and pedal-bar defects in it.
 
 ## First-attempt evidence
