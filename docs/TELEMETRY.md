@@ -131,7 +131,8 @@ The events:
   - **What she can see** is `VisibleView.visible_share()` (`src/ui/visible_view.gd`): the share of
     a world rectangle inside the camera's view, `Tuning.VIEW_HALF_EXTENT` about its centre, less, in
     the joystick scheme, the two bottom corners its controls cover — each from the screen's side to
-    the far edge of its run button, and from the top of its ring down *(inbox #581, the player:
+    the far edge of its focal disc, and from its painted top down. A ring and Run share the same
+    footprint, so choosing a steering side does not move these corners *(inbox #581, the player:
     "remove the area at the bottom left and right up to the top of the joystick circle and
     horizontal extent of the speed button ... for the other mode those rectangles *do* count")*.
     `pelican-seen` asks it too. Nothing gameplay decides by asks it yet.

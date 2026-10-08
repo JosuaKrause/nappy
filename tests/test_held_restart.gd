@@ -140,7 +140,7 @@ func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t) -> void:
 	pause.open()
 	pause._restart_button.position = Vector2(500.0, 400.0)
 	pause._restart_button.size = Vector2(92.0, 108.0)
-	var at: Vector2 = pause._restart_button.catch_rect().get_center()
+	var at: Vector2 = pause._restart_button.get_global_rect().get_center()
 
 	pause._unhandled_input(_touch_at(at, true, 0))
 	t.check(pause._restart_button.is_held_by(0), "the first finger starts the hold")
@@ -184,7 +184,7 @@ func _test_the_summary_restart_ignores_a_second_touch_mid_hold(t) -> void:
 	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
-	var at: Vector2 = summary._restart_button.catch_rect().get_center()
+	var at: Vector2 = summary._restart_button.get_global_rect().get_center()
 
 	summary._unhandled_input(_touch_at(at, true, 0))
 	t.check(summary._restart_button.is_held_by(0), "the first finger starts the hold")
@@ -219,7 +219,7 @@ func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t) -> void:
 	pause.open()
 	pause._restart_button.position = Vector2(500.0, 400.0)
 	pause._restart_button.size = Vector2(92.0, 108.0)
-	var pause_at: Vector2 = pause._restart_button.catch_rect().get_center()
+	var pause_at: Vector2 = pause._restart_button.get_global_rect().get_center()
 
 	pause._unhandled_input(_touch_at(pause_at, true, 0))
 	pause._restart_button._held_since = \
@@ -240,7 +240,7 @@ func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t) -> void:
 	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
-	var summary_at: Vector2 = summary._restart_button.catch_rect().get_center()
+	var summary_at: Vector2 = summary._restart_button.get_global_rect().get_center()
 
 	summary._unhandled_input(_touch_at(summary_at, true, 0))
 	summary._restart_button._held_since = \

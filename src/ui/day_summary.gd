@@ -435,7 +435,7 @@ func _handle_restart_touch(event: InputEvent) -> bool:
 			get_viewport().set_input_as_handled()
 			return true
 		var at := ScreenOrientation.to_design_space(position, _wants_rotation())
-		if not _restart_button.catch_rect().has_point(at):
+		if not _restart_button.contains_design_point(at):
 			return false
 		if not _restart_button.begin_hold(index):
 			return false
@@ -552,5 +552,5 @@ func _unhandled_input(event: InputEvent) -> void:
 func _update_hover(position: Vector2) -> void:
 	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
 	_continue_button.set_hovered(_continue_column.visible \
-			and _continue_button.catch_rect().has_point(at))
-	_restart_button.set_hovered(_buttons.visible and _restart_button.catch_rect().has_point(at))
+			and _continue_button.contains_design_point(at))
+	_restart_button.set_hovered(_buttons.visible and _restart_button.contains_design_point(at))
