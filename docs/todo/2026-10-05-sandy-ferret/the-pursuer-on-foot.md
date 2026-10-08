@@ -21,3 +21,9 @@ what is true. The README has the proposals, and one question is open for whoever
 **whether his catch ends the day**, as the robber's does, or costs her something less; the police
 car it replaces cannot end the day. The filer would pick ending the day, since "a proper pursuer"
 reads as one like the robber, whose drawing his mirrors.
+
+[azure-koala](../../playtests/2026-10-07-azure-koala.md), finding 7, re-reports a chasing police
+car moving like a person and asks for the police sprite. Reproduce the triggering pursuit before
+assuming it is the poster's: cover other police pursuit paths affected by that report, or give
+them an explicit owner. Ordinary driving patrols stay vehicles. The observation that the car
+is not lethal leaves the catch question above open; ask it before implementing a consequence.

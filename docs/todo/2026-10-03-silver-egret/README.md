@@ -1,4 +1,4 @@
-priority: next
+priority: now
 
 # silver-egret — A shadow is where the object meets the ground · filed 2026-10-03
 
@@ -27,3 +27,15 @@ it, and the capsule half (a thinner body she can lean through) stays.
 **Proposed, not asked for:** start with the first way on the objects where it reads worst (cars,
 then the tall props), shown on a review sheet; "adjust their number" is read as how many ovals an
 object casts (one per wheel pair), the other reading being how many objects cast one.
+
+**Re-report from playing:** [azure-koala](../../playtests/2026-10-07-azure-koala.md), finding 10,
+files inbox #601 in [azure-koala](../../playtests/2026-10-07-azure-koala.md) with the player's `queue_now` label, setting this entry's band to `now`:
+
+> police car's shadow makes it look floating
+
+This is the police-car case of the ground-contact request above. It answers the police-shadow
+question in `docs/review/2026-09-11-look-at-a-parked-delivery-van.md` negatively; that review
+keeps its unanswered van-facing and police-marking questions. Check the police car in its
+diagonal views and both ride frames, with [M108, cars on their
+wheels](../../decisions/2026-09-23-M108-eight-direction-entity-graphics-the-audit-and-cars-bob-on-their-wheels.md)
+as the registration record. The two shadow approaches remain unchosen.

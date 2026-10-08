@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://docs/evidence/pelican-diagonals-2026-10-07/runtime-current.gd" id="1"]
+
+[node name="PelicanCurrentRuntime" type="Node2D"]
+script = ExtResource("1")
