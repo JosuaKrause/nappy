@@ -124,3 +124,29 @@ CI on `f35292439b7e1eb308e23576b0c02838b31cef08` passes, including both browser 
 full game checks. Final integration with the trailer's recording/camera changes and a usable
 motion capture remain required by the queue; the failed covered-window movie is not recast as
 a pass.
+
+## Derived geometry and camera observations · 2026-10-08
+
+The independent source review finds two gaps that the initial editable-layout checks miss.
+An authored building's height and variant are applied after roof joins and shared courtyard
+tint have already been derived. In the concrete day-7 pair, raising lot `[90,56,2,6]` from
+two to four stories leaves its touching front lot `[90,62,2,8]` with roof-extension rows
+`[2,2]`. Commit `a262356a` applies authored district, variant and height while constructing
+the building, before those dependent relationships. The live regression now requires the
+front extension to reach the actual four-story rear wall, and the original probe reports
+`[4,4]`. Ordinary generated-building construction keeps its existing order and inputs.
+
+The event's visible-drawing observation also uses a fixed 640×360 world rectangle rather
+than the current camera. With a 1280×720 viewport at zoom 4, a 32-pixel actor centered
+250 pixels right of the camera passes despite being entirely beyond the real 160-pixel
+half-width. Commit `07c2221f` inverse-transforms all four live viewport corners through the
+canvas transform before applying the existing rendered-body and joystick-corner overlap
+test. The original probe then reports both `appeared=false` and `in_picture=false`.
+Regressions cover the default view, that zoomed-in counterexample and zoom 0.5, where the
+same offset is visible. The actual transform also supplies the view orientation.
+
+At source `07c2221f5514671e32d90655ee53350cbe79e527`, the focused scene suite passes 42 checks,
+the all-stretch crowd suite passes 147, and ordinary ground-floor/visible-view suites pass
+31,869, each with zero failures and a clean exit. Import/boot, lint and diff checks pass.
+These repairs need an independent delta review; they do not complete the separate trailer
+integration or moving-capture gates.
