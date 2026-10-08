@@ -150,3 +150,10 @@ the all-stretch crowd suite passes 147, and ordinary ground-floor/visible-view s
 31,869, each with zero failures and a clean exit. Import/boot, lint and diff checks pass.
 These repairs need an independent delta review; they do not complete the separate trailer
 integration or moving-capture gates.
+
+The delta review confirms the height repair and camera behavior, including a portrait
+transform, but finds the courtyard-tint repair incomplete. In the day-14 recipe, editing
+visible lot `[118,34,13,4]` to variant `123456789` leaves its tint at `3792558343`, selected
+from hidden, unlisted context lot `[118,48,22,8]`. Applying authored values before sharing
+is insufficient when the sharing pass still chooses its source outside the visible authored
+members. This remaining defect stays in the construction item for correction and review.
