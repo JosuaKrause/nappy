@@ -15,7 +15,9 @@ that already has a stretch is drafted again from its route; the drafted fields a
 replaced, but for a route bag already in the recipe, and everything else is kept.
 The draft is then played as the scene it is; a body it puts to wait on ground the
 stretch cut off has that tile added to draft.include and the stretch is drafted again
-(three rounds at most). The draft is then checked with --recipe-validate.
+(three rounds at most; guards still there after them fail the tool, as does a round
+that crashes, with the draft kept as FILE.rejected). The draft is then checked with
+--recipe-validate.
 --output FILE writes the draft there; --in-place overwrites the recipe itself.
 Example: tools/scene-draft.sh --recipe scene-recipes/task-07-package.json --in-place
 EOF
@@ -54,11 +56,14 @@ cp "$recipe" "$work/input.json"
 # Each round drafts from the input, then plays the draft as the scene it is: a body the scene puts to
 # wait on ground the stretch cut off (the manifest's `in_the_void`) has its tile added to the input's
 # `draft.include`, and the stretch is drafted again, so nothing waiting for her stands in the void.
-# Three rounds at most; what is still in the void after them is named.
+# Three rounds at most; guards still in the void after them, or a round whose play crashed, fail
+# the tool with the draft kept aside as $output.rejected. The draft's own walk is
+# --invincible: it walks the whole city, where a guard the stretch never puts out may catch her, and
+# only the tiles she walks are wanted from it.
 for round in 1 2 3; do
     "$GODOT" --headless --path "$root" --fixed-fps 60 -- \
         --recipe "$work/input.json" --recipe-mode scripted --recipe-draft "$work/draft.json" \
-        --no-save --no-telemetry >"$work/draft.log" 2>&1 &
+        --invincible --no-save --no-telemetry >"$work/draft.log" 2>&1 &
     pid=$!
     if ! wait_or_kill "$pid" 120 || [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]] || [[ ! -s "$work/draft.json" ]]; then
         cat "$work/draft.log" >&2
@@ -69,13 +74,30 @@ for round in 1 2 3; do
         --recipe "$work/draft.json" --recipe-mode scripted --recipe-manifest "$work/scene.json" \
         --no-save --no-telemetry >"$work/scene.log" 2>&1 &
     pid=$!
+    rm -f "$work/scene.json"
+    # A scene whose own observations go unmet still says where it put its guards, and the author
+    # fixes the walk after; one that crashed, hung or wrote no manifest says nothing, and the draft
+    # is kept aside rather than written as if it had answered.
     wait_or_kill "$pid" 120 || true
-    void="$(jq -c '[.in_the_void // [] | .[].tile]' "$work/scene.json" 2>/dev/null || echo '[]')"
+    if [[ "${WAIT_OR_KILL_STATUS:-1}" -ne 0 ]] && ! grep -q '^\[SceneRecipe\] unmet observation' "$work/scene.log"; then
+        crashed=true
+    else
+        crashed=false
+    fi
+    if $crashed || grep -qE 'SCRIPT ERROR|^ERROR:' "$work/scene.log" \
+            || ! void="$(jq -ec '[.in_the_void // [] | .[].tile]' "$work/scene.json" 2>/dev/null)"; then
+        cat "$work/scene.log" >&2
+        cp "$work/draft.json" "$output.rejected"
+        echo "scene-draft.sh: round $round's play of the draft crashed or wrote no manifest; the draft is kept at $output.rejected" >&2
+        exit 1
+    fi
+    grep '^\[SceneRecipe\] unmet observation' "$work/scene.log" | sed 's/^/scene-draft.sh: the draft as a scene: /' >&2 || true
     new="$(jq -c --argjson void "$void" '($void - (.draft.include // [])) | unique' "$work/input.json")"
     [[ "$new" == "[]" ]] && break
     if [[ "$round" == 3 ]]; then
-        echo "scene-draft.sh: after three rounds the scene still puts bodies on cut-off ground at $new" >&2
-        break
+        cp "$work/draft.json" "$output.rejected"
+        echo "scene-draft.sh: after three rounds the scene still puts guards on cut-off ground at $new; the draft is kept at $output.rejected" >&2
+        exit 1
     fi
     jq --argjson new "$new" '.draft.include = ((.draft.include // []) + $new)' "$work/input.json" \
         >"$work/next.json" && mv "$work/next.json" "$work/input.json"

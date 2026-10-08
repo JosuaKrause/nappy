@@ -26,21 +26,22 @@
       "marbles": ["cat_dash","cat_dash","cat_dash","cat_dash","cat_dash","loose_dog","loose_dog","loose_dog","loose_dog","loose_dog","loose_dog","cyclist","cyclist","cyclist"],
       "owed": 14,
       "pre_bag": ["cat_dash"],
-      "first_after": 3
+      "first_after": 0.5
     }
   },
   "playback": {
-    "walk": "1p0.4e",
-    "duration": 1.6,
-    "capture_at": 0.5,
+    "walk": "3w3e1p0.4e",
+    "duration": 8,
+    "capture_at": 6.8,
     "observations": [
       {"tick":1,"subject":"task","condition":"offered"},
       {"tick":1,"subject":"task","condition":"arrowed"},
       {"tick":1,"subject":"player","condition":"beyond","at":"door","distance":57.6},
-      {"tick":29,"subject":"task","condition":"offered"},
-      {"tick":29,"subject":"player","condition":"beyond","at":"door","distance":57.6},
-      {"tick":45,"subject":"task","condition":"done"},
-      {"tick":45,"subject":"player","condition":"crowd","walkers":2}
+      {"tick":209,"subject":"task","condition":"offered"},
+      {"tick":209,"subject":"player","condition":"beyond","at":"door","distance":57.6},
+      {"tick":225,"subject":"task","condition":"done"},
+      {"tick":239,"subject":"row:cat_dash","condition":"appeared"},
+      {"tick":150,"subject":"player","condition":"crowd","walkers":2}
     ]
   },
   "stretch": {

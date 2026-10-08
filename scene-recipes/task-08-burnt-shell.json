@@ -34,7 +34,7 @@
     }
   },
   "playback": {
-    "walk": "1.74@85@2.95w3.13n0.35w2.2n",
+    "walk": "1.74@85@2.95w3.13n0.6w2.2n",
     "duration": 10.6,
     "capture_at": 9.4,
     "observations": [
@@ -48,8 +48,8 @@
       {"tick":60,"subject":"rider","condition":"beyond","at":"mark","distance":540},
       {"tick":60,"subject":"rider","condition":"near","at":"mark","distance":644},
       {"tick":312,"subject":"task","condition":"done"},
-      {"tick":30,"subject":"player","condition":"crowd","walkers":1,"cars":1},
-      {"tick":317,"subject":"row:cat_dash","condition":"appeared"}
+      {"tick":317,"subject":"row:cat_dash","condition":"appeared"},
+      {"tick":180,"subject":"player","condition":"crowd","walkers":2,"cars":1}
     ]
   },
   "stretch": {

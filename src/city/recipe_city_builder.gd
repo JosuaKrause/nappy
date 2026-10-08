@@ -158,7 +158,12 @@ static func build(data: Dictionary) -> Dictionary:
 ## trees in the stretch exactly the witness's; a witness that disagrees is refused by name rather
 ## than drawn over, since a scene whose rules answer for a different street than the one on screen
 ## tests nothing. A generator change that moves the stretch's own ground therefore stops the scene
-## and asks for a new draft (`tools/scene-draft.sh`); one anywhere else changes nothing on screen.
+## and asks for a new draft (`tools/scene-draft.sh`). It also means the tiles, lots and street trees
+## cannot be edited by hand. And the witness is read unchecked where the scene meets it: the tile
+## just past each street end decides whether the crowd leaves and enters there or meets a wall
+## (`CityMap.is_cut_off()`), the lots round each building decide how far its roof reaches, and the
+## route tree, the regions and the mark's guard are its own — a generator change there changes the
+## scene without stopping it.
 static func _cut_the_stretch(stretch: Dictionary, map: CityMap, errors: Array[String]) -> void:
 	var mask := PackedByteArray()
 	mask.resize(map.size.x * map.size.y)

@@ -932,6 +932,7 @@ func _physics_process(_delta: float) -> void:
 	if not _active:
 		return
 	_watch_the_void()
+	_watch_the_crowd()
 	if _draft:
 		var step := _resistance.current_step() if _resistance else null
 		var walking_home: Node2D = named.get("rider") if step and not step.is_pickup \
@@ -1061,9 +1062,10 @@ func snapshot() -> Dictionary:
 func _observe() -> void:
 	_bind_task_names()
 	for check: Dictionary in _observations:
-		if check.condition == "appeared" and not _appeared.has(check.subject) \
-				and subject_of(str(check.subject)):
-			_appeared[check.subject] = tick
+		if check.condition == "appeared" and not _appeared.has(check.subject):
+			var watched := subject_of(str(check.subject))
+			if watched and _she_can_see(watched.global_position):
+				_appeared[check.subject] = tick
 	for check: Dictionary in _observations:
 		if int(check.tick) != tick:
 			continue
@@ -1116,6 +1118,8 @@ func _observe() -> void:
 					passed = _resistance != null and _resistance.red_arrow_target() == Vector2.INF
 		var record := check.duplicate(true)
 		record["passed"] = passed
+		if check.condition == "appeared" and passed:
+			record["first_in_the_picture"] = _appeared[check.subject]
 		record["state"] = snapshot().get(check.subject, {})
 		if is_instance_valid(_player):
 			record["player_at"] = [snappedf(_player.global_position.x, 0.01),
@@ -1141,17 +1145,28 @@ func _observe() -> void:
 			if summoned:
 				_last_positions[label] = summoned.global_position
 
-## The subjects an `appeared` observation asks about that have been in the world, and the first
+## The subjects an `appeared` observation asks about that have been in the picture, and the first
 ## tick each was: a route event the rigged bag hands out comes when the director's pacing and siting
-## say, so a scene asks that it came by a tick rather than at one. In the world rather than in the
-## picture, since the director sites a crossing a lead ahead of her and the game decides whether it
-## ever runs into view.
+## say, so a scene asks that she saw it by a tick rather than at one. In the picture, not merely in
+## the world: a cat sited ahead of her that crouches out of view and never runs is an event she
+## never meets, and the scene would be as empty as it looks.
 var _appeared := {}
 
 ## Whether a world point is in the picture, a margin inside its edges.
 func _in_the_picture(at: Vector2) -> bool:
 	return get_viewport().get_visible_rect().grow(-20).has_point(
 			get_viewport().get_canvas_transform() * at)
+
+## Whether she can see anything of a thing standing at `at` (a tile-sized box at its feet):
+## `VisibleView`'s area, the camera's view less the corners the joystick scheme's controls cover,
+## the same question the page's encounter counter asks of what she meets.
+func _she_can_see(at: Vector2) -> bool:
+	var centre := _player.camera_screen_center() if is_instance_valid(_player) else at
+	var controls := get_tree().get_first_node_in_group(HelpText.CONTROLS_GROUP) as TouchControls
+	var joystick := controls != null and controls.controls_mode() == ControlsMode.Mode.JOYSTICK
+	var half := Vector2.ONE * Tuning.TILE_SIZE * 0.5
+	return VisibleView.visible_share(Rect2(at - half, half * 2.0),
+			Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), joystick) > 0.0
 
 ## How many walkers and cars are moving in the picture now.
 func _moving_in_the_picture() -> Dictionary:
@@ -1222,6 +1237,36 @@ func _watch_the_void() -> void:
 			var found: Array = manifest.get("in_the_void", [])
 			found.append({"tile": [tile.x, tile.y], "row": instance.def.id, "tick": tick})
 			manifest["in_the_void"] = found
+
+## Where each of the crowd stood last tick, to catch one that leaves or enters in view.
+var _crowd_was := {}
+## How far a walker's or a car's picture reaches past its centre, for `_watch_the_crowd()`: a tile,
+## a car's half length and its shadow. Less than the room an agent keeps when it leaves
+## (`CrowdAgent.ENTRY_PICTURE_ROOM`), since the camera moves on between the frame it left on and the
+## tick that asks.
+const PICTURE_REACH := float(Tuning.TILE_SIZE)
+
+## **Nothing in a stretch's crowd appears or vanishes where she can see it** *(the player's rule,
+## PR #597)*: a walker or car that moves further in one tick than any of them walks or drives — a
+## recycle — while it stood, or now stands, in either view (`CrowdAgent._beyond_every_view()`) is
+## recorded in the manifest's `seen_to_jump`, which `tests/test_scene_recipe_stretch_crowd.gd` holds
+## empty over every stretch scene.
+func _watch_the_crowd() -> void:
+	if not _city or not _city.map.has_stretch() or not _city.crowd:
+		return
+	for agent in _city.crowd.agents():
+		var at := agent.global_position
+		if _crowd_was.has(agent):
+			var was: Vector2 = _crowd_was[agent]
+			if was.distance_to(at) > 2.0 * Tuning.TILE_SIZE \
+					and not (agent._beyond_every_view(was, PICTURE_REACH)
+					and agent._beyond_every_view(at, PICTURE_REACH)):
+				var jumps: Array = manifest.get("seen_to_jump", [])
+				jumps.append({"tick": tick, "from": [snappedf(was.x, 0.1), snappedf(was.y, 0.1)],
+						"to": [snappedf(at.x, 0.1), snappedf(at.y, 0.1)],
+						"kind": "car" if agent.kind == CrowdAgent.Kind.CAR else "walker"})
+				manifest["seen_to_jump"] = jumps
+		_crowd_was[agent] = at
 
 ## `--recipe-draft FILE`: the stretch the walk just took, written as a recipe (`SceneRecipeDraft`).
 ## Answers the exit code.

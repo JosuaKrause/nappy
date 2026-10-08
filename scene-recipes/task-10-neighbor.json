@@ -60,8 +60,8 @@
       {"tick":60,"subject":"task","condition":"near","at":"mark","distance":480},
       {"tick":312,"subject":"task","condition":"offered"},
       {"tick":450,"subject":"task","condition":"done"},
-      {"tick":60,"subject":"player","condition":"crowd","walkers":2},
-      {"tick":452,"subject":"row:cat_dash","condition":"appeared"}
+      {"tick":452,"subject":"row:cat_dash","condition":"appeared"},
+      {"tick":300,"subject":"player","condition":"crowd","walkers":2,"cars":1}
     ]
   },
   "stretch": {

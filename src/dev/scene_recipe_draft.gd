@@ -7,9 +7,16 @@ extends RefCounted
 ## once on its whole construction witness, with its own walk, and what she walked is cut out of the
 ## city — the tiles, the buildings fronting them, the street trees, props, litter and cracks on
 ## them, the day's posters on those walls, a starting crowd and the day's route bag — and written as
-## a `stretch` recipe the author then edits. The scene loads only what this writes. Drafting a
-## stretch recipe again writes all of that afresh but its route bag, which is the author's rigging
-## rather than a fact about where the stretch runs.
+## a `stretch` recipe the author then edits. Drafting a stretch recipe again writes all of that
+## afresh but its route bag, which is the author's rigging rather than a fact about where the
+## stretch runs.
+##
+## **The scene draws what this writes, and still builds the whole city behind it** (the
+## construction witness, `RecipeCityBuilder._cut_the_stretch()`): the day's rules are planned over
+## that city, and the tiles, building lots and street trees written here must stay the city's own —
+## an author can change a building's look, the props, litter, cracks, posters, crowd, route bag,
+## walk and observations, and widen the stretch through `draft.include`, but not edit a tile, move a
+## lot or plant a tree.
 ##
 ## **The stretch is the streets she walks** *(asked how wide "the path" is, the player chose "The
 ## streets she walks": every tile of the street segments along her route from start to mark to

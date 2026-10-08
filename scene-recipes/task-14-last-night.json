@@ -43,8 +43,8 @@
       {"tick":1,"subject":"task","condition":"beyond","at":"start","distance":576},
       {"tick":1,"subject":"task","condition":"near","at":"start","distance":640},
       {"tick":200,"subject":"task","condition":"done"},
-      {"tick":60,"subject":"player","condition":"crowd","walkers":2},
-      {"tick":209,"subject":"row:cat_dash","condition":"appeared"}
+      {"tick":209,"subject":"row:cat_dash","condition":"appeared"},
+      {"tick":60,"subject":"player","condition":"crowd","walkers":2}
     ]
   },
   "stretch": {

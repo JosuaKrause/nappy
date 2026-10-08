@@ -24,7 +24,8 @@ including its authored day. Escape retry restores that setup too.
 
 `tools/scene-recipes.sh` runs every scene's scripted assertions headlessly and retains logs and
 JSON manifests. Repeated `--recipe FILE` selects a subset; `--output DIR` chooses their folder.
-`--screenshots` also photographs each scene at its `playback.capture_at` time. This is elapsed
+`--screenshots` also photographs each scene a tenth of a second in (`NAME-start.png`) and at its
+`playback.capture_at` time. This is elapsed
 simulation time after the full world and movement start: events, traffic, animation and the
 camera advance together during this pre-roll. It is adjustable independently for every scene.
 The default is 0.5 seconds. A still shows composition; the headless observations check action.
@@ -70,7 +71,9 @@ first, `owed` is how many events her route is owed (both bags' marbles by defaul
 default). Every marble names a row the director sites that day (`AHEAD_OF_PLAYER` or
 `TOWARD_PLAYER`); the pacing after the first, where each is sited, the region doors' clear ground,
 a row's `max_per_day` over the ordinary bag's rows and a rig a task asks for later are all the
-game's own.
+game's own. A route bag also switches on the rest of what the director does while she walks, as in
+a played day: a place a marble puts on her route is sited on her way, and on days 8 to 14, once the
+baby sleeps and the walk home begins, the act III and IV return patrols are owed.
 
 An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path` and `age`.
 The ordinary scheduler's ground, route, spacing, protected-door and corridor checks accept
@@ -132,7 +135,8 @@ off the street signals. Supported escape pins are trucks, abduction, roadblocks 
 `capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`), `caption`, `title` and
 `observations`. Each observation has a physics `tick`, named `subject` and `condition`:
 `visible`, `moving`, `running`, `carrying`, `pursuing`, `near` or `beyond` with `at` and
-`distance` (at most or at least that far), `appeared` (the subject has been in the world at some
+`distance` (at most or at least that far), `appeared` (she has seen the subject — some of a tile at its feet
+inside `VisibleView`'s area, the camera's view less the corners the joystick scheme covers — at some
 tick up to this one, for a route event that comes when the director's pacing says rather than at a
 known tick), `crowd` with `walkers` and `cars` (asked of `player`: at least that many walkers and
 cars are moving in the picture), `off_screen` (no part of a box three tiles either side
@@ -189,8 +193,18 @@ questions about the city the stretch was cut from. So the witness has to be that
 listed tile must be the type the witness has there, every listed building a lot it builds, and the
 street trees on the stretch exactly its own. A witness that disagrees is refused by name
 (`stretch.witness`, `stretch.buildings`, `stretch.trees`) rather than drawn over, so a generator
-change that moves a stretch's own ground stops the scene and asks for a new draft; a change
-anywhere else changes nothing on screen.
+change that moves a stretch's own ground stops the scene and asks for a new draft.
+
+**So not everything in a stretch can be edited by hand.** Its tiles, its building lots and its
+street trees cannot: they must be the witness's, and an edit to any of them is refused. What can
+be: each building's district, variant, wall height and condition, the props, litter, cracks and
+posters, the starting walkers and cars, the route bag, the walk and the observations, and the
+tiles `draft.include` adds when the stretch is drafted again. And some of what the scene shows
+still follows the generator without a check: whether a street end is open ground beyond (an end
+the crowd leaves and enters by) or a building (a wall), read off the witness tile just past it; how
+far a building's roof reaches over its neighbours, measured against the witness's lots; and the
+route tree, the regions and the mark's guard, planned over the whole witness. A generator change
+there changes the scene without stopping it.
 
 **While she walks, the stretch is the whole world.** Every other question about the ground answers
 a void tile as a wall, so the task's target is placed by the director's own rule on the streets the
@@ -198,10 +212,13 @@ scene has, which need not be where the whole city would put it. The walks are au
 target the scene puts out.
 
 **The crowd is the street's own.** The starting walkers and cars are listed; the crowd's field is
-the whole stretch and does not follow her, and a walker or a car that reaches one of its ends, where
-a street runs into the void, leaves there and comes back in at an end, heading in. A street that
-ends at a building is a wall and nobody enters there, and nor does anybody at a junction's own arm
-into the void.
+the whole stretch and does not follow her. **Nothing appears or vanishes where she can see it**
+*(the player's rule, PR #597)*: a walker or a car that reaches one of the stretch's ends, where a
+street runs into the void, leaves there only when no part of it is in the landscape or the turned
+portrait view, and comes back in at an end that is out of both, heading in. In her view the end is a
+wall: a walker turns round at it, a car turns off before it or waits there until she has walked on.
+A street that ends at a building is a wall and nobody enters there, and nor does anybody at a
+junction's own arm into the void.
 
 **A draft comes from a seed and a route.** `tools/scene-draft.sh --recipe FILE (--output FILE |
 --in-place)` plays the recipe's own walk once on its whole construction city and writes everything
@@ -231,28 +248,31 @@ The routes keep out of the robber's notice at the mark and, where the straight w
 runs past him, go round. Every scene shares one context city (`context_seed` 1917501) and run seed
 11, so a scene starts the same way every time.
 
-Every task scene's route bag is the day's own ordinary bag with a cat in front of it, due 3s into
-the walk, and each scene asserts that the cat came (`appeared`) and that walkers, and on most
-streets a car, are moving in the picture at a stated tick (`crowd`). Day 9 asserts no route event:
-the district door's clear ground refuses every siting on the street she walks, which is the game's
-own rule; the station door's corner is over before one is due.
+Every task scene's route bag is the day's own ordinary bag with a cat in front of it, and each scene
+asserts that she saw the cat (`appeared`) and that walkers, and on days 6 to 11 a car, are moving
+in the picture at a stated tick (`crowd`). The cat is due 3s into the walk, except on day 9, where
+the district door's clear ground refuses every siting on the street down to the door, so she walks
+a block east along the cross street first and the cat is due 6s in, and at the station door's
+corner, where she walks a few steps west and back before the corner's question and the cat is due
+half a second in. `tests/test_scene_recipe_stretch_crowd.gd` plays every stretch scene to its end
+and holds every observation, and that nothing in the crowd appears or vanishes in her view.
 
 | Recipe | Day and target | She starts | The target, as the scene asserts it |
 |---|---|---|---|
 | `task-06-note.json` | 6, a note for the man shouting | 5 tiles west of the mark, on the street, the mark unread | the man shouting up the street west of the mark, 540–644px from the mark; no arrow, since any of them answers |
 | `task-07-package.json` | 7, the package at the van | 5 tiles west of the mark, on the street, the mark unread | the van on the same street, 540–644px from the mark |
 | `task-08-burnt-shell.json` | 8, the burnt building | 5 tiles west of the mark, on the street, the mark unread | the shell 540–644px from the mark, the arrow on the door behind it |
-| `task-09-crossing.json` | 9, the crossing | 5 tiles west of the mark, the mark unread | the named district door's gatehouse, 540–644px from the mark; done by crossing the door |
+| `task-09-crossing.json` | 9, the crossing | 5 tiles west of the mark, the mark unread | the named district door's gatehouse, 540–676px from the mark; done by crossing the door |
 | `task-10-neighbor.json` | 10, warning the neighbor | 5 tiles east of the mark on the street above it, the mark unread | the neighbor, 400px or more from where she reads the mark (about 455px from it), walking home |
 | `task-11-mast.json` | 11, silencing a mast | 5 tiles west of the mark, on the street, the mark unread | a mast put up for the task, 540–644px from the mark |
-| `task-12-swing.json` | 12, the swing | 5 tiles east of the mark on the street below it, the mark unread | the swing's base, 540–644px from the mark |
+| `task-12-swing.json` | 12, the swing | 5 tiles east of the mark on the street below it, the mark unread | the swing's base, 540–676px from the mark |
 | `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles west of the mark, on the street, the mark unread | the roadblock, 540–644px from the mark; no arrow |
 | `task-14-last-night.json` | 14, the station's front door | on the sidewalk west of it | the door on the facade, 576–640px out |
-| `station-door-corner.json` | 14, the station's front door | on the far outer corner of its sidewalk | the door, 57.7px away, outside its 50.6px reach |
+| `station-door-corner.json` | 14, the station's front door | on the far outer corner of its sidewalk, walking a few steps west and back to it | the door, 57.7px away, outside its 50.6px reach |
 | `fire-truck.json` | 3, the fire and the engine it calls in | on the sidewalk 496px east of the fire | the whole burning building, smoke included, out of both the landscape and the portrait view at the first tick; the engine parked at the kerb in front of it |
 
-Every scene but `fire-truck.json`, which is built on the whole context city with no background
-crowd and only `burning_building` named, is a stretch.
+Every scene in this table but `fire-truck.json`, which is built on the whole context city with no
+background crowd and only `burning_building` named, is a stretch.
 
 Play one with `tools/run.sh --recipe scene-recipes/task-07-package.json` and walk to the target,
 following the red arrow where there is one; the summary after a won day reloads the scene. Each
@@ -273,8 +293,9 @@ no start across it has a way to her.
 
 `station-door-corner.json` is for the question whether the station's door is touched from the far
 outer corners of the two sidewalk tiles in front of it (`ResistanceDirector.DOOR_REACH`, 50.6px,
-against the corners' 57.7px): she starts on the west corner, where the door is not touched, and one
-step east touches it. No guard waits at the station's door, and touching it sends nobody in this
+against the corners' 57.7px): she starts on the west corner, where the door is not touched, walks a
+few steps west and back to the corner, where it is still not touched, and one step east touches
+it. No guard waits at the station's door, and touching it sends nobody in this
 scene (above).
 `fire-truck.json` starts on day 3 with `burning_building` named and nothing else, her start 496px
 east of the fire, so that its lot, its rise and its smoke are out of both the landscape and the
