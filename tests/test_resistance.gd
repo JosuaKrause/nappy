@@ -4202,6 +4202,8 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
 			director._settle_the_arrow()
 			t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
 					"behind a wall the arrow points at the one she can walk to sooner")
+			t.check(director.pointable_objective() == director.red_arrow_target(),
+					"and the protest cue points at the same chosen objective as the arrow")
 			t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) > 100.0,
 					"and not at the nearer as the crow flies")
 			_city.map.release_obstruction(owner)
@@ -4424,12 +4426,15 @@ func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 			director.free()
 			return
 		var third_foot := _city.events.mast_foot(third)
+		var near_foot := _city.events.mast_foot(near)
 		player.global_position = _beside_the_mast(director, third_foot)
-		director._settle_the_arrow()
+		t.check(director.red_arrow_target().distance_to(near_foot) < 1.0
+				and director._mast_id == near,
+				"before the next choice the arrow and task still point at the near mast")
+		director._process(STEP)
 		t.check(director.red_arrow_target().distance_to(third_foot) < 1.0
 				and director._mast_id == third,
-				"beside the third mast the arrow, and the task, are on it")
-		director._process(STEP)
+				"following her between masts moves the task to the one she actually touches")
 		director._contact._physics_process(STEP)
 		t.check(step.index in GameState.completed_resistance_steps,
 				"touching the third mast completes the task")

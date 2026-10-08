@@ -156,11 +156,11 @@ that through the day before the last night:
 | 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's gatehouse — rather than round it. | red, on the closest by walking distance |
 | 14 | The last night | The power station's front door, offered only once the goal is met, the arrow ending on the door and touched from the sidewalk in front of it as day 8's door is. Touching it is the sabotage. | red |
 
-**Two kinds of task.** Some any live instance of the right thing answers — any man shouting, any
-roadblock, any live mast on day 11 *(2026-10-05, the player, on whether only the mast near the mark
-and the one rigged onto her route should: "why limit artificially to two arbitrary masts")* — and
-the rest are one place. **Every task has the red arrow** (`HomeArrow`'s own form in a color of its
-own, `Palette.TASK_ARROW`), a decided exception to *no quest log or marker for the resistance*
+**Two kinds of task.** In some tasks any live instance of the right thing answers — any man
+shouting, any roadblock, any live mast on day 11 *(2026-10-05, the player, on whether only the mast
+near the mark and the one rigged onto her route should: "why limit artificially to two arbitrary
+masts")* — and the rest are one place. **Every task has the red arrow** (`HomeArrow`'s own form in
+a color of its own, `Palette.TASK_ARROW`), a decided exception to *no quest log or marker for the resistance*
 *(2026-10-04, [busy-quail](playtests/2026-10-04-busy-quail.md), inbox #562: "yeah let's just
 always do arrows")*. Where several places answer, the arrow points at the closest by walking
 distance, never straight-line *(inbox #561: "closest here always means path closeness not crow

@@ -2578,12 +2578,15 @@ func contact_position() -> Vector2:
 ## today, or today's step is a chalk-mark pickup. *(2026-09-11, the player: "the mark is
 ## findable now -- I don't think we need pointing for that. but the other tasks are not as easy
 ## and need pointing.")* A perform step's own contact already sits at the task, so this is
-## `contact_position()` read back, never a placement or a move of its own.
+## the same read-only destination as the red arrow where several places answer, and otherwise
+## `contact_position()` read back. The protest rank and arrow therefore never contradict each
+## other about which roadblock answers day 13.
 func pointable_objective() -> Vector2:
 	var step := current_step()
 	if step == null or step.is_pickup:
 		return Vector2.INF
-	return contact_position()
+	return red_arrow_target() if ResistanceSteps.answers_at_several_places(step) \
+			else contact_position()
 
 ## Where the red arrow should point, or `Vector2.INF` when nothing warrants one: no step today,
 ## today's step is the mark rather than the task, or the task is done. **Every task has one**
@@ -2789,15 +2792,6 @@ func retarget_the_arrow() -> void:
 	elif not _swept_for(newest, found, versions):
 		_arrow_nearest_next = ArrowField.start(_map, found, versions)
 	var chosen: Variant = _choose_the_arrow(found)
-	if OS.has_environment("PM_DEBUG"):
-		var her_tile := _map.world_to_tile(_player_position())
-		for target in found:
-			print("PMDBG target %s at %s beat %s" % [target["key"], _map.world_to_tile(target["at"]), target["beat"]])
-		print("PMDBG her %s nearest %s len %d own %s len %d chosen %s cur %s" % [her_tile,
-				_arrow_nearest.nearest_at(her_tile) if _arrow_nearest else null,
-				_arrow_nearest.length_at(her_tile) if _arrow_nearest else -9,
-				_arrow_own.keys[0] if _arrow_own else null,
-				_arrow_own.length_at(her_tile) if _arrow_own else -9, chosen, _arrow_key])
 	if chosen == null:
 		if _arrow_position() == Vector2.INF:
 			_arrow_key = null

@@ -317,10 +317,11 @@ static func _build() -> Array[Step]:
 		_perform(10, "Warn the neighbor", 10, "neighbor", [GameEnums.TileType.SIDEWALK], true,
 				TargetKind.NEIGHBOR, false, "your neighbor, on the way home"),
 
-		# Day 11 · silence a loudspeaker mast — one place, red arrow. She reaches its foot, as she
-		# touches a mark, and it stays quiet for the rest of the run; its field makes the approach
-		# cost while it broadcasts, so timing it between broadcasts is the skill. The rehearsal:
-		# a mast's feed can be cut by hand, nobody comes, and the masts have no power of their own.
+		# Day 11 · silence any live loudspeaker mast, with the red arrow on the closest on foot. She
+		# reaches its foot, as she touches a mark, and it stays quiet for the rest of the run; its
+		# field makes the approach cost while it broadcasts, so timing it between broadcasts is the
+		# skill. The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no
+		# power of their own.
 		_mark(11, "Another mark", 11,
 				"Silence the loudspeaker mast. The wire is at its foot."),
 		_perform(12, "Silence a mast", 11, "", [], true, TargetKind.MAST, false,

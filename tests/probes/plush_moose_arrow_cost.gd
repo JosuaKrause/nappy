@@ -1,7 +1,7 @@
 extends RefCounted
 ## Measurement probe for plush-moose, "every task has a red arrow to the closest by walking
 ## distance": what choosing the arrow's target costs per tick on the three days several places
-## answer a task (day 6's man shouting, day 11's two masts, day 13's roadblock), and how often a
+## answer a task (day 6's man shouting, day 11's live masts, day 13's roadblock), and how often a
 ## tick finds no walking length to any target. Not a suite: it prints times rather than asserting
 ## them, so it lives under `tests/probes/`, where the runner never discovers it, and runs only by
 ## name:
