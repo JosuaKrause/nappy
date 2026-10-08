@@ -24,6 +24,9 @@ to that focal disc's far edge and from its top down, using `TouchControls`' shar
 The old queue README's geometry update is retained here while the completed queue entry stays
 deleted. [Round-gecko](2026-10-07-round-gecko.md) records the persistent side selection; the two
 disc positions keep the covered extent independent of which hand is steering.
+Actual touch controls exercise tap steering, release without resetting the side, a hand swap,
+and rotation through the visibility consumers. The old fixture treated a deferred-freed control
+as live and left its input mode behind; it now frees each fixture before the next is constructed.
 
 **Off screen is not visible.** Spawning goes wholly outside the camera's whole view, corners
 included (M226's no pop-in); the corners are left out only for what she can see.
