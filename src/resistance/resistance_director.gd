@@ -319,6 +319,7 @@ func _the_pinned_mark() -> Vector2:
 ## what the guard's draw is kept clear of — see the comment above `_maybe_set_a_trap()`'s call.
 func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	_step = step
+	_forget_the_arrow()
 	if not _step:
 		return
 
@@ -403,6 +404,10 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		at = _contact.global_position
 	_contact.completed.connect(_on_contact_completed)
 	_city.add_entity(_contact)
+	# Where several places answer, the arrow starts on the one the contact was placed on, and
+	# `_process()` moves it to the closest on foot once the first sweep has finished.
+	if ResistanceSteps.answers_at_several_places(_step):
+		_arrow_key = _contact_key()
 	EventBus.resistance_contact_available.emit(_step.index)
 	Telemetry.note("contact", "step %d on offer at %s" % [
 		_step.index, TelemetryLog.tile(_map.world_to_tile(at))])
@@ -2193,6 +2198,17 @@ func _process(delta: float) -> void:
 		_track_sight_and_reposition(delta)
 	elif _rider and not _step.is_one_place:
 		_follow_her_between_look_alikes()
+	if ResistanceSteps.answers_at_several_places(_step):
+		# Chosen again twice a second, and at once when what it points at has gone — finished, or
+		# freed as it streamed out — rather than leaving the arrow on nothing until the next tick.
+		_arrow_clock += delta
+		if _arrow_clock >= ARROW_RETARGET_SECONDS \
+				or (_arrow_key != null and _arrow_position() == Vector2.INF):
+			_arrow_clock = 0.0
+			retarget_the_arrow()
+		_sweep_the_arrow_fields(ARROW_SWEEP_TILES_PER_FRAME)
+		if _step.target_kind == ResistanceSteps.TargetKind.MAST:
+			_follow_her_between_masts()
 	if _step.deadline_fraction <= 0.0 or _day_length <= 0.0:
 		return
 	if _elapsed / _day_length < _step.deadline_fraction:
@@ -2533,6 +2549,7 @@ func _clear() -> void:
 	_contact = null
 	_rider = null
 	_mast_id = ""
+	_forget_the_arrow()
 	_lingering_rider = null
 	_lingering_remaining = 0.0
 
@@ -2561,30 +2578,353 @@ func contact_position() -> Vector2:
 ## today, or today's step is a chalk-mark pickup. *(2026-09-11, the player: "the mark is
 ## findable now -- I don't think we need pointing for that. but the other tasks are not as easy
 ## and need pointing.")* A perform step's own contact already sits at the task, so this is
-## `contact_position()` read back, never a placement or a move of its own.
+## the same read-only destination as the red arrow where several places answer, and otherwise
+## `contact_position()` read back. The protest rank and arrow therefore never contradict each
+## other about which roadblock answers day 13.
 func pointable_objective() -> Vector2:
 	var step := current_step()
 	if step == null or step.is_pickup:
 		return Vector2.INF
-	return contact_position()
+	return red_arrow_target() if ResistanceSteps.answers_at_several_places(step) \
+			else contact_position()
 
 ## Where the red arrow should point, or `Vector2.INF` when nothing warrants one: no step today,
-## today's step is the mark rather than the task, or the task is one any instance answers (the
-## man shouting, a roadblock) — the two tasks that never earn an arrow. The last night's front
-## door is one place and has it from dawn, since the finale has no mark. *(PLAYTEST-117: "a red
-## arrow (like the blue home arrow but red) to point to tasks where we need to go to a specific
-## location ... unlike the yeller task where we can just go to any yeller".)* **And none once the
-## task is done**: the arrow is there until she has reached the place, and the world answers after
-## that (`docs/NARRATIVE.md`: "A finished task is shown by the world and never by text"), not a pointer back at where she
-## has just been.
+## today's step is the mark rather than the task, or the task is done. **Every task has one**
+## *(the player, playtest busy-quail: "yeah let's just always do arrows")*, the tasks several places
+## answer included — any man shouting, any roadblock, any of day 11's live masts. The last
+## night's front door has it from dawn, since the finale has no mark. *(PLAYTEST-117: "a red arrow
+## (like the blue home arrow but red) to point to tasks where we need to go to a specific
+## location".)* **And none once the task is done**: the arrow is there until she has reached the
+## place, and the world answers after that (`docs/NARRATIVE.md`: "A finished task is shown by the
+## world and never by text"), not a pointer back at where she has just been.
 ##
 ## **The tip ends on the item, where its contact stands** (`_shape_the_touch()`; *"No! Never
 ## besides the item!"*): the van and the neighbor themselves, the burnt building's door on its
 ## facade (`_ride_to_the_door()`; sandy-egret: "or better to the door"), the district door's
 ## chosen gatehouse, the mast's foot, the swing's base and the station's door on its facade —
 ## `contact_position()`, which every one of them is.
+##
+## **Where several places answer the task** (`ResistanceSteps.answers_at_several_places()`) the tip
+## is the one `retarget_the_arrow()` last chose, the closest on foot. **Asking is a read**: this
+## never chooses, never sweeps and never moves the contact, since `main.gd` asks it every frame and
+## a scene recipe's `arrowed` check and `_begin_step()`'s run-log line ask it too. So in the frame
+## between the chosen man shouting or roadblock going (finished, or freed as it streams out) and
+## `_process()` choosing again, it answers the contact's own position, which is always a place that
+## answers the task, and never a freed one's. On day 11 the contact moves with the arrow
+## (`_point_the_arrow_at()`), so the contact's position is the arrow's.
 func red_arrow_target() -> Vector2:
 	var step := current_step()
-	if step == null or step.is_pickup or not step.is_one_place or _contact.is_done:
+	if step == null or step.is_pickup or _contact.is_done:
 		return Vector2.INF
-	return contact_position()
+	if not ResistanceSteps.answers_at_several_places(step) \
+			or step.target_kind == ResistanceSteps.TargetKind.MAST:
+		return contact_position()
+	var at := _arrow_position()
+	return at if at != Vector2.INF else contact_position()
+
+## How often the arrow of a task several places answer is chosen again: twice a second. **A choice
+## is a lookup**: her tile read in two finished fields (`ArrowField`), plus a scan of the live
+## targets to see whether they are still the ones the fields were swept from. The sweeps behind the
+## fields run apart from it, a slice a frame (`ARROW_SWEEP_TILES_PER_FRAME`), and only when the
+## targets or what blocks her have changed. `tests/probes/plush_moose_arrow_cost.gd` measures both.
+const ARROW_RETARGET_SECONDS := 0.5
+## How many tiles of walking closer another target has to be, at least, before the arrow leaves
+## the one it points at — four tiles closer moves it, three do not — so it does not flicker between
+## two that are about as near as each other. *(Proposed, not asked for: plush-moose's entry.)*
+const ARROW_HOLD_TILES := 4
+## How many tiles of a sweep (`ArrowField.advance()`) one frame runs. A whole sweep of a city's
+## open ground at once is a long frame, so it is spread: at this size a slice is a small part of a
+## frame, and one field is done in about twenty frames, a third of a second at 60fps, while the
+## arrow reads the field it replaces. `tests/probes/plush_moose_arrow_cost.gd` measures the slice,
+## the tick and the whole sweep.
+const ARROW_SWEEP_TILES_PER_FRAME := 1000
+
+## What the red arrow points at right now, for a task several places answer: the instance id of a
+## man shouting or a roadblock (an id rather than the `EventInstance`, so a freed one is never
+## touched — `instance_from_id()` answers null for it), or the mast id of a mast. Null before the
+## task is placed.
+var _arrow_key: Variant = null
+var _arrow_clock := 0.0
+## The finished fields the arrow reads (`ArrowField`): `_arrow_nearest` swept from every target at
+## once, which says which is closest from any tile and how far; `_arrow_own` swept from the one the
+## arrow points at alone, which says how far that one is when another is closest — what the hold
+## compares. Null until the first of each finishes.
+var _arrow_nearest: ArrowField
+var _arrow_own: ArrowField
+## The sweeps under way that will replace them, or null when none is.
+var _arrow_nearest_next: ArrowField
+var _arrow_own_next: ArrowField
+## `_ground_for_the_arrow()`'s layout, and the state of what blocks her it was laid out for.
+var _arrow_ground := PackedInt32Array()
+var _arrow_ground_versions := Vector2i(-1, -1)
+
+## Clears every choice and field of the arrow: a new step, or the day's end.
+func _forget_the_arrow() -> void:
+	_arrow_key = null
+	_arrow_clock = 0.0
+	_arrow_nearest = null
+	_arrow_own = null
+	_arrow_nearest_next = null
+	_arrow_own_next = null
+	_arrow_ground = PackedInt32Array()
+
+## Where `_arrow_key` stands now, or `Vector2.INF` when nothing is chosen or it is gone: an instance
+## finished or freed, or a mast no longer the day's.
+func _arrow_position() -> Vector2:
+	if _arrow_key is int:
+		var found := instance_from_id(_arrow_key)
+		if is_instance_valid(found) and found is EventInstance \
+				and not (found as EventInstance).is_finished:
+			return (found as EventInstance).global_position
+	elif _arrow_key is String and _city and _city.events:
+		return _city.events.mast_foot(_arrow_key)
+	return Vector2.INF
+
+## The key of the target the contact itself is on: the mast it was sent to, or the instance it
+## rides. Null when it rides nothing.
+func _contact_key() -> Variant:
+	if _step and _step.target_kind == ResistanceSteps.TargetKind.MAST:
+		return _mast_id if _mast_id != "" else null
+	if _rider and is_instance_valid(_rider):
+		return _rider.get_instance_id()
+	return null
+
+## Whether two keys name the same target. Keys of one day are all ids or all mast ids, but a
+## comparison of an int with a String is an error rather than false, so the type is asked first.
+static func _same_key(a: Variant, b: Variant) -> bool:
+	return typeof(a) == typeof(b) and a == b
+
+## Every place that answers today's task, as `{key, at, reach, beat}` (`ArrowField.start()`): `reach`
+## is how far from `at` a touch counts, and `beat` the path a man shouting paces, so a tile beside
+## any of his beat is beside him.
+func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
+	var found: Array[Dictionary] = []
+	if not _city or not _city.events or not _map:
+		return found
+	if step.target_kind == ResistanceSteps.TargetKind.MAST:
+		var walled_alleys := _walled_alleys()
+		for plan in _city.events.plans():
+			if _mast_answers(plan, walled_alleys):
+				found.append({"key": plan.mast_id, "at": plan.position, "reach": _mast_reach(),
+						"beat": PackedVector2Array()})
+		return found
+	for instance in _city.events.instances():
+		if instance.def.id == step.task_event_id and not instance.is_finished:
+			found.append({"key": instance.get_instance_id(), "at": instance.global_position,
+					"reach": _reach_distance(instance),
+					"beat": instance.path if instance.def.paces else PackedVector2Array()})
+	return found
+
+## Whether `plan` is a mast that answers day 11's task: **any live mast does** *(the player, asked
+## whether only the mast near the mark and the one rigged onto her route should: "why limit
+## artificially to two arbitrary masts")* — the mast near the mark, the one rigged onto her route
+## and every other. Live means the same offer `_place_at_a_mast()` makes: a placed, unsilenced mast
+## off the home block whose foot has legal, unobstructed ground beside it that is reachable from
+## home, so the arrow never moves the task onto a mast she cannot touch.
+func _mast_answers(plan: EventScheduler.Planned, walled_alleys: Array[Rect2i]) -> bool:
+	if plan.mast_id == "" or plan.def.id != MAST_ROW or plan.silenced or not plan.is_placed():
+		return false
+	var foot := _map.world_to_tile(plan.position)
+	if _map.is_closed(foot) or _map.is_on_home_block(foot):
+		return false
+	for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		var tile := foot + side
+		if is_legal_ground(_map, tile, walled_alleys) and not _map.is_obstructed(tile) \
+				and _reachable_from_home(tile):
+			return true
+	return false
+
+## How far from a mast's foot a touch counts (`_shape_the_touch()`).
+static func _mast_reach() -> float:
+	return EventCatalogue.by_id(MAST_ROW).solid_reach() + Tuning.PLAYER_BODY_RADIUS \
+			+ ContactPoint.REACH
+
+## The ground every sweep of the arrow starts from (`ArrowField.advance()`): each tile
+## `ArrowField.UNREACHED`, or `ArrowField.BLOCKED` where she cannot walk right now — today's
+## closures (`CityMap.closed_tiles`, the fenced park's ground included), the soft seals shut to
+## walkers (`soft_sealed_tiles`) and the tile under every stationary solid body standing
+## (`obstructed_tiles`), which holds what was put down after dawn too: a body rigged onto her route,
+## the task's own rider, a roadblock put on her route after the mark. What that record leaves out
+## she walks through here as she does in the street: a mobile row, which moves out of her way, and a
+## door's own bodies, which let a walker through.
+##
+## **Read live, and laid out once for each state of them**: rebuilt the first time a sweep asks after
+## any of the three has changed (`CityMap.day_record_version`, `CityMap.obstruction_version`), and
+## copied whole by every sweep started under the same state. A sweep already finished keeps what
+## blocked her when it began; a change starts a new one (`retarget_the_arrow()`).
+func _ground_for_the_arrow() -> PackedInt32Array:
+	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
+	if versions == _arrow_ground_versions and not _arrow_ground.is_empty():
+		return _arrow_ground
+	_arrow_ground_versions = versions
+	var width := _map.size.x
+	var ground := PackedInt32Array()
+	ground.resize(width * _map.size.y)
+	ground.fill(ArrowField.UNREACHED)
+	# The authored scene's void is BUILDING to every live walking query. ArrowField reads the
+	# saved context's raw tile array for its inner loop, so put that same boundary into the ground
+	# it receives rather than letting the red arrow measure a route the player cannot walk.
+	if _map.stretch_active:
+		for y in _map.size.y:
+			for x in _map.size.x:
+				var tile := Vector2i(x, y)
+				if not _map.in_stretch(tile):
+					ground[y * width + x] = ArrowField.BLOCKED
+	for blocked: Dictionary in [_map.closed_tiles, _map.soft_sealed_tiles, _map.obstructed_tiles]:
+		for tile: Vector2i in blocked:
+			if _map.in_bounds(tile):
+				ground[tile.y * width + tile.x] = ArrowField.BLOCKED
+	_arrow_ground = ground
+	return _arrow_ground
+
+## Chooses the target the red arrow points at, for a task several places answer, by **walking
+## distance and never straight-line**: the closest on foot from where she stands, read at her tile
+## from the finished fields (`ArrowField`). It stays on the one it points at until another is at
+## least `ARROW_HOLD_TILES` closer, whether she is heading for that one or has walked on past the
+## task; it leaves at once a target that has gone or that she can no longer walk to. Before the
+## first sweep has finished it stays on the contact's own target (`_contact_key()`).
+##
+## Also starts a sweep wherever the targets, or what blocks her (`CityMap.day_record_version`,
+## `CityMap.obstruction_version`), are no longer what a field was swept for. Run by `_process()`
+## every `ARROW_RETARGET_SECONDS`, at once when the target has gone, and when a sweep finishes. On
+## day 11 the contact moves with the arrow, so the mast the arrow points at is the one a touch
+## silences.
+func retarget_the_arrow() -> void:
+	var step := current_step()
+	if not ResistanceSteps.answers_at_several_places(step):
+		return
+	var found := _arrow_candidates(step)
+	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
+	var newest := _arrow_nearest_next if _arrow_nearest_next else _arrow_nearest
+	if found.is_empty():
+		_arrow_nearest_next = null
+	elif not _swept_for(newest, found, versions):
+		_arrow_nearest_next = ArrowField.start(_map, found, versions)
+	var chosen: Variant = _choose_the_arrow(found)
+	if chosen == null:
+		if _arrow_position() == Vector2.INF:
+			_arrow_key = null
+		return
+	if not _same_key(chosen, _arrow_key):
+		for target in found:
+			if _same_key(target["key"], chosen):
+				_point_the_arrow_at(chosen, target["at"], step)
+	# The field of the one it points at, alone, for the hold.
+	var own_newest := _arrow_own_next if _arrow_own_next else _arrow_own
+	for target in found:
+		if _same_key(target["key"], _arrow_key):
+			var alone: Array[Dictionary] = [target]
+			if not _swept_for(own_newest, alone, versions):
+				_arrow_own_next = ArrowField.start(_map, alone, versions)
+
+## The key `retarget_the_arrow()` points the arrow at from `found`, or null to leave it: see there.
+func _choose_the_arrow(found: Array[Dictionary]) -> Variant:
+	if found.is_empty():
+		return null
+	var live := {}
+	for target in found:
+		live[target["key"]] = true
+	var current: Variant = _arrow_key if _arrow_key != null and live.has(_arrow_key) else null
+	var here := _player_position()
+	var nearest: Variant = null
+	var nearest_length := -1
+	var tile := _map.world_to_tile(here) if here != Vector2.INF else Vector2i(-1, -1)
+	if _arrow_nearest and here != Vector2.INF:
+		nearest = _arrow_nearest.nearest_at(tile)
+		if nearest != null and live.has(nearest):
+			nearest_length = _arrow_nearest.length_at(tile)
+		else:
+			nearest = null
+	if current == null:
+		if nearest != null:
+			return nearest
+		var own: Variant = _contact_key()
+		return own if own != null and live.has(own) else null
+	if nearest == null or _same_key(nearest, current):
+		return current
+	if not _arrow_own:
+		# The first choice of the task: there is nothing yet for the arrow to flicker away from.
+		return nearest
+	if not _same_key(_arrow_own.keys[0], current):
+		# How far the one it points at is has not been swept yet: it holds until it has.
+		return current
+	var current_length := _arrow_own.length_at(tile)
+	if current_length < 0:
+		return nearest
+	return nearest if nearest_length <= current_length - ARROW_HOLD_TILES else current
+
+## Whether `field` (finished or under way) was swept from exactly `found`, each standing where it
+## stood then (`ArrowField.anchor_of()`), under the blocking `versions` name.
+func _swept_for(field: ArrowField, found: Array[Dictionary], versions: Vector2i) -> bool:
+	if field == null or field.versions != versions or field.anchors.size() != found.size():
+		return false
+	for target in found:
+		var key: Variant = target["key"]
+		if not field.anchors.has(key) or field.anchors[key] != ArrowField.anchor_of(_map, target):
+			return false
+	return true
+
+## Runs `budget` tiles of the sweeps under way, the field of every target first, and chooses again
+## the moment one finishes. A frame that lays out the ground (`_ground_for_the_arrow()`) or a field
+## (`ArrowField.advance()`'s first call) does that alone.
+func _sweep_the_arrow_fields(budget: int) -> void:
+	if not _arrow_nearest_next and not _arrow_own_next:
+		return
+	# Laying out what blocks her afresh is a frame's work of its own, like a field's own layout.
+	if Vector2i(_map.day_record_version, _map.obstruction_version) != _arrow_ground_versions \
+			or _arrow_ground.is_empty():
+		_ground_for_the_arrow()
+		return
+	var finished := false
+	if _arrow_nearest_next:
+		budget -= _arrow_nearest_next.advance(_map, _ground_for_the_arrow(), budget)
+		if _arrow_nearest_next.done:
+			_arrow_nearest = _arrow_nearest_next
+			_arrow_nearest_next = null
+			finished = true
+	if _arrow_own_next and budget > 0:
+		_arrow_own_next.advance(_map, _ground_for_the_arrow(), budget)
+		if _arrow_own_next.done:
+			_arrow_own = _arrow_own_next
+			_arrow_own_next = null
+			finished = true
+	if finished:
+		retarget_the_arrow()
+
+## Runs every sweep to its end and chooses, all at once: what a rig with no frames to spread it over
+## asks for (`tests/test_resistance.gd`, the cost probe). Bounded, though a sweep finishing starts at
+## most the one field of whatever it chose.
+func _settle_the_arrow() -> void:
+	retarget_the_arrow()
+	for i in 16:
+		if not _arrow_nearest_next and not _arrow_own_next:
+			return
+		_sweep_the_arrow_fields(1 << 30)
+
+## Points the arrow at `key`, and a mast's contact with it.
+func _point_the_arrow_at(key: Variant, at: Vector2, step: ResistanceSteps.Step) -> void:
+	if not _same_key(key, _arrow_key) and _arrow_key != null:
+		Telemetry.note("contact", "step %d: the red arrow moves to a closer target on foot"
+				% step.index)
+	_arrow_key = key
+	if step.target_kind == ResistanceSteps.TargetKind.MAST and key is String \
+			and _contact and not _contact.is_done:
+		_mast_id = key
+		_contact.global_position = at
+
+## Day 11: a mast she is within touching reach of is the one a touch silences, however the arrow
+## last chose — the arrow is chosen twice a second, and she covers ground in that time.
+func _follow_her_between_masts() -> void:
+	var here := _player_position()
+	if here == Vector2.INF or not _city or not _city.events:
+		return
+	var reach := _mast_reach()
+	if _contact.global_position.distance_to(here) <= reach:
+		return
+	var walled_alleys := _walled_alleys()
+	for plan in _city.events.plans():
+		if plan.mast_id == _mast_id or plan.position.distance_to(here) > reach:
+			continue
+		if _mast_answers(plan, walled_alleys):
+			_point_the_arrow_at(plan.mast_id, plan.position, _step)
+			return

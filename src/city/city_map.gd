@@ -435,12 +435,21 @@ var obstructed_tiles := {}
 ## Which tiles each body put there, by the owner id it was recorded under. Kept so a body can give
 ## its own tiles back without a sweep of the whole record.
 var _obstruction_owners := {}
+## Bumped whenever a tile enters or leaves `obstructed_tiles` — a version, like
+## `day_record_version`, that a reader only compares with the one its own answer was built from.
+## Not bumped when a second body is counted onto a tile already standing (a planned body's live
+## instance recording the same footprint as it streams in), since the set of standing tiles is
+## unchanged. Kept apart from `day_record_version` so a body coming or going does not re-flood
+## `CrowdPockets`, which never reads this record. Read by `ResistanceDirector`'s red arrow, whose
+## walking distances go round every body standing (`ArrowField`).
+var obstruction_version := 0
 
 ## Clears today's solid bodies. Called once a day, beside `clear_day_holds()` — see
 ## `obstructed_tiles`.
 func clear_day_obstructions() -> void:
 	obstructed_tiles.clear()
 	_obstruction_owners.clear()
+	obstruction_version += 1
 
 ## Records one body's footprint under `owner`, an `Object.get_instance_id()` the caller can hand
 ## back later. Re-recording the same owner replaces its old footprint, so a body that moved or a
@@ -450,6 +459,8 @@ func obstruct_tiles(owner: int, tiles_covered: Array[Vector2i]) -> void:
 	if tiles_covered.is_empty():
 		return
 	for tile in tiles_covered:
+		if not obstructed_tiles.has(tile):
+			obstruction_version += 1
 		obstructed_tiles[tile] = int(obstructed_tiles.get(tile, 0)) + 1
 	_obstruction_owners[owner] = tiles_covered
 
@@ -465,6 +476,7 @@ func release_obstruction(owner: int) -> void:
 			obstructed_tiles[tile] = left
 		else:
 			obstructed_tiles.erase(tile)
+			obstruction_version += 1
 	_obstruction_owners.erase(owner)
 
 ## Whether a stationary solid body is standing on a tile today.
@@ -1192,6 +1204,12 @@ const BLOCKED := -2
 ## rather than by call. `Tile.is_walkable` stays the one place that decides it.
 static var _WALKABLE: PackedByteArray = _lut(Tile.is_walkable)
 static var _CALM: PackedByteArray = _lut(Tile.is_calm)
+
+## `Tile.is_walkable` as a table indexed by tile type, for a sweep over `tiles` outside this file
+## (`ArrowField`, the red arrow's walking distances) that wants the same answer
+## `walk_field_from()` reads without a function call per neighbour.
+static func walkable_by_type() -> PackedByteArray:
+	return _WALKABLE
 
 ## Sized by the largest value rather than by the count of them, so an enum that later gains an
 ## explicit value cannot quietly index past the end or read a gap as "no".

@@ -17,6 +17,7 @@ func run(t) -> void:
 	var map: CityMap = built.map
 	var witness: CityMap = RecipeCityBuilder.build(SceneRecipeDraft.base_of(data)).map
 	_test_the_stretch_is_the_only_ground(t, map, witness)
+	_test_the_arrow_stays_on_the_stretch(t, map)
 	_test_saved_layout_is_independent(t, data)
 	_test_the_schema(t, data)
 	_test_the_crowd_enters_at_the_ends(t, map)
@@ -77,6 +78,44 @@ func _test_the_stretch_is_the_only_ground(t, map: CityMap, witness: CityMap) -> 
 	map.restore_edges(edges)
 	t.check(map.stretch_active and map.tile_at(outside) == GameEnums.TileType.BUILDING,
 			"and the void is back once it is done")
+
+func _test_the_arrow_stays_on_the_stretch(t, _map: CityMap) -> void:
+	# A U-shaped authored street: from the left tip, target A is five tiles along the visible
+	# ground. Target B is twelve tiles along it, but only four through the hidden context between
+	# the two tips. A raw-context sweep therefore picks B; the scene's real walk must pick A.
+	var map := CityMap.new(Vector2i(5, 5))
+	map.tiles.fill(GameEnums.TileType.SIDEWALK)
+	map.stretch.resize(map.tiles.size())
+	map.stretch.fill(0)
+	for y in map.size.y:
+		for x in map.size.x:
+			if x == 0 or x == map.size.x - 1 or y == map.size.y - 1:
+				map.stretch[y * map.size.x + x] = 1
+	map.stretch_active = true
+	var targets: Array[Dictionary] = [
+		{"key":"near_on_stretch", "at":map.tile_to_world(Vector2i(1, 4)),
+				"reach":0.0, "beat":PackedVector2Array()},
+		{"key":"near_through_void", "at":map.tile_to_world(Vector2i(4, 0)),
+				"reach":0.0, "beat":PackedVector2Array()}
+	]
+	var raw_ground := PackedInt32Array()
+	raw_ground.resize(map.tiles.size())
+	raw_ground.fill(ArrowField.UNREACHED)
+	var raw := ArrowField.start(map, targets, Vector2i.ZERO)
+	while not raw.done:
+		raw.advance(map, raw_ground, map.tiles.size())
+	var director := ResistanceDirector.new()
+	director._map = map
+	var ground := director._ground_for_the_arrow()
+	var authored := ArrowField.start(map, targets, Vector2i.ZERO)
+	while not authored.done:
+		authored.advance(map, ground, map.tiles.size())
+	var start := Vector2i(0, 0)
+	t.check(raw.nearest_at(start) == "near_through_void",
+			"the counterexample's raw context chooses the target across its hidden shortcut")
+	t.check(authored.nearest_at(start) == "near_on_stretch",
+			"the task arrow chooses the target actually nearer along the authored U-shaped street")
+	director.free()
 
 func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
 	var original := RecipeCityBuilder.build(data)

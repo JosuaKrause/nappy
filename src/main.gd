@@ -2407,8 +2407,10 @@ func _process(delta: float) -> void:
 	_hud.set_home_guidance(_day.phase == GameEnums.DayPhase.RETURNING,
 			_city.map.home_world_position())
 	# The red arrow: `ResistanceDirector.red_arrow_target()` is the one place that decides
-	# whether today's task is a one-place task with its mark already touched, so this is only
-	# ever a read of it, never a placement or a move of its own. `_resistance` can be null here —
+	# whether today's task is on offer with its mark already touched, and which of the places
+	# that answer it the arrow points at, so this is only ever a read of it, never a placement
+	# or a move of its own — and asking it is a read too: the director chooses in its own
+	# `_process()`. `_resistance` can be null here —
 	# several `tests/test_main.gd` rigs drive `_process()` with a script-only `main` that never
 	# builds one, the same reason `_dev_rig` and `_frame_graph` are checked below rather than
 	# assumed.

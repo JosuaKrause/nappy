@@ -46,7 +46,7 @@
       {"tick":1,"subject":"player","condition":"beyond","at":"mark","distance":150},
       {"tick":60,"subject":"mark","condition":"done"},
       {"tick":60,"subject":"task","condition":"offered"},
-      {"tick":60,"subject":"task","condition":"unarrowed"},
+      {"tick":60,"subject":"task","condition":"arrowed"},
       {"tick":60,"subject":"task","condition":"off_screen"},
       {"tick":60,"subject":"task","condition":"beyond","at":"mark","distance":540},
       {"tick":60,"subject":"task","condition":"near","at":"mark","distance":644},
