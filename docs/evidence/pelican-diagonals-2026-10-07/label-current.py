@@ -8,7 +8,10 @@ from PIL import Image, ImageDraw
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("raster_directory", type=Path)
 parser.add_argument("output_directory", type=Path)
+parser.add_argument("--candidate", type=int, default=2)
 args = parser.parse_args()
+if args.candidate < 1:
+    parser.error("candidate must be positive")
 for scale in (1, 6):
     picture = Image.open(args.raster_directory / f"current-{scale}x.png").convert("RGBA")
     draw = ImageDraw.Draw(picture)
@@ -19,4 +22,4 @@ for scale in (1, 6):
             phase = "A" if column % 2 == 0 else "B"
             label = f"{directions[column // 2]} {phase}"
             draw.text((column * cell_width + 4, row * cell_height + 3), label, fill="#221f28")
-    picture.save(args.output_directory / f"candidate-2-{scale}x.png")
+    picture.save(args.output_directory / f"candidate-{args.candidate}-{scale}x.png")
