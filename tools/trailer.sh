@@ -1198,7 +1198,10 @@ case "$MODE" in
         source_signature="$(audition_source_signature)"
         reuse_base=false
         if [[ -f "$OUT_DIR/source/base.mkv" && -f "$OUT_DIR/source/base-settings.json" ]] \
-                && [[ "$(jq -r '.source_signature // ""' "$OUT_DIR/source/base-settings.json")" == "$source_signature" ]]; then
+                && jq -e --arg signature "$source_signature" \
+                    '(.source_signature // "") == $signature or
+                     any(.compatible_source_signatures[]?; . == $signature)' \
+                    "$OUT_DIR/source/base-settings.json" >/dev/null; then
             reuse_base=true
             echo "reusing the matching retained clean game-audio base" >&2
         fi
@@ -1223,8 +1226,12 @@ case "$MODE" in
             jq -n --arg source_signature "$source_signature" \
                 --arg sha256 "$(shasum -a 256 < "$OUT_DIR/source/base.mkv" | awk '{print $1}')" \
                 --arg shots_sha256 "$(shasum -a 256 < "$SHOTS_FILE" | awk '{print $1}')" \
+                --arg capture_revision "$(git -C "$PROJECT_DIR" rev-parse HEAD)" \
+                --arg capture_tree "$(git -C "$PROJECT_DIR" rev-parse HEAD^{tree})" \
                 --argjson duration "$total_seconds" --argjson fps "$FPS" \
                 '{source_signature:$source_signature,sha256:$sha256,shots_sha256:$shots_sha256,
+                  capture_revision:$capture_revision,capture_tree:$capture_tree,
+                  compatible_source_signatures:[],compatibility_transitions:[],
                   duration_seconds:$duration,fps:$fps,audio:"captured game audio, PCM s16le",
                   video:"shared H.264 picture used unchanged by every audition"}' \
                 > "$OUT_DIR/source/base-settings.json"
