@@ -6,6 +6,7 @@
 #   tools/trailer.sh --check choice   # render it twice and compare every frame's hash
 #   tools/trailer.sh --check all      # the same for every shot
 #   tools/trailer.sh --auditions      # one clean capture, then three score mixes
+#   tools/trailer.sh --selected       # capture tracked scenes and build the selected final mix
 #   tools/trailer.sh --selected-reuse # replace changed shots in the retained base, then final mix
 #   tools/trailer.sh --selected-remix # replace editorial cards in that selected base; never recapture
 #   tools/trailer.sh --list           # print the shot list and render nothing
@@ -54,7 +55,7 @@ source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 
 usage() {
     cat <<EOF
-usage: tools/trailer.sh [--help|-h] [--list | --validate | --auditions | --auditions-reuse | --selected-reuse | --selected-remix | --shot NAME | --check NAME|all | --check-load NAME|all]
+usage: tools/trailer.sh [--help|-h] [--list | --validate | --auditions | --auditions-reuse | --selected | --selected-reuse | --selected-remix | --shot NAME | --check NAME|all | --check-load NAME|all]
 
 Renders the trailer from tools/trailer/shots.json: gameplay shots through Godot's movie writer,
 frame-locked, at the game's own resolution with its audio; editorial cards and the deterministic
@@ -66,7 +67,9 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
                    TRAILER_OUT; a matching retained base is reused on later score-only runs
   --auditions-reuse  build the three mixes only when a compatible retained base exists; refuse
                      a mismatch without opening a recording window
-  --selected-reuse  render only the changed hook and dog shots, replace those intervals in the
+  --selected        capture every tracked scene and build the chosen Glass Alarm composition,
+                    including additive bass and ending; requires no retained historical movies
+  --selected-reuse  render the changed hook, dog and title, replace those intervals in the
                     exact retained audition base, and build the selected Glass Alarm cut
   --selected-remix  render the hook and unfaded title in the exact prior selected base,
                     and rebuild the selected mix; refuse a mismatch rather than recapture
@@ -95,7 +98,7 @@ the recorded engine, assets, ffmpeg/font, and settings named by the retained man
 
   tools/trailer.sh --shot choice
 
-Opens a window for each gameplay shot. Needs jq, ffmpeg and fc-match on PATH, uv for auditions,
+Opens a window for each gameplay shot. Needs jq, ffmpeg and fc-match on PATH, uv for synthesized scores,
 and Godot 4.7 at \$GODOT.
 EOF
 }
@@ -105,7 +108,7 @@ TARGET=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --help|-h) usage; exit 0 ;;
-        --list|--validate|--auditions|--auditions-reuse|--selected-reuse|--selected-remix)
+        --list|--validate|--auditions|--auditions-reuse|--selected|--selected-reuse|--selected-remix)
             [[ "$MODE" == "all" ]] || { echo "$1 cannot be combined with --$MODE" >&2; usage >&2; exit 1; }
             MODE="${1#--}"; shift ;;
         --shot|--check|--check-load)
@@ -129,16 +132,16 @@ if [[ ! -f "$SHOTS_FILE" ]]; then
     echo "trailer.sh: no shot list at ${SHOTS_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse || "$MODE" == selected-remix ]] && [[ ! -f "$SCORES_FILE" ]]; then
-    echo "trailer.sh: no audition score list at ${SCORES_FILE#"$PROJECT_DIR"/}" >&2
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected* ]] && [[ ! -f "$SCORES_FILE" ]]; then
+    echo "trailer.sh: no score list at ${SCORES_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
-if [[ ( "$MODE" == selected-reuse || "$MODE" == selected-remix ) && ! -f "$FINAL_SCORE_FILE" ]]; then
+if [[ "$MODE" == selected* && ! -f "$FINAL_SCORE_FILE" ]]; then
     echo "trailer.sh: no selected score at ${FINAL_SCORE_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse || "$MODE" == selected-remix ]] && ! command -v uv >/dev/null 2>&1; then
-    echo "trailer.sh: uv not found on PATH; score auditions use the project Python environment" >&2
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected* ]] && ! command -v uv >/dev/null 2>&1; then
+    echo "trailer.sh: uv not found on PATH; synthesized scores use the project Python environment" >&2
     exit 127
 fi
 
@@ -236,7 +239,7 @@ if [[ -n "$schema_errors" ]]; then
     exit 1
 fi
 
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse || "$MODE" == selected-remix ]]; then
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected* ]]; then
     score_errors="$(jq -r '
         def num: type == "number";
         (if (keys - ["game_gain","target_mean_db","peak_ceiling_db","options"] | length) == 0
@@ -277,17 +280,17 @@ if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-
     fi
 fi
 
-if [[ "$MODE" == selected-reuse || "$MODE" == selected-remix ]]; then
+if [[ "$MODE" == selected* ]]; then
     final_score_errors="$(jq -r '
         def num: type == "number";
         (if (keys - ["version","base_option","output","source_base","source_settings",
-            "source_base_sha256","remix_base","remix_base_sha256","base_score_sha256",
+            "source_base_sha256","remix_base","remix_base_sha256","base_score_sha256","base_score_pcm_sha256",
             "bass_target_mean_db","bass_peak_ceiling_db","bass_events",
             "ending_target_mean_db","ending_peak_ceiling_db","ending_events"] | length) == 0 then empty
             else "unknown selected-score field" end),
         (if .version == 1 then empty else "version must be 1" end),
         (if all([.base_option,.output,.source_base,.source_settings,.source_base_sha256,
-            .remix_base,.remix_base_sha256,.base_score_sha256][]; type == "string" and length > 0) then empty
+            .remix_base,.remix_base_sha256,.base_score_sha256,.base_score_pcm_sha256][]; type == "string" and length > 0) then empty
             else "selected score paths, ids and hashes are required" end),
         (if (.output | test("^[a-z0-9-]+\\.mp4$")) and
             (.source_base | test("^[a-z0-9/_-]+\\.mkv$")) and
@@ -370,7 +373,7 @@ total_seconds="$(jq -r '[.shots[] | (.gap // 0) + .length] | add' "$SHOTS_FILE" 
     awk '{ printf "%.2f\n", $1 }')"
 RESOLVED_SCORES=""
 RESOLVED_FINAL=""
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-reuse || "$MODE" == selected-remix ]]; then
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected* ]]; then
     RESOLVED_SCORES="$(jq -n --slurpfile cut "$SHOTS_FILE" --slurpfile scores "$SCORES_FILE" '
         (reduce $cut[0].shots[] as $shot ({elapsed:0,starts:{}};
             .starts[$shot.name] = (.elapsed + ($shot.gap // 0)) |
@@ -391,7 +394,7 @@ if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected-
         exit 1
     fi
 fi
-if [[ "$MODE" == selected-reuse || "$MODE" == selected-remix ]]; then
+if [[ "$MODE" == selected* ]]; then
     RESOLVED_FINAL="$(jq -n --slurpfile cut "$SHOTS_FILE" --slurpfile final "$FINAL_SCORE_FILE" '
         (reduce $cut[0].shots[] as $shot ({elapsed:0,starts:{},parts:{}};
             .parts[$shot.name] = {start:.elapsed,end:(.elapsed + ($shot.gap // 0) + $shot.length)} |
@@ -940,20 +943,42 @@ alimiter=limit=0.92[a]" \
     fi
 }
 
-# Joins one shared picture-and-game-audio source for score auditions. PCM keeps the retained game
+# Joins a picture-and-game-audio source for selected renders or auditions. PCM keeps the game
 # stem clean; every option below copies this exact video stream and changes only the final audio.
 join_clean_base() {
+    local output="$1"
+    shift
     local inputs=() streams="" i=0
     for f in "$@"; do
         inputs+=(-i "$f")
         streams+="[$i:v][$i:a]"
         i=$(( i + 1 ))
     done
-    mkdir -p "$OUT_DIR/source"
+    mkdir -p "$(dirname "$output")"
     ffmpeg -hide_banner -loglevel error -y "${inputs[@]}" \
         -filter_complex "${streams}concat=n=${i}:v=1:a=1[v][a]" \
         -map "[v]" -map "[a]" -r "$FPS" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
-        -c:a pcm_s16le "$OUT_DIR/source/base.mkv"
+        -c:a pcm_s16le "$output"
+}
+
+# Every full composition uses the same capture/card path. The caller chooses its mixer.
+render_parts() {
+    local name part i=0
+    encoded=()
+    for name in "${SHOT_NAMES[@]}"; do
+        part="$(printf '%s/%02d.mkv' "$WORK" "$i")"
+        if [[ "$(shot_kind "$name")" == card ]]; then
+            encode_card "$name" "$part"
+        else
+            render_frames "$name" "$WORK/frames"
+            movie_evidence "$WORK/frames" "$OUT_DIR/evidence/$name" "$FPS" "$name"
+            write_cut_entry_evidence "$name" "$WORK/frames"
+            encode_shot "$name" "$WORK/frames" "$part"
+            rm -rf "$WORK/frames"
+        fi
+        encoded+=("$part")
+        i=$(( i + 1 ))
+    done
 }
 
 # Hash only inputs that can alter the retained picture/game-audio base. Score-only edits therefore
@@ -1078,7 +1103,7 @@ build_selected_mix() {
     local resolved_scores="$final_dir/resolved-scores.json"
     local resolved_final="$final_dir/resolved-final-score.json"
     local selected raw score check_raw check_score bass_raw bass bass_check_raw bass_check
-    local ending_raw ending ending_check_raw ending_check manifest provenance mixed_audio
+    local ending_raw ending ending_check_raw ending_check manifest provenance mixed_audio retained_provenance='{}'
     local game_gain output score_mean score_peak bass_mean bass_peak ending_mean ending_peak mix_mean mix_peak
     mkdir -p "$final_dir"
     printf '%s\n' "$RESOLVED_SCORES" > "$resolved_scores"
@@ -1104,8 +1129,12 @@ build_selected_mix() {
         echo "trailer.sh: selected score, additive bass or ending did not rebuild to identical bytes" >&2
         return 1
     fi
-    if [[ "$(shasum -a 256 < "$score" | awk '{print $1}')" != "$(jq -r '.base_score_sha256' "$FINAL_SCORE_FILE")" ]]; then
-        echo "trailer.sh: rebuilt Glass Alarm differs from the score the player selected" >&2
+    # WAV files carry the host's FFmpeg encoder tag. Pin the selected samples themselves so
+    # a fresh host may change that tag, but never one sample of the selected composition.
+    local score_pcm_sha
+    score_pcm_sha="$(ffmpeg -hide_banner -nostdin -loglevel error -i "$score" -map 0:a:0 -f s16le - | shasum -a 256 | awk '{print $1}')"
+    if [[ "$score_pcm_sha" != "$(jq -r '.base_score_pcm_sha256' "$FINAL_SCORE_FILE")" ]]; then
+        echo "trailer.sh: rebuilt Glass Alarm PCM differs from the score the player selected" >&2
         return 1
     fi
     game_gain="$(jq -r '.game_gain' <<< "$RESOLVED_SCORES")"
@@ -1128,7 +1157,15 @@ alimiter=limit=0.92[a]" \
             "mix mean:$mix_mean" "mix peak:$mix_peak"; do
         require_finite_level "${pair%%:*}" "${pair#*:}" || return 1
     done
-    if [[ "$MODE" == selected-remix ]]; then
+    if [[ "$MODE" == selected ]]; then
+        provenance="$(jq -n --arg revision "$(git -C "$PROJECT_DIR" rev-parse HEAD)" \
+            --arg tree "$(git -C "$PROJECT_DIR" rev-parse HEAD^{tree})" \
+            --arg shots_sha256 "$(shasum -a 256 < "$SHOTS_FILE" | awk '{print $1}')" \
+            --slurpfile shots "$SHOTS_FILE" \
+            '{fresh_capture:{capture_revision:$revision,capture_tree:$tree,shots_sha256:$shots_sha256,
+              scenes:[$shots[0].shots[] | select((.kind // "scene") == "scene") |
+                {shot:.name,recipe:.recipe,evidence:("evidence/" + .name)}]}}')"
+    elif [[ "$MODE" == selected-remix ]]; then
         provenance="$(jq -n \
             --arg source "$(jq -r '.remix_base' "$FINAL_SCORE_FILE")" \
             --arg source_sha "$(jq -r '.remix_base_sha256' "$FINAL_SCORE_FILE")" \
@@ -1152,41 +1189,47 @@ alimiter=limit=0.92[a]" \
                 dog:{interval:$intervals.dog,sha256:$dog_sha},
                 title:{interval:$intervals.title,sha256:$title_sha}}}')"
     fi
+    if [[ "$MODE" != selected ]]; then
+        retained_provenance="$(jq -n \
+            --arg file "$(jq -r '.source_base' "$FINAL_SCORE_FILE")" \
+            --arg sha256 "$(jq -r '.source_base_sha256' "$FINAL_SCORE_FILE")" \
+            --arg revision "$(jq -r '.capture_revision' "$OUT_DIR/$(jq -r '.source_settings' "$FINAL_SCORE_FILE")")" \
+            --argjson intervals "$(jq '.replacement_intervals' <<< "$RESOLVED_FINAL")" \
+            --argjson duration "$total_seconds" \
+            '{retained_base:{file:$file,sha256:$sha256,capture_revision:$revision,
+              reused_intervals:[{start:$intervals.hook.end,end:$intervals.dog.start},
+                {start:$intervals.title.end,end:$duration}]}}')"
+    fi
     manifest="${output%.mp4}.json"
     jq -n --arg output "$(basename "$output")" \
         --arg output_sha256 "$(shasum -a 256 < "$output" | awk '{print $1}')" \
         --arg selected_base "$FINAL_SOURCE_REL/selected-base.mkv" \
         --arg selected_base_sha256 "$(shasum -a 256 < "$base" | awk '{print $1}')" \
-        --arg retained_base "$(jq -r '.source_base' "$FINAL_SCORE_FILE")" \
-        --arg retained_base_sha256 "$(jq -r '.source_base_sha256' "$FINAL_SCORE_FILE")" \
-        --arg retained_capture_revision "$(jq -r '.capture_revision' "$OUT_DIR/$(jq -r '.source_settings' "$FINAL_SCORE_FILE")")" \
         --arg score_sha256 "$(shasum -a 256 < "$score" | awk '{print $1}')" \
+        --arg score_pcm_sha256 "$score_pcm_sha" \
         --arg bass_sha256 "$(shasum -a 256 < "$bass" | awk '{print $1}')" \
         --arg ending_sha256 "$(shasum -a 256 < "$ending" | awk '{print $1}')" \
         --arg revision "$(git -C "$PROJECT_DIR" rev-parse HEAD)" \
         --arg tree "$(git -C "$PROJECT_DIR" rev-parse HEAD^{tree})" \
-        --argjson duration "$total_seconds" --argjson intervals "$(jq '.replacement_intervals' <<< "$RESOLVED_FINAL")" \
+        --argjson duration "$total_seconds" \
         --argjson bass_cues "$(jq '.options[0].events' <<< "$RESOLVED_FINAL")" \
         --argjson ending_cues "$(jq '.options[1].events' <<< "$RESOLVED_FINAL")" \
         --argjson provenance "$provenance" \
+        --argjson retained_provenance "$retained_provenance" \
         --argjson score_mean_db "${score_mean%dB}" --argjson score_peak_db "${score_peak%dB}" \
         --argjson bass_mean_db "${bass_mean%dB}" --argjson bass_peak_db "${bass_peak%dB}" \
         --argjson ending_mean_db "${ending_mean%dB}" --argjson ending_peak_db "${ending_peak%dB}" \
         --argjson mix_mean_db "${mix_mean%dB}" --argjson mix_peak_db "${mix_peak%dB}" \
         '{output:$output,output_sha256:$output_sha256,duration_seconds:$duration,
           assembly_revision:$revision,assembly_tree:$tree,
-          retained_base:{file:$retained_base,sha256:$retained_base_sha256,
-            capture_revision:$retained_capture_revision,
-            reused_intervals:[{start:$intervals.hook.end,end:$intervals.dog.start},
-              {start:$intervals.title.end,end:$duration}]},
           selected_base:{file:$selected_base,sha256:$selected_base_sha256,
             audio:"PCM game audio padded with silence to the picture duration before score mixing"},
-          score:{name:"Glass Alarm",sha256:$score_sha256,mean_db:$score_mean_db,peak_db:$score_peak_db,
-            preservation:"rebuilt byte-identically to the selected audition before bass was added"},
+          score:{name:"Glass Alarm",sha256:$score_sha256,pcm_sha256:$score_pcm_sha256,mean_db:$score_mean_db,peak_db:$score_peak_db,
+            preservation:"PCM samples rebuilt byte-identically to the selected audition before bass was added; WAV encoder tags may vary"},
           additive_bass:{sha256:$bass_sha256,mean_db:$bass_mean_db,peak_db:$bass_peak_db,cues:$bass_cues},
           additive_ending:{sha256:$ending_sha256,mean_db:$ending_mean_db,peak_db:$ending_peak_db,cues:$ending_cues,
             preservation:"the selected Glass Alarm file remains byte-identical; this matching dyad is a separate layer"},
-          final_mix:{mean_db:$mix_mean_db,peak_db:$mix_peak_db,limiter:0.92}} + $provenance' \
+          final_mix:{mean_db:$mix_mean_db,peak_db:$mix_peak_db,limiter:0.92}} + $provenance + $retained_provenance' \
         > "$manifest"
 }
 
@@ -1445,13 +1488,14 @@ write_editorial_settings() {
         --arg ffmpeg "$ffmpeg_version" --arg font_family "$FONT_FAMILY" --arg font "$FONT_FILE" \
         --arg font_sha256 "$font_sha" --arg shots_sha256 "$shots_sha" \
         --arg card_asset "$card_asset" --arg card_asset_sha256 "$card_asset_sha" \
+        --arg score "${1:-deterministic oscillator notes from tools/trailer/shots.json}" \
         --argjson fps "$FPS" --argjson width "$WIDTH" --argjson height "$HEIGHT" \
         --argjson duration "$total_seconds" \
         '{revision:$revision,tracked_tree:$tree,working_diff_sha256:$dirty,ffmpeg:$ffmpeg,
           font_family:$font_family,font:$font,font_sha256:$font_sha256,shots_sha256:$shots_sha256,
           card_asset:$card_asset,card_asset_sha256:$card_asset_sha256,
           fps:$fps,width:$width,height:$height,duration_seconds:$duration,
-          score:"deterministic oscillator notes from tools/trailer/shots.json"}' \
+          score:$score}' \
         > "$OUT_DIR/editorial-settings.json"
 }
 
@@ -1496,6 +1540,13 @@ case "$MODE" in
         fi
         join_shots false "$WORK/00.mkv"
         echo "wrote ${OUTPUT#"$PROJECT_DIR"/}"
+        ;;
+    selected)
+        render_parts
+        join_clean_base "$OUT_DIR/$FINAL_SOURCE_REL/selected-base.mkv" "${encoded[@]}"
+        build_selected_mix "$OUT_DIR/$FINAL_SOURCE_REL/selected-base.mkv"
+        write_editorial_settings "selected Glass Alarm, additive bass and closing dyad from tools/trailer/final-score.json"
+        echo "wrote ${OUT_DIR#"$PROJECT_DIR"/}/$(jq -r '.output' "$FINAL_SCORE_FILE") from the tracked scene recipes and selected composition"
         ;;
     selected-reuse)
         retained_base="$OUT_DIR/$(jq -r '.source_base' "$FINAL_SCORE_FILE")"
@@ -1564,23 +1615,8 @@ case "$MODE" in
                 echo "trailer.sh: retained clean audition base is absent or incompatible; refusing to recapture in --auditions-reuse mode" >&2
                 exit 1
             fi
-            encoded=()
-            i=0
-            for name in "${SHOT_NAMES[@]}"; do
-                part="$(printf '%s/%02d.mkv' "$WORK" "$i")"
-                if [[ "$(shot_kind "$name")" == card ]]; then
-                    encode_card "$name" "$part"
-                else
-                    render_frames "$name" "$WORK/frames"
-                    movie_evidence "$WORK/frames" "$OUT_DIR/evidence/$name" "$FPS" "$name"
-                    write_cut_entry_evidence "$name" "$WORK/frames"
-                    encode_shot "$name" "$WORK/frames" "$part"
-                    rm -rf "$WORK/frames"
-                fi
-                encoded+=("$part")
-                i=$(( i + 1 ))
-            done
-            join_clean_base "${encoded[@]}"
+            render_parts
+            join_clean_base "$OUT_DIR/source/base.mkv" "${encoded[@]}"
             jq -n --arg source_signature "$source_signature" \
                 --arg sha256 "$(shasum -a 256 < "$OUT_DIR/source/base.mkv" | awk '{print $1}')" \
                 --arg shots_sha256 "$(shasum -a 256 < "$SHOTS_FILE" | awk '{print $1}')" \
@@ -1599,22 +1635,7 @@ case "$MODE" in
         ;;
     all)
         OUTPUT="$OUT_DIR/trailer.mp4"
-        encoded=()
-        i=0
-        for name in "${SHOT_NAMES[@]}"; do
-            part="$(printf '%s/%02d.mkv' "$WORK" "$i")"
-            if [[ "$(shot_kind "$name")" == card ]]; then
-                encode_card "$name" "$part"
-            else
-                render_frames "$name" "$WORK/frames"
-                movie_evidence "$WORK/frames" "$OUT_DIR/evidence/$name" "$FPS" "$name"
-                write_cut_entry_evidence "$name" "$WORK/frames"
-                encode_shot "$name" "$WORK/frames" "$part"
-                rm -rf "$WORK/frames"
-            fi
-            encoded+=("$part")
-            i=$(( i + 1 ))
-        done
+        render_parts
         join_shots true "${encoded[@]}"
         write_editorial_settings
         echo "wrote ${OUTPUT#"$PROJECT_DIR"/} (${total_seconds}s, ${#SHOT_NAMES[@]} shots)"

@@ -8,6 +8,7 @@
   "remix_base": "experiments/final/source/selected-base.mkv",
   "remix_base_sha256": "af4a335de30508996b2c9c6e419cd9866938f4a5428cb00f3599fa345c5f7ff9",
   "base_score_sha256": "1fae037952f28b051176fe8cb7443f68eb5532ea3238d37018cc150a0f1f5e40",
+  "base_score_pcm_sha256": "6c286aa0f7d6a5387e596d7ad5e2072b993637b14cf446eb823e8ff7fc686430",
   "bass_target_mean_db": -31.0,
   "bass_peak_ceiling_db": -12.0,
   "ending_target_mean_db": -35.0,

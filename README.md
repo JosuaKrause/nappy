@@ -88,8 +88,13 @@ and deterministic oscillator score before joining them with the captured game au
 `tools/trailer.sh --list` to inspect the cut, `--validate` to check its recipes headlessly,
 `--shot choice` to record one scene, or `--auditions` to capture one clean game-audio base and
 build the three original scores in `tools/trailer/scores.json` against that same picture. A later
-score-only audition run reuses the matching retained base. After a score is selected,
-`--selected-reuse` reads `tools/trailer/final-score.json`, refuses any retained-base mismatch,
+score-only audition run reuses the matching retained base. To build the selected full composition
+from a fresh checkout, run `TRAILER_OUT=build/trailer/fresh tools/trailer.sh --selected`.
+It captures the tracked scenes, builds Glass Alarm with additive bass and the closing dyad from
+`tools/trailer/final-score.json`, and records fresh capture and editorial provenance. No historical
+movie or ignored build artifact is required. The selected score's PCM sample hash is checked;
+host-specific WAV encoder tags may differ. The unflagged command retains the shot list's draft score.
+When compatible historical footage is available, `--selected-reuse` refuses any retained-base mismatch,
 renders the hook, dog and title replacements named by that final composition, and layers its
 additive event cues over the byte-identical selected score. `--selected-remix` reuses the
 verified selected base and rebuilds only the editorial cards and audio, with no gameplay capture.
