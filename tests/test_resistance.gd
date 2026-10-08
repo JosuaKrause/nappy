@@ -963,9 +963,12 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t) -> void:
 			var director := _director(t)
 			director.start_day(6, _rng(6, "resistance"), 300.0)
 			var mark_at := director.contact_position()
-			# The mark down and to her left, inside the left corner's rectangle and within reach.
-			var her := mark_at + Vector2(180.0, -45.0)
-			var view := VisibleView.around(her, joystick)
+			# Camera look-ahead puts this nearby mark beneath the narrower focal-disc corner.
+			# Keep her within the 150px notice distance independently of the camera centre.
+			var her := mark_at + Vector2(135.0, -50.0)
+			var view := VisibleView.around(her + Vector2(45.0, 0.0), joystick)
+			t.check(view.sees(mark_at) != joystick,
+					"the actual camera view covers the mark only in joystick mode")
 			director.set_sight(view.sees)
 			var player := _rig_player(t, her)
 			for i in ceili((ResistanceDirector.SEEN_DWELL_SECONDS + 0.5) / STEP):
