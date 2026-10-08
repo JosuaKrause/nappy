@@ -905,7 +905,7 @@ join_shots() {
 [gamea]volume=${game_gain},apad,atrim=duration=${total_seconds}[gamebed];\
 [${score_index}:a]aformat=sample_rates=48000:channel_layouts=stereo[score];\
 [gamebed][score]amix=inputs=2:duration=longest:normalize=0,\
-alimiter=limit=0.92:latency=1,atrim=duration=${total_seconds}[a]" \
+alimiter=limit=0.92,atrim=duration=${total_seconds}[a]" \
             -map "[joinedv]" -map "[a]" -r "$FPS" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
             -c:a aac -b:a 192k -movflags +faststart "$OUTPUT"
     else
@@ -1084,7 +1084,7 @@ build_selected_mix() {
 [2:a]aformat=sample_rates=48000:channel_layouts=stereo[bass];\
 [3:a]aformat=sample_rates=48000:channel_layouts=stereo[ending];\
 [game][glass][bass][ending]amix=inputs=4:duration=longest:normalize=0,\
-alimiter=limit=0.92:latency=1,atrim=duration=${total_seconds}[a]" \
+alimiter=limit=0.92,atrim=duration=${total_seconds}[a]" \
         -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -movflags +faststart "$output"
     score_mean="$(volume_stat "$score" mean_volume)"; score_peak="$(volume_stat "$score" max_volume)"
     bass_mean="$(volume_stat "$bass" mean_volume)"; bass_peak="$(volume_stat "$bass" max_volume)"
@@ -1181,7 +1181,7 @@ build_auditions() {
             -filter_complex "[0:a]volume=${game_gain},apad,atrim=duration=${total_seconds}[game];\
 [1:a]aformat=sample_rates=48000:channel_layouts=stereo[music];\
 [game][music]amix=inputs=2:duration=longest:normalize=0,\
-alimiter=limit=0.92:latency=1,atrim=duration=${total_seconds}[a]" \
+alimiter=limit=0.92,atrim=duration=${total_seconds}[a]" \
             -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -movflags +faststart \
             "$OUT_DIR/${id}.mp4"
         mix_mean="$(volume_stat "$OUT_DIR/${id}.mp4" mean_volume)"
