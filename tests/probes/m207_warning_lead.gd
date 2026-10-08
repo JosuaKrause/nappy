@@ -149,7 +149,7 @@ static func gold_encounters() -> Array[Dictionary]:
 ## the world (the first warning) and she answers on that frame; once the badge's own time is up the
 ## pursuer is created just out of sight along her heading (`PendingWarning.along_her_heading()` on
 ## open ground, as the game places the day-3 dog, and the resistance's own pursuers where nothing is
-## in the way), its approach still to run.
+## in the way). The dog's approach still runs; a sent robber or guard arrives chasing.
 static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dictionary:
 	var def: EventDef = encounter["def"]
 	var heading: Vector2 = encounter["heading"]
@@ -177,8 +177,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 	var velocity := _answered(answer, heading)
 	var clock := 0.0
 	var warned_at := 0.0
-	# A runner can keep a sent pursuer unseen until the existing long cap. Include the badge
-	# before that cap, so the measurement observes the ending rather than cutting off early.
+	# Include the badge before the long cap so even a chase that never catches her has an ending.
 	var limit := maxf(LIMIT, def.warned_for() + def.telegraph_time + def.duration + 1.0)
 	while clock < limit:
 		her += velocity * STEP
@@ -193,10 +192,6 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 			continue
 		instance.player_at = her
 		instance.player_running = answer == Answer.RUN
-		# What `EventManager._tell_them_where_she_is()` tells a pursuer that arrives chasing.
-		var seen_box := instance.drawn_box()
-		instance.in_sight = VisibleView.around(her).sees_any(
-				Rect2(instance.global_position + seen_box.position, seen_box.size))
 		instance._process(STEP)
 		var at := instance.global_position
 		var in_view := _in_view(at - her, 0.0)

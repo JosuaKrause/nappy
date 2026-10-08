@@ -2016,8 +2016,8 @@ static func _alley_robbery() -> EventDef:
 ## request — **no trigger** (`pursues_within` 0), so he is never `is_waiting()` — and his timing:
 ## the day-3 dog's badge and chase, read off `_charging_dog()`. His chase does not give up on a walker
 ## (`Tuning.PURSUIT_TIME`, a long cap; amendment 8: "pursuers should never (or a long time) stop
-## pursuing if she walks"); running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) shakes him off only after
-## `Tuning.PURSUIT_MIN_NOTICE` has passed since first entering her visible area.
+## pursuing if she walks"); running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) shakes him off,
+## including while he is still offscreen.
 ##
 ## What that leaves her, from just off screen above her (`tests/probes/m207_warning_lead.gd`'s gold
 ## timing, counted from the badge): standing still he catches her at about 1.8s, walking into him at

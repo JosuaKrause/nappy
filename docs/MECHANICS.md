@@ -984,10 +984,10 @@ screen, its badge alone its own half second (`EventDef.offscreen_notice`): the d
 placed just off screen with the whole approach still to run, where a non-pursuer warned first (the
 fire engine) spends its telegraph as the badge, with nothing in the world; the resistance's robber
 and guard arrive already chasing (`EventDef.arrives_chasing`: "the proximity rule is only for
-standing robbers"), then owe `PURSUIT_MIN_NOTICE` seconds from first entering her visible area
-before running may shake them off. A pursuer that stands still while it
+standing robbers"). Running while a sent pursuer is offscreen counts toward the same
+`PURSUIT_SHAKEN_OFF` timer; he need not become visible before she can shake him off. A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
-owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
+owed by an ordinary pursuer is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
 
 **And it stops at walls.** A chase is a straight line at whatever is chasing her, and nothing about

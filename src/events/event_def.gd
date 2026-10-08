@@ -439,8 +439,8 @@ func spawn_mode_on(day: int) -> SpawnMode:
 
 ## Whether a pursuer warned of before it exists is created already chasing her — with no telegraph
 ## (`telegraph_time` 0) and no closing-in to a stand-off — rather than spending its telegraph
-## visibly closing on her. Its notice is its badge alone, then `Tuning.PURSUIT_MIN_NOTICE` of being in
-## her sight before a run may shake it off (`EventInstance.notice_age()`). *(Amendment 7 of M226, the player: "why would the robber walk towards her
+## visibly closing on her. Its notice is its badge alone; running while it is still offscreen counts
+## toward shaking it off. *(Amendment 7 of M226, the player: "why would the robber walk towards her
 ## when it spawns as pursuing robber? the proximity rule is only for standing robbers.")* The
 ## resistance's sent `robber_giving_chase` and `van_guard_giving_chase`: their warning is the badge
 ## alone (`warned_for()`), and from their first frame they chase. The day-3 dog does not: its
@@ -1310,15 +1310,13 @@ func validate() -> bool:
 		push_error("Unfair pursuit '%s': its lunge is measured from %.0fpx, inside its own %.0fpx catch"
 				% [id, lunge_reach, lethal_reach()])
 		return false
-	# The notice a pursuer shows: its telegraph, the approach she watches — or, for one that arrives
-	# already chasing, the `Tuning.PURSUIT_MIN_NOTICE` of being in her sight before a run may shake
-	# it off (`EventInstance.notice_age()`), after a badge alone; it has no telegraph to show.
+	# A sent pursuer warns with its badge and starts chasing immediately. Only an ordinary
+	# pursuer has an approach whose notice duration the pursuit validator must check.
 	if arrives_chasing and not (pursues and warns_before_it_exists() and warned_for() > 0.0):
 		push_error("event '%s' arrives chasing but is not a pursuer warned of first" % id)
 		return false
-	var notice := Tuning.PURSUIT_MIN_NOTICE if arrives_chasing else telegraph_time
 	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, lethal_reach(),
-			notice, pursues_within, outer_radius, standoff_reach()):
+			telegraph_time, pursues_within, outer_radius, standoff_reach(), arrives_chasing):
 		return false
 	# The day-switched trigger is a second shape of the same contract and nothing else exercises
 	# it: `EventCatalogue.all()` validates every *heat* shape of every row, but the day axis is

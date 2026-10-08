@@ -27,7 +27,7 @@ func run(t) -> void:
 	_test_the_day_3_dog_keeps_its_gold_timing(t)
 	_test_the_resistances_pursuers_are_fitted_to_the_dog(t)
 	_test_every_pursuer_sent_from_off_screen_is_warned_first(t)
-	_test_a_sent_pursuer_cannot_be_shaken_off_before_visible_notice(t)
+	_test_a_sent_pursuer_counts_running_before_he_is_visible(t)
 	_test_a_failed_lesson_retry_leaves_the_director_running(t)
 	_test_a_retried_day_is_the_same_day(t)
 	_test_the_run_is_always_taught(t)
@@ -84,26 +84,28 @@ func _test_a_failed_lesson_retry_leaves_the_director_running(t) -> void:
 	manager.free()
 	body.free()
 
-## A run before he is seen must not spend the visible notice that a sent pursuer owes.
-func _test_a_sent_pursuer_cannot_be_shaken_off_before_visible_notice(t) -> void:
+## A sent pursuer's badge is enough notice: a sustained run can end the chase before he is seen.
+## Brief runs separated by walking do not accumulate into one escape.
+func _test_a_sent_pursuer_counts_running_before_he_is_visible(t) -> void:
 	for id: String in ["robber_giving_chase", "van_guard_giving_chase"]:
 		var pursuer := EventInstance.new()
 		pursuer.setup(EventCatalogue.by_id(id), Vector2.ZERO)
 		pursuer.player_running = true
-		for frame in 180:
+		for frame in int(Tuning.PURSUIT_SHAKEN_OFF / STEP) - 1:
 			pursuer.player_at = Vector2(500.0 + frame * Tuning.RUN_SPEED * STEP, 0.0)
 			pursuer._process(STEP)
-		t.check(not pursuer.gave_up and pursuer.notice_age() == 0.0,
-				"%s keeps chasing through a run while unseen" % id)
-		pursuer.in_sight = true
-		for frame in int(Tuning.PURSUIT_MIN_NOTICE / STEP) - 1:
+		t.check(not pursuer.gave_up, "%s needs the full sustained run" % id)
+		pursuer.player_running = false
+		pursuer._process(STEP)
+		pursuer.player_running = true
+		for frame in int(Tuning.PURSUIT_SHAKEN_OFF / STEP) - 1:
 			pursuer.player_at += Vector2.RIGHT * Tuning.RUN_SPEED * STEP
 			pursuer._process(STEP)
-		t.check(not pursuer.gave_up, "%s gives her the whole visible notice" % id)
+		t.check(not pursuer.gave_up, "%s restarts the shake-off timer after a walk" % id)
 		for frame in 3:
 			pursuer.player_at += Vector2.RIGHT * Tuning.RUN_SPEED * STEP
 			pursuer._process(STEP)
-		t.check(pursuer.gave_up, "%s can be shaken off after visible notice" % id)
+		t.check(pursuer.gave_up, "%s is shaken off by sustained running while offscreen" % id)
 		pursuer.free()
 
 ## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
@@ -687,7 +689,7 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t) -> void:
 ## towards her when it spawns as pursuing robber? the proximity rule is only for standing robbers".)*
 ## Both read the dog's own half-second badge and `Tuning.PURSUIT_TIME` chase, and are created with no
 ## closing-in: from above her — the start the director prefers — standing still and walking into him
-## are caught, and so is walking away. Running escapes; the visible notice floor still holds.
+## are caught, and so is walking away. Running escapes even while he is offscreen.
 func _test_the_resistances_pursuers_are_fitted_to_the_dog(t) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
 	var edge := DangerEdge.new()

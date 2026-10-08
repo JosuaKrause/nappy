@@ -77,9 +77,12 @@ second, the player's time to react), never a figure worked out from its field or
 engine and day 13's column included, whose place follows her so a walk out of their
 field is not one she can take during the badge. A pursuer warned first is held to
 `validate_pursuit` like every pursuer: its telegraph is the approach she watches once it exists.
-A sent robber or guard instead arrives chasing, with no approach: its minimum notice is
-`PURSUIT_MIN_NOTICE` from first entering her visible area before running may shake it off.
-`EventDef.validate()` checks that visible notice, not a telegraph spent before creation.
+A sent robber or guard instead arrives chasing, with no approach: its notice is its badge alone.
+Running while it is offscreen counts toward `PURSUIT_SHAKEN_OFF`, so it can be shaken off before
+it becomes visible ([tall-owl](../../../docs/playtests/2026-10-07-tall-owl.md)).
+`EventDef.validate()` requires that badge and validates its chase without inventing an approach.
+Standing robbers and the day-3 dog's approach keep their separate notice floor. Verify escape
+with the actual Baby meter: reaching the pursuit cap after the baby cries is a lost day.
 
 ## What telegraphs
 

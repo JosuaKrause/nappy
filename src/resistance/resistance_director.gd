@@ -731,8 +731,8 @@ func _trap_row_id(step: ResistanceSteps.Step) -> String:
 ## that to the others as well")*: the screen-edge badge goes up alone at once, with nothing in the
 ## world, pointing at where he will start (`_draw_arrival_position()`), for the row's own
 ## `offscreen_notice` (`EventDef.warned_for()`, at most `Tuning.WARNING_ALONE_MAX`); then he is
-## created just out of sight that way from where she is by then, his notice — the approach she
-## watches — still to run (`EventManager.spawn_warned()`), and the badge goes off as he comes into
+## created just out of sight that way from where she is by then, already chasing
+## (`EventManager.spawn_warned()`), and the badge goes off as he comes into
 ## view. The badge's place moves only with her, so it never jumps (`PendingWarning`).
 ##
 ## **On the last night it chases her away from the station.** The hand-over is the sabotage, and
@@ -766,8 +766,11 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 	# when the badge's time is up, from wherever she is then.
 	var bearing: Vector2 = (first[0] - her).normalized()
 	var drawn: Array = [first]
+	var putting_up := [true]
 	var where := func(standing: Vector2) -> Vector2:
-		if standing == her:
+		# Only put_up may reuse the initial draw: the camera can settle while she stands still.
+		if putting_up[0]:
+			putting_up[0] = false
 			return first[0]
 		var again := _draw_arrival_position(_rng, standing, def, front_door, bearing)
 		drawn[0] = again

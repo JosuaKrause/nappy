@@ -1912,7 +1912,8 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## every non-pursuer warned of before it exists (`EventDef.warns_before_it_exists()`: the cyclist,
 ## the fire engine, day 13's column), whose place follows her until it exists, so the
 ## walk out of its field that `required_telegraph_time()` prices is not a walk she can take during
-## the badge; a pursuer is owed `PURSUIT_MIN_NOTICE` of visible approach, every other row the
+## the badge; an ordinary pursuer is owed `PURSUIT_MIN_NOTICE` of visible approach, while a sent
+## robber or guard arrives chasing after its badge alone. Every other row owes the
 ## minimum its field sets, and a row that does not telegraph (`EventDef.telegraphs`) none.
 const OFFSCREEN_WARNING_MIN := 1.0
 ## The longest a screen-edge badge is up alone, with nothing in the world, before the thing it warns
@@ -1930,7 +1931,8 @@ const WARNING_ALONE_MAX := 1.0
 ## telegraphs, unlike a row warned of before it exists (the fire engine, sited by a screen-edge
 ## badge with nothing in the world until its telegraph is spent). A dog that has to bark for two
 ## seconds before it is allowed to start running is not a dog. So the notice is the sight of it
-## closing, and this is how much of that she is owed before it can touch her.
+## closing, and this is how much of that she is owed before it can touch her. A sent robber or
+## guard has no approach: its badge is the notice, and an offscreen run can shake it off.
 const PURSUIT_MIN_NOTICE := 1.5
 
 ## How long she is allowed to take to answer the lunge, at the speed the gap is actually closing.
@@ -2021,8 +2023,9 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 ##   before, at `PURSUIT_SHAKEN_OFF`'s rate, so the cap is never what a runner pays for.
 ## - **Running has to open more than the radius that ends the day**, over the whole chase. Otherwise
 ##   running is the correct answer and still not enough.
-## - **The notice is the sight of it coming**, and there has to be at least `PURSUIT_MIN_NOTICE` of
-##   it before the thing may end her day.
+## - **An ordinary pursuer's notice is the sight of it coming**, at least `PURSUIT_MIN_NOTICE`.
+##   A sent pursuer (`arrives_chasing`) has its badge alone, checked by `EventDef.validate()`,
+##   and running may shake it off while it is still offscreen.
 ## - **It stands off inside its own field.** A pursuer holding a stand-off outside `outer_radius`
 ##   emits nothing at her for the whole of the phase that is supposed to *be* the warning: no meter,
 ##   no `!` over her head, and a telemetry entry that cannot say what raised the mark. This one was
@@ -2048,7 +2051,8 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 ## still leave a two-tenths-of-a-second window. See `pursuit_standoff()`. The rig in
 ## `tests/test_events.gd` that has to accelerate is what checks the half this cannot.
 func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
-		telegraph: float, notice_within := 0.0, outer := 0.0, standoff_from := 0.0) -> bool:
+		telegraph: float, notice_within := 0.0, outer := 0.0, standoff_from := 0.0,
+		arrives_chasing := false) -> bool:
 	if speed < WALK_SPEED + PURSUIT_MIN_MARGIN:
 		push_error("Unfair pursuit '%s': %.0fpx/s is not enough faster than a walk (%.0f)"
 				% [id, speed, WALK_SPEED])
@@ -2068,7 +2072,7 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		push_error("Unfair pursuit '%s': running opens %.0fpx over %.1fs, less than the %.0fpx "
 				% [id, opened, chase_time, inner] + "that ends the day")
 		return false
-	if telegraph < PURSUIT_MIN_NOTICE:
+	if not arrives_chasing and telegraph < PURSUIT_MIN_NOTICE:
 		push_error("Unfair pursuit '%s': %.1fs of it coming is not enough notice (%.1fs)"
 				% [id, telegraph, PURSUIT_MIN_NOTICE])
 		return false

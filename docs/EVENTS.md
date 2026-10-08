@@ -434,8 +434,9 @@ now too long notice")*: `Tuning.OFFSCREEN_NOTICE` (0.2s) is the default, and `ch
 walk towards her when it spawns as pursuing robber? the proximity rule is only for standing
 robbers".)* The resistance's `robber_giving_chase` and `van_guard_giving_chase` read the dog's own
 half-second badge, are created just off screen with no closing-in telegraph (`EventDef.arrives_chasing`)
-and chase from their first frame. Running may shake them off only after `PURSUIT_MIN_NOTICE`
-seconds from first entering her visible area. The tall-osprey floor — standing still, a robber lunges no sooner
+and chase from their first frame. Running while they are still offscreen counts toward the
+`PURSUIT_SHAKEN_OFF` timer, so a sustained run can shake them off before they become visible.
+The tall-osprey floor — standing still, a robber lunges no sooner
 than `Tuning.PURSUIT_MIN_NOTICE` after he appears — is a standing robber's (`alley_robbery`, waiting
 in his alley), not theirs.
 

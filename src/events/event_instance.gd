@@ -1924,8 +1924,6 @@ var _lunged := false
 ## where that stops. Everything below then runs exactly as it does for a dog sited in front of her,
 ## started later.
 func _chase(delta: float) -> void:
-	if in_sight and _first_in_sight_age == INF:
-		_first_in_sight_age = age
 	if player_at == Vector2.INF or is_telegraphing_still():
 		return
 	var toward := player_at - global_position
@@ -1968,11 +1966,11 @@ func _chase(delta: float) -> void:
 	else:
 		_outrun_for = 0.0
 	_last_range = range_to_her
-	# `PURSUIT_MIN_NOTICE` is the floor under it, so a chase can never be over before it was a
-	# threat: a player already running when it lunges would otherwise shake off a thing that never
-	# got to say what it was. For one that arrives chasing, counted from the frame she first sees it
-	# (`notice_age()`), so a run cannot shake off a robber she never saw.
-	if _outrun_for >= Tuning.PURSUIT_SHAKEN_OFF and notice_age() >= Tuning.PURSUIT_MIN_NOTICE:
+	# An ordinary pursuer keeps its approach notice. A sent pursuer already warned with its badge:
+	# running counts while it is still offscreen, too (tall-owl: "starting to run while he's
+	# offscreen still counts towards the shaking off timer? sure").
+	var may_give_up := def.arrives_chasing or chase_age() >= Tuning.PURSUIT_MIN_NOTICE
+	if _outrun_for >= Tuning.PURSUIT_SHAKEN_OFF and may_give_up:
 		gave_up = true
 		_be_done()
 		return
@@ -2005,26 +2003,6 @@ func _chase(delta: float) -> void:
 	# Ground covered, not ground gained: sliding along a wall is still moving, and the bob is driven
 	# by distance so that a thing holding its ground reads as standing still.
 	_path_travelled += moved.length()
-
-## Whether she can see any of this instance this frame, told by whoever holds what she can see
-## (`EventManager._tell_them_where_she_is()`, from `VisibleView`); a rig tells it itself. Read only
-## by `notice_age()`.
-var in_sight := false
-## The age at which `in_sight` was first true, or `INF` before.
-var _first_in_sight_age := INF
-
-## How long this pursuer has been giving her notice — what `PURSUIT_MIN_NOTICE` is measured against
-## before a run may shake it off. For an ordinary pursuer that is how long it has been happening
-## (`chase_age()`): she sees it closing on its telegraph. **For one that arrives already chasing**
-## (`EventDef.arrives_chasing`, the resistance's sent robber and guard) it is the time since she first
-## saw it, 0 before: he has no telegraph to watch, so the notice is the sight of him, and a run cannot
-## shake off a robber she has not seen yet *(the re-review of #597)*.
-func notice_age() -> float:
-	if not def.arrives_chasing:
-		return chase_age()
-	if _first_in_sight_age == INF:
-		return 0.0
-	return age - _first_in_sight_age
 
 ## Ends this chase from outside `_chase()`'s own loop, in the one state `_chase()` reaches when she
 ## has outrun it: `gave_up` set, `_be_done()` called — the same departure, the same drawing and the

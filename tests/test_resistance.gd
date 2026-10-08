@@ -61,6 +61,7 @@ func run(t) -> void:
 	_test_every_guarded_target_sends_a_robber_from_off_screen(t)
 	_test_the_handover_sets_a_robber_on_her_from_off_screen(t)
 	_test_the_van_handover_sets_a_guard_on_her_from_off_screen(t)
+	_test_a_trap_rechecks_the_camera_when_its_warning_expires(t)
 	_test_the_robber_after_her_is_announced_before_he_can_catch_her(t)
 	_test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t)
 	_test_the_robber_after_her_is_never_the_schedulers(t)
@@ -2190,6 +2191,55 @@ func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
 		_city.events._run_the_warnings(STEP, her)
 	return warning.shown
 
+## Camera smoothing can move the view while she stands still through a badge. The actual
+## warning callback must place the entire drawing outside that new view in either input scheme.
+func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+	for joystick: bool in [false, true]:
+		GameState.completed_resistance_steps = []
+		GameState.completed_resistance_alley_tiles = saved_tiles.duplicate()
+		_build_city(t)
+		var director := _director(t)
+		director.start_day(6, _rng(6, "resistance"), 300.0)
+		director._on_contact_completed(1)
+		var her := director.contact_position()
+		var player := Node2D.new()
+		t.add_child(player)
+		player.position = her
+		player.add_to_group("player")
+		var view := _city.events.visible_view()
+		view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
+		director.set_sight(_city.events.sees)
+		director._set_the_trap_on_her(director.current_step())
+		var warning := _warning_for(_city.events, "robber_giving_chase")
+		t.check(warning != null and director._trap == null,
+				"camera-only movement starts with a real warning and no trap")
+		if warning != null:
+			var initial := warning.place
+			var bearing := (initial - her).normalized()
+			view.look(Rect2(her + bearing * 30.0 - Tuning.VIEW_HALF_EXTENT,
+					Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
+			_city.events._run_the_warnings(warning.left * 0.5, her)
+			t.check(warning.place == initial and director._trap == null,
+					"camera movement neither moves the badge nor creates its trap early")
+			_city.events._run_the_warnings(warning.left + STEP, her)
+			var trap: EventInstance = director._trap
+			t.check(trap != null, "the shifted camera still leaves legal ground for the trap")
+			if trap != null:
+				trap.player_at = her
+				var drawing := trap.drawn_rect_now()
+				t.check(view.view.intersects(Rect2(initial + drawing.position, drawing.size)),
+						"the camera moved far enough to expose a trap at the initial badge position")
+				t.check(not view.view.intersects(Rect2(trap.position + drawing.position, drawing.size)),
+						"warning expiry keeps the actual drawing outside the moved WHOLE camera")
+				t.check((trap.position - her).normalized().is_equal_approx(bearing),
+						"the trap keeps the badge's bearing when the camera moves")
+		player.free()
+		director.free()
+	GameState.completed_resistance_steps = saved_completed
+	GameState.completed_resistance_alley_tiles = saved_tiles
+
 ## A `_sight` answering the unrotated 640x360 screen round `her`.
 func _the_screen_round(her: Vector2) -> Callable:
 	return func(at: Vector2) -> bool:
@@ -2397,8 +2447,7 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 ##   rises gets her away;
 ## - **walking away** is caught from every start, beside her included — no pursuer gives up on a
 ##   walker (amendment 8: `Tuning.PURSUIT_TIME` is a long cap), so walking has to lose;
-## - **running** ends it, once he has been in her sight for `Tuning.PURSUIT_MIN_NOTICE`
-##   (`EventInstance.notice_age()`), never before she has seen him.
+## - **running** shakes him off while still unseen, before its cost can make an awake baby cry.
 ##
 ## The tall-osprey floor (standing still, a robber lunges no sooner than `Tuning.PURSUIT_MIN_NOTICE`
 ## after he appears) is a standing robber's, a mark's guard waiting in his alley, whom this build does
@@ -2448,17 +2497,22 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 				"from %v (%.0fpx): walking straight away is caught (%.2fs)"
 				% [start, start.length(), away["caught_at"]])
 		var ran := _walk_the_trap(def, start, -Tuning.RUN_SPEED)
-		t.check(ran["caught_at"] == INF and ran["ended"],
-				"from %v: running escapes until he gives up after notice or reaches his long cap" % start)
-		t.check(not ran["gave_up"] or ran["notice"] >= Tuning.PURSUIT_MIN_NOTICE,
-				"from %v: a run only shakes him off after the visible notice" % start)
+		t.check(ran["caught_at"] == INF and ran["gave_up"] and not ran["cried"],
+				"from %v: running shakes him off before either catch or crying" % start)
+		if is_zero_approx(start.x):
+			t.check(ran["first_seen"] == INF,
+					"from %v: the immediate run escapes while he remains offscreen" % start)
+		t.check(ran["excitement"] > 0.0 and ran["excitement"] < Tuning.METER_MAX * 0.3,
+				"from %v: the actual awake Baby pays an affordable %.2f points for running"
+				% [start, ran["excitement"]])
 
 ## Walks her at `speed` along the line to `start` — positive toward him, negative away — against a
 ## bare instance of `def` (`robber_giving_chase` or `van_guard_giving_chase`) created at `start`
 ## from her, the moment his warning is over, as `EventManager.spawn_warned()` creates him: already
 ## chasing. A walk is under way when he appears (the handover does not stop her); a run
 ## gets up to speed at `Tuning.ACCELERATION`. `turn_to_run_after`, if given, reverses her into a run
-## away from him that many seconds after he appears.
+## away from him that many seconds after he appears. The real Baby charges this run, awake at zero
+## excitement with no world noise or recovery; crying ends the attempt rather than counting as escape.
 func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_after := INF) -> Dictionary:
 	var bearing := start.normalized()
 	var robber := EventInstance.new()
@@ -2466,8 +2520,13 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 	robber.came_under_a_warning = true
 	if def.arrives_chasing:
 		robber.resume(EventManager.age_when_warned(def), 0.0)
+	var stroller := Stroller.new()
+	var baby := Baby.new()
+	baby.name = "Baby"
+	stroller.add_child(baby)
+	baby._stroller = stroller
 	var result := {"caught_at": INF, "at_the_lunge": INF, "lunged_at": INF, "gave_up": false,
-			"ended": false, "notice": 0.0}
+			"ended": false, "first_seen": INF, "cried": false, "excitement": 0.0}
 	var her := Vector2.ZERO
 	var velocity := speed if absf(speed) <= Tuning.WALK_SPEED else 0.0
 	var elapsed := 0.0
@@ -2478,11 +2537,16 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 			wanted = -Tuning.RUN_SPEED
 		velocity = move_toward(velocity, wanted, Tuning.ACCELERATION * STEP)
 		her += bearing * velocity * STEP
+		stroller.position = her
+		stroller.velocity = bearing * velocity
+		baby._physics_process(STEP)
 		robber.player_at = her
 		robber.player_running = absf(velocity) > Tuning.WALK_SPEED
 		var box := robber.drawn_box()
-		robber.in_sight = VisibleView.around(her).sees_any(
+		var in_sight := VisibleView.around(her).sees_any(
 				Rect2(robber.global_position + box.position, box.size))
+		if in_sight and result["first_seen"] == INF:
+			result["first_seen"] = elapsed
 		robber._process(STEP)
 		elapsed += STEP
 		var offset := robber.global_position - her
@@ -2493,11 +2557,15 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 		if robber.is_lethal_at(her):
 			result["caught_at"] = elapsed
 			break
+		if baby.state == GameEnums.BabyState.CRYING:
+			result["cried"] = true
+			break
 		if robber.gave_up or robber.is_finished or robber.is_leaving:
 			result["gave_up"] = robber.gave_up
 			result["ended"] = true
-			result["notice"] = robber.notice_age()
 			break
+	result["excitement"] = baby.excitement
+	stroller.free()
 	robber.free()
 	return result
 
