@@ -1898,8 +1898,8 @@ var _lunged := false
 ## why a pursuer can force a run at all. A telegraph it spends standing still is a head start she
 ## can simply walk away with: at `pursue_speed` against `WALK_SPEED` it closes about 56px a
 ## second, so two seconds of politeness hands her more ground than the entire chase can take
-## back. The notice is *the sight of it coming*, and `Tuning.PURSUIT_MIN_NOTICE` is how much of
-## that she is owed before it is allowed to end her day.
+## back. An ordinary pursuer's notice is *the sight of it coming*, and `Tuning.PURSUIT_MIN_NOTICE`
+## bounds its approach. A sent pursuer instead arrives chasing after its offscreen badge alone.
 ##
 ## **But it closes to a stand-off and holds it, rather than arriving.** The paragraph above buys the
 ## notice in seconds and says nothing about *where* the pursuer spends them: sited across her line a
@@ -1915,8 +1915,9 @@ var _lunged := false
 ## **And it gives up when it is being outrun, not when a gap has reached a size.** The pursuer is
 ## faster than a walk and slower than a run by construction, so "the gap is opening" is a statement
 ## the player can only make by running — which is why it can carry the whole of the design. Walking
-## away cannot end a chase at any distance, and running away always ends one in
-## `Tuning.PURSUIT_SHAKEN_OFF` seconds regardless of how big the thing chasing her is.
+## away cannot end a chase at any distance. Sustained running ends one after
+## `Tuning.PURSUIT_SHAKEN_OFF` seconds, once an ordinary pursuer's approach notice floor is met;
+## a sent pursuer can be shaken off while still offscreen.
 ##
 ## A pursuer may also be a **place** before it is a moment: something that raises the meter on
 ## sight, and comes for her if she gets close. While

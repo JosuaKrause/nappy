@@ -21,13 +21,13 @@ extends RefCounted
 ## **The rig.** A real `EventInstance` of the catalogue's own def, never added to a tree, ticked at
 ## 60Hz beside her with `player_at` told to it every frame the way `EventManager` does. Open ground,
 ## no map: a straight street with nothing in it, so nothing but the row's own warning, siting and
-## speed decides the numbers. A row that is **warned of before it exists** — the cyclist, the loose
-## dog, the day-3 dog, the fire engine, day 13's column — is a real `PendingWarning` first, with the
+## speed decides the numbers. A row that is **warned of before it exists** — the cyclist, the
+## day-3 dog, the fire engine, day 13's column — is a real `PendingWarning` first, with the
 ## same place function the game gives it (`PendingWarning.down_her_line()`, `along_her_heading()`,
 ## `on_its_route()`, `in_its_lane()`, each with the camera on her) and nothing in the world; the
 ## instance is created where it then points, just out of sight, once its badge alone is over, the way
 ## `EventManager.spawn_warned()` creates it: a non-pursuer with its telegraph spent, a pursuer with
-## its approach still to run. Every other row is placed the
+## its approach still to run unless it arrives chasing. Every other row is placed the
 ## way the game places it — where `EventDirector` sites it, where a waiting row stands, where a
 ## `MAP` mover streams in.
 ##

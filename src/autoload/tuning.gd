@@ -1913,8 +1913,8 @@ const PURSUIT_MIN_MARGIN := 20.0
 ## the fire engine, day 13's column), whose place follows her until it exists, so the
 ## walk out of its field that `required_telegraph_time()` prices is not a walk she can take during
 ## the badge; an ordinary pursuer is owed `PURSUIT_MIN_NOTICE` of visible approach, while a sent
-## robber or guard arrives chasing after its badge alone. Every other row owes the
-## minimum its field sets, and a row that does not telegraph (`EventDef.telegraphs`) none.
+## robber or guard arrives chasing after its badge alone. A row with an in-world telegraph owes
+## the minimum its field sets even when it has no coming badge (`EventDef.telegraphs` is false).
 const OFFSCREEN_WARNING_MIN := 1.0
 ## The longest a screen-edge badge is up alone, with nothing in the world, before the thing it warns
 ## of is placed just out of sight where it points (`PendingWarning`). *(calm-kestrel, inbox #559: "it
