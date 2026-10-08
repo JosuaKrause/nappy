@@ -857,7 +857,7 @@ audition_source_signature() {
 
 volume_stat() {
     local file="$1" key="$2" filter="${3:-volumedetect}"
-    ffmpeg -hide_banner -nostats -i "$file" -map 0:a:0 -af "$filter" -f null - 2>&1 |
+    ffmpeg -hide_banner -nostdin -nostats -i "$file" -map 0:a:0 -af "$filter" -f null - 2>&1 |
         sed -n "s/.*${key}: *\([^ ]*\).*/\1/p" | tail -1
 }
 
@@ -872,7 +872,7 @@ require_finite_level() {
 build_score_once() {
     local id="$1" raw="$2" score="$3" raw_mean raw_peak target ceiling wanted room adjust
     uv run python "$PROJECT_DIR/tools/trailer/synthesize_score.py" \
-        --resolved "$OUT_DIR/source/resolved-scores.json" --option "$id" --output "$raw"
+        --resolved "$OUT_DIR/source/resolved-scores.json" --option "$id" --output "$raw" </dev/null
     raw_mean="$(volume_stat "$raw" mean_volume)"
     raw_peak="$(volume_stat "$raw" max_volume)"
     target="$(jq -r '.target_mean_db' <<< "$RESOLVED_SCORES")"
@@ -881,7 +881,8 @@ build_score_once() {
     room="$(awk -v ceiling="$ceiling" -v peak="$raw_peak" 'BEGIN {printf "%.4f", ceiling-peak}')"
     adjust="$(awk -v wanted="$wanted" -v room="$room" \
         'BEGIN {if (wanted < room) printf "%.4f", wanted; else printf "%.4f", room}')"
-    ffmpeg -hide_banner -loglevel error -y -i "$raw" -af "volume=${adjust}dB" -c:a pcm_s16le "$score"
+    ffmpeg -hide_banner -nostdin -loglevel error -y -i "$raw" \
+        -af "volume=${adjust}dB" -c:a pcm_s16le "$score"
 }
 
 build_auditions() {
@@ -909,7 +910,7 @@ build_auditions() {
             echo "trailer.sh: score '$id' is not silent at both file boundaries" >&2
             return 1
         fi
-        ffmpeg -hide_banner -loglevel error -y -i "$base" -i "$score" \
+        ffmpeg -hide_banner -nostdin -loglevel error -y -i "$base" -i "$score" \
             -filter_complex "[0:a]volume=${game_gain}[game];[1:a]aformat=sample_rates=48000:channel_layouts=stereo[music];\
 [game][music]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.92[a]" \
             -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -movflags +faststart \
