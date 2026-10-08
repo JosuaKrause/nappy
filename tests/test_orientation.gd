@@ -103,7 +103,7 @@ func _test_a_rotated_touch_still_fires_the_pause_button(t: Node) -> void:
 	t.check(TouchControls._pause_fires(TouchControls.PAUSE_CENTRE),
 			"the pure geometry check underneath is untouched by rotation")
 
-	controls.queue_free()
+	controls.free()
 	Input.action_release(&"pause")
 
 ## **A direction press needs no remap of its own** — see `TouchControls.set_direction()`'s own
@@ -121,7 +121,7 @@ func _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t: Node) ->
 	controls._input(_touch_event(0, screen_point, true))
 	t.check(controls._walking, "a rotated touch well clear of the button sets a direction")
 
-	controls.queue_free()
+	controls.free()
 	rig.free()
 	_release_actions()
 
@@ -171,7 +171,7 @@ func _test_a_rotated_touch_still_aims_from_the_nearer_focus_correctly(t: Node) -
 	t.check(not Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
 			"and not north or south")
 
-	controls.queue_free()
+	controls.free()
 	rig.free()
 	_release_actions()
 

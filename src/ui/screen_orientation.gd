@@ -22,10 +22,9 @@ extends RefCounted
 ## which is what `pin_to_design_box()` is for: a single root `Control` per layer, pinned to
 ## `DESIGN_SIZE` with fixed top-left anchors so its rect never depends on the viewport's own shape.
 ##
-## `TouchControls` is the one place in `src/ui/` whose *input* needs the same correction the other
-## direction: a real touch still arrives in the swapped 720x1280 box regardless of any layer
-## transform, so `to_design_space()` is what remaps it back before comparing it to `PAUSE_CENTRE`,
-## `RUN_CENTRE_LEFT` and `RUN_CENTRE_RIGHT` — the fixed constants a press is compared to. `DangerEdge` and
+## Raw pointer input needs the same correction in the other direction: a real touch arrives in
+## the swapped 720x1280 box regardless of any layer transform. TouchControls and the title, pause
+## and summary screens use `to_design_space()` before testing their buttons. `DangerEdge` and
 ## `HomeArrow` need the same remap on the way *out* — both compute a
 ## screen position fresh every frame from a world position and
 ## `get_viewport().get_canvas_transform()`, which lands in that same swapped box, and now that

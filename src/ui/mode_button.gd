@@ -43,7 +43,7 @@ extends Button
 ## draw mode and the `hover`/`pressed`/`hover_pressed` styleboxes `_apply_disc_style()` installs are
 ## never selected. `force_pressed_look()`/`clear_forced_press()` and `set_hovered()` below answer
 ## both questions from the same raw-touch and raw-mouse reading the owning screen already does
-## through `catch_rect()` — `begin_hold()`/`end_hold()`/`cancel_hold()` route through the first pair
+## through `contains_design_point()` — `begin_hold()`/`end_hold()`/`cancel_hold()` route through the first pair
 ## too, so `RESTART`'s own timed hold gets the same fill as an ordinary press with no second
 ## mechanism. Hover is a laptop's question — there is no hover on a phone — and answered by the same
 ## `InputEventMouseMotion` a screen reads for nothing else, since `MOUSE_FILTER_IGNORE` also
@@ -70,10 +70,7 @@ const _ICON_BY_SYMBOL := {
 	Symbol.TAP: _TAP_ICON,
 }
 
-## `TouchControls.PAUSE_CATCH_RADIUS` and `TouchControls.RUN_CATCH_RADIUS` (both 46px) are the only
-## catch radii in the game — a thumb is never asked to land inside anything smaller during a run. This button is opened on the same phone, so its own radius matches it
-## rather than a value chosen for a mouse: nothing on this screen may be harder to hit than the
-## two controls already in the game that share this radius.
+## The resting disc's radius. Its radial catch extends five percent beyond the painted edge.
 const _RADIUS := 46.0
 const _DIAMETER := _RADIUS * 2.0
 ## The glyph reads best at roughly half the disc's own diameter — big enough to read at this
@@ -155,7 +152,7 @@ func _ready() -> void:
 	# Godot's GUI layer — which runs between `_input` and `_unhandled_input` — consumes a raw
 	# `InputEventScreenTouch` that lands on a `STOP` control. `PauseScreen` and `DaySummary` read
 	# every press in `_unhandled_input()`, which a `STOP` button never lets the touch reach. This
-	# button is driven entirely by the screens' own raw-touch reading — `catch_rect()` plus
+	# button is driven entirely by the screens' own raw-touch reading — `contains_design_point()` plus
 	# `begin_hold()`/`end_hold()` above — never by `Button`'s own `pressed` signal, so it must not
 	# claim the event at all: `IGNORE` lets it fall straight through to the screen underneath.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -191,7 +188,7 @@ func _process(_delta: float) -> void:
 ## Starts tracking a hold from `touch_index`, unless something else already holds this button.
 ## Returns whether it was accepted — the caller (`PauseScreen`/`DaySummary`) treats a `false` here
 ## exactly as "this touch is none of this button's business" and lets it fall through to its own
-## catch-all, the same as a press that missed `catch_rect()` entirely.
+## catch-all, the same as a press that missed `contains_design_point()` entirely.
 ##
 ## **`force_pressed_look()` here is a flash on contact, not the fill for the whole hold.**
 ## *(Playtest 35 finding 2: "the light up of the reset button conflicts with the bar filling up."
@@ -338,16 +335,12 @@ func _draw() -> void:
 		points.append(centre + Vector2(cos(angle), sin(angle)) * radius)
 	draw_colored_polygon(points, _HOLD_FILL)
 
-## A thumb does not land on a drawn disc to the pixel — `TouchControls.PAUSE_CATCH_RADIUS` is more
-## generous than what is drawn, and this button already matches that radius (`_RADIUS`'s own doc).
-## Grown by a third again for the same reason, in the coordinate space `PauseScreen`/`DaySummary`
-## already convert a raw touch into: `get_global_rect()` on a `Control` under a `CanvasLayer`
-## excludes that layer's own rotation transform, landing in the fixed 1280x720 design box every
-## screen is authored against — the same box `ScreenOrientation.to_design_space()` converts a raw
-## touch into, so the two are directly comparable with no further correction here.
-func catch_rect() -> Rect2:
-	return get_global_rect().grow(_RADIUS / 3.0)
-
+## The owning screen supplies design coordinates after undoing its CanvasLayer presentation.
+## Inverting only this control's global transform then handles local scaling without applying
+## the layer rotation twice. Hover and press use exactly the same radial boundary.
+func contains_design_point(point: Vector2) -> bool:
+	var local := get_global_transform().affine_inverse() * point
+	return ButtonGeometry.contains(local, size * 0.5, _drawn_radius())
 ## The disc itself: one `StyleBoxFlat` per visual state, so the fill comes from data Godot already
 ## knows how to switch on rather than from a paint call keyed off `get_draw_mode()`.
 ## `corner_radius_*` comes from `_drawn_radius()` — half the button's own shorter side, whatever
