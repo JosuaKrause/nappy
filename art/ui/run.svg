@@ -1,11 +1,7 @@
-<!-- The run button TouchControls draws beside each joystick focal point: a disc, its rim and two
-     chevrons pointing up, a sign for "faster" with no walking direction in it, since the buttons
-     sit beside controls whose sideways presses mean walking. Authored the same way pause.svg is, on
-     the same 128 grid, with the same three relative opacities (dim disc, mid rim, bright glyph) so
-     the one overall alpha TouchControls._draw_run_buttons() multiplies the texture by reads the same
-     idle and held contrast the pause button has. The glyph is drawn as strokes, not filled shapes,
-     and the two stacked chevrons are centred on the disc as a pair.
-     Antialiasing stays on for the reason pause.svg names. -->
+<!-- Run replaces the unused joystick ring. Its disc, rim and two upward chevrons share the
+     pause icon's relative opacities. TouchControls scales the outer painted radius (62.5 on
+     this 128px grid) to the joystick ring's outer edge, leaving the transparent margin outside
+     the visual radius. The chevrons are strokes, centered as a pair. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
   <circle cx="64" cy="64" r="60" fill="#ffffff" fill-opacity="0.16"/>
   <circle cx="64" cy="64" r="60" fill="none" stroke="#ffffff" stroke-width="5" stroke-opacity="0.4"/>

@@ -473,9 +473,9 @@ func _ready() -> void:
 	add_child(_resistance)
 	_pauses_with_the_game(_resistance)
 	_resistance.setup(_city, _city.map)
-	# The director's own "has she seen this" test — no viewport of its own, so it borrows the
-	# one rotation-aware on-screen check the game already has rather than growing a second one.
-	_resistance.set_sight(_edge.is_on_screen)
+	# The director's own "has she seen this" test — no camera of its own, so it asks the day's one
+	# answer to what she can see (`VisibleView`) rather than growing a second one.
+	_resistance.set_sight(_city.events.sees)
 
 	_day = DayController.new()
 	_day.name = "Day"

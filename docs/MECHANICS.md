@@ -394,22 +394,28 @@ a second via running)".)* Every pursuit's speed band and lead time is stated aga
 destination**: a tap that walked her to a point would pathfind, and a tap that pathfinds hands the
 route decision to the game.
 
-The two schemes differ in where that press is measured from, and joystick adds run buttons (below). **Tap** aims from wherever she is
-standing, the way a mouse always has, and a press within a generous radius of her stops her.
-**Joystick** aims from whichever of two fixed points on the screen is nearer the press — both drawn
-as a ring — and is stopped by a press on either point or in a band down the screen's own middle
-instead. Neither scheme is tied to a touchscreen or a mouse: either can be picked on either device.
+The two schemes differ in where a press is measured from. **Tap** aims from wherever she is
+standing, and a press within the radius around her stops her. **Joystick** aims from the nearer
+of two fixed focal points. Both show steering rings until the first pointer chooses a side.
+A tap or drag on either half selects that focus, and the opposite ring becomes a same-size
+**Run** disc. Releasing the steering pointer preserves the side choice and locked heading:
+"Keep Run visible until the player steers from the other side" (2026-10-07).
+A later tap outside Run on its half, or a drag across the middle stop band, swaps sides.
+The active ring and middle band retain their stop radius; a steering drag over either focus
+still stops. Neither scheme is tied to touch hardware.
 
-**Joystick also has a run button beside each ring**, 110px inward from it, toward the middle of the
-screen (the player chose the spot: "Inward"), which takes away the "walk toward the middle" press
-64-156px out of the ring in a 25-degree wedge either side of due east or west. *(2026-10-03, note #434: "for joystick mode a dedicated run button (one on each
-side next to the joystick) would make running much more precise and easier.")* A press that begins
-on a button holds **run** for as long as that finger stays down, so one thumb steers while the other
-holds it; a finger already steering that slides over a button does not press it, since only a press
-that begins there counts; and the double press still latches run, for a pointer with only one
-finger's worth of reach. Either keeps run down on its own, and run lasts while any finger holds a button, so handing it from one thumb to the other does not stutter it. Running lasting only while the button is
-held is the filer's proposal, not their words, and is open to overturn.
+Only a press beginning on the displayed Run disc holds **run**. It owns that hold until release
+wherever the pointer travels, even if steering swaps the displayed sides meanwhile. A steering
+pointer never becomes a run pointer by sliding onto it. Several run fingers can hand the hold
+over; it ends on the last release. Double tapping independently latches run, so releasing a hold
+does not cancel a latch. Pause preserves the selected side and locked heading while releasing
+pointer holds; changing control schemes or reconstructing the controls for a new day clears the
+side choice. Keyboard steering never chooses a side.
 
+Every round button catches to **105% of its visible radius**, including Run, pause, and the title,
+pause-screen and summary discs. Press and hover use the same circle in ordinary and rotated
+presentation. The joystick dead zones and middle stop band do not grow. Background continue
+presses and restart holds retain their own semantics.
 **A help text that names a button shows that button's own symbol in the line.** *(2026-10-04, note #533:
 "the press pause to pause text should say press <pause button> to pause where it uses the in-game
 symbol. Likewise joystick run should now say hold <run button> or double tap to run where it makes
@@ -970,13 +976,18 @@ outcomes* rather than the same outcome at two prices:
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
 | Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
-| Bounded | gives up after its own `duration` — `PURSUIT_TIME` for every row but two, `PURSUIT_TIME × 2` for the resistance's `robber_giving_chase` and `van_guard_giving_chase`, whose short notice (`PURSUIT_MIN_NOTICE` plus a stated margin) buys a longer chase instead of a longer wait before either exists — **or** after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, because a run is priced per second and an unbounded chase is a loss however well it is played |
+| Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
-telegraphs, unlike a row warned of before it exists (the fire engine, sited by a screen-edge badge
-with nothing in the world until its telegraph is spent). A pursuer that stands still while it
+telegraphs. One sent at her from off screen is warned of first like everything that arrives from off
+screen, its badge alone its own half second (`EventDef.offscreen_notice`): the day-3 dog is then
+placed just off screen with the whole approach still to run, where a non-pursuer warned first (the
+fire engine) spends its telegraph as the badge, with nothing in the world; the resistance's robber
+and guard arrive already chasing (`EventDef.arrives_chasing`: "the proximity rule is only for
+standing robbers"). Running while a sent pursuer is offscreen counts toward the same
+`PURSUIT_SHAKEN_OFF` timer; he need not become visible before she can shake him off. A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
-owed is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
+owed by an ordinary pursuer is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
 
 **And it stops at walls.** A chase is a straight line at whatever is chasing her, and nothing about
@@ -1207,13 +1218,23 @@ event, or one slower than the player (a dog walker at 32 px/s), only has to be w
 clearing the falloff band is enough. Something faster than the player cannot be outwalked at all; it sweeps its entire outer
 radius along the street, and the only escape is getting off its line, so it must give enough
 warning to clear the *full* radius. A row warned of before it exists is held to a different floor
-instead: the flat `Tuning.OFFSCREEN_WARNING_MIN` (2.9s) from its screen-edge badge to the earliest
-it can reach her, since its place follows her and there is no field to walk out of during the
-badge. The fire engine, warned first this way, is created with its field already on her when she
-is on its street; its `telegraph_time` is 6.27s, well past that floor.
+instead: the flat `Tuning.OFFSCREEN_WARNING_MIN` (a second) from its screen-edge badge to the
+earliest it can reach her, since its place follows her and there is no field to walk out of during
+the badge, and its badge alone is at most `Tuning.WARNING_ALONE_MAX` (a second). The fire engine,
+warned first this way, is created just out of sight with its field already on her when she is on its
+street, so its one-second badge is the whole of its warning.
 
 `Tuning.validate_event()` asserts this on load, and `tests/test_events.gd` checks it over
 the whole catalogue, so an unfair event fails loudly rather than quietly ruining a run.
+
+**Coming warnings and in-world telegraphs have distinct contracts.** A thing telegraphs its coming only if it goes
+fast, comes toward her, and carries a heavy penalty — it can end the day or hit her hard
+(PLAYTEST-145, statements 18-23; inbox #598: "the telegraphing rule was about heavy penalty not
+*only* lethal"). One that does not — the loose dog and the cat, the alley mouse, the pigeons, the
+patrol — is outside the screen-edge badge and warning-first placement, and is met as it comes.
+Its in-world telegraph still satisfies the fairness contract: the cat's crouch, the mouse's and
+flock's wait, and the patrol's approach. Only the loose dog, met with its telegraph already spent,
+has none to validate (`docs/EVENTS.md`, "What telegraphs").
 
 ## Calm zones, and what every other ground does
 
@@ -1253,9 +1274,11 @@ are the ones that cost you the baby's calm.
 
 A resistance pickup's chalk mark follows her rather than sitting still: it counts as noticed
 only once she has been within `ResistanceDirector.SEEN_DISTANCE` (150px, kept under the
-visible world's own 180px vertical half-extent so the point is on screen on every bearing
-rather than only a favourable one — never right at the screen's own edge) of it, on screen,
-continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough, for long
+visible world's own 180px vertical half-extent so the point is inside the camera's view on every
+bearing rather than only a favourable one — never right at the screen's own edge) of it, and in
+sight — what she can see, `VisibleView`: in the tap scheme that is every point within 150px, and in
+the joystick scheme a mark down and to one side can be under a corner its controls cover, where it
+is not in sight and its dwell does not run — continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough, for long
 enough, that walking past it rather than to it is a choice, not the instant its tile merely
 swept across the camera on the way to somewhere else. Until then, walking more than
 `ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable

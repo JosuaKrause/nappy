@@ -1,0 +1,7 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+AFFORDABLE robber_giving_chase (0.0, -1.0) { "caught_at": inf, "at_the_lunge": 194.527770996094, "lunged_at": 0.01666666666667, "gave_up": true, "ended": true, "first_seen": inf, "cried": false, "excitement": 4.04751460426732 }
+AFFORDABLE robber_giving_chase (1.0, 0.0) { "caught_at": inf, "at_the_lunge": 342.527801513672, "lunged_at": 0.01666666666667, "gave_up": true, "ended": true, "first_seen": 0.1, "cried": false, "excitement": 4.04751460426732 }
+AFFORDABLE van_guard_giving_chase (0.0, -1.0) { "caught_at": inf, "at_the_lunge": 194.527770996094, "lunged_at": 0.01666666666667, "gave_up": true, "ended": true, "first_seen": inf, "cried": false, "excitement": 4.04751460426732 }
+AFFORDABLE van_guard_giving_chase (1.0, 0.0) { "caught_at": inf, "at_the_lunge": 343.527801513672, "lunged_at": 0.01666666666667, "gave_up": true, "ended": true, "first_seen": 0.1, "cried": false, "excitement": 4.04751460426732 }
+Focused regression checks=88 failures=0

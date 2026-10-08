@@ -243,18 +243,17 @@ touch".)*
   swing and the last night's front door are not guarded at the contact. The moment she has done
   one — handed the note or the package over, reached the door, been let through the district door
   after its inspection, reached the mast's foot or the swing, handed the key over — someone is sent
-  after her from off screen, `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) above or below her where there
-  is a straight run at her from there — at a front door, from across the street first, out of the
-  block opposite — far enough past the edge of the view that the screen-edge badge announces them
-  before they are in it, never through the district's wall or a door, and awake and running at her
-  from the first frame. Walking under the district door's raised boom instead brings out the door's
+  after her from off screen: the screen-edge badge goes up alone for half a second, pointing where
+  they will come from, and they are then placed just off screen that way — above or below her where
+  there is a straight run at her from there, at a front door from across the street first, out of
+  the block opposite — never through the district's wall or a door, and already running at her from
+  the first frame. Walking under the district door's raised boom instead brings out the door's
   own guard and nobody else, and a gatehouse is no hiding place: stepping back into one with the
   robber after her holds her where he catches her. The van's package sends the
   roadblock's own guard, the same look and the same rules; every other task sends the alley robber
-  himself. The warning is short: standing still, whoever comes reaches her about two seconds after
-  the badge rises. Running shakes them off; walking away does not, except where they have to come
-  along her own street from the side, which is further off, or from across the street at a corner
-  rather than straight below her, as at the station's door. Whichever
+  himself. The warning is short: standing still, whoever comes reaches her a little under two
+  seconds after the badge rises. Running shakes them off; walking away does not, from wherever they
+  come, since a pursuer does not give up on someone only walking. Whichever
   look-alike she chose for the man shouting, the price is the same, and every task's price is paid
   on the way out rather than guarded at one spot she could walk round. On the last night it
   chases her away from the station: the day is still won by getting home, so being caught there

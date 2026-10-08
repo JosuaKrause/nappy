@@ -54,9 +54,10 @@ const NOTICE_RADIUS := 400.0
 ## constraint is the *shorter* axis: at 150, any point inside the circle is on screen on **every**
 ## bearing, not merely a favourable one — the corner case a distance under the wider, 320px
 ## sideways half-extent would still have let through, sitting right at the top or bottom edge with
-## little sideways offset. That makes "well inside the view" a geometric guarantee rather than a
-## typical case, which is what makes `_sight.call(at)` below redundant whenever this already holds
-## and left in anyway, for a rig whose `_sight` answers something other than the real screen.
+## little sideways offset. That makes "well inside the camera's view" a geometric guarantee rather
+## than a typical case. It is not a guarantee of being in sight: in the joystick scheme a mark down
+## and to one side within 150px can be under a corner its controls cover, which is what
+## `_sight.call(at)` below (the visible area) answers, so the dwell does not run there.
 ## Felt, open to overturn against a played day.
 const SEEN_DISTANCE := 150.0
 
@@ -130,10 +131,14 @@ var _day_length := 0.0
 var _expired := false
 var _day := 0
 
-## Injected by `main` from the one rotation-aware "is this on screen" test the game already
-## has, `DangerEdge.is_on_screen()`. A rig may leave this unset — with no predicate, nothing
-## is ever seen and the re-placement rule below simply keeps running, which is also correct:
-## a mark nobody is watching for should never stop moving because of it.
+## Whether she can see a world point: injected by `main` from the one answer the game has,
+## `EventManager.sees()` — what she can see (`VisibleView`), the camera's view less, in the
+## joystick scheme, the two bottom corners its controls cover *(inbox #581, the player:
+## "everything should follow this (and treat it depending on the input mode)")*. So a chalk mark
+## under a covered corner is not seen, and its notice does not run there. A rig may leave this
+## unset — with no predicate, nothing is ever seen and the re-placement rule below simply keeps
+## running, which is also correct: a mark nobody is watching for should never stop moving because
+## of it.
 var _sight: Callable
 ## Whether the current pickup's mark has been seen this world-day. Sticky once true — see
 ## `_track_sight_and_reposition()`.
@@ -192,8 +197,8 @@ func setup(city: City, map: CityMap) -> void:
 		city.events.door_crossed.connect(_on_door_crossed)
 	_happenings.setup(city, map)
 
-## Lets the danger edge's own screen test answer "has she seen this" for the resistance
-## too, without the director holding a viewport of its own. See the class doc on `_sight`.
+## Lets the day's own answer to "can she see it" answer "has she seen this" for the resistance
+## too, without the director holding a camera of its own. See the doc on `_sight`.
 func set_sight(is_on_screen: Callable) -> void:
 	_sight = is_on_screen
 
@@ -719,15 +724,21 @@ func _trap_row_id(step: ResistanceSteps.Step) -> String:
 ## grassy-goose: "the robber should spawn in off-screen already pursuing when I touch the goal".)*
 ## The moment she completes a task `sets_a_trap_on_her()` answers for — hands over the note or the
 ## package, reaches the burnt building's door, crosses the district door, reaches a mast's foot or
-## the swing, or hands the key over at the station's door — `_trap_row_id()`'s row, awake from its
-## first frame, is spawned off screen — at a front door from across the street, elsewhere usually
-## `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) above or below her — always far enough past the edge of
-## the view that the screen-edge badge is up before it is in it (`_draw_arrival_position()`), and
-## comes at her. On day 9 only an inspected crossing sends him (`_on_door_crossed()`). So the errand's price is paid on the way
-## out, from wherever she did it, rather than guarded at one seeded spot she could walk round —
-## and for the man shouting, whichever look-alike she chose costs the same. The screen-edge badge
-## announces it while it is off screen, the same way it announces any pursuer
-## (`DangerEdge._is_worth_an_arrow()`).
+## the swing, or hands the key over at the station's door — `_trap_row_id()`'s row is sent at her
+## from off screen, and comes at her, awake from its first frame. On day 9 only an inspected
+## crossing sends him (`_on_door_crossed()`). So the errand's price is paid on the way out, from
+## wherever she did it, rather than guarded at one seeded spot she could walk round — and for the
+## man shouting, whichever look-alike she chose costs the same.
+##
+## **Warned first, like everything else that arrives from off screen** *(M226: the resistance's own
+## pursuers come off the "not warned first" exception, the player's "A, remove the exemption";
+## calm-kestrel, inbox #559, and busy-quail, inbox #569, "1s warning should be enough -- let's apply
+## that to the others as well")*: the screen-edge badge goes up alone at once, with nothing in the
+## world, pointing at where he will start (`_draw_arrival_position()`), for the row's own
+## `offscreen_notice` (`EventDef.warned_for()`, at most `Tuning.WARNING_ALONE_MAX`); then he is
+## created just out of sight that way from where she is by then, already chasing
+## (`EventManager.spawn_warned()`), and the badge goes off as he comes into
+## view. The badge's place moves only with her, so it never jumps (`PendingWarning`).
 ##
 ## **On the last night it chases her away from the station.** The hand-over is the sabotage, and
 ## the day still has to be won by walking home under the blackout before it goes on to the escape
@@ -737,8 +748,8 @@ func _trap_row_id(step: ResistanceSteps.Step) -> String:
 ##
 ## From `TRAP_FIRST_DAY`, like the guard. Where she is, or the contact she has just touched when
 ## no player is in the tree (a bare director in a rig): she is within the contact's own reach of
-## it, or crossing its door.
-## Nothing is spawned when `_draw_arrival_position()` finds no ground, which the run log says.
+## it, or crossing its door. Nothing is sent when `_draw_arrival_position()` finds no ground, then
+## or when the badge's time is up, which the run log says.
 func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 	if _day < TRAP_FIRST_DAY or not _city or not _city.events:
 		return
@@ -750,13 +761,34 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 		her = contact_position()
 	if her == Vector2.INF:
 		return
-	var arrival := _draw_arrival_position(_rng, her, def, is_at_a_front_door(step))
-	var at: Vector2 = arrival[0]
-	if at == Vector2.INF:
-		Telemetry.note("roll", ("task handed over unguarded: no walkable ground %.0fpx from her "
-				+ "in %d draws") % [Tuning.TRAP_ARRIVAL_DISTANCE, TRAP_DRAW_LIMIT + 4])
+	var front_door := is_at_a_front_door(step)
+	var first := _draw_arrival_position(_rng, her, def, front_door)
+	if first[0] == Vector2.INF:
+		Telemetry.note("roll", "task handed over unguarded: no walkable ground out of sight of her "
+				+ "in %d draws" % (TRAP_DRAW_LIMIT + 4))
 		return
-	_trap = _city.events.spawn_extra(def, at)
+	# The bearing the badge points along, fixed now; where he is created is asked again along it
+	# when the badge's time is up, from wherever she is then.
+	var bearing: Vector2 = (first[0] - her).normalized()
+	var drawn: Array = [first]
+	var putting_up := [true]
+	var where := func(standing: Vector2) -> Vector2:
+		# Only put_up may reuse the initial draw: the camera can settle while she stands still.
+		if putting_up[0]:
+			putting_up[0] = false
+			return first[0]
+		var again := _draw_arrival_position(_rng, standing, def, front_door, bearing)
+		drawn[0] = again
+		return again[0]
+	var arrive := func(place: Vector2, standing: Vector2) -> bool:
+		_trap = _city.events.spawn_warned(def, PackedVector2Array([place]))
+		_note_the_trap(def, place, standing, drawn[0])
+		return true
+	_city.events.warn_first(def, her, where, arrive)
+
+## The run log's line for the pursuer a task has just sent at her, created at `at` with her at `her`,
+## from the `_draw_arrival_position()` answer `arrival` that placed it.
+func _note_the_trap(def: EventDef, at: Vector2, her: Vector2, arrival: Array) -> void:
 	var run := "no clear run at her"
 	if arrival[3]:
 		run = "a walk at her from across the street"
@@ -767,15 +799,24 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 	Telemetry.note("roll", "task handed over: %s sent after her from %s, %.0fpx off (%s)"
 			% [sent, TelemetryLog.tile(_map.world_to_tile(at)), her.distance_to(at), run])
 
-## Where the robber a handed-over task sets on her starts, past `badge_line()` so the screen-edge
-## badge is up before he is on screen, on ground `_draw_guard_position()`'s own refusals leave alone
-## (walkable, not behind a closure, not held, not the home block, not a walled-off alley) and off
-## screen by `_sight` as well. Returns `[position, clear, beside, across]` — `Vector2.INF` when no
-## start qualifies; `clear` when the straight line from there to her is walkable; `beside` when he
-## starts to her side rather than above or below her; `across` when he comes from across the street
-## at a front door (`_across_the_street()`).
+## What she can see this frame — the day's own view (`EventManager.visible_view()`), or, in a rig
+## that has never looked through a camera, the tap scheme's view about her
+## (`PendingWarning.seen_from()`).
+func _view_from(her: Vector2) -> VisibleView:
+	var view: VisibleView = _city.events.visible_view() if _city and _city.events else null
+	return PendingWarning.seen_from(view, her)
+
+## Where the pursuer a handed-over task sets on her starts: **just out of sight of her** along its
+## bearing (`PendingWarning.just_out_of_sight()`, the row's own drawn box clear of what she can see
+## and never nearer than the view's half height), on ground `_draw_guard_position()`'s own refusals
+## leave alone (walkable, not behind a closure, not held, not the home block, not a walled-off
+## alley), and out of sight by `_sight` as well. Returns `[position, clear, beside, across]` —
+## `Vector2.INF` when no start qualifies; `clear` when the straight line from there to her is
+## walkable; `beside` when he starts to her side rather than above or below her; `across` when he
+## comes from across the street at a front door (`_across_the_street()`). `prefer`, when given, is a
+## bearing tried before any other: the one his badge already points along.
 ##
-## **At a front door, across the street first** (`front_door` — the burnt building's, the
+## **At a front door, across the street first when choosing the badge's bearing** (`front_door` — the burnt building's, the
 ## station's: `is_at_a_front_door()`). *(2026-10-04, the player, asked "at a front door, prefer a
 ## start on the far side of the street that's out of view and has a walkable way to you; if there's
 ## none, fall back to today's rule. Is that what you mean?": "yes, to your proposal about front
@@ -788,58 +829,59 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 ## inspected at — on day 9 she is let out 54px past the door's line, where a start straight above,
 ## below or beside her is often on the door's far side.
 ##
-## **Above or below her, `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) out, by preference.** That is past
-## the badge line vertically within `arrival_cone()` — about 16° for `robber_giving_chase`
-## (`outer_radius` 200), about 11° for `van_guard_giving_chase` (`outer_radius` 120, a narrower
-## field, so the badge needs longer to rise and the cone that stays past its line is tighter) — of
-## straight up or down, and never sideways, where the view is wider — so those bearings are drawn
-## inside the two cones rather than from the whole circle. Straight up and straight down first, in
-## an order the day's RNG picks, then `TRAP_DRAW_LIMIT` bearings from the cones.
+## **The badge's own bearing first, when it is asked again** (`prefer`): once the badge has been up,
+## he is created along the way it pointed if that start still qualifies — at a front door too, ahead
+## of the search across the street — so he comes from where the badge said.
+##
+## **Above or below her by preference**, since the view is shorter that way and a start there is
+## nearer. Straight up and straight down first, in an order the day's RNG picks, then
+## `TRAP_DRAW_LIMIT` bearings within `ARRIVAL_CONE` of either.
 ##
 ## **A clear run at her is what decides it**, since he chases in a straight line
 ## (`EventInstance._chase()`), sliding along whatever wall is in the way: a start behind a building
-## is a man stuck against its back wall while the badge says he is coming. On a minority of the
-## man shouting's handovers there is no clear run from above or below — she is on a street that runs
-## sideways, with no crossing street near enough — and at a front door with no start across the
-## street, where the building stands straight above her (`tests/probes/grassy_goose_target_traps.gd`
-## measures how often); **then he comes along her own street**, straight left
-## or right at `beside_distance()` (about 466px), past the badge line sideways. From there walking
-## directly away outlasts his notice and chase, which is the price of a start the wider view needs;
-## standing still or walking into him is still caught. Only when neither has a clear run does the
-## first legal start of all of them stand in, and then he may never reach her — measured at 1 in
-## 200 seeds for `robber_giving_chase`, never for `van_guard_giving_chase`
-## (`tests/probes/m137_trap_arrival.gd`).
+## is a man stuck against its back wall while the badge says he is coming. Where there is no clear
+## run from above or below — she is on a street that runs sideways, with no crossing street near
+## enough — and at a front door with no start across the street, where the building stands straight
+## above her (`tests/probes/grassy_goose_target_traps.gd` measures how often), **he comes along her
+## own street**, straight left or right just out of sight. Only when neither has a clear run does the
+## first legal start of all of them stand in, and then he may never reach her.
 ##
-## **Measured over 200 seeds each with `tests/probes/m137_trap_arrival.gd`**, one handover per
-## seed: the beside fallback fires for `robber_giving_chase` 40 times in 200 (20.0%) and for
-## `van_guard_giving_chase` 54 times in 200 (27.0%) — the guard's narrower 120px field (against the
-## robber's 200px) leaves a tighter vertical cone (`arrival_cone()`), so fewer of its bearings clear
-## a wall along the way.
+## **He arrives chasing** (`EventDef.arrives_chasing`, amendment 7 of M226), so from any start here
+## walking straight away is caught within his long `Tuning.PURSUIT_TIME` cap, as are standing still
+## and walking into him (`tools/test.sh probes/m207_warning_lead.gd` measures each answer).
 func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: EventDef,
-		front_door := false) -> Array:
+		front_door := false, prefer := Vector2.ZERO) -> Array:
+	var view := _view_from(her)
 	var walled_alleys := _walled_alleys()
-	var boundary := _boundary_bodies_near(her, beside_distance(def))
+	var beside := beside_distance(view, def, her)
+	var boundary := _boundary_bodies_near(her, beside)
+	if prefer != Vector2.ZERO:
+		var kept := PendingWarning.just_out_of_sight(view, def, her, prefer)
+		if is_legal_ground(_map, _map.world_to_tile(kept), walled_alleys) \
+				and not (_sight.is_valid() and _sight.call(kept)) \
+				and not _runs_through_the_boundary(kept, her, boundary):
+			if _a_clear_run(kept, her):
+				return [kept, true, is_zero_approx(prefer.y), false]
+			if front_door and kept.y > her.y and _his_walk_reaches_her(kept, her, beside, boundary):
+				return [kept, false, false, true]
 	if front_door:
-		var across := _across_the_street(her, def, walled_alleys, boundary)
+		var across := _across_the_street(her, def, walled_alleys, boundary, view)
 		if across != Vector2.INF:
 			return [across, _a_clear_run(across, her), false, true]
-	var cone := arrival_cone(def)
+	var bearings: Array[Vector2] = []
 	var up := PI / 2.0 if rng.randf() < 0.5 else -PI / 2.0
-	var starts: Array[Vector2] = [Vector2.RIGHT.rotated(up) * Tuning.TRAP_ARRIVAL_DISTANCE,
-			Vector2.RIGHT.rotated(-up) * Tuning.TRAP_ARRIVAL_DISTANCE]
+	bearings.append(Vector2.RIGHT.rotated(up))
+	bearings.append(Vector2.RIGHT.rotated(-up))
 	for _attempt in TRAP_DRAW_LIMIT:
 		var side := PI / 2.0 if rng.randf() < 0.5 else -PI / 2.0
-		starts.append(Vector2.RIGHT.rotated(side + rng.randf_range(-cone, cone))
-				* Tuning.TRAP_ARRIVAL_DISTANCE)
+		bearings.append(Vector2.RIGHT.rotated(side + rng.randf_range(-ARRIVAL_CONE, ARRIVAL_CONE)))
 	var along := 1.0 if rng.randf() < 0.5 else -1.0
-	var beside := beside_distance(def)
-	starts.append(Vector2(along * beside, 0.0))
-	starts.append(Vector2(-along * beside, 0.0))
+	bearings.append(Vector2(along, 0.0))
+	bearings.append(Vector2(-along, 0.0))
 	var fallback := Vector2.INF
-	for offset in starts:
-		if not is_past_the_badge_line(offset, def):
-			continue
-		var candidate := her + offset
+	for bearing in bearings:
+		var candidate := PendingWarning.just_out_of_sight(view, def, her, bearing)
+		var sideways := is_zero_approx(bearing.y)
 		var tile := _map.world_to_tile(candidate)
 		if not is_legal_ground(_map, tile, walled_alleys):
 			continue
@@ -848,10 +890,15 @@ func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: Event
 		if _runs_through_the_boundary(candidate, her, boundary):
 			continue
 		if _a_clear_run(candidate, her):
-			return [candidate, true, is_zero_approx(offset.y), false]
+			return [candidate, true, sideways, false]
 		if fallback == Vector2.INF:
 			fallback = candidate
 	return [fallback, false, false, false]
+
+## How far either side of straight up or straight down `_draw_arrival_position()` draws a start's
+## bearing, in radians. Chosen, not measured: a start just out of sight within it is nearer her than
+## one beside her, since the view is shorter than it is wide.
+const ARRIVAL_CONE := PI / 6.0
 
 ## Whether `step`'s target is a door on a building's front — the burnt building's (day 8) or the
 ## power station's (the last night) — where she stands on the sidewalk below the facade and the
@@ -866,13 +913,11 @@ static func is_at_a_front_door(step: ResistanceSteps.Step) -> bool:
 ## walk at her — he comes out of the block opposite and crosses at her. The nearest tile centre that
 ## is:
 ##
-## - below her and past `badge_line()`, so the badge is up before he is on screen, and off screen by
-##   `_sight`;
-## - at least `Tuning.TRAP_ARRIVAL_DISTANCE` (311px) from her, the floor under his notice: standing
-##   still she is lunged at no sooner than `Tuning.PURSUIT_MIN_NOTICE` after he appears;
+## - below her and wholly out of sight (`PendingWarning.is_out_of_sight()`, his drawn box against
+##   what she can see, never nearer than the view's half height), and out of sight by `_sight`;
 ## - legal ground (`is_legal_ground()`);
-## - one his own chase walks to her (`_his_walk_reaches_her()`) in no more ground than
-##   `beside_distance()` (about 466px), so he is never later than the start along her street he
+## - one his own chase walks to her (`_his_walk_reaches_her()`) in no more ground than the start
+##   beside her (`beside_distance()`), so he is never later than the start along her street he
 ##   replaces, and never through the region's wall or a door.
 ##
 ## The walk is his chase's, not a path: straight at her, sliding along whatever wall is in the way
@@ -881,8 +926,8 @@ static func is_at_a_front_door(step: ResistanceSteps.Step) -> bool:
 ## nearer straight below her, so nothing is drawn from the day's RNG. `Vector2.INF` when no tile
 ## qualifies.
 func _across_the_street(her: Vector2, def: EventDef, walled_alleys: Array[Rect2i],
-		boundary: Array[EventScheduler.Planned]) -> Vector2:
-	var furthest := beside_distance(def)
+		boundary: Array[EventScheduler.Planned], view: VisibleView) -> Vector2:
+	var furthest := beside_distance(view, def, her)
 	var reach := ceili(furthest / Tuning.TILE_SIZE) + 1
 	var at := _map.world_to_tile(her)
 	var candidates: Array[Vector2] = []
@@ -890,10 +935,9 @@ func _across_the_street(her: Vector2, def: EventDef, walled_alleys: Array[Rect2i
 		for dx in range(-reach, reach + 1):
 			var centre := _map.tile_to_world(at + Vector2i(dx, dy))
 			var offset := centre - her
-			var distance := offset.length()
-			if offset.y <= 0.0 or distance < Tuning.TRAP_ARRIVAL_DISTANCE or distance > furthest:
+			if offset.y <= 0.0 or offset.length() > furthest:
 				continue
-			if absf(offset.y) < badge_line(def, distance).y:
+			if not PendingWarning.is_out_of_sight(view, def, her, centre):
 				continue
 			candidates.append(centre)
 	candidates.sort_custom(func(a: Vector2, b: Vector2) -> bool:
@@ -966,64 +1010,13 @@ static func _runs_through_the_boundary(from: Vector2, to: Vector2,
 			return true
 	return false
 
-## How far from her, along each axis, a pursuer `def` started `distance` out has to be for
-## `DangerEdge` to raise its badge before he is on screen, whatever the camera is doing. Per axis,
-## in world px:
-##
-## - `Tuning.VIEW_HALF_EXTENT` (320 × 180), half the view;
-## - plus the most the camera leads toward him — `Stroller.CAMERA_LOOK_AHEAD` (46px) sideways,
-##   46 × `Stroller.OBLIQUE_Y` (32px) vertically, when she faces him;
-## - plus `DangerEdge.SCREEN_MARGIN` (130 screen px, 65px of world at zoom 2), how far outside the
-##   view a thing has to be before a badge is raised for it;
-## - plus the ground the gap closes by while the badge rises (`badge_rise_time()`), at his speed and
-##   hers together, since she may be walking into him.
-##
-## For `robber_giving_chase` at 311px, about 453 sideways and 299 vertically; for
-## `van_guard_giving_chase` at the same 311px, about 459 sideways and 305 vertically — a few px
-## more each way, since his narrower 120px `outer_radius` (against the robber's 200px) leaves more
-## of the approach still to close and so costs the badge a little longer to rise.
-static func badge_line(def: EventDef, distance: float) -> Vector2:
-	var world_per_screen_px := Tuning.VIEW_HALF_EXTENT.x * 2.0 / ScreenOrientation.DESIGN_SIZE.x
-	var lead := Vector2(Stroller.CAMERA_LOOK_AHEAD, Stroller.CAMERA_LOOK_AHEAD * Stroller.OBLIQUE_Y)
-	var rising := (def.pursue_speed + Tuning.WALK_SPEED) \
-			* badge_rise_time(def.pursue_speed, distance, def.outer_radius)
-	return Tuning.VIEW_HALF_EXTENT + lead + Vector2.ONE \
-			* (DangerEdge.SCREEN_MARGIN * world_per_screen_px + rising)
-
-## How long `DangerEdge` takes to raise a badge for something closing at `speed` from `distance`
-## out, with a field of `outer`: the approach it measures is smoothed (`DangerEdge.SMOOTHING`, 6/s,
-## from zero), and it announces once that reaches `DangerEdge.announces()`'s own threshold at that
-## range — `CLOSING_SPEED`, or the gap to the field over `LEAD_TIME`. Plus two frames at 30 frames a
-## second, the slowest a phone runs it: the first, which has no earlier position to measure an
-## approach from, and one of rounding. About 0.1s for the robber at 311px, 0.15s at his 466px
-## beside distance; about 0.13s for the van's guard at 311px, 0.2s at his own 476px beside
-## distance — his narrower field leaves more of the approach still to close either way.
-static func badge_rise_time(speed: float, distance: float, outer: float) -> float:
-	var needed := maxf(DangerEdge.CLOSING_SPEED, maxf(0.0, distance - outer) / DangerEdge.LEAD_TIME)
-	if needed >= speed:
-		return INF
-	return 2.0 / 30.0 + log(speed / (speed - needed)) / DangerEdge.SMOOTHING
-
-## Whether a start at `offset` from her is outside the view grown by `badge_line()` — past it on
-## either axis is outside the box.
-static func is_past_the_badge_line(offset: Vector2, def: EventDef) -> bool:
-	var line := badge_line(def, offset.length())
-	return absf(offset.x) >= line.x or absf(offset.y) >= line.y
-
-## The half-angle, in radians, of the cone about straight up or straight down inside which a start
-## `Tuning.TRAP_ARRIVAL_DISTANCE` out is past `badge_line()` vertically — zero if it never is.
-static func arrival_cone(def: EventDef) -> float:
-	var line := badge_line(def, Tuning.TRAP_ARRIVAL_DISTANCE)
-	return acos(minf(1.0, line.y / Tuning.TRAP_ARRIVAL_DISTANCE))
-
-## How far to her side he starts when he comes along her own street: the least distance past
-## `badge_line()` sideways. The line moves out with the start, since a further start takes the badge
-## longer to rise for, so it is walked out to where it stops moving and rounded up.
-static func beside_distance(def: EventDef) -> float:
-	var distance := badge_line(def, 0.0).x
-	for _step in 6:
-		distance = badge_line(def, distance).x
-	return ceilf(distance)
+## How far to her side he starts when he comes along her own street: just out of sight sideways, his
+## drawn box clear of what she can see (`PendingWarning.just_out_of_sight()`), on whichever side is
+## further, so a start either side is covered. About 340px with the camera on her.
+static func beside_distance(view: VisibleView, def: EventDef, her: Vector2) -> float:
+	var right := PendingWarning.just_out_of_sight(view, def, her, Vector2.RIGHT).distance_to(her)
+	var left := PendingWarning.just_out_of_sight(view, def, her, Vector2.LEFT).distance_to(her)
+	return ceilf(maxf(right, left))
 
 ## Whether every point on the straight line from `from` to `to` is walkable, sampled at a quarter
 ## tile — the question `EventInstance._walkable_step()` asks of each step a chaser takes.
@@ -1246,8 +1239,8 @@ const GUARD_HALF_EXTENT := Vector2(14.0, 26.0)
 ## of the centre and the four corners. The screen is a rectangle far larger than either box and
 ## only ever turned by quarter turns (`ScreenOrientation`), so a box that overlaps it has a corner
 ## inside it. A bare centre test is what lets a picture whose centre is one pixel past the edge
-## show half of itself. The corners are asked through `_sight` itself rather than
-## `DangerEdge.is_on_screen()`'s own `margin`, which is in screen pixels and not in the world's.
+## show half of itself. The corners are asked through `_sight` itself rather than a margin on
+## it, since a margin grows every side of the box alike and the box is not square.
 ## `false` when `_sight` is unset: the bare-map rigs several tests in `tests/test_resistance.gd`
 ## drive have no camera to ask, so nothing they place is ever refused for being seen.
 func _box_shows(centre: Vector2, half: Vector2) -> bool:

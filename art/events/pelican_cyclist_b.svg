@@ -7,19 +7,21 @@
      illustrated PNG is ever made of it; the atlas bake rasterizes it like any SVG.
      Canvas 40x42, the cyclist's own for this view; bottom-centre ground anchor (20,42). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="42" viewBox="0 0 40 42" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <!-- The whole far leg is behind both wheels and every bicycle tube. -->
+  <path d="M19.2 24.6 L19.4 29.6 L16.4 34.4" fill="none" stroke="#3b2d32" stroke-width="2"/>
+  <path d="M19.2 24.6 L19.4 29.6 L16.4 34.4" fill="none" stroke="#b8683a" stroke-width="1.1"/>
+  <path d="M15.6 33.9 L19.4 33.5 L19.8 34.9 L18.8 35.4 L15.8 35.2 Z" fill="#b8683a" stroke-width="0.6"/>
   <circle cx="8" cy="34" r="7" fill="none" stroke="#221f28" stroke-width="2"/>
   <circle cx="31" cy="34" r="7" fill="none" stroke="#221f28" stroke-width="2"/>
   <rect x="10" y="26" width="19" height="3" fill="#c4503c"/>
   <rect x="17" y="28" width="3" height="7" fill="#c4503c"/>
   <rect x="28" y="20" width="3" height="9" fill="#c4503c"/>
   <rect x="26" y="18" width="9" height="3" fill="#221f28"/>
-  <path d="M19.2 24.6 L19.4 29.6 L16.4 34.4" fill="none" stroke="#3b2d32" stroke-width="2"/>
-  <path d="M19.2 24.6 L19.4 29.6 L16.4 34.4" fill="none" stroke="#b8683a" stroke-width="1.1"/>
-  <path d="M15.6 33.9 L19.4 33.5 L19.8 34.9 L18.8 35.4 L15.8 35.2 Z" fill="#b8683a" stroke-width="0.6"/>
   <path d="M11.6 19.2 L5.4 20.8 L5.8 23.4 L11.8 23.6 Z" fill="#ebe5d8"/>
-  <path d="M16.2 25 L20.8 27.2 L20.8 31" fill="none" stroke="#3b2d32" stroke-width="2"/>
-  <path d="M16.2 25 L20.8 27.2 L20.8 31" fill="none" stroke="#e0843a" stroke-width="1.1"/>
-  <path d="M20.0 30.5 L23.8 30.1 L24.2 31.5 L23.2 32.0 L20.2 31.8 Z" fill="#e0843a" stroke-width="0.6"/>
+  <!-- The same near hip carries the raised foot across the pedal bar. -->
+  <path d="M16 25 L20.8 27.2 L18.6 31" fill="none" stroke="#3b2d32" stroke-width="2"/>
+  <path d="M16 25 L20.8 27.2 L18.6 31" fill="none" stroke="#e0843a" stroke-width="1.1"/>
+  <path d="M17.8 30.5 L21.6 30.1 L22.0 31.5 L21.0 32.0 L18.0 31.8 Z" fill="#e0843a" stroke-width="0.6"/>
   <clipPath id="pelican-body"><path d="M10.4 21.6 C10 16.4 13.4 12.6 18.2 12.4 C22.4 12.2 25.4 15.4 25.2 19.6 C25 24 21.4 27 16.6 27 C12.8 27 10.6 24.8 10.4 21.6 Z"/></clipPath>
   <path d="M10.4 21.6 C10 16.4 13.4 12.6 18.2 12.4 C22.4 12.2 25.4 15.4 25.2 19.6 C25 24 21.4 27 16.6 27 C12.8 27 10.6 24.8 10.4 21.6 Z" fill="#ebe5d8" stroke="none"/>
   <g clip-path="url(#pelican-body)" stroke="none">

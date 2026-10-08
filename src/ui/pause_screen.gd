@@ -211,7 +211,7 @@ func _wants_rotation() -> bool:
 ## for the touch index a mouse event carries none of.
 ##
 ## Returns whether `event` belonged to the restart button at all — a press that landed inside its
-## `catch_rect()`, or the matching release, whichever way the hold resolves. The caller returns
+## `contains_design_point()`, or the matching release, whichever way the hold resolves. The caller returns
 ## without falling through to the catch-all exactly when this is true, so a press that starts a hold
 ## never also closes the screen underneath it, and a release — completed or not — never does either.
 ## A completed hold's own restart already fired before this release ever arrives; see
@@ -250,7 +250,7 @@ func _handle_restart_touch(event: InputEvent) -> bool:
 			get_viewport().set_input_as_handled()
 			return true
 		var at := ScreenOrientation.to_design_space(position, _wants_rotation())
-		if not _restart_button.catch_rect().has_point(at):
+		if not _restart_button.contains_design_point(at):
 			return false
 		if not _restart_button.begin_hold(index):
 			return false
@@ -277,8 +277,8 @@ const _MOUSE_HOLD_INDEX := -2
 ## silences a click.
 func _update_hover(position: Vector2) -> void:
 	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
-	_continue_button.set_hovered(_buttons.visible and _continue_button.catch_rect().has_point(at))
-	_restart_button.set_hovered(_buttons.visible and _restart_button.catch_rect().has_point(at))
+	_continue_button.set_hovered(_buttons.visible and _continue_button.contains_design_point(at))
+	_restart_button.set_hovered(_buttons.visible and _restart_button.contains_design_point(at))
 
 ## Whether an acknowledge-and-resume coroutine is already in flight — guards the same double-fire a
 ## real touch device's own emulated mouse click could otherwise cause, since `TouchInput.is_press()`

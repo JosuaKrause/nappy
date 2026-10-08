@@ -1,0 +1,57 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+
+== M207: seconds from the first warning to the earliest reach ==
+| row | how it is met | walking toward | standing | walking away | exists after | floor | over the floor (toward / standing / away) |
+|---|---|---|---|---|---|---|---|
+| `cat_dash` | director, across her line, vertical | 1.15 | never (it left) | never (it left) | — | outside | — |
+| `cat_dash` | director, across her line, horizontal | 0.00 | 0.00 | 0.00 | — | outside | — |
+| `alley_mouse` | waits in an alley, dashes across it | 1.42 | never (it left) | never (it left) | — | outside | — |
+| `military_convoy` | streamed in down her street | 4.08 | 4.08 | 15.53 | — | 4.29 | -0.21 / -0.21 / +11.24 |
+| `loose_dog` | unannounced, down her line, vertical | 0.00 | 0.00 | 0.00 | — | outside | — |
+| `loose_dog` | unannounced, down her line, horizontal | 0.58 | 0.98 | 3.25 | — | outside | — |
+| `cyclist` | warned, down her line, vertical | 1.65 | 2.02 | 3.28 | 1.00 | 1.00 | +0.65 / +1.02 / +2.28 |
+| `cyclist` | warned, down her line, horizontal | 2.23 | 2.92 | never (it left) | 1.00 | 1.00 | +1.23 / +1.92 / never |
+| `fire_truck` | warned, on its road to the fire | 1.02 | 1.02 | 1.02 | 1.00 | 1.00 | +0.02 / +0.02 / +0.02 |
+| `military_convoy` | day 13's column, warned in its lane | 1.02 | 1.02 | 1.02 | 1.00 | 1.00 | +0.02 / +0.02 / +0.02 |
+| `pigeon_flock` | waits on the sidewalk | 0.80 | 1.72 | never (it left) | — | outside | — |
+| `charging_dog` | day 3, warned, down her heading, vertical | 1.32 | 1.88 | 7.08 | 0.52 | 1.50 | -0.18 / +0.38 / +5.58 |
+| `charging_dog` | day 3, warned, down her heading, horizontal | 1.98 | 3.02 | 8.98 | 0.52 | 1.50 | +0.48 / +1.52 / +7.48 |
+| `charging_dog` | day 4 on, waits for her | 0.48 | 0.82 | 6.57 | — | 1.50 | -1.02 / -0.68 / +5.07 |
+| `police_patrol` | return leg, director, down the road toward her | 1.77 | 1.77 | never (it left) | — | outside | — |
+| `door_guard` | steps out of the hut beside her | 3.85 | 2.00 | 3.85 | — | 1.50 | +2.35 / +0.50 / +2.35 |
+| `alley_robbery` | waits in an alley | 0.52 | 0.88 | 4.18 | — | 1.50 | -0.98 / -0.62 / +2.68 |
+| `masked_pursuer` | waits at the foot of the stairwell | 2.27 | 3.87 | never (it left) | — | 3.53 | -1.26 / +0.34 / never |
+
+== M226: the gold timing, seconds from the first warning ==
+| pursuer | answer | visible | lunges | catches her | warning | chase |
+|---|---|---|---|---|---|---|
+| `charging_dog`, day 3, vertical | walking toward | 0.53 | 0.97 | 1.32 | 0.53 | 0.35 |
+| `charging_dog`, day 3, vertical | standing | 0.53 | 1.28 | 1.88 | 0.53 | 0.60 |
+| `charging_dog`, day 3, vertical | walking away | 0.55 | 5.03 | 7.08 | 0.55 | 2.05 |
+| `charging_dog`, day 3, vertical | running away | — | — | gave up at 2.03 | — | — |
+| `charging_dog`, day 3, horizontal | walking toward | 0.53 | 1.63 | 1.98 | 0.53 | 0.35 |
+| `charging_dog`, day 3, horizontal | standing | 0.53 | 2.42 | 3.02 | 0.53 | 0.60 |
+| `charging_dog`, day 3, horizontal | walking away | 0.55 | 5.03 | 8.98 | 0.55 | 3.95 |
+| `charging_dog`, day 3, horizontal | running away | — | — | gave up at 2.03 | — | — |
+| `robber_giving_chase`, from above | walking toward | 0.53 | 0.53 | 1.30 | 0.53 | 0.77 |
+| `robber_giving_chase`, from above | standing | 0.53 | 0.53 | 1.83 | 0.53 | 1.30 |
+| `robber_giving_chase`, from above | walking away | 0.55 | 0.53 | 5.02 | 0.55 | 4.48 |
+| `robber_giving_chase`, from above | running away | — | 0.53 | gave up at 0.87 | — | — |
+| `robber_giving_chase`, from beside | walking toward | 0.53 | 0.53 | 1.97 | 0.53 | 1.43 |
+| `robber_giving_chase`, from beside | standing | 0.53 | 0.53 | 2.98 | 0.53 | 2.45 |
+| `robber_giving_chase`, from beside | walking away | 0.55 | 0.53 | 8.90 | 0.55 | 8.37 |
+| `robber_giving_chase`, from beside | running away | — | 0.53 | gave up at 0.87 | — | — |
+| `van_guard_giving_chase`, from above | walking toward | 0.53 | 0.53 | 1.28 | 0.53 | 0.75 |
+| `van_guard_giving_chase`, from above | standing | 0.53 | 0.53 | 1.82 | 0.53 | 1.28 |
+| `van_guard_giving_chase`, from above | walking away | 0.55 | 0.53 | 4.97 | 0.55 | 4.43 |
+| `van_guard_giving_chase`, from above | running away | — | 0.53 | gave up at 0.87 | — | — |
+| `van_guard_giving_chase`, from beside | walking toward | 0.53 | 0.53 | 1.95 | 0.53 | 1.42 |
+| `van_guard_giving_chase`, from beside | standing | 0.53 | 0.53 | 2.97 | 0.53 | 2.43 |
+| `van_guard_giving_chase`, from beside | walking away | 0.55 | 0.53 | 8.88 | 0.55 | 8.35 |
+| `van_guard_giving_chase`, from beside | running away | — | 0.53 | gave up at 0.87 | — | — |
+-- m207_warning_lead.gd           434 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/m207_warning_lead.gd. Not a green build.

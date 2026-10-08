@@ -41,7 +41,7 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	AtlasLibrary.release(&"ui")
 
-## Whether the chosen scheme is the joystick one — the only one that draws run buttons, and so the
+## Whether the chosen scheme is the joystick one — the only one that offers a Run disc, and so the
 ## only one where a line may name a run button. False when no `TouchControls` exists (a test, or
 ## a screenshot rig that never built one), which is the tap scheme's wording.
 static func joystick_in_force(tree: SceneTree) -> bool:

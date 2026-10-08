@@ -1,0 +1,17 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[GameState] run started, seed=4242
+[Telemetry] /Users/krause/Library/Application Support/Godot/app_userdata/Nappy/telemetry/2026-10-07/rig-221147-seed4242-v0.25.4-26-g0364aa43/run.log
+[Main] 9 atlas pages held from startup in 23 ms
+[Main] city generated in 293 ms (seed 4242)
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] day 3 started in 1166 ms (act 1): 366 events (24 live, 1 ahead), 234 crowd, 210s | calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard | closed: roadworks h(0,6)
+CORNER 3.939 camera=false visible=false badge=true joystick=true relative=(-347.4062, 167.8308) age=0.000
+CORNER 3.980 camera=true visible=false badge=true joystick=true relative=(-339.6655, 164.2209) age=0.041
+CORNER 4.698 camera=true visible=false badge=false joystick=true relative=(-195.3098, 108.2546) age=0.759
+CORNER 4.704 camera=true visible=true badge=false joystick=true relative=(-191.3987, 107.7808) age=0.766
+CORNER 7.513 camera=true visible=true badge=true joystick=true relative=(29.94482, -8.146973) age=3.574
+CORNER 8.003 camera=false visible=false badge=true joystick=true relative=(-347.4062, 167.8303) age=0.000
+CORNER 8.044 camera=true visible=false badge=true joystick=true relative=(-339.752, 164.2607) age=0.041
+Frame trace: /Users/krause/Library/Application Support/Godot/app_userdata/Nappy/frame-traces/trace-2026-10-07T22-11-57-seed4242-11303495.json
+CORNER_RESULT covered=true emerged=true

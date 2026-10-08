@@ -155,13 +155,13 @@ func _test_the_joystick_corners_are_not_visible(t) -> void:
 	var ring := Vector2(TouchControls.STOP_RADIUS, TouchControls.STOP_RADIUS)
 	var button := Vector2(TouchControls.RUN_RADIUS, TouchControls.RUN_RADIUS)
 	t.check(left.encloses(Rect2(TouchControls.FOCUS_LEFT - ring, ring * 2.0))
-			and left.encloses(Rect2(TouchControls.RUN_CENTRE_LEFT - button, button * 2.0)),
+			and left.encloses(Rect2(TouchControls.FOCUS_LEFT - button, button * 2.0)),
 			"the left corner holds the left ring and its run button (%s)" % left)
 	t.check(right.encloses(Rect2(TouchControls.FOCUS_RIGHT - ring, ring * 2.0))
-			and right.encloses(Rect2(TouchControls.RUN_CENTRE_RIGHT - button, button * 2.0)),
+			and right.encloses(Rect2(TouchControls.FOCUS_RIGHT - button, button * 2.0)),
 			"the right corner holds the right ring and its run button (%s)" % right)
-	t.check(is_equal_approx(left.position.y, TouchControls.FOCUS_LEFT.y - TouchControls.STOP_RADIUS)
-			and is_equal_approx(left.end.x, TouchControls.RUN_CENTRE_LEFT.x + TouchControls.RUN_RADIUS)
+	t.check(is_equal_approx(left.position.y, TouchControls.FOCUS_LEFT.y - TouchControls.RUN_RADIUS)
+			and is_equal_approx(left.end.x, TouchControls.FOCUS_LEFT.x + TouchControls.RUN_RADIUS)
 			and is_equal_approx(left.end.y, ScreenOrientation.DESIGN_SIZE.y)
 			and is_zero_approx(left.position.x),
 			"and runs from the screen's side to the button's far edge, the ring's top to the bottom")
