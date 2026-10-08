@@ -29,8 +29,9 @@ its actor geometry is recorded in the manifest.
 Both that log and the first uninstrumented `assertion.log` contain sandbox errors opening
 Godot's user log and system certificates. They are retained diagnostics, not clean passing
 verification, even though the old wrapper printed PASS. `assertion-manifest.json` retains
-the assertions that run reported. The later `clean-assertion.log` and
-`clean-assertion-manifest.json` come from the final companion recipe with normal permissions:
+the assertions both runs reported: its SHA-256 is identical in the two runs, so only one
+manifest is retained. The later `clean-assertion.log` comes from the final companion recipe
+with normal permissions:
 the same assertion command above, with output `/private/tmp/nappy588-clean-assertion`, at
 HEAD `9fe6c905e7733e7c44ee80df423a00b29184b505` with only parent documentation/evidence edits
 pending. That run passes, completes playback and contains no engine errors.
