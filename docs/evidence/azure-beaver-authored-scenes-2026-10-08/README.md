@@ -72,8 +72,9 @@ and the engine log preserve provenance; the whole movie remains local at
 `build/records/azure-beaver-day7-motion-after-580-direct.mp4`. This proves continuous motion for
 this one covered-window day 7 playback; it does not claim a moving review of every authored scene.
 
-`fire-truck-crying.json` and its one-line run-log excerpt retain a separate failure at that
-same clean source. `tools/scene-recipes.sh --output /tmp/all-saved-scenes` stops on the
+`fire-truck-crying.json` and its one-line run-log excerpt retain a separate failure at clean
+source `f1ac0061e43800360715c6458433aad6f7eec760`.
+`tools/scene-recipes.sh --output /tmp/all-saved-scenes` stops on the
 unchanged full-city fire-truck recipe: its waiting route reaches excitement 100 and loses
 to crying at tick 261, before the required truck arrival observations. This result does
 not affect the ten passing stretch playbacks.
