@@ -2796,6 +2796,15 @@ func retarget_the_arrow() -> void:
 	elif not _swept_for(newest, found, versions):
 		_arrow_nearest_next = ArrowField.start(_map, found, versions)
 	var chosen: Variant = _choose_the_arrow(found)
+	if OS.has_environment("PM_DEBUG"):
+		var her_tile := _map.world_to_tile(_player_position())
+		for target in found:
+			print("PMDBG target %s at %s beat %s" % [target["key"], _map.world_to_tile(target["at"]), target["beat"]])
+		print("PMDBG her %s nearest %s len %d own %s len %d chosen %s cur %s" % [her_tile,
+				_arrow_nearest.nearest_at(her_tile) if _arrow_nearest else null,
+				_arrow_nearest.length_at(her_tile) if _arrow_nearest else -9,
+				_arrow_own.keys[0] if _arrow_own else null,
+				_arrow_own.length_at(her_tile) if _arrow_own else -9, chosen, _arrow_key])
 	if chosen == null:
 		if _arrow_position() == Vector2.INF:
 			_arrow_key = null
