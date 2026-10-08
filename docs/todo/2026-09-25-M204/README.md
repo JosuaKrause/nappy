@@ -1,4 +1,4 @@
-priority: later
+priority: now
 
 ## M204 — A trailer, rendered from the game by a script · asked for 2026-09-25
 
@@ -7,7 +7,11 @@ priority: later
 
 [PLAYTEST-139](../../playtests/PLAYTEST-139.md) holds the whole design, statements 1–10.
 
-The [standalone screenshot investigation](standalone-escape-screenshot.md) is the remaining
-work. It concerns the ordinary screenshot command's escape flags, independently of recipe
-capture. The trailer's design and camera correction are recorded in
-[M204, the trailer from saved scenes](../../decisions/2026-09-25-M204.md).
+[Polite-pelican](../../playtests/2026-10-07-polite-pelican.md) approves the current pacing and
+asks for a more interesting intro slide and further minimalist music experiments, with danger
+and tension through the military scenes after the title card. The
+[intro and music options](intro-slide-and-music.md) are the active work.
+
+The separate [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
+the ordinary screenshot command's escape flags and stays deferred. The trailer's design and
+camera correction are recorded in [M204, the trailer from saved scenes](../../decisions/2026-09-25-M204.md).
