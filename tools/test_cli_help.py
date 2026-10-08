@@ -42,6 +42,7 @@ ENTRY_POINTS = (
     "codex-hooks.py",
     "goatcounter.py",
     "synthesize-sfx.py",
+    "trailer/synthesize_score.py",
     "split-scenes.py",
     "migrate-queue.py",
     "convert-queue-edits.py",

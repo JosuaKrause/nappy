@@ -87,7 +87,8 @@ the recorded engine, assets, ffmpeg/font, and settings named by the retained man
 
   tools/trailer.sh --shot choice
 
-Opens a window for each gameplay shot. Needs jq, ffmpeg and fc-match on PATH, and Godot 4.7 at \$GODOT.
+Opens a window for each gameplay shot. Needs jq, ffmpeg and fc-match on PATH, uv for auditions,
+and Godot 4.7 at \$GODOT.
 EOF
 }
 
@@ -123,6 +124,10 @@ fi
 if [[ "$MODE" == auditions || "$MODE" == auditions-reuse ]] && [[ ! -f "$SCORES_FILE" ]]; then
     echo "trailer.sh: no audition score list at ${SCORES_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
+fi
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse ]] && ! command -v uv >/dev/null 2>&1; then
+    echo "trailer.sh: uv not found on PATH; score auditions use the project Python environment" >&2
+    exit 127
 fi
 
 # ------------------------------------------------------------------- the shot list, checked ---
@@ -856,32 +861,10 @@ volume_stat() {
         sed -n "s/.*${key}: *\([^ ]*\).*/\1/p" | tail -1
 }
 
-score_expression() {
-    local id="$1" expression="" at duration frequency gain texture phase envelope voice
-    while IFS=$'\t' read -r at duration frequency gain texture; do
-        phase="2*PI*${frequency}*(t-${at})"
-        envelope="pow(sin(PI*(t-${at})/${duration})\\,2)"
-        case "$texture" in
-            pluck) voice="(sin(${phase})+0.22*sin(2*${phase}))*${envelope}" ;;
-            glass) voice="(sin(${phase})+0.32*sin(2.01*${phase})+0.12*sin(4.07*${phase}))*${envelope}" ;;
-            pulse) voice="(sin(${phase})+0.18*sin(3*${phase}))*${envelope}" ;;
-            drone) voice="(sin(${phase})+0.16*sin(0.5*${phase}))*(0.82+0.18*sin(2*PI*0.37*t))*${envelope}" ;;
-            tick) voice="(sin(${phase})+0.25*sin(3*${phase}))*exp(-8*(t-${at})/${duration})*sin(PI*(t-${at})/${duration})" ;;
-        esac
-        [[ -z "$expression" ]] || expression+="+"
-        expression+="if(between(t\\,${at}\\,$(awk -v a="$at" -v d="$duration" 'BEGIN {printf "%.6f", a+d}'))\\,${gain}*${voice}\\,0)"
-    done < <(jq -r --arg id "$id" '.options[] | select(.id == $id) | .events[] |
-        [.at,.duration,.frequency,.gain,.texture] | @tsv' <<< "$RESOLVED_SCORES")
-    printf '%s\n' "$expression"
-}
-
 build_score_once() {
-    local id="$1" raw="$2" score="$3" expression raw_mean raw_peak target ceiling wanted room adjust
-    expression="$(score_expression "$id")"
-    ffmpeg -hide_banner -loglevel error -y \
-        -f lavfi -i "aevalsrc=exprs='${expression}|${expression}':s=48000:d=${total_seconds}:c=stereo" \
-        -af "afade=t=in:st=0:d=0.12,afade=t=out:st=$(awk -v d="$total_seconds" 'BEGIN {print d-0.25}'):d=0.25" \
-        -c:a pcm_s16le "$raw"
+    local id="$1" raw="$2" score="$3" raw_mean raw_peak target ceiling wanted room adjust
+    uv run python "$PROJECT_DIR/tools/trailer/synthesize_score.py" \
+        --resolved "$OUT_DIR/source/resolved-scores.json" --option "$id" --output "$raw"
     raw_mean="$(volume_stat "$raw" mean_volume)"
     raw_peak="$(volume_stat "$raw" max_volume)"
     target="$(jq -r '.target_mean_db' <<< "$RESOLVED_SCORES")"
