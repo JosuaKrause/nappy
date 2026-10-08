@@ -721,8 +721,8 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 	GameState.play_seconds = 0.0
 
 ## The trailer overview grows the finite city by one authored landscape margin. Its added east and
-## west columns are forest, while the north and south bands own their corners and the bridge ends
-## at the ordinary camera border depth.
+## west columns are forest, while the north and south bands own their corners and the bridge's
+## road carries on to any depth.
 func _test_the_overview_is_landscape_to_every_edge(t) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)

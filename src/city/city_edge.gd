@@ -153,11 +153,12 @@ func _swallow_the_road() -> void:
 ## The mountain over the tunnel, between the top of the portal and the far edge of the border band.
 ##
 ## The ground already paints mountain there — `City._border_source` stops the road at the
-## opening — but the ground is *under* the traffic, and a car on its way out drives on to
-## `Tuning.OUT_OF_SIGHT` before it is recycled, which is further than the portal is tall. This is
-## the lid: the same tile the border uses, blitted on the tile grid so it is indistinguishable from
-## the ground around it, in the y-sorted layer where a car that far past the edge sorts behind
-## it. Without it the car is dark inside the mouth and then bright on top of the mountain.
+## opening — but the ground is *under* the traffic, and a car coming out of the tunnel is put
+## inside the dark and under this roof (`CrowdAgent.TUNNEL_ENTRY_ROOM`), further than the portal
+## is tall. This is the lid: the same tile the border uses, blitted on the tile grid so it is
+## indistinguishable from the ground around it, in the y-sorted layer where a car that far past
+## the edge sorts behind it. Without it the car is dark inside the mouth and then bright on top
+## of the mountain.
 ##
 ## The whole corridor's width rather than the carriageway's, so a sprite hanging over its lane is
 ## covered too; the pavement columns are mountain underneath anyway, so the extra paint changes

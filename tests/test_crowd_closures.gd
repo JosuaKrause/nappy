@@ -46,6 +46,7 @@ func run(t) -> void:
 	_test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t)
 	_test_cars_come_out_of_the_tunnel_and_off_the_bridge(t)
 	_test_cars_do_not_drive_on_across_the_mountain(t)
+	_test_spine_cars_are_put_out_of_sight(t)
 	_test_nobody_enters_across_a_plain_edge(t)
 	_test_the_entry_roll_is_kept_inside_its_own_room(t)
 	_test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t)
@@ -1317,6 +1318,49 @@ func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t) -> void:
 				"edge %d: no car off the spine ever stands out of bounds (%d frames it did)"
 				% [i, off_spine_cars_out])
 
+## A spine car that is put into the world past the map's edge is put out of anybody's sight: coming
+## out of the tunnel it is wholly inside the opaque dark and no deeper than the mountain roof, and
+## coming onto the bridge it is beyond the camera's reach from the map's edge. Stood at each end,
+## every spine car is recycled over and over and the landings past the edge are read.
+func _test_spine_cars_are_put_out_of_sight(t) -> void:
+	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
+	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
+	var size := _city.map.world_size()
+	var ends := {
+		"tunnel": Vector2((spine_lo + spine_hi) * 0.5, Tuning.TILE_SIZE),
+		"bridge": Vector2((spine_lo + spine_hi) * 0.5, size.y - Tuning.TILE_SIZE),
+	}
+	var i := 0
+	for name in ends:
+		var at: Vector2 = ends[name]
+		_city.crowd.start_day(1, _rng(60 + i), at)
+		i += 1
+		var landed := 0
+		var in_view := 0
+		var too_deep := 0
+		for frame in int(round(40.0 / STEP)):
+			_city.crowd.set_focus(at)
+			_city.crowd.step(STEP)
+			for agent in _city.crowd.agents():
+				if agent.kind != CrowdAgent.Kind.CAR or not _city.map.is_main_road(true, agent._corridor):
+					continue
+				agent._recycle()
+				var y: float = agent.position.y
+				if name == "tunnel" and y < 0.0:
+					landed += 1
+					if y > -CrowdAgent.TUNNEL_ROOM:
+						in_view += 1
+					if y < -CrowdAgent.TUNNEL_ENTRY_ROOM:
+						too_deep += 1
+				elif name == "bridge" and y > size.y:
+					landed += 1
+					if y < size.y + CrowdAgent.BRIDGE_ENTRY_MIN:
+						in_view += 1
+		t.check(landed > 0, "%s: spine cars were put past the edge, so the check is not vacuous" % name)
+		t.check(in_view == 0 and too_deep == 0,
+				"%s: no spine car comes into existence in view (%d of %d did; %d too deep)"
+				% [name, in_view, landed, too_deep])
+
 ## A car driving into the tunnel stops existing once its whole body is inside the mouth, so it
 ## never visibly drives on across the mountain over it, and the bridge is long enough that a car
 ## never drives off the end of its deck. Stood at each end, the furthest any spine car gets past the
@@ -1347,7 +1391,7 @@ func _test_cars_do_not_drive_on_across_the_mountain(t) -> void:
 				furthest_south = maxf(furthest_south, agent.position.y - size.y)
 				if agent.position.y < 0.0 or agent.position.y > size.y:
 					seen_past_the_edge += 1
-		t.check(furthest_north <= CrowdAgent.TUNNEL_ROOM + Tuning.CAR_STRIKE_HALF_LENGTH,
+		t.check(furthest_north <= CrowdAgent.TUNNEL_ENTRY_ROOM + Tuning.CAR_STRIKE_HALF_LENGTH,
 				"%s: no car drives on north of the portal's dark opening (furthest %.0fpx)"
 				% [name, furthest_north])
 		t.check(furthest_south <= CityEdge.BRIDGE_DECK_PX,
@@ -1398,7 +1442,7 @@ func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t) -> void:
 				% [name, outbound])
 		# A car enters at most `ENTRY_SPREAD` out but leaves by the whole of the exit's room (the
 		# deck is longer than the entry band), so the fraction asked for is scaled by that.
-		var room := CrowdAgent.BRIDGE_RUN if name == "bridge" else CrowdAgent.TUNNEL_ROOM
+		var room := CrowdAgent.BRIDGE_RUN if name == "bridge" else CrowdAgent.TUNNEL_ENTRY_ROOM
 		var exposure := minf(CrowdAgent.ENTRY_SPREAD, room) / room
 		t.check(float(inbound) >= float(outbound) * exposure / 4.0,
 				"%s: cars come in by it too (%d frames heading in against %d heading out)"
