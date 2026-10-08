@@ -3276,8 +3276,8 @@ func _walks_off_the_stretch() -> bool:
 ## rolled from the field's own ends (`CrowdField.stretch_ends`) that are out of every view
 ## (`_beyond_every_view()`), heading in: a car on the lane that drives that way, a walker on any
 ## lane its footway has there, each at its ordinary speed. The same ground and room a recycle
-## anywhere asks for are asked here, for a handful of rolls; a car that finds no free end joins the
-## back of the queue at the last one it rolled, as anywhere else. With every end in view it turns
+## anywhere asks for are asked here, for a handful of rolls, including the final queue position.
+## With no accepted entry, or every end in view, it turns
 ## round where it is, at the end it left by, which is out of view or it would not have left.
 func _enter_at_a_stretch_end() -> void:
 	var before := _placement_taken()

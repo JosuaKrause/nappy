@@ -66,7 +66,7 @@ for file in "${recipes[@]}"; do
         echo "scene failed: $file (log: $output/$name.log)" >&2
         exit 1
     fi
-    if grep -qE 'SCRIPT ERROR|^ERROR:' "$output/$name.log" || ! jq -e \
+    if grep -qE 'SCRIPT ERROR|Parse Error|^ERROR:' "$output/$name.log" || ! jq -e \
         '.playback_complete == true and all(.observations[]; .passed == true)
          and ((.in_the_void // []) | length == 0) and ((.seen_to_jump // []) | length == 0)' \
         "$output/$name.json" >/dev/null; then
@@ -87,6 +87,10 @@ for file in "${recipes[@]}"; do
                 --recipe "$file" --recipe-mode scripted --player-view --no-save \
                 --recipe-manifest "$output/$stem-capture.json" >"$output/$stem-capture.log" 2>&1; then
                 echo "scene capture failed: $file (log: $output/$stem-capture.log)" >&2
+                exit 1
+            fi
+            if grep -qE 'SCRIPT ERROR|Parse Error|^ERROR:' "$output/$stem-capture.log"; then
+                echo "scene capture engine error: $file (log: $output/$stem-capture.log)" >&2
                 exit 1
             fi
             run_log="$(sed -n 's/^\[Telemetry\] //p' "$output/$stem-capture.log")"

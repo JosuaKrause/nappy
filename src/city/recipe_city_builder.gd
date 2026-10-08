@@ -1,6 +1,6 @@
 class_name RecipeCityBuilder
 extends RefCounted
-## A single constructive attempt with exact choices and an explicit global witness.
+## Loads authored stretches directly; constructs other scopes with exact choices and a global witness.
 ## Never searches whole-city seeds and never moves a requested placement after construction.
 
 static func build(data: Dictionary) -> Dictionary:

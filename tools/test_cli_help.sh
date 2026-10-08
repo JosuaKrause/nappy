@@ -568,6 +568,65 @@ else
     echo "FAIL caller-relative recipe or failure diagnostic: $relative_output" >&2
     failures=$(( failures + 1 ))
 fi
+# A successful engine exit and passing manifest must not hide its diagnostics, on either
+# the action or screenshot path. The capture stub writes the still and provenance too.
+recipe_stub="$work_dir/recipe-stub.sh"
+cat > "$recipe_stub" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+capture=false
+manifest=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --recipe-manifest) manifest="$2"; shift 2 ;;
+        --screenshot) capture=true; touch "$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+[[ -z "$manifest" ]] || echo '{"playback_complete":true,"observations":[{"passed":true}]}' > "$manifest"
+if $capture; then
+    touch "$NAPPY_RECIPE_TEST_LOG"
+    echo "[Telemetry] $NAPPY_RECIPE_TEST_LOG"
+fi
+if [[ "$NAPPY_RECIPE_TEST_PATH" == action ]] || $capture; then
+    echo "$NAPPY_RECIPE_TEST_ERROR"
+fi
+exit 0
+EOF
+chmod +x "$recipe_stub"
+for diagnostic in 'ERROR: denied' 'SCRIPT ERROR: failed' 'Parse Error: invalid'; do
+    for action_path in action capture; do
+        checks=$((checks + 1))
+        if NAPPY_RECIPE_TEST_ERROR="$diagnostic" NAPPY_RECIPE_TEST_PATH="$action_path" \
+                NAPPY_RECIPE_TEST_LOG="$work_dir/recipe-run.log" GODOT="$recipe_stub" \
+                ./tools/scene-recipes.sh --recipe "$work_dir/relative.json" \
+                --output "$work_dir/recipe-diagnostic" --screenshots > "$work_dir/diagnostic.log" 2>&1; then
+            echo "FAIL scene-recipes accepts $action_path $diagnostic" >&2
+            failures=$((failures + 1))
+        elif ! grep -qE 'scene assertions failed:|scene capture engine error:' "$work_dir/diagnostic.log"; then
+            echo "FAIL scene-recipes rejected $action_path for the wrong reason" >&2
+            cat "$work_dir/diagnostic.log" >&2
+            failures=$((failures + 1))
+        else
+            echo "ok   scene-recipes rejects $action_path $diagnostic despite exit 0"
+        fi
+    done
+done
+source "$root/tools/lib_movie_evidence.sh"
+for scope in bounded full stretch unknown; do
+    printf '{"classification":"normal","scope":"%s","bounds":[0,0,10,10]}' "$scope" > "$work_dir/movie.json"
+    checks=$((checks + 1))
+    movie_manifest_check "$work_dir/movie.json" > "$work_dir/movie-check.log" 2>&1
+    status=$?
+    if { [[ "$scope" == unknown ]] && [[ "$status" -ne 0 ]]; } \
+            || { [[ "$scope" != unknown ]] && [[ "$status" -eq 0 ]]; }; then
+        echo "ok   movie manifest checks scope $scope"
+    else
+        echo "FAIL movie manifest scope $scope returned $status" >&2
+        failures=$((failures + 1))
+    fi
+done
+
 # rig_kill_after_movie_seconds only reads --after/--day-length out of the argv it is given --
 # passing it a bare number (tools/trailer.sh once did: `rig_kill_after_movie_seconds "$after"`)
 # silently falls back to the day's own length times RIG_MOVIE_SLOWDOWN, killing a hung Godot after

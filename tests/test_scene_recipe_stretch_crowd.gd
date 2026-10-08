@@ -16,6 +16,7 @@ func run(t) -> void:
 		var data: Dictionary = SceneRecipe.load_file(path).data
 		if data.get("extent", {}).get("scope") != "stretch":
 			continue
+		_force_recycles(t, data, filename)
 		var manifest_path := "user://stretch_crowd_%d_%s" % [OS.get_process_id(), filename]
 		var output: Array = []
 		var status := OS.execute(OS.get_executable_path(), PackedStringArray([
@@ -45,3 +46,57 @@ func run(t) -> void:
 		t.check(asks_an_event, "%s asks that she sees a route event" % filename)
 		played += 1
 	t.check(played >= 10, "every stretch scene is played (%d)" % played)
+
+## Short authored walks need not naturally exhaust a street. Exercise actual departures and
+## accepted entries as well as the playback observer, with a real camera for its view boundary.
+func _force_recycles(t, data: Dictionary, label: String) -> void:
+	var built := RecipeCityBuilder.build(data)
+	if not built.errors.is_empty():
+		t.check(false, "%s loads for forced crowd entries" % label)
+		return
+	var map: CityMap = built.map
+	var field := CrowdField.new(map, Vector2.ZERO)
+	field.use_stretch()
+	var camera := Camera2D.new()
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	t.add_child(camera)
+	camera.make_current()
+	var visible_stable := true
+	var entries_safe := true
+	var entries := 0
+	var headings := {"north": Vector2.UP, "south": Vector2.DOWN,
+			"east": Vector2.RIGHT, "west": Vector2.LEFT}
+	for spec: Dictionary in data.setup.actors:
+		var agent := CrowdAgent.new()
+		var kind := CrowdAgent.Kind.CAR if spec.kind == "car" else CrowdAgent.Kind.WALKER
+		var at := Vector2(float(spec.at[0]), float(spec.at[1]))
+		var problem := agent.setup_at(kind, map, field, 11, at, headings[spec.direction], spec.speed)
+		if not problem.is_empty():
+			t.check(false, "%s/%s starts: %s" % [label, spec.name, problem])
+			agent.free()
+			continue
+		t.add_child(agent)
+		camera.position = at
+		camera.reset_physics_interpolation()
+		camera.reset_smoothing()
+		camera.force_update_scroll()
+		t.check(camera.get_screen_center_position().distance_to(at) < 1.0,
+				"%s camera centers on actor: %s / %s" % [label, camera.get_screen_center_position(), at])
+		agent._recycle()
+		visible_stable = visible_stable and agent.position == at
+		camera.position = Vector2(-10000, -10000)
+		camera.reset_physics_interpolation()
+		camera.reset_smoothing()
+		camera.force_update_scroll()
+		for attempt in 8:
+			var before := agent.position
+			agent._recycle()
+			if agent.position != before:
+				entries += 1
+				entries_safe = entries_safe and agent._beyond_every_view(agent.position) \
+						and agent._stands_on_a_street()
+		agent.free()
+	t.check(visible_stable, "%s: every visible actor turns without teleporting" % label)
+	t.check(entries > 0 and entries_safe,
+			"%s: %d forced entries stay on authored street outside the whole camera" % [label, entries])
+	camera.free()

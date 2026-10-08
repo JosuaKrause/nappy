@@ -1157,7 +1157,7 @@ func _in_the_picture(at: Vector2) -> bool:
 	return get_viewport().get_visible_rect().grow(-20).has_point(
 			get_viewport().get_canvas_transform() * at)
 
-## Whether she can see anything of a thing standing at `at` (a tile-sized box at its feet):
+## Whether any of the actor's drawing is visible (a tile-sized box for other named actors):
 ## `VisibleView`'s area, the camera's view less the corners the joystick scheme's controls cover,
 ## the same question the page's encounter counter asks of what she meets.
 func _she_can_see(actor: Node2D) -> bool:
@@ -1219,11 +1219,11 @@ func _box_in_either_view(centre: Vector2, half: Vector2) -> bool:
 			return true
 	return false
 
-## Every body the scene put in the world to wait on ground the stretch cut off
-## (`CityMap.is_cut_off()`) — a guard placed while she walks, standing where the whole city has a
+## Every body the scene put in the world to wait on ground the stretch omits
+## (`CityMap.is_void()`) — a guard placed while she walks, standing where the whole city has a
 ## street and the scene has none — with its tile and row: the manifest's `in_the_void`, which
 ## `tools/scene-draft.sh` adds to the next draft (`draft.include`) so that nothing waiting for her
-## stands in the void. Asked once of each body, where it first stands: a pursuer on its way to her
+## stands in the void. Checked each tick until a body is recorded: a pursuer on its way to her
 ## from off screen comes down streets the scene does not have and is not one of these.
 var _in_the_void := {}
 
