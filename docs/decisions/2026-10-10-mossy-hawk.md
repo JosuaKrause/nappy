@@ -49,7 +49,7 @@ half walking speed (46px/s) for 12 ticks (0.4s) against 4. The
 player judged the new cut in [leafy-puffin](../playtests/2026-10-10-leafy-puffin.md): "trailer looks
 good".
 
-**The re-encode under 10MB, for [frosty-egret](../todo/2026-10-10-frosty-egret/README.md).** The
+**The re-encode under 10MB, for [frosty-egret](2026-10-10-frosty-egret.md).** The
 smooth cut (47.9s, 30,426,821 bytes) re-encoded in two passes (`libx264 -preset slow -b:v 1400k`,
 AAC 128k, `+faststart`) is 9,228,642 bytes, SSIM 0.944 and PSNR 30.7 dB on average and 17.2 dB at
 its worst frame: the street shots stay readable but outlines soften, and the zoomed-out city at the
