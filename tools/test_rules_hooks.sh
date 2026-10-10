@@ -386,7 +386,7 @@ assert_eq "src/city/some_other_file.gd -> city only, not crowd-traffic" \
 todo_trace="$(printf '{"tool_input":{"file_path":"%s"}}' "$root/docs/TODO.md" \
     | bash -x "$root/.claude/hooks/lint-docs.sh" 2>&1 >/dev/null)"
 checks=$((checks + 1))
-if printf '%s' "$todo_trace" | grep -q '^+ governed=1$'; then
+if grep -q '^+ governed=1$' <<<"$todo_trace"; then
     echo "ok   docs/TODO.md is still in lint-docs.sh's governed set"
 else
     fail "docs/TODO.md is no longer governed by lint-docs.sh"
@@ -421,7 +421,7 @@ fi
 evidence_trace="$(printf '{"tool_input":{"file_path":"%s"}}' "$root/docs/evidence/zz-test-rules-hooks/README.md" \
     | bash -x "$root/.claude/hooks/lint-docs.sh" 2>&1 >/dev/null)"
 checks=$((checks + 1))
-if printf '%s' "$evidence_trace" | grep -q '^+ governed=1$'; then
+if grep -q '^+ governed=1$' <<<"$evidence_trace"; then
     fail "docs/evidence/.../README.md is wrongly governed by lint-docs.sh"
 else
     echo "ok   lint-docs.sh ignores docs/evidence/.../README.md"

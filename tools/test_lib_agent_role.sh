@@ -156,7 +156,7 @@ else
 fi
 checks=$((checks + 1))
 logged="$(cat "$UV_LOG")"
-if printf '%s' "$logged" | grep -q '^role=claude-coder$' && printf '%s' "$logged" | grep -qx "touch"; then
+if grep -q '^role=claude-coder$' <<<"$logged" && grep -qx "touch" <<<"$logged"; then
     ok "agent_run re-wraps through agent-identity.py run claude-coder -- touch ..."
 else
     fail "agent_run's own re-wrap did not look right: $logged"
@@ -173,7 +173,7 @@ bash -c '
 '
 checks=$((checks + 1))
 logged="$(cat "$UV_LOG")"
-if [ -e "$marker" ] && printf '%s' "$logged" | grep -q '^role=claude-orchestrator$'; then
+if [ -e "$marker" ] && grep -q '^role=claude-orchestrator$' <<<"$logged"; then
     ok "agent_run re-wraps through agent-identity.py run claude-orchestrator -- touch ..."
 else
     fail "agent_run as claude-orchestrator: marker exists: $([ -e "$marker" ] && echo yes || echo no), log: $logged"
@@ -191,7 +191,7 @@ checks=$((checks + 1))
 real_out="$(NAPPY_AGENTS_DIR="$empty_agents" "$real_python" "$root/tools/agent-identity.py" \
     run --repo O/R claude-orchestrator -- true 2>&1)"
 real_rc=$?
-if [ "$real_rc" -eq 1 ] && printf '%s' "$real_out" | grep -q 'create claude-orchestrator'; then
+if [ "$real_rc" -eq 1 ] && grep -q 'create claude-orchestrator' <<<"$real_out"; then
     ok "agent-identity.py run accepts claude-orchestrator (stops at not configured)"
 else
     fail "agent-identity.py run claude-orchestrator: rc=$real_rc: $real_out"
@@ -301,19 +301,19 @@ else
 fi
 checks=$((checks + 1))
 logged="$(cat "$UV_LOG")"
-if printf '%s' "$logged" | grep -q '^role=claude-coder$'; then
+if grep -q '^role=claude-coder$' <<<"$logged"; then
     ok "the read (gh pr view) and the delete both ran through agent-identity.py run claude-coder --"
 else
     fail "the calls did not go through agent_run: $logged"
 fi
 checks=$((checks + 1))
-if printf '%s' "$logged" | grep -qx "view" ; then
+if grep -qx "view" <<<"$logged"; then
     ok "gh pr view is wrapped too, not only the write"
 else
     fail "gh pr view did not go through agent_run: $logged"
 fi
 checks=$((checks + 1))
-if printf '%s' "$logged" | grep -q -- '--delete'; then
+if grep -q -- '--delete' <<<"$logged"; then
     ok "the delete ran through agent-identity.py run claude-coder --, not a bare git push"
 else
     fail "the delete did not go through agent_run: $logged"

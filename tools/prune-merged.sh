@@ -253,7 +253,7 @@ if [[ $dry -eq 0 ]]; then
 git worktree prune
 live_worktrees="$(git worktree list --porcelain | awk '/^worktree /{print substr($0, 10)}')"
 for agent_branch in $(git for-each-ref --format='%(refname:short)' 'refs/heads/worktree-agent-*'); do
-    if printf '%s\n' "$live_worktrees" | grep -q "/${agent_branch#worktree-}\$"; then
+    if grep -q "/${agent_branch#worktree-}\$" <<<"$live_worktrees"; then
         continue
     fi
     if [[ -z "$(worktree_of "$agent_branch")" ]] && out="$(git branch -d "$agent_branch" 2>&1)"; then

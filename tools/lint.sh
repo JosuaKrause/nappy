@@ -93,7 +93,7 @@ hits=0
 
 # True if the line carries a same-line `lint-allow` HTML-comment escape.
 is_allowed() {
-    printf '%s\n' "$1" | grep -qE '<!--[^>]*lint-allow[^>]*-->'
+    grep -qE '<!--[^>]*lint-allow[^>]*-->' <<<"$1"
 }
 
 # $1 file  $2 line number  $3 label  $4 full line text (checked for the escape hatch)
@@ -143,7 +143,7 @@ lint_heading_status() {
     while IFS=: read -r n content; do
         after="${content#*·}"
         [[ "$after" == "$content" ]] && continue
-        if printf '%s\n' "$after" | grep -qE '(^|[^a-zA-Z])(in progress|not started|partly built|done)([^a-zA-Z]|$)'; then
+        if grep -qE '(^|[^a-zA-Z])(in progress|not started|partly built|done)([^a-zA-Z]|$)' <<<"$after"; then
             report "$f" "$n" "status word in a heading" "$content"
         fi
     done < <(grep -nE '^#{1,4} .*·' "$f")
@@ -203,7 +203,7 @@ lint_duplicate_names() {
                 [[ "$base" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z]+-[a-z]+(-[0-9]+)?$ ]] || continue
                 own=0
                 if [[ "$folder" == docs/decisions || "$folder" == docs/review ]] \
-                    && head -n 1 "$path" | grep -qF '· not from an entry'; then
+                    && grep -qF '· not from an entry' <<<"$(head -n 1 "$path")"; then
                     own=1
                 fi
                 printf '%s %s %s\n' "$folder" "$base" "$own"
