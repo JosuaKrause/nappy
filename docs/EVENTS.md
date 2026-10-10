@@ -1610,8 +1610,9 @@ source being louder rather than a second falloff with its own idea of where the 
 
 The debug view's fields layer (`DebugLayers`, `1`) traces the exact boundary
 `GroundShape.field_outline()` computes from the same arithmetic, cut wherever a wall keeps the field
-from that point (the line from the emitter's own node, asked of its own `wall_grid()`), so a
-screenshot of a field cannot disagree with what the meter does, behind a building or in the open —
+from that point (the line from the emitter's own node, asked of its own `wall_grid()`, in pieces of
+at most `DebugLayers.CUT_PIECE`, 8px), so a screenshot of a field agrees with what the meter does,
+behind a building or in the open, to within one piece —
 see docs/TELEMETRY.md, "The debug view".
 
 The lookup is a **linear scan**, not a spatial hash. A late day has around 26 events

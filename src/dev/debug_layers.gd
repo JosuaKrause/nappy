@@ -34,7 +34,7 @@ extends Node2D
 ## about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one.
 ## **And cut where a wall stops it**: an outline is drawn only where the emitter's own walls
 ## (`EventInstance.wall_grid()`, `CrowdAgent.wall_grid()`) let its field reach, so behind a
-## building, where the meter receives nothing, there is no line either. `_draw_fields()` is where the
+## building, where the meter receives nothing, there is no line either, to within one `CUT_PIECE`. `_draw_fields()` is where the
 ## shape-per-emitter decision is made, and `open_runs()` where the cut is.
 ##
 ## **The building shows what the city shows.** Nothing here needs a day: the events are an event
