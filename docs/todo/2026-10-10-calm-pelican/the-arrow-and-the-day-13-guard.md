@@ -37,7 +37,5 @@ close to where she reads the mark. The arrow chooses among every live roadblock,
 one normally is. Measure how often the arrow's pick is the task's own roadblock, with a probe like
 `tests/probes/plush_moose_arrow_cost.gd`, and report it.
 
-**Low, same area:** no picture shows day 11 with several masts answering, since a scene recipe
-cannot give an authored loudspeaker a mast id; let a recipe give one a `mast_id` and capture day 11
-with the arrow moving between two masts. And reflow the `TASK_ARROW` comment in `src/palette.gd`,
-which leaves one word alone on a line.
+**Low, same area:** reflow the `TASK_ARROW` comment in `src/palette.gd`, which leaves one word
+alone on a line.

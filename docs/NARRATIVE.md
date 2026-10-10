@@ -248,8 +248,10 @@ touch".)*
   there is a straight run at her from there, at a front door from across the street first, out of
   the block opposite — never through the district's wall or a door, and already running at her from
   the first frame. Walking under the district door's raised boom instead brings out the door's
-  own guard and nobody else, and a gatehouse is no hiding place: stepping back into one with the
-  robber after her holds her where he catches her. The van's package sends the
+  own guard and nobody else, and a hut ends that guard's chase without sending anyone ("It's a
+  fair cheat getting through the barrier is hard enough. Well earned if the player pulls it off.");
+  a gatehouse is no hiding place from the robber, though: stepping back into one with him after her
+  holds her where he catches her. The van's package sends the
   roadblock's own guard, the same look and the same rules; every other task sends the alley robber
   himself. The warning is short: standing still, whoever comes reaches her a little under two
   seconds after the badge rises. Running shakes them off; walking away does not, from wherever they
