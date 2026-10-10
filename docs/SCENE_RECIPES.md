@@ -116,7 +116,11 @@ arrow ends) and `rider` for a task riding a body: the man shouting, the van, the
 neighbor and a roadblock. An observation of `task` or `rider` belongs after the walk has reached the
 mark, so one before it finds nothing and fails; the manifest's `task` records the tick she read the
 mark (`read_tick`), where the target was put and where the arrow points. A task the director has
-nowhere to place, once she has read the mark, stops the scene with the director's reasons.
+nowhere to place, once she has read the mark, prints the director's reasons and fails the setup: a
+scripted scene stops there, and free play goes on with no task on offer. A placed task can still
+expire as on a played day — day 10's neighbor home before she reaches them, a rider gone, a
+deadline — and then the manifest's `task` records the tick (`expired_tick`), `task` names nothing
+from then on, and an observation that still asks about it fails.
 
 `column: {"at":[1904,2064],"direction":"north"}` starts the real three-truck army formation
 in its actual main-road lane. Its ordinary formation spacing and rear-truck stopping logic
@@ -159,8 +163,9 @@ pram's zzz), `pursuing`, `near` or `beyond` with `at` and
 `distance` (at most or at least that far), or `near_player` with `distance` (the subject is at most
 that far from her), `off_screen` (no part of a box three tiles either side
 and four up and down, `ResistanceDirector.TASK_HALF_EXTENT`, is in the picture), `clear_of_both_views` with `half` (`[half width, half height]` in px: no part
-of that box round the subject is in the world the camera shows in the landscape window or in the
-rotated portrait presentation, 640x360 and 360x640 at the game's zoom), and for `mark` or
+of that box round the subject is in the world the camera shows, 640x360 at the game's zoom, which
+is the world in both presentations, since a portrait touch screen shows the same box turned a
+quarter), and for `mark` or
 `task` alone `offered`, `done`, `arrowed` (the red arrow ends on it) and `unarrowed` (no red arrow
 is drawn). `appeared` says the subject's rendered body has overlapped the live camera viewport,
 excluding the corners covered by joystick controls, at some tick up to this one; it lets a recipe
@@ -231,8 +236,8 @@ target the scene puts out.
 **The crowd is the street's own.** The starting walkers and cars are listed; the crowd's field is
 the whole stretch and does not follow her. **Nothing appears or vanishes where she can see it**
 *(the player's rule, PR #597)*: a walker or a car that reaches one of the stretch's ends, where a
-street runs into the void, leaves there only when no part of it is in the landscape or the turned
-portrait view, and comes back in at an end that is out of both, heading in. In her view the end is a
+street runs into the void, leaves there only when no part of it is in her view, in either
+presentation, and comes back in at an end that is out of it, heading in. In her view the end is a
 wall: a walker turns round at it, a car turns off before it or waits there until she has walked on.
 A street that ends at a building is a wall and nobody enters there, and nor does anybody at a
 junction's own arm into the void.
@@ -285,7 +290,7 @@ and holds every observation, and that nothing in the crowd appears or vanishes i
 | `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles west of the mark, on the street, the mark unread | the roadblock, 540–644px from the mark, with the arrow on it |
 | `task-14-last-night.json` | 14, the station's front door | on the sidewalk west of it | the door on the facade, 576–640px out |
 | `station-door-corner.json` | 14, the station's front door | on the far outer corner of its sidewalk, walking a few steps west and back to it | the door, 57.7px away, outside its 50.6px reach |
-| `fire-truck.json` | 3, the fire and the engine it calls in | on the sidewalk 496px east of the fire | the whole burning building, smoke included, out of both the landscape and the portrait view at the first tick; the engine parked at the kerb in front of it |
+| `fire-truck.json` | 3, the fire and the engine it calls in | on the sidewalk 496px east of the fire | the whole burning building, smoke included, out of her view at the first tick; the engine parked at the kerb in front of it |
 
 Every scene in this table but `fire-truck.json`, which is built on the whole context city with no
 background crowd and only `burning_building` named, is a stretch.
@@ -314,8 +319,8 @@ few steps west and back to the corner, where it is still not touched, and one st
 it. No guard waits at the station's door, and touching it sends nobody in this
 scene (above).
 `fire-truck.json` starts on day 3 with `burning_building` named and nothing else, her start 496px
-east of the fire, so that its lot, its rise and its smoke are out of both the landscape and the
-portrait view at the first frame *(the player, inbox #557: "the
+east of the fire, so that its lot, its rise and its smoke are out of her view, in either
+presentation, at the first frame *(the player, inbox #557: "the
 fire truck scene starts too close to the start -- the building is already on screen")*: once she has seen
 the fire, its own `spawns_on_sight` calls the `fire_truck` in from off screen exactly as a played
 day does, and the engine parks at the kerb in front of the fire for the rest of the day.

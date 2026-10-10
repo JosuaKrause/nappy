@@ -23,6 +23,10 @@ var _plan: WalkPlan
 var _observations: Array = []
 var _duration_ticks := 0
 var _active := false
+## A free-play scene under way: nothing is observed or pressed, but the ticks still count and the
+## task is still named each tick (`_bind_task_names()`), so a refusal at the read is printed and
+## the manifest's task records when she read the mark.
+var _hand_played := false
 var _capture_tick := -1
 var _zoom: ZoomOutCamera
 var _fixed_camera: Camera2D
@@ -617,8 +621,15 @@ var _task_from := Vector2.INF
 ## Names what the director offers now. A mark stands unread as `mark` until she touches it; the
 ## task it unlocks is placed at that touch, so `task` and `rider` are named from the tick after,
 ## and the manifest records where the target was put and which way the arrow points. Called every
-## tick, so an observation finds the task however late she reads the mark. A placement the
-## director refuses stops the scene.
+## tick, in free play as well as in a scripted one, so an observation finds the task however late
+## she reads the mark.
+##
+## **A task gone after the read is one of two things, told apart by whether it was ever placed.**
+## Never placed, the director refused it: the reasons are printed, and a scripted scene stops as a
+## failed setup while free play goes on with no task. Placed and then gone, it expired the way a
+## played day's task does (`ResistanceDirector._expire()`: day 10's neighbor home before she
+## reaches them, a rider finishing, a deadline): the manifest's `task.expired_tick` records when,
+## `task` names nothing from then on, and an observation that still asks about it fails on that.
 func _bind_task_names() -> void:
 	if not _resistance or not data.get("setup", {}).has("task") or manifest.get("setup_failed", false):
 		return
@@ -628,14 +639,22 @@ func _bind_task_names() -> void:
 	elif contact and contact.step.is_pickup and not contact.is_done:
 		named["mark"] = contact
 		return
+	if (not contact or contact.step.is_pickup) and manifest.task.has("read_tick"):
+		if not manifest.task.has("expired_tick"):
+			manifest.task["expired_tick"] = tick
+			named.erase("task")
+			print("[SceneRecipe] setup.task: the task expired at tick %d" % tick)
+			write_manifest()
+		return
 	if not contact or contact.step.is_pickup:
 		manifest["setup_failed"] = true
 		for problem in _resistance.scene_task_errors():
 			print("[SceneRecipe] " + problem)
 		print("[SceneRecipe] setup.task: the mark's task has nowhere to go in this scene")
 		write_manifest()
-		_active = false
-		get_tree().quit(1)
+		if scripted:
+			_active = false
+			get_tree().quit(1)
 		return
 	if named.get("task") == contact:
 		return
@@ -914,6 +933,7 @@ func begin() -> void:
 		get_tree().quit(0)
 		return
 	if not scripted:
+		_hand_played = true
 		return
 	# `install()` positions the player while the boot camera is still current. Camera2D can only
 	# reset its smoothed screen centre once the player's camera owns the viewport, which is true
@@ -975,6 +995,10 @@ func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 	_fixed_camera = fixed
 
 func _physics_process(_delta: float) -> void:
+	if _hand_played and not get_tree().paused:
+		tick += 1
+		_bind_task_names()
+		return
 	if not _active:
 		return
 	if get_tree().paused:
@@ -1271,21 +1295,19 @@ func _box_on_screen(centre: Vector2, half: Vector2) -> bool:
 			return true
 	return false
 
-## Whether any part of a box `half` either side of `centre` is inside the world her camera shows
-## in the landscape window or in the rotated, portrait presentation of the same game
-## (`ScreenOrientation`: 1280x720 turned into 720x1280, the same zoom), both centred on where the
-## camera looks: the world 640x360 wide in one and 360x640 in the other at zoom 2.
+## Whether any part of a box `half` either side of `centre` is inside the world her camera shows,
+## centred on where the camera looks: the 1280x720 design box at the camera's zoom, 640x360 world
+## pixels at zoom 2. That is the world in both presentations. A portrait touch screen presents the
+## same box turned a quarter (`main._apply_orientation()` turns the camera with
+## `ScreenOrientation.apply_to_camera()`), never a narrower and taller piece of the world, and a
+## portrait window without touch letterboxes the same box, so one box answers for both, and the
+## answer does not depend on the window a check happens to run in.
 func _box_in_either_view(centre: Vector2, half: Vector2) -> bool:
 	var camera := get_viewport().get_camera_2d()
 	var looking := camera.get_screen_center_position() if camera else _player.global_position
 	var zoom := camera.zoom.x if camera else 1.0
-	var landscape := ScreenOrientation.DESIGN_SIZE / zoom
-	var portrait := ScreenOrientation.ROTATED_SIZE / zoom
-	var box := Rect2(centre - half, half * 2.0)
-	for size: Vector2 in [landscape, portrait]:
-		if Rect2(looking - size * 0.5, size).intersects(box):
-			return true
-	return false
+	var size := ScreenOrientation.DESIGN_SIZE / zoom
+	return Rect2(looking - size * 0.5, size).intersects(Rect2(centre - half, half * 2.0))
 
 ## Every body the scene put in the world to wait on ground the stretch omits
 ## (`CityMap.is_void()`) — a guard placed while she walks, standing where the whole city has a
