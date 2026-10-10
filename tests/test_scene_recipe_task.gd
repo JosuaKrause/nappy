@@ -15,6 +15,7 @@ func run(t) -> void:
 	_test_the_schema_names_a_mark_on_the_days_that_have_one(t)
 	_test_the_task_observations_ask_about_the_task(t)
 	_test_the_task_scenes_start_off_an_unread_mark(t)
+	_test_the_door_scenes_show_the_robber_a_done_task_sends(t)
 	var saved := {"day": GameState.day, "completed": GameState.completed_resistance_steps.duplicate(),
 			"failed": GameState.failed_resistance_steps.duplicate(),
 			"progress": GameState.resistance_progress, "scars": GameState.scars.duplicate(true),
@@ -249,3 +250,24 @@ func _test_the_task_scenes_start_off_an_unread_mark(t) -> void:
 				"%s asserts the mark unread and no arrow at the first tick" % name)
 		t.check(not at_first.any(func(entry: String) -> bool: return entry.begins_with("task ")),
 				"%s asserts nothing of the task before she has read the mark" % name)
+
+## *(Inbox #650, "yes include his approach street.")* Day 9's crossing and the station door's corner
+## list the street a sent robber starts on in `draft.include`, and ask that he pursues her once the
+## task is done. The scenes' own headless play (`tools/scene-recipes.sh`) answers the asking; this
+## keeps either from being dropped from the recipe.
+func _test_the_door_scenes_show_the_robber_a_done_task_sends(t) -> void:
+	for file: String in ["task-09-crossing", "station-door-corner"]:
+		var data: Dictionary = SceneRecipe.load_file("res://scene-recipes/%s.json" % file).data
+		t.check(not data.get("draft", {}).get("include", []).is_empty(),
+				"%s lists the street the robber starts on" % file)
+		var pursues := false
+		var done_at := 0
+		for check: Dictionary in data.playback.observations:
+			if check.subject == "task" and check.condition == "done":
+				done_at = int(check.tick)
+		for check: Dictionary in data.playback.observations:
+			if check.subject == "row:robber_giving_chase" and check.condition == "pursuing" \
+					and int(check.tick) > done_at:
+				pursues = true
+		t.check(done_at > 0 and pursues,
+				"%s asks that the robber pursues her once the task is done" % file)

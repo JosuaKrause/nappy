@@ -305,9 +305,13 @@ checks that reaching the target completed the task. The mark's robber stands whe
 target is done, the robber or guard the task sends comes from off screen as in a played day and
 catches her a little after the scene's last assertion; add `--invincible` to play on without a robber
 ending it. Days 10 and 13 send nobody after the target: the neighbor's task has no pursuer, and the
-roadblock keeps its own guard waiting in its band instead. Day 9 and the station door's corner send
-nobody either: the stretch has no ground at the distance a sent robber starts from, so the day's
-own draw finds nowhere for him to come from. At a door on a building's front — day 8's
+roadblock keeps its own guard waiting in its band instead. Day 9 and the station door's corner
+send the robber like any other target *(the player, inbox #650: "yes include his approach
+street.")*: the stretch has the street a sent robber starts on, listed in the recipe's
+`draft.include`, and an observation checks that he pursues her and closes on her after the task
+is done. Day 9's scene walks along the hut's sidewalk and is let through after the inspection, since
+walking under a raised boom sends the door's guard and no robber ("Checkpoints" in
+`docs/EVENTS.md`). At a door on a building's front — day 8's
 burnt building and day 14's station — the robber usually comes from across the street, out of view,
 and by the rule every other target uses, usually from beside her along her own street, only where
 no start across it has a way to her.
@@ -316,8 +320,8 @@ no start across it has a way to her.
 outer corners of the two sidewalk tiles in front of it (`ResistanceDirector.DOOR_REACH`, 50.6px,
 against the corners' 57.7px): she starts on the west corner, where the door is not touched, walks a
 few steps west and back to the corner, where it is still not touched, and one step east touches
-it. No guard waits at the station's door, and touching it sends nobody in this
-scene (above).
+it. No guard waits at the station's door; touching it sends the robber, from across the
+street, as above.
 `fire-truck.json` starts on day 3 with `burning_building` named and nothing else, her start 496px
 east of the fire, so that its lot, its rise and its smoke are out of her view, in either
 presentation, at the first frame *(the player, inbox #557: "the
