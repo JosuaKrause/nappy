@@ -25,7 +25,8 @@ it shrinks with it; the PR description says so, since the tap scheme changes too
 
 **A swipe through the dead zone keeps her moving.** A drag that passes over the dead zone and is
 released outside it walks her in the direction of the final position from the focus, never
-stops her; only a press or release inside the dead zone stops. Test both: a drag that crosses
+stops her. **Proposed, not asked for:** a press, or a drag released, inside the dead zone stops
+her, as a press there does today. Test both: a drag that crosses
 the dead zone and ends outside it, and one that ends inside it.
 
 Verify with `./tools/test.sh touch orientation pause encounters held_restart` and gameplay stills

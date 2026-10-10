@@ -4,8 +4,13 @@ The title screen (`src/ui/title_screen.gd`) shows two `ModeButton`s today, "On-s
 (`Symbol.JOYSTICK`, the joystick scheme) and "Tap to Go" (`Symbol.TAP`), side by side across the
 bottom. Build the player's layout instead: **two joystick buttons, one drawn where each joystick
 focal point is in play** (`TouchControls.FOCUS_LEFT`, 240,480, and `FOCUS_RIGHT`, 1040,480, in
-design space), **and the tap button in the centre between them.** Pressing the left joystick
-button begins the run in the joystick scheme with the left side steering and the right side Run;
+design space), **and the tap button in the centre between them.** Read as, open to correction: "the
+joystick select buttons" are today's one "On-screen Controls" button, which becomes two, and "the
+tap to play button" is today's "Tap to Go". This rebuilds the title that
+[M76, the title asks with buttons](../../decisions/2026-09-06-M76-the-title-asks-with-buttons-and-a-release-carries-no-modifiers.md)
+and [M88, the player chooses the controls](../../decisions/2026-09-07-M88-the-player-chooses-the-controls.md)
+built: the scheme is still the player's choice, made with buttons, and now the side with it.
+Pressing the left joystick button begins the run in the joystick scheme with the left side steering and the right side Run;
 the right one is the mirror. The tap button begins the tap scheme as it does now.
 
 **In play the sides never swap.** No steering press, tap or drag on the Run side selects steering
