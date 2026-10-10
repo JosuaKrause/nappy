@@ -89,11 +89,13 @@ const _TREES := {
 }
 
 ## Distance between adjacent bollards' centres across a precinct's mouth, in px. A post stops her
-## and the gaps between posts stay passable, so a gap has to hold her body: 40px less two posts'
-## 4.8px radii leaves 30.4px clear against her 28px (`Tuning.PLAYER_BODY_RADIUS` 14, doubled), with
-## a pixel and a bit to spare each side. That puts two posts on the 64px carriageway band, 12px in
-## from either edge. Open to overturn; `tests/test_bollards.gd` holds the clearance.
-const BOLLARD_SPACING := 40.0
+## and the gaps between posts stay passable, so a gap has to hold her whole collision shape: her
+## body (14px radius) plus the pram circle (8px radius) centred 14px out along her facing, which
+## follows the input and not her velocity, so with a diagonal held the pram sits to the side. Along
+## the row that is up to 2 x 14 + 8 = 36px. 46px less two posts' 4.8px radii leaves 36.4px clear.
+## That puts two posts on the 64px carriageway band, 9px in from either edge. Open to overturn;
+## `tests/test_bollards.gd` holds the clearance and the walks.
+const BOLLARD_SPACING := 46.0
 
 ## The least two trees in one lot may stand apart, centre to centre — read off the picture rather
 ## than asked for. `Prop.TREES` (`tree_a.svg`, `tree_b.svg`) are both drawn 40px wide, and

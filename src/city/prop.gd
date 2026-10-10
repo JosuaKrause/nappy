@@ -42,8 +42,8 @@ func _ready() -> void:
 ## collision resource, so the post's body is the ground contact its shadow is drawn from (one shape
 ## per object, M61) rather than a second number. A tree, a sack and a pile stay bodiless; a post
 ## stops her *(2026-10-10, the player, leafy-puffin, on the bollards: "gaps still passable")*, and
-## `City.BOLLARD_SPACING` keeps the gaps between posts wider than her body. Open to overturn: the
-## radius is the shadow's 0.4 of the 12px picture (4.8px), not the picture's 6px rim.
+## `City.BOLLARD_SPACING` keeps the gaps between posts wider than her body plus the pram. Open to
+## overturn: the radius is the shadow's 0.4 of the 12px picture (4.8px), not the picture's 6px rim.
 func _add_bollard_body() -> void:
 	var body := StaticBody2D.new()
 	body.name = "BollardBody"
