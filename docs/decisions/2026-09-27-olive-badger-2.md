@@ -36,9 +36,11 @@ grown by the camera's lead and a tile (`WalkSiting.could_be_in_her_view()`): mea
 position alone, 77 of 357 sites a route offers would have been drawn in view, and 2 of 10 placed
 vans were. Its tile is on none of the day's routes and cuts none of them, and her way home stays
 open; when her own line is off the day's routes it may stand on the line she walks, as it did on 4
-of 10 placed walks (*open to overturn*: the far side of her street instead).
-In view on 8 of 12 walks, 1s to 4s after it is placed; of the four misses, two drew the marble
-seconds before home, where nothing is placed within 400px, and two turned off the street first.
+of 10 placed walks; asked whether to keep that or prefer the far side of her street, the player:
+"it's fine" ([2026-10-10-curly-gecko](../playtests/2026-10-10-curly-gecko.md)).
+In view on 8 of 12 walks, 1s to 6s after it is placed; of the four misses, one never drew the
+marble, one drew it seconds before home, where nothing is placed within 400px, and two turned off
+the street first.
 *Open to overturn:* "on her route" read as the street she is walking, the nearest spot first, and
 placed inside the streaming radius so it exists at once. The marble comes 13s to 79s into her walk,
 usually on the way home: the bag's own pacing, unchanged.
