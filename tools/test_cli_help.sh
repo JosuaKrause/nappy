@@ -329,6 +329,32 @@ assert_exit "trailer.sh --validate --shot (combined)" nonzero ./tools/trailer.sh
 assert_exit "trailer.sh --list --shot (combined)" nonzero ./tools/trailer.sh --list --shot choice
 assert_exit "trailer.sh --list --auditions (combined)" nonzero ./tools/trailer.sh --list --auditions
 assert_exit "trailer.sh --selected --selected-remix (combined)" nonzero ./tools/trailer.sh --selected --selected-remix
+# A reuse mode cuts the kept footage at the shot list's times, so a shot list that no longer
+# matches the timeline final-score.json records for the base is refused before anything renders.
+trailer_cut_dir="$work_dir/trailer-cut"
+mkdir -p "$trailer_cut_dir"
+jq '(.shots[] | select(.name == "choice") | .length) = 6' tools/trailer/shots.json > "$trailer_cut_dir/shorter.json"
+for trailer_reuse_mode in selected-reuse selected-remix; do
+    checks=$(( checks + 1 ))
+    trailer_cut_output="$(TRAILER_SHOTS="$trailer_cut_dir/shorter.json" TRAILER_OUT="$trailer_cut_dir/out" \
+        ./tools/trailer.sh "--$trailer_reuse_mode" 2>&1)"
+    trailer_cut_status=$?
+    if [[ "$trailer_cut_status" -ne 0 && "$trailer_cut_output" == *"no longer matches the timeline the retained base was cut with"* ]]; then
+        echo "ok   trailer.sh --$trailer_reuse_mode refuses a changed choice length"
+    else
+        echo "FAIL trailer.sh --$trailer_reuse_mode accepted a changed choice length (status $trailer_cut_status): $trailer_cut_output" >&2
+        failures=$(( failures + 1 ))
+    fi
+done
+# The unchanged shot list passes that check and reaches the retained-footage check instead.
+checks=$(( checks + 1 ))
+trailer_cut_output="$(TRAILER_OUT="$trailer_cut_dir/out" ./tools/trailer.sh --selected-remix 2>&1)"
+if [[ "$trailer_cut_output" == *"requires the retained selected base"* ]]; then
+    echo "ok   trailer.sh --selected-remix with the recorded timeline reaches the retained-footage check"
+else
+    echo "FAIL trailer.sh --selected-remix did not reach the retained-footage check: $trailer_cut_output" >&2
+    failures=$(( failures + 1 ))
+fi
 assert_exit "record.sh --bogus"       nonzero ./tools/record.sh --bogus
 assert_exit "record.sh (no flags)"    nonzero ./tools/record.sh
 assert_exit "record.sh --this-is-not-a-dev-flag" nonzero ./tools/record.sh --this-is-not-a-dev-flag
