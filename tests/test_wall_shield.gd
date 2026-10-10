@@ -30,6 +30,7 @@ func run(t) -> void:
 	_test_the_caret_asks_the_wall_where_the_bodies_will_be(t)
 	_test_the_building_inside_stops_it_at_its_own_walls(t)
 	_test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t)
+	_test_the_fields_layer_skips_only_where_no_wall_can_block(t)
 	t.check(_asymmetric == 0, "every hand-built line answers the same both ways (%d did not)"
 			% _asymmetric)
 
@@ -481,8 +482,8 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 
 ## The debug view's fields layer draws an outline only where the meter would read it: a musician
 ## beside a building two tiles thick has the part of his outline past the building's middle cut
-## away, every point left on it is one his field reaches, each cut ends within a pixel of where the
-## wall's answer turns, and on open ground the same outline is the whole closed loop.
+## away, every point left on it is one his field reaches by his own wall answer, each cut ends within
+## a pixel of where that answer turns, and on open ground the same outline is the whole closed loop.
 func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
 	var def := EventCatalogue.by_id("busker")
 	# A map wide enough that the outline stays on it: ground off the map counts as building.
@@ -490,14 +491,14 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
 	var behind := _musician(def, at, _map_with(_rect_tiles(Rect2i(11, 0, 2, 24)), 24, 24))
 	var beside := _musician(def, at, _map_with([], 24, 24))
 	var outline := GroundShape.field_outline_at(at, Vector2.ZERO, def.outer_radius)
-	var whole := DebugLayers.open_runs(outline, beside.walled_off_to)
+	var whole := DebugLayers.open_runs(outline, at, beside.wall_grid())
 	t.check(whole.size() == 1 and whole[0].size() == outline.size() + 1
 			and whole[0][0] == whole[0][whole[0].size() - 1],
 			"on open ground the outline is drawn whole, closed")
-	var runs := DebugLayers.open_runs(outline, behind.walled_off_to)
+	var runs := DebugLayers.open_runs(outline, at, behind.wall_grid())
 	var kept := 0
 	for point in outline:
-		if not behind.walled_off_to(point):
+		if not behind._walled_off(at, point):
 			kept += 1
 	t.check(kept > 0 and kept < outline.size(),
 			"the musician's outline runs both sides of the building (%d of %d points open)"
@@ -509,12 +510,12 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
 		drawn += run.size()
 		for i in run.size() - 1:
 			for step in 5:
-				if behind.walled_off_to(run[i].lerp(run[i + 1], float(step) / 4.0)):
+				if behind._walled_off(at, run[i].lerp(run[i + 1], float(step) / 4.0)):
 					through += 1
 		var past_end := run[run.size() - 1] \
 				+ (run[run.size() - 1] - run[run.size() - 2]).normalized()
 		var past_start := run[0] + (run[0] - run[1]).normalized()
-		if not behind.walled_off_to(past_end) or not behind.walled_off_to(past_start):
+		if not behind._walled_off(at, past_end) or not behind._walled_off(at, past_start):
 			loose += 1
 	t.check(runs.size() == 1, "behind one building it is one open stretch (%d)" % runs.size())
 	t.check(drawn == kept + 2, "carrying every open point of the outline and the two cuts (%d)"
@@ -523,3 +524,43 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
 	t.check(loose == 0, "and each cut stops within a pixel of the wall's answer turning")
 	behind.free()
 	beside.free()
+
+## The layer skips the wall questions for an outline when nothing within its bounds is deep enough in
+## a building to wall a line (`DebugLayers._deep_ground_meets()`), which is only right if every line
+## a wall does block crosses such ground. Asked of seeded lines from open ground, up to the widest
+## field's reach, on a real city and on hand-built maps of scattered buildings, where one-tile walls,
+## bends and corners open only diagonally are common: every blocked line has deep ground in its
+## bounds, and the guards count both that some were blocked and that the skip is taken for others.
+func _test_the_fields_layer_skips_only_where_no_wall_can_block(t) -> void:
+	var maps: Array[CityMap] = [CityGenerator.generate(4242)]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1004
+	for i in 6:
+		var scattered: Array[Vector2i] = []
+		for tile in _rect_tiles(Rect2i(0, 0, 16, 16)):
+			if rng.randf() < 0.45:
+				scattered.append(tile)
+		maps.append(_map_with(scattered, 16, 16))
+	for map in maps:
+		var open: Array[Vector2i] = []
+		for tile in _rect_tiles(Rect2i(Vector2i.ZERO, map.size)):
+			if map.is_walkable(tile):
+				open.append(tile)
+		var reach := 260.0 if map.size.x > 16 else 120.0
+		var blocked := 0
+		var skipped := 0
+		var missed := 0
+		for i in 1500:
+			var from := map.tile_to_world(open[rng.randi_range(0, open.size() - 1)]) \
+					+ Vector2(rng.randf_range(-15.0, 15.0), rng.randf_range(-15.0, 15.0))
+			var to := from + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(10.0, reach)
+			var deep := DebugLayers._deep_ground_meets(map, Rect2(from, Vector2.ZERO).expand(to))
+			if map.wall_between(from, to):
+				blocked += 1
+				if not deep:
+					missed += 1
+			elif not deep:
+				skipped += 1
+		t.check(blocked > 50 and skipped > 20 and missed == 0,
+				"on a %dx%d map the skip is taken (%d lines) and never for one a wall blocks (%d of %d)"
+				% [map.size.x, map.size.y, skipped, missed, blocked])

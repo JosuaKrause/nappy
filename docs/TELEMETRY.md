@@ -1011,8 +1011,8 @@ build has nothing in `project.godot` to reach:
   `GroundShape.field_outline()`/`field_outline_at()` arithmetic the falloff itself uses: a capsule
   about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one, a
   plain circle at zero speed — so its shapes are the meter's, and each is cut wherever a wall keeps
-  the field from that point (the emitter's own `walled_off_to()`, which asks
-  `CityMap.wall_between()`), so nothing is drawn behind a building where the meter receives nothing.
+  the field from that point (`CityMap.wall_between()` from the emitter's own node, asked of its own
+  `wall_grid()`), so nothing is drawn behind a building where the meter receives nothing.
   Only what is on screen is drawn, and a standing source's cut is reused while it stands. A flock
   draws one pair per bird, at its own position and its own velocity, rather than one for the whole
   event. Amber (`Palette.MARK_COSTLY`) for a merely costly field, deep red (`Palette.MARK_LETHAL`)

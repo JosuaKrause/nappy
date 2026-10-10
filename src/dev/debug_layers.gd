@@ -32,8 +32,8 @@ extends Node2D
 ## `GroundShape.field_outline()` and `field_outline_at()`, the same effective-distance arithmetic
 ## `Tuning.falloff()` prices, so this layer cannot disagree with what the meter does: a capsule
 ## about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one.
-## **And cut where a wall stops it**: an outline is drawn only where the emitter's own wall answer
-## (`EventInstance.walled_off_to()`, `CrowdAgent.walled_off_to()`) lets its field reach, so behind a
+## **And cut where a wall stops it**: an outline is drawn only where the emitter's own walls
+## (`EventInstance.wall_grid()`, `CrowdAgent.wall_grid()`) let its field reach, so behind a
 ## building, where the meter receives nothing, there is no line either. `_draw_fields()` is where the
 ## shape-per-emitter decision is made, and `open_runs()` where the cut is.
 ##
@@ -157,36 +157,52 @@ func _draw() -> void:
 ## its own `heading * speed`, and `flock_outer_radius()` rather than `outer_radius` — the same
 ## radius `_flock_contribution_at()` sums over, so drawing the flat number instead would show a
 ## field wider than what the birds actually emit. Each outline is cut wherever the emitter's own
-## wall answer keeps the field from that point — see `open_runs()`.
+## walls keep the field from that point — see `open_runs()`.
 func _draw_fields() -> void:
-	var view := _view_rect()
+	for drawn in field_runs(_view_rect()):
+		for run: PackedVector2Array in drawn[0]:
+			draw_polyline(run, drawn[1], LINE_WIDTH, true)
+
+## What `_draw_fields()` draws, as `[runs, colour]` per outline, for every outline that meets `view`
+## — pulled out of the draw so a test can ask it, and time it, with no viewport to draw into.
+func field_runs(view: Rect2) -> Array:
+	var drawn: Array = []
 	var cuts := {}
+	_cut_calls += 1
+	var refresh := _cut_calls % _CUT_REFRESH_FRAMES == 0
 	for instance in _live():
 		if instance.is_finished:
 			continue
 		var colour := FIELD_LETHAL if instance.def.hard_fail else FIELD_COSTLY
-		var walled: Callable = instance.walled_off_to
+		var source := instance.global_position
+		var grid := instance.wall_grid()
 		var id := instance.get_instance_id()
 		var offsets := instance.flock_offsets()
 		if offsets.is_empty():
 			var axis := instance.solid_axis()
 			var velocity := instance.travel_velocity()
 			var shape := instance.def.shape
+			var spine := shape.half_length if shape != null else 0.0
 			for level: float in [instance.def.inner_radius, instance.def.outer_radius]:
-				var outline := shape.field_outline(instance.global_position, axis, velocity, level) \
-						if shape != null \
-						else GroundShape.field_outline_at(instance.global_position, velocity, level)
-				_draw_field_boundary(outline, colour, walled, [id, -1, level], view, cuts)
+				if not _may_be_seen(view, source, level, spine):
+					continue
+				var outline := shape.field_outline(source, axis, velocity, level) if shape != null \
+						else GroundShape.field_outline_at(source, velocity, level)
+				_field_boundary(outline, source, grid, colour, [id, -1, level], view, refresh, cuts,
+						drawn)
 			continue
 		var outer := instance.flock_outer_radius()
 		var velocities := instance.flock_velocities()
 		# Every bird's outline is cut by the flock's own line, from its centre, which is the line
 		# `contribution_at()` asks for the whole flock.
 		for i in offsets.size():
-			var at := instance.global_position + offsets[i]
+			var at := source + offsets[i]
 			for level: float in [instance.def.inner_radius, outer]:
+				if not _may_be_seen(view, at, level):
+					continue
 				var outline := GroundShape.field_outline_at(at, velocities[i], level)
-				_draw_field_boundary(outline, colour, walled, [id, i, level], view, cuts)
+				_field_boundary(outline, source, grid, colour, [id, i, level], view, refresh, cuts,
+						drawn)
 	for agent in _agents():
 		var is_car := agent.kind == CrowdAgent.Kind.CAR
 		var inner := Tuning.CAR_INNER_RADIUS if is_car else Tuning.PEDESTRIAN_INNER_RADIUS
@@ -201,20 +217,26 @@ func _draw_fields() -> void:
 			var jolt := agent.jolt_radii()
 			levels.append(jolt.x)
 			levels.append(jolt.y)
-		var walled: Callable = agent.walled_off_to
+		var source := agent.global_position
+		var grid := agent.wall_grid()
 		var id := agent.get_instance_id()
 		for level in levels:
-			var outline := GroundShape.field_outline_at(agent.global_position, velocity, level)
-			_draw_field_boundary(outline, FIELD_COSTLY, walled, [id, -1, level], view, cuts)
+			if not _may_be_seen(view, source, level):
+				continue
+			var outline := GroundShape.field_outline_at(source, velocity, level)
+			_field_boundary(outline, source, grid, FIELD_COSTLY, [id, -1, level], view, refresh,
+					cuts, drawn)
 	_cuts = cuts
+	return drawn
 
 ## The cut outlines of the last frame, by `[emitter id, bird or -1, level]`: `[outline, runs]`.
 ## **An outline the same as last frame's is cut the same way**, so a standing source — most events
 ## — asks its walls once rather than every frame; anything that moved is asked again. Rebuilt every
 ## frame from the outlines drawn, so nothing gone or off screen stays in it, and every outline is
-## asked again on every `_CUT_REFRESH_FRAMES`th frame, so a change to the ground under a standing
+## asked again every `_CUT_REFRESH_FRAMES`th frame, so a change to the ground under a standing
 ## source (a task scene's stretch coming on) is drawn within a second.
 var _cuts := {}
+var _cut_calls := 0
 const _CUT_REFRESH_FRAMES := 60
 
 ## The world the camera shows, so an outline nobody can see costs nothing: the wall questions
@@ -222,24 +244,28 @@ const _CUT_REFRESH_FRAMES := 60
 func _view_rect() -> Rect2:
 	return get_canvas_transform().affine_inverse() * get_viewport_rect()
 
+## Whether a field level about `at` can reach into `view`, asked before its outline is built: no
+## outline reaches further from its emitter than `level / (1 - Tuning.FIELD_ECCENTRICITY_MAX)`,
+## the bound `CrowdAgent.contribution_at()` culls by, past the end of a body's own `spine`.
+static func _may_be_seen(view: Rect2, at: Vector2, level: float, spine := 0.0) -> bool:
+	return view.grow(level / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX) + spine).has_point(at)
+
 ## One level of one field's boundary — an outline from `GroundShape.field_outline()` or its
 ## plain-point form `field_outline_at()` (a crowd agent or one bird of a flock, neither of which
-## owns a body in field terms) — drawn only where `walled` lets the field reach, and not at all
-## off screen. See `_cuts` for `key` and `cuts`.
-func _draw_field_boundary(outline: PackedVector2Array, colour: Color, walled: Callable, key: Array,
-		view: Rect2, cuts: Dictionary) -> void:
+## owns a body in field terms) — added to `drawn` as the runs `open_runs()` leaves, and not at all
+## off screen. See `_cuts` for `key`, `refresh` and `cuts`.
+func _field_boundary(outline: PackedVector2Array, source: Vector2, grid: CityMap, colour: Color,
+		key: Array, view: Rect2, refresh: bool, cuts: Dictionary, drawn: Array) -> void:
 	if outline.is_empty() or not view.intersects(_bounds_of(outline)):
 		return
 	var runs: Array[PackedVector2Array] = []
 	var cached: Array = _cuts.get(key, [])
-	if not cached.is_empty() and cached[0] == outline \
-			and Engine.get_process_frames() % _CUT_REFRESH_FRAMES != 0:
+	if not refresh and not cached.is_empty() and cached[0] == outline:
 		runs = cached[1]
 	else:
-		runs = open_runs(outline, walled)
+		runs = open_runs(outline, source, grid)
 	cuts[key] = [outline, runs]
-	for run in runs:
-		draw_polyline(run, colour, LINE_WIDTH, true)
+	drawn.append([runs, colour])
 
 static func _bounds_of(points: PackedVector2Array) -> Rect2:
 	var rect := Rect2(points[0], Vector2.ZERO)
@@ -253,24 +279,32 @@ static func _bounds_of(points: PackedVector2Array) -> Rect2:
 const _CUT_STEPS := 6
 
 ## A closed outline as the open polylines left once every stretch of it a wall keeps the field from
-## is cut away — `walled` answers that for one point, the emitter's own `walled_off_to()`. With
-## nothing walled it is the whole loop, closed; with everything walled it is nothing. **Where an
-## edge runs from open to walled, the cut is where the answer turns along that edge**, found by
-## halving it, so the line ends at the wall's depth rather than at whichever vertex of the outline
-## happened to fall short of it. An edge walled at both ends is dropped whole; a gap narrower than one
-## edge between two walled vertices is the one thing this cannot see.
-static func open_runs(points: PackedVector2Array, walled: Callable) -> Array[PackedVector2Array]:
+## is cut away: walled where `grid.wall_between()` blocks the line from `source`, the emitter's own
+## node, to the point — the line `contribution_at()` asks, of the grid the emitter asks it of
+## (`EventInstance.wall_grid()`, `CrowdAgent.wall_grid()`). With nothing walled it is the whole
+## loop, closed; with everything walled it is nothing; with no grid nothing is walled. **Where an edge
+## runs from open to walled, the cut is where the answer turns along that edge**, found by halving
+## it, so the line ends at the wall's depth rather than at whichever vertex of the outline happened
+## to fall short of it. An edge walled at both ends is dropped whole; a gap narrower than one edge
+## between two walled vertices is the one thing this cannot see.
+##
+## **Most outlines ask no line at all**: `_deep_ground_meets()` answers first whether anything
+## within the outline's bounds could be deep enough in a building to wall one, and a walker on a
+## sidewalk beside a facade almost never reaches that far in.
+static func open_runs(points: PackedVector2Array, source: Vector2, grid: CityMap
+		) -> Array[PackedVector2Array]:
 	var runs: Array[PackedVector2Array] = []
 	var count := points.size()
 	if count < 2:
 		return runs
 	var shut: Array[bool] = []
 	var first_shut := -1
-	for i in count:
-		var is_shut: bool = walled.call(points[i])
-		shut.append(is_shut)
-		if is_shut and first_shut < 0:
-			first_shut = i
+	if grid != null and _deep_ground_meets(grid, _bounds_of(points).expand(source)):
+		for i in count:
+			var is_shut := grid.wall_between(source, points[i])
+			shut.append(is_shut)
+			if is_shut and first_shut < 0:
+				first_shut = i
 	if first_shut < 0:
 		var closed := points.duplicate()
 		closed.append(points[0])
@@ -284,24 +318,57 @@ static func open_runs(points: PackedVector2Array, walled: Callable) -> Array[Pac
 		if shut[i] and shut[j]:
 			continue
 		if shut[i]:
-			run = PackedVector2Array([_where_the_wall_starts(points[j], points[i], walled), points[j]])
+			run = PackedVector2Array([
+					_where_the_wall_starts(points[j], points[i], source, grid), points[j]])
 		elif shut[j]:
-			run.append(_where_the_wall_starts(points[i], points[j], walled))
+			run.append(_where_the_wall_starts(points[i], points[j], source, grid))
 			runs.append(run)
 			run = PackedVector2Array()
 		else:
 			run.append(points[j])
 	return runs
 
-## The last point from `open` towards `shut` that `walled` still leaves open.
-static func _where_the_wall_starts(open: Vector2, shut: Vector2, walled: Callable) -> Vector2:
+## The last point from `open` towards `shut` whose line from `source` the grid leaves open.
+static func _where_the_wall_starts(open: Vector2, shut: Vector2, source: Vector2, grid: CityMap
+		) -> Vector2:
 	for _i in _CUT_STEPS:
 		var middle := (open + shut) * 0.5
-		if walled.call(middle):
+		if grid.wall_between(source, middle):
 			shut = middle
 		else:
 			open = middle
 	return open
+
+## Whether any point of `rect` lies in a building tile at least `Tuning.THIN_WALL_SHIELD_DEPTH` in
+## from each of its open sides — a superset of the ground deep enough for `CityMap.wall_between()`
+## to block at, since no tile asks less than that depth and the corner discs it also leaves out only
+## take more away. A line from the source to the outline lies inside the outline's bounds with the
+## source added, so where this is false no line on it can be walled and none need be asked.
+static func _deep_ground_meets(grid: CityMap, rect: Rect2) -> bool:
+	var size := float(Tuning.TILE_SIZE)
+	var depth := minf(Tuning.THIN_WALL_SHIELD_DEPTH, Tuning.WALL_SHIELD_DEPTH)
+	var first := grid.world_to_tile(rect.position)
+	var last := grid.world_to_tile(rect.end)
+	for y in range(first.y, last.y + 1):
+		for x in range(first.x, last.x + 1):
+			var tile := Vector2i(x, y)
+			if grid.is_walkable(tile):
+				continue
+			var low := Vector2(tile) * size
+			var high := low + Vector2(size, size)
+			if grid.is_walkable(Vector2i(x - 1, y)):
+				low.x += depth
+			if grid.is_walkable(Vector2i(x + 1, y)):
+				high.x -= depth
+			if grid.is_walkable(Vector2i(x, y - 1)):
+				low.y += depth
+			if grid.is_walkable(Vector2i(x, y + 1)):
+				high.y -= depth
+			if low.x <= high.x and low.y <= high.y \
+					and low.x <= rect.end.x and rect.position.x <= high.x \
+					and low.y <= rect.end.y and rect.position.y <= high.y:
+				return true
+	return false
 
 # ----------------------------------------------------------------- shadows ---
 
