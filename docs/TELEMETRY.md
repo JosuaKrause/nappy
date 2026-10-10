@@ -691,6 +691,13 @@ world counters; `Performance.TIME_PROCESS` and `TIME_PHYSICS_PROCESS` are delibe
 because they are previous-second maxima, not costs of the sampled frame. The existing graph
 continues to show simulation delta and the readout retains its separate labels.
 
+**A trace needs its window drawn.** On macOS the main loop skips its draw step while the window is
+hidden — covered by another app's opaque window, or minimized — and the game runs on underneath, so
+the post-draw callback never fires: a trace taken while the window is covered records no frames at
+all, and its file's summary shows 0 intervals. Unlike a still, a trace never draws a frame on
+demand. Keep the window in view for the whole measured interval, and read `summary.intervals` before
+anything else in the file.
+
 Schema version 1 has `columns` naming the positional fields of every `samples` row, plus
 `environment_start`, `environment_end` and `summary`. An interval ends at its row's timestamp;
 its start is the preceding row's timestamp. A zero interval anchors each new segment. Pauses,
@@ -853,13 +860,11 @@ measurement is under `docs/evidence/m159-frame-record-2026-10-04/`.
 The game's own `_draw()` overrides each start with `if FrameRecord.on:` and one call that adds 1
 to a per-kind count, so off they pay one static read each. That is acceptable where the timing
 wrap's read was not, because of how often it runs: a frame runs about twenty `_draw()` calls (the
-per-kind means add up to 17.6 to 20.3 a frame in the three desktop records; the retained canvas
-items redraw only when something changes) against some 270 timed bodies, and the most in one
-frame was 275, once. One guarded counter costs about 130ns more than the same body without it in
-GDScript's own interpreter (`drew_cost.gd`, off), so about 3µs a frame, and 36µs in the worst
-frame, against a mean frame of 7.9ms. The desktop's full runs with the record off agree: the
-branch's median of six runs is 7.957ms against the base's 7.901ms, inside the runs' own spread
-(`docs/evidence/m159-draw-split-2026-10-04/`).
+retained canvas items redraw only when something changes) against some 270 timed bodies, so with
+the record off the guarded reads cost nothing the frame medians can see. The measured figures —
+the per-kind means, one guarded counter's cost against the same body without it (`drew_cost.gd`),
+and the frame medians with the record off against the base — are in
+[M159-7](decisions/2026-09-19-M159-7.md) and its evidence, `docs/evidence/m159-draw-split-2026-10-04/`.
 
 **The readout carries one line for it**, beneath the frame block: the last slow frame's length and
 what its callbacks took, as `frame/work`, then its largest costs under short names (`phys` and
