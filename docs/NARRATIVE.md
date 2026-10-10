@@ -185,7 +185,9 @@ the day would offer it, its spacing from everything else, the region doors' clea
 she has not used, the crossings and sidewalks the day's routes need — and never where it would close
 her way home or to a calm area, among the road and crossing tiles where her paths reach that edge,
 and only where the day's rules refuse every one of them, among those her paths reach a block
-further out. It is one more roadblock in the day's plan, and the arrow chooses among them all.
+further out. Where the rules refuse those too, it is spawned on that edge as the other tasks'
+places are, outside the day's rules. It is one more roadblock in the day's plan, and the arrow
+chooses among them all.
 *(2026-10-10, [mossy-beaver](playtests/2026-10-10-mossy-beaver.md): "let's place one properly and
 guide to that -- just make sure it's closeby".)* The places that are fixed keep them: day 9's district door, day 12's
 swing park, the neighbor on the walk home, the last night's station door, and the building a run's
@@ -243,10 +245,14 @@ touch".)*
   instead, measured from the ground it is touched from — touched from any side of its band, so he
   stands that far beyond the band's own reach: inside that band touching it is death, always;
   above it he never wakes at all; between them, which side the player approaches from decides
-  whether he notices them. Any roadblock answers the task, so he waits at the one she approaches:
-  each time the red arrow moves to another roadblock, he is moved to it, however often, and only
-  while neither where he stands nor where he goes is in her view, so he is never seen to vanish or
-  to appear; once he has noticed her he stays on her. *(2026-10-10, [lilac-marmot](playtests/2026-10-10-lilac-marmot.md):
+  whether he notices them. He stands where he has a clear line to the roadblock, since he notices
+  her only along one. Any roadblock answers the task, so he waits at the one she approaches: each
+  time the red arrow moves to another roadblock, he guards it from where he stands if he is
+  already that near it, or is moved to it, however often — into its band, or, while all of the
+  band is in her view, to ground just past it, in line with it, until it is not — and only while neither where
+  he stands nor where he goes is in her view, so he is never seen to vanish or to appear. So he
+  waits at the one she approaches unless he is in her view from the moment she turns toward another
+  until she reaches it; once he has noticed her he stays on her. *(2026-10-10, [lilac-marmot](playtests/2026-10-10-lilac-marmot.md):
   "just move the guard always to any roadblock she approaches. We can move the guard around
   offscreen as much as we want. If we need to move multiple times so be it".)* Seeded from the run and the day, so the distance or the alley that was
   safe on day 9 of this run is safe on day 9 every time you replay it — the pattern is learnable,

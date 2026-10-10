@@ -37,6 +37,7 @@ func run(t) -> void:
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
 	var saved_progress := GameState.resistance_progress
 	var saved_scars := GameState.scars.duplicate()
+	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
 	var saved_state := GameState.city_state
 	for fallback in [true, false]:
 		_measure(t, fallback)
@@ -44,6 +45,7 @@ func run(t) -> void:
 	GameState.failed_resistance_steps.assign(saved_failed)
 	GameState.resistance_progress = saved_progress
 	GameState.scars.assign(saved_scars)
+	GameState.completed_resistance_alley_tiles.assign(saved_alleys)
 	GameState.city_state = saved_state
 
 func _measure(t, fallback: bool) -> void:
@@ -131,6 +133,9 @@ func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int
 	GameState.completed_resistance_steps.assign(done)
 	GameState.failed_resistance_steps.assign([])
 	GameState.resistance_progress = 0
+	# A read mark's alley is remembered and never chosen again, so each day built on one seed starts
+	# from none remembered and reads the same mark.
+	GameState.completed_resistance_alley_tiles.assign([])
 	var state := CityState.new()
 	GameState.city_state = state
 	state.begin_day(city.map.block_plans, DAY)

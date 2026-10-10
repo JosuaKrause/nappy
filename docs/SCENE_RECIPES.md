@@ -268,7 +268,8 @@ as test whether it will be properly off screen")*. Days 6, 7, 8, 11 and 13 leave
 the director, which puts the target where a path from her first reaches the 576px circle round her
 (`ResistanceDirector.NEAR_THE_MARK`), on the stretch, out of her view; day 13's roadblock is put
 there under every rule a roadblock the day plans is placed under, or, where those rules refuse all of
-that ground, on ground her paths reach up to a block further out. Day 8's burnt building stands
+that ground, on ground her paths reach up to a block further out, and where they refuse that too, on
+the circle's edge as the other targets are, outside those rules. Day 8's burnt building stands
 there for a run with no day-3 fire, its door a tile or two behind the shell. The targets whose
 place is fixed — day 9's district door, day 12's swing and day 14's station door — have no such
 rule, so their scenes put the mark or her start just past that same circle. Day 10's neighbor
