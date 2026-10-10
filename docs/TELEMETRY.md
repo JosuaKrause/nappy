@@ -133,7 +133,7 @@ The events:
     a world rectangle inside the camera's view, `Tuning.VIEW_HALF_EXTENT` about its centre, less, in
     the joystick scheme, the two bottom corners its controls cover — each from the screen's side to
     the far edge of its focal disc, and from its painted top down. A ring and Run share the same
-    footprint, so choosing a steering side does not move these corners *(inbox #581, the player:
+    footprint, so the steering side the title chooses does not move these corners *(inbox #581, the player:
     "remove the area at the bottom left and right up to the top of the joystick circle and
     horizontal extent of the speed button ... for the other mode those rectangles *do* count")*.
     `pelican-seen` asks it too, and so does everything gameplay decides by what she can see: the

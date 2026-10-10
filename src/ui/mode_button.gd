@@ -32,8 +32,9 @@ extends Button
 ## here too, so both screens drive the same drawing through `hold_progress` rather than each screen
 ## painting its own.
 ##
-## `Symbol.JOYSTICK` and `Symbol.TAP` are the title screen's own pair, one per aiming origin —
-## see `TitleScreen` and `ControlsMode`. Neither ever holds: a press chooses the mode outright, so
+## `Symbol.JOYSTICK` and `Symbol.TAP` are the title screen's own buttons — two joysticks, one per
+## steering side, and the tap between them; see `TitleScreen` and `ControlsMode`. None ever holds: a
+## press chooses outright, so
 ## `hold_progress` and the `_draw()` sweep below stay meaningful only for `RESTART`.
 ##
 ## **Pressed and hovered are driven from outside, not from `Button`'s own draw state.**
@@ -71,8 +72,9 @@ const _ICON_BY_SYMBOL := {
 }
 
 ## The resting disc's radius. Its radial catch extends five percent beyond the painted edge.
-const _RADIUS := 46.0
-const _DIAMETER := _RADIUS * 2.0
+## Public so `TitleScreen` can centre a disc on a point rather than on a container's corner.
+const RADIUS := 46.0
+const _DIAMETER := RADIUS * 2.0
 ## The glyph reads best at roughly half the disc's own diameter — big enough to read at this
 ## button's 46px radius, short of the rim so it never touches the disc's own edge.
 const _ICON_SIZE := _DIAMETER * 0.5
@@ -308,7 +310,7 @@ func _refresh_look() -> void:
 
 ## The one thing this button paints — see the class comment for why a fill that is not a drawing
 ## of anything is not a picture. A radial sweep from 12 o'clock clockwise, drawn as a triangle fan
-## (`draw_colored_polygon`) clipped to `_RADIUS` rather than a full opaque disc, so the SVG glyph
+## (`draw_colored_polygon`) clipped to `RADIUS` rather than a full opaque disc, so the SVG glyph
 ## underneath still reads through the translucent `_HOLD_FILL` even once `hold_progress` reaches
 ## 1.0 and the sweep has closed the whole circle. Segment count scales with `hold_progress` rather
 ## than always drawing `_HOLD_FILL_SEGMENTS` wedges, so a `hold_progress` of 0 needs no fan at all.
@@ -318,7 +320,7 @@ func _draw() -> void:
 	if symbol != Symbol.RESTART or hold_progress <= 0.0:
 		return
 	# The rect's own middle and the rect's own radius, for the same reason the stylebox reads them
-	# rather than `_RADIUS`: a stretched button would otherwise sweep a circle off to one side of
+	# rather than `RADIUS`: a stretched button would otherwise sweep a circle off to one side of
 	# itself. See `_drawn_radius()`.
 	var centre := size * 0.5
 	var radius := _drawn_radius()
@@ -358,7 +360,7 @@ func _apply_disc_style() -> void:
 	add_theme_stylebox_override("hover_pressed", _disc_style(Palette.BUTTON_PRESSED))
 
 ## Half the button's own shorter side, which is the radius that actually rounds a rect into a
-## circle — **not `_RADIUS`, which is only that number while the rect happens to be 92x92.**
+## circle — **not `RADIUS`, which is only that number while the rect happens to be 92x92.**
 ##
 ## *(2026-09-07, the player: "the hover highlight showed a bug that the button is currently a square
 ## and not the circle".)* `custom_minimum_size` is a *minimum*: any container that hands this button
@@ -366,11 +368,11 @@ func _apply_disc_style() -> void:
 ## **The near-white hover is what made it visible rather than what caused it** — the resting and
 ## hover browns sat close enough to the panel behind them that the corners never read.
 ##
-## Falls back to `_RADIUS` before the first layout, when `size` is still zero and rounding by zero
+## Falls back to `RADIUS` before the first layout, when `size` is still zero and rounding by zero
 ## would draw a plain square for one frame.
 func _drawn_radius() -> float:
 	var half := minf(size.x, size.y) * 0.5
-	return half if half > 0.0 else _RADIUS
+	return half if half > 0.0 else RADIUS
 
 func _disc_style(fill: Color) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()

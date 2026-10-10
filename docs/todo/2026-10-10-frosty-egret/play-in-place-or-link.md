@@ -30,4 +30,6 @@ plain-link outcome. What is left is settling whether a route plays in place and,
 its player.
 
 **Proposed, not asked for:** the video shown in place is the cut rendered with smooth turns
-([mossy-hawk](../2026-10-10-mossy-hawk/README.md)), so it is uploaded or committed once.
+([mossy-hawk](../../decisions/2026-10-10-mossy-hawk.md)), so it is uploaded or committed once. Its
+under-10MB re-encode, `build/trailer/mossy-hawk-smooth/trailer-glass-alarm-final-v6-under10mb.mp4`
+in the main checkout, is described in that record.

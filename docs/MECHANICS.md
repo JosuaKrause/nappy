@@ -395,27 +395,36 @@ destination**: a tap that walked her to a point would pathfind, and a tap that p
 route decision to the game.
 
 The two schemes differ in where a press is measured from. **Tap** aims from wherever she is
-standing, and a press within the radius around her stops her. **Joystick** aims from the nearer
-of two fixed focal points. Both show steering rings until the first pointer chooses a side.
-A tap or drag on either half selects that focus, and the opposite ring becomes a same-size
-**Run** disc. Releasing the steering pointer preserves the side choice and locked heading:
-"Keep Run visible until the player steers from the other side" (2026-10-07).
-A later tap outside Run on its half, or a drag across the middle stop band, swaps sides.
-The active ring and middle band retain their stop radius; a steering drag over either focus
-still stops. Neither scheme is tied to touch hardware.
+standing, and a press within the radius around her stops her. **Joystick** aims from one fixed
+focal point, on the side the title chose: the title's two joystick buttons stand where the two
+focal points are, and pressing one makes that side steer and the other side **Run** for the
+sitting — until the title asks again, after a run ends *(2026-10-10: "selecting the left one will
+make the left side permanently joystick and the right side permanently run button (permanently for
+the sitting). vice versa on the right side")*. Nothing in play swaps the sides, and the walk out
+in the escape keeps the scheme and the sides the run's title chose. From the first frame of play
+the steering side shows its ring, and the other focal point a same-size Run disc. Neither scheme is
+tied to touch hardware.
 
-Only a press beginning on the displayed Run disc holds **run**. It owns that hold until release
-wherever the pointer travels, even if steering swaps the displayed sides meanwhile. A steering
-pointer never becomes a run pointer by sliding onto it. Several run fingers can hand the hold
-over; it ends on the last release. Double tapping independently latches run, so releasing a hold
-does not cancel a latch. Pause preserves the selected side and locked heading while releasing
-pointer holds; changing control schemes or reconstructing the controls for a new day clears the
-side choice. Keyboard steering never chooses a side.
+The steering side reaches two thirds of the way from its focal point to Run's *(2026-10-10:
+"instead of splitting the in middle we can move it closer to the run button; although I wouldn't go
+all the way")*, with a stop band of the ring's diameter at its edge. Everything beyond that edge is
+Run's: a press there, on the disc or off it, holds **run** and never steers. Inside the ring a
+smaller, separately drawn dead zone stops her, as does the stop band; dragging back out steers
+again. The heading locks in where a steering drag lifts, so a swipe through the dead zone that
+lands outside it keeps her walking toward the landing point, and one that lands inside it stops
+her *(2026-10-10: "make sure swiping over it but landing outside of it correctly keeps the player
+moving in the direction of the final position")*.
 
-Every round button catches to **105% of its visible radius**, including Run, pause, and the title,
-pause-screen and summary discs. Press and hover use the same circle in ordinary and rotated
-presentation. The joystick dead zones and middle stop band do not grow. Background continue
-presses and restart holds retain their own semantics.
+Each pointer keeps the role its press gave it until release. A run finger never steers, wherever it
+travels; a steering drag carried past the band onto Run's side steers on from the same focal point
+and never takes Run. Several run fingers can hand the hold over; it ends on the last release.
+Double tapping independently latches run, so releasing a hold does not cancel a latch. Pause keeps
+the locked heading while releasing pointer holds. Keyboard steering never moves the sides.
+
+Every round button catches to **105% of its visible radius**: pause, and the title, pause-screen and
+summary discs. Press and hover use the same circle in ordinary and rotated presentation. The joystick
+dead zone and stop band do not grow. Background continue presses and restart holds retain their
+own semantics.
 **A help text that names a button shows that button's own symbol in the line.** *(2026-10-04, note #533:
 "the press pause to pause text should say press <pause button> to pause where it uses the in-game
 symbol. Likewise joystick run should now say hold <run button> or double tap to run where it makes
@@ -426,18 +435,16 @@ in the joystick scheme only, where it is on screen; the tap scheme keeps *double
 screen is shown before a scheme is chosen, so its body keeps *double tap to run*, which holds in both.
 The symbol is the atlas region the button wears, drawn one text line tall in the line (`HelpText`).
 
-Where a heading is measured from, and what stops her, are the one place a mouse and a real finger
-disagree. A mouse aims from her own world position, and a click within a generous radius of that
-position stops her. A real touch instead aims from whichever of two fixed points on the screen is
-nearer the press — drawn as a ring with a knob at the heading she is actually walking, so what she
-is walking can be read off the glass without watching her — and is stopped by a press on either
-point or by one in a band down the screen's own middle, never by a press near her own position: the
-camera keeps her at the middle of the screen, so that ground is the band's own. **Both rings always
-show that same heading**, whichever one a press aimed through, and also while the keyboard is what
-is actually steering her: the knob reads the walk's own input state directly rather than only
-`Joystick`'s own last press, so a real key overriding a stale click shows up on both circles the
-instant it does. `Tap` draws nothing to update, having only her own position to aim from rather
-than two fixed points to keep in agreement.
+Where a heading is measured from, and what stops her, are the one place the two schemes disagree.
+**Tap** aims from her own world position, and a press within a small radius of her body — the
+joystick's dead zone, at the camera's zoom — stops her. **Joystick** aims from the steering focal
+point — drawn as a ring with the dead zone's fainter circle inside it and a knob at the heading she
+is actually walking, so what she is walking can be read off the glass without watching her — and is
+stopped by a press in the dead zone or in the stop band at the steering side's edge, never by a
+press near her own position. **The ring's knob shows the heading she is walking** whatever set it,
+including the keyboard: the knob reads the walk's own input state directly rather than only the
+last press, so a real key overriding a stale click shows up on the ring the instant it does. Tap
+draws nothing to update, having only her own position to aim from.
 
 The pause button, top right, is shown on every device once a day — or a section of the escape, the
 run's own ending — is actually running: a real `InputEventAction` for `pause` through

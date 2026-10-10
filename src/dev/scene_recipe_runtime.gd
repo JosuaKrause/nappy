@@ -8,7 +8,7 @@ const DIRECTIONS := {"north": Vector2.UP, "south": Vector2.DOWN,
 const OWNED_FLAGS := ["--seed", "--day", "--spawn", "--parent", "--meters", "--walk",
 		"--flee", "--route", "--force", "--follow", "--zoom", "--zoom-out", "--caption",
 		"--title-card", "--start-escape", "--blackout", "--overview", "--day-length",
-		"--press", "--tap", "--ending", "--quit-when-still", "--skip"]
+		"--press", "--tap", "--ending", "--quit-when-still", "--skip", "--smooth-walk"]
 
 var data: Dictionary = {}
 var built: Dictionary = {}
@@ -18,7 +18,8 @@ var scripted := false
 var tick := 0
 var _player: Stroller
 var _city: City
-var _steps: Array[Dictionary] = []
+## The recipe's `playback.walk`, pressed tick by tick (`playback.smooth` smooths its turns).
+var _plan: WalkPlan
 var _observations: Array = []
 var _duration_ticks := 0
 var _active := false
@@ -249,8 +250,8 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 		for actor: Dictionary in setup.actors:
 			if not background.get("uniform_walkers", false) or actor.kind != "walker":
 				errors.append("background crowd accepts only pinned walkers with uniform_walkers enabled")
-	_keys(playback, ["walk", "duration", "capture_at", "camera", "caption", "title", "observations",
-			"settled_camera"],
+	_keys(playback, ["walk", "smooth", "duration", "capture_at", "camera", "caption", "title",
+			"observations", "settled_camera"],
 			"playback", errors)
 	_number(playback.get("duration", 5), "playback.duration", 1.0 / 60.0, 240, errors)
 	if not errors.is_empty():
@@ -260,6 +261,8 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	var walk: Variant = playback.get("walk", "")
 	if not walk is String or (not str(walk).is_empty() and AutoScreenshot._parse_script(walk).is_empty()):
 		errors.append("playback.walk is not a valid timed movement script")
+	if not playback.get("smooth", false) is bool:
+		errors.append("playback.smooth must be boolean")
 	for key in ["caption", "title"]:
 		if not playback.get(key, "") is String:
 			errors.append("playback.%s must be text" % key)
@@ -449,7 +452,8 @@ func configure(result: Dictionary, scripted_mode: bool) -> void:
 	for label: String in result.anchors:
 		var at: Vector2 = result.anchors[label]
 		manifest.anchors[label] = [at.x, at.y]
-	_steps = AutoScreenshot._parse_script(str(data.get("playback", {}).get("walk", "")))
+	_plan = WalkPlan.make(AutoScreenshot._parse_script(str(data.get("playback", {}).get("walk", ""))),
+			Engine.physics_ticks_per_second, bool(data.get("playback", {}).get("smooth", false)))
 	_observations = data.get("playback", {}).get("observations", [])
 	_duration_ticks = roundi(float(data.get("playback", {}).get("duration", 5)) * Engine.physics_ticks_per_second)
 	if "--screenshot" in DevFlags.active_args():
@@ -1011,21 +1015,7 @@ func _physics_process(_delta: float) -> void:
 	_apply_input()
 
 func _apply_input() -> void:
-	var remaining := float(tick) / Engine.physics_ticks_per_second
-	var direction := Vector2.ZERO
-	var running := false
-	for step in _steps:
-		if remaining < float(step.seconds):
-			direction = step.direction
-			running = step.run
-			break
-		remaining -= float(step.seconds)
-	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
-	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
-	if running:
-		Input.action_press("run")
-	else:
-		Input.action_release("run")
+	WalkPlan.press(_plan.input_at(tick))
 
 func elapsed() -> float:
 	return float(tick) / Engine.physics_ticks_per_second

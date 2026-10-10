@@ -76,7 +76,7 @@ func _test_button_catches_and_hover_are_radial_when_rotated(t) -> void:
 			var title := screen as TitleScreen
 			var button: ModeButton
 			if title:
-				button = title._joystick_button
+				button = title._left_button
 				title._tap_button.position = Vector2(900.0, 400.0)
 			else:
 				button = screen.get("_restart_button") as ModeButton
@@ -250,7 +250,8 @@ func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started := [0]
-	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool) -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
+			_side: ControlsMode.Side) -> void: started[0] += 1)
 	title.open()
 
 	TitleScreen.note_restart_requested()
@@ -284,7 +285,8 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 
 	var started := [0]
 	var quit := [0]
-	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool) -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
+			_side: ControlsMode.Side) -> void: started[0] += 1)
 	title.quit_requested.connect(func() -> void: quit[0] += 1)
 	title._unhandled_input(_accept())
 	t.check(started[0] == 1, "space begins the run")
@@ -307,7 +309,8 @@ func _test_every_walking_key_begins_the_run(t) -> void:
 	t.add_child(title)
 	var started_modes: Array[ControlsMode.Mode] = []
 	var by_keys: Array[bool] = []
-	title.start_requested.connect(func(mode: ControlsMode.Mode, by_key: bool) -> void:
+	title.start_requested.connect(func(mode: ControlsMode.Mode, by_key: bool,
+			_side: ControlsMode.Side) -> void:
 		started_modes.append(mode)
 		by_keys.append(by_key))
 	title.open()
@@ -320,12 +323,15 @@ func _test_every_walking_key_begins_the_run(t) -> void:
 	title.close()
 	title.queue_free()
 
-## **The two buttons are the only pointer way in, and each answers the mode it names.**
+## **The buttons are the only pointer way in, and each answers the mode and side it names.**
 ## *(2026-09-07: "let's make the controls a player choice and bring back the two buttons ... that
 ## should also solve the issue with the missing title screen since the only way to start the game
-## will be clicking on one of the buttons".)* Positions are set directly rather than read after a
-## frame of container sorting, the same reason `_test_the_restart_button_is_a_hold` gives for doing
-## the same on the pause screen — `contains_design_point()` still answers off whatever rect is actually set.
+## will be clicking on one of the buttons". 2026-10-10: "the joystick select buttons move to where
+## the joystick buttons will be. selecting the left one will make the left side permanently
+## joystick and the right side permanently run button ... vice versa on the right side. the tap to
+## play button goes in the center between both.")* The columns are sorted by hand rather than after
+## a frame, so the discs are read where the real layout puts them: on the two focal points, and
+## midway between them.
 ##
 ## Acknowledged two frames ahead of itself, the same as every other button that fires and closes
 ## its own screen — see `TitleScreen._acknowledge_and_begin()` for why, and
@@ -333,32 +339,38 @@ func _test_every_walking_key_begins_the_run(t) -> void:
 func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
-	var started_modes: Array[ControlsMode.Mode] = []
+	var started: Array[Array] = []
 	var by_keys: Array[bool] = []
-	title.start_requested.connect(func(mode: ControlsMode.Mode, by_key: bool) -> void:
-		started_modes.append(mode)
+	title.start_requested.connect(func(mode: ControlsMode.Mode, by_key: bool,
+			side: ControlsMode.Side) -> void:
+		started.append([mode, side])
 		by_keys.append(by_key))
 	title.open()
-	title._joystick_button.position = Vector2(300.0, 400.0)
-	title._joystick_button.size = Vector2(92.0, 92.0)
-	title._tap_button.position = Vector2(700.0, 400.0)
-	title._tap_button.size = Vector2(92.0, 92.0)
+	var expected := [
+		[title._left_button, TouchControls.FOCUS_LEFT,
+				[ControlsMode.Mode.JOYSTICK, ControlsMode.Side.LEFT], "left joystick"],
+		[title._right_button, TouchControls.FOCUS_RIGHT,
+				[ControlsMode.Mode.JOYSTICK, ControlsMode.Side.RIGHT], "right joystick"],
+		[title._tap_button, (TouchControls.FOCUS_LEFT + TouchControls.FOCUS_RIGHT) * 0.5,
+				[ControlsMode.Mode.TAP, ControlsMode.Side.LEFT], "tap"],
+	]
+	for row: Array in expected:
+		var button: ModeButton = row[0]
+		button.get_parent().notification(Container.NOTIFICATION_SORT_CHILDREN)
+		var centre := button.get_global_rect().get_center()
+		t.check(centre.distance_to(row[1]) < 0.5,
+				"the %s button's disc is centred on %s (got %s)" % [row[3], row[1], centre])
 
-	var joystick_at: Vector2 = title._joystick_button.get_global_rect().get_center()
-	title._unhandled_input(_touch_at(joystick_at, true))
-	t.check(started_modes.is_empty(), "the press is acknowledged before it is acted on")
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	t.check(started_modes == [ControlsMode.Mode.JOYSTICK],
-			"pressing the joystick button starts a run in Mode.JOYSTICK")
-
-	var tap_at: Vector2 = title._tap_button.get_global_rect().get_center()
-	title._unhandled_input(_touch_at(tap_at, true))
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	t.check(started_modes == [ControlsMode.Mode.JOYSTICK, ControlsMode.Mode.TAP],
-			"and pressing the tap button starts a second run in Mode.TAP")
-	t.check(by_keys == [false, false], "a button press is never reported as a key")
+	for row: Array in expected:
+		var button: ModeButton = row[0]
+		title._unhandled_input(_touch_at(button.get_global_rect().get_center(), true))
+		t.check(started.size() < expected.find(row) + 1,
+				"the %s press is acknowledged before it is acted on" % row[3])
+		t.get_tree().process_frame.emit()
+		t.get_tree().process_frame.emit()
+		t.check(started.size() == expected.find(row) + 1 and started.back() == row[2],
+				"pressing the %s button starts a run as %s (got %s)" % [row[3], row[2], started])
+	t.check(by_keys == [false, false, false], "a button press is never reported as a key")
 
 	title.close()
 	title.queue_free()
@@ -373,14 +385,15 @@ func _test_a_real_touch_on_a_title_button_reaches_the_title_screen(t) -> void:
 	t.add_child(title)
 	var started_modes: Array[ControlsMode.Mode] = []
 	var by_keys: Array[bool] = []
-	title.start_requested.connect(func(mode: ControlsMode.Mode, by_key: bool) -> void:
+	title.start_requested.connect(func(mode: ControlsMode.Mode, by_key: bool,
+			_side: ControlsMode.Side) -> void:
 		started_modes.append(mode)
 		by_keys.append(by_key))
 	title.open()
-	title._joystick_button.position = Vector2(300.0, 400.0)
-	title._joystick_button.size = Vector2(92.0, 92.0)
+	title._left_button.position = Vector2(300.0, 400.0)
+	title._left_button.size = Vector2(92.0, 92.0)
 
-	var at: Vector2 = title._joystick_button.get_global_rect().get_center()
+	var at: Vector2 = title._left_button.get_global_rect().get_center()
 	var touch := InputEventScreenTouch.new()
 	touch.position = at
 	touch.pressed = true
@@ -473,15 +486,18 @@ func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 			"and the body says two things and nothing else ('%s')" % title._body.text)
 	t.check(not "that way" in title._body.text and not "tap her" in title._body.text,
 			"no mention of tapping her or 'that way' — stopping still works, it just is not taught")
-	t.check(title._joystick_button.visible and title._tap_button.visible,
-			"both buttons are on screen, the only pointer way to begin a run")
+	t.check(title._left_button.visible and title._tap_button.visible
+			and title._right_button.visible,
+			"all three buttons are on screen, the only pointer way to begin a run")
 	# *(Playtest 34 finding 10: "call the modes 'On-screen Controls' and 'Tap to Go' no further
-	# explanations".)* The captions under the two buttons are the names and nothing else.
-	var joystick_caption: Label = title.get_node(
-			"Root/Bottom/Lines/Choice/JoystickColumn/JoystickCaption")
-	var tap_caption: Label = title.get_node("Root/Bottom/Lines/Choice/TapColumn/TapCaption")
-	t.check(joystick_caption.text == "On-screen Controls",
-			"the joystick mode is named and not explained ('%s')" % joystick_caption.text)
+	# explanations".)* The captions under the buttons are the names and nothing else; the two
+	# joystick buttons share theirs, since a button's place says its side.
+	for caption_path: String in ["Root/Choice/LeftColumn/LeftCaption",
+			"Root/Choice/RightColumn/RightCaption"]:
+		var joystick_caption: Label = title.get_node(caption_path)
+		t.check(joystick_caption.text == "On-screen Controls",
+				"the joystick mode is named and not explained ('%s')" % joystick_caption.text)
+	var tap_caption: Label = title.get_node("Root/Choice/TapColumn/TapCaption")
 	t.check(tap_caption.text == "Tap to Go",
 			"and the tap mode is named and not explained ('%s')" % tap_caption.text)
 
@@ -624,15 +640,15 @@ func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
 	t.add_child(title)
 	title._touch = false
 	title.open()
-	title._joystick_button.position = Vector2(300.0, 400.0)
-	title._joystick_button.size = Vector2(92.0, 92.0)
+	title._left_button.position = Vector2(300.0, 400.0)
+	title._left_button.size = Vector2(92.0, 92.0)
 	title._tap_button.position = Vector2(700.0, 400.0)
 	title._tap_button.size = Vector2(92.0, 92.0)
 
 	var over_joystick := InputEventMouseMotion.new()
-	over_joystick.position = title._joystick_button.get_global_rect().get_center()
+	over_joystick.position = title._left_button.get_global_rect().get_center()
 	title._unhandled_input(over_joystick)
-	t.check((title._joystick_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+	t.check((title._left_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
 				== Palette.BUTTON_HOVER,
 			"the mouse sitting over the joystick button lights it up")
 	t.check((title._tap_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
@@ -642,7 +658,7 @@ func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
 	var away := InputEventMouseMotion.new()
 	away.position = Vector2(20.0, 20.0)
 	title._unhandled_input(away)
-	t.check((title._joystick_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
+	t.check((title._left_button.get_theme_stylebox("normal") as StyleBoxFlat).bg_color
 				!= Palette.BUTTON_HOVER,
 			"and moving away turns it off again")
 
@@ -781,9 +797,9 @@ func _test_the_buttons_show_on_every_device(t) -> void:
 ## **The trap this milestone's own design names**: a touch anywhere already means *carry on*, so a
 ## press that lands on the restart button has to be caught before that catch-all or it would both
 ## start a hold and immediately close the screen underneath it. Driven through `_unhandled_input`
-## directly with events shaped at the restart button's own `contains_design_point()` centre, the same way
-## every other touch test in this file drives a real propagated-looking event rather than calling
-## the hold logic by name.
+## directly with events shaped at the restart button's centre, the same way every other touch
+## test in this file drives a real propagated-looking event rather than calling the hold logic by
+## name.
 func _test_the_restart_button_is_a_hold(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
 	t.add_child(pause)
@@ -1018,7 +1034,7 @@ func _test_pause_keeps_the_last_heading_through_the_dismiss_press(t) -> void:
 	_release_moves()
 	t.get_tree().paused = false
 	pause.queue_free()
-	controls.queue_free()
+	controls.free()
 	rig.free()
 
 ## The other half of the same fix: a run that was never walking must not start walking from the
@@ -1069,7 +1085,7 @@ func _test_pause_stays_standing_through_the_dismiss_press(t) -> void:
 	_release_moves()
 	t.get_tree().paused = false
 	pause.queue_free()
-	controls.queue_free()
+	controls.free()
 	rig.free()
 
 ## Movement actions and `run` are global `Input` state, not scoped to this suite's own nodes --
@@ -1314,7 +1330,8 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started := [0]
-	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool) -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
+			_side: ControlsMode.Side) -> void: started[0] += 1)
 	title.open()
 	title._unhandled_input(_touch(false))
 	t.check(started[0] == 0, "lifting a finger does nothing on the title")
@@ -1379,7 +1396,8 @@ func _test_a_mouse_click_advances_every_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)
 	var started := [0]
-	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool) -> void: started[0] += 1)
+	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
+			_side: ControlsMode.Side) -> void: started[0] += 1)
 	title.open()
 	var release := _left_click()
 	release.pressed = false

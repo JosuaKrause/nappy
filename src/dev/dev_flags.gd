@@ -16,8 +16,8 @@ extends RefCounted
 ## **`--no-telemetry` is not here.** It is a documented player-facing opt-out (see
 ## docs/TELEMETRY.md), not developer furniture, and stays live in every build.
 ## **`AutoScreenshot.from_command_line()` gates itself the same way independently**, since
-## `--screenshot`, `--after`, `--walk`, `--flee` and `--press` are parsed there rather than in
-## `main.gd`, and are gated in place rather than moved here.
+## `--screenshot`, `--after`, `--walk`, `--smooth-walk`, `--flee` and `--press` are parsed there
+## rather than in `main.gd`, and are gated in place rather than moved here.
 ##
 ## **The table below is the one manifest of the whole surface, even the half parsed elsewhere.**
 ## `tools/run.sh` and `tools/shot.sh` forward whatever a caller gives them straight to the game
@@ -64,6 +64,7 @@ extends RefCounted
 ##   --screenshot    1
 ##   --after         1
 ##   --walk          1
+##   --smooth-walk   0
 ##   --flee          0?
 ##   --press         2*
 ##   --tap           2
@@ -129,7 +130,7 @@ extends RefCounted
 ## `--zoom`, `--touch`, `--web`, `--title`/`--no-title`, `--no-focus-pause`, `--no-save`,
 ## `--spikes`, `--frame-trace`, `--quit-when-still`, and (through
 ## `AutoScreenshot.from_command_line()`'s own copy of this gate) `--screenshot`, `--after`,
-## `--walk`, `--flee`, `--press` and `--tap` — a release build answers
+## `--walk`, `--smooth-walk`, `--flee`, `--press` and `--tap` — a release build answers
 ## none of it, from any address a visitor could type.
 ##
 ## **The smaller half — the flags that choose where a run starts or how it is drawn, and the frame
@@ -711,7 +712,7 @@ static func _ending_from_query(query: String) -> String:
 			return pair[1]
 	return ""
 
-## `--controls joystick|tap` — the raw word, or "" if none was given. Mapping it onto
+## `--controls joystick|joystick-left|joystick-right|tap` — the raw word, or "" if none was given. Mapping it onto
 ## `ControlsMode.Mode` stays in `ControlsMode.resolve()`, the only caller, alongside the page's own
 ## `?controls=` query — this is only ever the command-line half of that same question.
 static func controls_override() -> String:

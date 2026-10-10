@@ -4,7 +4,7 @@
   "anchors": {"start": {"world": [3282, 2720]}, "gate": {"world": [3568, 2720]}},
   "setup": {"tutorial_complete": true, "day": 13, "parent": "father", "player": {"at": "start", "facing": "east"},
     "background": {"crowd": true}, "gates": [{"segment": [7, 6, 0]}]},
-  "playback": {"settled_camera": true, "walk": "2.2e", "duration": 2.2, "capture_at": 1.9,
+  "playback": {"settled_camera": true, "walk": "2.2e", "smooth": true, "duration": 2.2, "capture_at": 1.9,
     "observations": [{"tick": 24, "subject": "player", "condition": "moving"},
       {"tick": 30, "subject": "player", "condition": "moving"},
       {"tick": 60, "subject": "player", "condition": "moving"},

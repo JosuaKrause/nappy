@@ -18,7 +18,7 @@
       {"cell": [1, 2], "kind": "skylight_a"}, {"cell": [3, 2], "kind": "skylight_b"},
       {"cell": [5, 2], "kind": "skylight_a"}]}],
     "events": [{"name": "dog", "row": "charging_dog", "at": "dog"}]},
-  "playback": {"settled_camera": true, "walk": "1.55e3.45W", "duration": 5.0, "capture_at": 2.35,
+  "playback": {"settled_camera": true, "walk": "1.55e3.45W", "smooth": true, "duration": 5.0, "capture_at": 2.35,
     "camera": {"fixed": true},
     "observations": [{"tick": 15, "subject": "player", "condition": "moving"},
       {"tick": 21, "subject": "player", "condition": "moving"},
