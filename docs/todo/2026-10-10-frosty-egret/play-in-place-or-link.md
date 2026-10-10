@@ -7,6 +7,10 @@ can commit the video / or I upload to youtube" and then supplied the YouTube add
 built the thumbnail linked to YouTube, since GitHub's Markdown filters iframe players. The player
 now finds that it "only works partially. I always go to youtube".
 
+**The player will upload it** (inbox #648 in [leafy-puffin](../../playtests/2026-10-10-leafy-puffin.md)): "I can add the video into a comment --
+let's try that, too". The route to try first is the attachment: the player drags the under-10MB
+cut into a GitHub comment and hands over its address.
+
 What is known: GitHub filters an embedded YouTube player out of a README. What is not yet known,
 and is the first thing to settle at pickup: **which route, if any, plays the trailer in place on
 GitHub's README page.** The candidates, each checked against GitHub's rendered README for a

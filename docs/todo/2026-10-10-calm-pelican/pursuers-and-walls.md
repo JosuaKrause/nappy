@@ -8,9 +8,11 @@ what the player described in #544, "He couldn't reach me. But it was instant". T
 only in [polite-rabbit](../../decisions/2026-10-04-polite-rabbit.md) and
 [polite-rabbit-2](../../decisions/2026-10-04-polite-rabbit-2.md); nobody asked the player.
 
-**Open, for the player:** should noticing and the lunge need a clear line to her? If yes, the
-events skill's rule still holds: a lunge held back by a wall starts from the full stand-off when
-she walks.
+**Answered in part by the player** (inbox #648 in [leafy-puffin](../../playtests/2026-10-10-leafy-puffin.md)), asked whether noticing and the lunge
+should need a clear line: "yes noticing needs a clear line". A pursuer notices her (turns to
+face her within `pursues_within`) only along a clear line. **Still open, for the player:** the
+lunge, which the answer does not name. If it needs a clear line too, the events skill's rule
+holds: a lunge held back by a wall starts from the full stand-off when she walks.
 
 **Low, same area:** the comment on `EventInstance.will_be_lethal()` (it decides whether the doubled
 red caret shows) says it asks "the same geometry `is_lethal_at()` tests", but the real catch now

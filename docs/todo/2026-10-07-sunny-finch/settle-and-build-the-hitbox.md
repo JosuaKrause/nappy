@@ -1,6 +1,9 @@
 Reproduce passing through a police car and determine which patrol states the player means.
-**Open, for the player before it is built:** what the requested hitbox does: physical obstruction, a contact consequence,
-or both; whether it applies while driving, stopped and pursuing; and how it avoids pinning her.
+**Answered by the player** (inbox #648 in [leafy-puffin](../../playtests/2026-10-10-leafy-puffin.md)), offered "solid in every state, lethal only in
+front while driving": "yes to the police car hitbox". The car is a solid body she walks round in
+every patrol state, and lethal only in front of it while it drives, as
+[grassy-alpaca](../2026-10-03-grassy-alpaca/README.md) makes every car; build it so it never pins
+her.
 Quote M61's nonblocking police row when proposing the replacement. Finding 7 describes the
 chasing car as "at least no lethal"; neither that observation nor "hitbox" authorizes a lethal
 strike. The policeman-on-foot pursuit is owned by sandy-ferret, not this item.

@@ -40,13 +40,14 @@ nothing; a smooth `--walk` is pressed on the physics tick while the abrupt one s
 frames, so on that path the two agree within one tick; the end position matches on open ground only,
 since walls, stairs and crowd shoves can still move her differently.
 
-**Open for the player:** [M204](2026-09-25-M204.md) rejected "A pause in the wrong turn" on the
+**The slowed wrong turn, judged by the player.** [M204](2026-09-25-M204.md) rejected "A pause in the wrong turn" on the
 player's "always keep moving". The smoothed reversal decelerates over 0.8s instead of about 0.26s.
 Measured in the choice shot, neither reaches a standstill, but the smoothed one comes closer and
 stays slow longer: its slowest tick is 0.39px/s against the abrupt 1.33px/s, it is below the
 game's idle threshold (`IDLE_SPEED_THRESHOLD`, 12px/s) for 3 ticks (0.1s) against 1, and below
 half walking speed (46px/s) for 12 ticks (0.4s) against 4. The
-[review item](../review/2026-10-10-mossy-hawk.md) asks the player to judge it in the new cut.
+player judged the new cut in [leafy-puffin](../playtests/2026-10-10-leafy-puffin.md): "trailer looks
+good".
 
 **The re-encode under 10MB, for [frosty-egret](../todo/2026-10-10-frosty-egret/README.md).** The
 smooth cut (47.9s, 30,426,821 bytes) re-encoded in two passes (`libx264 -preset slow -b:v 1400k`,

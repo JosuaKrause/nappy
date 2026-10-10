@@ -8,6 +8,9 @@ release that fires pause uses it too, so a thumb has less room before it cancels
 pause-screen and summary buttons' `ModeButton.contains_design_point()` went from a 122.7px square to
 a 48.3px circle, about half the area. The round-gecko record gives only the new numbers.
 
-**Open, for the player:** is 105% exact, or a minimum? As a minimum, each catch is the larger of
-its old catch and 1.05 times its drawn radius, in all three places. Whichever the answer, the phone
+**Answered by the player** (inbox #648 in [leafy-puffin](../../playtests/2026-10-10-leafy-puffin.md)): "why does the button reach decrease
+anything??? the 5% should go over the visible size making the area *larger*!" Read as, open to
+correction: every catch is at least 5% beyond its drawn size and never smaller than it was before
+round-gecko, so each is the larger of its old catch and 1.05 times its drawn radius, in all three
+places (pause, Run, and the round title, pause-screen and summary buttons). Whichever the answer, the phone
 review [leafy-marten](../../review/2026-10-10-leafy-marten.md) says the catches changed.
