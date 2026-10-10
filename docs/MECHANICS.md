@@ -1300,7 +1300,8 @@ swept across the camera on the way to somewhere else. Until then, walking more t
 alley mouth within that radius of her instead — a mark only ever sits at an alley's mouth, at
 dawn as on every move (*"Mouth only"*, 2026-10-03, inbox #486 in [quiet-yak](playtests/2026-10-03-quiet-yak.md)), on the path rather than off it, and never where any part of the mark's picture, or of the guard standing two-thirds
 through that alley (or at the courtyard's inner end, past a courtyard's passage), would be on her
-screen, so neither is ever planted in front of her —
+screen — the camera's whole view, a corner the joystick's controls cover included, since what
+stands under the controls is still drawn there — so neither is ever planted in front of her —
 skipping an alley a completed step's mark already stood at as long as some other one is still
 in reach. Its guard moves with it, to two-thirds of the way through that alley from the end
 nearer wherever the mark lands, never within 62px of the mark (the courtyard's inner end, for a
