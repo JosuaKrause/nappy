@@ -15,8 +15,9 @@ extends Control
 ## steers. Each pointer keeps the role its press gave it until release: a steering drag that
 ## wanders onto Run's half still steers, and a run finger never steers. A double press
 ## independently latches run. A release re-aims a steering drag at the point it lifted, so a swipe
-## through the dead zone that lands outside it walks toward the landing point. Button catches grow
-## 5% beyond their painted radius (`ButtonGeometry`); the dead zone does not. Tap mode instead aims
+## through the dead zone that lands outside it walks toward the landing point. Button catches reach
+## at least 5% beyond their painted radius (`ButtonGeometry`) and never less than they did before
+## that rule (pause keeps its 46px); the dead zone does not. Tap mode instead aims
 ## from the player's world position.
 ##
 ## Raw input is shared by mouse and touch; emulated mouse events are ignored on touch devices.

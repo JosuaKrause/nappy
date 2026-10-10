@@ -22,5 +22,7 @@ is the larger of `PAUSE_OLD_CATCH_RADIUS` (46px) and that; `ModeButton.contains_
 the 1.05 circle or the button's rect grown by a third of its radius. Run needed no change: its
 whole half already catches a press, which holds the disc and 1.05 times its radius on both sides,
 and a test now pins that. The tests in `tests/test_touch.gd` and `tests/test_pause.gd` pin each
-catch against both its old extent and 1.05 times its drawn radius; with the source reverted they
-fail 17 checks. Nothing drawn changes, so there is no picture.
+catch against both its old extent and 1.05 times its drawn radius; with `src/ui` reverted to `main`
+they fail (53 failing checks in the touch and pause suites, by the reviewer's count). The circle
+in `contains_design_point()` always lies inside the grown square at this size, so it decides
+nothing today; it is kept as the 5% floor should the disc outgrow the square. Nothing drawn changes, so there is no picture.

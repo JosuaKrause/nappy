@@ -372,10 +372,13 @@ its release re-aims at the lift point in `Mode.JOYSTICK`, so a swipe that ends o
 zone walks toward where it ended. `set_direction()` always normalizes, so every steering path gives
 a full-speed heading. Pause, hiding controls, and a change of mode or side release pointer holds.
 
-`ButtonGeometry` shares the 1.05 visible-radius multiplier for button catches. Run's painted
+`ButtonGeometry` shares the 1.05 visible-radius multiplier, the least a button catches; no catch is
+smaller than it was before that multiplier. Run's painted
 radius matches the steering ring including its stroke; the texture rectangle compensates for
-the SVG's transparent border. Pause uses the same compensation. `ModeButton.contains_design_point()`
-tests the round disc after undoing the control transform; title, pause and summary screens use it
+the SVG's transparent border. Pause uses the same compensation, and its catch is the larger of 1.05 times its radius and
+`PAUSE_OLD_CATCH_RADIUS` (46px). `ModeButton.contains_design_point()` tests the 1.05 circle or the
+control's rectangle grown by a third of its radius, after undoing the control transform; title,
+pause and summary screens use it
 for both hover and press after converting presented coordinates to design coordinates.
 The joystick dead zone and Run's half do not use this multiplier.
 The pause button shows only during a running day. `PauseScreen` and `DaySummary` also handle
