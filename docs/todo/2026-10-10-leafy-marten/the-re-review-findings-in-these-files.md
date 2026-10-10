@@ -3,10 +3,11 @@
 From the re-review of PR #603 (round-gecko, the unused joystick becomes Run), in files this entry
 rewrites, so they are built with it.
 
-- **Nothing of the pre-selection state survives:** today joystick mode shows two rings and no Run
+- **Nothing of the pre-selection state survives.** Today joystick mode shows two rings and no Run
   before the first press, which leaves a player steering with keys without Run while the help text
-  says "hold {run}", against `src/ui/hud.gd`'s "a symbol for a button that is not on screen would point at nothing"),
-  and a first press on Run's side never steers.
+  says "hold {run}", against `src/ui/hud.gd`'s "a symbol for a button that is not on screen would
+  point at nothing"; and a first press on the side where Run will appear steers. With the side
+  chosen on the title, Run shows from the first frame and a press on its side never steers.
 - **Docs say one steering ring with a knob and one Run disc:** `docs/MECHANICS.md` ("Both rings
   always show that same heading", and the paragraph describing swapping), the touch-controls
   paragraph in `docs/ARCHITECTURE.md`, the art/ui row in `docs/GRAPHICS.md`, the doc comments in
