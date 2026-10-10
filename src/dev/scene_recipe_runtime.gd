@@ -212,6 +212,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 				errors.append("setup.column requires day 13 and a full city scene")
 		for i in Tuning.COLUMN_TRUCKS:
 			names["truck_%d" % (i + 1)] = true
+	var mast_ids := {}
 	for collection in ["events", "actors"]:
 		if not setup.get(collection, []) is Array:
 			errors.append("setup.%s must be an array" % collection)
@@ -221,7 +222,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if not entry is Dictionary:
 				errors.append(where + " entries must be objects")
 				continue
-			_keys(entry, ["name", "row", "at", "path", "age", "route_seed"] if collection == "events"
+			_keys(entry, ["name", "row", "at", "path", "age", "route_seed", "mast_id"] if collection == "events"
 					else ["name", "kind", "at", "direction", "speed"], where, errors)
 			var label: Variant = entry.get("name")
 			if not label is String or str(label).is_empty() or names.has(label):
@@ -232,6 +233,16 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if collection == "events":
 				if not entry.get("row") is String or not EventCatalogue.by_id(str(entry.get("row", ""))):
 					errors.append(where + ".row is an unknown catalogue identifier")
+				if entry.has("mast_id"):
+					# A mast's identity is what the day's task and its arrow answer to, so two
+					# authored masts need two ids, and only a loudspeaker is a mast.
+					var mast_id: Variant = entry.mast_id
+					if entry.get("row") != "loudspeaker":
+						errors.append(where + ".mast_id belongs to a loudspeaker row")
+					elif not mast_id is String or str(mast_id).is_empty() or mast_ids.has(mast_id):
+						errors.append(where + ".mast_id must be a unique nonempty string")
+					else:
+						mast_ids[mast_id] = true
 				_number(entry.get("age", 0), where + ".age", 0, 3600, errors)
 				_number(entry.get("route_seed", 1), where + ".route_seed", 0, 2147483647, errors, true)
 				if not entry.get("path", []) is Array:
@@ -857,7 +868,9 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 			continue
 		var def := EventCatalogue.by_id(entry.row)
 		var plan: EventScheduler.Planned
-		if finale:
+		if def.id == EventScheduler.WalkSiting.MAST_ROW:
+			plan = _mast_placement(def, at, plans, doors)
+		elif finale:
 			plan = _finale_placement(def, at, player_at, finale, plans,
 					int(entry.get("route_seed", 1)))
 		elif def.spawn_mode_on(GameState.day) != EventDef.SpawnMode.MAP:
@@ -891,8 +904,40 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		if plan.age > plan.def.telegraph_time:
 			errors.append("event %s.age cannot skip active simulation; use playback warmup" % entry.name)
 		plan.set_meta("recipe_name", entry.name)
+		if def.id == EventScheduler.WalkSiting.MAST_ROW:
+			# Every mast the game stands has an id, and the director's lists and the blackout
+			# find a mast by it: a recipe's own, or the one a mast added for day 11 is named by.
+			plan.mast_id = str(entry.mast_id) if entry.has("mast_id") \
+					else EventScheduler.added_mast_id(plan.position)
 		plans.append(plan)
 	return plans
+
+## An authored mast stands where the day's masts may, by the checks `EventScheduler._place_masts()`
+## makes of a site and nothing wider: the day is `Tuning.MAST_FIRST_DAY` or later; the tile is a
+## sidewalk or square tile `MastSites._is_eligible()` would offer (off the home street, its field
+## off a calm interior and off every place a region door could stand); it is not closed, not on a
+## held street and not on the home block; the mast's field is clear of the day's own doors
+## (`EventScheduler.clear_of_the_doors()`); and no body placed before it is too near
+## (`EventScheduler._room_around()`). It does not ask what `EventManager.queue_a_mast()`'s
+## `WalkSiting` asks beyond those: the calm she has not used and the route junctions and sidewalks
+## the day keeps open. The loudspeaker is a scripted row no catalogue roll places, so the ordinary
+## placement refuses it.
+func _mast_placement(def: EventDef, at: Vector2, prior: Array[EventScheduler.Planned],
+		doors: PackedVector2Array) -> EventScheduler.Planned:
+	var map := _city.map
+	var tile := map.world_to_tile(at)
+	if GameState.day < Tuning.MAST_FIRST_DAY \
+			or not map.tile_to_world(tile).is_equal_approx(at) \
+			or not map.tile_at(tile) in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE] \
+			or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile) \
+			or not MastSites._is_eligible(at, map) \
+			or not EventScheduler.clear_of_the_doors(at, PackedVector2Array(), doors,
+					def.field_reach()):
+		return null
+	var candidate := EventScheduler._build_placement(def, map, tile, RandomNumberGenerator.new())
+	if not candidate or EventScheduler._room_around(candidate, prior) == -INF:
+		return null
+	return candidate
 
 ## The escape's exact actors use its own row variants, open streets, tree exclusion, spawn
 ## clearance and body spacing. No ordinary-day corridor or offscreen director stands in for it.

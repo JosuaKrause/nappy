@@ -15,6 +15,9 @@ func run(t) -> void:
 	_test_the_schema_names_a_mark_on_the_days_that_have_one(t)
 	_test_the_task_observations_ask_about_the_task(t)
 	_test_the_task_scenes_start_off_an_unread_mark(t)
+	_test_the_door_scenes_show_the_robber_a_done_task_sends(t)
+	_test_an_authored_mast_carries_its_own_id(t)
+	_test_an_authored_mast_stands_only_where_the_days_masts_may(t)
 	var saved := {"day": GameState.day, "completed": GameState.completed_resistance_steps.duplicate(),
 			"failed": GameState.failed_resistance_steps.duplicate(),
 			"progress": GameState.resistance_progress, "scars": GameState.scars.duplicate(true),
@@ -249,3 +252,85 @@ func _test_the_task_scenes_start_off_an_unread_mark(t) -> void:
 				"%s asserts the mark unread and no arrow at the first tick" % name)
 		t.check(not at_first.any(func(entry: String) -> bool: return entry.begins_with("task ")),
 				"%s asserts nothing of the task before she has read the mark" % name)
+
+## *(Inbox #650, "yes include his approach street.")* Day 9's crossing and the station door's corner
+## list the street a sent robber starts on in `draft.include`, and ask that he pursues her once the
+## task is done. The scenes' own headless play (`tools/scene-recipes.sh`) answers the asking; this
+## keeps either from being dropped from the recipe.
+func _test_the_door_scenes_show_the_robber_a_done_task_sends(t) -> void:
+	for file: String in ["task-09-crossing", "station-door-corner"]:
+		var data: Dictionary = SceneRecipe.load_file("res://scene-recipes/%s.json" % file).data
+		t.check(not data.get("draft", {}).get("include", []).is_empty(),
+				"%s lists the street the robber starts on" % file)
+		var pursues := false
+		var done_at := 0
+		for check: Dictionary in data.playback.observations:
+			if check.subject == "task" and check.condition == "done":
+				done_at = int(check.tick)
+		for check: Dictionary in data.playback.observations:
+			if check.subject == "row:robber_giving_chase" and check.condition == "pursuing" \
+					and int(check.tick) > done_at:
+				pursues = true
+		t.check(done_at > 0 and pursues,
+				"%s asks that the robber pursues her once the task is done" % file)
+
+## A scene recipe gives an authored loudspeaker a `mast_id`, the identity day 11's task and its red
+## arrow answer to, so a scene can stand two masts and show the arrow move between them
+## (`scene-recipes/task-11-two-masts.json`). Only a loudspeaker is a mast, and one id names one mast.
+func _test_an_authored_mast_carries_its_own_id(t) -> void:
+	var mast := func(name: String, row: String, id: Variant) -> Dictionary:
+		var entry := {"name": name, "row": row, "at": [3440, 1936]}
+		if id != null:
+			entry["mast_id"] = id
+		return entry
+	var with := func(events: Array) -> Dictionary:
+		var recipe := _recipe(11, {"mark": [2960, 2224]})
+		recipe.setup["events"] = events
+		return recipe
+	t.check(SceneRecipeRuntime.validate_runtime(with.call([mast.call("a", "loudspeaker", "north"),
+			mast.call("b", "loudspeaker", "south")])).is_empty(),
+			"two loudspeakers with their own ids are accepted")
+	t.check(_refused(with.call([mast.call("a", "charging_dog", "north")]),
+			"belongs to a loudspeaker row"), "only a loudspeaker is given a mast id")
+	t.check(_refused(with.call([mast.call("a", "loudspeaker", "north"),
+			mast.call("b", "loudspeaker", "north")]), "unique nonempty string"),
+			"two masts cannot share an id")
+	t.check(_refused(with.call([mast.call("a", "loudspeaker", "")]), "unique nonempty string"),
+			"an empty id names nothing")
+	var data: Dictionary = SceneRecipe.load_file("res://scene-recipes/task-11-two-masts.json").data
+	var ids := []
+	for entry: Dictionary in data.setup.events:
+		ids.append(entry.get("mast_id", ""))
+	t.check(ids.size() == 2 and not "" in ids and ids[0] != ids[1],
+			"the two-mast scene stands two masts under two ids")
+
+## An authored mast is accepted by the checks `EventScheduler._place_masts()` makes of a site: a
+## day with masts, ground a mast site would be offered that is not closed, held or the home block,
+## and clear of the day's doors. (107, 60) is where day 11's own mast stands on the context city.
+func _test_an_authored_mast_stands_only_where_the_days_masts_may(t) -> void:
+	var at := Vector2(3440, 1936)
+	var def := EventCatalogue.by_id("loudspeaker")
+	var none: Array[EventScheduler.Planned] = []
+	var no_doors := PackedVector2Array()
+	var runtime := SceneRecipeRuntime.new()
+	var made := _day(t, 11)
+	runtime._city = made[0]
+	t.check(runtime._mast_placement(def, at, none, no_doors) != null,
+			"a mast stands on an eligible sidewalk of a day with masts")
+	t.check(runtime._mast_placement(def, at, none, PackedVector2Array([at + Vector2(40, 0)])) == null,
+			"but not with its field on one of the day's doors")
+	var tile: Vector2i = runtime._city.map.world_to_tile(at)
+	runtime._city.map.closed_tiles[tile] = true
+	t.check(runtime._mast_placement(def, at, none, no_doors) == null, "nor on a closed tile")
+	runtime._city.map.closed_tiles.erase(tile)
+	runtime._city.map.hold_segment(StreetNetwork.segment_containing(tile).key())
+	t.check(runtime._mast_placement(def, at, none, no_doors) == null, "nor on a held street")
+	made[1].free()
+	made[0].free()
+	made = _day(t, Tuning.MAST_FIRST_DAY - 1)
+	runtime._city = made[0]
+	t.check(runtime._mast_placement(def, at, none, no_doors) == null,
+			"nor on a day before the masts")
+	made[1].free()
+	made[0].free()
+	runtime.free()

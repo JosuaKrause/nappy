@@ -89,7 +89,17 @@ baby sleeps and the walk home begins, the act III and IV return patrols are owed
 
 An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path` and `age`.
 The ordinary scheduler's ground, route, spacing, protected-door and corridor checks accept
-its site. An authored path must equal that production route. Director pursuers use the real
+its site. An authored path must equal that production route. A `loudspeaker` row is a mast, a
+scripted row no roll places, so it is accepted instead by the checks the day's masts pass
+(`EventScheduler._place_masts()`): day 5 or later; a sidewalk or square tile a mast site would be
+offered (off the home street, its field off a calm interior and off every place a region door
+could stand); not closed, not on a held street, not on the home block; its field clear of the day's
+own doors; and clear of what is placed before it. The calm she has not used and the route junctions
+the day keeps open, which a mast queued for day 11's task also respects, are not asked. It gives
+an optional `mast_id`, the identity day 11's task, its red arrow and the last night's blackout
+find a mast by (a string no other mast of the scene shares; `mast_id` on any other row is
+refused), and a mast without one is named as a mast added for day 11 is, from its foot
+(`EventScheduler.added_mast_id()`). Director pursuers use the real
 ahead-of-player siting. `age` may advance through the initial warning only; active movement is
 simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direction` and optional
 `speed`; production lane, ground, speed and car-gap checks apply.
@@ -286,6 +296,7 @@ and holds every observation, and that nothing in the crowd appears or vanishes i
 | `task-09-crossing.json` | 9, the crossing | 5 tiles west of the mark, the mark unread | the named district door's gatehouse, 540–676px from the mark; done by crossing the door |
 | `task-10-neighbor.json` | 10, warning the neighbor | 5 tiles east of the mark on the street above it, the mark unread | the neighbor, 400px or more from where she reads the mark (about 455px from it), walking home |
 | `task-11-mast.json` | 11, silencing a mast | 5 tiles west of the mark, on the street, the mark unread | a mast put up for the task, 540–644px from the mark |
+| `task-11-two-masts.json` | 11, silencing a mast, with two masts answering | 5 tiles west of the mark, on the street, the mark unread | two authored masts, `south` (224px east of the mark, on the street her walk later goes up) and `north` (where the day's own generated mast stands): the red arrow starts on `south` and moves to `north` once her walk up the street beyond passes the point where `north` is the nearer on foot |
 | `task-12-swing.json` | 12, the swing | 5 tiles east of the mark on the street below it, the mark unread | the swing's base, 540–676px from the mark |
 | `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles west of the mark, on the street, the mark unread | the roadblock, 540–644px from the mark, with the arrow on it |
 | `task-14-last-night.json` | 14, the station's front door | on the sidewalk west of it | the door on the facade, 576–640px out |
@@ -305,9 +316,13 @@ checks that reaching the target completed the task. The mark's robber stands whe
 target is done, the robber or guard the task sends comes from off screen as in a played day and
 catches her a little after the scene's last assertion; add `--invincible` to play on without a robber
 ending it. Days 10 and 13 send nobody after the target: the neighbor's task has no pursuer, and the
-roadblock keeps its own guard waiting in its band instead. Day 9 and the station door's corner send
-nobody either: the stretch has no ground at the distance a sent robber starts from, so the day's
-own draw finds nowhere for him to come from. At a door on a building's front — day 8's
+roadblock keeps its own guard waiting in its band instead. Day 9 and the station door's corner
+send the robber like any other target *(the player, inbox #650: "yes include his approach
+street.")*: the stretch has the street a sent robber starts on, listed in the recipe's
+`draft.include`, and an observation checks that he pursues her and closes on her after the task
+is done. Day 9's scene walks along the hut's sidewalk and is let through after the inspection, since
+walking under a raised boom sends the door's guard and no robber ("Checkpoints" in
+`docs/EVENTS.md`). At a door on a building's front — day 8's
 burnt building and day 14's station — the robber usually comes from across the street, out of view,
 and by the rule every other target uses, usually from beside her along her own street, only where
 no start across it has a way to her.
@@ -316,8 +331,8 @@ no start across it has a way to her.
 outer corners of the two sidewalk tiles in front of it (`ResistanceDirector.DOOR_REACH`, 50.6px,
 against the corners' 57.7px): she starts on the west corner, where the door is not touched, walks a
 few steps west and back to the corner, where it is still not touched, and one step east touches
-it. No guard waits at the station's door, and touching it sends nobody in this
-scene (above).
+it. No guard waits at the station's door; touching it sends the robber, from across the
+street, as above.
 `fire-truck.json` starts on day 3 with `burning_building` named and nothing else, her start 496px
 east of the fire, so that its lot, its rise and its smoke are out of her view, in either
 presentation, at the first frame *(the player, inbox #557: "the

@@ -693,7 +693,11 @@ asks whether it has finished. The roadblock's hunting guard and the escape's mas
 never the one guard this reaches, so a hold does not touch either — and neither is the robber a
 done task sends after her: a gatehouse is no hiding place from him, and stepping back into one with
 him after her holds her where he catches her. *(2026-10-04, the player: "you shouldn't try to cheat
-it by going back in the hut -- that should be fatal by the robber".)*
+it by going back in the hut -- that should be fatal by the robber".)* **The guard the walk under the district
+door's boom sets is one a hut does end**, and no robber is sent in his place. *(2026-10-10, the
+player, asked whether the hut should stop ending that chase or send the robber instead: "Let's not
+send the robber in that case and stop the chase. It's a fair cheat getting through the barrier is
+hard enough. Well earned if the player pulls it off.")*
 
 **The boundary's structures charge as one source, never their sum.** *(2026-09-20, the player:
 "since two gates can be adjacent to each other their influence shouldn't add up" · "otherwise

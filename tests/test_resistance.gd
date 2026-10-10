@@ -110,6 +110,7 @@ func run(t) -> void:
 	_test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
 	_test_the_swings_touch_is_the_ellipse_at_its_base(t)
 	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
+	_test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t)
 	_test_day_nine_completes_when_she_is_let_through_after_the_inspection(t)
 	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
 	_test_a_task_is_placed_near_its_mark(t)
@@ -4842,19 +4843,124 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 			t.check(_city.events.walks_under_a_boom() > walked_before,
 					"another district door's line was walked through")
 			t.check(not director._contact.is_done, "crossing another district door completes nothing")
+			# **Only one walk-under guard exists at a time**, and that other door has just set one
+			# on her: left alone, the named crossing below spawns nobody and the check on a guard
+			# after her passes on this first one. So he is finished first and the named crossing
+			# has to set a guard of its own.
+			var first_guard := _city.events._guard_after_her
+			t.check(first_guard != null and first_guard.def.id == "door_guard",
+					"the other door's walk under set its own guard on her")
+			if first_guard:
+				first_guard.give_up_the_chase()
 			_walk_through(director._door_at, director._door_axis, direction, player)
 			if director._contact.is_done:
 				crossings += 1
 			t.check(director._trap == null
 					and _warning_for(_city.events, "robber_giving_chase") == null,
 					"walking under the named door's boom sends no robber after her, nor warns of one")
-			t.check(_city.events._guard_after_her != null,
-					"the door's own guard is after her instead")
+			var guard := _city.events._guard_after_her
+			t.check(guard != null and guard != first_guard and guard.def.id == "door_guard"
+					and not guard.is_finished and not guard.is_leaving,
+					"the named door's own, new guard is after her instead")
+			if guard:
+				t.check(guard.global_position.distance_to(director._door_at)
+						< Tuning.STREET_WIDTH * Tuning.TILE_SIZE
+						and guard.global_position.distance_to(first_guard.global_position
+								if first_guard else Vector2.INF) > 100.0,
+						"and he steps out of the named door's hut, not the other door's")
 			player.free()
 			director.free()
 		t.check(crossings == 2,
 				"walking through the named door completes the task, in either direction (%d of 2)"
 				% crossings)
+		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
+	GameState.city_state = saved_state
+
+## lilac-marmot (inbox #651), day 9's walk under the named boom and then a hut: *"Let's not send the
+## robber in that case and stop the chase. It's a fair cheat getting through the barrier is hard
+## enough. Well earned if the player pulls it off."* She walks under the named door's raised boom
+## (the task is done, one `door_guard` steps out of the hut nearer to her), then steps into a hut of
+## that door: the hold ends the guard's chase (`EventManager._end_the_guard_for_a_hold()`), and
+## nobody else is sent — no robber warned of or set on her, no second guard.
+func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
+	_build_city(t)
+	var saved_state := GameState.city_state
+	_with_clean_run(func() -> void:
+		for direction: float in [1.0, -1.0]:
+			_city.events.stream_radius = INF
+			var read := _read_the_mark_on(t, 9, SEED)
+			var director: ResistanceDirector = read[0]
+			var player: Stroller = read[2]
+			var events := _city.events
+			if director._door_at == Vector2.INF:
+				t.check(false, "day 9's door is named")
+				player.free()
+				director.free()
+				continue
+			events._player = player
+			events.stream_around(player.global_position)
+			_walk_through(director._door_at, director._door_axis, direction, player)
+			t.check(director._contact.is_done, "walking under the named boom does the task")
+			var guard := events._guard_after_her
+			t.check(guard != null and guard.def.id == "door_guard" and not guard.is_finished
+					and not guard.is_leaving and not guard.gave_up,
+					"and sets the door's guard after her")
+			t.check(director._trap == null and _warning_for(events, "robber_giving_chase") == null,
+					"and no robber")
+			var hut: EventInstance = null
+			for instance in events.instances():
+				if instance.def.id == "checkpoint_hut" and absf((instance.global_position
+						- director._door_at).dot(director._door_axis)) < 1.0 \
+						and instance.global_position.distance_to(director._door_at) \
+						< Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5:
+					hut = instance
+					break
+			t.check(hut != null, "the named door has a hut to step into")
+			if guard and hut:
+				player.global_position = hut.global_position
+				events._check_detentions()
+				t.check(hut.is_chatting(), "stepping into the hut is a hold")
+				t.check(guard.gave_up and (guard.is_leaving or guard.is_finished),
+						"the hold ends the walk under's guard: he gives up")
+				t.check(director._trap == null and _warning_for(events, "robber_giving_chase") == null,
+						"no robber is warned of or set on her for it")
+				var pursuers := 0
+				for instance in events.instances():
+					if instance.def.id == "door_guard" and not instance.is_finished \
+							and not instance.is_leaving:
+						pursuers += 1
+				t.check(pursuers == 0 and events._guard_after_her == guard,
+						"and nobody else is sent: no second guard is after her")
+				t.check(director._contact.is_done, "the task stays done")
+				# **The moment day 9 sends the robber is the end of the hold**: the inspection lets her
+				# through (`_release_finished_door_detentions()`, `door_crossed(…, true)`), which
+				# completes the crossing for a task done under the boom only if the director's early
+				# return in `_on_door_crossed()` lets it. So the hold is run out, she is released,
+				# and the warning a robber would send is run out before anything is counted.
+				var before := player.global_position
+				var guard_steps := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
+				while hut.is_chatting() and guard_steps > 0:
+					guard_steps -= 1
+					for instance in events.instances():
+						instance._process(STEP)
+				t.check(not hut.is_chatting() and guard_steps > 0, "the hold runs its clock out")
+				events._release_finished_door_detentions(player)
+				t.check(player.global_position.distance_to(before) > 1.0
+						and (player.global_position - hut.global_position).dot(director._door_axis)
+						* (before - hut.global_position).dot(director._door_axis) <= 0.0,
+						"and the inspection lets her out on the far side of the door")
+				_run_the_traps_warning("robber_giving_chase", player.global_position)
+				t.check(director._trap == null and _warning_for(events, "robber_giving_chase") == null,
+						"no robber is warned of or set on her by the inspected crossing")
+				pursuers = 0
+				for instance in events.instances():
+					if instance.def.id in ["door_guard", "robber_giving_chase"] \
+							and not instance.is_finished and not instance.is_leaving:
+						pursuers += 1
+				t.check(pursuers == 0, "and no guard or robber is live after her")
+				t.check(director._contact.is_done, "the task stays done")
+			player.free()
+			director.free()
 		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
 	GameState.city_state = saved_state
 
