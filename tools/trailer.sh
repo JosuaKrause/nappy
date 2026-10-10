@@ -523,7 +523,7 @@ if [[ "$MODE" != validate ]]; then
         echo "trailer.sh: fontconfig could not resolve the editorial font '$FONT_FAMILY'" >&2
         exit 1
     fi
-    if ! printf '%s\n' "$FONT_RESOLVED" | tr ',' '\n' | grep -Fixq -- "$FONT_FAMILY"; then
+    if ! grep -Fixq -- "$FONT_FAMILY" <<<"${FONT_RESOLVED//,/$'\n'}"; then
         echo "trailer.sh: the editorial font '$FONT_FAMILY' resolved to '$FONT_RESOLVED' ($FONT_FILE), not the family asked for" >&2
         exit 1
     fi
