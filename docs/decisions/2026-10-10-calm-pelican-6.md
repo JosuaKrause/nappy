@@ -23,3 +23,13 @@ interval is a fresh roll; a place's siting now has the walk-siting gates (18s of
 day started, 400px from home), which the old path lacked; the first siting can come up to 1s after
 the handover; a place that never finds a site is not met, with no dusk fallback like the fire's;
 the per-day count for a place is taken when its marble is drawn.
+
+**Open for the player before this merges: it narrows a recorded guarantee.**
+[Olive-badger](2026-09-27-olive-badger.md) records "After day 6's mark a man shouting is one of the
+next two events on her route", from the player's "guaranteed to encounter a yeller in the next three
+events" (olive-koala, statement 2). Before, the unsited place stalled the route, so the man shouting
+was always among the next events placed — at the price of blocking every event behind him, return
+patrols included, for as long as no site existed. Now his marble is among the next handed out, and
+he is met once her walk sites him: if she is off the day's routes when the marble is drawn and the
+next interval (11–26s) passes before she is back, a cat or cyclist can be placed first, and a place
+never sited is never met. The same holds for day 11's second mast.
