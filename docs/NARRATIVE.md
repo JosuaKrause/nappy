@@ -317,11 +317,13 @@ her the whole time, then stops and walks away, on foot, until he is out of sight
 departure any finished event takes, not a word on screen. The
 look-alikes she never reached carry on shouting exactly as before.
 
-A chalk mark the player has not actually noticed — stood near, on screen, long enough that
-walking past it rather than to it was a choice — has never really been placed, so it follows
-the player rather than sitting where the dawn plan first put it: once they are far enough from it
-to have missed it, it moves to the alley they have just come near instead, guard and all, never a
-tile on the player's screen so it never appears in front of them, skipping an alley an
+A chalk mark the player has not actually noticed — stood near, in sight (on screen and not under a
+corner the joystick's controls cover), long enough that walking past it rather than to it was a
+choice — has never really been placed, so it follows the player rather than sitting where the dawn
+plan first put it: once they are far enough from it to have missed it, it moves to the alley they
+have just come near instead, guard and all, never where any of it would be on the player's screen,
+a covered corner included, since what stands under the controls is still drawn there, so it never
+appears in front of them, skipping an alley an
 earlier task's mark already used while another is in reach — so a mark the player can actually
 walk up to is what makes the silent first encounter fair rather than a dead end.
 

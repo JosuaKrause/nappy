@@ -147,7 +147,7 @@ var _sight: Callable
 ## `_on_screen` answers **"would it be drawn in front of her"**, for everything the director places
 ## or removes: where a relocated mark, a waiting robber, a task target, a pursuer sent after her and
 ## day 10's raid may appear, and when a waiting robber or the taken neighbor may vanish
-## (`_box_shows()` and its callers, `_draw_arrival_position()`, `_take_the_neighbor_away()`).
+## (`_box_shows()`, `_drawing_shows()` and their callers, and `_draw_arrival_position()`).
 ## `EventManager.on_screen()`, the camera's whole view, corners included in either scheme: a thing
 ## under a covered corner is still drawn there, under the controls, so appearing or vanishing there
 ## is pop-in *(the same note: "I don't want any pop in")*. A rig may leave it unset, and then
@@ -1276,6 +1276,17 @@ func _box_shows(centre: Vector2, half: Vector2) -> bool:
 func _shows(point: Vector2) -> bool:
 	return _on_screen.is_valid() and _on_screen.call(point)
 
+## Whether any of what `row` can draw, standing at `feet`, would be on screen right now: its
+## footprint (`EventInstance.footprint_of()`, every picture its look can draw, its shadow, bob and
+## halo rim, and the caret of a row that can be marked — what `PendingWarning` places outside the
+## view by) asked through `_box_shows()`. A row that draws nothing of its own is its feet. What an
+## event the director brings in or takes away asks, so nothing of it appears or vanishes in view.
+func _drawing_shows(row: EventDef, feet: Vector2) -> bool:
+	var box := EventInstance.footprint_of(row)
+	if not box.has_area():
+		return _shows(feet)
+	return _box_shows(feet + box.get_center(), box.size * 0.5)
+
 ## Whether any part of a chalk mark's picture at `at` would be on screen right now.
 func _mark_shows(at: Vector2) -> bool:
 	return _box_shows(at, MARK_HALF_EXTENT)
@@ -1955,13 +1966,16 @@ func _walk_home(field: PackedInt32Array, start: Vector2i) -> PackedVector2Array:
 	corners.append(_map.doorstep_world_position())
 	return corners
 
-## Takes the neighbor she did not reach away with the raid, once she cannot see them — they walked
-## home into the vans, and a figure that vanished in front of her would say something else.
+## Takes the neighbor she did not reach away with the raid, once nothing of them is on her screen
+## (`_drawing_shows()`: everything they draw, against the camera's whole view, covered corners
+## included) — they walked home into the vans, and a figure that vanished in front of her would say
+## something else. Their feet alone are not enough: their picture stands above them, so feet just
+## past the bottom edge leave most of the figure in view.
 func _take_the_neighbor_away() -> void:
 	if not _taken_neighbor or not is_instance_valid(_taken_neighbor):
 		_taken_neighbor = null
 		return
-	if _shows(_taken_neighbor.global_position):
+	if _drawing_shows(_taken_neighbor.def, _taken_neighbor.global_position):
 		return
 	_city.events.retire(_taken_neighbor)
 	_taken_neighbor = null
@@ -2199,7 +2213,7 @@ func _reachable_from_home(tile: Vector2i) -> bool:
 	return _reach_grid.reaches(tile, _reach_blocked, _reach_reached)
 
 func _process(delta: float) -> void:
-	_happenings.tick(delta, _player_position(), _player_velocity(), _on_screen)
+	_happenings.tick(delta, _player_position(), _player_velocity(), _drawing_shows)
 	if _taken_neighbor:
 		_take_the_neighbor_away()
 	if _lingering_rider:

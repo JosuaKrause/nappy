@@ -38,6 +38,7 @@ func run(t) -> void:
 	_test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t)
 	_test_a_mark_under_a_covered_corner_is_not_noticed(t)
 	_test_nothing_appears_or_vanishes_under_a_covered_corner(t)
+	_test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t)
 	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_the_guard_moves_with_the_mark_into_its_new_alley(t)
@@ -805,8 +806,9 @@ func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 
 ## M177, playtest 116's own day-6 shape: a mark on offer at (24,149), on screen from the doorstep
 ## at (80,84) — fifteen tiles away — moved to (65,83) two seconds in and was marked *seen* 0.4s
-## later, so a fifteen-tile-distant alley froze it for the rest of the day. `_sight` answering
-## true near `mark_at` alone reproduces "on screen" there without a viewport, while leaving
+## later, so a fifteen-tile-distant alley froze it for the rest of the day. Both of the director's
+## view tests (`_sight` for the notice, `_on_screen` for placing) answering true near `mark_at`
+## alone reproduces "on screen" there without a viewport, while leaving
 ## `far_alley` — the relocation target, over `NOTICE_RADIUS` away — answering false, the ground
 ## `_nearest_alley_within()` needs to still offer a candidate (never a tile she can currently
 ## see, brisk-wombat's "the mark and its robber never appear in front of her"); standing
@@ -839,11 +841,11 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 ## *"I just had one appear out of nowhere while I was walking through an alley."* `_nearest_alley_
 ## within()`'s own nearest candidate to `here` is, by construction, wherever she is standing or
 ## right beside it, which is on screen more often than not, so the search has to actively refuse
-## whatever `_is_visible()` calls seen rather than pick the plain nearest blind. `raw_nearest`
-## names exactly that plain-nearest tile (asked with no `_sight` set at all, so nothing is ever
-## "seen"); hiding only that one tile from a mocked `_sight` is what makes the assertion below
-## discriminate the refusal — the search has to find some other candidate still in `NOTICE_RADIUS`
-## rather than the one nearest tile it would otherwise answer.
+## whatever `_mark_shows()` calls on screen rather than pick the plain nearest blind. `raw_nearest`
+## names exactly that plain-nearest tile (asked with neither of the director's view tests set, so
+## nothing is ever on screen); hiding only that one tile from both, mocked, is what makes the
+## assertion below discriminate the refusal — the search has to find some other candidate still in
+## `NOTICE_RADIUS` rather than the one nearest tile it would otherwise answer.
 func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
@@ -1071,6 +1073,93 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 			late._process(STEP)
 			t.check(late._taken_neighbor == null, "once the camera is off them, they are taken")
 		late.free())
+
+## **What the raid brings and takes away is asked by its whole drawing, not its feet** *(olive-
+## hedgehog, inbox #598: "I don't want any pop in")*, in either scheme and through the day's own
+## view as `main` wires it:
+##
+## - **The taken neighbor stays while any of their figure is in view.** Their feet just below the
+##   view's bottom edge leave their picture, which stands above them, on screen; they are taken
+##   once the camera is off them.
+## - **Day 10's raid waits while any of it would be drawn in view.** With the view's bottom edge
+##   just above the patrol car's lane every van's and every beat point's feet are out of it, but
+##   the car's picture at the start of its beat reaches up into it, so the raid does not arrive yet;
+##   it arrives once the camera is off all of it.
+func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void:
+	var saved_scars := GameState.scars.duplicate(true)
+	for joystick: bool in [false, true]:
+		var scheme := "joystick" if joystick else "tap"
+		GameState.scars.clear()
+		_build_city(t)
+		_with_clean_run(func() -> void:
+			var events := _city.events
+			var away := func() -> void:
+				events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
+						Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
+
+			var late := _director_on_the_neighbor(t)
+			late.set_sight(events.sees, events.on_screen)
+			var walker := late._rider
+			t.check(walker != null, "%s scheme: the neighbor is walking home" % scheme)
+			if walker:
+				walker.is_parked = true
+				away.call()
+				late._process(STEP)
+				t.check(late._taken_neighbor == walker,
+						"%s scheme: reaching the door first, they are to be taken" % scheme)
+				var feet := walker.global_position
+				var view_at := feet - Vector2(Tuning.VIEW_HALF_EXTENT.x,
+						Tuning.VIEW_HALF_EXTENT.y * 2.0 + 2.0)
+				events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
+				var box := EventInstance.box_of(walker.def)
+				t.check(not events.on_screen(feet)
+						and events.sees(feet + Vector2(0.0, box.position.y * 0.5)),
+						"%s scheme: their feet are just below the view, their figure in it" % scheme)
+				late._process(STEP)
+				t.check(late._taken_neighbor == walker and not walker.is_finished,
+						"%s scheme: with their figure on screen, the neighbor is not taken" % scheme)
+				away.call()
+				late._process(STEP)
+				t.check(late._taken_neighbor == null,
+						"%s scheme: once the camera is off them, they are taken" % scheme)
+			late.free()
+
+			GameState.completed_resistance_steps = []
+			GameState.failed_resistance_steps = []
+			var director := _director_on_the_neighbor(t)
+			director.set_sight(events.sees, events.on_screen)
+			var happenings := director._happenings
+			var door := _city.map.doorstep_world_position()
+			var player := _rig_player(t, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0))
+			player.add_to_group("player")
+			t.check(happenings._raid_beat.size() == 2 and happenings._raid_vans.size() == 2,
+					"%s scheme: the raid has its vans and a beat at her building" % scheme)
+			if happenings._raid_beat.size() == 2:
+				var top := INF
+				for at: Vector2 in Array(happenings._raid_vans) + Array(happenings._raid_beat):
+					top = minf(top, at.y)
+				var view := Rect2(Vector2(door.x - Tuning.VIEW_HALF_EXTENT.x,
+						top - 2.0 - Tuning.VIEW_HALF_EXTENT.y * 2.0), Tuning.VIEW_HALF_EXTENT * 2.0)
+				events.visible_view().look(view, joystick)
+				var car := EventInstance.box_of(EventCatalogue.by_id("police_patrol"))
+				var start: Vector2 = happenings._raid_beat[0]
+				var any_feet := false
+				for at: Vector2 in Array(happenings._raid_vans) + Array(happenings._raid_beat):
+					any_feet = any_feet or events.on_screen(at)
+				t.check(not any_feet and view.intersects(Rect2(start + car.position, car.size)),
+						"%s scheme: no feet of the raid are in view, the car's picture is" % scheme)
+				director._process(STEP)
+				t.check(happenings.raid.is_empty(),
+						"%s scheme: the raid waits while the car would be drawn in view" % scheme)
+				away.call()
+				director._process(STEP)
+				t.check(happenings.raid.size() == 3,
+						"%s scheme: off camera, the raid arrives (%d)" % [scheme, happenings.raid.size()])
+				for instance in happenings.raid:
+					_city.events.retire(instance)
+			player.free()
+			director.free())
+	GameState.scars = saved_scars
 
 ## The other half of the same rule: near enough, for long enough, that walking away is a choice.
 func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> void:
@@ -2333,7 +2422,8 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 	GameState.completed_resistance_steps = saved_completed
 	GameState.completed_resistance_alley_tiles = saved_tiles
 
-## A `_sight` answering the unrotated 640x360 screen round `her`.
+## A view test answering the unrotated 640x360 screen round `her`, handed to the director for
+## both `_sight` and `_on_screen`: in the tap scheme the visible area is the whole view.
 func _the_screen_round(her: Vector2) -> Callable:
 	return func(at: Vector2) -> bool:
 		var off := (at - her).abs()
@@ -3787,7 +3877,7 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	happenings.tick(STEP, door, Vector2.ZERO, Callable())
 	t.check(happenings.raid.is_empty(), "nothing arrives while she is at her door")
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
-			func(_at: Vector2) -> bool: return true)
+			func(_row: EventDef, _at: Vector2) -> bool: return true)
 	t.check(happenings.raid.is_empty(), "or while any of it would be on screen")
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
 			Callable())

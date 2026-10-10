@@ -118,16 +118,17 @@ func start_day(day: int, with_its_events := true) -> void:
 		_city.board_neighbor_window()
 
 ## Once a frame, from the director: brings in whatever the day is waiting to bring in. `her` is her
-## position, `Vector2.INF` with no player, and `velocity` hers; `sight` is whether a world point is
-## anywhere in the camera's whole view, covered corners included (the director's `_on_screen`,
-## since what it decides is where something appears), which a rig may leave unset.
-func tick(delta: float, her: Vector2, velocity: Vector2, sight: Callable) -> void:
+## position, `Vector2.INF` with no player, and `velocity` hers; `shows(row, feet)` is whether any
+## of what `row` draws, standing at `feet`, would be in the camera's whole view, covered corners
+## included (the director's `_drawing_shows()`, since what it decides is where something appears),
+## which a rig may leave unset.
+func tick(delta: float, her: Vector2, velocity: Vector2, shows: Callable) -> void:
 	_elapsed += delta
 	if her != Vector2.INF and velocity.length() >= Tuning.AHEAD_MIN_SPEED:
 		_heading = velocity.normalized()
 		_walked += delta
 	if not _raid_vans.is_empty() and raid.is_empty():
-		_maybe_raid(her, sight)
+		_maybe_raid(her, shows)
 	if _market_owed:
 		_maybe_the_market(delta, her)
 	if not _closing.is_empty():
@@ -161,28 +162,29 @@ func _plan_the_raid() -> void:
 		_raid_beat = PackedVector2Array([_map.tile_to_world(from), _map.tile_to_world(to)])
 
 ## **What she comes home to**: the raid arrives once she has left, is `Tuning.OUT_OF_SIGHT` from
-## her door and none of it would be on screen — *nothing is seen to appear* — so it is waiting at
-## home rather than arriving in front of her. Cold, whatever the run's heat: `night_raid` hunts at
+## her door and none of it would be on screen — each van's and the patrol car's whole drawing, at
+## both ends of the car's beat, asked through `shows` — *nothing is seen to appear* — so it is
+## waiting at home rather than arriving in front of her. Cold, whatever the run's heat: `night_raid` hunts at
 ## `Tuning.HEAT_HUNTS_LEVEL`, and a van that ran her down at her own door would make the doorstep
 ## the one place the day cannot end, which is the opposite of what the raid was decided as.
-func _maybe_raid(her: Vector2, sight: Callable) -> void:
+func _maybe_raid(her: Vector2, shows: Callable) -> void:
 	if not _city or not _city.events or her == Vector2.INF:
 		return
 	var door := _map.doorstep_world_position()
 	if her.distance_to(door) < Tuning.OUT_OF_SIGHT:
 		return
-	var points: Array[Vector2] = []
-	points.append_array(Array(_raid_vans))
-	points.append_array(Array(_raid_beat))
-	if sight.is_valid():
-		for point in points:
-			if sight.call(point):
-				return
 	var van := EventCatalogue.by_id("night_raid")
+	var row := EventCatalogue.by_id("police_patrol")
+	if shows.is_valid():
+		for at in _raid_vans:
+			if shows.call(van, at):
+				return
+		for at in _raid_beat:
+			if shows.call(row, at):
+				return
 	for at in _raid_vans:
 		raid.append(_city.events.spawn_extra(van, at))
 	if _raid_beat.size() == 2:
-		var row := EventCatalogue.by_id("police_patrol")
 		var patrol: EventDef = row.duplicate()
 		# `shape` is a plain `RefCounted` field `Resource.duplicate()` does not copy (the note on
 		# `EventScheduler._without_its_aftermath()`); dropped, the car draws and charges nothing.

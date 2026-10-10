@@ -10,8 +10,8 @@ extends RefCounted
 ## **The one answer to "can she see it"**, for everything that asks: the screen-edge badge, which is
 ## up for a thing until she can see it (`DangerEdge`); the fire's
 ## sighting, which summons the engine (`EventManager._summon_what_has_been_sighted()`); a chalk mark
-## counting as noticed and every other "has she seen this" of the resistance's (`ResistanceDirector`,
-## handed `sees()` by `main`); the poster crews' pasting (`PosterWalls._work_the_crews()`); and the
+## counting as noticed, the one "has she seen this" of the resistance's (`ResistanceDirector`, handed
+## `sees()` by `main`); the poster crews' pasting (`PosterWalls._work_the_crews()`); and the
 ## page's counter (`EncounterWatch`, the pelican's `pelican-seen`). **What is drawn and loaded is not
 ## asked here**: the streaming of the ground, the scenery and the day's events keeps the whole view,
 ## since the corners are drawn under the controls rather than left undrawn.
@@ -25,7 +25,10 @@ extends RefCounted
 ## **Placing a thing is not a "has she seen it" question.** A thing arriving from off screen is placed
 ## wholly outside the camera's whole view, corners included (`PendingWarning.seen_from()` asks
 ## `clear_of_sight()` of this view with no corners laid on it) *(amendment 6 of M226, the player: "I
-## don't want any pop in")*: a thing placed under a corner would still be drawn there.
+## don't want any pop in")*: a thing placed under a corner would still be drawn there. The same goes
+## for whatever the resistance places or takes away, which asks `EventManager.on_screen()`, a point
+## anywhere in this view's whole rect, corners included *(olive-hedgehog, inbox #598: "off screen is
+## not the same as visible -- the corners get removed for visible not for off screen")*.
 ##
 ## The corners are worked out from `TouchControls`' own constants in the 1280x720 design box and
 ## scaled onto the view, so moving a ring or a button moves what it covers.
