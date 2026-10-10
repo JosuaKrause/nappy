@@ -367,8 +367,8 @@ enum Condition {
 		_rebuild()
 
 ## The door's own world-space x-span, `[min, max)`, or `Vector2.INF` for a building nobody told
-## about one — the same "no such point" sentinel `touch_controls.gd`'s `_drag_origin_focus` and
-## `home_arrow.gd`'s `target` already use, and `_column_under_door()`'s overlap test always answers
+## about one — the same "no such point" sentinel `touch_controls.gd`'s `set_direction()` reads as
+## "her own position" and `home_arrow.gd`'s `target` already use, and `_column_under_door()`'s overlap test always answers
 ## false against it, since nothing is ever greater than `INF`. Set by `City._spawn_buildings()` for
 ## every building on the home block, from the same `map.home_rect` centre `City._spawn_home()`
 ## places the door sprite at: the door is a separate sprite standing in front of whatever the wall

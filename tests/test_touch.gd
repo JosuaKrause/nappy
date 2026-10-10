@@ -43,10 +43,11 @@ func run(t) -> void:
 	_test_the_corner_is_an_ordinary_direction_press_where_the_button_is_not_drawn(t)
 	_test_no_input_path_presses_a_vector_shorter_than_one(t)
 	_test_a_keyboard_press_resets_a_clicked_heading(t)
-	_test_nearer_focus_is_picked_on_each_half(t)
-	_test_is_on_a_focus_catches_the_stop_radius_around_either_point(t)
-	_test_a_touch_aims_from_the_nearer_focus_not_from_her(t)
-	_test_current_heading_matches_a_press_through_either_focus(t)
+	_test_the_steering_half_reaches_two_thirds_toward_run(t)
+	_test_the_dead_zone_is_tighter_than_the_ring_and_only_on_steering(t)
+	_test_the_stop_band_sits_on_the_steering_edge(t)
+	_test_a_touch_aims_from_the_steering_focus_not_from_her(t)
+	_test_current_heading_matches_a_press_through_the_steering_focus(t)
 	_test_current_heading_reads_zero_while_detained(t)
 	_test_a_press_at_a_focus_centre_stops_her_on_touch(t)
 	_test_a_touch_near_her_own_position_no_longer_stops_her(t)
@@ -57,13 +58,13 @@ func run(t) -> void:
 	_test_a_double_tap_that_then_drags_keeps_running(t)
 	_test_a_mouse_drag_reaims_from_her_own_position(t)
 	_test_a_mouse_motion_without_the_button_held_does_nothing(t)
-	_test_is_in_stop_band_catches_the_middle_and_only_the_middle(t)
 	_test_a_tap_in_the_stop_band_stops_her_on_touch(t)
-	_test_a_drag_that_crosses_the_band_stops_her_rather_than_steering_her(t)
-	_test_leaving_the_band_at_the_same_edge_twice_never_flips_focus(t)
-	_test_taps_choose_and_retain_the_run_side(t)
+	_test_a_drag_past_the_band_keeps_steering_from_the_same_side(t)
+	_test_a_press_on_runs_side_never_steers(t)
+	_test_a_swipe_through_the_dead_zone_lands_on_its_release(t)
 	_test_round_button_margins_and_unchanged_dead_zones(t)
-	_test_pointer_roles_survive_side_swaps(t)
+	_test_a_rig_word_names_the_side(t)
+	_test_pointer_roles_hold_wherever_the_pointers_travel(t)
 	_test_a_run_button_does_not_cancel_a_double_press_latch(t)
 	_test_pause_hide_and_mode_changes_release_holds(t)
 	t.get_tree().paused = was_paused
@@ -253,9 +254,8 @@ func _test_set_direction_on_her_own_position_stops_rather_than_pressing(t) -> vo
 ## `_test_a_touch_near_her_own_position_no_longer_stops_her`, further down.
 ##
 ## **Also the regression test for playtest 35 finding 1**: the circle is centred `TAP_STOP_CENTRE_LIFT`
-## (23px) above her feet, not on them, so a click straight below her feet — inside the old,
-## feet-anchored radius — no longer stops her, and a click on her head — outside the old radius
-## entirely — now does.
+## (23px) above her feet, not on them, so a click straight below her feet does not stop her and a
+## click on her shoulders does.
 func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	var rig := _rig_at(t, Vector2(200.0, 200.0))
 	var controls := _controls(t)
@@ -266,7 +266,7 @@ func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	t.check(Input.is_action_pressed("move_right"), "walking first, so a stop has something to undo")
 
 	# 15px off the centre of her sprite (200, 177 -- TAP_STOP_CENTRE_LIFT above her feet at
-	# 200, 200) -- within TAP_STOP_RADIUS (24px) of the middle of her, not of her feet.
+	# 200, 200) -- within TAP_STOP_RADIUS (16px) of the middle of her, not of her feet.
 	controls._on_tap(transform * Vector2(215.0, 177.0), 1.0)
 	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
 			"a click near the centre of her sprite, not only near her feet, stops her")
@@ -275,23 +275,21 @@ func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	t.check(Input.is_action_pressed("move_right"),
 			"walking again, so the two boundary clicks below have something to undo")
 
-	# 20px straight below her feet -- within the old, feet-anchored TAP_STOP_RADIUS but 43px from
-	# the true, lifted centre. This is playtest 35 finding 1 itself: "right now I can click below
-	# her to stop."
+	# 20px straight below her feet -- 43px from the lifted centre. This is playtest 35 finding 1
+	# itself: "right now I can click below her to stop."
 	controls._on_tap(transform * Vector2(200.0, 220.0), 3.0)
 	t.check(Input.is_action_pressed("move_down") and controls._walking,
-			"a click below her feet no longer stops her -- it used to, and that was the bug")
+			"a click below her feet does not stop her")
 
 	controls._on_tap(transform * Vector2(500.0, 200.0), 4.0)
 	t.check(Input.is_action_pressed("move_right"),
-			"walking again, so the head click below has something to undo")
+			"walking again, so the upper-body click below has something to undo")
 
-	# 46px straight above her feet -- her own head, Stroller.FIGURE_HEIGHT up -- 23px from the
-	# lifted centre and therefore within TAP_STOP_RADIUS, where the old feet-anchored circle missed
-	# it entirely.
-	controls._on_tap(transform * Vector2(200.0, 154.0), 5.0)
+	# 38px straight above her feet -- her shoulders -- 15px from the lifted centre and therefore
+	# within TAP_STOP_RADIUS, where a circle centred on her feet would miss it entirely.
+	controls._on_tap(transform * Vector2(200.0, 162.0), 5.0)
 	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
-			"and a click on her head, 46px above her feet, now stops her too")
+			"and a click on her shoulders, 38px above her feet, stops her too")
 
 	controls._on_tap(transform * Vector2(500.0, 200.0), 6.0)
 	t.check(Input.is_action_pressed("move_right"),
@@ -634,49 +632,79 @@ func _test_a_keyboard_press_resets_a_clicked_heading(t) -> void:
 	rig.free()
 
 ## **Pure geometry, no viewport needed** — the same shape `heading_to()`/`is_double_tap()` are
-## tested in. *(2026-09-06, the player: "define two points equally apart from the border on each
-## side ... whichever is closer to the touch".)*
-func _test_nearer_focus_is_picked_on_each_half(t) -> void:
-	t.check(TouchControls.nearer_focus(Vector2(100.0, 200.0)) == TouchControls.FOCUS_LEFT,
-			"the left half of the design box picks the left focus")
-	t.check(TouchControls.nearer_focus(Vector2(1200.0, 500.0)) == TouchControls.FOCUS_RIGHT,
-			"and the right half picks the right focus")
-	t.check(TouchControls.nearer_focus(TouchControls.FOCUS_LEFT) == TouchControls.FOCUS_LEFT,
-			"a press right on a focus picks that one")
-	t.check(TouchControls.nearer_focus(TouchControls.FOCUS_RIGHT) == TouchControls.FOCUS_RIGHT,
-			"and the other focus, right on it")
+## tested in. *(2026-10-10, the player: "instead of splitting the in middle we can move it closer to
+## the run button; although I wouldn't go all the way".)* The steering half reaches two thirds of
+## the way to Run's focus, mirrored for either side, and stops short of Run's own disc.
+func _test_the_steering_half_reaches_two_thirds_toward_run(t) -> void:
+	var left := TouchControls.FOCUS_LEFT
+	var right := TouchControls.FOCUS_RIGHT
+	t.check(is_equal_approx(TouchControls.boundary_x(left), left.x + (right.x - left.x) * 2.0 / 3.0),
+			"with the left side steering, the edge is two thirds of the way to the right focus "
+			+ "(got %.2f)" % TouchControls.boundary_x(left))
+	t.check(is_equal_approx(TouchControls.boundary_x(right), right.x - (right.x - left.x) * 2.0 / 3.0),
+			"and mirrored with the right side steering (got %.2f)" % TouchControls.boundary_x(right))
+	t.check(TouchControls.boundary_x(left) + TouchControls.RING_RADIUS
+			< right.x - TouchControls.RUN_RADIUS,
+			"the stop band ends short of Run's painted disc: not all the way")
+	for steering: Vector2 in [left, right]:
+		var edge := TouchControls.boundary_x(steering)
+		var toward_run := signf(TouchControls.run_focus_for(steering).x - steering.x)
+		t.check(not TouchControls.is_on_run_side(Vector2(edge - toward_run * 0.5, 300.0), steering),
+				"half a pixel short of the edge is still steering's")
+		t.check(TouchControls.is_on_run_side(Vector2(edge + toward_run * 0.5, 300.0), steering),
+				"half a pixel past it is Run's")
+		t.check(not TouchControls.is_on_run_side(Vector2(640.0, 480.0), steering),
+				"the middle of the screen now belongs to steering, on either side")
+		t.check(TouchControls.is_on_run_side(TouchControls.run_focus_for(steering), steering)
+				and not TouchControls.is_on_run_side(steering, steering),
+				"Run's own focus is on Run's side, and the steering focus is not")
 
-## *(2026-09-06, the player: "tapping in their center ... should stop the player still".)*
-func _test_is_on_a_focus_catches_the_stop_radius_around_either_point(t) -> void:
-	t.check(TouchControls.is_on_a_focus(TouchControls.FOCUS_LEFT), "dead on the left focus stops")
-	t.check(TouchControls.is_on_a_focus(TouchControls.FOCUS_RIGHT), "dead on the right focus stops")
-	t.check(TouchControls.is_on_a_focus(TouchControls.FOCUS_LEFT + Vector2(10.0, 0.0)),
-			"and near enough to it (within STOP_RADIUS) stops too")
-	t.check(not TouchControls.is_on_a_focus(Vector2(640.0, 360.0)),
-			"exactly between the two, past both radii, is neither")
+## The dead zone surrounds the steering focus only, tighter than the ring drawn around it.
+## *(2026-10-10, the player: "decrease the deadzone of the joystick (which makes the player stop)
+## smaller/tighter".)*
+func _test_the_dead_zone_is_tighter_than_the_ring_and_only_on_steering(t) -> void:
+	var left := TouchControls.FOCUS_LEFT
+	t.check(TouchControls.DEAD_ZONE_RADIUS < TouchControls.RING_RADIUS,
+			"the dead zone is tighter than the ring drawn around it")
+	t.check(TouchControls.in_dead_zone(left, left), "dead on the steering focus stops")
+	t.check(TouchControls.in_dead_zone(left + Vector2.UP * TouchControls.DEAD_ZONE_RADIUS * 0.99, left),
+			"just inside the dead zone stops")
+	t.check(not TouchControls.in_dead_zone(left + Vector2.UP * TouchControls.DEAD_ZONE_RADIUS * 1.01,
+			left), "just outside it, still inside the ring, does not")
+	t.check(not TouchControls.in_dead_zone(TouchControls.FOCUS_RIGHT, left),
+			"Run's focus has no dead zone")
+	t.check(is_equal_approx(TouchControls.TAP_STOP_RADIUS * 2.0, TouchControls.DEAD_ZONE_RADIUS),
+			"tap mode's stop circle covers the dead zone on screen at the camera's zoom of 2, "
+			+ "nothing bigger (playtest 34 finding 5)")
 
-## Pure geometry, no viewport needed — the same shape `is_on_a_focus()` is tested in.
-## *(2026-09-07: "there should be a narrow band in the middle of the screen (size of the stop
-## circle) that stops the player".)*
-func _test_is_in_stop_band_catches_the_middle_and_only_the_middle(t) -> void:
-	t.check(TouchControls.is_in_stop_band(Vector2(640.0, 0.0)), "dead centre, at any height, stops")
-	t.check(TouchControls.is_in_stop_band(Vector2(640.0, 719.0)), "even right at the bottom edge")
-	t.check(TouchControls.is_in_stop_band(Vector2(640.0 + TouchControls.STOP_RADIUS, 360.0)),
-			"and STOP_RADIUS to either side, at the diameter's own edge")
-	t.check(not TouchControls.is_in_stop_band(
-			Vector2(640.0 + TouchControls.STOP_RADIUS + 1.0, 360.0)),
-			"but just past that edge is an ordinary direction press")
-	t.check(not TouchControls.is_in_stop_band(TouchControls.FOCUS_LEFT),
-			"and neither focus itself is anywhere near the middle band")
+## Pure geometry, no viewport needed. *(2026-09-07: "there should be a narrow band in the middle of
+## the screen (size of the stop circle) that stops the player".)* The band moved to the steering
+## half's edge and kept the ring's diameter as its width.
+func _test_the_stop_band_sits_on_the_steering_edge(t) -> void:
+	for steering: Vector2 in [TouchControls.FOCUS_LEFT, TouchControls.FOCUS_RIGHT]:
+		var edge := TouchControls.boundary_x(steering)
+		t.check(TouchControls.is_in_stop_band(Vector2(edge, 0.0), steering)
+				and TouchControls.is_in_stop_band(Vector2(edge, 719.0), steering),
+				"on the edge, at any height, is in the band")
+		t.check(TouchControls.is_in_stop_band(Vector2(edge - TouchControls.RING_RADIUS * 0.99, 360.0),
+				steering) and TouchControls.is_in_stop_band(
+				Vector2(edge + TouchControls.RING_RADIUS * 0.99, 360.0), steering),
+				"just inside RING_RADIUS either side of the edge is in the band")
+		t.check(not TouchControls.is_in_stop_band(
+				Vector2(edge - TouchControls.RING_RADIUS * 1.01, 360.0), steering),
+				"just past that is an ordinary direction press; the band does not grow")
+		t.check(not TouchControls.is_in_stop_band(Vector2(640.0, 360.0), steering),
+				"and the middle of the screen is no longer a band")
 
-## **The reach the two focal points exist to fix.** *(2026-09-06, the player: "right now the
-## finger needs to reach over half the phone to be able to input an up or down direction".)* A
-## press west of a focus walks west, and above it walks north, no matter where she is standing —
-## the whole point of the two fixed points is that the direction no longer depends on where she is.
-func _test_a_touch_aims_from_the_nearer_focus_not_from_her(t) -> void:
+## **The reach the focal points exist to fix.** *(2026-09-06, the player: "right now the finger
+## needs to reach over half the phone to be able to input an up or down direction".)* A press west
+## of the steering focus walks west, and above it walks north, no matter where she is standing —
+## the direction does not depend on where she is. Either side steers the same way once the title
+## has chosen it.
+func _test_a_touch_aims_from_the_steering_focus_not_from_her(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0)) # far from either focus, on purpose
 	var controls := _controls(t)
-	controls._mode = ControlsMode.Mode.JOYSTICK
+	controls.set_mode(ControlsMode.Mode.JOYSTICK, ControlsMode.Side.LEFT)
 
 	# West of the left focus, in the design box `_on_tap()` reads a non-rotated press in directly.
 	controls._on_tap(TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), 0.0)
@@ -685,39 +713,39 @@ func _test_a_touch_aims_from_the_nearer_focus_not_from_her(t) -> void:
 	t.check(not Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
 			"and not north or south, since the press is due west of the focus")
 
-	# Above (smaller y) the right focus.
+	controls.set_mode(ControlsMode.Mode.JOYSTICK, ControlsMode.Side.RIGHT)
 	controls._on_tap(TouchControls.FOCUS_RIGHT + Vector2(0.0, -150.0), 1.0)
 	t.check(Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
-			"and a press above the right focus walks north")
+			"and with the right side steering, a press above the right focus walks north")
 
 	controls.free()
 	rig.free()
 
-## **Both focal points show the heading she is walking, whichever side set it.** *(2026-09-27,
-## playtest olive-koala statement 6: "the onscreen controls should show the selected direction on
-## both sides always. when using hands and when using the keyboard".)* `_draw_focus_circles()` reads
-## `current_heading()` for the offset it draws on both circles at once — there is one heading locked
-## in, not one per focus — so a press aimed through either one has to move it the same way
-## `Input.is_action_pressed()` already shows the underlying press moved.
-func _test_current_heading_matches_a_press_through_either_focus(t) -> void:
+## **The steering ring's knob shows the heading she is walking.** *(2026-09-27, playtest
+## olive-koala statement 6: "the onscreen controls should show the selected direction on both sides
+## always. when using hands and when using the keyboard".)* One ring steers now, so "both sides" is
+## that ring: `_draw_focus_circles()` reads `current_heading()` for its knob, so a press through the
+## steering focus has to move it the same way `Input.is_action_pressed()` shows the press moved.
+func _test_current_heading_matches_a_press_through_the_steering_focus(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0)) # far from either focus, on purpose
 	var controls := _controls(t)
-	controls._mode = ControlsMode.Mode.JOYSTICK
+	controls.set_mode(ControlsMode.Mode.JOYSTICK, ControlsMode.Side.LEFT)
 
 	controls._on_tap(TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), 0.0)
 	t.check(TouchControls.current_heading().is_equal_approx(Vector2.LEFT),
-			"a press west of the left focus is what both circles now show")
+			"a press west of the left focus is what the knob now shows")
 
+	controls.set_mode(ControlsMode.Mode.JOYSTICK, ControlsMode.Side.RIGHT)
 	controls._on_tap(TouchControls.FOCUS_RIGHT + Vector2(0.0, -150.0), 1.0)
 	t.check(TouchControls.current_heading().is_equal_approx(Vector2.UP),
-			"and a press above the right focus, the same way, off the right one")
+			"and a press above the right focus, with the right side steering, the same way")
 
 	controls.free()
 	rig.free()
 
 ## **Zero while she is detained, even with a key still held.** Found in review of #412:
 ## `current_heading()` did not gate on `Stroller.is_detained()`, so a key held through a
-## conversation or a capture kept swinging both knobs toward it even though
+## conversation or a capture kept swinging the knob toward it even though
 ## `Stroller._physics_process()` itself already ignores `Input.get_vector()` for exactly that
 ## reason (`_detained_for > 0.0`) — the one thing `current_heading()`'s own doc promises never
 ## happens, disagreeing with what she is actually doing. A bare `Stroller.new()` is enough:
@@ -734,13 +762,13 @@ func _test_current_heading_reads_zero_while_detained(t) -> void:
 	Input.action_press(&"move_right")
 
 	t.check(TouchControls.current_heading().is_equal_approx(Vector2.RIGHT),
-			"not detained, so the held key is what both circles would draw, same as everywhere else")
+			"not detained, so the held key is what the knob would draw, same as everywhere else")
 	t.check(TouchControls.current_heading(stroller).is_equal_approx(Vector2.RIGHT),
 			"and passing a rig that says it is not detained changes nothing")
 
 	stroller.detain(5.0)
 	t.check(TouchControls.current_heading(stroller).is_equal_approx(Vector2.ZERO),
-			"detained, so both circles read stopped no matter what is still held")
+			"detained, so the knob reads stopped no matter what is still held")
 
 	Input.action_release(&"move_right")
 	stroller.free()
@@ -764,10 +792,8 @@ func _test_a_press_at_a_focus_centre_stops_her_on_touch(t) -> void:
 ## player: "tapping in their center or on the player should stop the player still" — the finding
 ## M83 built this test for. 2026-09-07, overturning it: "with that we can remove tap the player to
 ## stop since it's the same area and if a movement accidentally goes over the player it might
-## become surprising to see her stop".)* The camera sits on her, so her own screen position already
-## sits on the stop band's own centre line — covering the ground twice is what made a drag crossing
-## her by accident stop her by surprise. A press near her own world position, off both focal points
-## and off the band, now walks toward the nearer focus instead of stopping.
+## become surprising to see her stop".)* A press near her own world position, off the dead zone and
+## off the band, walks away from the steering focus instead of stopping.
 func _test_a_touch_near_her_own_position_no_longer_stops_her(t) -> void:
 	var rig := _rig_at(t, Vector2(300.0, 300.0))
 	var controls := _controls(t)
@@ -777,14 +803,14 @@ func _test_a_touch_near_her_own_position_no_longer_stops_her(t) -> void:
 	controls.set_direction(Vector2(400.0, 300.0), false)
 	t.check(Input.is_action_pressed("move_right"), "walking first, so a stop has something to undo")
 
-	# Well away from either focus and the middle band in design space, and within the old
-	# world-space STOP_RADIUS of her -- the exact case the deleted door used to catch.
+	# Well away from the dead zone and the band in design space, and within world-space reach of
+	# her -- the exact case the deleted door used to catch.
 	controls._on_tap(transform * Vector2(310.0, 300.0), 1.0)
 	t.check(controls._walking,
-			"a press near her walks toward the nearer focus instead of stopping")
+			"a press near her steers from the focus instead of stopping")
 	t.check(controls._direction.is_equal_approx(TouchControls.heading_to(
 			Vector2(310.0, 300.0), TouchControls.FOCUS_LEFT)),
-			"toward FOCUS_LEFT specifically, the nearer of the two")
+			"measured from FOCUS_LEFT, the steering focus")
 
 	controls.free()
 	rig.free()
@@ -895,7 +921,7 @@ func _test_a_tap_mode_drag_stops_and_resumes_crossing_her_own_stop_radius(t) -> 
 
 	var motion := InputEventMouseMotion.new()
 	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
-	# Within TAP_STOP_RADIUS (24px) of the centre of her sprite (300, 277 -- TAP_STOP_CENTRE_LIFT
+	# Within TAP_STOP_RADIUS (16px) of the centre of her sprite (300, 277 -- TAP_STOP_CENTRE_LIFT
 	# above her feet at 300, 300), not of her feet.
 	motion.position = transform * Vector2(310.0, 280.0)
 	controls._input(motion)
@@ -937,8 +963,7 @@ func _test_a_double_tap_that_then_drags_keeps_running(t) -> void:
 
 ## **`Mode.TAP`'s own half of the drag.** *(2026-09-07: "although dragging a mouse should reaim as
 ## well".)* Its origin is her own position, not a focus — the one place the two modes keep
-## disagreeing — carried through every motion event exactly as `_drag_origin_world` recorded it at
-## the click that started this drag.
+## disagreeing — read live on every motion event.
 func _test_a_mouse_drag_reaims_from_her_own_position(t) -> void:
 	var rig := _rig_at(t, Vector2(300.0, 300.0))
 	var controls := _controls(t)
@@ -989,105 +1014,151 @@ func _test_a_mouse_motion_without_the_button_held_does_nothing(t) -> void:
 	controls.free()
 	rig.free()
 
-## A press dead in the middle of the screen stops her in `Mode.JOYSTICK`, the third door into
-## `_stop()` beside a press on either focus. *(2026-09-07: "there should be a narrow band in the
-## middle of the screen ... that stops the player".)*
+## A press in the band at the steering half's edge stops her in `Mode.JOYSTICK`, the other door
+## into `_stop()` beside the dead zone. *(2026-09-07: "there should be a narrow band in the middle of
+## the screen ... that stops the player".)*
 func _test_a_tap_in_the_stop_band_stops_her_on_touch(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
-	controls._mode = ControlsMode.Mode.JOYSTICK
+	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 
 	controls._on_tap(TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), 0.0)
 	t.check(Input.is_action_pressed("move_left"), "walking first, so a stop has something to undo")
 
-	controls._on_tap(Vector2(640.0, 200.0), 1.0)
+	controls._on_tap(Vector2(TouchControls.boundary_x(TouchControls.FOCUS_LEFT) - 10.0, 200.0), 1.0)
 	t.check(not Input.is_action_pressed("move_left") and not controls._walking,
-			"a press in the middle band stops her rather than steering toward either focus")
+			"a press in the band at the steering edge stops her rather than steering")
 
 	controls.free()
 	rig.free()
 
-## **A drag that wanders into the band stops her rather than steering her**, and leaving the band
-## re-picks which focus she steers from for whichever side the pointer left on. *(Playtest 35
-## finding 4: "dragging from one side of the screen to the other side of the screen keeps the
-## reference on the original side... since there is a gap in the middle that stops I think we
-## should retarget to the other side when that happens.")* The exit point is chosen so the two foci
-## disagree about which way it is — `FOCUS_LEFT` would still read "east" (`move_right`), `FOCUS_RIGHT`
-## reads "west" (`move_left`) — so landing on `move_left` is what proves the retarget actually
-## happened rather than merely permitting a direction both foci would have agreed on.
-func _test_a_drag_that_crosses_the_band_stops_her_rather_than_steering_her(t) -> void:
+## **A steering drag into the band stops her, and one carried on past it onto Run's half steers
+## again from the same focus.** The sides never swap in play *(2026-10-10, the player: "we don't
+## allow switching joystick and run key")*, so the pointer keeps the role its press gave it: it
+## neither takes Run nor moves the ring.
+func _test_a_drag_past_the_band_keeps_steering_from_the_same_side(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
 	controls._touch = true
-	controls._mode = ControlsMode.Mode.JOYSTICK
+	controls.visible = true
+	controls.set_mode(ControlsMode.Mode.JOYSTICK)
+	var edge := TouchControls.boundary_x(TouchControls.FOCUS_LEFT)
 
 	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
 	t.check(Input.is_action_pressed("move_left"), "the press itself walks west of the focus")
 
-	controls._input(_drag_event(0, Vector2(660.0, 480.0)))
-	t.check(not Input.is_action_pressed("move_left") and not controls._walking,
-			"dragging into the band stops her rather than steering her toward the right focus")
+	controls._input(_drag_event(0, Vector2(edge, 480.0)))
+	t.check(not controls._walking, "dragging into the band stops her")
 
-	controls._input(_drag_event(0, Vector2(750.0, 480.0)))
-	t.check(Input.is_action_pressed("move_left") and controls._walking,
-			"leaving the band re-picks FOCUS_RIGHT for the side the pointer actually left on")
+	controls._input(_drag_event(0, TouchControls.FOCUS_RIGHT + Vector2(0.0, -150.0)))
+	t.check(controls._walking and Input.is_action_pressed("move_right")
+			and not Input.is_action_pressed("move_left"),
+			"carried on onto Run's half, it steers again from the left focus, toward the pointer")
+	t.check(not controls._run_held and controls.run_button_center() == TouchControls.FOCUS_RIGHT,
+			"without taking Run or moving Run's disc")
 
+	controls._input(_touch_event(0, TouchControls.FOCUS_RIGHT + Vector2(0.0, -150.0), false))
+	t.check(controls._walking and controls.run_button_center() == TouchControls.FOCUS_RIGHT,
+			"and lifting there leaves her walking with the sides as they were")
 	controls.free()
 	rig.free()
+	_release_actions()
 
-## **The band's own edge cannot flip-flap between the two foci.** `nearer_focus()` ties only exactly
-## on the design box's centre line (640), which sits 48px inside either edge of the band — so every
-## point outside the band already lies unambiguously on one side of it. Leaving the same edge twice
-## re-picks the same focus both times; only actually crossing the whole band re-picks the other one.
-func _test_leaving_the_band_at_the_same_edge_twice_never_flips_focus(t) -> void:
+## **The title's side holds from the first frame of play and nothing in play moves it.**
+## *(2026-10-10, the player: "selecting the left one will make the left side permanently joystick
+## and the right side permanently run button (permanently for the sitting). vice versa on the right
+## side.")* Before any press Run is already on screen, a key picks no side, and a press anywhere
+## on Run's half — on the disc or well off it, in either presentation — holds Run and never steers.
+func _test_a_press_on_runs_side_never_steers(t) -> void:
+	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
+	for side: ControlsMode.Side in [ControlsMode.Side.LEFT, ControlsMode.Side.RIGHT]:
+		var steering := TouchControls.FOCUS_RIGHT if side == ControlsMode.Side.RIGHT \
+				else TouchControls.FOCUS_LEFT
+		var run := TouchControls.run_focus_for(steering)
+		var toward_run := signf(run.x - steering.x)
+		for rotate: bool in [false, true]:
+			var controls := _controls(t)
+			controls.visible = true
+			controls.rotated = rotate
+			controls.set_mode(ControlsMode.Mode.JOYSTICK, side)
+			t.check(controls.run_button_center() == run,
+					"Run is on the far side from the first frame (side=%d rotated=%s)" % [side, rotate])
+			var key := InputEventKey.new()
+			key.keycode = KEY_D
+			key.pressed = true
+			controls._input(key)
+			t.check(controls.run_button_center() == run, "a key picks no side")
+			controls._input(_touch_event(0, ScreenOrientation.to_presented_space(
+					steering + Vector2(0.0, -100.0), rotate), true))
+			controls._input(_touch_event(0, ScreenOrientation.to_presented_space(
+					steering + Vector2(0.0, -100.0), rotate), false))
+			t.check(controls._walking,
+					"a tap above the steering focus walks (the heading's own direction under a "
+					+ "rotated presentation is test_orientation's)")
+			var heading := controls._direction
+			var off_the_disc := Vector2(TouchControls.boundary_x(steering) + toward_run, 150.0)
+			for at: Vector2 in [run, run + Vector2(0.0, -100.0), off_the_disc]:
+				var pressed_at := ScreenOrientation.to_presented_space(at, rotate)
+				controls._input(_touch_event(1, pressed_at, true))
+				t.check(controls._run_held and controls._direction == heading
+						and controls._drag_pointer_index == -1,
+						"a press at %s on Run's half holds Run and never steers" % at)
+				controls._input(_drag_event(1, ScreenOrientation.to_presented_space(steering, rotate)))
+				t.check(controls._direction == heading,
+						"and dragging that finger over the steering focus does not steer either")
+				controls._input(_touch_event(1, pressed_at, false))
+				t.check(controls.run_button_center() == run and controls._direction == heading,
+						"releasing it leaves both the heading and the sides as they were")
+			controls.free()
+			_release_actions()
+	rig.free()
+
+## **A swipe through the dead zone keeps her walking toward where it lands; one that lands inside
+## stops her.** *(2026-10-10, the player: "make sure swiping over it but landing outside of it
+## correctly keeps the player moving in the direction of the final position".)* A fast swipe can
+## lift with its last motion event inside the dead zone, so the release's own position decides.
+func _test_a_swipe_through_the_dead_zone_lands_on_its_release(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
 	controls._touch = true
-	controls._mode = ControlsMode.Mode.JOYSTICK
+	controls.set_mode(ControlsMode.Mode.JOYSTICK)
+	var focus := TouchControls.FOCUS_LEFT
 
-	controls._input(_touch_event(0, TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0), true))
-	controls._input(_drag_event(0, Vector2(660.0, 480.0))) # into the band
-	controls._input(_drag_event(0, Vector2(750.0, 480.0))) # out the right edge -- picks FOCUS_RIGHT
-	t.check(Input.is_action_pressed("move_left"), "the first exit on the right side picks FOCUS_RIGHT")
+	controls._input(_touch_event(0, focus + Vector2(-150.0, 0.0), true))
+	controls._input(_drag_event(0, focus + Vector2(-5.0, 2.0)))
+	t.check(not controls._walking, "the swipe's last motion event is inside the dead zone")
+	controls._input(_touch_event(0, focus + Vector2(150.0, 0.0), false))
+	t.check(controls._walking and Input.is_action_pressed("move_right")
+			and not Input.is_action_pressed("move_left"),
+			"lifting outside it walks toward the release point, east of the focus")
+	t.check(controls._drag_pointer_index == -1, "and the drag is over")
 
-	controls._input(_drag_event(0, Vector2(660.0, 480.0))) # wiggling back into the band
-	controls._input(_drag_event(0, Vector2(750.0, 480.0))) # and back out the same right edge
-	t.check(Input.is_action_pressed("move_left"),
-			"wiggling back into the band and out the same edge picks FOCUS_RIGHT again, not FOCUS_LEFT")
+	controls._input(_touch_event(0, focus + Vector2(0.0, -150.0), true))
+	controls._input(_drag_event(0, focus + Vector2(0.0, -60.0)))
+	t.check(controls._walking and Input.is_action_pressed("move_up"),
+			"a second drag walks north, outside the dead zone")
+	controls._input(_touch_event(0, focus + Vector2(TouchControls.DEAD_ZONE_RADIUS * 0.5, 0.0), false))
+	t.check(not controls._walking and not Input.is_action_pressed("move_up"),
+			"lifting inside the dead zone, with no motion event there, stops her")
 
 	controls.free()
 	rig.free()
+	_release_actions()
 
-## Taps choose either side, and release preserves that choice without a held steering pointer.
-func _test_taps_choose_and_retain_the_run_side(t) -> void:
-	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
-	for rotate in [false, true]:
-		var controls := _controls(t)
-		controls.visible = true
-		controls.set_mode(ControlsMode.Mode.JOYSTICK)
-		controls.rotated = rotate
-		t.check(controls.run_button_center() == Vector2.INF, "no arbitrary starting side")
-		var key := InputEventKey.new()
-		key.keycode = KEY_D
-		key.pressed = true
-		controls._input(key)
-		t.check(controls.run_button_center() == Vector2.INF, "keyboard does not choose a side")
-		for focus in [TouchControls.FOCUS_LEFT, TouchControls.FOCUS_RIGHT, TouchControls.FOCUS_LEFT]:
-			var at := ScreenOrientation.to_presented_space(focus + Vector2(0.0, -100.0), rotate)
-			controls._input(_touch_event(0, at, true))
-			var heading := controls._direction
-			controls._input(_touch_event(0, at, false))
-			t.check(controls._steering_focus == focus and controls._drag_pointer_index == -1,
-					"a tap retains the selected focus after release (rotated=%s)" % rotate)
-			t.check(controls._walking and controls._direction == heading,
-					"releasing a tap preserves its heading")
-			t.check(controls.run_button_center() != focus
-					and controls.run_button_center() != Vector2.INF, "Run occupies the other focus")
-		controls.free()
-		_release_actions()
-	rig.free()
+## A rig that skips the title chooses the side with `--controls` (or `?controls=`), since nothing
+## else can reach the right-steering layout without a press on the title.
+func _test_a_rig_word_names_the_side(t) -> void:
+	for word: String in ["joystick", "joystick-left", "joystick-right"]:
+		t.check(ControlsMode.from_word(word) == ControlsMode.Mode.JOYSTICK,
+				"'%s' is the joystick scheme" % word)
+	t.check(ControlsMode.side_from_word("joystick-right") == ControlsMode.Side.RIGHT,
+			"'joystick-right' steers from the right")
+	for word: String in ["joystick", "joystick-left", "tap", ""]:
+		t.check(ControlsMode.side_from_word(word) == ControlsMode.Side.LEFT,
+				"'%s' steers from the left" % word)
+	t.check(ControlsMode.from_word("tap") == ControlsMode.Mode.TAP, "'tap' is still the tap scheme")
 
-## Hit boundaries follow the painted button, while a steering dead zone stays unchanged.
+## Pause's catch grows 5% past its painted rim; the dead zone does not grow at all.
 func _test_round_button_margins_and_unchanged_dead_zones(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	for rotate in [false, true]:
@@ -1095,18 +1166,7 @@ func _test_round_button_margins_and_unchanged_dead_zones(t) -> void:
 		controls.visible = true
 		controls.set_mode(ControlsMode.Mode.JOYSTICK)
 		controls.rotated = rotate
-		var steering := ScreenOrientation.to_presented_space(TouchControls.FOCUS_LEFT, rotate)
-		controls._input(_touch_event(0, steering, true))
-		controls._input(_touch_event(0, steering, false))
 		for ratio: float in [1.049, 1.051]:
-			var offset := Vector2.RIGHT * TouchControls.RUN_RADIUS * ratio
-			var at := ScreenOrientation.to_presented_space(TouchControls.FOCUS_RIGHT + offset, rotate)
-			controls._input(_touch_event(1, at, true))
-			t.check(controls._run_held == (ratio < 1.05),
-					"Run catches just inside 5%%, rejects just outside (rotated=%s)" % rotate)
-			controls._input(_touch_event(1, at, false))
-			controls._input(_touch_event(0, steering, true))
-			controls._input(_touch_event(0, steering, false))
 			var pause_at := ScreenOrientation.to_presented_space(TouchControls.PAUSE_CENTRE
 					+ Vector2.LEFT * TouchControls.PAUSE_RADIUS * ratio, rotate)
 			controls._input(_touch_event(2, pause_at, true))
@@ -1115,17 +1175,16 @@ func _test_round_button_margins_and_unchanged_dead_zones(t) -> void:
 			t.check(TouchControls._pause_fires(ScreenOrientation.to_design_space(pause_at, rotate))
 					== (ratio < 1.05), "pause release uses the same margin")
 			controls._input(_touch_event(2, Vector2.ZERO, false))
-		var edge := TouchControls.FOCUS_LEFT + Vector2.UP * TouchControls.STOP_RADIUS * 1.01
+		var edge := TouchControls.FOCUS_LEFT + Vector2.UP * TouchControls.DEAD_ZONE_RADIUS * 1.01
 		controls._input(_touch_event(0, ScreenOrientation.to_presented_space(edge, rotate), true))
-		t.check(controls._walking, "a press 1% beyond the stop radius still steers")
-		t.check(not TouchControls.is_in_stop_band(Vector2(640.0
-				+ TouchControls.STOP_RADIUS * 1.01, 480.0)), "middle band does not grow")
+		t.check(controls._walking, "a press 1% beyond the dead zone still steers")
+		controls._input(_touch_event(0, ScreenOrientation.to_presented_space(edge, rotate), false))
 		controls.free()
 		_release_actions()
 	rig.free()
 
-## A run pointer never becomes steering during a swap; a steering drag never becomes Run.
-func _test_pointer_roles_survive_side_swaps(t) -> void:
+## A run pointer never steers and a steering pointer never takes Run, however they travel.
+func _test_pointer_roles_hold_wherever_the_pointers_travel(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
 	controls.visible = true
@@ -1137,37 +1196,24 @@ func _test_pointer_roles_survive_side_swaps(t) -> void:
 	controls._input(_touch_event(1, right, true))
 	t.check(controls._run_held and controls._drag_pointer_index == 0
 			and controls._last_tap_at == tap_clock, "Run leaves steering and double-tap clock alone")
-	controls._input(_drag_event(0, Vector2(640.0, 480.0)))
+	controls._input(_drag_event(0, Vector2(TouchControls.boundary_x(left), 480.0)))
 	t.check(not controls._walking and Input.is_action_pressed("run"), "band stops while Run stays held")
-	t.check(controls.run_button_center() == right, "band alone does not change the selected side")
-	controls._input(_drag_event(0, right))
-	t.check(controls.run_button_center() == left and not controls._walking,
-			"leaving the band into the other focus swaps roles and keeps its dead zone")
 	controls._input(_drag_event(0, right + Vector2.DOWN * 100.0))
+	t.check(controls._walking and controls.run_button_center() == right,
+			"steering onto Run's half steers without moving the disc")
 	var heading := controls._direction
 	controls._input(_drag_event(1, left + Vector2.UP * 100.0))
 	t.check(controls._direction == heading and controls._drag_pointer_index == 0,
-			"held Run pointer cannot steer after its original disc turns into a joystick")
-	controls._input(_touch_event(2, left, true))
-	controls._input(_touch_event(1, right, false))
-	t.check(Input.is_action_pressed("run"), "another run finger can take over the moved button")
-	controls._input(_touch_event(2, left, false))
+			"the run finger dragged onto the steering half does not steer")
+	controls._input(_touch_event(2, right, true))
+	controls._input(_touch_event(1, left, false))
+	t.check(Input.is_action_pressed("run"), "another run finger can take over the hold")
+	controls._input(_touch_event(2, right, false))
 	t.check(not Input.is_action_pressed("run") and controls._walking,
 			"last run release leaves steering intact")
-	controls._input(_drag_event(0, Vector2(640.0, 480.0)))
-	controls._input(_drag_event(0, left + Vector2.RIGHT * 50.0))
-	t.check(controls.run_button_center() == right and controls._walking and not controls._run_held,
-			"steering into the old Run margin swaps sides without acquiring Run")
-	controls._input(_touch_event(0, left, false))
-	t.check(controls.run_button_center() == right, "drag release retains the new placement")
-	controls._input(_touch_event(1, right, true))
-	controls._input(_touch_event(2, right + Vector2.UP * 100.0, true))
-	controls._input(_touch_event(2, right + Vector2.UP * 100.0, false))
-	t.check(controls.run_button_center() == left and controls._run_held,
-			"a tap swaps Run while its original finger still owns the hold")
-	controls._input(_touch_event(1, Vector2.ZERO, false))
-	t.check(not controls._run_held and controls._walking,
-			"the original Run finger can release off the moved disc without changing heading")
+	controls._input(_touch_event(0, right + Vector2.DOWN * 100.0, false))
+	t.check(controls._walking and not controls._run_held,
+			"the steering finger lifting on Run's half never took Run")
 	controls.free()
 	rig.free()
 	_release_actions()
@@ -1189,7 +1235,8 @@ func _test_a_run_button_does_not_cancel_a_double_press_latch(t) -> void:
 	rig.free()
 	_release_actions()
 
-## Pause preserves the layout and locked heading, but never revives a pointer hold.
+## Pause preserves the sides and locked heading, but never revives a pointer hold; a change of
+## scheme or side lets go of everything.
 func _test_pause_hide_and_mode_changes_release_holds(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := _controls(t)
@@ -1208,7 +1255,7 @@ func _test_pause_hide_and_mode_changes_release_holds(t) -> void:
 	controls.resume_after_pause()
 	t.check(controls._walking and not Input.is_action_pressed("run")
 			and controls.run_button_center() == TouchControls.FOCUS_RIGHT,
-			"resume restores heading and side without the run finger")
+			"resume restores heading and sides without the run finger")
 	controls._input(_drag_event(1, at))
 	t.check(controls._drag_pointer_index == -1, "old finger motion after pause cannot acquire steering")
 	controls._input(_touch_event(1, TouchControls.FOCUS_RIGHT, true))
@@ -1216,14 +1263,20 @@ func _test_pause_hide_and_mode_changes_release_holds(t) -> void:
 	t.check(not controls._run_held and not controls._walking, "hiding releases held input")
 	controls.show()
 	controls._input(_touch_event(1, TouchControls.FOCUS_RIGHT, true))
+	controls.set_mode(ControlsMode.Mode.JOYSTICK, ControlsMode.Side.RIGHT)
+	t.check(not controls._run_held and controls.run_button_center() == TouchControls.FOCUS_LEFT,
+			"a change of side releases Run and moves its disc")
+	controls._input(_touch_event(1, TouchControls.FOCUS_LEFT, true))
 	controls.set_mode(ControlsMode.Mode.TAP)
 	t.check(not controls._run_held and controls.run_button_center() == Vector2.INF,
 			"mode change releases Run and removes its disc")
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
-	t.check(controls._steering_focus == Vector2.INF, "returning to joystick starts with both rings")
+	t.check(controls.run_button_center() == TouchControls.FOCUS_RIGHT,
+			"returning to joystick has Run on screen at once")
 	controls.free()
 	rig.free()
 	_release_actions()
+
 func _click_event(position: Vector2, pressed: bool) -> InputEventMouseButton:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
