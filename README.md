@@ -16,12 +16,6 @@ it is not.
 
 [Watch the gameplay trailer on YouTube.](https://youtu.be/88nfOmjEcHc)
 
-<p align="center">
-  <a href="https://youtu.be/88nfOmjEcHc">
-	<img src="https://i.ytimg.com/vi/88nfOmjEcHc/maxresdefault.jpg" alt="Watch the Nappy gameplay trailer on YouTube" width="640">
-  </a>
-</p>
-
 > **Spoilers:** everything under `docs/` describes the game's full arc, including things a
 > player should meet for the first time in play. This README deliberately does not.
 
