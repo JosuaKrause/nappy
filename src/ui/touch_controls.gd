@@ -145,9 +145,11 @@ const _ICON_HALF_SIZE := 64.0
 ## heading while she walks: a third of `PAUSE_RADIUS` (about 8.7px), so even the larger running knob
 ## at `_FOCUS_KNOB_OFFSET` stays inside the ring rather than crowding the rim.
 const _FOCUS_KNOB_RADIUS := PAUSE_RADIUS / 3.0
-## How far the knob sits from the focus while she walks: a quarter of the way from the dead zone's
-## edge to the ring (24px), so its centre stands outside the dead zone and the knob inside the ring.
-const _FOCUS_KNOB_OFFSET := DEAD_ZONE_RADIUS + (RING_RADIUS - DEAD_ZONE_RADIUS) * 0.25
+## How far the knob sits from the focus while she walks, 36px: just inside the ring's 48px with the
+## larger running knob still within it. **Unrelated to `DEAD_ZONE_RADIUS`** *(2026-10-10, pebbly-alpaca:
+## "the position where the dot it drawn should be independent of the deadzone -- those two have no
+## relation")*; it keeps the value it had when the dead zone was 32px.
+const _FOCUS_KNOB_OFFSET := 36.0
 
 ## Hardware only — see the class doc's own paragraph on what this decides and what it no longer
 ## does. Read once into a member the same way `TouchInput.available()` already is everywhere else

@@ -712,10 +712,8 @@ func _test_the_dead_zone_is_tighter_than_the_ring_and_only_on_steering(t) -> voi
 	t.check(is_equal_approx(TouchControls.TAP_STOP_RADIUS * 2.0, TouchControls.DEAD_ZONE_RADIUS),
 			"tap mode's stop circle covers the dead zone on screen at the camera's zoom of 2, "
 			+ "nothing bigger (playtest 34 finding 5): 8 world px, 16 on screen")
-	var offset := TouchControls._FOCUS_KNOB_OFFSET
-	t.check(offset > TouchControls.DEAD_ZONE_RADIUS
-			and offset + TouchControls._FOCUS_KNOB_RADIUS * 1.3 < TouchControls.RING_RADIUS,
-			"the walking knob's centre is outside the dead zone and the knob inside the ring")
+	t.check(TouchControls._FOCUS_KNOB_OFFSET + TouchControls._FOCUS_KNOB_RADIUS * 1.3
+			< TouchControls.RING_RADIUS, "the walking knob, running, stays inside the ring")
 
 ## Pure geometry, no viewport needed. *(2026-09-07: "there should be a narrow band in the middle of
 ## the screen (size of the stop circle) that stops the player".)* The band moved to the steering
