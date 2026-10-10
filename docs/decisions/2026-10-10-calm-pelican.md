@@ -25,7 +25,7 @@ each in the busy-hedgehog and tiny-beaver records, and the pelican evidence READ
 corrected and flagged to the player: **committing** stated as permanent that the bots' tokens cannot
 upload attachments, which holds only at the pinned upstream commit; **using-tools** pointed the
 scene-recipe and scene-draft rows at **verify**, which says nothing about drafting. The findings on
-#603 inside [leafy-marten](../todo/2026-10-10-leafy-marten/README.md)'s files are an item of that
+#603 inside [leafy-marten](2026-10-10-leafy-marten.md)'s files are an item of that
 entry, since its agent is rewriting those files.
 
 **Not filed, open to overturn:**

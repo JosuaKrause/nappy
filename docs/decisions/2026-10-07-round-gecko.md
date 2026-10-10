@@ -44,4 +44,4 @@ test fixtures were changed to free their controls immediately, preventing a queu
 from supplying the next suite's control mode. No full local suite was run; full game and browser
 verification is CI's. The two inspected [gameplay stills](../evidence/round-gecko-controls-2026-10-07/README.md)
 show both layouts after synthetic tap release, with provenance and limits. Evidence is three files,
-434,699 bytes. The [phone review](../review/2026-10-07-round-gecko.md) covers reach and feel.
+434,699 bytes. Its phone review is now [leafy-marten](../review/2026-10-10-leafy-marten.md)'s, which keeps the button-rim check.
