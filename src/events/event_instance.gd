@@ -2068,6 +2068,26 @@ func give_up_the_chase() -> void:
 	gave_up = true
 	_be_done()
 
+## **Notices her now, wherever she is**: a waiting pursuer told to come after her by what she did
+## rather than by what it saw — day 13's waiting guard, the moment she has done the roadblock's task,
+## from wherever he stands (`ResistanceDirector._set_the_task_guard_on_her()`; inbox #651 follow-up,
+## the player: "as long as he starts pursuing when you hit the task it's fine"). The notice
+## `_chase()` makes, without its range and its clear line: the clock starts, he turns to her, and
+## from then on he is an ordinary pursuer — his notice runs before he may lunge, he closes only to
+## his stand-off while it runs, and he lunges only along a clear line. Noticed already inside his
+## stand-off, which only a wall between them allows here, the lunge is held as `_chase()` holds it
+## (`_lunge_held`). Nothing for a pursuer no longer waiting, or for a `her` of `Vector2.INF`.
+func notice_her_at(her: Vector2) -> void:
+	if not is_waiting() or her == Vector2.INF or is_finished:
+		return
+	player_at = her
+	_noticed_at = age
+	var toward := her - global_position
+	if toward.length() >= 1.0:
+		_heading = toward.normalized()
+	if toward.length() <= Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()):
+		_lunge_held = true
+
 ## `_chase()`'s own notice check, folded out for anything that waits on `pursues_within` without
 ## also `pursues` — a row that runs its own path once noticed rather than turning to chase her.
 ## `alley_mouse` is the first: `EventScheduler` places it on an `ALLEY` tile at dawn, well outside

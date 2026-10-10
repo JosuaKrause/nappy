@@ -12,6 +12,12 @@ extends RefCounted
 ## of her view he is re-placed in it, out of her reach, and each guard he was is gone; and he follows
 ## her again to the next one she approaches.
 ##
+## Whichever roadblock she touches, the guard comes after her the moment she has done it *(the
+## player: "as long as he starts pursuing when you hit the task it's fine")*: parked at another
+## roadblock, kept there by her view, he is chasing her the moment she touches the one she
+## approached, and comes all the way to her; and a guard who already noticed her is left on her
+## exactly as he was.
+##
 ## And day 13's own roadblock is placed under the day's rules, close by *(inbox #650 in mossy-beaver:
 ## "let's place one properly and guide to that -- just make sure it's closeby")*: on several cities,
 ## reading the mark appends it to the day's plan, between the edge of the circle round her and the
@@ -32,6 +38,8 @@ func run(t) -> void:
 	# Each day here starts from no read mark's alley remembered (`_start_the_day()`).
 	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
 	_test_the_guard_follows_her_to_the_roadblock_she_approaches(t)
+	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, true)
+	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, false)
 	for seed_value in PLACEMENT_SEEDS:
 		_test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value)
 	GameState.completed_resistance_alley_tiles.assign(saved_alleys)
@@ -174,6 +182,110 @@ static func _a_clear_line(map: CityMap, from: Vector2, to: Vector2) -> bool:
 func _guard_in_view(feet: Vector2) -> bool:
 	return _view.has_area() and _view.intersects(Rect2(feet + Vector2(-14.0, -48.0),
 			Vector2(28.0, 52.0)))
+
+## **The done task sets the guard on her, wherever he stands.** With `parked`, she touches another
+## live roadblock while the guard is held at the task's own by her view on him; without, he has
+## already noticed her at the task's own before she touches it.
+func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: bool) -> void:
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_failed := GameState.failed_resistance_steps.duplicate()
+	var saved_progress := GameState.resistance_progress
+	var saved_scars := GameState.scars.duplicate()
+	var saved_state := GameState.city_state
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+	GameState.scars = []
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director.contact_position())
+	_view = Rect2()
+	var mark := director.current_step()
+	if mark:
+		director._on_contact_completed(mark.index)
+	var step := director.current_step()
+	var guard: EventInstance = director._task_guard
+	var what := "parked at another roadblock" if parked else "already after her"
+	t.check(step != null and guard != null and guard.is_waiting(),
+			"(%s) the task offers a roadblock, guarded by a waiting guard" % what)
+	if step == null or guard == null:
+		_tear_down(player, director, city)
+		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+		return
+	var map := city.map
+	var touched: EventInstance = director._rider
+	if parked:
+		director._settle_the_arrow()
+		# Her view on him from here on, so he cannot be moved to the one she approaches.
+		var held := guard.global_position
+		_view = Rect2(held - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
+		touched = _her_way_to_another_roadblock(director, player, step)
+		t.check(touched != null, "(%s) there is another live roadblock to touch" % what)
+		if touched == null:
+			_tear_down(player, director, city)
+			_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+			return
+		director._move_the_task_guard_to_her_target()
+		t.check(director._task_guard == guard and guard.global_position == held
+				and guard.is_waiting()
+				and guard.global_position.distance_to(touched.body_position())
+				> EventCatalogue.by_id("alley_robbery").pursues_within
+				+ ContactPoint.body_reach(touched),
+				"(%s) the guard is still at the task's own roadblock, out of the band of the one she touches (%.0fpx from it)"
+				% [what, guard.global_position.distance_to(touched.body_position())])
+	var at := _beside(map, touched.body_position(), ContactPoint.body_reach(touched))
+	t.check(at != Vector2.INF, "(%s) there is ground to touch the roadblock from" % what)
+	player.global_position = at
+	var noticed_before := INF
+	if not parked:
+		# He notices her the ordinary way: she comes within his reach along a clear line, here a
+		# step from him on his own tile.
+		guard.player_at = guard.global_position + Vector2(4.0, 0.0)
+		guard._process(0.1)
+		noticed_before = guard.noticed_at()
+		t.check(not guard.is_waiting(), "(%s) he noticed her the ordinary way" % what)
+	director._on_contact_completed(step.index)
+	t.check(not guard.is_finished and not guard.is_waiting(),
+			"(%s) the moment she has done the task, he is after her" % what)
+	if not parked:
+		t.check(guard.noticed_at() == noticed_before,
+				"(%s) a guard already after her is left as he was" % what)
+		_tear_down(player, director, city)
+		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+		return
+	var start := guard.global_position.distance_to(at)
+	var standoff := Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach())
+	var nearest := start
+	var walked := 0.0
+	var lethal := false
+	while walked < 30.0 and not lethal and not guard.is_finished:
+		guard.player_at = at
+		guard._process(0.1)
+		walked += 0.1
+		nearest = minf(nearest, guard.global_position.distance_to(at))
+		lethal = guard.is_lethal_at(at)
+	t.check(lethal or nearest <= standoff + 1.0,
+			"(%s) he comes from %.0fpx away to her (nearest %.0fpx, stand-off %.0fpx, caught %s, %.1fs)"
+			% [what, start, nearest, standoff, lethal, walked])
+	_tear_down(player, director, city)
+	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+
+## Walkable, open, unobstructed ground within `reach` of `body`, nearest the reach's edge first —
+## where she stands to touch it — or `Vector2.INF`.
+static func _beside(map: CityMap, body: Vector2, reach: float) -> Vector2:
+	var centre := map.world_to_tile(body)
+	var best := Vector2.INF
+	var best_distance := -1.0
+	for dy in range(-5, 6):
+		for dx in range(-5, 6):
+			var tile := centre + Vector2i(dx, dy)
+			var spot := map.tile_to_world(tile)
+			var distance := spot.distance_to(body)
+			if distance > reach - 4.0 or distance <= best_distance or not map.is_walkable(tile) \
+					or map.is_closed(tile) or map.is_obstructed(tile):
+				continue
+			best = spot
+			best_distance = distance
+	return best
 
 ## **Day 13's own roadblock is placed under the day's rules, close by.** She reads the mark where it
 ## stands, with the 640x360 view round her answering what is on screen.

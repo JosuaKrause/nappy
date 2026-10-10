@@ -2547,8 +2547,9 @@ func _tick_lingering_rider(delta: float) -> void:
 ## to whichever roadblock she approaches — the one the red arrow points at — however often she
 ## changes target (`_move_the_task_guard_to_her_target()`), so the roadblock she walks up to is the
 ## guarded one whichever she picks, unless he is in her view from the moment she changes target to
-## the moment she arrives; and `_process()`'s own deadline check reads `_elapsed` against
-## `_day_length` — none of them reads `_rider`'s identity.
+## the moment she arrives — and whichever she touches, he comes after her from wherever he stands
+## the moment she has (`_set_the_task_guard_on_her()`); and `_process()`'s own deadline check reads
+## `_elapsed` against `_day_length` — none of them reads `_rider`'s identity.
 ##
 ## Skipped while the nearest look-alike in reach is already the one it rides (`best == _rider`):
 ## a rider with a body is touched from any side of it (`ContactPoint.touches_the_body()`), and one
@@ -2607,7 +2608,8 @@ func _reach_distance(instance: EventInstance) -> float:
 ## it. *(Proposed, not asked for: the player's "offscreen" does not choose between this and moving
 ## him as soon as he alone is off screen.)* So **he waits at the roadblock she approaches unless she
 ## changes target while he is in her view and keeps him in it until she arrives**: then he is still
-## at the one before, and only moving him in her view would put him at hers.
+## at the one before, and only moving him in her view would put him at hers. Wherever he is, he
+## comes after her the moment she has done the task (`_set_the_task_guard_on_her()`).
 ##
 ## **A guard who has noticed her is not moved**, nor one whose chase is over: he is after her, or
 ## gone, and a move would take him off her or bring him back.
@@ -2652,6 +2654,29 @@ func _move_the_task_guard_to_her_target() -> void:
 	Telemetry.note("roll", "the task's guard moves, unseen, to the roadblock she approaches, "
 			+ "%.0fpx from it%s" % [at.distance_to(target.body_position()),
 			"" if in_band else ", past its band"])
+
+## **Day 13's done task sets its guard on her, wherever he stands** *(inbox #651 follow-up, the
+## player, of a guard still at another roadblock when she reaches hers: "as long as he starts
+## pursuing when you hit the task it's fine")*. The moment she has touched the roadblock, a guard who
+## has not yet noticed her notices her now (`EventInstance.notice_her_at()`) and comes after her
+## from where he is: from the band with a clear line, as he would have; from the roadblock before,
+## from the ring past the band, or round a corner, the same. He is already in the world, so nothing
+## appears: off screen he comes on from off screen, his badge up as he closes on her
+## (`DangerEdge`), and in view he is the guard she can already see. The chase keeps every pursuit
+## rule — his notice before any lunge, his stand-off while it runs, a lunge only along a clear line.
+## A guard already after her, or whose chase is over, is left as he is.
+func _set_the_task_guard_on_her() -> void:
+	if not _task_guard or not is_instance_valid(_task_guard) or _task_guard.is_finished \
+			or not _task_guard.is_waiting():
+		return
+	var her := _player_position()
+	if her == Vector2.INF and _contact:
+		her = _contact.global_position
+	if her == Vector2.INF:
+		return
+	_task_guard.notice_her_at(her)
+	Telemetry.note("roll", "the roadblock is done: the task's guard comes after her from %.0fpx away"
+			% _task_guard.global_position.distance_to(her))
 
 ## The live, unfinished event instance `key` names by its instance id, or null.
 static func _live_instance(key: Variant) -> EventInstance:
@@ -2866,8 +2891,11 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
 		_happenings.take_the_park()
 	# Every task but the roadblock and the neighbor sends a pursuer after her from off screen; the
-	# roadblock keeps its guard waiting at the contact instead (`_begin_step()`). Day 9's door sends
-	# none when she walked under its boom, whose own guard is already after her (`_on_door_crossed()`).
+	# roadblock keeps its guard waiting at the contact instead (`_begin_step()`), and done, sets him
+	# on her wherever he stands. Day 9's door sends none when she walked under its boom, whose own
+	# guard is already after her (`_on_door_crossed()`).
+	if step and not step.is_pickup and step.task_event_id == ROADBLOCK_ROW:
+		_set_the_task_guard_on_her()
 	if step and sets_a_trap_on_her(step) and not _walked_under_the_door:
 		_set_the_trap_on_her(step)
 	elif step and sets_a_trap_on_her(step):
