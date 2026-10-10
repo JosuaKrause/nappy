@@ -19,16 +19,15 @@ shows what survives the filter) rather than assumed:
 - **A video committed to the repository**, which the player allowed in olive-toad ("it's fine we
   can commit the video"), referenced from the README in whatever form GitHub renders as a player.
 
-If one plays in place, the README shows that player where the thumbnail is now and keeps one
+If one plays in place, the README shows that player below the trailer link and keeps that
 plain text link to YouTube. If none does, the player's fallback holds: "we need to change the link
 anyway. then we won't need a thumbnail either anymore and can make it a normal link". Either way
 the logo still links to the game (`https://nappy.josuakrause.com/`).
 
 **Read as, open to correction:** the thumbnail goes in both outcomes, since the player called it
 "redundant" beside the logo ("they're almost the same"), though the words tie its removal to the
-plain-link outcome. The README already carries the plain-link outcome: the logo links to the game
-and one text line links the trailer on YouTube. What is left is settling whether a route plays in
-place and, if one does, adding its player.
+plain-link outcome. What is left is settling whether a route plays in place and, if one does, adding
+its player.
 
 **Proposed, not asked for:** the video shown in place is the cut rendered with smooth turns
 ([mossy-hawk](../2026-10-10-mossy-hawk/README.md)), so it is uploaded or committed once.
