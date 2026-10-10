@@ -1,4 +1,4 @@
-# calm-pelican — A hut ends the walk under's guard, and the task scenes show the sent pursuer · 2026-10-10
+# calm-pelican — A hut ends the walk under's guard, the task scenes show the sent pursuer, and day 11 shows two masts · 2026-10-10
 
 ## Day 9's walk under the boom and a hut's hold
 
@@ -12,14 +12,16 @@ that task costs one inspection and no pursuer. The player keeps it (inbox #651 i
 
 Nothing about the behaviour changes. Built in PR #658: `tests/test_resistance.gd`'s
 `_test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody` walks under the named boom, steps
-into a hut, and asserts the guard gives up and neither a second guard nor the robber is sent, in
-both directions; `_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it` ends the guard
+into a hut, runs the hold out, lets her through and runs out any warning, and asserts the guard
+gives up and neither a second guard nor the robber is sent, in both directions (4 failures with the
+director made to set the trap on an inspected crossing of a done task); `_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it` ends the guard
 an earlier door's walk under set and asserts a new `door_guard` at the named door's hut, so it can
 fail (4 failures with `EventManager._set_a_guard_on_her()` made to return on the named crossing).
 *The filer's proposal, open to overturn:* a sentence in `docs/EVENTS.md`'s hold paragraph and in
 `docs/NARRATIVE.md`'s day-9 paragraph says the walk under's guard is one a hut ends, with the
 player's words. The pictures of the trap on the days #570 changed beyond day 8 (day 9 walked under
-and inspected, day 11's mast foot, day 12's swing, day 14's station door) are in
+and inspected, day 11's mast foot, day 12's swing with the robber closing, day 14's station door)
+are in
 [walk-under-2026-10-10](../evidence/walk-under-2026-10-10/).
 
 ## The day-9 and station-door scenes show the sent pursuer
@@ -41,7 +43,10 @@ from tick 420 to 290; the observations sit before the catch, since a catch ends 
 
 From the same re-review (PR #588, plush-moose): no picture showed day 11 with several masts
 answering, since a recipe could not give an authored loudspeaker a mast id. Built in PR #658:
-a recipe's `loudspeaker` event row is accepted, placed on a sidewalk or square tile
-`MastSites._is_eligible()` accepts, with an optional unique `mast_id`; `scene-recipes/task-11-two-masts.json`
+a recipe's `loudspeaker` event row is accepted from day 5 (`Tuning.MAST_FIRST_DAY`), on a
+sidewalk or square tile `MastSites._is_eligible()` accepts that is not closed, held or on the home
+block, with its field clear of the day's doors and clear of earlier placements (`WalkSiting`'s
+further checks, unused calm and route junctions, are not applied), and an optional unique
+`mast_id` that defaults to `EventScheduler.added_mast_id()`, the name the game gives a mast it adds; `scene-recipes/task-11-two-masts.json`
 shows the arrow move from the mast 224px from the mark to the one her walk reaches, asserted on
 either side of the switch, with the stills before and after.
