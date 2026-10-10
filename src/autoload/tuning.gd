@@ -1615,9 +1615,10 @@ const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
 ## and takes none of these, so with the lesson and these two `max_per_day`'s 3 rarely binds.
 const ROUTE_BAG_MARBLES_OF := {"charging_dog": 2}
 
-## How many of the events placed on her route after day 6's mark a man shouting is one of: the
-## route's bag is rigged (`MarbleBag.rig()`) with a bag of this many marbles, one `homeless_yeller`
-## and the rest drawn from the bag she was drawing from. *(olive-koala, statement 2: "after touching
+## How many of the events handed out on her route after day 6's mark a man shouting's marble is one
+## of: the route's bag is rigged (`MarbleBag.rig()`) with a bag of this many marbles, one
+## `homeless_yeller` and the rest drawn from the bag she was drawing from, and he is put on her route
+## once her walk finds him a site (`EventDirector._place_on_her_route()`). *(olive-koala, statement 2: "after touching
 ## the mark a marble bag with 1/3 chance of yeller should be put in so the yeller is guaranteed to
 ## encounter a yeller in the next three events" · inbox #561 in coral-bunny, on the size of a rigged bag: "x
 ## defines how soon we want to get the guaranteed event", and, told how sparse the route's events
@@ -1625,8 +1626,9 @@ const ROUTE_BAG_MARBLES_OF := {"charging_dog": 2}
 ## `AHEAD_INTERVAL`, within a minute of walking.
 const TASK_CONTACT_WITHIN_THE_NEXT := 2
 
-## The same for day 11: once she has read its mark, a second loudspeaker mast is put on her route
-## within this many events, beside the one near the mark the task points at first. *(inbox #561 in coral-bunny:
+## The same for day 11: once she has read its mark, a second loudspeaker mast's marble is one of
+## the next this many events, and the mast is put on her route once her walk finds it a site, beside
+## the one near the mark the task points at first. *(inbox #561 in coral-bunny:
 ## "day 11 is going to be a x=3", then "let's make the other rigged bags smaller".)*
 const MAST_WITHIN_THE_NEXT := 2
 
