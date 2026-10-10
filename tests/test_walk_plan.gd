@@ -232,7 +232,8 @@ func _test_a_smooth_walk_rig_presses_the_plan_tick_by_tick(t) -> void:
 			blended += 1
 	t.check(blended > 6, "and presses between west and north through the turn (%d ticks)" % blended)
 	t.check(read.is_equal_approx(Vector2.UP), "and north once the turn is over")
-	node._process(STEP)
+	# A step clock reading past the first one-second step would advance an abrupt script.
+	node._process(1.5)
 	t.check(node._script_index == 0, "the step clock never advances a smooth script")
 	_release()
 	node.free()

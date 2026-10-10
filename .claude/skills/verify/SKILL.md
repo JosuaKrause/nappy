@@ -302,8 +302,11 @@ somewhere.
 - **`--smooth-walk`** turns a script's corners gradually, and is the one scripted press shorter than
   one: through a turn the press blends from one step's vector to the next, so her heading sweeps
   and her speed dips, and once the turn is over she is exactly where the abrupt script puts her
-  (`WalkPlan`, `src/dev/walk_plan.gd`; `tests/test_walk_plan.gd` holds the end positions against
-  a real `Stroller`). It is pressed from the rig's physics tick, so it needs a script; a scene
+  on open ground (`WalkPlan`, `src/dev/walk_plan.gd`; `tests/test_walk_plan.gd` holds the end
+  positions against a real `Stroller`). A wall, a stair flight or a shove from the crowd moves her
+  differently on the two paths, and under `--walk` the abrupt script switches steps on process
+  frames while the smooth one is pressed on physics ticks, so there the two agree to within a
+  tick's walk; a recipe's `playback.smooth` presses both on ticks and is exact. It is pressed from the rig's physics tick, so it needs a script; a scene
   recipe asks for it with `playback.smooth`. No player's input path reads it.
 - **`--flee [delay]`** turns round and runs when something starts chasing her. A rig that can only
   hold a direction can only ever demonstrate the *wrong* answer to a pursuit; the delay is the axis
