@@ -94,7 +94,7 @@ func _walk_a_day(t, seed_value: int, day: int, row: String) -> String:
 		var home: Array[Vector2i] = [map.world_to_tile(map.doorstep_world_position())]
 		walk.along(player, _path(map, player.global_position, home))
 		outcome = walk.outcome()
-		print("day7_VAN seed %d: %s | %s" % [seed_value, outcome, walk.detail()])
+		print("DAY7_VAN day %d seed %d: %s | %s" % [day, seed_value, outcome, walk.detail()])
 	player.free()
 	resistance.free()
 	city.free()
@@ -110,6 +110,7 @@ class Walk extends RefCounted:
 	var drawn_at := -1.0
 	var sited_at := -1.0
 	var her_at_siting := Vector2.INF
+	var heading_at_siting := Vector2.ZERO
 	var ahead_at_siting := 0.0
 	var nearest_after := INF
 	var seen_at := -1.0
@@ -154,6 +155,7 @@ class Walk extends RefCounted:
 				sited_at = walked
 				sited_phase = phase
 				her_at_siting = player.global_position
+				heading_at_siting = player.velocity.normalized()
 				ahead_at_siting = van.position.distance_to(player.global_position)
 			var off := (van.position - player.global_position).abs()
 			nearest_after = minf(nearest_after, van.position.distance_to(player.global_position))
@@ -174,7 +176,8 @@ class Walk extends RefCounted:
 	func detail() -> String:
 		var where := "-"
 		if van and van.is_placed():
-			where = "sited %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s" \
+			where = "she at %s heading %s, van at %s; " % [her_at_siting, heading_at_siting,
+					van.position] + "sited %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s" \
 					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live]
 		var waits: Dictionary = city.events._siting.waits if city.events._siting else {}
 		return "walked %.0fs, drawn at %.0fs (%s), sited %s | %s | waits %s | seen at %s" % [walked,

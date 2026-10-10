@@ -1,4 +1,4 @@
-# Day 13: the waiting guard at the roadblock she approaches
+# Day 13's guard at the roadblock she approaches, and day 7's route van
 
 **Claim.** On day 13, after she reads the mark, the red arrow points at the live roadblock closest
 to her on foot, and the task's waiting guard has been moved, unseen, into the band round that
@@ -35,11 +35,28 @@ own zoom.
 ./tools/shot.sh /tmp/day13-guard-follows.png 5.4 --recipe docs/evidence/day13-guard-2026-10-10/day13-guard-follows.json --recipe-mode scripted --no-save --invincible --player-view
 ```
 
-**Day 7's second van has no still.** The route van is sited by her walk on the day's routes, which
-a scene recipe does not run (a scene's day has no placement context for her walk), and the route
-rig (`--route`) refuses `--screenshot`. Its runs tried here did not give one either: with
-`--invincible` no `--press snapshot` was written, and of the five runs with and without it (seeds
-4242, 7, 90210 and 1234567) none brought the van into her view before the day ended or she reached
-her target; on seed 1234567 the log shows the van put on her route 2126px ahead of her on the walk
-home. `tests/test_day7_van.gd` holds the van being put on her route and brought into the world by
-her walk, in three cities.
+## Day 7: the route van in her view
+
+**Claim.** Day 7's second van, put on her route by the rigged bag her reading the mark makes, stands
+on the street she is walking, ahead of her and out of her view when it is put there, and comes into
+view as she keeps walking.
+
+**Where it comes from.** `tests/probes/calm_pelican_day7_van_met.gd` walks 12 cities the way
+`--route mark,task,calm,home` does, ticking what the event manager ticks for her walk. On seed 2024
+it put the van at world (2736, 880), a kerb on the street west of her, 490px from her, while she
+was walking home west; she had it in view 4s later. That run cannot be photographed: it is a
+headless rig, and the route rig cannot take a still (`--route` refuses `--screenshot`, and a
+recording of a whole route day runs far slower than the day).
+
+**The still** (`day7-route-van.png`, 3.2s in, `--invincible`) is a scene recreating that moment:
+`day7-route-van.json`, a full-city scene of city 2024 on day 7. It places the van exactly where the
+probe's walk put it and starts her at tile (99, 28), 448px east of it on the street she was walking.
+It asserts that the van is clear of both views at the start and in her view by 3.2s. She walks west
+and the van is in front of her at the kerb. The scene does not run the rigged bag: the van is
+authored where the bag's siting put it, so the still shows where it stands and what she sees, not
+the draw.
+
+```sh
+./tools/scene-recipes.sh --recipe docs/evidence/day13-guard-2026-10-10/day7-route-van.json --output /tmp/day7-van-check
+./tools/shot.sh /tmp/day7-route-van.png 3.2 --recipe docs/evidence/day13-guard-2026-10-10/day7-route-van.json --recipe-mode scripted --no-save --invincible --player-view
+```
