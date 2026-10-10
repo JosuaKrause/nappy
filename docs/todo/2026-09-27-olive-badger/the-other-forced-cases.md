@@ -28,8 +28,9 @@ unrigged" (inbox #650 in [mossy-beaver](../../playtests/2026-10-10-mossy-beaver.
 So **the roadblock stays unrigged**, and the record's choice stands; its placement close by and the
 arrow guiding to it are filed with day 13's arrow, calm-pelican's
 [the-arrow-and-the-day-13-guard](../2026-10-10-calm-pelican/the-arrow-and-the-day-13-guard.md).
-**The neighbor gets none**: day 10's neighbor is a scripted walker sent home along his own way from
-the mark, which is the route the player means, so a second, route-drawn one adds nothing.
+**The neighbor gets none**, read as the player's "I guess that leaves only the van?" and open to
+correction: day 10's neighbor is a scripted walker sent home along his own way from the mark, which
+the filer takes to be the route the player means, so a second, route-drawn one adds nothing.
 
 *Proposed, not asked for:* **the size, x=2** (the orchestrator's judgement, which the player's "use
 your own judgement" asked for, inside their "2 or 3"). It is one `Tuning` constant beside
