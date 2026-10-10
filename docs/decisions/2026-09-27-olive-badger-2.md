@@ -31,11 +31,17 @@ ahead on a route she then left). So `ahead_of()` hands a wall by its fit alone t
 `WalkSiting.ahead_on_her_street()`, which puts it on the street she is walking, ahead of her and
 within five tiles of her line, all of it just past the edge of her view and inside the streaming
 radius, nearest first, under the same placement rules; it is in the world at once and never moves.
+Out of view means its whole drawing (it reaches 56.5px up from its feet) outside the 640x360 view
+grown by the camera's lead and a tile (`WalkSiting.could_be_in_her_view()`): measured against her
+position alone, 77 of 357 sites a route offers would have been drawn in view, and 2 of 10 placed
+vans were. Its tile is on none of the day's routes and cuts none of them, and her way home stays
+open; when her own line is off the day's routes it may stand on the line she walks, as it did on 4
+of 10 placed walks (*open to overturn*: the far side of her street instead).
 In view on 8 of 12 walks, 1s to 4s after it is placed; of the four misses, two drew the marble
 seconds before home, where nothing is placed within 400px, and two turned off the street first.
 *Open to overturn:* "on her route" read as the street she is walking, the nearest spot first, and
-placed inside the streaming radius so it exists at once. The marble comes 13s to 79s of walking
-after the mark, usually on the way home: the bag's own pacing, unchanged.
+placed inside the streaming radius so it exists at once. The marble comes 13s to 79s into her walk,
+usually on the way home: the bag's own pacing, unchanged.
 
 `tests/test_day7_van.gd` holds over 3 cities that the van's marble is among the next 2 handed out
 after the mark, that one van is placed ahead of her on her street out of view and reachable on
@@ -46,5 +52,5 @@ on which the bag her reading the mark rigs sends the scene's cat before the van.
 van coming into view is a scene recreating one probe walk with the van authored where the siting
 put it, not a played day: [day13-guard-2026-10-10](../evidence/day13-guard-2026-10-10/README.md).
 
-The same probe found day 6's second man shouting, placed by the unchanged route-band rule, in her
-view on only 3 of the same 12 walks.
+The same probe, each walk starting with no alley remembered as read, found day 6's second man
+shouting, placed by the unchanged route-band rule, in her view on only 1 of the same 12 walks.

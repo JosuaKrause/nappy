@@ -13,16 +13,28 @@ roadblock the player approaches"; and (inbox #651 in
 
 **The guard follows her target.** Built in PR #659: on each of the arrow's choices (twice a
 second), when the arrow points at a different roadblock from the one the guard stands over,
-`ResistanceDirector._move_the_task_guard_to_her_target()` re-places him in the band round that
-roadblock, 136px to 250px from its body and outside his 140px trigger range of her, on a random
-stream of its own so nothing else in the day shifts, however often she changes target. The arrow
+`ResistanceDirector._move_the_task_guard_to_her_target()` re-places him (`_roadblock_guard_spot()`, which
+places the task's own guard too) on a tile in the band round that roadblock, 136px to 250px from
+its body, outside his 140px trigger range of her and with a clear line to the roadblock's body
+(the line his noticing uses since calm-pelican-12), alleys first, on a random stream of its own so
+nothing else in the day shifts, however often she changes target. When the whole band is in her
+view he goes to the ring just past it, out to 448px (`TASK_GUARD_FARTHEST`), and into the band once
+a spot in it is out of view; a guard already in the next roadblock's band with a clear line to it
+stays. The move is tried on the arrow's half-second clock and on the frame the arrow changes. The arrow
 keeps plush-moose's closest-by-walking choice among every live roadblock; "the roadblock she
 approaches" is the arrow's pick. *The filer's proposal, open to the player's alternative:* he
 moves only while both where he stands and where he goes are out of her view, and otherwise waits
 for the next choice, so he never pops in or out on screen; the alternative is moving him as soon as
 he alone is off screen. *Chosen where the design was silent, open to overturn:* a guard who has
-noticed her, or whose chase is over, is not moved. `tests/test_day13_guard.gd` holds that he ends
-at the roadblock she approaches and never moves while either end is in view; removing either view
+noticed her, or whose chase is over, is not moved. Walking from the mark to each of the four nearest
+roadblocks in 12 cities with the camera leading her (`tests/probes/calm_pelican_day13_guard_walk.gd`),
+he was in the band with a clear line at 45 of 45 arrivals, where the first build had 34 (9 over
+the roadblock with no line, 2 at another roadblock 417px away). **What is left, and the player's to
+judge:** he never moves while she can see him, so if he stays in view from the moment she turns
+toward another roadblock until she reaches it, he is still at the old one; none of the probe's
+walks did that, and only moving him in her view would close it. `tests/test_day13_guard.gd` holds
+that he ends at the roadblock she approaches with a clear line to it, takes the ring and then the
+band, and never moves while either end is in view; removing the clear-line rule or either view
 check fails it.
 
 **The day's own roadblock is placed by the day's rules, close by.** The player: "yeah let's not
@@ -37,12 +49,17 @@ clearance, junctions and sidewalks, and never cutting her off from home or a cal
 block further out is offered, and the old live spawn on the circle is the last fallback; the
 circle alone found a site in only 6 of 12 cities. The task's roadblock keeps the plain catalogue
 row, so its own soldiers do not hunt her at high heat. The one ground scan runs at dawn on day 13,
-so reading the mark costs about 36ms on average, 82ms at worst.
+so reading the mark costs about 43ms on average, 155ms at worst in a debug build on a shared
+machine, where it was 5ms.
 
-Measured by `tests/probes/calm_pelican_day13_roadblock.gd` over 12 seeds, before and after: placed
-under the day's rules in 0 and then 11 of 12; its distance from the mark 577/588/601px and then
-577/598/862px (min, median, max); the arrow on the task's own roadblock from where she read the
-mark in 9 of 12 both times, and at points on her way to it in 25 of 31 and then 18 of 21. A city
+Measured by `tests/probes/calm_pelican_day13_roadblock.gd` over 12 seeds, before and after, each
+build starting with no alley remembered as read: placed under the day's rules in 0 and then 10 of
+12 (seeds 99 and 314159 fall back to the edge spawn); its distance from the mark 577/588/601px and
+then 584/598/859px (min, median, max); the arrow on the task's own roadblock from where she read
+the mark in 10 and then 11 of 12, and at points on her way to it in 26 of 31 and then 27 of 29.
+`tests/test_day13_guard.gd` holds over 4 cities that it joins the day's plan, stands between the
+576px circle and the widest ring, out of her view, blocks a walker, and leaves her way home and to
+a calm area open. A city
 has 1 to 20 live roadblocks. The still of the guard moved beside the roadblock she approaches is in
 [day13-guard-2026-10-10](../evidence/day13-guard-2026-10-10/README.md).
 
