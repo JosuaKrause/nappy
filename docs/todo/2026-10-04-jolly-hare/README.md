@@ -8,7 +8,9 @@ priority: now
 > the fire truck has no collision at all -- I can walk through it without it being lethal
 
 Asked what touching it should do, the player chose "Lethal driving, solid parked (Recommended)":
-while it drives it is lethal like a car; once parked at the fire it is a solid body she walks round
+while it drives it is lethal like a car (which
+[grassy-alpaca](../2026-10-03-grassy-alpaca/README.md) makes lethal only in front of it while it
+drives, see the item); once parked at the fire it is a solid body she walks round
 but cannot be hurt by.
 
 **What exists.** `EventCatalogue._fire_truck()` is a `SCRIPTED` row created once the fire is seen

@@ -1,5 +1,5 @@
-**Day 7's van, day 10's neighbor and day 13's roadblock each get a second instance, drawn on her
-route from a rigged bag of 2 or 3** — all three under the filer's reading of the player's answer,
+**Open, for the player before it is built: which of day 7's van, day 10's neighbor and day 13's
+roadblock get a second instance, drawn on her route from a rigged bag of 2 or 3** — all three under the filer's reading of the player's answer,
 the van alone under the other (see **Proposed, not asked for** below). Each is placed today by the resistance director at the moment
 she reads the mark rather than drawn on her route: day 7's van and day 13's roadblock spawn live at
 the 576px circle, and day 10's neighbor is a scripted walker sent home. That one stays as it is;

@@ -29,4 +29,5 @@ per-pointer role ownership stay. Its phone review,
 the PR that builds this rewrites or replaces it.
 
 The items: [title-chooses-the-side.md](title-chooses-the-side.md),
-[joystick-zone-and-dead-zone.md](joystick-zone-and-dead-zone.md).
+[joystick-zone-and-dead-zone.md](joystick-zone-and-dead-zone.md),
+[the-re-review-findings-in-these-files.md](the-re-review-findings-in-these-files.md).

@@ -1,15 +1,13 @@
-priority: now
+priority: later
 
-## M204 — A trailer, rendered from the game by a script · asked for 2026-09-25
+## M204 — `tools/shot.sh --start-escape` with `--walk` or `--after` · filed 2026-09-25
 
-> "the trailer will be a set of paths in pre determined seeds with fixed events so we can
-> reproduce it easily"
+The trailer this entry was filed for ("the trailer will be a set of paths in pre determined seeds
+with fixed events so we can reproduce it easily", [PLAYTEST-139](../../playtests/PLAYTEST-139.md))
+is built and recorded in [M204, the trailer from saved scenes](../../decisions/2026-09-25-M204.md).
+What is left is one investigation the trailer work turned up in the ordinary screenshot command,
+not in the trailer, which records its scenes through scene recipes:
+[standalone-escape-screenshot.md](standalone-escape-screenshot.md).
 
-[PLAYTEST-139](../../playtests/PLAYTEST-139.md) holds the whole design, statements 1–10.
-
-The [standalone screenshot investigation](standalone-escape-screenshot.md) concerns
-the ordinary screenshot command's escape flags and stays deferred. The trailer's design,
-camera correction and presentation choices are recorded in
-[M204, the trailer from saved scenes](../../decisions/2026-09-25-M204.md).
-[Mossy-lemur](../../playtests/2026-10-08-mossy-lemur.md) defines the approved A-only cut,
-its natural musical ending and the final appearance fade. No further movie review is required.
+The band `later` is the filer's, set when the trailer itself left the queue, since the item is
+deferred and nothing the player asked for waits on it.
