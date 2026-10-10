@@ -488,7 +488,9 @@ func _event(t, def: EventDef) -> EventInstance:
 ## Everything `GameState.start_run()` and the boot's `begin_day()` write: the save's own fields
 ## through `save_snapshot()` (the dawn photograph included), and beside them the ones the save
 ## file keeps out of that snapshot — `escape_section`, the posters, the fenced park and the alley
-## tiles — so the next suite in the process finds the run it left.
+## tiles — so the next suite in the process finds the run it left. A field the save snapshot
+## gains is covered by the closing equality check; one written outside it has to join the
+## hand-listed set here, which that check cannot see.
 func _save_game_state() -> Dictionary:
 	return {
 		"snapshot": GameState.save_snapshot(),

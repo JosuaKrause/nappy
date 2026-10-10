@@ -11,7 +11,8 @@ out for the next suite in the same process.
 photograph, and carry beside it the fields the snapshot leaves out: `escape_section`, `posters`,
 `fenced_park`, `fenced_park_act` and `completed_resistance_alley_tiles`. The real-main test ends by
 checking that a fresh save equals the one taken before it, comparing whole dictionaries so a field
-added to the snapshot later is covered too (the agent's addition, open to overturn). Cut back to
+added to the snapshot later is covered too, while one written outside the snapshot has to join the
+hand-listed set (the check is the agent's addition, open to overturn). Cut back to
 restoring day and nerves only, that check fails; with the fix, the frame-record suite and the
 finale, invincible, orientation and day-loop suites pass together. Amber-quail's sentence is true
 again.
