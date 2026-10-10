@@ -62,7 +62,10 @@ paving too, which is what keeps the crossing street from painting a zebra over a
 pavement's width later. That is where the bollards stand: a line of posts across the carriageway
 at the paving's edge, so the street reads as closed on purpose rather than as the road running out.
 The pavements either side of the posts run straight past them onto the precinct's own paving — a
-pram walks through, a car does not. **Nothing drives on the span itself, on either axis.** A
+pram walks through, a car does not. **Each post is a body** (a circle of the post's shadow radius,
+4.8px, so the body is the drawn ground contact), and the posts stand `City.BOLLARD_SPACING` (40px)
+apart: the 30.4px between two posts clears her 28px body, so the gap between them is open as the
+pavements are, and a post stops her only if she walks into it. Two posts stand on the 64px band. **Nothing drives on the span itself, on either axis.** A
 street crossing it internally meets paving rather than a carriageway and gets no zebra — the box is
 brick from edge to edge — so what would be a crossroads elsewhere is a T at a precinct's edge, the
 precinct's own pavement continuing past it as the third arm.
