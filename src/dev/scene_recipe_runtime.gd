@@ -267,6 +267,8 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 		errors.append("playback.walk is not a valid timed movement script")
 	if not playback.get("smooth", false) is bool:
 		errors.append("playback.smooth must be boolean")
+	if not playback.get("settled_camera", false) is bool:
+		errors.append("playback.settled_camera must be boolean")
 	for key in ["caption", "title"]:
 		if not playback.get(key, "") is String:
 			errors.append("playback.%s must be text" % key)
