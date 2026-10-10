@@ -21,7 +21,13 @@ view's flank to flank, along the car's heading and turning with it. The same sha
 (it was a 19px disc), and the picture is anchored as a crowd car's is, over the body.
 `EventInstance._drive()` refuses any step or turn that would bring the body into her or the pram,
 so the car stands for her rather than pushing her, and drives on only once she is out of its lane
-or beyond its warning distance. *Open to overturn:* the crowd's walkers and cars still pass through
+or beyond its warning distance. **It never turns into her**: a turn on its route that would newly
+put her in its path within its warning's reach (the strike lead and the 1.6s horn of travel) is
+refused, and it stands facing away until she leaves its lane; the review of PR #660 found the
+raid's pacing car at her door turning 180° in one frame and striking her from behind with 0.02s to
+1.37s of warning. **A car that leaves turns away from her first**, and is finished only beyond
+420px from her, so it never vanishes in her view (the investigating car had stood nose to her and
+vanished beside her when its chase ended). *Open to overturn:* the crowd's walkers and cars still pass through
 it, as they pass through every event body.
 
 **It is lethal only in front of it while it drives.** The strike starts past the nose, as wide as
@@ -36,9 +42,12 @@ carriageway, which `EventDef.validate()` checks for the row; the doubled red car
 car whenever staying put would end the day; there is still no screen-edge badge, the car being
 slower than a walk. `hard_fail` stays false and `obstructs_radius` 0, so its route role, every
 planner and `docs/COSTS.md` are unchanged. A loss to it reads "The patrol car never slowed down.
-You were in the road." *Open to overturn:* the strike needs her on the carriageway; a car leaving
-at its route's end never strikes; it does not give way at a zebra, its contract being the warning,
-as the main road's traffic.
+You were in the road." **It gives way where the crowd's cars do** (`_room_to_its_line()`): off the
+main road it stops 34px short of the paint of a zebra she waits at, and at a signalled junction
+whose arm is not green it stops 34px short of the junction, carrying on once its nose is past the
+line; a car that will stop short of her neither warns her nor shows the caret, so the zebra stays
+"the safe way over" (`docs/MECHANICS.md`). *Open to overturn:* the strike needs her on the
+carriageway; a car leaving at its route's end never strikes.
 
 **The investigating car does not strike.** Built: it comes up to her and stops against her, and
 strikes only while still patrolling its route. Asked whether it should be deadly in front too, the
@@ -48,14 +57,20 @@ policeman should emerge and pursue her". That is sandy-ferret's to build, with i
 
 `tests/test_police_car.gd` walks her real rig side-on into a standing car (through it, 160px, with
 the body off; stopped on its flank with it on), from behind and beside a driving car (solid, never
-lethal), in front (lethal, with the warning first), and sweeps 324 stands round a turning car
-without its body ever coming into her. `tests/test_shapes.gd`'s guard that "every emitting segment
+lethal), in front (lethal, with the warning first), sweeps 324 stands round a turning car without
+its body ever coming into her, holds the raid's pacing car standing rather than turning into her
+from 41px to 141px behind it, a leaving car never nearer than where it set off, and the car giving
+way at a real zebra and a red side arm; the reversal, zebra and red-light tests fail with those
+rules off. The doubled caret is drawn as high over the car's picture as over any other row, and the
+run log names the patrol when its warning raises the mark. `tests/test_shapes.gd`'s guard that "every emitting segment
 row … is stationary" now asks that a moving emitting segment's body lie inside its own core (21px
 against 44px). The stills, her against the flank and the warning in front, are in
 [police-car-2026-10-10](../evidence/police-car-2026-10-10/README.md).
 
 **Two skills were wrong and are fixed in the same PR.** The events skill said the patrol "does not
 telegraph its coming at all (slower than a walk, never ends the day)" and called "anything mobile"
-an unconditional exemption; it now names the car's warning and adds the two traps above (the
-strike at the touch, and a car that stood for her pulling away into her). The crowd-traffic skill's
-traffic contract now says the patrol keeps it in place of a telegraph.
+an unconditional exemption; it now names the car's warning and lists four traps: the strike at the
+touch, a car that stood for her pulling away into her, a car turning into her, and a car vanishing
+beside her. The crowd-traffic skill's
+traffic contract now says the patrol keeps it in place of a telegraph, and gives way as the crowd's
+cars do.
