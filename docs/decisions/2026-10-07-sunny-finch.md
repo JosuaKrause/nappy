@@ -38,14 +38,17 @@ only while the car drives its route and she is on the carriageway; nothing strik
 beside it, while it stands, while it leaves, or while it comes over to investigate. **Its warning is
 the crowd car's contract**: while it drives at her in its lane the exclamation mark goes up over her
 1.6s of its travel before the strike (`Tuning.CAR_HORN_TIME`), more than the 1.39s to walk off the
-carriageway, which `EventDef.validate()` checks for the row; the doubled red caret shows over the
+carriageway, which `Tuning.validate_traffic()` holds on
+boot; the doubled red caret shows over the
 car whenever staying put would end the day; there is still no screen-edge badge, the car being
 slower than a walk. `hard_fail` stays false and `obstructs_radius` 0, so its route role, every
 planner and `docs/COSTS.md` are unchanged. A loss to it reads "The patrol car never slowed down.
 You were in the road." **It gives way where the crowd's cars do** (`_room_to_its_line()`): off the
 main road it stops 34px short of the paint of a zebra she waits at, and at a signalled junction
 whose arm is not green it stops 34px short of the junction, carrying on once its nose is past the
-line; a car that will stop short of her neither warns her nor shows the caret, so the zebra stays
+line, and holds at a junction box's entry line when the zebra she waits at lies beyond the box, so
+it never stands in a box it cannot leave; a car that will stop short of her neither warns her nor
+shows the caret, so the zebra stays
 "the safe way over" (`docs/MECHANICS.md`). *Open to overturn:* the strike needs her on the
 carriageway; a car leaving at its route's end never strikes.
 
