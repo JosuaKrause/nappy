@@ -1409,10 +1409,11 @@ func _put_down_on_her_route(plan: EventScheduler.Planned, body: Node2D) -> void:
 			_heading_name((body as CharacterBody2D).velocity.normalized()),
 			TelemetryLog.tile(_map.world_to_tile(body.global_position))])
 
-## **Rigs her route so `ids` are among the next `size` events placed on it** — see
-## `EventDirector.rig_her_route()` and `MarbleBag.rig()`. A place among them is sited ahead of her
-## by the day's placement context, which is built here if the day had none, and its first scans are
-## done now rather than on the frame it is sited. Answers the rigged bag's marbles.
+## **Rigs her route so the marbles of `ids` are among the next `size` events handed out on it** —
+## see `EventDirector.rig_her_route()` and `MarbleBag.rig()`. A place among them is handed to her walk
+## when its marble comes up and sited ahead of her once her walk finds it a site, by the day's
+## placement context, which is built here if the day had none, and its first scans are done now
+## rather than on the frame it is sited. Answers the rigged bag's marbles.
 func rig_her_route(ids: Array[String], size: int) -> Array:
 	# A rig that never started a day has no route to rig, and building it a placement context for
 	# nothing would grow a route tree to no end.

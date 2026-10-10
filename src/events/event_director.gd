@@ -273,7 +273,7 @@ const LESSON_DELAY := 6.0
 
 ## Moves `count` of the owed list's marbles to its head, adding marbles where it holds fewer, so the
 ## next `count` events handed out are the route bag's next `count` draws — what a rig of that size
-## needs to be a guarantee about what is placed on her route rather than about the bag alone.
+## needs to be a guarantee about what is handed out on her route rather than about the bag alone.
 func _bag_the_next(count: int) -> void:
 	var taken := 0
 	var rest: Array[EventDef] = []
@@ -398,17 +398,20 @@ func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: 
 func route_bag() -> MarbleBag:
 	return _route
 
-## **Rigs her route so `ids` are among the next `size` events placed on it**: a bag of `size`
-## marbles, `ids` and the rest drawn from the bag she was drawing from, is drawn from first, and
-## that bag carries on with what it has left once the rigged one is empty (`MarbleBag.rig()`). A
-## row that is not one the director sites — the man shouting, a mast, a place — is handed to her
-## walk to site ahead of her when its marble comes up (`_place_on_her_route()`), and waits there for
-## a legal site without holding up the events behind it. Answers the rigged bag's marbles, or
-## nothing under `--force`, whose queue is the forced row's alone, and on a rig with no day.
+## **Rigs her route so the marbles of `ids` are among the next `size` events handed out on it**:
+## a bag of `size` marbles, `ids` and the rest drawn from the bag she was drawing from, is drawn from
+## first, and that bag carries on with what it has left once the rigged one is empty
+## (`MarbleBag.rig()`). A row that is not one the director sites — the man shouting, a mast, a
+## place — is handed to her walk to site ahead of her when its marble comes up
+## (`_place_on_her_route()`), and waits there for a legal site without holding up the events behind
+## it. Answers the rigged bag's marbles, or nothing under `--force`, whose queue is the forced row's
+## alone, and on a rig with no day.
 ##
 ## **The next `size` events she is owed are the rigged bag's**, so the guarantee is about what is
-## placed on her route and not about the bag alone: they are moved to the head of the owed list,
-## ahead of a sprinkled dog not yet met, and the list is topped up when the day has fewer left.
+## handed out on her route and not about the bag alone: they are moved to the head of the owed list,
+## ahead of a sprinkled dog not yet met, and the list is topped up when the day has fewer left. For a
+## moment that is what she meets; for a place it is its marble, and the place is met once her walk
+## finds it a site, which can be after an event behind it, or never.
 ## `siting` is the day's placement context, for a place; `heat` the shape its row is put in.
 func rig_her_route(ids: Array[String], size: int, heat: int = 0,
 		siting: EventScheduler.WalkSiting = null) -> Array:
