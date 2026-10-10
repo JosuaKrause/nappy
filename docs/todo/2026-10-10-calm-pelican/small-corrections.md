@@ -22,3 +22,6 @@
   agent is Opus, and the player approved the drawing as it is).
 - **#547:** the `BABY_CUE_LIFT` comment in `src/player/stroller.gd` types "30px", which
   `PRAM_ART_HEIGHT` now names.
+- **Found building #642:** `docs/TELEMETRY.md`'s "Raw frame traces" section does not say that a
+  trace taken while the game's window is covered records no frames at all (its summary shows 0
+  intervals).
