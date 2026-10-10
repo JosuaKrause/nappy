@@ -117,7 +117,9 @@ both out and in through black, including the final shot's fade-out. The audition
 player between the choices and can jump to the military turn. The cut uses the selected westward birds scene,
 `trailer-birds.json`, and the park-only circular walk in `trailer-park-circle.json`.
 Each recipe owns its setup and scripted action;
-the shot list owns the cut timing and editorial treatment. Only normal scenes enter the trailer,
+the shot list owns the cut timing and editorial treatment. Every recipe in the cut sets
+`playback.smooth`, so her scripted turns sweep gradually rather than snapping and still end where
+the abrupt walk does. Only normal scenes enter the trailer,
 with their authored extent and validation scope preserved in the resolved manifest. The editor
 reads the native viewport size from `project.godot`, resolves the named font through fontconfig
 (a font that resolves to a different family stops the render with an error, never a substitute;
