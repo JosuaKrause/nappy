@@ -2,11 +2,16 @@ class_name ContactPoint
 extends Node2D
 ## A place in the city where touching completes a step of the resistance subquest.
 ##
-## Deliberately quiet: no quest marker, no arrow. A pickup is a chalk mark on the ground,
+## Deliberately quiet: no quest marker of its own. A pickup is a chalk mark on the ground,
 ## found by walking past it, which is the only way anything in this game is found. A
-## perform's contact rides on the `EventInstance` its task is built around and draws
-## nothing of its own — it must look exactly like the ordinary version of the same row, or
-## "several candidates to test before finding the correct one" is not actually true.
+## perform's contact draws nothing of its own, whether it rides on the `EventInstance` its task
+## is built around or stands on a bare point — day 9's district door, day 11's mast foot, day
+## 12's swing, the last night's station door. The destination is the item itself, which the
+## world already draws and the red arrow ends on (`ResistanceDirector.red_arrow_target()`), so a
+## chalk mark there would name the wrong thing *(snowy-kestrel, the player: "red arrow tasks show
+## a chalk mark at their destination")*. And a rider must look exactly like the ordinary version
+## of the same row, or "several candidates to test before finding the correct one" is not
+## actually true.
 
 signal completed(step: int)
 
@@ -175,11 +180,17 @@ func _complete() -> void:
 func _draw() -> void:
 	if FrameRecord.on:
 		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
-	# A perform's contact is invisible — it has to look exactly like the ordinary row it
-	# rides on, or approaching it would already answer "is this the one".
-	if _rider:
+	if not draws_a_mark():
 		return
 	_draw_chalk()
+
+## Whether this contact draws a chalk picture at all — `_draw()`'s one question, pure, so a headless
+## test (which never calls `_draw()`) can ask it. Only a pickup is a chalk mark. A perform's contact
+## is invisible, untouched or done: a rider has to look exactly like the ordinary row it rides on,
+## or approaching it would already answer "is this the one", and a bare point's destination is the
+## item the world draws there.
+func draws_a_mark() -> bool:
+	return step != null and step.is_pickup
 
 ## The chalk mark itself — `chalk_mark.svg` untouched, `chalk_mark_touched.svg` once `is_done`,
 ## drawn from the `decoration` atlas group exactly as prepared, centre-anchored on this node's
