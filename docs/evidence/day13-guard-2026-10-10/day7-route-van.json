@@ -11,8 +11,8 @@
   "anchors": {
     "start": {
       "tile": [
-        99,
-        28
+        100,
+        24
       ]
     }
   },
@@ -36,9 +36,9 @@
     ]
   },
   "playback": {
-    "walk": "3.2w",
-    "duration": 4.0,
-    "capture_at": 3.2,
+    "walk": "0.6w1.4s2.6w",
+    "duration": 5.0,
+    "capture_at": 4.6,
     "observations": [
       {
         "tick": 1,
@@ -50,7 +50,7 @@
         ]
       },
       {
-        "tick": 96,
+        "tick": 138,
         "subject": "the_route_van",
         "condition": "visible"
       }
