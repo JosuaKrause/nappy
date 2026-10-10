@@ -54,16 +54,17 @@ func _test_every_shape_of_every_row_is_fair(t) -> void:
 			t.check(hot.validate(), "'%s' is fair at heat %d" % [def.id, level])
 			t.check(hot.id == def.id, "heat does not change what '%s' is" % def.id)
 
-## The non-lethal rung stays non-lethal, and it is checked over the response rather than over the
-## one row that carries it: the whole instruction this came from is that the ladder has two rungs
-## and only the top one kills, so a second `PRESSES` row added later inherits the promise.
+## The rung that does not hunt never gains `hard_fail`, and it is checked over the response rather
+## than over the one row that carries it: the ladder has two rungs and only the top one hunts, so a
+## second `PRESSES` row added later inherits the promise. (The patrol that carries it strikes as a
+## car does at every heat, `EventDef.drives`, which is not a rung — `tests/test_police_car.gd`.)
 func _test_the_ladder_has_a_top(t) -> void:
 	for def in EventCatalogue.all():
 		if def.heat_response != EventDef.HeatResponse.PRESSES:
 			continue
 		for level in EventCatalogue.heat_levels():
 			t.check(not EventCatalogue.heated(def, level).hard_fail,
-					"'%s' presses without ever becoming lethal (heat %d)" % [def.id, level])
+					"'%s' presses without ever becoming hard_fail (heat %d)" % [def.id, level])
 
 ## The lethal rung: below its own threshold a `HUNTS` row is untouched, and at or above it, it
 ## pursues, keeps `hard_fail`, and its derived numbers satisfy the pursuit contract measured from
@@ -243,7 +244,7 @@ func _cold_patrol() -> EventDef:
 func _test_the_patrol_presses_more_and_louder(t) -> void:
 	var cold := _cold_patrol()
 	t.check(cold.heat_response == EventDef.HeatResponse.PRESSES,
-			"the patrol answers to the resistance, the non-lethal way")
+			"the patrol answers to the resistance, the way that never hunts")
 	var last_population := cold.max_per_day
 	var last_intensity := cold.intensity
 	for level in range(1, EventCatalogue.heat_levels()):

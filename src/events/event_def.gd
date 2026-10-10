@@ -455,7 +455,7 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## placement, rather than exempted from them**: nothing announces its coming before she can see it,
 ## and it is met as it comes. False on `loose_dog` and `cat_dash` (the player's own), `alley_mouse`
 ## (across its alley, not at her), `pigeon_flock` (goes up where she walks in) and `police_patrol`
-## (slower than a walk, never ends the day). **The telegraph contract still holds its in-world
+## (slower than a walk; it ends the day only as a car does, warned as a car is — see `drives`). **The telegraph contract still holds its in-world
 ## telegraph** — the cat's crouch, the mouse's and the flock's wait, the patrol's approach — as it
 ## holds a standing row's (a lorry backing in, a firefight, a raid). Only the loose dog, met with its
 ## telegraph already spent, has none for the contract to hold (`validate()`).
@@ -656,7 +656,8 @@ enum HeatResponse {
 	## Answers to nothing. Everything in act I, and the default: a cat does not care who you know.
 	NONE,
 	## **More of them, and more expensive to stand near, and past a threshold it comes over.**
-	## The non-lethal rung: it never gains `hard_fail`, whatever the heat.
+	## The rung that does not hunt: it never gains `hard_fail`, whatever the heat. (The patrol that
+	## carries it strikes as a car does at every heat — `drives` — which is not a rung.)
 	PRESSES,
 	## **It stops being a place and starts being a hunter.** The lethal rung.
 	HUNTS,

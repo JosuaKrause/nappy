@@ -544,6 +544,13 @@ A car is not an event: it has no telegraph, it is not in the catalogue, and
 The horn also raises the **exclamation mark over the player**, the load-bearing cue of the visual
 vocabulary. See docs/EVENTS.md.
 
+**A patrol car keeps the same contract.** `police_patrol` is a car (docs/EVENTS.md, "Solid things
+are solid"): a solid body she walks round in every state, which ends the day only in front of its
+nose while it drives its route and she stands on the carriageway. Its warning is the same
+`Tuning.CAR_HORN_TIME` of its own travel before the strike, said with the same exclamation mark
+over her head, and the doubled red caret is over the car while staying put in its lane would end
+the day. With her on the sidewalk and her pram over the kerb, it stops for her instead.
+
 **On the main road the light is the contract, and with the power out the horn is.** The spine's
 traffic does not give way at a zebra, so what stands between her and a hard fail there is the length
 of the side street's green (`Tuning.validate_signals()`). On the last night, after the blackout, the
@@ -935,8 +942,9 @@ object's own `GroundShape` and a kernel — a disc while it stands still, an ell
 moves — so `inner_radius`/`outer_radius` mean distance *from that shape*, not from a fixed centre.
 A point body's field is exactly the circle above; a segment's (a café frontage, a barricade) is a
 capsule about its own spine, `GroundShape.distance_to_spine()`. A moving emitter is a point either
-way — nobody builds the general capsule-and-ellipse sum, because every emitting segment row is
-stationary — and its field is `GroundShape.eccentric_distance()`: a conic with the emitter at one
+way — nobody builds the general capsule-and-ellipse sum, because the one emitting segment that
+moves, the patrol car, has its whole body inside its own field's core — and its field is
+`GroundShape.eccentric_distance()`: a conic with the emitter at one
 focus rather than at the centre, eccentricity from speed (`Tuning.field_eccentricity()`). **The
 resting disc's own width is what the ellipse keeps**: it holds exactly `outer_radius` abeam of a
 moving thing whatever its speed, reaches `outer_radius · Tuning.field_scale(e)` ahead of it — more

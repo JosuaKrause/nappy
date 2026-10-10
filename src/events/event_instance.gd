@@ -1676,9 +1676,10 @@ func _become_solid_once_it_starts() -> void:
 
 ## True while `_drive()` is running this frame's ordinary `_process()` body inside itself.
 var _driving := false
-## Whether this frame's movement was taken back because it would have put the body into her: the
-## car is standing for her. Cleared every frame `_drive()` runs.
-var _held_by_her := false
+## Whether the car is standing for her: its last frame's movement was taken back because it would
+## have put the body into her, or, on its route, she is still in its lane within its warning — see
+## `_drive()`. A car standing for her is not driving, so it neither warns nor strikes.
+var _standing_for_her := false
 
 ## How near the car's body may be moved to her and her pram, in px. Above zero so the car stops a
 ## hair short of the contact her own collision already rests at rather than on it.
@@ -1699,11 +1700,17 @@ const DRIVEN_CLEARANCE := 0.5
 ## `DRIVEN_CLEARANCE` and nearer than it already was is refused — the same "an agent already
 ## standing where it may not be is left alone" the crowd's own guard keeps.
 ##
-## **Driving into her nose first is the strike, not the stop.** The strike reaches
-## `Tuning.PATROL_STRIKE_LEAD` of travel past the touch (`_in_front()`), so a car that would drive
-## its nose into her on the carriageway ends the day before this refuses the step; what it refuses
-## is the rest — a flank or a corner turned into her, a pram poking over the kerb, the investigating
-## car coming over to her.
+## **Driving its nose into her on the carriageway is the strike, not a stop.** The step is still
+## taken back — the body never goes into her — but a car that was driving its route does not stand
+## for her then: it is still driving, and with her inside the strike area (`_in_front()`, which
+## reaches `Tuning.PATROL_STRIKE_LEAD` past the touch for exactly this) `is_lethal_at()` ends the
+## day. What it stands for is the rest — a flank or a corner turned into her, a pram poking over the
+## kerb, the investigating car coming over to her, a car leaving.
+##
+## **And a car that has stood for her drives on only once she is out of its way.** On its route it
+## goes on standing while she is in its lane within its warning (`closes_on()`'s reach), so it never
+## pulls away into her with less than `Tuning.CAR_HORN_TIME` of warning: a car stopped for her is
+## harmless however she then steps in front of it, which is what "standing" has to mean.
 func _drive(delta: float) -> void:
 	var at := position
 	var heading := _heading
@@ -1713,22 +1720,32 @@ func _drive(delta: float) -> void:
 	_driving = true
 	_process(delta)
 	_driving = false
-	_held_by_her = false
-	if not is_finished:
-		var now := _gap_to_her(position, _heading)
-		if now < DRIVEN_CLEARANCE and now < was - 0.001:
-			position = at
-			_heading = heading
-			_path_travelled = travelled
-			_gait_phase = phase
-			_gait_moving = false
-			_held_by_her = true
-			_redraw_if_the_picture_changed()
+	if is_finished:
+		_standing_for_her = false
+		return
+	var now := _gap_to_her(position, _heading)
+	var into_her := now < DRIVEN_CLEARANCE and now < was - 0.001
+	var on_its_route := _drives_its_route()
+	var in_its_way := _standing_for_her and on_its_route and player_at != Vector2.INF \
+			and _meets_her(at, heading, player_at,
+					Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME)
+	if into_her or in_its_way:
+		position = at
+		_heading = heading
+		_path_travelled = travelled
+		_gait_phase = phase
+		_gait_moving = false
+		var strikes := into_her and on_its_route and not _standing_for_her \
+				and _meets_her(at, heading, player_at, Tuning.PATROL_STRIKE_LEAD)
+		_standing_for_her = not strikes
+		_redraw_if_the_picture_changed()
+	else:
+		_standing_for_her = false
 	_turn_the_body()
 
-## Whether the car is standing for her this frame — see `_drive()`.
-func is_held_by_her() -> bool:
-	return _held_by_her
+## Whether the car is standing for her — see `_drive()`.
+func is_standing_for_her() -> bool:
+	return _standing_for_her
 
 ## Lays a car's body along its heading, which `_build_obstruction()` read once. A capsule turns; a
 ## point would not need to.
@@ -1756,13 +1773,17 @@ func _gap_to(at: Vector2, heading: Vector2, centre: Vector2, radius: float) -> f
 	var local := (centre - at).rotated(-heading.angle())
 	return def.shape.distance_to_spine(local) - def.shape.radius - radius
 
-## Whether this car is driving its route right now: the one state its strike is live in. Not while
-## it stands (a telegraph it holds still through, parked), not once it is leaving — it is over, and
-## nothing that is over ends the day — and **not while it comes over to investigate**: the heated
-## copy that has noticed her is a pursuer closing on her, not a car on its route, and it stops
-## against her rather than striking her (see `EventDef.at_heat()`). A car standing for her
-## (`is_held_by_her()`) still means to drive, so it is still driving.
+## Whether this car is driving right now: the one state its warning and its strike are live in. On
+## its route (`_drives_its_route()`) and not standing for her (`is_standing_for_her()`).
 func is_driving() -> bool:
+	return _drives_its_route() and not _standing_for_her
+
+## Whether the car is on its route rather than in any other state: not standing still through a
+## telegraph or parked, not leaving — it is over, and nothing that is over ends the day — and **not
+## coming over to investigate**: the heated copy that has noticed her is a pursuer closing on her,
+## not a car on its route, and it stops against her rather than striking her (see
+## `EventDef.at_heat()`).
+func _drives_its_route() -> bool:
 	if not def.drives or is_finished or is_leaving or is_parked:
 		return false
 	if not def.mobile or path.size() < 2 or is_telegraphing_still():
@@ -3224,10 +3245,11 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 ##
 ## **A car that drives is the one row lethal without `hard_fail`** (`EventDef.drives`): it strikes
 ## her in front of its nose while it drives its route and she is on the carriageway, and nowhere
-## else — not behind it, not beside it, not while it stands. A body touching her is not enough, and
-## not needed: the strike reaches `Tuning.PATROL_STRIKE_LEAD` of its travel past the touch, so it
-## fires before the car would stop against her (`_drive()`). Its telegraph is not asked: its warning
-## is a car's, `closes_on()`, not a field coming up to strength.
+## else — not behind it, not beside it, not while it stands (`is_driving()`). A body touching her is
+## not enough, and not needed: the strike reaches `Tuning.PATROL_STRIKE_LEAD` of its travel past the
+## touch, so a car driving its nose into her strikes her rather than standing for her (`_drive()`).
+## Its telegraph is not asked: its warning is a car's, `closes_on()`, not a field coming up to
+## strength.
 func is_lethal_at(world_position: Vector2) -> bool:
 	if def.drives:
 		return is_driving() and _meets_her(global_position, _heading, world_position,

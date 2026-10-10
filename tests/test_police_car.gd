@@ -209,7 +209,7 @@ func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t) -> void:
 			var now := float(i) * STEP
 			if warned_at < 0.0 and car.closes_on(player.global_position):
 				warned_at = now
-			held = held or car.is_held_by_her()
+			held = held or car.is_standing_for_her()
 			if car.is_lethal_at(player.global_position):
 				struck_at = now
 				break
@@ -241,7 +241,7 @@ func _test_a_car_that_is_not_driving_strikes_nobody(t) -> void:
 		struck = struck or leaving.is_lethal_at(player.global_position)
 		deepest = minf(deepest, _gap(leaving))
 	t.check(not struck, "a leaving car never strikes her in front of it")
-	t.check(deepest >= -0.01 and leaving.is_held_by_her(),
+	t.check(deepest >= -0.01 and leaving.is_standing_for_her(),
 			"it stops against her instead (closest %.2fpx)" % deepest)
 	leaving.free()
 	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
@@ -287,8 +287,25 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t) -> void:
 	t.check(map.tile_at(map.world_to_tile(on_the_sidewalk)) == GameEnums.TileType.SIDEWALK,
 			"she stands on the sidewalk")
 	t.check(not struck, "with her on the sidewalk, a car never strikes her")
-	t.check(car.is_held_by_her() and deepest >= -0.01,
+	t.check(car.is_standing_for_her() and deepest >= -0.01,
 			"it stops for her pram in its lane instead (closest %.2fpx)" % deepest)
+	# Standing for her, it stays harmless however she then steps into the road in front of it.
+	var nose := car.global_position + along * (car.def.shape.reach() + Tuning.PLAYER_BODY_RADIUS
+			+ 3.0)
+	player.global_position = Vector2(nose.x, lane.y)
+	player.facing = -along
+	for i in int(3.0 / STEP):
+		_drive(car, player)
+		struck = struck or car.is_lethal_at(player.global_position)
+	t.check(not struck and car.is_standing_for_her(),
+			"a car standing for her never strikes her when she steps in front of it")
+	# And it drives on once she is out of its way.
+	player.global_position = on_the_sidewalk + outward * float(Tuning.TILE_SIZE)
+	var stood_at := car.global_position
+	for i in int(1.0 / STEP):
+		_drive(car, player)
+	t.check(not car.is_standing_for_her() and car.global_position.distance_to(stood_at) > 30.0,
+			"and it drives on once she is out of its way")
 	car.free()
 	var in_the_road := edge - outward * 4.0
 	player.global_position = in_the_road
@@ -345,7 +362,7 @@ func _test_the_car_never_drives_into_her(t) -> void:
 					if car.is_lethal_at(player.global_position):
 						break
 					worst = minf(worst, _gap(car))
-				if car.is_held_by_her():
+				if car.is_standing_for_her():
 					held += 1
 				player.free()
 				car.free()
