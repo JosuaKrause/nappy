@@ -11,6 +11,15 @@ now finds that it "only works partially. I always go to youtube".
 let's try that, too". The route to try first is the attachment: the player drags the under-10MB
 cut into a GitHub comment and hands over its address.
 
+**The attachment exists** (inbox #650 in [mossy-beaver](../../playtests/2026-10-10-mossy-beaver.md)): "the trailer link is in
+https://github.com/JosuaKrause/nappy/pull/643#issuecomment-6097675357". That comment holds
+`https://github.com/user-attachments/assets/a8033ef2-cabf-4a4f-b323-3d1bf0dfc0d3`, the under-10MB
+cut, uploaded by the player. Try it first in the README, on a line of its own.
+
+**The YouTube link is new**: "the new youtube link is https://youtu.be/cTB_woqjSMg". The README's
+trailer link (`README.md`, "Watch the gameplay trailer on YouTube.") changes to it in either
+outcome, since the smooth-turn cut is the one uploaded there.
+
 What is known: GitHub filters an embedded YouTube player out of a README. What is not yet known,
 and is the first thing to settle at pickup: **which route, if any, plays the trailer in place on
 GitHub's README page.** The candidates, each checked against GitHub's rendered README for a

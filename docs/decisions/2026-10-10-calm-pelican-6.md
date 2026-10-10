@@ -24,7 +24,9 @@ day started, 400px from home), which the old path lacked; the first siting can c
 the handover; a place that never finds a site is not met, with no dusk fallback like the fire's;
 the per-day count for a place is taken when its marble is drawn.
 
-**Open for the player before this merges: it narrows a recorded guarantee.**
+**It narrows a recorded guarantee, and the player accepted the narrowing**
+(inbox #650 in [mossy-beaver](../playtests/2026-10-10-mossy-beaver.md), told the choice was "(a)
+accept the narrowing": "if you recorded it then yes go ahead with that").
 [Olive-badger](2026-09-27-olive-badger.md) records "After day 6's mark a man shouting is one of the
 next two events on her route", from the player's "guaranteed to encounter a yeller in the next three
 events" (olive-koala, statement 2). Before, the unsited place stalled the route, so the man shouting
