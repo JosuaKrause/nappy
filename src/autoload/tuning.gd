@@ -1632,6 +1632,14 @@ const TASK_CONTACT_WITHIN_THE_NEXT := 2
 ## "day 11 is going to be a x=3", then "let's make the other rigged bags smaller".)*
 const MAST_WITHIN_THE_NEXT := 2
 
+## The same for day 7: once she has read its mark, a second `delivery_van`'s marble is one of the
+## next this many events, and the van is put on her route once her walk finds it a site, besides the
+## one near the mark the task points at. *(inbox #586 in olive-hedgehog: "each olive badger rigged
+## bag should be 2 or 3. use your own judgement on how soon the events should happen"; inbox #650 in
+## mossy-beaver, of which forced cases get one: "I guess that leaves only the van?")* Two is the
+## filer's proposal inside the player's "2 or 3", the size day 6's and day 11's rigs have.
+const VAN_WITHIN_THE_NEXT := 2
+
 ## The same for each of the return leg's patrols (`RETURN_PATROLS_PER_ACT`): rigged into a bag of
 ## this many as the one before it is handed out, so they come one after another inside the leg.
 ## *(inbox #561 in coral-bunny, of the return patrols: "they will need rigged bags".)* Two, with

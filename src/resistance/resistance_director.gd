@@ -2718,18 +2718,20 @@ func _on_contact_completed(step_index: int) -> void:
 	# every mast at once, the masts because they run on the same power. That is `Blackout`'s, and
 	# it watches the flag set above rather than this call.
 
-## **After a mark, the task's own row is rigged onto her route** — the man shouting on day 6 and a
-## loudspeaker mast on day 11. *(olive-koala, statement 2: "right now the first mark I almost never
+## **After a mark, the task's own row is rigged onto her route** — the man shouting on day 6, a
+## delivery van on day 7 and a loudspeaker mast on day 11. *(olive-koala, statement 2: "right now the first mark I almost never
 ## see a yeller. after touching the mark a marble bag with 1/3 chance of yeller should be put in so
 ## the yeller is guaranteed to encounter a yeller in the next three events" · inbox #561 in coral-bunny: "day 11 is
 ## going to be a x=3", then "let's make the other rigged bags smaller, too".)* The route's bag is
-## rigged with a bag of `Tuning.TASK_CONTACT_WITHIN_THE_NEXT` (`MAST_WITHIN_THE_NEXT` for the mast)
-## marbles, the row and the rest drawn from the bag she was drawing from
+## rigged with a bag of `Tuning.TASK_CONTACT_WITHIN_THE_NEXT` (`VAN_WITHIN_THE_NEXT` for the van,
+## `MAST_WITHIN_THE_NEXT` for the mast) marbles, the row and the rest drawn from the bag she was drawing from
 ## (`EventManager.rig_her_route()`), and the place it names is put ahead of her on the branch she is
 ## walking. It is **besides** the contact `_begin_step()` placed near the mark, never instead of it:
 ## the man shouting is a look-alike the any-instance contact follows her onto
-## (`_follow_her_between_look_alikes()`), and the mast is a second one on her way while the task's
-## arrow points at the one near the mark first (inbox #561 in coral-bunny: "let it point to the closest one first").
+## (`_follow_her_between_look_alikes()`), the mast is a second one on her way while the task's
+## arrow points at the one near the mark first (inbox #561 in coral-bunny: "let it point to the closest one first"),
+## and the van is a second van on her way while the task stays the one near the mark (inbox #650 in
+## mossy-beaver: "I guess that leaves only the van?").
 func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 	if not task or not _city or not _city.events:
 		return
@@ -2741,6 +2743,9 @@ func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 	elif task.target_kind == ResistanceSteps.TargetKind.MAST:
 		row = MAST_ROW
 		size = Tuning.MAST_WITHIN_THE_NEXT
+	elif task.task_event_id == VAN_ROW:
+		row = VAN_ROW
+		size = Tuning.VAN_WITHIN_THE_NEXT
 	if row == "":
 		return
 	var ids: Array[String] = [row]
@@ -2758,6 +2763,7 @@ func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 ## The rows a task's mark rigs onto her route — see `_rig_her_route_for()`.
 const YELLER_ROW := "homeless_yeller"
 const MAST_ROW := "loudspeaker"
+const VAN_ROW := "delivery_van"
 
 func _clear() -> void:
 	if _contact and is_instance_valid(_contact):

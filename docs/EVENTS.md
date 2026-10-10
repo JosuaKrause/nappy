@@ -224,7 +224,7 @@ new marble bag with x holdings place the ensured item in the bag fill the remain
 the rest. `EventDirector.rig_her_route()` moves that many of the owed events to the head of the
 list, so the ensured marble is one of the next `x` events handed out on her route. A moment's marble
 is met as it is handed out; a place's is handed to her walk, and the place is met once her walk
-finds it a site, which can be after an event behind it, or never. Two rigs stand:
+finds it a site, which can be after an event behind it, or never. Three rigs stand:
 
 - **After day 6's mark, a man shouting's marble is one of the next two** (`Tuning.TASK_CONTACT_WITHIN_THE_NEXT`;
   inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "maybe let's make the other rigged bags smaller, too"). A row the director does not
@@ -241,6 +241,14 @@ finds it a site, which can be after an event behind it, or never. Two rigs stand
   (`Tuning.MAST_WITHIN_THE_NEXT`), put on her route the same way on the sidewalk or square, besides
   the mast near the mark the task points at first (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "let it point to the closest one
   first"). It is a mast like the one `EventManager.queue_a_mast()` adds, named by its foot.
+- **After day 7's mark, a second `delivery_van`'s marble is one of the next two**
+  (`Tuning.VAN_WITHIN_THE_NEXT`; inbox #586 in [olive-hedgehog](playtests/2026-10-05-olive-hedgehog.md): "each olive badger rigged bag should be 2 or 3";
+  inbox #650 in [mossy-beaver](playtests/2026-10-10-mossy-beaver.md): "I guess that leaves only the van?"), besides the van near the mark the task
+  rides, which stays the task. Two is the filer's choice inside the player's "2 or 3". A van leaves
+  no line past it on the sidewalk it stands on, so the day never puts one on a sidewalk a route runs
+  along, and its walk sites it across the street from the branch she is walking instead
+  (`EventScheduler.WalkSiting.across_her_way()`), ahead of her, past the streaming band and under
+  every other acceptance rule, where it counts as still on her way.
 - **Each of the return leg's patrols** — see "The return owes her patrols" below.
 
 **Day 3's lesson is a rigged bag of one**, and it stays the first thing she meets (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md):
