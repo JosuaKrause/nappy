@@ -1552,8 +1552,9 @@ walls answer it**: `InteriorEvents` hands every source the plan's walkability as
 answers at the same depths, so the solid between two flights of a stairwell stops the masked man's
 field as a building stops a busker's. The one source indoors no wall stops is the explosion, whose
 instance stands where she is for a bang outside that has already come through the walls to reach
-her. A rig's row with neither a map nor walls handed to it is blocked by nothing. `docs/COSTS.md` prices a row with
-nothing between, so a route past buildings pays less than the sum of its rows' table prices.
+her. A rig's row with neither a map nor walls handed to it is blocked by nothing. `docs/COSTS.md`
+prices a row with nothing between, so a route past buildings pays less than the sum of its rows'
+table prices.
 
 **A row may carry a second, louder part close in, and one does.** `EventDef.core_intensity` and
 `core_radius` are a core: the same curve over a shorter band, and the row emits **the larger** of

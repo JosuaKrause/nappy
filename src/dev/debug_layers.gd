@@ -169,7 +169,6 @@ func field_runs(view: Rect2) -> Array:
 	var drawn: Array = []
 	var cuts := {}
 	_cut_calls += 1
-	var refresh := _cut_calls % _CUT_REFRESH_FRAMES == 0
 	for instance in _live():
 		if instance.is_finished:
 			continue
@@ -188,8 +187,7 @@ func field_runs(view: Rect2) -> Array:
 					continue
 				var outline := shape.field_outline(source, axis, velocity, level) if shape != null \
 						else GroundShape.field_outline_at(source, velocity, level)
-				_field_boundary(outline, source, grid, colour, [id, -1, level], view, refresh, cuts,
-						drawn)
+				_field_boundary(outline, source, grid, colour, [id, -1, level], view, cuts, drawn)
 			continue
 		var outer := instance.flock_outer_radius()
 		var velocities := instance.flock_velocities()
@@ -201,8 +199,7 @@ func field_runs(view: Rect2) -> Array:
 				if not _may_be_seen(view, at, level):
 					continue
 				var outline := GroundShape.field_outline_at(at, velocities[i], level)
-				_field_boundary(outline, source, grid, colour, [id, i, level], view, refresh, cuts,
-						drawn)
+				_field_boundary(outline, source, grid, colour, [id, i, level], view, cuts, drawn)
 	for agent in _agents():
 		var is_car := agent.kind == CrowdAgent.Kind.CAR
 		var inner := Tuning.CAR_INNER_RADIUS if is_car else Tuning.PEDESTRIAN_INNER_RADIUS
@@ -224,8 +221,8 @@ func field_runs(view: Rect2) -> Array:
 			if not _may_be_seen(view, source, level):
 				continue
 			var outline := GroundShape.field_outline_at(source, velocity, level)
-			_field_boundary(outline, source, grid, FIELD_COSTLY, [id, -1, level], view, refresh,
-					cuts, drawn)
+			_field_boundary(outline, source, grid, FIELD_COSTLY, [id, -1, level], view, cuts,
+					drawn)
 	_cuts = cuts
 	return drawn
 
@@ -233,8 +230,9 @@ func field_runs(view: Rect2) -> Array:
 ## **An outline the same as last frame's is cut the same way**, so a standing source — most events
 ## — asks its walls once rather than every frame; anything that moved is asked again. Rebuilt every
 ## frame from the outlines drawn, so nothing gone or off screen stays in it, and every outline is
-## asked again every `_CUT_REFRESH_FRAMES`th frame, so a change to the ground under a standing
-## source (a task scene's stretch coming on) is drawn within a second.
+## asked again once every `_CUT_REFRESH_FRAMES` frames, so a change to the ground under a standing
+## source (a task scene's stretch coming on) is drawn within a second — each on a frame of its own,
+## chosen by its key, so a screen's worth of fresh cuts never lands on one frame.
 var _cuts := {}
 var _cut_calls := 0
 const _CUT_REFRESH_FRAMES := 60
@@ -253,13 +251,14 @@ static func _may_be_seen(view: Rect2, at: Vector2, level: float, spine := 0.0) -
 ## One level of one field's boundary — an outline from `GroundShape.field_outline()` or its
 ## plain-point form `field_outline_at()` (a crowd agent or one bird of a flock, neither of which
 ## owns a body in field terms) — added to `drawn` as the runs `open_runs()` leaves, and not at all
-## off screen. See `_cuts` for `key`, `refresh` and `cuts`.
+## off screen. See `_cuts` for `key` and `cuts`.
 func _field_boundary(outline: PackedVector2Array, source: Vector2, grid: CityMap, colour: Color,
-		key: Array, view: Rect2, refresh: bool, cuts: Dictionary, drawn: Array) -> void:
+		key: Array, view: Rect2, cuts: Dictionary, drawn: Array) -> void:
 	if outline.is_empty() or not view.intersects(_bounds_of(outline)):
 		return
 	var runs: Array[PackedVector2Array] = []
 	var cached: Array = _cuts.get(key, [])
+	var refresh := posmod(_cut_calls + key.hash(), _CUT_REFRESH_FRAMES) == 0
 	if not refresh and not cached.is_empty() and cached[0] == outline:
 		runs = cached[1]
 	else:
@@ -273,20 +272,24 @@ static func _bounds_of(points: PackedVector2Array) -> Rect2:
 		rect = rect.expand(point)
 	return rect
 
-## How many halvings `_where_the_wall_starts()` takes over one edge of an outline: an edge of the
-## widest field's outline is a few tens of pixels, so six leave the cut within a pixel of where the
-## wall's answer turns.
-const _CUT_STEPS := 6
+## The longest stretch of outline asked as one: once a wall is possible every edge is cut into
+## pieces no longer than this before any line is asked, so a wall is never missed for falling
+## between two corners of the outline — the widest rows' outlines have edges of a hundred pixels and
+## more. A walled or open stretch shorter than one piece, between two of the other kind, is the one
+## thing this cannot see.
+const CUT_PIECE := 8.0
+## How many halvings `_where_the_wall_starts()` takes over one piece: four leave the cut within half a
+## pixel of where the wall's answer turns.
+const _CUT_STEPS := 4
 
 ## A closed outline as the open polylines left once every stretch of it a wall keeps the field from
 ## is cut away: walled where `grid.wall_between()` blocks the line from `source`, the emitter's own
 ## node, to the point — the line `contribution_at()` asks, of the grid the emitter asks it of
 ## (`EventInstance.wall_grid()`, `CrowdAgent.wall_grid()`). With nothing walled it is the whole
-## loop, closed; with everything walled it is nothing; with no grid nothing is walled. **Where an edge
-## runs from open to walled, the cut is where the answer turns along that edge**, found by halving
-## it, so the line ends at the wall's depth rather than at whichever vertex of the outline happened
-## to fall short of it. An edge walled at both ends is dropped whole; a gap narrower than one edge
-## between two walled vertices is the one thing this cannot see.
+## loop, closed; with everything walled it is nothing; with no grid nothing is walled. The outline
+## is asked piece by piece (`CUT_PIECE`), and **where a piece runs from open to walled, the cut is
+## where the answer turns along it**, found by halving it, so the line ends at the wall's depth
+## rather than at whichever point of the outline happened to fall short of it.
 ##
 ## **Most outlines ask no line at all**: `_deep_ground_meets()` answers first whether anything
 ## within the outline's bounds could be deep enough in a building to wall one, and a walker on a
@@ -294,14 +297,15 @@ const _CUT_STEPS := 6
 static func open_runs(points: PackedVector2Array, source: Vector2, grid: CityMap
 		) -> Array[PackedVector2Array]:
 	var runs: Array[PackedVector2Array] = []
-	var count := points.size()
-	if count < 2:
+	if points.size() < 2:
 		return runs
 	var shut: Array[bool] = []
 	var first_shut := -1
+	var pieces := PackedVector2Array()
 	if grid != null and _deep_ground_meets(grid, _bounds_of(points).expand(source)):
-		for i in count:
-			var is_shut := grid.wall_between(source, points[i])
+		pieces = _in_pieces(points)
+		for i in pieces.size():
+			var is_shut := grid.wall_between(source, pieces[i])
 			shut.append(is_shut)
 			if is_shut and first_shut < 0:
 				first_shut = i
@@ -310,7 +314,8 @@ static func open_runs(points: PackedVector2Array, source: Vector2, grid: CityMap
 		closed.append(points[0])
 		runs.append(closed)
 		return runs
-	# Starting from a walled vertex, every open stretch begins and ends inside the one pass.
+	# Starting from a walled point, every open stretch begins and ends inside the one pass.
+	var count := pieces.size()
 	var run := PackedVector2Array()
 	for k in count:
 		var i := (first_shut + k) % count
@@ -319,16 +324,30 @@ static func open_runs(points: PackedVector2Array, source: Vector2, grid: CityMap
 			continue
 		if shut[i]:
 			run = PackedVector2Array([
-					_where_the_wall_starts(points[j], points[i], source, grid), points[j]])
+					_where_the_wall_starts(pieces[j], pieces[i], source, grid), pieces[j]])
 		elif shut[j]:
-			run.append(_where_the_wall_starts(points[i], points[j], source, grid))
+			run.append(_where_the_wall_starts(pieces[i], pieces[j], source, grid))
 			runs.append(run)
 			run = PackedVector2Array()
 		else:
-			run.append(points[j])
+			run.append(pieces[j])
 	return runs
 
-## The last point from `open` towards `shut` whose line from `source` the grid leaves open.
+## The closed outline with every edge cut into equal pieces no longer than `CUT_PIECE`: its own
+## corners and the points between, in order, the last piece ending back at the first corner.
+static func _in_pieces(points: PackedVector2Array) -> PackedVector2Array:
+	var pieces := PackedVector2Array()
+	var count := points.size()
+	for i in count:
+		var from := points[i]
+		var to := points[(i + 1) % count]
+		var parts := maxi(1, ceili(from.distance_to(to) / CUT_PIECE))
+		for k in parts:
+			pieces.append(from.lerp(to, float(k) / float(parts)))
+	return pieces
+
+## The last point from `open` towards `shut`, one piece apart, whose line from `source` the grid
+## leaves open.
 static func _where_the_wall_starts(open: Vector2, shut: Vector2, source: Vector2, grid: CityMap
 		) -> Vector2:
 	for _i in _CUT_STEPS:
