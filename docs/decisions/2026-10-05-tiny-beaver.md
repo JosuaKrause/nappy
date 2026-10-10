@@ -19,5 +19,7 @@ with a yellow band and a soft work cap. No amber or red on him, since the danger
 off screen at once, a guardsman from day 9 — is its own change, after the off-screen warning rework
 (M226). `docs/GRAPHICS.md` lists the family as prepared and unbound.
 
-**Chosen while drawing, open to overturn:** the baton, which the lunge swings in his left hand in
-every view (the player's to keep or drop); side and diagonal views face east, as the robber's do.
+**Chosen while drawing:** the baton, which the lunge swings in his left hand in every view. The
+player judged the sheet with the baton on it, "policeman looks good" (inbox #591 in
+[olive-hedgehog](../playtests/2026-10-05-olive-hedgehog.md)), without naming the baton, so it stays
+unless the player drops it. **Open to overturn:** side and diagonal views face east, as the robber's do.
