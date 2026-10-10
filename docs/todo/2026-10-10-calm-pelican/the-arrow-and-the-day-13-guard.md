@@ -1,6 +1,6 @@
 # Day 13's arrow and the task's waiting guard agree
 
-**Medium, a question for the player · from the re-review of PR #588 (plush-moose, every task has a
+**Medium · from the re-review of PR #588 (plush-moose, every task has a
 red arrow, on the closest target by walking distance).** [Feathery-badger](../../decisions/2026-10-04-feathery-badger.md)
 keeps a guard around day 13's seeded roadblock ("Every guarded target (Recommended)"), placed in
 `ResistanceDirector._begin_step()` and never moved, but the arrow chooses among every live roadblock
@@ -8,9 +8,23 @@ keeps a guard around day 13's seeded roadblock ("Every guarded target (Recommend
 guard. How often was not measured. The comment above `_follow_her_between_look_alikes()` still says
 the guard "is not moved when she picks another".
 
-**Open, for the player:** should the guard follow the roadblock the arrow chooses? If yes, move or
-re-place `_task_guard` on it; if no, record in [plush-moose](../../decisions/2026-10-04-plush-moose.md)
-and that comment that the guard stays on the seeded roadblock.
+**The guard moves to the roadblock she approaches** (inbox #650 in [mossy-beaver](../../playtests/2026-10-10-mossy-beaver.md)):
+"move the task's waiting guard to the roadblock the player approaches". Move or re-place
+`_task_guard` on the roadblock she is walking up to, and rewrite the comment above
+`_follow_her_between_look_alikes()` to say so.
+
+**And the day's own roadblock is placed close by.** Asked whether day 13's roadblock gets a second,
+route-drawn copy from a rigged bag (olive-badger's [the-other-forced-cases](../2026-09-27-olive-badger/the-other-forced-cases.md)),
+the player: "yeah let's not rig the roadblock let's place one properly and guide to that -- just
+make sure it's closeby". Today the task's roadblock is spawned live on the 576px circle
+(`ResistanceDirector.NEAR_THE_MARK`) round where she read the mark. **Read as, open to
+correction:** that roadblock is placed under every placement rule a planned row is, close to where
+she reads the mark, and the arrow keeps [plush-moose](../../decisions/2026-10-04-plush-moose.md)'s
+closest-by-walking choice among every live roadblock, which the close one normally is; the guard
+follows whichever she approaches. The other reading is that the arrow points only at the task's own
+roadblock, which would narrow plush-moose's "every live roadblock on day 13" and is asked before it
+is built that way. Measure how often the arrow's pick is the task's own roadblock, with a probe like
+`tests/probes/plush_moose_arrow_cost.gd`, and report it.
 
 **Low, same area:** no picture shows day 11 with several masts answering, since a scene recipe
 cannot give an authored loudspeaker a mast id; let a recipe give one a `mast_id` and capture day 11
