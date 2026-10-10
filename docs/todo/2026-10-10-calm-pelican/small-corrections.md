@@ -1,6 +1,7 @@
 # Small corrections from the re-review
 
-**Low, each one line or a few · from the re-review of the PRs since v0.25.0.**
+**Low, each one line or a few · from the re-review of the PRs since v0.25.0, and one found while
+building #642.**
 - **#580:** `tests/test_crowd_closures.gd` and `tests/probes/m100_map_edge_entries.gd` say a spine
   car overruns the map edge by `Tuning.OUT_OF_SIGHT`; cars now keep `CrowdAgent.TUNNEL_ROOM` /
   `BRIDGE_RUN` on the way out and `TUNNEL_ENTRY_ROOM` / `BRIDGE_ENTRY_MIN` on the way in. Name those.

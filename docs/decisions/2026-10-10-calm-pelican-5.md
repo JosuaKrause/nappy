@@ -17,8 +17,10 @@ instance only carries a bang from outside that has already come through the wall
 The debug fields layer now cuts an outline where a wall stops the field (`DebugLayers.open_runs()`),
 so it agrees with the meter behind buildings. To keep it cheap, outlines off screen are not built, a
 standing source reuses its cut, and an outline with no deep building ground asks no wall question;
-one screen at her doorstep measured 1.5–1.8ms cold and 0.7ms with nothing moved (headless, parked
-probe `tests/probes/calm_pelican_fields_layer_cost.gd`). The building-end answer from
+the outline is asked along its whole length in pieces of at most 8px, not only at its
+corners, so a wall falling between two corners is not missed; one screen at her doorstep measured
+1.9–2.9ms cold and 0.7–0.8ms with nothing moved, and a screen round an event 4.6–6.4ms cold on
+average (headless, parked probe `tests/probes/calm_pelican_fields_layer_cost.gd`). The building-end answer from
 bouncy-kestrel (#568) replaces "open to them" in `city_map.gd`, `docs/EVENTS.md` and
 `tests/test_wall_shield.gd`, and `docs/MECHANICS.md` describes the wall rule as built: shallower at
 open ends, and a 2x2 building blocks only through its centre. A still and a crop of the cut layer
@@ -26,7 +28,7 @@ are in [calm-pelican-fields-cut-2026-10-10](../evidence/calm-pelican-fields-cut-
 
 **Chosen where the item was silent, open to overturn:** an indoor wall is any cell
 `InteriorMapPlan.is_walkable()` refuses, rubble and gaps between parts included; the explosion stays
-unwalled; the layer cuts rather than tints, and does not draw a gap narrower than one outline edge
-between two walled points; a flock's birds are cut along the line from the flock's centre, the line
+unwalled; the layer cuts rather than tints, and cannot see a walled or open stretch shorter than one 8px piece
+between two of the other kind; a flock's birds are cut along the line from the flock's centre, the line
 `contribution_at()` already uses. No interior picture was taken: the masked man stood behind the
 edge badge in the stairwell still, and the suite holds the interior instead.
