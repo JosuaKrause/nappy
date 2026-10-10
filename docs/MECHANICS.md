@@ -409,7 +409,7 @@ The steering side reaches two thirds of the way from its focal point to Run's *(
 "instead of splitting the in middle we can move it closer to the run button; although I wouldn't go
 all the way")*, with a stop band of the ring's diameter at its edge. Everything beyond that edge is
 Run's: a press there, on the disc or off it, holds **run** and never steers. Inside the ring a
-smaller, separately drawn dead zone stops her, as does the stop band; dragging back out steers
+undrawn 16px dead zone at its centre stops her (a press just past it steers; the 5% catch is the buttons' only), as does the stop band; dragging back out steers
 again. The heading locks in where a steering drag lifts, so a swipe through the dead zone that
 lands outside it keeps her walking toward the landing point, and one that lands inside it stops
 her *(2026-10-10: "make sure swiping over it but landing outside of it correctly keeps the player
@@ -441,8 +441,8 @@ The symbol is the atlas region the button wears, drawn one text line tall in the
 
 Where a heading is measured from, and what stops her, are the one place the two schemes disagree.
 **Tap** aims from her own world position, and a press within a small radius of her body — the
-joystick's dead zone, at the camera's zoom — stops her. **Joystick** aims from the steering focal
-point — drawn as a ring with the dead zone's fainter circle inside it and a knob at the heading she
+8 world px of the centre of her sprite, the joystick's dead zone at the camera's zoom (16px on screen) — stops her. **Joystick** aims from the steering focal
+point — drawn as a ring with a knob (a dot on the focus at rest; the dead zone is not drawn) at the heading she
 is actually walking, so what she is walking can be read off the glass without watching her — and is
 stopped by a press in the dead zone or in the stop band at the steering side's edge, never by a
 press near her own position. **The ring's knob shows the heading she is walking** whatever set it,

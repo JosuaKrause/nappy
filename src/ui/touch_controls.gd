@@ -65,18 +65,20 @@ const DOUBLE_TAP_DISTANCE := 60.0
 ## The joystick ring's drawn radius, in **design-space** px, and the half-width of the stop band
 ## at the steering half's edge. The band was asked for at the stop circle's size *(2026-09-07: "a
 ## narrow band in the middle of the screen (size of the stop circle) that stops the player")*, when
-## the stop circle and the ring were both 48px. The stop circle is now the tighter dead zone, and
+## the stop circle and the ring were both 48px. The stop circle is now the 16px dead zone, and
 ## keeping the band at the ring's width is the filer's proposal, open to overturn; see
 ## `is_in_stop_band()`. Run's disc is sized off this ring.
 const RING_RADIUS := 48.0
 
 ## How close a press has to land to the steering focus, in **design-space** px, to stop her rather
-## than steer — the joystick's dead zone, drawn as its own circle inside `RING_RADIUS`.
-## *(2026-10-10, the player: "decrease the deadzone of the joystick (which makes the player stop)
-## smaller/tighter".)* No number was named; two thirds of the ring keeps a thumb-sized stop target
-## while leaving a band of steering inside the ring. `in_dead_zone()` is the only place it is
-## compared. It never takes `ButtonGeometry.CATCH_SCALE`: it is steering geometry, not a button.
-const DEAD_ZONE_RADIUS := 32.0
+## than steer — the joystick's dead zone. **Not drawn** *(2026-10-10, pebbly-alpaca: "also don't draw
+## the dead zone")*; the ring and the dot at the focus are what shows. 16px *(2026-10-10: "why is the
+## deadzone so big now?" at 32px; "make it the size of the dot"; then "we can try 16px to keep the
+## deadzone consistent")*, which is also what tap mode's stop circle is on screen (see
+## `TAP_STOP_RADIUS`). `in_dead_zone()` is the only place it is compared. **It never takes
+## `ButtonGeometry.CATCH_SCALE`** *(2026-10-10: "the 5% increase doesn't apply to dead zones only to
+## buttons")*: it is steering geometry, not a button, so a press just past 16px steers.
+const DEAD_ZONE_RADIUS := 16.0
 
 ## How far the steering half reaches toward Run's focus, as a fraction of the distance between the
 ## two foci. *(2026-10-10, the player: "we can even increase the influence zone of the joystick
@@ -90,9 +92,13 @@ const STEERING_REACH := 2.0 / 3.0
 ## origin is her own live position rather than a fixed place on the glass. Half of
 ## `DEAD_ZONE_RADIUS`: the camera sits on her at zoom 2 over a 1280x720 viewport
 ## (`Tuning.OUT_OF_SIGHT`'s own doc states the same fact for the sight radii), so this covers
-## exactly the joystick's dead zone on screen. *(Playtest 34 finding 5: "the stop circle on the
+## exactly the joystick's dead zone on screen (16px). *(Playtest 34 finding 5: "the stop circle on the
 ## player should exactly be the size of the joystick stop circle nothing bigger.")* So it tightens
-## whenever the joystick's dead zone does.
+## whenever the joystick's dead zone does. 8 world px is smaller than her 14px body radius, so
+## stopping her by tap needs a press near the middle of her sprite. *(2026-10-10, pebbly-alpaca:
+## asked whether tap should keep 16 world px or shrink with the dead zone, the player chose "Keep tap
+## at 16px", then, told that is 32px on screen: "but 32 is just wrong"; read as 16px on screen, open
+## to correction.)*
 ##
 ## **Deliberately excludes the visible pram's side-view centre.** *(Playtest 34 finding 6: "if I
 ## click on the stroller it shouldn't stop only when I click on the body of the player.")* The
@@ -108,7 +114,7 @@ const TAP_STOP_RADIUS := DEAD_ZONE_RADIUS / 2.0
 ## should be at the center of the sprite -- right now I can click below her to stop.")* `Sprites`'
 ## own doc states the anchoring: "a node's position is where its feet are, and its art rises from
 ## there." Centred on her feet, the circle would cover pavement below her while her head sat
-## outside it; centred here, `TAP_STOP_RADIUS` (16px) covers her body from 7px to 39px above her
+## outside it; centred here, `TAP_STOP_RADIUS` (8px) covers her body from 15px to 31px above her
 ## feet.
 const TAP_STOP_CENTRE_LIFT := Stroller.FIGURE_HEIGHT / 2.0
 
@@ -132,18 +138,15 @@ const FOCUS_RIGHT := Vector2(1040.0, 480.0)
 ## 1.05 times its radius on both sides (`tests/test_touch.gd` pins it).
 const FOCUS_STROKE_WIDTH := 2.0
 const RUN_RADIUS := RING_RADIUS + FOCUS_STROKE_WIDTH * 0.5
-## The dead zone's own circle, thinner and fainter than the ring around it so the two read as one
-## control with a smaller centre rather than two rings.
-const _DEAD_ZONE_STROKE_WIDTH := 1.5
 ## Both pause.svg and run.svg paint to radius 62.5 on a 128px square.
 const _ICON_PAINTED_RADIUS := 62.5
 const _ICON_HALF_SIZE := 64.0
-## The knob `_draw_focus_circles()` offsets from the steering focus, at rest. Sized off
-## `PAUSE_RADIUS`'s own third, so even the larger running knob at `_FOCUS_KNOB_OFFSET` stays
-## inside the ring rather than crowding the rim.
+## The dot `_draw_focus_circles()` draws at the steering focus while she stands, offset toward her
+## heading while she walks: a third of `PAUSE_RADIUS` (about 8.7px), so even the larger running knob
+## at `_FOCUS_KNOB_OFFSET` stays inside the ring rather than crowding the rim.
 const _FOCUS_KNOB_RADIUS := PAUSE_RADIUS / 3.0
-## How far the knob sits from the focus while she walks: just past the dead zone's circle, where a
-## steering press itself lands, rather than straddling it.
+## How far the knob sits from the focus while she walks: a quarter of the way from the dead zone's
+## edge to the ring (24px), so its centre stands outside the dead zone and the knob inside the ring.
 const _FOCUS_KNOB_OFFSET := DEAD_ZONE_RADIUS + (RING_RADIUS - DEAD_ZONE_RADIUS) * 0.25
 
 ## Hardware only — see the class doc's own paragraph on what this decides and what it no longer
@@ -709,7 +712,7 @@ static func in_dead_zone(design_position: Vector2, steering: Vector2) -> bool:
 ## the finger over the middle of the screen and quickly flicking back and forth.")* It moved from the
 ## middle to the edge with the steering half's reach. The player confirmed the band's width as the
 ## stop circle's **diameter** *(2026-09-07: "the band doesn't get drawn and yes it's the diameter in
-## size")* when that circle was the 48px ring. The stop circle is now the 32px dead zone; keeping the
+## size")* when that circle was the 48px ring. The stop circle is now the 16px dead zone; keeping the
 ## band at the ring's diameter rather than shrinking it with the dead zone is the filer's proposal,
 ## open to overturn. **Not drawn**, by the same quote. The half
 ## of it beyond the edge is on Run's side, so a fresh press there holds Run; only a steering drag
@@ -877,8 +880,8 @@ func _draw_run_button() -> void:
 	draw_texture_rect(AtlasLibrary.region(_RUN_ICON), Rect2(center - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if _run_held else 0.7))
 
-## The steering ring at `RING_RADIUS`, the dead zone's own fainter circle inside it, and a knob
-## at the heading she is actually walking, including keyboard steering and detention — so what she
+## The steering ring at `RING_RADIUS` and a knob (the dot, which at rest is the dead zone itself, so
+## no separate dead-zone circle is drawn) at the heading she is actually walking, including keyboard steering and detention — so what she
 ## is walking can be read off the glass without watching her. Layout rather than a picture, the
 ## same reading the **cues** rule's exception gives any shape whose position is live state.
 func _draw_focus_circles() -> void:
@@ -890,8 +893,6 @@ func _draw_focus_circles() -> void:
 	var offset := current_heading(_rig) * _FOCUS_KNOB_OFFSET
 	draw_arc(_steering_focus, RING_RADIUS, 0.0, TAU, 48, Color(1.0, 1.0, 1.0, 0.35),
 			FOCUS_STROKE_WIDTH, true)
-	draw_arc(_steering_focus, DEAD_ZONE_RADIUS, 0.0, TAU, 48, Color(1.0, 1.0, 1.0, 0.22),
-			_DEAD_ZONE_STROKE_WIDTH, true)
 	draw_circle(_steering_focus + offset, knob_radius, knob_colour)
 
 ## The heading she is actually walking this instant, whichever of the two doors set it: a press or
