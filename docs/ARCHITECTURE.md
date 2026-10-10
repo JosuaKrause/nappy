@@ -601,6 +601,9 @@ non-zero on any failure.
 - `test_resistance.gd` — the step table, touch-completion, a task activated the same day its
   mark is touched, the four placement kinds a perform step may use, the seeded guard, the
   expiring step, and the sabotage putting the city's masts out once she has walked away.
+- `test_destination_drawing.gd` — on every task day, the mark on offer draws its chalk and keeps
+  its touched picture once read, and the task's destination draws none, untouched or done, while
+  the red arrow ends on it.
 - `test_blackout.gd` — the last night's blackout: nothing off without the sabotage or beside the
   station, every window, light and mast off in one call past the distance, dark for as long as the
   sabotage stands and lit again on a retry, the station's hall lit only on the last night, the dark
