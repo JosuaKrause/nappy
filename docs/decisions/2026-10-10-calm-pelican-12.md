@@ -34,9 +34,9 @@ visibly track her round a corner (`docs/GRAPHICS.md`'s robber row).
 off: he stands turned toward her with the doubled red caret up and his field charging her meter for
 as long as she stays inside his stand-off, and walking away gets his lunge from the full stand-off;
 the notice clock runs while she is outside the stand-off and out of his line, so if it ends then he
-chases round the wall from at least the stand-off; the alley mouse still notices through walls, since it waits and
-runs its own path rather than chasing, and the answer was about pursuers; the held state is not
-kept across a stream-out, which happens only far from her.
+chases round the wall from at least the stand-off; the alley mouse still notices through walls,
+since it waits and runs its own path rather than chasing, and the answer was about pursuers; the
+held state is not kept across a stream-out, which happens only far from her.
 
 **The caret projects the catch.** `will_be_lethal()` (whether the doubled red caret shows) measures
 against `def.lethal_reach()` rather than `def.inner_radius`, and its comment says it projects the
@@ -49,8 +49,9 @@ lunge through one (5 failing checks on the old code, among them a lunge "from hi
 new contract (the notice along a clear line, the chase from about the stand-off, at least
 `PURSUIT_REACTION` for her to react, no catch through the corner), a held lunge that never sets off
 inside the stand-off with the robber 20px to 90px into the alley, and a held pursuer she stays
-beside who never sets off; the last two fail 17 checks on the code before the pause. The stills of the same moment
-1.75s in, before and after, are in [pursuers-walls-2026-10-10](../evidence/pursuers-walls-2026-10-10/README.md).
+beside who never sets off; the last two fail 16 checks on the code before the pause. The stills of
+the same moment 1.75s in, before and after, are in
+[pursuers-walls-2026-10-10](../evidence/pursuers-walls-2026-10-10/README.md).
 
 **The events skill was wrong and is fixed in the same PR**: its pursuit trap said "Only the catch
 asks for a clear line"; it now says the notice, the lunge and the catch all do, and that a held

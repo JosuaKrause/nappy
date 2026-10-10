@@ -1915,10 +1915,10 @@ var _lunge_held := false
 ## Seconds the notice has stood still because a held lunge (`_lunge_held`) had her inside its
 ## stand-off; `chase_age()` leaves them out. **A held pursuer she stays beside never sets off**, for
 ## as long as she stays: he stands turned toward her with the doubled red caret up, his field
-## charging her meter at full strength, and the chase starts only once she walks back out to the
+## charging her meter (at full strength for the robber and the heated rows; the day-3 teaching
+## dog's warning period is damped), and the chase starts only once she walks back out to the
 ## stand-off. That is fair because the one way out of it is the walk the contract was written for —
-## the lunge from the full stand-off, with all of `PURSUIT_REACTION` to answer it — and standing in
-## a robber's field is not free. See `_pause_a_held_notice()`.
+## the lunge from the full stand-off, with all of `PURSUIT_REACTION` to answer it. See `_pause_a_held_notice()`.
 var _notice_paused_for := 0.0
 
 ## Comes after her — the one kind of thing running is the answer to. See `EventDef.pursues` and
