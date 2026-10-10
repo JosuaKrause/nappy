@@ -19,8 +19,8 @@ body (`Tuning.PLAYER_BODY_RADIUS`, 14px) and the pram's 8px circle, held 14px ou
 which follows the input rather than her velocity: holding a diagonal she is up to 2 × 14 + 8 =
 36px across the row. M53's spacing leaves 4.4px between two posts, so "gaps still passable" cannot
 hold at five posts, and the band fits at most two posts with a gap she passes. At 46px the clear
-gap is 36.4px; at 40px (30.4px) the review of PR #656 measured her wedged in front of the row
-holding a diagonal, and the walks through the gap facing 45° fail there. The other answer, five posts barring the
+gap is 36.4px; at 40px (30.4px) a walk through the gap's middle facing 45° off her way stops at
+the row. The other answer, five posts barring the
 band with only the pavements open, is the one the player did not choose. *Open to overturn, and
 the player's to judge by eye:* whether two posts still read as a street closed on purpose, which
 is what M53 drew them for; the review item [tall-walrus](../review/2026-10-07-tall-walrus.md) asks.
