@@ -10,4 +10,4 @@ a 48.3px circle, about half the area. The record and the phone review give only 
 
 **Open, for the player:** is 105% exact, or a minimum? As a minimum, each catch is the larger of
 its old catch and 1.05 times its drawn radius, in all three places. Whichever the answer, the phone
-review that [leafy-marten](../2026-10-10-leafy-marten/README.md) rewrites says the catches changed.
+review [leafy-marten](../../review/2026-10-10-leafy-marten.md) says the catches changed.

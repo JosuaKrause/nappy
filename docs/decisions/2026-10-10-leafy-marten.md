@@ -23,12 +23,17 @@ never saved. The rig flag `--controls` (and `?controls=`) also takes `joystick-l
 **This replaces part of [round-gecko](2026-10-07-round-gecko.md)**, the unused joystick becomes Run,
 by the player's own change of mind: its "using the joystick chooses the side" and "it's not
 permanent", the both-rings start before the first press, and the swap on a press or a band crossing
-are gone. Round-gecko's Run disc at the joystick's size, the 5% catch, held Run with the double-tap
+are gone. So is [M90](2026-09-07-M90-the-controls-do-what-the-hand-does.md)'s re-target on leaving
+the middle band, the player's own 2026-09-07 reasoning ("since there is a gap in the middle that
+stops I think we should retarget to the other side when that happens"): with one steering focus
+there is no other side to re-target to. Round-gecko's Run disc at the joystick's size, the 5% catch, held Run with the double-tap
 latch, and per-pointer roles stay.
 
 **Reach and dead zone, the filer's proposals as built, open to overturn.** The steering half ends
 two thirds of the way to Run's focus (`STEERING_REACH`, x≈773 when the left side steers, x≈507 when
-the right does); the 2026-09-07 stop band moved to that edge at its 96px width, and everything
+the right does); the 2026-09-07 stop band moved to that edge at the ring's 96px width (the player's "size of the
+stop circle" was 96px when the ring and the stop circle were one; the review item asks whether it
+follows the 32px dead zone instead), and everything
 beyond it is Run's. The dead zone is `DEAD_ZONE_RADIUS` 32px, drawn as its own faint circle inside
 the unchanged 48px ring (`RING_RADIUS`). The tap scheme's stop circle on her stays half the dead
 zone, as playtest 34 finding 5 asks ("exactly … the size of the joystick stop circle nothing
