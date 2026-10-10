@@ -68,11 +68,14 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
   --auditions-reuse  build the three mixes only when a compatible retained base exists; refuse
                      a mismatch without opening a recording window
   --selected        capture every tracked scene and build the chosen Glass Alarm composition,
-                    including additive bass and ending; requires no retained historical movies
+                    including additive bass (and an ending layer only when `ending_events` in
+                    final-score.json is non-empty); requires no retained historical movies
   --selected-reuse  render the changed hook, dog and title, replace those intervals in the
-                    exact retained audition base, and build the selected Glass Alarm cut
+                    exact retained audition base, and build the selected Glass Alarm cut; refuses a
+                    shot list whose timeline differs from the one final-score.json records for it
   --selected-remix  render the hook and unfaded title in the exact prior selected base,
-                    and rebuild the selected mix; refuse a mismatch rather than recapture
+                    and rebuild the selected mix; refuse a mismatch (file hash or timeline) rather
+                    than recapture
   --shot NAME      render one shot alone into TRAILER_OUT/shot-NAME.mp4
   --check NAME     render the shot twice and compare every frame's hash; exits non-zero on a
                    difference inside the shot's cut
@@ -139,10 +142,6 @@ fi
 if [[ "$MODE" == selected* && ! -f "$FINAL_SCORE_FILE" ]]; then
     echo "trailer.sh: no selected score at ${FINAL_SCORE_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
-fi
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected* ]] && ! command -v uv >/dev/null 2>&1; then
-    echo "trailer.sh: uv not found on PATH; synthesized scores use the project Python environment" >&2
-    exit 127
 fi
 
 # ------------------------------------------------------------------- the shot list, checked ---
@@ -284,21 +283,28 @@ if [[ "$MODE" == selected* ]]; then
     final_score_errors="$(jq -r '
         def num: type == "number";
         (if (keys - ["version","base_option","output","source_base","source_settings",
-            "source_base_sha256","remix_base","remix_base_sha256","base_score_sha256",
+            "source_base_sha256","source_base_timeline","remix_base","remix_base_sha256",
+            "remix_base_timeline","remix_manifest","base_score_sha256",
             "base_score_raw_pcm_sha256","base_score_pcm_sha256",
             "bass_target_mean_db","bass_peak_ceiling_db","bass_events",
             "ending_target_mean_db","ending_peak_ceiling_db","ending_events"] | length) == 0 then empty
             else "unknown selected-score field" end),
         (if .version == 1 then empty else "version must be 1" end),
         (if all([.base_option,.output,.source_base,.source_settings,.source_base_sha256,
-            .remix_base,.remix_base_sha256,.base_score_sha256,.base_score_raw_pcm_sha256,
+            .remix_base,.remix_base_sha256,.remix_manifest,.base_score_sha256,.base_score_raw_pcm_sha256,
             .base_score_pcm_sha256][]; type == "string" and length > 0) then empty
             else "selected score paths, ids and hashes are required" end),
         (if (.output | test("^[a-z0-9-]+\\.mp4$")) and
             (.source_base | test("^[a-z0-9/_-]+\\.mkv$")) and
             (.source_settings | test("^[a-z0-9/_-]+\\.json$")) and
-            (.remix_base | test("^[a-z0-9/_-]+\\.mkv$")) then empty
+            (.remix_base | test("^[a-z0-9/_-]+\\.mkv$")) and
+            (.remix_manifest | test("^[a-z0-9-]+\\.json$")) then empty
             else "selected score paths are malformed" end),
+        (if all([.source_base_timeline,.remix_base_timeline][]; type == "array" and length > 0 and
+                all(.[]; type == "object" and (keys - ["shot","gap","length"] | length) == 0 and
+                    (.shot | type) == "string" and (.shot | length) > 0 and
+                    (.gap | num) and .gap >= 0 and (.length | num) and .length > 0))
+            then empty else "a retained base needs the timeline it was cut with: shot, gap and length per shot" end),
         (if (.bass_target_mean_db | num) and .bass_target_mean_db >= -60 and .bass_target_mean_db <= -18
             then empty else "bass_target_mean_db must be between -60 and -18" end),
         (if (.bass_peak_ceiling_db | num) and .bass_peak_ceiling_db >= -24 and .bass_peak_ceiling_db <= -3
@@ -423,6 +429,23 @@ if [[ "$MODE" == selected* ]]; then
         echo "trailer.sh: the selected score, replacement intervals or bass cues do not fit the cut" >&2
         exit 1
     fi
+    # A reuse mode cuts the kept footage at today's shot times, so the base must have been cut with
+    # exactly this timeline; a changed length or gap would drop or repeat footage without any error.
+    base_timeline_key=""
+    [[ "$MODE" != selected-reuse ]] || base_timeline_key=source_base_timeline
+    [[ "$MODE" != selected-remix ]] || base_timeline_key=remix_base_timeline
+    if [[ -n "$base_timeline_key" ]] && ! jq -n -e --arg key "$base_timeline_key" \
+            --slurpfile cut "$SHOTS_FILE" --slurpfile final "$FINAL_SCORE_FILE" '
+        [$cut[0].shots[] | {shot:.name,gap:(.gap // 0),length:.length}] == $final[0][$key]
+    ' >/dev/null; then
+        echo "trailer.sh: ${SHOTS_FILE#"$PROJECT_DIR"/} no longer matches the timeline the retained base was cut with (${base_timeline_key} in ${FINAL_SCORE_FILE#"$PROJECT_DIR"/}); refusing to cut it at other times" >&2
+        exit 1
+    fi
+fi
+# uv is needed only to synthesize scores, after the pure-jq refusals above.
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected* ]] && ! command -v uv >/dev/null 2>&1; then
+    echo "trailer.sh: uv not found on PATH; synthesized scores use the project Python environment" >&2
+    exit 127
 fi
 if ! jq -e --argjson total "$total_seconds" '
     all(.score.notes[]; .at + .duration <= $total) and
@@ -991,7 +1014,7 @@ audition_source_signature() {
     {
         jq -S 'del(.score)' "$SHOTS_FILE"
         while IFS= read -r file; do
-            shasum -a 256 "$PROJECT_DIR/$file"
+            printf '%s  %s\n' "$(shasum -a 256 < "$PROJECT_DIR/$file" | awk '{print $1}')" "$file"
         done < <(git -C "$PROJECT_DIR" ls-files src art project.godot scene-recipes tools/trailer.sh tools/trailer/window)
     } | shasum -a 256 | awk '{print $1}'
 }
@@ -1059,8 +1082,9 @@ build_ending_once() {
         -af "volume=${adjust}dB" -c:a pcm_s16le "$score"
 }
 
-# Replaces only the two changed shot intervals. The middle and tail are decoded from the retained
-# e29585da base, never recaptured; the selected-cut manifest records all four sources and hashes.
+# Replaces the hook, dog and title intervals. The middle and tail are decoded from the retained
+# audition base, never recaptured; the selected-cut manifest records every source and hash. The
+# base must have been cut with the current timeline (checked before any render).
 assemble_selected_base() {
     local retained="$1" hook="$2" dog="$3" title="$4" output="$5" hook_end dog_start title_end
     hook_end="$(jq -r '.replacement_intervals.hook.end' <<< "$RESOLVED_FINAL")"
@@ -1224,7 +1248,7 @@ alimiter=limit=0.92[a]" \
         provenance="$(jq -n \
             --arg source "$(jq -r '.remix_base' "$FINAL_SCORE_FILE")" \
             --arg source_sha "$(jq -r '.remix_base_sha256' "$FINAL_SCORE_FILE")" \
-            --arg source_revision "$(jq -r '.assembly_revision' "$OUT_DIR/trailer-glass-alarm-final.json")" \
+            --arg source_revision "$(jq -r '.assembly_revision' "$remix_manifest")" \
             --arg hook_sha "$(shasum -a 256 < "$WORK/selected-hook.mkv" | awk '{print $1}')" \
             --arg title_sha "$(shasum -a 256 < "$WORK/selected-title.mkv" | awk '{print $1}')" \
             --argjson intervals "$(jq '.replacement_intervals' <<< "$RESOLVED_FINAL")" \
@@ -1245,10 +1269,17 @@ alimiter=limit=0.92[a]" \
                 title:{interval:$intervals.title,sha256:$title_sha}}}')"
     fi
     if [[ "$MODE" != selected ]]; then
+        local retained_settings_file="$OUT_DIR/$(jq -r '.source_settings' "$FINAL_SCORE_FILE")" retained_revision
+        # Read outside the nested substitution below, where a failure would not stop the script.
+        retained_revision="$(jq -er '.capture_revision | select(type == "string" and length > 0)' \
+            "$retained_settings_file")" || {
+            echo "trailer.sh: ${retained_settings_file#"$PROJECT_DIR"/} is absent or records no capture_revision" >&2
+            return 1
+        }
         retained_provenance="$(jq -n \
             --arg file "$(jq -r '.source_base' "$FINAL_SCORE_FILE")" \
             --arg sha256 "$(jq -r '.source_base_sha256' "$FINAL_SCORE_FILE")" \
-            --arg revision "$(jq -r '.capture_revision' "$OUT_DIR/$(jq -r '.source_settings' "$FINAL_SCORE_FILE")")" \
+            --arg revision "$retained_revision" \
             --argjson intervals "$(jq '.replacement_intervals' <<< "$RESOLVED_FINAL")" \
             --argjson duration "$total_seconds" \
             '{retained_base:{file:$file,sha256:$sha256,capture_revision:$revision,
@@ -1637,13 +1668,15 @@ case "$MODE" in
         ;;
     selected-remix)
         remix_base="$OUT_DIR/$(jq -r '.remix_base' "$FINAL_SCORE_FILE")"
+        remix_manifest="$OUT_DIR/$(jq -r '.remix_manifest' "$FINAL_SCORE_FILE")"
         expected_remix_sha="$(jq -r '.remix_base_sha256' "$FINAL_SCORE_FILE")"
-        if [[ ! -f "$remix_base" || ! -f "$OUT_DIR/trailer-glass-alarm-final.json" ]]; then
-            echo "trailer.sh: selected remix requires the retained selected base and its manifest; refusing to recapture unchanged footage" >&2
+        if [[ ! -f "$remix_base" || ! -f "$remix_manifest" \
+                || ! -f "$OUT_DIR/$(jq -r '.source_settings' "$FINAL_SCORE_FILE")" ]]; then
+            echo "trailer.sh: selected remix requires the retained selected base, its manifest and the retained audition settings; refusing to recapture unchanged footage" >&2
             exit 1
         fi
         actual_remix_sha="$(shasum -a 256 < "$remix_base" | awk '{print $1}')"
-        manifest_remix_sha="$(jq -r '.selected_base.sha256 // ""' "$OUT_DIR/trailer-glass-alarm-final.json")"
+        manifest_remix_sha="$(jq -r '.selected_base.sha256 // ""' "$remix_manifest")"
         if [[ "$actual_remix_sha" != "$expected_remix_sha" || "$manifest_remix_sha" != "$expected_remix_sha" ]]; then
             echo "trailer.sh: prior selected base does not match its remix contract; refusing to recapture unchanged footage" >&2
             exit 1
