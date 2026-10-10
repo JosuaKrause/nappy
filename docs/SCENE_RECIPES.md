@@ -89,7 +89,12 @@ baby sleeps and the walk home begins, the act III and IV return patrols are owed
 
 An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path` and `age`.
 The ordinary scheduler's ground, route, spacing, protected-door and corridor checks accept
-its site. An authored path must equal that production route. Director pursuers use the real
+its site. An authored path must equal that production route. A `loudspeaker` row is a mast, a
+scripted row no roll places, so it is accepted instead on a sidewalk or square tile a mast site
+would be offered (off the home street, its field off a calm interior and off every place a region
+door could stand), clear of what is placed before it, and gives an optional `mast_id`: the
+identity day 11's task and its red arrow answer to (a string no other mast of the scene shares),
+which `mast_id` on any other row refuses. Director pursuers use the real
 ahead-of-player siting. `age` may advance through the initial warning only; active movement is
 simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direction` and optional
 `speed`; production lane, ground, speed and car-gap checks apply.
@@ -286,6 +291,7 @@ and holds every observation, and that nothing in the crowd appears or vanishes i
 | `task-09-crossing.json` | 9, the crossing | 5 tiles west of the mark, the mark unread | the named district door's gatehouse, 540–676px from the mark; done by crossing the door |
 | `task-10-neighbor.json` | 10, warning the neighbor | 5 tiles east of the mark on the street above it, the mark unread | the neighbor, 400px or more from where she reads the mark (about 455px from it), walking home |
 | `task-11-mast.json` | 11, silencing a mast | 5 tiles west of the mark, on the street, the mark unread | a mast put up for the task, 540–644px from the mark |
+| `task-11-two-masts.json` | 11, silencing a mast, with two masts answering | 5 tiles west of the mark, on the street, the mark unread | two authored masts, `south` (224px east of the mark, on the street her walk later goes up) and `north` (where the day's own generated mast stands): the red arrow starts on `south` and moves to `north` once her walk up the street beyond passes the point where `north` is the nearer on foot |
 | `task-12-swing.json` | 12, the swing | 5 tiles east of the mark on the street below it, the mark unread | the swing's base, 540–676px from the mark |
 | `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles west of the mark, on the street, the mark unread | the roadblock, 540–644px from the mark, with the arrow on it |
 | `task-14-last-night.json` | 14, the station's front door | on the sidewalk west of it | the door on the facade, 576–640px out |

@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_the_task_observations_ask_about_the_task(t)
 	_test_the_task_scenes_start_off_an_unread_mark(t)
 	_test_the_door_scenes_show_the_robber_a_done_task_sends(t)
+	_test_an_authored_mast_carries_its_own_id(t)
 	var saved := {"day": GameState.day, "completed": GameState.completed_resistance_steps.duplicate(),
 			"failed": GameState.failed_resistance_steps.duplicate(),
 			"progress": GameState.resistance_progress, "scars": GameState.scars.duplicate(true),
@@ -271,3 +272,33 @@ func _test_the_door_scenes_show_the_robber_a_done_task_sends(t) -> void:
 				pursues = true
 		t.check(done_at > 0 and pursues,
 				"%s asks that the robber pursues her once the task is done" % file)
+
+## A scene recipe gives an authored loudspeaker a `mast_id`, the identity day 11's task and its red
+## arrow answer to, so a scene can stand two masts and show the arrow move between them
+## (`scene-recipes/task-11-two-masts.json`). Only a loudspeaker is a mast, and one id names one mast.
+func _test_an_authored_mast_carries_its_own_id(t) -> void:
+	var mast := func(name: String, row: String, id: Variant) -> Dictionary:
+		var entry := {"name": name, "row": row, "at": [3440, 1936]}
+		if id != null:
+			entry["mast_id"] = id
+		return entry
+	var with := func(events: Array) -> Dictionary:
+		var recipe := _recipe(11, {"mark": [2960, 2224]})
+		recipe.setup["events"] = events
+		return recipe
+	t.check(SceneRecipeRuntime.validate_runtime(with.call([mast.call("a", "loudspeaker", "north"),
+			mast.call("b", "loudspeaker", "south")])).is_empty(),
+			"two loudspeakers with their own ids are accepted")
+	t.check(_refused(with.call([mast.call("a", "charging_dog", "north")]),
+			"belongs to a loudspeaker row"), "only a loudspeaker is given a mast id")
+	t.check(_refused(with.call([mast.call("a", "loudspeaker", "north"),
+			mast.call("b", "loudspeaker", "north")]), "unique nonempty string"),
+			"two masts cannot share an id")
+	t.check(_refused(with.call([mast.call("a", "loudspeaker", "")]), "unique nonempty string"),
+			"an empty id names nothing")
+	var data: Dictionary = SceneRecipe.load_file("res://scene-recipes/task-11-two-masts.json").data
+	var ids := []
+	for entry: Dictionary in data.setup.events:
+		ids.append(entry.get("mast_id", ""))
+	t.check(ids.size() == 2 and not "" in ids and ids[0] != ids[1],
+			"the two-mast scene stands two masts under two ids")
