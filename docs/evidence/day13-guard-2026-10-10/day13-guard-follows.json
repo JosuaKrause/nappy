@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "name": "calm-pelican evidence: day 13's guard waits at the roadblock she approaches",
+  "seed": 11,
+  "extent": {
+    "scope": "full"
+  },
+  "city": {
+    "context_seed": 1917501
+  },
+  "anchors": {
+    "mark": {
+      "tile": [
+        92,
+        69
+      ]
+    },
+    "start": {
+      "tile": [
+        87,
+        70
+      ]
+    }
+  },
+  "setup": {
+    "tutorial_complete": true,
+    "day": 13,
+    "parent": "mother",
+    "player": {
+      "at": "start",
+      "facing": "east"
+    },
+    "task": {
+      "mark": "mark"
+    },
+    "events": [
+      {
+        "name": "the_roadblock_she_approaches",
+        "row": "roadblock",
+        "at": [
+          2768,
+          2064
+        ]
+      }
+    ]
+  },
+  "playback": {
+    "walk": "1.9@85@1.8w0.9n",
+    "duration": 6.2,
+    "capture_at": 5.4,
+    "observations": [
+      {
+        "tick": 60,
+        "subject": "task",
+        "condition": "offered"
+      }
+    ],
+    "camera": {
+      "zoom": 0.5
+    }
+  }
+}

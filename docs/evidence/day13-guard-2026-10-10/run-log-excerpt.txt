@@ -1,0 +1,11 @@
+   0.0  contact  step 15 on offer at (92,69)
+   0.0  roll     chalk mark guarded (two-thirds in): robber 155px away
+   0.0  contact  walked within 128px of the chalk mark at (92,69)
+   0.0  contact  step 15 seen at (92,69) after 1.0s within 150px
+   0.0  contact  step 15 completed
+   0.0  contact  a roadblock is placed at (109,72) for the task, 552px from the mark
+   0.0  contact  step 16 on offer at (109,72)
+   0.0  contact  step 16 stands 552px from the mark it was read at
+   0.0  roll     task guarded (band): robber 170px away
+   0.0  contact  step 16: the red arrow moves to a closer target on foot
+   0.0  roll     the task's guard moves, unseen, to the roadblock she approaches, 204px from it
