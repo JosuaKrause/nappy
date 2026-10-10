@@ -1333,6 +1333,14 @@ const CAR_STRIKE_HALF_WIDTH := 14.0
 ## Below this a car cannot run anybody over, however close they stand to it. A car halted at a
 ## zebra is scenery, and walking into one must not end the day.
 const CAR_STRIKE_MIN_SPEED := 20.0
+## How far past the touch a patrol car's strike reaches ahead of its nose, in seconds of its own
+## travel (`EventDef.drives`): a tenth of a second, 7px at the patrol's 74px/s. The strike has to
+## reach past the point where the car's body would first touch her, because the car never moves its
+## body into her — a step that would is refused — and a strike stated over the touch alone could
+## then never fire: a lethal reach a body stops her short of, which `EventDef.validate()` refuses for
+## a standing thing for the same reason. Seconds rather than pixels so a frame's step at any speed
+## the car drives at, down to ten frames a second, lands inside it.
+const PATROL_STRIKE_LEAD := 0.1
 
 ## Seconds of travel at which a car sounds its horn at somebody standing in its lane. This is
 ## the traffic fairness contract, and `validate_traffic()` checks it: the warning has to be

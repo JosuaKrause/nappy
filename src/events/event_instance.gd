@@ -1000,6 +1000,7 @@ func drawn_box() -> Rect2:
 		_drawn_box = Rect2()
 		return _drawn_box
 	var size := box.size
+	box = _with_the_drop(def, box)
 	var half := maxf(11.0, def.obstructs_radius)
 	if def.has_a_spread and _spread_vertical:
 		box = box.merge(Rect2(-size.x * 0.5, -half, size.x, half * 2.0))
@@ -1023,7 +1024,8 @@ static func box_of(row: EventDef) -> Rect2:
 
 ## **Everything a row can put on the screen**, standing on its feet at the origin, whichever way it
 ## faces: the union of every picture its look can draw (`family_sources()` — a cyclist coming down
-## the screen draws its front view, not the side view its badge shows), its body shadow (a disc of
+## the screen draws its front view, not the side view its badge shows) wherever it can stand (a
+## police car's lowered over its body, `_picture_drop_of()`), its body shadow (a disc of
 ## its shape's radius at its feet), the loose dog's trailing lead, the bob and the excitement halo's
 ## rim (`EntityHalo.HALO_MARGIN`). What a thing arriving from off screen is placed wholly outside the
 ## camera's view by (`PendingWarning.just_out_of_sight()`), so nothing of it shows on the frame it
@@ -1043,6 +1045,7 @@ static func footprint_of(row: EventDef) -> Rect2:
 		any = true
 	if not any:
 		return box_of(row)
+	box = _with_the_drop(row, box)
 	if row.draws_body_shadow and row.shape != null:
 		var r := row.obstructs_radius if row.obstructs_radius > 0.0 else row.shape.radius
 		box = box.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
@@ -1101,6 +1104,13 @@ var _skip_draw := DevFlags.skip_events()
 ## value again every frame through `set_player_at()`, part of the duck type it reads back for the
 ## caret — the two writers agree because both read `_player.global_position` the same frame.
 var player_at := Vector2.INF
+
+## Where her pram's own body is (`Stroller.PRAM_BODY_RADIUS`, on her circumference along her
+## facing), told beside `player_at` by `EventManager`, or `Vector2.INF` with no pram (a rig, or the
+## escape's carrying). Only a car that drives asks it (`EventDef.drives`): the pram is the part of
+## her that meets a car first when she faces it, so a car that stopped only for her own body would
+## shove the pram, and a strike stated over her body alone would be stopped short by the pram.
+var pram_at := Vector2.INF
 
 ## Her current velocity, her current decay rate (`Baby.decay_rate()`, her locomotion times the
 ## ground she is on) and the baby's current sensitivity (`Baby.current_sensitivity()`) —
@@ -1419,6 +1429,11 @@ func _ready() -> void:
 	# field's own doc, and `_become_solid_once_it_starts()` below, which is where it goes down.
 	if def.obstructs_radius > 0.0 and not def.solid_once_it_starts:
 		_build_obstruction()
+	# A car's body is its `shape` (`EventDef.drives`), put down here like any other unless she is
+	# already where it would stand, in which case `_become_solid_once_it_starts()` puts it down the
+	# first frame she is not — a body never goes down around her.
+	if def.drives and _gap_to_her(position, _heading) >= 0.0:
+		_build_obstruction()
 	if def.flock_size > 0:
 		_build_the_flock()
 	_build_scenery()
@@ -1644,6 +1659,9 @@ var _arm_was_open := false
 ## has her does, once a frame — and an infinite distance is outside every footprint, so a rig with
 ## no player in it gets the body immediately rather than never.
 func _become_solid_once_it_starts() -> void:
+	if def.drives and _obstruction == null and _gap_to_her(position, _heading) >= 0.0:
+		_build_obstruction()
+		return
 	if not def.solid_once_it_starts or _obstruction != null:
 		return
 	if is_finished or is_leaving or is_waiting() or is_telegraphing():
@@ -1651,6 +1669,148 @@ func _become_solid_once_it_starts() -> void:
 	if global_position.distance_to(player_at) <= def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS:
 		return
 	_build_obstruction()
+
+# -------------------------------------------------------------------- a car ---
+# `EventDef.drives`: a body that moves and never into her, and a strike ahead of its nose while it
+# drives. See that field's own doc for why the two are separate things.
+
+## True while `_drive()` is running this frame's ordinary `_process()` body inside itself.
+var _driving := false
+## Whether this frame's movement was taken back because it would have put the body into her: the
+## car is standing for her. Cleared every frame `_drive()` runs.
+var _held_by_her := false
+
+## How near the car's body may be moved to her and her pram, in px. Above zero so the car stops a
+## hair short of the contact her own collision already rests at rather than on it.
+const DRIVEN_CLEARANCE := 0.5
+
+## Runs a car's frame, and **takes back whatever part of it would have brought the body into her or
+## her pram** — the step along its route, the chase toward her, the departure and a turn onto a new
+## heading alike — so the car stands where it was, facing the way it faced, until she moves. It
+## stops rather than pushes: a car that shoved her could shove her into a wall, which is the pin the
+## mobile exemption from solidity exists to prevent.
+##
+## **Positional, never a force**, the crowd's own rule for bodies (the **crowd-traffic** skill): the
+## pose the frame would end on is checked, rather than a brake asked to want something, because a
+## brake arrives a frame late and a car a frame late is inside her.
+##
+## **A pose that leaves her no nearer is always allowed**, so a car she walked up against drives on
+## along its flank or away from her rather than wedging for good: only a pose both nearer than
+## `DRIVEN_CLEARANCE` and nearer than it already was is refused — the same "an agent already
+## standing where it may not be is left alone" the crowd's own guard keeps.
+##
+## **Driving into her nose first is the strike, not the stop.** The strike reaches
+## `Tuning.PATROL_STRIKE_LEAD` of travel past the touch (`_in_front()`), so a car that would drive
+## its nose into her on the carriageway ends the day before this refuses the step; what it refuses
+## is the rest — a flank or a corner turned into her, a pram poking over the kerb, the investigating
+## car coming over to her.
+func _drive(delta: float) -> void:
+	var at := position
+	var heading := _heading
+	var travelled := _path_travelled
+	var phase := _gait_phase
+	var was := _gap_to_her(at, heading)
+	_driving = true
+	_process(delta)
+	_driving = false
+	_held_by_her = false
+	if not is_finished:
+		var now := _gap_to_her(position, _heading)
+		if now < DRIVEN_CLEARANCE and now < was - 0.001:
+			position = at
+			_heading = heading
+			_path_travelled = travelled
+			_gait_phase = phase
+			_gait_moving = false
+			_held_by_her = true
+			_redraw_if_the_picture_changed()
+	_turn_the_body()
+
+## Whether the car is standing for her this frame — see `_drive()`.
+func is_held_by_her() -> bool:
+	return _held_by_her
+
+## Lays a car's body along its heading, which `_build_obstruction()` read once. A capsule turns; a
+## point would not need to.
+func _turn_the_body() -> void:
+	if _obstruction == null or def.shape == null or def.shape.half_length <= 0.0:
+		return
+	var angle := _solid_axis().angle() - PI * 0.5
+	for child in _obstruction.get_children():
+		var collision := child as CollisionShape2D
+		if collision and not is_equal_approx(collision.rotation, angle):
+			collision.rotation = angle
+
+## How far apart the car's body would be from her and from her pram with the car at `at` facing
+## `heading`: the smaller gap, negative where they would overlap, `INF` for anything that does not
+## drive or with nobody told where she is.
+func _gap_to_her(at: Vector2, heading: Vector2) -> float:
+	if not def.drives or def.shape == null or player_at == Vector2.INF:
+		return INF
+	var gap := _gap_to(at, heading, player_at, Tuning.PLAYER_BODY_RADIUS)
+	if pram_at != Vector2.INF:
+		gap = minf(gap, _gap_to(at, heading, pram_at, Stroller.PRAM_BODY_RADIUS))
+	return gap
+
+func _gap_to(at: Vector2, heading: Vector2, centre: Vector2, radius: float) -> float:
+	var local := (centre - at).rotated(-heading.angle())
+	return def.shape.distance_to_spine(local) - def.shape.radius - radius
+
+## Whether this car is driving its route right now: the one state its strike is live in. Not while
+## it stands (a telegraph it holds still through, parked), not once it is leaving — it is over, and
+## nothing that is over ends the day — and **not while it comes over to investigate**: the heated
+## copy that has noticed her is a pursuer closing on her, not a car on its route, and it stops
+## against her rather than striking her (see `EventDef.at_heat()`). A car standing for her
+## (`is_held_by_her()`) still means to drive, so it is still driving.
+func is_driving() -> bool:
+	if not def.drives or is_finished or is_leaving or is_parked:
+		return false
+	if not def.mobile or path.size() < 2 or is_telegraphing_still():
+		return false
+	if def.pursues and not is_waiting():
+		return false
+	return def.speed >= Tuning.CAR_STRIKE_MIN_SPEED
+
+## Whether a circle of `radius` at `centre` is in front of a car at `at` facing `heading`, within
+## `seconds` of its travel past the point its body would touch it: past the nose (`shape`'s spine
+## ends `half_length` ahead of its centre), across no wider than the body and the circle together —
+## the ground the body sweeps — and no further ahead than the touch plus that travel. **Nothing
+## behind it and nothing beside it**: a circle level with the body's flank is outside, whatever the
+## car is doing. *(leafy-puffin, inbox #648: "lethal only in front while driving".)*
+func _in_front(at: Vector2, heading: Vector2, centre: Vector2, radius: float,
+		seconds: float) -> bool:
+	var local := (centre - at).rotated(-heading.angle())
+	var nose := def.shape.half_length
+	if local.x <= nose or absf(local.y) > def.shape.radius + radius:
+		return false
+	return local.x <= nose + def.shape.radius + radius + def.speed * seconds
+
+## Whether her body or her pram, with her at `her`, is in front of a car at `at` facing `heading`
+## within `seconds` of its travel past the touch, **with her on the carriageway** — the crowd car's
+## own condition (`Crowd._strike()`): the kerb is the edge she chose to step over, so a pram poking
+## over it from the sidewalk is a car stopping for her, not a strike.
+func _meets_her(at: Vector2, heading: Vector2, her: Vector2, seconds: float) -> bool:
+	if not _on_the_carriageway(her):
+		return false
+	if _in_front(at, heading, her, Tuning.PLAYER_BODY_RADIUS, seconds):
+		return true
+	if pram_at == Vector2.INF or player_at == Vector2.INF:
+		return false
+	return _in_front(at, heading, her + (pram_at - player_at), Stroller.PRAM_BODY_RADIUS, seconds)
+
+## Whether `at` is on the carriageway: a road or a crossing tile. True with no map, which is every
+## data-level rig built without one, as `_clear_line_to()` is.
+func _on_the_carriageway(at: Vector2) -> bool:
+	return _map == null or Tile.is_road(_map.tile_type_at_world(at))
+
+## **The car's warning, a horn said with the mark over her head**: true while it drives at her where
+## she stands on the carriageway, within `Tuning.CAR_HORN_TIME` of its travel of the strike — so the
+## warning comes that long before the strike whatever the car's speed, the crowd car's contract
+## (`Tuning.validate_traffic()`, which holds it against walking off the carriageway with the
+## doubled margin). `EventManager._warn_about_the_ground_she_is_on()` raises the mark from it.
+func closes_on(her: Vector2) -> bool:
+	return is_driving() and _meets_her(global_position, _heading, her,
+			Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME)
 
 ## Whether the frame record (`FrameRecord`) was running when this event was made, read once here
 ## so that, with the record off, `_process()` pays one member read rather than a static read and a
@@ -1674,6 +1834,11 @@ func _process(delta: float) -> void:
 		FrameRecord.leave(outer)
 		return
 	if is_finished:
+		return
+	# A car runs its frame inside `_drive()`, which takes back whatever part of it would have put
+	# its body into her. The body below runs through the call to itself.
+	if def.drives and not _driving:
+		_drive(delta)
 		return
 	_clock += delta
 	age += delta
@@ -3056,7 +3221,17 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 ## distance would not physically connect so counting it as caught would be unfair. Only if the
 ## Robert touches the player should it end instantly".)* The reach is unchanged; what is added is
 ## that nothing stands between them. Every other `hard_fail` row keeps the straight-line distance.
+##
+## **A car that drives is the one row lethal without `hard_fail`** (`EventDef.drives`): it strikes
+## her in front of its nose while it drives its route and she is on the carriageway, and nowhere
+## else — not behind it, not beside it, not while it stands. A body touching her is not enough, and
+## not needed: the strike reaches `Tuning.PATROL_STRIKE_LEAD` of its travel past the touch, so it
+## fires before the car would stop against her (`_drive()`). Its telegraph is not asked: its warning
+## is a car's, `closes_on()`, not a field coming up to strength.
 func is_lethal_at(world_position: Vector2) -> bool:
+	if def.drives:
+		return is_driving() and _meets_her(global_position, _heading, world_position,
+				Tuning.PATROL_STRIKE_LEAD)
 	if is_finished or is_leaving or is_waiting() or not def.hard_fail or is_telegraphing():
 		return false
 	if global_position.distance_to(world_position) > def.lethal_reach():
@@ -3278,7 +3453,22 @@ func expected_impact_at(player_position: Vector2) -> float:
 ## telegraph has to read red, or the doubled caret only ever appears in the last fraction of a
 ## second. `is_waiting()`, `is_finished` and `is_leaving` still refuse it — a waiting pursuer has
 ## not decided anything about her yet, so there is no course to be lethal on.
+##
+## **A car that drives asks its own strike along its own course** (`EventDef.drives`): driving now,
+## and her in front of its nose on the carriageway from some point of its next
+## `EXPECTED_IMPACT_HORIZON` straight ahead — so the doubled caret is over a patrol car exactly when
+## staying where she is in its lane would end the day.
 func will_be_lethal(player_position: Vector2) -> bool:
+	if def.drives:
+		if not is_driving():
+			return false
+		var ahead := 0.0
+		while ahead <= def.speed * Tuning.EXPECTED_IMPACT_HORIZON:
+			if _meets_her(global_position + _heading * ahead, _heading, player_position,
+					Tuning.PATROL_STRIKE_LEAD):
+				return true
+			ahead += def.speed * 0.25
+		return false
 	if is_finished or is_leaving or is_waiting() or not def.hard_fail:
 		return false
 	var velocity := _caret_velocity()
@@ -3429,9 +3619,13 @@ func _picture_key() -> Vector4i:
 	flags = flags * 2 + (1 if mast and silenced else 0)
 	flags = flags * 2 + (1 if mast and _mast_is_telegraphing_now() else 0)
 	var sector := EightDirection.update(_view_sector, _drawn_heading())
+	# A car's picture is anchored on its live heading (`_police_car_anchor()`), and its shadow and
+	# body turn with it, so a car coming over to her redraws as it turns rather than only when it
+	# crosses into another sector. Whole degrees, above the protest's own poses.
+	var turn := posmod(roundi(rad_to_deg(_heading.angle())), 360) if def.drives else 0
 	return Vector4i(
 			flags,
-			sector + 8 * caret + 32 * _protest_pose(),
+			sector + 8 * caret + 32 * _protest_pose() + 320 * turn,
 			roundi(_current_bob() * BOB_STEPS_PER_PX),
 			roundi(swell * SWELL_STEPS))
 
@@ -3627,11 +3821,15 @@ func _spread_axis() -> Vector2:
 	return Vector2.DOWN if _spread_vertical else Vector2.RIGHT
 
 ## The ground-plane direction this instance's own solid body's spine lies along, for whichever of
-## the two families ever has a segment shape: a spread-drawn row (`_spread_axis()`, above) or the
-## one stationary-vehicle row wide enough to be a segment (`moving_van` — see `GroundShape.band()`
-## on that row), which lies along whichever of the street's axes `_stationary_vehicle_side` already
-## draws it on. Never asked of a point shape, where an axis means nothing.
+## the three families ever has a segment shape: a car that drives (`EventDef.drives`), along its
+## own heading; a spread-drawn row (`_spread_axis()`, above); or the one stationary-vehicle row wide
+## enough to be a segment (`moving_van` — see `GroundShape.band()` on that row), which lies along
+## whichever of the street's axes `_stationary_vehicle_side` already draws it on. Never asked of a
+## point shape, where an axis means nothing.
 func _solid_axis() -> Vector2:
+	# A car's body lies along the way it is driving, and turns with it (`_turn_the_body()`).
+	if def.drives:
+		return _heading.normalized() if not _heading.is_zero_approx() else Vector2.RIGHT
 	if def.has_a_spread or def.look == EventDef.Look.PROTEST or def.look == EventDef.Look.FIREFIGHT:
 		return _spread_axis()
 	return Vector2.RIGHT if _stationary_vehicle_side else Vector2.DOWN
@@ -4107,8 +4305,13 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.POLICE_CAR:
 			# East-authored — see `ICE_CREAM_VAN` above — and now a real octant: `police_patrol` is
 			# mobile and turns corners along its own patrol route, so this is the first vehicle row
-			# whose diagonal views are ordinarily reachable rather than a dead branch.
-			_draw_eight_view(POLICE_CAR_BY_VIEW, _heading, canvas)
+			# whose diagonal views are ordinarily reachable rather than a dead branch. Drawn over
+			# its own body rather than standing on its node — see `_police_car_anchor()` — with the
+			# shadow, which is the body's shape, under the node on the ground.
+			var view := _select_view(_heading)
+			_draw_body_shadow(canvas, Vector2(0.0, -_current_bob()))
+			_draw_eight_view(POLICE_CAR_BY_VIEW, _heading, canvas, false, {}, false,
+					_police_car_anchor(view))
 		EventDef.Look.POSTER_CREW:
 			var crew := POSTER_CREW_BY_VIEW_B if _idle_stepping(POSTER_CREW_PASTE_PERIOD) \
 					else POSTER_CREW_BY_VIEW
@@ -4231,6 +4434,51 @@ func _draw_simple(picture: String, canvas: CanvasItem = self,
 ##
 ## `at` is where the feet stand in local space: the node's own origin for every caller but
 ## `_draw_roadblock()`, whose guard stands beside his band rather than on its centre.
+## How much empty canvas each police car view leaves below its own drawn content, in px, read off
+## the SVGs (`art/events/police_car*.svg`): the side view's tyres touch its bottom row, the front and
+## back views' bodies end two rows above theirs and the diagonals' tyres two rows above theirs —
+## the same margins the crowd car's views leave (`CrowdAgent.CAR_CANVAS_BOTTOM_MARGIN`).
+const POLICE_CAR_CANVAS_BOTTOM_MARGIN := {
+	"front": 2.0,
+	"back": 2.0,
+	"side": 0.0,
+	"front_diagonal": 2.0,
+	"back_diagonal": 2.0,
+}
+
+## Where a police car's picture is anchored for `Sprites.draw_standing`, which bottom-centres it:
+## **the drawn content's bottom edge lands on the southernmost point of its body**, the crowd car's
+## own registration rule (`CrowdAgent._car_body_anchor()`), because every view is a standing
+## elevation whose bottom row is the car's nearest ground contact. The body is its `shape`, a
+## capsule centred on the node and laid along the heading (`EventDef.drives`), so its southern reach
+## is `half_length · |heading.y| + radius` — 12px driving east or west, 21 north or south — and
+## the picture sits over the body she walks into rather than standing in front of it. Read off the
+## live heading rather than the quantised view, the crowd car's reason: the body turns
+## continuously while a car comes over to her, and a picture anchored on the view would jump at
+## every sector boundary.
+func _police_car_anchor(view: String) -> Vector2:
+	var south := def.shape.half_length * absf(_solid_axis().y) + def.shape.radius
+	return Vector2(0.0, south + float(POLICE_CAR_CANVAS_BOTTOM_MARGIN.get(view, 0.0)))
+
+## The furthest below its own node a row's picture is ever drawn: a police car's body reach,
+## pointed straight down the screen, and its largest canvas margin (`_police_car_anchor()`); zero
+## for every other row, whose pictures stand on the node. `footprint_of()` and `drawn_box()` add it.
+static func _picture_drop_of(row: EventDef) -> float:
+	if row.look != EventDef.Look.POLICE_CAR or row.shape == null:
+		return 0.0
+	var margin := 0.0
+	for view: String in POLICE_CAR_CANVAS_BOTTOM_MARGIN:
+		margin = maxf(margin, float(POLICE_CAR_CANVAS_BOTTOM_MARGIN[view]))
+	return row.shape.reach() + margin
+
+## `box` and the same box lowered by `_picture_drop_of(row)`, together: every place between the
+## two a picture can stand as its heading turns.
+static func _with_the_drop(row: EventDef, box: Rect2) -> Rect2:
+	var drop := _picture_drop_of(row)
+	if drop <= 0.0:
+		return box
+	return box.merge(Rect2(box.position + Vector2(0.0, drop), box.size))
+
 func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem = self,
 		side_faces_west := false, by_view_b: Dictionary = {}, draw_shadow := true,
 		at := Vector2.ZERO) -> void:

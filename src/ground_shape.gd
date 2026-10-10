@@ -17,7 +17,8 @@ extends RefCounted
 ## body (`distance_to_spine()`, the ordinary case) and an ellipse for a moving one
 ## (`eccentric_distance()`, eccentricity from speed) are the only two kernels built: nobody
 ## computes the general capsule-and-ellipse sum, because every emitting segment row in the
-## catalogue is stationary and everything that moves is small enough to be a point. See
+## catalogue is stationary but one, and that one — the patrol car — is priced as the point at its
+## centre while it moves, its body lying inside its own field's core. See
 ## docs/EVENTS.md, "The emission model".
 
 ## Which of the three kinds this shape is. A point and a segment could still be told apart by

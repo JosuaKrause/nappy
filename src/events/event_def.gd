@@ -727,6 +727,31 @@ enum HeatResponse {
 ## is reserved the whole time.
 @export var solid_once_it_starts := false
 
+## **A car: solid at its own `shape` in every state, and lethal only in front of it while it
+## drives.** *(azure-koala, inbox #601: "police cars don't have a hitbox"; leafy-puffin, inbox
+## #648, offered "solid in every state, lethal only in front while driving": "yes to the police car
+## hitbox".)* `police_patrol` carries it, and so does every copy of it.
+##
+## **It is the one body that moves, and it answers the reason a moving thing is otherwise exempt
+## from being solid** — a moving wall pins her. `EventInstance` never moves the body into her: a
+## step or a turn that would bring it into contact with her or her pram is refused and the car
+## stands where it is until she moves, a car stopping for her rather than a wall shoving her. She
+## is stopped by it the way she is stopped by anything solid, and nothing follows her into a wall.
+##
+## **`obstructs_radius` stays zero, because it closes no ground**: it drives down a carriageway she
+## walks round it on. So the planners' disc, the crowd's per-tile record and the director's refusal
+## of a director-sited body know nothing about it, and the body is `shape` itself, laid along the
+## car's heading (`EventInstance._solid_axis()`).
+##
+## **What kills is not the body**: a strike area ahead of the nose, only while it drives its route,
+## and only with her on the carriageway (`EventInstance.is_lethal_at()`) — a crowd car's own
+## contract, the painted carriageway she chooses to step onto and a warning `Tuning.CAR_HORN_TIME`
+## of its travel ahead of the strike (`EventInstance.closes_on()`), which `Tuning.validate_traffic()`
+## holds against the time it takes to walk off the carriageway. `hard_fail` stays false: every rule
+## it drives — a route wall, a field kept clear, the doubled telegraph margin — is about a place
+## that ends the day, and this is a car on a road.
+@export var drives := false
+
 ## Which lane of a two-tile pavement an event wants.
 ##
 ## Almost nothing cares, and `ANY` is the honest default: a café spills out of whichever frontage
@@ -1032,9 +1057,10 @@ func at_heat(level: int) -> EventDef:
 				# notices her rather than from dawn. Cold, this row has none and simply drives to
 				# the end of its route.
 				hot.duration = Tuning.HEAT_INVESTIGATE_SECONDS
-			# The non-lethal rung stays non-lethal at every level. Stated rather than assumed,
-			# because the whole instruction this milestone came from is that the ladder has two
-			# rungs and only the top one kills.
+			# The rung stays off the hard-fail ladder at every level. Stated rather than assumed,
+			# because the ladder has two rungs and only the top one hunts her: a patrol car kills
+			# only as a car does, in front of it while it drives its route (`drives`), and never
+			# while it comes over to investigate.
 			hot.hard_fail = false
 		HeatResponse.HUNTS:
 			# Below its own threshold a `HUNTS` row is untouched. Population and intensity are
@@ -1299,6 +1325,27 @@ func validate() -> bool:
 					% [id, detain_distance(), detain_radius, obstructs_radius])
 					+ ("sit inside its own field (inner %.0f <= outer %.0f)"
 					% [inner_radius, outer_radius]))
+			return false
+	# **A car that drives is a body that moves and a strike that is not the body** — see `drives`.
+	# Each half-set version is a row the rules cannot read: a car with no route stands for ever and
+	# its strike never fires, a car with no shape has no body to be, one that also obstructs would be
+	# a moving closure every planner reads as standing ground, and one that is also `hard_fail` would
+	# kill twice over, once by its whole field's core from behind and beside it.
+	if drives:
+		if not mobile or speed < Tuning.CAR_STRIKE_MIN_SPEED or shape == null:
+			push_error("event '%s' drives but has no route, speed (%.0f) or shape to drive with"
+					% [id, speed])
+			return false
+		if obstructs_radius > 0.0 or hard_fail:
+			push_error("event '%s' drives and is also %s: a car closes no ground and kills only "
+					% [id, "an obstruction" if obstructs_radius > 0.0 else "hard_fail"]
+					+ "in front of it")
+			return false
+		# The car's own contract, the crowd car's: the warning comes `CAR_HORN_TIME` of its travel
+		# ahead of the strike, so whatever its speed she has that long to walk off the carriageway.
+		if Tuning.CAR_HORN_TIME + 0.001 < Tuning.required_horn_time():
+			push_error("event '%s' drives with a %.2fs warning, under the %.2fs needed to walk off "
+					% [id, Tuning.CAR_HORN_TIME, Tuning.required_horn_time()] + "the carriageway")
 			return false
 	# *(busy-quail, inbox #569: "1s warning should be enough".)* A badge up alone is up for at most
 	# `Tuning.WARNING_ALONE_MAX`, whatever the row.

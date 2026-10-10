@@ -422,19 +422,23 @@ func _test_approaching_costs_more_than_receding(t) -> void:
 			+ ("(%.1f) than the same distance behind it (%.1f) — approaching costs more"
 					% [approaching, receding]))
 
-## D2: nobody builds the general capsule-and-ellipse sum, because every emitting segment row in the
-## catalogue is stationary. If a future row breaks that, `contribution_at()`'s "moving objects are
-## points" simplification quietly drops its own body — this is the regression guard.
+## D2: nobody builds the general capsule-and-ellipse sum, because a moving emitter's field is priced
+## from its centre as a point (`GroundShape.field_distance()`). That is only true to the row's own
+## body when the body lies inside its own field's core — the patrol car's 21px capsule inside its
+## 44px core, `police_patrol` being the one emitting segment that moves (`EventDef.drives`): the
+## core is full strength wherever the body is, and past it the point is wrong by at most the spine's
+## half-length. A moving segment reaching past its core would quietly drop its own body from its
+## field — this is the regression guard.
 func _test_no_emitting_segment_row_moves(t) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
 		if def.shape == null or def.shape.kind != GroundShape.Kind.SEGMENT or def.intensity <= 0.0:
 			continue
 		checked += 1
-		t.check(not def.mobile,
-				"'%s' emits and is a segment, so it must not be mobile (D2: moving objects are points)"
-				% def.id)
-		t.check(not def.pursues,
-				"'%s' emits and is a segment, so it must not pursue (D2: moving objects are points)"
-				% def.id)
+		if not def.mobile and not def.pursues:
+			continue
+		t.check(def.shape.reach() <= def.inner_radius,
+				("'%s' emits, is a segment and moves, so its %.0fpx body must lie inside its %.0fpx "
+				% [def.id, def.shape.reach(), def.inner_radius])
+				+ "core (D2: moving objects are points)")
 	t.check(checked >= 1, "and at least one emitting segment row was actually checked (%d)" % checked)

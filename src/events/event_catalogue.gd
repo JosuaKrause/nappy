@@ -1582,24 +1582,35 @@ static func _charging_dog() -> EventDef:
 
 # ------------------------------------------------------- Act II: notices (4-7) ---
 
-## Mobile, unhurried, and it stops. Not dangerous yet — the danger is that you start
+## Mobile, unhurried, and it stops. Its field is not the danger — the danger is that you start
 ## planning around it, which is the point.
 ##
-## **The non-lethal rung of the resistance's ladder.** `heat_response = PRESSES`: past
+## **A car, solid and lethal the way a car is** (`EventDef.drives`): *(leafy-puffin, inbox #648,
+## offered "solid in every state, lethal only in front while driving": "yes to the police car
+## hitbox".)* She walks round its body whether it drives, stands or comes over to investigate, and
+## it ends the day only in front of it, while it drives its route, with her on the carriageway.
+##
+## **The patrol rung of the resistance's ladder.** `heat_response = PRESSES`: past
 ## `GameState.resistance_progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
 ## it stops merely patrolling and starts investigating — see `EventDef.at_heat()`. It never gains
-## `hard_fail`, whatever the heat; the van is the rung that kills.
+## `hard_fail`, whatever the heat, and coming over to investigate never strikes her; the van is the
+## rung that hunts.
 static func _police_patrol() -> EventDef:
 	var def := EventDef.new()
 	def.id = "police_patrol"
-	# It does not telegraph its coming (`EventDef.telegraphs`, amendment 9 of M226): 74px/s is slower
-	# than a walk and it never ends the day (a pass costs about 3 points); no badge, outside the
-	# telegraph contract. Its copies — the return's and a torn poster's down the road, and the
-	# investigating one at heat — carry it with them.
+	# It does not telegraph its coming (`EventDef.telegraphs`): 74px/s is slower than a walk, so it
+	# is not something fast coming at her, and its strike is a car's, warned the way a car warns
+	# (`EventDef.drives`) rather than with a badge from off screen. Its copies — the return's and a
+	# torn poster's down the road, and the investigating one at heat — carry it with them.
 	def.telegraphs = false
 	def.display_name = "Patrol"
 	def.look = EventDef.Look.POLICE_CAR
-	def.shape = GroundShape.point(19.0)
+	# **The body is its drawn ground contact** — 42px long, the side view's body from bumper to
+	# bumper (`police_car.svg`, x 2 to 44), and 24px wide, the end views' body from flank to flank
+	# (`police_car_front.svg`, x 3 to 27) — as a capsule laid along its heading, the same datum its
+	# shadow is drawn from, one shape per object. `drives` makes it the body as well.
+	def.shape = GroundShape.segment(9.0, 12.0)
+	def.drives = true
 	def.first_day = 4
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
