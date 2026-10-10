@@ -11,7 +11,8 @@ with (`source_base_timeline`, `remix_base_timeline`: shot, gap and length per sh
 `tools/trailer.sh` validates both, and both reuse modes compare the matching timeline with
 `shots.json` before any base or render is touched, refusing any difference. The saved-audio
 signature hashes file contents with repo-relative paths, so a base made in one checkout matches in a
-worktree (existing bases recapture once). `--selected-remix` reads its manifest name from
+worktree; existing audition bases no longer match, so `--auditions-reuse` refuses until one plain
+`--auditions` run captures them again. `--selected-remix` reads its manifest name from
 `final-score.json` rather than a hardcoded one, requires the source settings file, and fails on an
 empty capture revision. The usage text, the using-tools row and the README no longer promise an
 ending layer, a hash or a "4.4-second" intro. New checks in `tools/test_cli_help.sh` refuse both
@@ -19,5 +20,5 @@ modes with a changed choice length. No trailer was rendered.
 
 **Chosen where the item was silent, open to overturn:** the timeline is stored as readable per-shot
 arrays compared exactly rather than as a hash; each base has its own field; `source_base_timeline`
-records the current timeline, since no kept base exists locally to read one from — if the old base
-was cut with a different timeline, that field needs correcting.
+records the current timeline, which the review confirmed equals the shot list at e29585da, the
+kept base's capture commit.
