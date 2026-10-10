@@ -5,8 +5,9 @@ extends RefCounted
 ## protected so the blocking should happen in the middle of the wall (or one tile deep)"; inbox
 ## #568: "half a tile was only supposed to be done if the wall is only one tile wide otherwise it
 ## should be one tile")*: the geometry's own edge cases on hand-built maps, a sweep against a
-## sampled depth on a real city, and the three readers (the meter's sum, the halo's pick and the
-## caret's projection) agreeing.
+## sampled depth on a real city, the three readers (the meter's sum, the halo's pick and the
+## caret's projection) agreeing, the escape's building stopping it at its own walls, and the debug
+## view's fields layer cut where the meter receives nothing.
 
 const _SIZE := float(Tuning.TILE_SIZE)
 
@@ -27,6 +28,8 @@ func run(t) -> void:
 	_test_an_event_is_silent_behind_a_wall(t)
 	_test_a_crowd_body_is_silent_behind_a_wall(t)
 	_test_the_caret_asks_the_wall_where_the_bodies_will_be(t)
+	_test_the_building_inside_stops_it_at_its_own_walls(t)
+	_test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t)
 	t.check(_asymmetric == 0, "every hand-built line answers the same both ways (%d did not)"
 			% _asymmetric)
 
@@ -101,8 +104,9 @@ func _test_a_thicker_building_blocks_a_tile_deep(t) -> void:
 
 ## Near an open end, where the middle is shallower: a building two tiles thick and eight long, x 4 to
 ## 5 and y 2 to 9 (y from 64px), blocks a line straight across it only once it is a tile from the end,
-## and a one-tile wall of the same length only once it is half a tile from it. Pinned as built, the
-## player's "otherwise it should be one tile" read literally; the end is a question put to them.
+## and a one-tile wall of the same length only once it is half a tile from it. The player's own answer
+## for the end *(bouncy-kestrel, inbox #568: "Near the end of the building the same spacing is used
+## so a 2x8 building has a 6 unit long line through its middle")*.
 func _test_an_open_end_is_shallower(t) -> void:
 	var thick := _map_with(_rect_tiles(Rect2i(4, 2, 2, 8)))
 	t.check(not _blocked(thick, Vector2(112.0, 95.0), Vector2(208.0, 95.0)),
@@ -377,3 +381,145 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t) -> void:
 			t.check(expected > 0.0, "the same car with nothing between expects something (%.2f)"
 					% expected)
 		car.free()
+
+## **Indoors too.** *(plaid-wombat, inbox #554: "Excitement should not go through **any** wall".)*
+## The escape's building has no `CityMap`, so `InteriorEvents` hands every source its own walls
+## (`InteriorScene.wall_grid()`, the plan's walkability as a grid `CityMap.wall_between()` answers)
+## and they stop a field at the depths a city's buildings do. The masked man is stood on every tile
+## of his own shaft's walk and asked at every walkable point of it within his reach: nothing where
+## the grid walls the line, the field itself everywhere else; the guard counts the points a field
+## reached and a wall stopped, which is what the solid between two flights does to him. The
+## explosion is the exception: it stands for a bang outside that has already come through the walls,
+## so a wall between where its instance stands and her keeps none of it from her.
+func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var grid := scene.wall_grid()
+	var disagreed := 0
+	for y in range(-2, grid.size.y + 2):
+		for x in range(-2, grid.size.x + 2):
+			if grid.is_walkable(Vector2i(x, y)) != scene.is_walkable(Vector2i(x, y)):
+				disagreed += 1
+	t.check(disagreed == 0, "the wall grid is open exactly where she may stand (%d tiles were not)"
+			% disagreed)
+
+	var man: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "masked_pursuer":
+			man = instance
+	t.check(man != null, "the masked man is on the stairs")
+	if man:
+		man.resume(man.def.telegraph_time, 0.0, INF)
+		var shaft: Array[Vector2] = []
+		for tile in scene.stairwell_tiles("stairwell_right"):
+			if not scene.is_walkable(tile):
+				continue
+			for sy in 4:
+				for sx in 4:
+					shaft.append(Vector2(tile) * _SIZE + Vector2(4.0 + 8.0 * sx, 4.0 + 8.0 * sy))
+		var reached := 0
+		var stopped := 0
+		var wrong := 0
+		for tile in scene.stairwell_walk("stairwell_right"):
+			man.global_position = scene.tile_to_world(tile)
+			for her in shaft:
+				var field := man._field_at(her, -1.0, Vector2.INF)
+				if field <= 0.0:
+					continue
+				# Uncached: the man is moved under a fixed `age`, which `contribution_at()`'s
+				# own cache is keyed on, so the public call would answer for where he last stood.
+				var landed := man._contribution_at_uncached(her, -1.0, Vector2.INF)
+				var walled := grid.wall_between(man.global_position, her)
+				if walled:
+					stopped += 1
+				else:
+					reached += 1
+				if landed != (0.0 if walled else field):
+					wrong += 1
+		t.check(stopped > 0, "a wall in his shaft stands between him and her (%d points)" % stopped)
+		t.check(reached > stopped, "while most of his reach is open stairs (%d points)" % reached)
+		t.check(wrong == 0, "and his field reaches her exactly where no wall stops it (%d did not)"
+				% wrong)
+
+	# Somewhere on the stairs with open stair behind a wall from it, well inside the bang's reach.
+	var stands := Vector2.INF
+	var behind := Vector2.INF
+	for from in scene.stairwell_walk("stairwell_right"):
+		for tile in scene.stairwell_tiles("stairwell_right"):
+			var at := scene.tile_to_world(tile)
+			if scene.is_walkable(tile) and at.distance_to(scene.tile_to_world(from)) < 200.0 \
+					and grid.wall_between(scene.tile_to_world(from), at):
+				stands = scene.tile_to_world(from)
+				behind = at
+				break
+		if behind != Vector2.INF:
+			break
+	t.check(behind != Vector2.INF, "there is open stair behind a wall from a step of the shaft")
+	var player := Node2D.new()
+	player.add_to_group("player")
+	t.add_child(player)
+	player.global_position = stands
+	events._explode_every_so_often(Tuning.FINALE_EXPLOSION_INTERVAL)
+	var burst: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "finale_explosion":
+			burst = instance
+	t.check(burst != null and burst.global_position == stands,
+			"an explosion goes off where she stands")
+	if burst and behind != Vector2.INF:
+		t.check(burst.contribution_at(behind) > 0.0,
+				"and the bang reaches her behind the wall: it came through the walls from outside"
+				+ " (%.1f)" % burst.contribution_at(behind))
+	player.free()
+	events.free()
+	scene.free()
+
+## The debug view's fields layer draws an outline only where the meter would read it: a musician
+## beside a building two tiles thick has the part of his outline past the building's middle cut
+## away, every point left on it is one his field reaches, each cut ends within a pixel of where the
+## wall's answer turns, and on open ground the same outline is the whole closed loop.
+func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
+	var def := EventCatalogue.by_id("busker")
+	# A map wide enough that the outline stays on it: ground off the map counts as building.
+	var at := Vector2(304.0, 384.0)
+	var behind := _musician(def, at, _map_with(_rect_tiles(Rect2i(11, 0, 2, 24)), 24, 24))
+	var beside := _musician(def, at, _map_with([], 24, 24))
+	var outline := GroundShape.field_outline_at(at, Vector2.ZERO, def.outer_radius)
+	var whole := DebugLayers.open_runs(outline, beside.walled_off_to)
+	t.check(whole.size() == 1 and whole[0].size() == outline.size() + 1
+			and whole[0][0] == whole[0][whole[0].size() - 1],
+			"on open ground the outline is drawn whole, closed")
+	var runs := DebugLayers.open_runs(outline, behind.walled_off_to)
+	var kept := 0
+	for point in outline:
+		if not behind.walled_off_to(point):
+			kept += 1
+	t.check(kept > 0 and kept < outline.size(),
+			"the musician's outline runs both sides of the building (%d of %d points open)"
+			% [kept, outline.size()])
+	var drawn := 0
+	var through := 0
+	var loose := 0
+	for run in runs:
+		drawn += run.size()
+		for i in run.size() - 1:
+			for step in 5:
+				if behind.walled_off_to(run[i].lerp(run[i + 1], float(step) / 4.0)):
+					through += 1
+		var past_end := run[run.size() - 1] \
+				+ (run[run.size() - 1] - run[run.size() - 2]).normalized()
+		var past_start := run[0] + (run[0] - run[1]).normalized()
+		if not behind.walled_off_to(past_end) or not behind.walled_off_to(past_start):
+			loose += 1
+	t.check(runs.size() == 1, "behind one building it is one open stretch (%d)" % runs.size())
+	t.check(drawn == kept + 2, "carrying every open point of the outline and the two cuts (%d)"
+			% drawn)
+	t.check(through == 0, "nothing drawn is behind the wall (%d samples were)" % through)
+	t.check(loose == 0, "and each cut stops within a pixel of the wall's answer turning")
+	behind.free()
+	beside.free()

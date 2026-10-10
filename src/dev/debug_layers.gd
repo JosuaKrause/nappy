@@ -32,7 +32,10 @@ extends Node2D
 ## `GroundShape.field_outline()` and `field_outline_at()`, the same effective-distance arithmetic
 ## `Tuning.falloff()` prices, so this layer cannot disagree with what the meter does: a capsule
 ## about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one.
-## `_draw_fields()` is where the shape-per-emitter decision is made.
+## **And cut where a wall stops it**: an outline is drawn only where the emitter's own wall answer
+## (`EventInstance.walled_off_to()`, `CrowdAgent.walled_off_to()`) lets its field reach, so behind a
+## building, where the meter receives nothing, there is no line either. `_draw_fields()` is where the
+## shape-per-emitter decision is made, and `open_runs()` where the cut is.
 ##
 ## **The building shows what the city shows.** Nothing here needs a day: the events are an event
 ## source (anything answering `instances() -> Array[EventInstance]`, which `InteriorEvents` does as
@@ -153,28 +156,37 @@ func _draw() -> void:
 ## included, now that it stands somewhere. A flock draws one pair per bird, at its own position and
 ## its own `heading * speed`, and `flock_outer_radius()` rather than `outer_radius` — the same
 ## radius `_flock_contribution_at()` sums over, so drawing the flat number instead would show a
-## field wider than what the birds actually emit.
+## field wider than what the birds actually emit. Each outline is cut wherever the emitter's own
+## wall answer keeps the field from that point — see `open_runs()`.
 func _draw_fields() -> void:
+	var view := _view_rect()
+	var cuts := {}
 	for instance in _live():
 		if instance.is_finished:
 			continue
 		var colour := FIELD_LETHAL if instance.def.hard_fail else FIELD_COSTLY
+		var walled: Callable = instance.walled_off_to
+		var id := instance.get_instance_id()
 		var offsets := instance.flock_offsets()
 		if offsets.is_empty():
 			var axis := instance.solid_axis()
 			var velocity := instance.travel_velocity()
-			_draw_field_boundary(instance.def.shape, instance.global_position, axis, velocity,
-					instance.def.inner_radius, colour)
-			_draw_field_boundary(instance.def.shape, instance.global_position, axis, velocity,
-					instance.def.outer_radius, colour)
+			var shape := instance.def.shape
+			for level: float in [instance.def.inner_radius, instance.def.outer_radius]:
+				var outline := shape.field_outline(instance.global_position, axis, velocity, level) \
+						if shape != null \
+						else GroundShape.field_outline_at(instance.global_position, velocity, level)
+				_draw_field_boundary(outline, colour, walled, [id, -1, level], view, cuts)
 			continue
 		var outer := instance.flock_outer_radius()
 		var velocities := instance.flock_velocities()
+		# Every bird's outline is cut by the flock's own line, from its centre, which is the line
+		# `contribution_at()` asks for the whole flock.
 		for i in offsets.size():
 			var at := instance.global_position + offsets[i]
-			_draw_field_boundary(null, at, Vector2.RIGHT, velocities[i], instance.def.inner_radius,
-					colour)
-			_draw_field_boundary(null, at, Vector2.RIGHT, velocities[i], outer, colour)
+			for level: float in [instance.def.inner_radius, outer]:
+				var outline := GroundShape.field_outline_at(at, velocities[i], level)
+				_draw_field_boundary(outline, colour, walled, [id, i, level], view, cuts)
 	for agent in _agents():
 		var is_car := agent.kind == CrowdAgent.Kind.CAR
 		var inner := Tuning.CAR_INNER_RADIUS if is_car else Tuning.PEDESTRIAN_INNER_RADIUS
@@ -182,25 +194,114 @@ func _draw_fields() -> void:
 		# Noise, never lethal — a car's strike box is drawn in the bounding-box layer instead, in
 		# the same lethal colour, because being hit is a body question and this is a field one. A
 		# crowd body is always a point in field terms (see `CrowdAgent.contribution_at()`'s own
-		# doc), so `shape` is null here whatever the agent's own shadow shape says.
+		# doc), so it is outlined as a point whatever the agent's own shadow shape says.
 		var velocity := agent.velocity()
-		_draw_field_boundary(null, agent.global_position, Vector2.RIGHT, velocity, inner, FIELD_COSTLY)
-		_draw_field_boundary(null, agent.global_position, Vector2.RIGHT, velocity, outer, FIELD_COSTLY)
+		var levels: Array[float] = [inner, outer]
 		if agent.is_startled():
 			var jolt := agent.jolt_radii()
-			_draw_field_boundary(null, agent.global_position, Vector2.RIGHT, velocity, jolt.x,
-					FIELD_COSTLY)
-			_draw_field_boundary(null, agent.global_position, Vector2.RIGHT, velocity, jolt.y,
-					FIELD_COSTLY)
+			levels.append(jolt.x)
+			levels.append(jolt.y)
+		var walled: Callable = agent.walled_off_to
+		var id := agent.get_instance_id()
+		for level in levels:
+			var outline := GroundShape.field_outline_at(agent.global_position, velocity, level)
+			_draw_field_boundary(outline, FIELD_COSTLY, walled, [id, -1, level], view, cuts)
+	_cuts = cuts
 
-## One level of one field's boundary — `shape.field_outline()` when there is a shape to offset,
-## `GroundShape.field_outline_at()`'s plain-point form otherwise (a crowd agent or one bird of a
-## flock, neither of which owns a body in field terms).
-func _draw_field_boundary(shape: GroundShape, at: Vector2, axis: Vector2, velocity: Vector2,
-		level: float, colour: Color) -> void:
-	var points := shape.field_outline(at, axis, velocity, level) if shape != null \
-			else GroundShape.field_outline_at(at, velocity, level)
-	_draw_closed_polyline(points, colour)
+## The cut outlines of the last frame, by `[emitter id, bird or -1, level]`: `[outline, runs]`.
+## **An outline the same as last frame's is cut the same way**, so a standing source — most events
+## — asks its walls once rather than every frame; anything that moved is asked again. Rebuilt every
+## frame from the outlines drawn, so nothing gone or off screen stays in it, and every outline is
+## asked again on every `_CUT_REFRESH_FRAMES`th frame, so a change to the ground under a standing
+## source (a task scene's stretch coming on) is drawn within a second.
+var _cuts := {}
+const _CUT_REFRESH_FRAMES := 60
+
+## The world the camera shows, so an outline nobody can see costs nothing: the wall questions
+## behind a cut are the expensive part of this layer, and most of a day's emitters are off screen.
+func _view_rect() -> Rect2:
+	return get_canvas_transform().affine_inverse() * get_viewport_rect()
+
+## One level of one field's boundary — an outline from `GroundShape.field_outline()` or its
+## plain-point form `field_outline_at()` (a crowd agent or one bird of a flock, neither of which
+## owns a body in field terms) — drawn only where `walled` lets the field reach, and not at all
+## off screen. See `_cuts` for `key` and `cuts`.
+func _draw_field_boundary(outline: PackedVector2Array, colour: Color, walled: Callable, key: Array,
+		view: Rect2, cuts: Dictionary) -> void:
+	if outline.is_empty() or not view.intersects(_bounds_of(outline)):
+		return
+	var runs: Array[PackedVector2Array] = []
+	var cached: Array = _cuts.get(key, [])
+	if not cached.is_empty() and cached[0] == outline \
+			and Engine.get_process_frames() % _CUT_REFRESH_FRAMES != 0:
+		runs = cached[1]
+	else:
+		runs = open_runs(outline, walled)
+	cuts[key] = [outline, runs]
+	for run in runs:
+		draw_polyline(run, colour, LINE_WIDTH, true)
+
+static func _bounds_of(points: PackedVector2Array) -> Rect2:
+	var rect := Rect2(points[0], Vector2.ZERO)
+	for point in points:
+		rect = rect.expand(point)
+	return rect
+
+## How many halvings `_where_the_wall_starts()` takes over one edge of an outline: an edge of the
+## widest field's outline is a few tens of pixels, so six leave the cut within a pixel of where the
+## wall's answer turns.
+const _CUT_STEPS := 6
+
+## A closed outline as the open polylines left once every stretch of it a wall keeps the field from
+## is cut away — `walled` answers that for one point, the emitter's own `walled_off_to()`. With
+## nothing walled it is the whole loop, closed; with everything walled it is nothing. **Where an
+## edge runs from open to walled, the cut is where the answer turns along that edge**, found by
+## halving it, so the line ends at the wall's depth rather than at whichever vertex of the outline
+## happened to fall short of it. An edge walled at both ends is dropped whole; a gap narrower than one
+## edge between two walled vertices is the one thing this cannot see.
+static func open_runs(points: PackedVector2Array, walled: Callable) -> Array[PackedVector2Array]:
+	var runs: Array[PackedVector2Array] = []
+	var count := points.size()
+	if count < 2:
+		return runs
+	var shut: Array[bool] = []
+	var first_shut := -1
+	for i in count:
+		var is_shut: bool = walled.call(points[i])
+		shut.append(is_shut)
+		if is_shut and first_shut < 0:
+			first_shut = i
+	if first_shut < 0:
+		var closed := points.duplicate()
+		closed.append(points[0])
+		runs.append(closed)
+		return runs
+	# Starting from a walled vertex, every open stretch begins and ends inside the one pass.
+	var run := PackedVector2Array()
+	for k in count:
+		var i := (first_shut + k) % count
+		var j := (i + 1) % count
+		if shut[i] and shut[j]:
+			continue
+		if shut[i]:
+			run = PackedVector2Array([_where_the_wall_starts(points[j], points[i], walled), points[j]])
+		elif shut[j]:
+			run.append(_where_the_wall_starts(points[i], points[j], walled))
+			runs.append(run)
+			run = PackedVector2Array()
+		else:
+			run.append(points[j])
+	return runs
+
+## The last point from `open` towards `shut` that `walled` still leaves open.
+static func _where_the_wall_starts(open: Vector2, shut: Vector2, walled: Callable) -> Vector2:
+	for _i in _CUT_STEPS:
+		var middle := (open + shut) * 0.5
+		if walled.call(middle):
+			shut = middle
+		else:
+			open = middle
+	return open
 
 # ----------------------------------------------------------------- shadows ---
 
