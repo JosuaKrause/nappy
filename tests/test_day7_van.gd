@@ -5,9 +5,11 @@ extends RefCounted
 ##
 ## Holds, through a real city: reading day 7's mark rigs her route with a bag of
 ## `Tuning.VAN_WITHIN_THE_NEXT` holding one `delivery_van`; walking the day's route, the van's marble
-## is among that many events handed out on it, and a van is then put on her route — on ground the
-## day's routes run along, past the streaming band, where she can walk to it, and in the world once
-## she walks to it — while the van the task rides, placed near the mark, stays where it is.
+## is among that many events handed out on it, and a van is then put on her route — ahead of her on
+## the street she is walking, out of her view, where she can walk to it, in the world at once, and
+## where keeping on her way brings it into view — while the van the task rides, placed near the
+## mark, stays where it is. How often a played walk sees it is
+## `tests/probes/calm_pelican_day7_van_met.gd`'s to measure.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 90210, 1234567]
@@ -79,13 +81,14 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	var her_at_siting := Vector2.INF
 	var where_sited := Vector2.INF
 	var heading_at_siting := Vector2.ZERO
+	var live_at_once := false
 	if path.size() >= 2:
 		var index := 0
 		var direction := 1
 		player.global_position = path[0]
 		var handed := 0
 		var walked := 0.0
-		while (handed < size or placed.is_empty() or not placed[0].was_live) and walked < 600.0:
+		while (handed < size or placed.is_empty()) and walked < 600.0:
 			var next: Vector2 = path[index + direction] if index + direction >= 0 \
 					and index + direction < path.size() else Vector2.INF
 			if next == Vector2.INF:
@@ -113,38 +116,38 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 					her_at_siting = player.global_position
 					where_sited = plan.position
 					heading_at_siting = player.velocity.normalized()
+					city.events.stream_around(player.global_position)
+					live_at_once = plan.live != null
 			player.global_position += player.velocity * STEP
 			walked += STEP
 	t.check(drawn_within, "seed %d: the van's marble is among the next %d events on her route"
 			% [seed_value, size])
-	var met_on_her_walk := placed.size() == 1 and placed[0].was_live
-	print("[test_day7_van] seed %d: %d van put on her route, %s in the world by her walk"
-			% [seed_value, placed.size(), "and" if met_on_her_walk else "not"])
-	t.check(placed.size() <= 1, "seed %d: at most one van is put on her route (%d)"
+	t.check(placed.size() == 1, "seed %d: one van is put on her route (%d)"
 			% [seed_value, placed.size()])
 	if placed.size() == 1:
 		var plan := placed[0]
 		var map := city.map
 		var tile := map.world_to_tile(where_sited)
-		# A van leaves no line past it on the sidewalk it stands on, so the day never puts one on a
-		# sidewalk a route runs along: "on her route" is the street she walks, across from her.
-		var corridor := Corridor.of(city.route_tree())
-		t.check(corridor.depth(tile) == 0 and not corridor.carries_a_route(tile),
-				"seed %d: it stands on a street the day's routes run along, across from the route"
+		# A van leaves no line past it on a sidewalk a route runs along, so it is put on the street
+		# she is walking, just out of her sight ahead of her (`WalkSiting.ahead_on_her_street()`).
+		var offset := where_sited - her_at_siting
+		t.check(offset.dot(heading_at_siting) > 0.0
+				and absf(offset.cross(heading_at_siting)) <= 5.0 * Tuning.TILE_SIZE,
+				"seed %d: it stands ahead of her on the street she is walking (%s)"
+				% [seed_value, offset])
+		t.check(absf(offset.x) > Tuning.VIEW_HALF_EXTENT.x
+				or absf(offset.y) > Tuning.VIEW_HALF_EXTENT.y,
+				"seed %d: out of her view when it is put there, so it is never seen to appear"
 				% seed_value)
-		t.check(where_sited.distance_to(her_at_siting) >= Tuning.EVENT_STREAM_RADIUS,
-				"seed %d: it is put past the streaming band, so it is never seen to appear (%.0fpx)"
-				% [seed_value, where_sited.distance_to(her_at_siting)])
 		var grid := ReachabilityGrid.build(map)
 		var reached := grid.flood([map.world_to_tile(her_at_siting)])
 		t.check(grid.reaches(tile, {}, reached),
 				"seed %d: she can walk to it from where she was" % seed_value)
-		# Across the street is still on her way, so walking toward it does not move it on ahead of her
-		# again before she reaches it (`EventDirector._is_no_longer_on_her_way()`).
-		t.check(city.events._siting.still_ahead_of(her_at_siting, heading_at_siting, where_sited),
-				"seed %d: across the street it still counts as on her way" % seed_value)
-		t.check(met_on_her_walk and plan.position == where_sited,
-				"seed %d: and walking on, she brings it into the world" % seed_value)
+		t.check(live_at_once and plan.position == where_sited,
+				"seed %d: it is in the world at once, and stays where it was put" % seed_value)
+		t.check(_keeping_on_brings_it_into_view(map, her_at_siting, heading_at_siting, where_sited),
+				"seed %d: keeping on the way she was walking, over walkable ground, it comes into her view"
+				% seed_value)
 	t.check(task_van != null and is_instance_valid(task_van) and not task_van.is_finished
 			and task_van.global_position == task_van_at and resistance._rider == task_van,
 			"seed %d: the task's own van stays where it was placed, and stays the task" % seed_value)
@@ -155,6 +158,23 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	GameState.failed_resistance_steps.assign(saved_failed)
 	GameState.resistance_progress = saved_progress
 	return placed.size() == 1
+
+## Whether walking on from `from` along `heading`, over walkable ground and no further than the
+## streaming radius, brings `van` inside her view (`Tuning.VIEW_HALF_EXTENT` round her) — that it
+## stands on the way she is walking rather than across a building or past where the street ends.
+func _keeping_on_brings_it_into_view(map: CityMap, from: Vector2, heading: Vector2,
+		van: Vector2) -> bool:
+	var at := from
+	var gone := 0.0
+	while gone <= Tuning.EVENT_STREAM_RADIUS:
+		var off := (van - at).abs()
+		if off.x <= Tuning.VIEW_HALF_EXTENT.x and off.y <= Tuning.VIEW_HALF_EXTENT.y:
+			return true
+		at += heading * 8.0
+		gone += 8.0
+		if not map.is_walkable(map.world_to_tile(at)):
+			return false
+	return false
 
 ## The van a marble from her route's bag handed to her walk to site, sited or not; null when none
 ## has been.

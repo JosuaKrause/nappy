@@ -246,9 +246,12 @@ finds it a site, which can be after an event behind it, or never. Three rigs sta
   inbox #650 in [mossy-beaver](playtests/2026-10-10-mossy-beaver.md): "I guess that leaves only the van?"), besides the van near the mark the task
   rides, which stays the task. Two is the filer's choice inside the player's "2 or 3". A van leaves
   no line past it on the sidewalk it stands on, so the day never puts one on a sidewalk a route runs
-  along, and its walk sites it across the street from the branch she is walking instead
-  (`EventScheduler.WalkSiting.across_her_way()`), ahead of her, past the streaming band and under
-  every other acceptance rule, where it counts as still on her way.
+  along, and the band ahead of her on the day's routes the other places are sited in is ground her
+  own walk rarely reaches. So her walk puts it on the street she is walking, ahead of her and just
+  out of her view, nearest first, under every other acceptance rule
+  (`EventScheduler.WalkSiting.ahead_on_her_street()`), where it is in the world at once and in her
+  view a few seconds later if she keeps going. `tests/probes/calm_pelican_day7_van_met.gd`
+  measures how often a played walk sees it.
 - **Each of the return leg's patrols** — see "The return owes her patrols" below.
 
 **Day 3's lesson is a rigged bag of one**, and it stays the first thing she meets (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md):

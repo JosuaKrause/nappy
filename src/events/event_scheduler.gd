@@ -1106,10 +1106,10 @@ class WalkSiting extends RefCounted:
 	func ahead_of(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
 			at: Vector2, heading: Vector2, near: float, far: float) -> Planned:
 		var role := EventScheduler._role_for(def, _day)
-		# A wall by its fit alone is never put on a sidewalk a route runs along, so its ground on her
-		# way is across the street from the branch she is walking (`across_her_way()`).
+		# A wall by its fit alone is never put on a sidewalk a route runs along, so it is put on the
+		# street she is walking instead, just out of her sight (`ahead_on_her_street()`).
 		if role == GameEnums.BlockerRole.WALL and not EventScheduler._is_a_wall_by_cost(def):
-			return across_her_way(def, rng, already, at, heading, near, far)
+			return ahead_on_her_street(def, rng, already, at, heading)
 		var ahead := _the_way_she_is_going(at, heading, far)
 		if ahead.is_empty():
 			return _waited("she is off the day's routes")
@@ -1141,89 +1141,86 @@ class WalkSiting extends RefCounted:
 		return candidate
 
 	## **`ahead_of()` for a wall by its fit alone** — a row whose body leaves no line past it on the
-	## sidewalk it stands on, which is never put on a sidewalk a route runs along
-	## (`_copies_of()`; `_leaves_the_routes_sidewalk_open()`: "the far side of a street answers a van,
-	## and nothing answers a van on the side the route is drawn down"): day 7's second van
-	## (`ResistanceDirector._rig_her_route_for()`). Offered the ground it may stand on across the
-	## street from the branch she is walking — on a street one of `ahead`'s cells lies on, on no cell a
-	## route runs along — between `near` and `far` ahead of her as `ahead_of()` measures them, widened
-	## along the same branch the same way, and accepted the same way. *(Proposed, not asked for: the
-	## player's "on her route" read as the street she walks, since its own sidewalk is ground the day
-	## never gives a van.)*
-	func across_her_way(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
-			at: Vector2, heading: Vector2, near: float, far: float) -> Planned:
+	## sidewalk it stands on: day 7's second van (`ResistanceDirector._rig_her_route_for()`). Its
+	## marble is drawn so she meets it *(olive-koala, statement 2: "that way we can control what the
+	## player sees on their route")*, and a van is never put on a sidewalk a route runs along
+	## (`_leaves_the_routes_sidewalk_open()`: "the far side of a street answers a van, and nothing
+	## answers a van on the side the route is drawn down"), so the branch-and-band siting the other
+	## places take would put it where her walk does not go: across a route she has often left, and a
+	## band she rarely walks to the end of.
+	##
+	## **So it is put on the street she is walking, just out of her sight ahead of her**: the ground
+	## it may stand on within `_STREET_HALF_WIDTH` either side of her line of travel, ahead of her
+	## with the whole of what it draws past the edge of her view (`Tuning.VIEW_HALF_EXTENT`, a tile
+	## to spare) and within `Tuning.EVENT_STREAM_RADIUS`, nearest first, under every acceptance rule
+	## `ahead_of()` applies. Inside the streaming radius it is in the world at once, where she will see
+	## it in a few seconds if she keeps walking that way, and like anything in the world it is not
+	## moved again. `near` and `far`, the director's band for a place it may still move, are not read.
+	## *(Proposed, not asked for: "on her route" read as the street she is walking.)*
+	func ahead_on_her_street(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+			at: Vector2, heading: Vector2) -> Planned:
 		var role := EventScheduler._role_for(def, _day)
+		if heading.length_squared() < 0.5:
+			return _waited("she is not walking anywhere")
+		var box := EventInstance.footprint_of(def)
+		var hidden := Tuning.VIEW_HALF_EXTENT + box.size * 0.5 + Vector2.ONE * Tuning.TILE_SIZE
+		var pool := _ground_as_a_set(def)
+		var by_distance := {}
+		var centre := _map.world_to_tile(at)
+		var reach := ceili(Tuning.EVENT_STREAM_RADIUS / Tuning.TILE_SIZE)
+		for dy in range(-reach, reach + 1):
+			for dx in range(-reach, reach + 1):
+				var tile := centre + Vector2i(dx, dy)
+				if not pool.has(tile):
+					continue
+				var offset := _map.tile_to_world(tile) - at
+				var along := offset.dot(heading)
+				if along <= 0.0 or offset.length() > Tuning.EVENT_STREAM_RADIUS \
+						or absf(offset.cross(heading)) > _STREET_HALF_WIDTH:
+					continue
+				# Out of her view, the whole of what it draws and a tile to spare: a thing created at
+				# once is placed past the view's own edge (`Tuning.offscreen_boundary()`'s rule).
+				if absf(offset.x) < hidden.x and absf(offset.y) < hidden.y:
+					continue
+				var band := int(along / Tuning.TILE_SIZE)
+				if not by_distance.has(band):
+					by_distance[band] = []
+				(by_distance[band] as Array).append(tile)
+		if by_distance.is_empty():
+			return _waited("no ground ahead of her on the street she is walking")
+		var bands := by_distance.keys()
+		bands.sort()
+		# Nearest first: a few tiles of the street at a time, so she meets it as soon as she can.
 		var offered: Array[Vector2i] = []
-		for wider: float in [far, far * 2.0, INF]:
-			var ahead := _the_way_she_is_going(at, heading, wider)
-			if ahead.is_empty():
-				return _waited("she is off the day's routes")
-			offered = _across_from(def, ahead, at, near)
-			if not offered.is_empty():
-				if wider != far:
-					widened += 1
-				break
-		if offered.is_empty():
-			return _waited("no ground across the street from the branch ahead of her")
+		for band: int in bands:
+			offered.append_array(by_distance[band])
+			if offered.size() < _NEAREST_FIRST:
+				continue
+			var candidate := _accepted(def, rng, already, offered, role, at)
+			if candidate:
+				return candidate
+			offered.clear()
+		if not offered.is_empty():
+			var candidate := _accepted(def, rng, already, offered, role, at)
+			if candidate:
+				return candidate
+		return _waited("every site ahead of her on her street broke a placement rule")
+
+	## How far either side of her line of travel `ahead_on_her_street()` looks: the street she is on,
+	## from her sidewalk to the far kerb, and no further — a block's frontage is past it.
+	const _STREET_HALF_WIDTH := 5.0 * Tuning.TILE_SIZE
+	## How many tiles of ground `ahead_on_her_street()` offers `_best_of()` at a time, nearest first.
+	const _NEAREST_FIRST := 8
+
+	## `_best_of()` over `offered` with the day's own ground, corridor, protected calm and doors, then
+	## `_still_leaves_a_park_reachable()` from `at`: the acceptance `ahead_of()` gives a site.
+	func _accepted(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+			offered: Array[Vector2i], role: GameEnums.BlockerRole, at: Vector2) -> Planned:
 		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
 				_leave_alone, _corridor, _doors)
-		if not candidate:
-			return _waited("every site across from her branch broke a placement rule")
-		if not _still_leaves_a_park_reachable(already, candidate, at):
-			return _waited("the site would close her way out")
-		return candidate
-
-	## The tiles `def` may stand on that lie on the street of one of `ahead`'s cells and on no cell a
-	## route runs along, at least `near` from her — see `across_her_way()`. In each street's own tile
-	## order, the streets in the order they are first reached, so the draw over them is the same every
-	## time.
-	func _across_from(def: EventDef, ahead: Dictionary, at: Vector2, near: float) -> Array[Vector2i]:
-		var pool := _ground_as_a_set(def)
-		var offered: Array[Vector2i] = []
-		for street in _streets_of(ahead):
-			var rect := street.tile_rect()
-			for y in range(rect.position.y, rect.end.y):
-				for x in range(rect.position.x, rect.end.x):
-					var tile := Vector2i(x, y)
-					if not pool.has(tile) or _corridor.carries_a_route(tile):
-						continue
-					if _map.tile_to_world(tile).distance_to(at) < near:
-						continue
-					offered.append(tile)
-		return offered
-
-	## The streets `ahead`'s cells lie on, in the order she reaches them along her branch.
-	func _streets_of(ahead: Dictionary) -> Array[StreetNetwork.Segment]:
-		var streets: Array[StreetNetwork.Segment] = []
-		var seen := {}
-		var cells := ahead.keys()
-		cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
-			return float(ahead[a]) < float(ahead[b]))
-		for cell: Vector2i in cells:
-			for dy in ReachabilityGrid.CELL:
-				for dx in ReachabilityGrid.CELL:
-					var street := StreetNetwork.segment_containing(
-							cell * ReachabilityGrid.CELL + Vector2i(dx, dy))
-					if street and not seen.has(street.key()):
-						seen[street.key()] = true
-						streets.append(street)
-		return streets
-
-	## Whether `position` stands across the street from the branch `ahead` names — on a street one of
-	## its cells lies on, on no cell a route runs along — which is where `across_her_way()` sites a
-	## wall by its fit, and so still on her way for `still_ahead_of()`. A row on another branch's
-	## street stands on a route, so a fork she did not take is never read as across from her.
-	func _across_her_branch(ahead: Dictionary, position: Vector2) -> bool:
-		var tile := _map.world_to_tile(position)
-		if _corridor.carries_a_route(tile):
-			return false
-		var street := StreetNetwork.segment_containing(tile)
-		if not street:
-			return false
-		for each in _streets_of(ahead):
-			if each.key() == street.key():
-				return true
-		return false
+		if candidate and _still_leaves_a_park_reachable(already, candidate, at):
+			return candidate
+		return null
 
 	## A placement for `def` among `offered`, by `EventScheduler._best_of()` against `already` with the
 	## day's own ground, corridor, protected calm and doors — the acceptance every row the day plans
@@ -1348,7 +1345,7 @@ class WalkSiting extends RefCounted:
 		var ahead := _the_way_she_is_going(at, heading, INF)
 		if ahead.is_empty():
 			return true
-		return ahead.has(_cell_of(position)) or _across_her_branch(ahead, position)
+		return ahead.has(_cell_of(position))
 
 	## Every cell of the day's route tree that lies ahead of `at` along the branch she is walking, as
 	## `cell -> how far she walks down the route to reach it`, out to `limit` pixels.
