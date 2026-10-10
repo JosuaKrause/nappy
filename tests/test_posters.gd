@@ -159,11 +159,11 @@ func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 ## probability throughout -- even the end doesn't have many posters"). Walking any route the day
 ## offers, a screen's worth of wall around her has a sheet on it at least `view_floor` of the
 ## time, and a whole route passes at least `route_floor` distinct sheets in view. The floors sit
-## below what `tests/probes/merry_elk_poster_density.gd` measures over eight seeds and above what
-## the rates before it gave. The route floor is per route, and the day-4 one is only two
-## sheets, so the first day's promise is the view share pooled over the routes, not every route.
-## `LAST_DAY_ROUTE_FLOOR` is a guard against the last day thinning out, and passes at the old rates
-## too; the view floors are what reverting the rates fails.
+## below what `tests/probes/merry_elk_poster_density.gd` measures over eight seeds. The route
+## floor is per route, and the day-4 one is only two sheets, so the first day's promise is the
+## view share pooled over the routes, not every route. The floors are guards against the walls
+## thinning out: the route floors pass at the rates before merry-elk too, and whether the view
+## floors would fail at them is not checked.
 const FIRST_DAY_VIEW_FLOOR := 0.45
 const FIRST_DAY_ROUTE_FLOOR := 2
 const LAST_DAY_VIEW_FLOOR := 0.78
