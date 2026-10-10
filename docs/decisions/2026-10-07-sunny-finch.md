@@ -46,8 +46,13 @@ planner and `docs/COSTS.md` are unchanged. A loss to it reads "The patrol car ne
 You were in the road." **It gives way where the crowd's cars do** (`_room_to_its_line()`): off the
 main road it stops 34px short of the paint of a zebra she waits at, and at a signalled junction
 whose arm is not green it stops 34px short of the junction, carrying on once its nose is past the
-line, and holds at a junction box's entry line when the zebra she waits at lies beyond the box, so
-it never stands in a box it cannot leave; a car that will stop short of her neither warns her nor
+line. For a zebra on the far side of a junction it holds at the junction's entry line, where a
+red light stops it, decided before its nose reaches the box: from `CAR_JUNCTION_SIGHT` (200px)
+short of it, with her waiting at either tile of that zebra (within `CAR_ZEBRA_WAIT_RADIUS` along
+and half a street across), however far that is in a straight line; only a car whose nose is
+already in the box, committed, stands short of the paint instead. The crowd's own cars have no such
+rule (their zebra scan is a 200px circle) and need none, because the box rules see them standing
+there; the patrol's body is not seen by them, so it never stands in a box; a car that will stop short of her neither warns her nor
 shows the caret, so the zebra stays
 "the safe way over" (`docs/MECHANICS.md`). *Open to overturn:* the strike needs her on the
 carriageway; a car leaving at its route's end never strikes.
