@@ -41,6 +41,7 @@ func run(t) -> void:
 	# Each day here starts from no read mark's alley remembered (`_start_the_day()`).
 	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
 	_test_the_guard_follows_her_to_the_roadblock_she_approaches(t)
+	_test_set_on_her_inside_his_stand_off_he_holds(t)
 	# The probes' days on which a guard drawn with no way asked stood on her only way.
 	_streams = ""
 	for seed_value in [1234567, 314159]:
@@ -112,7 +113,10 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	t.check(director._task_guard == first and first.global_position == where,
 			"the guard does not move while all the ground round the roadblock she approaches is in view")
 
-	# Only its band is in her view: he goes to the ring just past it, out of her view.
+	# Only its band is in her view: he goes to the ring just past it, out of her view. The view
+	# changes here with her neither moving nor turning, which nothing in play does, so the search the
+	# step before found nothing for is forgotten by hand.
+	director._task_guard_found_nothing_for = []
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var band_edge := robbery.pursues_within + ContactPoint.body_reach(other)
 	var band_seen := Vector2.ONE * (band_edge + 48.0)
@@ -281,6 +285,46 @@ func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
 			% [seed_value, near_side, asked])
 	_tear_down(player, director, city)
 	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+
+## **Set on her already inside his stand-off, he holds it** (`EventInstance.notice_her_at()`; the
+## events skill: "the chase starts at the stand-off however she came"). A waiting robber with her
+## 60px off along a clear line — inside his stand-off, outside his catch — is set on her: while she
+## stands there he neither lunges nor can end her day, however long; when she walks away he lunges
+## only once she is back at the full stand-off. Without the hold he would lunge from 60px on his
+## first tick.
+func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
+	var robbery := EventCatalogue.by_id("alley_robbery")
+	var guard := EventInstance.new()
+	guard.setup(robbery, Vector2.ZERO, PackedVector2Array())
+	t.add_child(guard)
+	guard.set_process(false)
+	var standoff := Tuning.pursuit_standoff(robbery.pursue_speed, robbery.standoff_reach())
+	var her := Vector2(60.0, 0.0)
+	t.check(her.length() < standoff and her.length() > robbery.lethal_reach(),
+			"she stands inside his %.0fpx stand-off and outside his catch" % standoff)
+	guard.notice_her_at(her)
+	t.check(not guard.is_waiting(), "set on her, he has noticed her")
+	var lunged_standing := false
+	var lethal_standing := false
+	for i in 60:
+		guard.player_at = her
+		guard._process(0.1)
+		lunged_standing = lunged_standing or guard._lunged
+		lethal_standing = lethal_standing or guard.is_lethal_at(her)
+	t.check(not lunged_standing and not lethal_standing,
+			"while she stands 60px off for 6s he holds: no lunge, and he cannot end her day")
+	var lunged_at := -1.0
+	for i in 60:
+		her += Vector2(Tuning.WALK_SPEED * 0.1, 0.0)
+		guard.player_at = her
+		guard._process(0.1)
+		if guard._lunged:
+			lunged_at = guard.global_position.distance_to(her)
+			break
+	t.check(lunged_at >= standoff - Tuning.WALK_SPEED * 0.1,
+			"walking away, he lunges only once she is back at his stand-off (%.0fpx, stand-off %.0fpx)"
+			% [lunged_at, standoff])
+	guard.free()
 
 ## **The done task sets the guard on her, wherever he stands.** With `parked`, she touches another
 ## live roadblock while the guard is held at the task's own by her view on him; without, he has

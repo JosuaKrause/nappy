@@ -65,7 +65,7 @@ func run(t) -> void:
 		var own: EventInstance = day["director"]._rider
 		var way: bool = day["director"]._leaves_her_a_way_past(placed.global_position,
 				own.body_position(), ResistanceDirector._body_touch_reach(own), day["mark"],
-				day["director"]._her_side_of(own.body_position(), day["mark"]))
+				ResistanceDirector.HerSide.new(own.body_position(), day["mark"]))
 		totals["placed"] += 1
 		totals["placed_without_a_way"] += 0 if way else 1
 		_tear_down(day)
