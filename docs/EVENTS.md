@@ -919,7 +919,7 @@ from the doorstep to the calm areas still worth reaching.
 | a **pacing** row that leaves no line past it and whose beat passes no way off its sidewalk (`homeless_yeller`, where its beat is truncated short of one) | **wall** | the same, decided per placement rather than per row |
 | a **pacing** row whose beat passes a junction's crosswalk or a side route (`homeless_yeller`, almost everywhere) | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor, the route's own sidewalk included |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
-| a `ONE_SHOT` | **set piece** | one placement at *each* site of a covering set; one of them happens — or, with `EventDef.sited_on_her_way`, one placement with no position, put on a building face ahead of her once her heading for the day is clear |
+| a `ONE_SHOT` | **set piece** | one placement at *each* site of a covering set; one of them happens — or, with `EventDef.sited_on_her_way`, one placement with no position, put on a tile of its own ground ahead of her (a building face for day 3's fire) once her heading for the day is clear |
 | `AMBIENT`, `AHEAD_OF_PLAYER`, a scar, a park spoiler, `EventDef.scenery` (`pigeon_flock`) | **none** | wherever its own rule says |
 
 **The second row is a question about the ground, not about the price, and it is asked two ways.**
@@ -1052,7 +1052,9 @@ day's `RouteTree` she is walking**, and nowhere else: *"valid spawn locations ar
 
 The window is the day's own route rather than a line from her. `EventScheduler.WalkSiting.ahead_of()`
 walks the cells of every route through the cell she is standing on, in the direction that agrees
-with the way she is travelling, and offers the building faces standing on them. **The far end of the
+with the way she is travelling, and offers the tiles of the row's own ground standing on them — a
+building face for the fire and the poster crews, a sidewalk for a man shouting, a mast's site for a
+mast (`WalkSiting._its_ground_on()`). **The far end of the
 band is read along that route** — `ON_HER_WAY_SIGHT` seconds of walking past the streaming band,
 through every corner and junction, which is how much further she actually has to walk. **The near
 end is a distance across the block**, the streaming radius plus its hysteresis, because that is what
@@ -1092,9 +1094,9 @@ route you chose that day)"* (PLAYTEST-117). Three things make that hold:
   rather than at the screen edge, which is six seconds of walking earlier than she could have seen
   it.
 - **Nothing is placed illegally to satisfy the guarantee.** No building face on the branch ahead of
-  her, a door's clear ground, calm she has not used, a site that would close her own way out — any
+  her (for another row, no tile of its own ground), a door's clear ground, calm she has not used, a site that would close her own way out — any
   of these and the siting is simply refused and asked again a second later, from wherever she has
-  got to. A day she walks into a corner is a day it waits. Where the band itself holds no face the
+  got to. A day she walks into a corner is a day it waits. Where the band itself holds none the
   window widens **along the same branch**, first to twice its width and then to the end of the route
   she is on, before anything else is considered; it never leaves the tree.
 - **And a day she wins while it waited still burns.** *"I agree with the fire fix"* (PLAYTEST-121).
@@ -1165,7 +1167,7 @@ of one another would be a real overlap on whichever one fires. And **nothing let
 into an offer**: if it does resolve there, she meets a lethal field and a set piece at once, which
 is exactly the sum the telegraph contract refuses. A siting made from her walk is held to the same
 rule from the other side — `EventScheduler._room_around` measures the candidate against everything
-the day has already placed, so a building face inside a lethal field is not a face it may take.
+the day has already placed, so a tile inside a lethal field is not one it may take.
 
 The three counts this splits apart are worth keeping straight, because two tests depend on it.
 `max_per_day` is a cap on **instances**, and the number of offers is not one — so a one-shot is

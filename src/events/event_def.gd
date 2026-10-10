@@ -382,8 +382,8 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## moves is the moment: a one-shot is planned with no position (`EventScheduler._place_one_shots`),
 ## a recurring row is rolled and placed at dawn exactly as any other and then handed to her walk
 ## with that position dropped (`EventScheduler._hand_to_her_walk`), and
-## `EventDirector.site_what_is_on_her_way()` puts it on a building face ahead of her once her
-## direction for the day is clear, off screen and far enough that she meets it rather than watches
+## `EventDirector.site_what_is_on_her_way()` puts it on a tile of its own ground ahead of her (a
+## building face for the fire and the crews) once her direction for the day is clear, off screen and far enough that she meets it rather than watches
 ## it appear. Until it has been in the world it may be moved again, so a day she turns round is
 ## still a day it is on her way.
 ##

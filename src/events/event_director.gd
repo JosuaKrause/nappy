@@ -31,8 +31,8 @@ extends RefCounted
 ## is a place in every sense: a tile, a body, a field, and what it leaves on the city outlives the
 ## day. What it cannot be is *anywhere*: the fire is the authored beat of act I and a crew is the
 ## walls visibly changing, and either one on a street she never walks down is a silhouette spent on
-## nothing. So the day budgets it and this sites it, on a building face ahead of her heading, once
-## her direction for the day is clear.
+## nothing. So the day budgets it and this sites it, on a tile of the row's own ground ahead of her
+## heading (a building face for the fire and the crews), once her direction for the day is clear.
 ##
 ## The two jobs share this class because they share the one thing neither the scheduler nor the
 ## manager has: **the direction she is actually travelling, now**. They do not share a queue, an
@@ -547,8 +547,8 @@ const ON_HER_WAY_BEHIND := -0.5
 ## How often the walk is looked at, in seconds of walking — one cadence for both halves of the
 ## question, because both are asked of the same walk and neither is worth a frame's answer.
 ##
-## A refusal is ordinary — there is no building face on the branch ahead of her, or the one there is
-## stands in a door's clear ground or would close her way out — and the answer is to ask again a
+## A refusal is ordinary — there is no tile of the row's own ground on the branch ahead of her, or
+## the one there is stands in a door's clear ground or would close her way out — and the answer is to ask again a
 ## street later rather than to place it somewhere illegal. A placement already made is asked on the
 ## same beat whether the walk has left it behind, which is a walk of the route tree rather than a
 ## dot product and does not belong in a physics frame: a refused attempt scans her branch, rolls
@@ -557,8 +557,9 @@ const ON_HER_WAY_BEHIND := -0.5
 ## to be watching.
 const ON_HER_WAY_LOOK := 1.0
 
-## Sites, or re-sites, whatever the day budgeted and left for her walk to place: a building face on
-## the day's own route tree, **on the branch she is walking**, ahead of her by distance along that
+## Sites, or re-sites, whatever the day budgeted and left for her walk to place: a tile of the row's
+## own ground (a building face for the fire and the crews, a sidewalk for a man shouting) on the
+## day's own route tree, **on the branch she is walking**, ahead of her by distance along that
 ## route, off screen, `ON_HER_WAY_SIGHT` seconds of walking short of being seen. Returns every plan
 ## this call moved, so the caller can give back the ground the old body was standing on and take the
 ## new — `EventManager._site_what_is_on_her_way()` is that caller — and a place from her route's bag
@@ -586,8 +587,9 @@ const ON_HER_WAY_LOOK := 1.0
 ## could ever have seen it.
 ##
 ## **Nothing is moved to satisfy the guarantee, and nothing is ever sited off the path.** When the
-## branch ahead of her offers no legal face — she has stepped off the tree through a thinned seal or
-## into an alley, the window holds no building frontage, a candidate stands in a door's clear ground,
+## branch ahead of her offers no legal tile of the row's own ground — she has stepped off the tree
+## through a thinned seal or into an alley, the window holds none of that ground (no building
+## frontage, for the fire and the crews), a candidate stands in a door's clear ground,
 ## or one would close her own way out — this answers with nothing and asks again a second later, from
 ## wherever she has got to. A day she walks into a corner is a day it waits.
 func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
