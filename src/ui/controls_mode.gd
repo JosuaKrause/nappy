@@ -16,10 +16,10 @@ extends RefCounted
 ##
 ## `resolve()` is asked once, before the title screen exists, for the mode a rig gets if it skips
 ## the title screen entirely (`--no-title`, a screenshot rig): the command line first
-## (`--controls joystick|joystick-right|tap`), then the page's own URL (`?controls=`, the same
-## words), then `TAP` — the
-## wording every existing capture and `--walk` script was taken under, so a rig's back catalogue
-## keeps reproducing. **The title screen's own two buttons are not a third step in this order**:
+## (`--controls joystick|joystick-left|joystick-right|tap`), then the page's own URL
+## (`?controls=`, the same words), then `TAP` — the wording every existing capture and `--walk`
+## script was taken under, so a rig's back catalogue keeps reproducing. **The title screen's own
+## buttons are not a third step in this order**:
 ## they are what decides instead of it, every time the title is actually shown — see `TitleScreen`,
 ## whose buttons are the only pointer way in and always answer the question, the side included,
 ## rather than deferring to whatever `resolve()` already set. `main._add_touch_controls()` is
@@ -84,8 +84,8 @@ static func resolve_side() -> ControlsMode.Side:
 static func side_from_word(word: String) -> ControlsMode.Side:
 	return Side.RIGHT if word == "joystick-right" else Side.LEFT
 
-## The page's own `?controls=joystick` or `?controls=tap`, read through
-## `JavaScriptBridge.eval("window.location.search")` — the one place in the project that asks the
+## The page's own `?controls=` word (`joystick`, `joystick-left`, `joystick-right` or `tap`), read
+## through `JavaScriptBridge.eval("window.location.search")` — the one place in the project that asks the
 ## browser's own address bar anything. "" outside a Web export, where the address bar does not
 ## exist to ask, "" for a page with no such parameter, and "" on a release page nobody asked
 ## `?debug=1` of.

@@ -341,7 +341,7 @@ that lands anywhere else on the screen does nothing — and a direction key or `
 `Mode.TAP` instead, on the reasoning that a player pressing a key has told the screen nothing about
 a thumb. `main._add_touch_controls()` gives `TouchControls` a starting mode and side from
 `ControlsMode.resolve()` and `resolve_side()` (the command line's `--controls
-joystick|joystick-right|tap`, then the page's own `?controls=`, then `TAP`) before the title screen
+joystick|joystick-left|joystick-right|tap`, then the page's own `?controls=`, then `TAP`) before the title screen
 exists at all — the answer a rig gets if it skips the title (`--no-title`, a screenshot rig) — and
 `main._on_title_start()` overrides both the moment a player actually presses a button. The side is
 never saved: it lasts until the title asks again. The day-14 hand-over to the escape reloads the

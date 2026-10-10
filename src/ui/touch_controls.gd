@@ -58,9 +58,11 @@ const DOUBLE_TAP_SECONDS := 0.35
 ## on the same pixel either time.
 const DOUBLE_TAP_DISTANCE := 60.0
 ## The joystick ring's drawn radius, in **design-space** px, and the half-width of the stop band
-## at the steering half's edge — the band keeps the width it was given as the ring's diameter
-## *(2026-09-07: "a narrow band in the middle of the screen (size of the stop circle) that stops the
-## player")* when the dead zone inside the ring tightened. Run's disc is sized off this ring.
+## at the steering half's edge. The band was asked for at the stop circle's size *(2026-09-07: "a
+## narrow band in the middle of the screen (size of the stop circle) that stops the player")*, when
+## the stop circle and the ring were both 48px. The stop circle is now the tighter dead zone, and
+## keeping the band at the ring's width is the filer's proposal, open to overturn; see
+## `is_in_stop_band()`. Run's disc is sized off this ring.
 const RING_RADIUS := 48.0
 
 ## How close a press has to land to the steering focus, in **design-space** px, to stop her rather
@@ -699,9 +701,11 @@ static func in_dead_zone(design_position: Vector2, steering: Vector2) -> bool:
 ## half's edge — the other door into `_stop()`. *(2026-09-07: "there should be a narrow band in the
 ## middle of the screen (size of the stop circle) that stops the player. this is to prevent moving
 ## the finger over the middle of the screen and quickly flicking back and forth.")* It moved from the
-## middle to the edge with the steering half's reach and kept its width, read as *"size of the stop
-## circle"* meaning the ring's **diameter** — confirmed by the player rather than inferred. **Not
-## drawn** — *(2026-09-07: "the band doesn't get drawn and yes it's the diameter in size".)* The half
+## middle to the edge with the steering half's reach. The player confirmed the band's width as the
+## stop circle's **diameter** *(2026-09-07: "the band doesn't get drawn and yes it's the diameter in
+## size")* when that circle was the 48px ring. The stop circle is now the 32px dead zone; keeping the
+## band at the ring's diameter rather than shrinking it with the dead zone is the filer's proposal,
+## open to overturn. **Not drawn**, by the same quote. The half
 ## of it beyond the edge is on Run's side, so a fresh press there holds Run; only a steering drag
 ## that wanders in is stopped by it, before it carries on past onto Run's half.
 static func is_in_stop_band(design_position: Vector2, steering: Vector2) -> bool:
