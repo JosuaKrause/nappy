@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "name": "olive-badger evidence: day 7's route van, put just out of sight ahead of her on her street, comes into view",
+  "seed": 2024,
+  "extent": {
+    "scope": "full"
+  },
+  "city": {
+    "context_seed": 2024
+  },
+  "anchors": {
+    "start": {
+      "tile": [
+        99,
+        28
+      ]
+    }
+  },
+  "setup": {
+    "tutorial_complete": true,
+    "day": 7,
+    "parent": "mother",
+    "player": {
+      "at": "start",
+      "facing": "west"
+    },
+    "events": [
+      {
+        "name": "the_route_van",
+        "row": "delivery_van",
+        "at": [
+          2736,
+          880
+        ]
+      }
+    ]
+  },
+  "playback": {
+    "walk": "3.2w",
+    "duration": 4.0,
+    "capture_at": 3.2,
+    "observations": [
+      {
+        "tick": 1,
+        "subject": "the_route_van",
+        "condition": "clear_of_both_views",
+        "half": [
+          22,
+          22
+        ]
+      },
+      {
+        "tick": 96,
+        "subject": "the_route_van",
+        "condition": "visible"
+      }
+    ]
+  }
+}

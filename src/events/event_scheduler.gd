@@ -1108,6 +1108,10 @@ class WalkSiting extends RefCounted:
 	func ahead_of(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
 			at: Vector2, heading: Vector2, near: float, far: float) -> Planned:
 		var role := EventScheduler._role_for(def, _day)
+		# A wall by its fit alone is never put on a sidewalk a route runs along, so it is put on the
+		# street she is walking instead, just out of her sight (`ahead_on_her_street()`).
+		if role == GameEnums.BlockerRole.WALL and not EventScheduler._is_a_wall_by_cost(def):
+			return ahead_on_her_street(def, rng, already, at, heading)
 		var ahead := _the_way_she_is_going(at, heading, far)
 		if ahead.is_empty():
 			return _waited("she is off the day's routes")
@@ -1138,6 +1142,88 @@ class WalkSiting extends RefCounted:
 			candidate.facing = Vector2.UP
 		return candidate
 
+	## **`ahead_of()` for a wall by its fit alone** — a row whose body leaves no line past it on the
+	## sidewalk it stands on: day 7's second van (`ResistanceDirector._rig_her_route_for()`). Its
+	## marble is drawn so she meets it *(olive-koala, statement 2: "that way we can control what the
+	## player sees on their route")*, and a van is never put on a sidewalk a route runs along
+	## (`_leaves_the_routes_sidewalk_open()`: "the far side of a street answers a van, and nothing
+	## answers a van on the side the route is drawn down"), so the branch-and-band siting the other
+	## places take would put it where her walk does not go: across a route she has often left, and a
+	## band she rarely walks to the end of.
+	##
+	## **So it is put on the street she is walking, just out of her sight ahead of her**: the ground
+	## it may stand on within `_STREET_HALF_WIDTH` either side of her line of travel, ahead of her
+	## with the whole of what it draws past the edge of her view (`Tuning.VIEW_HALF_EXTENT`, a tile
+	## to spare) and within `Tuning.EVENT_STREAM_RADIUS`, nearest first, under every acceptance rule
+	## `ahead_of()` applies. Inside the streaming radius it is in the world at once, where she will see
+	## it in a few seconds if she keeps walking that way, and like anything in the world it is not
+	## moved again. `near` and `far`, the director's band for a place it may still move, are not read.
+	## *(Proposed, not asked for: "on her route" read as the street she is walking.)*
+	func ahead_on_her_street(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+			at: Vector2, heading: Vector2) -> Planned:
+		var role := EventScheduler._role_for(def, _day)
+		if heading.length_squared() < 0.5:
+			return _waited("she is not walking anywhere")
+		var box := EventInstance.footprint_of(def)
+		var hidden := Tuning.VIEW_HALF_EXTENT + box.size * 0.5 + Vector2.ONE * Tuning.TILE_SIZE
+		var pool := _ground_as_a_set(def)
+		var by_distance := {}
+		var centre := _map.world_to_tile(at)
+		var reach := ceili(Tuning.EVENT_STREAM_RADIUS / Tuning.TILE_SIZE)
+		for dy in range(-reach, reach + 1):
+			for dx in range(-reach, reach + 1):
+				var tile := centre + Vector2i(dx, dy)
+				if not pool.has(tile):
+					continue
+				var offset := _map.tile_to_world(tile) - at
+				var along := offset.dot(heading)
+				if along <= 0.0 or offset.length() > Tuning.EVENT_STREAM_RADIUS \
+						or absf(offset.cross(heading)) > _STREET_HALF_WIDTH:
+					continue
+				# Out of her view, the whole of what it draws and a tile to spare: a thing created at
+				# once is placed past the view's own edge (`Tuning.offscreen_boundary()`'s rule).
+				if absf(offset.x) < hidden.x and absf(offset.y) < hidden.y:
+					continue
+				var band := int(along / Tuning.TILE_SIZE)
+				if not by_distance.has(band):
+					by_distance[band] = []
+				(by_distance[band] as Array).append(tile)
+		if by_distance.is_empty():
+			return _waited("no ground ahead of her on the street she is walking")
+		var bands := by_distance.keys()
+		bands.sort()
+		# Nearest first: a few tiles of the street at a time, so she meets it as soon as she can.
+		var offered: Array[Vector2i] = []
+		for band: int in bands:
+			offered.append_array(by_distance[band])
+			if offered.size() < _NEAREST_FIRST:
+				continue
+			var candidate := _accepted(def, rng, already, offered, role, at)
+			if candidate:
+				return candidate
+			offered.clear()
+		if not offered.is_empty():
+			var candidate := _accepted(def, rng, already, offered, role, at)
+			if candidate:
+				return candidate
+		return _waited("every site ahead of her on her street broke a placement rule")
+
+	## How far either side of her line of travel `ahead_on_her_street()` looks: the street she is on,
+	## from her sidewalk to the far kerb, and no further — a block's frontage is past it.
+	const _STREET_HALF_WIDTH := 5.0 * Tuning.TILE_SIZE
+	## How many tiles of ground `ahead_on_her_street()` offers `_best_of()` at a time, nearest first.
+	const _NEAREST_FIRST := 8
+
+	## `_best_of()` over `offered` with the day's own ground, corridor, protected calm and doors, then
+	## `_still_leaves_a_park_reachable()` from `at`: the acceptance `ahead_of()` gives a site.
+	func _accepted(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+			offered: Array[Vector2i], role: GameEnums.BlockerRole, at: Vector2) -> Planned:
+		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
+				_leave_alone, _corridor, _doors)
+		if candidate and _still_leaves_a_park_reachable(already, candidate, at):
+			return candidate
+		return null
+
 	## A placement for `def` among `offered`, by `EventScheduler._best_of()` against `already` with the
 	## day's own ground, corridor, protected calm and doors — the acceptance every row the day plans
 	## gets, over a pool the caller chose: day 11's mast queued near her
@@ -1150,6 +1236,34 @@ class WalkSiting extends RefCounted:
 			return null
 		return EventScheduler._best_of(def, rng, _map, offered, EventScheduler._role_for(def, _day),
 				already, _ground, _leave_alone, _corridor, _doors)
+
+	## A placement for `def` among `offered`, near her at `at`, **under every rule a row the day plans
+	## is placed under**: only the tiles of `offered` its own dawn pool would offer it — the open
+	## ground `_open_ground_for()` keeps it to, and for a `WALL` none a route runs along
+	## (`_copies_of()`) — then `_best_of()` against `already` with the day's own ground, corridor,
+	## protected calm and doors, as `among()` does, and then, since it is put down after dawn, only a
+	## site that still leaves her a way home and to a calm area from `at`
+	## (`_still_leaves_a_park_reachable()`). Null when nothing offered passes. Day 13's own roadblock,
+	## placed near the mark she read (`ResistanceDirector._place_the_roadblock_near()`).
+	func near_her(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+			offered: Array[Vector2i], at: Vector2) -> Planned:
+		var role := EventScheduler._role_for(def, _day)
+		var by_cost := EventScheduler._is_a_wall_by_cost(def)
+		var pool := _ground_as_a_set(def)
+		var kept: Array[Vector2i] = []
+		for tile in offered:
+			if pool.has(tile) and EventScheduler._copies_of(tile, _corridor, role, def.hard_fail,
+					by_cost) > 0:
+				kept.append(tile)
+		if kept.is_empty():
+			return _waited("no ground near her the day would offer the row")
+		var candidate := EventScheduler._best_of(def, rng, _map, kept, role, already, _ground,
+				_leave_alone, _corridor, _doors)
+		if not candidate:
+			return _waited("every site near her broke a placement rule")
+		if not _still_leaves_a_park_reachable(already, candidate, at):
+			return _waited("the site would close her way out")
+		return candidate
 
 	## How far from where she finished the day a dusk placement has to be: the streaming radius, so
 	## the site is ground she was never near enough to have it exist in front of her.
