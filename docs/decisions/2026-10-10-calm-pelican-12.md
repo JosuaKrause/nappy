@@ -18,13 +18,23 @@ between them, or he first notices her already inside it (which only a wall can c
 `_lunge_held` makes him behave as the door guard's row (`sets_off_beside_her`) does: he holds his
 ground while she is nearer than the stand-off, follows at it once she is further, and lunges when
 she is back at the full stand-off with the line clear, or chases when his notice (1.8s for the
-robber) runs out. Deferring the lunge alone would be the events skill's trap: at an alley mouth the
-line clears with her 43px to 106px into his 116px stand-off.
+robber) runs out with her outside it. **His notice does not run out while she is inside the
+stand-off** (`_notice_paused_for`, left out of `chase_age()`), so the chase starts from the full
+stand-off however she came. Deferring the lunge alone would be the events skill's trap: at an alley
+mouth the line clears with her 43px to 106px into his 116px stand-off, and the review of PR #657
+measured catches 0.02s to 0.58s after a chase that set off from there, under the 0.6s
+`PURSUIT_REACTION` a pursuit owes her. The day-3 charging dog and the heated rows go through the
+same code; the door guard is unchanged.
 
-*Chosen where the design was silent, open to overturn:* she walking into a held pursuer during his
-notice is caught when it ends, the price the door guard's row already accepts; the notice clock
-keeps running while the lunge is held, so if it ends with her out of sight he chases round the
-wall from at least the stand-off; the alley mouse still notices through walls, since it waits and
+**Noticing is also what is drawn**: the waiting robber faces her only along a clear line
+(`_robber_waiting_heading()`), and keeps the facing he was sited with otherwise, so he does not
+visibly track her round a corner (`docs/GRAPHICS.md`'s robber row).
+
+*Chosen where the design was silent, open to overturn:* a held pursuer she stays beside never sets
+off: he stands turned toward her with the doubled red caret up and his field charging her meter for
+as long as she stays inside his stand-off, and walking away gets his lunge from the full stand-off;
+the notice clock runs while she is outside the stand-off and out of his line, so if it ends then he
+chases round the wall from at least the stand-off; the alley mouse still notices through walls, since it waits and
 runs its own path rather than chasing, and the answer was about pursuers; the held state is not
 kept across a stream-out, which happens only far from her.
 
@@ -37,7 +47,9 @@ Tests in `tests/test_events_pursuit.gd`: the robber does not notice her through 
 lunge through one (5 failing checks on the old code, among them a lunge "from his full stand-off
 (36.0px of 116.0px)"), the caret measured from the catch, and the alley-mouth walk rewritten to the
 new contract (the notice along a clear line, the chase from about the stand-off, at least
-`PURSUIT_REACTION` for her to react, no catch through the corner). The stills of the same moment
+`PURSUIT_REACTION` for her to react, no catch through the corner), a held lunge that never sets off
+inside the stand-off with the robber 20px to 90px into the alley, and a held pursuer she stays
+beside who never sets off; the last two fail 17 checks on the code before the pause. The stills of the same moment
 1.75s in, before and after, are in [pursuers-walls-2026-10-10](../evidence/pursuers-walls-2026-10-10/README.md).
 
 **The events skill was wrong and is fixed in the same PR**: its pursuit trap said "Only the catch
