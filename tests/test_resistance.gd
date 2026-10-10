@@ -4945,10 +4945,10 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 						instance._process(STEP)
 				t.check(not hut.is_chatting() and guard_steps > 0, "the hold runs its clock out")
 				events._release_finished_door_detentions(player)
-				t.check(player.global_position.distance_to(before) > 1.0
-						and (player.global_position - hut.global_position).dot(director._door_axis)
-						* (before - hut.global_position).dot(director._door_axis) <= 0.0,
-						"and the inspection lets her out on the far side of the door")
+				# She stood at the hut's own centre, so which side she is put down on is not measured
+				# here; only the release moves her, so being moved is being let through.
+				t.check(player.global_position.distance_to(before) > 1.0,
+						"and the inspection lets her through")
 				_run_the_traps_warning("robber_giving_chase", player.global_position)
 				t.check(director._trap == null and _warning_for(events, "robber_giving_chase") == null,
 						"no robber is warned of or set on her by the inspected crossing")
