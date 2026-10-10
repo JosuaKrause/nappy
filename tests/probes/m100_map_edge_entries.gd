@@ -67,9 +67,13 @@ func _diagnose_recycle(map: CityMap) -> void:
 					agent._recycle()
 					if agent._vertical != vertical or agent._direction != entering_direction:
 						continue
-					# A spine car keeps `Tuning.OUT_OF_SIGHT` past the true edge by design (M94,
-					# M120) — that is the tunnel and the bridge, not this defect, so it is left out
-					# of the tally rather than counted as "unsafe".
+					# A spine car exists past the true edge by design (M94, M120): on its way out
+					# by `CrowdAgent.TUNNEL_ROOM` (into the tunnel's dark) or `CrowdAgent.BRIDGE_RUN`
+					# (along the bridge deck), and on its way in by up to
+					# `CrowdAgent.TUNNEL_ENTRY_ROOM` (under the tunnel's roof) or at least
+					# `CrowdAgent.BRIDGE_ENTRY_MIN` (beyond the camera's reach on the deck). That is
+					# the tunnel and the bridge, not this defect, so it is left out of the tally
+					# rather than counted as "unsafe".
 					if kind == CrowdAgent.Kind.CAR and vertical and agent._corridor == map.main_road:
 						continue
 					samples += 1
