@@ -1346,6 +1346,14 @@ walking instructions and the big message shown when a chalk mark is touched are 
 through, rather than a line break typed into each string. The small HUD task line is never broken: it
 is the short version (`out there:` and the step's header) and stays on one line.
 
+**The label is wide enough for each sentence on its own line.** A sentence the label's width cannot
+hold wraps word by word, and the last word of an otherwise full line (`her.`) drops onto a line of
+its own although the screen has room. The day summary's labels are 900 px wide (the longest
+sentence in them measures about 830 px at the title's size) and the pause screen's body is 1120 px
+wide (its longest sentence, 1042 px at the body's size); `tests/test_sentence_lines_render.gd`
+renders every caller's text at its label's width and asserts that each sentence fits and that the
+label's own line count is the number of lines `SentenceLines` returned.
+
 **Everything below that one line is the coming day's, not the day that just ended.** The day
 number, the nerves carried into it and the morning's own line (`_DAY_BRIEF`, below) all read off
 `GameState.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
