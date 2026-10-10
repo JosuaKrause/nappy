@@ -177,7 +177,8 @@ func _test_schema(t) -> void:
 ## A task gone after she read the mark is one of two things. Placed and then gone, it expired as a
 ## played day's task can (day 10's neighbor home first): the manifest records the tick, `task`
 ## names nothing from then on, and the setup has not failed. Never placed, the director refused
-## it: a failed setup, noticed and recorded in a scene played by hand as well.
+## it: a failed setup, noticed and recorded in a scene played by hand as well, with the director's
+## reasons printed.
 func _test_a_task_gone_after_the_read(t) -> void:
 	var director := ResistanceDirector.new()
 	var mark := ContactPoint.new()
@@ -199,13 +200,26 @@ func _test_a_task_gone_after_the_read(t) -> void:
 	t.add_child(refused)
 	refused.set_physics_process(false)
 	refused._hand_played = true
-	director._scene_task_errors.append("setup.task: nowhere for it in this test")
+	var reason := "setup.task: nowhere for it in this test"
+	director._scene_task_errors.append(reason)
+	var printed := PrintedLines.new()
+	OS.add_logger(printed)
 	refused._physics_process(1.0 / Engine.physics_ticks_per_second)
+	OS.remove_logger(printed)
 	t.check(refused.tick == 1 and refused.manifest.get("setup_failed", false)
 			and not refused.manifest.task.has("expired_tick"),
 			"a task refused at the read fails the setup, noticed by a scene played by hand too")
+	t.check(Array(printed.lines).any(func(line: String) -> bool: return line.contains(reason)),
+			"and the director's reasons are printed: %s" % [printed.lines])
 	for node: Node in [placed, refused, expired, mark, director]:
 		node.free()
+
+## Every line printed while it is attached (`OS.add_logger()`), so a test reads what a run prints.
+class PrintedLines extends Logger:
+	var lines := PackedStringArray()
+
+	func _log_message(message: String, _error: bool) -> void:
+		lines.append(message)
 
 ## A runtime for `_bind_task_names()` alone, played by hand, its task's mark already started.
 func _task_runtime(director: ResistanceDirector) -> SceneRecipeRuntime:

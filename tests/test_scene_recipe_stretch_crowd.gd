@@ -53,7 +53,8 @@ func run(t) -> void:
 ## from beside it on either side, just far enough that the end's middle is out of view
 ## (`CrowdAgent._beyond_every_view()`) while ground a pixel nearer, its near lanes, is in it; each
 ## actor is entered at an end under every one of those views, and no accepted entry may stand in
-## the view it was made under. The end in view is what dropping the in-view ends keeps out, and
+## the view it was made under, by the crowd's rule and by the real view
+## (`_out_of_the_real_view()`). The end in view is what dropping the in-view ends keeps out, and
 ## the near lanes are what checking the final placement keeps out.
 func _force_recycles(t, data: Dictionary, label: String) -> void:
 	var built := RecipeCityBuilder.build(data)
@@ -110,7 +111,8 @@ func _force_recycles(t, data: Dictionary, label: String) -> void:
 					if agent.position == before:
 						continue
 					entries += 1
-					var safe := agent._beyond_every_view(agent.position) and agent._stands_on_a_street()
+					var safe := agent._beyond_every_view(agent.position) and agent._stands_on_a_street() \
+							and _out_of_the_real_view(camera, agent.position)
 					entries_safe = entries_safe and safe
 					if not safe and unsafe.size() < 4:
 						unsafe.append("%s entered at %s, camera on %s" % [spec.name, agent.position, looking])
@@ -133,6 +135,17 @@ func _middle_of(end: Dictionary) -> Vector2:
 	var across := (float(end.corridor) * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
 			* Tuning.TILE_SIZE
 	return Vector2(across, along) if end.vertical else Vector2(along, across)
+
+## Whether a body at `at`, `CrowdAgent.ENTRY_PICTURE_ROOM` either side, lies wholly outside the
+## world the camera shows: the 1280x720 design box at its zoom, centred where it looks, which is
+## the world in both presentations (a portrait touch screen turns the same box a quarter). Asked
+## beside the crowd's own rule, which it does not depend on, so a rule that shrinks below the real
+## view fails here rather than agreeing with itself.
+func _out_of_the_real_view(camera: Camera2D, at: Vector2) -> bool:
+	var size := ScreenOrientation.DESIGN_SIZE / camera.zoom
+	var view := Rect2(camera.get_screen_center_position() - size * 0.5, size)
+	var body := Rect2(at, Vector2.ZERO).grow(CrowdAgent.ENTRY_PICTURE_ROOM)
+	return not view.intersects(body)
 
 func _look_at(camera: Camera2D, at: Vector2) -> void:
 	camera.position = at
