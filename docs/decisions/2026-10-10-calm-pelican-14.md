@@ -32,7 +32,8 @@ in the band with a clear line at 45 of 45 arrivals, where the first build had 34
 roadblock with no line, 2 at another roadblock 417px away). He never moves while she can see him, so
 if he stays in view from the moment she turns toward another roadblock until she reaches it, he is
 still at the old one; none of the probe's walks did that. **So the moment she completes the task, a
-guard who has not noticed her is set on her from wherever he stands**
+guard who has not noticed her is set on her from wherever he stands** (in the band, on the ring,
+where no touch is within his notice, or at another roadblock)
 (`ResistanceDirector._set_the_task_guard_on_her()`, through `EventInstance.notice_her_at()`, the
 ordinary notice without its range and clear-line test): his notice still runs before any lunge, he
 closes only to his stand-off while it does, and lunges only along a clear line; off screen he comes
@@ -42,7 +43,17 @@ when you hit the task it's fine". `tests/test_day13_guard.gd` holds that he ends
 she approaches with a clear line to it, takes the ring and then the band, never moves while either
 end is in view, and, held at another roadblock while she completes the task 1,680px away, is chasing
 her on completion and reaches her stand-off within 30s; removing the clear-line rule or either view
-check fails it.
+check fails it. **He is never put on her only way to the roadblock**: spots on the far side of the
+roadblock from her are tried first (an alley, then any tile), then the near side, then the ring, and
+a spot is taken only if she can still walk to touch range without coming within his 140px notice
+along a clear line (`_leaves_her_a_way_past()`, a flood fill from the touch tiles); when no spot
+passes, a move is not made and he is set on her at completion anyway, and the task's own guard takes
+the first spot and the run log says so. Over the reviewer's 45 walks her shortest walk passed inside
+his notice before she could touch the roadblock on 10 (it was 21; the nearest 96px to 130px, each
+with a way round), over his own tile on none (3), with no approach from the mark avoiding him on
+none (2); the task's own guard was placed with no way past on 0 of 12, and 45 of 45 arrivals were
+guarded. The clear line he guards along and the one his noticing uses are one walk,
+`CityMap.clear_line()`.
 
 **The day's own roadblock is placed by the day's rules, close by.** The player: "yeah let's not
 rig the roadblock let's place one properly and guide to that -- just make sure it's closeby"
