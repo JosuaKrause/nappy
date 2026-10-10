@@ -26,7 +26,7 @@ const SACK_PILE := &"props/garbage_sacks_pile"
 ## frame (`_playground_frame_shape()`). Computed once `_ready()` fires, by which point `city.gd`
 ## has already set `kind`, `variant` and `scale_factor` on the new node (`Prop.new()` then the
 ## three exports, then `add_child()`), and read by `_draw()` for the shadow. **No prop has a
-## body.** A tree on a pavement is walked past exactly like a tree in a park *(2026-09-12, the
+## body** except the bollard (`_add_bollard_body()`). A tree on a pavement is walked past exactly like a tree in a park *(2026-09-12, the
 ## player, PLAYTEST-58.md: "trees shouldn't have a hitbox at all. trees in parks don't why should
 ## the ones in the street be treated differently?")*; a sack or a pile carries none either, so the
 ## ground under it stays exactly as walkable as the pavement or alley it stands on. Decoration
@@ -35,6 +35,22 @@ var shape: GroundShape
 
 func _ready() -> void:
 	shape = _compute_shape()
+	if kind == Kind.BOLLARD:
+		_add_bollard_body()
+
+## **The one prop with a body: a precinct's post.** A `StaticBody2D` holding `shape`'s own
+## collision resource, so the post's body is the ground contact its shadow is drawn from (one shape
+## per object, M61) rather than a second number. A tree, a sack and a pile stay bodiless; a post
+## stops her *(2026-10-10, the player, leafy-puffin, on the bollards: "gaps still passable")*, and
+## `City.BOLLARD_SPACING` keeps the gaps between posts wider than her body plus the pram. Open to
+## overturn: the radius is the shadow's 0.4 of the 12px picture (4.8px), not the picture's 6px rim.
+func _add_bollard_body() -> void:
+	var body := StaticBody2D.new()
+	body.name = "BollardBody"
+	var collision := CollisionShape2D.new()
+	collision.shape = shape.collision_shape()
+	body.add_child(collision)
+	add_child(body)
 
 func _compute_shape() -> GroundShape:
 	match kind:

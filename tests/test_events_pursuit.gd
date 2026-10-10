@@ -36,7 +36,12 @@ func run(t) -> void:
 	_test_a_pursuer_stops_at_walls(t)
 	_test_the_robbers_lunge_is_further_out_than_his_catch(t)
 	_test_the_robber_does_not_catch_her_through_a_wall(t)
+	_test_the_robber_does_not_notice_her_through_a_wall(t)
+	_test_the_robber_does_not_lunge_through_a_wall(t)
+	_test_a_held_lunge_never_sets_off_inside_the_stand_off(t)
+	_test_a_held_pursuer_she_stays_beside_never_sets_off(t)
 	_test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t)
+	_test_the_red_caret_is_measured_from_the_catch(t)
 	_test_the_robber_catches_her_by_coming_round_the_corner(t)
 	_test_a_clear_line_is_every_tile_the_line_crosses(t)
 	_test_a_clear_line_at_a_corner_an_edge_and_its_own_start(t)
@@ -962,14 +967,15 @@ func _an_alley_mouth(map: CityMap) -> Dictionary:
 	return {}
 
 ## The alley robber on `map`, past his notice and chasing, so what follows is about the line between
-## the two of them and not about the notice.
+## the two of them and not about the notice. The notice is run on open ground and the map handed
+## over after it, since the notice asks for a clear line and the origin may be anywhere on `map`.
 func _a_chasing_robber(t, map: CityMap) -> EventInstance:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance := _instance(t, def, Vector2.ZERO)
-	instance._map = map
 	instance.player_at = Vector2(def.pursues_within - 10.0, 0.0)
 	instance._process(STEP)
 	_advance(instance, def.telegraph_time + 0.1)
+	instance._map = map
 	return instance
 
 ## **He catches her only by touching her.** *(freckled-goose, #544: "Even then the distance would
@@ -1009,15 +1015,206 @@ func _test_the_robber_does_not_catch_her_through_a_wall(t) -> void:
 	t.check(instance.is_lethal_at(in_the_mouth), "and with nothing between them, he catches her")
 	instance.free()
 
-## **A wall between them does not hold his lunge back, so a walk past an alley keeps its notice.**
+## Where the alley robber waits for these tests: in the middle of the alley tile, `back` px in from
+## the mouth's edge, so the building's corner stands between him and the sidewalk round it.
+func _a_waiting_robber(t, map: CityMap, mouth: Dictionary, back: float) -> EventInstance:
+	var corner: Vector2 = mouth["corner"]
+	var d1: Vector2 = mouth["d1"]
+	var d2: Vector2 = mouth["d2"]
+	var at := corner + d1 * 16.0 - d2 * back
+	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), at)
+	instance._map = map
+	return instance
+
+## **He notices her only along a clear line.** *(leafy-puffin, inbox #648, asked whether noticing
+## her should need a clear line: "yes noticing needs a clear line".)* He waits in the alley 40px
+## back from the mouth; she stands on the sidewalk round the building's corner, well inside his
+## 140px `pursues_within` in a straight line but with the building between them, and he goes on
+## waiting and is drawn looking the way he was sited, not tracking her round the corner. She steps
+## in front of the mouth, nearer still, the line between them clear, and on that frame he notices
+## her and is drawn facing her. What is checked is `_drawn_heading()`, the heading his picture is
+## chosen from, not only his own `_heading`.
+func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
+	var map := _map()
+	var mouth := _an_alley_mouth(map)
+	if mouth.is_empty():
+		return
+	var corner: Vector2 = mouth["corner"]
+	var d1: Vector2 = mouth["d1"]
+	var d2: Vector2 = mouth["d2"]
+	var instance := _a_waiting_robber(t, map, mouth, 40.0)
+	var looking := instance._drawn_heading().normalized()
+	var round_the_corner := corner - d1 * 60.0 + d2 * Tuning.PLAYER_BODY_RADIUS
+	t.check(instance.global_position.distance_to(round_the_corner) < instance.def.pursues_within,
+			"round the corner she is inside his notice in a straight line (%.1fpx)"
+			% instance.global_position.distance_to(round_the_corner))
+	t.check(not _sampled_line_is_walkable(map, instance.global_position, round_the_corner),
+			"with the building between them")
+	instance.player_at = round_the_corner
+	_advance(instance, 1.0)
+	t.check(instance.is_waiting(), "he does not notice her through the building")
+	t.check(instance._drawn_heading().normalized().is_equal_approx(looking),
+			"and is not drawn turned toward her")
+	var in_the_mouth := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
+	t.check(_sampled_line_is_walkable(map, instance.global_position, in_the_mouth),
+			"in front of the mouth nothing stands between them")
+	instance.player_at = in_the_mouth
+	instance._process(STEP)
+	t.check(not instance.is_waiting(), "and there he notices her")
+	t.check(instance._drawn_heading().normalized().is_equal_approx(
+			(in_the_mouth - instance.global_position).normalized()), "and is drawn facing her")
+	instance.free()
+
+## **His lunge needs a clear line too.** *(mossy-beaver, inbox #650: "how would that even work? how
+## can it pursue without noticing? obviously it needs a clear line".)* He notices her down the alley
+## outside his stand-off, the line clear; she steps round the building's corner, inside his
+## stand-off with the building between them, and he does not lunge. The line clears with her in
+## front of the mouth, still inside his stand-off, and he still does not lunge from there — that
+## would be the **events** skill's trap, a lunge from a fraction of the stand-off; he holds his
+## ground as the door guard does. She walks straight out of the alley's line, away from him, and he
+## lunges as she reaches the full stand-off.
+func _test_the_robber_does_not_lunge_through_a_wall(t) -> void:
+	var map := _map()
+	var mouth := _an_alley_mouth(map)
+	if mouth.is_empty():
+		return
+	var corner: Vector2 = mouth["corner"]
+	var d1: Vector2 = mouth["d1"]
+	var d2: Vector2 = mouth["d2"]
+	var instance := _a_waiting_robber(t, map, mouth, 40.0)
+	var def := instance.def
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	var start := instance.global_position
+	var down_the_alley := start + d2 * (standoff + 10.0)
+	t.check(_sampled_line_is_walkable(map, start, down_the_alley),
+			"down the alley's line, past his stand-off, nothing stands between them")
+	instance.player_at = down_the_alley
+	instance._process(STEP)
+	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he notices her there")
+	var round_the_corner := corner - d1 * 60.0 + d2 * Tuning.PLAYER_BODY_RADIUS
+	t.check(instance.global_position.distance_to(round_the_corner) < standoff,
+			"round the corner she is inside his stand-off")
+	t.check(not _sampled_line_is_walkable(map, instance.global_position, round_the_corner),
+			"with the building between them")
+	instance.player_at = round_the_corner
+	_advance(instance, 0.25)
+	t.check(instance.is_telegraphing(), "he does not lunge through the building")
+	var in_the_mouth := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
+	instance.player_at = in_the_mouth
+	instance._process(STEP)
+	t.check(_sampled_line_is_walkable(map, instance.global_position, in_the_mouth)
+			and instance.global_position.distance_to(in_the_mouth) < standoff,
+			"in front of the mouth the line is clear and she is inside his stand-off")
+	t.check(instance.is_telegraphing(), "and he does not lunge from a fraction of it")
+	var her := in_the_mouth
+	var lunge_range := INF
+	var elapsed := 0.0
+	while elapsed < 1.0 and lunge_range == INF:
+		her += d2 * Tuning.WALK_SPEED * STEP
+		instance.player_at = her
+		instance._process(STEP)
+		elapsed += STEP
+		if not instance.is_telegraphing():
+			lunge_range = instance.global_position.distance_to(her)
+	t.check(lunge_range != INF, "walking away down the alley's line, he lunges")
+	t.check(lunge_range >= standoff - 2.0,
+			"from his full stand-off (%.1fpx of %.1fpx)" % [lunge_range, standoff])
+	instance.free()
+
+## **A held lunge never sets off from inside the stand-off, even when she stands still.** The robber
+## waits 20, 40, 60 and 90px back in the alley; she steps in front of the mouth, the line clear, so
+## he notices her already inside his stand-off and the lunge is held. She stands there a second
+## longer than his whole notice: had the notice run out, he would have set off from a fraction of
+## the stand-off and caught her inside `PURSUIT_REACTION` — the **events** skill's trap, reached by
+## standing still. Then she walks out of the alley's line, away from him across the street, stopping
+## only where something built stands in her way: the chase starts no nearer than his stand-off and
+## she has at least `PURSUIT_REACTION` between its start and his catch.
+func _test_a_held_lunge_never_sets_off_inside_the_stand_off(t) -> void:
+	var map := _map()
+	var mouth := _an_alley_mouth(map)
+	if mouth.is_empty():
+		return
+	var corner: Vector2 = mouth["corner"]
+	var d1: Vector2 = mouth["d1"]
+	var d2: Vector2 = mouth["d2"]
+	var def := EventCatalogue.by_id("alley_robbery")
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	for back in [20.0, 40.0, 60.0, 90.0]:
+		var instance := _a_waiting_robber(t, map, mouth, back)
+		var her := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
+		instance.player_at = her
+		instance._process(STEP)
+		t.check(not instance.is_waiting()
+				and instance.global_position.distance_to(her) < standoff,
+				"%dpx in: he notices her in the mouth, inside his stand-off" % int(back))
+		_advance(instance, def.telegraph_time + 1.0)
+		t.check(instance.is_telegraphing(),
+				"%dpx in: standing there past his whole notice, he has not set off" % int(back))
+		var started_at := INF
+		var start_range := INF
+		var caught_at := INF
+		var elapsed := 0.0
+		while elapsed < 10.0 and caught_at == INF and not instance.is_finished:
+			# Out across the street, stopping at whatever stands on its far side.
+			her += EventInstance.walkable_step_on(map, her, d2 * Tuning.WALK_SPEED * STEP)
+			instance.player_at = her
+			instance._process(STEP)
+			elapsed += STEP
+			if started_at == INF and not instance.is_telegraphing():
+				started_at = elapsed
+				start_range = instance.global_position.distance_to(her)
+			if instance.is_lethal_at(her):
+				caught_at = elapsed
+		t.check(started_at != INF and caught_at != INF,
+				"%dpx in: walking away, the chase starts and catches her" % int(back))
+		t.check(start_range >= standoff - 2.0,
+				"%dpx in: from his full stand-off (%.1fpx of %.1fpx)"
+				% [int(back), start_range, standoff])
+		t.check(caught_at - started_at >= Tuning.PURSUIT_REACTION,
+				"%dpx in: with her reaction time between the chase starting and the catch (%.2fs)"
+				% [int(back), caught_at - started_at])
+		instance.free()
+
+## **A held pursuer she stays beside never sets off, and staying is not free.** The same held
+## robber, her standing in the mouth inside his stand-off for longer than his notice and his whole
+## chase together. He has not set off, cannot catch her, and is still drawn facing her
+## with the doubled red caret up; his field charges her for every second of it. The way out is the
+## walk the previous test checks: the lunge from the full stand-off.
+func _test_a_held_pursuer_she_stays_beside_never_sets_off(t) -> void:
+	var map := _map()
+	var mouth := _an_alley_mouth(map)
+	if mouth.is_empty():
+		return
+	var corner: Vector2 = mouth["corner"]
+	var d1: Vector2 = mouth["d1"]
+	var d2: Vector2 = mouth["d2"]
+	var instance := _a_waiting_robber(t, map, mouth, 40.0)
+	var def := instance.def
+	var start := instance.global_position
+	var her := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
+	instance.player_at = her
+	instance._process(STEP)
+	var stay := def.telegraph_time + def.duration + 5.0
+	_advance(instance, stay)
+	t.check(instance.is_telegraphing() and not instance.is_finished,
+			"%.0fs beside him, longer than his notice and his chase, he has still not set off"
+			% stay)
+	t.close_to(instance.global_position.distance_to(start), 0.0, "nor moved toward her", 0.5)
+	t.check(not instance.is_lethal_at(her), "and cannot catch her")
+	t.check(instance.will_be_lethal(her), "the doubled red caret stays up")
+	t.check(instance.contribution_at(her) > 0.0, "and his field charges her for staying")
+	instance.free()
+
+## **A walk past an alley keeps the whole of his lunge's notice, though the wall holds both back.**
 ## The robber waits in the alley 20, 40, 60 and 90px back from the mouth; she walks along the
-## sidewalk toward it at `WALK_SPEED`, 14px off the building's face, and on past. His 140px notice
-## reaches her through the building, so he notices her, closes and lunges with the building still
-## between them, from his stand-off, as he does in the open — a lunge held until the line cleared
-## would fire from a fraction of the stand-off with her almost in the mouth. What the stand-off
-## contract owes her is checked as walked: the lunge from about the stand-off, and at least
-## `PURSUIT_REACTION` from the lunge to the catch. And he still never catches her through the
-## corner: every frame that catches has a clear sampled line.
+## sidewalk toward it at `WALK_SPEED`, 14px off the building's face, and on past. The building hides
+## her until she is nearly at the mouth, so he notices her only once the line between them is clear,
+## already inside his stand-off, and a lunge from there would leave her a fraction of it — the
+## **events** skill's trap. So he holds his ground until she has walked back out to his stand-off,
+## and the chase starts from there, by the lunge or by the end of his notice, whichever comes first.
+## What the stand-off contract owes her is checked as walked: the notice along a clear line, the
+## lunge from about the stand-off, and at least `PURSUIT_REACTION` from the lunge to the catch. And
+## he still never catches her through the corner: every frame that catches has a clear sampled line.
 func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 	var map := _map()
 	var mouth := _an_alley_mouth(map)
@@ -1037,11 +1234,16 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 		var lunge_range := INF
 		var caught_at := INF
 		var through_a_wall := 0
-		while elapsed < 8.0 and caught_at == INF and not instance.is_finished:
+		var noticed_through_a_wall := false
+		while elapsed < 15.0 and caught_at == INF and not instance.is_finished:
 			her += d1 * Tuning.WALK_SPEED * STEP
 			instance.player_at = her
+			var was_waiting := instance.is_waiting()
 			instance._process(STEP)
 			elapsed += STEP
+			if was_waiting and not instance.is_waiting():
+				noticed_through_a_wall = not _sampled_line_is_walkable(map,
+						instance.global_position, her)
 			if lunged_at == INF and not instance.is_waiting() and not instance.is_telegraphing():
 				lunged_at = elapsed
 				lunge_range = instance.global_position.distance_to(her)
@@ -1057,8 +1259,33 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 		t.check(caught_at - lunged_at >= Tuning.PURSUIT_REACTION,
 				"%dpx in: she has her reaction time between his lunge and his catch (%.2fs)"
 				% [int(back), caught_at - lunged_at])
+		t.check(not noticed_through_a_wall,
+				"%dpx in: he notices her only once nothing stands between them" % int(back))
 		t.check(through_a_wall == 0, "%dpx in: and he never catches her through the corner" % int(back))
 		instance.free()
+
+## **The doubled red caret projects the catch, not the field's core.** `will_be_lethal()` asks
+## whether a pursuer's course puts her inside the radius that ends the day; for the hunting
+## roadblock that is his 28px reach (`lethal_reach()`), not the band's 86px core, which every other
+## row's catch already is. His course passes 20px from her: red. 50px, beyond his reach and inside
+## the core: not red. Both points sit on a quarter-second step of the projection, so neither answer
+## depends on where its samples fall.
+func _test_the_red_caret_is_measured_from_the_catch(t) -> void:
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.HEAT_HUNTS_LEVEL)
+	t.check(hot.pursues and hot.hard_fail and hot.lethal_reach() < hot.inner_radius,
+			"the hunting roadblock catches inside its field's core (%.0fpx < %.0fpx)"
+			% [hot.lethal_reach(), hot.inner_radius])
+	var instance := _instance(t, hot, Vector2.ZERO)
+	instance.player_at = Vector2(hot.pursues_within - 10.0, 0.0)
+	instance._process(STEP)
+	t.check(not instance.is_waiting(), "the guard notices her")
+	var heading := instance.facing_now()
+	var ahead := instance.global_position + heading * hot.pursue_speed * 0.5
+	var across := heading.orthogonal()
+	t.check(instance.will_be_lethal(ahead + across * 20.0), "his course 20px from her reads red")
+	t.check(not instance.will_be_lethal(ahead + across * 50.0),
+			"his course 50px from her, beyond his reach, does not")
+	instance.free()
 
 ## **To catch her round a corner he has to come round it.** She stands on the sidewalk just round
 ## the building from him, inside his catch in a straight line, and he chases: he slides along the

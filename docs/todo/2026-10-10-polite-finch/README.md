@@ -13,7 +13,7 @@ under `src/interior/`. The player:
 > yeah we need a text catalogue instead of spreading it all across the codebase
 
 And, on a text that broke onto three lines where two were asked for (the
-[feathery-puffin](../2026-10-10-feathery-puffin/README.md) entry):
+[feathery-puffin](../../decisions/2026-10-10-feathery-puffin.md) entry):
 
 > I can't find the exact text (we need that catalogue)
 

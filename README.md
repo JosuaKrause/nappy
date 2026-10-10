@@ -14,7 +14,9 @@ baby to sleep. **[Play it in a browser.](https://nappy.josuakrause.com/)**
 The city is fixed for a whole run, so the map is knowledge you earn and keep. The noise in
 it is not.
 
-[Watch the gameplay trailer on YouTube.](https://youtu.be/88nfOmjEcHc)
+[Watch the gameplay trailer on YouTube.](https://youtu.be/cTB_woqjSMg)
+
+https://github.com/user-attachments/assets/a8033ef2-cabf-4a4f-b323-3d1bf0dfc0d3
 
 > **Spoilers:** everything under `docs/` describes the game's full arc, including things a
 > player should meet for the first time in play. This README deliberately does not.

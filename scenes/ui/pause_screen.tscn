@@ -36,7 +36,7 @@ theme_override_font_sizes/font_size = 36
 text = "Stopped on the pavement."
 
 [node name="Body" type="RichTextLabel" parent="Root/Center/Lines"]
-custom_minimum_size = Vector2(820, 0)
+custom_minimum_size = Vector2(1120, 0)
 mouse_filter = 2
 theme_override_colors/default_color = Color(0.8, 0.78, 0.74, 1)
 theme_override_font_sizes/normal_font_size = 32
