@@ -1154,9 +1154,9 @@ class WalkSiting extends RefCounted:
 	##
 	## **So it is put on the street she is walking, just out of her sight ahead of her**: the ground
 	## it may stand on within `_STREET_HALF_WIDTH` either side of her line of travel, ahead of her
-	## with the whole of what it draws past the edge of her view (`Tuning.VIEW_HALF_EXTENT`, a tile
-	## to spare) and within `Tuning.EVENT_STREAM_RADIUS`, nearest first, under every acceptance rule
-	## `ahead_of()` applies. Inside the streaming radius it is in the world at once, where she will see
+	## with the whole of what it draws past the edge of the camera's view, its lead included
+	## (`could_be_in_her_view()`), and within `Tuning.EVENT_STREAM_RADIUS`, nearest first, under
+	## every acceptance rule `ahead_of()` applies. Inside the streaming radius it is in the world at once, where she will see
 	## it in a few seconds if she keeps walking that way, and like anything in the world it is not
 	## moved again. `near` and `far`, the director's band for a place it may still move, are not read.
 	## *(Proposed, not asked for: "on her route" read as the street she is walking.)*
@@ -1165,8 +1165,6 @@ class WalkSiting extends RefCounted:
 		var role := EventScheduler._role_for(def, _day)
 		if heading.length_squared() < 0.5:
 			return _waited("she is not walking anywhere")
-		var box := EventInstance.footprint_of(def)
-		var hidden := Tuning.VIEW_HALF_EXTENT + box.size * 0.5 + Vector2.ONE * Tuning.TILE_SIZE
 		var pool := _ground_as_a_set(def)
 		var by_distance := {}
 		var centre := _map.world_to_tile(at)
@@ -1181,9 +1179,9 @@ class WalkSiting extends RefCounted:
 				if along <= 0.0 or offset.length() > Tuning.EVENT_STREAM_RADIUS \
 						or absf(offset.cross(heading)) > _STREET_HALF_WIDTH:
 					continue
-				# Out of her view, the whole of what it draws and a tile to spare: a thing created at
-				# once is placed past the view's own edge (`Tuning.offscreen_boundary()`'s rule).
-				if absf(offset.x) < hidden.x and absf(offset.y) < hidden.y:
+				# Out of her view, the whole of what it draws: a thing created at once is placed past
+				# the view's own edge (`Tuning.offscreen_boundary()`'s rule).
+				if could_be_in_her_view(def, _map.tile_to_world(tile), at):
 					continue
 				var band := int(along / Tuning.TILE_SIZE)
 				if not by_distance.has(band):
@@ -1208,6 +1206,22 @@ class WalkSiting extends RefCounted:
 			if candidate:
 				return candidate
 		return _waited("every site ahead of her on her street broke a placement rule")
+
+	## Whether any of what `def` draws, standing at `feet`, could be in the camera's view while she
+	## stands at `her`: its footprint where it is drawn (`EventInstance.footprint_of()`, a van's
+	## reaching 56.5px up from its feet and 28.5px down) against the 640x360 view round her
+	## (`Tuning.VIEW_HALF_EXTENT`), grown on every side by the camera's lead
+	## (`Stroller.CAMERA_LOOK_AHEAD` along her facing, `Stroller.OBLIQUE_Y` of it up or down), since
+	## the lead eases toward a new facing over a turn, and by a tile to spare.
+	static func could_be_in_her_view(def: EventDef, feet: Vector2, her: Vector2) -> bool:
+		var box := EventInstance.footprint_of(def)
+		var drawn := Rect2(feet + box.position, box.size) if box.has_area() \
+				else Rect2(feet, Vector2.ZERO)
+		var lead := Vector2(Stroller.CAMERA_LOOK_AHEAD,
+				Stroller.CAMERA_LOOK_AHEAD * Stroller.OBLIQUE_Y) + Vector2.ONE * Tuning.TILE_SIZE
+		var view := Rect2(her - Tuning.VIEW_HALF_EXTENT - lead,
+				(Tuning.VIEW_HALF_EXTENT + lead) * 2.0)
+		return view.intersects(drawn, true)
 
 	## How far either side of her line of travel `ahead_on_her_street()` looks: the street she is on,
 	## from her sidewalk to the far kerb, and no further — a block's frontage is past it.

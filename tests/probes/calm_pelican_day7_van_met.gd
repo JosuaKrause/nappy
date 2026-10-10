@@ -14,7 +14,12 @@ extends RefCounted
 ## **What is counted**, per seed: whether the van's marble was drawn; where the van was put — how far
 ## ahead of her, and how near her own later walk ever came to it; whether it was ever inside her view
 ## (`Tuning.VIEW_HALF_EXTENT` round her, the player's unrotated screen); and, where it was not, why:
-## never sited, sited past where she stopped walking, or sited off the way she then walked.
+## never sited, sited past where she stopped walking, or sited off the way she then walked. Of each
+## van put on her route, too: whether any of what it draws (`EventInstance.footprint_of()`) was in
+## the camera's view, led `Stroller.CAMERA_LOOK_AHEAD` along her heading, the moment it was put
+## there; whether its tile carries one of the day's routes (`Corridor.carries_a_route()`); and
+## whether her later walk passed within its body and hers (`obstructs_radius` plus
+## `Tuning.PLAYER_BODY_RADIUS`) of its feet — stood on the line she walked.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The day and row measured, and the same for day 6's man shouting, rigged and sited the way the
@@ -29,6 +34,7 @@ func run(t) -> void:
 	var saved_completed := GameState.completed_resistance_steps.duplicate()
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
 	var saved_progress := GameState.resistance_progress
+	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
 	for case: Array in CASES:
 		var tally := {}
 		for seed_value in SEEDS:
@@ -38,6 +44,7 @@ func run(t) -> void:
 	GameState.completed_resistance_steps.assign(saved_completed)
 	GameState.failed_resistance_steps.assign(saved_failed)
 	GameState.resistance_progress = saved_progress
+	GameState.completed_resistance_alley_tiles.assign(saved_alleys)
 
 func _walk_a_day(t, seed_value: int, day: int, row: String) -> String:
 	var city: City = CITY_SCENE.instantiate()
@@ -55,6 +62,8 @@ func _walk_a_day(t, seed_value: int, day: int, row: String) -> String:
 	GameState.completed_resistance_steps.assign(done)
 	GameState.failed_resistance_steps.assign([])
 	GameState.resistance_progress = 0
+	# A read mark's alley is remembered and never chosen again; each walk starts from none.
+	GameState.completed_resistance_alley_tiles.assign([])
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
@@ -119,6 +128,8 @@ class Walk extends RefCounted:
 	var phase := "to the mark"
 	var drawn_phase := ""
 	var sited_phase := ""
+	var drawn_in_view_at_siting := false
+	var on_a_route := false
 
 	func along(player: Stroller, points: Array[Vector2]) -> void:
 		for point in points:
@@ -157,6 +168,15 @@ class Walk extends RefCounted:
 				her_at_siting = player.global_position
 				heading_at_siting = player.velocity.normalized()
 				ahead_at_siting = van.position.distance_to(player.global_position)
+				var box := EventInstance.footprint_of(van.def)
+				var lead := Vector2(heading_at_siting.x, heading_at_siting.y * Stroller.OBLIQUE_Y) \
+						* Stroller.CAMERA_LOOK_AHEAD
+				var view := Rect2(player.global_position + lead - Tuning.VIEW_HALF_EXTENT,
+						Tuning.VIEW_HALF_EXTENT * 2.0)
+				drawn_in_view_at_siting = view.intersects(Rect2(van.position + box.position,
+						box.size), true)
+				on_a_route = Corridor.of(city.route_tree()).carries_a_route(
+						city.map.world_to_tile(van.position))
 			var off := (van.position - player.global_position).abs()
 			nearest_after = minf(nearest_after, van.position.distance_to(player.global_position))
 			if seen_at < 0.0 and off.x <= Tuning.VIEW_HALF_EXTENT.x \
@@ -176,9 +196,11 @@ class Walk extends RefCounted:
 	func detail() -> String:
 		var where := "-"
 		if van and van.is_placed():
+			var on_her_line := nearest_after <= van.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
 			where = "she at %s heading %s, van at %s; " % [her_at_siting, heading_at_siting,
-					van.position] + "sited %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s" \
-					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live]
+					van.position] + "sited %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when put there %s; on a route %s; on her line %s" \
+					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live,
+					drawn_in_view_at_siting, on_a_route, on_her_line]
 		var waits: Dictionary = city.events._siting.waits if city.events._siting else {}
 		return "walked %.0fs, drawn at %.0fs (%s), sited %s | %s | waits %s | seen at %s" % [walked,
 				drawn_at, drawn_phase, sited_phase, where, waits,

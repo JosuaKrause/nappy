@@ -250,8 +250,12 @@ finds it a site, which can be after an event behind it, or never. Three rigs sta
   own walk rarely reaches. So her walk puts it on the street she is walking, ahead of her and just
   out of her view, nearest first, under every other acceptance rule
   (`EventScheduler.WalkSiting.ahead_on_her_street()`), where it is in the world at once and in her
-  view a few seconds later if she keeps going. `tests/probes/calm_pelican_day7_van_met.gd`
-  measures how often a played walk sees it.
+  view a few seconds later if she keeps going. Nothing it draws is in the camera's view, lead
+  included, the moment it is put there. **It may stand on the very line she walks**: the street she
+  is walking is often off the day's routes, and off them nothing refuses a van on her own sidewalk,
+  so she steps round it; on a route's sidewalk it is refused as every van is.
+  `tests/probes/calm_pelican_day7_van_met.gd` measures how often a played walk sees it, and how
+  often it stood on her line.
 - **Each of the return leg's patrols** — see "The return owes her patrols" below.
 
 **Day 3's lesson is a rigged bag of one**, and it stays the first thing she meets (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md):
