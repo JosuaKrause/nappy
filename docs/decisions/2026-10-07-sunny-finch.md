@@ -40,10 +40,11 @@ You were in the road." *Open to overturn:* the strike needs her on the carriagew
 at its route's end never strikes; it does not give way at a zebra, its contract being the warning,
 as the main road's traffic.
 
-**Open, for the player: whether the investigating car strikes.** Built: it comes up to her and
-stops against her, and strikes only while still patrolling its route. The other reading, a lethal
-front during the chase, makes the heat-3 rung a lethal pursuer owing the pursuit contract and a
-badge, and would answer sandy-ferret's open question of whether his catch ends the day.
+**The investigating car does not strike.** Built: it comes up to her and stops against her, and
+strikes only while still patrolling its route. Asked whether it should be deadly in front too, the
+player answered with a different car ([merry-stork](../playtests/2026-10-10-merry-stork.md)): "an
+investigating police car should not leave the street. it should stop if close to her and a
+policeman should emerge and pursue her". That is sandy-ferret's to build, with its pursuer on foot.
 
 `tests/test_police_car.gd` walks her real rig side-on into a standing car (through it, 160px, with
 the body off; stopped on its flank with it on), from behind and beside a driving car (solid, never
