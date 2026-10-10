@@ -64,6 +64,8 @@ const TILE := float(Tuning.TILE_SIZE)
 const FADE_SECONDS := 0.35
 
 var _plan: InteriorMapPlan
+## See `wall_grid()`.
+var _wall_grid: CityMap
 var _tile_set: TileSet
 var _ground: TileMapLayer
 var _backdrops: Node2D
@@ -451,6 +453,33 @@ func world_to_tile(world_position: Vector2) -> Vector2i:
 
 func is_walkable(tile: Vector2i) -> bool:
 	return _plan.is_walkable(tile)
+
+## The building's walls as a grid `CityMap.wall_between()` can answer — open where
+## `is_walkable()` says she may stand, building everywhere else: the solid between two flights, a
+## stair side, the rubble, the gaps between parts. *(plaid-wombat, inbox #554: "Excitement should
+## not go through **any** wall".)* So a field indoors is stopped at exactly the depths a field
+## outdoors is, by the same function, rather than by a second copy of its geometry that could drift
+## from it: a tile deep in anything thicker than one tile, the middle of a wall one tile thick.
+##
+## **A wall grid and nothing else.** The tiles are `SIDEWALK` and `BUILDING` only because those are
+## the open and the shut kinds `wall_between()` reads; it carries no streets, blocks or closures, so
+## it is handed to an `EventInstance` for its wall question alone (`EventInstance.set_walls()`) and
+## never as the map every other question of its asks. Built on first use and kept: the plan never
+## changes after `build()`. The building starts at tile (0, 0) — the slots run east from it and
+## every part's rows south — and a tile off the grid counts as building, as it does outdoors.
+func wall_grid() -> CityMap:
+	if _wall_grid:
+		return _wall_grid
+	build()
+	var box := _footprint()
+	if box.position.x < 0 or box.position.y < 0:
+		push_error("the building reaches tile %s, west or north of the wall grid's origin"
+				% box.position)
+	_wall_grid = CityMap.new(box.end)
+	for tile: Vector2i in _plan.tiles:
+		if _plan.is_walkable(tile):
+			_wall_grid.set_tile(tile, GameEnums.TileType.SIDEWALK)
+	return _wall_grid
 
 ## `+1`/`-1` if `world_position`'s tile is a diagonal flight tile, `0` otherwise — the one question
 ## `Stroller._physics_process()` asks every frame to redirect a sideways press along a flight's own

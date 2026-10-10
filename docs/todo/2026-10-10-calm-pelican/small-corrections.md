@@ -1,6 +1,7 @@
 # Small corrections from the re-review
 
-**Low, each one line or a few · from the re-review of the PRs since v0.25.0.**
+**Low, each one line or a few · from the re-review of the PRs since v0.25.0, and one found while
+building #642.**
 - **#580:** `tests/test_crowd_closures.gd` and `tests/probes/m100_map_edge_entries.gd` say a spine
   car overruns the map edge by `Tuning.OUT_OF_SIGHT`; cars now keep `CrowdAgent.TUNNEL_ROOM` /
   `BRIDGE_RUN` on the way out and `TUNNEL_ENTRY_ROOM` / `BRIDGE_ENTRY_MIN` on the way in. Name those.
@@ -22,3 +23,6 @@
   agent is Opus, and the player approved the drawing as it is).
 - **#547:** the `BABY_CUE_LIFT` comment in `src/player/stroller.gd` types "30px", which
   `PRAM_ART_HEIGHT` now names.
+- **Found building #642:** `docs/TELEMETRY.md`'s "Raw frame traces" section does not say that a
+  trace taken while the game's window is covered records no frames at all (its summary shows 0
+  intervals).

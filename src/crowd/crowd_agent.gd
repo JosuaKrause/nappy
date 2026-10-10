@@ -1172,6 +1172,12 @@ func contribution_at(world_position: Vector2, walls := true) -> float:
 func _walled_off(body_at: Vector2, her_at: Vector2) -> bool:
 	return _map != null and _map.wall_between(body_at, her_at)
 
+## The grid `_walled_off()` asks, the city's map or `null` — read by the debug view's fields layer,
+## which cuts this body's outline from its own position along the same lines
+## (`DebugLayers.open_runs()`).
+func wall_grid() -> CityMap:
+	return _map
+
 ## The last line `contribution_at()` asked about and its answer, kept by value. The meter's sum,
 ## the halo's pick and the caret's present rate ask the same pair in a frame, and the answer
 ## depends on nothing but the two points and the map — a body moved from outside is a new key, so

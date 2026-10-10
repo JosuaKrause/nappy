@@ -1202,11 +1202,17 @@ var _idle_phase_offset := 0.0
 
 ## The city, for the questions only the ground can answer: whether the ground a step would land on
 ## is somewhere anybody can stand (`_walkable_step`), whether a catch has a clear line
-## (`_clear_line_to`), and whether a building keeps this field from her (`_walled_off`). `null` in
+## (`_clear_line_to`), and whether a building keeps this field from her (`_walled_off`, which asks
+## `_walls` instead where the building's own walls were handed over). `null` in
 ## every data-level test that builds an instance without one — a rig that walks a straight line on
 ## purpose gets exactly the unclamped movement and the open-ground field it always has — and in the
 ## building's interior, and always set by `EventManager._create`, the only real caller in the city.
 var _map: CityMap
+## The building's own wall grid indoors (`InteriorScene.wall_grid()`), handed over by
+## `set_walls()` for `_walled_off()` alone, with none of the city's other questions behind it: a
+## stairwell has no pavement band to centre on and no alley for a mouse to cross, but its walls stop
+## excitement as a city's buildings do. `null` in the city, where `_walled_off()` asks `_map`.
+var _walls: CityMap
 
 ## The solid body `_build_obstruction()` made, or `null` before it exists and after
 ## `_process()` has dropped it. See `is_solid()`.
@@ -2888,10 +2894,22 @@ func _contribution_at_uncached(world_position: Vector2, intensity_override: floa
 ## Whether a building stands between a source standing at `source_at` and her at `her_at`, deep
 ## enough to keep its excitement from her — `CityMap.wall_between()`, measured from this node
 ## (a flock's centre, a shaped row's middle) to her centre. *(plaid-wombat, inbox #554: "Excitement
-## should not go through any wall".)* False with no map, which is every data-level rig built
-## without one and the building's interior, whose events are given none.
+## should not go through any wall".)* Asked of `wall_grid()`, so indoors the building's own walls
+## answer it; false with no grid at all, which is every data-level rig built without one.
 func _walled_off(source_at: Vector2, her_at: Vector2) -> bool:
-	return _map != null and _map.wall_between(source_at, her_at)
+	var grid := wall_grid()
+	return grid != null and grid.wall_between(source_at, her_at)
+
+## What `_walled_off()` asks: the building's walls indoors (`_walls`), the city's map outdoors, and
+## `null` for a rig with neither. Read by the debug view's fields layer too, which cuts this
+## source's outline from its own node along the same lines (`DebugLayers.open_runs()`).
+func wall_grid() -> CityMap:
+	return _walls if _walls != null else _map
+
+## Indoors, the grid `_walled_off()` asks — `InteriorEvents` hands every source in the building its
+## walls this way, since it has no `CityMap` to give `setup()`. See `_walls`.
+func set_walls(walls: CityMap) -> void:
+	_walls = walls
 
 ## The last line `contribution_at()` asked about and its answer, kept by value. The meter's sum,
 ## the halo's pick and the caret's present rate ask the same pair in a frame, and the answer
@@ -2905,10 +2923,11 @@ var _wall_answer := false
 ## `_walled_off()` through that one-line cache, for `contribution_at()` alone: the caret's
 ## projection asks a different pair at every step and would only push the frame's own pair out.
 func _walled_off_now(source_at: Vector2, her_at: Vector2) -> bool:
-	if source_at != _wall_from or her_at != _wall_to or _map != _wall_map:
+	var grid := wall_grid()
+	if source_at != _wall_from or her_at != _wall_to or grid != _wall_map:
 		_wall_from = source_at
 		_wall_to = her_at
-		_wall_map = _map
+		_wall_map = grid
 		_wall_answer = _walled_off(source_at, her_at)
 	return _wall_answer
 

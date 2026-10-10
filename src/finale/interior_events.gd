@@ -8,12 +8,13 @@ extends Node
 ## That class is a day: a plan streamed around a walking player, a director owing rows ahead of
 ## her, one-shots, scars, successors, detentions and city-wide announcements, all of it stated over
 ## a `CityMap` this building does not have. What is wanted here is *"relatively minimal"* — at most
-## one of each — so what this does is the four things an instance actually needs from whatever owns
-## it: put it in the world, tell it where she is, sum what it contributes, and fire the hard fail
-## when one of them reaches her. Everything else about an event — the telegraph, the field, the
-## path, the pursuit, the drawing — is `EventInstance`'s own and works unchanged indoors. And what
-## everything *around* the events reads — the badge, the halo, the debug view, the run log — is
-## `instances()`, which this answers under the name `EventManager` does; see there.
+## one of each — so what this does is the five things an instance actually needs from whatever owns
+## it: put it in the world, hand it the building's walls, tell it where she is, sum what it
+## contributes, and fire the hard fail when one of them reaches her. Everything else about an event
+## — the telegraph, the field, the path, the pursuit, the drawing — is `EventInstance`'s own and
+## works unchanged indoors. And what everything *around* the events reads — the badge, the halo,
+## the debug view, the run log — is `instances()`, which this answers under the name
+## `EventManager` does; see there.
 ##
 ## **The pressure is the same two meters.** `InteriorScene` is a `WorldContext` and asks this for
 ## its excitement, so the baby is woken by a mouse in the basement in exactly the way she is woken
@@ -350,7 +351,9 @@ func _inner_floor_approaches(side: String) -> Array[Vector2i]:
 
 # -------------------------------------------------------------- the instances ---
 
-func _spawn(def: EventDef, at: Vector2, path := PackedVector2Array()) -> EventInstance:
+## `walled` false is the explosion's alone: see `_explode_every_so_often()`.
+func _spawn(def: EventDef, at: Vector2, path := PackedVector2Array(), walled := true
+		) -> EventInstance:
 	if not def:
 		return null
 	var instance := EventInstance.new()
@@ -358,6 +361,12 @@ func _spawn(def: EventDef, at: Vector2, path := PackedVector2Array()) -> EventIn
 	# which way a spread lies, which alley a mouse crosses — is about a lattice this building does
 	# not sit on, and `EventInstance` already answers all three for a caller with no map.
 	instance.setup(def, at, path)
+	# **But the walls are the building's own**, and stop excitement as a city's buildings do.
+	# *(plaid-wombat, inbox #554: "Excitement should not go through **any** wall".)* The masked
+	# man's field reaches round the flights of his own shaft, and without this it would reach her
+	# through the solid between them.
+	if walled:
+		instance.set_walls(_interior.wall_grid())
 	_interior.add_entity(instance)
 	_instances.append(instance)
 	return instance
@@ -401,7 +410,11 @@ func _explode_every_so_often(delta: float) -> void:
 		return
 	# Its telegraph is spent before the flash rather than after it: what the windows say is *it has
 	# already happened*, so the row is handed to the world with its notice already over.
-	var burst := _spawn(EventCatalogue.by_id(_EXPLOSION_ID), _player.global_position)
+	# **And no wall stops it.** The bang is outside and has already come through the building's
+	# walls to reach her; the instance standing where she is only carries its charge, so a wall
+	# between that spot and a step she takes in the next second is not a wall between her and it.
+	var burst := _spawn(EventCatalogue.by_id(_EXPLOSION_ID), _player.global_position,
+			PackedVector2Array(), false)
 	if burst:
 		burst.resume(burst.def.telegraph_time, 0.0, INF)
 

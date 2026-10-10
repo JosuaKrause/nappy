@@ -691,8 +691,11 @@ func is_walkable(tile: Vector2i) -> bool:
 ## exceed `Tuning.TILE_SIZE`. A segment exactly the depth from open ground at its deepest is blocked.
 ## **A building two tiles thick blocks only along its middle**, the one line of points a whole tile
 ## in, and not within a tile of an open end of it: a line straight through such a building 31px from
-## its end passes, and a building two tiles square blocks only a line through its very centre. That
-## is the player's "otherwise it should be one tile" read literally, and the end is open to them.
+## its end passes, and a building two tiles square blocks only a line through its very centre: the
+## ends as the player described them *(bouncy-kestrel, inbox #568: "Near the end of the building the
+## same spacing is used so a 2x8 building has a 6 unit long line through its middle")*. **Indoors
+## too**: the escape's building hands its own walls to its sources as a grid of this class
+## (`InteriorScene.wall_grid()`), so this one function answers for every wall in the game.
 func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH,
 		thin_depth := Tuning.THIN_WALL_SHIELD_DEPTH) -> bool:
 	var tile_size := float(Tuning.TILE_SIZE)
