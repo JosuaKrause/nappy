@@ -1149,6 +1149,34 @@ class WalkSiting extends RefCounted:
 		return EventScheduler._best_of(def, rng, _map, offered, EventScheduler._role_for(def, _day),
 				already, _ground, _leave_alone, _corridor, _doors)
 
+	## A placement for `def` among `offered`, near her at `at`, **under every rule a row the day plans
+	## is placed under**: only the tiles of `offered` its own dawn pool would offer it — the open
+	## ground `_open_ground_for()` keeps it to, and for a `WALL` none a route runs along
+	## (`_copies_of()`) — then `_best_of()` against `already` with the day's own ground, corridor,
+	## protected calm and doors, as `among()` does, and then, since it is put down after dawn, only a
+	## site that still leaves her a way home and to a calm area from `at`
+	## (`_still_leaves_a_park_reachable()`). Null when nothing offered passes. Day 13's own roadblock,
+	## placed near the mark she read (`ResistanceDirector._place_the_roadblock_near()`).
+	func near_her(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+			offered: Array[Vector2i], at: Vector2) -> Planned:
+		var role := EventScheduler._role_for(def, _day)
+		var by_cost := EventScheduler._is_a_wall_by_cost(def)
+		var pool := _ground_as_a_set(def)
+		var kept: Array[Vector2i] = []
+		for tile in offered:
+			if pool.has(tile) and EventScheduler._copies_of(tile, _corridor, role, def.hard_fail,
+					by_cost) > 0:
+				kept.append(tile)
+		if kept.is_empty():
+			return _waited("no ground near her the day would offer the row")
+		var candidate := EventScheduler._best_of(def, rng, _map, kept, role, already, _ground,
+				_leave_alone, _corridor, _doors)
+		if not candidate:
+			return _waited("every site near her broke a placement rule")
+		if not _still_leaves_a_park_reachable(already, candidate, at):
+			return _waited("the site would close her way out")
+		return candidate
+
 	## How far from where she finished the day a dusk placement has to be: the streaming radius, so
 	## the site is ground she was never near enough to have it exist in front of her.
 	const DUSK_CLEAR_OF_HER := Tuning.EVENT_STREAM_RADIUS

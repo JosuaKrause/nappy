@@ -885,6 +885,52 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	_record_the_body(plan.get_instance_id(), def, plan.position, plan.facing)
 	return plan
 
+## **A task's own row, placed the way the day places one, near where she read its mark**: day 13's
+## roadblock (`ResistanceDirector._place_the_roadblock_near()`, the player: "let's place one
+## properly and guide to that -- just make sure it's closeby"). Placed by
+## `EventScheduler.WalkSiting.near_her()` among `offered` — the tiles the director found near her and
+## out of her view — under every rule a planned row is placed under, against the whole of the day's
+## plan, and refused where it would close her way home or to a calm area from `her`. Appended to the
+## day's plan with its body recorded, and put in the world at once and kept there for the rest of the
+## day (`keep_live()`'s rule), since a task's contact rides it and must not lose it to the streaming.
+## Answers its live instance, or null when no offered tile passes.
+func queue_a_task_row(def: EventDef, offered: Array[Vector2i], rng: RandomNumberGenerator,
+		her: Vector2) -> EventInstance:
+	if offered.is_empty() or not def:
+		return null
+	var plan := _task_siting().near_her(def, rng, _plans, offered, her)
+	if not plan:
+		return null
+	_plans.append(plan)
+	_record_the_body(plan.get_instance_id(), def, plan.position, plan.facing)
+	_stream_in(plan)
+	plan.kept_live = true
+	return plan.live
+
+## Does at dawn the one-time work `queue_a_task_row()` would otherwise do on the frame she reads the
+## mark: the scan for the ground `def` may stand on and the reachability grid
+## (`EventScheduler.WalkSiting.prepare()`). Nothing here rolls, so the day is the same day whether
+## or not this ran.
+func prepare_a_task_row(def: EventDef) -> void:
+	if def:
+		_task_siting().prepare(def, _plans)
+
+## The day's placement context for `queue_a_task_row()`: the one the day kept for her walk, or one
+## built from what the day was planned against and kept for the rest of the day (`_day_tree` names
+## the day it was built for), so the ground scans, the corridor and the reachability grid it builds
+## are paid for once however often a placement is asked.
+func _task_siting() -> EventScheduler.WalkSiting:
+	if _siting:
+		return _siting
+	if not _task_siting_cache or _task_siting_tree != _day_tree:
+		_task_siting_cache = EventScheduler.WalkSiting.new(_day, _map, _day_tree,
+				GameState.settled_this_act(), _day_doors)
+		_task_siting_tree = _day_tree
+	return _task_siting_cache
+
+var _task_siting_cache: EventScheduler.WalkSiting
+var _task_siting_tree: RouteTree
+
 ## She has crossed a district door: let out on its far side after the inspection
 ## (`_release_finished_door_detentions()`, `inspected` true), or walked through its line under a
 ## raised boom (`_watch_the_door_lines()`, `inspected` false, which sets the door's own guard on her
