@@ -16,15 +16,14 @@ func run(t) -> void:
 	if not built.errors.is_empty():
 		return
 	var map: CityMap = built.map
-	var witness: CityMap = RecipeCityBuilder.build(SceneRecipeDraft.base_of(data)).map
-	_test_the_stretch_is_the_only_ground(t, map, witness)
+	_test_the_stretch_is_the_only_ground(t, map, data)
 	_test_the_arrow_stays_on_the_stretch(t, map)
 	_test_saved_layout_is_independent(t, data)
 	_test_authored_building_values_drive_live_joins(t, data)
 	_test_authored_partial_courtyard_controls_live_tint(t)
 	_test_the_schema(t, data)
 	_test_the_crowd_enters_at_the_ends(t, map)
-	_test_the_draft_takes_whole_streets(t, witness)
+	_test_the_draft_takes_whole_streets(t, data)
 	_test_the_route_bag(t, map, data)
 	_test_the_city_draws_the_stretch_alone(t, map)
 	_test_appeared_requires_sight(t)
@@ -98,33 +97,65 @@ func _visibility_rig(t, zoom: float) -> Dictionary:
 	runtime._player = player
 	return {"viewport": viewport, "player": player, "camera": camera, "runtime": runtime}
 
-func _test_the_stretch_is_the_only_ground(t, map: CityMap, witness: CityMap) -> void:
+## The live map against the recipe's own lists, never against a generated city *(mossy-marmot,
+## inbox #618, the player's choice: "Finish fully handcrafted layouts now")*: each stretch tile
+## is the type `stretch.tiles` lists for it, every other tile is void, and the void the stretch
+## cut off is ground in its saved `context`. Asked of the saved scene and of a copy with one road
+## run hand-edited to sidewalk, which the saved context still has as road: an edit an author makes
+## is what the scene shows, and holds here as it holds in play.
+func _test_the_stretch_is_the_only_ground(t, map: CityMap, data: Dictionary) -> void:
 	t.check(map.has_stretch() and map.stretch_active, "the scene's map shows its stretch")
-	var inside := 0
-	var agrees := true
-	var cut_off := 0
-	for y in map.size.y:
-		for x in map.size.x:
-			var tile := Vector2i(x, y)
-			if map.in_stretch(tile):
-				inside += 1
-				agrees = agrees and map.tile_at(tile) == witness.tile_at(tile)
-			elif map.tile_at(tile) != GameEnums.TileType.BUILDING or map.is_walkable(tile) \
-					or map.is_street(tile):
-				agrees = false
-			if map.is_cut_off(tile):
-				cut_off += 1
-				agrees = agrees and witness.is_walkable(tile)
-	t.check(inside > 0 and agrees,
-			"its %d tiles read as the witness has them and every other tile as void, no ground" % inside)
-	t.check(cut_off > 0, "and some of the void is street the stretch cut off (%d tiles)" % cut_off)
+	var context := RecipeCityContext.restore(data.context)
+	_check_the_ground(t, map, data, context, "the saved scene")
+	var edited := data.duplicate(true)
+	var road: Array = edited.stretch.tiles.road
+	var moved: Array = road.pop_back()
+	(edited.stretch.tiles.sidewalk as Array).append(moved)
+	var tile := Vector2i(int(moved[1]), int(moved[0]))
+	var rebuilt := RecipeCityBuilder.build(edited)
+	t.check(rebuilt.errors.is_empty() and context.tile_at(tile) == GameEnums.TileType.ROAD,
+			"the hand-edited copy builds, its edit at %s differing from the saved context: %s"
+			% [tile, rebuilt.errors])
+	if rebuilt.errors.is_empty():
+		_check_the_ground(t, rebuilt.map, edited, context, "the hand-edited copy")
 	var edges := map.witness_only()
 	var outside := Vector2i(0, 0)
-	t.check(not map.in_stretch(outside) and map.tile_at(outside) == witness.tile_at(outside),
-			"a whole-city rule reads the witness while the edges are off")
+	t.check(not map.in_stretch(outside) and map.tile_at(outside) == context.tile_at(outside),
+			"a whole-city rule reads the saved context while the edges are off")
 	map.restore_edges(edges)
 	t.check(map.stretch_active and map.tile_at(outside) == GameEnums.TileType.BUILDING,
 			"and the void is back once it is done")
+
+func _check_the_ground(t, map: CityMap, data: Dictionary, context: CityMap, label: String) -> void:
+	var listed := {}
+	for type_name: String in data.stretch.tiles:
+		for run: Array in data.stretch.tiles[type_name]:
+			for x in range(int(run[1]), int(run[2]) + 1):
+				listed[Vector2i(x, int(run[0]))] = GameEnums.TileType[type_name.to_upper()]
+	var as_listed := true
+	var void_elsewhere := true
+	var cut_off := 0
+	var cut_off_was_ground := true
+	for y in map.size.y:
+		for x in map.size.x:
+			var tile := Vector2i(x, y)
+			if map.in_stretch(tile) != listed.has(tile):
+				as_listed = false
+			elif listed.has(tile):
+				as_listed = as_listed and map.tile_at(tile) == listed[tile]
+			elif map.tile_at(tile) != GameEnums.TileType.BUILDING or map.is_walkable(tile) \
+					or map.is_street(tile):
+				void_elsewhere = false
+			if map.is_cut_off(tile):
+				cut_off += 1
+				cut_off_was_ground = cut_off_was_ground and context.is_walkable(tile)
+	t.check(not listed.is_empty() and as_listed,
+			"%s: its %d tiles are the stretch and read as `stretch.tiles` lists them"
+			% [label, listed.size()])
+	t.check(void_elsewhere, "%s: every other tile is void, no ground" % label)
+	t.check(cut_off > 0 and cut_off_was_ground,
+			"%s: some of the void is ground the stretch cut off from its saved context (%d tiles)"
+			% [label, cut_off])
 
 func _test_the_arrow_stays_on_the_stretch(t, _map: CityMap) -> void:
 	# A U-shaped authored street: from the left tip, target A is five tiles along the visible
@@ -342,7 +373,10 @@ func _test_the_crowd_enters_at_the_ends(t, map: CityMap) -> void:
 	t.check(field.has_stretch() and field.looking_at() == looking and field.centre != looking,
 			"the field stays over the whole stretch while the camera moves")
 
-func _test_the_draft_takes_whole_streets(t, witness: CityMap) -> void:
+## Drafting is the one place a stretch meets generation: the draft walks the whole city its
+## drafting inputs make (`SceneRecipeDraft.base_of()`).
+func _test_the_draft_takes_whole_streets(t, data: Dictionary) -> void:
+	var witness: CityMap = RecipeCityBuilder.build(SceneRecipeDraft.base_of(data)).map
 	var segment := StreetNetwork.by_key(Vector3i(5, 5, 1))
 	var ground := {}
 	SceneRecipeDraft._add_the_ground_of(witness, segment.tile_rect().get_center(), ground)

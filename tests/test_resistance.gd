@@ -4511,10 +4511,10 @@ func _longest_route_points() -> Array[Vector2]:
 		points.append(EventScheduler.WalkSiting._cell_centre(_city.map, longest[i]))
 	return points
 
-## Walks her down the day's longest route, the events placing what is owed ahead of her as they do
-## in play, until the mast reading day 11's mark rigged onto her route is put down — a mast that is
-## not in `at_the_mark`, the ids the day had when she read it: its mast id, or "" if the walk ends
-## first.
+## Walks her down the day's longest route, the events siting what her walk sites and placing what
+## is owed ahead of her as they do in play, until the mast reading day 11's mark rigged onto her
+## route is put down — a mast that is not in `at_the_mark`, the ids the day had when she read it:
+## its mast id, or "" if the walk ends first.
 func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> String:
 	var path := _longest_route_points()
 	_city.events._find_player()
@@ -4541,6 +4541,7 @@ func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> St
 			index += direction
 			continue
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
+		_city.events._site_what_is_on_her_way(step)
 		_city.events._place_what_is_owed_ahead(step)
 		player.global_position += player.velocity * step
 		walked += step

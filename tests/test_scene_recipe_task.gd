@@ -75,7 +75,7 @@ func _test_the_task_observations_ask_about_the_task(t) -> void:
 			"asks about the task's mark or target"), "offered asks only about the task")
 	t.check(SceneRecipeRuntime.validate_runtime(_recipe(3, null, [{"tick": 1, "subject": "player",
 			"condition": "clear_of_both_views", "half": [160, 480]}])).is_empty(),
-			"a box clear of the landscape and the portrait view is asked with its half extents")
+			"a box clear of her view, in either presentation, is asked with its half extents")
 	t.check(_refused(_recipe(3, null, [{"tick": 1, "subject": "player",
 			"condition": "clear_of_both_views"}]), "needs [half width, half height]"),
 			"and a view check with no box is refused")

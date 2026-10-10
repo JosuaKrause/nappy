@@ -11,8 +11,9 @@ extends RefCounted
 ## **The rig.** Per seed and day, a real city through the real day order (`CityState.begin_day()`,
 ## `City.start_day()`, `EventManager.start_day()`, then the director), the mark read so the task is
 ## placed and her route rigged, and the day's longest route walked through
-## `EventManager._place_what_is_owed_ahead()` until the rigged bag is spent, so day 11 has its
-## second mast on her route and day 6 its second man shouting, the way a played day has them.
+## `EventManager._site_what_is_on_her_way()` and `_place_what_is_owed_ahead()` until the rigged bag
+## is spent, so day 11 has its second mast on her route and day 6 its second man shouting, the way a
+## played day has them.
 ##
 ## **The positions.** The mark, then `POSITIONS - 1` sidewalk tiles reachable from home, taken at an
 ## even stride through every such tile in scan order, so they spread over the whole city rather than
@@ -195,6 +196,7 @@ func _walk_the_rigged_bag(city: City, player: Stroller) -> void:
 			index += direction
 			continue
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
+		city.events._site_what_is_on_her_way(STEP)
 		city.events._place_what_is_owed_ahead(STEP)
 		player.global_position += player.velocity * STEP
 		walked += STEP
