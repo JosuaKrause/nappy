@@ -76,7 +76,7 @@ assert_exit() {
         failures=$(( failures + 1 ))
         return
     fi
-    if ! printf '%s' "$out" | grep -qi usage; then
+    if ! grep -qi usage <<<"$out"; then
         echo "FAIL $label: no 'usage' anywhere in the output" >&2
         printf '%s\n' "$out" | sed 's/^/    /' >&2
         failures=$(( failures + 1 ))
@@ -539,7 +539,7 @@ checks=$(( checks + 1 ))
 if [[ $status -eq 0 ]]; then
     echo "FAIL shot.sh --route (implicit --screenshot): expected a non-zero exit, got 0" >&2
     failures=$(( failures + 1 ))
-elif ! printf '%s' "$out" | grep -qi -- "--route"; then
+elif ! grep -qi -- "--route" <<<"$out"; then
     echo "FAIL shot.sh --route: rejection message did not mention --route" >&2
     printf '%s\n' "$out" | sed 's/^/    /' >&2
     failures=$(( failures + 1 ))

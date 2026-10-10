@@ -242,7 +242,7 @@ cleanup() {
         echo "scratch retained (cannot verify registration): $scratch_wt" >&2
         return 0
     }
-    if ! printf '%s\n' "$registrations" | grep -Fxq "worktree $scratch_wt"; then
+    if ! grep -Fxq "worktree $scratch_wt" <<<"$registrations"; then
         # A failed add can leave its mktemp directory behind; rmdir cannot erase any contents.
         rmdir "$scratch_wt" 2>/dev/null \
             || echo "scratch retained (creation failed; directory is not empty): $scratch_wt" >&2

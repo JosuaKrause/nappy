@@ -10,7 +10,7 @@
   <!-- The whole far leg is behind both wheels and every bicycle tube. -->
   <path d="M20.4 24.2 L25.6 29.4 L23.2 34" fill="none" stroke="#3b2d32" stroke-width="2"/>
   <path d="M20.4 24.2 L25.6 29.4 L23.2 34" fill="none" stroke="#b8683a" stroke-width="1.1"/>
-  <path d="M22.4 33.3 L25.8 34.2 L25.6 35.5 L24.2 35.7 L22.4 34.7 Z" fill="#e0843a" stroke-width="0.6"/>
+  <path d="M22.4 33.3 L25.8 34.2 L25.6 35.5 L24.2 35.7 L22.4 34.7 Z" fill="#b8683a" stroke-width="0.6"/>
   <ellipse cx="8" cy="29" rx="4.5" ry="6" fill="none" stroke="#221f28" stroke-width="1.6"/><ellipse cx="29" cy="37" rx="4.5" ry="6" fill="none" stroke="#221f28" stroke-width="1.6"/>
   <path d="M8 29 L15 24 L20 33 L8 29 M15 24 L28 28 L20 33 L29 37 L28 24" fill="none" stroke="#c4503c" stroke-width="1.8"/>
   <path d="M24 26 L33 24" fill="none" stroke="#221f28" stroke-width="1.6"/>

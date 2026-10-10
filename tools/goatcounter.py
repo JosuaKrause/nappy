@@ -42,11 +42,13 @@ value of a repeated `exclude_paths=1&exclude_paths=2`, so repeating it re-sent t
 page (duplicated counts) and, with the list growing by ~24 bytes an id, ended in a query of ~32 KB that
 the server answers by closing the connection (the "Remote end closed connection without response" of a
 long range). Comma-joined, an id costs ~10 bytes, and a range whose list would still pass ~30 KB is
-refused with a message to narrow it rather than sent. `count` on each hit is
-"Number of visitors for the selected date range", the API's own wording. The page visit keeps the
-site's sessions, so its count is visitors; every event opts out of them (`count.js`'s `no_session`,
-sent as the hit's `ns` parameter), and GoatCounter counts a hit without a session as a visit of its
-own: an event's count is every time it was sent, a retry by the same person included.
+refused with a message to narrow it rather than sent. A page that says `more` while none of its hits
+carries a `path_id` cannot be paged past, and is an error rather than a quietly short count.
+`count` on each hit is "Number of visitors for the selected date range", the API's own wording. The
+page visit keeps the site's sessions, so its count is visitors; every event opts out of them
+(`count.js`'s `no_session`, sent as the hit's `ns` parameter), and GoatCounter counts a hit without a
+session as a visit of its own: an event's count is every time it was sent, a retry by the same person
+included.
 
 Grouping follows the shape `docs/TELEMETRY.md` documents rather than a hard-coded list of event
 names, since the catalogue keeps growing: a name is either run-level (`run-*`, `ending-*`,
@@ -397,9 +399,17 @@ def fetch_hits(fetch: Fetcher, start: datetime, end: datetime, *, limit: int = P
         hits.extend(fresh)
         new_ids = [str(hit["path_id"]) for hit in fresh if isinstance(hit, dict) and "path_id" in hit]
         seen.update(new_ids)
+        more = bool(page.get("more"))
+        # Paging works by excluding the paths already read, so a page of hits that carry no
+        # `path_id` cannot be paged past: stopping there would quietly cut the range short.
+        if more and page_hits and not any(isinstance(h, dict) and "path_id" in h for h in page_hits):
+            raise GoatCounterError(
+                "GoatCounter said there were more hits, but none on the page had a 'path_id' to "
+                "page past; the counts would be incomplete"
+            )
         # A server claiming more with nothing new to exclude would otherwise loop forever asking
         # the same question; stop rather than trust that half of the contract blindly.
-        if not page.get("more") or not new_ids:
+        if not more or not new_ids:
             break
         exclude.extend(new_ids)
     return hits

@@ -1189,8 +1189,10 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
 ## entry-side fallback (`CrowdAgent._keep_within_the_room_beyond_the_map`) used to hand every kind
 ## the same `ENTRY_SPREAD` reach past the true edge, so a walker whose six recycle rolls all missed
 ## could appear already standing on the bridge. The bridge is not made safe by this: a car on the
-## spine still overruns the map by `Tuning.OUT_OF_SIGHT`, which is the whole of how it looks like it
-## drives across rather than stopping dead at the kerb.
+## spine still overruns the map's south edge, by up to `CrowdAgent.BRIDGE_RUN` (the bridge deck's
+## length less a car) on its way out and at least `CrowdAgent.BRIDGE_ENTRY_MIN` (past the camera's
+## reach beyond the edge) on its way in, which is the whole of how it looks like it drives across
+## rather than stopping dead at the kerb.
 func _test_only_cars_go_over_the_bridge(t) -> void:
 	var spine_x := (_city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
 			* float(Tuning.TILE_SIZE)

@@ -243,9 +243,10 @@ const CLOSE_FLASHES_PER_SECOND := 7.0
 ## cues in one column collide**: the mark means *this will end your day*, and a cue about the meter
 ## that can be read as part of it takes that meaning away from it.
 ##
-## The lift clears the pram's own art, which is 30px tall from its ground point. Both numbers are
-## set by looking: any less and the cue is inside the hood and reads as clutter on the pram, and
-## with no lateral step it is over her chest walking south and over her head walking north.
+## The lift clears the pram's own art, `PRAM_ART_HEIGHT` tall from its ground point. The lift and
+## the step aside are set by looking: any less and the cue is inside the hood and reads as clutter
+## on the pram, and with no lateral step it is over her chest walking south and over her head
+## walking north.
 const BABY_CUE_LIFT := 36.0
 const BABY_CUE_ASIDE := 34.0
 ## Slow, because it is a state rather than an alarm; the two urgent ones flash and the two
