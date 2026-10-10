@@ -131,15 +131,28 @@ var _day_length := 0.0
 var _expired := false
 var _day := 0
 
-## Whether she can see a world point: injected by `main` from the one answer the game has,
-## `EventManager.sees()` — what she can see (`VisibleView`), the camera's view less, in the
-## joystick scheme, the two bottom corners its controls cover *(inbox #581, the player:
-## "everything should follow this (and treat it depending on the input mode)")*. So a chalk mark
-## under a covered corner is not seen, and its notice does not run there. A rig may leave this
-## unset — with no predicate, nothing is ever seen and the re-placement rule below simply keeps
-## running, which is also correct: a mark nobody is watching for should never stop moving because
-## of it.
+## **Two tests, for two questions** *(olive-hedgehog, inbox #598, the player: "off screen is not
+## the same as visible -- the corners get removed for visible not for off screen")*, both injected
+## by `main` (`set_sight()`) from the day's one view, so the director holds no camera of its own.
+##
+## `_sight` answers **"has she seen it"**, and only for a chalk mark's notice dwell
+## (`_track_sight_and_reposition()`): `EventManager.sees()`, what she can see (`VisibleView`), the
+## camera's view less, in the joystick scheme, the two bottom corners its controls cover *(inbox
+## #581, the player: "everything should follow this (and treat it depending on the input
+## mode)")*. So a chalk mark under a covered corner is not seen, and its notice does not run there.
+## A rig may leave it unset — with no predicate, nothing is ever seen and the re-placement rule
+## simply keeps running, which is also correct: a mark nobody is watching for should never stop
+## moving because of it.
 var _sight: Callable
+## `_on_screen` answers **"would it be drawn in front of her"**, for everything the director places
+## or removes: where a relocated mark, a waiting robber, a task target, a pursuer sent after her and
+## day 10's raid may appear, and when a waiting robber or the taken neighbor may vanish
+## (`_box_shows()` and its callers, `_draw_arrival_position()`, `_take_the_neighbor_away()`).
+## `EventManager.on_screen()`, the camera's whole view, corners included in either scheme: a thing
+## under a covered corner is still drawn there, under the controls, so appearing or vanishing there
+## is pop-in *(the same note: "I don't want any pop in")*. A rig may leave it unset, and then
+## nothing is ever refused for being on screen.
+var _on_screen: Callable
 ## Whether the current pickup's mark has been seen this world-day. Sticky once true — see
 ## `_track_sight_and_reposition()`.
 var _seen := false
@@ -197,10 +210,13 @@ func setup(city: City, map: CityMap) -> void:
 		city.events.door_crossed.connect(_on_door_crossed)
 	_happenings.setup(city, map)
 
-## Lets the day's own answer to "can she see it" answer "has she seen this" for the resistance
-## too, without the director holding a camera of its own. See the doc on `_sight`.
-func set_sight(is_on_screen: Callable) -> void:
-	_sight = is_on_screen
+## Hands the director the day's two answers about her view: `sees`, whether she can see a world
+## point (the notice dwell's), and `on_screen`, whether a world point is anywhere in the camera's
+## whole view (placing and removing's). Both are asked of every caller at once, so a test of one
+## is never wired where the other belongs. See the docs on `_sight` and `_on_screen`.
+func set_sight(sees: Callable, on_screen: Callable) -> void:
+	_sight = sees
+	_on_screen = on_screen
 
 func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_clear()
@@ -425,7 +441,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	#
 	# **At dawn her position is not yet today's.** `main.gd` starts the resistance before it resets
 	# her, so `_player_position()` still answers where the previous attempt left her — often right
-	# beside this same mark, if its robber caught her — and the camera `_sight` asks is still
+	# beside this same mark, if its robber caught her — and the camera `_on_screen` asks is still
 	# there too. A candidate refused on either still spends its draws from `_rng`, which moves the
 	# guard and every later draw of the day, the task her reading the mark places included. So
 	# a dawn guard — only ever a mark's, since the last night's door, the one task offered at dawn,
@@ -810,7 +826,7 @@ func _view_from(her: Vector2) -> VisibleView:
 ## bearing (`PendingWarning.just_out_of_sight()`, the row's own drawn box clear of what she can see
 ## and never nearer than the view's half height), on ground `_draw_guard_position()`'s own refusals
 ## leave alone (walkable, not behind a closure, not held, not the home block, not a walled-off
-## alley), and out of sight by `_sight` as well. Returns `[position, clear, beside, across]` —
+## alley), and off the camera's whole view by `_shows()` as well. Returns `[position, clear, beside, across]` —
 ## `Vector2.INF` when no start qualifies; `clear` when the straight line from there to her is
 ## walkable; `beside` when he starts to her side rather than above or below her; `across` when he
 ## comes from across the street at a front door (`_across_the_street()`). `prefer`, when given, is a
@@ -858,7 +874,7 @@ func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: Event
 	if prefer != Vector2.ZERO:
 		var kept := PendingWarning.just_out_of_sight(view, def, her, prefer)
 		if is_legal_ground(_map, _map.world_to_tile(kept), walled_alleys) \
-				and not (_sight.is_valid() and _sight.call(kept)) \
+				and not _shows(kept) \
 				and not _runs_through_the_boundary(kept, her, boundary):
 			if _a_clear_run(kept, her):
 				return [kept, true, is_zero_approx(prefer.y), false]
@@ -885,7 +901,7 @@ func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: Event
 		var tile := _map.world_to_tile(candidate)
 		if not is_legal_ground(_map, tile, walled_alleys):
 			continue
-		if _sight.is_valid() and _sight.call(candidate):
+		if _shows(candidate):
 			continue
 		if _runs_through_the_boundary(candidate, her, boundary):
 			continue
@@ -914,7 +930,8 @@ static func is_at_a_front_door(step: ResistanceSteps.Step) -> bool:
 ## is:
 ##
 ## - below her and wholly out of sight (`PendingWarning.is_out_of_sight()`, his drawn box against
-##   what she can see, never nearer than the view's half height), and out of sight by `_sight`;
+##   what she can see, never nearer than the view's half height), and off the camera's whole
+##   view by `_shows()`;
 ## - legal ground (`is_legal_ground()`);
 ## - one his own chase walks to her (`_his_walk_reaches_her()`) in no more ground than the start
 ##   beside her (`beside_distance()`), so he is never later than the start along her street he
@@ -949,7 +966,7 @@ func _across_the_street(her: Vector2, def: EventDef, walled_alleys: Array[Rect2i
 	for candidate in candidates:
 		if not is_legal_ground(_map, _map.world_to_tile(candidate), walled_alleys):
 			continue
-		if _sight.is_valid() and _sight.call(candidate):
+		if _shows(candidate):
 			continue
 		if _his_walk_reaches_her(candidate, her, furthest, boundary):
 			return candidate
@@ -1235,22 +1252,29 @@ const MARK_HALF_EXTENT := Vector2(16.0, 16.0)
 const GUARD_BODY_CENTRE := Vector2(0.0, -22.0)
 const GUARD_HALF_EXTENT := Vector2(14.0, 26.0)
 
-## Whether any part of a box `half` either side of `centre` is on screen right now: `_sight` asked
-## of the centre and the four corners. The screen is a rectangle far larger than either box and
-## only ever turned by quarter turns (`ScreenOrientation`), so a box that overlaps it has a corner
-## inside it. A bare centre test is what lets a picture whose centre is one pixel past the edge
-## show half of itself. The corners are asked through `_sight` itself rather than a margin on
-## it, since a margin grows every side of the box alike and the box is not square.
-## `false` when `_sight` is unset: the bare-map rigs several tests in `tests/test_resistance.gd`
-## drive have no camera to ask, so nothing they place is ever refused for being seen.
+## Whether any part of a box `half` either side of `centre` is on screen right now: `_shows()`
+## asked of the centre and the four corners. The screen is the camera's whole view
+## (`_on_screen`), a rectangle far larger than either box and the same world box however the
+## window is turned (`VisibleView`'s own doc), so a box that overlaps it has a corner inside it. A
+## bare centre test is what lets a picture whose centre is one pixel past the edge show half of
+## itself. The corners are asked through `_shows()` itself rather than a margin on it, since a
+## margin grows every side of the box alike and the box is not square. A covered corner's area is
+## not left out: what is placed there is drawn there, under the controls.
+## `false` when `_on_screen` is unset: the bare-map rigs several tests in `tests/test_resistance.gd`
+## drive have no camera to ask, so nothing they place is ever refused for being on screen.
 func _box_shows(centre: Vector2, half: Vector2) -> bool:
-	if not _sight.is_valid():
+	if not _on_screen.is_valid():
 		return false
 	for corner: Vector2 in [centre, centre + half, centre - half, centre + Vector2(half.x, -half.y),
 			centre + Vector2(-half.x, half.y)]:
-		if _sight.call(corner):
+		if _on_screen.call(corner):
 			return true
 	return false
+
+## Whether a world point is anywhere in the camera's whole view right now (`_on_screen`), covered
+## corners included — what placing and removing ask. `false` when `_on_screen` is unset.
+func _shows(point: Vector2) -> bool:
+	return _on_screen.is_valid() and _on_screen.call(point)
 
 ## Whether any part of a chalk mark's picture at `at` would be on screen right now.
 func _mark_shows(at: Vector2) -> bool:
@@ -1937,7 +1961,7 @@ func _take_the_neighbor_away() -> void:
 	if not _taken_neighbor or not is_instance_valid(_taken_neighbor):
 		_taken_neighbor = null
 		return
-	if _sight.is_valid() and _sight.call(_taken_neighbor.global_position):
+	if _shows(_taken_neighbor.global_position):
 		return
 	_city.events.retire(_taken_neighbor)
 	_taken_neighbor = null
@@ -2175,7 +2199,7 @@ func _reachable_from_home(tile: Vector2i) -> bool:
 	return _reach_grid.reaches(tile, _reach_blocked, _reach_reached)
 
 func _process(delta: float) -> void:
-	_happenings.tick(delta, _player_position(), _player_velocity(), _sight)
+	_happenings.tick(delta, _player_position(), _player_velocity(), _on_screen)
 	if _taken_neighbor:
 		_take_the_neighbor_away()
 	if _lingering_rider:

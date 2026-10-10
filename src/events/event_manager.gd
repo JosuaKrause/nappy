@@ -714,8 +714,9 @@ func _watch_the_encounters(delta: float) -> void:
 
 ## What she can see this frame — the one answer to "can she see it" for everything on a day
 ## (`VisibleView`): the screen-edge badge, the placing of what arrives from off screen, the fire's
-## sighting, the resistance's own sight (`ResistanceDirector.set_sight()`, wired to `sees()` by
-## `main`), the poster crews and the page's counter. One instance for the day, never replaced, so a
+## sighting, a chalk mark's notice (`ResistanceDirector.set_sight()`, wired to `sees()` by
+## `main`), the poster crews and the page's counter. What the resistance places and removes asks
+## `on_screen()` of the same view instead. One instance for the day, never replaced, so a
 ## caller may keep it. Set at the top of each physics frame by `_look_through_the_camera()`.
 var _visible := VisibleView.new()
 
@@ -727,6 +728,16 @@ func visible_view() -> VisibleView:
 ## px past the edge count as in sight as well.
 func sees(world_position: Vector2, margin := 0.0) -> bool:
 	return _visible.sees(world_position, margin)
+
+## Whether a world point is anywhere in the camera's whole view this frame, the corners the
+## joystick's controls cover included: `_visible`'s view with no corners laid on it, the view
+## `PendingWarning.seen_from()` places against. What the resistance asks before it places or
+## removes something (`ResistanceDirector.set_sight()`, wired by `main`), since a thing under a
+## covered corner is still drawn there *(olive-hedgehog, inbox #598, the player: "off screen is not
+## the same as visible -- the corners get removed for visible not for off screen")*. `false` until
+## the view has been looked through, the same as `sees()`.
+func on_screen(world_position: Vector2) -> bool:
+	return _visible.view.has_point(world_position)
 
 ## Tells `_visible` this frame's view and scheme (`VisibleView.look_through()`): the camera's view,
 ## `Tuning.VIEW_HALF_EXTENT` about the centre of the screen, which her look-ahead moves off her a

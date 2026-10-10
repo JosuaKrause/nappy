@@ -76,9 +76,10 @@ func _task_guards(t) -> void:
 			t.add_child(player)
 			player.set_physics_process(false)
 			player.global_position = her
-			director.set_sight(func(p: Vector2) -> bool:
+			var screen := func(p: Vector2) -> bool:
 				return absf(p.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x \
-						and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y)
+						and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y
+			director.set_sight(screen, screen)
 			director._on_contact_completed(mark.index)
 			placed += 1
 			var guard: EventInstance = director._task_guard
@@ -185,9 +186,10 @@ func _on_screen(t) -> void:
 		var robbery := EventCatalogue.by_id("alley_robbery")
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
 			var her := map.tile_to_world(tile)
-			director.set_sight(func(p: Vector2) -> bool:
+			var screen := func(p: Vector2) -> bool:
 				return absf(p.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x \
-						and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y)
+						and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y
+			director.set_sight(screen, screen)
 			var mark := director._nearest_alley_within(her)
 			if mark == Vector2.INF:
 				continue

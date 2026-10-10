@@ -182,9 +182,10 @@ func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Ar
 ## `_draw_arrival_position()` asked with `_sight` set to the screen round `her`; returns
 ## `[her, result]`.
 func _draw(director: ResistanceDirector, her: Vector2, def: EventDef, front_door: bool) -> Array:
-	director.set_sight(func(p: Vector2) -> bool:
+	var screen := func(p: Vector2) -> bool:
 		return absf(p.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x \
-				and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y)
+				and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y
+	director.set_sight(screen, screen)
 	var args: Array = [director._rng, her, def]
 	if director.get_method_argument_count("_draw_arrival_position") >= 4:
 		args.append(front_door)

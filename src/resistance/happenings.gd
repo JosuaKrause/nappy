@@ -118,8 +118,9 @@ func start_day(day: int, with_its_events := true) -> void:
 		_city.board_neighbor_window()
 
 ## Once a frame, from the director: brings in whatever the day is waiting to bring in. `her` is her
-## position, `Vector2.INF` with no player, and `velocity` hers; `sight` is the danger edge's own
-## on-screen test, which a rig may leave unset.
+## position, `Vector2.INF` with no player, and `velocity` hers; `sight` is whether a world point is
+## anywhere in the camera's whole view, covered corners included (the director's `_on_screen`,
+## since what it decides is where something appears), which a rig may leave unset.
 func tick(delta: float, her: Vector2, velocity: Vector2, sight: Callable) -> void:
 	_elapsed += delta
 	if her != Vector2.INF and velocity.length() >= Tuning.AHEAD_MIN_SPEED:
