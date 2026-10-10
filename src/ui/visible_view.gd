@@ -17,7 +17,8 @@ extends RefCounted
 ## since the corners are drawn under the controls rather than left undrawn.
 ##
 ## The covered corners exist only in joystick mode. Each focus carries either a steering ring
-## or an equally sized Run disc, so swapping sides does not change the covered footprint.
+## or an equally sized Run disc, so the steering side the title chose does not change the covered
+## footprint.
 ## Each rectangle runs from its screen edge to the disc's far edge, and from its top downward.
 ## In tap mode the whole view counts. A thing under a covered corner keeps its badge.
 ##

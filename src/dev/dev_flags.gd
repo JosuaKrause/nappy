@@ -711,7 +711,7 @@ static func _ending_from_query(query: String) -> String:
 			return pair[1]
 	return ""
 
-## `--controls joystick|tap` — the raw word, or "" if none was given. Mapping it onto
+## `--controls joystick|joystick-left|joystick-right|tap` — the raw word, or "" if none was given. Mapping it onto
 ## `ControlsMode.Mode` stays in `ControlsMode.resolve()`, the only caller, alongside the page's own
 ## `?controls=` query — this is only ever the command-line half of that same question.
 static func controls_override() -> String:

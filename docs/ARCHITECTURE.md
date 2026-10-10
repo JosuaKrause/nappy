@@ -333,15 +333,21 @@ doubling press — and nothing about where a heading is measured from.
 ### Choosing the controls
 
 `ControlsMode` (`src/ui/controls_mode.gd`) is the player's own choice of aiming origin, independent
-of `_touch`: a touchscreen can be set to `TAP` and a mouse can be set to `JOYSTICK`. `TitleScreen`'s
-two `ModeButton`s (`Symbol.JOYSTICK`/`Symbol.TAP`) are the only pointer way into a run — a press
+of `_touch`: a touchscreen can be set to `TAP` and a mouse can be set to `JOYSTICK`. In `JOYSTICK`
+it carries a `ControlsMode.Side` too, the half that steers. `TitleScreen`'s three `ModeButton`s are
+the only pointer way into a run — two `Symbol.JOYSTICK` discs centred on `TouchControls.FOCUS_LEFT`
+and `FOCUS_RIGHT`, each choosing its own side, and a `Symbol.TAP` disc midway between them; a press
 that lands anywhere else on the screen does nothing — and a direction key or `space` begins one in
 `Mode.TAP` instead, on the reasoning that a player pressing a key has told the screen nothing about
-a thumb. `main._add_touch_controls()` gives `TouchControls` a starting mode from
-`ControlsMode.resolve()` (the command line's `--controls joystick|tap`, then the page's own
-`?controls=`, then `TAP`) before the title screen exists at all — the answer a rig gets if it skips
-the title (`--no-title`, a screenshot rig) — and `main._on_title_start()` overrides it the moment a
-player actually presses a button. `resolve()`'s command-line door stays behind `DevFlags.enabled()`;
+a thumb. `main._add_touch_controls()` gives `TouchControls` a starting mode and side from
+`ControlsMode.resolve()` and `resolve_side()` (the command line's `--controls
+joystick|joystick-left|joystick-right|tap`, then the page's own `?controls=`, then `TAP`) before the title screen
+exists at all — the answer a rig gets if it skips the title (`--no-title`, a screenshot rig) — and
+`main._on_title_start()` overrides both the moment a player actually presses a button. The side is
+never saved: it lasts until the title asks again. The day-14 hand-over to the escape reloads the
+scene and opens no title, so `ControlsMode.remember()` keeps the title's answer in static variables
+for the rest of the process, and that boot's `_add_touch_controls()` takes it instead of
+`resolve()`. `resolve()`'s command-line door stays behind `DevFlags.enabled()`;
 its query door stays behind `DevFlags.live_debug_requested()`, so a release page's own
 `?debug=1&controls=` reaches it too (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the
 debug flags").
@@ -349,32 +355,32 @@ debug flags").
 `TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme, and the two modes
 disagree about where a heading is measured from. `Mode.TAP` sets a direction toward its own world
 position, aimed from wherever she currently stands, and a press within `TAP_STOP_RADIUS` of her stops
-her instead. `Mode.JOYSTICK` instead aims from whichever of two fixed points, `FOCUS_LEFT` or
-`FOCUS_RIGHT`, is nearer the press — each available ring at `STOP_RADIUS` has a knob at the
-currently-held direction — and is stopped by a press on either focus or in a band down the middle
-of the screen (`is_in_stop_band()`) rather than by a press near her own position, which does not
-stop her in this mode at all. Either way the direction locked in is walked with nothing held down
-until the next press changes it, and a double press holds `run` until the next press changes or
-releases it. In joystick mode, `_steering_focus` records the last side chosen by a pointer tap
-or drag, independently of `_drag_pointer_index`: lifting the pointer clears its drag ownership,
-not the selected side. `run_button_center()` puts Run at the opposite focus, or returns no disc
-until a side is chosen. A mode change clears the selection; pause preserves it.
-`_on_pointer()` acquires Run only on a press beginning on that displayed disc, tracking its
-owners in `_run_touches` until release even if steering changes the disc's side.
-`_run_held` and the double press's `_run_active` independently hold the same run action.
-A steering drag never acquires Run by crossing its disc, and leaving the stop band re-picks the
-steering focus. `set_direction()` always normalizes, so every steering path gives a full-speed
-heading. Pause, hiding controls, and mode changes release pointer holds.
+her instead. `Mode.JOYSTICK` instead aims from `_steering_focus`, `FOCUS_LEFT` or `FOCUS_RIGHT` as
+`set_mode()` was told by the title, and nothing in play changes it — the ring at `RING_RADIUS` has
+the dead zone's own circle (`DEAD_ZONE_RADIUS`) inside it and a knob at the currently-held
+direction. It is stopped by a press in that dead zone (`in_dead_zone()`) or in the stop band at
+the steering half's edge (`is_in_stop_band()`), never by a press near her own position. The edge,
+`boundary_x()`, is `STEERING_REACH` (two thirds) of the way from the steering focus to Run's;
+everything beyond it is Run's (`is_on_run_side()`). Either way the direction locked in is walked
+with nothing held down until the next press changes it, and a double press holds `run` until the
+next press changes or releases it. `run_button_center()` puts Run's disc on the other focus from
+the first frame of play, or returns no disc in `Mode.TAP`. `_on_pointer()` gives Run every press
+that begins on Run's side, tracking its owners in `_run_touches` until release wherever they
+travel; `_run_held` and the double press's `_run_active` independently hold the same run action.
+A steering drag keeps steering from the same focus wherever it travels, and never acquires Run;
+its release re-aims at the lift point in `Mode.JOYSTICK`, so a swipe that ends outside the dead
+zone walks toward where it ended. `set_direction()` always normalizes, so every steering path gives
+a full-speed heading. Pause, hiding controls, and a change of mode or side release pointer holds.
 
 `ButtonGeometry` shares the 1.05 visible-radius multiplier for button catches. Run's painted
 radius matches the steering ring including its stroke; the texture rectangle compensates for
 the SVG's transparent border. Pause uses the same compensation. `ModeButton.contains_design_point()`
 tests the round disc after undoing the control transform; title, pause and summary screens use it
 for both hover and press after converting presented coordinates to design coordinates.
-Joystick dead zones do not use this multiplier.
+The joystick dead zone and Run's half do not use this multiplier.
 The pause button shows only during a running day. `PauseScreen` and `DaySummary` also handle
 background presses through `TouchInput.is_press()`, so a press away from restart continues;
-`TitleScreen` requires a press on one of its two mode buttons.
+`TitleScreen` requires a press on one of its three mode buttons.
 
 A press or a drag computes a heading — `(target - origin)`, normalised — and presses it through
 `_set_axis()`, one signed value onto a pair of opposite actions. There is no target and nothing to
@@ -385,14 +391,14 @@ press changes the direction or stops her; a drag that started on a doubled press
 `run` through every motion event. The screen press itself is mapped to a world position with
 `get_viewport().get_canvas_transform().affine_inverse()` — the reverse of what `DangerEdge` and
 `HomeArrow` already do forwards every frame — so it tracks the camera, the zoom and the rotated
-presentation for free. Which focus is nearer, and whether a press lands on a focus or in the stop
-band, are asked in **design space** instead, through `ScreenOrientation.to_design_space()`, since
-that is where "half the screen" and "the middle of the screen" mean what they say — the chosen
-focus then makes the same design→presented→world trip a raw touch's own position already takes, in
-reverse, before it can be subtracted from or used as the heading's own origin. **The pause button's
-own corner and the Run disc are other places this remap is needed**: a new press there is
-subtracted from the aiming surface while the controls are drawn, against `PAUSE_CENTRE` or
-the currently displayed `run_button_center()`. Mouse clicks use the same path.
+presentation for free. Whether a press lands in the dead zone, in the stop band or on Run's side is
+asked in **design space** instead, through `ScreenOrientation.to_design_space()`, since that is
+where "two thirds of the way to Run" means what it says — the steering focus then makes the same
+design→presented→world trip a raw touch's own position already takes, in reverse, before it can be
+used as the heading's own origin. **The pause button's own corner and Run's side are other places
+this remap is needed**: a new press there is subtracted from the aiming surface, against
+`PAUSE_CENTRE` while the controls are drawn, or `is_on_run_side()`. Mouse clicks use the same
+path.
 
 A real touch device emulates a mouse click from every tap it makes, so every mouse branch in
 `TouchControls`, `TitleScreen`, `PauseScreen` and `DaySummary` is gated on `not TouchInput.available()`

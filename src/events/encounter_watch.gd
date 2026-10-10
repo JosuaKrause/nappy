@@ -13,7 +13,7 @@ extends RefCounted
 ## baby or the player reads, so the day plays the same with nobody listening.
 ##
 ## **What she can see is `VisibleView.visible_share()`**: the view, less the two bottom corners the
-## joystick scheme's rings and run buttons cover, which count in the tap scheme.
+## joystick scheme's steering ring and Run disc cover, which count in the tap scheme.
 ##
 ## **An encounter is one instance's time on screen.** It opens the first frame any of what is drawn
 ## for the instance is visible (`EventInstance.drawn_box()`), or the instance

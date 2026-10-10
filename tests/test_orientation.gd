@@ -32,7 +32,7 @@ func run(t) -> void:
 	_test_the_transform_round_trips(t)
 	_test_a_rotated_touch_still_fires_the_pause_button(t)
 	_test_a_rotated_touch_outside_the_button_still_sets_a_direction(t)
-	_test_a_rotated_touch_still_aims_from_the_nearer_focus_correctly(t)
+	_test_a_rotated_touch_still_aims_from_the_steering_focus_correctly(t)
 	_test_pin_to_design_box_gives_a_fixed_rect_regardless_of_any_parent(t)
 	_test_apply_to_layer_is_identity_unrotated_and_the_rotation_when_rotated(t)
 	_test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(t)
@@ -133,7 +133,7 @@ func _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t: Node) ->
 ## design-space direction survives the round trip unchanged. Proven here by giving a bare rig the
 ## same compensating camera rotation `main.gd` would, rather than assuming `canvas_transform` is
 ## identity the way this suite's other rotation tests can — neither of those ever touches a focus.
-func _test_a_rotated_touch_still_aims_from_the_nearer_focus_correctly(t: Node) -> void:
+func _test_a_rotated_touch_still_aims_from_the_steering_focus_correctly(t: Node) -> void:
 	var rig := Node2D.new()
 	rig.add_to_group("player")
 	t.add_child(rig)
