@@ -43,7 +43,7 @@ which the player did not choose: first pelican after 8.2 runs on average, at the
 ## Provenance
 
 - **Source revision:** `cec67517ba603512811b3538b2002b8dc1745a4f`, a commit of the marble-bag pull
-  request #565 (olive-badger, what she meets on her route is drawn from a marble bag), since merged.
+  request #565 (olive-badger, what she meets on her route is drawn from a marble bag).
   A fresh clone fetches it with `git fetch origin refs/pull/565/head`.
 - **Command:** with the probe copied to `tests/probes/pelican_cyclists_per_run.gd`,
   `tools/test.sh probes/pelican_cyclists_per_run.gd`.
@@ -59,7 +59,7 @@ which the player did not choose: first pelican after 8.2 runs on average, at the
   own boot on a worktree with no `.godot/` yet, which the bake prints an explanation for; the probe
   ran after them and reported 1 check, 0 failures.
 - `an.py`: the analysis. It reads the output named as its argument (`pelican.out` in this folder by
-  default; the run read a copy in `/tmp`, and only that path changed). It needs numpy:
+  default). It needs numpy:
   `uv run --no-project --with numpy python an.py pelican.out`.
 - `analysis.txt`: what `an.py` printed for this `pelican.out`. Its simulation has a fixed seed, so
   a rerun prints the same.
