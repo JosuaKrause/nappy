@@ -378,6 +378,8 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	FrameRecord.ledger = was
 	FrameRecord.on = was_on
 	_restore_game_state(saved)
+	t.check(_save_game_state() == saved,
+			"the suite leaves every field a real main's run writes as it found it")
 
 ## The real day's agents, made under the record: each `_process()` runs its body once (its clock
 ## moves by one step, not two and not none), inside one timed call charged to `crowd`, and once the
@@ -483,29 +485,27 @@ func _event(t, def: EventDef) -> EventInstance:
 	instance.set_process(false)
 	return instance
 
+## Everything `GameState.start_run()` and the boot's `begin_day()` write: the save's own fields
+## through `save_snapshot()` (the dawn photograph included), and beside them the ones the save
+## file keeps out of that snapshot — `escape_section`, the posters, the fenced park and the alley
+## tiles — so the next suite in the process finds the run it left.
 func _save_game_state() -> Dictionary:
 	return {
-		"seed": GameState.run_seed, "day": GameState.day, "nerves": GameState.nerves,
-		"progress": GameState.resistance_progress, "ending": GameState.ending,
-		"one_shots": GameState.consumed_one_shots.duplicate(),
-		"completed": GameState.completed_resistance_steps.duplicate(),
-		"failed": GameState.failed_resistance_steps.duplicate(),
-		"scars": GameState.scars.duplicate(true), "sabotage": GameState.sabotage_done,
-		"male": GameState.player_is_male,
+		"snapshot": GameState.save_snapshot(),
+		"escape_section": GameState.escape_section,
+		"posters": GameState.posters.to_data(),
+		"fenced_park": GameState.fenced_park,
+		"fenced_park_act": GameState.fenced_park_act,
+		"alley_tiles": GameState.completed_resistance_alley_tiles.duplicate(),
 	}
 
 func _restore_game_state(saved: Dictionary) -> void:
-	GameState.run_seed = saved["seed"]
-	GameState.day = saved["day"]
-	GameState.nerves = saved["nerves"]
-	GameState.resistance_progress = saved["progress"]
-	GameState.ending = saved["ending"]
-	GameState.consumed_one_shots.assign(saved["one_shots"])
-	GameState.completed_resistance_steps.assign(saved["completed"])
-	GameState.failed_resistance_steps.assign(saved["failed"])
-	GameState.scars.assign(saved["scars"])
-	GameState.sabotage_done = saved["sabotage"]
-	GameState.player_is_male = saved["male"]
+	GameState.restore_snapshot(saved["snapshot"])
+	GameState.escape_section = saved["escape_section"]
+	GameState.posters.restore(saved["posters"])
+	GameState.fenced_park = saved["fenced_park"]
+	GameState.fenced_park_act = saved["fenced_park_act"]
+	GameState.completed_resistance_alley_tiles.assign(saved["alley_tiles"])
 
 ## One kept frame starting at `start` and lasting `length`, of which `spent` went to `bucket`.
 func _drive(ledger: FrameLedger, start: int, length: int, bucket: int, spent: int) -> void:
