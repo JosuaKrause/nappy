@@ -8,7 +8,7 @@ extends RefCounted
 ## that a kind never arrives before its day, and that the whole thing is the same from the same
 ## seed and given back whole by a lost day. And the tears: that a push tears and walking past does
 ## not, that the marble bag's shares are exact and its draws reproducible, and that a pursuit marble
-## sends a patrol down her street without moving the day's own queue.
+## sends the pursuer on foot (`tests/test_pursuer_on_foot.gd` holds what he is and how he comes).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS := [4242, 90210]
@@ -28,7 +28,6 @@ func run(t) -> void:
 	_test_a_push_tears_and_walking_past_does_not(t)
 	_test_a_held_push_tears_every_sheet_she_slides_past(t)
 	_test_a_door_in_the_wall_does_not_end_the_slide(t)
-	_test_a_sent_patrol_comes_down_her_street_and_moves_nothing_else(t)
 	_test_a_crew_under_a_covered_corner_does_not_paste(t)
 	GameState.run_seed = _saved_seed
 	GameState.posters.restore(_saved_posters)
@@ -251,11 +250,11 @@ func _test_the_marble_bag_is_exact_and_reproducible(t) -> void:
 
 # ---------------------------------------------------------------- the push ---
 
-## The push, on a real front of a built city with no player: `_push_to_tear()` is what the node
-## runs every physics frame with her position and her steering. Pressing into the wall at its face
-## tears after `PRESS_TO_TEAR`, a diagonal included; walking along it, standing back from it, or
-## letting go before the time is up does not. Then the tears' marbles: the run's first is safe,
-## one in each ten after it sends a patrol, and a lost day gives the tears back so the retry draws
+## The push, on a real front of a built city with a stand-in for her: `_push_to_tear()` is what the
+## node runs every physics frame with her position and her steering. Pressing into the wall at its
+## face tears after `PRESS_TO_TEAR`, a diagonal included; walking along it, standing back from it,
+## or letting go before the time is up does not. Then the tears' marbles: the run's first is safe,
+## one in each ten after it sends a pursuer, and a lost day gives the tears back so the retry draws
 ## the same marbles again.
 ## **A crew under a corner the joystick's controls cover does not paste** (dappled-swan's
 ## the-sightings, the filer's reading that a crew's pasting is a sighting): a `poster_crew` standing on
@@ -318,6 +317,12 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 		for i in ceili(seconds / step):
 			walls._push_to_tear(step, from, steering)
 	walls._day_running = true
+	# A stand-in for her, the one thing a pursuit marble's `EventManager.send_a_pursuer()` asks of
+	# her: where she is, to put his warning up against.
+	var her := Node2D.new()
+	her.add_to_group("player")
+	t.add_child(her)
+	her.global_position = at
 
 	GameState.posters.paste(tile, PosterArt.Kind.RULES, false, 1)
 	hold.call(Vector2.RIGHT, at, 2.0)
@@ -354,20 +359,20 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 		var spot := Vector2(map.tile_rect_to_world(Rect2i(cell, Vector2i.ONE)).get_center().x,
 				map.tile_rect_to_world(Rect2i(cell, Vector2i.ONE)).position.y + 20.0)
 		GameState.posters.paste(cell, PosterArt.Kind.RULES, false, 1)
-		city.events._director._sent = null
+		_forget_the_pursuer(city.events)
 		hold.call(Vector2.UP, spot, PosterWalls.PRESS_TO_TEAR + 0.05)
-		sent.append(city.events.has_a_sent_patrol())
+		sent.append(city.events.a_pursuer_is_after_her())
 	t.check(GameState.posters.tears == tears, "every push tore its sheet (%d of %d)"
 			% [GameState.posters.tears, tears])
 	t.check(not sent[0], "the run's first tear sends nobody")
-	t.check(sent.count(true) == 2, "two whole bags of tears send exactly two patrols (%d)"
+	t.check(sent.count(true) == 2, "two whole bags of tears send exactly two pursuers (%d)"
 			% sent.count(true))
 	EventBus.poster_torn.disconnect(on_torn)
 	EventBus.poster_pursuit_sent.disconnect(on_pursuit)
 	t.check(signalled["torn"] == tears, "every tear tells the counter (%d of %d)"
 			% [signalled["torn"], tears])
 	t.check(signalled["pursuit"] == sent.count(true),
-			"and every patrol a tear sent tells it too, once each (%d)" % signalled["pursuit"])
+			"and every pursuer a tear sent tells it too, once each (%d)" % signalled["pursuit"])
 	var first_marbles := sent.duplicate()
 	GameState.posters.give_back()
 	sent.clear()
@@ -376,21 +381,28 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 		var spot := Vector2(map.tile_rect_to_world(Rect2i(cell, Vector2i.ONE)).get_center().x,
 				map.tile_rect_to_world(Rect2i(cell, Vector2i.ONE)).position.y + 20.0)
 		GameState.posters.paste(cell, PosterArt.Kind.RULES, false, 1)
-		city.events._director._sent = null
+		_forget_the_pursuer(city.events)
 		hold.call(Vector2.UP, spot, PosterWalls.PRESS_TO_TEAR + 0.05)
-		sent.append(city.events.has_a_sent_patrol())
+		sent.append(city.events.a_pursuer_is_after_her())
 	t.check(sent == first_marbles, "a lost day gives the tears back and the retry draws the same marbles")
-	city.events._director._sent = null
+	_forget_the_pursuer(city.events)
 	var folded := [0]
 	var on_folded := func() -> void: folded[0] += 1
 	EventBus.poster_pursuit_sent.connect(on_folded)
-	city.events.send_a_patrol()
-	city.events.send_a_patrol()
+	city.events.send_a_pursuer()
+	city.events.send_a_pursuer()
 	EventBus.poster_pursuit_sent.disconnect(on_folded)
 	t.check(folded[0] == 1,
-			"a second marble while the patrol is on its way is the same patrol, told to the counter once")
-	city.events._director._sent = null
+			"a second marble while the pursuer is on his way sends nobody, told to the counter once")
+	_forget_the_pursuer(city.events)
+	her.free()
 	city.free()
+
+## Takes a sent pursuer's warning down, so the next tear is asked about on its own.
+func _forget_the_pursuer(events: EventManager) -> void:
+	events._pending.clear()
+	events._sent_warning = null
+	events._sent_after_her = null
 
 # ---------------------------------------------------------------- the slide ---
 
@@ -551,48 +563,3 @@ func _test_a_door_in_the_wall_does_not_end_the_slide(t) -> void:
 	walls._push_to_tear(step, Vector2(rect.position.x + 40.0, y + 5.0 * Tuning.TILE_SIZE), diagonal)
 	t.check(not walls._sliding, "walking off the front ends the slide")
 	city.free()
-
-# ---------------------------------------------------------------- the patrol ---
-
-## A pursuit marble's patrol: nothing while she stands at the wall, then — once she walks along the
-## street — a `police_patrol` sited toward her on the carriageway, off screen; and neither the
-## day's owed queue, its clock nor its stream has moved.
-func _test_a_sent_patrol_comes_down_her_street_and_moves_nothing_else(t) -> void:
-	var map := CityGenerator.generate(SEEDS[0])
-	var director := EventDirector.new(map)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 17
-	var no_plans: Array[EventScheduler.Planned] = []
-	director.start_day(6, no_plans, rng)
-	var owed := director.owed()
-	var next_in: float = director._next_in
-	var state := rng.state
-	director.send_a_patrol(0)
-	director.send_a_patrol(0)
-	t.check(director.has_a_sent_patrol(), "a pursuit marble sends a patrol")
-	# The arterial's sidewalk is a real north-south street by construction.
-	var at := CrowdLanes.arterial_pavement(map)
-	at.y = map.world_size().y * 0.5
-	var standing := director.due(5.0, at, Vector2.ZERO)
-	t.check(standing.is_empty() and director.has_a_sent_patrol(),
-			"it is not sited while she stands pushing at the wall")
-	var walking := Vector2(0.0, -Tuning.WALK_SPEED)
-	var handed: Array = []
-	for i in 120:
-		handed = director.due(1.0 / 60.0, at, walking)
-		if not handed.is_empty():
-			break
-	t.check(handed.size() == 2, "once she walks, it is sited")
-	if handed.size() == 2:
-		var def := handed[0] as EventDef
-		var path := handed[1] as PackedVector2Array
-		t.check(def.id == "police_patrol" and def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER,
-				"it is a police patrol coming toward her")
-		t.check(absf(path[0].y - at.y) > Tuning.VIEW_HALF_EXTENT.y and path[0].y < at.y,
-				"ahead of her and off screen (%.0fpx)" % absf(path[0].y - at.y))
-		t.check((path[1] - path[0]).dot(walking) < 0.0, "and driving toward her")
-	t.check(not director.has_a_sent_patrol(), "one pursuit marble is one patrol, however often drawn")
-	t.check(director.owed() == owed and rng.state == state,
-			"the day's own queue and stream are untouched")
-	t.check(director._next_in <= next_in and director._next_in > next_in - 3.0,
-			"and its clock ran only while she walked (%.2f, then %.2f)" % [next_in, director._next_in])

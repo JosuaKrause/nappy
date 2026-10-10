@@ -169,6 +169,11 @@ const _HARD_FAIL_TEXT := {
 	# the alley's, so his line follows `door_guard`'s tone (a detention, not a killing) with the
 	# package named as the reason, the same "what is lost is named, never dwelt on" rule.
 	"van_guard_giving_chase": "He caught up with the package still on her. They took her in.",
+	# The pursuer on foot a torn poster sends, or an investigating car lets out — the robber's line
+	# in a uniform: who caught her, then what it means, plainly, with the poster left unnamed, since
+	# the same man gets out of a car that never saw one torn.
+	"policeman_giving_chase": "The policeman caught up with you. They took you in.",
+	"guardsman_giving_chase": "The guard caught up with you. They took you in.",
 	"firefight": "You walked into the middle of it.",
 	# Not an event, and the only hard fail the player can walk into rather than be caught by.
 	"car_strike": "It never slowed down. You were in the road.",

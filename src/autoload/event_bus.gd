@@ -169,9 +169,9 @@ signal player_detained(id: String)
 ## `state.tear()` already refuses). Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The
 ## page counts visits".
 signal poster_torn()
-## `EventManager.send_a_patrol()`'s own moment a torn poster's pursuit marble sends a patrol
-## toward her — never a marble folded into a patrol already on its way, and nothing during the
-## escape. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
+## `EventManager.send_a_pursuer()`'s own moment a torn poster's pursuit marble sends a pursuer on
+## foot after her, as his warning goes up — never a marble drawn while one is still on his way or
+## after her, and nothing during the escape. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal poster_pursuit_sent()
 ## The blackout came and the masts went quiet with the power.
 signal city_went_quiet()

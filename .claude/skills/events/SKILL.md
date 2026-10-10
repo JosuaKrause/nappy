@@ -108,7 +108,8 @@ longer than 2s ... place the object immediately off screen so it will immediatel
 the screen turning off the warning ... they jump around wildly"; busy-quail, inbox #569: "1s warning
 should be enough".)* A row that arrives from off screen under the screen-edge badge — `cyclist`,
 `charging_dog` sent down her heading, the fire engine, the resistance's own
-`robber_giving_chase` and `van_guard_giving_chase`, day 13's column, each a row
+`robber_giving_chase` and `van_guard_giving_chase`, a torn poster's pursuer on foot
+(`policeman_giving_chase`, `guardsman_giving_chase`), day 13's column, each a row
 `warns_before_it_exists()` answers true for (flagged `warned_first` on its row, or made so by
 `EventManager.as_warned()`, which every warning goes through) — is a `PendingWarning` first
 (`EventManager.warn_first()`): nothing in the world, the badge up at once for the row's own
@@ -122,8 +123,8 @@ in")*, and `tests/test_no_pop_in.gd` holds it — a sidewalk for the bike, walka
 heading for the day-3 dog, the road on its way to the fire for the engine, its lane for the column,
 the director's own rules for the trap. A non-pursuer is created with its telegraph spent
 (`EventManager.spawn_warned()`); **a pursuer with its telegraph still to run**, since its telegraph
-is its approach — except one that `arrives_chasing` (the resistance's sent robber and guard: "the
-proximity rule is only for standing robbers"). Where its ground has no place when the second is up,
+is its approach — except one that `arrives_chasing` (the resistance's sent robber and guard, and a
+torn poster's pursuer on foot: "the proximity rule is only for standing robbers"). Where its ground has no place when the second is up,
 the warning is withdrawn; a withdrawn day-3 dog is owed again.
 
 **The warning time is the row's own number.** *(PLAYTEST-145: "I don't like that the warning is

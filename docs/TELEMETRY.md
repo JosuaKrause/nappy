@@ -183,9 +183,10 @@ The events:
 - `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — every poster torn
   (`PosterWalls._tear()`), every mother who stops her to chat, and every time a checkpoint holds
   her (`EventManager._check_detentions()`, once per catch).
-- `nappy-day-N-poster-pursuit` — a tear whose marble sends a patrol after her, beside that tear's
-  own `poster-torn` (`EventManager.send_a_patrol()`). A marble drawn while a patrol is already on
-  its way is that same patrol and sends nothing more, and nothing is sent during the escape.
+- `nappy-day-N-poster-pursuit` — a tear whose marble sends a pursuer on foot after her, beside that
+  tear's own `poster-torn`, the moment his warning goes up (`EventManager.send_a_pursuer()`): one
+  per pursuer sent. A marble drawn while one is still on his way or after her sends nobody and
+  nothing here, and nothing is sent during the escape.
 - `nappy-day-N-restarted` — a held restart, on the day it abandoned. Not fired for the ordinary
   return to the title after an ending already reported through `nappy-ending-*`.
 - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
@@ -524,7 +525,7 @@ is made as the warning goes up, so the first line already knows.
 | Kind | Written by | Answers |
 | --- | --- | --- |
 | `plan` | `main.gd`, `City`, `ClosurePlanner` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm |
-| `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed. A torn poster's marble is one: which marble the tear drew and how many are left in the bag. So is the bag day 6's or day 11's mark rigs her route with: which marbles the next events on it are drawn from |
+| `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls`, `EventManager` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed. A torn poster's marble is one: which marble the tear drew and how many are left in the bag, and, on a pursuit marble, who was sent after her, from where and whether with a clear run at her (or that nobody was, with no ground out of her sight). So is the bag day 6's or day 11's mark rigs her route with: which marbles the next events on it are drawn from |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager`, `PosterWalls` | Where the city stopped being recomputable — a scar an event left, a crew starting and finishing a wall, a poster she tore down |
 | `ahead` | `EventManager` | Where the director put something from her own walk and where she was standing: a run across her line, a row down her line at the moment its warning is over and it is created, day 3's fire sited or moved on the branch she is walking, a place a marble from her route's bag put on it (the man shouting after day 6's mark, the mast after day 11's), or — on a day she won without it ever entering the world — where it was lit at dusk instead. The only record of a placement no seed reproduces, since it depends on the route she took |

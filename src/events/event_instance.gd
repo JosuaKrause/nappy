@@ -357,6 +357,32 @@ const ROBBER_LUNGING_BY_VIEW_B := {
 	"front_diagonal": "events/robber_lunging_front_diagonal_b",
 	"back_diagonal": "events/robber_lunging_back_diagonal_b",
 }
+## The policeman on foot (`art/events/policeman_*`): the robber's set one for one — the same
+## canvases, anchors and postures, east-authored like the robber's — so he is drawn the way the
+## robber is (`_draw_policeman()`). The unsuffixed lunge is his badge silhouette (`icon_for()`).
+const POLICEMAN_LUNGING := "events/policeman_lunging"
+const POLICEMAN_WAITING_BY_VIEW := {
+	"front": "events/policeman_waiting_front",
+	"back": "events/policeman_waiting_back",
+	"side": "events/policeman_waiting_side",
+	"front_diagonal": "events/policeman_waiting_front_diagonal",
+	"back_diagonal": "events/policeman_waiting_back_diagonal",
+}
+const POLICEMAN_LUNGING_BY_VIEW := {
+	"front": "events/policeman_lunging_front",
+	"back": "events/policeman_lunging_back",
+	"side": "events/policeman_lunging_side",
+	"front_diagonal": "events/policeman_lunging_front_diagonal",
+	"back_diagonal": "events/policeman_lunging_back_diagonal",
+}
+## The lunge's own stride, as `ROBBER_LUNGING_BY_VIEW_B` is the robber's.
+const POLICEMAN_LUNGING_BY_VIEW_B := {
+	"front": "events/policeman_lunging_front_b",
+	"back": "events/policeman_lunging_back_b",
+	"side": "events/policeman_lunging_side_b",
+	"front_diagonal": "events/policeman_lunging_front_diagonal_b",
+	"back_diagonal": "events/policeman_lunging_back_diagonal_b",
+}
 const CHATTING_MOTHER_WALKING_BY_VIEW := {
 	"front": "events/chatting_mother_walking_front",
 	"back": "events/chatting_mother_walking_back",
@@ -853,6 +879,11 @@ static func icon_for(look: EventDef.Look) -> String:
 		# The same man again: `MASKED_PURSUER` already stands for the front (`GUARD_LUNGING`) and
 		# `DOOR_GUARD` for the side, so the guard the van's task sets on her is badged by the back.
 		EventDef.Look.VAN_GUARD_GIVING_CHASE: return str(GUARD_LUNGING_BY_VIEW["back"])
+		# The policeman's own lunge silhouette, the unsuffixed picture drawn for his badge.
+		EventDef.Look.POLICEMAN_GIVING_CHASE: return POLICEMAN_LUNGING
+		# The guard once more: the front, side and back of his lunge are taken, so the guardsman
+		# a torn poster sends from day 9 is badged by its front diagonal.
+		EventDef.Look.GUARDSMAN_GIVING_CHASE: return str(GUARD_LUNGING_BY_VIEW["front_diagonal"])
 		_: return ""
 
 ## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
@@ -4390,8 +4421,13 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect(sources, [GUARD_STANDING])
 		EventDef.Look.IMPACT_CRATER:
 			_collect(sources, [IMPACT_CRATER])
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE:
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE, \
+				EventDef.Look.GUARDSMAN_GIVING_CHASE:
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
+		EventDef.Look.POLICEMAN_GIVING_CHASE:
+			_collect_views(sources, [POLICEMAN_WAITING_BY_VIEW, POLICEMAN_LUNGING_BY_VIEW,
+					POLICEMAN_LUNGING_BY_VIEW_B])
+			_collect(sources, [POLICEMAN_LUNGING])
 		EventDef.Look.STEAM:
 			_collect(sources, [STEAM, STEAM_B])
 		EventDef.Look.LOUDSPEAKER_MAST:
@@ -4557,8 +4593,11 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_at_anchor(canvas, GUARD_STANDING, _GUARD_ANCHOR)
 		EventDef.Look.IMPACT_CRATER:
 			_draw_crater(canvas)
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE:
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE, \
+				EventDef.Look.GUARDSMAN_GIVING_CHASE:
 			_draw_masked_pursuer(canvas)
+		EventDef.Look.POLICEMAN_GIVING_CHASE:
+			_draw_policeman(canvas)
 		EventDef.Look.STEAM:
 			_draw_simple(STEAM_B if _idle_stepping(STEAM_BILLOW_PERIOD) else STEAM, canvas)
 		EventDef.Look.LOUDSPEAKER_MAST:
@@ -4800,6 +4839,22 @@ func _draw_robber(canvas: CanvasItem = self) -> void:
 	# the street is worth nothing next to a man watching *her* — see `_robber_waiting_heading()`.
 	var heading := _robber_waiting_heading() if waiting else _heading
 	var view := _select_view(heading)
+	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+			EightDirection.is_mirrored(_view_sector))
+
+## **The policeman on foot, drawn as the robber is**: his waiting posture while his notice runs —
+## the one sent from off screen has none and is only ever drawn coming; the one who gets out of an
+## investigating car holds his ground in it (`EventDef.sets_off_beside_her`) — and his lunge, with
+## its stride, once he gives chase. The switch is `is_telegraphing()`, the one `_draw_masked_pursuer()`
+## reads for the guard. He faces her throughout: `_chase()` keeps `_heading` on her once he is in
+## the world.
+func _draw_policeman(canvas: CanvasItem = self) -> void:
+	_draw_body_shadow(canvas)
+	var waiting := is_telegraphing()
+	var by_view := POLICEMAN_WAITING_BY_VIEW if waiting else POLICEMAN_LUNGING_BY_VIEW
+	if not waiting and _gait_stepping():
+		by_view = POLICEMAN_LUNGING_BY_VIEW_B
+	var view := _select_view(_heading)
 	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 

@@ -173,6 +173,12 @@ static func _build() -> Array[EventDef]:
 		# `_van_guard_giving_chase()`.
 		_van_guard_giving_chase(),
 
+		# The pursuer on foot a torn poster sends — never rolled by the ordinary scheduler and
+		# never in the day's queue, sent only by `EventManager.send_a_pursuer()`. A policeman
+		# through day 8, a guardsman from day 9: see `on_foot_on()`.
+		_policeman_giving_chase(),
+		_guardsman_giving_chase(),
+
 		# The finale — never rolled by the ordinary scheduler, placed only by `FinalePlanner` and
 		# `InteriorEvents`. See "the finale" below.
 		_finale_explosion(),
@@ -2124,6 +2130,63 @@ static func _van_guard_giving_chase() -> EventDef:
 	def.departs_at = alley.departs_at
 	def.hard_fail = guard.hard_fail
 	return def
+
+# ------------------------------------------------------- the pursuer on foot ---
+
+## **A torn poster's pursuer: a policeman on foot, coming at her from off screen the moment the
+## tear draws its pursuit marble.** *(Inbox #591 in olive-hedgehog, the player: "the poster pursuit
+## should not be placed! it should happen instantly with the pursuer spawning off-screen! and it
+## should be a proper pursuer not a police car -- maybe a policeman on foot?" · "the pursuer is not
+## a scheduled event. it is instant!")* Nothing places it but `EventManager.send_a_pursuer()`:
+## `SCRIPTED` on day 0, the day nobody plays, so the roll, the day's queue, its stream and its
+## budget never reach it.
+##
+## **The robber a task sends, in a policeman's coat**: every number read off
+## `_robber_giving_chase()` — his field, his 130px/s, his 26px catch and 116px lunge, the dog's
+## half-second badge, arriving already chasing with no closing in, a chase that does not give up on
+## a walker within `Tuning.PURSUIT_TIME` and that running shakes off. **His catch ends the day**
+## *(merry-stork, the player, asked whether it ends the day or costs calm and ends the chase:
+## "Ends the day (Recommended)")*. What differs is the picture, `EventDef.Look.
+## POLICEMAN_GIVING_CHASE` (`art/events/policeman_*`, the robber's set one for one), and his line
+## when he catches her.
+##
+## **Through day 8 only**: from day 9 the same pursuit is a guardsman (`_guardsman_giving_chase()`,
+## `on_foot_on()`).
+static func _policeman_giving_chase() -> EventDef:
+	var robber := _robber_giving_chase()
+	var def := robber.duplicate() as EventDef
+	# `duplicate()` copies only the exported fields; the shape is a plain one (`EventDef.at_heat()`
+	# says why), shared rather than copied since nothing mutates a shape in place.
+	def.shape = robber.shape
+	def.id = "policeman_giving_chase"
+	def.display_name = "Policeman giving chase"
+	def.look = EventDef.Look.POLICEMAN_GIVING_CHASE
+	return def
+
+## **The same pursuer from day 9, once guards are in the city** *(inbox #591, the player: "and a
+## guardsman once they are in the city (earlier a guardsman won't make much sense)" · "policemen
+## get switched to guardman on day 9")*: the checkpoint guard's own drawing, `EventDef.Look.
+## GUARDSMAN_GIVING_CHASE`, drawn as `door_guard` is drawn. Every number is the policeman's — the
+## robber's — rather than the van guard's, since he replaces the policeman on the same errand and
+## nothing about the chase is the picture's to change.
+static func _guardsman_giving_chase() -> EventDef:
+	var def := _policeman_giving_chase()
+	def.id = "guardsman_giving_chase"
+	def.display_name = "Guardsman giving chase"
+	def.look = EventDef.Look.GUARDSMAN_GIVING_CHASE
+	return def
+
+## The first day the pursuer on foot is a guardsman rather than a policeman: the day the region's
+## doors and their guards first stand (`Tuning.REGION_WALL_FIRST_DAY`, day 9). *(Inbox #591, the
+## player: "policemen get switched to guardman on day 9".)*
+static func guardsmen_from_day() -> int:
+	return Tuning.REGION_WALL_FIRST_DAY
+
+## The pursuer on foot on `day`: the policeman through day 8, the guardsman from day 9
+## (`guardsmen_from_day()`).
+static func on_foot_on(day: int) -> EventDef:
+	return by_id("guardsman_giving_chase" if day >= guardsmen_from_day()
+			else "policeman_giving_chase")
 
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##

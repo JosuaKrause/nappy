@@ -104,6 +104,14 @@ enum Look {
 	VAN_GUARD_GIVING_CHASE, ## The guard the van's task sets on her — the same man as `DOOR_GUARD`
 	                        ## and `MASKED_PURSUER`, only ever drawn coming, badged by his back
 	                        ## view, the one picture of him neither of theirs already stands for.
+	# ---- the pursuer on foot a torn poster sends, or an investigating car lets out ----
+	POLICEMAN_GIVING_CHASE, ## A policeman on foot, through day 8: a peaked cap and a baton, the
+	                        ## robber's two postures one for one — waiting while his notice runs,
+	                        ## lunging once he chases — badged by the lunge's own silhouette.
+	GUARDSMAN_GIVING_CHASE, ## The same pursuer from day 9, once guards are in the city: the
+	                        ## checkpoint guard's own drawing, standing then lunging as
+	                        ## `DOOR_GUARD` is drawn, badged by the lunge's front diagonal, the
+	                        ## one picture of the guard no other look already stands for.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.

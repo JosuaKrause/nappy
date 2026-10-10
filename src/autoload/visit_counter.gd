@@ -65,7 +65,8 @@ extends Node
 ##   ended without: a mark never gives one of these any more, see `mark-*` above.
 ## - `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — every poster torn,
 ##   every mother who stops her to chat and every checkpoint hold.
-## - `nappy-day-N-poster-pursuit` — a tear that sends a patrol after her, beside its `poster-torn`.
+## - `nappy-day-N-poster-pursuit` — a tear that sends a pursuer on foot after her, beside its
+##   `poster-torn`.
 ## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
 ## - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: begun (the fresh
 ##   handover only), lost (either section, any attempt), or got out.

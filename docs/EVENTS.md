@@ -300,8 +300,8 @@ the loose dog's 24 is not. Applied to every row by its numbers:
 - **Telegraph**: the cyclist (165px/s, down her line, ends the day), the fire engine (190px/s, down
   its street to her, 32 points), day 13's column and the planned convoy (120px/s, down the road she is
   on, 30 points), and every pursuer — the day-3 dog and the dogs after it, the waiting robber and
-  guard, the resistance's sent robber and guard, the masked man, and what hunts at heat (130px/s, at
-  her, ends the day).
+  guard, the resistance's sent robber and guard, a torn poster's policeman or guardsman, the masked
+  man, and what hunts at heat (130px/s, at her, ends the day).
 - **Do not**: the loose dog (132px/s at her, 24 points) and the cat (240px/s, across her line, about
   free) — the player's own — then `alley_mouse` (200px/s, across its alley, not at her),
   `pigeon_flock` (goes up where she walks in, a 45-point heavy hit but never coming toward her) and `police_patrol` (74px/s, slower than a walk, about 3
@@ -318,7 +318,7 @@ the loose dog's 24 is not. Applied to every row by its numbers:
 | `fire_truck` | 190 | Along its street to her | 32% a pass | Yes | Heavy hit |
 | `military_convoy`, planned or day-13 column | 120 | Along her road | 30% a pass | Yes | Heavy hit |
 | `charging_dog` | 130 | Yes | Ends the day | Yes | Fast, approaching, lethal |
-| Sent robber and van guard | 130 | Yes | Ends the day | Yes | Already pursuing after the badge |
+| Sent robber and van guard, a torn poster's policeman or guardsman | 130 | Yes | Ends the day | Yes | Already pursuing after the badge |
 | Waiting robber, door guard, masked pursuer, hunting abduction and raid | 130 | Once noticed | Ends the day | Yes | Pursuit approaches her |
 | `loose_dog` | 132 | Down her sidewalk | 24% a pass | No | Below the heavy-hit line; the player's explicit exception |
 | `cat_dash` | 240 | Across her line | About free | No | Crosses rather than approaches; the player's explicit exception |
@@ -342,9 +342,10 @@ enough screen space to cross -- let's apply that to the others as well".)* Every
 the director sites down her line that telegraphs; `charging_dog` when the director sends it at her down
 her heading (on `RUN_TAUGHT_DAY`, and now and then later); `fire_truck`, the moment
 `burning_building` is seen; the resistance's own `robber_giving_chase` and `van_guard_giving_chase`,
-the moment she has done a task; and day 13's column of `military_convoy` trucks
-(`ResistanceHappenings`). The fire engine and the resistance's two are flagged `warned_first` on
-their rows; the dog and the column are copies made so by `EventManager.as_warned()`, which
+the moment she has done a task; the pursuer on foot a torn poster sends, `policeman_giving_chase` or
+from day 9 `guardsman_giving_chase`, the moment the tear draws its pursuit marble; and day 13's
+column of `military_convoy` trucks (`ResistanceHappenings`). The fire engine, the resistance's two
+and the pursuer on foot are flagged `warned_first` on their rows; the dog and the column are copies made so by `EventManager.as_warned()`, which
 everything put up as a warning goes through. When one is sent, nothing is put in the world. A
 `PendingWarning` is put up instead (`EventManager.warn_first()`), and `DangerEdge` draws its badge
 from that frame, pointing at the place the thing will come from.
@@ -438,9 +439,10 @@ now too long notice")*: `Tuning.OFFSCREEN_NOTICE` (0.2s) is the default, and `ch
 
 **A sent robber arrives already chasing.** *(Amendment 7 of M226, the player: "why would the robber
 walk towards her when it spawns as pursuing robber? the proximity rule is only for standing
-robbers".)* The resistance's `robber_giving_chase` and `van_guard_giving_chase` read the dog's own
-half-second badge, are created just off screen with no closing-in telegraph (`EventDef.arrives_chasing`)
-and chase from their first frame. Running while they are still offscreen counts toward the
+robbers".)* The resistance's `robber_giving_chase` and `van_guard_giving_chase`, and a torn poster's
+`policeman_giving_chase` and `guardsman_giving_chase`, read the dog's own half-second badge, are
+created just off screen with no closing-in telegraph (`EventDef.arrives_chasing`) and chase from
+their first frame. Running while they are still offscreen counts toward the
 `PURSUIT_SHAKEN_OFF` timer, so a sustained run can shake them off before they become visible.
 The tall-osprey floor — standing still, a robber lunges no sooner
 than `Tuning.PURSUIT_MIN_NOTICE` after he appears — is a standing robber's (`alley_robbery`, waiting
@@ -454,8 +456,7 @@ exists so a pursuer stuck against a wall lets go in the end.
 
 **Two kinds of thing that come from off screen are not warned first:**
 
-- **A patrol sent toward her on the road** (the return leg's, and a torn poster's) **is created at
-  once**, `Tuning.offscreen_lead()` ahead of her, and telegraphs on its way in (1.97s) with no badge:
+- **A patrol sent toward her on the road** (the return leg's) **is created at once**, `Tuning.offscreen_lead()` ahead of her, and telegraphs on its way in (1.97s) with no badge:
   the badge goes only to something `hard_fail` or faster than a walk, and a patrol is neither
   (slower than a walk, never `hard_fail` at any heat — its strike is a car's, in front of it on the
   carriageway, and warned as a car warns, "Solid things are solid"). It does not telegraph its
@@ -1268,14 +1269,23 @@ seconds pastes a few of its wall's cells. Its field and its cost are unchanged. 
 probes/m180_crews_on_her_way.gd` walks the day's routes and prints how many crews were sited, met
 and how much they pasted.
 
-**A torn poster can send a patrol.** When the tear's marble says so (`docs/MECHANICS.md`, "Tearing
-a poster down"), `EventDirector.send_a_patrol()` sends a `police_patrol` at the run's heat the way
-the return leg's patrols come: `TOWARD_PLAYER` down the carriageway lane driving toward her, at
-least its `offscreen_notice` outside the view (`_toward_her_on_the_road()`), so its telegraph
-contract is the one that row already keeps. It is held apart from the day's owed queue — it takes
-no turn in it, rolls no interval and draws from no stream — so a day she tears a poster hands every
-other director-sited row what it would have had anyway. At most one is waiting at a time, it is
-sited only once she walks on along a street, and nothing is sent during the escape.
+**A torn poster can send a pursuer on foot, at once.** *(Inbox #591 in
+[olive-hedgehog](playtests/2026-10-05-olive-hedgehog.md): "the poster pursuit should not be placed!
+it should happen instantly with the pursuer spawning off-screen! and it should be a proper pursuer
+not a police car" · "the pursuer is not a scheduled event. it is instant! policemen get switched to
+guardman on day 9".)* When the tear's marble says so (`docs/MECHANICS.md`, "Tearing a poster
+down"), `EventManager.send_a_pursuer()` sends `policeman_giving_chase` through day 8 and
+`guardsman_giving_chase` from day 9 (`EventCatalogue.on_foot_on()`) the moment the marble is drawn,
+with no wait for her to walk on or for a street: warned first and placed as a task's robber is
+("Everything arrives from off screen" above), just off screen above or below her by preference, with
+a clear run at her and never through the region's wall or a door
+(`EventManager._where_the_sent_pursuer_starts()`), and arriving already chasing. Which of above
+and below is tried first is a hash of the run and the tear count. He is never the scheduler's and
+never in the day's queue: he takes no turn in it, rolls no interval and draws from no stream, so a
+day she tears a poster hands every director-sited row what it would have had anyway, and the tears'
+bag and the event bags never cross. *Proposed, not asked for (sandy-ferret):* a pursuit marble
+drawn while his badge is up or while he is still after her sends nobody more; nothing is sent during
+the escape; and ordinary driving patrols stay cars — only a pursuit is on foot.
 
 ### Danger, and when it arrives
 
@@ -1526,6 +1536,20 @@ guard waiting at it, and the neighbor, which has neither (`ResistanceDirector.se
 | --- | --- | --- | --- |
 | `robber_giving_chase` **`hard_fail`** | SCRIPTED | day 6 | **The trap of every task but the van's, coming to her rather than waiting at it**: the man shouting's note, the burnt building's door, the district door, a mast's foot, the swing and the last night's front door. *(PLAYTEST-144, statement 15, the player: "After the man shouting, the robber, which is fine only if he starts off screen." [grassy-goose](playtests/2026-10-04-grassy-goose.md): "the robber should spawn in off-screen already pursuing when I touch the goal"; asked which tasks, "Every guarded target (Recommended)". The van's own task sends `van_guard_giving_chase` below instead; a roadblock keeps a waiting guard.)* The moment she has done one — handed the note over, reached the door, been let through the district door after its inspection, reached the mast's foot or the swing, handed the key over — `ResistanceDirector._set_the_trap_on_her()` sends him and he comes at her. Walked under the district door's raised boom, the door's own `door_guard` comes instead, and he does not ("Checkpoints" above). **Warned first, like everything that arrives from off screen** *(M226: the player's "A, remove the exemption")*: the screen-edge badge is up alone, with nothing in the world, for the day-3 dog's half second, pointing where he will come from, and he is then created just off screen that way from where she is by then, along the badge's own bearing where that still serves ("Everything arrives from off screen"). **He arrives already chasing** (`arrives_chasing`; the player: "the proximity rule is only for standing robbers"): no closing-in, his telegraph spent the moment he exists. **The alley robber, read off his row rather than copied**: the same body, 16 over a 26–200px field, 130px/s, the 26px catch with the 116px lunge (`lunge_reach` 38), `hard_fail`, the walk-off at 100px/s. **No trigger**, so he is never waiting. **The day-3 dog's badge and chase**, read off its row: the half-second badge, and a chase that does not give up on a walker (`Tuning.PURSUIT_TIME`, a long cap). **Where he starts**: just off screen above or below her by preference — straight up or down first, then bearings within `ResistanceDirector.ARRIVAL_CONE` (30°) of either; on walkable ground a guard may stand on, with a straight walkable run at her, since he chases in a straight line, and never one that runs through the region's wall or a district door (`ResistanceDirector._runs_through_the_boundary()`) — on day 9 she is let out 54px past the door's line, where a start straight above, below or beside her is often on its far side. **At a front door — the burnt building's, the station's — he comes from across the street first**: the nearest start below her, beyond her street, out of sight, from which his own chase, straight at her and sliding along walls, reaches her in no more ground than the start beside her would take (`ResistanceDirector._across_the_street()`). *(2026-10-04, the player: "yes, to your proposal about front doors" — "at a front door, prefer a start on the far side of the street that's out of view and has a walkable way to you; if there's none, fall back to today's rule".)* Where no start above or below has a run at her, and a front door with no start across the street (`tests/probes/grassy_goose_target_traps.gd` and `tests/probes/m137_trap_arrival.gd` measure how often), he comes along her own street from just off screen to her side, about 340px off; where no start has one at all, the first legal start stands in and he may never reach her, and where there is no legal start at all nobody is sent, then or when the badge's time is up. **After the note, the man she just left keeps shouting, and charging her, for `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover (M205)**, so his field is still live while the robber comes whichever way she answers. What that leaves her, from just off screen above her and counted from the badge (`tools/test.sh probes/m207_warning_lead.gd`'s gold timing): standing still he catches her at about 1.8s — before the man would have stopped shouting on his own; walking into him at about 1.3s; walking directly away at about 5.0s (about 8.9s from beside her); running away the moment she is warned, he gives up within a second. Whether shouting-plus-chasing at once is more than a walker should answer is `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not settled here. His own look, `ROBBER_GIVING_CHASE`, draws the alley robber's own pictures (only ever the lunge) and is badged by the lunge's side view, the one picture of him `ROBBER` does not already stand for — `door_guard`'s arrangement. `EventDef.validate()` refuses a pursuer with no trigger that the scheduler could place, so this shape exists only as a row nothing but a director spawns. |
 | `van_guard_giving_chase` **`hard_fail`** | SCRIPTED | day 7 | **The trap of the van's own task**, on the same terms as `robber_giving_chase` above: the moment she hands the van's package over, `ResistanceDirector._set_the_trap_on_her()` warns of him first and then sends him from just off screen, already chasing, with the same no-trigger contract, the day-3 dog's half-second badge and a chase that does not give up on a walker. **The roadblock's own guard, read off his row rather than copied**: the same body, 18 over a 28–120px field (`door_guard`'s own numbers, `MASKED_MAN_REACH` — 28px — the catch), `Tuning.HEAT_HUNTS_SPEED` (130px/s, identical to the robber's own speed, so nothing about the chase itself differs), `hard_fail`. **The walk-off is the robber's**, 100px/s, rather than `door_guard`'s own (who never leaves his post): this guard, like the robber, is a stranger in the street with nowhere to be once he has lost her. His own look, `VAN_GUARD_GIVING_CHASE`, draws the same `guard_standing_*`/`guard_lunging_*` pictures as `door_guard` and `masked_pursuer`, badged by the lunge's back view, the one picture of the man neither of theirs already stands for. Caught, the loss line names what she was carrying rather than dwelling on it: "He caught up with the package still on her. They took her in." |
+
+### The pursuer on foot — a policeman, a guardsman from day 9
+
+Two rows the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0), sent only by
+`EventManager.send_a_pursuer()` the moment a torn poster draws its pursuit marble ("A torn poster
+can send a pursuer on foot, at once" above). Which of the two is the day's is
+`EventCatalogue.on_foot_on()`: the policeman through day 8, the guardsman from day 9, the day the
+region's doors and their guards first stand *(inbox #591: "policemen get switched to guardman on
+day 9")*.
+
+| id | kind | from | Behaviour |
+| --- | --- | --- | --- |
+| `policeman_giving_chase` **`hard_fail`** | SCRIPTED | day 4 | **The task robber's chase in a uniform**: every number is `robber_giving_chase`'s — 16 over a 26–200px field, 130px/s, the 26px catch with the 116px lunge, the day-3 dog's half-second badge, arriving already chasing, a chase that does not give up on a walker within `Tuning.PURSUIT_TIME` and that running shakes off, the walk-off at 100px/s. **His catch ends the day** *([merry-stork](playtests/2026-10-10-merry-stork.md), asked whether it ends the day or costs calm and ends the chase: "Ends the day (Recommended)")*: "The policeman caught up with you. They took you in." His own look, `POLICEMAN_GIVING_CHASE`, draws `art/events/policeman_*` as the robber is drawn (waiting while a notice runs, the lunge with its stride once he chases), badged by the unsuffixed lunge. |
+| `guardsman_giving_chase` **`hard_fail`** | SCRIPTED | day 9 | **The same pursuer once guards are in the city**: every number the policeman's, the checkpoint guard's drawing (`GUARDSMAN_GIVING_CHASE`, `guard_standing_*` then `guard_lunging_*`, as `door_guard` is drawn), badged by the lunge's front diagonal, the one picture of the guard no other look stands for. "The guard caught up with you. They took you in." |
 
 ### The escape — the walk that is not a day
 
