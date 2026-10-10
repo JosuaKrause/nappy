@@ -35,8 +35,10 @@ extends RefCounted
 ##   player: "use the real catch code")*: `EventInstance.is_lethal_at()` for the catch, so a cyclist
 ##   still only warned or waiting, a row already finished, or a pursuer within reach through a wall
 ##   is no catch; and `EventManager._hold_that_would_begin()` for the hold, handed in as a callable.
-##   Both are pure reads, which start nothing and roll nothing. A pursuer chases from the first frame
-##   after its telegraph, so one with a wall between them still counts, through the chase.
+##   Both are pure reads, which start nothing and roll nothing. A pursuer chases from the moment it
+##   comes for her (`EventBus.pursuit_began`), which is before she is within its reach, so one with
+##   a wall between them still counts, through the chase. A catch on the frame a door sets her down
+##   within reach, after this frame's tick, is told by `caught_by()`.
 ##   *(Inbox #577, the player: "let's count chases and catches as influenced always".)* A row that
 ##   can do none of the three — a fallen tree, a skip — is seen and never influenced.
 ##   An influence before the encounter is seen waits: it goes out as influenced the moment the
@@ -111,6 +113,19 @@ func tick(delta: float, instances: Array[EventInstance], visible: VisibleView, h
 		_look_at(instance, visible, her)
 	_close_what_is_over()
 	_watch_the_running(running)
+
+## Tells the watch that `instance` has just caught her where she now stands, on a frame whose own
+## `tick()` has already run. `EventManager` strikes her after the watch each frame, and a hut
+## inspection that sets her down within reach of a cyclist past its warning does it on the very
+## frame the day ends, so the summary pauses the game before the watch could see the catch: this is
+## that frame's one look, the same as a tick's for this one instance, and the catch is the game's
+## own `EventInstance.is_lethal_at()` that `_is_meaningful()` asks. *(calm-pelican, from the
+## re-review of the PR that made catches count; inbox #577, the player: "let's count chases and
+## catches as influenced always".)* A catch of an instance that is not in view and never landed
+## anything has no encounter to count it in, as in a tick.
+func caught_by(instance: EventInstance, visible: VisibleView, her: Vector2) -> void:
+	_frame += 1
+	_look_at(instance, visible, her)
 
 ## Ends the day's watch: every open encounter is over, and the clock, the records' list and the
 ## running start again with the next day.

@@ -701,6 +701,14 @@ func _report_the_pelicans_in_view() -> void:
 ## reads and decides nothing gameplay reads.
 var _encounters := EncounterWatch.new()
 
+## Tells `_encounters` that `instance` has struck her, for the catch `_watch_the_encounters()` did
+## not see: a door's release (`_check_detentions()`) sets her down within reach after the watch has
+## run, and the day ends on that frame. Watched on the same terms as a tick.
+func _tell_the_watch_of_the_catch(instance: EventInstance) -> void:
+	if _walking_the_finale or not _player.is_in_group("player"):
+		return
+	_encounters.caught_by(instance, _visible, _player.global_position)
+
 ## Asks `_encounters` about this frame, while a day is being played: not behind the title screen,
 ## which runs the city with her stood aside out of the `player` group, and not on the escape, which
 ## is not a day and has `nappy-escape-*` of its own.
@@ -2072,6 +2080,7 @@ func _check_hard_fails() -> void:
 		if instance.is_lethal_at(_player.global_position):
 			_hard_failed = true
 			_struck_by = instance.logged_name()
+			_tell_the_watch_of_the_catch(instance)
 			# Ahead of the hard fail, which ends the day and sends its loss.
 			if instance.is_pelican:
 				EventBus.pelican_struck_her.emit(instance)
