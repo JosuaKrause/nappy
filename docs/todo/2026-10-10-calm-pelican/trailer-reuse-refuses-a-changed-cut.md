@@ -1,8 +1,7 @@
 # The trailer's reuse modes refuse a changed cut
 
 **Medium · from the re-review of PR #580 (the trailer reimagined, its camera starting at the
-player).** [Mossy-hawk](../../decisions/2026-10-10-mossy-hawk.md) (smooth scripted turns) last
-edited the same script.
+player).**
 - `--selected-reuse` and `--selected-remix` (`tools/trailer.sh`) cut the kept footage at the
   current `tools/trailer/shots.json` times and check only the file's sha256; the base's own
   settings record `shots_sha256` and nothing compares it. Changing `choice.length` from 7 to 6 and
