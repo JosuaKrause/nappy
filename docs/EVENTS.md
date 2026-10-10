@@ -602,6 +602,9 @@ warning — the raid's pacing car reversing at the end of its beat with her stan
 refused the same way, and the car stands. **It gives way where the crowd's cars do**: short of a
 zebra she is waiting at on a street whose traffic gives way, and at a red light, where
 `Crowd.give_way_at_junctions()` stops the crowd's cars (`EventInstance._room_to_its_line()`).
+For a zebra on the far side of a junction it holds at the junction's entry line, where a red light
+stops it: nothing enters a box it cannot leave, and the crossing traffic cannot see a patrol car's
+body to wait for it.
 **A car leaving does not vanish beside her**: one ending a visit to her turns away from her first,
 and any car leaving is gone only once she is out of sight of it. **It closes no ground**: `obstructs_radius` stays zero, so the
 planners' disc, the crowd's per-tile record (which the crowd's walkers and cars read, and which is

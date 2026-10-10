@@ -1793,7 +1793,8 @@ func is_standing() -> bool:
 ##   crossings the light keeps), within `Tuning.CAR_ZEBRA_SIGHT` ahead, her within half a street of
 ##   the car's line and `Tuning.CAR_ZEBRA_WAIT_RADIUS` along of the paint: the centre stops
 ##   `CAR_STOP_LINE_SETBACK` short of the paint's near edge, `CrowdAgent._distance_to_stop_line()`'s
-##   own arithmetic.
+##   own arithmetic — **unless the zebra is on the far side of the junction box ahead**, where that
+##   line would stand it inside the box: then it holds at the box's entry line, as at a red light.
 ##
 ## Only on its route and along a street's own axis, which is every route a patrol drives.
 func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
@@ -1808,20 +1809,23 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	var tile := float(Tuning.TILE_SIZE)
 	var nose := def.shape.reach()
 	var room := INF
-	# The red light: the junction box this car is coming to, as `CrowdAgent.junction_ahead()` finds it.
+	# The junction box this car is coming to, as `CrowdAgent.junction_ahead()` finds it: the crossing
+	# street's whole corridor, its zebras included. `to_the_box` is from the nose to its near edge.
+	var along_tile := floori(along / tile)
+	var index := CityMap.junction_index(along_tile)
+	if CityMap.corridor_offset(along_tile) < 0 and direction > 0.0:
+		index += 1
+	var low := float(index * CityMap.period()) * tile
+	var near := low if direction > 0.0 else low + float(Tuning.STREET_WIDTH) * tile
+	var to_the_box := (near - along) * direction - nose
+	var box_line := to_the_box - Tuning.CAR_STOP_LINE_SETBACK
+	# The red light.
 	if signals != null:
-		var along_tile := floori(along / tile)
-		var index := CityMap.junction_index(along_tile)
-		if CityMap.corridor_offset(along_tile) < 0 and direction > 0.0:
-			index += 1
-		var low := float(index * CityMap.period()) * tile
-		var near := low if direction > 0.0 else low + float(Tuning.STREET_WIDTH) * tile
-		var to_the_box := (near - along) * direction - nose
 		var corridor := CityMap.junction_index(floori(cross / tile))
 		var junction := Vector2i(corridor, index) if vertical else Vector2i(index, corridor)
 		if to_the_box >= 0.0 and to_the_box <= Tuning.CAR_JUNCTION_SIGHT \
 				and signals.is_signalled(junction) and not signals.green_for(junction, vertical):
-			room = minf(room, to_the_box - Tuning.CAR_STOP_LINE_SETBACK)
+			room = minf(room, box_line)
 	# The zebra she is waiting at.
 	if player_at != Vector2.INF and at.distance_to(player_at) <= Tuning.CAR_ZEBRA_SIGHT \
 			and _map.street_kind_at(vertical, _map.world_to_tile(at)) != GameEnums.StreetKind.MAIN \
@@ -1843,7 +1847,14 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 				continue
 			var edge := float(run_start + (0 if direction > 0.0 else 1)) * tile
 			var to_the_paint := (edge - along) * direction
-			if to_the_paint - nose >= 0.0:
+			# **Nothing enters a box it cannot leave** (the **crowd-traffic** skill). A zebra on the
+			# far side of the box ahead would stand the car inside the box, where the crossing
+			# traffic — which cannot see a patrol car's body — drives through it; so it holds at the
+			# box's entry line instead, where a red light stops it. A car whose nose is already in
+			# the box has committed, and stands short of the paint.
+			if to_the_box >= 0.0 and (edge - near) * direction > 0.5:
+				room = minf(room, box_line)
+			elif to_the_paint - nose >= 0.0:
 				room = minf(room, to_the_paint - Tuning.CAR_STOP_LINE_SETBACK)
 			break
 	return room
@@ -2831,17 +2842,18 @@ var is_leaving := false
 var is_parked := false
 var _leaving_for := 0.0
 
-## Set only by `leave_for_a_completed_task()`: true when `LEAVING_GIVES_UP` may not end this
-## instance while she could still be watching it. False for every ordinary departure, which
-## keeps `_leave()`'s old behaviour byte for byte — see that function and `LEAVING_GIVES_UP`'s
-## own doc for why an *ordinary* departure needs no such wait.
+## True when `LEAVING_GIVES_UP` may not end this instance while she could still be watching it.
+## Set by `leave_for_a_completed_task()`, whose departure starts with her beside it, and by
+## `_be_done()` for every car that drives (`EventDef.drives`), whose body she can stand against so
+## a departure can be held up beside her (`_drive()`). False for every other departure — see
+## `_leave()` and `LEAVING_GIVES_UP`'s own doc for why those need no such wait.
 var _leaving_must_clear_sight := false
 
 ## The most it may spend on the way out. A backstop rather than a timing: with no player to be out
 ## of sight of — a headless rig, a streamed-out day — nothing else would ever end it. **Not a
-## backstop for a departure she is actually standing next to**: `leave_for_a_completed_task()`
-## sets `_leaving_must_clear_sight`, which keeps this clock from ending an instance she could
-## still be watching — see `_leave()`.
+## backstop for a departure she is actually standing next to**: `leave_for_a_completed_task()`, and
+## `_be_done()` for a car that drives, set `_leaving_must_clear_sight`, which keeps this clock from
+## ending an instance she could still be watching — see `_leave()`.
 const LEAVING_GIVES_UP := 6.0
 
 ## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
@@ -2942,8 +2954,8 @@ func _leave(delta: float) -> void:
 	# `LEAVING_GIVES_UP` is a backstop for a departure nobody could be watching (a headless rig, a
 	# streamed-out day) — not for one she is standing next to. `_leaving_must_clear_sight` holds
 	# the clock off until she genuinely could not be watching: no player to be out of sight of, or
-	# already past `OUT_OF_SIGHT`. An ordinary departure never sets the flag, so this changes
-	# nothing about it.
+	# already past `OUT_OF_SIGHT`. Only a completed task's departure and a car that drives set the
+	# flag (see its doc); every other departure gives up on the clock as it always did.
 	var may_give_up := not _leaving_must_clear_sight or player_at == Vector2.INF or gone
 	if gone or (may_give_up and _leaving_for >= LEAVING_GIVES_UP):
 		_finish()

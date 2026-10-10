@@ -28,6 +28,8 @@ func run(t) -> void:
 	_test_it_gives_way_at_a_zebra_she_waits_at(t)
 	_test_it_stops_at_a_red_light(t)
 	_test_its_caret_stands_over_its_picture(t)
+	_test_a_far_zebra_holds_it_out_of_the_box(t)
+	_test_the_log_names_the_patrol_for_its_mark(t)
 
 # ------------------------------------------------------------------ the rig ---
 
@@ -633,5 +635,87 @@ func _test_its_caret_stands_over_its_picture(t) -> void:
 	var usual := EventInstance.MARK_HEIGHT + 10.0 * swell - width * 0.5 - 1.0
 	t.check(absf(above - usual) < 0.01,
 			"its caret clears the picture's bottom by %.1fpx, as on any row (%.1fpx)" % [above, usual])
+	player.free()
+	car.free()
+
+# ------------------------------------------------------------------ the box ---
+
+## **Nothing enters a box it cannot leave.** With her at the zebra on the far side of a junction,
+## the car holds at the box's entry line rather than standing inside the box short of that zebra —
+## at an ordinary junction, and at the main road on the side street's green, where the main road's
+## traffic would otherwise drive through it.
+func _test_a_far_zebra_holds_it_out_of_the_box(t) -> void:
+	var map: CityMap = CityGenerator.generate(4242)
+	var lane_y := -1
+	for y in range(1, map.size.y - 1):
+		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
+				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
+						== GameEnums.TileType.ROAD:
+			lane_y = y
+			break
+	t.check(lane_y >= 0, "found an east-west lane coming to the main road")
+	if lane_y < 0:
+		return
+	var ordinary := -1
+	for c in range(1, map.main_road):
+		var far_zebra := Vector2i(c * CityMap.period() + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH,
+				lane_y)
+		if map.tile_at(far_zebra) == GameEnums.TileType.CROSSING \
+				and map.tile_at(Vector2i(c * CityMap.period() - 4, lane_y)) == GameEnums.TileType.ROAD:
+			ordinary = c
+			break
+	t.check(ordinary >= 0, "found an ordinary junction on that lane with a zebra beyond its box")
+	var lane := float(lane_y) * Tuning.TILE_SIZE + Tuning.TILE_SIZE * 0.5
+	var signals := TrafficSignals.new(map)
+	var green := Vector2i(map.main_road, CityMap.junction_index(lane_y))
+	signals.elapsed = 0.0
+	while not signals.green_for(green, false):
+		signals.elapsed += 0.25
+	for c in [ordinary, map.main_road]:
+		if c < 0:
+			continue
+		var what := "the main road" if c == map.main_road else "an ordinary junction"
+		var near := float(c * CityMap.period() * Tuning.TILE_SIZE)
+		var far_zebra := map.tile_to_world(Vector2i(
+				c * CityMap.period() + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH, lane_y))
+		var route := PackedVector2Array([Vector2(near - 220.0, lane), Vector2(near + 600.0, lane)])
+		var car := _car(t, _patrol(), route, map)
+		car.signals = signals
+		var player := _her(t, far_zebra, Vector2.UP)
+		var furthest := -INF
+		for i in int(6.0 / STEP):
+			_drive(car, player)
+			furthest = maxf(furthest, car.global_position.x + car.def.shape.reach())
+		t.check(furthest <= near - Tuning.CAR_STOP_LINE_SETBACK + 0.5 and car.is_standing(),
+				"at %s, with her at the far zebra, it holds at the box's entry line (nose %.0f, box %.0f)"
+				% [what, furthest, near])
+		player.free()
+		car.free()
+
+# ------------------------------------------------------------------ the log ---
+
+## The run log names the patrol for the mark it raises over her, not a crowd car's horn.
+func _test_the_log_names_the_patrol_for_its_mark(t) -> void:
+	var car := _car(t, _patrol(), PackedVector2Array([Vector2.ZERO, Vector2(800.0, 0.0)]))
+	var player := _her(t, Vector2(150.0, 0.0), Vector2.LEFT)
+	_tell(car, player)
+	var source := GDScript.new()
+	source.source_code = "extends Node\nvar list: Array[EventInstance] = []\n" \
+			+ "func instances() -> Array[EventInstance]:\n\treturn list\n"
+	source.reload()
+	var events: Node = source.new()
+	events.list.append(car)
+	var observer := TelemetryObserver.new()
+	observer._events = events
+	observer._player = player
+	t.check(car.closes_on(player.global_position), "the car is closing on her in its lane")
+	t.check(observer._what_raised_the_mark().begins_with("police_patrol "),
+			"the log names the patrol for the mark (%s)" % observer._what_raised_the_mark())
+	player.global_position = Vector2(150.0, 80.0)
+	_tell(car, player)
+	t.check(not observer._what_raised_the_mark().begins_with("police_patrol"),
+			"and out of its lane it names nothing of it (%s)" % observer._what_raised_the_mark())
+	observer.free()
+	events.free()
 	player.free()
 	car.free()

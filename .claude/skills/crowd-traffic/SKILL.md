@@ -278,7 +278,9 @@ difficulty setting. **The patrol car is in the catalogue and keeps this contract
 telegraph** (`EventDef.drives`): it strikes only on the carriageway, only ahead of its nose, and
 warns anybody standing in its lane `CAR_HORN_TIME` of its own travel before the strike, so
 `validate_traffic()`'s check is its check too. It also gives way where the crowd's cars do — short
-of a zebra she is waiting at off the main road, and at a red light.
+of a zebra she is waiting at off the main road, and at a red light — and never inside a junction
+box: for a zebra beyond the box it holds at the box's entry line, since the crossing traffic cannot
+see its body.
 
 **The main road replaces the courtesy with a clock, so the clock is the contract.** Traffic on the
 spine does not give way at a zebra — what stops it is the light — so the thing standing between her
