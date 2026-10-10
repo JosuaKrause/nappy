@@ -71,7 +71,9 @@ const _ICON_BY_SYMBOL := {
 	Symbol.TAP: _TAP_ICON,
 }
 
-## The resting disc's radius. Its radial catch extends five percent beyond the painted edge.
+## The resting disc's radius. Its catch holds both the circle five percent beyond the painted edge
+## and the square a third of this radius beyond the control's rectangle it had before that margin
+## (`contains_design_point()`).
 ## Public so `TitleScreen` can centre a disc on a point rather than on a container's corner.
 const RADIUS := 46.0
 const _DIAMETER := RADIUS * 2.0
@@ -339,10 +341,18 @@ func _draw() -> void:
 
 ## The owning screen supplies design coordinates after undoing its CanvasLayer presentation.
 ## Inverting only this control's global transform then handles local scaling without applying
-## the layer rotation twice. Hover and press use exactly the same radial boundary.
+## the layer rotation twice. Hover and press use exactly the same boundary.
+##
+## **The union of two shapes, so the catch is never smaller than either.** The 5% circle is
+## `ButtonGeometry`'s; the square is the control's rectangle grown by a third of `RADIUS` on every
+## side, the 122.7px square the catch was before the 5% margin and a thumb does not land on a drawn
+## disc to the pixel. The circle lies inside the square on a disc of this size, so the square is what
+## a thumb meets, and the circle is the floor the 5% asks for should the disc ever outgrow it.
 func contains_design_point(point: Vector2) -> bool:
 	var local := get_global_transform().affine_inverse() * point
-	return ButtonGeometry.contains(local, size * 0.5, _drawn_radius())
+	return ButtonGeometry.contains(local, size * 0.5, _drawn_radius()) \
+			or Rect2(Vector2.ZERO, size).grow(RADIUS / 3.0).has_point(local)
+
 ## The disc itself: one `StyleBoxFlat` per visual state, so the fill comes from data Godot already
 ## knows how to switch on rather than from a paint call keyed off `get_draw_mode()`.
 ## `corner_radius_*` comes from `_drawn_radius()` — half the button's own shorter side, whatever

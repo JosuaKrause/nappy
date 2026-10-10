@@ -14,7 +14,7 @@ kept the ring's 96px width; your 2026-09-07 rule said "size of the stop circle",
 
 In tap mode, is stopping her by tapping her smaller body circle still easy? Then try pause and the
 round title, pause and summary buttons near their visible rims: is their reach forgiving enough?
-Round-gecko's 5% rule made these catches smaller than they were (pause from 46px to 27.3px, the round
-buttons from a 122.7px square to a 48.3px circle); whether 5% is exact or a minimum is
-[calm-pelican](../todo/2026-10-10-calm-pelican/button-catches-shrank.md)'s question.
+Each catch is the larger of its catch before round-gecko and 5% beyond the drawn rim
+(pause a 46px radius, the round buttons a 122.7px square), as
+[calm-pelican](../decisions/2026-10-10-calm-pelican-11.md) records.
 The build is recorded in [leafy-marten](../decisions/2026-10-10-leafy-marten.md).
