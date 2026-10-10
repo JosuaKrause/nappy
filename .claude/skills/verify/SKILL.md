@@ -299,6 +299,12 @@ somewhere.
   (`tools/trailer.sh`): a duration may carry a decimal point (`1.5s`); `p` stands still for its
   duration (`0.5p`), pressing nothing, the same as a player letting go; and an uppercase letter is
   that direction at a run (`2S`) rather than a walk.
+- **`--smooth-walk`** turns a script's corners gradually, and is the one scripted press shorter than
+  one: through a turn the press blends from one step's vector to the next, so her heading sweeps
+  and her speed dips, and once the turn is over she is exactly where the abrupt script puts her
+  (`WalkPlan`, `src/dev/walk_plan.gd`; `tests/test_walk_plan.gd` holds the end positions against
+  a real `Stroller`). It is pressed from the rig's physics tick, so it needs a script; a scene
+  recipe asks for it with `playback.smooth`. No player's input path reads it.
 - **`--flee [delay]`** turns round and runs when something starts chasing her. A rig that can only
   hold a direction can only ever demonstrate the *wrong* answer to a pursuit; the delay is the axis
   worth measuring — what the right answer costs when it is given late.

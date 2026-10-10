@@ -44,6 +44,16 @@ extends Node
 ## over the same seed, so the same script is reproducible evidence rather than one run that
 ## happened to go somewhere.
 ##
+## **`--smooth-walk` turns a script's corners instead of snapping them**, and is the one scripted
+## exception to the unit length above: through a turn the press blends from the old step's vector
+## to the new one's, shorter than one in the middle, and lands her exactly where the abrupt script
+## does once the turn is over — `WalkPlan` says how, and why the shorter press is scripted only.
+## *(2026-10-10, dotted-wombat: "in general when running a movement script we should have a smooth
+## option".)* A smooth script is pressed from `_physics_process()`, one input per physics tick on
+## the tick count a scene recipe uses, rather than on `_process()`'s frame clock, since the turn's
+## window is placed tick by tick; it needs a script, and with a bare direction there is no turn to
+## smooth.
+##
 ## `--flee` turns round and runs **when something starts chasing her**, and it exists for exactly
 ## one thing: the game has one encounter with a **right answer**, and a rig that can only hold a
 ## direction can only ever demonstrate the wrong one. Every trace of the day-3 dog taken with
@@ -124,6 +134,12 @@ var _script_index := 0
 ## `_elapsed` at the moment the current script step started, so each step is timed against the
 ## one clock the rest of the node already uses rather than a second one of its own.
 var _script_step_started := 0.0
+## `--smooth-walk`: the script's turns are smoothed, and `_plan` presses it tick by tick from
+## `_physics_process()` in place of `_advance_script()`.
+var _smooth := false
+var _plan: WalkPlan
+## Physics ticks since the smooth script started, the clock `_plan` is read on.
+var _plan_tick := 0
 ## Whether to answer a pursuit by running, and how long to dither before doing it.
 var _flees := false
 var _dither := 0.0
@@ -138,9 +154,9 @@ var _tap_at := Vector2.INF
 
 ## Returns a configured instance for a screenshot, or for a timed, capture-free run — a frame trace
 ## or a recording. Returns null without one of those requests or outside a debug build.
-## `--screenshot`, `--after`, `--walk`, `--flee` and `--press` are developer furniture like every
-## flag `DevFlags` gates, and are gated here rather than moved there because this file already owns
-## their parsing.
+## `--screenshot`, `--after`, `--walk`, `--smooth-walk`, `--flee` and `--press` are developer
+## furniture like every flag `DevFlags` gates, and are gated here rather than moved there because
+## this file already owns their parsing.
 ##
 ## **Deliberately has no override, for the same reason `DevFlags.enabled()` does not get one.**
 ## What this gate reaches is scripted input (`--walk`, `--flee`, `--press` can drive any action or
@@ -176,6 +192,11 @@ static func from_command_line() -> AutoScreenshot:
 			node._script = _parse_script(word)
 			if node._script.is_empty():
 				push_warning("unknown --walk direction '%s'" % word)
+	if "--smooth-walk" in args:
+		if node._script.is_empty():
+			push_warning("--smooth-walk smooths the turns of a --walk script, and there is none")
+		else:
+			node._smooth = true
 	var flee := args.find("--flee")
 	if flee != -1:
 		node._flees = true
@@ -226,7 +247,8 @@ const KEY_PREFIX := "key:"
 ## wants finer placing than that; `p` stands still for its duration (`0.5p`) — she stops, sees
 ## the wrong street for what it is, and turns — with nothing pressed, the same as a player letting
 ## go; and an **upper-case** letter is that direction at a run (`2S`), `run` held for the step and
-## let go when a walking step follows. Every step still presses a unit vector or nothing at all.
+## let go when a walking step follows. Every step still presses a unit vector or nothing at all;
+## only a smoothed turn (`--smooth-walk`, `WalkPlan`) presses less, between two steps.
 ##
 ## A number with no letter or `@…@` after it, a letter with no digits before it, an unknown
 ## letter, an `@` with no digits or no closing `@`, a second decimal point, or a zero-or-negative
@@ -290,7 +312,13 @@ static func _bearing_to_direction(degrees: float) -> Vector2:
 	return Vector2(sin(radians), -cos(radians)).normalized()
 
 func _ready() -> void:
-	if not _script.is_empty():
+	if _smooth:
+		_plan = WalkPlan.make(_script, Engine.physics_ticks_per_second, true)
+		# After the stroller's own physics tick, the way a recipe's playback presses, so the input
+		# pressed on tick `n` is the one she reads on tick `n + 1`.
+		process_physics_priority = 100
+		_press_plan(0)
+	elif not _script.is_empty():
 		_start_step(_script[0])
 	elif _holding != "":
 		Input.action_press(_holding)
@@ -364,6 +392,23 @@ func _start_step(step: Dictionary) -> void:
 	else:
 		Input.action_release("run")
 
+## A smooth script's own tick: the plan's next input, until the script is let go of or a pursuit
+## takes over (`_fled`, the same reason `_advance_script()` stops).
+func _physics_process(_delta: float) -> void:
+	if not _smooth or _plan == null or _fled:
+		return
+	_plan_tick += 1
+	_press_plan(_plan_tick)
+
+## Presses what `_plan` asks for at `tick`. `_holding_direction` keeps the heading as a unit vector
+## (or nothing), so `_release_direction()` knows whether anything is held and `_turn_and_run()`
+## still about-turns at full length from the middle of a blend.
+func _press_plan(tick: int) -> void:
+	var input := _plan.input_at(tick)
+	WalkPlan.press(input)
+	var direction: Vector2 = input.direction
+	_holding_direction = direction.normalized()
+
 func _on_telegraphed(instance: EventInstance) -> void:
 	if _fled or _flee_at < INF or not instance.def.pursues:
 		return
@@ -374,7 +419,8 @@ func _process(delta: float) -> void:
 		_elapsed = float(simulation_clock.call())
 	else:
 		_elapsed += delta
-	_advance_script()
+	if not _smooth:
+		_advance_script()
 	if not _fled and _elapsed >= _flee_at:
 		_fled = true
 		_turn_and_run()
@@ -386,6 +432,7 @@ func _process(delta: float) -> void:
 	if _elapsed < _seconds_to_wait:
 		return
 	set_process(false)
+	set_physics_process(false)
 	if _holding != "":
 		Input.action_release(_holding)
 	_release_direction()

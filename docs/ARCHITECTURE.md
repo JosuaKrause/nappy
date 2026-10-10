@@ -282,7 +282,7 @@ query actually used one of the flags above (`DevFlags.web_debug_flag_used()`), t
 already refuses a debug build's own argv.
 
 `src/dev/auto_screenshot.gd` parses `--screenshot` and the flags nested under it (`--after`,
-`--walk`, `--flee`, `--press`, `--tap`) itself, and gates its own entry point behind `enabled()`
+`--walk`, `--smooth-walk`, `--flee`, `--press`, `--tap`) itself, and gates its own entry point behind `enabled()`
 the same way rather than moving that parsing out — none of it has a release-page door. `--no-telemetry`
 is not part of this: it is a documented player-facing opt-out (see docs/TELEMETRY.md), not
 developer furniture, and stays live in every build. `main.gd`'s own right-hand readout (seed, frame
