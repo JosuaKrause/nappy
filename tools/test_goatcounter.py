@@ -556,6 +556,16 @@ class FetchHitsTests(unittest.TestCase):
         end = datetime(2026, 9, 2, tzinfo=UTC)
         self.assertEqual(goatcounter.fetch_hits(fetch, start, end), [])
 
+    def test_a_page_with_no_path_id_to_page_past_is_an_error_not_a_short_count(self) -> None:
+        def fetch(_params: dict[str, Any]) -> dict[str, Any]:
+            return {"hits": [{"path": "nappy-a", "count": 1, "event": True, "stats": []}], "more": True}
+
+        start = datetime(2026, 9, 1, tzinfo=UTC)
+        end = datetime(2026, 9, 2, tzinfo=UTC)
+        with self.assertRaises(goatcounter.GoatCounterError) as ctx:
+            goatcounter.fetch_hits(fetch, start, end)
+        self.assertIn("path_id", str(ctx.exception))
+
     def test_a_malformed_response_is_an_actionable_error(self) -> None:
         def fetch(_params: dict[str, Any]) -> dict[str, Any]:
             return {"total": 0}
