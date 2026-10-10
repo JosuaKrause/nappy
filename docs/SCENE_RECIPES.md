@@ -90,11 +90,16 @@ baby sleeps and the walk home begins, the act III and IV return patrols are owed
 An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path` and `age`.
 The ordinary scheduler's ground, route, spacing, protected-door and corridor checks accept
 its site. An authored path must equal that production route. A `loudspeaker` row is a mast, a
-scripted row no roll places, so it is accepted instead on a sidewalk or square tile a mast site
-would be offered (off the home street, its field off a calm interior and off every place a region
-door could stand), clear of what is placed before it, and gives an optional `mast_id`: the
-identity day 11's task and its red arrow answer to (a string no other mast of the scene shares),
-which `mast_id` on any other row refuses. Director pursuers use the real
+scripted row no roll places, so it is accepted instead by the checks the day's masts pass
+(`EventScheduler._place_masts()`): day 5 or later; a sidewalk or square tile a mast site would be
+offered (off the home street, its field off a calm interior and off every place a region door
+could stand); not closed, not on a held street, not on the home block; its field clear of the day's
+own doors; and clear of what is placed before it. The calm she has not used and the route junctions
+the day keeps open, which a mast queued for day 11's task also respects, are not asked. It gives
+an optional `mast_id`, the identity day 11's task, its red arrow and the last night's blackout
+find a mast by (a string no other mast of the scene shares; `mast_id` on any other row is
+refused), and a mast without one is named as a mast added for day 11 is, from its foot
+(`EventScheduler.added_mast_id()`). Director pursuers use the real
 ahead-of-player siting. `age` may advance through the initial warning only; active movement is
 simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direction` and optional
 `speed`; production lane, ground, speed and car-gap checks apply.

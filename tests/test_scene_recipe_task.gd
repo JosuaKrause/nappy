@@ -17,6 +17,7 @@ func run(t) -> void:
 	_test_the_task_scenes_start_off_an_unread_mark(t)
 	_test_the_door_scenes_show_the_robber_a_done_task_sends(t)
 	_test_an_authored_mast_carries_its_own_id(t)
+	_test_an_authored_mast_stands_only_where_the_days_masts_may(t)
 	var saved := {"day": GameState.day, "completed": GameState.completed_resistance_steps.duplicate(),
 			"failed": GameState.failed_resistance_steps.duplicate(),
 			"progress": GameState.resistance_progress, "scars": GameState.scars.duplicate(true),
@@ -302,3 +303,34 @@ func _test_an_authored_mast_carries_its_own_id(t) -> void:
 		ids.append(entry.get("mast_id", ""))
 	t.check(ids.size() == 2 and not "" in ids and ids[0] != ids[1],
 			"the two-mast scene stands two masts under two ids")
+
+## An authored mast is accepted by the checks `EventScheduler._place_masts()` makes of a site: a
+## day with masts, ground a mast site would be offered that is not closed, held or the home block,
+## and clear of the day's doors. (107, 60) is where day 11's own mast stands on the context city.
+func _test_an_authored_mast_stands_only_where_the_days_masts_may(t) -> void:
+	var at := Vector2(3440, 1936)
+	var def := EventCatalogue.by_id("loudspeaker")
+	var none: Array[EventScheduler.Planned] = []
+	var no_doors := PackedVector2Array()
+	var runtime := SceneRecipeRuntime.new()
+	var made := _day(t, 11)
+	runtime._city = made[0]
+	t.check(runtime._mast_placement(def, at, none, no_doors) != null,
+			"a mast stands on an eligible sidewalk of a day with masts")
+	t.check(runtime._mast_placement(def, at, none, PackedVector2Array([at + Vector2(40, 0)])) == null,
+			"but not with its field on one of the day's doors")
+	var tile: Vector2i = runtime._city.map.world_to_tile(at)
+	runtime._city.map.closed_tiles[tile] = true
+	t.check(runtime._mast_placement(def, at, none, no_doors) == null, "nor on a closed tile")
+	runtime._city.map.closed_tiles.erase(tile)
+	runtime._city.map.hold_segment(StreetNetwork.segment_containing(tile).key())
+	t.check(runtime._mast_placement(def, at, none, no_doors) == null, "nor on a held street")
+	made[1].free()
+	made[0].free()
+	made = _day(t, Tuning.MAST_FIRST_DAY - 1)
+	runtime._city = made[0]
+	t.check(runtime._mast_placement(def, at, none, no_doors) == null,
+			"nor on a day before the masts")
+	made[1].free()
+	made[0].free()
+	runtime.free()

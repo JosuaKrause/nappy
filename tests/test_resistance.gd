@@ -4932,6 +4932,33 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 				t.check(pursuers == 0 and events._guard_after_her == guard,
 						"and nobody else is sent: no second guard is after her")
 				t.check(director._contact.is_done, "the task stays done")
+				# **The moment day 9 sends the robber is the end of the hold**: the inspection lets her
+				# through (`_release_finished_door_detentions()`, `door_crossed(…, true)`), which
+				# completes the crossing for a task done under the boom only if the director's early
+				# return in `_on_door_crossed()` lets it. So the hold is run out, she is released,
+				# and the warning a robber would send is run out before anything is counted.
+				var before := player.global_position
+				var guard_steps := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
+				while hut.is_chatting() and guard_steps > 0:
+					guard_steps -= 1
+					for instance in events.instances():
+						instance._process(STEP)
+				t.check(not hut.is_chatting() and guard_steps > 0, "the hold runs its clock out")
+				events._release_finished_door_detentions(player)
+				t.check(player.global_position.distance_to(before) > 1.0
+						and (player.global_position - hut.global_position).dot(director._door_axis)
+						* (before - hut.global_position).dot(director._door_axis) <= 0.0,
+						"and the inspection lets her out on the far side of the door")
+				_run_the_traps_warning("robber_giving_chase", player.global_position)
+				t.check(director._trap == null and _warning_for(events, "robber_giving_chase") == null,
+						"no robber is warned of or set on her by the inspected crossing")
+				pursuers = 0
+				for instance in events.instances():
+					if instance.def.id in ["door_guard", "robber_giving_chase"] \
+							and not instance.is_finished and not instance.is_leaving:
+						pursuers += 1
+				t.check(pursuers == 0, "and no guard or robber is live after her")
+				t.check(director._contact.is_done, "the task stays done")
 			player.free()
 			director.free()
 		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
