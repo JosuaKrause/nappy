@@ -143,10 +143,6 @@ if [[ "$MODE" == selected* && ! -f "$FINAL_SCORE_FILE" ]]; then
     echo "trailer.sh: no selected score at ${FINAL_SCORE_FILE#"$PROJECT_DIR"/}" >&2
     exit 1
 fi
-if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected* ]] && ! command -v uv >/dev/null 2>&1; then
-    echo "trailer.sh: uv not found on PATH; synthesized scores use the project Python environment" >&2
-    exit 127
-fi
 
 # ------------------------------------------------------------------- the shot list, checked ---
 # Every shot is checked before any window opens: the fields a shot must carry, the dev flags it
@@ -445,6 +441,11 @@ if [[ "$MODE" == selected* ]]; then
         echo "trailer.sh: ${SHOTS_FILE#"$PROJECT_DIR"/} no longer matches the timeline the retained base was cut with (${base_timeline_key} in ${FINAL_SCORE_FILE#"$PROJECT_DIR"/}); refusing to cut it at other times" >&2
         exit 1
     fi
+fi
+# uv is needed only to synthesize scores, after the pure-jq refusals above.
+if [[ "$MODE" == auditions || "$MODE" == auditions-reuse || "$MODE" == selected* ]] && ! command -v uv >/dev/null 2>&1; then
+    echo "trailer.sh: uv not found on PATH; synthesized scores use the project Python environment" >&2
+    exit 127
 fi
 if ! jq -e --argjson total "$total_seconds" '
     all(.score.notes[]; .at + .duration <= $total) and

@@ -346,10 +346,13 @@ for trailer_reuse_mode in selected-reuse selected-remix; do
         failures=$(( failures + 1 ))
     fi
 done
-# The unchanged shot list passes that check and reaches the retained-footage check instead.
+# The unchanged shot list passes that check and reaches the retained-footage check instead (past
+# the uv requirement, so only where uv is installed; the refusals above need neither).
 checks=$(( checks + 1 ))
 trailer_cut_output="$(TRAILER_OUT="$trailer_cut_dir/out" ./tools/trailer.sh --selected-remix 2>&1)"
-if [[ "$trailer_cut_output" == *"requires the retained selected base"* ]]; then
+if ! command -v uv >/dev/null 2>&1; then
+    echo "ok   trailer.sh --selected-remix retained-footage check skipped (no uv on PATH)"
+elif [[ "$trailer_cut_output" == *"requires the retained selected base"* ]]; then
     echo "ok   trailer.sh --selected-remix with the recorded timeline reaches the retained-footage check"
 else
     echo "FAIL trailer.sh --selected-remix did not reach the retained-footage check: $trailer_cut_output" >&2
