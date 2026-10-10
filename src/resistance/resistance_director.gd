@@ -166,9 +166,17 @@ var _seen_dwell := 0.0
 var _guard: EventInstance
 ## The guard day 13's roadblock task sets over its own contact (`keeps_a_waiting_guard()`, the one
 ## task that does) — tracked apart from `_guard` so activating it, right behind the mark in the
-## same `_on_contact_completed()` call, never retires the mark's own guard by mistake. Set once a
-## day and never replaced until the next `start_day()`, since the contact never relocates.
+## same `_on_contact_completed()` call, never retires the mark's own guard by mistake. Set as the
+## task is placed, and re-placed off screen at the roadblock she approaches whenever she changes
+## target (`_move_the_task_guard_to_her_target()`).
 var _task_guard: EventInstance
+## The roadblock `_task_guard` stands over, by the instance id the red arrow names a roadblock by
+## (`_arrow_key`), or null when no guard stands over one.
+var _task_guard_over: Variant = null
+## The stream the task guard's moves are drawn from — its own, seeded from the day's, so how often
+## she changes target and how long a move waits on her view move nothing the day's own stream
+## decides.
+var _task_guard_moves: RandomNumberGenerator
 ## The `robber_giving_chase` or `van_guard_giving_chase` today's done task set on her
 ## (`_set_the_trap_on_her()`), or null before a task is done. Nothing here steers him — he
 ## chases on his own — so this is kept only so what was set can be read back.
@@ -234,6 +242,8 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_seen_dwell = 0.0
 	_guard = null
 	_task_guard = null
+	_task_guard_over = null
+	_task_guard_moves = null
 	_trap = null
 	_taken_neighbor = null
 	# Rebuilt lazily on the first placement that asks — see `_ensure_reachability()` — rather than
@@ -468,6 +478,10 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		else:
 			_maybe_set_a_trap(_day, _rng, guarded_at, _step.is_pickup, _player_position(), true,
 					guarded_reach)
+		if not _step.is_pickup and _task_guard and _rider:
+			_task_guard_over = _rider.get_instance_id()
+			_task_guard_moves = RandomNumberGenerator.new()
+			_task_guard_moves.seed = hash("%d:%d:task-guard-moves" % [_rng.seed, _day])
 
 ## How far from a body's own centre a touch of it counts (`ContactPoint.body_reach()`): 110px for a
 ## roadblock (60 + 14 + 36), 72px for the van (22 + 14 + 36).
@@ -635,7 +649,8 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ## out of the day: he stays, asleep, awake or chasing, until the day ends. A relocation of an unread
 ## mark (`_move_the_mark()`) is the one thing that retires him early, and it never runs while he is
 ## awake or any part of him is on her screen (`_track_sight_and_reposition()`). A task's guard is
-## placed once a day and never replaced.
+## placed here once, as the task is, and from then on only `_move_the_task_guard_to_her_target()`
+## re-places him.
 ##
 ## **`her` and `on_screen_matters` are the caller's to give**: at dawn the doorstep and `false`,
 ## since her own position and the camera are still the previous attempt's (`_begin_step()`); in
@@ -2246,6 +2261,7 @@ func _process(delta: float) -> void:
 				or (_arrow_key != null and _arrow_position() == Vector2.INF):
 			_arrow_clock = 0.0
 			retarget_the_arrow()
+			_move_the_task_guard_to_her_target()
 		_sweep_the_arrow_fields(ARROW_SWEEP_TILES_PER_FRAME)
 		if _step.target_kind == ResistanceSteps.TargetKind.MAST:
 			_follow_her_between_masts()
@@ -2283,10 +2299,11 @@ func _tick_lingering_rider(delta: float) -> void:
 ## task.
 ##
 ## **Retargeting changes neither price.** The man shouting's trap comes to her at the handover
-## from wherever it happens (`sets_a_trap_on_her()`); the roadblock's guard stands where the
-## seeded one put him (`keeps_a_waiting_guard()`) and is not moved when she picks another; and
-## `_process()`'s own deadline check reads `_elapsed` against `_day_length` — none of them reads
-## `_rider`'s identity.
+## from wherever it happens (`sets_a_trap_on_her()`); the roadblock's guard follows her, off screen,
+## to whichever roadblock she approaches — the one the red arrow points at — however often she
+## changes target (`_move_the_task_guard_to_her_target()`), so the roadblock she walks up to is the
+## guarded one whichever she picks; and `_process()`'s own deadline check reads `_elapsed` against
+## `_day_length` — none of them reads `_rider`'s identity.
 ##
 ## Skipped while the nearest look-alike in reach is already the one it rides (`best == _rider`):
 ## a rider with a body is touched from any side of it (`ContactPoint.touches_the_body()`), and one
@@ -2322,6 +2339,58 @@ func _follow_her_between_look_alikes() -> void:
 func _reach_distance(instance: EventInstance) -> float:
 	return _body_touch_reach(instance) if ContactPoint.has_a_body(instance) \
 			else Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH
+
+## **Day 13's waiting guard follows her to the roadblock she approaches** *(inbox #650 in
+## mossy-beaver: "move the task's waiting guard to the roadblock the player approaches"; inbox #651
+## in lilac-marmot: "just move the guard always to any roadblock she approaches. We can move the guard
+## around offscreen as much as we want. If we need to move multiple times so be it")*. The roadblock
+## she approaches is the one the red arrow points at (`_arrow_key`), the closest on foot, which moves
+## as she walks toward another; each time it does, the guard is re-placed in the same band round that
+## roadblock's body that `_maybe_set_a_trap()` draws for the task's own, from the stream of his own
+## (`_task_guard_moves`), as often as she changes target.
+##
+## **He moves only while both where he stands and where he goes are out of her view** — his whole
+## body off the camera's view (`_guard_shows()`), and a spot `_guard_position()` draws off it and
+## outside his own trigger range of her — so he is never seen to vanish or to appear. When either is
+## in view he stays where he is, and the move is asked again on the arrow's next choice
+## (`ARROW_RETARGET_SECONDS`) until both are out of it. *(Proposed, not asked for: the player's
+## "offscreen" does not choose between this and moving him as soon as he alone is off screen.)*
+##
+## **A guard who has noticed her is not moved**, nor one whose chase is over: he is after her, or
+## gone, and a move would take him off her or bring him back.
+func _move_the_task_guard_to_her_target() -> void:
+	if _task_guard_over == null or _arrow_key == null or _same_key(_arrow_key, _task_guard_over):
+		return
+	if not _task_guard or not is_instance_valid(_task_guard) or _task_guard.is_finished \
+			or not _task_guard.is_waiting():
+		return
+	var target := _live_instance(_arrow_key)
+	if not target or not _city or not _city.events:
+		return
+	if _guard_shows(_task_guard.global_position):
+		return
+	var at := _guard_position(_task_guard_moves, target.body_position(), false, _player_position(),
+			true, _body_touch_reach(target))
+	if at == Vector2.INF:
+		return
+	var robbery := EventCatalogue.by_id("alley_robbery")
+	if not robbery:
+		return
+	_city.events.retire(_task_guard)
+	_task_guard = _city.events.spawn_extra(robbery, at)
+	_task_guard_over = _arrow_key
+	Telemetry.note("roll", "the task's guard moves, unseen, to the roadblock she approaches, "
+			+ "%.0fpx from it" % at.distance_to(target.body_position()))
+
+## The live, unfinished event instance `key` names by its instance id, or null.
+static func _live_instance(key: Variant) -> EventInstance:
+	if not key is int:
+		return null
+	var found := instance_from_id(key)
+	if is_instance_valid(found) and found is EventInstance \
+			and not (found as EventInstance).is_finished:
+		return found as EventInstance
+	return null
 
 ## "A mark that was never on screen was never placed" — playtest 19, verbatim, still the rule for
 ## what keeps a mark moving. **What changed (M177, playtest 116) is what counts as having actually

@@ -235,7 +235,12 @@ touch".)*
   instead, measured from the ground it is touched from — touched from any side of its band, so he
   stands that far beyond the band's own reach: inside that band touching it is death, always;
   above it he never wakes at all; between them, which side the player approaches from decides
-  whether he notices them. Seeded from the run and the day, so the distance or the alley that was
+  whether he notices them. Any roadblock answers the task, so he waits at the one she approaches:
+  each time the red arrow moves to another roadblock, he is moved to it, however often, and only
+  while neither where he stands nor where he goes is in her view, so he is never seen to vanish or
+  to appear; once he has noticed her he stays on her. *(2026-10-10, [lilac-marmot](playtests/2026-10-10-lilac-marmot.md):
+  "just move the guard always to any roadblock she approaches. We can move the guard around
+  offscreen as much as we want. If we need to move multiple times so be it".)* Seeded from the run and the day, so the distance or the alley that was
   safe on day 9 of this run is safe on day 9 every time you replay it — the pattern is learnable,
   which is the difference between risk and a coin flip.
 - **Every other task sends someone after her rather than guarding where she finds it.** The man
