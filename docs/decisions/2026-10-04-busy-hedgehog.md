@@ -12,8 +12,8 @@ reads the wall clock each frame and re-enables it on the first frame past the en
 scene (`_exit_tree()`) or a fresh `_ready()` re-enables it too, so no path leaves input off. A
 one-shot timer was tried first and could fire before the 500ms was up, leaving input off for good. A gate in `main._input()` was not enough, since a child's `_input()` runs before its
 parent's. On the web a second trigger arms the same window: `document`'s `visibilitychange` when
-it turns visible, and `window`'s `focus`, through `JavaScriptBridge`. Arming again extends the
-window. [M161](2026-09-19-M161-the-game-pauses-when-it-loses-focus-and-a-rig-can-say-not-to.md)'s
+it turns visible, and `window`'s `focus`, through `JavaScriptBridge`. A second trigger inside
+the window does nothing unless the game has left again in between (below). [M161](2026-09-19-M161-the-game-pauses-when-it-loses-focus-and-a-rig-can-say-not-to.md)'s
 pause on focus loss is unchanged, so a return during play shows the pause screen and a return
 during the day brief shows the day brief. Polled input is not dropped: a key held through the
 return stays pressed; only events are.

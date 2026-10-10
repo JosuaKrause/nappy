@@ -1,5 +1,4 @@
 priority: now
-after: 2026-09-26-M226
 
 # sandy-ferret — A torn poster's pursuit is instant, on foot · filed 2026-10-05
 
@@ -34,7 +33,9 @@ pebbly-ibis (the pelican from one shared bag per run) and olive-badger's forced 
   ("policemen get switched to guardman on day 9").
 - **The tears' bag is its own.** "the poster tear marble bag is a completely separate marble bag
   than the event marbles. nothing influences across them."
-- **A walk never escapes him**: "pursuers should never (or a long time) stop pursuing if she walks".
+- **A walk does not escape him**: "pursuers should never (or a long time) stop pursuing if she
+  walks". M226 built this for every pursuer: `Tuning.PURSUIT_TIME` is a 30s cap, so walking does not
+  end a chase early and running still shakes him off.
 - **The band `now`, for right after the release**, and not started in the session it was said in.
 
 **What it replaces.** `PosterWalls._tear()` draws the tears' marble and, on a pursuit marble, calls
@@ -63,10 +64,11 @@ the pursuer sent at once, "sent" becomes the moment the marble is drawn, and the
 to come): `art/events/policeman_*`, the robber's set one for one (waiting and lunging in five views,
 a stride frame each), so the runtime can drive him the way it drives the robber; no catalogue row
 or atlas line yet, and `docs/GRAPHICS.md` lists him as prepared. The player judged him: "policeman
-looks good". The guardsman is the checkpoint guard's drawing, `art/checkpoints/guard_*`. M226
-(the pursuing dog keeps its day-3 timing, and the other warnings fit it, PR #597) is what every
-pursuer from off screen is warned and placed by — the badge alone for at most a second, then the
-thing just out of sight — which is why this entry waits on it.
+looks good". The guardsman is the checkpoint guard's drawing, `art/checkpoints/guard_*`.
+[M226](../../decisions/2026-09-26-M226.md) (every off-screen warning is a short badge, then the
+thing spawns off screen, PR #597) built how a sent pursuer arrives: `robber_giving_chase` and
+`van_guard_giving_chase` "spawn off screen already pursuing after their 0.5s badge, with no closing
+in (`telegraph_time = 0`)", and no pursuer gives up on a walker within the 30s `PURSUIT_TIME` cap.
 
 The one item is [the-pursuer-on-foot.md](the-pursuer-on-foot.md).
 
@@ -81,21 +83,13 @@ pickup and cover any additional affected police pursuit, or record its separate 
 "at least no lethal" describes the car in the report; the catch consequence remains the open
 question in the item, not an agreed lethal replacement.
 
-**The `after: 2026-09-26-M226` line is the filer's ordering, not the player's.** The player did not
-say this waits on M226; the filer put it behind M226 (PR #597) because the pursuer is to be warned
-and placed the way M226 warns and places every pursuer from off screen (the first proposal below).
-Without that proposal the entry waits on nothing, and the line is what keeps it from starting right
-after the release ahead of M226.
-
 **Proposed, not asked for:**
 
-- **The pursuer is warned and placed as M226 places every pursuer from off screen**, its badge
-  starting at the tear: "instant" read as no wait for a heading or a street, not as no badge at
-  all. The alternative is no badge, which the cues rule's warning for something lethal coming
-  toward her would have to exempt.
-- **His chase is the gold timing's**, the day-3 dog's on-screen approach and chase as M226 fits the
-  other pursuers to it, except that a walk never outruns him; how long he keeps on her when she
-  runs is the build's to propose with its measurement.
+- **The pursuer arrives as M226's sent robber does**: a 0.5s badge starting at the tear, then he
+  spawns off screen already pursuing, with no closing in, and the 30s `PURSUIT_TIME` cap. "Instant"
+  is read as no wait for a heading or a street, not as no badge at all. The alternative is no badge,
+  which the cues rule's warning for something lethal coming toward her would have to exempt.
 - **A second pursuit marble while he is still after her sends nobody more**, as a second marble
   before the patrol arrives does today.
 - **During the escape nothing is sent**, as today.
+- **Ordinary driving patrols stay vehicles**; only a pursuit becomes a pursuer on foot.

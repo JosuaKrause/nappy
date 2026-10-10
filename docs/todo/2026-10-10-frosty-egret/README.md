@@ -11,7 +11,7 @@ player's `now` band:
 > are currently next to each other (they're almost the same) and redundant. clicking on the logo
 > should still go to the game
 
-The README today opens with the logo (`art/logo.png`) linking to the game, a text link "Watch
-the gameplay trailer on YouTube", and a YouTube thumbnail image linking to the same video.
+The README opens with the logo (`art/logo.png`) linking to the game and one text link, "Watch
+the gameplay trailer on YouTube", with no thumbnail: the plain-link outcome.
 
 The item: [play-in-place-or-link.md](play-in-place-or-link.md).
