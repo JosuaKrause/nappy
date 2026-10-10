@@ -10,8 +10,9 @@ controls and pursuits, the task scenes and route events, the performance and tel
 trailer and drawings — each reading the player's words and the records first, then the code, and
 checking every finding against `main` at be97976b. Each PR has one review by `claude-reviewer`
 naming its head and merge commits and the verdict it would have had; a merged PR's review is a
-comment, since nothing on it can change. Thirteen would not have been ready, six of them for doc or
-comment wording alone.
+comment, since nothing on it can change. Twelve would not have been ready (#552, #564, #565,
+#567, #570, #580, #585, #588, #590, #592, #597 and #603), three of them (#564, #585 and #590) for
+doc or comment wording alone.
 
 **Where the findings went.** Defects still on `main` that need code or a test are the items under
 `docs/todo/2026-10-10-calm-pelican/`, each naming its PR; the ones that need the player's answer
