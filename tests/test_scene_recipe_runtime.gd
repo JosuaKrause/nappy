@@ -108,13 +108,15 @@ func _ready() -> void:
 
 func run(t) -> void:
 	_test_schema(t)
+	_test_a_task_gone_after_the_read(t)
 	_test_arguments(t)
 	_test_inputs(t)
 	_test_real_argv_and_failure(t)
 
 func _test_schema(t) -> void:
 	var valid := {"setup": {"day": 1, "parent": "mother"},
-			"playback": {"duration": 2, "walk": "0.5s0.5E1p", "camera": {"fixed": true}}}
+			"playback": {"duration": 2, "walk": "0.5s0.5E1p", "camera": {"fixed": true},
+				"settled_camera": true}}
 	t.check(SceneRecipeRuntime.validate_runtime(valid).is_empty(), "valid optional runtime defaults are accepted")
 	var mixed := {"setup": {"background": {"crowd": true, "uniform_walkers": true},
 			"actors": [{"name": "walker", "kind": "walker", "at": [0, 0], "direction": "north"}]}}
@@ -157,6 +159,7 @@ func _test_schema(t) -> void:
 		{"playback": {"duration": "two"}},
 		{"playback": {"camera": {"zoom": 0}}},
 		{"playback": {"camera": {"fixed": "yes"}}},
+		{"playback": {"settled_camera": "false"}},
 		{"playback": {"camera": {"fixed_offset": [200, 0]}}},
 		{"playback": {"camera": {"fixed": true, "fixed_offset": [200]}}},
 		{"playback": {"caption": false}},
@@ -170,6 +173,62 @@ func _test_schema(t) -> void:
 	for recipe in invalid:
 		t.check(not SceneRecipeRuntime.validate_runtime(recipe).is_empty(),
 				"malformed runtime data is rejected: %s" % [recipe])
+
+## A task gone after she read the mark is one of two things. Placed and then gone, it expired as a
+## played day's task can (day 10's neighbor home first): the manifest records the tick, `task`
+## names nothing from then on, and the setup has not failed. Never placed, the director refused
+## it: a failed setup, noticed and recorded in a scene played by hand as well, with the director's
+## reasons printed.
+func _test_a_task_gone_after_the_read(t) -> void:
+	var director := ResistanceDirector.new()
+	var mark := ContactPoint.new()
+	director._read_mark = mark
+	director._contact = null
+	var placed := _task_runtime(director)
+	var expired := ContactPoint.new()
+	placed.named["task"] = expired
+	placed.manifest.task["read_tick"] = 40
+	placed.tick = 90
+	placed._bind_task_names()
+	placed.tick = 91
+	placed._bind_task_names()
+	t.check(placed.manifest.task.get("expired_tick") == 90 and not placed.named.has("task")
+			and not placed.manifest.get("setup_failed", false),
+			"a placed task that is gone expired at the tick it went: %s" % [placed.manifest.task])
+	# Played by hand, the runtime's own tick is what notices the read, as it does in play.
+	var refused := _task_runtime(director)
+	t.add_child(refused)
+	refused.set_physics_process(false)
+	refused._hand_played = true
+	var reason := "setup.task: nowhere for it in this test"
+	director._scene_task_errors.append(reason)
+	var printed := PrintedLines.new()
+	OS.add_logger(printed)
+	refused._physics_process(1.0 / Engine.physics_ticks_per_second)
+	OS.remove_logger(printed)
+	t.check(refused.tick == 1 and refused.manifest.get("setup_failed", false)
+			and not refused.manifest.task.has("expired_tick"),
+			"a task refused at the read fails the setup, noticed by a scene played by hand too")
+	t.check(Array(printed.lines).any(func(line: String) -> bool: return line.contains(reason)),
+			"and the director's reasons are printed: %s" % [printed.lines])
+	for node: Node in [placed, refused, expired, mark, director]:
+		node.free()
+
+## Every line printed while it is attached (`OS.add_logger()`), so a test reads what a run prints.
+class PrintedLines extends Logger:
+	var lines := PackedStringArray()
+
+	func _log_message(message: String, _error: bool) -> void:
+		lines.append(message)
+
+## A runtime for `_bind_task_names()` alone, played by hand, its task's mark already started.
+func _task_runtime(director: ResistanceDirector) -> SceneRecipeRuntime:
+	var runtime := SceneRecipeRuntime.new()
+	runtime.configure({"data": {"setup": {"task": {"mark": "mark"}}}, "manifest": {},
+			"anchors": {}}, false)
+	runtime._resistance = director
+	runtime.manifest["task"] = {"mark": [0, 0]}
+	return runtime
 
 func _test_arguments(t) -> void:
 	for args: PackedStringArray in [

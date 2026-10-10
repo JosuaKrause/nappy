@@ -47,8 +47,15 @@ func run(t) -> void:
 		played += 1
 	t.check(played >= 10, "every stretch scene is played (%d)" % played)
 
-## Short authored walks need not naturally exhaust a street. Exercise actual departures and
-## accepted entries as well as the playback observer, with a real camera for its view boundary.
+## Short authored walks need not naturally exhaust a street, so entries are forced here, with a
+## real camera for the view boundary at her camera's zoom. A visible actor asked to recycle turns
+## where it stands. Then, for each stretch end in turn, the camera looks straight at it, and then
+## from beside it on either side, just far enough that the end's middle is out of view
+## (`CrowdAgent._beyond_every_view()`) while ground a pixel nearer, its near lanes, is in it; each
+## actor is entered at an end under every one of those views, and no accepted entry may stand in
+## the view it was made under, by the crowd's rule and by the real view
+## (`_out_of_the_real_view()`). The end in view is what dropping the in-view ends keeps out, and
+## the near lanes are what checking the final placement keeps out.
 func _force_recycles(t, data: Dictionary, label: String) -> void:
 	var built := RecipeCityBuilder.build(data)
 	if not built.errors.is_empty():
@@ -59,11 +66,14 @@ func _force_recycles(t, data: Dictionary, label: String) -> void:
 	field.use_stretch()
 	var camera := Camera2D.new()
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	camera.zoom = Vector2.ONE * HER_ZOOM
 	t.add_child(camera)
 	camera.make_current()
 	var visible_stable := true
 	var entries_safe := true
+	var ends_seen := true
 	var entries := 0
+	var unsafe: Array[String] = []
 	var headings := {"north": Vector2.UP, "south": Vector2.DOWN,
 			"east": Vector2.RIGHT, "west": Vector2.LEFT}
 	for spec: Dictionary in data.setup.actors:
@@ -76,27 +86,69 @@ func _force_recycles(t, data: Dictionary, label: String) -> void:
 			agent.free()
 			continue
 		t.add_child(agent)
-		camera.position = at
-		camera.reset_physics_interpolation()
-		camera.reset_smoothing()
-		camera.force_update_scroll()
+		_look_at(camera, at)
 		t.check(camera.get_screen_center_position().distance_to(at) < 1.0,
 				"%s camera centers on actor: %s / %s" % [label, camera.get_screen_center_position(), at])
 		agent._recycle()
 		visible_stable = visible_stable and agent.position == at
-		camera.position = Vector2(-10000, -10000)
-		camera.reset_physics_interpolation()
-		camera.reset_smoothing()
-		camera.force_update_scroll()
-		for attempt in 8:
-			var before := agent.position
-			agent._recycle()
-			if agent.position != before:
-				entries += 1
-				entries_safe = entries_safe and agent._beyond_every_view(agent.position) \
-						and agent._stands_on_a_street()
+		for end: Dictionary in field.stretch_ends:
+			var middle := _middle_of(end)
+			var across := Vector2.RIGHT if end.vertical else Vector2.DOWN
+			# The least distance across at which the camera no longer sees the end's middle, by the
+			# crowd's own rule, so whatever that rule's view and room are, the lanes a pixel nearer
+			# the camera are in view.
+			_look_at(camera, middle)
+			var aside := 0.0
+			while aside < 4096.0 and not agent._beyond_every_view(middle + across * aside):
+				aside += 1.0
+			for looking: Vector2 in [middle, middle + across * aside, middle - across * aside]:
+				_look_at(camera, looking)
+				ends_seen = ends_seen and aside < 4096.0 \
+						and (looking != middle or not agent._beyond_every_view(middle))
+				for _attempt in 4:
+					var before := agent.position
+					agent._enter_at_a_stretch_end()
+					if agent.position == before:
+						continue
+					entries += 1
+					var safe := agent._beyond_every_view(agent.position) and agent._stands_on_a_street() \
+							and _out_of_the_real_view(camera, agent.position)
+					entries_safe = entries_safe and safe
+					if not safe and unsafe.size() < 4:
+						unsafe.append("%s entered at %s, camera on %s" % [spec.name, agent.position, looking])
 		agent.free()
 	t.check(visible_stable, "%s: every visible actor turns without teleporting" % label)
+	t.check(ends_seen, "%s: the camera on a stretch end has that end in view" % label)
 	t.check(entries > 0 and entries_safe,
-			"%s: %d forced entries stay on authored street outside the whole camera" % [label, entries])
+			("%s: %d forced entries, each made with an end or its near lanes in view, stay on "
+			+ "authored street out of that view: %s") % [label, entries, unsafe])
 	camera.free()
+
+## Her camera's zoom (`scenes/player/stroller.tscn`), so the view the entries keep out of is the
+## size it is in play.
+const HER_ZOOM := 2.0
+
+## The middle of a stretch end's street, at the end's own tile along it: where
+## `CrowdAgent._enter_at_a_stretch_end()` asks whether the end is in view.
+func _middle_of(end: Dictionary) -> Vector2:
+	var along := (float(end.along) + 0.5) * Tuning.TILE_SIZE
+	var across := (float(end.corridor) * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
+			* Tuning.TILE_SIZE
+	return Vector2(across, along) if end.vertical else Vector2(along, across)
+
+## Whether a body at `at`, `CrowdAgent.ENTRY_PICTURE_ROOM` either side, lies wholly outside the
+## world the camera shows: the 1280x720 design box at its zoom, centred where it looks, which is
+## the world in both presentations (a portrait touch screen turns the same box a quarter). Asked
+## beside the crowd's own rule, which it does not depend on, so a rule that shrinks below the real
+## view fails here rather than agreeing with itself.
+func _out_of_the_real_view(camera: Camera2D, at: Vector2) -> bool:
+	var size := ScreenOrientation.DESIGN_SIZE / camera.zoom
+	var view := Rect2(camera.get_screen_center_position() - size * 0.5, size)
+	var body := Rect2(at, Vector2.ZERO).grow(CrowdAgent.ENTRY_PICTURE_ROOM)
+	return not view.intersects(body)
+
+func _look_at(camera: Camera2D, at: Vector2) -> void:
+	camera.position = at
+	camera.reset_physics_interpolation()
+	camera.reset_smoothing()
+	camera.force_update_scroll()

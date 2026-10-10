@@ -675,9 +675,12 @@ func _out_of_view() -> bool:
 ## stretch's ends are often in the picture — the street runs into the void a few tiles from her — so
 ## the radius a played day recycles beyond is not enough: nothing may appear or vanish where she can
 ## see it *(the player's rule, PR #597)*. True when no part of a body standing at `at` (`room`
-## either side, a car's length and more by default, `ENTRY_PICTURE_ROOM`) is inside the world the
-## camera shows in the landscape window or in the turned portrait one, both centred where the camera
-## looks. With no camera — a rig that steps agents by hand — the played day's radius answers.
+## either side, a car's length and more by default, `ENTRY_PICTURE_ROOM`) is inside a square
+## centred where the camera looks, as wide and as tall as the larger side of the design box at the
+## camera's zoom (640x640 world pixels at zoom 2). That is stricter than the real view: both
+## presentations show the same 640x360 world, a portrait touch screen turning it a quarter
+## (`ScreenOrientation.apply_to_camera()`), so the square holds a margin above and below it. With
+## no camera — a rig that steps agents by hand — the played day's radius answers.
 func _beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
 	var camera := get_viewport().get_camera_2d() if is_inside_tree() else null
 	if not camera:

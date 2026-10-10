@@ -297,10 +297,12 @@ func scene_task_errors() -> Array[String]:
 ## Set for the length of `start_recipe_task()`'s own `start_day()`, and kept for the day it starts:
 ## a scene's day is the authored one, never the day's own happenings.
 var _scene_task := false
-## What `start_recipe_task()` refused, filled while it runs.
+## What a scene's task refused: filled while `start_recipe_task()` runs, and again when she reads
+## the mark and the task it unlocks is placed (`scene_task_errors()`).
 var _scene_task_errors: Array[String] = []
 ## The mark `start_recipe_task()` pins, `Vector2.INF` once the mark is placed, and the neighbor's
-## start it pins, kept until she reads the mark and the task draws the neighbor.
+## start it pins, which is never cleared: every neighbor draw for the rest of the scene takes that
+## start or none (`_a_neighbor_start()`), so a second draw in one scene is refused against it.
 var _pinned_mark := Vector2.INF
 var _pinned_neighbor := Vector2.INF
 
