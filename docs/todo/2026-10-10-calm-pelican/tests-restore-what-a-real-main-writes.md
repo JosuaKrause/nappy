@@ -9,4 +9,5 @@ writes `escape_section`, `play_seconds`, `city_state`, `posters`, `settled_in`, 
 boot's `begin_day()` rewrites the dawn snapshot. A later suite in the same process that loses a day
 without its own `begin_day()` gets the frame-record run's dawn back. Save and restore through
 `GameState.save_snapshot()`/`restore_snapshot()`, as test_finale's hands-over test does, plus the
-fields the save file leaves out.
+fields the save file leaves out: `escape_section`, `posters`, `fenced_park`, `fenced_park_act` and
+`completed_resistance_alley_tiles`.

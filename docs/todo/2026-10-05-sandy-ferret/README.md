@@ -10,8 +10,8 @@ as a pursuit:
 
 > the poster pursuit should not be placed! it should happen instantly with the pursuer spawning off-screen! and it should be a proper pursuer not a police car -- maybe a policeman on foot?  (we will need a graphic for that anyway for the polic robber chase later) and a guardsman once they are in the city (earlier a guardsman won't make much sense)
 
-Told the plan (a pursuit marble sends a pursuer on foot from off screen at once, once M226's
-off-screen warning rework had landed) and asked whether the guardsman replaces the policeman from day 9
+Told the plan (a pursuit marble sends a pursuer on foot from off screen at once, after M226's
+off-screen warning rework lands) and asked whether the guardsman replaces the policeman from day 9
 (guards first at the checkpoints) or from day 13 (the army arrives):
 
 > the poster tear marble bag is a completely separate marble bag than the event marbles. nothing influences across them. the pursuer is not a scheduled event. it is instant! policemen get switched to guardman on day 9.

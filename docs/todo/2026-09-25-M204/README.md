@@ -1,6 +1,6 @@
 priority: later
 
-## M204 — The screenshot command's escape start with a walk · asked for 2026-09-25
+## M204 — `tools/shot.sh --start-escape` with `--walk` or `--after` · filed 2026-09-25
 
 The trailer this entry was filed for ("the trailer will be a set of paths in pre determined seeds
 with fixed events so we can reproduce it easily", [PLAYTEST-139](../../playtests/PLAYTEST-139.md))

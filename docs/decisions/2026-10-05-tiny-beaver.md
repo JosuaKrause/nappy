@@ -22,4 +22,4 @@ off screen at once, a guardsman from day 9 — is its own change, after the off-
 **Chosen while drawing:** the baton, which the lunge swings in his left hand in every view. The
 player judged the sheet with the baton on it, "policeman looks good" (inbox #591 in
 [olive-hedgehog](../playtests/2026-10-05-olive-hedgehog.md)), without naming the baton, so it stays
-unless the player drops it; side and diagonal views face east, as the robber's do.
+unless the player drops it. **Open to overturn:** side and diagonal views face east, as the robber's do.

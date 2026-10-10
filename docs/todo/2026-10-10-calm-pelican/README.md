@@ -12,9 +12,8 @@ filed here as an item of its own, naming the PR, the file and the change it need
 review on that PR carries the finding against its lines (**pr-review**, a merged PR reviewed after
 the fact).
 
-Every PR's review is posted on it. Findings that were text in the queue, the records, the skills or
-an evidence README were corrected in the pull request that filed these items; the items below are
-what is left, each naming its PR. An item marked open waits on the player's answer before it is built.
+Each item names the PR it comes from, and the review posted on that PR carries the finding against
+its lines. An item marked open waits on the player's answer before it is built.
 
 - [resistance-placement-uses-the-whole-view.md](resistance-placement-uses-the-whole-view.md): the resistance places and removes against the whole view (#597, medium)
 - [a-place-marble-never-blocks-the-route.md](a-place-marble-never-blocks-the-route.md): a place marble never blocks the route events behind it (#565, medium)

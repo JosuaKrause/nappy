@@ -14,8 +14,7 @@
 - **#596:** `tools/goatcounter.py`'s `fetch_hits` ends paging quietly when a page's hits all lack
   `path_id` while `more` is true; raise `GoatCounterError` instead.
 - **#629:** the `printf '%s' "$x" | grep -q` pattern, which `pipefail` turns into a false failure
-  when grep exits early, remains in `tools/test_cli_help.sh`, `tools/lint.sh`, the branch-pruning
-  script, `tools/test_lib_agent_role.sh` and `tools/test_rules_hooks.sh`; use here-strings
+  when grep exits early, remains in `tools/test_cli_help.sh`, `tools/lint.sh`, `tools/prune-merged.sh`, `tools/test_lib_agent_role.sh` and `tools/test_rules_hooks.sh`; use here-strings
   (`grep -q … <<<"$x"`) in one pass.
 - **#605:** the southeast pelican's far foot keeps the near leg's `#e0843a` in
   `art/events/pelican_cyclist_front_diagonal.svg` and `_b.svg`, where every other view and the

@@ -1,5 +1,5 @@
 Reproduce passing through a police car and determine which patrol states the player means.
-At pickup, settle what the requested hitbox does: physical obstruction, a contact consequence,
+**Open, for the player before it is built:** what the requested hitbox does: physical obstruction, a contact consequence,
 or both; whether it applies while driving, stopped and pursuing; and how it avoids pinning her.
 Quote M61's nonblocking police row when proposing the replacement. Finding 7 describes the
 chasing car as "at least no lethal"; neither that observation nor "hitbox" authorizes a lethal
@@ -11,5 +11,5 @@ verify each affected state against its drawn ground contact and the route/fairne
 
 **The same ground in [M100](../2026-09-09-M100/README.md)** (small, real, and nobody's): its
 "Vehicle collision and silhouette agreement is checked with M61, one shape per object" covers
-whether a vehicle's drawn shape and its collision agree; the police car's hitbox is built so the
-two stay one shape.
+whether a vehicle's drawn shape and its collision agree. *Proposed, not asked for:* the police
+car's hitbox is built so the two stay one shape.

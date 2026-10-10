@@ -7,7 +7,7 @@ off" whenever there is no map, so the masked man on the stairs, the fire in the 
 basement's mouse or steam can reach her through interior walls; nobody has measured whether any
 does. The record [polite-rabbit-2](../../decisions/2026-10-04-polite-rabbit-2.md) lists interiors as
 "Left open", but #567 deleted the queue entry. Build a wall check over the interior map's walls, or
-measure that no indoor field crosses a wall and say so in the PR.
+measure that no indoor field crosses a wall and drop the item with the player's agreement.
 
 **Low, same area:**
 - The debug fields layer still draws fields through buildings (`docs/TELEMETRY.md` and
