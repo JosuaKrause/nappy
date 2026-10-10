@@ -30,4 +30,7 @@ plain-link outcome. What is left is settling whether a route plays in place and,
 its player.
 
 **Proposed, not asked for:** the video shown in place is the cut rendered with smooth turns
-([mossy-hawk](../2026-10-10-mossy-hawk/README.md)), so it is uploaded or committed once.
+([mossy-hawk](../../decisions/2026-10-10-mossy-hawk.md)), so it is uploaded or committed once. That
+render, re-encoded under 10MB in two passes (`libx264 -preset slow -b:v 1400k`, AAC 128k,
+`+faststart`), is 9,228,642 bytes: the street shots stay readable but outlines soften, and the
+zoomed-out city at the end smears its fine detail.
