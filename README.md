@@ -99,14 +99,14 @@ movie or ignored build artifact is required. The selected score's synthesized PC
 checked before normalization; its target level and peak ceiling are checked after normalization.
 Host-specific gain rounding and WAV encoder tags may differ. The unflagged command retains the
 shot list's draft score.
-When compatible historical footage is available, `--selected-reuse` refuses any retained-base mismatch,
+When compatible historical footage is available, `--selected-reuse` refuses any retained-base mismatch (its file hash or the shot timeline it was cut with, which `tools/trailer/final-score.json` records),
 renders the hook, dog and title replacements named by that final composition, and layers its
 additive event cues over the source-identical selected score. `--selected-remix` reuses the
-verified selected base and rebuilds only the editorial cards and audio, with no gameplay capture.
+verified selected base and rebuilds only the editorial cards and audio, with no gameplay capture, under the same two refusals.
 Selected outputs refuse an existing movie or manifest; use a new output name or fresh output
 directory for another review. The completed PCM mix stays beside its source stems for comparison
 with decoded delivery audio. The opening background starts immediately, the mother independently
-fades in across the full 4.4-second intro, and the main title has no fades. Gameplay scenes fade
+fades in across the whole opening card, and the main title has no fades. Gameplay scenes fade
 both out and in through black, including the final shot's fade-out. The auditions' local `index.html` switches one
 player between the choices and can jump to the military turn. The cut uses the selected westward birds scene,
 `trailer-birds.json`, and the park-only circular walk in `trailer-park-circle.json`.
