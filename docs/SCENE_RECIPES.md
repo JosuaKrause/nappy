@@ -191,8 +191,9 @@ sidewalks and the carriageway, with the junction box at each of its ends; a junc
 crosses; off the streets, the ground she walks over and the tiles beside it, and the whole of an
 alley she walks into; the corner of each place `setup.task` pins (the mark, day 10's neighbor's
 start); and day 10's neighbor's way home, which the recipe pins and the whole city routes. Every
-other tile is void: no ground is drawn there, no building, prop, decal, shadow or pit, and a wall
-stands along its edge, so she, a pursuer and a nudge from the crowd stop there as at a frontage.
+other tile but the lots of the buildings it lists (`stretch.buildings`, below) is void: no ground
+is drawn there, no building, prop, decal, shadow or pit, and a wall stands along its edge, so she,
+a pursuer and a nudge from the crowd stop there as at a frontage.
 
 **The recipe lists what is placed**, and the scene draws only what it lists:
 
@@ -377,8 +378,8 @@ building it lists (`power_station_door` stands on the station's facade). Runtime
 name. The manifest records the actual points, inputs, validation checks and bounds.
 
 `extent: {"scope":"full"}` constructs and presents the complete city and requires its full
-generator guarantees. `{"scope":"stretch"}` presents only the recipe's `stretch` over the same
-complete construction ("The task scenes" above). `{"scope":"bounded","bounds":[x,y,width,height]}` presents only that
+generator guarantees. `{"scope":"stretch"}` presents only the recipe's `stretch`, over its saved
+`context` restored as it is: a stretch runs no construction ("The task scenes" above). `{"scope":"bounded","bounds":[x,y,width,height]}` presents only that
 tile rectangle. Bounds cannot cut a building footprint. The explicit full construction
 witness supplies the global dependencies used by the existing station and closure checks;
 the manifest distinguishes this witness from the bounded authored scene. Construction and
