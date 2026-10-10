@@ -643,7 +643,9 @@ func _test_its_caret_stands_over_its_picture(t) -> void:
 ## **Nothing enters a box it cannot leave.** With her at the zebra on the far side of a junction,
 ## the car holds at the box's entry line rather than standing inside the box short of that zebra —
 ## at an ordinary junction, and at the main road on the side street's green, where the main road's
-## traffic would otherwise drive through it.
+## traffic would otherwise drive through it; driving east and driving west; with her on either tile
+## of that zebra, in its lane or out beside it on the sidewalk (0, 64 and 96px out), which is
+## further than the zebra's own 200px sight circle reaches from the box's entry line.
 func _test_a_far_zebra_holds_it_out_of_the_box(t) -> void:
 	var map: CityMap = CityGenerator.generate(4242)
 	var lane_y := -1
@@ -656,41 +658,63 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t) -> void:
 	t.check(lane_y >= 0, "found an east-west lane coming to the main road")
 	if lane_y < 0:
 		return
+	var period := CityMap.period()
+	var zebras := func(c: int) -> bool:
+		for x in [c * period, c * period + 1, c * period + Tuning.STREET_WIDTH - 2,
+				c * period + Tuning.STREET_WIDTH - 1]:
+			if map.tile_at(Vector2i(x, lane_y)) != GameEnums.TileType.CROSSING:
+				return false
+		return map.tile_at(Vector2i(c * period - 4, lane_y)) == GameEnums.TileType.ROAD \
+				and map.tile_at(Vector2i(c * period + Tuning.STREET_WIDTH + 4, lane_y)) \
+						== GameEnums.TileType.ROAD
 	var ordinary := -1
 	for c in range(1, map.main_road):
-		var far_zebra := Vector2i(c * CityMap.period() + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH,
-				lane_y)
-		if map.tile_at(far_zebra) == GameEnums.TileType.CROSSING \
-				and map.tile_at(Vector2i(c * CityMap.period() - 4, lane_y)) == GameEnums.TileType.ROAD:
+		if zebras.call(c):
 			ordinary = c
 			break
-	t.check(ordinary >= 0, "found an ordinary junction on that lane with a zebra beyond its box")
+	t.check(ordinary >= 0, "found an ordinary junction on that lane with zebras either side")
 	var lane := float(lane_y) * Tuning.TILE_SIZE + Tuning.TILE_SIZE * 0.5
 	var signals := TrafficSignals.new(map)
 	var green := Vector2i(map.main_road, CityMap.junction_index(lane_y))
 	signals.elapsed = 0.0
 	while not signals.green_for(green, false):
 		signals.elapsed += 0.25
+	var tile := float(Tuning.TILE_SIZE)
+	var worst := -INF
+	var cases := 0
 	for c in [ordinary, map.main_road]:
 		if c < 0:
 			continue
 		var what := "the main road" if c == map.main_road else "an ordinary junction"
-		var near := float(c * CityMap.period() * Tuning.TILE_SIZE)
-		var far_zebra := map.tile_to_world(Vector2i(
-				c * CityMap.period() + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH, lane_y))
-		var route := PackedVector2Array([Vector2(near - 220.0, lane), Vector2(near + 600.0, lane)])
-		var car := _car(t, _patrol(), route, map)
-		car.signals = signals
-		var player := _her(t, far_zebra, Vector2.UP)
-		var furthest := -INF
-		for i in int(6.0 / STEP):
-			_drive(car, player)
-			furthest = maxf(furthest, car.global_position.x + car.def.shape.reach())
-		t.check(furthest <= near - Tuning.CAR_STOP_LINE_SETBACK + 0.5 and car.is_standing(),
-				"at %s, with her at the far zebra, it holds at the box's entry line (nose %.0f, box %.0f)"
-				% [what, furthest, near])
-		player.free()
-		car.free()
+		var low: float = float(c * period) * tile
+		for direction in [1.0, -1.0]:
+			var near: float = low if direction > 0.0 else low + float(Tuning.STREET_WIDTH) * tile
+			var first: int = c * period + (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
+					if direction > 0.0 else 0)
+			var start: Vector2 = Vector2(near - direction * 220.0, lane)
+			var route := PackedVector2Array([start, start + Vector2(direction * 820.0, 0.0)])
+			for k in Tuning.SIDEWALK_WIDTH:
+				for out in [0.0, 64.0, 96.0]:
+					var her: Vector2 = Vector2((float(first + k) + 0.5) * tile, lane - out)
+					var car := _car(t, _patrol(), route, map)
+					car.signals = signals
+					var player := _her(t, her, Vector2.UP)
+					var furthest := -INF
+					for i in int(6.0 / STEP):
+						_drive(car, player)
+						var nose: float = (car.global_position.x - near) * direction \
+								+ car.def.shape.reach()
+						furthest = maxf(furthest, nose)
+					cases += 1
+					worst = maxf(worst, furthest)
+					t.check(furthest <= -Tuning.CAR_STOP_LINE_SETBACK + 0.5 and car.is_standing(),
+							("at %s, driving %s, her at the far zebra's tile %d, %.0fpx out: it holds "
+							% [what, "east" if direction > 0.0 else "west", k + 1, out])
+							+ "at the box's entry line (nose %.1fpx from the box)" % furthest)
+					player.free()
+					car.free()
+	t.check(cases == 24, "every case ran (%d of 24; the furthest nose %.1fpx from the box)"
+			% [cases, worst])
 
 # ------------------------------------------------------------------ the log ---
 
