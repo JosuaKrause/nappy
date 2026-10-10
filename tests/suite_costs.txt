@@ -75,6 +75,7 @@ test_orientation.gd 40
 test_pause.gd 409
 test_performance.gd 4
 test_player_presentation.gd 58
+test_police_car.gd 4100
 test_posters.gd 19237
 test_power_station.gd 17982
 test_prediction_reuse.gd 366
