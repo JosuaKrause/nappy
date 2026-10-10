@@ -2208,8 +2208,9 @@ Top-down camera with a fake vertical extrusion:
   four sheets on a worked wall in act II (the rules and the leader's portrait, the curfew sheet
   among them from day 6), whole walls of the dark uniform sheet from day 8, and from day 12 the
   wanted notice and the portrait nearly everywhere. The rates are set against what she sees along
-  her routes: on the first poster day a sheet is in view along most of every route, which
-  `tests/test_posters.gd` pins as a floor for that day and for the last. A new sheet on an old one
+  her routes: on the first poster day a sheet is in view along at least 45% of the way
+  over all the routes (a single route can pass as few as two sheets), and `tests/test_posters.gd`
+  pins a floor for that day and a higher one for the last. A new sheet on an old one
   mostly covers it exactly; a quarter of the time the older one shows beneath, offset enough to
   read as pasted over. What is on the walls is run state
   (`GameState.posters`, a `PosterState`): it is saved, and a lost day gives it back like the rest

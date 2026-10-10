@@ -1165,8 +1165,10 @@ still happen by accident, which is how it is found, and nothing teaches it: tear
 egg, taught by no hint, tutorial or prompt anywhere. What is read is her steering rather than
 her velocity, since the wall stops the one and not the other. A diagonal slides her along the wall,
 and **once a push has torn its first sheet, every intact sheet she slides in front of tears at
-once** while it is held: a push held along a papered wall strips it. Letting go, turning out of the
-wall or stepping back from its face ends the push, and the next one takes the 0.4 seconds again.
+once** while it is held: a push held along a papered wall strips it, a door, portico or fire
+escape in the wall included (she is still on the building's front, and the push goes on across the
+gap). Letting go, turning out of the wall or stepping back from its face, or walking off the
+building's front, ends the push, and the next one takes the 0.4 seconds again.
 
 The sheet shows one of the three tears and stays torn until a crew, or a dawn, pastes that wall
 again. **A tear costs nothing on the meter and counts for nothing**: it is a gimmick, judged by

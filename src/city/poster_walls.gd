@@ -21,7 +21,7 @@ extends Node
 ## - **Dawn.** From `FIRST_DAY` (day 4, the first day crews appear) every morning pastes a share
 ##   of the walls from the day's own `posters` stream, so some are already up that first morning
 ##   and each day's walls add to the last. What kind goes up, and how much of a wall, follows the
-##   progression in `docs/TODO.md`'s M180 (`KIND_FIRST_DAY`, `KIND_WEIGHTS`, `_sheets_for()`).
+##   progression in the poster paragraph of `docs/CITY.md` (`KIND_FIRST_DAY`, `KIND_WEIGHTS`, `_sheets_for()`).
 ## - **A crew on her way.** `poster_crew` is sited on her walk, in front of a blank cell
 ##   (`EventScheduler.WalkSiting`, `fronts()`), and pastes its wall a sheet at a time while it is in
 ##   her view — see `_work_the_crews()`.
@@ -59,8 +59,9 @@ const KIND_WEIGHTS := [
 ## the main road runs north-south, so act IV's "most walls on a main street" is read as the routes
 ## too. Raised after a playtest ("on the first day with posters it's very hard to find one --
 ## increase the probability throughout"): measured along the routes she walks (`tests/probes/
-## merry_elk_poster_density.gd`), the first poster day leaves a sheet in view along most of
-## every route; `tests/test_posters.gd` pins the floor. Taste, open to overturn.
+## merry_elk_poster_density.gd`), a sheet is in view along at least 45% of the way, pooled over
+## the routes, on the first poster day (one route can pass as few as two sheets);
+## `tests/test_posters.gd` pins that floor. Taste, open to overturn.
 const DAWN_SHARE_ON_ROUTES := [0.0, 0.55, 0.65, 0.80]
 const DAWN_SHARE_OFF_ROUTES := [0.0, 0.30, 0.35, 0.40]
 ## Extra share of the walls the first morning of each act beyond the first works, on top of the
@@ -371,11 +372,22 @@ func _job_for(tile: Vector2i) -> Dictionary:
 ## intact sheet she comes in front of tears at once while the push is held, so a push held along a
 ## papered wall strips every sheet she slides past. Letting go, turning out of the wall or stepping
 ## back from its face (or off its sidewalk) ends the push, and the next one takes the time again.
+## A door, portico or fire escape in the wall does not: she is still on the building's front, so a
+## push held across the gap goes on and the next sheet tears at once.
 ##
 ## A tear costs nothing and counts for nothing; what it can do is bring a patrol — see `_tear()`.
 func _push_to_tear(delta: float, at: Vector2, steering: Vector2) -> void:
 	var tile := _map.world_to_tile(at)
-	if not _by_tile.has(tile) or not _presses_into_the_wall(tile, at, steering):
+	if not _by_tile.has(tile):
+		# A door, a portico or a fire escape's column is part of the building's front but carries
+		# no sheet: a push held across it goes on (crossing one takes under 0.4s, and starting the
+		# count again there would let the next sheet escape). Only leaving the front ends it.
+		if _is_a_front(_map, tile) and _presses_into_the_front(tile, at, steering):
+			return
+		_pressed_for = 0.0
+		_sliding = false
+		return
+	if not _presses_into_the_wall(tile, at, steering):
 		_pressed_for = 0.0
 		_sliding = false
 		return
@@ -398,6 +410,15 @@ func _presses_into_the_wall(tile: Vector2i, at: Vector2, steering: Vector2) -> b
 		return false
 	var wall := _walls[_by_tile[tile].x]
 	var face := (wall["building"] as Building).global_position.y
+	return at.y - face <= PRESS_REACH
+
+## Whether a heading `steering` from `at` pushes into the front on `tile`, a front tile with no
+## sheet (a door, a portico, a fire escape's column): the same test as `_presses_into_the_wall()`,
+## against the face of the tile's own row.
+func _presses_into_the_front(tile: Vector2i, at: Vector2, steering: Vector2) -> bool:
+	if steering.normalized().y > -PRESS_INTO:
+		return false
+	var face := _map.tile_rect_to_world(Rect2i(tile, Vector2i.ONE)).position.y
 	return at.y - face <= PRESS_REACH
 
 ## Tears the sheet on `tile`, one of the three tears, and draws a marble for whether a patrol

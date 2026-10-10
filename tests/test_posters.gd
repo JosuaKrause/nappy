@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_the_marble_bag_is_exact_and_reproducible(t)
 	_test_a_push_tears_and_walking_past_does_not(t)
 	_test_a_held_push_tears_every_sheet_she_slides_past(t)
+	_test_a_door_in_the_wall_does_not_end_the_slide(t)
 	_test_a_sent_patrol_comes_down_her_street_and_moves_nothing_else(t)
 	_test_a_crew_under_a_covered_corner_does_not_paste(t)
 	GameState.run_seed = _saved_seed
@@ -142,7 +143,7 @@ func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 		t.check(int(covered_on[PosterWalls.FIRST_DAY]) > 0,
 				"seed %d: some posters are already up on day 4's morning" % seed_value)
 		t.check(int(covered_on[Tuning.RUN_LENGTH_DAYS]) > 2 * int(covered_on[PosterWalls.FIRST_DAY]),
-				"seed %d: denser every act and at least twice day 4's by the end (%d on day 4, %d on day %d)"
+				"seed %d: the walls never lose a sheet by dawn and hold at least twice day 4's by the end (%d on day 4, %d on day %d)"
 				% [seed_value, covered_on[PosterWalls.FIRST_DAY],
 				covered_on[Tuning.RUN_LENGTH_DAYS], Tuning.RUN_LENGTH_DAYS])
 		var offset := 0
@@ -159,7 +160,10 @@ func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 ## offers, a screen's worth of wall around her has a sheet on it at least `view_floor` of the
 ## time, and a whole route passes at least `route_floor` distinct sheets in view. The floors sit
 ## below what `tests/probes/merry_elk_poster_density.gd` measures over eight seeds and above what
-## the rates before it gave, so reverting them fails the check.
+## the rates before it gave. The route floor is per route, and the day-4 one is only two
+## sheets, so the first day's promise is the view share pooled over the routes, not every route.
+## `LAST_DAY_ROUTE_FLOOR` is a guard against the last day thinning out, and passes at the old rates
+## too; the view floors are what reverting the rates fails.
 const FIRST_DAY_VIEW_FLOOR := 0.45
 const FIRST_DAY_ROUTE_FLOOR := 2
 const LAST_DAY_VIEW_FLOOR := 0.78
@@ -493,6 +497,59 @@ func _test_a_held_push_tears_every_sheet_she_slides_past(t) -> void:
 	t.check(not walls._sliding, "letting go ends the slide")
 	walls._push_to_tear(step, Vector2(start_x, y), diagonal)
 	t.check(GameState.posters.has_intact_sheet(run[0]), "and the next push waits for the time again")
+	city.free()
+
+## A door, a portico or a fire escape's column is a front tile with no sheet. Crossing one at
+## walking speed takes under 0.4s, so a slide that ended there would start its count again and the
+## sheet after the door would escape. The door is made by taking the middle cell of a run of three
+## out of the wall's cells, which is what `blank_ground_floor_cells()` does for a real one. Without
+## the fix the slide resets on the door's tile and the third cell, slid past in 0.35s, is not torn.
+func _test_a_door_in_the_wall_does_not_end_the_slide(t) -> void:
+	var map := CityGenerator.generate(SEEDS[0])
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(map)
+	GameState.run_seed = SEEDS[0]
+	GameState.posters.reset()
+	var walls := city.poster_walls()
+	walls._day_running = true
+	var run: Array[Vector2i] = []
+	for index in walls.wall_count():
+		var cells: Array = walls._walls[index]["tiles"]
+		for i in range(0, cells.size() - 2):
+			if run.is_empty() and cells[i + 1].x == cells[i].x + 1 and cells[i + 2].x == cells[i].x + 2:
+				run.assign(cells.slice(i, i + 3))
+	t.check(run.size() == 3, "there are three touching cells to put a door in the middle of")
+	if run.size() != 3:
+		city.free()
+		return
+	var door := run[1]
+	walls._by_tile.erase(door)
+	t.check(PosterWalls._is_a_front(map, door), "the door's tile is still the building's front")
+	var rect := map.tile_rect_to_world(Rect2i(run[0], Vector2i.ONE))
+	var y := rect.position.y + Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS
+	var step := 1.0 / 60.0
+	var speed := 92.0
+	var diagonal := Vector2(1.0, -1.0).normalized()
+	GameState.posters.paste(run[0], PosterArt.Kind.RULES, false, 1)
+	GameState.posters.paste(run[2], PosterArt.Kind.RULES, false, 1)
+	# She stands against the first sheet until it gives, then slides across the door to the third.
+	var x := rect.position.x + 1.0
+	for i in ceili((PosterWalls.PRESS_TO_TEAR + 0.05) / step):
+		walls._push_to_tear(step, Vector2(x, y), diagonal)
+	t.check(GameState.posters.is_torn(run[0]), "the sheet before the door tears")
+	for i in ceili(3.0 * Tuning.TILE_SIZE / speed / step):
+		walls._push_to_tear(step, Vector2(x, y), diagonal)
+		x += speed * step
+	t.check(GameState.posters.is_torn(run[2]), "a push held across a door tears the next sheet at once")
+	t.check(walls._sliding, "and the slide is still going")
+	# Turning out of the wall on the door's tile ends it.
+	walls._push_to_tear(step, Vector2(rect.position.x + 40.0, y), Vector2.RIGHT)
+	t.check(not walls._sliding, "turning out of the wall in the doorway ends the slide")
+	# Leaving the front altogether ends it too: a point far from the wall is no front tile.
+	walls._sliding = true
+	walls._push_to_tear(step, Vector2(rect.position.x + 40.0, y + 5.0 * Tuning.TILE_SIZE), diagonal)
+	t.check(not walls._sliding, "walking off the front ends the slide")
 	city.free()
 
 # ---------------------------------------------------------------- the patrol ---
