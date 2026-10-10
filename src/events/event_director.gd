@@ -74,7 +74,8 @@ var _ordinary_rows := {}
 ## The stream a place put on her route by a marble (`_place_on_her_route()`) is sited and re-sited
 ## from — its own, so it never moves a crew's or the fire's.
 var _place_rng := RandomNumberGenerator.new()
-## The plans a marble put on her route, so a re-siting draws from `_place_rng`.
+## The plans a marble put on her route, so their sitings draw from `_place_rng`. Not in the day's
+## plan until first sited: `EventManager` adds one there then (`is_from_her_route()`).
 var _placed_from_the_route := {}
 var _next_in := 0.0
 ## Whether `owe_the_return()` has already handed today its return-phase patrols. Set once and
@@ -92,8 +93,9 @@ var _return_pacing := false
 var _doors := PackedVector2Array()
 
 ## Today's plans that the day budgeted and left for her walk to site — `EventDef.sited_on_her_way`,
-## which is day 3's fire, and the poster crews from day 4. Read off the same plan list `_owed` is, in
-## `start_day()`, and emptied as each one is put in the world.
+## which is day 3's fire, and the poster crews from day 4 — read off the same plan list `_owed` is,
+## in `start_day()`; and the places a marble from her route's bag names, added the moment the marble
+## is drawn (`_place_on_her_route()`). Emptied as each one is put in the world.
 var _on_her_way: Array[EventScheduler.Planned] = []
 ## The day's placement context, for siting one of those against the same ground, corridor, doors and
 ## protected calm every dawn placement was stated against. Null on a day with nothing to site, and
@@ -399,8 +401,9 @@ func route_bag() -> MarbleBag:
 ## **Rigs her route so `ids` are among the next `size` events placed on it**: a bag of `size`
 ## marbles, `ids` and the rest drawn from the bag she was drawing from, is drawn from first, and
 ## that bag carries on with what it has left once the rigged one is empty (`MarbleBag.rig()`). A
-## row that is not one the director sites — the man shouting, a place — is put on her route ahead
-## of her by `_place_on_her_route()` when its marble comes up. Answers the rigged bag's marbles, or
+## row that is not one the director sites — the man shouting, a mast, a place — is handed to her
+## walk to site ahead of her when its marble comes up (`_place_on_her_route()`), and waits there for
+## a legal site without holding up the events behind it. Answers the rigged bag's marbles, or
 ## nothing under `--force`, whose queue is the forced row's alone, and on a rig with no day.
 ##
 ## **The next `size` events she is owed are the rigged bag's**, so the guarantee is about what is
@@ -465,38 +468,37 @@ func _next_on_the_route() -> EventDef:
 ## it gives up: more than a whole bag, so it only stops on a bag whose every row is spent.
 const ROUTE_SKIP_LIMIT := 64
 
-## A marble that names a place rather than a moment — the man shouting a rigged bag puts on her route
-## — is sited the way the day's own places left to her walk are (`EventScheduler.WalkSiting.
-## ahead_of()`): on the branch of the day's route tree she is walking, past the streaming band and
-## within `ON_HER_WAY_SIGHT` seconds of walking of it, through every acceptance rule a dawn placement
-## is under. So it is never seen to appear, it is reachable on the route she is walking, and it is in
-## the world once she walks on. Until it has been, it is re-sited ahead of her if she turns away
-## (`site_what_is_on_her_way()`), the way day 3's fire is. Returns `[EventDef, path, Planned]` for
-## the manager to put in the day's plan, or nothing when there is no legal site yet, which is a retry
-## a second of walking later.
-func _place_on_her_route(def: EventDef, at: Vector2, heading: Vector2,
-		plans: Array[EventScheduler.Planned]) -> Array:
-	if not _siting:
-		# Nowhere to ask: a rig that started the day with no placement context. The marble is spent
-		# rather than left to block the route for the rest of the day, and counted against a patrol's
-		# bag like any other marble spent from it.
-		_route.draw()
-		_handed_from_the_route()
-		return []
-	var band := _siting_band()
-	var sited := _siting.ahead_of(def, _place_rng, plans, at, heading, band.x, band.y)
-	if not sited:
-		_next_in = 1.0
-		return []
+## A marble that names a place rather than a moment — the man shouting or the mast a rigged bag puts
+## on her route — is handed out the moment it is drawn, like any other marble: its owed slot and
+## the marble are spent, and the place goes on the list of what her walk sites
+## (`site_what_is_on_her_way()`), unplaced, the way day 3's fire waits there. That half sites it on
+## its own cadence: on the branch of the day's route tree she is walking, past the streaming band
+## and within `ON_HER_WAY_SIGHT` seconds of walking of it, through every acceptance rule a dawn
+## placement is under, so it is never seen to appear, it is reachable on the route she is walking,
+## and it is in the world once she walks on; and it re-sites it ahead of her if she turns away before
+## it has been.
+##
+## **A place that cannot be sited yet holds nothing up.** A refusal is ordinary — she is off the
+## day's routes, or walking home inside the streaming band of the branch's end — so the events
+## behind its marble, a return patrol among them, come on the queue's own pacing while it waits, and
+## a place that never finds a site is a place she does not meet. With no placement context at all
+## (a rig that started the day without one) there is nowhere to ask, and the marble is spent unmet.
+func _place_on_her_route(def: EventDef) -> void:
 	_next_in = _roll_interval()
 	_owed.pop_front()
 	_route.draw()
 	_handed_from_the_route()
+	if not _siting:
+		return
 	_met_today[def.id] = int(_met_today.get(def.id, 0)) + 1
-	_on_her_way.append(sited)
-	_behind_her[sited] = 0.0
-	_placed_from_the_route[sited] = true
-	return [def, sited.path, sited]
+	var waiting := EventScheduler.Planned.new(def, Vector2.INF)
+	_on_her_way.append(waiting)
+	_placed_from_the_route[waiting] = true
+
+## Whether `plan` is a place a marble from her route's bag put on her way (`_place_on_her_route()`),
+## which joins the day's plan when it is first sited rather than at dawn.
+func is_from_her_route(plan: EventScheduler.Planned) -> bool:
+	return _placed_from_the_route.has(plan)
 
 # ------------------------------------------------- the place that is on her way ---
 
@@ -556,7 +558,8 @@ const ON_HER_WAY_LOOK := 1.0
 ## the day's own route tree, **on the branch she is walking**, ahead of her by distance along that
 ## route, off screen, `ON_HER_WAY_SIGHT` seconds of walking short of being seen. Returns every plan
 ## this call moved, so the caller can give back the ground the old body was standing on and take the
-## new — `EventManager._site_what_is_on_her_way()` is that caller.
+## new — `EventManager._site_what_is_on_her_way()` is that caller — and a place from her route's bag
+## sited for the first time, which the caller adds to the day's plan (`is_from_her_route()`).
 ##
 ## **The path is the day's route tree and nothing else is a site.** *(PLAYTEST-119: "the fire needs
 ## to spawn on the current path the player is on — moving it around works but valid spawn locations
@@ -588,14 +591,16 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 		plans: Array[EventScheduler.Planned]) -> Array[EventScheduler.Planned]:
 	var moved: Array[EventScheduler.Planned] = []
 	_forget_what_is_real()
-	if _on_her_way.is_empty() or not _siting:
-		return moved
 	var speed := velocity.length()
 	# The same clock `due()` runs on and for the same reason: a direction is something she is
 	# travelling in, not something she is facing, and a player standing still has neither.
 	if speed < Tuning.AHEAD_MIN_SPEED:
 		return moved
+	# Counted while nothing waits as well: a place a marble hands over mid-day
+	# (`_place_on_her_route()`) is sited on a walk that has been under way all along.
 	_walked += delta
+	if _on_her_way.is_empty() or not _siting:
+		return moved
 	_since_the_last_look += delta
 	if _walked < ON_HER_WAY_AFTER or _since_the_last_look < ON_HER_WAY_LOOK:
 		return moved
@@ -856,11 +861,10 @@ func has_a_sent_patrol() -> bool:
 ## facing: something that crosses in front of a player standing still is not in front of
 ## anything.
 ##
-## Returns `[EventDef, PackedVector2Array]`, or an empty array — or `[EventDef, path, Planned]` for
-## a place the route's bag put ahead of her (`_place_on_her_route()`), which the caller adds to the
-## day's plan. `plans` is the day's plan, which such a place is spaced and checked against.
-func due(delta: float, at: Vector2, velocity: Vector2,
-		plans: Array[EventScheduler.Planned] = []) -> Array:
+## Returns `[EventDef, PackedVector2Array]`, or an empty array. A place the route's bag names is
+## handed to her walk to site (`_place_on_her_route()`) and answers the empty array: it joins the
+## day's plan through `site_what_is_on_her_way()` once it has a site.
+func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	var sent := _site_the_sent_patrol(delta, at, velocity)
 	if not sent.is_empty():
 		return sent
@@ -887,9 +891,10 @@ func due(delta: float, at: Vector2, velocity: Vector2,
 			# The bag has nothing left to name today: the event is owed nothing.
 			_owed.pop_front()
 			return []
-	var heading := velocity / speed
 	if from_the_bag and next.spawn_mode_on(_day) == EventDef.SpawnMode.MAP:
-		return _place_on_her_route(next, at, heading, plans)
+		_place_on_her_route(next)
+		return []
+	var heading := velocity / speed
 	# A `TOWARD_PLAYER` row whose `placement` names `ROAD` is a car, not a bike — `police_patrol`
 	# is the one row `owe_the_return()` ever adds this way — and a car belongs on the carriageway
 	# lane that drives toward her rather than on her own pavement. `_toward_her()` is still what

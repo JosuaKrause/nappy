@@ -1363,14 +1363,11 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 			_warn_down_her_heading(owed, body.global_position,
 					body.global_position + body.velocity.normalized())
 	# A dog waiting for legal ground never stops the director's other clocks or due events.
-	var due := _director.due(delta, body.global_position, body.velocity, _plans)
+	var due := _director.due(delta, body.global_position, body.velocity)
 	if due.is_empty():
 		return
 	var def := due[0] as EventDef
 	var path := due[1] as PackedVector2Array
-	if due.size() > 2:
-		_put_down_on_her_route(due[2] as EventScheduler.Planned, body)
-		return
 	if def.warns_before_it_exists():
 		_warn_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
 		return
@@ -1393,10 +1390,11 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 		def.id, verb, lead,
 		TelemetryLog.tile(_map.world_to_tile(body.global_position))])
 
-## A place a marble from her route's bag named — the man shouting a rigged bag puts on it — sited by
-## the director ahead of her on the branch she is walking (`EventDirector._place_on_her_route()`).
-## It joins the day's plan with the bookkeeping a dawn placement had: its body recorded per tile, the
-## way `queue_a_mast()` records a mast's, and it streams in like any planned row once she walks on.
+## A place a marble from her route's bag named — the man shouting or the mast a rigged bag puts on
+## it — sited for the first time by the director ahead of her on the branch she is walking
+## (`EventDirector._place_on_her_route()`, then `EventDirector.site_what_is_on_her_way()`). It joins
+## the day's plan with the bookkeeping a dawn placement had: its body recorded per tile, the way
+## `queue_a_mast()` records a mast's, and it streams in like any planned row once she walks on.
 func _put_down_on_her_route(plan: EventScheduler.Planned, body: Node2D) -> void:
 	# A mast is a mast like the one `queue_a_mast()` adds: it broadcasts on the one clock, is
 	# silenced by `silence_mast()` and counts for `silence_all_masts()`.
@@ -1518,9 +1516,10 @@ func _owe_pursuer_again(def: EventDef) -> void:
 	_pursuer_owed = def
 	_pursuer_retry_in = 1.0
 
-## The other half of the director's day: a place the day budgeted and left unsited, put on a
-## building face ahead of her once her heading for the day is clear. Day 3's fire is the only row
-## that asks for this — see `EventDef.sited_on_her_way` and `EventDirector.site_what_is_on_her_way`.
+## The other half of the director's day: a place left unsited, put ahead of her on the branch she
+## is walking once her heading for the day is clear — day 3's fire and the day's poster crews
+## (`EventDef.sited_on_her_way`), and a place a marble from her route's bag names, which joins the
+## day's plan here (`_put_down_on_her_route()`). See `EventDirector.site_what_is_on_her_way`.
 ##
 ## **The bookkeeping a late placement owes is the bookkeeping dawn already did for everything else.**
 ## A body is recorded per tile from the *plan* so the crowd steers round it whether or not the
@@ -1535,6 +1534,10 @@ func _site_what_is_on_her_way(delta: float) -> void:
 	var moved := _director.site_what_is_on_her_way(delta, body.global_position, body.velocity,
 			_plans)
 	for plan in moved:
+		# A place from her route's bag is not in the day's plan until its first siting.
+		if _director.is_from_her_route(plan) and not _plans.has(plan):
+			_put_down_on_her_route(plan, body)
+			continue
 		_map.release_obstruction(plan.get_instance_id())
 		_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 		# A mast's id is its foot (`EventScheduler.added_mast_id()`), so a mast moved before it was

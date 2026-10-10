@@ -226,10 +226,13 @@ list, so the guarantee is about what is placed on her route. Two rigs stand:
 
 - **After day 6's mark, a man shouting is one of the next two** (`Tuning.TASK_CONTACT_WITHIN_THE_NEXT`;
   inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "maybe let's make the other rigged bags smaller, too"). A row the director does not
-  otherwise site is a place, so when its marble comes up it is put on her route the way day 3's
-  fire is (`EventScheduler.WalkSiting.ahead_of()`): on the branch of the day's routes she is
+  otherwise site is a place, so when its marble comes up it is handed to her walk to site, the way
+  day 3's fire is (`EventScheduler.WalkSiting.ahead_of()`): on the branch of the day's routes she is
   walking, past the streaming band so it is never seen to appear, under every acceptance rule a dawn
-  placement is, and moved ahead of her again if she turns away before it has been in the world. He
+  placement is, and moved ahead of her again if she turns away before it has been in the world. Its
+  marble spends its turn the moment it is drawn, so a place with no legal site yet — she is off the
+  day's routes, or walking home inside the streaming band of the branch's end — holds up none of the
+  events behind it, a return patrol included, and one that never finds a site is not met. He
   is a look-alike the day's any-instance contact follows her onto, besides the one her reading the
   mark spawns near it.
 - **After day 11's mark, a second loudspeaker mast is one of the next two**
