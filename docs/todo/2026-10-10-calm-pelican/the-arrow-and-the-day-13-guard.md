@@ -19,8 +19,13 @@ The player, asked which roadblock the arrow points at (inbox #651 in [lilac-marm
 
 So the arrow keeps [plush-moose](../../decisions/2026-10-04-plush-moose.md)'s closest-by-walking
 choice among every live roadblock, and the guard moves, off screen, to the roadblock she approaches
-each time she changes target, however often. A move is never made in her view: the guard is
-re-placed only while both where he stands and where he goes are out of it.
+each time she changes target, however often.
+
+*Proposed, not asked for:* a move is made only while both where the guard stands and where he goes
+are out of her view, so he never pops in or out on screen. The case it leaves open, her turning
+toward a roadblock in view while the guard is in view too, keeps him where he is until one of the
+two leaves the view; the plainer alternative is moving him regardless once he is off screen, and
+the player's "offscreen" does not choose between them.
 
 **And the day's own roadblock is placed close by.** Asked whether day 13's roadblock gets a second,
 route-drawn copy from a rigged bag (olive-badger's [the-other-forced-cases](../2026-09-27-olive-badger/the-other-forced-cases.md)),

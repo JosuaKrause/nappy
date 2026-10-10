@@ -17,9 +17,10 @@ hold (the player's "you shouldn't try to cheat it by going back in the hut -- th
 by the robber", [plush-bunny](../../playtests/2026-10-05-plush-bunny.md), and `docs/EVENTS.md`'s
 "a gatehouse is no hiding place from him"), and the walk under never sends him. What this item
 owes: a test that walks under the named boom, steps into a hut, and asserts the door's guard gives
-up and nobody else is sent; and a sentence in `docs/EVENTS.md`'s hold paragraph and
-`docs/NARRATIVE.md`'s day-9 paragraph saying the walk under's guard is one a hut ends, with the
-player's words.
+up and nobody else is sent. *Proposed, not asked for:* a sentence in `docs/EVENTS.md`'s hold
+paragraph and `docs/NARRATIVE.md`'s day-9 paragraph, both of which already speak only of the robber,
+saying the walk under's guard is one a hut ends, with the player's words; it clarifies, and changes
+nothing they say.
 
 **Low, same area:** `tests/test_resistance.gd`'s
 `_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it` cannot fail: an earlier walk
