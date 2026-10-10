@@ -110,4 +110,5 @@ test_turns.gd 2995
 test_tutorial_dog.gd 57494
 test_visit_counter.gd 50
 test_visuals.gd 133
+test_walk_plan.gd 46
 test_walker_views.gd 13

@@ -6,7 +6,7 @@
   "setup": {"tutorial_complete": true, "day": 1, "parent": "father", "player": {"at": "start", "facing": "west"},
     "background": {"crowd": true, "uniform_walkers": true, "walker_multiplier": 2},
     "events": [{"name": "birds", "row": "pigeon_flock", "at": "birds"}]},
-  "playback": {"settled_camera": true, "walk": "4.1w1.3@315@", "duration": 5.4, "capture_at": 2.7,
+  "playback": {"settled_camera": true, "walk": "4.1w1.3@315@", "smooth": true, "duration": 5.4, "capture_at": 2.7,
     "observations": [{"tick": 30, "subject": "player", "condition": "moving"},
       {"tick": 45, "subject": "player", "condition": "moving"},
       {"tick": 75, "subject": "birds", "condition": "visible"},

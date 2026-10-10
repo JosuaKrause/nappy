@@ -4,7 +4,7 @@
   "anchors": {"start": "doorstep"},
   "setup": {"tutorial_complete": true, "day": 1, "parent": "mother", "player": {"at": "start", "facing": "south"},
     "background": {"crowd": true, "crowd_scope": "city"}},
-  "playback": {"settled_camera": true, "walk": "0.3s9.7e", "duration": 10, "capture_at": 6,
+  "playback": {"settled_camera": true, "walk": "0.3s9.7e", "smooth": true, "duration": 10, "capture_at": 6,
     "camera": {"zoom_out": 4, "zoom_delay": 1.5, "landscape_margin": 512},
     "observations": [{"tick": 15, "subject": "player", "condition": "moving"},
       {"tick": 30, "subject": "player", "condition": "moving"},
