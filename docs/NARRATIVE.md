@@ -321,7 +321,7 @@ A chalk mark the player has not actually noticed — stood near, on screen, long
 walking past it rather than to it was a choice — has never really been placed, so it follows
 the player rather than sitting where the dawn plan first put it: once they are far enough from it
 to have missed it, it moves to the alley they have just come near instead, guard and all, never a
-tile the player can currently see so it never appears in front of them, skipping an alley an
+tile on the player's screen so it never appears in front of them, skipping an alley an
 earlier task's mark already used while another is in reach — so a mark the player can actually
 walk up to is what makes the silent first encounter fair rather than a dead end.
 
