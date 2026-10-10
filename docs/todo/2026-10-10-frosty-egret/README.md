@@ -12,7 +12,6 @@ player's `now` band:
 > should still go to the game
 
 The README opens with the logo (`art/logo.png`) linking to the game and one text link, "Watch
-the gameplay trailer on YouTube"; the YouTube thumbnail that sat beside the logo is gone, so the
-plain-link outcome is already in place.
+the gameplay trailer on YouTube", with no thumbnail: the plain-link outcome.
 
 The item: [play-in-place-or-link.md](play-in-place-or-link.md).
