@@ -245,16 +245,20 @@ touch".)*
   instead, measured from the ground it is touched from — touched from any side of its band, so he
   stands that far beyond the band's own reach: inside that band touching it is death, always;
   above it he never notices them on their way to it; between them, which side the player
-  approaches from decides whether he notices them before they touch it. He stands where he has a clear line to the roadblock, since he notices
-  her only along one. Any roadblock answers the task, so he waits at the one she approaches: each
-  time the red arrow moves to another roadblock, he guards it from where he stands if he is
-  already that near it, or is moved to it, however often — into its band, or, while all of the
-  band is in her view, to ground just past it, in line with it, until it is not — and only while neither where
-  he stands nor where he goes is in her view, so he is never seen to vanish or to appear. So he
-  waits at the one she approaches unless he is in her view from the moment she turns toward another
-  until she reaches it; and the moment she has done the task, if he has not noticed her yet, he
-  comes after her from wherever he stands, at the roadblock she touched or not, an ordinary chase
-  from there. *(2026-10-10, the player: "as long as he starts pursuing when you hit the task it's
+  approaches from decides whether he notices them before they touch it. He stands where he has a
+  clear line to the roadblock, since he notices her only along one, and not on her only way to
+  it: he is put where she can still walk to it without coming within his notice, on the far side
+  of it from her where he can be, and only where no spot round it leaves her such a way is the
+  task's own guard put on the first spot anyway. Any roadblock answers the task, so he waits at the one she
+  approaches: each time the red arrow moves to another roadblock, he guards it from where he stands
+  if he is already that near it, or is moved to it, however often — into its band, or, while all
+  of the band is in her view, to ground just past it, in line with it, where no touch is within his
+  notice, until it is not — and only while neither where he stands nor where he goes is in her
+  view, so he is never seen to vanish or to appear. So he waits at the one she approaches unless he
+  is in her view from the moment she turns toward another until she reaches it, or no spot round it
+  leaves her a way past him. Wherever he stands when she has done the task — in the band, past it,
+  at another roadblock — he comes after her the moment she has, if he has not noticed her yet, an
+  ordinary chase from there. *(2026-10-10, the player: "as long as he starts pursuing when you hit the task it's
   fine".)* Once he has noticed her he stays on her. *(2026-10-10, [lilac-marmot](playtests/2026-10-10-lilac-marmot.md):
   "just move the guard always to any roadblock she approaches. We can move the guard around
   offscreen as much as we want. If we need to move multiple times so be it".)* Seeded from the run and the day, so the distance or the alley that was

@@ -3086,50 +3086,12 @@ func is_lethal_at(world_position: Vector2) -> bool:
 ## Whether the straight line from this node to `world_position` crosses only ground
 ## `CityMap.is_walkable()` agrees with — the question a pursuer's catch asks, since a catch across a
 ## wall is a man reaching through a building, and the one its notice and its lunge ask in
-## `_chase()`, since he can neither see nor go for her through one. Every tile the segment enters is
-## asked, found by stepping from one tile boundary to the next along it rather than by sampling, so
-## a line that clips a building's corner by a pixel is blocked however short it is. A line through a
-## corner point exactly asks both tiles beside it. True with no map, which is every data-level rig
-## built without one, exactly as `_walkable_step()` is.
+## `_chase()`, since he can neither see nor go for her through one. `CityMap.clear_line()` walks it,
+## the one walk every caller asks, so a line that clips a building's corner by a pixel is blocked
+## however short it is. True with no map, which is every data-level rig built without one, exactly
+## as `_walkable_step()` is.
 func _clear_line_to(world_position: Vector2) -> bool:
-	if not _map:
-		return true
-	var from := global_position
-	var tile := _map.world_to_tile(from)
-	if not _map.is_walkable(tile):
-		return false
-	var delta := world_position - from
-	var size := float(Tuning.TILE_SIZE)
-	var step := Vector2i(int(signf(delta.x)), int(signf(delta.y)))
-	# The fraction of the segment at which it next crosses a vertical (x) or horizontal (y) tile
-	# boundary, and how much of the segment one whole tile takes on each axis.
-	var next_x := INF
-	var each_x := INF
-	if step.x != 0:
-		next_x = (float(tile.x + maxi(step.x, 0)) * size - from.x) / delta.x
-		each_x = size / absf(delta.x)
-	var next_y := INF
-	var each_y := INF
-	if step.y != 0:
-		next_y = (float(tile.y + maxi(step.y, 0)) * size - from.y) / delta.y
-		each_y = size / absf(delta.y)
-	while minf(next_x, next_y) <= 1.0:
-		if is_equal_approx(next_x, next_y):
-			if not _map.is_walkable(tile + Vector2i(step.x, 0)) \
-					or not _map.is_walkable(tile + Vector2i(0, step.y)):
-				return false
-			tile += step
-			next_x += each_x
-			next_y += each_y
-		elif next_x < next_y:
-			tile.x += step.x
-			next_x += each_x
-		else:
-			tile.y += step.y
-			next_y += each_y
-		if not _map.is_walkable(tile):
-			return false
-	return true
+	return not _map or _map.clear_line(global_position, world_position)
 
 ## One bounded integral cache per source, with a by-value key rather than a clock or identity.
 var _expected_landed_key: Array = []

@@ -26,6 +26,12 @@ extends RefCounted
 ##   spot of the band is in her view;
 ## - **elsewhere**: over another roadblock, with his distance from the arrow's.
 ## A guard who noticed her is not ticked in this rig, so none is.
+##
+## **And whether he stands on her way** (review of #659): on each step before she is within touch
+## reach of the arrow's roadblock, whether she is within his `pursues_within` along a clear line
+## (`CityMap.clear_line()`) — her shortest walk passing his notice — and how near she comes to his
+## feet; and, on arrival, whether any walk from the mark reaches touch range without entering his
+## notice (a flood fill of this file's own, tile centres, around closures and standing bodies).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const DAY := 13
@@ -46,7 +52,8 @@ func run(t) -> void:
 	var saved_scars := GameState.scars.duplicate()
 	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
 	var saved_state := GameState.city_state
-	var totals := {"walks": 0, "guarding": 0, "near": 0, "elsewhere": 0, "none": 0, "moves": 0}
+	var totals := {"walks": 0, "guarding": 0, "near": 0, "elsewhere": 0, "none": 0, "moves": 0,
+			"noticed": 0, "on_his_tile": 0, "no_way": 0, "placed": 0, "placed_without_a_way": 0}
 	var elsewhere: Array[String] = []
 	for seed_value in SEEDS:
 		var day := _read_the_mark(t, seed_value)
@@ -54,6 +61,13 @@ func run(t) -> void:
 			print("DAY13_GUARD seed %d: no roadblock task" % seed_value)
 			continue
 		var targets := _nearest_on_foot(day)
+		var placed: EventInstance = day["director"]._task_guard
+		var own: EventInstance = day["director"]._rider
+		var way: bool = day["director"]._leaves_her_a_way_past(placed.global_position,
+				own.body_position(), ResistanceDirector._body_touch_reach(own), day["mark"],
+				day["director"]._her_side_of(own.body_position(), day["mark"]))
+		totals["placed"] += 1
+		totals["placed_without_a_way"] += 0 if way else 1
 		_tear_down(day)
 		for index in targets.size():
 			var walk := _read_the_mark(t, seed_value)
@@ -68,14 +82,19 @@ func run(t) -> void:
 			totals["walks"] += 1
 			totals[result["kind"]] += 1
 			totals["moves"] += result["moves"]
+			totals["noticed"] += 1 if result["noticed"] else 0
+			totals["on_his_tile"] += 1 if result["nearest"] <= 16.0 else 0
+			totals["no_way"] += 1 if not result["way"] else 0
 			if result["kind"] == "elsewhere":
 				elsewhere.append("seed %d %.0fpx" % [seed_value, result["from_arrow"]])
-			print("DAY13_GUARD seed %d walk to roadblock %d (%s): %s, %.0fpx from the arrow's roadblock, clear line %s, %d moves" % [
+			print("DAY13_GUARD seed %d walk to roadblock %d (%s): %s, %.0fpx from the arrow's roadblock, clear line %s, %d moves; her walk in his notice before touch range %s, nearest his feet %.0fpx, a way past him from the mark %s" % [
 					seed_value, index, targets[index], result["kind"], result["from_arrow"],
-					result["clear"], result["moves"]])
-	print("DAY13_GUARD %d arrivals: guarding %d, near it outside the band %d, elsewhere %d %s, no guard %d | %d moves"
+					result["clear"], result["moves"], result["noticed"], result["nearest"],
+					result["way"]])
+	print("DAY13_GUARD %d arrivals: guarding %d, near it outside the band %d, elsewhere %d %s, no guard %d | %d moves | her shortest walk in his notice before touch range %d, within 16px of his feet %d, no way past him from the mark %d | guards placed with the task %d, of them with no way past (the fallback) %d"
 			% [totals["walks"], totals["guarding"], totals["near"], totals["elsewhere"], elsewhere,
-			totals["none"], totals["moves"]])
+			totals["none"], totals["moves"], totals["noticed"], totals["on_his_tile"],
+			totals["no_way"], totals["placed"], totals["placed_without_a_way"]])
 	GameState.completed_resistance_steps.assign(saved_completed)
 	GameState.failed_resistance_steps.assign(saved_failed)
 	GameState.resistance_progress = saved_progress
@@ -187,6 +206,9 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 		points.append(map.tile_to_world(step_tile))
 	var walked := 0.0
 	var next_choice := STEP
+	var noticed := false
+	var nearest := INF
+	var notice := EventCatalogue.by_id("alley_robbery").pursues_within
 	for i in range(1, points.size()):
 		var from: Vector2 = points[i - 1]
 		var to: Vector2 = points[i]
@@ -201,6 +223,14 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 			if director._task_guard != guard:
 				moves += 1
 				guard = director._task_guard
+			var arrow := ResistanceDirector._live_instance(director._arrow_key)
+			var her := player.global_position
+			if guard and arrow and her.distance_to(arrow.body_position()) \
+					> ResistanceDirector._body_touch_reach(arrow):
+				var off := her.distance_to(guard.global_position)
+				nearest = minf(nearest, off)
+				if off <= notice and map.clear_line(guard.global_position, her):
+					noticed = true
 			next_choice += STEP
 		walked += length
 	player.global_position = points.back()
@@ -208,7 +238,47 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 	director._move_the_task_guard_to_her_target()
 	if director._task_guard != guard:
 		moves += 1
-	return _what_he_guards(director, moves)
+	var result := _what_he_guards(director, moves)
+	result["noticed"] = noticed
+	result["nearest"] = nearest
+	result["way"] = _a_way_past(director, day["mark"])
+	return result
+
+## Whether some walk from `from` reaches ground within touch reach of the arrow's roadblock without
+## her centre coming within the guard's `pursues_within` along a clear line: a flood fill over open,
+## unobstructed walkable tiles, never onto a tile his notice reaches.
+func _a_way_past(director: ResistanceDirector, from: Vector2) -> bool:
+	var map: CityMap = director._map
+	var guard: EventInstance = director._task_guard
+	var arrow := ResistanceDirector._live_instance(director._arrow_key)
+	if guard == null or arrow == null:
+		return true
+	var notice := EventCatalogue.by_id("alley_robbery").pursues_within
+	var reach := ResistanceDirector._body_touch_reach(arrow)
+	var body := arrow.body_position()
+	var start := map.world_to_tile(from)
+	var seen := {start: true}
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	while head < queue.size():
+		var tile: Vector2i = queue[head]
+		head += 1
+		if map.tile_to_world(tile).distance_to(body) <= reach:
+			return true
+		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + side
+			if seen.has(next):
+				continue
+			seen[next] = true
+			if not map.in_bounds(next) or not map.is_walkable(next) or map.is_closed(next) \
+					or map.is_obstructed(next):
+				continue
+			var at := map.tile_to_world(next)
+			if at.distance_to(guard.global_position) <= notice \
+					and map.clear_line(guard.global_position, at):
+				continue
+			queue.append(next)
+	return false
 
 func _what_he_guards(director: ResistanceDirector, moves: int) -> Dictionary:
 	var guard: EventInstance = director._task_guard
@@ -218,7 +288,7 @@ func _what_he_guards(director: ResistanceDirector, moves: int) -> Dictionary:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var reach := ResistanceDirector._body_touch_reach(arrow)
 	var from_arrow := guard.global_position.distance_to(arrow.body_position())
-	var clear := director._a_clear_line(guard.global_position, arrow.body_position())
+	var clear := director._map.clear_line(guard.global_position, arrow.body_position())
 	var over := ResistanceDirector._same_key(director._task_guard_over, director._arrow_key)
 	var kind := "elsewhere"
 	if over and from_arrow >= robbery.inner_radius + reach - 0.5 \

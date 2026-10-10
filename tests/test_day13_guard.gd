@@ -33,11 +33,19 @@ const PLACEMENT_SEEDS: Array[int] = [4242, 90210, 555, 271828]
 
 ## What the test's camera shows: a `Rect2` of world ground, or an empty one for nothing at all.
 var _view := Rect2()
+## What each day's streams are named after: this suite's own, or, empty, the day-13 probes' own
+## (`tests/probes/calm_pelican_day13_guard_walk.gd`), so a day the probes measured is built again.
+var _streams := "day13-guard:"
 
 func run(t) -> void:
 	# Each day here starts from no read mark's alley remembered (`_start_the_day()`).
 	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
 	_test_the_guard_follows_her_to_the_roadblock_she_approaches(t)
+	# The probes' days on which a guard drawn with no way asked stood on her only way.
+	_streams = ""
+	for seed_value in [1234567, 314159]:
+		_test_the_guard_never_stands_on_her_only_way(t, seed_value)
+	_streams = "day13-guard:"
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, true)
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, false)
 	for seed_value in PLACEMENT_SEEDS:
@@ -165,6 +173,9 @@ func _check_he_guards(t, director: ResistanceDirector, roadblock: EventInstance,
 	t.check(ResistanceDirector._same_key(director._task_guard_over, roadblock.get_instance_id())
 			and director._task_guard_in_band,
 			"and the director knows which roadblock he guards")
+	t.check(_a_way_past(director._map, guard.global_position, roadblock.body_position(),
+			ContactPoint.body_reach(roadblock), player.global_position),
+			"at %s she can still walk to it without coming within his notice" % what)
 
 ## Whether every point of the straight line from `from` to `to`, a pixel apart, is on walkable
 ## ground: the line a waiting guard notices her along, asked here by sampling rather than through
@@ -177,11 +188,99 @@ static func _a_clear_line(map: CityMap, from: Vector2, to: Vector2) -> bool:
 			return false
 	return true
 
+## Whether some walk from `from` reaches ground within `reach` of `body` without her centre coming
+## within a guard at `guard`'s `pursues_within` along a clear line: a flood fill of the test's own over
+## open, unobstructed walkable tiles, tile centres, never onto a tile his notice reaches.
+static func _a_way_past(map: CityMap, guard: Vector2, body: Vector2, reach: float,
+		from: Vector2) -> bool:
+	var notice := EventCatalogue.by_id("alley_robbery").pursues_within
+	var start := map.world_to_tile(from)
+	var seen := {start: true}
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	while head < queue.size():
+		var tile: Vector2i = queue[head]
+		head += 1
+		if map.tile_to_world(tile).distance_to(body) <= reach:
+			return true
+		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + side
+			if seen.has(next):
+				continue
+			seen[next] = true
+			if not map.in_bounds(next) or not map.is_walkable(next) or map.is_closed(next) \
+					or map.is_obstructed(next):
+				continue
+			var at := map.tile_to_world(next)
+			if at.distance_to(guard) <= notice and _a_clear_line(map, guard, at):
+				continue
+			queue.append(next)
+	return false
+
 ## Whether any part of a waiting robber standing at `feet` (22 by 44px above his feet, a few px to
 ## spare) is in the test's view.
 func _guard_in_view(feet: Vector2) -> bool:
 	return _view.has_area() and _view.intersects(Rect2(feet + Vector2(-14.0, -48.0),
 			Vector2(28.0, 52.0)))
+
+## **The guard is never put on her only way to the roadblock** (`_roadblock_guard_spot()`): from
+## her where she read the mark, and at open ground 8 to 14 tiles out in each of four directions,
+## round every live roadblock of the day, wherever a move would put him, she can still walk to touch
+## range without coming within his notice — asked by the test's own flood fill — and he stands on
+## the far side of the roadblock from her far more often than on hers.
+func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_failed := GameState.failed_resistance_steps.duplicate()
+	var saved_progress := GameState.resistance_progress
+	var saved_scars := GameState.scars.duplicate()
+	var saved_state := GameState.city_state
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(seed_value))
+	GameState.scars = []
+	var director := _start_the_day(t, city, seed_value)
+	var player := _rig_player(t, director.contact_position())
+	_view = Rect2()
+	var mark := director.current_step()
+	if mark:
+		director._on_contact_completed(mark.index)
+	var map := city.map
+	var rng := _rng(seed_value, "ways")
+	var read_at := player.global_position
+	var asked := 0
+	var blocked: Array[String] = []
+	var near_side := 0
+	for target: Dictionary in director._arrow_candidates(director.current_step()):
+		var roadblock := ResistanceDirector._live_instance(target["key"])
+		if roadblock == null:
+			continue
+		var body := roadblock.body_position()
+		var reach := ContactPoint.body_reach(roadblock)
+		var places: Array[Vector2] = [read_at]
+		for direction: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			for out: int in [8, 11, 14]:
+				var tile: Vector2i = map.world_to_tile(body) + direction * out
+				if map.in_bounds(tile) and map.is_walkable(tile) and not map.is_obstructed(tile) \
+						and not map.is_closed(tile):
+					places.append(map.tile_to_world(tile))
+		for her in places:
+			var tile := map.world_to_tile(her)
+			var spot := director._roadblock_guard_spot(rng, body, reach, her, false, false)
+			if spot == Vector2.INF:
+				continue
+			asked += 1
+			if not _a_way_past(map, spot, body, reach, her):
+				blocked.append("%s from %s" % [map.world_to_tile(body), tile])
+			if (spot - body).dot(her - body) > 0.0:
+				near_side += 1
+	t.check(asked > 20 and blocked.is_empty(),
+			"seed %d: wherever he is put, she keeps a way to the roadblock past his notice (%d asked, blocked %s)"
+			% [seed_value, asked, blocked.slice(0, 4)])
+	t.check(near_side * 3 < asked,
+			"seed %d: and he stands on the far side of it from her far more often than on hers (%d of %d on her side)"
+			% [seed_value, near_side, asked])
+	_tear_down(player, director, city)
+	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 
 ## **The done task sets the guard on her, wherever he stands.** With `parked`, she touches another
 ## live roadblock while the guard is held at the task's own by her view on him; without, he has
@@ -422,7 +521,7 @@ func _rig_player(t, at: Vector2) -> Stroller:
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("day13-guard:%d:%d:%s" % [seed_value, DAY, stream])
+	rng.seed = hash("%s%d:%d:%s" % [_streams, seed_value, DAY, stream])
 	return rng
 
 func _tear_down(player: Stroller, director: ResistanceDirector, city: City) -> void:

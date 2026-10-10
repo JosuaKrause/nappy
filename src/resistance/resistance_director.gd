@@ -747,28 +747,44 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 ## within `reach` of it (`_body_touch_reach()`): a tile's centre in the band round the body that
 ## `_maybe_set_a_trap()` describes — from `inner_radius + reach`, so no touch lands her in his
 ## catch, to `pursues_within + reach`, past which no touch can wake him — with **a clear line to
-## the body** (`_a_clear_line()`), since he notices her only along one *(leafy-puffin, inbox #648:
-## "yes noticing needs a clear line")* and a guard behind a building from the roadblock guards
-## nothing. An `ALLEY` tile by preference, as the row's own placement is, then any other.
+## the body** (`CityMap.clear_line()`), since he notices her only along one *(leafy-puffin, inbox
+## #648: "yes noticing needs a clear line")* and a guard behind a building from the roadblock guards
+## nothing.
+##
+## **Never on her only way to it.** Which side she comes from decides whether he notices her
+## (`docs/NARRATIVE.md`), so a spot is taken only where she can still walk from `her` to ground
+## within touch reach of the roadblock without coming within his notice
+## (`_leaves_her_a_way_past()`), and the spots on **the far side of the roadblock from her** are
+## tried first: the clear line puts most spots on the roadblock's own street, the street she walks
+## up, and one between her and it is a guard she walks into a second after he comes into view.
+## Within each side an `ALLEY` tile first, as the row's own placement is, then any other, each drawn
+## from `rng`; at most `GUARD_WAYS_ASKED` spots are asked, in that order.
 ##
 ## Refused, as every guard's ground is, where he may not stand — not walkable, closed, held, on the
 ## home block, in a walled alley, or under a standing body — within `pursues_within` of `her`, and,
 ## when `on_screen_matters`, anywhere any part of him would be on screen (`_guard_shows()`).
 ##
-## **Where every spot of the band is refused, the ring just past it**, a tile at a time out to
-## `TASK_GUARD_FARTHEST`, nearest ring first, on the same terms and with the same clear line: the
+## **Where no spot of the band passes, the ring just past it**, a tile at a time out to
+## `TASK_GUARD_FARTHEST`, nearest ring first and the far side first in each, on the same terms: the
 ## band can be wholly in her view when she stands beside the roadblock, and the street through it
 ## runs on past the view's edge. *(inbox #651 in lilac-marmot: "We can move the guard around
-## offscreen as much as we want. If we need to move multiple times so be it".)* Drawn from `rng`
-## once among the spots of the nearest ring that has any. `Vector2.INF` when none qualifies.
+## offscreen as much as we want. If we need to move multiple times so be it".)* On the ring no touch
+## is within his notice; the task sets him on her when she has done it, wherever he stands
+## (`_set_the_task_guard_on_her()`).
+##
+## **Where no spot leaves her a way past him**, `or_any` decides: true, for the guard placed with the
+## task, the first spot in that order is taken anyway — far side first, so he is at least not between
+## them if he can help it — and the run log says so; false, for a move, `Vector2.INF`, and he stays
+## where he is, to be set on her when she has done the task. `Vector2.INF` too when no spot qualifies
+## at all. With `her` `Vector2.INF` (a rig with no one to keep a way for) nothing is asked of a way.
 func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: float, her: Vector2,
-		on_screen_matters: bool) -> Vector2:
+		on_screen_matters: bool, or_any := true) -> Vector2:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var nearest := robbery.inner_radius + reach
 	var band_edge := robbery.pursues_within + reach
 	var walled_alleys := _walled_alleys()
-	var alleys: Array[Vector2] = []
-	var band: Array[Vector2] = []
+	# [far alleys, far band, near alleys, near band]
+	var pools: Array = [[], [], [], []]
 	var beyond := {}
 	var centre := _map.world_to_tile(body)
 	var span := ceili(TASK_GUARD_FARTHEST / Tuning.TILE_SIZE)
@@ -787,27 +803,141 @@ func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: flo
 				continue
 			if on_screen_matters and _guard_shows(spot):
 				continue
-			if not _a_clear_line(spot, body):
+			if not _map.clear_line(spot, body):
 				continue
+			var near_side := 2 if her != Vector2.INF and (spot - body).dot(her - body) > 0.0 else 0
 			if distance <= band_edge:
-				if _map.tile_at(tile) == GameEnums.TileType.ALLEY:
-					alleys.append(spot)
-				else:
-					band.append(spot)
+				var alley := 0 if _map.tile_at(tile) == GameEnums.TileType.ALLEY else 1
+				(pools[near_side + alley] as Array).append(spot)
 				continue
-			var ring := int((distance - band_edge) / Tuning.TILE_SIZE)
+			var ring := int((distance - band_edge) / Tuning.TILE_SIZE) * 2 + near_side / 2
 			if not beyond.has(ring):
 				beyond[ring] = []
 			(beyond[ring] as Array).append(spot)
-	for pool: Array in [alleys, band]:
-		if not pool.is_empty():
-			return pool[rng.randi_range(0, pool.size() - 1)]
-	if beyond.is_empty():
-		return Vector2.INF
 	var rings := beyond.keys()
 	rings.sort()
-	var outer: Array = beyond[rings[0]]
-	return outer[rng.randi_range(0, outer.size() - 1)]
+	for ring: int in rings:
+		pools.append(beyond[ring])
+	var ordered: Array[Vector2] = []
+	for pool: Array in pools:
+		_shuffle(pool, rng)
+		for spot: Vector2 in pool:
+			ordered.append(spot)
+	if ordered.is_empty():
+		return Vector2.INF
+	if her == Vector2.INF:
+		return ordered[0]
+	var her_side := _her_side_of(body, her)
+	for i in mini(ordered.size(), GUARD_WAYS_ASKED):
+		if _leaves_her_a_way_past(ordered[i], body, reach, her, her_side):
+			return ordered[i]
+	if not or_any:
+		return Vector2.INF
+	Telemetry.note("roll", "no spot round the roadblock leaves her a way past its guard; "
+			+ "he stands at the first anyway, %.0fpx from it" % ordered[0].distance_to(body))
+	return ordered[0]
+
+## How many of the spots `_roadblock_guard_spot()` orders it asks for a way past him, at most:
+## each is a flood fill round the roadblock, and a move is asked twice a second.
+const GUARD_WAYS_ASKED := 12
+
+## Shuffles `items` in place from `rng` (Fisher-Yates), so the order is the stream's.
+static func _shuffle(items: Array, rng: RandomNumberGenerator) -> void:
+	for i in range(items.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var kept: Variant = items[i]
+		items[i] = items[j]
+		items[j] = kept
+
+## **Whether she can walk from `her` to ground she can touch the roadblock at `body` from without
+## coming within notice of a guard at `spot`**: a flood fill out from every open tile within `reach`
+## of the body, over the ground she can walk today (walkable, open, unsealed, no body standing on
+## it), never onto a tile whose centre is within his `pursues_within` along a clear line from him
+## (`CityMap.clear_line()`), the notice `EventInstance._chase()` takes. It answers yes the moment it
+## reaches her tile, or a tile of `her_side` — the ground she reaches without coming near the
+## roadblock at all (`_her_side_of()`), where nothing of any guard round it stands in her way. Tile
+## centres stand in for her: a way that passes his notice by less than half a tile counts as a way.
+## **Bounded** to `GUARD_WAY_DETOUR` past that ground round the roadblock: from her beside the
+## roadblock, a way round longer than that is not a way she would take, and the fill stays a few
+## thousand tiles rather than the city.
+func _leaves_her_a_way_past(spot: Vector2, body: Vector2, reach: float, her: Vector2,
+		her_side: Dictionary) -> bool:
+	var notice := EventCatalogue.by_id("alley_robbery").pursues_within
+	var bound := _guard_notice_reach() + GUARD_WAY_DETOUR
+	var her_tile := _map.world_to_tile(her)
+	var seen := {}
+	var queue: Array[Vector2i] = []
+	var centre := _map.world_to_tile(body)
+	var span := ceili(reach / Tuning.TILE_SIZE) + 1
+	for dy in range(-span, span + 1):
+		for dx in range(-span, span + 1):
+			var tile := centre + Vector2i(dx, dy)
+			if _map.tile_to_world(tile).distance_to(body) > reach \
+					or not _open_to_her(tile) or _noticed_from(spot, tile, notice):
+				continue
+			seen[tile] = true
+			queue.append(tile)
+	var head := 0
+	while head < queue.size():
+		var tile: Vector2i = queue[head]
+		head += 1
+		if tile == her_tile or her_side.has(tile):
+			return true
+		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + side
+			if seen.has(next):
+				continue
+			seen[next] = true
+			if next == her_tile or (_open_to_her(next) and not _noticed_from(spot, next, notice)
+					and _map.tile_to_world(next).distance_to(body) <= bound):
+				queue.append(next)
+	return false
+
+## How far past the ground any guard round a roadblock can notice her `_leaves_her_a_way_past()`
+## follows a way round: eight tiles, half a block and a street.
+const GUARD_WAY_DETOUR := 8.0 * Tuning.TILE_SIZE
+
+## The ground she can walk to from `her` today without coming within `_guard_notice_reach()` of the
+## roadblock at `body`, `tile -> true`: where any guard `_roadblock_guard_spot()` may put round it is
+## too far to notice her. Empty when she stands within that reach herself. Worked out once for every
+## spot `_leaves_her_a_way_past()` asks about.
+func _her_side_of(body: Vector2, her: Vector2) -> Dictionary:
+	var found := {}
+	var start := _map.world_to_tile(her)
+	var reach := _guard_notice_reach()
+	if her.distance_to(body) < reach or not _map.in_bounds(start):
+		return found
+	found[start] = true
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	while head < queue.size():
+		var tile: Vector2i = queue[head]
+		head += 1
+		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + side
+			if found.has(next) or not _open_to_her(next) \
+					or _map.tile_to_world(next).distance_to(body) < reach:
+				continue
+			found[next] = true
+			queue.append(next)
+	return found
+
+## How far from a roadblock's body any guard round it can notice her: the farthest he stands
+## (`TASK_GUARD_FARTHEST`), his notice (`pursues_within`), and a tile.
+static func _guard_notice_reach() -> float:
+	return TASK_GUARD_FARTHEST + EventCatalogue.by_id("alley_robbery").pursues_within \
+			+ Tuning.TILE_SIZE
+
+## Whether she can walk onto `tile` today: walkable, open, not sealed to walkers, no body on it.
+func _open_to_her(tile: Vector2i) -> bool:
+	return _map.in_bounds(tile) and _map.is_walkable(tile) and not _map.is_closed(tile) \
+			and not _map.soft_sealed_tiles.has(tile) and not _map.is_obstructed(tile)
+
+## Whether a guard at `spot` notices her standing on `tile`'s centre: within `notice` of him, along
+## a clear line.
+func _noticed_from(spot: Vector2, tile: Vector2i, notice: float) -> bool:
+	var at := _map.tile_to_world(tile)
+	return at.distance_to(spot) <= notice and _map.clear_line(spot, at)
 
 ## How far from a roadblock's body its guard may stand when its band is all refused
 ## (`_roadblock_guard_spot()`): past the camera's half-width and its lead along the street from a
@@ -821,7 +951,7 @@ func _guards_the_roadblock(feet: Vector2, roadblock: EventInstance) -> bool:
 	var reach := _body_touch_reach(roadblock)
 	var distance := feet.distance_to(roadblock.body_position())
 	return distance >= robbery.inner_radius + reach and distance <= robbery.pursues_within + reach \
-			and _a_clear_line(feet, roadblock.body_position())
+			and _map.clear_line(feet, roadblock.body_position())
 
 ## Whether `step` is guarded where it waits rather than sending its trap after her: a chalk mark,
 ## whose robber stands in its alley (`_maybe_set_a_trap()`), and day 13's roadblock, a guarded place
@@ -1164,47 +1294,6 @@ func _a_clear_run(from: Vector2, to: Vector2) -> bool:
 	for i in steps + 1:
 		var point := from.lerp(to, float(i) / float(maxi(steps, 1)))
 		if not _map.is_walkable(_map.world_to_tile(point)):
-			return false
-	return true
-
-## Whether the straight line from `from` to `to` crosses only walkable ground, every tile it enters
-## asked and a line through a corner point exactly asking both tiles beside it: the line a waiting
-## pursuer notices her along (`EventInstance._clear_line_to()`, the same tile-boundary walk), asked
-## here of two points before anybody stands on either. *(leafy-puffin, inbox #648: "yes noticing
-## needs a clear line".)* Unlike `_a_clear_run()`'s samples, a line that clips a building's corner
-## by a pixel is blocked.
-func _a_clear_line(from: Vector2, to: Vector2) -> bool:
-	var tile := _map.world_to_tile(from)
-	if not _map.is_walkable(tile):
-		return false
-	var delta := to - from
-	var size := float(Tuning.TILE_SIZE)
-	var step := Vector2i(int(signf(delta.x)), int(signf(delta.y)))
-	var next_x := INF
-	var each_x := INF
-	if step.x != 0:
-		next_x = (float(tile.x + maxi(step.x, 0)) * size - from.x) / delta.x
-		each_x = size / absf(delta.x)
-	var next_y := INF
-	var each_y := INF
-	if step.y != 0:
-		next_y = (float(tile.y + maxi(step.y, 0)) * size - from.y) / delta.y
-		each_y = size / absf(delta.y)
-	while minf(next_x, next_y) <= 1.0:
-		if is_equal_approx(next_x, next_y):
-			if not _map.is_walkable(tile + Vector2i(step.x, 0)) \
-					or not _map.is_walkable(tile + Vector2i(0, step.y)):
-				return false
-			tile += step
-			next_x += each_x
-			next_y += each_y
-		elif next_x < next_y:
-			tile.x += step.x
-			next_x += each_x
-		else:
-			tile.y += step.y
-			next_y += each_y
-		if not _map.is_walkable(tile):
 			return false
 	return true
 
@@ -2547,8 +2636,8 @@ func _tick_lingering_rider(delta: float) -> void:
 ## to whichever roadblock she approaches — the one the red arrow points at — however often she
 ## changes target (`_move_the_task_guard_to_her_target()`), so the roadblock she walks up to is the
 ## guarded one whichever she picks, unless he is in her view from the moment she changes target to
-## the moment she arrives — and whichever she touches, he comes after her from wherever he stands
-## the moment she has (`_set_the_task_guard_on_her()`); and `_process()`'s own deadline check reads
+## the moment she arrives — and whichever she touches, he comes after her from wherever he stands,
+## the ring past its band included, the moment she has (`_set_the_task_guard_on_her()`); and `_process()`'s own deadline check reads
 ## `_elapsed` against `_day_length` — none of them reads `_rider`'s identity.
 ##
 ## Skipped while the nearest look-alike in reach is already the one it rides (`best == _rider`):
@@ -2597,9 +2686,11 @@ func _reach_distance(instance: EventInstance) -> float:
 ##   (`_guards_the_roadblock()`), as a guard over one of a line of roadblocks often is for the next:
 ##   nothing moves, and he is its guard from now on;
 ## - otherwise he is re-placed at the spot `_roadblock_guard_spot()` finds for it, in its band with a
-##   clear line to it, or, where every such spot is in her view, on the ring just past the band,
-##   drawn from the stream of his own (`_task_guard_moves`). A guard on that ring is moved again
-##   into the band as soon as a spot in it is out of her view.
+##   clear line to it and never on her only way to it, the far side first, or, where every such spot
+##   is in her view, on the ring just past the band, drawn from the stream of his own
+##   (`_task_guard_moves`). A guard on that ring is moved again into the band as soon as a spot in
+##   it is out of her view. On the ring no touch of the roadblock is within his notice.
+##   Where no spot round it leaves her a way past him, he stays where he is.
 ##
 ## **He moves only while both where he stands and where he goes are out of her view** — his whole
 ## body off the camera's view (`_guard_shows()`), and a spot off it and outside his own trigger range
@@ -2608,8 +2699,9 @@ func _reach_distance(instance: EventInstance) -> float:
 ## it. *(Proposed, not asked for: the player's "offscreen" does not choose between this and moving
 ## him as soon as he alone is off screen.)* So **he waits at the roadblock she approaches unless she
 ## changes target while he is in her view and keeps him in it until she arrives**: then he is still
-## at the one before, and only moving him in her view would put him at hers. Wherever he is, he
-## comes after her the moment she has done the task (`_set_the_task_guard_on_her()`).
+## at the one before, and only moving him in her view would put him at hers. **Wherever he is when
+## she has done the task — in the band, on the ring past it, at another roadblock — he comes after
+## her the moment she has** (`_set_the_task_guard_on_her()`).
 ##
 ## **A guard who has noticed her is not moved**, nor one whose chase is over: he is after her, or
 ## gone, and a move would take him off her or bring him back.
@@ -2637,7 +2729,7 @@ func _move_the_task_guard_to_her_target() -> void:
 	if _guard_shows(_task_guard.global_position):
 		return
 	var at := _roadblock_guard_spot(_task_guard_moves, target.body_position(),
-			_body_touch_reach(target), _player_position(), true)
+			_body_touch_reach(target), _player_position(), true, false)
 	if at == Vector2.INF:
 		return
 	var in_band := _guards_the_roadblock(at, target)
