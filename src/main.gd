@@ -1165,6 +1165,7 @@ func _on_finale_summary_continued() -> void:
 func _on_escape_title_start(mode: ControlsMode.Mode, _by_key := false,
 		side := ControlsMode.Side.LEFT) -> void:
 	_touch_controls.set_mode(mode, side)
+	ControlsMode.remember(mode, side)
 	if _escape_title_is_resume_gate:
 		_escape_title_is_resume_gate = false
 		_title.close()
@@ -1308,6 +1309,7 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 	# theirs that way.
 	EventBus.controls_chosen.emit(mode, by_key)
 	_touch_controls.set_mode(mode, side)
+	ControlsMode.remember(mode, side)
 	_in_the_title = false
 	_title.close()
 	if not _resume.is_empty():
@@ -1707,6 +1709,12 @@ func _add_route_lines() -> void:
 ## the command line, then the page's own URL, then `TAP`. This is only ever the **pre-title**
 ## answer: `_title` does not exist yet at this point in `_ready()`, and `main._on_title_start()`
 ## overrides it the moment a player actually presses one of the title screen's own buttons.
+##
+## **Except on the day-14 hand-over to the escape** (`_escape_from_a_run` with the title's answer
+## still in this process): that boot opens no title, so it keeps the mode and steering side the
+## player chose on the run's title (`ControlsMode.remember()`) rather than falling back to the rig's
+## default — the side is "permanently for the sitting" (2026-10-10). A game closed inside a section
+## and opened again has no answer in memory, and its title asks.
 func _add_touch_controls() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "TouchControls"
@@ -1715,7 +1723,10 @@ func _add_touch_controls() -> void:
 	_touch_controls = TOUCH_CONTROLS.instantiate()
 	_touch_layer.add_child(_touch_controls)
 	_touch_controls.rotated = _rotated
-	_touch_controls.set_mode(ControlsMode.resolve(), ControlsMode.resolve_side())
+	if _escape_from_a_run and ControlsMode.has_remembered():
+		_touch_controls.set_mode(ControlsMode.remembered_mode(), ControlsMode.remembered_side())
+	else:
+		_touch_controls.set_mode(ControlsMode.resolve(), ControlsMode.resolve_side())
 
 ## Adds the final pass before raising the root render target. The engine's final root blit is a
 ## nearest sample, so a larger target alone would discard three quarters of its pixels. The shader

@@ -400,9 +400,10 @@ focal point, on the side the title chose: the title's two joystick buttons stand
 focal points are, and pressing one makes that side steer and the other side **Run** for the
 sitting — until the title asks again, after a run ends *(2026-10-10: "selecting the left one will
 make the left side permanently joystick and the right side permanently run button (permanently for
-the sitting). vice versa on the right side")*. Nothing in play swaps the sides. From the first frame
-of play the steering side shows its ring, and the other focal point a same-size Run disc. Neither
-scheme is tied to touch hardware.
+the sitting). vice versa on the right side")*. Nothing in play swaps the sides, and the walk out
+in the escape keeps the scheme and the sides the run's title chose. From the first frame of play
+the steering side shows its ring, and the other focal point a same-size Run disc. Neither scheme is
+tied to touch hardware.
 
 The steering side reaches two thirds of the way from its focal point to Run's *(2026-10-10:
 "instead of splitting the in middle we can move it closer to the run button; although I wouldn't go

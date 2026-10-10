@@ -344,7 +344,10 @@ a thumb. `main._add_touch_controls()` gives `TouchControls` a starting mode and 
 joystick|joystick-right|tap`, then the page's own `?controls=`, then `TAP`) before the title screen
 exists at all — the answer a rig gets if it skips the title (`--no-title`, a screenshot rig) — and
 `main._on_title_start()` overrides both the moment a player actually presses a button. The side is
-never saved: it lasts until the title asks again. `resolve()`'s command-line door stays behind `DevFlags.enabled()`;
+never saved: it lasts until the title asks again. The day-14 hand-over to the escape reloads the
+scene and opens no title, so `ControlsMode.remember()` keeps the title's answer in static variables
+for the rest of the process, and that boot's `_add_touch_controls()` takes it instead of
+`resolve()`. `resolve()`'s command-line door stays behind `DevFlags.enabled()`;
 its query door stays behind `DevFlags.live_debug_requested()`, so a release page's own
 `?debug=1&controls=` reaches it too (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the
 debug flags").

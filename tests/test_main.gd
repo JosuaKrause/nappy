@@ -429,6 +429,11 @@ func _test_on_title_start_sets_the_controls_mode(t) -> void:
 			[ControlsMode.Mode.TAP, true]],
 			"and the counter hears which input began each run, a key as a key")
 
+	# The last answer was a key's tap scheme; a joystick-right player's run is the one that matters
+	# for the hand-over below.
+	main._on_title_start(ControlsMode.Mode.JOYSTICK, false, ControlsMode.Side.RIGHT)
+	_test_the_title_choice_survives_the_handover_to_the_escape(t)
+
 	main._status.free()
 	main._title.free()
 	main._edge_layer.free()
@@ -436,6 +441,31 @@ func _test_on_title_start_sets_the_controls_mode(t) -> void:
 	main._city.free()
 	main.free()
 	stroller.free()
+
+## **A joystick-right player reaches the escape still joystick-right.** *(2026-10-10, the player:
+## "permanently for the sitting".)* The day-14 hand-over reloads the scene and the escape's boot
+## opens no title, so its fresh controls take the title's answer this process remembers rather than
+## the rig's default; an ordinary boot, whose title asks again, still starts from the rig's default.
+## Called by `_test_on_title_start_sets_the_controls_mode` right after a joystick-right title press.
+func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
+	var escape: Node2D = MAIN_SCRIPT.new()
+	escape._escape_from_a_run = true
+	escape._add_touch_controls()
+	t.check(escape._touch_controls.controls_mode() == ControlsMode.Mode.JOYSTICK
+			and escape._touch_controls.run_button_center() == TouchControls.FOCUS_LEFT,
+			"the escape's controls keep the joystick, steering from the right with Run on the left")
+	escape.free()
+
+	var fresh: Node2D = MAIN_SCRIPT.new()
+	fresh._add_touch_controls()
+	t.check(fresh._touch_controls.controls_mode() == ControlsMode.Mode.TAP,
+			"a boot that opens its title starts from the rig's default, and the title asks again")
+	fresh.free()
+
+	# Process-wide state, not scoped to this test — reset for every later suite's own escape boot.
+	ControlsMode._remembered = false
+	ControlsMode._remembered_mode = ControlsMode.Mode.TAP
+	ControlsMode._remembered_side = ControlsMode.Side.LEFT
 
 ## The correction to M153 the same evening: the graph's independence is from `4`, not from the
 ## title screen, which still hides everything about a player who is not there — this graph

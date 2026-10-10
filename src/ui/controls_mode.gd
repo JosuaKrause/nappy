@@ -31,6 +31,33 @@ enum Mode { JOYSTICK, TAP }
 ## `Mode.TAP`, where nothing is drawn to choose between.
 enum Side { LEFT, RIGHT }
 
+## The title's last answer this sitting, kept across a scene reload. `static var`s on the class
+## rather than members on a node, for the reason `TitleScreen._restarted_at_msec` is one:
+## `reload_current_scene()` frees every node, and the script class is never unloaded, so this is the
+## one place the answer survives the day-14 hand-over to the escape, whose boot builds its controls
+## afresh *(2026-10-10, the player: "permanently for the sitting")*. Process memory only, never saved:
+## a page opened again asks on its title. `remember()` writes it; `main._add_touch_controls()` reads
+## it on the escape's hand-over boot alone, since every other boot's title asks anyway.
+static var _remembered := false
+static var _remembered_mode := Mode.TAP
+static var _remembered_side := Side.LEFT
+
+## Keeps the title's answer for the rest of the sitting — see `_remembered`.
+static func remember(mode: ControlsMode.Mode, side: ControlsMode.Side) -> void:
+	_remembered = true
+	_remembered_mode = mode
+	_remembered_side = side
+
+## Whether the title has answered this sitting — see `_remembered`.
+static func has_remembered() -> bool:
+	return _remembered
+
+static func remembered_mode() -> ControlsMode.Mode:
+	return _remembered_mode
+
+static func remembered_side() -> ControlsMode.Side:
+	return _remembered_side
+
 static func resolve() -> Mode:
 	var word := DevFlags.controls_override()
 	if word == "":
