@@ -38,6 +38,7 @@ func run(t) -> void:
 	_test_an_influence_from_off_screen_waits_to_be_seen(t)
 	_test_a_chase_or_a_catch_is_always_an_influence(t)
 	_test_influenced_follows_the_real_catch_and_hold(t)
+	_test_a_catch_on_the_frame_a_door_releases_her_counts(t)
 	_test_a_static_row_is_seen_and_never_influenced(t)
 	_test_two_instances_are_two_encounters(t)
 	_test_runs_less_than_the_gap_apart_are_one_bout(t)
@@ -411,6 +412,46 @@ func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
 	manager._instances.clear()
 	mother.free()
 	post.free()
+	manager.free()
+
+## *(calm-pelican.)* A hut inspection sets her down within reach of a cyclist past its warning on
+## the frame `_check_hard_fails()` strikes her, after that frame's watch: the day ends and the game
+## pauses before the watch looks again. The manager tells the watch of the catch itself.
+func _test_a_catch_on_the_frame_a_door_releases_her_counts(t) -> void:
+	_clear()
+	var manager := EventManager.new()
+	manager._map = CityMap.new()
+	t.add_child(manager)
+	manager.set_physics_process(false)
+	manager._day = DAY
+	manager._encounters.day = DAY
+	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	t.add_child(stroller)
+	stroller.set_physics_process(false)
+	manager._player = stroller
+	var cyclist := _instance(t, "cyclist", Vector2.ZERO)
+	manager._instances.append(cyclist)
+	cyclist.resume(cyclist.def.telegraph_time + 0.1, 0.0, 0.0)
+	var reach := cyclist.def.lethal_reach()
+	# Seen from outside its reach, the watch's tick done for the frame.
+	stroller.global_position = Vector2(0.0, reach + 40.0)
+	manager._look_through_the_camera()
+	manager._watch_the_encounters(STEP)
+	manager._check_hard_fails()
+	t.check(not cyclist.is_telegraphing() and not manager._hard_failed and _seen.size() == 1
+			and _influenced.is_empty(),
+			"seen outside its reach, past its warning, no catch and no influence yet (%s)"
+			% [_influenced])
+	# The door sets her down inside its reach; the same frame's hard-fail check strikes her.
+	stroller.global_position = Vector2(0.0, reach - 2.0)
+	manager._check_hard_fails()
+	t.check(manager._hard_failed, "the cyclist strikes her where the door set her down")
+	t.check(_influenced == ["%d:cyclist:seen" % DAY],
+			"and the catch is counted without another watch frame (%s)" % [_influenced])
+	manager._instances.clear()
+	manager._player = null
+	cyclist.free()
+	stroller.free()
 	manager.free()
 
 ## *(Inbox #577: "the static things question was meant for telemetry. we need to record seen for
