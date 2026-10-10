@@ -222,17 +222,22 @@ new marble bag with x holdings place the ensured item in the bag fill the remain
 *drawing* from the currently active bag"). A rigged bag of `x` marbles holds what is ensured and
 `x - 1` taken from the bag she was drawing from; it is drawn first, and that bag then carries on with
 the rest. `EventDirector.rig_her_route()` moves that many of the owed events to the head of the
-list, so the guarantee is about what is placed on her route. Two rigs stand:
+list, so the ensured marble is one of the next `x` events handed out on her route. A moment's marble
+is met as it is handed out; a place's is handed to her walk, and the place is met once her walk
+finds it a site, which can be after an event behind it, or never. Two rigs stand:
 
-- **After day 6's mark, a man shouting is one of the next two** (`Tuning.TASK_CONTACT_WITHIN_THE_NEXT`;
+- **After day 6's mark, a man shouting's marble is one of the next two** (`Tuning.TASK_CONTACT_WITHIN_THE_NEXT`;
   inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "maybe let's make the other rigged bags smaller, too"). A row the director does not
-  otherwise site is a place, so when its marble comes up it is put on her route the way day 3's
-  fire is (`EventScheduler.WalkSiting.ahead_of()`): on the branch of the day's routes she is
+  otherwise site is a place, so when its marble comes up it is handed to her walk to site, the way
+  day 3's fire is (`EventScheduler.WalkSiting.ahead_of()`): on the branch of the day's routes she is
   walking, past the streaming band so it is never seen to appear, under every acceptance rule a dawn
-  placement is, and moved ahead of her again if she turns away before it has been in the world. He
+  placement is, and moved ahead of her again if she turns away before it has been in the world. Its
+  marble spends its turn the moment it is drawn, so a place with no legal site yet — she is off the
+  day's routes, or walking home inside the streaming band of the branch's end — holds up none of the
+  events behind it, a return patrol included, and one that never finds a site is not met. He
   is a look-alike the day's any-instance contact follows her onto, besides the one her reading the
   mark spawns near it.
-- **After day 11's mark, a second loudspeaker mast is one of the next two**
+- **After day 11's mark, a second loudspeaker mast's marble is one of the next two**
   (`Tuning.MAST_WITHIN_THE_NEXT`), put on her route the same way on the sidewalk or square, besides
   the mast near the mark the task points at first (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "let it point to the closest one
   first"). It is a mast like the one `EventManager.queue_a_mast()` adds, named by its foot.

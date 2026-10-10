@@ -187,13 +187,15 @@ func _take(count: int, keep_out: Array) -> Array:
 	var taken := []
 	_picked = -1
 	var at := 0
-	var filled := false
+	# The fill an empty queue starts with is not the extra one: a queue that starts empty may be
+	# filled twice, one that does not once.
+	var fills_left := 2 if _queue.is_empty() else 1
 	while taken.size() < count:
 		if at >= _queue.size():
-			if filled or _ordinary.is_empty():
+			if fills_left <= 0 or _ordinary.is_empty():
 				break
 			_queue.append(_ordinary.duplicate())
-			filled = true
+			fills_left -= 1
 		var bag: Array = _queue[at]
 		var open: Array[int] = []
 		for i in bag.size():
