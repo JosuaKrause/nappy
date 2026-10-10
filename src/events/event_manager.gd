@@ -772,6 +772,8 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 		facing := Vector2.RIGHT) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, path, facing, _map)
+	# The lights a car that drives stops at, the crowd's own (`EventInstance.signals`).
+	instance.signals = _city.signals
 	_city.add_entity(instance)
 	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and
@@ -1303,7 +1305,8 @@ static func where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
 ## `SOON` is a lethal event still telegraphing whose radius already covers her — the thing has
 ## not happened yet and walking out is the answer, which is exactly what the fairness contract
 ## promises her time to do. `NOW` is one of them live with her inside its reach: one step left
-## between her and the end of the day.
+## between her and the end of the day. A patrol car that drives (`EventDef.drives`) raises `SOON`
+## the way a crowd car's horn does, while it is closing on her in its lane.
 ##
 ## **Raising it for any telegraphing event whose radius reaches her is the mistake to avoid.** Most
 ## of the catalogue is not a `hard_fail`, and for those the mark would mean *a number is about to
@@ -1312,7 +1315,7 @@ static func where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
 ## the same rule — **a cue that marks everything says nothing** — except that this is the one cue in
 ## the game that cannot afford it, because it is the only one that gives an *instruction*.
 ##
-## The cost of that narrowness is real and is the right cost: six rows in the whole catalogue are
+## The cost of that narrowness is real and is the right cost: few rows in the whole catalogue are
 ## lethal, so the mark is rare, and it is rarest early. That is not the cue being broken, it is the
 ## cue being honest about a game whose first days are barely dangerous.
 ##
@@ -1338,6 +1341,13 @@ func _warn_about_the_ground_she_is_on() -> void:
 	if not body:
 		return
 	for instance in _instances:
+		# A car that drives warns the way a crowd car's horn does: `SOON`, while it is closing on her
+		# in its lane on the carriageway (`EventInstance.closes_on()`), which is the car's own
+		# contract — `Tuning.CAR_HORN_TIME` before its strike.
+		if instance.def.drives:
+			if instance.closes_on(here):
+				body.warn(Stroller.Alert.SOON, WARNING_HOLD, WARNING_SOURCE)
+			continue
 		if instance.is_finished or not instance.def.hard_fail:
 			continue
 		var gap := instance.global_position.distance_to(here) - instance.def.inner_radius
@@ -1724,8 +1734,14 @@ func _tell_them_where_she_is() -> void:
 	var running: bool = stroller != null and stroller.run_excess_ratio() > 0.0
 	var awake: bool = stroller == null or stroller.baby_is_awake()
 	var strongest := _strongest_barrier_at(_player.global_position)
+	# Her pram's own body, on her circumference along her facing — what a car that drives keeps clear
+	# of as well as her (`EventInstance.pram_at`). None while she carries the baby.
+	var pram := Vector2.INF
+	if stroller != null and not stroller.carrying:
+		pram = stroller.global_position + stroller.facing * Tuning.PLAYER_BODY_RADIUS
 	for instance in _instances:
 		instance.player_at = _player.global_position
+		instance.pram_at = pram
 		instance.player_running = running
 		instance.baby_awake = awake
 		instance.outranked_by_a_stronger_barrier = \

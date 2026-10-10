@@ -274,7 +274,16 @@ boot rather than only on the street** if the two stop agreeing.
 
 **If anything else ever becomes lethal without being in the catalogue, it needs its own stated
 contract in the same place.** A hard fail with no written contract is a bug waiting to be called a
-difficulty setting.
+difficulty setting. **The patrol car is in the catalogue and keeps this contract instead of a
+telegraph** (`EventDef.drives`): it strikes only on the carriageway, only ahead of its nose, and
+warns anybody standing in its lane `CAR_HORN_TIME` of its own travel before the strike, so
+`validate_traffic()`'s check is its check too. It also gives way where the crowd's cars do — short
+of a zebra she is waiting at off the main road, and at a red light — and never inside a junction
+box: for a zebra beyond the box it holds at the box's entry line, since the crossing traffic cannot
+see its body. **Decide that before the nose reaches the box**, from the box's own sight and
+wherever she waits along that zebra: a car that looks for the far zebra through the zebra's own
+200px sight circle sees her standing out on its second tile only once its nose is in the box, counts
+itself committed, and stands there.
 
 **The main road replaces the courtesy with a clock, so the clock is the contract.** Traffic on the
 spine does not give way at a zebra — what stops it is the light — so the thing standing between her

@@ -172,6 +172,9 @@ const _HARD_FAIL_TEXT := {
 	"firefight": "You walked into the middle of it.",
 	# Not an event, and the only hard fail the player can walk into rather than be caught by.
 	"car_strike": "It never slowed down. You were in the road.",
+	# The patrol car strikes the way a car does, in front of it on the carriageway, so its line is
+	# the car's with the car named.
+	"police_patrol": "The patrol car never slowed down. You were in the road.",
 	# Act I's two, and they are deliberately the most ordinary sentences in this table:
 	# the danger act I was missing is not sinister, it is a street.
 	"cyclist": "The bell, and then the bike. She is screaming.",

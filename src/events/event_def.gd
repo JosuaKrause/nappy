@@ -455,7 +455,7 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## placement, rather than exempted from them**: nothing announces its coming before she can see it,
 ## and it is met as it comes. False on `loose_dog` and `cat_dash` (the player's own), `alley_mouse`
 ## (across its alley, not at her), `pigeon_flock` (goes up where she walks in) and `police_patrol`
-## (slower than a walk, never ends the day). **The telegraph contract still holds its in-world
+## (slower than a walk; it ends the day only as a car does, warned as a car is — see `drives`). **The telegraph contract still holds its in-world
 ## telegraph** — the cat's crouch, the mouse's and the flock's wait, the patrol's approach — as it
 ## holds a standing row's (a lorry backing in, a firefight, a raid). Only the loose dog, met with its
 ## telegraph already spent, has none for the contract to hold (`validate()`).
@@ -656,7 +656,8 @@ enum HeatResponse {
 	## Answers to nothing. Everything in act I, and the default: a cat does not care who you know.
 	NONE,
 	## **More of them, and more expensive to stand near, and past a threshold it comes over.**
-	## The non-lethal rung: it never gains `hard_fail`, whatever the heat.
+	## The rung that does not hunt: it never gains `hard_fail`, whatever the heat. (The patrol that
+	## carries it strikes as a car does at every heat — `drives` — which is not a rung.)
 	PRESSES,
 	## **It stops being a place and starts being a hunter.** The lethal rung.
 	HUNTS,
@@ -726,6 +727,31 @@ enum HeatResponse {
 ## life. Set it on something placed where there is no lattice to clear, or accept that the ground
 ## is reserved the whole time.
 @export var solid_once_it_starts := false
+
+## **A car: solid at its own `shape` in every state, and lethal only in front of it while it
+## drives.** *(azure-koala, inbox #601: "police cars don't have a hitbox"; leafy-puffin, inbox
+## #648, offered "solid in every state, lethal only in front while driving": "yes to the police car
+## hitbox".)* `police_patrol` carries it, and so does every copy of it.
+##
+## **It is the one body that moves, and it answers the reason a moving thing is otherwise exempt
+## from being solid** — a moving wall pins her. `EventInstance` never moves the body into her: a
+## step or a turn that would bring it into contact with her or her pram is refused and the car
+## stands where it is until she moves, a car stopping for her rather than a wall shoving her. She
+## is stopped by it the way she is stopped by anything solid, and nothing follows her into a wall.
+##
+## **`obstructs_radius` stays zero, because it closes no ground**: it drives down a carriageway she
+## walks round it on. So the planners' disc, the crowd's per-tile record and the director's refusal
+## of a director-sited body know nothing about it, and the body is `shape` itself, laid along the
+## car's heading (`EventInstance._solid_axis()`).
+##
+## **What kills is not the body**: a strike area ahead of the nose, only while it drives its route,
+## and only with her on the carriageway (`EventInstance.is_lethal_at()`) — a crowd car's own
+## contract, the painted carriageway she chooses to step onto and a warning `Tuning.CAR_HORN_TIME`
+## of its travel ahead of the strike (`EventInstance.closes_on()`), which `Tuning.validate_traffic()`
+## holds against the time it takes to walk off the carriageway. `hard_fail` stays false: every rule
+## it drives — a route wall, a field kept clear, the doubled telegraph margin — is about a place
+## that ends the day, and this is a car on a road.
+@export var drives := false
 
 ## Which lane of a two-tile pavement an event wants.
 ##
@@ -1032,9 +1058,10 @@ func at_heat(level: int) -> EventDef:
 				# notices her rather than from dawn. Cold, this row has none and simply drives to
 				# the end of its route.
 				hot.duration = Tuning.HEAT_INVESTIGATE_SECONDS
-			# The non-lethal rung stays non-lethal at every level. Stated rather than assumed,
-			# because the whole instruction this milestone came from is that the ladder has two
-			# rungs and only the top one kills.
+			# The rung stays off the hard-fail ladder at every level. Stated rather than assumed,
+			# because the ladder has two rungs and only the top one hunts her: a patrol car kills
+			# only as a car does, in front of it while it drives its route (`drives`), and never
+			# while it comes over to investigate.
 			hot.hard_fail = false
 		HeatResponse.HUNTS:
 			# Below its own threshold a `HUNTS` row is untouched. Population and intensity are
@@ -1300,6 +1327,24 @@ func validate() -> bool:
 					+ ("sit inside its own field (inner %.0f <= outer %.0f)"
 					% [inner_radius, outer_radius]))
 			return false
+	# **A car that drives is a body that moves and a strike that is not the body** — see `drives`.
+	# Each half-set version is a row the rules cannot read: a car with no route stands for ever and
+	# its strike never fires, a car with no shape has no body to be, one that also obstructs would be
+	# a moving closure every planner reads as standing ground, and one that is also `hard_fail` would
+	# kill twice over, once by its whole field's core from behind and beside it.
+	if drives:
+		if not mobile or speed < Tuning.CAR_STRIKE_MIN_SPEED or shape == null:
+			push_error("event '%s' drives but has no route, speed (%.0f) or shape to drive with"
+					% [id, speed])
+			return false
+		if obstructs_radius > 0.0 or hard_fail:
+			push_error("event '%s' drives and is also %s: a car closes no ground and kills only "
+					% [id, "an obstruction" if obstructs_radius > 0.0 else "hard_fail"]
+					+ "in front of it")
+			return false
+		# Its warning is the crowd car's contract, `CAR_HORN_TIME` of its own travel ahead of the
+		# strike whatever its speed, so `Tuning.validate_traffic()`'s check on boot is its check:
+		# nothing about one row's numbers can break it.
 	# *(busy-quail, inbox #569: "1s warning should be enough".)* A badge up alone is up for at most
 	# `Tuning.WARNING_ALONE_MAX`, whatever the row.
 	if warns_before_it_exists() and warned_for() > Tuning.WARNING_ALONE_MAX + 0.001:

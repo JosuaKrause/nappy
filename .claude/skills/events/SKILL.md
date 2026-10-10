@@ -138,7 +138,8 @@ chase lasts `Tuning.PURSUIT_TIME`, a long cap (30s), so walking away loses by co
 ends it at `PURSUIT_SHAKEN_OFF`'s rate.
 
 **Not warned first: a patrol sent down the road and a `MAP` mover** (`military_convoy`). The patrol
-does not telegraph its coming at all (slower than a walk, never ends the day); the planned convoy
+does not telegraph its coming at all (slower than a walk; its strike is a car's, warned the way a
+car warns — "A car that drives" below); the planned convoy
 telegraphs in the world (4.43s, with a badge because 120px/s is faster than a walk) as a place the
 day planned, not something sent at her. **Do not add a row to this list, and do not cite it as the
 reason something else is not warned first.** What stands in the way of it is `docs/EVENTS.md`,
@@ -170,10 +171,37 @@ draws a blocking object at exactly the width it obstructs for the same reason in
 direction.
 
 Four exemptions, each written down in `docs/EVENTS.md`, "Solid things are solid": anything
-**mobile** (a moving wall pins her), anything **director-sited** (`validate()` refuses it), anything
-with no silhouette, and a **flock** (`validate()` refuses that too — several bodies wheeling inside
-one disc have no silhouette to be half of, and being walked into is the event).
-`tests/test_events.gd` requires everything else to have one.
+**mobile** (a moving wall pins her) but a car that drives, below, anything **director-sited**
+(`validate()` refuses it), anything with no silhouette, and a **flock** (`validate()` refuses that
+too — several bodies wheeling inside one disc have no silhouette to be half of, and being walked into
+is the event). `tests/test_events.gd` requires everything else to have one.
+
+## A car that drives is a body that moves, and its strike is not the body
+
+`EventDef.drives` (`police_patrol` and every copy of it) is the one body that moves, and it answers
+the pin the mobile exemption is for by **never moving into her**: `EventInstance._drive()` takes
+back any step or turn that would bring the body into her or her pram, and the car stands for her
+until she is out of its way. Its `obstructs_radius` stays zero — it closes no ground — and its
+lethality is **a strike area ahead of its nose, only while it drives its route, only with her on
+the carriageway**, reaching `Tuning.PATROL_STRIKE_LEAD` past the touch so a car driving its nose
+into her strikes rather than stands. It gives way where the crowd's cars do — short of a zebra she
+is waiting at off the main road, and at a red light — so the zebra stays the safe way over. Four
+traps:
+
+- **A strike stated over the touch alone never fires**, because the body stops her first — the
+  same switched-off kill as a lethal radius inside a body. The lead past the touch is what keeps it
+  live.
+- **A car that has stood must not pull away into her.** It goes on standing while she is in its
+  lane within its warning, so every strike comes after `Tuning.CAR_HORN_TIME` of warning or from
+  her stepping into a moving car's path — the crowd car's contract, the carriageway and the horn,
+  which is the one it keeps instead of a telegraph (**crowd-traffic**, "The traffic fairness
+  contract").
+- **A heading change that newly brings her inside its warning's reach is refused like a step into
+  her.** A turn moves nothing, so the body check passes it — and the raid's pacing car reversing at
+  the end of its beat turns her from behind a car driving away into the front of one, struck with
+  next to no warning. The car stands instead.
+- **A car leaving must not vanish beside her.** A departure into her is refused every frame, so a
+  car that ends a visit to her turns away first and is gone only once she could not be watching.
 
 **A body is a route cost, not a closure.** `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
 `obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can

@@ -18,13 +18,21 @@ heading or a street; day 8 sends a policeman and day 9 a guardsman; a tear and i
 nothing the day's event bags draw; walking away does not end his chase before the cap. `docs/MECHANICS.md` (the tears'
 pursuit), `docs/EVENTS.md` (the tear's patrol), `docs/GRAPHICS.md` (the policeman bound, no longer
 only prepared) and `docs/TELEMETRY.md` (the counter's `poster-pursuit`, one per pursuer sent) say
-what is true. The README has the proposals, and one question is open for whoever picks it up:
-**whether his catch ends the day**, as the robber's does, or costs her something less; the police
-car it replaces cannot end the day. The filer would pick ending the day, since "a proper pursuer"
-reads as one like the robber, whose drawing his mirrors.
+what is true. The README has the proposals. **His catch ends the day**, as the robber's does: asked whether it
+ends the day or costs calm and ends the chase, the player chose "Ends the day (Recommended)"
+([merry-stork](../../playtests/2026-10-10-merry-stork.md)).
+
+**The investigating police car gets out, too.** On a hot run a patrol stops patrolling and comes
+over to investigate her; built in [sunny-finch](../../decisions/2026-10-07-sunny-finch.md), it
+drives up to her and stops against her. The player (merry-stork): "an investigating police car
+should not leave the street. it should stop if close to her and a policeman should emerge and
+pursue her". So the investigating car stays on the carriageway, stops once it is close to her, and
+the same pursuer on foot (a policeman, a guardsman from day 9) gets out of it and pursues her, his
+catch ending the day as above. *Read as, open to correction:* "close" is the distance at which the
+car today stops coming over, and the policeman owes the pursuit contract the robber does from the
+moment he gets out (in view, so the badge is not the off-screen one).
 
 [azure-koala](../../playtests/2026-10-07-azure-koala.md), finding 7, re-reports a chasing police
 car moving like a person and asks for the police sprite. Reproduce the triggering pursuit before
 assuming it is the poster's: cover other police pursuit paths affected by that report, or give
-them an explicit owner. Ordinary driving patrols stay vehicles, as the README proposes. The observation that the car
-is not lethal leaves the catch question above open; ask it before implementing a consequence.
+them an explicit owner. Ordinary driving patrols stay vehicles, as the README proposes. The catch is answered above.
