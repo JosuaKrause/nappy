@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "name": "The alley robber does not notice her round the building's corner",
+  "seed": 11,
+  "extent": {
+    "scope": "full"
+  },
+  "city": {
+    "context_seed": 1917501
+  },
+  "anchors": {
+    "start": {
+      "world": [
+        4572,
+        4210
+      ]
+    },
+    "robber": {
+      "tile": [
+        135,
+        133
+      ]
+    }
+  },
+  "setup": {
+    "tutorial_complete": true,
+    "day": 8,
+    "parent": "mother",
+    "player": {
+      "at": "start",
+      "facing": "west"
+    },
+    "events": [
+      {
+        "name": "robber",
+        "row": "alley_robbery",
+        "at": "robber"
+      }
+    ]
+  },
+  "playback": {
+    "settled_camera": true,
+    "walk": "3.0w",
+    "duration": 2.8,
+    "capture_at": 1.75,
+    "observations": [
+      {
+        "tick": 52,
+        "subject": "robber",
+        "condition": "visible"
+      },
+      {
+        "tick": 52,
+        "subject": "robber",
+        "condition": "near_player",
+        "distance": 140
+      },
+      {
+        "tick": 52,
+        "subject": "player",
+        "condition": "moving"
+      },
+      {
+        "tick": 80,
+        "subject": "robber",
+        "condition": "visible"
+      }
+    ]
+  }
+}

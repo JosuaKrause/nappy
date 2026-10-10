@@ -562,7 +562,7 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 			print("[test_route_bag] siting the route mast asked %d tiles of %d tiles of ground"
 					% [siting.mast_checks, ground.size()])
 			var ahead := siting._the_way_she_is_going(her_at_siting, heading_at_siting, INF)
-			var offered := siting._faces_on(mast, ahead, her_at_siting, 0.0, INF)
+			var offered := siting._its_ground_on(mast, ahead, her_at_siting, 0.0, INF)
 			var door_points := MastSites.possible_door_points(map)
 			var refused_offered := 0
 			for at in offered:

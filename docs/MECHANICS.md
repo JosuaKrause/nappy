@@ -1019,12 +1019,26 @@ a question about the one tile the next step would land on.
 "Only if the Robert touches the player should it end instantly".)* A pursuer's catch is its reach
 **and** a clear line — `EventInstance.is_lethal_at()` asks `_clear_line_to()` whether the straight
 line from it to her crosses any ground `CityMap.is_walkable()` refuses, every tile the line enters,
-so within reach across a building's corner is not a catch. **Its lunge does not ask**: it still
-fires at the stand-off with a building between them, and the chase comes round the wall. Holding the
-lunge until the line clears would clamp the approach at zero — at an alley mouth his notice reaches
-her through the building, the line clears with her already well inside the stand-off, and the lunge
-would fire from a fraction of it. The reach itself is unchanged, and only a pursuer asks — every
-other `hard_fail` row's catch is still the straight-line distance.
+so within reach across a building's corner is not a catch. The reach itself is unchanged, and only
+a pursuer asks — every other `hard_fail` row's catch is still the straight-line distance.
+
+**Nor does it notice or lunge through them.** *(leafy-puffin, inbox #648: "yes noticing needs a
+clear line"; mossy-beaver, inbox #650: "how can it pursue without noticing? obviously it needs a
+clear line".)* A waiting pursuer notices her within `pursues_within` only along the same clear line,
+and its lunge at the stand-off asks for it too. A lunge the wall holds back is not simply deferred
+until the line clears, which would clamp the approach at zero — at an alley mouth the line clears
+with her already well inside the stand-off, and it would fire from a fraction of it. Instead the
+pursuer holds the door guard's ground (`EventDef.sets_off_beside_her`): it stands while she is
+nearer than the stand-off, follows at the stand-off once she is further, and lunges the moment she
+is back at the full stand-off with the line clear. **Its notice does not run out while she is inside
+the stand-off**, since a notice ending there would start the chase from a fraction of it, the same
+trap reached by standing still; it runs on while she is outside, and if it ends there the chase
+starts from the stand-off as well. So the chase starts from the full stand-off however she came. A
+held pursuer she stays beside never sets off: it stands turned toward her with the doubled red caret
+up and its field charging her, and the way out is the walk the contract was written for. A waiting
+robber is drawn facing her only along the same clear line, so he does not visibly track her round a
+corner. The doubled red caret does not ask for the line: it projects the straight-line reach, so it
+can read red before the pursuer has come round a corner.
 
 ### The stand-off, and what a contract in seconds cannot say
 

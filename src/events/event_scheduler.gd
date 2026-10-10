@@ -1070,17 +1070,19 @@ class WalkSiting extends RefCounted:
 		_leave_alone = EventScheduler._calm_to_leave_alone(map, used_calm)
 		_doors = doors
 
-	## A placement for `def` on a building face **on the branch of the day's route tree she is
-	## walking**, between `near` and `far` pixels ahead of her measured *along that route*, or `null`
-	## when there is nothing legal there — which is a retry as she walks and never a placement made
-	## anyway.
+	## A placement for `def` on a tile of its own ground **on the branch of the day's route tree she
+	## is walking** — whatever `_ground_as_a_set()` offers the row: a building face for day 3's fire
+	## and the poster crews, a sidewalk for a man shouting, a mast's site for a mast — between
+	## `near` and `far` pixels ahead of her measured *along that route*, or `null` when there is
+	## nothing legal there — which is a retry as she walks and never a placement made anyway.
 	##
-	## **The path is the day's route tree, and a place off it is never a site.** *(PLAYTEST-119: "the
-	## fire needs to spawn on the current path the player is on — moving it around works but valid
-	## spawn locations are only on the path".)* A straight line from her is the wrong measure twice
-	## over: it offers faces on streets her route never reaches, and it prices a face round the corner
-	## as nearer than it is to walk to. So the window is walked cell by cell down the route, through
-	## its corners and its junctions, and only the faces standing on those cells are offered.
+	## **The path is the day's route tree, and a place off it is never a site.** *(PLAYTEST-119:
+	## "the fire needs to spawn on the current path the player is on — moving it around works but
+	## valid spawn locations are only on the path".)* A straight line from her is the wrong measure
+	## twice over: it offers tiles on streets her route never reaches, and it prices a tile round
+	## the corner as nearer than it is to walk to. So the window is walked cell by cell down the
+	## route, through its corners and its junctions, and only the tiles of the row's ground on those
+	## cells are offered.
 	##
 	## **The far end is read along the route and the near end is a straight line**, and they are two
 	## different questions rather than one measured twice. Far is how much more walking there is
@@ -1094,10 +1096,10 @@ class WalkSiting extends RefCounted:
 	## walked, so before she commits both are on offer; once she has taken one, her own cell carries
 	## only that one and `EventDirector._is_no_longer_on_her_way()` moves an unseen fire off the other.
 	##
-	## **A window with no face in it widens along the same branch before anything else is
-	## considered** — to the end of the route rather than off the tree — because "further along the
-	## way she is going" is still the way she is going, and the alternative on a short branch is a
-	## fire that waits all day. Nothing else about the candidate bends.
+	## **A window with none of the row's ground in it widens along the same branch before anything
+	## else is considered** — to the end of the route rather than off the tree — because "further
+	## along the way she is going" is still the way she is going, and the alternative on a short
+	## branch is a fire that waits all day. Nothing else about the candidate bends.
 	##
 	## `already` is everything else the day has planned, for spacing and for the walkability question
 	## below. **The plan being sited is not in it** — a row being moved off a position it has not yet
@@ -1109,7 +1111,7 @@ class WalkSiting extends RefCounted:
 		var ahead := _the_way_she_is_going(at, heading, far)
 		if ahead.is_empty():
 			return _waited("she is off the day's routes")
-		var offered := _faces_on(def, ahead, at, near, far)
+		var offered := _its_ground_on(def, ahead, at, near, far)
 		if offered.is_empty():
 			# Widened along the same branch: twice the band first, then the whole of the route she
 			# is on. Stepped rather than straight to the end, because the widening is for "a little
@@ -1118,16 +1120,16 @@ class WalkSiting extends RefCounted:
 			# end of a walk she has not decided to take yet.
 			for wider in [far * 2.0, INF]:
 				ahead = _the_way_she_is_going(at, heading, wider)
-				offered = _faces_on(def, ahead, at, near, wider)
+				offered = _its_ground_on(def, ahead, at, near, wider)
 				if not offered.is_empty():
 					break
 			if offered.is_empty():
-				return _waited("no building face on the branch ahead of her")
+				return _waited("no tile of its ground on the branch ahead of her")
 			widened += 1
 		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
 				_leave_alone, _corridor, _doors)
 		if not candidate:
-			return _waited("every face on her branch broke a placement rule")
+			return _waited("every tile of its ground on her branch broke a placement rule")
 		if not _still_leaves_a_park_reachable(already, candidate, at):
 			return _waited("the site would close her way out")
 		# A crew faces the wall it pastes, its back to the street. `_build_placement` turned it by
@@ -1311,7 +1313,7 @@ class WalkSiting extends RefCounted:
 	## The cells are asked for their tiles rather than the ground pool being scanned for its cells,
 	## which is what keeps a refused attempt off the frame budget: a window is a few dozen cells and
 	## the pool is every sidewalk in the city.
-	func _faces_on(def: EventDef, ahead: Dictionary, at: Vector2, near: float,
+	func _its_ground_on(def: EventDef, ahead: Dictionary, at: Vector2, near: float,
 			far: float) -> Array[Vector2i]:
 		var pool := _ground_as_a_set(def)
 		var a_mast := def.id == MAST_ROW
@@ -1337,16 +1339,16 @@ class WalkSiting extends RefCounted:
 					offered.append(tile)
 		return offered
 
-	## The row a mast is, for `_faces_on()`.
+	## The row a mast is, for `_its_ground_on()`.
 	const MAST_ROW := "loudspeaker"
 
-	## **A mast is offered only ground a mast site would be** (`MastSites._is_eligible()`: off the home
-	## street, its field off a calm interior and off every place a region door could stand), the same
-	## refusal day 11's mast near the mark is under — a mast is never on the home street (M180, the
-	## masts), whichever way it is put down. Asked only of the tiles `_faces_on()` offers, never of the
-	## whole ground: over every sidewalk and square in the city it is seconds of work on the frame she
-	## reads day 11's mark. Each tile's answer is kept, and the door points it measures against are
-	## computed once (`MastSites.possible_door_points()`).
+	## **A mast is offered only ground a mast site would be** (`MastSites._is_eligible()`: off the
+	## home street, its field off a calm interior and off every place a region door could stand),
+	## the same refusal day 11's mast near the mark is under — a mast is never on the home street
+	## (M180, the masts), whichever way it is put down. Asked only of the tiles `_its_ground_on()`
+	## offers, never of the whole ground: over every sidewalk and square in the city it is seconds
+	## of work on the frame she reads day 11's mark. Each tile's answer is kept, and the door points
+	## it measures against are computed once (`MastSites.possible_door_points()`).
 	func _a_mast_may_stand(tile: Vector2i) -> bool:
 		if not _mast_may_stand.has(tile):
 			if _door_points.is_empty():
@@ -1368,8 +1370,8 @@ class WalkSiting extends RefCounted:
 	##
 	## **The precinct weighting is dropped here and that is correct rather than a shortcut.** The
 	## weighting offers a retail tile several times so the day's own roll lands there more often;
-	## this roll is over the handful of faces on one branch inside one window, where which street she
-	## is walking has already decided everything the weight was for.
+	## this roll is over the handful of tiles on one branch inside one window, where which street
+	## she is walking has already decided everything the weight was for.
 	##
 	## **A row that pastes a front is offered the fronts, not its own side.** Its ground is the
 	## `AT_THE_FRONT` lane with every rule `_open_ground_for` asks of any other row, narrowed to the
@@ -1619,9 +1621,10 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ## perfect one or the roomiest of the rest.
 ##
 ## Split out of `_place_one` above because a placement made **after** dawn asks the identical
-## questions of a narrower pool — `WalkSiting.ahead_of()` offers only the building faces on the
-## branch of the day's route tree she is walking — and a second copy of this list of rules is a
-## second copy that would agree with it right up to the first time one of them gained a rule.
+## questions of a narrower pool — `WalkSiting.ahead_of()` offers only the tiles of the row's own
+## ground on the branch of the day's route tree she is walking — and a second copy of this list of
+## rules is a second copy that would agree with it right up to the first time one of them gained a
+## rule.
 ##
 ## **`standing` is what the seals and the region wall's own bodies stand as, asked only by the
 ## three questions below and never by the spacing.** `SealPlanner.plan_day` and `RegionPlanner.

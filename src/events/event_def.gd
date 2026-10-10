@@ -378,14 +378,14 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## Whether the day budgets this row but leaves *where* it stands to the walk she takes.
 ##
 ## A `MAP` row in every other respect — it is a place, on a tile, with a body and a field, and the
-## whole plan is stated against the day's corridor exactly as it would have been at dawn. What
-## moves is the moment: a one-shot is planned with no position (`EventScheduler._place_one_shots`),
-## a recurring row is rolled and placed at dawn exactly as any other and then handed to her walk
-## with that position dropped (`EventScheduler._hand_to_her_walk`), and
-## `EventDirector.site_what_is_on_her_way()` puts it on a building face ahead of her once her
-## direction for the day is clear, off screen and far enough that she meets it rather than watches
-## it appear. Until it has been in the world it may be moved again, so a day she turns round is
-## still a day it is on her way.
+## whole plan is stated against the day's corridor exactly as it would have been at dawn. What moves
+## is the moment: a one-shot is planned with no position (`EventScheduler._place_one_shots`), a
+## recurring row is rolled and placed at dawn exactly as any other and then handed to her walk with
+## that position dropped (`EventScheduler._hand_to_her_walk`), and
+## `EventDirector.site_what_is_on_her_way()` puts it on a tile of its own ground ahead of her (a
+## building face for the fire and the crews) once her direction for the day is clear, off screen and
+## far enough that she meets it rather than watches it appear. Until it has been in the world it may
+## be moved again, so a day she turns round is still a day it is on her way.
 ##
 ## **This is not `AHEAD_OF_PLAYER`**, and the difference is the whole reason it is a second field
 ## rather than a fourth `SpawnMode`. A director-sited row has no tile at all, may not obstruct, and
