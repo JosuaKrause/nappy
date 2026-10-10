@@ -3,7 +3,10 @@
 On a phone, in landscape and in rotated portrait, press the left joystick button on the title. The
 left side should steer and Run sit on the right from the first frame, and nothing in play should
 swap them. Steer with presses reaching toward Run: is two thirds of the way far enough, without
-stealing Run presses? Is the 16px dead zone, no longer drawn, tight enough? Swipe through the
+stealing Run presses? Is the 16px dead zone, no longer drawn, tight enough? In tap mode, the
+stop circle round her is 16px on screen too (8 world px), read from your "but 32 is just wrong"
+over your earlier "Keep tap at 16px" (16 world px, 32 on screen): is stopping her by tapping her
+middle still easy, or do you want the 16 world px back? Swipe through the
 dead zone and lift outside it: she should keep walking toward the lift point; lift inside it: she
 should stop. Hold Run with one thumb while dragging the steering thumb past the band onto Run's
 side. Repeat from the right joystick button. Two choices to keep or overturn: a press anywhere past the

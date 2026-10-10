@@ -882,9 +882,9 @@ func _draw_run_button() -> void:
 	draw_texture_rect(AtlasLibrary.region(_RUN_ICON), Rect2(center - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if _run_held else 0.7))
 
-## The steering ring at `RING_RADIUS` and a knob (the dot, which at rest is the dead zone itself, so
-## no separate dead-zone circle is drawn) at the heading she is actually walking, including keyboard steering and detention — so what she
-## is walking can be read off the glass without watching her. Layout rather than a picture, the
+## The steering ring at `RING_RADIUS` and a knob (the dot) at the heading she is actually walking,
+## including keyboard steering and detention — so what she is walking can be read off the glass
+## without watching her. The dead zone is not drawn (`DEAD_ZONE_RADIUS`). Layout rather than a picture, the
 ## same reading the **cues** rule's exception gives any shape whose position is live state.
 func _draw_focus_circles() -> void:
 	if not _rig:
