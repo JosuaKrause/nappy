@@ -357,8 +357,9 @@ disagree about where a heading is measured from. `Mode.TAP` sets a direction tow
 position, aimed from wherever she currently stands, and a press within `TAP_STOP_RADIUS` of her stops
 her instead. `Mode.JOYSTICK` instead aims from `_steering_focus`, `FOCUS_LEFT` or `FOCUS_RIGHT` as
 `set_mode()` was told by the title, and nothing in play changes it — the ring at `RING_RADIUS` has
-the dead zone's own circle (`DEAD_ZONE_RADIUS`) inside it and a knob at the currently-held
-direction. It is stopped by a press in that dead zone (`in_dead_zone()`) or in the stop band at
+a knob (the dot) at the currently-held direction, which at rest sits on the focus. The dead zone
+(`DEAD_ZONE_RADIUS`, 16 design px) is not drawn and never takes the buttons' 5% catch;
+`TAP_STOP_RADIUS` is half of it in world px, the same 16px on screen. It is stopped by a press in that dead zone (`in_dead_zone()`) or in the stop band at
 the steering half's edge (`is_in_stop_band()`), never by a press near her own position. The edge,
 `boundary_x()`, is `STEERING_REACH` (two thirds) of the way from the steering focus to Run's;
 everything beyond it is Run's (`is_on_run_side()`). Either way the direction locked in is walked

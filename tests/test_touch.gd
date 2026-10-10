@@ -297,9 +297,9 @@ func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	controls._on_tap(transform * Vector2(500.0, 200.0), 0.0)
 	t.check(Input.is_action_pressed("move_right"), "walking first, so a stop has something to undo")
 
-	# 15px off the centre of her sprite (200, 177 -- TAP_STOP_CENTRE_LIFT above her feet at
-	# 200, 200) -- within TAP_STOP_RADIUS (16px) of the middle of her, not of her feet.
-	controls._on_tap(transform * Vector2(215.0, 177.0), 1.0)
+	# 6px off the centre of her sprite (200, 177 -- TAP_STOP_CENTRE_LIFT above her feet at
+	# 200, 200) -- within TAP_STOP_RADIUS (8px) of the middle of her, not of her feet.
+	controls._on_tap(transform * Vector2(206.0, 177.0), 1.0)
 	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
 			"a click near the centre of her sprite, not only near her feet, stops her")
 
@@ -317,11 +317,11 @@ func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 	t.check(Input.is_action_pressed("move_right"),
 			"walking again, so the upper-body click below has something to undo")
 
-	# 38px straight above her feet -- her shoulders -- 15px from the lifted centre and therefore
+	# 30px straight above her feet -- her chest -- 7px from the lifted centre and therefore
 	# within TAP_STOP_RADIUS, where a circle centred on her feet would miss it entirely.
-	controls._on_tap(transform * Vector2(200.0, 162.0), 5.0)
+	controls._on_tap(transform * Vector2(200.0, 170.0), 5.0)
 	t.check(not Input.is_action_pressed("move_right") and not controls._walking,
-			"and a click on her shoulders, 38px above her feet, stops her too")
+			"and a click on her chest, 30px above her feet, stops her too")
 
 	controls._on_tap(transform * Vector2(500.0, 200.0), 6.0)
 	t.check(Input.is_action_pressed("move_right"),
@@ -705,9 +705,15 @@ func _test_the_dead_zone_is_tighter_than_the_ring_and_only_on_steering(t) -> voi
 			left), "just outside it, still inside the ring, does not")
 	t.check(not TouchControls.in_dead_zone(TouchControls.FOCUS_RIGHT, left),
 			"Run's focus has no dead zone")
+	t.check(is_equal_approx(TouchControls.DEAD_ZONE_RADIUS, 16.0),
+			"the dead zone is 16 design px (pebbly-alpaca: \"we can try 16px\")")
+	t.check(not TouchControls.in_dead_zone(left + Vector2.UP * 16.0 * 1.01, left),
+			"a press at 1.01 times 16px steers: no 5% catch on a dead zone")
 	t.check(is_equal_approx(TouchControls.TAP_STOP_RADIUS * 2.0, TouchControls.DEAD_ZONE_RADIUS),
 			"tap mode's stop circle covers the dead zone on screen at the camera's zoom of 2, "
-			+ "nothing bigger (playtest 34 finding 5)")
+			+ "nothing bigger (playtest 34 finding 5): 8 world px, 16 on screen")
+	t.check(TouchControls._FOCUS_KNOB_OFFSET + TouchControls._FOCUS_KNOB_RADIUS * 1.3
+			< TouchControls.RING_RADIUS, "the walking knob, running, stays inside the ring")
 
 ## Pure geometry, no viewport needed. *(2026-09-07: "there should be a narrow band in the middle of
 ## the screen (size of the stop circle) that stops the player".)* The band moved to the steering
@@ -953,9 +959,9 @@ func _test_a_tap_mode_drag_stops_and_resumes_crossing_her_own_stop_radius(t) -> 
 
 	var motion := InputEventMouseMotion.new()
 	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
-	# Within TAP_STOP_RADIUS (16px) of the centre of her sprite (300, 277 -- TAP_STOP_CENTRE_LIFT
+	# Within TAP_STOP_RADIUS (8px) of the centre of her sprite (300, 277 -- TAP_STOP_CENTRE_LIFT
 	# above her feet at 300, 300), not of her feet.
-	motion.position = transform * Vector2(310.0, 280.0)
+	motion.position = transform * Vector2(305.0, 280.0)
 	controls._input(motion)
 	t.check(not controls._walking and not Input.is_action_pressed("move_right"),
 			"dragging back near the centre of her stops her live")
