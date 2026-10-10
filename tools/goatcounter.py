@@ -45,10 +45,10 @@ long range). Comma-joined, an id costs ~10 bytes, and a range whose list would s
 refused with a message to narrow it rather than sent. A page that says `more` while none of its hits
 carries a `path_id` cannot be paged past, and is an error rather than a quietly short count.
 `count` on each hit is "Number of visitors for the selected date range", the API's own wording. The
-page visit keeps the
-site's sessions, so its count is visitors; every event opts out of them (`count.js`'s `no_session`,
-sent as the hit's `ns` parameter), and GoatCounter counts a hit without a session as a visit of its
-own: an event's count is every time it was sent, a retry by the same person included.
+page visit keeps the site's sessions, so its count is visitors; every event opts out of them
+(`count.js`'s `no_session`, sent as the hit's `ns` parameter), and GoatCounter counts a hit without a
+session as a visit of its own: an event's count is every time it was sent, a retry by the same person
+included.
 
 Grouping follows the shape `docs/TELEMETRY.md` documents rather than a hard-coded list of event
 names, since the catalogue keeps growing: a name is either run-level (`run-*`, `ending-*`,

@@ -3,7 +3,7 @@
 From the re-reviews of PRs #580, #553, #596, #629, #605 and #547, and one gap found while building
 #642.
 
-**Built in PR #647**, one commit each:
+**Built in PR #647**:
 
 - **#580:** the comments in `tests/test_crowd_closures.gd` and `tests/probes/m100_map_edge_entries.gd`
   name the room a spine car keeps (`CrowdAgent.TUNNEL_ROOM`, `BRIDGE_RUN`, `TUNNEL_ENTRY_ROOM`,
