@@ -152,7 +152,7 @@ func _test_a_sliver_at_the_edge_is_not_seen(t) -> void:
 func _test_the_joystick_corners_are_not_visible(t) -> void:
 	var left := VisibleView.covered_left()
 	var right := VisibleView.covered_right()
-	var ring := Vector2(TouchControls.STOP_RADIUS, TouchControls.STOP_RADIUS)
+	var ring := Vector2(TouchControls.RING_RADIUS, TouchControls.RING_RADIUS)
 	var button := Vector2(TouchControls.RUN_RADIUS, TouchControls.RUN_RADIUS)
 	t.check(left.encloses(Rect2(TouchControls.FOCUS_LEFT - ring, ring * 2.0))
 			and left.encloses(Rect2(TouchControls.FOCUS_LEFT - button, button * 2.0)),

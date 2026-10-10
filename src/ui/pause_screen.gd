@@ -62,7 +62,7 @@ func set_touch_controls(controls: TouchControls) -> void:
 ##
 ## **Says two things and nothing else.** *(2026-09-07: "the movement tutorial should just say 'Tap
 ## to walk' and 'Double tap to run'. no mention of tapping her or 'that way'.")* The struck clauses
-## named a stop she can still ask for — a press within `STOP_RADIUS` of a focal point, or a mouse
+## named a stop she can still ask for — a press in the joystick's dead zone, or a mouse
 ## click on her — the same way nothing here has ever named a key: stopping still works, and the
 ## game simply stops teaching it, exactly as `HUD._teach_the_day()`'s own day-1 line already reads.
 ##
@@ -73,10 +73,10 @@ func set_touch_controls(controls: TouchControls) -> void:
 ##
 ## **The run half names the run button in the joystick scheme only.** *(2026-10-04, the player, inbox
 ## #533: "joystick run should now say hold <run button> or double tap to run where it makes
-## sense".)* The joystick scheme draws run buttons, so its line shows one — `{run}` stands for the
-## button's own symbol, see `HelpText` — and the tap scheme, which draws none, keeps "double tap to
-## run". That is the one place the body varies, and it varies by the scheme the player chose, not
-## by the device.
+## sense".)* The joystick scheme draws a run button from the first frame of play, so its line shows
+## it — `{run}` stands for the button's own symbol, see `HelpText` — and the tap scheme, which draws
+## none, keeps "double tap to run". That is the one place the body varies, and it varies by the
+## scheme the player chose, not by the device.
 const _BODY := "Tap to walk, %s. " \
 		+ "Walk to calm ground and stay moving; standing still settles nothing."
 const _RUN_TAP := "double tap to run"

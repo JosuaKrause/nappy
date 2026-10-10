@@ -960,7 +960,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	t.check(not main._escape_resumed_from_disk, "consumed the instant it is read")
 	t.check(not finale.is_running(), "with nothing counting down behind either screen")
 
-	main._title.start_requested.emit(ControlsMode.Mode.TAP, false)
+	main._title.start_requested.emit(ControlsMode.Mode.TAP, false, ControlsMode.Side.LEFT)
 	t.check(not main._title.is_open(), "pressing start closes the title")
 	t.check(main._summary.is_showing(), "and raises the section's own brief")
 	var title_label: Label = main._summary.get_node("Root/Center/Lines/Title")

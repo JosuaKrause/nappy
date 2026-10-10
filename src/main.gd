@@ -1162,8 +1162,9 @@ func _on_finale_summary_continued() -> void:
 ## built (the interior or the finale city, whichever section she was in) stays exactly as it is,
 ## so this shows that section's brief instead of throwing the world away and reloading — see
 ## `_on_finale_section_started()`'s own doc for why the title stood in front of it at all.
-func _on_escape_title_start(mode: ControlsMode.Mode, _by_key := false) -> void:
-	_touch_controls.set_mode(mode)
+func _on_escape_title_start(mode: ControlsMode.Mode, _by_key := false,
+		side := ControlsMode.Side.LEFT) -> void:
+	_touch_controls.set_mode(mode, side)
 	if _escape_title_is_resume_gate:
 		_escape_title_is_resume_gate = false
 		_title.close()
@@ -1279,8 +1280,9 @@ func _open_the_title() -> void:
 ## The title screen has been pressed, which is also the start: hand the city back to the day it
 ## belongs to.
 ##
-## `mode` is the player's own answer to the controls question — a press on `TitleScreen`'s
-## `Symbol.JOYSTICK`/`Symbol.TAP` button, or `Mode.TAP` when a key began the run instead. Handed
+## `mode` is the player's own answer to the controls question — a press on one of `TitleScreen`'s
+## two `Symbol.JOYSTICK` buttons or its `Symbol.TAP` one, or `Mode.TAP` when a key began the run
+## instead — and `side` is which half a joystick button chose to steer from. Both are handed
 ## straight to `_touch_controls.set_mode()`, which overrides whatever `_add_touch_controls()` set
 ## from `ControlsMode.resolve()` at boot — see that function's own doc for why a rig that never
 ## reaches this screen keeps that earlier answer instead. `by_key` says a key began the run, which
@@ -1298,13 +1300,14 @@ func _open_the_title() -> void:
 ## screen's own continue that reaches `_engage_the_day()`, through `_on_summary_continued()`'s own
 ## `_resume_gate_open` branch — see that function's own doc for why the same signal reaches two
 ## different places depending on which screen raised it.
-func _on_title_start(mode: ControlsMode.Mode, by_key := false) -> void:
+func _on_title_start(mode: ControlsMode.Mode, by_key := false,
+		side := ControlsMode.Side.LEFT) -> void:
 	# `VisitCounter`'s own cheap "etc." — which control scheme was picked, or that a key began the
 	# run. `mode` as `int`: a cross-script enum is not the same type as itself as a signal
 	# parameter (see the **godot** skill), the same reason `FinaleController`'s own signals pass
 	# theirs that way.
 	EventBus.controls_chosen.emit(mode, by_key)
-	_touch_controls.set_mode(mode)
+	_touch_controls.set_mode(mode, side)
 	_in_the_title = false
 	_title.close()
 	if not _resume.is_empty():
@@ -1699,11 +1702,11 @@ func _add_route_lines() -> void:
 ## set. That is one fact main already produces for other reasons rather than a second wire main
 ## would have to remember to pull on every one of those screens.
 ##
-## `set_mode(ControlsMode.resolve())` gives it the mode a rig gets if the title screen is never
-## reached at all (`--no-title`, a screenshot rig) — the command line, then the page's own URL,
-## then `TAP`. This is only ever the **pre-title** answer: `_title` does not exist yet at this
-## point in `_ready()`, and `main._on_title_start()` overrides it the moment a player actually
-## presses one of the title screen's own two buttons.
+## `set_mode()` with `ControlsMode.resolve()` and `resolve_side()` gives it the mode and steering
+## side a rig gets if the title screen is never reached at all (`--no-title`, a screenshot rig) —
+## the command line, then the page's own URL, then `TAP`. This is only ever the **pre-title**
+## answer: `_title` does not exist yet at this point in `_ready()`, and `main._on_title_start()`
+## overrides it the moment a player actually presses one of the title screen's own buttons.
 func _add_touch_controls() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "TouchControls"
@@ -1712,7 +1715,7 @@ func _add_touch_controls() -> void:
 	_touch_controls = TOUCH_CONTROLS.instantiate()
 	_touch_layer.add_child(_touch_controls)
 	_touch_controls.rotated = _rotated
-	_touch_controls.set_mode(ControlsMode.resolve())
+	_touch_controls.set_mode(ControlsMode.resolve(), ControlsMode.resolve_side())
 
 ## Adds the final pass before raising the root render target. The engine's final root blit is a
 ## nearest sample, so a larger target alone would discard three quarters of its pixels. The shader

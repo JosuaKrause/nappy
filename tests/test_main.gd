@@ -369,7 +369,7 @@ func _test_key_six_twice_empties_the_ring(t) -> void:
 
 ## **One node goes into the tree, not a choice between two.** `TouchControls` is the whole of the
 ## pointer scheme regardless of which aiming mode is chosen — `_add_touch_controls()` builds the
-## one node either way and hands it a starting mode through `set_mode(ControlsMode.resolve())`,
+## one node either way and hands it a starting mode through `set_mode()` with `ControlsMode.resolve()`,
 ## which the title screen goes on to override once a player actually presses a button (see
 ## `main._on_title_start()`). `ControlsMode.resolve()` answers `TAP` here, with neither `--controls`
 ## nor a URL query present in this suite's own process.
@@ -416,11 +416,17 @@ func _test_on_title_start_sets_the_controls_mode(t) -> void:
 	main._on_title_start(ControlsMode.Mode.JOYSTICK)
 	t.check(main._touch_controls._mode == ControlsMode.Mode.JOYSTICK,
 			"pressing the joystick button on the title screen sets that mode on the one control reader")
+	t.check(main._touch_controls.run_button_center() == TouchControls.FOCUS_RIGHT,
+			"the left joystick button steers from the left, with Run on the right")
+	main._on_title_start(ControlsMode.Mode.JOYSTICK, false, ControlsMode.Side.RIGHT)
+	t.check(main._touch_controls.run_button_center() == TouchControls.FOCUS_LEFT,
+			"and the right one steers from the right, with Run on the left")
 	main._on_title_start(ControlsMode.Mode.TAP, true)
 	EventBus.controls_chosen.disconnect(record)
 	t.check(main._touch_controls._mode == ControlsMode.Mode.TAP,
 			"a key begins the run in tap mode")
-	t.check(chosen == [[ControlsMode.Mode.JOYSTICK, false], [ControlsMode.Mode.TAP, true]],
+	t.check(chosen == [[ControlsMode.Mode.JOYSTICK, false], [ControlsMode.Mode.JOYSTICK, false],
+			[ControlsMode.Mode.TAP, true]],
 			"and the counter hears which input began each run, a key as a key")
 
 	main._status.free()

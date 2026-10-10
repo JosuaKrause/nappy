@@ -1,11 +1,12 @@
 class_name ControlsMode
 extends RefCounted
-## The player's choice of aiming origin. Both modes lock a heading from a press, run on a double
-## press and re-aim while dragging.
+## The player's choice of aiming origin, and in joystick mode of the side that steers. Both modes
+## lock a heading from a press, run on a double press and re-aim while dragging.
 ##
-## - JOYSTICK aims from the nearer focus. Steering selects that ring and the other becomes Run.
-##   Run keeps its side after release; steering from the other half swaps them. A press beginning
-##   on Run holds it until release, while the active focus and middle band stop steering.
+## - JOYSTICK aims from the steering focus on the chosen `Side`; the other focus is Run, from the
+##   first frame of play. The side is chosen on the title and never swaps during play *(2026-10-10,
+##   the player: "selecting the left one will make the left side permanently joystick and the right
+##   side permanently run button (permanently for the sitting)")*. See `TouchControls`.
 ## - TAP aims from her world position, stopping within TouchControls.TAP_STOP_RADIUS of her.
 ##
 ## **Neither is tied to a device.** *(2026-09-07, the player: "both modes for in both settings so
@@ -15,15 +16,20 @@ extends RefCounted
 ##
 ## `resolve()` is asked once, before the title screen exists, for the mode a rig gets if it skips
 ## the title screen entirely (`--no-title`, a screenshot rig): the command line first
-## (`--controls joystick|tap`), then the page's own URL (`?controls=joystick|tap`), then `TAP` — the
+## (`--controls joystick|joystick-right|tap`), then the page's own URL (`?controls=`, the same
+## words), then `TAP` — the
 ## wording every existing capture and `--walk` script was taken under, so a rig's back catalogue
 ## keeps reproducing. **The title screen's own two buttons are not a third step in this order**:
 ## they are what decides instead of it, every time the title is actually shown — see `TitleScreen`,
-## whose buttons are the only pointer way in and always answer the question themselves rather than
-## deferring to whatever `resolve()` already set. `main._add_touch_controls()` is `resolve()`'s only
-## caller, and `main._on_title_start()` overrides it the moment a player actually presses a button.
+## whose buttons are the only pointer way in and always answer the question, the side included,
+## rather than deferring to whatever `resolve()` already set. `main._add_touch_controls()` is
+## `resolve()`'s and `resolve_side()`'s only caller, and `main._on_title_start()` overrides both the
+## moment a player actually presses a button.
 
 enum Mode { JOYSTICK, TAP }
+## Which half of the screen steers in `Mode.JOYSTICK`; the other half is Run. Meaningless in
+## `Mode.TAP`, where nothing is drawn to choose between.
+enum Side { LEFT, RIGHT }
 
 static func resolve() -> Mode:
 	var word := DevFlags.controls_override()
@@ -33,10 +39,23 @@ static func resolve() -> Mode:
 
 ## The bare mapping from a raw word — `DevFlags.controls_override()`'s or `_url_word()`'s own —
 ## onto a `Mode`. Pulled out so a test can ask the mapping directly without a real command line or
-## a Web export to answer through. `"joystick"` is the only word that ever selects it; anything
-## else, including an empty string, is `TAP` — the default this milestone settled on.
+## a Web export to answer through. `"joystick"`, `"joystick-left"` and `"joystick-right"` select
+## it; anything else, including an empty string, is `TAP`.
 static func from_word(word: String) -> Mode:
-	return Mode.JOYSTICK if word == "joystick" else Mode.TAP
+	return Mode.JOYSTICK if word in ["joystick", "joystick-left", "joystick-right"] else Mode.TAP
+
+## The steering side a rig gets with the mode `resolve()` answers: `joystick-right` steers from the
+## right, and every other word — `joystick` and `joystick-left` included — from the left. Only a
+## rig that skips the title reads it; the title's two joystick buttons choose the side themselves.
+static func resolve_side() -> ControlsMode.Side:
+	var word := DevFlags.controls_override()
+	if word == "":
+		word = _url_word()
+	return side_from_word(word)
+
+## The bare mapping behind `resolve_side()`, for a test to ask without a command line.
+static func side_from_word(word: String) -> ControlsMode.Side:
+	return Side.RIGHT if word == "joystick-right" else Side.LEFT
 
 ## The page's own `?controls=joystick` or `?controls=tap`, read through
 ## `JavaScriptBridge.eval("window.location.search")` — the one place in the project that asks the

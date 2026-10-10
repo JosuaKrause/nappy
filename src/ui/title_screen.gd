@@ -9,28 +9,34 @@ extends CanvasLayer
 ##
 ## One screen answers both, because a run that is over goes back to where a run begins. There is
 ## deliberately no separate "restart" screen and no menu: this is a title, two lines of controls,
-## and the two buttons that choose between them.
+## and the three buttons that choose between them.
 ##
 ## **What is behind it is the game, running.** Not a still, not a menu over black: the
 ## doorstep the run starts on, with the traffic driving and the events playing out on it and nobody
 ## pushing a pram through them. The screen itself is therefore only two scrims, a handful of labels
-## and the two `ModeButton`s: the title across the top half, the controls across the bottom, and
-## the street visible through both. `main._open_the_title()` is the half that makes the city keep
-## moving while everything that is a *day* stops; this class owns its two buttons and a small
-## handful of keys and nothing else.
+## and the three `ModeButton`s: the title and the two lines of controls across the top half, the
+## buttons across the bottom, and the street visible through both. `main._open_the_title()` is the
+## half that makes the city keep moving while everything that is a *day* stops; this class owns
+## its three buttons and a small handful of keys and nothing else.
 ##
 ## What it is not is a main menu. There are no options, no seed box and no load game, and none of
 ## those is what this screen exists for.
 ##
-## **Starting is also the controls question, and the two buttons are how it is answered.**
+## **Starting is also the controls question, and the buttons are how it is answered.**
 ## *(2026-09-07, the player: "let's make the controls a player choice and bring back the two
 ## buttons ... that should also solve the issue with the missing title screen since the only way to
-## start the game will be clicking on one of the buttons".)* `_joystick_button` and `_tap_button`
-## are `ModeButton`s with `Symbol.JOYSTICK`/`Symbol.TAP`, each named underneath — "On-screen
-## Controls", "Tap to Go" — and nothing else. *(2026-09-07, the player: "call the modes 'On-screen
-## Controls' and 'Tap to Go' no further explanations".)* Two earlier sentences in the same session
-## asked for the explanations simplified and for no mention of stopping; both are read as replaced
-## by the third, which is later, strictly narrower, and leaves nothing for either to apply to.
+## start the game will be clicking on one of the buttons".)* The joystick scheme's answer carries
+## its steering side, and the buttons say which by where they stand: *(2026-10-10, the player: "the
+## joystick select buttons move to where the joystick buttons will be. selecting the left one will
+## make the left side permanently joystick and the right side permanently run button (permanently
+## for the sitting). vice versa on the right side. the tap to play button goes in the center
+## between both.")* `_left_button` and `_right_button` are `Symbol.JOYSTICK` discs centred on
+## `TouchControls.FOCUS_LEFT` and `FOCUS_RIGHT`, the points that side's ring will stand on in play,
+## and `_tap_button` is the `Symbol.TAP` disc midway between them. Each is named underneath —
+## "On-screen Controls", "Tap to Go" — and nothing else. *(2026-09-07, the player: "call the modes
+## 'On-screen Controls' and 'Tap to Go' no further explanations".)* The two joystick buttons share
+## their caption, since the side is said by the button's place. "For the sitting" lasts until this
+## screen asks again: the side is never saved, and every time the title opens it is chosen afresh.
 ## **A pointer press begins a run only when it lands on one of them**, never on the bare scrim: with
 ## the buttons as the only pointer way in, a stray tap that dismissed the ending screen a frame
 ## earlier can no longer restart the game just by landing anywhere on this one — the restart guard
@@ -40,10 +46,11 @@ extends CanvasLayer
 ## doc for why that always chooses `Mode.TAP`.
 
 ## `mode` is the aiming origin the run begins in; `by_key` says a key began it rather than one of
-## the two buttons. The two are separate because a key begins the run in `Mode.TAP`, and the
-## counter reports a key player as a key player, never as the tap mode a key falls back to
+## the buttons; `side` is the steering half in `Mode.JOYSTICK` (`Side.LEFT` wherever the scheme or
+## a key named none). `mode` and `by_key` are separate because a key begins the run in `Mode.TAP`,
+## and the counter reports a key player as a key player, never as the tap mode a key falls back to
 ## (`VisitCounter`'s `controls-keys`).
-signal start_requested(mode: ControlsMode.Mode, by_key: bool)
+signal start_requested(mode: ControlsMode.Mode, by_key: bool, side: ControlsMode.Side)
 signal quit_requested()
 
 ## The instant `main._restart_run()` last asked for a scene reload, or `-INF` before the first one
@@ -67,10 +74,11 @@ const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
 
 @onready var _root: Control = $Root
 @onready var _name: Label = $Root/Top/Lines/Title
-@onready var _body: Label = $Root/Bottom/Lines/Body
-@onready var _joystick_button: ModeButton = $Root/Bottom/Lines/Choice/JoystickColumn/Joystick
-@onready var _tap_button: ModeButton = $Root/Bottom/Lines/Choice/TapColumn/Tap
-@onready var _hint: Label = $Root/Bottom/Lines/Hint
+@onready var _body: Label = $Root/Top/Lines/Body
+@onready var _left_button: ModeButton = $Root/Choice/LeftColumn/Left
+@onready var _tap_button: ModeButton = $Root/Choice/TapColumn/Tap
+@onready var _right_button: ModeButton = $Root/Choice/RightColumn/Right
+@onready var _hint: Label = $Root/Hint
 @onready var _version: Label = $Root/Version
 
 ## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
@@ -94,7 +102,7 @@ var _touch := TouchInput.available()
 ##
 ## **Says two things and nothing else.** *(2026-09-07: "the movement tutorial should just say 'Tap
 ## to walk' and 'Double tap to run'. no mention of tapping her or 'that way'.")* The struck clauses
-## named a stop she can still ask for — a press within `STOP_RADIUS` of a focal point, or a mouse
+## named a stop she can still ask for — a press in the joystick's dead zone, or a mouse
 ## click on her — the same way nothing here has ever named a key: stopping still works, and the
 ## game simply stops teaching it, exactly as `HUD._teach_the_day()`'s own day-1 line already reads.
 const _BODY := "Tap to walk, double tap to run.\n" \
@@ -115,7 +123,23 @@ func _ready() -> void:
 	# `main._apply_orientation()`) has a stationary 1280x720 footprint to rotate — see
 	# `ScreenOrientation.pin_to_design_box()`.
 	ScreenOrientation.pin_to_design_box(_root)
+	_place_column($Root/Choice/LeftColumn, TouchControls.FOCUS_LEFT)
+	_place_column($Root/Choice/TapColumn, TAP_BUTTON_CENTRE)
+	_place_column($Root/Choice/RightColumn, TouchControls.FOCUS_RIGHT)
 	visible = false
+
+## Where the tap button stands: midway between the two joystick buttons.
+const TAP_BUTTON_CENTRE := (TouchControls.FOCUS_LEFT + TouchControls.FOCUS_RIGHT) * 0.5
+
+## A column's width: its caption's, which is wider than the disc it centres under it.
+const _COLUMN_WIDTH := 220.0
+
+## Puts `column`'s disc centre on `centre`, in the design box `_root` is pinned to. The column is a
+## disc with its caption under it, so the disc's centre is half the column's width across and one
+## `ModeButton.RADIUS` down from its top-left corner.
+static func _place_column(column: Control, centre: Vector2) -> void:
+	column.position = centre - Vector2(_COLUMN_WIDTH * 0.5, ModeButton.RADIUS)
+	column.size = Vector2(_COLUMN_WIDTH, column.size.y)
 
 ## Its own function, rather than inline in `_ready()`, matching `PauseScreen._refresh_body()` —
 ## kept even though `_BODY` no longer varies, so a test can call this again rather than reaching
@@ -182,10 +206,10 @@ func is_open() -> bool:
 ## **The one hint in the game that is never empty, and it has to name the thing that actually
 ## works.** *(2026-09-07, on review: "a bare tap no longer begins anything ... the screen instructs
 ## the player to do the one thing that will not work".)* `tap to begin` was true when any press
-## anywhere began a run; once only the two buttons do, it sends a first-time player looking for
+## anywhere began a run; once only the buttons do, it sends a first-time player looking for
 ## something a tap on the scrim will never do. `press a button` is what is actually true and what
 ## still says nothing about a key, the same way `tap` never did *(2026-09-06: "never should it be
-## mentioned to the user".)* — it also points the sentence at the two discs themselves, which are
+## mentioned to the user".)* — it also points the sentence at the discs themselves, which are
 ## otherwise the only thing on this screen that does anything. `q to quit` still does not appear
 ## here even though the key still works — `_can_quit` gates `_unhandled_input()` alone.
 func open(again := false) -> void:
@@ -196,16 +220,19 @@ func open(again := false) -> void:
 	# never reach `_unhandled_input()` at all, once `visible` has already gone false. Cleared here
 	# rather than left to leak into whatever this screen shows next, the same reason
 	# `PauseScreen.open()` calls `_restart_button.cancel_hold()`.
-	_joystick_button.clear_forced_press()
-	_tap_button.clear_forced_press()
-	_joystick_button.set_hovered(false)
-	_tap_button.set_hovered(false)
+	for button: ModeButton in _buttons():
+		button.clear_forced_press()
+		button.set_hovered(false)
+
+## The three buttons, in the order hover and press ask them.
+func _buttons() -> Array[ModeButton]:
+	return [_left_button, _tap_button, _right_button]
 
 func close() -> void:
 	visible = false
 
-## `space` or a direction key begins the run **in `Mode.TAP`**, and a press on one of the two
-## buttons begins it in whichever mode that button names. *(2026-09-07: "using awsd or arrow keys
+## `space` or a direction key begins the run **in `Mode.TAP`**, and a press on one of the
+## buttons begins it in whichever mode — and, for a joystick, side — that button names. *(2026-09-07: "using awsd or arrow keys
 ## will start the game with tap mode".)* Read as *the keyboard is a desktop and a desktop is a
 ## mouse* — the same reasoning that makes `TAP` the mouse mode at all: a player pressing `space` or
 ## an arrow has told this screen nothing about a thumb either. The run still says a key began it
@@ -217,7 +244,7 @@ func close() -> void:
 ## `Esc` is deliberately not handled: `main` will not open the pause over this, because a pause
 ## over a game that has not started is a screen with nothing behind it to stop.
 ##
-## **A pointer press that does not land on either button does nothing at all.** *(2026-09-07: "the
+## **A pointer press that does not land on a button does nothing at all.** *(2026-09-07: "the
 ## only way to start the game will be clicking on one of the buttons".)* This is the property that
 ## makes the ending-screen leak M85 patched with a guard structurally impossible instead: a bare
 ## tap or click anywhere on the scrim used to begin a run outright, which is exactly what let a
@@ -229,7 +256,7 @@ func close() -> void:
 ## `DaySummary` emitting `continued` → `main._on_summary_continued()` → `_restart_run()` →
 ## `get_tree().call_deferred("reload_current_scene")` → this screen's own fresh `_ready()` →
 ## `main._open_the_title()`, and this screen is up within a frame or two of the press that dismissed
-## the ending. A stray press can still land squarely on a button — the two are drawn in the same
+## the ending. A stray press can still land squarely on a button — they are drawn in the same
 ## screen region a catch-all used to cover — so the guard answers exactly that case now rather than
 ## every press on the screen. See `_restarted_at_msec`'s own doc for what survives the reload and
 ## `_RESTART_GUARD_SECONDS`'s for the window's own size.
@@ -238,7 +265,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("ui_accept") or _is_a_walk_key(event):
 		get_viewport().set_input_as_handled()
-		_begin(ControlsMode.Mode.TAP, true)
+		_begin(ControlsMode.Mode.TAP, ControlsMode.Side.LEFT, true)
 		return
 	if _handle_mode_button_press(event):
 		return
@@ -257,8 +284,8 @@ func _unhandled_input(event: InputEvent) -> void:
 ## `mouse_entered`/`mouse_exited` exactly as it silences a click — nothing native is left to ask.
 func _update_hover(position: Vector2) -> void:
 	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
-	_joystick_button.set_hovered(_joystick_button.contains_design_point(at))
-	_tap_button.set_hovered(_tap_button.contains_design_point(at))
+	for button: ModeButton in _buttons():
+		button.set_hovered(button.contains_design_point(at))
 
 ## The four `move_*` actions — `WASD` and the arrows both, since each is bound to all four. Asked
 ## as a loop over the action list rather than four `or`ed `is_action_pressed()` calls, so a fifth
@@ -271,8 +298,7 @@ static func _is_a_walk_key(event: InputEvent) -> bool:
 			return true
 	return false
 
-## A press landing inside `_joystick_button.contains_design_point()` or `_tap_button.contains_design_point()` — read by
-## raw touch or mouse position, the way `PauseScreen._handle_restart_touch()` and
+## A press landing inside one of the buttons' round catches — read by raw touch or mouse position, the way `PauseScreen._handle_restart_touch()` and
 ## `DaySummary._handle_restart_touch()` already read theirs, rather than through `Button.pressed`:
 ## `ModeButton._ready()` sets `mouse_filter = MOUSE_FILTER_IGNORE` on every symbol, so Godot's GUI
 ## layer never claims the event and a `Button`'s own signal never fires for a real touch.
@@ -284,7 +310,7 @@ static func _is_a_walk_key(event: InputEvent) -> bool:
 ##
 ## Returns whether the press belonged to a button at all, so `_unhandled_input()` knows not to fall
 ## through to the quit key check for the same event — though with no catch-all left on this screen,
-## a press that misses both buttons simply does nothing, which is exactly what was asked for.
+## a press that misses every button simply does nothing, which is exactly what was asked for.
 func _handle_mode_button_press(event: InputEvent) -> bool:
 	var position: Vector2
 	var pressed: bool
@@ -302,14 +328,15 @@ func _handle_mode_button_press(event: InputEvent) -> bool:
 	if not pressed:
 		return false
 	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
-	if _joystick_button.contains_design_point(at):
-		get_viewport().set_input_as_handled()
-		_acknowledge_and_begin(ControlsMode.Mode.JOYSTICK, _joystick_button)
-		return true
-	if _tap_button.contains_design_point(at):
-		get_viewport().set_input_as_handled()
-		_acknowledge_and_begin(ControlsMode.Mode.TAP, _tap_button)
-		return true
+	for button: ModeButton in _buttons():
+		if button.contains_design_point(at):
+			get_viewport().set_input_as_handled()
+			var mode := ControlsMode.Mode.TAP if button == _tap_button \
+					else ControlsMode.Mode.JOYSTICK
+			var side := ControlsMode.Side.RIGHT if button == _right_button \
+					else ControlsMode.Side.LEFT
+			_acknowledge_and_begin(mode, side, button)
+			return true
 	return false
 
 ## Whether an acknowledge-and-begin coroutine is already in flight — see `_acknowledge_and_begin()`.
@@ -325,7 +352,8 @@ var _starting := false
 ## continue button. Two `process_frame` awaits, not one, for the reason that doc gives:
 ## `SceneTree.process_frame` fires *before* the frame it names is drawn, so the second is what
 ## actually lands after the draw that happens between them.
-func _acknowledge_and_begin(mode: ControlsMode.Mode, button: ModeButton) -> void:
+func _acknowledge_and_begin(mode: ControlsMode.Mode, side: ControlsMode.Side,
+		button: ModeButton) -> void:
 	if _starting:
 		return
 	_starting = true
@@ -334,13 +362,13 @@ func _acknowledge_and_begin(mode: ControlsMode.Mode, button: ModeButton) -> void
 	await get_tree().process_frame
 	button.clear_forced_press()
 	_starting = false
-	_begin(mode)
+	_begin(mode, side)
 
-## The one place `start_requested` is actually emitted — a walk key, `space`, or one of the two
+## The one place `start_requested` is actually emitted — a walk key, `space`, or one of the
 ## buttons, all funnelled through here so the restart guard is asked exactly once regardless of
 ## which of them fired. See `_unhandled_input()`'s own doc for what the guard still answers now
 ## that a bare press elsewhere on the screen can no longer reach this function at all.
-func _begin(mode: ControlsMode.Mode, by_key := false) -> void:
+func _begin(mode: ControlsMode.Mode, side: ControlsMode.Side, by_key := false) -> void:
 	if (Time.get_ticks_msec() - _restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
 		return
-	start_requested.emit(mode, by_key)
+	start_requested.emit(mode, by_key, side)
