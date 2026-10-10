@@ -24,8 +24,10 @@ so the widths are the same in landscape and portrait.
 *Open to overturn:* 900px rather than the screen's width for the summary, because at 1120px the
 player's own pinned example ("She started crying after 0:10. / There is no settling her now.")
 fits on one line and loses the break they asked for; 900px keeps it and holds the 830px sentence.
+The summary's brief takes the same 900px, so a two-sentence brief measuring 820px to 900px now shows
+on one line, as the sentence-breaking rule says a text that fits does.
 `tests/test_sentence_lines_render.gd` renders every caller's texts at the label's real width and
 asserts each sentence fits it and the label's own line count equals the lines `SentenceLines`
 returned; at the old widths it fails six checks (the van-guard title and the pause body, in both
-control schemes). The stills before and after are in
+control schemes). The stills before and after, and one of the title after in a phone held upright, are in
 [two-lines-2026-10-10](../evidence/two-lines-2026-10-10/).
