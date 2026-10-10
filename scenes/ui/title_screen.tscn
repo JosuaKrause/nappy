@@ -41,40 +41,27 @@ theme_override_colors/font_color = Color(0.72, 0.69, 0.64, 1)
 theme_override_font_sizes/font_size = 18
 text = "Fourteen days. One pram. Get her to sleep and get her home."
 
-[node name="Bottom" type="CenterContainer" parent="Root"]
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_bottom = -80.0
-
-[node name="Lines" type="VBoxContainer" parent="Root/Bottom"]
-theme_override_constants/separation = 20
-
-[node name="Body" type="Label" parent="Root/Bottom/Lines"]
+[node name="Body" type="Label" parent="Root/Top/Lines"]
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
 theme_override_font_sizes/font_size = 32
 text = "Tap to walk, double tap to run.
 Walk to calm ground and stay moving; standing still settles nothing."
 
-[node name="Gap" type="Control" parent="Root/Bottom/Lines"]
-custom_minimum_size = Vector2(0, 36)
+[node name="Choice" type="Control" parent="Root"]
+anchor_right = 1.0
+anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="Choice" type="HBoxContainer" parent="Root/Bottom/Lines"]
-alignment = 1
-theme_override_constants/separation = 64
-
-[node name="JoystickColumn" type="VBoxContainer" parent="Root/Bottom/Lines/Choice"]
-alignment = 0
+[node name="LeftColumn" type="VBoxContainer" parent="Root/Choice"]
 theme_override_constants/separation = 10
 
-[node name="Joystick" type="Button" parent="Root/Bottom/Lines/Choice/JoystickColumn"]
+[node name="Left" type="Button" parent="Root/Choice/LeftColumn"]
 size_flags_horizontal = 4
 script = ExtResource("2_mode_button")
 symbol = 2
 
-[node name="JoystickCaption" type="Label" parent="Root/Bottom/Lines/Choice/JoystickColumn"]
+[node name="LeftCaption" type="Label" parent="Root/Choice/LeftColumn"]
 custom_minimum_size = Vector2(220, 0)
 mouse_filter = 2
 horizontal_alignment = 1
@@ -83,16 +70,15 @@ theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
 theme_override_font_sizes/font_size = 15
 text = "On-screen Controls"
 
-[node name="TapColumn" type="VBoxContainer" parent="Root/Bottom/Lines/Choice"]
-alignment = 0
+[node name="TapColumn" type="VBoxContainer" parent="Root/Choice"]
 theme_override_constants/separation = 10
 
-[node name="Tap" type="Button" parent="Root/Bottom/Lines/Choice/TapColumn"]
+[node name="Tap" type="Button" parent="Root/Choice/TapColumn"]
 size_flags_horizontal = 4
 script = ExtResource("2_mode_button")
 symbol = 3
 
-[node name="TapCaption" type="Label" parent="Root/Bottom/Lines/Choice/TapColumn"]
+[node name="TapCaption" type="Label" parent="Root/Choice/TapColumn"]
 custom_minimum_size = Vector2(220, 0)
 mouse_filter = 2
 horizontal_alignment = 1
@@ -101,7 +87,28 @@ theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
 theme_override_font_sizes/font_size = 15
 text = "Tap to Go"
 
-[node name="Hint" type="Label" parent="Root/Bottom/Lines"]
+[node name="RightColumn" type="VBoxContainer" parent="Root/Choice"]
+theme_override_constants/separation = 10
+
+[node name="Right" type="Button" parent="Root/Choice/RightColumn"]
+size_flags_horizontal = 4
+script = ExtResource("2_mode_button")
+symbol = 2
+
+[node name="RightCaption" type="Label" parent="Root/Choice/RightColumn"]
+custom_minimum_size = Vector2(220, 0)
+mouse_filter = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
+theme_override_font_sizes/font_size = 15
+text = "On-screen Controls"
+
+[node name="Hint" type="Label" parent="Root"]
+anchor_right = 1.0
+offset_top = 596.0
+offset_bottom = 616.0
+mouse_filter = 2
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.62, 0.6, 0.58, 1)
 theme_override_font_sizes/font_size = 13

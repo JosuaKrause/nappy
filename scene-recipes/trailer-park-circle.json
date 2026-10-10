@@ -7,7 +7,7 @@
   "setup": {"tutorial_complete": true, "day": 1, "parent": "mother",
     "player": {"at": "start", "facing": "east", "sleep": 73}},
   "playback": {"settled_camera": true,
-    "walk": "1e0.6@90@0.6@135@0.6@180@0.6@225@0.6@270@0.6@315@0.6@0@0.6@45@0.3e",
+    "walk": "1e0.6@90@0.6@135@0.6@180@0.6@225@0.6@270@0.6@315@0.6@0@0.6@45@0.3e", "smooth": true,
     "duration": 6.1, "capture_at": 4, "camera": {"zoom": 2.4},
     "observations": [{"tick": 30, "subject": "player", "condition": "moving"},
       {"tick": 60, "subject": "player", "condition": "awake"},

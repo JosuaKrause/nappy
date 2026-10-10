@@ -264,9 +264,9 @@ func _on_controls_chosen(mode: int, _by_key: bool) -> void:
 		_say_the_walking_lesson(mode == ControlsMode.Mode.JOYSTICK)
 
 ## How the run lessons put it. *(2026-10-04, the player, inbox #533: "joystick run should now say
-## hold <run button> or double tap to run where it makes sense".)* The joystick scheme draws run
-## buttons, so there the line shows one; the tap scheme draws none, so there it stays "double tap
-## to run" — a symbol for a button that is not on screen would point at nothing.
+## hold <run button> or double tap to run where it makes sense".)* The joystick scheme draws a run
+## button from the first frame of play, so there the line shows it; the tap scheme draws none, so
+## there it stays "double tap to run" — a symbol for a button that is not on screen would point at nothing.
 func _run_phrase(joystick: bool) -> String:
 	if joystick:
 		return "hold %s or double tap to run" % HelpText.RUN_TOKEN

@@ -143,7 +143,9 @@ carrying pose, two escape routes and heated guard variants. Generated finale sea
 installed: the recipe selects its own events. `progression.blackout` turns
 off the street signals. Supported escape pins are trucks, abduction, roadblocks and explosions.
 
-`playback` accepts a timed `walk` script (the same syntax as `--walk`), `duration` in seconds,
+`playback` accepts a timed `walk` script (the same syntax as `--walk`), `smooth` (true: the
+script's turns sweep gradually and still end exactly where the abrupt walk does, the same as
+`--smooth-walk`; `WalkPlan` in `src/dev/walk_plan.gd` says how), `duration` in seconds,
 `capture_at`, optional `camera` (`zoom`, `zoom_out`, `zoom_delay`, `landscape_margin`, and
 `fixed`, which holds a scripted scene on its starting view, and optional `fixed_offset: [x,y]`,
 which shifts that held view in world pixels), `settled_camera` (true: the camera starts settled on her with its look-ahead,

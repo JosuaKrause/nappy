@@ -17,8 +17,8 @@ func run(t) -> void:
 	_test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t)
 	_test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t)
 
-## Actual steering presses change Run's side; every consumer still sees the painted footprint,
-## while spawning stays outside the complete camera. The old inward button's ground is visible.
+## Whichever side the title chose, every consumer sees the painted footprint, while spawning stays
+## outside the complete camera. The ground inward of the focal discs is visible.
 func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t) -> void:
 	var paused: bool = t.get_tree().paused
 	t.get_tree().paused = false
@@ -39,22 +39,19 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t) -> v
 	source.live.append(bike)
 	for rotated: bool in [false, true]:
 		controls.rotated = rotated
-		controls.set_mode(ControlsMode.Mode.JOYSTICK)
-		for focus: Vector2 in [TouchControls.FOCUS_LEFT, TouchControls.FOCUS_RIGHT]:
-			var tap := ScreenOrientation.to_presented_space(focus + Vector2(0.0, -100.0), rotated)
-			controls._on_pointer(tap, true, 7)
-			controls._on_pointer(tap, false, 7)
-			var other := TouchControls.FOCUS_RIGHT if focus == TouchControls.FOCUS_LEFT \
-					else TouchControls.FOCUS_LEFT
+		for side: ControlsMode.Side in [ControlsMode.Side.LEFT, ControlsMode.Side.RIGHT]:
+			controls.set_mode(ControlsMode.Mode.JOYSTICK, side)
+			var other := TouchControls.FOCUS_LEFT if side == ControlsMode.Side.RIGHT \
+					else TouchControls.FOCUS_RIGHT
 			t.check(controls.run_button_center() == other,
-					"a released steering tap retains Run on the opposite side, rotated=%s" % rotated)
+					"the title's side puts Run on the opposite focus, rotated=%s" % rotated)
 			source.view.look_through(player)
 			for design: Vector2 in [Vector2(350.0, 620.0), Vector2(930.0, 620.0)]:
 				bike.global_position = player.global_position + (design - ScreenOrientation.DESIGN_SIZE * 0.5) * 0.5
 				t.check(edge._shows(bike), "ground inward of either focal disc is visible to the badge")
 			for design: Vector2 in [Vector2(160.0, 650.0), Vector2(1120.0, 650.0)]:
 				bike.global_position = player.global_position + (design - ScreenOrientation.DESIGN_SIZE * 0.5) * 0.5
-				t.check(not edge._shows(bike), "both covered corners remain unseen through a hand swap")
+				t.check(not edge._shows(bike), "both covered corners remain unseen on either side")
 				var way := (bike.global_position - player.global_position).normalized()
 				var at := PendingWarning.just_out_of_sight(
 						PendingWarning.seen_from(source.view, player.global_position),
@@ -65,7 +62,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t) -> v
 		controls.set_mode(ControlsMode.Mode.TAP)
 		source.view.look_through(player)
 		t.check(edge._shows(bike) and controls.run_button_center() == Vector2.INF,
-				"tap mode reveals the corner and clears the selected Run side")
+				"tap mode reveals the corner and removes the Run disc")
 	controls.free()
 	edge.free()
 	source.free()

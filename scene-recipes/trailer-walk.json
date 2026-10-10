@@ -4,7 +4,7 @@
   "anchors": {"start": "doorstep"},
   "setup": {"tutorial_complete": true, "day": 1, "parent": "mother", "player": {"at": "start", "facing": "south"},
     "background": {"crowd": true, "uniform_walkers": true, "walker_multiplier": 2}},
-  "playback": {"settled_camera": true, "walk": "0.3s6w", "duration": 6.3, "capture_at": 3,
+  "playback": {"settled_camera": true, "walk": "0.3s6w", "smooth": true, "duration": 6.3, "capture_at": 3,
     "observations": [{"tick": 30, "subject": "player", "condition": "moving"},
       {"tick": 90, "subject": "player", "condition": "moving"},
       {"tick": 150, "subject": "player", "condition": "moving"},
