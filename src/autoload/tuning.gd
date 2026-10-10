@@ -376,25 +376,18 @@ const HEAT_PRESSES_POPULATION := 1.6
 ## centre becomes 13.5/s. Deliberately the smaller of the two multipliers — an intensity rise is the
 ## one the player feels without seeing anything change, so it is the seasoning rather than the meal.
 const HEAT_PRESSES_INTENSITY := 1.35
-## The progress at which a pressing row stops merely running its route and starts coming over. As
-## close to half way through `RESISTANCE_GOAL` as a whole task lets it land (`roundi(5 / 2.0)`),
-## so the first half of the subquest is the city being *denser* and the second is it being
-## *interested* — two escalations rather than one continuous number nobody can name the moment of.
+## The progress at which a pressing row stops merely running its route and starts investigating —
+## stopping near her and letting a pursuer on foot out (`EventDef.investigates`). As close to half
+## way through `RESISTANCE_GOAL` as a whole task lets it land (`roundi(5 / 2.0)`), so the first half
+## of the subquest is the city being *denser* and the second is it being *interested* — two
+## escalations rather than one continuous number nobody can name the moment of.
 const HEAT_INVESTIGATES_LEVEL := 3
-## How fast it follows, and it is the same 130px/s every other pursuer in the game moves at.
-## `validate_pursuit` allows the band `WALK_SPEED + PURSUIT_MIN_MARGIN` to
-## `RUN_SPEED - PURSUIT_MIN_MARGIN` — 112 to 148 — and a second speed inside it would be a second
-## answer to "can I outrun this", which is the one question a pursuit is allowed to ask.
-const HEAT_INVESTIGATE_SPEED := 130.0
-## How close she has to come before it takes an interest, in px. It has to sit **outside** the
-## stand-off the contract computes (122px against a 44px inner radius at the speed above) or the
-## whole notice is spent standing still, and **inside** the row's own 185px outer radius or it
-## decides about her before she can feel it. `validate_pursuit` refuses both ends.
+## How close she has to come, along a clear line, before an investigating car stops and its
+## policeman gets out, in px — "close" in the player's "it should stop if close to her" (merry-stork).
+## **Inside the patrol's own 185px outer radius**, so it decides about her only once she can feel it,
+## and wider than the man's stand-off (116px), so he usually gets out with room to hold his ground
+## and the notice he owes her (`EventDef.sets_off_beside_her` covers him when she is nearer).
 const HEAT_INVESTIGATE_WITHIN := 150.0
-## How long it follows for once it has noticed, in seconds. Under `PURSUIT_TIME * 2`, and long
-## enough that running opens (`RUN_SPEED` - 130) x 4 = 152px — more than three times the 44px it is
-## expensive inside, so the answer to being investigated is legible as *leave*.
-const HEAT_INVESTIGATE_SECONDS := 4.0
 
 ## The progress at which a `HUNTS` row stops being a place and starts being a hunter. Its own
 ## number rather than the patrol's `HEAT_INVESTIGATES_LEVEL`, deliberately: sharing one would put
@@ -404,7 +397,8 @@ const HEAT_INVESTIGATE_SECONDS := 4.0
 ## task's worth of progress left before the goal — rather than the fraction that produced it.
 const HEAT_HUNTS_LEVEL := RESISTANCE_GOAL - 1
 ## How fast it hunts once it starts — the same 130px/s every other pursuer in the game moves at
-## (`charging_dog`, `alley_robbery`, the investigating patrol). `validate_pursuit` allows the band
+## (`charging_dog`, `alley_robbery`, the policeman an investigating patrol lets out).
+## `validate_pursuit` allows the band
 ## `WALK_SPEED + PURSUIT_MIN_MARGIN` to `RUN_SPEED - PURSUIT_MIN_MARGIN` — 112 to 148 — and a
 ## second speed inside it would be a second answer to "can I outrun this", which is the one
 ## question a pursuit is allowed to ask.

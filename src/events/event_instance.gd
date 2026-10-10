@@ -1743,7 +1743,7 @@ const DRIVEN_CLEARANCE := 0.5
 ## for her then: it is still driving, and with her inside the strike area (`_in_front()`, which
 ## reaches `Tuning.PATROL_STRIKE_LEAD` past the touch for exactly this) `is_lethal_at()` ends the
 ## day. What it stands for is the rest — a flank or a corner turned into her, a pram poking over the
-## kerb, the investigating car coming over to her, a car leaving.
+## kerb, a car leaving.
 ##
 ## **No strike without its full warning, unless she steps into a moving car's path.** Three more
 ## refusals keep every other way of putting her in front of it out:
@@ -1953,15 +1953,15 @@ func is_driving() -> bool:
 
 ## Whether the car is on its route rather than in any other state: not standing still through a
 ## telegraph or parked, not leaving — it is over, and nothing that is over ends the day — and **not
-## coming over to investigate**: the heated copy that has noticed her is a pursuer closing on her,
-## not a car on its route, and it stops against her rather than striking her (see
-## `EventDef.at_heat()`).
+## stopped to investigate**: the heated copy that has noticed her stands where it stopped while the
+## man it let out pursues her (`EventDef.investigates`, `_investigate()`), and a standing car
+## strikes nobody.
 func _drives_its_route() -> bool:
 	if not def.drives or is_finished or is_leaving or is_parked:
 		return false
 	if not def.mobile or path.size() < 2 or is_telegraphing_still():
 		return false
-	if def.pursues and not is_waiting():
+	if (def.pursues or def.investigates) and not is_waiting():
 		return false
 	return def.speed >= Tuning.CAR_STRIKE_MIN_SPEED
 
@@ -2079,7 +2079,11 @@ func _process(delta: float) -> void:
 		return
 
 	_fly_the_flock(delta)
-	if def.pursues:
+	if def.investigates:
+		_investigate()
+		if is_waiting() and def.mobile and path.size() > 1:
+			_advance_along_path(delta)
+	elif def.pursues:
 		# **A pursuer that has a route runs it until it notices her.** No field says so — see
 		# `EventDef.at_heat()`'s own note on `PRESSES` — it is read off the two flags a mobile
 		# pursuer already carries: while it is only `is_waiting()` it has not decided anything about
@@ -2413,6 +2417,59 @@ func _chase(delta: float) -> void:
 	# Ground covered, not ground gained: sliding along a wall is still moving, and the bob is driven
 	# by distance so that a thing holding its ground reads as standing still.
 	_path_travelled += moved.length()
+
+# ------------------------------------------------------------ the investigation ---
+# *(merry-stork, the player: "an investigating police car should not leave the street. it should
+# stop if close to her and a policeman should emerge and pursue her".)*
+
+## Whether this investigating car has stopped for her and still owes the man it lets out: true from
+## the frame it notices her until `EventManager` puts him down (`let_out()`).
+var _officer_owed := false
+## The pursuer on foot this car let out, once he is in the world.
+var _officer: EventInstance = null
+
+## **An investigating car notices her and stops** (`EventDef.investigates`): while it waits it
+## drives its route (`_process()`), and the frame she is within `pursues_within` of it along a clear
+## line (`_clear_line_to()`, every notice's test) it stops where it is, on its road, and owes the man
+## it lets out (`wants_its_officer()`). From then on it stands while he is after her, and once he has
+## caught her, given up or run out his chase — or it has none, streamed back in already stopped — it
+## drives on (`_be_done()`).
+func _investigate() -> void:
+	if is_waiting():
+		if player_at != Vector2.INF \
+				and global_position.distance_to(player_at) <= def.pursues_within \
+				and _clear_line_to(player_at):
+			_noticed_at = age
+			_officer_owed = true
+		return
+	if _officer_owed:
+		return
+	if not is_instance_valid(_officer) or _officer.is_finished or _officer.is_leaving:
+		_be_done()
+
+## Whether this car has stopped for her and the man it lets out is still to be put down. Read by
+## `EventManager._let_the_officers_out()`.
+func wants_its_officer() -> bool:
+	return _officer_owed and not is_finished and not is_leaving
+
+## Hands the car the man `EventManager` put down at its door (`door_for_its_officer()`), so it
+## stands until he is done.
+func let_out(officer: EventInstance) -> void:
+	_officer_owed = false
+	_officer = officer
+
+## The man this car let out, or null.
+func its_officer() -> EventInstance:
+	return _officer if is_instance_valid(_officer) else null
+
+## Where the man gets out: beside the car's flank on her side, clear of its body by his own, at its
+## middle — `side` 1 for her side, -1 for the other.
+func door_for_its_officer(row: EventDef, side := 1.0) -> Vector2:
+	var across := _heading.orthogonal()
+	if player_at != Vector2.INF and (player_at - global_position).dot(across) < 0.0:
+		across = -across
+	var reach := def.shape.radius + (row.shape.reach() if row.shape else 0.0) + 1.0
+	return global_position + across * side * reach
 
 ## Ends this chase from outside `_chase()`'s own loop, in the one state `_chase()` reaches when she
 ## has outrun it: `gave_up` set, `_be_done()` called — the same departure, the same drawing and the
@@ -2955,16 +3012,16 @@ func _be_done(may_park := true) -> void:
 			and not global_position.is_equal_approx(player_at):
 		_heading = (global_position - player_at).normalized()
 	if def.drives:
-		# **A car leaves the way it can, and never vanishes beside her.** One that ends a visit to
-		# her — the investigating car's chase running out — still faces her, and every step of a
-		# departure into her is refused (`_drive()`), so it turns away from her as
-		# `leave_for_a_completed_task()` turns anything; and a car that has a body she can stand
-		# against is gone only once she could not be watching (`_leaving_must_clear_sight`), not
-		# off `LEAVING_GIVES_UP`'s clock while she stands beside it.
+		# **A car leaves the way it can, and never vanishes beside her.** Every step of a departure
+		# into her is refused (`_drive()`), and a car that has a body she can stand against is gone
+		# only once she could not be watching (`_leaving_must_clear_sight`), not off
+		# `LEAVING_GIVES_UP`'s clock while she stands beside it. **An investigating car drives on
+		# along its road, away from her**: it stopped facing along its lane, and the way along it
+		# that does not run at her is the way it goes — never off the carriageway.
 		_leaving_must_clear_sight = true
-		if def.pursues and _noticed_at != INF and player_at != Vector2.INF \
-				and not global_position.is_equal_approx(player_at):
-			_heading = (global_position - player_at).normalized()
+		if def.investigates and _noticed_at != INF and player_at != Vector2.INF \
+				and (player_at - global_position).dot(_heading) > 0.0:
+			_heading = -_heading
 
 ## Ends this instance early because a resistance step's contact rode on it and she has just
 ## completed the step — called by `ResistanceDirector._on_contact_completed()` on the instance
@@ -4677,7 +4734,7 @@ const POLICE_CAR_CANVAS_BOTTOM_MARGIN := {
 ## is `half_length · |heading.y| + radius` — 12px driving east or west, 21 north or south — and
 ## the picture sits over the body she walks into rather than standing in front of it. Read off the
 ## live heading rather than the quantised view, the crowd car's reason: the body turns
-## continuously while a car comes over to her, and a picture anchored on the view would jump at
+## continuously as a car rounds a corner, and a picture anchored on the view would jump at
 ## every sector boundary. The caret over it is lowered by the same amount (`_picture_drop_now()`).
 func _police_car_anchor(view: String) -> Vector2:
 	var south := def.shape.half_length * absf(_solid_axis().y) + def.shape.radius

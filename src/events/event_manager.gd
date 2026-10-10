@@ -235,6 +235,34 @@ func send_a_pursuer() -> void:
 		# `VisitCounter`'s own "poster-pursuit" — see docs/TELEMETRY.md, "The page counts visits".
 		EventBus.poster_pursuit_sent.emit()
 
+## **The man an investigating car lets out.** *(merry-stork, the player: "an investigating police
+## car should not leave the street. it should stop if close to her and a policeman should emerge and
+## pursue her".)* Every car that has just stopped for her (`EventInstance.wants_its_officer()`) gets
+## the day's pursuer on foot as he gets out of a car (`EventCatalogue.out_of_the_car()`: a policeman
+## through day 8, a guardsman from day 9) put down at its door on her side
+## (`EventInstance.door_for_its_officer()`), or on the other side where hers is not walkable, or at
+## the car itself where neither is. He appears in her view, so there is no badge: his notice is the
+## sight of him, the door guard's (`EventDef.sets_off_beside_her`). Outside the day's plan, like
+## everything put down after dawn by a director.
+func _let_the_officers_out() -> void:
+	for car: EventInstance in _instances.duplicate():
+		if not car.wants_its_officer():
+			continue
+		var def := EventCatalogue.out_of_the_car(_day)
+		var at := car.door_for_its_officer(def)
+		if not _map.is_walkable(_map.world_to_tile(at)):
+			at = car.door_for_its_officer(def, -1.0)
+		if not _map.is_walkable(_map.world_to_tile(at)):
+			at = car.global_position
+		var officer := _spawn_unplanned(def, at)
+		officer.player_at = _player.global_position
+		car.let_out(officer)
+		Telemetry.note("roll", "an investigating patrol stops at %s, %.0fpx from her, and %s gets out"
+				% [TelemetryLog.tile(_map.world_to_tile(car.global_position)),
+				car.global_position.distance_to(_player.global_position),
+				"a guardsman" if def.look == EventDef.Look.GUARDSMAN_GIVING_CHASE
+						else "a policeman"])
+
 ## Whether a torn poster's pursuer is on his way or after her: his warning is up, or he is in the
 ## world and neither finished nor leaving.
 func a_pursuer_is_after_her() -> bool:
@@ -1312,6 +1340,7 @@ func _tick_the_events(delta: float) -> void:
 		_watch_the_encounters(delta)
 		_run_the_warnings(delta, _player.global_position)
 		_tell_them_where_she_is()
+		_let_the_officers_out()
 		_warn_about_the_ground_she_is_on()
 		_watch_the_door_lines()
 		_check_detentions()

@@ -202,7 +202,8 @@ traps:
   the end of its beat turns her from behind a car driving away into the front of one, struck with
   next to no warning. The car stands instead.
 - **A car leaving must not vanish beside her.** A departure into her is refused every frame, so a
-  car that ends a visit to her turns away first and is gone only once she could not be watching.
+  car that stopped for her — the investigating car, once the man it let out is done — leaves along
+  its road the way that does not run at her, and is gone only once she could not be watching.
 
 **A body is a route cost, not a closure.** `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
 `obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can

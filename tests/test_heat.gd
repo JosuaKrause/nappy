@@ -26,7 +26,7 @@ func run(t) -> void:
 	_test_the_patrol_investigates_past_the_threshold(t)
 	_test_it_patrols_while_it_waits(t)
 	_test_a_patrol_that_never_notices_drives_off_its_route(t)
-	_test_the_patrol_chases_once_it_notices(t)
+	_test_the_patrol_stops_once_it_notices(t)
 	_test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t)
 	_test_only_the_guard_on_her_side_sets_off_from_his_post(t)
 	_test_a_streamed_patrol_resumes_where_it_left_off(t)
@@ -269,17 +269,26 @@ func _test_the_patrol_presses_more_and_louder(t) -> void:
 
 ## It does not investigate below the threshold, and does at and above it — checked over every
 ## level rather than just the two ends, since a threshold is exactly the kind of thing an
-## off-by-one hides in.
+## off-by-one hides in. **At no heat is the car itself a pursuer** (merry-stork: "an investigating
+## police car should not leave the street"): the man it lets out is. It notices her only inside its
+## own field, and further out than the man's own stand-off, so he usually gets out with room to
+## hold his ground.
 func _test_the_patrol_investigates_past_the_threshold(t) -> void:
 	var cold := _cold_patrol()
 	for level in EventCatalogue.heat_levels():
 		var hot := EventCatalogue.heated(cold, level)
 		var should_investigate := level >= Tuning.HEAT_INVESTIGATES_LEVEL
-		t.check(hot.pursues == should_investigate,
+		t.check(hot.investigates == should_investigate,
 				"heat %d: the patrol investigates iff it is at or past the threshold" % level)
+		t.check(not hot.pursues, "heat %d: and the car itself never pursues her" % level)
 		if should_investigate:
-			t.check(hot.pursue_speed > Tuning.WALK_SPEED and hot.pursue_speed < Tuning.RUN_SPEED,
-					"heat %d: and it comes at a speed strictly between a walk and a run" % level)
+			for day: int in [8, 9]:
+				var officer := EventCatalogue.out_of_the_car(day)
+				var standoff := Tuning.pursuit_standoff(officer.pursue_speed,
+						officer.standoff_reach())
+				t.check(standoff < hot.pursues_within and hot.pursues_within <= hot.outer_radius,
+						"heat %d: the man's stand-off %.0f < its notice %.0f <= its field %.0f"
+						% [level, standoff, hot.pursues_within, hot.outer_radius])
 
 ## A waiting pursuer with a route runs it rather than standing at attention. Sited far from her so
 ## it is never noticed, a heated patrol has to actually cover ground along its path while
@@ -288,7 +297,7 @@ func _test_the_patrol_investigates_past_the_threshold(t) -> void:
 ## away the moment it started answering to heat.
 func _test_it_patrols_while_it_waits(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
-	t.check(hot.pursues and hot.mobile, "the fully heated patrol is a mobile pursuer")
+	t.check(hot.investigates and hot.mobile, "the fully heated patrol is a mobile investigator")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(hot, path[0], path)
@@ -331,45 +340,39 @@ func _test_a_patrol_that_never_notices_drives_off_its_route(t) -> void:
 			"and it still leaves once it drives off the end, exactly as a plain mobile row would")
 	instance.free()
 
-## Once she comes inside `pursues_within` it stops patrolling and chases, on the same contract
-## every pursuer in the game is held to — the one rule to keep from the rig style in
-## `tests/test_events.gd`: the player accelerates rather than snapping to `RUN_SPEED`, because a
-## rig that starts at full speed passes even a pursuer with no break-off in it at all.
-func _test_the_patrol_chases_once_it_notices(t) -> void:
+## Once she comes inside `pursues_within` along a clear line it stops where it is on its road
+## and owes the man it lets out — it never moves toward her; it stands while he is after her, and
+## once he has given up it drives on along its road, away from her.
+func _test_the_patrol_stops_once_it_notices(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
+	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 	var instance := EventInstance.new()
-	instance.setup(hot, Vector2.ZERO)
+	instance.setup(hot, path[0], path)
 	t.add_child(instance)
 	instance.set_process(false)
-
-	var her := Vector2(hot.pursues_within - 10.0, 0.0)
+	var her := Vector2(hot.pursues_within - 10.0, -40.0)
 	instance.player_at = her
 	instance._process(STEP)
-	t.check(not instance.is_waiting(), "she is inside the trigger, so it turns and notices her")
-
-	# She holds still through the telegraph and the lunge, so what follows is only the chase.
-	var telegraph_frames := 0
-	while instance.is_telegraphing() and telegraph_frames < int(10.0 / STEP):
+	t.check(not instance.is_waiting(), "she is inside its reach, so it notices her")
+	t.check(instance.wants_its_officer(), "and owes the man it lets out")
+	var stopped_at := instance.position
+	var officer := EventInstance.new()
+	var out := EventCatalogue.out_of_the_car(6)
+	officer.setup(out, instance.door_for_its_officer(out))
+	instance.let_out(officer)
+	for i in int(round(3.0 / STEP)):
 		instance.player_at = her
 		instance._process(STEP)
-		telegraph_frames += 1
-	t.check(not instance.is_telegraphing(), "and the telegraph actually ends")
-
-	# Now she runs, accelerating rather than teleporting to speed.
-	var speed := 0.0
-	var elapsed := 0.0
-	var opened_from := instance.global_position.distance_to(her)
-	while elapsed < 6.0 and not instance.gave_up and not instance.is_finished:
-		speed = move_toward(speed, Tuning.RUN_SPEED, Tuning.ACCELERATION * STEP)
-		her.x += speed * STEP
-		instance.player_at = her
-		instance.player_running = speed > Tuning.WALK_SPEED
-		instance._process(STEP)
-		elapsed += STEP
-	t.check(instance.gave_up, "running away from a fully heated patrol still works")
-	var opened_to := instance.global_position.distance_to(her)
-	t.check(opened_to > opened_from,
-			"and the gap actually opened once she ran (%.0fpx -> %.0fpx)" % [opened_from, opened_to])
+	t.check(instance.position == stopped_at and not instance.is_leaving,
+			"it stands where it stopped while he is after her")
+	t.check(not instance.is_driving(), "and a standing car is not driving, so it strikes nobody")
+	officer.give_up_the_chase()
+	instance.player_at = her
+	instance._process(STEP)
+	t.check(instance.is_leaving, "once he has given up, it drives on")
+	t.check(absf(instance.facing_now().y) < 0.001,
+			"along its road, never across it (%s)" % instance.facing_now())
+	officer.free()
 	instance.free()
 
 ## *"I just saw a barrier turn into a mask men (the barrier disappeared and the masked man
@@ -577,7 +580,7 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 	for i in int(round(1.0 / STEP)):
 		first.player_at = her
 		first._process(STEP)
-	t.check(not first.is_waiting(), "and a second later it is still chasing, not patrolling")
+	t.check(not first.is_waiting(), "and a second later it has still stopped, not patrolling")
 	var age := first.age
 	var travelled := first.path_travelled()
 	var noticed_at := first.noticed_at()
@@ -588,9 +591,13 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 	t.add_child(second)
 	second.resume(age, travelled, noticed_at)
 	t.check(not second.is_waiting(),
-			"streamed back in mid-chase it is still chasing — `_noticed_at` is carried over")
+			"streamed back in after it stopped, it has still noticed her — `_noticed_at` is carried over")
 	t.close_to(second.chase_age(), age - noticed_at,
-			"and the chase clock resumes from the notice rather than restarting at it", 0.001)
+			"and the notice's clock resumes from the notice rather than restarting at it", 0.001)
+	t.check(not second.wants_its_officer(), "and it does not let a second man out")
+	second.player_at = her
+	second._process(STEP)
+	t.check(second.is_leaving, "with nobody of its own after her, it drives on")
 	second.free()
 
 ## A day planned at full heat places at least as many patrols as the same day cold, and strictly

@@ -23,6 +23,9 @@ func run(t) -> void:
 	_test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t)
 	_test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t)
 	_test_his_catch_ends_the_day_with_its_own_line(t)
+	_test_the_man_out_of_the_car_owes_the_pursuit_contract(t)
+	_test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t)
+	_test_the_car_does_not_notice_her_through_a_building(t)
 
 # ------------------------------------------------------------------ the rig ---
 
@@ -274,3 +277,178 @@ func _test_his_catch_ends_the_day_with_its_own_line(t) -> void:
 		t.check(EventCatalogue.by_id(id).hard_fail, "'%s' is a hard fail" % id)
 		var line: String = DayController._HARD_FAIL_TEXT.get(id, "")
 		t.check(line != "", "'%s' has its own loss line" % id)
+
+# ----------------------------------------------------------- out of the car ---
+
+## The man an investigating car lets out is the day's pursuer on foot, met in her view: not warned
+## of from off screen and not arriving chasing, but holding the door guard's ground for the alley
+## robber's notice — at least `Tuning.PURSUIT_MIN_NOTICE` — and then chasing under the pursuit
+## contract, which `validate()` holds him to.
+func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
+	for day: int in [8, 9]:
+		var out := EventCatalogue.out_of_the_car(day)
+		var own := EventCatalogue.on_foot_on(day)
+		t.check(out.id == own.id and out.look == own.look and out.hard_fail,
+				"day %d: the man out of the car is %s, whose catch ends the day" % [day, own.id])
+		t.check(not out.warns_before_it_exists() and not out.arrives_chasing,
+				"day %d: he gets out in her view, with no off-screen badge" % day)
+		t.check(out.sets_off_beside_her and out.telegraph_time >= Tuning.PURSUIT_MIN_NOTICE,
+				"day %d: he holds his ground for a %.1fs notice before he chases"
+				% [day, out.telegraph_time])
+		t.check(out.validate(), "day %d: and the pursuit contract holds him" % day)
+		# Standing still beside the car, she is not caught during his notice: he holds his ground.
+		var her := Vector2.ZERO
+		var man := EventInstance.new()
+		man.setup(out, Vector2(60.0, 0.0))
+		var caught := INF
+		var elapsed := 0.0
+		while elapsed < out.telegraph_time + 4.0:
+			man.player_at = her
+			man._process(STEP)
+			elapsed += STEP
+			if man.is_lethal_at(her):
+				caught = elapsed
+				break
+		t.check(caught >= out.telegraph_time,
+				"day %d: standing beside him, his catch comes only after his notice (%.2fs)"
+				% [day, caught])
+		man.free()
+
+## A lane on an east-west street off the main road, with a sidewalk tile beside it: `[lane point,
+## sidewalk point]` on `map`, or empty.
+func _a_lane_beside_a_sidewalk(map: CityMap) -> Array:
+	for y in range(2, map.size.y - 2):
+		for x in range(12, map.size.x - 12):
+			var tile := Vector2i(x, y)
+			if map.tile_at(tile) != GameEnums.TileType.ROAD \
+					or map.tile_at(tile + Vector2i.UP) != GameEnums.TileType.SIDEWALK:
+				continue
+			var run := true
+			for dx in range(-10, 14):
+				run = run and Tile.is_road(map.tile_at(tile + Vector2i(dx, 0)))
+			if run and not map.is_on_home_block(tile + Vector2i.UP):
+				return [map.tile_to_world(tile), map.tile_to_world(tile + Vector2i.UP)]
+	return []
+
+## **The investigating car stops on its road and the man gets out and pursues her.** On a real
+## city, through the manager's own steps: a heated patrol drives its lane toward her standing on the
+## sidewalk beside it; it stays on the carriageway every frame, stops once she is within its reach,
+## and the day's man — a policeman on day 8, a guardsman on day 9 — appears at its door on her side,
+## with no badge; the car stands while he is after her; and, standing still, she is caught after
+## his notice, which ends the day in his name.
+func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t) -> void:
+	for day: int in [8, 9]:
+		var rig := _city_with_her(t, day)
+		var city: City = rig[0]
+		var her: Node2D = rig[1]
+		var spot := _a_lane_beside_a_sidewalk(city.map)
+		t.check(spot.size() == 2, "found a lane beside a sidewalk")
+		if spot.size() != 2:
+			_done(city, her)
+			return
+		var lane: Vector2 = spot[0]
+		her.global_position = spot[1]
+		var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"),
+				Tuning.RESISTANCE_GOAL)
+		var route := PackedVector2Array([lane - Vector2(280.0, 0.0), lane + Vector2(400.0, 0.0)])
+		for end in route:
+			t.check(Tile.is_road(city.map.tile_type_at_world(end)), "its route is on the road")
+		var car := city.events.spawn_extra(hot, route[0], route)
+		var events := city.events
+		var off_the_road := 0
+		var officer: EventInstance = null
+		var out_at := INF
+		var stopped_at := Vector2.INF
+		var car_moved := 0.0
+		# An array, since a lambda captures a local by value.
+		var struck := [""]
+		var on_struck := func(id: String) -> void: struck[0] = id
+		EventBus.hard_fail_triggered.connect(on_struck)
+		var elapsed := 0.0
+		events._find_player()
+		while elapsed < 12.0 and struck[0] == "":
+			events._tell_them_where_she_is()
+			events._let_the_officers_out()
+			for instance in events.instances().duplicate():
+				instance._process(STEP)
+			events._check_hard_fails()
+			elapsed += STEP
+			if not Tile.is_road(city.map.tile_type_at_world(car.global_position)):
+				off_the_road += 1
+			if officer == null and car.its_officer() != null:
+				officer = car.its_officer()
+				out_at = elapsed
+				stopped_at = car.global_position
+				t.check(events.pending_warnings().is_empty(),
+						"day %d: he gets out with no off-screen badge" % day)
+				var door := officer.global_position.distance_to(car.global_position)
+				t.check(door <= car.def.shape.radius + officer.def.shape.reach() + 2.0,
+						"day %d: at the car's door (%.0fpx from its middle)" % [day, door])
+			elif stopped_at != Vector2.INF and officer and not officer.is_leaving:
+				car_moved = maxf(car_moved, car.global_position.distance_to(stopped_at))
+		EventBus.hard_fail_triggered.disconnect(on_struck)
+		var expected := "guardsman_giving_chase" if day >= 9 else "policeman_giving_chase"
+		t.check(off_the_road == 0, "day %d: the car stayed on the carriageway (%d frames off)"
+				% [day, off_the_road])
+		t.check(stopped_at != Vector2.INF
+				and stopped_at.distance_to(her.global_position) <= hot.pursues_within + 0.5,
+				"day %d: it stopped once close to her (%.0fpx)"
+				% [day, stopped_at.distance_to(her.global_position)])
+		t.check(officer != null and officer.def.id == expected,
+				"day %d: and %s got out" % [day, expected])
+		t.check(car_moved < 0.01, "day %d: the car stood while he was after her" % day)
+		t.check(struck[0] == expected, "day %d: standing still, she is caught and the day ends in "
+				% day + "his name (%s)" % struck[0])
+		t.check(officer != null and elapsed - out_at >= officer.def.telegraph_time,
+				"day %d: and only after his %.1fs notice (%.2fs)"
+				% [day, officer.def.telegraph_time if officer else 0.0, elapsed - out_at])
+		_done(city, her)
+
+## **It notices her only along a clear line**, as every notice does: within its reach but with a
+## building between them, the car drives on rather than stopping.
+func _test_the_car_does_not_notice_her_through_a_building(t) -> void:
+	var map := CityGenerator.generate(SEED)
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
+	var found := _a_hidden_spot(map, hot.pursues_within)
+	t.check(found.size() == 2, "found walkable ground in its reach behind a building")
+	if found.size() != 2:
+		return
+	var lane: Vector2 = found[0]
+	var hidden: Vector2 = found[1]
+	var car := EventInstance.new()
+	car.setup(hot, lane, PackedVector2Array([lane, lane + Vector2(4000.0, 0.0)]), Vector2.RIGHT,
+			map)
+	t.add_child(car)
+	car.set_process(false)
+	car.player_at = hidden
+	car._process(STEP)
+	t.check(car.is_waiting() and not car.wants_its_officer(),
+			"with a building between them, %.0fpx off, it has not noticed her"
+			% lane.distance_to(hidden))
+	car.free()
+
+## A road tile centre on an east-west lane beside a sidewalk and a walkable point within `reach` of
+## it whose straight line to it crosses a building — round a block's corner: `[lane, her]` on `map`,
+## or empty.
+func _a_hidden_spot(map: CityMap, reach: float) -> Array:
+	var tiles := ceili(reach / Tuning.TILE_SIZE)
+	for y in range(tiles, map.size.y - tiles):
+		for x in range(tiles, map.size.x - tiles):
+			var at := Vector2i(x, y)
+			if map.tile_at(at) != GameEnums.TileType.ROAD \
+					or map.tile_at(at + Vector2i.UP) != GameEnums.TileType.SIDEWALK:
+				continue
+			var lane := map.tile_to_world(at)
+			for dy in range(-tiles, 0):
+				for dx in range(-tiles, tiles + 1):
+					var her := map.tile_to_world(at + Vector2i(dx, dy))
+					if her.distance_to(lane) > reach or not map.is_walkable(map.world_to_tile(her)):
+						continue
+					var blocked := false
+					for i in 65:
+						var point := lane.lerp(her, float(i) / 64.0)
+						blocked = blocked or map.tile_at(map.world_to_tile(point)) \
+								== GameEnums.TileType.BUILDING
+					if blocked:
+						return [lane, her]
+	return []

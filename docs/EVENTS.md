@@ -50,7 +50,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `sets_off_beside_her` | Whether a pursuer starts **inside its own stand-off**, spawned beside her rather than sited or noticing her outside it. Its notice then cannot be cut short by her being close and it never backs off: it holds its ground, follows at the stand-off once she is further, and chases when the notice has run its whole length. `door_guard` is the one row — see "Checkpoints". Any other pursuer takes the same ground once a wall has held its lunge back, and lunges when she is back at its stand-off with the line clear; its notice, unlike the door guard's, does not run out while she is inside the stand-off |
 | `lifts_for_traffic` | Whether this row is a **boom**: a bar across a door's carriageway that the cars raise and lower, solid to her only while it is down, and never an inspection. `checkpoint_gate` is the one row — see "Checkpoints" |
 | `barrier_structure` | Whether this row is a piece of the region boundary — a street being held. The four that are (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`, `roadblock`) charge the meter as **one** source, the strongest at her position, rather than as their sum; everything else in the catalogue still sums — see "Checkpoints" |
-| `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it comes over), `HUNTS` (it stops being a place and starts being a hunter) — see "The heat" |
+| `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it stops near her and a pursuer on foot gets out), `HUNTS` (it stops being a place and starts being a hunter) — see "The heat" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
 | `shape` | The row's own `GroundShape` (`src/ground_shape.gd`) — a point or a segment, independent of the picture — that its shadow and, when it obstructs, its collision body are both derived from. Set by `EventDef.solid(shape)` for anything with `obstructs_radius`, or directly for anything with a `look` that does not obstruct; `null` only for `look == NONE` — see "Solid things are solid" |
 | `draws_body_shadow` | Whether `EventInstance._draw_body_shadow()` puts anything down for this row. `true` for every row but `burst_water_main`, whose crater is sunk into the road rather than standing on it |
@@ -324,7 +324,7 @@ the loose dog's 24 is not. Applied to every row by its numbers:
 | `cat_dash` | 240 | Across her line | About free | No | Crosses rather than approaches; the player's explicit exception |
 | `alley_mouse` | 200 | Across its alley | 13% walked through | No | Crosses rather than approaches; keeps its in-world crouch |
 | `pigeon_flock` | Stationary | No | 45% walked through | No | Heavy hit, but she approaches it; keeps its in-world wait |
-| `police_patrol`, including sent and investigating copies | 74 | Along her road | About 3% a pass; ends the day in front of it on the carriageway while it drives | No | Slower than a walk; its strike is a car's, warned by its horn |
+| `police_patrol`, including the return's copies and the investigating one | 74 | Along her road | About 3% a pass; ends the day in front of it on the carriageway while it drives | No | Slower than a walk; its strike is a car's, warned by its horn |
 | Reversing lorry, cold abduction and raid, firefight | 0 | No | Ends the day | In-world telegraph only | They stand; their fairness contract remains |
 
 ### Everything arrives from off screen
@@ -580,19 +580,18 @@ whole of its life. `basement_steam` is placed indoors, where there is no lattice
 **A car is solid and never drives into her.** *(azure-koala, inbox #601: "police cars don't have a
 hitbox"; leafy-puffin, inbox #648, offered "solid in every state, lethal only in front while
 driving": "yes to the police car hitbox".)* `police_patrol` and every copy of it — the return's
-and a torn poster's down the road, the raid's pacing at her door, the investigating one at heat —
-carry `EventDef.drives`, which makes it the one body that moves. **The body is the car's drawn
+down the road, the raid's pacing at her door, the investigating one at heat — carry
+`EventDef.drives`, which makes it the one body that moves. **The body is the car's drawn
 ground contact**: its `shape`, a capsule 42px long (the side view's body, bumper to bumper) and
 24px wide (the end views', flank to flank), centred on the node and laid along the car's heading,
 turning as it turns (`EventInstance._solid_axis()`). The same shape is its shadow, and its picture
 is drawn over it — the bottom of each view on the body's southern edge, the crowd car's own
 registration (`EventInstance._police_car_anchor()`) — so where she is stopped is where the car is
-drawn. She walks round it whether it drives, stands, or comes over to investigate.
+drawn. She walks round it whether it drives or stands.
 
 **It answers the pin the mobile exemption exists for, by never moving into her.** Each frame
 `EventInstance._drive()` takes back whatever part of it would bring the body into contact with her
-or her pram — a step along its route, a turn onto a new heading, the investigating car's approach,
-its departure — and the car stands where it was until she moves: it stops for her rather than
+or her pram — a step along its route, a turn onto a new heading, its departure — and the car stands where it was until she moves: it stops for her rather than
 pushing her, so nothing ever carries her into a wall and she is never inside it. A pose that leaves
 her no nearer is always allowed, so a car she has walked up against drives on along its flank or
 away from her rather than wedging. **A car that has stood for her drives on only once she is out
@@ -610,8 +609,9 @@ body to wait for it. That is decided before its nose reaches the box, from `Tuni
 `Tuning.CAR_ZEBRA_WAIT_RADIUS` along of it and half a street across from the car's lane — however
 far that is in a straight line; only a car whose nose is already in the box, committed, stands
 short of the zebra's paint instead.
-**A car leaving does not vanish beside her**: one ending a visit to her turns away from her first,
-and any car leaving is gone only once she is out of sight of it. **It closes no ground**: `obstructs_radius` stays zero, so the
+**A car leaving does not vanish beside her**: an investigating car that stopped for her drives on
+along its road the way that does not run at her, and any car leaving is gone only once she is out
+of sight of it. **It closes no ground**: `obstructs_radius` stays zero, so the
 planners' disc, the crowd's per-tile record (which the crowd's walkers and cars read, and which is
 built from the plan's stationary bodies) and the director's refusal of a director-sited body know
 nothing of it — it drives down a carriageway she walks round it on, and the crowd passes through it
@@ -622,8 +622,8 @@ wider than the body and her together, the ground the body sweeps, and reaching
 `Tuning.PATROL_STRIKE_LEAD` (0.1s) of its travel past the point it would touch her or her pram —
 ends the day while the car drives its route and she stands on the carriageway
 (`EventInstance.is_lethal_at()`). Nothing behind it, nothing beside it, nothing while it stands — for her or otherwise —
-is leaving, or comes over to investigate: the heated copy that has noticed her stops against her
-rather than striking her. The strike reaches past the touch on purpose, because the car never
+is leaving, or stands for the man it let out: the heated copy that has noticed her stops on its
+road rather than striking her. The strike reaches past the touch on purpose, because the car never
 moves its body into her: a car driving its nose into her on the carriageway does not stand for her
 but strikes, where a strike stated over the touch alone would be stopped short by the body — the
 switched-off kill the constraint below refuses for a standing thing. **Its contract is
@@ -1339,8 +1339,8 @@ Three things about that shape are the design rather than the implementation:
 level, and `tests/test_heat.gd` asserts that over the response rather than over the row that
 currently carries it. The patrol that carries it is still a car at every level — lethal in front of
 it while it drives its route, as a car is ("Solid things are solid") — and that strike is not a rung:
-it is the same at every heat, and the investigating copy coming over to her stops against her rather
-than striking her.
+it is the same at every heat, and the investigating copy stops on its road near her rather than
+striking her: what comes after her then is the man who gets out of it.
 
 `abduction`, `night_raid` and `roadblock` all carry `HUNTS`. Below its own threshold,
 `Tuning.HEAT_HUNTS_LEVEL`, each is untouched — population and intensity are `PRESSES`'s axes, not
@@ -1466,7 +1466,7 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Its field is light — the danger is that you start planning around it. It is a car: a solid body she walks round whether it drives, stands or comes over to investigate, and lethal only in front of it while it drives its route, with her on the carriageway, after a car's warning (see "Solid things are solid"). In acts III and IV, extra copies of this row are also what the return leg owes — see "The return owes her patrols" above. It does not telegraph its coming (see "What telegraphs"): no badge; its in-world telegraph still meets the fairness contract. |
+| `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Its field is light — the danger is that you start planning around it. It is a car: a solid body she walks round whether it drives or stands, and lethal only in front of it while it drives its route, with her on the carriageway, after a car's warning (see "Solid things are solid"). **Past `Tuning.HEAT_INVESTIGATES_LEVEL` it investigates** (`EventDef.investigates`; [merry-stork](playtests/2026-10-10-merry-stork.md): "an investigating police car should not leave the street. it should stop if close to her and a policeman should emerge and pursue her"): it drives its route until she is within `Tuning.HEAT_INVESTIGATE_WITHIN` (150px) of it along a clear line, then stops where it is on its road and the day's pursuer on foot gets out at its door on her side (`EventManager._let_the_officers_out()`, "The pursuer on foot" below); it stands, striking nobody, while he is after her, and once he has caught her, given up or run out his chase it drives on along its road away from her. The car itself never pursues and never leaves the carriageway. In acts III and IV, extra copies of this row are also what the return leg owes — see "The return owes her patrols" above. It does not telegraph its coming (see "What telegraphs"): no badge; its in-world telegraph still meets the fairness contract. |
 | `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. **Sited from her walk** (`sited_on_her_way`, `pastes_a_front`): rolled and placed at dawn like any recurring row, then handed to her walk and sited one crew at a time on the branch she is walking, in front of a blank ground-floor cell and facing it, where it pastes its wall while she can see it — see "The crews paste the walls she passes". At dawn it stands `AGAINST_THE_BUILDING`, the way `reversing_lorry` stands, on a north-south street with a real building on the far side, and that placement is what spends the day's stream exactly as before. Centred (`ANY`, the default) it would leave under 28px on each side of the band and be a wall by physical fit; pinned at the frontage, it spans 5-27px of the band and leaves 37px to the kerb, so it stays friction. A sidewalk row only: a square has no frontage lane for a pinned body to stand in, and `poster_crew_square` below is the square's own crew. |
 | `poster_crew_square` | RECURRING | 4 | The same crew on a square, pasting onto a free-standing advertising column — every number is `poster_crew`'s, because it is the same event on the ground a row pinned against a building cannot stand on. It takes no pavement side, so `EventInstance` centres its 11px body on the tile it is given, and its picture carries the column beside the worker. The density is the sidewalk row's own, split rather than added: about one poster crew in a hundred used to land on a square, which is the square share of the ground the roll draws from, so this row carries a hundredth of that row's weight and is a rare sight by measurement. |
 | `loudspeaker` | SCRIPTED | 5 | **A mast on a street, with a field.** Six of them (`Tuning.MAST_COUNT`), sited once by `MastSites.compute()` — junction corners, commercial squares, the main road, each snapped to her own sidewalk or a square's paving — and placed fresh every day from `Tuning.MAST_FIRST_DAY` by `EventScheduler._place_masts()`, bypassing the ordinary roll: `scripted_day` stays 0, the seal pictures' own sentinel. `MastSites` also refuses a site near where a region door could ever stand (`Tuning.CHECKPOINT_EVENT_GAP` of any boundary segment's own door position — the boundary is fixed at generation, so the refusal costs no day-to-day variety); a site is skipped for the day rather than planted over them for the narrower case a day's own closures, region wall or checkpoints still catch — an alley door among them, or held ground — rare, since a closure is one street's own width against the whole city. Same field shape as `homeless_yeller` (inner 45px, outer 210px), so walking past a speaking mast on its own sidewalk costs what walking past him does — [COSTS.md](COSTS.md): both 40.0 to walk straight through. `pulse_period` 22s, `telegraph_time` 3s, repeating: `EventInstance._mast_is_telegraphing_now()` reads the mast's own `age`, which is `EventManager._broadcast_clock` rather than a clock of its own, so every mast telegraphs and speaks in the same phase. Solid at `EventCatalogue.MAST_BODY` (6px), a pole rather than a body to edge past. **A mast she silenced stays silenced**: day 11's task sends her to the foot of one live mast, and reaching it silences it through `EventManager.silence_mast()` and leaves an `EventScheduler.SILENCED_MAST` scar at its foot, which `_place_masts()` reads on every later day to plan that mast already silenced — pole and horns standing, lamp out, no field. **Day 11 can put up one more**: when no live mast stands where her paths reach inside a `ResistanceDirector.NEAR_THE_MARK` (576px) circle round where she read the mark, `EventManager.queue_a_mast()` generates a seventh, as the next event the day's scheduler places (the player: "if there is a mast queued up that will be the next event to be generated"), with every rule a planned row is placed under (`_room_around()`'s spacing included, so never inside a lethal row's field), among ground where one of those paths first reaches its edge, out of her view, that a site would be offered on; the task sends her there (the player: "Now just add a new mast close by"). It is silenced, counted by day 14's sabotage and scarred like the others, and `_place_masts()` stands it again, silenced, from its scar on every later day; one never silenced is not planned again. |
@@ -1539,9 +1539,17 @@ guard waiting at it, and the neighbor, which has neither (`ResistanceDirector.se
 
 ### The pursuer on foot — a policeman, a guardsman from day 9
 
-Two rows the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0), sent only by
+Two rows the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0), sent by
 `EventManager.send_a_pursuer()` the moment a torn poster draws its pursuit marble ("A torn poster
-can send a pursuer on foot, at once" above). Which of the two is the day's is
+can send a pursuer on foot, at once" above), and the same man gets out of an investigating police
+car that has stopped near her (`police_patrol` below). **Out of the car he is met in her view**, so
+he has no badge and does not arrive chasing: `EventCatalogue.out_of_the_car()` is a derived copy of
+the day's row that gets out as `door_guard` steps out of his hut (`sets_off_beside_her`) — for the
+alley robber's 1.8s notice he holds his ground while she is nearer than his 116px stand-off and
+follows at it once she is further, never lunging early, and then chases under the pursuit contract,
+which `EventCatalogue.all()` validates the copy against on load. *Read as, open to correction:*
+"close" in the player's words is the car's own notice reach, 150px along a clear line, and after
+he is done the car drives on rather than standing for the rest of the day. Which of the two is the day's is
 `EventCatalogue.on_foot_on()`: the policeman through day 8, the guardsman from day 9, the day the
 region's doors and their guards first stand *(inbox #591: "policemen get switched to guardman on
 day 9")*.

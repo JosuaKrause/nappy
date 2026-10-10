@@ -63,6 +63,10 @@ static func all() -> Array[EventDef]:
 		for def in _all:
 			for level in heat_levels():
 				heated(def, level).validate()
+		# And the man an investigating car lets out, a copy of the day's pursuer on foot whose
+		# notice is the sight of him — validated for the same reason.
+		for day: int in [guardsmen_from_day() - 1, guardsmen_from_day()]:
+			out_of_the_car(day).validate()
 	return _all
 
 ## This row at a resistance level, derived once per run and kept.
@@ -1593,21 +1597,22 @@ static func _charging_dog() -> EventDef:
 ##
 ## **A car, solid and lethal the way a car is** (`EventDef.drives`): *(leafy-puffin, inbox #648,
 ## offered "solid in every state, lethal only in front while driving": "yes to the police car
-## hitbox".)* She walks round its body whether it drives, stands or comes over to investigate, and
-## it ends the day only in front of it, while it drives its route, with her on the carriageway.
+## hitbox".)* She walks round its body whether it drives or stands, and it ends the day only in
+## front of it, while it drives its route, with her on the carriageway.
 ##
 ## **The patrol rung of the resistance's ladder.** `heat_response = PRESSES`: past
 ## `GameState.resistance_progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
-## it stops merely patrolling and starts investigating — see `EventDef.at_heat()`. It never gains
-## `hard_fail`, whatever the heat, and coming over to investigate never strikes her; the van is the
-## rung that hunts.
+## it stops merely patrolling and starts investigating: it stops on its road once she is close and
+## a policeman gets out and pursues her (`EventDef.investigates`, `out_of_the_car()`). The car never
+## gains `hard_fail`, whatever the heat, and never strikes her while it stands for him; the van is
+## the rung that hunts.
 static func _police_patrol() -> EventDef:
 	var def := EventDef.new()
 	def.id = "police_patrol"
 	# It does not telegraph its coming (`EventDef.telegraphs`): 74px/s is slower than a walk, so it
 	# is not something fast coming at her, and its strike is a car's, warned the way a car warns
-	# (`EventDef.drives`) rather than with a badge from off screen. Its copies — the return's and a
-	# torn poster's down the road, and the investigating one at heat — carry it with them.
+	# (`EventDef.drives`) rather than with a badge from off screen. Its copies — the return's down
+	# the road, the raid's pacing car and the investigating one at heat — carry it with them.
 	def.telegraphs = false
 	def.display_name = "Patrol"
 	def.look = EventDef.Look.POLICE_CAR
@@ -2187,6 +2192,39 @@ static func guardsmen_from_day() -> int:
 static func on_foot_on(day: int) -> EventDef:
 	return by_id("guardsman_giving_chase" if day >= guardsmen_from_day()
 			else "policeman_giving_chase")
+
+## Derived copies of the pursuer on foot, as he gets out of a car, keyed by his row's id. See
+## `out_of_the_car()`.
+static var _out_of_the_car: Dictionary[String, EventDef] = {}
+
+## **The man an investigating police car lets out** (`EventDef.investigates`): the day's pursuer on
+## foot (`on_foot_on()`, a policeman through day 8, a guardsman from day 9), his own row and his own
+## catch, which ends the day, getting out at the car's door in her view. *(merry-stork, the player:
+## "it should stop if close to her and a policeman should emerge and pursue her".)*
+##
+## **In view, so not the badge: the sight of him is his notice.** He is not warned of before he
+## exists and does not arrive chasing; he is the door guard getting out of his hut
+## (`_door_guard()`, `EventDef.sets_off_beside_her`): for the alley robber's 1.8s notice he holds
+## his ground while she is nearer than his stand-off and follows at it once she is further, his
+## lunge never firing early, and then he chases under the pursuit contract
+## (`Tuning.validate_pursuit()`, which `all()` holds this copy to on load). Every other number is
+## his own row's.
+##
+## A derived copy rather than a catalogue row, as a heated row is: it is the same man with the same
+## loss line, met another way.
+static func out_of_the_car(day: int) -> EventDef:
+	var on_foot := on_foot_on(day)
+	if not _out_of_the_car.has(on_foot.id):
+		var def := on_foot.duplicate() as EventDef
+		# The shape is a plain field `duplicate()` leaves behind; see `_policeman_giving_chase()`.
+		def.shape = on_foot.shape
+		def.warned_first = false
+		def.arrives_chasing = false
+		def.offscreen_notice = Tuning.OFFSCREEN_NOTICE
+		def.telegraph_time = _alley_robbery().telegraph_time
+		def.sets_off_beside_her = true
+		_out_of_the_car[on_foot.id] = def
+	return _out_of_the_car[on_foot.id]
 
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##

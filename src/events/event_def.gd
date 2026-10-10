@@ -663,7 +663,8 @@ func pursues_within_on(day: int) -> float:
 enum HeatResponse {
 	## Answers to nothing. Everything in act I, and the default: a cat does not care who you know.
 	NONE,
-	## **More of them, and more expensive to stand near, and past a threshold it comes over.**
+	## **More of them, and more expensive to stand near, and past a threshold it investigates**
+	## (`investigates`: it stops near her and a pursuer on foot gets out).
 	## The rung that does not hunt: it never gains `hard_fail`, whatever the heat. (The patrol that
 	## carries it strikes as a car does at every heat — `drives` — which is not a rung.)
 	PRESSES,
@@ -760,6 +761,20 @@ enum HeatResponse {
 ## it drives — a route wall, a field kept clear, the doubled telegraph margin — is about a place
 ## that ends the day, and this is a car on a road.
 @export var drives := false
+
+## **A car that investigates: it drives its route until it notices her, then stops where it is on
+## the carriageway and a pursuer on foot gets out of it.** *(merry-stork, the player: "an
+## investigating police car should not leave the street. it should stop if close to her and a
+## policeman should emerge and pursue her".)* Only `police_patrol`'s heated copy past
+## `Tuning.HEAT_INVESTIGATES_LEVEL` carries it (`at_heat()`), with `pursues_within` as the reach it
+## notices her within — along a clear line, as every notice is (`EventInstance._investigate()`).
+##
+## **It is not a pursuer**, so the car never chases and never leaves its road: it stands, as a car
+## stands for her, while the man it let out — `EventCatalogue.out_of_the_car()`, a policeman
+## through day 8 and a guardsman from day 9, put down at its door by `EventManager` — pursues her
+## under the pursuit contract; once he is done it drives on along its road, the way a patrol leaves.
+## While it stands it is not driving, so it neither warns nor strikes.
+@export var investigates := false
 
 ## Which lane of a two-tile pavement an event wants.
 ##
@@ -1056,20 +1071,14 @@ func at_heat(level: int) -> EventDef:
 					roundi(max_per_day * lerpf(1.0, Tuning.HEAT_PRESSES_POPULATION, through)))
 			hot.intensity = intensity * lerpf(1.0, Tuning.HEAT_PRESSES_INTENSITY, through)
 			if level >= Tuning.HEAT_INVESTIGATES_LEVEL:
-				# **It runs its route until it notices her, and then it comes over.** No field says
-				# so: a pursuer that is also `mobile` with a path patrols it while it waits, which
-				# `EventInstance._process` reads off the two flags it already has.
-				hot.pursues = true
-				hot.pursue_speed = Tuning.HEAT_INVESTIGATE_SPEED
+				# **It runs its route until it notices her, and then it stops and a policeman gets
+				# out** (`investigates`): the car stays on its road, and the man is the pursuer.
+				hot.investigates = true
 				hot.pursues_within = Tuning.HEAT_INVESTIGATE_WITHIN
-				# For a pursuer `duration` is the length of the chase, measured from the moment it
-				# notices her rather than from dawn. Cold, this row has none and simply drives to
-				# the end of its route.
-				hot.duration = Tuning.HEAT_INVESTIGATE_SECONDS
 			# The rung stays off the hard-fail ladder at every level. Stated rather than assumed,
 			# because the ladder has two rungs and only the top one hunts her: a patrol car kills
 			# only as a car does, in front of it while it drives its route (`drives`), and never
-			# while it comes over to investigate.
+			# while it stands for the man it let out.
 			hot.hard_fail = false
 		HeatResponse.HUNTS:
 			# Below its own threshold a `HUNTS` row is untouched. Population and intensity are
@@ -1340,6 +1349,12 @@ func validate() -> bool:
 	# its strike never fires, a car with no shape has no body to be, one that also obstructs would be
 	# a moving closure every planner reads as standing ground, and one that is also `hard_fail` would
 	# kill twice over, once by its whole field's core from behind and beside it.
+	# A car that investigates notices her within `pursues_within` and lets a pursuer out: one that
+	# also pursued would be the car chasing her off its road, and one with no reach never notices.
+	if investigates and (not drives or pursues or pursues_within <= 0.0):
+		push_error("event '%s' investigates but is not a car with a reach to notice her in that "
+				% id + "stays a car")
+		return false
 	if drives:
 		if not mobile or speed < Tuning.CAR_STRIKE_MIN_SPEED or shape == null:
 			push_error("event '%s' drives but has no route, speed (%.0f) or shape to drive with"
