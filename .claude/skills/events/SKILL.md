@@ -184,16 +184,24 @@ back any step or turn that would bring the body into her or her pram, and the ca
 until she is out of its way. Its `obstructs_radius` stays zero — it closes no ground — and its
 lethality is **a strike area ahead of its nose, only while it drives its route, only with her on
 the carriageway**, reaching `Tuning.PATROL_STRIKE_LEAD` past the touch so a car driving its nose
-into her strikes rather than stands. Two traps:
+into her strikes rather than stands. It gives way where the crowd's cars do — short of a zebra she
+is waiting at off the main road, and at a red light — so the zebra stays the safe way over. Four
+traps:
 
 - **A strike stated over the touch alone never fires**, because the body stops her first — the
   same switched-off kill as a lethal radius inside a body. The lead past the touch is what keeps it
   live.
-- **A car that has stood for her must not pull away into her.** It goes on standing while she is
-  in its lane within its warning, so every strike comes after `Tuning.CAR_HORN_TIME` of warning or
-  from her stepping into a moving car's path — the crowd car's contract, the carriageway and the
-  horn, which is the one it keeps instead of a telegraph (**crowd-traffic**, "The traffic fairness
+- **A car that has stood must not pull away into her.** It goes on standing while she is in its
+  lane within its warning, so every strike comes after `Tuning.CAR_HORN_TIME` of warning or from
+  her stepping into a moving car's path — the crowd car's contract, the carriageway and the horn,
+  which is the one it keeps instead of a telegraph (**crowd-traffic**, "The traffic fairness
   contract").
+- **A heading change that newly brings her inside its warning's reach is refused like a step into
+  her.** A turn moves nothing, so the body check passes it — and the raid's pacing car reversing at
+  the end of its beat turns her from behind a car driving away into the front of one, struck with
+  next to no warning. The car stands instead.
+- **A car leaving must not vanish beside her.** A departure into her is refused every frame, so a
+  car that ends a visit to her turns away first and is gone only once she could not be watching.
 
 **A body is a route cost, not a closure.** `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
 `obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can

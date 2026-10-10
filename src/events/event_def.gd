@@ -1342,12 +1342,9 @@ func validate() -> bool:
 					% [id, "an obstruction" if obstructs_radius > 0.0 else "hard_fail"]
 					+ "in front of it")
 			return false
-		# The car's own contract, the crowd car's: the warning comes `CAR_HORN_TIME` of its travel
-		# ahead of the strike, so whatever its speed she has that long to walk off the carriageway.
-		if Tuning.CAR_HORN_TIME + 0.001 < Tuning.required_horn_time():
-			push_error("event '%s' drives with a %.2fs warning, under the %.2fs needed to walk off "
-					% [id, Tuning.CAR_HORN_TIME, Tuning.required_horn_time()] + "the carriageway")
-			return false
+		# Its warning is the crowd car's contract, `CAR_HORN_TIME` of its own travel ahead of the
+		# strike whatever its speed, so `Tuning.validate_traffic()`'s check on boot is its check:
+		# nothing about one row's numbers can break it.
 	# *(busy-quail, inbox #569: "1s warning should be enough".)* A badge up alone is up for at most
 	# `Tuning.WARNING_ALONE_MAX`, whatever the row.
 	if warns_before_it_exists() and warned_for() > Tuning.WARNING_ALONE_MAX + 0.001:

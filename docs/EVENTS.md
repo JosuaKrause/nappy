@@ -597,7 +597,13 @@ her no nearer is always allowed, so a car she has walked up against drives on al
 away from her rather than wedging. **A car that has stood for her drives on only once she is out
 of its way**: on its route it goes on standing while she is in its lane within its warning, so it
 never pulls away into her with less than the full warning below, and a car standing for her is
-harmless however she steps in front of it. **It closes no ground**: `obstructs_radius` stays zero, so the
+harmless however she steps in front of it. **A turn that would newly put her in front of it** within its
+warning — the raid's pacing car reversing at the end of its beat with her standing behind it — is
+refused the same way, and the car stands. **It gives way where the crowd's cars do**: short of a
+zebra she is waiting at on a street whose traffic gives way, and at a red light, where
+`Crowd.give_way_at_junctions()` stops the crowd's cars (`EventInstance._room_to_its_line()`).
+**A car leaving does not vanish beside her**: one ending a visit to her turns away from her first,
+and any car leaving is gone only once she is out of sight of it. **It closes no ground**: `obstructs_radius` stays zero, so the
 planners' disc, the crowd's per-tile record (which the crowd's walkers and cars read, and which is
 built from the plan's stationary bodies) and the director's refusal of a director-sited body know
 nothing of it — it drives down a carriageway she walks round it on, and the crowd passes through it
@@ -617,8 +623,8 @@ a crowd car's** ("The traffic fairness contract" in `docs/MECHANICS.md`): the pa
 she chooses to step onto — with her on the sidewalk and her pram poking over the kerb, the car
 stops for her — and a warning `Tuning.CAR_HORN_TIME` (1.6s) of its own travel before the strike,
 the exclamation mark over her head (`EventInstance.closes_on()`), which is longer than walking off
-the carriageway with the doubled margin and which `Tuning.validate_traffic()` and
-`EventDef.validate()` hold. The doubled red caret is over the car whenever staying put in its lane
+the carriageway with the doubled margin, which `Tuning.validate_traffic()` holds on boot — the
+warning is stated in seconds of the car's own travel, so no row's numbers can break it. The doubled red caret is over the car whenever staying put in its lane
 would end the day (`EventInstance.will_be_lethal()`). `hard_fail` stays false: what it decides —
 a route wall, a field kept clear, the doubled telegraph margin — is about a place that ends the day,
 and this is a car on a road. A loss to it names `police_patrol` as its cause.

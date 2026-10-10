@@ -1,9 +1,59 @@
 {
-  "version": 1, "name": "Day 5: she walks off the sidewalk into the flank of a passing patrol car and is stopped against it", "seed": 11,
-  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
-  "anchors": {"car": {"world": [2128, 2768]}, "start": {"world": [2340, 2722]}},
-  "setup": {"tutorial_complete": true, "day": 5, "parent": "mother", "player": {"at": "start", "facing": "south"}, "events": [{"name": "patrol", "row": "police_patrol", "at": "car"}]},
-  "playback": {"walk": "2.75p1s", "duration": 3.6, "capture_at": 3.0,
-    "observations": [{"tick": 90, "subject": "patrol", "condition": "near_player", "distance": 40},
-      {"tick": 90, "subject": "patrol", "condition": "moving"}]}
+ "version": 1,
+ "name": "Day 5: mid-block, she walks off the sidewalk into the flank of a passing patrol car and is stopped against it",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "car": {
+   "world": [
+    2000,
+    2768
+   ]
+  },
+  "start": {
+   "world": [
+    2140,
+    2722
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 5,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "south"
+  },
+  "events": [
+   {
+    "name": "patrol",
+    "row": "police_patrol",
+    "at": "car"
+   }
+  ]
+ },
+ "playback": {
+  "walk": "1.75p1s",
+  "duration": 2.6,
+  "capture_at": 2.0,
+  "observations": [
+   {
+    "tick": 60,
+    "subject": "patrol",
+    "condition": "near_player",
+    "distance": 40
+   },
+   {
+    "tick": 60,
+    "subject": "patrol",
+    "condition": "moving"
+   }
+  ]
+ }
 }

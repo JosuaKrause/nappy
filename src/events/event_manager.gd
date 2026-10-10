@@ -772,6 +772,8 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 		facing := Vector2.RIGHT) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, path, facing, _map)
+	# The lights a car that drives stops at, the crowd's own (`EventInstance.signals`).
+	instance.signals = _city.signals
 	_city.add_entity(instance)
 	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and

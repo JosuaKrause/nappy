@@ -23,6 +23,11 @@ func run(t) -> void:
 	_test_off_the_carriageway_it_stops_for_her_pram(t)
 	_test_the_car_never_drives_into_her(t)
 	_test_an_investigating_car_never_pins_her_against_a_wall(t)
+	_test_the_raids_car_never_reverses_onto_her(t)
+	_test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t)
+	_test_it_gives_way_at_a_zebra_she_waits_at(t)
+	_test_it_stops_at_a_red_light(t)
+	_test_its_caret_stands_over_its_picture(t)
 
 # ------------------------------------------------------------------ the rig ---
 
@@ -209,7 +214,7 @@ func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t) -> void:
 			var now := float(i) * STEP
 			if warned_at < 0.0 and car.closes_on(player.global_position):
 				warned_at = now
-			held = held or car.is_standing_for_her()
+			held = held or car.is_standing()
 			if car.is_lethal_at(player.global_position):
 				struck_at = now
 				break
@@ -241,7 +246,7 @@ func _test_a_car_that_is_not_driving_strikes_nobody(t) -> void:
 		struck = struck or leaving.is_lethal_at(player.global_position)
 		deepest = minf(deepest, _gap(leaving))
 	t.check(not struck, "a leaving car never strikes her in front of it")
-	t.check(deepest >= -0.01 and leaving.is_standing_for_her(),
+	t.check(deepest >= -0.01 and leaving.is_standing(),
 			"it stops against her instead (closest %.2fpx)" % deepest)
 	leaving.free()
 	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
@@ -287,7 +292,7 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t) -> void:
 	t.check(map.tile_at(map.world_to_tile(on_the_sidewalk)) == GameEnums.TileType.SIDEWALK,
 			"she stands on the sidewalk")
 	t.check(not struck, "with her on the sidewalk, a car never strikes her")
-	t.check(car.is_standing_for_her() and deepest >= -0.01,
+	t.check(car.is_standing() and deepest >= -0.01,
 			"it stops for her pram in its lane instead (closest %.2fpx)" % deepest)
 	# Standing for her, it stays harmless however she then steps into the road in front of it.
 	var nose := car.global_position + along * (car.def.shape.reach() + Tuning.PLAYER_BODY_RADIUS
@@ -297,14 +302,14 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t) -> void:
 	for i in int(3.0 / STEP):
 		_drive(car, player)
 		struck = struck or car.is_lethal_at(player.global_position)
-	t.check(not struck and car.is_standing_for_her(),
+	t.check(not struck and car.is_standing(),
 			"a car standing for her never strikes her when she steps in front of it")
 	# And it drives on once she is out of its way.
 	player.global_position = on_the_sidewalk + outward * float(Tuning.TILE_SIZE)
 	var stood_at := car.global_position
 	for i in int(1.0 / STEP):
 		_drive(car, player)
-	t.check(not car.is_standing_for_her() and car.global_position.distance_to(stood_at) > 30.0,
+	t.check(not car.is_standing() and car.global_position.distance_to(stood_at) > 30.0,
 			"and it drives on once she is out of its way")
 	car.free()
 	var in_the_road := edge - outward * 4.0
@@ -362,7 +367,7 @@ func _test_the_car_never_drives_into_her(t) -> void:
 					if car.is_lethal_at(player.global_position):
 						break
 					worst = minf(worst, _gap(car))
-				if car.is_standing_for_her():
+				if car.is_standing():
 					held += 1
 				player.free()
 				car.free()
@@ -428,3 +433,205 @@ func _a_wall(map: CityMap) -> Array:
 			if run and map.tile_at(tile + Vector2i(0, 2)) == GameEnums.TileType.ROAD:
 				return [map.tile_to_world(tile), Vector2.UP]
 	return []
+
+# ------------------------------------------------------------- reversing ---
+
+## **The raid's pacing car never reverses onto her.** The raid's patrol at her door paces a beat,
+## turning round at each end. She steps into its lane behind it as it nears the end of its beat, at
+## the distances a review measured a strike after 0.02 to 1.37s of warning: a turn that would put
+## her in front of it within its warning is refused, and it stands for her instead. Far enough
+## behind, it turns and comes back at her with its whole warning.
+func _test_the_raids_car_never_reverses_onto_her(t) -> void:
+	var raid: EventDef = _patrol().duplicate()
+	raid.shape = _patrol().shape
+	raid.paces = true
+	var beat := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
+	for behind in [41.0, 49.0, 61.0, 101.0, 141.0]:
+		var car := _car(t, raid, beat)
+		var player := _her(t, Vector2(0.0, 80.0), Vector2.UP)
+		# Drive it to just short of the end of its beat, then step in behind it.
+		while car.global_position.x < 396.0:
+			_drive(car, player)
+		player.global_position = Vector2(car.global_position.x - behind, 0.0)
+		var struck := false
+		var deepest := INF
+		for i in int(6.0 / STEP):
+			_drive(car, player)
+			struck = struck or car.is_lethal_at(player.global_position)
+			deepest = minf(deepest, _gap(car))
+		t.check(not struck, "stepped in %.0fpx behind the raid's car at the end of its beat, it never "
+				% behind + "strikes her")
+		t.check(car.is_standing() and car._heading.is_equal_approx(Vector2.RIGHT),
+				"%.0fpx behind: it stands, still facing away from her, rather than turning onto her"
+				% behind)
+		t.check(deepest >= -0.01, "%.0fpx behind: and its body never came into her" % behind)
+		# Out of its lane, it turns and paces on.
+		player.global_position = Vector2(player.global_position.x, 80.0)
+		for i in int(1.0 / STEP):
+			_drive(car, player)
+		t.check(not car.is_standing() and car._heading.is_equal_approx(Vector2.LEFT),
+				"%.0fpx behind: once she is out of its lane it turns and paces back" % behind)
+		player.free()
+		car.free()
+	# Further behind than its warning reaches, it turns at once and drives back at her, warning her
+	# its whole horn time before the strike.
+	var car := _car(t, raid, beat)
+	var player := _her(t, Vector2(0.0, 80.0), Vector2.RIGHT)
+	while car.global_position.x < 396.0:
+		_drive(car, player)
+	player.global_position = Vector2(car.global_position.x - 260.0, 0.0)
+	var warned_at := -1.0
+	var struck_at := -1.0
+	for i in int(8.0 / STEP):
+		_drive(car, player)
+		if warned_at < 0.0 and car.closes_on(player.global_position):
+			warned_at = float(i) * STEP
+		if car.is_lethal_at(player.global_position):
+			struck_at = float(i) * STEP
+			break
+	t.check(struck_at > 0.0 and struck_at - warned_at >= Tuning.required_horn_time(),
+			"260px behind, it turns, comes back and strikes her only after %.2fs of warning"
+			% (struck_at - warned_at))
+	player.free()
+	car.free()
+
+# --------------------------------------------------------------- leaving ---
+
+## The investigating car that ends its visit beside her turns away and drives off, and is never
+## finished while she could see it.
+func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t) -> void:
+	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
+	var car := _car(t, hot, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(600.0, 0.0)]))
+	var player := _her(t, Vector2.ZERO, Vector2.LEFT)
+	var left_at := INF
+	var vanished_near := false
+	var nearest_after := INF
+	for i in int(20.0 / STEP):
+		_drive(car, player)
+		if car.is_finished:
+			vanished_near = car.global_position.distance_to(player.global_position) \
+					<= Tuning.OUT_OF_SIGHT
+			break
+		if car.is_leaving:
+			if left_at == INF:
+				left_at = car.global_position.distance_to(player.global_position)
+			nearest_after = minf(nearest_after,
+					car.global_position.distance_to(player.global_position))
+	t.check(left_at < 60.0, "the investigating car came up to her and left from beside her (%.0fpx)"
+			% left_at)
+	t.check(nearest_after >= left_at - 0.01,
+			"it drove away from her, never nearer than where it set off (%.0f, %.0f)"
+			% [nearest_after, left_at])
+	t.check(car.is_finished and not vanished_near,
+			"and it was gone only once out of her sight, never beside her (finished %s, at %.0fpx)"
+			% [car.is_finished, car.global_position.distance_to(player.global_position)])
+	player.free()
+	car.free()
+
+# ------------------------------------------------------------- giving way ---
+
+## On a street whose traffic gives way, it stops short of the zebra she is on, never warns her and
+## never strikes her there, and drives over once she has crossed.
+func _test_it_gives_way_at_a_zebra_she_waits_at(t) -> void:
+	var map: CityMap = CityGenerator.generate(4242)
+	var zebra := _a_zebra(map)
+	t.check(zebra != Vector2.INF, "found a zebra on an east-west carriageway off the main road")
+	if zebra == Vector2.INF:
+		return
+	var route := PackedVector2Array([zebra - Vector2(160.0, 0.0), zebra + Vector2(400.0, 0.0)])
+	var car := _car(t, _patrol(), route, map)
+	var player := _her(t, zebra, Vector2.UP)
+	var struck := false
+	var warned := false
+	for i in int(5.0 / STEP):
+		_drive(car, player)
+		struck = struck or car.is_lethal_at(player.global_position)
+		warned = warned or car.closes_on(player.global_position)
+	var nose := car.global_position.x + car.def.shape.reach()
+	var paint := floorf(zebra.x / Tuning.TILE_SIZE) * Tuning.TILE_SIZE
+	t.check(not struck and not warned, "on the zebra she is never warned or struck")
+	t.check(car.is_standing() and nose <= paint,
+			"it stands short of the paint (nose %.0f, paint %.0f)" % [nose, paint])
+	player.global_position = zebra + Vector2(0.0, -float(Tuning.TILE_SIZE) * 5.0)
+	var stood_at := car.global_position
+	for i in int(2.0 / STEP):
+		_drive(car, player)
+	t.check(car.global_position.x > stood_at.x + 60.0, "and drives over once she has crossed")
+	player.free()
+	car.free()
+
+## The centre of the first `CROSSING` tile on an east-west carriageway lane, at a junction off the
+## main road, on `map`, or `INF`.
+func _a_zebra(map: CityMap) -> Vector2:
+	for y in range(1, map.size.y - 1):
+		if CityMap.corridor_offset(y) < 0 or not CityMap.is_road_offset(CityMap.corridor_offset(y)):
+			continue
+		for x in range(12, map.size.x - 16):
+			var tile := Vector2i(x, y)
+			if map.tile_at(tile) != GameEnums.TileType.CROSSING:
+				continue
+			if map.tile_at(tile - Vector2i(5, 0)) != GameEnums.TileType.ROAD:
+				continue
+			if map.is_main_road(true, CityMap.junction_index(x + 2)):
+				continue
+			return map.tile_to_world(tile)
+	return Vector2.INF
+
+## Driving east at the main road, it stops short of the junction on a red light and goes on green.
+func _test_it_stops_at_a_red_light(t) -> void:
+	var map: CityMap = CityGenerator.generate(4242)
+	var signals := TrafficSignals.new(map)
+	var lane_y := -1
+	for y in range(1, map.size.y - 1):
+		if CityMap.corridor_offset(y) == Tuning.SIDEWALK_WIDTH \
+				and map.tile_at(Vector2i(map.main_road * CityMap.period() - 4, y)) \
+						== GameEnums.TileType.ROAD:
+			lane_y = y
+			break
+	t.check(lane_y >= 0, "found an east-west lane coming to the main road")
+	if lane_y < 0:
+		return
+	var box_x := float(map.main_road * CityMap.period() * Tuning.TILE_SIZE)
+	var lane := float(lane_y) * Tuning.TILE_SIZE + Tuning.TILE_SIZE * 0.5
+	var junction := Vector2i(map.main_road, CityMap.junction_index(lane_y))
+	# The main road's green, which is the side street's red.
+	signals.elapsed = 0.0
+	while signals.phase_of(junction) != TrafficSignals.Phase.MAIN_GREEN:
+		signals.elapsed += 0.25
+	t.check(not signals.green_for(junction, false), "the east-west arm is red")
+	var route := PackedVector2Array([Vector2(box_x - 260.0, lane), Vector2(box_x + 400.0, lane)])
+	var car := _car(t, _patrol(), route, map)
+	car.signals = signals
+	for i in int(5.0 / STEP):
+		car._process(STEP)
+	var nose := car.global_position.x + car.def.shape.reach()
+	t.check(car.is_standing() and nose <= box_x - Tuning.CAR_STOP_LINE_SETBACK + 0.5,
+			"on red it stands at the stop line (nose %.0f, box %.0f)" % [nose, box_x])
+	while not signals.green_for(junction, false):
+		signals.elapsed += 0.25
+	for i in int(2.0 / STEP):
+		car._process(STEP)
+	t.check(car.global_position.x > box_x, "and on green it drives through (%.0f)"
+			% car.global_position.x)
+	car.free()
+
+# ----------------------------------------------------------------- the caret ---
+
+## The caret over a police car stands as high above its picture as it does over anything else: it
+## is lowered with the picture.
+func _test_its_caret_stands_over_its_picture(t) -> void:
+	var car := _car(t, _patrol(), PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)]))
+	var player := _her(t, Vector2(200.0, 0.0), Vector2.LEFT)
+	_tell(car, player)
+	var rect := car.mark_rect()
+	var anchor := car._police_car_anchor("side")
+	t.check(rect.has_area(), "the car in front of her is marked")
+	var above := anchor.y - (rect.position.y + rect.size.y)
+	# What any other row's caret clears its picture's bottom (its node) by, at the same swell.
+	var swell := car.mark_swell()
+	var width := EventInstance.MARK_WIDTH * (0.55 + 0.45 * swell)
+	var usual := EventInstance.MARK_HEIGHT + 10.0 * swell - width * 0.5 - 1.0
+	t.check(absf(above - usual) < 0.01,
+			"its caret clears the picture's bottom by %.1fpx, as on any row (%.1fpx)" % [above, usual])
+	player.free()
+	car.free()

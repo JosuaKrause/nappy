@@ -549,7 +549,10 @@ are solid"): a solid body she walks round in every state, which ends the day onl
 nose while it drives its route and she stands on the carriageway. Its warning is the same
 `Tuning.CAR_HORN_TIME` of its own travel before the strike, said with the same exclamation mark
 over her head, and the doubled red caret is over the car while staying put in its lane would end
-the day. With her on the sidewalk and her pram over the kerb, it stops for her instead.
+the day. With her on the sidewalk and her pram over the kerb, it stops for her instead. **And it
+gives way where the crowd's cars do**: it stops short of a zebra she is waiting at on any street
+but the main road, and at a red light, and drives on only once she is out of its lane or beyond its
+warning — so the zebra below stays the safe way over with a patrol on the street too.
 
 **On the main road the light is the contract, and with the power out the horn is.** The spine's
 traffic does not give way at a zebra, so what stands between her and a hard fail there is the length

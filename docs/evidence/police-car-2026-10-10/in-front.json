@@ -1,8 +1,53 @@
 {
-  "version": 1, "name": "Day 5: she stands in the lane ahead of a patrol car; the mark over her and the doubled caret over the car warn of its strike", "seed": 11,
-  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
-  "anchors": {"car": {"world": [2128, 2768]}, "start": {"world": [2328, 2768]}},
-  "setup": {"tutorial_complete": true, "day": 5, "parent": "mother", "player": {"at": "start", "facing": "west"}, "events": [{"name": "patrol", "row": "police_patrol", "at": "car"}]},
-  "playback": {"walk": "4p", "duration": 3.6, "capture_at": 1.75,
-    "observations": [{"tick": 48, "subject": "patrol", "condition": "moving"}]}
+ "version": 1,
+ "name": "Day 5: she stands in the lane ahead of a patrol car, mid-block; the mark over her and the doubled caret over the car warn of its strike",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "car": {
+   "world": [
+    2000,
+    2768
+   ]
+  },
+  "start": {
+   "world": [
+    2190,
+    2768
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 5,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "west"
+  },
+  "events": [
+   {
+    "name": "patrol",
+    "row": "police_patrol",
+    "at": "car"
+   }
+  ]
+ },
+ "playback": {
+  "walk": "4p",
+  "duration": 1.8,
+  "capture_at": 1.75,
+  "observations": [
+   {
+    "tick": 30,
+    "subject": "patrol",
+    "condition": "moving"
+   }
+  ]
+ }
 }

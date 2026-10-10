@@ -820,14 +820,22 @@ func _where_is(id: String) -> String:
 
 ## What put the mark over her head, rather than what merely happened to be nearest.
 ##
-## Exactly two things can: a `hard_fail` event whose radius covers her, and a car closing on the
+## Exactly three things can: a `hard_fail` event whose radius covers her, a patrol car closing on
+## her in its lane (`EventDef.drives`, `EventInstance.closes_on()`), and a crowd car closing on the
 ## lane she is standing in. **`_nearest()` answers a different question and answers it misleadingly
 ## here** — it will blame an ice cream van five hundred pixels away for a car's horn, which is the
 ## *"unattributable"* mark this entry exists to explain, reproduced in the log meant to settle it.
 func _what_raised_the_mark() -> String:
 	var here := _player.global_position
 	for instance in _live():
-		if instance.is_finished or not instance.def.hard_fail:
+		if instance.is_finished:
+			continue
+		if instance.def.drives:
+			if instance.closes_on(here):
+				return "%s %.0fpx" % [instance.logged_name(),
+						instance.global_position.distance_to(here)]
+			continue
+		if not instance.def.hard_fail:
 			continue
 		var distance := instance.global_position.distance_to(here)
 		if distance <= instance.def.outer_radius:
