@@ -421,10 +421,14 @@ and never takes Run. Several run fingers can hand the hold over; it ends on the 
 Double tapping independently latches run, so releasing a hold does not cancel a latch. Pause keeps
 the locked heading while releasing pointer holds. Keyboard steering never moves the sides.
 
-Every round button catches to **105% of its visible radius**: pause, and the title, pause-screen and
-summary discs. Press and hover use the same circle in ordinary and rotated presentation. The joystick
-dead zone and stop band do not grow. Background continue presses and restart holds retain their
-own semantics.
+Every round button catches at least **105% of its visible radius** and never less than it caught
+before that margin was asked for *(2026-10-10: "the 5% should go over the visible size making the
+area *larger*!")*: each catch is the larger of its older reach and the 5% circle. Pause's 26px disc
+catches at 46px, and its release fires within the same 46px. The title, pause-screen and summary
+discs (46px drawn) catch in a 122.7px square, which holds the 48.3px circle. Run's whole half
+catches, so it holds its disc and 5% past it. Press and hover use the same shape in ordinary and
+rotated presentation. The joystick dead zone and stop band do not grow. Background continue presses
+and restart holds retain their own semantics.
 **A help text that names a button shows that button's own symbol in the line.** *(2026-10-04, note #533:
 "the press pause to pause text should say press <pause button> to pause where it uses the in-game
 symbol. Likewise joystick run should now say hold <run button> or double tap to run where it makes

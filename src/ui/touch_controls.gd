@@ -25,7 +25,11 @@ extends Control
 
 ## The pause disc's painted radius, smaller than the joystick-sized Run disc.
 const PAUSE_RADIUS := 26.0
-const PAUSE_CATCH_RADIUS := PAUSE_RADIUS * ButtonGeometry.CATCH_SCALE
+## The catch is the larger of the 46px a thumb always had here and 1.05 times the painted radius
+## (27.3px), so it is 46px — and it is also the radius a *release* has to land inside to fire, so a
+## thumb that lands wrong can slide off and lift without stopping the day. See `_on_pointer()`.
+const PAUSE_OLD_CATCH_RADIUS := 46.0
+const PAUSE_CATCH_RADIUS := maxf(PAUSE_OLD_CATCH_RADIUS, PAUSE_RADIUS * ButtonGeometry.CATCH_SCALE)
 ## Top right, in the corner both `DangerEdge` and `HomeArrow` keep clear on purpose rather than in
 ## front of them: `DangerEdge.MARGIN` (104/116/104/148, left/top/right/bottom) never draws a chevron
 ## closer to this corner than (1176, 116), and `HomeArrow.MARGIN` (96px, uniform) never draws its
@@ -123,7 +127,8 @@ const FOCUS_RIGHT := Vector2(1040.0, 480.0)
 
 ## The joystick ring's stroke reaches one pixel beyond `RING_RADIUS`. Run's disc matches that
 ## visible outer edge, rather than the SVG's transparent texture bounds. Run needs no catch radius
-## of its own: its whole half catches a run press (`is_on_run_side()`).
+## of its own: its whole half catches a run press (`is_on_run_side()`), which holds the disc and
+## 1.05 times its radius on both sides (`tests/test_touch.gd` pins it).
 const FOCUS_STROKE_WIDTH := 2.0
 const RUN_RADIUS := RING_RADIUS + FOCUS_STROKE_WIDTH * 0.5
 ## The dead zone's own circle, thinner and fainter than the ring around it so the two read as one

@@ -31,6 +31,7 @@ func run(t) -> void:
 	_test_the_title_screen_does_not_stop_the_city(t)
 	_test_every_walking_key_begins_the_run(t)
 	_test_a_press_on_either_title_button_starts_a_run_in_that_mode(t)
+	_test_a_round_button_catches_its_old_square_and_five_percent_past_its_disc(t)
 	_test_a_real_touch_on_a_title_button_reaches_the_title_screen(t)
 	_test_the_title_quit_key_matches_the_platform(t)
 	_test_the_pause_quit_key_matches_the_platform(t)
@@ -85,13 +86,17 @@ func _test_button_catches_and_hover_are_radial_when_rotated(t) -> void:
 			button.size = Vector2(92.0, 92.0)
 			var center := button.get_global_rect().get_center()
 			var radius := button.size.x * 0.5
-			for offset: Vector2 in [Vector2.RIGHT * radius * 1.049,
-					Vector2.RIGHT * radius * 1.051, Vector2.ONE * radius * 0.9]:
-				var expected := offset.length() < radius * 1.05
+			# The catch is the 122.7px square (half-side `radius` * 4/3) holding the 1.05 circle, so
+			# a point just inside and just past the square's edge and its corner are the edges.
+			var half_square := radius * 4.0 / 3.0
+			for offset: Vector2 in [Vector2.RIGHT * half_square * 0.999,
+					Vector2.RIGHT * half_square * 1.001, Vector2.ONE * radius * 0.9,
+					Vector2.ONE * half_square * 0.999, Vector2.ONE * half_square * 1.001]:
+				var expected := maxf(absf(offset.x), absf(offset.y)) < half_square
 				var presented := ScreenOrientation.to_presented_space(center + offset, rotated)
 				screen.call("_update_hover", presented)
 				t.check(button._hovered_look == expected,
-						"screen hover follows the circle, including rotated margins and square corners")
+						"screen hover follows the catch, including rotated margins and square corners")
 				var event := _touch_at(presented, true)
 				var caught: bool = screen.call("_handle_mode_button_press" if title
 						else "_handle_restart_touch", event)
@@ -320,6 +325,37 @@ func _test_every_walking_key_begins_the_run(t) -> void:
 	t.check(started_modes[0] == ControlsMode.Mode.TAP, "and always chooses tap, never joystick")
 	t.check(by_keys == [true], "and says a key began it, so the counter reports keys, not tap")
 
+	title.close()
+	title.queue_free()
+
+## **A round button's catch holds both the 122.7px square it had before the 5% margin and the
+## circle 5% past its drawn disc** *(2026-10-10, the player: "why does the button reach decrease
+## anything??? the 5% should go over the visible size making the area *larger*!")*. The margin alone
+## made it a 48.3px circle, about half the area. Pinned on the title's three buttons, which are the
+## pause screen's and the summary's too (one `ModeButton`), at points in the old square's corner and
+## just past its edge, in the button's own local frame so a rotated presentation does not matter.
+func _test_a_round_button_catches_its_old_square_and_five_percent_past_its_disc(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	title.open()
+	for button: ModeButton in [title._left_button, title._right_button, title._tap_button]:
+		button.get_parent().notification(Container.NOTIFICATION_SORT_CHILDREN)
+		var centre := button.size * 0.5
+		var drawn := minf(button.size.x, button.size.y) * 0.5
+		var half_square := ModeButton.RADIUS + ModeButton.RADIUS / 3.0
+		var transform := button.get_global_transform()
+		t.close_to(drawn, ModeButton.RADIUS, "the disc is drawn at %.0fpx" % ModeButton.RADIUS, 0.01)
+		for local: Vector2 in [centre + Vector2(drawn * 1.05 - 0.5, 0.0),
+				centre + Vector2(half_square - 0.5, 0.0), centre + Vector2(0.0, -(half_square - 0.5)),
+				centre + Vector2(half_square - 0.5, half_square - 0.5),
+				centre + Vector2(-(half_square - 0.5), half_square - 0.5)]:
+			t.check(button.contains_design_point(transform * local),
+					"%.1fpx right and %.1fpx down of the disc's centre is inside the catch"
+					% [local.x - centre.x, local.y - centre.y])
+		for local: Vector2 in [centre + Vector2(half_square + 0.5, 0.0),
+				centre + Vector2(0.0, half_square + 0.5), centre + Vector2(-(half_square + 0.5), 0.0)]:
+			t.check(not button.contains_design_point(transform * local),
+					"%.1fpx past the old square's edge is outside it" % (half_square + 0.5 - ModeButton.RADIUS))
 	title.close()
 	title.queue_free()
 

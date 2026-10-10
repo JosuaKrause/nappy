@@ -23,6 +23,7 @@ func run(t) -> void:
 	_test_the_button_shows_on_every_device_with_a_day_running(t)
 	_test_the_pause_button_sends_a_real_action_event(t)
 	_test_the_pause_button_fires_on_release_inside_and_not_outside(t)
+	_test_every_catch_is_at_least_five_percent_past_its_drawing_and_never_smaller_than_it_was(t)
 	_test_the_pause_button_tracks_its_own_touch_index(t)
 	_test_hiding_the_controls_releases_a_held_direction(t)
 	_test_heading_to_is_the_unit_vector_and_zero_for_a_tap_on_herself(t)
@@ -151,6 +152,37 @@ func _test_the_pause_button_fires_on_release_inside_and_not_outside(t) -> void:
 			"releasing on the button fires it")
 	t.check(not TouchControls._pause_fires(TouchControls.PAUSE_CENTRE + Vector2(500.0, 0.0)),
 			"and releasing well outside it cancels rather than firing")
+
+## **A catch is the larger of what it was and 1.05 times its drawn radius** *(2026-10-10, the player:
+## "why does the button reach decrease anything??? the 5% should go over the visible size making the
+## area *larger*!")*. Pause drew 26px and caught at 46px before the 5% margin, which asked for 27.3px
+## and shrank the catch to a third of its area; the margin must never take reach away. The release
+## that fires pause asks the same geometry, so it is pinned alongside the press. Run's whole half
+## catches a press, so what is pinned is that both the drawn disc and 1.05 times its radius lie on
+## that half whichever side steers.
+func _test_every_catch_is_at_least_five_percent_past_its_drawing_and_never_smaller_than_it_was(t) -> void:
+	var drawn := TouchControls.PAUSE_RADIUS
+	var old_catch := 46.0
+	t.check(TouchControls.PAUSE_CATCH_RADIUS >= drawn * 1.05,
+			"pause catches at least 5%% beyond its drawn %.0fpx (catch %.1fpx)"
+			% [drawn, TouchControls.PAUSE_CATCH_RADIUS])
+	t.check(TouchControls.PAUSE_CATCH_RADIUS >= old_catch,
+			"and never less than the 46px it caught at before the margin (catch %.1fpx)"
+			% TouchControls.PAUSE_CATCH_RADIUS)
+	for probe: Vector2 in [Vector2(old_catch - 0.5, 0.0), Vector2(0.0, -(old_catch - 0.5)),
+			Vector2(drawn * 1.05 + 1.0, 0.0), Vector2(-30.0, 30.0)]:
+		t.check(TouchControls._pause_fires(TouchControls.PAUSE_CENTRE + probe),
+				"a release %.1fpx from the pause button's centre still fires it" % probe.length())
+	t.check(not TouchControls._pause_fires(TouchControls.PAUSE_CENTRE + Vector2(old_catch + 1.0, 0.0)),
+			"and one past the catch does not")
+	for steering: Vector2 in [TouchControls.FOCUS_LEFT, TouchControls.FOCUS_RIGHT]:
+		var run := TouchControls.run_focus_for(steering)
+		for step in 16:
+			var around := Vector2.from_angle(TAU * step / 16.0)
+			t.check(TouchControls.is_on_run_side(
+					run + around * TouchControls.RUN_RADIUS * ButtonGeometry.CATCH_SCALE, steering),
+					"Run's disc and 1.05 times its radius lie on Run's half (steering %s, step %d)"
+					% [steering, step])
 
 ## **The touch index is grabbed on press and let go on release, whichever way the release
 ## resolves.** A synchronous check on the node's own state rather than on anything `Input`
@@ -1158,7 +1190,7 @@ func _test_a_rig_word_names_the_side(t) -> void:
 				"'%s' steers from the left" % word)
 	t.check(ControlsMode.from_word("tap") == ControlsMode.Mode.TAP, "'tap' is still the tap scheme")
 
-## Pause's catch grows 5% past its painted rim; the dead zone does not grow at all.
+## Pause's catch is its old 46px, past the 5% rim (27.3px); the dead zone does not grow at all.
 func _test_round_button_margins_and_unchanged_dead_zones(t) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	for rotate in [false, true]:
@@ -1166,14 +1198,15 @@ func _test_round_button_margins_and_unchanged_dead_zones(t) -> void:
 		controls.visible = true
 		controls.set_mode(ControlsMode.Mode.JOYSTICK)
 		controls.rotated = rotate
-		for ratio: float in [1.049, 1.051]:
+		var catch_ratio := TouchControls.PAUSE_CATCH_RADIUS / TouchControls.PAUSE_RADIUS
+		for ratio: float in [1.051, catch_ratio - 0.01, catch_ratio + 0.01]:
 			var pause_at := ScreenOrientation.to_presented_space(TouchControls.PAUSE_CENTRE
 					+ Vector2.LEFT * TouchControls.PAUSE_RADIUS * ratio, rotate)
 			controls._input(_touch_event(2, pause_at, true))
-			t.check((controls._pause_touch == 2) == (ratio < 1.05),
-					"pause shares the radial margin for press")
+			t.check((controls._pause_touch == 2) == (ratio < catch_ratio),
+					"pause shares the catch for press")
 			t.check(TouchControls._pause_fires(ScreenOrientation.to_design_space(pause_at, rotate))
-					== (ratio < 1.05), "pause release uses the same margin")
+					== (ratio < catch_ratio), "pause release uses the same catch")
 			controls._input(_touch_event(2, Vector2.ZERO, false))
 		var edge := TouchControls.FOCUS_LEFT + Vector2.UP * TouchControls.DEAD_ZONE_RADIUS * 1.01
 		controls._input(_touch_event(0, ScreenOrientation.to_presented_space(edge, rotate), true))
