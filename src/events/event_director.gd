@@ -548,13 +548,13 @@ const ON_HER_WAY_BEHIND := -0.5
 ## question, because both are asked of the same walk and neither is worth a frame's answer.
 ##
 ## A refusal is ordinary — there is no tile of the row's own ground on the branch ahead of her, or
-## the one there is stands in a door's clear ground or would close her way out — and the answer is to ask again a
-## street later rather than to place it somewhere illegal. A placement already made is asked on the
-## same beat whether the walk has left it behind, which is a walk of the route tree rather than a
-## dot product and does not belong in a physics frame: a refused attempt scans her branch, rolls
-## `Tuning.EVENT_PLACEMENT_TRIES` candidates and floods the reachability grid, and doing that sixty
-## times a second while she walks into a corner is the one hitch on the beat of the day she is meant
-## to be watching.
+## the one there is stands in a door's clear ground or would close her way out — and the answer is
+## to ask again a street later rather than to place it somewhere illegal. A placement already made
+## is asked on the same beat whether the walk has left it behind, which is a walk of the route tree
+## rather than a dot product and does not belong in a physics frame: a refused attempt scans her
+## branch, rolls `Tuning.EVENT_PLACEMENT_TRIES` candidates and floods the reachability grid, and
+## doing that sixty times a second while she walks into a corner is the one hitch on the beat of the
+## day she is meant to be watching.
 const ON_HER_WAY_LOOK := 1.0
 
 ## Sites, or re-sites, whatever the day budgeted and left for her walk to place: a tile of the row's

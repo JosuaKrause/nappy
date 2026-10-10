@@ -208,12 +208,14 @@ a moving encounter is stated over distance and checked by walking**, never by as
 it was written from. The traps:
 
 - **Clamping the approach at zero is not a stand-off.** The pursuer stands still while *she* closes
-  the gap and dies on the first lethal frame. It closes to its stand-off (`Tuning.pursuit_standoff()`)
-  and lunges the moment she reaches it, so the chase starts at the stand-off however she came. A
-  wall between them that holds the lunge back is the same trap: at an alley mouth the line clears
-  with her already inside the stand-off. The notice, the lunge and the catch all ask for a clear
-  line, so a held lunge is not deferred until the line clears: the pursuer holds the door guard's
-  ground (`EventInstance._lunge_held`) and lunges once she is back at the full stand-off.
+  the gap and dies on the first lethal frame. It closes to its stand-off
+  (`Tuning.pursuit_standoff()`) and lunges the moment she reaches it, so the chase starts at the
+  stand-off however she came. A wall between them that holds the lunge back is the same trap: at an
+  alley mouth the line clears with her already inside the stand-off. The notice, the lunge and the
+  catch all ask for a clear line, so a held lunge is not deferred until the line clears: the pursuer
+  holds the door guard's ground (`EventInstance._lunge_held`) and lunges once she is back at the
+  full stand-off, and its notice does not run out while she is inside it (`_pause_a_held_notice()`)
+  — a notice ending there is the same trap, reached by her standing still.
 - **A break-off stated as a distance needs two inequalities, and they fight.**
   `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a **rate** — the gap opening — which only running can
   do, and it is stated over *her*, because a proxy over the pursuer's geometry resets at every

@@ -1026,11 +1026,15 @@ until the line clears, which would clamp the approach at zero — at an alley mo
 with her already well inside the stand-off, and it would fire from a fraction of it. Instead the
 pursuer holds the door guard's ground (`EventDef.sets_off_beside_her`): it stands while she is
 nearer than the stand-off, follows at the stand-off once she is further, and lunges the moment she
-is back at the full stand-off with the line clear, or chases when its notice has run its whole
-length. A walker leaving it meets the chase from the stand-off; one who walks into it through its
-notice is caught when the notice ends, having watched it turned toward her for all of it. The doubled
-red caret does not ask for the line: it projects the straight-line reach, so it can read red before
-the pursuer has come round a corner.
+is back at the full stand-off with the line clear. **Its notice does not run out while she is inside
+the stand-off**, since a notice ending there would start the chase from a fraction of it, the same
+trap reached by standing still; it runs on while she is outside, and if it ends there the chase
+starts from the stand-off as well. So the chase starts from the full stand-off however she came. A
+held pursuer she stays beside never sets off: it stands turned toward her with the doubled red caret
+up and its field charging her, and the way out is the walk the contract was written for. A waiting
+robber is drawn facing her only along the same clear line, so he does not visibly track her round a
+corner. The doubled red caret does not ask for the line: it projects the straight-line reach, so it
+can read red before the pursuer has come round a corner.
 
 ### The stand-off, and what a contract in seconds cannot say
 

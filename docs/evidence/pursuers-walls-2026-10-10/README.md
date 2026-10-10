@@ -28,8 +28,9 @@ Each still:
 
 ## Retained
 
-- `after-he-does-not-notice-her.png` — the commit that adds this folder, 1.75s in. She is about
-  102px from him round the building's corner; he stands in the alley in his waiting posture. The
+- `after-he-does-not-notice-her.png` — the commit that last changed this still, 1.75s in. She is
+  about 102px from him round the building's corner; he stands in the alley in his waiting posture,
+  drawn facing east, the way he was sited, rather than turned toward her through the building. The
   capture's manifest at tick 52 (1.73s): robber at (4336, 4272), `telegraphing` false, `pursuing`
   false, so still waiting. At tick 80 (2.67s), her in front of the mouth at (4331, 4210), the
   headless run records him `telegraphing` true: he has noticed her.

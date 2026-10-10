@@ -1677,6 +1677,7 @@ func _process(delta: float) -> void:
 		return
 	_clock += delta
 	age += delta
+	_pause_a_held_notice(delta)
 	# The gait phase advances by whatever this tick actually adds to `_path_travelled` below,
 	# whichever branch does the adding (`_leave`, `_advance_along_path`, `_chase`) or none of them
 	# — see `_advance_gait()`, called once at every exit from this function.
@@ -1900,17 +1901,25 @@ var _lunged := false
 ## line between them (`_clear_line_to()`), or it first noticed her already inside it, which only a
 ## wall between them can do. **The lunge needs a clear line** *(mossy-beaver, inbox #650: "how can
 ## it pursue without noticing? obviously it needs a clear line")*, and a lunge simply deferred until
-## the line clears is the **events** skill's trap: at an alley mouth the line clears with her already
-## inside the stand-off, and he would lunge from a fraction of it.
+## the line clears is the **events** skill's trap: at an alley mouth the line clears with her
+## already inside the stand-off, and he would lunge from a fraction of it.
 ##
-## So from here on it holds `EventDef.sets_off_beside_her`'s ground — it holds its position while she
-## is nearer than the stand-off and follows at the stand-off once she is further — and lunges the
-## moment she is back at the full stand-off with the line clear; otherwise the chase starts when the
-## notice has run its whole length, as the door guard's does. A walker leaving him meets the lunge
-## from the full stand-off; one who walks *into* him through his notice is caught when it ends,
-## having watched him turned toward her for all of it — the door guard's price, taken for the same
-## reason.
+## So from here on it holds `EventDef.sets_off_beside_her`'s ground — it holds its position while
+## she is nearer than the stand-off and follows at the stand-off once she is further — and lunges
+## the moment she is back at the full stand-off with the line clear. **Its notice does not run out
+## while she is inside the stand-off** (`_notice_paused_for`): a notice that ran out there would
+## start the chase from a fraction of the stand-off, the same trap reached by her standing still.
+## So the chase starts from the full stand-off however she came: by the lunge as she leaves, or by
+## the notice running out while she is already outside it.
 var _lunge_held := false
+## Seconds the notice has stood still because a held lunge (`_lunge_held`) had her inside its
+## stand-off; `chase_age()` leaves them out. **A held pursuer she stays beside never sets off**, for
+## as long as she stays: he stands turned toward her with the doubled red caret up, his field
+## charging her meter at full strength, and the chase starts only once she walks back out to the
+## stand-off. That is fair because the one way out of it is the walk the contract was written for —
+## the lunge from the full stand-off, with all of `PURSUIT_REACTION` to answer it — and standing in
+## a robber's field is not free. See `_pause_a_held_notice()`.
+var _notice_paused_for := 0.0
 
 ## Comes after her — the one kind of thing running is the answer to. See `EventDef.pursues` and
 ## `Tuning.validate_pursuit`.
@@ -1967,8 +1976,10 @@ func _chase(delta: float) -> void:
 		# inbox #648: "yes noticing needs a clear line".)*
 		if range_to_her <= def.pursues_within and _clear_line_to(player_at):
 			_noticed_at = age
-			# It turns to face her on the frame it notices, which is the whole of the cue: a man who
-			# was looking down the alley is now looking at you.
+			# It turns to face her on the frame it notices: a dog or a guard that was looking
+			# elsewhere is now looking at her. A waiting robber is already drawn facing her along a
+			# clear line (`_robber_waiting_heading()`), so for him the cue is the posture switch,
+			# waiting to lunging, on this frame.
 			_heading = toward.normalized()
 			# Noticed already inside the stand-off, which only a wall can do — `pursues_within` is
 			# wider than the stand-off on every row (`Tuning.validate_pursuit()`) — so the wall held
@@ -2020,7 +2031,8 @@ func _chase(delta: float) -> void:
 		# without noticing? obviously it needs a clear line")*, and a wall that holds it back hands
 		# him the door guard's ground rather than a lunge from wherever the line clears — see
 		# `_lunge_held`. Once held, he lunges the moment she is back at the full stand-off with
-		# the line clear, which is where a walker leaving him puts her.
+		# the line clear, which is where a walker leaving him puts her, and his notice does not
+		# run out while she is inside it (`_pause_a_held_notice()`).
 		var clear := _clear_line_to(player_at)
 		if def.sets_off_beside_her or _lunge_held:
 			step = clampf(range_to_her - standoff, 0.0, step)
@@ -2709,10 +2721,27 @@ func is_waiting() -> bool:
 ## For everything in the catalogue but one it is the age. For a pursuer that waits, the clock starts
 ## when it notices her — a telegraph spent at dawn, four streets away, is not a notice, and
 ## `telegraph_time` and `duration` are both promises about the encounter rather than about the day.
+##
+## Less `_notice_paused_for`, the time a held lunge's notice stood still with her inside its
+## stand-off.
 func chase_age() -> float:
 	if def.pursues_within <= 0.0:
-		return age
-	return 0.0 if _noticed_at == INF else age - _noticed_at
+		return age - _notice_paused_for
+	return 0.0 if _noticed_at == INF else age - _noticed_at - _notice_paused_for
+
+## Holds a held lunge's notice clock still for this tick while she is inside its stand-off — see
+## `_notice_paused_for`. Run straight after `age` advances, before anything asks
+## `is_telegraphing()`, so the frame the notice would have run out is never seen as the chase
+## starting. Only while the notice was still running at the start of this tick: a chase already
+## under way is never turned back into a notice.
+func _pause_a_held_notice(delta: float) -> void:
+	if not _lunge_held or _lunged or is_waiting() or player_at == Vector2.INF:
+		return
+	if chase_age() - delta >= def.telegraph_time:
+		return
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	if global_position.distance_to(player_at) < standoff:
+		_notice_paused_for += delta
 
 ## Current peak intensity at the centre, after the telegraph damping and the pulse envelope.
 ##
@@ -3036,10 +3065,10 @@ func is_lethal_at(world_position: Vector2) -> bool:
 
 ## Whether the straight line from this node to `world_position` crosses only ground
 ## `CityMap.is_walkable()` agrees with — the question a pursuer's catch asks, since a catch across a
-## wall is a man reaching through a building, and the one its notice and its lunge ask in `_chase()`,
-## since he can neither see nor go for her through one. Every tile the segment enters is
-## asked, found by stepping from one tile boundary to the next along it rather than by sampling, so a
-## line that clips a building's corner by a pixel is blocked however short it is. A line through a
+## wall is a man reaching through a building, and the one its notice and its lunge ask in
+## `_chase()`, since he can neither see nor go for her through one. Every tile the segment enters is
+## asked, found by stepping from one tile boundary to the next along it rather than by sampling, so
+## a line that clips a building's corner by a pixel is blocked however short it is. A line through a
 ## corner point exactly asks both tiles beside it. True with no map, which is every data-level rig
 ## built without one, exactly as `_walkable_step()` is.
 func _clear_line_to(world_position: Vector2) -> bool:
@@ -3236,9 +3265,10 @@ func expected_impact_at(player_position: Vector2) -> float:
 ## doubled caret's own question.
 ##
 ## **The straight-line reach without the clear-line test.** A pursuer's real catch also needs
-## `_clear_line_to()` her, and the caret does not ask it: it projects the pursuer straight at her, so
-## it can read red while a building still stands between them, before he has come round the corner.
-## Whether it should ask is open to overturn (the polite-rabbit record says why it does not).
+## `_clear_line_to()` her, and the caret does not ask it: it projects the pursuer straight at her,
+## so it can read red while a building still stands between them, before he has come round the
+## corner. Whether it should ask is open to overturn (the polite-rabbit record says why it does
+## not).
 ##
 ## **`is_lethal_at()`'s guards, minus its own telegraph gate.** A telegraphing `hard_fail` row
 ## cannot fire *yet* — that gate is exactly right for `is_lethal_at()`'s own callers, which ask
@@ -3318,10 +3348,10 @@ func _picture_never_settles() -> bool:
 ## Which heading the next draw would pick this instance's eight-view sector from.
 ##
 ## Ordinarily `_heading`. The one exception is a robber who has not noticed her yet: `_draw_robber`
-## picks his view from `_robber_waiting_heading()` — her position, from the moment anything has
-## told this instance where she is — rather than from the alley he was sited facing, so the key has
-## to read the same thing or the one turn in the game that happens without the body moving would
-## never reach the screen.
+## picks his view from `_robber_waiting_heading()` — her position, whenever anything has told this
+## instance where she is and nothing built stands between them — rather than from the alley he was
+## sited facing, so the key has to read the same thing or the one turn in the game that happens
+## without the body moving would never reach the screen.
 func _drawn_heading() -> Vector2:
 	if def.look == EventDef.Look.ROBBER and is_waiting():
 		return _robber_waiting_heading()
@@ -4333,15 +4363,18 @@ func _draw_robber(canvas: CanvasItem = self) -> void:
 	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
-## Which way the waiting posture faces: her, from the moment a caller has told this instance where
-## she is (`set_player_at()`), since that is the one thing worth turning toward before he has
-## actually noticed her — `_chase()`'s own `is_waiting()` branch does not move `_heading` until she
-## is inside `pursues_within`, see that function's doc. Falls back to the site's own authored
-## facing where no player position is known at all, the harmless default a data-level rig gets.
+## Which way the waiting posture faces: her, whenever a caller has told this instance where she is
+## (`set_player_at()`) and **nothing built stands between them** (`_clear_line_to()`, the test his
+## notice asks), since she is the one thing worth turning toward before he has actually noticed
+## her — `_chase()`'s own `is_waiting()` branch does not move `_heading` until she is inside
+## `pursues_within`, see that function's doc. With a building between them he has not seen her, so
+## he does not visibly track her round the corner *(leafy-puffin, inbox #648: "yes noticing needs
+## a clear line")*: he keeps the facing he was sited with, which is also the harmless default a
+## data-level rig with no player position gets.
 func _robber_waiting_heading() -> Vector2:
 	if player_at != Vector2.INF:
 		var toward := player_at - global_position
-		if toward.length_squared() > 0.0001:
+		if toward.length_squared() > 0.0001 and _clear_line_to(player_at):
 			return toward
 	return _heading
 
