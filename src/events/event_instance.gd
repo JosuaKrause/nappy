@@ -1201,9 +1201,9 @@ var _gait_moving := false
 var _idle_phase_offset := 0.0
 
 ## The city, for the questions only the ground can answer: whether the ground a step would land on
-## is somewhere anybody can stand (`_walkable_step`), whether a catch has a clear line
-## (`_clear_line_to`), and whether a building keeps this field from her (`_walled_off`, which asks
-## `_walls` instead where the building's own walls were handed over). `null` in
+## is somewhere anybody can stand (`_walkable_step`), whether a notice, a lunge or a catch has a
+## clear line (`_clear_line_to`), and whether a building keeps this field from her (`_walled_off`,
+## which asks `_walls` instead where the building's own walls were handed over). `null` in
 ## every data-level test that builds an instance without one — a rig that walks a straight line on
 ## purpose gets exactly the unclamped movement and the open-ground field it always has — and in the
 ## building's interior, and always set by `EventManager._create`, the only real caller in the city.
@@ -1896,6 +1896,21 @@ var _pursuit_began_reported := false
 ## The same sentence about a different distance: a clock cannot know when she reached them, so a
 ## clock put the birds up behind her.
 var _lunged := false
+## True once a wall has held a pursuer's lunge back: she came inside its stand-off with no clear
+## line between them (`_clear_line_to()`), or it first noticed her already inside it, which only a
+## wall between them can do. **The lunge needs a clear line** *(mossy-beaver, inbox #650: "how can
+## it pursue without noticing? obviously it needs a clear line")*, and a lunge simply deferred until
+## the line clears is the **events** skill's trap: at an alley mouth the line clears with her already
+## inside the stand-off, and he would lunge from a fraction of it.
+##
+## So from here on it holds `EventDef.sets_off_beside_her`'s ground — it holds its position while she
+## is nearer than the stand-off and follows at the stand-off once she is further — and lunges the
+## moment she is back at the full stand-off with the line clear; otherwise the chase starts when the
+## notice has run its whole length, as the door guard's does. A walker leaving him meets the lunge
+## from the full stand-off; one who walks *into* him through his notice is caught when it ends,
+## having watched him turned toward her for all of it — the door guard's price, taken for the same
+## reason.
+var _lunge_held := false
 
 ## Comes after her — the one kind of thing running is the answer to. See `EventDef.pursues` and
 ## `Tuning.validate_pursuit`.
@@ -1937,20 +1952,6 @@ func _chase(delta: float) -> void:
 	var range_to_her := toward.length()
 	if range_to_her < 1.0:
 		return
-	if is_waiting():
-		if range_to_her <= def.pursues_within:
-			_noticed_at = age
-			# It turns to face her on the frame it notices, which is the whole of the cue: a man who
-			# was looking down the alley is now looking at you.
-			_heading = toward.normalized()
-		return
-	if not _pursuit_began_reported:
-		_pursuit_began_reported = true
-		# `VisitCounter`'s own "dog-chased" — actually coming for her, whether that is a transition
-		# out of `is_waiting()` or (a row with no `pursues_within` at all) this chase's first frame.
-		# See docs/TELEMETRY.md, "The page counts visits".
-		EventBus.pursuit_began.emit(def.id)
-	_heading = toward.normalized()
 	# From what ends her day, not from where the field's core ends: the same `lethal_reach()`
 	# `Tuning.validate_pursuit()` states the contract over. Every row but `roadblock` has no
 	# `lethal_radius` and reads its `inner_radius` here; a roadblock's guard catches at a man's reach,
@@ -1960,6 +1961,28 @@ func _chase(delta: float) -> void:
 	# `standoff_reach()` is that same reach unless the row keeps its lunge further out than its catch
 	# (`EventDef.lunge_reach`, the alley robber's): his catch and his lunge are set separately.
 	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	if is_waiting():
+		# **It notices her only along a clear line** (`_clear_line_to()`, the catch's own test):
+		# within `pursues_within` round a building's corner, he has not seen her. *(leafy-puffin,
+		# inbox #648: "yes noticing needs a clear line".)*
+		if range_to_her <= def.pursues_within and _clear_line_to(player_at):
+			_noticed_at = age
+			# It turns to face her on the frame it notices, which is the whole of the cue: a man who
+			# was looking down the alley is now looking at you.
+			_heading = toward.normalized()
+			# Noticed already inside the stand-off, which only a wall can do — `pursues_within` is
+			# wider than the stand-off on every row (`Tuning.validate_pursuit()`) — so the wall held
+			# the lunge back as well as the notice. See `_lunge_held`.
+			if range_to_her <= standoff:
+				_lunge_held = true
+		return
+	if not _pursuit_began_reported:
+		_pursuit_began_reported = true
+		# `VisitCounter`'s own "dog-chased" — actually coming for her, whether that is a transition
+		# out of `is_waiting()` or (a row with no `pursues_within` at all) this chase's first frame.
+		# See docs/TELEMETRY.md, "The page counts visits".
+		EventBus.pursuit_began.emit(def.id)
+	_heading = toward.normalized()
 	# **She ran, so it backs off.** Counting seconds of the *gap actually opening* is the same
 	# sentence said about the geometry instead of about the player, and in play it is a different
 	# rule: a run opens the gap at 38px/s against the day-3 dog, a fifth of a pixel a frame, so a
@@ -1993,16 +2016,22 @@ func _chase(delta: float) -> void:
 		# and it neither lunges early nor backs off — it holds its ground while she is nearer than
 		# the stand-off and follows at it once she is further.
 		#
-		# **A wall between them does not hold the lunge back.** Only the catch asks for a clear line
-		# (`is_lethal_at()`); the lunge still fires at the stand-off, and the chase comes round the
-		# wall, sliding along it (`_walkable_step()`). Holding the lunge until the line clears is the
-		# approach clamped at zero: at an alley mouth his notice reaches her through the building and
-		# is spent there, so the line clears with her already inside the stand-off and the lunge fires
-		# from a fraction of it, with almost none of `PURSUIT_REACTION` left to answer.
-		if def.sets_off_beside_her:
+		# **The lunge needs a clear line too** *(mossy-beaver, inbox #650: "how can it pursue
+		# without noticing? obviously it needs a clear line")*, and a wall that holds it back hands
+		# him the door guard's ground rather than a lunge from wherever the line clears — see
+		# `_lunge_held`. Once held, he lunges the moment she is back at the full stand-off with
+		# the line clear, which is where a walker leaving him puts her.
+		var clear := _clear_line_to(player_at)
+		if def.sets_off_beside_her or _lunge_held:
 			step = clampf(range_to_her - standoff, 0.0, step)
+			if _lunge_held and clear and range_to_her >= standoff:
+				_lunged = true
 		elif range_to_her <= standoff:
-			_lunged = true
+			if clear:
+				_lunged = true
+			else:
+				_lunge_held = true
+				step = 0.0
 		else:
 			step = minf(step, range_to_her - standoff)
 	var moved := _walkable_step(_heading * step)
@@ -3007,7 +3036,8 @@ func is_lethal_at(world_position: Vector2) -> bool:
 
 ## Whether the straight line from this node to `world_position` crosses only ground
 ## `CityMap.is_walkable()` agrees with — the question a pursuer's catch asks, since a catch across a
-## wall is a man reaching through a building. Every tile the segment enters is
+## wall is a man reaching through a building, and the one its notice and its lunge ask in `_chase()`,
+## since he can neither see nor go for her through one. Every tile the segment enters is
 ## asked, found by stepping from one tile boundary to the next along it rather than by sampling, so a
 ## line that clips a building's corner by a pixel is blocked however short it is. A line through a
 ## corner point exactly asks both tiles beside it. True with no map, which is every data-level rig
@@ -3200,10 +3230,15 @@ func expected_impact_at(player_position: Vector2) -> float:
 	return maxf(gross - decay, 0.0)
 
 ## Whether this event's own current course puts her inside the radius that ends the day at some
-## point before `Tuning.EXPECTED_IMPACT_HORIZON`, her position held fixed — the same geometry
-## `is_lethal_at()` tests, asked at every step of the same projection `expected_impact_at()`
-## takes, rather than only at the position she is standing at now. The doubled caret's own
-## question.
+## point before `Tuning.EXPECTED_IMPACT_HORIZON`, her position held fixed — `is_lethal_at()`'s
+## straight-line reach, `def.lethal_reach()`, asked at every step of the same projection
+## `expected_impact_at()` takes, rather than only at the position she is standing at now. The
+## doubled caret's own question.
+##
+## **The straight-line reach without the clear-line test.** A pursuer's real catch also needs
+## `_clear_line_to()` her, and the caret does not ask it: it projects the pursuer straight at her, so
+## it can read red while a building still stands between them, before he has come round the corner.
+## Whether it should ask is open to overturn (the polite-rabbit record says why it does not).
 ##
 ## **`is_lethal_at()`'s guards, minus its own telegraph gate.** A telegraphing `hard_fail` row
 ## cannot fire *yet* — that gate is exactly right for `is_lethal_at()`'s own callers, which ask
@@ -3217,13 +3252,14 @@ func will_be_lethal(player_position: Vector2) -> bool:
 	if is_finished or is_leaving or is_waiting() or not def.hard_fail:
 		return false
 	var velocity := _caret_velocity()
+	var reach := def.lethal_reach()
 	if velocity.is_zero_approx():
-		return global_position.distance_to(player_position) <= def.inner_radius
+		return global_position.distance_to(player_position) <= reach
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	for i in steps + 1:
 		var future_at := global_position + velocity * (float(i) * dt)
-		if future_at.distance_to(player_position) <= def.inner_radius:
+		if future_at.distance_to(player_position) <= reach:
 			return true
 	return false
 

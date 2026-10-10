@@ -211,7 +211,9 @@ it was written from. The traps:
   the gap and dies on the first lethal frame. It closes to its stand-off (`Tuning.pursuit_standoff()`)
   and lunges the moment she reaches it, so the chase starts at the stand-off however she came. A
   wall between them that holds the lunge back is the same trap: at an alley mouth the line clears
-  with her already inside the stand-off. Only the catch asks for a clear line.
+  with her already inside the stand-off. The notice, the lunge and the catch all ask for a clear
+  line, so a held lunge is not deferred until the line clears: the pursuer holds the door guard's
+  ground (`EventInstance._lunge_held`) and lunges once she is back at the full stand-off.
 - **A break-off stated as a distance needs two inequalities, and they fight.**
   `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a **rate** — the gap opening — which only running can
   do, and it is stated over *her*, because a proxy over the pursuer's geometry resets at every
