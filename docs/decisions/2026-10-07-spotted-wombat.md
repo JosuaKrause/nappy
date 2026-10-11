@@ -28,7 +28,7 @@ walking away, and the band still standing with his end empty; the stride bob is 
 
 **Review (#676) changed three things.** The band and the guard posted beside it are their own
 y-sorted node (`EventInstance.RoadblockBand`) so they sort at the band's line instead of re-sorting
-with the man; the barrier keeps its own field on while he walks away rather than going dark for the
+with the man; the barrier keeps its own field on while he walks away (charged at the band, walled off from the band, with a rim of its own, and he is held to leave out of her sight) rather than going dark for the
 walk; and the plan carries the spent guard (`Planned.guard_spent`, `chaser_side`), so a barrier
 streamed out and in again comes back as only the barrier, not as a fresh armed roadblock.
 

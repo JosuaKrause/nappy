@@ -885,7 +885,7 @@ which is the far corner of a 640x360 view with the camera's look-ahead on top of
 deleted, out of shot, where a deletion is what it looks like from the inside and nothing at all
 from the outside.
 
-Three things worth keeping straight:
+Four things worth keeping straight:
 
 - **It is over the moment it starts leaving.** A cat that trailed its field behind it for the two
   seconds it took to reach the kerb would be a worse bug than vanishing.
@@ -901,10 +901,14 @@ Three things worth keeping straight:
   the standing field is the whole point of it.
 - **One thing leaves and is not deleted: the guard who set off from a barrier**
   (`EventDef.body_stays_behind`). A roadblock has no departure speed, so he leaves at his chasing
-  pace; the barrier is his own node and keeps its own field on while he goes (the field is centred
-  on the band, not on him), and when he is out of shot, or after `LEAVING_GIVES_UP`, the instance
-  goes back to being only the barrier — waiting, solid, costing what a barrier costs. The
-  exception to "it is over the moment it starts leaving" is the barrier, not the man.
+  pace. The barrier is its own node (`RoadblockBand`) and keeps charging what a waiting roadblock
+  charges (`def.intensity`) while he goes: the field is centred on the band, walled off from the
+  band, and carries a rim of its own on the band, while the man, who costs her nothing, has none.
+  He is in her view as he goes, so he is held to the rule above and not to `LEAVING_GIVES_UP`'s
+  clock (`_leaving_must_clear_sight`, as for a car): the instance goes back to being only the
+  barrier — waiting, solid, costing what a barrier costs — once he is out of her sight, or after
+  the backstop when there is no player to be out of sight of. The exception to "it is over the
+  moment it starts leaving" is the barrier, not the man.
 
 ## Scheduling
 

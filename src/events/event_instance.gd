@@ -3156,7 +3156,8 @@ func flock_velocities() -> Array[Vector2]:
 ## cannot end the day, and it carries no cue: whatever it was, it is over. **The one exception is a
 ## guard walking away from his barrier** (`EventDef.body_stays_behind`): the walk ends with the
 ## instance still there as the barrier (`_stand_as_the_barrier()`), `is_leaving` cleared, and the
-## barrier keeps its own field on while he goes.
+## barrier keeps charging what a waiting roadblock charges while he goes (`current_intensity()`
+## answers `def.intensity` for it, `_field_at()` centres it on the band).
 var is_leaving := false
 
 ## True once a row that `EventDef.stops_where_it_arrives` has reached the end of its route and
@@ -3168,7 +3169,8 @@ var _leaving_for := 0.0
 ## True when `LEAVING_GIVES_UP` may not end this instance while she could still be watching it.
 ## Set by `leave_for_a_completed_task()`, whose departure starts with her beside it, and by
 ## `_be_done()` for every car that drives (`EventDef.drives`), whose body she can stand against so
-## a departure can be held up beside her (`_drive()`). False for every other departure — see
+## a departure can be held up beside her (`_drive()`), and by `_be_done()` for a guard walking away
+## from his barrier, who is in her view as he goes. False for every other departure — see
 ## `_leave()` and `LEAVING_GIVES_UP`'s own doc for why those need no such wait.
 var _leaving_must_clear_sight := false
 
@@ -3233,6 +3235,10 @@ func _be_done(may_park := true) -> void:
 		# only at the end of its route, which it drives on to once its man is back in
 		# (`_investigate()`), so it leaves the way it was going, as every patrol does.
 		_leaving_must_clear_sight = true
+	if _is_a_guard_leaving_his_barrier():
+		# **He is in her view as he goes**, and the barrier he leaves is there to be looked at: he is
+		# gone only once she could not be watching, never off `LEAVING_GIVES_UP`'s clock beside her.
+		_leaving_must_clear_sight = true
 	if not _trail.is_empty():
 		# **A man a vehicle let out walks back to it** (`_walk_back()`) rather than away from her,
 		# and he is in her view as he goes, so he is gone only at its door or out of her sight.
@@ -3286,7 +3292,7 @@ func _leave(delta: float) -> void:
 	# flag (see its doc); every other departure gives up on the clock as it always did.
 	var may_give_up := not _leaving_must_clear_sight or player_at == Vector2.INF or gone
 	if gone or (may_give_up and _leaving_for >= LEAVING_GIVES_UP):
-		if has_left_its_body_behind() and def.body_stays_behind:
+		if _is_a_guard_leaving_his_barrier():
 			_stand_as_the_barrier()
 		else:
 			_finish()
@@ -3295,7 +3301,7 @@ func _leave(delta: float) -> void:
 ## guard who set off from a barrier (`EventDef.body_stays_behind`): a roadblock has none of its own
 ## (it never travelled), and he leaves at the pace he chased at rather than vanishing in the street.
 func _leaving_speed() -> float:
-	if def.body_stays_behind and has_left_its_body_behind():
+	if _is_a_guard_leaving_his_barrier():
 		return def.pursue_speed
 	return def.departure_speed()
 
@@ -3311,7 +3317,12 @@ var _guard_spent := false
 ## (`EventScheduler.Planned.guard_spent`) so that a barrier streamed in again comes back as only
 ## the barrier (`come_back_as_the_barrier()`), never as a guard who has forgotten and chases again.
 func is_a_spent_guard() -> bool:
-	return _guard_spent or (is_leaving and def.body_stays_behind and has_left_its_body_behind())
+	return _guard_spent or (is_leaving and _is_a_guard_leaving_his_barrier())
+
+## True for the man who set off from a barrier (`EventDef.body_stays_behind`) once he has left it
+## behind: what `_leaving_speed()`, the field and the halo ask of the departure.
+func _is_a_guard_leaving_his_barrier() -> bool:
+	return def.body_stays_behind and has_left_its_body_behind()
 
 ## Which side's guard set off, the other half of what a stream-out carries; `0` while both stand.
 func chaser_side() -> int:
@@ -3326,6 +3337,7 @@ func _stand_as_the_barrier() -> void:
 	_guard_spent = true
 	is_leaving = false
 	_leaving_for = 0.0
+	_leaving_must_clear_sight = false
 	_noticed_at = INF
 	global_position = _body_left_at
 	_keep_the_body_where_it_was_left()
@@ -3464,6 +3476,10 @@ func _pause_a_held_notice(delta: float) -> void:
 ## `_caret_intensity_over_horizon()`, asking for the pulse's own mean over
 ## `Tuning.EXPECTED_IMPACT_HORIZON` instead of the beat this instant happens to be on.
 func current_intensity(pulse_multiplier_override := -1.0) -> float:
+	if is_leaving and _is_a_guard_leaving_his_barrier():
+		# **The barrier's own peak, not the man's.** He walks away but the band keeps charging what
+		# a waiting roadblock charges (`_field_at()` centres it on the band).
+		return def.intensity
 	if is_finished or is_leaving:
 		# On the way out it is scenery. Emitting while it goes would mean the excitement of an
 		# event trailing after her for as long as it took the thing to get off screen.
@@ -3670,7 +3686,10 @@ func contribution_at(world_position: Vector2, intensity_override := -1.0,
 func _contribution_at_uncached(world_position: Vector2, intensity_override: float,
 		velocity_override: Vector2) -> float:
 	var field := _field_at(world_position, intensity_override, velocity_override)
-	if field > 0.0 and _walled_off_now(global_position, world_position):
+	# From where the field is centred: the band while a guard walks away from it, this node else.
+	var source_at := _body_left_at if is_leaving and _is_a_guard_leaving_his_barrier() \
+			else global_position
+	if field > 0.0 and _walled_off_now(source_at, world_position):
 		return 0.0
 	return field
 
@@ -3724,7 +3743,7 @@ func _field_at(world_position: Vector2, intensity_override: float,
 	if is_leaving:
 		# **A guard walking away from his barrier leaves the barrier's own field on**, centred on
 		# the band where it stands rather than on him; every other leaving event emits nothing.
-		if not (def.body_stays_behind and has_left_its_body_behind()):
+		if not _is_a_guard_leaving_his_barrier():
 			return 0.0
 		var held := intensity_override if intensity_override >= 0.0 else current_intensity()
 		var shape_distance := _field_distance_at(_body_left_at, world_position, Vector2.ZERO)
@@ -4395,6 +4414,12 @@ func solid_axis() -> Vector2:
 ## cut off mid-fade instead of draining over `EntityHalo.FADE_OUT_SECONDS`. The same lifetime
 ## `CrowdAgent.set_halo_strength()` gives its own rim; `release_halo()` is how it is given back.
 func set_halo_strength(strength: float, colour: Color) -> void:
+	# **While a guard walks away from his barrier the cost is the barrier's**, so the rim is on the
+	# band (`RoadblockBand`'s own) and not on the man, who is costing her nothing.
+	var on_the_band := is_leaving and _is_a_guard_leaving_his_barrier() and _band != null
+	_glow_the_band(strength if on_the_band and not is_finished else 0.0, colour)
+	if on_the_band:
+		strength = 0.0
 	if strength <= 0.0 or is_finished:
 		if _halo:
 			_halo.set_glow(0.0, colour)
@@ -4405,10 +4430,34 @@ func set_halo_strength(strength: float, colour: Color) -> void:
 		_build_halo()
 	_halo.set_glow(strength, colour)
 
+## The band's own rim, built when a departing guard's barrier becomes the thing costing her and
+## given back once it has faded.
+func _glow_the_band(strength: float, colour: Color) -> void:
+	if strength <= 0.0:
+		if _band_halo:
+			_band_halo.set_glow(0.0, colour)
+			if _band_halo.is_faded_out():
+				_release_the_band_halo()
+		return
+	if _band_halo == null:
+		_band_halo = EntityHalo.new(_draw_the_band_for_the_halo, func() -> float: return 0.0)
+		_band.add_child(_band_halo)
+	_band_halo.set_glow(strength, colour)
+
+var _band_halo: EntityHalo
+
+func _draw_the_band_for_the_halo(canvas: CanvasItem) -> void:
+	_draw_the_band(canvas, Vector2.ZERO)
+
+func _release_the_band_halo() -> void:
+	if _band_halo:
+		EntityHalo.release(_band_halo)
+		_band_halo = null
+
 ## Whether this instance holds a rim right now, lit or still fading — what `ExcitementHalo` counts
 ## against `EntityHalo.RIM_BUDGET`.
 func holds_a_halo() -> bool:
-	return _halo != null
+	return _halo != null or _band_halo != null
 
 ## Frees the rim on the spot, never through `queue_free()`: a rim keeps its block in the web
 ## renderer's instance buffer until the engine frees it, and a queued free lands at the end of the
@@ -4420,6 +4469,7 @@ func release_halo() -> void:
 	if _halo:
 		EntityHalo.release(_halo)
 		_halo = null
+	_release_the_band_halo()
 
 # ------------------------------------------------------------------ the mark ---
 # **Nothing draws a field.** A ring communicates a falloff radius, which is a number, and a number
@@ -5242,7 +5292,14 @@ func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	# are their own node (`RoadblockBand`), standing at the body and sorting at its own feet; the
 	# halo ring's canvas has no such node and draws them back down by the lift
 	# (*"the guard pursuer makes his barrier jump up and down"*).
-	if canvas != self or _band == null:
+	if canvas == self and _band != null:
+		_draw_the_chaser(canvas)
+		return
+	# The halo ring (`canvas != self`) traces what is costing her: both guards and the band while
+	# the instance stands on the band, only the man once he has set off (his halo would otherwise
+	# paint over the band wherever he stands south of it). A departing guard's band has a rim of its
+	# own, `_band_halo`.
+	if _chaser_side == 0 or _guard_spent or _band == null:
 		_draw_the_band(canvas, _roadblock_band_at())
 	_draw_the_chaser(canvas)
 
@@ -5280,12 +5337,15 @@ func _build_the_band() -> void:
 	_band = RoadblockBand.new()
 	_band.instance = self
 	_band.name = "RoadblockBand"
+	# Moved from `_process()`, so it opts out of physics interpolation like this instance does.
+	_band.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_attach_the_band.call_deferred()
 
 ## Idempotent, so a rig that never reaches the idle frame can call it itself.
 func _attach_the_band() -> void:
 	if _band == null or _band.is_inside_tree() or not is_inside_tree() or get_parent() == null:
 		return
+	_band.position = body_position()
 	get_parent().add_child(_band)
 	_move_the_band()
 
@@ -5301,6 +5361,7 @@ func _move_the_band(redraw := false) -> void:
 		_band.queue_redraw()
 
 func _exit_tree() -> void:
+	_band_halo = null
 	if _band != null and is_instance_valid(_band):
 		_band.queue_free()
 	_band = null

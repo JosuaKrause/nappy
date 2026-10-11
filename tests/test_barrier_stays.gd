@@ -76,8 +76,9 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	var barrier_held := true
 	var body_held := true
 	var walked := 0
+	var stood := guard.player_at
 	while guard.is_leaving and walked < int(30.0 / STEP):
-		guard.player_at = guard.global_position + Vector2(0.0, 300.0)
+		guard.player_at = stood # she stands still; he walks out of her sight
 		guard._process(STEP)
 		walked += 1
 		body_held = body_held and guard.is_solid() \
@@ -149,15 +150,21 @@ func _test_the_barrier_keeps_its_field_while_he_walks_away(t) -> void:
 	guard.give_up_the_chase()
 	t.check(guard.is_leaving, "he is walking away")
 	var beside := post + Vector2(0.0, 40.0)
-	var held := true
-	var walked := 0
-	while guard.is_leaving and walked < int(30.0 / STEP):
-		guard.player_at = post + Vector2(0.0, 500.0)
+	var leaving_frames := 0
+	var dark_frames := 0
+	# She stands beside the barrier, inside the 420px he must clear, so the departure lasts.
+	while guard.is_leaving and leaving_frames < int(30.0 / STEP):
+		guard.player_at = beside
+		if guard.contribution_at(beside) <= 0.0:
+			dark_frames += 1
+		leaving_frames += 1
 		guard._process(STEP)
-		held = held and guard.contribution_at(beside) > 0.0
-		walked += 1
-	t.check(held, "the barrier costs what it costs beside it on every frame of his leaving")
+	t.check(leaving_frames > 60, "the departure lasts (%d frames)" % leaving_frames)
+	t.check(dark_frames == 0, "the barrier costs what it costs beside it on every leaving frame (%d dark)"
+			% dark_frames)
 	t.check(guard.contribution_at(beside) > 0.0, "and after it")
+	t.check(guard.global_position.distance_to(beside) > Tuning.OUT_OF_SIGHT or guard.is_waiting(),
+			"he does not vanish beside her: he is out of sight before the barrier stands alone")
 	guard.free()
 
 ## A heated roadblock streamed through `EventManager` itself, the only place the plan carries what

@@ -44,6 +44,18 @@ done
 - `guard-25.0.png`: the chaser is not in the frame. The barrier stands where it was built with the
   west guard beside it, and the east post he left is empty.
 
+**The south approach.** `roadblock-south-approach.json` puts a band across a north-south street and
+her south of it, standing still, in the same forcing patch.
+
+```sh
+tools/shot.sh south-0.5.png 0.5 --recipe docs/evidence/barrier-stays-2026-10-11/roadblock-south-approach.json \
+    --recipe-mode scripted --player-view --no-save --invincible
+```
+
+- `south-0.5.png`: the guard on her side, the south one, has stepped out south of the band and has his
+  red caret and the amber rim; the rim traces only him. The band and the north guard, which sort at
+  the band's line above him, are clean, with no rim on them.
+
 The camera follows her, so the barrier slides across the frame as she runs; what the pictures show
 is that it does not move on the street. The still pictures cannot show the stride bob the jump
 symptom was; `tests/test_barrier_stays.gd` holds that, frame by frame.
