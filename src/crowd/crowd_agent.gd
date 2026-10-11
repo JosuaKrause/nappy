@@ -175,8 +175,8 @@ var _skip_motion := DevFlags.skip_motion()
 ## no body for either — see `_car_shadow_shape()`'s own docstring for why a car gets none, and
 ## `CAR_STRIKE_HALF_LENGTH`/`CAR_STRIKE_HALF_WIDTH` in `tuning.gd` for the lethal rectangle this
 ## shape is not: *"lethal != noise"* (the player, 2026-09-10) — this datum is the noise (and the
-## shadow) a car makes, `will_be_lethal()`'s strike box is what it hits, and this commit leaves
-## the strike box exactly where it stands.
+## shadow) a car makes, `will_be_lethal()`'s strike box (the front half of the body) is what it hits, and this commit
+## leaves the body's rectangle exactly where it stands.
 var shape: GroundShape
 
 ## The box this agent lives in, held by reference and moved by `Crowd`. Leaving the box is what
@@ -1071,7 +1071,7 @@ func _hold_inside_the_tile(stood_on: Vector2i, along_axis: bool) -> void:
 ## capsule along the same heading. Both are continuous through an arc while the sector is not, so a
 ## key made only of the quantised half leaves a car that has turned wearing the anchor and the
 ## shadow axis it last had at a sector boundary — up to 22.5 degrees back, which lands an east- or
-## west-bound car's picture about nine pixels south of its own strike box and keeps it there for the
+## west-bound car's picture about nine pixels south of its own body and keeps it there for the
 ## rest of its run in that lane, since nothing about the quantised picture ever changes again. The
 ## rim does not go with it: `EntityHalo` re-traces the body every frame it is drawn, so the halo
 ## stands where the car should be and the car does not. That is exactly what the player saw.
@@ -1289,22 +1289,28 @@ func expected_impact_at(player_position: Vector2) -> float:
 ## Whether this car's own strike box reaches her at some point before
 ## `Tuning.EXPECTED_IMPACT_HORIZON`, on its current course, her position held fixed — a car's
 ## equivalent of `EventInstance.will_be_lethal()`, over the same rectangle `Crowd._strike()` tests
-## for the actual collision. Never true for a walker: nothing about a pedestrian ends the day, and
-## never true for a car already too slow to strike at all (`Crowd._strike()`'s own guard).
+## for the actual collision: the car's front half, from its centre forward. Never true for a
+## walker: nothing about a pedestrian ends the day, and never true for a car already too slow to strike at all (`Crowd._strike()`'s own guard).
 func will_be_lethal(player_position: Vector2) -> bool:
 	if kind != Kind.CAR or _speed < Tuning.CAR_STRIKE_MIN_SPEED:
 		return false
 	var vel := velocity()
 	var forward := heading()
 	var side := Vector2(-forward.y, forward.x)
-	var dt := 0.25
-	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
-	for i in steps + 1:
-		var offset := player_position - (global_position + vel * (float(i) * dt))
-		if absf(offset.dot(forward)) <= Tuning.CAR_STRIKE_HALF_LENGTH \
-				and absf(offset.dot(side)) <= Tuning.CAR_STRIKE_HALF_WIDTH:
-			return true
-	return false
+	var offset := player_position - global_position
+	if absf(offset.dot(side)) > Tuning.CAR_STRIKE_HALF_WIDTH:
+		return false
+	# The box is the car's front half, 26px long, and a fast car covers more than that between
+	# two samples, so the question is answered on the line rather than by stepping: the car
+	# closes on her at `closing` px/s along its heading, and she is struck when the distance
+	# ahead of its centre falls into [0, CAR_STRIKE_HALF_LENGTH] within the horizon.
+	var ahead := offset.dot(forward)
+	if ahead < 0.0:
+		return false
+	var closing := vel.dot(forward)
+	if closing <= 0.0:
+		return ahead <= Tuning.CAR_STRIKE_HALF_LENGTH
+	return (ahead - Tuning.CAR_STRIKE_HALF_LENGTH) / closing <= Tuning.EXPECTED_IMPACT_HORIZON
 
 ## Duck-typed with `EventInstance`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
 ## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
@@ -2444,7 +2450,7 @@ func _turn_round() -> void:
 ## two frames and `_walker_gait_frame()` carries it through both of them over half a turn of
 ## `_walker_gait_phase`, which `WALKER_GAIT_RATE` prices at 0.09 radians per pixel walked — so a
 ## stride is `PI / 0.09`, about 35px, and at `Tuning.PEDESTRIAN_SPEED` (46–74px/s) that is half a
-## second or so. A car has no gait and its stride is its own length, the same 52px the strike box is
+## second or so. A car has no gait and its stride is its own length, the same 52px the body is
 ## measured over, which at `Tuning.CAR_SPEED` (130–185px/s) is about a third of a second.
 ##
 ## Stated in seconds rather than as a distance travelled, because the agent this exists for is
@@ -2860,7 +2866,7 @@ func _land_the_turn() -> void:
 
 ## Whether every tile the car's own body passes over during the arc is road it may drive on.
 ##
-## **The strike box is the datum** — the 52×28px rectangle that makes a car lethal — swept along the
+## **The car's body is the datum** — the 52×28px rectangle whose front half is the strike box — swept along the
 ## curve and sampled at its own corners and the points between them. It is deliberately the same
 ## rectangle the game already tells the player is the dangerous part of a car, rather than a second
 ## footprint nobody can see.
@@ -3720,9 +3726,9 @@ const CAR_CANVAS_BOTTOM_MARGIN := {
 ## footprint closest to the camera. So there is one registration rule for the whole family, and it
 ## is stated over the heading rather than per view:
 ##
-## > the drawn content's bottom edge lands on the southernmost point of the strike box.
+## > the drawn content's bottom edge lands on the southernmost point of the car's body.
 ##
-## That box is `Tuning.CAR_STRIKE_HALF_LENGTH` (26) by `CAR_STRIKE_HALF_WIDTH` (14), centred on the
+## That body is `Tuning.CAR_STRIKE_HALF_LENGTH` (26) by `CAR_STRIKE_HALF_WIDTH` (14), centred on the
 ## node and rotated onto the heading, so its southern reach is `26·|heading.y| + 14·|heading.x|` —
 ## 26 pointed along a vertical lane, 14 along a horizontal one, `(26 + 14)/sqrt(2)` ≈ 28.28 at
 ## exactly 45 degrees, and every value between while a car is on an arc.
@@ -3739,7 +3745,7 @@ const CAR_CANVAS_BOTTOM_MARGIN := {
 ## **Because it is read off the heading, the redraw gate has to read the heading too.** This is one
 ## of the two continuous terms `_redraw_if_the_picture_changed()`'s key carries; keyed on the
 ## quantised view alone, a car that has turned keeps the anchor it had at the last sector boundary
-## and its picture sits south of its own strike box for the rest of its run.
+## and its picture sits south of its own body for the rest of its run.
 func _car_body_anchor(view: String, forward: Vector2) -> Vector2:
 	var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH * absf(forward.y) \
 			+ Tuning.CAR_STRIKE_HALF_WIDTH * absf(forward.x)

@@ -18,7 +18,7 @@ extends RefCounted
 ## carriageway are 32px apart, so the semicircle joining them has a 16px radius and nothing else.
 ##
 ## Nothing here knows about the map. **Whether an arc fits is `CrowdAgent`'s question**, asked of the
-## swept strike box before the car commits to it, because the answer is about ground rather than
+## swept body before the car commits to it, because the answer is about ground rather than
 ## about geometry.
 
 ## The axis the car is travelling along when the arc begins, and which way it points along it.

@@ -261,6 +261,13 @@ telegraph: the **painted carriageway**, which is permanent and learnable and whi
 step onto, and the **horn**, which must be long enough to walk the whole width of it with the
 doubled hard-fail margin.
 
+**The rear half of a crowd car is safe on purpose.** `Crowd._strike()` and
+`CrowdAgent.will_be_lethal()` test only the box from the car's centre forward (26px long, 14px
+either side), never its whole 52×28px body: the player said "cars should only be lethal in front of
+them while they're driving" and "when I walk behind a standing car right now and it starts moving I
+die -- that is not correct the car is driving away from me" (2026-10-03, minty-hedgehog). Keep the
+horn, the caret and the strike on the same box, and do not widen it back to the body.
+
 **The horn can only be as early as the car is watching her, so it gets its own watch.**
 `Crowd._physics_process` hands the strike and the give-way scan (`pedestrian_ahead`) only the
 cars within `CAR_ZEBRA_SIGHT` (200px) of her — both are about a car that has already noticed
