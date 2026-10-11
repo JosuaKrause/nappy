@@ -388,6 +388,27 @@ const HEAT_INVESTIGATES_LEVEL := 3
 ## and wider than the man's stand-off (116px), so he usually gets out with room to hold his ground
 ## and the notice he owes her (`EventDef.sets_off_beside_her` covers him when she is nearer).
 const HEAT_INVESTIGATE_WITHIN := 150.0
+## **What it costs when the man an investigating car let out reaches her**, in points of the
+## excitement meter, landed on her standing beside him: he stops her, and his own field charges this
+## over `OFFICER_STOP_SECONDS`, fading, before he walks back to his car (`EventDef.stop_excitement`).
+## *(Inbox #669, the player on PR #663: "we make it somewhat costly. once the policeman reaches her
+## they stop and walk back to the car" · "it needs to give a substantial cost but not lethal
+## directly" · "well if the excitement meter is already high it can be lethal".)*
+##
+## **Substantial, and never the end of a day on its own**: nearly four of a contact's eleven points
+## (`BUMP_INTENSITY`) and well over a conversation's 25 (`CHAT_EXCITEMENT`), so being reached is a
+## thing she pays for rather than a bump; and under `METER_MAX`, so from a calm meter it never ends
+## the day — only on a meter already high enough that it carries her to the cap and past
+## `EXCITEMENT_OVERFLOW_TO_CRY` does it. It is his field, but it is spent in a second at its full
+## width, so walking away the instant he reaches her takes little of it off; a sleeping baby takes
+## `SLEEPING_SENSITIVITY` of it, as of everything.
+## Chosen while building, open to overturn.
+const OFFICER_STOP_EXCITEMENT := 40.0
+## How long the stop lasts: he stands with her while his field lands `OFFICER_STOP_EXCITEMENT`,
+## fading from twice its mean to nothing, and then walks back to the car. Short and sharp — "a
+## sharp spike is a short duration at high intensity" (the **events** skill) — so the cost is the
+## moment he reaches her rather than a field she can stroll out of.
+const OFFICER_STOP_SECONDS := 1.0
 
 ## The progress at which a `HUNTS` row stops being a place and starts being a hunter. Its own
 ## number rather than the patrol's `HEAT_INVESTIGATES_LEVEL`, deliberately: sharing one would put

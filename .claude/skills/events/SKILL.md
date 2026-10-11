@@ -201,9 +201,17 @@ traps:
   her.** A turn moves nothing, so the body check passes it — and the raid's pacing car reversing at
   the end of its beat turns her from behind a car driving away into the front of one, struck with
   next to no warning. The car stands instead.
-- **A car leaving must not vanish beside her.** A departure into her is refused every frame, so a
-  car that stopped for her — the investigating car, once the man it let out is done — leaves along
-  its road the way that does not run at her, and is gone only once she could not be watching.
+- **A car that stopped for her must not turn round on the spot, nor vanish beside her.** She is
+  nearly always ahead of the investigating car, so "leave the way that does not run at her" is a
+  180° turn in one frame in her view; once its man is back in it drives on along its route the way
+  it was going instead, a car that has stood, so it waits while she is in its way. Any car leaving
+  is gone only once she could not be watching.
+- **A car that stops where it noticed her stops in junction boxes.** Measured on real
+  `_along_street_path()` routes, about one investigating car in five did, standing in the crossing
+  traffic's way for a whole chase; one that notices her with any of its body on a junction drives
+  on until it is clear of the box (`EventInstance._stands_in_a_junction()`). A test on a hand-made
+  straight route away from junctions cannot see this; `tests/test_pursuer_on_foot.gd` drives real
+  routes on three seeds.
 
 **A body is a route cost, not a closure.** `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
 `obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can

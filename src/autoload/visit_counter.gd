@@ -394,8 +394,9 @@ func _on_pelican_struck_her(_instance: Variant) -> void:
 func _on_poster_torn() -> void:
 	_send_event(_day_event_name(GameState.day, "poster-torn"))
 
-## A tear whose marble sends a patrol, beside that tear's own `poster-torn` (PLAYTEST-143: "we
-## need a telemetry item for ripping posters and pursuit triggered by poster ripping").
+## A tear whose marble sends a pursuer on foot after her, beside that tear's own `poster-torn`
+## (PLAYTEST-143: "we need a telemetry item for ripping posters and pursuit triggered by poster
+## ripping").
 func _on_poster_pursuit_sent() -> void:
 	_send_event(_day_event_name(GameState.day, "poster-pursuit"))
 

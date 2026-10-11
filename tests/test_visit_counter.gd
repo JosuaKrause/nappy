@@ -254,7 +254,7 @@ func _test_every_tear_and_every_hold_is_sent(t) -> void:
 	t.check(counter.sent.count(held) == 2, "a checkpoint that holds her twice is two events")
 	counter._on_poster_pursuit_sent()
 	t.check(counter.sent.back() == "nappy-day-%d-poster-pursuit" % day,
-		"a tear that sends a patrol sends its own poster-pursuit")
+		"a tear that sends a pursuer on foot sends its own poster-pursuit")
 	counter.free()
 
 ## The fold this counter makes: `day_lost_to`'s own cause becomes part of the one event a lost day

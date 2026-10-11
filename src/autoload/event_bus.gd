@@ -98,8 +98,9 @@ signal pursuit_began(id: String)
 ## `EventInstance._be_done()`'s own moment a pursuit that had actually noticed her is over without
 ## catching her. `shaken_off` is `EventInstance.gave_up` — `_chase()`'s own record of whether she
 ## outran it (`Tuning.PURSUIT_SHAKEN_OFF`) rather than its `duration` simply running out. A catch
-## ends the day through `hard_fail_triggered` instead and never reaches `_be_done()`, so the two
-## never both fire for the same chase. Listen-only — see docs/TELEMETRY.md, "The page counts
+## never fires it: one that ends the day goes through `hard_fail_triggered` instead and never
+## reaches `_be_done()`, so the two never both fire for the same chase, and a police vehicle's man
+## who reached her and stopped her (`EventInstance.has_stopped_her()`) caught her too. Listen-only — see docs/TELEMETRY.md, "The page counts
 ## visits".
 signal pursuit_ended(id: String, shaken_off: bool)
 
