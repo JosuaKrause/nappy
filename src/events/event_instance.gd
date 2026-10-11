@@ -1640,6 +1640,11 @@ func solid_part_shapes() -> Array[GroundShape]:
 func _build_halo() -> void:
 	_halo = EntityHalo.new(_draw_body, _current_bob)
 	add_child(_halo)
+	# **First child, so first of the behind-parent drawers.** The rim and the visible scene's layers
+	# (`EventScenery`) both opt into `show_behind_parent`, and siblings that do are painted in
+	# tree order: a rim added after the scenery -- which `_ready()` built long before any pick --
+	# painted over the pictures it is meant to outline.
+	move_child(_halo, 0)
 
 ## Whether this instance is solid right now. True from `_ready()` for anything with
 ## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()` —
