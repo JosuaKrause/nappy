@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_a_car_that_runs_out_of_route_leaves_out_of_her_sight(t)
 	_test_an_investigating_car_leaves_out_of_her_sight(t)
 	_test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t)
+	_test_a_leaving_car_streamed_out_does_not_come_back(t)
 
 func _rig(t, day: int) -> Array:
 	var map := CityGenerator.generate(SEED)
@@ -173,3 +174,26 @@ func _test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t) -> void:
 	t.check(car != null and _removed(car), "she stood, and it drove out of her view and was removed")
 	_done(city, her)
 
+
+## A car that is leaving and is streamed out beyond her sight is over: walking back to its route does
+## not put it at the route's end again to leave in front of her.
+func _test_a_leaving_car_streamed_out_does_not_come_back(t) -> void:
+	var rig := _lane_rig(t, EventCatalogue.by_id("police_patrol"))
+	var city: City = rig[0]
+	var her: Node2D = rig[1]
+	var plan: EventScheduler.Planned = rig[2]
+	var home := her.global_position
+	var elapsed := 0.0
+	while elapsed < 30.0 and (plan.live == null or not plan.live.is_leaving):
+		_frame(city)
+		elapsed += STEP
+	t.check(plan.live != null and plan.live.is_leaving, "the patrol ran out of route and is leaving")
+	her.global_position = home + Vector2(0.0, 2400.0)
+	_frame(city)
+	t.check(plan.live == null, "she is far away and it is streamed out")
+	her.global_position = home
+	for i in 30:
+		_frame(city)
+	t.check(plan.live == null and plan.spent,
+			"walking back to its route does not bring it back to leave again in front of her")
+	_done(city, her)

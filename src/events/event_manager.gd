@@ -707,6 +707,12 @@ func _stream_out(plan: EventScheduler.Planned) -> void:
 	if plan.live.is_a_spent_guard():
 		plan.guard_spent = true
 		plan.chaser_side = plan.live.chaser_side()
+	# **A departure streamed out is over**, as one that finished is (`_mark_plan_spent()`): rebuilt
+	# on the way back in, it would stand at its route's end in front of her and leave again. A guard
+	# walking away from his barrier is the one that comes back, as only the barrier.
+	if plan.live.is_leaving and not plan.live.is_a_spent_guard():
+		plan.spent = true
+		_map.release_obstruction(plan.get_instance_id())
 	_map.release_obstruction(plan.live.get_instance_id())
 	_instances.erase(plan.live)
 	plan.live.queue_free()
