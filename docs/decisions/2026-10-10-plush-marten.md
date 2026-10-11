@@ -27,8 +27,10 @@ view of where she stood; a stretch never takes less than `PARK_CLOSING_STRETCH_M
 gap closes, the day ends** (`park_cordon`, "They taped the park shut with you inside."). Up to
 `PARK_CLOSING_ESCORTS` (2) more officers walk the park's people out: a way out is planned at set-out,
 through the last gap and over the ground outside it to the nearest place out of her sight, by sidewalk
-where it gets there; each escort comes in along it, sends his person off down it and walks out behind
-them, and is gone once out of her sight. Anything planned in the park that has not appeared yet is
+where it gets there; each escort comes in along it, sends his person off down it
+(`EventInstance.leave_along()`, which walks on away from her past the way's end and ends only once she
+could not be watching) and walks out behind them, and is gone once out of her sight. Anyone in the
+park already leaving on their own is turned onto the way too. Anything planned in the park that has not appeared yet is
 taken off the day. Afterwards the tapers walk off by the same kind of way, out of sight.
 
 The tape is `art/closures/cordon_tape_across.svg`, `cordon_tape_along.svg` and `cordon_post.svg`, in
@@ -51,16 +53,29 @@ since the officer waited only on her centre; and the park's people left in a str
 her, through the tape, with their escort walking a fixed 840px through whatever stood that way. Each
 is fixed as described above.
 
+**Its second review found one more of each kind**, all fixed: a person walked out ended at the way's
+last point, because the private `EventInstance._trail` the cordon wrote is walked by `_walk_back()`,
+which ends where it runs out, so on seed 4242, with her walking the same way out from 4 or 8s after
+the touch and stopping at its end, the busker vanished beside her; the logged close and
+`first_in_view` were read before the 0.3s-a-stretch floor, so a large park logged 12.0s and closed at
+14.0s, and a taper lost the rest of a frame's step at every stretch's end, about half a second over a
+large park; and someone already leaving on their own, or an escort sent back alone from inside the
+park, was not counted by the gap's wait. Merging main's bouncy-egret (#674), whose `_reach_blocked`
+also carries the soft seals' bands, moved seed 13's last gap off one, to an edge the officers reach
+her view of later, so that park now closes at 26.3s rather than 14.0s.
+
 **Measured** (`tests/probes/plush_marten_cordon.gd`, seeds 1 to 40 and 90210, her at the swing and the
 camera on her; 41 swing parks, 35 of them 256 by 256px and 6 of them 704 by 704px): every last gap's
 outside reaches home and the day's other calm ground with the park blocked, and stands clear of the
 day's bodies and fields. The walk from the swing to the gap is 60 to 538px, 0.7 to 5.8s (the 538px on
 seed 10, whose nearer edges open onto ground cut off from home). On the small parks an officer is in
-view within 0.5s and the gap closes 12.1 to 12.2s after the touch; on the large ones the first officer
-comes into view 1.1 to 23.2s after it and the gap closes at 14.0s, and at 28.4s on seed 40, where the
-officers come into her view only late in their round. First sight comes 2.1 to 11.4s before the close
-beyond the walk, and setting off at a walk a second after it gets her out on every one.
-`tests/test_park_cordon_seeds.gd` holds that sweep against the map and the clock;
+view within 0.5s and the gap closes 12.0s after the touch; on the large ones the first officer
+comes into view 1.1 to 22.7s after it and the gap closes at 13.4 to 13.5s, and at 26.3s on seed 13 and
+27.9s on seed 40, where the officers come into her view only late in their round. First sight comes
+2.0 to 11.2s before the close beyond the walk, and setting off at a walk a second after it gets her
+out on every one; the close and first sight are within a quarter of a second of what the cordon set
+out to (`deadline`, `first_in_view`). `tests/test_park_cordon_seeds.gd` holds that sweep against the
+map and the clock;
 `tests/test_park_cordon.gd` holds the cordon on one city, the pram at 20 to 26px either side of the
 line, and a busker walked out through the gap.
 
@@ -77,17 +92,17 @@ nobody, the deadline instead leaving her the walk and two seconds after first si
 reach is taken whichever way she faces rather than read off her facing, since the facing can swing
 the pram into the line after the tape is up; standing in the last
 gap keeps the park from closing; the tape stands only on day 12, and from day 13 the park is like any
-other spent park; `ParkCordon._send_off()` walks a park person off on a copy of their own row with
-`departs_at` set, and sets the way out on the instance's private `_trail` (which `_leave()` walks
-back), a stopgap for a public leave-along-a-path hook on `EventInstance`, a file another branch owns;
-the cordon's search for the way out (`ParkCordon._route_away()`) is a breadth-first search of its own,
+other spent park; a park person with no departure of their own walks out at
+`PARK_CLOSING_LEAVE_SPEED` (50px/s), the pace `leave_along()` is handed; past the way's end
+`leave_along()` walks on straight away from her, sliding along a wall or the city's edge when that
+is off the walkable ground, since the way's end may be where she now stands; the cordon's search for the way out (`ParkCordon._route_away()`) is a breadth-first search of its own,
 over walkable ground off the park and off the day's blocked set, roads only when the sidewalk does not
 get there. The art's open points: the
 tape at thigh height, blue and white rather than yellow and black, the end-on runs reading as posts.
 
 *Open for the player:* whether the tape should stand on days 13 and 14, a physical closure that meets
 [M129, one late park is fenced](2026-09-26-M129-regular-spent-parks-are-spoiled-one-late-park-is-fenced-corrected.md);
-whether being shut in only by staying about twelve seconds on most parks, and up to about 28 on the
+whether being shut in only by staying twelve seconds on most parks, and up to about 28 on the
 largest — the swing's robber usually runs her out within a couple — is the danger meant; and whether
 a large park's later close should instead come from bringing the officers into her view sooner.
 [snowy-trout](../todo/2026-10-07-snowy-trout/README.md), day 12's return softlock, does not reproduce
