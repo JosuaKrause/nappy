@@ -1063,8 +1063,9 @@ func mast_foot(mast_id: String) -> Vector2:
 ## the day's own (`GameState.resistance_progress`) placed by `EventScheduler._best_of()` among
 ## `offered` — the tiles the director found near her and out of her view — against the whole of the
 ## day's plan: `_room_around()`'s spacing, so it never stands inside anything else or inside a lethal
-## row's field, the region doors' clear ground, the calm she has not used, and the route junctions
-## and sidewalks the day keeps open. Appended to the day's plan under
+## row's field, the region doors' clear ground and the calm she has not used; a mast is exempt from
+## the three rules that keep a line along her routes (the route junctions, the route sidewalks and a
+## pacing beat's opening), as the fixed ones are (inbox #684). Appended to the day's plan under
 ## `EventScheduler.added_mast_id()` with its body recorded, it streams in like any planned row,
 ## broadcasts on the one clock, is silenced by `silence_mast()`, counts for `silence_all_masts()`,
 ## and once silenced stands silenced on later days from its scar (`EventScheduler._place_masts()`).

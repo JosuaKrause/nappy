@@ -78,9 +78,9 @@ otherwise is whether her walk comes within reach of one and the siting's roll pi
 down. Making it certain would change what a mast is held to — the city's six masts are already
 outside the line rules (`EventScheduler._counts_against_the_line`, "a mast is planted once by
 `MastSites`"), and [feathery-marmot](2026-10-03-feathery-marmot.md) puts a queued mast through "the
-route junctions and sidewalks the day keeps open" — which is the player's choice and is not made
-here; it is queued as [cozy-lynx](../todo/2026-10-11-cozy-lynx/README.md), day 11's rigged mast stands
-on her route.
+route junctions and sidewalks the day keeps open" — which was the player's choice and was not made
+here; the player made it in [cozy-lynx](2026-10-11-cozy-lynx.md), day 11's rigged mast
+stands on her route.
 
 Day 13's guard, set on her from another roadblock 1,778px away with a building between them, comes
 straight at her, slides along the building he meets and stops 479px from her, so
