@@ -15,6 +15,7 @@ const CAR_BOX := Vector2(48.0, 48.0)
 func run(t) -> void:
 	_test_a_car_that_runs_out_of_route_leaves_out_of_her_sight(t)
 	_test_an_investigating_car_leaves_out_of_her_sight(t)
+	_test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(t)
 	_test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t)
 	_test_a_leaving_car_streamed_out_does_not_come_back(t)
 
@@ -75,10 +76,13 @@ func _lane_rig(t, def: EventDef) -> Array:
 
 ## One frame as the game runs it: the manager's own tick, then every instance's. The lights are off
 ## so a red one cannot hold the car where the probe wants it to run.
-func _frame(city: City) -> void:
+func _frame(city: City, running := false) -> void:
 	city.events._tick_the_events(STEP)
 	for instance in city.events.instances().duplicate():
 		instance.signals = null
+		# `running` stands for her running: the manager's tick has just said she is not.
+		if running:
+			instance.player_running = true
 		instance._process(STEP)
 
 ## Whether `car` is out of the world: finished, or handed to `queue_free()` by a retirement or a
@@ -135,6 +139,33 @@ func _test_an_investigating_car_leaves_out_of_her_sight(t) -> void:
 	t.check(not seen_at_the_end, "out of her view, never inside it")
 	_done(city, her)
 
+## The same car, its man shaken off instead: she runs, he gives up the chase and walks back to the
+## car, which drives on once he is in. Every removal of the car is out of her view.
+func _test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(t) -> void:
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
+	var rig := _lane_rig(t, hot)
+	var city: City = rig[0]
+	var her: Node2D = rig[1]
+	var plan: EventScheduler.Planned = rig[2]
+	var car: EventInstance = null
+	var officer: EventInstance = null
+	var seen_at_the_end := false
+	var elapsed := 0.0
+	while elapsed < 120.0:
+		_frame(city, officer != null and not officer.is_finished)
+		elapsed += STEP
+		car = car if car != null else plan.live
+		if car != null and officer == null:
+			officer = car.its_officer()
+		if car != null and _removed(car):
+			seen_at_the_end = _seen(car.global_position, her.global_position)
+			break
+	t.check(officer != null, "the heated patrol stopped for her and let a man out")
+	t.check(officer != null and officer.gave_up, "she ran and he gave up the chase")
+	t.check(car != null and _removed(car), "and the car, its man back in, drove on and left the world")
+	t.check(not seen_at_the_end, "out of her view, never inside it")
+	_done(city, her)
+
 ## **The vanishing the player reported.** A plan is streamed out by how far she is from its *route*
 ## (`Planned.distance_from()`), and a car that has run out of route carries on past its end, so a car
 ## she follows out of its street is far from the route while she is a few paces behind it. At 1160px
@@ -175,8 +206,11 @@ func _test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t) -> void:
 	_done(city, her)
 
 
-## A car that is leaving and is streamed out beyond her sight is over: walking back to its route does
-## not put it at the route's end again to leave in front of her.
+## A car that is leaving and is streamed out beyond her sight is over, and its plan says so
+## (`Planned.spent`): a departure that has ended is not run again. She is *teleported* away and back
+## here, which is not how she moves; walking, the plan streams in only 900px from its route's end, and
+## the car is rebuilt out of her view and finishes at once. So this holds the bookkeeping, and the
+## second half walks her back and holds that nothing is ever inside her view.
 func _test_a_leaving_car_streamed_out_does_not_come_back(t) -> void:
 	var rig := _lane_rig(t, EventCatalogue.by_id("police_patrol"))
 	var city: City = rig[0]
@@ -188,12 +222,18 @@ func _test_a_leaving_car_streamed_out_does_not_come_back(t) -> void:
 		_frame(city)
 		elapsed += STEP
 	t.check(plan.live != null and plan.live.is_leaving, "the patrol ran out of route and is leaving")
-	her.global_position = home + Vector2(0.0, 2400.0)
+	her.global_position = home + Vector2(0.0, 2400.0) # a teleport, see above
 	_frame(city)
 	t.check(plan.live == null, "she is far away and it is streamed out")
-	her.global_position = home
+	t.check(plan.spent, "and its plan is spent, a departure being over once it is streamed out")
+	var seen := false
+	while her.global_position.y > home.y:
+		her.global_position.y = maxf(her.global_position.y - Tuning.WALK_SPEED * STEP, home.y)
+		_frame(city)
+		for instance in city.events.instances():
+			seen = seen or _seen(instance.global_position, her.global_position)
 	for i in 30:
 		_frame(city)
-	t.check(plan.live == null and plan.spent,
-			"walking back to its route does not bring it back to leave again in front of her")
+	t.check(plan.live == null and not seen,
+			"walking back to its route, nothing of it is ever in her view")
 	_done(city, her)

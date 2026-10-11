@@ -914,12 +914,13 @@ Four things worth keeping straight:
 from its *route* (`Tuning.EVENT_STREAM_RADIUS` and its hysteresis), but a car that has run out of
 route carries on past its end, so a car she follows out of its street is a long way from the route
 while she walks a few paces behind it. An instance stays in the world while it is within
-`Tuning.OUT_OF_SIGHT` of her (`EventManager.stream_around()`), however far its route is, and is
-ended only by its own departure (`_leave()`) once it is out of her view. An instance that is leaving and is streamed out anyway, beyond her sight, is over: its plan is spent
-(`EventManager._stream_out()`), so walking back to the route does not stand it at the route's end to
-leave again; only the guard walking away from a barrier comes back, as the barrier. `tests/test_patrol_vanish.gd`
-holds it, with the patrol's other departures: the end of its route and the investigating car driving
-on once its man is back in.
+`Tuning.OUT_OF_SIGHT` of her (`EventManager.stream_around()`), however far its route is; past that,
+streaming may take it, out of her view. An instance that is leaving and is streamed out anyway,
+beyond her sight, is over: its plan is spent (`EventManager._stream_out()`), as one that finished is,
+so an ended departure is not rebuilt (a person streamed out mid-`leave_along` does not stand in
+day 12's closed park again); only the guard walking away from a barrier comes back, as the barrier.
+`tests/test_patrol_vanish.gd` holds it, with the patrol's other departures: the end of its route and
+the investigating car driving on once its man is back in or has been shaken off by her running.
 
 ## Scheduling
 

@@ -242,11 +242,13 @@ charges throughout (the field centred on the band, a rim of its own) — so "it 
 starts leaving" holds for the man and not for the barrier he left. He is in her view as he goes, so
 he is held to the sight rule like a car (`_leaving_must_clear_sight`) rather than vanishing on the
 6-second backstop beside her; the backstop remains for a departure with no player to be out of
-sight of. **Streaming is a way out too**: `EventManager.stream_around()` takes a plan out by her distance
-from its *route*, and a car that has run out of route drives on past its end, so it keeps a live
-instance within `Tuning.OUT_OF_SIGHT` of her in the world however far the route is, or a car she
-follows out of its street is deleted in front of her. A plan streamed out while he is spent or leaving must carry that (`Planned.guard_spent`), or the barrier
-comes back armed. The rest is `docs/EVENTS.md`, "Going away".
+sight of. A plan streamed out while he is spent or leaving must carry that (`Planned.guard_spent`), or
+the barrier comes back armed. **Streaming is a way out too**: `EventManager.stream_around()` takes a
+plan out by her distance from its *route*, and a car that has run out of route drives on past its
+end, so `stream_around()` keeps any live instance within `Tuning.OUT_OF_SIGHT` of her in the world
+however far its route is, or a car she follows out of its street is deleted in front of her; and a
+leaving plan it does stream out is spent, as one that finished is, the guard's `guard_spent` being
+the exception. The rest is `docs/EVENTS.md`, "Going away".
 
 ## Pursuits
 
