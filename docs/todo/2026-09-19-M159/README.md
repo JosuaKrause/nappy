@@ -34,6 +34,18 @@ and ellipse work outside a bound that includes the current jolt and the maximum 
 atlas CPU spans; its semantics and limits are in
 [TELEMETRY.md](../../TELEMETRY.md#raw-frame-traces).
 
+**What the phone records of [velvet-marten](../../playtests/2026-10-11-velvet-marten.md)
+point at.** On days 9 and 14 of v0.27.1 the renderer's own work (`render`) is the largest bucket in
+nearly every frame, mostly outside the engine's measured canvas render, and day 14's frames sit at
+the 33ms line between two refreshes and three, which the player felt as "a lot of stutter". The
+player chose what comes next: [shadows baked into their own page](shadows-are-pictures-on-their-own-atlas-page.md),
+[nothing off screen redrawn or animated](nothing-off-screen-is-redrawn-or-animated.md),
+[the frame straight to the screen, then fewer pixels](the-frame-goes-straight-to-the-screen-then-fewer-pixels.md),
+and [the readout's resolution and refresh](the-readout-says-its-resolution-and-refreshes-less-often.md).
+[The cues and the events doing less](the-cues-and-the-events-step-less.md) and
+[the cheaper tick](make-the-physics-tick-cheaper.md) take the game's own work down beside them.
+Day 9's long spike is [bouncy-swan](../2026-10-11-bouncy-swan/README.md)'s.
+
 The [scenery residency record](../../decisions/2026-09-19-M159-4.md) carries loading,
 unloading and reconstruction contracts and their acceptance evidence. The remaining scenery
 audit preserves stationary pixels while separating partial motion.
