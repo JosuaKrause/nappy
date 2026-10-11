@@ -187,5 +187,9 @@ down.
 ## A per-tile predicate in a sweep is a lookup table
 
 A `Tile.is_walkable()` call per tile becomes a `PackedByteArray` indexed by tile type
-(`CityMap._lut`), built *from* `Tile.is_walkable` so it stays the one place that decides. The rest of flood-fill performance
+(`CityMap._lut`), built *from* `Tile.is_walkable`, which decides every tile type. It is not the whole answer: the
+precinct bollards are posts standing on otherwise walkable tiles (`CityMap.post_tiles()`), so a sweep
+over `_WALKABLE` that a body or a flood must obey also blocks those tiles, as `walk_field_from()`
+does, or it walks straight through every row. A line-of-sight walk (`_open()`) leaves them open on
+purpose. The rest of flood-fill performance
 (a `Vector2i`-keyed `Dictionary` against a flat array) is the **godot** skill, "Performance".

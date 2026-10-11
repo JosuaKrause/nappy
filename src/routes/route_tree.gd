@@ -247,9 +247,8 @@ static func for_the_run(map: CityMap) -> RouteTree:
 static func for_day(map: CityMap, day: int) -> RouteTree:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
-	var grid := ReachabilityGrid.build(map, false)
 	var tree := grow(map, ClosurePlanner.home_street(map), _growable_areas(map),
-			map.blocked_segments(), grid, rng)
+			map.blocked_segments(), lattice_grid(map), rng)
 	if day == Tuning.POWER_STATION_DAY and map.has_power_station():
 		tree._grow_a_spur_to(map.rect_tiles(map.power_station_door))
 	return tree
@@ -266,6 +265,13 @@ static func _growable_areas(map: CityMap) -> Array[ClosurePlanner.CalmArea]:
 		if not area.block in map.shut_calm:
 			areas.append(area)
 	return areas
+
+## The grid a tree is grown on: the permanent lattice as the tile types lay it, **without** the
+## precinct posts (`ReachabilityGrid.build()`'s `posts_block` false). Every caller of `grow()` takes
+## its grid from here, so no tree is grown on a grid that sees the posts while `for_day()` grows on
+## one that does not.
+static func lattice_grid(map: CityMap) -> ReachabilityGrid:
+	return ReachabilityGrid.build(map, false)
 
 ## Grows the tree. `closed` is the merged set `CityMap.blocked_segments()` returns — the streets a
 ## calm zone absorbed. Their ground is already reflected in `grid` as walkable calm tiles, so it

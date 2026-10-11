@@ -473,7 +473,7 @@ func _test_cached_growth_matches_uncached_growth(t) -> void:
 		var state := CityState.new()
 		state.begin_day(planned.map.block_plans, planned.day)
 		planned.map.repaint(state)
-		var grid := ReachabilityGrid.build(planned.map)
+		var grid := RouteTree.lattice_grid(planned.map)
 		var areas := ClosurePlanner.calm_areas(planned.map)
 		var closed := planned.map.blocked_segments()
 		var cached := RouteTree.grow(planned.map, planned.home, areas, closed, grid, cached_rng)

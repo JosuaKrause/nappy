@@ -221,7 +221,7 @@ func _test_no_other_day_is_bent_toward_it(t) -> void:
 		_repaint_for(map, day)
 		var with_spur := RouteTree.for_day(map, day)
 		var without := RouteTree.grow(map, ClosurePlanner.home_street(map),
-				ClosurePlanner.calm_areas(map), map.blocked_segments(), ReachabilityGrid.build(map),
+				ClosurePlanner.calm_areas(map), map.blocked_segments(), RouteTree.lattice_grid(map),
 				_routes_rng(map, day))
 		# Asked of the trees' own node ids, which agree because both grids are built from the same
 		# map the same way — a cell can hold two nodes, so a cell-to-tile round trip cannot ask it.
@@ -238,7 +238,7 @@ func _test_no_other_day_is_bent_toward_it(t) -> void:
 		var before := Tuning.POWER_STATION_DAY - 1
 		_repaint_for(map, before)
 		var plain := RouteTree.grow(map, ClosurePlanner.home_street(map),
-				ClosurePlanner.calm_areas(map), map.blocked_segments(), ReachabilityGrid.build(map),
+				ClosurePlanner.calm_areas(map), map.blocked_segments(), RouteTree.lattice_grid(map),
 				_routes_rng(map, before))
 		t.check(RouteTree.for_day(map, before).cells().size() == plain.cells().size(),
 				"seed %d day %d: an ordinary day's corridor has no spur" % [map.seed_used, before])

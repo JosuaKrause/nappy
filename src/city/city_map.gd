@@ -824,6 +824,10 @@ func _reaches_the_middle_of(tile: Vector2i, from: Vector2, delta: Vector2, depth
 ## it for every tile a segment crosses, and most cross no building at all, so the one call stands
 ## for `is_walkable()`'s three. A recipe's exterior and a stretch's void still go through
 ## `tile_at()`.
+##
+## **It deliberately ignores the precinct posts** (`post_tiles()`): the line walk asks whether a
+## segment is *seen* across, and a bollard blocks a body but not a line of
+## sight, so a post tile is open here though no step or flood may enter it.
 func _open(x: int, y: int) -> bool:
 	if recipe_exterior or stretch_active:
 		return Tile.is_walkable(tile_at(Vector2i(x, y)))
