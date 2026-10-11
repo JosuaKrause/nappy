@@ -441,7 +441,8 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
 	t.check(not shows.call(EventCatalogue.by_id(ParkCordon.OFFICER_ROW), escort.at),
 			"from out of her sight")
 	var seen := {"through_tape": 0, "off_ground": 0, "crossed_at": Vector2.INF, "steps": 0,
-			"busker_left": false, "closed_with_them_inside": false, "gone_seen": false}
+			"busker_left": false, "closed_with_them_inside": false, "gone_seen": false,
+			"escort_ahead": 0}
 	var last := {"busker": busker.global_position, "escort": escort.at}
 	var waited := 0.0
 	while waited < PATIENCE and escort.phase != ParkCordon.Officer.Phase.GONE:
@@ -470,6 +471,9 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
 					and not cordon.line.has_point(now):
 				seen.crossed_at = now
 			last[who] = now
+		if walkers.has("busker") and busker.is_leaving and cordon.line.has_point(walkers.busker) \
+				and not cordon.line.has_point(escort.at):
+			seen.escort_ahead += 1
 		if not was_closed and cordon.is_closed():
 			seen.closed_with_them_inside = cordon.line.has_point(escort.at) \
 					or (walkers.has("busker") and cordon.line.has_point(walkers.busker))
@@ -479,6 +483,9 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
 			"neither the busker nor his escort steps across tape that is up (%d of %d steps)"
 			% [seen.through_tape, seen.steps])
 	t.check(seen.off_ground == 0, "or onto ground nobody walks (%d)" % seen.off_ground)
+	t.check(seen.escort_ahead == 0,
+			"the officer walks out behind the busker, never out of the park ahead of him (%d frames)"
+			% seen.escort_ahead)
 	var crossed: Vector2 = seen.crossed_at
 	t.check(crossed != Vector2.INF
 			and crossed.distance_to(cordon.last_gap) <= Tuning.TILE_SIZE * 1.5,

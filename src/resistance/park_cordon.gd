@@ -461,7 +461,7 @@ func _set_out(her: Vector2, shows: Callable) -> void:
 		officers.append(officer)
 		_make_figure(officer)
 	_exit = _way_out_through_the_gap(her, shows)
-	_send_escorts(her)
+	_send_escorts()
 	_time_the_close(her, shows)
 	Telemetry.note("contact", "the police set out to cordon the park at block %s: %d stretches, "
 			% [park, _needed_count()] + "the last gap at %s, closing %.1fs after the swing"
@@ -687,7 +687,7 @@ func _trail_out_from(from: Vector2) -> PackedVector2Array:
 ## A person is anything live in the park that stands or strolls there: not the playground (an
 ## ambient row with no figure), and not anything that came for her or drives (a pursuer, a car).
 ## Each escort comes in along the way out, from its far end, which is out of her sight.
-func _send_escorts(her: Vector2) -> void:
+func _send_escorts() -> void:
 	if not _city or not _city.events:
 		return
 	for plan in _city.events.plans():
@@ -718,10 +718,9 @@ func _send_escorts(her: Vector2) -> void:
 		officers.append(escort)
 		_make_figure(escort)
 		sent += 1
-	if sent > 0 and her != Vector2.INF and _exit.size() > 0 \
-			and _exit[_exit.size() - 1].distance_to(her) < Tuning.OUT_OF_SIGHT:
-		Telemetry.note("contact", "the park's escorts set out from %.0fpx from her"
-				% _exit[_exit.size() - 1].distance_to(her))
+	if sent > 0 or not _leaving.is_empty():
+		Telemetry.note("contact", "%d officers come to walk the park's people out, %d more sent off "
+				% [sent, _leaving.size()] + "on their own, through the last gap")
 
 ## Whether a live event is one of the park's people, to be walked out.
 func _walks_out(live: EventInstance) -> bool:
@@ -954,8 +953,10 @@ func _approach_the_person(officer: Officer, delta: float, her: Vector2) -> void:
 		officer.phase = Officer.Phase.ESCORTING
 		officer.path = PackedVector2Array(_exit)
 
-## Walks out behind the person he sent off, down the same way, never nearer them than
-## `ESCORT_BEHIND`; once they are gone he walks on and is gone once out of her sight.
+## Walks out behind the person he sent off, down the same way, never nearer them along it than
+## `ESCORT_BEHIND` — measured along the way rather than straight, so he stays behind them rather
+## than passing them, he being the faster; once they are gone he walks on and is gone once out of
+## her sight.
 func _escort(officer: Officer, delta: float, her: Vector2, shows: Callable) -> void:
 	var person := officer.person
 	if not person or not is_instance_valid(person) or person.is_finished \
@@ -963,7 +964,12 @@ func _escort(officer: Officer, delta: float, her: Vector2, shows: Callable) -> v
 		officer.phase = Officer.Phase.LEAVING
 		_maybe_gone(officer, her, shows)
 		return
-	var room := officer.at.distance_to(person.global_position) - ESCORT_BEHIND
+	var points := PackedVector2Array([officer.at])
+	points.append_array(officer.path)
+	var theirs := PackedVector2Array([person.global_position])
+	for i in range(person._trail.size() - 1, -1, -1):
+		theirs.append(person._trail[i])
+	var room := _length_of(points) - _length_of(theirs) - ESCORT_BEHIND
 	if room > 0.0:
 		_walk_path(officer, minf(officer.speed * delta, room))
 
