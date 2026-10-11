@@ -164,6 +164,11 @@ react, not to plan. A bike on her own pavement is a road, and the answer to a ro
 decision — cross to the other side, or turn — made with the warning its screen-edge badge gives
 before it exists (see "Everything arrives from off screen"). The loose dog does not telegraph
 (see "What telegraphs") and is created at once just off screen down her sidewalk, with no badge.
+**A loose dog she turns away from still arrives, or is retired.** She may turn round or run after it is
+sent (`RUN_SPEED` 168 against its 132): a dog behind her that is closing — even at 40px/s on a walker
+going away — runs on and passes her, and one that is more than `Tuning.OUT_OF_SIGHT` from her and has
+not closed for two seconds is finished where it stands, out of sight, rather than run its whole route
+unseen (`EventInstance._give_up_what_cannot_reach_her()`).
 
 **And it comes down her own pavement, not the one across the carriageway.** *(2026-09-07: "also
 biker should be on the same side of the road not the other side".)* Sited along her literal heading,

@@ -1,0 +1,12 @@
+   0.0  plan     events: alley_mouse x4, burnt_out_car x72, burst_water_main x15, busker x8, cafe_tables x34, car_accident x23, cat_dash x8,
+   0.0  ahead    loose_dog comes at her from 293px in front of her at (113,94), unannounced
+   0.0  near     loose_dog at (113,96), 139px, exc 0, in 0.0/s (crowd 0.0, events 9.2), sleep 3
+   0.0  near     loose_dog at (113,96), 138px, exc 0, in 0.0/s (crowd 0.0, events 8.7), sleep 3
+   0.0  near     loose_dog at (113,89), 73px, exc 0, in 0.0/s (crowd 3.7, events 33.9), sleep 3
+   0.0  near     loose_dog at (113,86), 36px, exc 0, in 0.0/s (crowd 4.7, events 9.8), sleep 4
+   0.0  near     loose_dog at (113,83), 17px, exc 0, in 0.0/s (crowd 7.2, events 0.0), sleep 4
+   0.0  ahead    loose_dog comes at her from 212px in front of her at (113,82), unannounced
+   0.0  near     loose_dog at (113,77), 114px, exc 0, in 0.0/s (crowd 10.6, events 25.5), sleep 4
+   0.0  near     loose_dog at (113,78), 62px, exc 0, in 0.0/s (crowd 9.8, events 37.8), sleep 4
+   0.0  near     loose_dog at (113,79), 31px, exc 0, in 0.0/s (crowd 9.0, events 38.8), sleep 5
+   0.0  near     loose_dog at (113,79), 16px, exc 0, in 0.0/s (crowd 8.4, events 38.2), sleep 5
