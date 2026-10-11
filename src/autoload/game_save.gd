@@ -522,6 +522,7 @@ static func run_data() -> Dictionary:
 		"fenced_park": {"x": GameState.fenced_park.x, "y": GameState.fenced_park.y},
 		"fenced_park_act": GameState.fenced_park_act,
 		"posters": GameState.posters.to_data(),
+		"pelican": GameState.pelican.to_data(),
 		"state": GameState.save_snapshot(),
 	}
 
@@ -556,6 +557,11 @@ static func restore_run_data(data: Dictionary) -> void:
 	var posters: Variant = data.get("posters", {})
 	if posters is Dictionary:
 		GameState.posters.restore(posters)
+	# And the pelican bag's count, the same way again: a save from before it loads at 0.
+	GameState.pelican.reset()
+	var pelican: Variant = data.get("pelican", {})
+	if pelican is Dictionary:
+		GameState.pelican.restore(pelican)
 
 ## Tries to resume a run. Returns `{}` when there is nothing to resume — no file, a file this build
 ## cannot read, or a dev/headless run `uses_save()` already refused — and `{"day_under_way": bool}`

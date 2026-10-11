@@ -202,7 +202,7 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 ## `fenced_park`/`fenced_park_act`, the one calm area a run may fence
 ## (`_test_a_save_from_before_the_fenced_park_still_loads()`).
 const _SAVED_OUTSIDE_THE_SNAPSHOT := [
-	"escape_section", "completed_resistance_alley_tiles", "posters",
+	"escape_section", "completed_resistance_alley_tiles", "posters", "pelican",
 	"fenced_park", "fenced_park_act", "hard_mode", "checkpoint",
 ]
 

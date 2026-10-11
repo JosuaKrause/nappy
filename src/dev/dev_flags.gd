@@ -473,8 +473,8 @@ static func forced_interval() -> float:
 
 const _FORCED_INTERVAL_DEFAULT := 6.0
 
-## `--pelican` — every cyclist the day sends is drawn as the pelican that is otherwise about one in
-## four hundred (`EventManager.rolls_a_pelican()`), so the drawing can be looked at on demand rather
+## `--pelican` — every cyclist the day sends is drawn as the pelican that is otherwise one in a run's
+## bag of four hundred (`EventManager.rolls_a_pelican()`), so the drawing can be looked at on demand rather
 ## than waited for. A picture only, like the pelican itself: the riders, their warnings and their
 ## fields are the ones the run would have had. `--force cyclist --pelican` sends one every few
 ## seconds.
