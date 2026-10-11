@@ -625,26 +625,42 @@ const DOOR_REACH := Tuning.TILE_SIZE * sqrt(0.5 * 0.5 + 1.5 * 1.5)
 ## Day 8's contact: it rides the burnt shell `shell` (so `rider_alive()` keeps answering for it) but
 ## stands on the door of the building behind it (`City.way_in_behind()`) and reaches `DOOR_REACH`
 ## from there. The shell has no body and draws nothing, so the door is where the task *is* — *"the
-## building is what needs to be burnt, not an object next to the building"*. **The door's own
-## frontage tile must be ground she can stand on**, the same refusals every contact here keeps
-## (`is_legal_ground()`, unobstructed, reachable from home): a door whose frontage something solid
-## stands on today gives way to the facade point straight behind the shell, one tile north of it,
-## which `DOOR_REACH` covers from the shell's own frontage-lane tile the same way. Draws nothing
-## from `_rng`, so the day's later draws are unmoved.
+## building is what needs to be burnt, not an object next to the building"*. **Some ground within
+## `DOOR_REACH` of the door must be ground she can stand on** (`_door_can_be_touched()`); only a
+## door none of whose reachable frontage can be stood on today (shut off from home, or solid
+## bodies on all of it) gives way to the facade point straight behind the shell, one tile north of
+## it, which `DOOR_REACH` covers from the shell's own frontage-lane tile the same way. Draws
+## nothing from `_rng`, so the day's later draws are unmoved.
 func _ride_to_the_door(shell: EventInstance) -> void:
 	var door := _city.way_in_behind(shell.global_position) if _city else Vector2.INF
-	if door != Vector2.INF:
-		var frontage := _map.world_to_tile(door) + Vector2i.DOWN
-		if not is_legal_ground(_map, frontage, _walled_alleys()) or _map.is_obstructed(frontage) \
-				or not _reachable_from_home(frontage):
-			Telemetry.note("contact", ("step %d: the burnt building's door at %s has no ground " +
-					"in front of it today — the facade behind the shell stands in")
-					% [_step.index, TelemetryLog.tile(_map.world_to_tile(door))])
-			door = Vector2.INF
+	if door != Vector2.INF and not _door_can_be_touched(door):
+		Telemetry.note("contact", ("step %d: the burnt building's door at %s has no ground " +
+				"within reach today — the facade behind the shell stands in")
+				% [_step.index, TelemetryLog.tile(_map.world_to_tile(door))])
+		door = Vector2.INF
 	if door == Vector2.INF:
 		door = shell.global_position + Vector2.UP * Tuning.TILE_SIZE
 	_contact.ride(_step, shell, door - shell.global_position)
 	_contact.reach = DOOR_REACH
+
+## Whether she can stand within `DOOR_REACH` of the door point `door` today: one of the three
+## frontage-lane tiles the reach covers — the one straight below the door and the one either side of
+## it (45px from the door's point, inside the 50.6px reach) — is ground every contact here
+## keeps (`is_legal_ground()`, unobstructed, reachable from home). **A held segment is not a
+## refusal**: a region door's street or the street round her block is held so no *row* is sited on
+## it, and it is ground she walks on like any other (`allow_held`, as day 9's door is placed), so a
+## door on one is still the door. The shell's own tile is not what is asked, since the door can
+## stand several columns from the shell along the front.
+func _door_can_be_touched(door: Vector2) -> bool:
+	var frontage := _map.world_to_tile(door) + Vector2i.DOWN
+	var walled := _walled_alleys()
+	for across in [0, -1, 1]:
+		var tile: Vector2i = frontage + Vector2i(across, 0)
+		if door.distance_to(_map.tile_to_world(tile)) <= DOOR_REACH \
+				and is_legal_ground(_map, tile, walled, true) and not _map.is_obstructed(tile) \
+				and _reachable_from_home(tile):
+			return true
+	return false
 
 ## Day 3's fire, whose own siting rules `_fronts_a_fire_catches_on()` reuses.
 const FIRE_ROW := "burning_building"
