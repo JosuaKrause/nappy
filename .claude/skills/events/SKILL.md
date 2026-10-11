@@ -179,14 +179,15 @@ is the event). `tests/test_events.gd` requires everything else to have one.
 
 ## A car that drives is a body that moves, and its strike is not the body
 
-`EventDef.drives` (`police_patrol` and every copy of it) is the one body that moves, and it answers
+`EventDef.drives` (`police_patrol` and every copy of it, and `fire_truck`) makes the only bodies
+that move, and it answers
 the pin the mobile exemption is for by **never moving into her**: `EventInstance._drive()` takes
 back any step or turn that would bring the body into her or her pram, and the car stands for her
 until she is out of its way. Its `obstructs_radius` stays zero — it closes no ground — and its
 lethality is **a strike area ahead of its nose, only while it drives its route, only with her on
 the carriageway**, reaching `Tuning.PATROL_STRIKE_LEAD` past the touch so a car driving its nose
 into her strikes rather than stands. It gives way where the crowd's cars do — short of a zebra she
-is waiting at off the main road, and at a red light — so the zebra stays the safe way over. Four
+is waiting at off the main road, and at a red light — so the zebra stays the safe way over. Seven
 traps:
 
 - **A strike stated over the touch alone never fires**, because the body stops her first — the
@@ -197,6 +198,17 @@ traps:
   her stepping into a moving car's path — the crowd car's contract, the carriageway and the horn,
   which is the one it keeps instead of a telegraph (**crowd-traffic**, "The traffic fairness
   contract").
+- **A car created in her lane must not drive off at her.** Just out of sight on any street is
+  nearer her than a fast car's warning reaches her — the fire engine's 1.7s of 190px/s past a
+  touch that counts its body and hers, against the view's 180px half height up a north-south
+  street and 320px half width across an east-west one — so one driving from its first frame
+  strikes her inside the time it takes to walk off the road. A car that drives is created standing
+  (`EventInstance.setup()`), so it waits until she is out of its way, as a car that has stood does.
+- **A car that parks where it arrives must not reach past where it parks.** Its warning, strike,
+  doubled caret and standing for her are stated in seconds of its travel, and the fire engine's
+  route ends at its kerb: uncut, it warned her past the kerb of a strike it could not make, ended
+  the day parking short of her, and stood off screen for her there. They end at the touch it would
+  make parked (`EventInstance._route_left()`), with no strike lead past it.
 - **A heading change that newly brings her inside its warning's reach is refused like a step into
   her.** A turn moves nothing, so the body check passes it — and the raid's pacing car reversing at
   the end of its beat turns her from behind a car driving away into the front of one, struck with

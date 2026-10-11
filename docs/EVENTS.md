@@ -337,7 +337,7 @@ the loose dog's 24 is not. Applied to every row by its numbers:
 | Row | Speed (px/s) | Toward her | Worst penalty | Warns of coming | Reason |
 | --- | --- | --- | --- | --- | --- |
 | `cyclist` (including pelican) | 165 | Down her line | Ends the day | Yes | Fast, approaching, lethal |
-| `fire_truck` | 190 | Along its street to her | 32% a pass | Yes | Heavy hit |
+| `fire_truck` | 190 | Along its street to her | Ends the day in front of it on the carriageway while it drives; 32% a pass | Yes | Fast, approaching, lethal; a heavy hit |
 | `military_convoy`, planned or day-13 column | 120 | Along her road | 30% a pass | Yes | Heavy hit |
 | `charging_dog` | 130 | Yes | Ends the day | Yes | Fast, approaching, lethal |
 | Sent robber and van guard, a torn poster's policeman or guardsman | 130 | Yes | Ends the day | Yes | Already pursuing after the badge |
@@ -605,12 +605,12 @@ whole of its life. `basement_steam` is placed indoors, where there is no lattice
 hitbox"; leafy-puffin, inbox #648, offered "solid in every state, lethal only in front while
 driving": "yes to the police car hitbox".)* `police_patrol` and every copy of it — the return's
 down the road, the raid's pacing at her door, the investigating one at heat — carry
-`EventDef.drives`, which makes it the one body that moves. **The body is the car's drawn
-ground contact**: its `shape`, a capsule 42px long (the side view's body, bumper to bumper) and
-24px wide (the end views', flank to flank), centred on the node and laid along the car's heading,
+`EventDef.drives`, as the fire engine does (below), which makes them the only bodies that move.
+**The body is the car's drawn ground contact**: its `shape`, a capsule 42px long (the side view's
+body, bumper to bumper) and 24px wide (the end views', flank to flank), centred on the node and laid along the car's heading,
 turning as it turns (`EventInstance._solid_axis()`). The same shape is its shadow, and its picture
 is drawn over it — the bottom of each view on the body's southern edge, the crowd car's own
-registration (`EventInstance._police_car_anchor()`) — so where she is stopped is where the car is
+registration (`EventInstance._body_anchor()`) — so where she is stopped is where the car is
 drawn. She walks round it whether it drives or stands.
 
 **It answers the pin the mobile exemption exists for, by never moving into her.** Each frame
@@ -621,7 +621,9 @@ her no nearer is always allowed, so a car she has walked up against drives on al
 away from her rather than wedging. **A car that has stood for her drives on only once she is out
 of its way**: on its route it goes on standing while she is in its lane within its warning, so it
 never pulls away into her with less than the full warning below, and a car standing for her is
-harmless however she steps in front of it. **A turn that would newly put her in front of it** within its
+harmless however she steps in front of it. **A car is created standing**, under the same rule, so
+one created in her lane within its warning waits where it was created until she is out of its way
+rather than driving off at her: being put into her path is not her stepping into its path. **A turn that would newly put her in front of it** within its
 warning — the raid's pacing car reversing at the end of its beat with her standing behind it — is
 refused the same way, and the car stands. **It gives way where the crowd's cars do**: short of a
 zebra she is waiting at on a street whose traffic gives way, and at a red light, where
@@ -663,6 +665,36 @@ warning is stated in seconds of the car's own travel, so no row's numbers can br
 would end the day (`EventInstance.will_be_lethal()`). `hard_fail` stays false: what it decides —
 a route wall, a field kept clear, the doubled telegraph margin — is about a place that ends the day,
 and this is a car on a road. A loss to it names `police_patrol` as its cause.
+
+**The fire engine is the same construction** *(calm-kestrel, inbox #558: "the fire truck has no
+collision at all -- I can walk through it without it being lethal"; asked what touching it should
+do: "Lethal driving, solid parked")*. `fire_truck` carries `EventDef.drives` with a capsule 58px long
+(`fire_engine.svg`, bumper to bumper) and 26px wide (`fire_engine_front.svg`, flank to flank); its
+picture is anchored over that body as the patrol car's is. **While it drives down its street to the
+kerb it is lethal only in front of it**, with a car's warning: the exclamation mark `CAR_HORN_TIME`
+(1.6s) of its travel before the strike, on top of the one-second badge it already has from off screen
+(M226; inbox #598, "fire truck has heavy penalty"), so it is warned of first and again in her lane.
+That holds where it is created too. Just out of sight on any street — up a north-south one the
+view's 180px half height plus the engine's own picture, across an east-west one its 320px half
+width plus the picture — is nearer her than its warning reaches her (1.7s of its 190px/s past the
+touch, which counts its body and hers), so with her in its lane there it waits, created standing
+like any car, until she is out of its way; it then drives on to the kerb. **Its kerb is where it
+stops, so nothing of it reaches past**: its warning, its strike, its doubled caret and its standing
+for her end at the touch it would make parked there (`EventInstance._route_left()`), so in its lane
+beyond where its parked nose would touch her (about 43px past the kerb) she gets no mark, is never
+struck by an engine that parks short of her, and does not hold it off screen; nearer than that it
+waits for her or strikes as any car does.
+Beside it and behind it it is a solid body that never strikes her. **Once it has parked** at the kerb
+across from the fire (`stops_where_it_arrives`) it is not driving, so it ends nothing from any side,
+and stays a solid body she walks round: it stands in the carriageway's near lane along the street, a
+capsule 26px across in a six-tile street, so the route-redundancy guarantee (a closure
+leaves distinct routes to a calm area) is untouched. **Its field is still priced from its centre**,
+a point's (`EventDef.field_from_its_centre`), not from the body as a standing patrol car's is: the
+body it is given to be solid is not a reason for the street beside it to cost more, so a pass costs
+what this page and `docs/COSTS.md` say, and the day's own check for the fire's site, which closes
+340px about the kerb as ground she will not walk through, covers the whole of it. A loss to it reads "The fire
+engine never slowed down. You were in the road." and names `fire_truck` in the run log and the
+page's loss event (`lost-hard-fail-fire-truck`).
 
 **And one constraint that is not an exemption: a lethal radius and a solid body are the same
 mechanism.** She is stopped with her centre `solid_reach() + PLAYER_BODY_RADIUS` from the
@@ -1550,7 +1582,7 @@ All implemented.
 | `busker` | RECURRING | 2 | Park and square spoiler. Nothing about it is threatening; it is simply interesting, which is the whole problem. Solid at 11px, which is a man to walk around and not a park closed — see `OBSTRUCTION_A_PARK_CAN_HOLD`. |
 | `construction` | RECURRING | 2 | The widest body in act I (`obstructs_radius` `EventCatalogue.SIDEWALK_SPREAD_MAX`, 32px), and the one that leaves no gap: centred on the pavement band it stands on rather than on the tile the scheduler chose, it fills the full 64px of it — which is what makes it a **wall** by passability although it is silent and cheap, since a band with no lane left is a band with no line along it. Since a street is sidewalk\|road\|sidewalk the road is always still there, so it costs time, never the day. Silent, like `delivery_van`: a hoarding is not a source. |
 | `burning_building` | ONE_SHOT | 3 | Against the one face of a building the city actually draws, `AT_THE_FRONT` — never `AGAINST_THE_BUILDING`, the way `reversing_lorry` sites, since that catches only an east-or-west wall `building.gd` never puts a facade on — and never the power station's front, whose facade does not draw burnt and whose transformer yard has no wall. **Sited from the walk she is taking** (`sited_on_her_way`) rather than from a street chosen at dawn: on the branch of the day's route tree she is walking and never off it, off screen, beyond the streaming band across the block and at most `EventDirector.ON_HER_WAY_SIGHT` seconds of walking further along that route. It may be moved while she has not reached it and never once it is real. `spawns_on_sight` calls `fire_truck` in the moment she first sees it. **The fire itself has no field and no obstacle — the truck it calls in is the danger, not the fire** (*"the fire goes on the building. the challenge is the fire truck not the fire"*, PLAYTEST-144, statement 12): `EventInstance._draw_fire()` paints the flames and the smoke above them on the facade of the building it stands against, and the sidewalk in front stays clear. The flames burn along that building's whole facade, every column of it the city draws, and stay inside it: never on a neighbor's tile, and never on a column another building's roof covers (*"the fire should be on the whole building not only the door"*, sandy-egret). Burns for the rest of the day; from the next morning on, the scar it leaves is the building itself drawn burnt (`City.mark_the_burnt_frontage()`, `Building.Condition.BURNT`): windows black and broken under soot, the door boarded, the parapet charred. The `burnt_shell` row at the scar has no body and no picture of its own on the sidewalk, only its faint 2.5/s field — *"the building is what needs to be burnt, not an object next to the building"*. |
-| `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius, warned of first — its badge goes up alone the moment the fire is seen, pointing up the fire's own street, for its one-second telegraph, the most a badge is up alone, and it is then created just off screen on that road — and driving to the near kerb across from it. **It parks there for the rest of the day** (`stops_where_it_arrives`): a standing 26/s field out to 340px beside a fire she was led to is what makes the pair a street to turn round on — *"a fire engine has a high cost"*, *"you're not supposed to go past it"* (PLAYTEST-119). It has no body, so what it closes is the ground its field covers rather than the road itself. |
+| `fire_truck` | — | — | Never scheduled: a SCRIPTED def with no day, created only once `burning_building` has been seen. Drives an arterial at 190px/s with a 340px radius, warned of first — its badge goes up alone the moment the fire is seen, pointing up the fire's own street, for its one-second telegraph, the most a badge is up alone, and it is then created just off screen on that road — and driving to the near kerb across from it. **It parks there for the rest of the day** (`stops_where_it_arrives`): a standing 26/s field out to 340px beside a fire she was led to is what makes the pair a street to turn round on — *"a fire engine has a high cost"*, *"you're not supposed to go past it"* (PLAYTEST-119). It has a body, the patrol car's construction (see "A car is solid and never drives into her"): solid while it drives and once it has parked, lethal only in front of it while it drives its route, and harmless once parked. What it closes is still the ground its field covers rather than the road itself: the body closes none (`obstructs_radius` is zero) and lies inside the field's 70px inner radius. A loss to it names `fire_truck` as its cause. |
 
 **And the rest of act I**, which is where its variety and its danger come from — a
 neighbourhood's own rather than a patrol's.

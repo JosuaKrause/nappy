@@ -1119,8 +1119,9 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 
 ## A car strike, which ends the day.
 ##
-## Two things keep it fair, and both are geometry rather than a warning: the box is the car
-## the player can see, and it only counts while she is standing on the carriageway. The kerb
+## Two things keep it fair, and both are geometry rather than a warning: the box is the front
+## half of the car the player can see (from its centre forward, so she is safe behind a car that
+## pulls away from her), and it only counts while she is standing on the carriageway. The kerb
 ## is the edge she chose to step over — the same shape of contract the alley robbery has,
 ## where the alley is the warning. See `Tuning.validate_traffic()`.
 func _strike(agent: CrowdAgent, here: Vector2) -> bool:
@@ -1128,7 +1129,9 @@ func _strike(agent: CrowdAgent, here: Vector2) -> bool:
 		return false
 	var forward := agent.heading()
 	var offset := here - agent.global_position
-	if absf(offset.dot(forward)) > Tuning.CAR_STRIKE_HALF_LENGTH:
+	# Only from the car's centre forward: behind it the car is driving away from her.
+	var along := offset.dot(forward)
+	if along < 0.0 or along > Tuning.CAR_STRIKE_HALF_LENGTH:
 		return false
 	if absf(offset.dot(Vector2(-forward.y, forward.x))) > Tuning.CAR_STRIKE_HALF_WIDTH:
 		return false

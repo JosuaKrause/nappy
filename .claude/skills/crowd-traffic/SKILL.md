@@ -261,6 +261,13 @@ telegraph: the **painted carriageway**, which is permanent and learnable and whi
 step onto, and the **horn**, which must be long enough to walk the whole width of it with the
 doubled hard-fail margin.
 
+**The rear half of a crowd car is safe on purpose.** `Crowd._strike()` and
+`CrowdAgent.will_be_lethal()` test only the box from the car's centre forward (26px long, 14px
+either side), never its whole 52×28px body: the player said "cars should only be lethal in front of
+them while they're driving" and "when I walk behind a standing car right now and it starts moving I
+die -- that is not correct the car is driving away from me" (2026-10-03, minty-hedgehog). Keep the
+horn, the caret and the strike on the same box, and do not widen it back to the body.
+
 **The horn can only be as early as the car is watching her, so it gets its own watch.**
 `Crowd._physics_process` hands the strike and the give-way scan (`pedestrian_ahead`) only the
 cars within `CAR_ZEBRA_SIGHT` (200px) of her — both are about a car that has already noticed
@@ -274,10 +281,11 @@ boot rather than only on the street** if the two stop agreeing.
 
 **If anything else ever becomes lethal without being in the catalogue, it needs its own stated
 contract in the same place.** A hard fail with no written contract is a bug waiting to be called a
-difficulty setting. **The patrol car is in the catalogue and keeps this contract instead of a
-telegraph** (`EventDef.drives`): it strikes only on the carriageway, only ahead of its nose, and
-warns anybody standing in its lane `CAR_HORN_TIME` of its own travel before the strike, so
-`validate_traffic()`'s check is its check too. It also gives way where the crowd's cars do — short
+difficulty setting. **The patrol car and the fire engine are in the catalogue and keep this
+contract instead of a telegraph** (`EventDef.drives`): each strikes only on the carriageway, only
+ahead of its nose, and warns anybody standing in its lane `CAR_HORN_TIME` of its own travel before
+the strike, wherever it is created, so `validate_traffic()`'s check is its check too. Each also
+gives way where the crowd's cars do — short
 of a zebra she is waiting at off the main road, and at a red light — and never inside a junction
 box: for a zebra beyond the box it holds at the box's entry line, since the crossing traffic cannot
 see its body. **Decide that before the nose reaches the box**, from the box's own sight and
