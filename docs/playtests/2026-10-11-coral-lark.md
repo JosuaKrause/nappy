@@ -1,7 +1,7 @@
 # Playtest coral-lark — The policeman on foot, lag spikes on the phone, the park cordon, day 11's mast
 
 2026-10-11.
-Said as five inbox notes on GitHub Issues, #669, #670, #680, #684 and #694, and answered in comments on
+Said as six inbox notes on GitHub Issues, #669, #670, #680, #684, #695 and #694, and answered in comments on
 them. Each note is recorded as it holds: first what its words answered, where a comment says so,
 then the words themselves, whole, and each later word after what it answers. The questions and
 context are the assistant's; only the quoted lines are the player's.
@@ -79,6 +79,20 @@ context are the assistant's; only the quoted lines are the player's.
 2. **The note.**
 
    > Exempt like fixed masts (Recommended)
+
+## #695
+
+1. **Context** (the assistant):
+
+   Said while the batch was being filed, after the assistant had found that the "softlock" the player meant in #670 was day 12's (azure-koala, finding 9), which snowy-trout had closed that day as not reproduced on headless desktop rigs and a suite.
+
+2. **The note.**
+
+   > how can you close something as not-reproduced when it happened on a phone?
+
+3. **The player's further words.**
+
+   > what is the point of an issue system if you just close items nilly willy?
 
 ## #694
 

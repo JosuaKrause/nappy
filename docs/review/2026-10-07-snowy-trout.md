@@ -6,4 +6,5 @@ walk home, once leaving through the last gap before the tape closes and once wit
 taped behind you. Win the day, read the summary and go on into day 13. Does anything stop
 responding — her movement, the door at home, the summary, the next morning? If it does, save the frame
 record with the page's button and note what you did just before; the long stall is queued as
-[bouncy-swan](../todo/2026-10-11-bouncy-swan/README.md), the phone's lag spikes.
+[bouncy-swan](../todo/2026-10-11-bouncy-swan/README.md), the phone's lag spikes. What the rigs ruled out
+is in [snowy-trout](../decisions/2026-10-07-snowy-trout.md).
