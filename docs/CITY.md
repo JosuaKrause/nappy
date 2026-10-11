@@ -62,13 +62,20 @@ paving too, which is what keeps the crossing street from painting a zebra over a
 pavement's width later. That is where the bollards stand: a line of posts across the carriageway
 at the paving's edge, so the street reads as closed on purpose rather than as the road running out.
 The pavements either side of the posts run straight past them onto the precinct's own paving — a
-pram walks through, a car does not. **Each post is a body** (a circle of the post's shadow radius,
-4.8px, so the body is the drawn ground contact), and the posts stand `City.BOLLARD_SPACING` (46px)
-apart. Her collision shape is her 14px body plus the pram's 8px circle, 14px out along her facing,
-and her facing follows the input rather than her velocity, so across the row she can need
-2 x 14 + 8 = 36px; the 36.4px between two posts clears that at any facing. The gap is open as the
-pavements are, and a post stops her only if she walks into it. Two posts stand on the 64px band,
-9px in from either edge. **Nothing drives on the span itself, on either axis.** A
+pram walks past on the pavement, and nothing gets through the carriageway band between them, a car
+or her. **Each post is a body** (a circle of the post's shadow radius,
+4.8px, so the body is the drawn ground contact), and the posts stand `City.BOLLARD_SPACING` (14px)
+apart. Her collision shape is her 28px-wide body plus the pram's 8px circle, 14px out along her
+facing, so a gap has to be narrower than her body to shut; 14px less two posts' radii leaves a
+4.4px slit, and the row of five (4px in from either edge of the 64px band) is a wall to her at
+every facing. *(2026-10-10, the player: "it will make the middle of the road impassable when going
+from street to pedestrian road. that's okay. this is intended".)* The way from the street into the
+precinct is the pavement either side, so the row is a detour inside the junction box, never a cut. The
+day's routes (`RouteTree`) take no step onto or off a post's tile, so a route into a precinct, and
+the route line drawn from it, goes in by the pavement; the route rig (`--route`) blocks the tiles
+within her body's reach of a post in every plan, for the same reason.
+Crowd walkers have no bodies and walk through the posts; that is left as it is unless the player
+finds it reads wrong. **Nothing drives on the span itself, on either axis.** A
 street crossing it internally meets paving rather than a carriageway and gets no zebra — the box is
 brick from edge to edge — so what would be a crossroads elsewhere is a T at a precinct's edge, the
 precinct's own pavement continuing past it as the third arm.
