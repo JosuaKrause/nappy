@@ -11,3 +11,11 @@ This re-reports the separation required by [M168, the escape after playtest
 94](../../decisions/2026-09-19-M168-the-escape-after-playtest-94.md): the guard sets off while
 `body_stays_behind` "leaves the band drawn and solid where it was, so the street stays shut".
 The work is [keep-the-barrier-in-place.md](keep-the-barrier-in-place.md).
+
+Re-reported in [azure-puffin](../../playtests/2026-10-10-azure-puffin.md), point 5, inbox #664:
+
+> the guarded barriers disappear after shaking off the pursuer. that doesn't make sense.
+
+So the barrier also goes when the guard's pursuit ends: a shaken-off guard ends the roadblock's
+whole instance (`EventInstance._be_done()` finishes a row that does not depart, and
+`EventManager._retire_finished()` frees the barrier's body and picture with the guard).
