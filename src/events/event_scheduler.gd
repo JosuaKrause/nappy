@@ -1140,8 +1140,9 @@ class WalkSiting extends RefCounted:
 	## twice over: it offers tiles on streets her route never reaches, and it prices a tile round
 	## the corner as nearer than it is to walk to. So the window is walked cell by cell down the
 	## route, through its corners and its junctions, and only the tiles of the row's ground on those
-	## cells are offered. A wall by its fit alone (day 7's route van) is sited on the street she is
-	## walking instead, just out of her sight (`ahead_on_her_street()`).
+	## cells are offered. A wall by its fit alone (day 7's route van) and a man shouting a bag hands
+	## her (day 6's rigged one) are sited on the street she is walking instead, just out of her sight
+	## (`ahead_on_her_street()`).
 	##
 	## **The far end is read along the route and the near end is a straight line**, and they are two
 	## different questions rather than one measured twice. Far is how much more walking there is

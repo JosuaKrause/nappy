@@ -551,8 +551,8 @@ const ON_HER_WAY_BEHIND := -0.5
 const ON_HER_WAY_LOOK := 1.0
 
 ## Sites, or re-sites, whatever the day budgeted and left for her walk to place: a tile of the row's
-## own ground (a building face for the fire and the crews, a sidewalk for a man shouting) on the
-## day's own route tree, **on the branch she is walking**, ahead of her by distance along that
+## own ground (a building face for the fire and the crews) on the day's own route tree — day 7's
+## route van and day 6's rigged man shouting on the street she is walking instead — **on the branch she is walking**, ahead of her by distance along that
 ## route, off screen, `ON_HER_WAY_SIGHT` seconds of walking short of being seen. Returns every plan
 ## this call moved, so the caller can give back the ground the old body was standing on and take the
 ## new — `EventManager._site_what_is_on_her_way()` is that caller — and a place from her route's bag

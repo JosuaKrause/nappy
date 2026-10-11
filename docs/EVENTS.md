@@ -1221,8 +1221,9 @@ day's `RouteTree` she is walking**, and nowhere else: *"valid spawn locations ar
 The window is the day's own route rather than a line from her. `EventScheduler.WalkSiting.ahead_of()`
 walks the cells of every route through the cell she is standing on, in the direction that agrees
 with the way she is travelling, and offers the tiles of the row's own ground standing on them — a
-building face for the fire and the poster crews, a sidewalk for a man shouting, a mast's site for a
-mast (`WalkSiting._its_ground_on()`). **The far end of the
+building face for the fire and the poster crews, a mast's site for a mast
+(`WalkSiting._its_ground_on()`); day 7's route van and a man shouting a bag hands her (day 6's rigged
+one) are sited on the street she is walking instead (`ahead_on_her_street()`). **The far end of the
 band is read along that route** — `ON_HER_WAY_SIGHT` seconds of walking past the streaming band,
 through every corner and junction, which is how much further she actually has to walk. **The near
 end is a distance across the block**, the streaming radius plus its hysteresis, because that is what
