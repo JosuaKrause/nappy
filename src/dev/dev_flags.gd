@@ -75,6 +75,8 @@ extends RefCounted
 ##   --quit-when-still 0?
 ##   --player-view   0
 ##   --parent        1
+##   --hard          0
+##   --nerves        1
 ##   --zoom-out      1?
 ##   --caption       1
 ##   --title-card    1
@@ -957,6 +959,31 @@ static func parent_override() -> String:
 	if index == -1 or index + 1 >= args.size():
 		return ""
 	return parse_parent(args[index + 1])
+
+## `--hard` — the fresh run begins in hard mode, and the title's Hard Mode checkbox opens checked
+## (`main._apply_the_mode_flags()`), so a rig that never reaches the title, or `--title`'s own
+## photograph, sees hard mode without anybody pressing it.
+static func hard_mode_requested() -> bool:
+	return "--hard" in _args()
+
+## `--nerves N` — the fresh run begins with `N` nerves instead of `Tuning.STARTING_NERVES`, so a rig
+## reaches what the last nerve does on the first loss rather than the fifth. `0` for "not given";
+## anything that is not a whole number from 1 to `Tuning.STARTING_NERVES` is refused with
+## `push_warning` and treated the same, the reasoning `_validate_skip_words()` gives.
+static func nerves_override() -> int:
+	var args := _args()
+	var index := args.find("--nerves")
+	if index == -1 or index + 1 >= args.size():
+		return 0
+	return parse_nerves(args[index + 1])
+
+## The bare parsing of a `--nerves` value, pulled out so a test can drive it without a command line.
+static func parse_nerves(raw: String) -> int:
+	if raw.is_valid_int() and int(raw) >= 1 and int(raw) <= Tuning.STARTING_NERVES:
+		return int(raw)
+	push_warning("--nerves: '%s' is not a whole number from 1 to %d, ignoring the flag"
+			% [raw, Tuning.STARTING_NERVES])
+	return 0
 
 ## The bare parsing of a `--parent` value, pulled out so a test can drive it without a command line.
 static func parse_parent(raw: String) -> String:

@@ -283,6 +283,16 @@ var _resume_gate_open := false
 const _RESUMED_DAY_LOST_NOTE := \
 		"Left before the day ended. That cost a nerve — it starts over from dawn."
 
+## The same line when the nerve the load charged was a normal run's last, which sends it back to its
+## checkpoint rather than the same dawn — `%d` is the checkpoint's day.
+const _RESUMED_LAST_NERVE_NOTE := \
+		"Left before the day ended. That was the last nerve — back to day %d."
+
+## Whether opening the save spent a normal run's last nerve and sent it back to its checkpoint —
+## set once in `_ready()`, before the charge, and read by `_show_the_resume_gate()` for the line the
+## day brief carries. A hard run's last nerve is `_run_over` instead.
+var _resume_went_back := false
+
 ## Read once — a run's own touch hardware does not change — the same pattern `TouchControls._touch`
 ## and `hud._touch` already follow, and what lets `_process()` ask `ScreenOrientation.wants_rotation`
 ## every frame without also repeating `TouchInput.available()`'s own `OS.get_cmdline_user_args()`
@@ -373,6 +383,7 @@ func _ready() -> void:
 		GameState.start_run(DevFlags.seed_override())
 		_apply_the_parent_flag()
 		GameState.day = DevFlags.day_override()
+		_apply_the_mode_flags()
 	# `VisitCounter`'s own "a run begun fresh, or resumed from the save" — fired once here for
 	# every path through this function, ordinary or handed over to the escape, since GameState.day
 	# is already settled for both by this line. `resumed` says only whether `GameSave.try_resume()`
@@ -402,17 +413,19 @@ func _ready() -> void:
 	_hold_every_page_a_day_draws(AtlasLibrary.MOMENT_STARTUP, NO_FURTHER_GROUPS)
 	# A save whose day was under way when it was written loses that day, through the same code
 	# path an ordinary lost day takes — one nerve, the resistance given back, the same day again,
-	# the last nerve ending the run exactly as it does there. Applied before anything downstream
-	# (the HUD, the city's own act) ever reads a nerve count or a resistance state that has not
-	# been charged yet. `_run_over` mirrors `_on_day_finished()`'s own variable, so the tail of
-	# this function shows the same ending screen a run that ends there does; `_on_title_start()` is
-	# what actually shows either screen, once the title itself has been dismissed.
+	# and the last nerve doing exactly what it does there: a hard run ends, a normal one goes back
+	# to its checkpoint. Applied before anything downstream (the HUD, the city's own act) ever reads
+	# a nerve count or a resistance state that has not been charged yet. `_run_over` mirrors
+	# `_on_day_finished()`'s own variable, so the tail of this function shows the same ending screen
+	# a hard run that ends there does; `_on_title_start()` is what actually shows either screen,
+	# once the title itself has been dismissed.
 	#
 	# **The symbol exists before this charge**, because the charge can end the run and the run's
 	# end deletes the save, a change the symbol shows (`GameSave.clear()` announces it on
 	# `EventBus`, which only an indicator already built hears).
 	_raise_save_indicator()
 	if _resume.get("day_under_way", false):
+		_resume_went_back = GameState.a_loss_goes_back_to_the_checkpoint()
 		_run_over = not GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 
 	_city = CITY.instantiate()
@@ -610,6 +623,7 @@ func _ready_escape() -> void:
 		_apply_the_parent_flag()
 		if _recipe:
 			GameState.day = DevFlags.day_override()
+		_apply_the_mode_flags()
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
 	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
 	# both need an active log to write anything at all — see `Telemetry.start_burst()`'s own
@@ -753,6 +767,18 @@ func _apply_the_parent_flag() -> void:
 	var parent := DevFlags.parent_override()
 	if parent != "":
 		GameState.player_is_male = parent == "father"
+
+## `--hard` and `--nerves N` over the fresh run `GameState.start_run()` just made, so a rig can reach
+## what running out of nerves does in either mode without spending four nerves first. `--hard` is
+## also what the title's checkbox opens on (`TitleScreen.open()` reads `GameState.hard_mode`), so
+## `--title --hard` photographs it checked. Called straight after each of this file's two
+## `start_run()` calls, beside `_apply_the_parent_flag()`.
+func _apply_the_mode_flags() -> void:
+	if DevFlags.hard_mode_requested():
+		GameState.choose_mode(true)
+	var nerves := DevFlags.nerves_override()
+	if nerves > 0:
+		GameState.nerves = nerves
 
 ## Under `--player-view`, the HUD a release build draws: `HUD._debug` is read once from
 ## `DevFlags.enabled()` when the scene is instantiated, so it is set here, before `add_child()`
@@ -935,6 +961,11 @@ static func escape_part_for(raw: String) -> String:
 ## it emits, and `_on_finale_section_started()` clears it once she has been put down on the street,
 ## so nothing of the city is seen being assembled.
 func _on_escape_exit_requested() -> void:
+	# **Getting out of the building gives a hard run a nerve back**, up to five, before the city's
+	# brief shows the count and writes it. *(gentle-osprey, the player: "Section won gives one
+	# back".)* A normal run's escape neither spends nor gives one.
+	if GameState.hard_mode:
+		GameState.regain_a_nerve()
 	_build_the_finale_city()
 	_finale.enter_city()
 	# `VisitCounter`'s own "escape-city" — the building is behind her and the city section begins.
@@ -1039,7 +1070,8 @@ static func finale_hint_for(section: int) -> String:
 ## The screen a section opens on — *"each the apartment and escape city are treated as their own
 ## 'days' with brief and restart checkpoint"*. The day brief's own form
 ## (`DaySummary.show_finale_brief()`) with the section's own line where a day's number stands, and
-## the Nerve count unchanged, because nothing about the escape ever spends one.
+## the Nerve count as it stands: unchanged in a normal run, whose escape never spends one, and a
+## hard run's after whatever its lost sections spent and its cleared building gave back.
 ##
 ## **It is also where the save is written.** A section's brief is the escape's only checkpoint, so
 ## it is the moment a closed game has to come back to, and the run's own record of which section
@@ -1060,8 +1092,9 @@ var _finale_brief_open := false
 ## "restarting should still have the day brief for both the apartment escape and the city escape
 ## even if the nerves don't go down.")* The answer is the section again from its own brief, which
 ## is exactly what `FinaleController.restart_section()` raises, so this writes the loss down and
-## hands over rather than drawing a second kind of screen. Nothing is spent: no Nerve, no calendar,
-## and `GameState`'s day is untouched.
+## hands over rather than drawing a second kind of screen. A normal run spends nothing: no Nerve,
+## no calendar, and `GameState`'s day is untouched. A hard run spends a Nerve, and its last one is
+## the bad ending instead of the section again.
 func _on_finale_section_lost(_section: int, result: int) -> void:
 	# Written before the restart, so the entry carries the second the section was lost at rather
 	# than the second the retry began. Without it the log shows the timestamps marching up and then
@@ -1071,6 +1104,17 @@ func _on_finale_section_lost(_section: int, result: int) -> void:
 	# `VisitCounter`'s own "the escape: … or lost" — no section named, see `EventBus.escape_lost`'s
 	# own doc for why.
 	EventBus.escape_lost.emit()
+	# **Hard mode's escape spends a nerve on every lost section**, and the last one is the bad
+	# ending rather than the section again. *(gentle-osprey, the player: "with hard mode the escape
+	# also has normal nerve counts and ends if nerves go to zero (instead of restarting
+	# indefinitely; this is only for normal mode)".)* The brief the restart raises writes the save
+	# with the spent nerve on it, so closing the game cannot take the loss back.
+	if GameState.hard_mode and not GameState.spend_a_nerve_in_the_escape():
+		_run_over = true
+		_ending_shown = true
+		_hud.visible = false
+		_summary.show_ending(GameState.ending, GameState.day)
+		return
 	_finale.restart_section()
 
 ## The escape's run log, watched the way a day's is — see `TelemetryObserver`'s class doc. Built
@@ -1277,7 +1321,7 @@ func _open_the_title() -> void:
 	_set_readout_visible(false)
 	if _frame_graph:
 		_frame_graph.visible = false
-	_title.open(_ending_shown)
+	_title.open(_ending_shown, _resume.is_empty())
 
 ## The title screen has been pressed, which is also the start: hand the city back to the day it
 ## belongs to.
@@ -1312,6 +1356,12 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 	_touch_controls.set_mode(mode, side)
 	ControlsMode.remember(mode, side)
 	_in_the_title = false
+	# A new game's mode is the title's Hard Mode checkbox, read as the title is dismissed — the
+	# checkbox shows only for a new game (`_open_the_title()`), and a resumed run keeps the mode
+	# its save carries.
+	if _resume.is_empty():
+		GameState.choose_mode(_title.hard_mode_checked())
+		EventBus.run_mode_chosen.emit(GameState.hard_mode, GameState.day)
 	_title.close()
 	if not _resume.is_empty():
 		_show_the_resume_gate()
@@ -1330,9 +1380,10 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 ## screen is showing, never a second charge and never a free one.
 func _show_the_resume_gate() -> void:
 	if _run_over:
-		# The last nerve the load itself spent — same ending, same screen, as a run that reaches
-		# zero nerves any other way. `GameState.ending` is already set (`GameState.finish_day()`
-		# set it in `_ready()`), so nothing downstream can write a save naming this run again.
+		# The last nerve the load itself spent, in hard mode — same ending, same screen, as a hard
+		# run that reaches zero nerves any other way. `GameState.ending` is already set
+		# (`GameState.finish_day()` set it in `_ready()`), so nothing downstream can write a save
+		# naming this run again.
 		_ending_shown = true
 		_summary.show_ending(GameState.ending, GameState.day)
 		return
@@ -1343,8 +1394,17 @@ func _show_the_resume_gate() -> void:
 	# anyway because this is the screen a page the boot could not have known about belongs behind:
 	# a group whose membership depends on the day would be acquired between these two lines.
 	AtlasLibrary.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
-	_summary.show_day_brief(GameState.day, GameState.nerves,
-			_RESUMED_DAY_LOST_NOTE if _resume["day_under_way"] else "")
+	_summary.show_day_brief(GameState.day, GameState.nerves, _resume_gate_note())
+
+## The day brief's one line about what opening the save cost: nothing, a nerve and the same dawn,
+## or — a normal run's last nerve — the checkpoint `GameState.finish_day()` already went back to,
+## whose day `GameState.day` now holds.
+func _resume_gate_note() -> String:
+	if not _resume.get("day_under_way", false):
+		return ""
+	if _resume_went_back:
+		return _RESUMED_LAST_NERVE_NOTE % GameState.day
+	return _RESUMED_DAY_LOST_NOTE
 
 ## Hands the day already built and paused behind a gate — the title, on a fresh or a resumed run
 ## the load left with nothing charged, or the day brief the load put on top of it — over to the
@@ -2226,13 +2286,18 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 		_save_now(false)
 		_summary.show_day(result, _day.failure_reason, GameState.nerves, elapsed_seconds)
 		return
+	# Asked before `finish_day()`, which is what goes back: whether this loss spends a normal run's
+	# last nerve, so the summary says where she is going rather than that she tries the day again.
+	var goes_back := result != GameEnums.DayResult.WON \
+			and GameState.a_loss_goes_back_to_the_checkpoint()
 	_run_over = not GameState.finish_day(result)
 	# The end-of-day write — one of the two moments a run is saved. Skipped when the run just
 	# ended: `GameState._end_run()` (called from inside `finish_day()` above) already cleared the
-	# save, and writing here would resurrect a file naming a run that is over.
+	# save, and writing here would resurrect a file naming a run that is over. A normal run sent
+	# back to its checkpoint is written here like any other loss, already standing at that dawn.
 	if not _run_over:
 		_save_now(false)
-	_summary.show_day(result, _day.failure_reason, GameState.nerves, elapsed_seconds)
+	_summary.show_day(result, _day.failure_reason, GameState.nerves, elapsed_seconds, goes_back)
 
 ## Whether the day that just ended is the one the escape follows: **won, the last day, and every
 ## task complete**. *"After completing all tasks"*, and what that already means in this game is

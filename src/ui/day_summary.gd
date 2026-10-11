@@ -2,6 +2,11 @@ extends CanvasLayer
 ## The screen between days, the one at the end of a run, and the two the escape uses — the brief
 ## before a lost section starts again, and the last screen of the sequence.
 ##
+## **A normal run's last nerve comes here as a lost day, not as an ending**: the same screen any
+## lost day reaches, saying the day she goes back to and drawing the nerves she has again, with the
+## ordinary continue that carries on into it (`show_day()`'s `back_to_checkpoint`). The ending with
+## no continue, `GAME OVER`, is hard mode's alone — see `_refresh_buttons()`.
+##
 ## Also the pause: the tree is paused while this is up, so the city keeps its state and the
 ## day can simply be restarted rather than rebuilt.
 ##
@@ -146,7 +151,8 @@ var _showing_ending := false
 ##
 ## **Continue does not show on an ending.** *(Playtest 28 finding 4: "the game over screen cannot
 ## have a continue button".)* Every other screen this row appears on carries on into a day that
-## still has one; an ending has none, and the button was drawn as *continue* while doing exactly
+## still has one — a normal run out of nerves included, whose lost-day screen carries on into its
+## checkpoint, so the game over screen is a hard run's alone; an ending has none, and the button was drawn as *continue* while doing exactly
 ## what the catch-all underneath it already does — restart the run. `_buttons` itself stays
 ## visible for `_restart_button` even here: *"the restart button, hold and all"* is the player's
 ## own answer to whether the hold still earns its keep with no day left to protect.
@@ -194,8 +200,14 @@ func show_day_brief(day: int, nerves: int, lost_note: String = "") -> void:
 ## leaves it exactly on the day being retried, so nothing this screen shows still needs the day
 ## that ended passed in separately from `GameState.day` — `_elapsed_line()` below reads only
 ## `result` and `reason`, neither of which is a day number.
+##
+## **`back_to_checkpoint` is a normal run's last nerve**: `GameState.finish_day()` has already put
+## the run back at its checkpoint's dawn with every nerve, so `GameState.day` is the day she goes
+## back to and `nerves` is five. The line that says she tries the day again says that instead —
+## *(gentle-osprey, the player's own example: "Back to day 8")* — and the continue under it carries
+## on into that day.
 func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
-		elapsed_seconds: float = 0.0) -> void:
+		elapsed_seconds: float = 0.0, back_to_checkpoint := false) -> void:
 	_heading.hide()
 	_showing_ending = false
 	# Never carried from a day brief this same day might have opened on — this is a real day's own
@@ -212,8 +224,11 @@ func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
 	# stars — never a digit — the way every other screen that shows the count now does.
 	lines.append("Nerves left: %s" % NerveDisplay.stars(nerves))
 	# The calendar does not move on a loss, so the screen says so rather than leaving the player
-	# to notice tomorrow that it is still today.
-	if retrying:
+	# to notice tomorrow that it is still today — or, when the last nerve sent a normal run back,
+	# which day it went back to, and why every star is there again.
+	if back_to_checkpoint:
+		lines.append(back_to_line(GameState.day))
+	elif retrying:
 		lines.append("You try day %d again." % GameState.day)
 	# The tally is the only place the subquest is ever spelled out. In the world it is chalk on
 	# a wall.
@@ -257,6 +272,11 @@ func _elapsed_line(result: GameEnums.DayResult, reason: String, clock: String) -
 		_:
 			return "%s After %s." % [reason, clock]
 
+## What the lost-day screen says when a normal run's last nerve sent it back to `day`, its
+## checkpoint.
+static func back_to_line(day: int) -> String:
+	return "Your nerves gave out. Back to day %d." % day
+
 ## The tally alone. The morning's own line is `_brief`'s job now — a static fact about the
 ## calendar day, shown unconditionally in `show_day()` — so this stays about progress and losses
 ## only, which is why it is still gated on `has_joined_resistance()` at the call site.
@@ -278,9 +298,9 @@ func _resistance_tally_line() -> String:
 ## the only way out. Space dismisses every other screen in the game, so it is the key this one owes
 ## rather than a new one.
 ##
-## `day` is the last day played, not the last day completed — a run that loses its last nerve on
-## day 1 names day 1, not 0. It is shown only on the `BAD` ending — the only one that can end
-## mid-day: `NEUTRAL` and `GOOD` are reached by finishing day 14, and every caller already has the
+## `day` is the last day played, not the last day completed — a hard run that loses its last nerve
+## on day 1 names day 1, not 0. It is shown only on the `BAD` ending — a hard run's, and the only one
+## that can end mid-day: `NEUTRAL` and `GOOD` are reached by finishing day 14, and every caller already has the
 ## number this needs, since `GameState.day` is never advanced past the day a run ends on
 ## (`GameState.finish_day()` ends the run before it would move the calendar) or past the day a
 ## load spent the last nerve on.
@@ -333,8 +353,9 @@ func show_finale(exit_kind: int, seconds: float) -> void:
 ## checkpoint."*
 ##
 ## **The same screen a resumed day opens on** (`show_day_brief()`), with the two lines that are
-## about a day replaced by the two that are true here. A section costs no Nerve however it goes, so
-## the nerve count is exactly what it was and the line says so, unchanged; and the escape has no
+## about a day replaced by the two that are true here. The nerve count is whatever the run holds:
+## a normal run's section costs no Nerve however it goes, so the line is unchanged, and a hard run's
+## shows what its lost sections spent and its cleared building gave back; and the escape has no
 ## day number, so what stands where "Day N of 14" stands is **the section's own line** — *"Escape
 ## the building"* or *"Escape the city"*, the same words `HUD.say_once()` says once she is walking
 ## it and the same words `main` passes in. No new fiction, and nothing triumphant or melodramatic
@@ -343,7 +364,7 @@ func show_finale(exit_kind: int, seconds: float) -> void:
 ##
 ## There is no reason line and no lost note. The screen before a section is about what she is about
 ## to do, not about what just happened — `show_day()` is the screen that reports an outcome, and a
-## section has no outcome worth a sentence when nothing was spent on it.
+## section has no outcome worth a sentence: the stars already say what a hard run's loss spent.
 func show_finale_brief(hint: String, nerves: int) -> void:
 	_heading.hide()
 	_showing_ending = false

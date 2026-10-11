@@ -19,8 +19,18 @@ extends CanvasLayer
 ## half that makes the city keep moving while everything that is a *day* stops; this class owns
 ## its three buttons and a small handful of keys and nothing else.
 ##
-## What it is not is a main menu. There are no options, no seed box and no load game, and none of
-## those is what this screen exists for.
+## What it is not is a main menu. There is one option, no seed box and no load game, and none of
+## those is what this screen exists for. **The one option is the Hard Mode checkbox**, shown only
+## when the title begins a new game. *(gentle-osprey, the player: "a "Hard Mode" checkbox on the
+## title screen (if new game) that decides whether checkpoints are available".)* Checked, the run
+## has no checkpoints and its last nerve is the bad ending (`GameState.hard_mode`). It is quiet on
+## purpose — Godot's own `CheckBox`, small, in the tagline's colour, under the hint — because it is
+## a setting, not a way in: **pressing it never starts the run**, which still begins only from the
+## three buttons or a key, so the box can be set and changed freely first. `H` toggles it from a
+## keyboard, unnamed on screen like every other key here. It opens unchecked on every new game
+## (it reads `GameState.hard_mode`, which a fresh run begins `false`, so only `--hard` opens it
+## checked) and is never remembered between sittings: a mode kept outside the save would make a
+## returning player's run depend on something the run does not hold.
 ##
 ## **Starting is also the controls question, and the buttons are how it is answered.**
 ## *(2026-09-07, the player: "let's make the controls a player choice and bring back the two
@@ -80,6 +90,13 @@ const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
 @onready var _right_button: ModeButton = $Root/Choice/RightColumn/Right
 @onready var _hint: Label = $Root/Hint
 @onready var _version: Label = $Root/Version
+@onready var _hard_mode: CheckBox = $Root/HardModeRow/HardMode
+## The box's own edge, behind Godot's `unchecked` icon — which is a translucent dark square that
+## disappears into the scrim and the cobbles behind it. A `StyleBoxFlat` in the title buttons' own
+## fill and hover colours (`Palette.BUTTON_FILL`, `BUTTON_HOVER`), so the empty box reads as the
+## same family as the three discs above it; the `checked` icon covers it whole. Engine data rather
+## than anything drawn — see the **cues** rule, "Prefer the engine's data over any drawing at all".
+@onready var _hard_mode_frame: Panel = $Root/HardModeRow/HardMode/Frame
 
 ## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
 ## each use site, so a test — never itself a web export — can set this and drive both shapes.
@@ -126,6 +143,9 @@ func _ready() -> void:
 	_place_column($Root/Choice/LeftColumn, TouchControls.FOCUS_LEFT)
 	_place_column($Root/Choice/TapColumn, TAP_BUTTON_CENTRE)
 	_place_column($Root/Choice/RightColumn, TouchControls.FOCUS_RIGHT)
+	_hard_mode_frame.add_theme_stylebox_override("panel", _hard_mode_frame_style())
+	_hard_mode.resized.connect(_place_the_hard_mode_frame)
+	_place_the_hard_mode_frame()
 	visible = false
 
 ## Where the tap button stands: midway between the two joystick buttons.
@@ -197,7 +217,10 @@ func is_open() -> bool:
 	return visible
 
 ## Shows the screen. `again` is whether a run has just ended, which is the only difference between
-## the two times it is shown.
+## the two times it is shown — besides `new_game`, which is whether pressing a button begins a new
+## run rather than one a save brought back, and is the only time the Hard Mode checkbox shows. It
+## opens on the mode the run already holds, `GameState.hard_mode`: `false` for every fresh run, and
+## `true` only under `--hard`.
 ##
 ## It does **not** touch `get_tree().paused`, which is where it differs from `PauseScreen` and why:
 ## a pause stops the world and this one deliberately does not. What stops, and what carries on
@@ -212,8 +235,10 @@ func is_open() -> bool:
 ## mentioned to the user".)* — it also points the sentence at the discs themselves, which are
 ## otherwise the only thing on this screen that does anything. `q to quit` still does not appear
 ## here even though the key still works — `_can_quit` gates `_unhandled_input()` alone.
-func open(again := false) -> void:
+func open(again := false, new_game := false) -> void:
 	visible = true
+	_hard_mode.visible = new_game
+	_hard_mode.button_pressed = new_game and GameState.hard_mode
 	_hint.text = "press a button to walk again" if again else "press a button to begin"
 	# A press that closed this screen can leave a button's own forced-pressed look set — see
 	# `_acknowledge_and_begin()`'s own doc for why the release that would otherwise clear it may
@@ -230,6 +255,74 @@ func _buttons() -> Array[ModeButton]:
 
 func close() -> void:
 	visible = false
+
+## Whether the Hard Mode checkbox is checked — read by `main._on_title_start()` as the title is
+## dismissed, and only for a new game, the one time the box is shown.
+func hard_mode_checked() -> bool:
+	return _hard_mode.visible and _hard_mode.button_pressed
+
+## Flips the Hard Mode checkbox, if it is showing. Never starts the run.
+func _toggle_hard_mode() -> void:
+	if _hard_mode.visible:
+		_hard_mode.button_pressed = not _hard_mode.button_pressed
+
+## The key that flips the checkbox from a keyboard — `H`, for hard — and, like every key here,
+## never named on screen.
+const _HARD_MODE_KEY := KEY_H
+
+## How far past the checkbox's own rect a press still lands on it: a fingertip is wider than a
+## sixteen-pixel box, and nothing else on the screen stands within this of it.
+const _HARD_MODE_REACH := 14.0
+
+## A touch or a left click on the checkbox flips it and is used up there, so it can never fall
+## through to `_handle_mode_button_press()` and begin the run — read off the raw press position in
+## design space the way the three buttons are, since `mouse_filter` is `IGNORE` on it too and a
+## rotated layer would otherwise put Godot's own hit test in the wrong place. On the press, like the
+## buttons; the mouse branch is gated `not _touch` for the same doubled-press reason theirs is.
+func _handle_hard_mode_press(event: InputEvent) -> bool:
+	if not _hard_mode.visible:
+		return false
+	var position: Vector2
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		position = (event as InputEventScreenTouch).position
+	elif not _touch and event is InputEventMouseButton \
+			and (event as InputEventMouseButton).pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		position = (event as InputEventMouseButton).position
+	else:
+		return false
+	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
+	if not hard_mode_contains_design_point(at):
+		return false
+	get_viewport().set_input_as_handled()
+	_toggle_hard_mode()
+	return true
+
+## The frame's look: the buttons' dark fill, a hairline of their hover colour, corners rounded
+## like the icon it sits behind.
+static func _hard_mode_frame_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Palette.BUTTON_FILL
+	style.border_color = Palette.BUTTON_HOVER
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	return style
+
+## Puts the frame exactly where `CheckBox` draws its icon: past the normal stylebox's left margin,
+## centred down the control, plus the theme's own `check_v_offset`.
+func _place_the_hard_mode_frame() -> void:
+	var icon := _hard_mode.get_theme_icon("unchecked")
+	var style := _hard_mode.get_theme_stylebox("normal")
+	_hard_mode_frame.position = Vector2(style.get_margin(SIDE_LEFT),
+			(_hard_mode.size.y - icon.get_height()) * 0.5
+			+ _hard_mode.get_theme_constant("check_v_offset"))
+	_hard_mode_frame.size = icon.get_size()
+
+## Whether `point`, in the 1280x720 design box, lands on the checkbox or within `_HARD_MODE_REACH`
+## of it.
+func hard_mode_contains_design_point(point: Vector2) -> bool:
+	var local := _hard_mode.get_global_transform().affine_inverse() * point
+	return Rect2(Vector2.ZERO, _hard_mode.size).grow(_HARD_MODE_REACH).has_point(local)
 
 ## `space` or a direction key begins the run **in `Mode.TAP`**, and a press on one of the
 ## buttons begins it in whichever mode — and, for a joystick, side — that button names. *(2026-09-07: "using awsd or arrow keys
@@ -266,6 +359,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_accept") or _is_a_walk_key(event):
 		get_viewport().set_input_as_handled()
 		_begin(ControlsMode.Mode.TAP, ControlsMode.Side.LEFT, true)
+		return
+	if event is InputEventKey and event.pressed and not (event as InputEventKey).echo \
+			and (event as InputEventKey).keycode == _HARD_MODE_KEY and _hard_mode.visible:
+		get_viewport().set_input_as_handled()
+		_toggle_hard_mode()
+		return
+	if _handle_hard_mode_press(event):
 		return
 	if _handle_mode_button_press(event):
 		return

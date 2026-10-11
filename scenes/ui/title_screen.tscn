@@ -116,6 +116,29 @@ theme_override_colors/font_color = Color(0.62, 0.6, 0.58, 1)
 theme_override_font_sizes/font_size = 13
 text = "press a button to begin"
 
+[node name="HardModeRow" type="CenterContainer" parent="Root"]
+anchor_right = 1.0
+offset_top = 628.0
+offset_bottom = 664.0
+mouse_filter = 2
+
+[node name="HardMode" type="CheckBox" parent="Root/HardModeRow"]
+mouse_filter = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.72, 0.69, 0.64, 1)
+theme_override_colors/font_pressed_color = Color(0.8, 0.78, 0.74, 1)
+theme_override_colors/font_hover_color = Color(0.72, 0.69, 0.64, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.8, 0.78, 0.74, 1)
+theme_override_colors/font_focus_color = Color(0.72, 0.69, 0.64, 1)
+theme_override_colors/checkbox_unchecked_color = Color(0.72, 0.69, 0.64, 1)
+theme_override_colors/checkbox_checked_color = Color(0.8, 0.78, 0.74, 1)
+theme_override_font_sizes/font_size = 15
+text = "Hard Mode"
+
+[node name="Frame" type="Panel" parent="Root/HardModeRow/HardMode"]
+show_behind_parent = true
+mouse_filter = 2
+
 [node name="Version" type="Label" parent="Root"]
 anchor_left = 1.0
 anchor_top = 1.0
