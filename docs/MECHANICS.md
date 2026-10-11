@@ -1602,9 +1602,10 @@ she took, to the millisecond, which is the only number that screen carries.
 
 ## Nerves
 
-The run-level health bar. Starts at 5. Every lost day costs one, and a day she **wins** gives one
-back, up to the same five (`GameState.regain_a_nerve()`) — so a bad single day is recoverable rather
-than a tight spot carried all the way to day 14. **What 0 does is the run's mode**, chosen on the
+The run-level health bar. Starts at 5. Every lost day costs one, and in a normal run a day she
+**wins** gives one back, up to the same five (`GameState.regain_a_nerve_for_a_won_day()`) — so a bad
+single day is recoverable rather than a tight spot carried all the way to day 14. **A hard run's won
+day gives nothing back**: it starts with five and only loses them. **What 0 does is the run's mode**, chosen on the
 title as a new game begins (see "Two modes" below): a normal run goes back to its latest checkpoint
 with five, and a hard run ends with the bad ending.
 
@@ -1612,7 +1613,7 @@ with five, and a hard run ends with the bad ending.
 end, and a hard run's gives one only for getting out of the building (see "The escape, which is the
 run's ending"): the run's last `finish_day()` call, from `main._on_finale_escaped()`, skips the gain
 in both because `GameState.escape_section` is still set to the section she just left. Day 14
-itself still gives one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s hand-over
+itself still gives a normal run one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s hand-over
 to the escape rather than waiting for `finish_day()`, which by then is deciding the escape's ending
 instead of day 14's.
 
@@ -1679,7 +1680,12 @@ remembered between sittings. A press on it, or `H` on a keyboard, flips it and n
 the run still begins only from the title's three controls buttons or a key, so the box can be set
 first (`TitleScreen`). The mode is `GameState.hard_mode`, fixed for the run and carried in the save.
 **Nothing during play shows it** and nothing about the city, the events or a day's difficulty reads
-it: *"hard mode doesn't affect gameplay -- only restart pacing"*.
+it: *"hard mode doesn't affect gameplay -- only restart pacing"*. **Gameplay is anything that
+happens during a day** *(dotted-hawk, the player: "by gameplay I mean -- enemies are not harder. or
+excitement or sleepiness doesn't move in on different values", "or distribution of events doesn't
+change", "anything that happens *during* a day is gameplay")*: how hard the enemies are, the values
+excitement and sleepiness move by, and the distribution of events. Hard Mode changes none of it;
+nerves, which decide only when a run ends, are restart pacing, and that is where it differs.
 
 - **Normal mode has checkpoints and never reaches the bad ending.** The checkpoints are days 4, 8 and
   12, the first days of acts II, III and IV (`Tuning.ACT_START_DAYS`), and day 1 is checkpoint zero.

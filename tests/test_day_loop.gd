@@ -329,10 +329,24 @@ func _test_a_won_day_gives_a_nerve_back(t) -> void:
 	GameState.finish_day(GameEnums.DayResult.WON)
 	t.check(GameState.nerves == 3, "the escape's own win gives no nerve back")
 
+	# Hard Mode: a won day gives nothing back, through `finish_day()` and through day 14's hand-over
+	# to the escape, which reaches the gain without it. (dotted-hawk, #709)
+	GameState.start_run(SEED)
+	GameState.hard_mode = true
+	GameState.nerves = 3
+	t.check(GameState.finish_day(GameEnums.DayResult.WON), "a hard run's win continues")
+	t.check(GameState.nerves == 3, "a won day gives a hard run no nerve back")
+	GameState.regain_a_nerve_for_a_won_day()
+	t.check(GameState.nerves == 3, "nor does day 14's hand-over to the escape")
+	GameState.hard_mode = false
+	GameState.regain_a_nerve_for_a_won_day()
+	t.check(GameState.nerves == 4, "while a normal run's hand-over still does")
+
 	GameState.run_seed = saved_seed
 	GameState.day = saved_day
 	GameState.nerves = saved_nerves
 	GameState.escape_section = saved_section
+	GameState.hard_mode = false
 
 ## The recording half of M24. The scheduler's half is tested in `test_events.gd`; this is the
 ## half that decides *what* it gets told, and it is easy to get subtly wrong in two ways —
