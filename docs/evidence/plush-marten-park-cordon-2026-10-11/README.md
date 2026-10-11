@@ -14,8 +14,9 @@ Evidence for the plush-marten entry (the cordon), 2026-10-11.
 ## The cordon in play
 
 Two runs of one scene, recorded frame by frame with Godot's own movie writer (60fps, 1280x720,
-`--player-view --no-focus-pause --no-save`), neither under `--invincible`, on the build at
-`407d1366ee5cf05ee9131ea8a84e93cf9658da42` plus nothing else. The scene is `scene-recipes/task-12-swing.json` (run seed 11, city
+`--player-view --no-focus-pause --no-save`), neither under `--invincible`: the shut-in run at
+`c044816abdc95a1dc1bb211451d17c4eeb5aad7c` and the walk-out run at `407d1366ee5cf05ee9131ea8a84e93cf9658da42`, which differ only in the
+shut-in sentence. The scene is `scene-recipes/task-12-swing.json` (run seed 11, city
 seed 1917501, day 12) with its extent made the whole city (`{"scope":"full"}`, its stretch, context,
 actors, posters and route bag dropped, as `SceneRecipeDraft.base_of()` drops them) and its
 `playback.walk` extended; the scratch recipes are not committed. Command, from the repository:
@@ -30,7 +31,7 @@ of it"), leaving her standing in the park's south-east.
 
 - **Shut in**: then `20p`, standing. The run log: "the last gap of the park's cordon is taped
   12.2s after the swing, with her inside: she is shut in", then "lost_hard_fail after 24.8s to
-  park-cordon — They taped the last gap with you still inside the park."
+  park-cordon — They taped the park shut with you inside."
   - `tape-and-officers.png` (frame 1200, 7.1s after the touch): the east side taped and the south
     side being taped by one officer, posts at every stretch end, the ground still grass.
   - `cordon-closing-sheet.png`: frames 880, 1000, 1120, 1240, 1360 and 1484, two seconds apart
