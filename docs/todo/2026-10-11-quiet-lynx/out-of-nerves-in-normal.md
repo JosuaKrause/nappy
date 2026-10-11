@@ -1,6 +1,6 @@
 # What the last nerve does in normal mode
 
-**Normal mode never reaches the GAME OVER ending** (statement 7: *"No game over in normal
+**Normal mode never reaches the GAME OVER ending** (statement 5, answer 6: *"No game over in normal
 (Recommended)"*). Losing the last nerve sends the run to its latest checkpoint with 5 nerves (see
 [checkpoints.md](checkpoints.md)).
 

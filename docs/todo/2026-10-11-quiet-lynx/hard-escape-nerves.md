@@ -7,7 +7,7 @@ indefinitely; this is only for normal mode)"*). In hard mode:
 
 - she enters the escape with the nerves day 14 left her;
 - a lost section (being taken, the meter reaching 100, or the clock running out) costs one nerve;
-- clearing a section, "Escape the building", gives one back, up to 5 (statement 4: *"Section won
+- clearing a section, "Escape the building", gives one back, up to 5 (statement 3, answer 3: *"Section won
   gives one back"*), before "Escape the city";
 - 0 nerves ends the run with the bad ending.
 
