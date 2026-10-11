@@ -322,7 +322,13 @@ static func _web_query() -> String:
 ## The command line, or nothing at all outside a debug build — the one choke point every getter
 ## below reads through.
 static func _args() -> PackedStringArray:
+	if not args_for_tests.is_empty():
+		return args_for_tests
 	return OS.get_cmdline_user_args() if enabled() else PackedStringArray()
+
+## Command-line words a test stands in for the real ones, so a flag's own getter can be exercised
+## (`--pelican`); empty outside a test.
+static var args_for_tests := PackedStringArray()
 
 ## The same, for a caller that needs to test for a flag's bare presence rather than a value —
 ## `main._somebody_is_playing()` is the one case, and it must see no rig flags at all outside a

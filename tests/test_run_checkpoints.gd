@@ -175,6 +175,8 @@ func _change_everything() -> void:
 	GameState.posters.tears += 1
 	GameState.posters.pasted_through += 4
 	GameState.posters.photograph()
+	GameState.pelican.draws += 5
+	GameState.pelican.photograph()
 
 func _fake_block_plan() -> BlockPlan:
 	var plan := BlockPlan.new()

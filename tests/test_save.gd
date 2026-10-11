@@ -42,6 +42,7 @@ func run(t) -> void:
 	_test_a_save_from_before_the_fenced_park_still_loads(t)
 	_test_a_save_from_before_a_task_was_one_day_still_loads(t)
 	_test_the_posters_survive_a_round_trip(t)
+	_test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at_0(t)
 
 	_test_day_under_way_load_costs_one_nerve(t)
 	_test_a_day_under_way_gives_back_the_fire_it_lit(t)
@@ -198,7 +199,9 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 ## the escape existed unreadable, for the sake of one int. `_test_a_save_from_before_the_escape_
 ## still_loads()` is what holds that. `completed_resistance_alley_tiles` rides the same way, for
 ## the same reason — `_test_a_save_from_before_the_alley_tiles_still_loads()` holds it — and so do
-## `posters`, what is pasted on the walls (`_test_the_posters_survive_a_round_trip()`), and
+## `posters`, what is pasted on the walls (`_test_the_posters_survive_a_round_trip()`), `pelican`,
+## the count of cyclists drawn from the run's pelican bag
+## (`_test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at_0()`), and
 ## `fenced_park`/`fenced_park_act`, the one calm area a run may fence
 ## (`_test_a_save_from_before_the_fenced_park_still_loads()`).
 const _SAVED_OUTSIDE_THE_SNAPSHOT := [
@@ -538,6 +541,26 @@ func _test_a_save_from_before_the_fenced_park_still_loads(t) -> void:
 
 ## **The walls survive the file, and a save from before there were posters loads with none up.**
 ## `posters` rides at the top level for the reason `escape_section` does.
+func _test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at_0(t) -> void:
+	GameState.start_run(656565)
+	GameState.pelican.draws = 9
+	GameState.pelican.photograph()
+	GameState.pelican.draws = 12
+	var data := GameSave.run_data()
+	GameState.pelican.reset()
+	GameSave.restore_run_data(data)
+	t.check(GameState.pelican.draws == 12, "a save keeps the pelican bag's count (%d)"
+			% GameState.pelican.draws)
+	GameState.pelican.give_back()
+	t.check(GameState.pelican.draws == 9, "and the dawn's, so a lost day after a resume goes back")
+	GameState.pelican.draws = 12
+	var old: Dictionary = data.duplicate(true)
+	old.erase("pelican")
+	GameSave.restore_run_data(old)
+	t.check(GameState.pelican.draws == 0,
+			"a save written before the bag loads at 0 over a run with a count (%d)"
+			% GameState.pelican.draws)
+
 func _test_the_posters_survive_a_round_trip(t) -> void:
 	GameState.start_run(646464)
 	GameState.posters.paste(Vector2i(5, 6), PosterArt.Kind.LEADER, false, 1)

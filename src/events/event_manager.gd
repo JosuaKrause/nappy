@@ -35,10 +35,10 @@ var _city: City
 var _map: CityMap
 var _player: Node2D
 var _hard_failed := false
-## Today's own day number, kept for the two RNG streams drawn while the day runs:
+## Today's own day number, kept for the RNG stream drawn while the day runs:
 ## `_summon_the_sighted_row()`'s — the direction a summoned row enters from is a coin flip like any
-## other placement, and it has to come from the day's own seed to stay deterministic — and the
-## pelican's (`rolls_a_pelican()`).
+## other placement, and it has to come from the day's own seed to stay deterministic. The pelican's
+## bag (`rolls_a_pelican()`) is the run's, not the day's, and does not read it.
 var _day := 0
 
 ## True between `start_finale()` and the next `start_day()`: this walk is the escape, not a day.

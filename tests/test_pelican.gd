@@ -33,6 +33,8 @@ func run(t) -> void:
 	_test_a_run_meets_at_most_one_pelican_and_about_one_cyclist_in_400_is_it(t)
 	_test_the_seed_decides_which_cyclist_is_the_pelican(t)
 	_test_only_a_cyclist_draws_from_the_bag(t)
+	_test_the_bag_follows_the_run_and_the_count(t)
+	_test_the_dev_flag_makes_every_cyclist_a_pelican(t)
 	_test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t)
 	_test_the_pelican_never_becomes_a_png(t)
 	_city = CITY_SCENE.instantiate()
@@ -88,6 +90,52 @@ func _test_the_seed_decides_which_cyclist_is_the_pelican(t) -> void:
 	t.check(first == again, "the same run makes the same cyclists the pelican")
 	t.check(first != other_run, "another run makes others the pelican")
 
+## The bag is rebuilt when the run's seed or the count it was left at disagrees with it, and only
+## then: one manager kept across a new run, and across a count a lost day put back, draws what a
+## fresh manager would.
+func _test_the_bag_follows_the_run_and_the_count(t) -> void:
+	var cyclist := EventCatalogue.by_id("cyclist")
+	var manager := EventManager.new()
+	_new_run(11)
+	var first: Array[bool] = []
+	for _i in 400:
+		first.append(manager.rolls_a_pelican(cyclist))
+	var fresh_11 := _rolls_for(11, [cyclist], 400)
+	t.check(first == fresh_11, "a manager's draws are a fresh manager's")
+	_new_run(12)
+	var other: Array[bool] = []
+	for _i in 400:
+		other.append(manager.rolls_a_pelican(cyclist))
+	t.check(other == _rolls_for(12, [cyclist], 400) and other != first,
+			"the same manager on another run's seed draws that run's bag")
+	_new_run(12)
+	GameState.pelican.draws = 0
+	var again: Array[bool] = []
+	for _i in 400:
+		again.append(manager.rolls_a_pelican(cyclist))
+	t.check(again == other, "and a count put back to 0 starts that bag again")
+	GameState.pelican.draws = 100
+	var from_100: Array[bool] = []
+	for _i in 300:
+		from_100.append(manager.rolls_a_pelican(cyclist))
+	t.check(from_100 == other.slice(100), "and put back to 100 carries on from the hundredth")
+	manager.free()
+
+## `--pelican` through the flag's own getter: every cyclist is the pelican, a loose dog still is
+## not, and the bag draws what it would have.
+func _test_the_dev_flag_makes_every_cyclist_a_pelican(t) -> void:
+	var cyclist := EventCatalogue.by_id("cyclist")
+	var plain := _rolls_for(5, [cyclist], 40)
+	DevFlags.args_for_tests = PackedStringArray(["--pelican"])
+	t.check(DevFlags.pelican(), "the flag is read from the command line")
+	var flagged := _rolls_for(5, [cyclist], 40)
+	var dog := _rolls_for(5, [EventCatalogue.by_id("loose_dog")], 5)
+	DevFlags.args_for_tests = PackedStringArray()
+	t.check(flagged.count(true) == 40 and dog.count(true) == 0,
+			"with it every cyclist is a pelican and no dog is")
+	t.check(GameState.pelican.draws == 0 and _rolls_for(5, [cyclist], 40) == plain,
+			"and without it the same run draws as before")
+
 ## A row that is not a cyclist is never the pelican and draws nothing from the bag, so the loose
 ## dogs sent between two cyclists do not move which of them it is.
 func _test_only_a_cyclist_draws_from_the_bag(t) -> void:
@@ -114,19 +162,20 @@ func _test_only_a_cyclist_draws_from_the_bag(t) -> void:
 func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	# Some run whose pelican is among the day's cyclists, so the comparison compares one.
+	# The day is draws 7 to 26, so the window searched is that one.
 	var seed_value := 1
-	for candidate in range(1, 200):
-		_new_run(candidate)
-		if _rolls(cyclist, 20, candidate).has(true):
+	for candidate in range(1, 2000):
+		if _rolls_for(candidate, [cyclist], 27).slice(7).has(true):
 			seed_value = candidate
 			break
 	_new_run(seed_value)
 	var yesterday := _rolls(cyclist, 7, seed_value)
 	t.check(yesterday.size() == 7 and GameState.pelican.draws == 7, "a run's earlier day draws 7")
-	GameState.pelican.photograph()
+	GameState._snapshot_what_the_attempt_can_spend()
 	var day := _rolls(cyclist, 20, seed_value)
+	t.check(day.has(true), "the day holds the pelican (a guard that the comparisons compare one)")
 	var saved := GameState.pelican.to_data()
-	GameState.pelican.give_back()
+	GameState._give_back_what_the_attempt_spent()
 	t.check(GameState.pelican.draws == 7, "a lost day sets the count back to the day's dawn")
 	t.check(_rolls(cyclist, 20, seed_value) == day,
 			"and the retry draws the same cyclists and pelican the day first did")
