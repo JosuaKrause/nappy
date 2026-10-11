@@ -258,6 +258,15 @@ along with her are the same drawing call that draws her, so nothing about them n
 switch. The meters keep running throughout — sleepiness still drains at the idle rate, because the
 baby is still there whether or not the player can see her.
 
+**She stands still on the far side until the player chooses where to go.** *(2026-10-10, the
+player: "there is a bug when leaving the guard huts that the player keeps moving in the previous
+direction. let's reset the movement to 0 when leaving so the player has a choice".)* The release
+zeroes her velocity, drops the heading a tap or a joystick drag had locked in
+(`TouchControls.stand_still_after_hold()`), and ignores a key still held until it is released or
+another is pressed (`Stroller.show_after_inspection()`). A finger still down chooses again by
+moving. It is one mechanism for every `redetains` hold: the street doors' gatehouses and the alley
+guard. `tests/test_checkpoints.gd` holds it for a key, a tap's heading and a joystick drag's.
+
 **The hold charges its toll and nothing else.** While she is inside a door — inside the trigger of
 a `redetains` instance whose hold is running — the only thing the meter sums is that hold's own
 flat `Tuning.CHAT_EXCITEMENT` (25) over `Tuning.CHECKPOINT_DETAIN_SECONDS`. Every other event field

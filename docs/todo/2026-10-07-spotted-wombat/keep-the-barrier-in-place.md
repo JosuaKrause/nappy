@@ -3,6 +3,10 @@ barrier picture and solid body fixed at their original ground position through n
 pursuit and the guard's departure. Inspect `EventInstance._leave_the_body_behind()`,
 `_body_left_at` and the roadblock draw path; a moving guard must not carry the barrier's
 animation or lifetime with him.
+The barrier does not disappear after she shakes off the pursuer (azure-puffin, point 5).
+**Proposed, not asked for** (open to the player's correction): it stays where it was built, solid,
+for as long as the roadblock would have stood had he never set off, and the same holds when he gives
+up or departs for any other reason.
 
 Open for pickup: the event variant, seed and phase where each symptom begins. The roadblock
 is the first reproduction candidate, not a proven identification. Verify the diagnosed lifecycle

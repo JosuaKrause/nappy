@@ -30,6 +30,7 @@ func run(t) -> void:
 	_test_the_manager_actually_places_the_door_structure(t)
 	_test_nothing_the_day_places_reaches_into_a_doors_gap(t)
 	_test_a_hut_detains_and_releases_on_the_other_side(t)
+	_test_she_stands_still_when_a_hold_lets_her_out(t)
 	_test_the_hold_charges_only_its_toll(t)
 	_test_a_boundarys_structures_charge_as_one(t)
 	_test_a_corner_of_two_doors_is_one_toll(t)
@@ -564,6 +565,101 @@ func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 	hut.free()
 	stroller.free()
 	manager.free()
+
+const _TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
+
+func _release_move_actions() -> void:
+	for action in [&"move_left", &"move_right", &"move_up", &"move_down", &"run"]:
+		Input.action_release(action)
+
+## **She stands still on the far side of a hold, whatever was held going in** *(2026-10-10,
+## playtest azure-puffin: "the player keeps moving in the previous direction. let's reset the
+## movement to 0 when leaving so the player has a choice")*. Three ways to be holding a direction:
+## a key physically down, a heading a tap or a joystick drag locked in, and the same heading locked
+## in again by a press after the release. Each is walked into a hut with the heading held, let out,
+## and stepped on a few physics frames: she has not moved, and a new input moves her.
+func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
+	var axis := Vector2.RIGHT
+	var centre := Vector2(4000.0, 4000.0)
+	for way in ["a key held down", "a tap's locked heading", "a joystick drag's locked heading"]:
+		_release_move_actions()
+		var manager := _manager(t)
+		var stroller := _real_stroller(t)
+		manager._player = stroller
+		var controls: TouchControls = _TOUCH_CONTROLS.instantiate()
+		t.add_child(controls)
+		controls.set_process(false)
+		if way == "a joystick drag's locked heading":
+			controls.set_mode(ControlsMode.Mode.JOYSTICK)
+		var hut := _door_instance(t, "checkpoint_hut", centre, axis)
+		manager._instances.append(hut)
+
+		stroller.global_position = centre + axis * 40.0 + Vector2(0.0, 16.0)
+		if way == "a key held down":
+			Input.action_press(&"move_left")
+		else:
+			controls.set_direction(stroller.global_position + Vector2(-100.0, 0.0), false,
+					Vector2.INF if way == "a tap's locked heading"
+					else stroller.global_position)
+		manager._tell_them_where_she_is()
+		manager._check_detentions()
+		t.check(stroller.is_detained(), "%s: she is held" % way)
+		# Her physics runs through the hold, as it does in play: her input is ignored while it
+		# lasts and the held heading is still held when it ends.
+		for i in int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 5:
+			hut._process(STEP)
+			manager._check_detentions()
+			stroller._physics_process(STEP)
+		t.check(not hut.is_chatting(), "%s: and let out" % way)
+
+		var released := stroller.global_position
+		for i in 20:
+			stroller._physics_process(STEP)
+		t.check(stroller.global_position.is_equal_approx(released) \
+				and stroller.velocity == Vector2.ZERO,
+				"%s: she has not moved a frame after the release (%s)" % [way, stroller.velocity])
+
+		t.check(stroller.input_she_moves_by() == Vector2.ZERO \
+				and TouchControls.current_heading(stroller) == Vector2.ZERO,
+				"%s: the knob and the blocked watch read nothing while she stands" % way)
+		if way == "a joystick drag's locked heading":
+			# The finger is still down: moving it steers her again.
+			stroller.velocity = Vector2.ZERO
+			controls._drag_pointer_index = 7
+			controls._on_drag(TouchControls.FOCUS_LEFT + Vector2(0.0, -60.0), 7)
+			for i in 5:
+				stroller._physics_process(STEP)
+			t.check(stroller.velocity.y < 0.0, "%s: a finger still down moves her again by moving" % way)
+			controls._on_pointer(Vector2.ZERO, false, 7)
+			_release_move_actions()
+			stroller._physics_process(STEP)
+		# A new input moves her: the other key, or a new press. From rest, so leftover velocity
+		# cannot satisfy the check.
+		stroller.velocity = Vector2.ZERO
+		if way == "a key held down":
+			Input.action_press(&"move_up")
+		else:
+			controls.set_direction(stroller.global_position + Vector2(0.0, -100.0), false)
+		for i in 5:
+			stroller._physics_process(STEP)
+		t.check(stroller.velocity.y < 0.0, "%s: and a new input moves her" % way)
+
+		if way == "a key held down":
+			t.check(stroller.input_she_moves_by() != Vector2.ZERO \
+					and TouchControls.current_heading(stroller) != Vector2.ZERO,
+					"%s: the knob and the blocked watch read the new input" % way)
+		if way == "a key held down":
+			# Released, then pressed again, is a choice too.
+			_release_move_actions()
+			stroller._physics_process(STEP)
+			Input.action_press(&"move_left")
+			stroller._physics_process(STEP)
+			t.check(stroller.velocity.x < 0.0, "%s: and so is the same key pressed again" % way)
+		_release_move_actions()
+		hut.free()
+		controls.free()
+		stroller.free()
+		manager.free()
 
 ## A `WorldContext` answering out of one `EventManager`, so a real `Baby` can be driven against the
 ## same sum the game's own `City` builds — `Baby._ready()` finds it by the `world` group, which
