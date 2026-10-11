@@ -118,6 +118,10 @@ func _test_schema(t) -> void:
 			"playback": {"duration": 2, "walk": "0.5s0.5E1p", "camera": {"fixed": true},
 				"settled_camera": true}}
 	t.check(SceneRecipeRuntime.validate_runtime(valid).is_empty(), "valid optional runtime defaults are accepted")
+	var heated := {"setup": {"day": 7, "events": [{"name": "block", "row": "roadblock", "at": [0, 0],
+			"heat": Tuning.HEAT_HUNTS_LEVEL}]}}
+	t.check(SceneRecipeRuntime.validate_runtime(heated).is_empty(),
+			"an event may name the resistance progress its row is installed at")
 	var mixed := {"setup": {"background": {"crowd": true, "uniform_walkers": true},
 			"actors": [{"name": "walker", "kind": "walker", "at": [0, 0], "direction": "north"}]}}
 	t.check(SceneRecipeRuntime.validate_runtime(mixed).is_empty(), "uniform background admits explicit walkers")
@@ -151,6 +155,10 @@ func _test_schema(t) -> void:
 		{"setup": {"progression": {"escape_part": "city"}}},
 		{"setup": {"events": "not an array"}},
 		{"setup": {"events": [{"name": "event", "row": "unknown", "at": [0, 0]}]}},
+		{"setup": {"events": [{"name": "event", "row": "roadblock", "at": [0, 0], "heat": -1}]}},
+		{"setup": {"events": [{"name": "event", "row": "roadblock", "at": [0, 0], "heat": 1.5}]}},
+		{"setup": {"events": [{"name": "event", "row": "roadblock", "at": [0, 0],
+			"heat": Tuning.RESISTANCE_GOAL + 1}]}},
 		{"setup": {"actors": [{"name": "actor", "kind": "train", "at": [0, 0], "direction": "east"}]}},
 		{"setup": {"actors": [{"name": "player", "kind": "walker", "at": [0, 0], "direction": "east"}]}},
 		{"setup": {"actors": [{"name": "actor", "kind": "walker", "at": [0, 0], "direction": "diagonal"}]}},
