@@ -2885,9 +2885,10 @@ func _move_the_task_guard_to_her_target() -> void:
 ## pursuing when you hit the task it's fine")*. The moment she has touched the roadblock, a guard who
 ## has not yet noticed her notices her now (`EventInstance.notice_her_at()`) and starts after her
 ## from where he is: from the band with a clear line, as he would have; from the roadblock before,
-## from the ring past the band, or round a corner, the same. **He starts after her; he does not
-## always reach her**: he walks straight at her, sliding along walls (`EventInstance._chase()`), so a
-## chase begun round a corner can stall behind a building and lose her, as any chase can. He is
+## from the ring past the band, or round a corner, the same. **He starts after her and walks round
+## buildings to her** (`EventInstance._paths_to_her`): where no clear line runs to her he follows the
+## walk to her, refreshed as she moves, so from another roadblock he comes all the way to her;
+## running still shakes him off, as it does any chase. He is
 ## already in the world, so nothing appears: off screen he comes on from off screen, his badge up as
 ## he closes on her (`DangerEdge`), and in view he is the guard she can already see. The chase keeps
 ## every pursuit rule — his notice before any lunge, his stand-off while it runs, a lunge only along

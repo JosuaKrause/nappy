@@ -267,8 +267,8 @@ touch".)*
   is in her view from the moment she turns toward another until she reaches it, or no spot round it
   leaves her a way past him. Wherever he stands when she has done the task — in the band, past it,
   at another roadblock — he starts after her the moment she has, if he has not noticed her yet, an
-  ordinary chase from there, which from round a corner can stall behind a building and lose her as
-  any chase can. *(2026-10-10, the player: "as long as he starts pursuing when you hit the task it's
+  ordinary chase from there, except that he walks round the buildings between them toward her, so
+  from another roadblock he comes all the way to her; running still shakes him off. *(2026-10-10, the player: "as long as he starts pursuing when you hit the task it's
   fine".)* Once he has noticed her he stays on her. *(2026-10-10, [lilac-marmot](playtests/2026-10-10-lilac-marmot.md):
   "just move the guard always to any roadblock she approaches. We can move the guard around
   offscreen as much as we want. If we need to move multiple times so be it".)* Seeded from the run and the day, so the distance or the alley that was
