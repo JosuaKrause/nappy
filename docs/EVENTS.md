@@ -1430,7 +1430,13 @@ standing at his. Two fields make that work and both are general rather than writ
   stops waiting, because a moving pursuer with a body is a wall. A barrier is not the man's own
   bulk: `EventInstance` pins it at the place it was left and draws it there for the rest of the
   event's life, so **the street he abandoned stays shut behind him**. Nothing appears and nothing
-  disappears.
+  disappears. **The barrier is furniture, not part of the man**: it is drawn back down by the
+  stride bob that lifts the chaser (`EventInstance._roadblock_band_at()`), so it never jumps with
+  him, and it is re-pinned through his departure too. **It outlives the chase**: when the chase
+  ends — she shook him off, his chase ran out, a hold ended it — he walks away at his chasing pace
+  and the instance goes back to being only the barrier, waiting, solid and costing what a barrier
+  costs, with the post he left empty and the other guard still standing. He does not come back for
+  her. *("the guarded barriers disappear after shaking off the pursuer. that doesn't make sense.")*
 - **`EventDef.lethal_radius`**, and `lethal_reach()` is what every caller asks. The field and the
   killer are no longer the same object — the field is a street being held and is cored on the band
   at `inner_radius` 86, while what ends the day is a pair of arms at 28px, the same

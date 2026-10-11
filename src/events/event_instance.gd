@@ -2053,6 +2053,11 @@ func _process(delta: float) -> void:
 		_leave(delta)
 		_fly_the_flock(delta)
 		_advance_gait(_path_travelled - _travelled_before)
+		if has_left_its_body_behind() and not is_finished:
+			# He walks off and the barrier does not go with him: its body and its picture stay
+			# where it was built through the departure as through the chase.
+			_keep_the_body_where_it_was_left()
+			queue_redraw()
 		_redraw_if_the_picture_changed()
 		return
 
@@ -2330,7 +2335,7 @@ var _notice_paused_for := 0.0
 ## where that stops. Everything below then runs exactly as it does for a dog sited in front of her,
 ## started later.
 func _chase(delta: float) -> void:
-	if player_at == Vector2.INF or is_telegraphing_still():
+	if player_at == Vector2.INF or is_telegraphing_still() or _guard_spent:
 		return
 	var toward := player_at - global_position
 	var range_to_her := toward.length()
@@ -2702,7 +2707,7 @@ func notice_her_at(her: Vector2) -> void:
 ## overwrites `_heading` from the path's own direction the instant it starts moving, so this only
 ## shows for whatever is left of the frame it happens on.
 func _check_for_notice() -> void:
-	if player_at == Vector2.INF or not is_waiting():
+	if player_at == Vector2.INF or not is_waiting() or _guard_spent:
 		return
 	var toward := player_at - global_position
 	if toward.length() > def.pursues_within:
@@ -3188,7 +3193,7 @@ const LEAVING_GIVES_UP := 6.0
 ##
 ## Everything else that runs out of route drives on and is gone.
 func _be_done(may_park := true) -> void:
-	if is_finished or is_leaving or is_parked:
+	if is_finished or is_leaving or is_parked or _guard_spent:
 		return
 	if def.pursues and _pursuit_began_reported and not has_stopped_her():
 		# `VisitCounter`'s own "dog-shaken"/"dog-outlasted" — a pursuit that had actually begun is
@@ -3206,7 +3211,7 @@ func _be_done(may_park := true) -> void:
 		_path_travelled = _path_length()
 		queue_redraw()
 		return
-	if def.departure_speed() <= 0.0 or def.spawns_on_finish != "":
+	if (_leaving_speed() <= 0.0 or def.spawns_on_finish != ""):
 		_finish()
 		return
 	is_leaving = true
@@ -3262,7 +3267,7 @@ func leave_for_a_completed_task() -> void:
 
 func _leave(delta: float) -> void:
 	_leaving_for += delta
-	var step := def.departure_speed() * delta
+	var step := _leaving_speed() * delta
 	if not _trail.is_empty():
 		if not _walk_back(step):
 			return
@@ -3278,7 +3283,38 @@ func _leave(delta: float) -> void:
 	# flag (see its doc); every other departure gives up on the clock as it always did.
 	var may_give_up := not _leaving_must_clear_sight or player_at == Vector2.INF or gone
 	if gone or (may_give_up and _leaving_for >= LEAVING_GIVES_UP):
-		_finish()
+		if has_left_its_body_behind() and def.body_stays_behind:
+			_stand_as_the_barrier()
+		else:
+			_finish()
+
+## How fast this instance walks away once it is over. The row's own departure speed, except for a
+## guard who set off from a barrier (`EventDef.body_stays_behind`): a roadblock has none of its own
+## (it never travelled), and he leaves at the pace he chased at rather than vanishing in the street.
+func _leaving_speed() -> float:
+	if def.body_stays_behind and has_left_its_body_behind():
+		return def.pursue_speed
+	return def.departure_speed()
+
+## True once the guard who set off from a barrier is gone for good, and this instance is only the
+## barrier: solid and costing what a barrier costs, for as long as the roadblock would have stood
+## had he never set off. He does not come back for her.
+var _guard_spent := false
+
+## **The barrier outlives its guard.** *(Playtest: "the guarded barriers disappear after shaking off
+## the pursuer. that doesn't make sense.")* A chase that ends — she shook him off, his time ran
+## out, a hold ended it — sends the man away (`_be_done()`), and once he is out of the picture the
+## instance goes back to being what it was before he set off: waiting, with its body and its picture
+## where they were built and the post he left empty. Nothing appears and nothing disappears.
+func _stand_as_the_barrier() -> void:
+	_guard_spent = true
+	is_leaving = false
+	_leaving_for = 0.0
+	_noticed_at = INF
+	global_position = _body_left_at
+	_keep_the_body_where_it_was_left()
+	_invalidate_contribution_cache()
+	queue_redraw()
 
 func _advance_along_path(delta: float) -> void:
 	# Movement starts when the telegraph does, so an approaching siren is audible and
@@ -5156,19 +5192,30 @@ func _robber_waiting_heading() -> Vector2:
 ## posted, the chaser once he has set off. A guard posted north or south of a broadside band sorts
 ## at the band's line rather than at his own feet.
 func _draw_roadblock(canvas: CanvasItem = self) -> void:
-	var band_at := body_position() - global_position
+	# **The barrier never rides the chaser's stride.** `_draw()` lifts the whole canvas by
+	# `_current_bob()` for anything that pursues or leaves, and the band and the posted guard are
+	# furniture of the street rather than part of the man who walked out of it, so they are drawn
+	# back down by the same amount (*"the guard pursuer makes his barrier jump up and down"*).
+	var band_at := _roadblock_band_at()
 	_draw_spread(_roadblock_segment_texture(_spread_vertical), ROADBLOCK_END, canvas, band_at)
 	for side: int in def.guard_sides:
 		if side != _chaser_side:
 			_draw_posted_guard(canvas, band_at, side)
-	if _chaser_side == 0:
+	if _chaser_side == 0 or _guard_spent:
 		return
 	# His own small shadow — not the band's, which `_draw_spread()` above already drew at the post
 	# he left — so `_draw_eight_view()` below is asked not to draw one of its own; see that
 	# function's own doc comment.
 	_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
-	var by_view := GUARD_LUNGING_BY_VIEW if not is_telegraphing() else GUARD_STANDING_BY_VIEW
+	var by_view := GUARD_LUNGING_BY_VIEW if not (is_telegraphing() or is_leaving) \
+			else GUARD_STANDING_BY_VIEW
 	_draw_eight_view(by_view, _heading, canvas, false, {}, false)
+
+## Where the band is drawn in this node's local space: back at `body_position()`, and drawn down
+## by the lift `_draw()` puts the whole canvas through, so on the screen it stands exactly where its
+## body does on every frame. Read by `tests/test_barrier_stays.gd`.
+func _roadblock_band_at() -> Vector2:
+	return body_position() - global_position + Vector2(0.0, -_current_bob())
 
 ## One guard standing at his post on `side` of the band drawn at `band_at`, facing out from it.
 ## **The view sector is put back afterwards**: `_select_view()` advances `_view_sector` with
