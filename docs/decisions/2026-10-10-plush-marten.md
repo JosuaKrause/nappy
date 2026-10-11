@@ -25,13 +25,14 @@ included, to a deadline solved at set-out (`ParkCordon._time_the_close()`): no s
 to the gap plus `Tuning.PARK_CLOSING_WARNING` (2s) after the first officer comes into the camera's
 view of where she stood; a stretch never takes less than `PARK_CLOSING_STRETCH_MIN` (0.3s). **If she is inside when the last
 gap closes, the day ends** (`park_cordon`, "They taped the park shut with you inside."). Up to
-`PARK_CLOSING_ESCORTS` (2) more officers walk the park's people out: a way out is planned at set-out,
-through the last gap and over the ground outside it to the nearest place out of her sight, by sidewalk
-where it gets there; each escort comes in along it, sends his person off down it
-(`EventInstance.leave_along()`, which walks on away from her past the way's end and ends only once she
-could not be watching) and walks out behind them, and is gone once out of her sight. Anyone in the
-park already leaving on their own is turned onto the way too. Anything planned in the park that has not appeared yet is
-taken off the day. Afterwards the tapers walk off by the same kind of way, out of sight.
+`PARK_CLOSING_ESCORTS` (2) more officers walk the park's people out: a way out is planned at
+set-out, through the last gap and over the ground outside it to the nearest place out of her sight,
+by sidewalk where it gets there; each escort comes in along it, sends his person off down it
+(`EventInstance.leave_along()`, which past the way's end plans on from there to where she could not
+be watching and ends only there) and walks out behind them, and is gone once out of her sight.
+Anyone in the park already leaving on their own is turned onto the way too. Anything planned in the
+park that has not appeared yet is taken off the day. Afterwards the tapers walk off by the same kind
+of way, out of sight.
 
 The tape is `art/closures/cordon_tape_across.svg`, `cordon_tape_along.svg` and `cordon_post.svg`, in
 police blue and white, on the late park's fence line; each taped stretch is a static body
@@ -64,6 +65,15 @@ park, was not counted by the gap's wait. Merging main's bouncy-egret (#674), who
 also carries the soft seals' bands, moved seed 13's last gap off one, to an edge the officers reach
 her view of later, so that park now closes at 26.3s rather than 14.0s.
 
+**Its third review found the walk past the way's end standing still in her view**: it steered
+straight away from her and, where that was off the walkable ground, slid along the wall by the part
+of the step square to it, which against the city's edge met nearly square-on is next to nothing. On
+seed 4242, with her stopped at the way's end, the busker walked 304px west to the city's edge and
+stood there, in her view for 42s after the way was walked; turning along the open axis at full
+pace was the other fix offered, and was not taken because steering on "away from her" also turns
+back and forth in a dead end. With the rest planned by the search he is in her view 6.8s after the
+way and never under half his pace in it, and `tests/test_park_cordon.gd` bounds both.
+
 **Measured** (`tests/probes/plush_marten_cordon.gd`, seeds 1 to 40 and 90210, her at the swing and the
 camera on her; 41 swing parks, 35 of them 256 by 256px and 6 of them 704 by 704px): every last gap's
 outside reaches home and the day's other calm ground with the park blocked, and stands clear of the
@@ -93,12 +103,16 @@ reach is taken whichever way she faces rather than read off her facing, since th
 the pram into the line after the tape is up; standing in the last
 gap keeps the park from closing; the tape stands only on day 12, and from day 13 the park is like any
 other spent park; a park person with no departure of their own walks out at
-`PARK_CLOSING_LEAVE_SPEED` (50px/s), the pace `leave_along()` is handed; past the way's end
-`leave_along()` walks on straight away from her, sliding along a wall or the city's edge when that
-is off the walkable ground, since the way's end may be where she now stands; the cordon's search for the way out (`ParkCordon._route_away()`) is a breadth-first search of its own,
-over walkable ground off the park and off the day's blocked set, roads only when the sidewalk does not
-get there. The art's open points: the
-tape at thigh height, blue and white rather than yellow and black, the end-on runs reading as posts.
+`PARK_CLOSING_LEAVE_SPEED` (50px/s), the pace `leave_along()` is handed; past the way's end, since
+that may be where she now stands, `leave_along()` plans the rest from where she is
+(`EventInstance._way_on_out_of_sight()`, a breadth-first search over the tiles
+`CityMap.is_walkable()` admits to the nearest one more than `Tuning.OUT_OF_SIGHT` and a tile from
+her, again each time one runs out while she could still be watching) and walks it at the same pace,
+stepping straight away from her only where the search finds nothing; the cordon's search for the
+way out (`ParkCordon._route_away()`) is a breadth-first search of its own, over walkable ground off
+the park and off the day's blocked set, roads only when the sidewalk does not get there. The art's
+open points: the tape at thigh height, blue and white rather than yellow and black, the end-on runs
+reading as posts.
 
 *Open for the player:* whether the tape should stand on days 13 and 14, a physical closure that meets
 [M129, one late park is fenced](2026-09-26-M129-regular-spent-parks-are-spoiled-one-late-park-is-fenced-corrected.md);

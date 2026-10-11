@@ -515,7 +515,11 @@ func _busker_in_the_park() -> EventInstance:
 ## it": the end of an event is a departure, not a deletion)*. The way out ends out of sight of where
 ## she stood at the touch, and it is her way out too: she walks it at `Tuning.WALK_SPEED`, setting
 ## off 4s and then 8s after the touch, and stops where it ends. The busker walked out down it is
-## seen to go on past her, and is gone only where the camera on her cannot see him.
+## seen to go on past her, and is gone only where the camera on her cannot see him. **And he walks
+## on at his pace while she can see him**, never standing at a wall or the city's edge: once the
+## way is walked he is in her view no longer than walking out of the view box square to its sides
+## takes at `Tuning.PARK_CLOSING_LEAVE_SPEED`, never slower than half that pace in it, and never
+## across tape that is up.
 func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 	for set_off: float in [4.0, 8.0]:
 		var person: Array = [null]
@@ -529,6 +533,10 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 		var clock := STEP
 		var last := busker.global_position
 		var ended_in_view := false
+		var walked := false
+		var in_view_after := 0.0
+		var slow_in_view := 0.0
+		var through_tape := 0
 		while clock < PATIENCE * 2.0 and not busker.is_finished:
 			if clock >= set_off and not way.is_empty():
 				her[0] = (her[0] as Vector2).move_toward(way[0], Tuning.WALK_SPEED * STEP)
@@ -538,14 +546,34 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 			busker._process(STEP)
 			happenings.tick(STEP, her[0], Vector2.ZERO, shows)
 			clock += STEP
+			for stretch in happenings.cordon.stretches:
+				if stretch.taped and Geometry2D.segment_intersects_segment(last,
+						busker.global_position, stretch.a, stretch.b) != null:
+					through_tape += 1
 			if busker.is_finished:
 				ended_in_view = shows.call(busker.def, last)
+			elif walked and shows.call(busker.def, busker.global_position):
+				in_view_after += STEP
+				if last.distance_to(busker.global_position) \
+						< Tuning.PARK_CLOSING_LEAVE_SPEED * STEP * 0.5:
+					slow_in_view += STEP
+			walked = walked or (busker.is_leaving and busker.way_left().is_empty())
 			last = busker.global_position
 		t.check(busker.is_leaving and busker.is_finished,
 				"setting off %.0fs after the touch down the way out: the busker walked out "
 				% set_off + "ahead of her is gone in the end (%.1fs)" % clock)
 		t.check(not ended_in_view, "and not where she can see him (%.0fpx from her)"
 				% last.distance_to(her[0]))
+		var out_of_view := (Tuning.VIEW_HALF_EXTENT.x + Tuning.VIEW_HALF_EXTENT.y) \
+				/ Tuning.PARK_CLOSING_LEAVE_SPEED
+		t.check(in_view_after <= out_of_view,
+				"once the way is walked he is in her view %.1fs, " % in_view_after
+				+ "no longer than walking out of it takes (%.1fs)" % out_of_view)
+		t.check(slow_in_view < 0.25,
+				"and walks at his pace while in it, never standing at a wall (%.1fs slow)"
+				% slow_in_view)
+		t.check(through_tape == 0, "and never steps across tape that is up (%d steps)"
+				% through_tape)
 		_end(fixture)
 
 ## **Someone already leaving on their own is walked out through the gap too**, rather than straight
