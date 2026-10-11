@@ -1,8 +1,8 @@
 # Playtest mossy-ferret — The south water, Hard Mode's nerves, and a bug band and an up-next band
 
 2026-10-11.
-Said in one session as three notes the assistant captured into the inbox on GitHub Issues, #708, #709
-and #710, with the player's further words appended to them. Each note is recorded as it holds: first
+Said in one session as four notes the assistant captured into the inbox on GitHub Issues, #708, #709,
+#710 and #713, with the player's further words appended to them. Each note is recorded as it holds: first
 what its words answered, then the words themselves, whole, and each later word after what it
 answers. The questions and context are the assistant's; only the quoted lines are the player's.
 
@@ -100,6 +100,16 @@ answers. The questions and context are the assistant's; only the quoted lines ar
 
    > Only when you say so
 
+## #713
+
+1. **What the note answered** (the assistant):
+
+   Asked how to avoid the costs of making "up next" a band (an entry moved there no longer records the band it came from, and its band line is edited once more). The agent proposed keeping the band and adding a separate marker line beside it, `upnext: true`: the entry keeps its real band, removing the line puts it back where it was, `tools/queue.sh` prints marked entries first in an 'up next' section ahead of `bug` (and can show which entries have a running agent), and the marker is dropped as part of the queue move when the work starts. It asked whether to update lilac-stork's proposal (PR #712) to the marker.
+
+2. **The note.**
+
+   > okay let's do that then.
+
 ## Filed as
 
 - **#708**: [amber-puffin](../todo/2026-10-11-amber-puffin/README.md), the south water is a blue base
@@ -109,3 +119,4 @@ answers. The questions and context are the assistant's; only the quoted lines ar
 - **#710**: [lilac-stork](../todo/2026-10-11-lilac-stork/README.md), a bug band above now, and an
   up-next band above both. The four entries it names besides #709 (teal-trout, feathery-lemur,
   pebbly-ibis and spry-magpie) were started in the session; #709's dotted-hawk is filed `now`.
+- **#713**: in lilac-stork, up next is an `upnext: true` line beside an entry's band.
