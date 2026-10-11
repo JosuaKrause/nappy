@@ -197,7 +197,7 @@ const _HARD_FAIL_TEXT := {
 	# Day 12's park, cordoned off by the police with her still inside (`ParkCordon`): not a catch
 	# but a place closed round her, said as plainly as the rest, with what it means left to the
 	# reader.
-	"park_cordon": "They taped the last gap with you still inside the park.",
+	"park_cordon": "They taped the park shut with you inside.",
 }
 
 func _end(result: GameEnums.DayResult) -> void:
