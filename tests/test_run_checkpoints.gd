@@ -34,8 +34,7 @@ func run(t) -> void:
 	_test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t)
 	_test_choosing_hard_mode_drops_a_checkpoint_already_kept(t)
 	_test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t)
-	_test_only_a_hard_run_gets_a_nerve_back_for_leaving_the_building(t)
-	_test_leaving_the_building_gives_a_hard_run_its_nerve_on_the_citys_brief(t)
+	_test_leaving_the_building_gives_a_hard_run_no_nerve_back(t)
 	_test_parse_nerves_accepts_one_to_five_and_refuses_the_rest(t)
 	_test_the_lost_day_screen_says_where_she_goes_back_to(t)
 	_test_the_checkbox_shows_only_for_a_new_game(t)
@@ -376,27 +375,11 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	DevFlags._invincible_override = null
 	GameState.ending = GameEnums.Ending.NONE
 
-## *(gentle-osprey, the player: "Section won gives one back".)* The gate: a hard run gets one, up
-## to five, and a normal run's escape gets none.
-func _test_only_a_hard_run_gets_a_nerve_back_for_leaving_the_building(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	GameState.start_run(_SEED)
-	GameState.nerves = 3
-	main._regain_a_nerve_for_leaving_the_building()
-	t.check(GameState.nerves == 3, "a normal run's escape gives none back")
-	GameState.choose_mode(true)
-	main._regain_a_nerve_for_leaving_the_building()
-	t.check(GameState.nerves == 4, "a hard run gets one back")
-	GameState.nerves = Tuning.STARTING_NERVES
-	main._regain_a_nerve_for_leaving_the_building()
-	t.check(GameState.nerves == Tuning.STARTING_NERVES, "never past five")
-	main.free()
-	GameState.hard_mode = false
-
-## The same regain, reached the way she reaches it: a hard run handed over to the escape boots the
-## real `main.tscn` on the building, and the service door's own `exit_requested` — the signal the
-## building emits when she walks out of it — brings the city's brief up with one more star.
-func _test_leaving_the_building_gives_a_hard_run_its_nerve_on_the_citys_brief(t) -> void:
+## *(dotted-hawk, the player, #718: "No regain in escape either.")* A hard run handed over to the
+## escape boots the real `main.tscn` on the building, and the service door's own `exit_requested`
+## — the signal the building emits when she walks out of it — brings the city's brief up with the
+## nerves it had, none given back.
+func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 	GameState.start_run(_SEED)
 	GameState.choose_mode(true)
 	GameState.day = Tuning.RUN_LENGTH_DAYS
@@ -412,10 +395,10 @@ func _test_leaving_the_building_gives_a_hard_run_its_nerve_on_the_citys_brief(t)
 			"the service door is wired to the handler that leaves the building")
 	main._on_finale_summary_continued()
 	main._interior.exit_requested.emit()
-	t.check(GameState.nerves == 4, "leaving the building gave the hard run a nerve back")
+	t.check(GameState.nerves == 3, "leaving the building gives the hard run no nerve back")
 	var body: Label = main._summary.get_node("Root/Center/Lines/Body")
-	t.check(main._summary.is_showing() and body.text.contains(NerveDisplay.stars(4)),
-			"and the city's brief shows it ('%s')" % body.text)
+	t.check(main._summary.is_showing() and body.text.contains(NerveDisplay.stars(3)),
+			"and the city's brief shows the same count ('%s')" % body.text)
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
