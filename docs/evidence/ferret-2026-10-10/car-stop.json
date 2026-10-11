@@ -38,7 +38,7 @@
  },
  "playback": {
   "walk": "0.3s6p",
-  "duration": 12.5,
+  "duration": 20.0,
   "capture_at": 0.3,
   "camera": {
    "zoom": 1.5
