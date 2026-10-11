@@ -32,7 +32,9 @@ post-aware grid, each re-grow the corridor on most days — measured by the revi
 days, the tree's cells differ on 146 of 160 days and the region doors on 64 of 80 from the region-wall
 day, with branches unchanged at 1,191 and second-route branches 788 to 793 — and each breaks six
 authored scene recipes (`task-09-crossing`, `trailer-choice`, `trailer-dog`, `trailer-gatehouse`, the
-two-mast task's mast site and a bounded-context check). *Open to overturn, at the cost of re-authoring
+two-mast task's mast site and a bounded-context check), and a day-10 seed of the resistance
+sweep. `RouteTree.lattice_grid(map)` is the one place the posts-blind grid is built, so every tree
+grown outside `for_day` (the power station's and the route tree's own tests) grows on the same lattice. *Open to overturn, at the cost of re-authoring
 those recipes.*
 
 *Left as it is, open to overturn:* crowd walkers have no bodies and still walk through the posts.
