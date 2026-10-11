@@ -32,7 +32,8 @@ hard mode since hard mode doesn't affect gameplay -- only restart pacing".
   directly, on the run read back the way a load reads it (`GameSave.load_in_memory()`), so nothing
   a later day put on the world, such as day 11's boarded window over the neighbor's flat, survives
   the trip back (clearing the window at a dawn before day 11 was rejected: it fixes the one fact
-  found and not the next); a resumed save that
+  found and not the next); the reloaded boot opens no title, so it keeps the controls the
+  title chose, mode and steering side, the way the escape's handover does; a resumed save that
   spends the last nerve says "Left before the day ended. That was the last nerve — back to day N."
   The held restart still starts from scratch in both modes.
 - **Hard mode is the old run, and its escape spends nerves.** A lost section costs one and at zero
