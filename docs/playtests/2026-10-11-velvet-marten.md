@@ -1,8 +1,8 @@
-# Playtest velvet-marten — Two phone frame records, and seven notes from playing days 9 and 14
+# Playtest velvet-marten — Two phone frame records, and eight notes from playing days 9 and 14
 
 2026-10-11.
-Said in one session as seven notes the assistant captured into the inbox on GitHub Issues, #696, #697,
-#698, #699, #700, #701 and #703, while the player recorded two frame records on the phone for M159 (a slow
+Said in one session as eight notes the assistant captured into the inbox on GitHub Issues, #696, #697,
+#698, #699, #700, #701, #703 and #704, while the player recorded two frame records on the phone for M159 (a slow
 frame names the frame that was slow) and the assistant reported on them. Each note is recorded as it
 holds: first what its words answered, then the words themselves, whole, and each later word after
 what it answers. The questions and context are the assistant's; only the quoted lines are the
@@ -115,6 +115,16 @@ unchanged, under [velvet-marten-phone-records-2026-10-11](../evidence/velvet-mar
 
    > No super lag spikes but a lot of stutter
 
+## #704
+
+1. **What the note answered** (the assistant):
+
+   Answering the filing of #699 (every charger is neutral, then warns, then charges) as teal-trout in PR #702, where the review moved two scope calls under "Proposed, not asked for:" for the player to rule on from the audit's table: whether the pursuers that notice her and lunge rather than trigger at a distance (the policemen on foot, the guards) fall under the rule, and whether the pursuers that arrive already charging (such as day 3's dog sited off screen, with no neutral stage on screen) do.
+
+2. **The note.**
+
+   > whether the police and guards who notice and lunge count, -- yes, why wouldn't they?
+
 ## Filed as
 
 - **#696**: a re-report, added to [M219](../todo/2026-09-26-M219/README.md), on a pedestrian street a
@@ -131,6 +141,8 @@ unchanged, under [velvet-marten-phone-records-2026-10-11](../evidence/velvet-mar
 - **#701**: an item added to [bouncy-swan](../todo/2026-10-11-bouncy-swan/README.md), the phone's lag
   spikes are found and fixed: event placement completes, always and within a bound.
 - **#703**: the day-14 record's context in its evidence README and in M159's README.
+- **#704**: in teal-trout, the policemen on foot and the guards who notice her and lunge are under the
+  rule.
 
 The day-9 record answers bouncy-swan's review item, "Save a frame record of a lag spike on the phone":
 it was saved straight after a big lag spike, which its longest frame names as `events`. That item
