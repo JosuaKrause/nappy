@@ -1,4 +1,4 @@
-# Playtest velvet-marten — Two phone frame records, and six notes from playing days 9 and 14
+# Playtest velvet-marten — Two phone frame records, and seven notes from playing days 9 and 14
 
 2026-10-11.
 Said in one session as seven notes the assistant captured into the inbox on GitHub Issues, #696, #697,
@@ -128,9 +128,9 @@ unchanged, under [velvet-marten-phone-records-2026-10-11](../evidence/velvet-mar
   frame drawn straight to the screen and then the pixel multiplier, and the readout's resolution and
   refresh. The engine patch is recorded there as not now. A fifth item, the cues and the events
   doing less, is the filer's proposal from the investigators' candidates, marked so in its file.
-- **#703**: the day-14 record's context in its evidence README and in M159's README.
 - **#701**: an item added to [bouncy-swan](../todo/2026-10-11-bouncy-swan/README.md), the phone's lag
   spikes are found and fixed: event placement completes, always and within a bound.
+- **#703**: the day-14 record's context in its evidence README and in M159's README.
 
 The day-9 record answers bouncy-swan's review item, "Save a frame record of a lag spike on the phone":
 it was saved straight after a big lag spike, which its longest frame names as `events`. That item
