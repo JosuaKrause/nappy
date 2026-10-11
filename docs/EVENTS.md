@@ -910,6 +910,15 @@ Four things worth keeping straight:
   the backstop when there is no player to be out of sight of. The exception to "it is over the
   moment it starts leaving" is the barrier, not the man.
 
+**Streaming never ends a departure she could be watching.** A plan is streamed out by how far she is
+from its *route* (`Tuning.EVENT_STREAM_RADIUS` and its hysteresis), but a car that has run out of
+route carries on past its end, so a car she follows out of its street is a long way from the route
+while she walks a few paces behind it. An instance stays in the world while it is within
+`Tuning.OUT_OF_SIGHT` of her (`EventManager.stream_around()`), however far its route is, and is
+ended only by its own departure (`_leave()`) once it is out of her view. `tests/test_patrol_vanish.gd`
+holds it, with the patrol's other departures: the end of its route and the investigating car driving
+on once its man is back in.
+
 ## Scheduling
 
 ```
