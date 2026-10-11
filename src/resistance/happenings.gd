@@ -10,8 +10,8 @@ extends RefCounted
 ## way"): day 10's raid is **waiting at home** and the neighbor is gone from the next morning; day
 ## 11's market is **found gone**, a block ahead of her boarded up before she gets there, and it
 ## stays boarded; day 12's park **closes in front of her** once she has reached its swing, the
-## police taping it off round its edge, and stays requisitioned; day 13's column **comes down the main road on her way**, and the barricade it
-## stops at stays for the rest of the run.
+## police taping it off round its edge, and stays requisitioned; day 13's column **comes down the
+## main road on her way**, and the barricade it stops at stays for the rest of the run.
 ##
 ## **Deterministic from the run seed and the day**, like every other placement: its own stream
 ## (`GameState.day_rng(day, "happenings")`), so nothing here moves a draw the director or the

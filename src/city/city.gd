@@ -1287,8 +1287,9 @@ func present_block(block: Vector2i, state: CityState) -> void:
 ## **Ground taken away in front of her**: `tiles` become `SPOILED` now, in the map and on screen.
 ## **Nothing in the game calls it**: day 12's park, which it was written for, is closed by a police
 ## cordon that changes no tile (`ParkCordon`). It stays because `tests/test_scenery_residency.gd`
-## uses it as the one live ground edit that checks resident scenery chunks are redrawn. Each tile and its eight neighbors are repainted from `GroundTiles.source_for()`, the dawn paint's
-## own answer, so an edge drawn against the old ground is redrawn against the new. The swing frame
+## uses it as the one live ground edit that checks resident scenery chunks are redrawn. Each tile
+## and its eight neighbors are repainted from `GroundTiles.source_for()`, the dawn paint's own
+## answer, so an edge drawn against the old ground is redrawn against the new. The swing frame
 ## goes with the playground tile it stands on, and the calm-ground cache is dropped, since the tile
 ## she is standing on may be one that just stopped being calm.
 func close_ground(tiles: Array[Vector2i]) -> void:

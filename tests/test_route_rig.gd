@@ -1045,9 +1045,9 @@ func _test_check_settled_waits_for_asleep(t) -> void:
 
 ## **Ground that goes from under her while she settles sends her to look again**, on the same
 ## target, since a baby does not settle on ground that is no longer calm and pacing on where the
-## calm tile was would never end. Nothing in the game repaints calm ground during a day now — day
-## 12's park keeps its grass while the police cordon it off (`ParkCordon`) — so this holds the
-## rig's own rule for whatever does next. Pinned with `set_tile()` on the tile she paces on.
+## calm tile was would never end. Nothing in the game repaints calm ground during a day (day 12's
+## park keeps its grass under the cordon, `ParkCordon`), so this holds the rig's own rule for
+## ground that stops being calm under her. Pinned with `set_tile()` on the tile she paces on.
 func _test_calm_ground_gone_under_her_looks_again(t) -> void:
 	var baby: Baby = _stroller.get_node("Baby")
 	baby.reset()

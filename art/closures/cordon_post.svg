@@ -2,9 +2,12 @@
      weighted round base, with the tape's reel housing at hip height in the tape's own police blue
      and white, and a pale cap. Slim, so a line of them reads as a temporary cordon rather than
      the square park fence post. Upright on both axes, so the same picture stands where a
-     broadside stretch ends and where an end-on one does. Feet-anchored at the bottom centre,
-     (4,22); the housing spans 13 to 18px above the feet, where the tape is carried. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="8" height="22" viewBox="0 0 8 22" shape-rendering="geometricPrecision" stroke="#22304f" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+     broadside stretch ends and where an end-on one does. A soft contact shadow sits under the
+     base, as under `park_post.svg`. Feet-anchored at the bottom centre, (6,22); the housing
+     spans 13 to 18px above the feet, where the tape is carried. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="12" height="22" viewBox="-2 0 12 22" shape-rendering="geometricPrecision" stroke="#22304f" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Its contact shadow, wider than the base it sits under. -->
+  <ellipse cx="4" cy="21" rx="5.8" ry="1" fill="#211d1c" fill-opacity="0.25" stroke="none"/>
   <!-- The weighted base, a flat disc on the ground. -->
   <ellipse cx="4" cy="20.6" rx="3.8" ry="1.3" fill="#2a2d36"/>
   <!-- The pole, lit down its left. -->

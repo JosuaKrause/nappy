@@ -3,8 +3,10 @@
      projects to a narrow upright band, drawn at hip height above its own ground line, so the
      band stands 13.6px up the screen from the ground it runs over, where `cordon_post.svg`
      carries it. The same blue and white as `cordon_tape_across.svg`, the bands crossing it every
-     8px so a stretch stacked on its neighbour meets it on the same phase. Its shadow runs down the
-     ground at the band's foot. Canvas 6x32, one tile's run; the code stretches it to the
+     8px so a stretch stacked on its neighbour meets it on the same phase. It casts no shadow of
+     its own: `CordonTape._draw()` draws the band `LIFT` (13.6px) above the ground it runs over,
+     so a shadow baked in here would hang in the air, and the posts carry the cordon's contact
+     with the ground. Canvas 6x32, one tile's run; the code stretches it to the
      stretch's own length. Feet-anchored at the bottom centre, the near end of the run. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="6" height="32" viewBox="0 0 6 32" shape-rendering="geometricPrecision" stroke-linejoin="round" stroke-linecap="round">
   <defs>
