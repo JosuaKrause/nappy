@@ -74,7 +74,7 @@ work". Never prints the key.
 
 **GoatCounter's API is reached only through this script.** An assistant that needs something this
 cannot yet answer adds a flag here rather than writing a one-off `curl` or web request against the
-API directly -- see `.claude/skills/using-tools/SKILL.md`'s own row for why.
+API directly, or a one-off script that imports this module and calls its fetcher -- see `.claude/skills/using-tools/SKILL.md`'s own row for why.
 """
 
 from __future__ import annotations
