@@ -16,7 +16,7 @@ and, asked whether notes from playing now default to `bug`:
 
 > Only when you say so
 
-*The band is the filer's proposal.*
+*The band `now` is the filer's proposal:* the note names none and is not from playing.
 
 **What it changes.** The bands are `now`, `next`, `later` and `parked`, set by an entry's
 `priority:` line and a note's `queue_<band>` label, and `tools/queue.sh` prints them in that order;

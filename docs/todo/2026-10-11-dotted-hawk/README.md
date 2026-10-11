@@ -18,7 +18,8 @@ and what "gameplay" means:
 
 > anything that happens *during* a day is gameplay
 
-The player named it among what is picked up next (#710), so it is filed `now`.
+*The band `now` is the filer's reading:* the player named it among what is picked up immediately
+after the current items (#710), which the up-next marker of lilac-stork will say once it exists.
 
 **What it changes.** Today a day she wins gives one nerve back, up to five, in both modes
 (`GameState.regain_a_nerve()`; `docs/MECHANICS.md`, "Nerves"). In Hard Mode a won day gives none: a

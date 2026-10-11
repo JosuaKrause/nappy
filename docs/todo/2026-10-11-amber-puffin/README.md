@@ -15,8 +15,8 @@ and, on its scope and cost:
 **What it replaces.** The south water is drawn from the `tiles/water` atlas region on its own
 `SceneryWater` canvas, absent from the static ground, and a shader shifts each tile's sample by less
 than a pixel on a clock that pauses with gameplay (`docs/GRAPHICS.md`, "City ground and buildings";
-`docs/CITY.md`, the map's border). That motion was approved in the
-[scenery animation bursts](../../evidence/m159-scenery-animation-2026-09-26/README.md); this entry
+`docs/CITY.md`, the map's border). That motion was approved with the
+[record that separated the scenery's animation](../../decisions/2026-09-26-M159-crowded-scene-cpu-attribution-and-separate-scenery-animation.md); this entry
 replaces it for the south water only. Every other water, the burst water main's fountain included,
 keeps its drawing and its motion.
 

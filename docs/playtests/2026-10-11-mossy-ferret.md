@@ -1,4 +1,4 @@
-# Playtest mossy-ferret — The south water, Hard Mode's nerves, and a bug band and an up-next band
+# Playtest mossy-ferret — The south water, Hard Mode's nerves, and a bug band and an up-next marker
 
 2026-10-11.
 Said in one session as four notes the assistant captured into the inbox on GitHub Issues, #708, #709,
@@ -117,6 +117,6 @@ answers. The questions and context are the assistant's; only the quoted lines ar
 - **#709**: [dotted-hawk](../todo/2026-10-11-dotted-hawk/README.md), in Hard Mode a won day gives no
   nerve back.
 - **#710**: [lilac-stork](../todo/2026-10-11-lilac-stork/README.md), a bug band above now, and an
-  up-next band above both. The four entries it names besides #709 (teal-trout, feathery-lemur,
+  up-next marker above both (#713). The four entries it names besides #709 (teal-trout, feathery-lemur,
   pebbly-ibis and spry-magpie) were started in the session; #709's dotted-hawk is filed `now`.
 - **#713**: in lilac-stork, up next is an `upnext: true` line beside an entry's band.
