@@ -10,7 +10,9 @@ extends RefCounted
 ## walk from the swing to the gap plus `Tuning.PARK_CLOSING_WARNING` before it closes, so setting
 ## off at a walk a second after first sight gets her out. Both are checked here against the map
 ## and the clock, not against what the cordon says of itself. `tests/probes/plush_marten_cordon.gd`
-## prints the same measurements as a table.
+## prints the same measurements as a table. And **a person walked out stays out**: with her
+## standing a little past the way out's end, the busker walked out of the park never walks back
+## into it, nor across tape that is up, on the way on out of her sight.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The sweep, and a seed whose swing park is one of the largest calm zones (704 by 704px).
@@ -22,6 +24,10 @@ const PATIENCE := 60.0
 ## How long after first seeing an officer she sets off walking in the walking check: less than
 ## `Tuning.PARK_CLOSING_WARNING`, which is the time the cordon leaves her to see and decide.
 const REACTION := 1.0
+## When she sets off down the way out behind a walked-out busker, and how far past its end, along
+## its last leg, she stops.
+const SET_OFF := 4.0
+const PAST_THE_END := 60.0
 
 func run(t) -> void:
 	var seeds: Array[int] = []
@@ -29,18 +35,25 @@ func run(t) -> void:
 		seeds.append(seed_value)
 	seeds.append(LARGE_PARK_SEED)
 	var measured := 0
+	var walked_out := 0
 	var largest := 0.0
 	for seed_value in seeds:
 		var m := measure(t, seed_value)
 		if m.is_empty():
 			continue
 		measured += 1
+		if m.person_placed and m.person_left:
+			walked_out += 1
 		largest = maxf(largest, (m.park_size as Vector2).x * (m.park_size as Vector2).y)
 		_check(t, seed_value, m)
 	t.check(measured >= 30, "the sweep measured a swing park on most seeds (%d of %d)"
 			% [measured, seeds.size()])
 	t.check(largest >= 704.0 * 704.0 - 1.0,
 			"and the largest calm zone the generator builds among them (%.0f px²)" % largest)
+	# On the rest she walks on out of his sight while he is still inside, and he is gone there.
+	t.check(walked_out >= measured / 3,
+			"a busker was walked out of the park on a third of them or more (%d of %d)"
+			% [walked_out, measured])
 
 func _check(t, seed_value: int, m: Dictionary) -> void:
 	var size: Vector2 = m.park_size
@@ -67,6 +80,12 @@ func _check(t, seed_value: int, m: Dictionary) -> void:
 	t.check(absf(m.first_seen - m.first_in_view) <= 0.25,
 			"%s: and an officer is first in view when it said (%.1fs, said %.1fs)"
 			% [what, m.first_seen, m.first_in_view])
+	if m.person_placed:
+		t.check(m.back_in == 0,
+				"%s: a busker walked out, with her stopped %.0fpx past the way's end, " % [what,
+				PAST_THE_END] + "never walks back into the park (%d frames back in)" % m.back_in)
+		t.check(m.person_through_tape == 0, "%s: nor across tape that is up (%d steps)"
+				% [what, m.person_through_tape])
 
 ## Day 12 on `seed_value`'s city, played twice from the swing's touch: once standing at the swing,
 ## and once walking out through the last gap `REACTION` after an officer first comes into view.
@@ -145,7 +164,55 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	var walking := _play(again, her, shows, true)
 	result.walked_out = walking.closed_at >= 0.0 and not walking.trapped
 	again.clear()
+	result.merge(_walk_a_person_out(city, director, cordon.park, swing))
 	return result
+
+## A busker standing in the park as a fresh cordon starts, walked out by his escort, with her
+## walking the same way out from `SET_OFF` after the start and stopping `PAST_THE_END` beyond its
+## end. Answers whether he was placed, whether he left the tape's line, the frames he spent back
+## inside it after leaving it, and the steps he took across tape that was up.
+func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i,
+		swing: Vector2) -> Dictionary:
+	var area := city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(city.map, park))
+	var busker := city.events.spawn_extra(EventCatalogue.by_id("busker"),
+			area.position + area.size * Vector2(0.25, 0.3))
+	if not busker:
+		return {"person_placed": false}
+	var cordon := ParkCordon.new(city.map, city, park, director._reach_blocked)
+	var her := [swing]
+	var shows := _camera_on(her)
+	cordon.tick(STEP, her[0], shows)
+	var way := PackedVector2Array(cordon._exit)
+	if way.size() >= 2:
+		var last_leg := (way[way.size() - 1] - way[way.size() - 2]).normalized()
+		way.append(way[way.size() - 1] + last_leg * PAST_THE_END)
+	var clock := STEP
+	var last := busker.global_position
+	var left := false
+	var back_in := 0
+	var through_tape := 0
+	while clock < PATIENCE * 2.0 and not busker.is_finished:
+		if clock >= SET_OFF and not way.is_empty():
+			her[0] = (her[0] as Vector2).move_toward(way[0], Tuning.WALK_SPEED * STEP)
+			if (her[0] as Vector2).distance_to(way[0]) < 0.5:
+				way.remove_at(0)
+		busker.player_at = her[0]
+		busker._process(STEP)
+		cordon.tick(STEP, her[0], shows)
+		clock += STEP
+		var now := busker.global_position
+		for stretch in cordon.stretches:
+			if stretch.taped and Geometry2D.segment_intersects_segment(last, now, stretch.a,
+					stretch.b) != null:
+				through_tape += 1
+		if not cordon.line.has_point(now):
+			left = true
+		elif left:
+			back_in += 1
+		last = now
+	cordon.clear()
+	return {"person_placed": true, "person_left": left, "back_in": back_in,
+			"person_through_tape": through_tape}
 
 ## Checks the chosen gap against the map: the tile beyond each of its stretches' edge tiles reached
 ## from home with the park's ground blocked under the director's `_reach_blocked`, some other calm

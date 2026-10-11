@@ -759,7 +759,7 @@ func _send_off(person: EventInstance) -> void:
 	if not person or not is_instance_valid(person) or person.is_finished or _leaving.has(person):
 		return
 	var speed := Tuning.PARK_CLOSING_LEAVE_SPEED if person.def.departure_speed() <= 0.0 else 0.0
-	if not person.leave_along(_way_out_from(person.global_position), speed):
+	if not person.leave_along(_way_out_from(person.global_position), speed, _rect):
 		if _city and _city.events:
 			_city.events.retire(person)
 		return

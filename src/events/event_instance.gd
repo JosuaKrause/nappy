@@ -3293,10 +3293,12 @@ func leave_for_a_completed_task() -> void:
 ## row that stands where it was placed, which has no departure of its own, a walking pace. An
 ## instance already leaving on its own is turned onto the way. Like `leave_for_a_completed_task()`
 ## it is a departure she may be standing beside, so `LEAVING_GIVES_UP` does not end it while she
-## could still be watching. Answers whether it is now leaving along the way: not for something
-## finished, parked, a guard leaving his barrier, or a row that ends rather than leaving
-## (`spawns_on_finish`).
-func leave_along(way: PackedVector2Array, speed := 0.0) -> bool:
+## could still be watching. `avoid` is ground the rest planned past the way's end never enters,
+## nor a step away from her where no rest is found: the cordon's park, whose grass is walkable and
+## whose tape is a body rather than a tile, so the nearest ground out of her sight is often across
+## it. Answers whether it is now leaving along the way: not for something finished, parked, a guard
+## leaving his barrier, or a row that ends rather than leaving (`spawns_on_finish`).
+func leave_along(way: PackedVector2Array, speed := 0.0, avoid := Rect2i()) -> bool:
 	if is_finished or is_parked or _guard_spent or _is_a_guard_leaving_his_barrier():
 		return false
 	_way_speed = speed
@@ -3306,6 +3308,8 @@ func leave_along(way: PackedVector2Array, speed := 0.0) -> bool:
 		_way_speed = 0.0
 		return false
 	_way = way.duplicate()
+	_way_on = PackedVector2Array()
+	_way_avoids = avoid
 	_walks_a_way = true
 	_leaving_must_clear_sight = true
 	return true
@@ -3316,9 +3320,11 @@ func way_left() -> PackedVector2Array:
 	return _way
 
 ## The way `leave_along()` set, each point dropped as it is reached; the way planned on from its
-## end, the same; whether this departure walks one; and its pace, 0 for the row's own.
+## end, the same, and the tiles that one never enters; whether this departure walks one; and its
+## pace, 0 for the row's own.
 var _way := PackedVector2Array()
 var _way_on := PackedVector2Array()
+var _way_avoids := Rect2i()
 var _walks_a_way := false
 var _way_speed := 0.0
 
@@ -3342,12 +3348,12 @@ func _walk_the_way(step: float) -> void:
 	var away := _heading
 	if player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
 		away = (global_position - player_at).normalized()
-	var moved := _walkable_step(away * left)
+	var moved := _step_clear_of_the_avoided(away * left)
 	if moved.is_zero_approx() and player_at != Vector2.INF:
 		# Straight away from her is a wall or the city's edge: along it, whichever way takes it
 		# farther from her.
 		for side: Vector2 in [away.orthogonal(), -away.orthogonal()]:
-			var along := _walkable_step(side * left)
+			var along := _step_clear_of_the_avoided(side * left)
 			if not along.is_zero_approx() and (global_position + along).distance_to(player_at) \
 					> (global_position + moved).distance_to(player_at):
 				moved = along
@@ -3356,6 +3362,13 @@ func _walk_the_way(step: float) -> void:
 	_heading = moved.normalized()
 	position += moved
 	_path_travelled += moved.length()
+
+## `_walkable_step()`'s part of `delta_pos`, or none where that would end on `_way_avoids`.
+func _step_clear_of_the_avoided(delta_pos: Vector2) -> Vector2:
+	var moved := _walkable_step(delta_pos)
+	if _map and _way_avoids.has_point(_map.world_to_tile(global_position + moved)):
+		return Vector2.ZERO
+	return moved
 
 ## Walks up to `step` pixels down `_way`, or `_way_on` when `planned`, dropping each point as it is
 ## reached; answers how much of the step is left once that way is walked, 0 while it is not.
@@ -3380,11 +3393,12 @@ func _walk_points(planned: bool, step: float) -> float:
 		_way = points
 	return left
 
-## **The rest of a way out, planned from where she is now**: the tile centres from
-## the tile it stands on to the nearest walkable tile more than `Tuning.OUT_OF_SIGHT` and a tile
-## from her, by a breadth-first search over the tiles `CityMap.is_walkable()` admits, square steps
-## only, so that each leg stays on the two tiles it joins. Empty when no such tile is found within
-## `WAY_ON_SEARCH_LIMIT` tiles, and the step falls back to walking away from her.
+## **The rest of a way out, planned from where she is now**: the tile centres from the tile it
+## stands on to the nearest walkable tile more than `Tuning.OUT_OF_SIGHT` and a tile from her, by a
+## breadth-first search over the tiles `CityMap.is_walkable()` admits outside `_way_avoids`
+## (`leave_along()`'s `avoid`), square steps only, so that each leg stays on the two tiles it joins.
+## Empty when no such tile is found within `WAY_ON_SEARCH_LIMIT` tiles, and the step falls back to
+## walking away from her.
 func _way_on_out_of_sight() -> PackedVector2Array:
 	var start := _map.world_to_tile(global_position)
 	var came_from: Dictionary[Vector2i, Vector2i] = {start: start}
@@ -3402,7 +3416,8 @@ func _way_on_out_of_sight() -> PackedVector2Array:
 			return way
 		for step: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
 			var next := tile + step
-			if not came_from.has(next) and _map.is_walkable(next):
+			if not came_from.has(next) and _map.is_walkable(next) \
+					and not _way_avoids.has_point(next):
 				came_from[next] = tile
 				queue.append(next)
 	return PackedVector2Array()

@@ -74,6 +74,14 @@ pace was the other fix offered, and was not taken because steering on "away from
 back and forth in a dead end. With the rest planned by the search he is in her view 6.8s after the
 way and never under half his pace in it, and `tests/test_park_cordon.gd` bounds both.
 
+**Its fourth review found that search walking him back into the park**: the park's grass is
+walkable and the tape is a body, not a tile, so the nearest ground out of her sight was often across
+the park. With her stopped 60px past the way's end, the busker walked back in through the last gap
+88px from her on seed 10, back into the park in her view on seed 40, and across tape that was up on
+seed 34. `leave_along()` now takes the tiles the rest must not enter, and the cordon passes its
+park's; the planned rest also left a second call's new way followed by the old rest, and is cleared
+with it.
+
 **Measured** (`tests/probes/plush_marten_cordon.gd`, seeds 1 to 40 and 90210, her at the swing and the
 camera on her; 41 swing parks, 35 of them 256 by 256px and 6 of them 704 by 704px): every last gap's
 outside reaches home and the day's other calm ground with the park blocked, and stands clear of the
@@ -85,10 +93,10 @@ comes into view 1.1 to 22.7s after it and the gap closes at 13.4 to 13.5s, and a
 2.0 to 11.2s before the close beyond the walk, and setting off at a walk a second after it gets her
 out on every one; the close and first sight are within a quarter of a second of what the cordon set
 out to (`deadline`, `first_in_view`). `tests/test_park_cordon_seeds.gd` holds that sweep against the
-map and the clock;
-`tests/test_park_cordon.gd` holds the cordon on one city, the pram at 20 to 26px either side of the
-line, and a busker walked out through the gap.
-
+map and the clock, and walks a busker out of each park with her stopped 60px past the way's end,
+holding that he never walks back into it nor across tape; `tests/test_park_cordon.gd` holds the
+cordon on one city, the pram at 20 to 26px either side of the line, and a busker walked out through
+the gap.
 The pictures, from day 12's swing scene on the whole city without `--invincible`, are [plush-marten-park-cordon-2026-10-11](../evidence/plush-marten-park-cordon-2026-10-11/): the tape
 and officers, a sheet and a clip of the cordon closing, the last gap and the day lost to it, and her
 outside the closed park; and [plush-marten-walked-out-2026-10-11](../evidence/plush-marten-walked-out-2026-10-11/):
@@ -106,13 +114,13 @@ other spent park; a park person with no departure of their own walks out at
 `PARK_CLOSING_LEAVE_SPEED` (50px/s), the pace `leave_along()` is handed; past the way's end, since
 that may be where she now stands, `leave_along()` plans the rest from where she is
 (`EventInstance._way_on_out_of_sight()`, a breadth-first search over the tiles
-`CityMap.is_walkable()` admits to the nearest one more than `Tuning.OUT_OF_SIGHT` and a tile from
-her, again each time one runs out while she could still be watching) and walks it at the same pace,
-stepping straight away from her only where the search finds nothing; the cordon's search for the
-way out (`ParkCordon._route_away()`) is a breadth-first search of its own, over walkable ground off
-the park and off the day's blocked set, roads only when the sidewalk does not get there. The art's
-open points: the tape at thigh height, blue and white rather than yellow and black, the end-on runs
-reading as posts.
+`CityMap.is_walkable()` admits, off the park's, to the nearest one more than `Tuning.OUT_OF_SIGHT`
+and a tile from her, again each time one runs out while she could still be watching) and walks it
+at the same pace, stepping straight away from her only where the search finds nothing; the cordon's
+search for the way out (`ParkCordon._route_away()`) is a breadth-first search of its own, over
+walkable ground off the park and off the day's blocked set, roads only when the sidewalk does not
+get there. The art's open points: the tape at thigh height, blue and white rather than yellow and
+black, the end-on runs reading as posts.
 
 *Open for the player:* whether the tape should stand on days 13 and 14, a physical closure that meets
 [M129, one late park is fenced](2026-09-26-M129-regular-spent-parks-are-spoiled-one-late-park-is-fenced-corrected.md);
