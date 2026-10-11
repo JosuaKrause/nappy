@@ -1812,8 +1812,9 @@ func _add_route_lines() -> void:
 ## answer: `_title` does not exist yet at this point in `_ready()`, and `main._on_title_start()`
 ## overrides it the moment a player actually presses one of the title screen's own buttons.
 ##
-## **Except on the day-14 hand-over to the escape** (`_escape_from_a_run` with the title's answer
-## still in this process): that boot opens no title, so it keeps the mode and steering side the
+## **Except on the two boots that open no title of their own** while the title's answer is still in
+## this process: the day-14 hand-over to the escape (`_escape_from_a_run`) and a normal run carried
+## on from its checkpoint (`_carried_from_a_checkpoint`). Each keeps the mode and steering side the
 ## player chose on the run's title (`ControlsMode.remember()`) rather than falling back to the rig's
 ## default — the side is "permanently for the sitting" (2026-10-10). A game closed inside a section
 ## and opened again has no answer in memory, and its title asks.
@@ -1825,7 +1826,7 @@ func _add_touch_controls() -> void:
 	_touch_controls = TOUCH_CONTROLS.instantiate()
 	_touch_layer.add_child(_touch_controls)
 	_touch_controls.rotated = _rotated
-	if _escape_from_a_run and ControlsMode.has_remembered():
+	if (_escape_from_a_run or _carried_from_a_checkpoint) and ControlsMode.has_remembered():
 		_touch_controls.set_mode(ControlsMode.remembered_mode(), ControlsMode.remembered_side())
 	else:
 		_touch_controls.set_mode(ControlsMode.resolve(), ControlsMode.resolve_side())

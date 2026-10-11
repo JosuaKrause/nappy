@@ -245,7 +245,9 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
-	main._on_title_start(ControlsMode.Mode.TAP)
+	# A joystick, steered from the right: what the title answered has to hold for the sitting, and
+	# the boot going back opens no title to ask again.
+	main._on_title_start(ControlsMode.Mode.JOYSTICK, false, ControlsMode.Side.RIGHT)
 	GameState.day = 8
 	main._start_day()
 	for d in range(8, 11):
@@ -286,6 +288,10 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 			"and the neighbor's window is not boarded on day 8")
 	t.check(not playing._title.is_open() and not t.get_tree().paused,
 			"straight into the day, with no title in front of it")
+	t.check(playing._touch_controls._mode == ControlsMode.Mode.JOYSTICK
+			and playing._touch_controls._steering_focus == TouchControls.FOCUS_RIGHT,
+			"with the joystick the title chose, steered from the right, as before")
+	t.check(GameState.hard_mode == false, "in the mode the title chose")
 	t.check(back == [[8, 11]], "the checkpoint restart was counted once (%s)" % [back])
 	t.check(begun.is_empty(), "and the reload begins no new run (%s)" % [begun])
 	EventBus.went_back_to_a_checkpoint.disconnect(on_back)
