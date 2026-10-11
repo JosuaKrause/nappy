@@ -260,5 +260,7 @@ func _test_nothing_walks_through_the_row_but_her_own_body(t) -> void:
 				% [map.distance_at(field, to), seed_value])
 		var grid := ReachabilityGrid.build(map)
 		t.check(grid.node_at(map.world_to_tile(middle)) < 0, "the grid has no node on a post's tile")
+		t.check(ReachabilityGrid.build(map, false).node_at(map.world_to_tile(middle)) >= 0,
+				"but the lattice the route tree grows on still does")
 		var reached := grid.flood([from])
 		t.check(grid.reaches(to, {}, reached), "the grid joins the two sides of the row (seed %d)" % seed_value)

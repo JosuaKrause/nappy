@@ -247,7 +247,7 @@ static func for_the_run(map: CityMap) -> RouteTree:
 static func for_day(map: CityMap, day: int) -> RouteTree:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
-	var grid := ReachabilityGrid.build(map)
+	var grid := ReachabilityGrid.build(map, false)
 	var tree := grow(map, ClosurePlanner.home_street(map), _growable_areas(map),
 			map.blocked_segments(), grid, rng)
 	if day == Tuning.POWER_STATION_DAY and map.has_power_station():

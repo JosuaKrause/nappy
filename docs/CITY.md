@@ -75,8 +75,13 @@ reader that asks where she or a pursuer can stand or step, and every flood that 
 city stays walkable, sees a post's tile as blocked (`CityMap.post_tiles()`, folded into
 `is_walkable()`, `is_open()`, `walk_field()`, `ReachabilityGrid` and the red arrow's ground), so a
 pursuer goes round by the pavement as she does and a winnability check counts the row as shut.
-The tile's type stays paving, so the ground and the crowd read it as before. The route rig also
-keeps every plan a body's width off a post.
+The tile's type stays paving, so the ground and the crowd read it as before. The one exception is
+the day's route tree (`RouteTree`), which grows on the lattice as the tile types lay it
+(`ReachabilityGrid.build(map, false)`): a route that crosses a mouth's row is a detour by the pavement
+inside the same junction box, which the street it runs along keeps open for every closure, and
+growing it posts-blind keeps the corridor, and so the doors and masts and authored scenes placed
+against it, where they were. The route line is drawn from that tree, so it can cross a row's cell;
+the route rig keeps every plan a body's width off a post and goes round.
 Crowd walkers have no bodies and walk through the posts; that is left as it is unless the player
 finds it reads wrong. **Nothing drives on the span itself, on either axis.** A
 street crossing it internally meets paving rather than a carriageway and gets no zebra — the box is
