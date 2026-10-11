@@ -108,7 +108,13 @@ static func _compute_components(mask: int) -> Array:
 
 ## Builds the grid from a day's tiles. Cheap enough to do once a day: every cell is a handful of
 ## `is_walkable` lookups and the edges are found once, not searched per query.
-static func build(map: CityMap) -> ReachabilityGrid:
+##
+## **A precinct's posts are no ground in it** (`CityMap.post_tiles()`), so every flood over it sees
+## the row shut the way her body does. `posts_block` false builds the lattice as the tile types lay
+## it, which is what `RouteTree` grows on: the tree plans the permanent lattice, and a route that
+## crosses a mouth's row is a detour by the pavement inside the same junction box, which the street
+## it runs along keeps open for every closure (`ClosurePlanner` excludes the tree's streets).
+static func build(map: CityMap, posts_block := true) -> ReachabilityGrid:
 	var grid := ReachabilityGrid.new()
 	grid._map_size = map.size
 	grid._cells = map.size / CELL
@@ -126,7 +132,7 @@ static func build(map: CityMap) -> ReachabilityGrid:
 			for slot in 4:
 				var tile := origin + _SLOT_OFFSET[slot]
 				tiles.append(tile)
-				if map.is_walkable(tile):
+				if map.is_walkable(tile) if posts_block else Tile.is_walkable(map.tile_at(tile)):
 					mask |= 1 << slot
 			for component in _components_of_mask(mask):
 				var node := grid._edges.size()

@@ -148,7 +148,8 @@ func _check_the_ground(t, map: CityMap, data: Dictionary, context: CityMap, labe
 				void_elsewhere = false
 			if map.is_cut_off(tile):
 				cut_off += 1
-				cut_off_was_ground = cut_off_was_ground and context.is_walkable(tile)
+				# A precinct's post stands on ground whose type is walkable and that nobody can stand on.
+				cut_off_was_ground = cut_off_was_ground and (context.is_walkable(tile) or context.is_post(tile))
 	t.check(not listed.is_empty() and as_listed,
 			"%s: its %d tiles are the stretch and read as `stretch.tiles` lists them"
 			% [label, listed.size()])
