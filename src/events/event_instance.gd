@@ -1779,7 +1779,10 @@ func _drive(delta: float) -> void:
 	var phase := _gait_phase
 	var was := _gap_to_her(at, heading)
 	var line := _room_to_its_line(at, heading)
-	var warning := Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME
+	# Never further than the end of a route it stops at (`_route_left()`): it never stands for her,
+	# nor turns onto her, where it cannot reach her.
+	var left := _route_left(travelled)
+	var warning := _short_of_its_stop(Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME, left)
 	var known := player_at != Vector2.INF
 	var ahead_before := known and _meets_her(at, heading, player_at, warning)
 	var was_leaving := is_leaving
@@ -1813,7 +1816,7 @@ func _drive(delta: float) -> void:
 		_gait_moving = false
 		var strikes := into_her and on_its_route and not _standing and not turns_onto_her \
 				and not past_its_line and _meets_her(at, heading, player_at,
-						Tuning.PATROL_STRIKE_LEAD)
+						_short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, left))
 		_standing = not strikes
 		_redraw_if_the_picture_changed()
 	else:
@@ -1924,13 +1927,33 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	return room
 
 ## `seconds` of the car's travel past the touch, cut to what it can cover before the line it gives
-## way at (`_room_to_its_line()`): a car that will stand at a red light or a zebra short of her
-## neither warns her nor reads as lethal to her, since it never reaches her.
+## way at (`_room_to_its_line()`) and before the end of a route it stops at (`_route_left()`): a
+## car that will stand at a red light or a zebra short of her, or park short of her, neither warns
+## her nor reads as lethal to her, since it never reaches her.
 func _short_of_its_line(seconds: float) -> float:
+	var cut := _short_of_its_stop(seconds, _route_left(_path_travelled))
 	var line := _room_to_its_line(global_position, _heading)
 	if line == INF or def.speed <= 0.0:
+		return cut
+	return minf(cut, Tuning.PATROL_STRIKE_LEAD + maxf(line, 0.0) / def.speed)
+
+## **How far a car that stops where it arrives (`EventDef.stops_where_it_arrives`, the fire engine
+## at its kerb) has still to go along its route** once it has `travelled`, in px; `INF` for every
+## other row, which drives on past the end of its route as it leaves. The kerb is a place it stops,
+## like a line it gives way at, but with nothing past it: where it parks it is not driving, so its
+## warning, its strike and its standing for her end at the touch it would make there, without
+## `Tuning.PATROL_STRIKE_LEAD` past it. Uncut, an engine parking 7-17px short of her ended the day,
+## and one created with her past its kerb stood off screen for as long as she stayed there.
+func _route_left(travelled: float) -> float:
+	if not def.stops_where_it_arrives or def.paces or path.size() < 2:
+		return INF
+	return maxf(_path_length() - travelled, 0.0)
+
+## `seconds` of the car's travel cut to the `left` px of a route it stops at (`_route_left()`).
+func _short_of_its_stop(seconds: float, left: float) -> float:
+	if left == INF or def.speed <= 0.0:
 		return seconds
-	return minf(seconds, Tuning.PATROL_STRIKE_LEAD + maxf(line, 0.0) / def.speed)
+	return minf(seconds, left / def.speed)
 
 ## Lays a car's body along its heading, which `_build_obstruction()` read once. A capsule turns; a
 ## point would not need to.
@@ -2016,7 +2039,8 @@ func _on_the_carriageway(at: Vector2) -> bool:
 ## warning comes that long before the strike whatever the car's speed, the crowd car's contract
 ## (`Tuning.validate_traffic()`, which holds it against walking off the carriageway with the
 ## doubled margin). `EventManager._warn_about_the_ground_she_is_on()` raises the mark from it. Not
-## while a line it gives way at stands between them (`_short_of_its_line()`): it will stop there.
+## while a line it gives way at, or the end of a route it parks at, stands between them
+## (`_short_of_its_line()`): it will stop there.
 func closes_on(her: Vector2) -> bool:
 	return is_driving() and _meets_her(global_position, _heading, her,
 			_short_of_its_line(Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME))
@@ -4223,7 +4247,7 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 func is_lethal_at(world_position: Vector2) -> bool:
 	if def.drives:
 		return is_driving() and _meets_her(global_position, _heading, world_position,
-				Tuning.PATROL_STRIKE_LEAD)
+				_short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, _route_left(_path_travelled)))
 	if is_finished or is_leaving or is_waiting() or not def.hard_fail or is_telegraphing():
 		return false
 	if global_position.distance_to(world_position) > def.lethal_reach():
@@ -4416,16 +4440,19 @@ func will_be_lethal(player_position: Vector2) -> bool:
 	if def.drives:
 		if not is_driving():
 			return false
-		# Only as far as the line it gives way at, where it will stand rather than reach her.
+		# Only as far as the line it gives way at, where it will stand rather than reach her, and
+		# the end of a route it stops at, where it parks (`_route_left()`).
 		var horizon := def.speed * Tuning.EXPECTED_IMPACT_HORIZON
 		var line := _room_to_its_line(global_position, _heading)
 		if line < INF:
 			horizon = minf(horizon, maxf(line, 0.0))
+		var left := _route_left(_path_travelled)
+		horizon = minf(horizon, left)
 		var steps := ceili(horizon / (def.speed * 0.25))
 		for i in steps + 1:
 			var ahead := minf(float(i) * def.speed * 0.25, horizon)
 			if _meets_her(global_position + _heading * ahead, _heading, player_position,
-					Tuning.PATROL_STRIKE_LEAD):
+					_short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, left - ahead)):
 				return true
 		return false
 	if is_finished or is_leaving or is_waiting() or not def.hard_fail:

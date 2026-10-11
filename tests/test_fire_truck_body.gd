@@ -19,6 +19,7 @@ func run(t) -> void:
 	_test_the_body_is_solid_while_it_drives_and_lethal_only_ahead(t)
 	_test_in_front_of_it_the_warning_comes_first(t)
 	_test_where_it_is_created_she_is_warned_in_full(t)
+	_test_nothing_reaches_past_its_kerb(t)
 	_test_behind_and_beside_it_nothing_strikes(t)
 	_test_parked_it_is_solid_and_harmless(t)
 	_test_parked_its_field_is_a_points(t)
@@ -147,23 +148,25 @@ func _test_in_front_of_it_the_warning_comes_first(t) -> void:
 
 ## **Created where the game creates it**, just out of sight up its street
 ## (`PendingWarning.on_its_route()`, the place `EventManager._summon_the_sighted_row()` asks for),
-## from each of the four sides, with her standing in its lane facing it. On a north-south street
-## that place is nearer her than its warning reaches (the view is 180px to either side of her
-## that way, against 1.7s of its 190px/s), so a truck driving from its first frame strikes her
-## well inside the time it takes to walk off the road. A car that drives is created standing
-## (`_drive()`'s car that has stood): it waits there while she is in its lane within its warning,
-## so every strike comes after the full warning, and drives on to the kerb once she is out of it.
+## from each of the four sides, with her standing in its lane facing it. On any street that place is
+## nearer her than its warning reaches her (1.7s of its 190px/s past the touch, the touch counting
+## its body and hers): up a north-south street the view is 180px to either side of her, and across
+## an east-west one 320px. A truck driving from its first frame would strike her inside the time it
+## takes to walk off the road. A car that drives is created standing (`_drive()`'s car that has
+## stood): it waits there while she is in its lane within its warning, and nothing strikes her.
+## Once she is further along its lane than its warning reaches, it drives on, and the strike comes
+## after the full warning.
 func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 	var def := _truck()
 	var warning_reach := (Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME) * def.speed \
-			+ def.shape.reach()
+			+ def.shape.half_length + def.shape.radius + Tuning.PLAYER_BODY_RADIUS
 	var nearer_than_its_warning := 0
 	var sides := {Vector2.DOWN: "the north", Vector2.UP: "the south", Vector2.RIGHT: "the west",
 			Vector2.LEFT: "the east"}
 	for travel: Vector2 in sides:
 		var side: String = sides[travel]
 		var her := Vector2.ZERO
-		var stop := her + travel * 240.0
+		var stop := her + travel * 600.0
 		var place := PendingWarning.on_its_route(def, her, stop, travel, 4000.0,
 				VisibleView.around(her))
 		t.check(place != Vector2.INF, "from %s, there is a place out of sight to create it" % side)
@@ -173,9 +176,20 @@ func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 			nearer_than_its_warning += 1
 		var engine := _engine(t, PackedVector2Array([place, stop]))
 		var player := _her(t, her, -travel)
+		var struck := false
+		var moved := false
+		for i in int(3.0 / STEP):
+			_step(engine, player)
+			struck = struck or engine.is_lethal_at(player.global_position)
+			moved = moved or engine.global_position.distance_to(place) > 1.0
+		t.check(not struck and not moved,
+				"from %s, created %.0fpx from her, it waits while she stands in its lane"
+				% [side, place.distance_to(her)])
+		# Further along its lane than its warning reaches her: it drives, and warns in full.
+		player.global_position = place + travel * (warning_reach + 40.0)
 		var warned_at := -1.0
 		var struck_at := -1.0
-		for i in int(4.0 / STEP):
+		for i in int(5.0 / STEP):
 			_step(engine, player)
 			var now := float(i) * STEP
 			if warned_at < 0.0 and engine.closes_on(player.global_position):
@@ -183,25 +197,88 @@ func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 			if engine.is_lethal_at(player.global_position):
 				struck_at = now
 				break
-		t.check(struck_at < 0.0 or (warned_at >= 0.0
-				and struck_at - warned_at >= Tuning.required_horn_time()),
-				"from %s, created %.0fpx from her: %s" % [side, place.distance_to(her),
-				"no strike while she stands in its lane" if struck_at < 0.0
-				else "struck %.2fs after the mark, at least the %.2fs to walk off the road"
-				% [struck_at - warned_at, Tuning.required_horn_time()]])
-		# Out of its lane, it drives on and reaches the kerb.
-		player.global_position = her + Vector2(travel.y, -travel.x) * 80.0
+		t.check(struck_at > 0.0 and warned_at >= 0.0
+				and struck_at - warned_at >= Tuning.required_horn_time(),
+				"from %s, once she is beyond its warning it drives on and strikes her %.2fs after "
+				% [side, struck_at - warned_at] + "the mark, at least the %.2fs to walk off the road"
+				% Tuning.required_horn_time())
+		player.free()
+		engine.free()
+	t.check(nearer_than_its_warning == 4,
+			"every side's place is nearer her than its warning reaches (%d of 4)"
+			% nearer_than_its_warning)
+
+# ------------------------------------------------------------ at its kerb ---
+
+## **Its kerb is where it stops, so nothing of it reaches past.** A car's warning, strike and stand
+## reach 1.7s of its travel past the touch, but the engine's route ends at the kerb it parks at
+## (`stops_where_it_arrives`): past it, in its lane, she gets no mark and no doubled caret, is never
+## struck by an engine that parks short of her, and does not hold it off screen.
+func _test_nothing_reaches_past_its_kerb(t) -> void:
+	# 120px past the kerb, the truck already driving: no warning that cannot come true.
+	var engine := _engine(t, PackedVector2Array([Vector2(-600.0, 0.0), Vector2.ZERO]))
+	var player := _her(t, Vector2(120.0, 0.0), Vector2.LEFT)
+	var warned := false
+	var lethal := false
+	for i in int(5.0 / STEP):
+		_step(engine, player)
+		warned = warned or engine.closes_on(player.global_position)
+		lethal = lethal or engine.will_be_lethal(player.global_position) \
+				or engine.is_lethal_at(player.global_position)
+		if engine.is_parked:
+			break
+	t.check(engine.is_parked and not warned and not lethal,
+			"120px past its kerb, no mark and no doubled caret over a truck that parks short of her")
+	player.free()
+	engine.free()
+	# 50-60px past it, her pram on the far side: it parks short of her and ends nothing.
+	for past: float in [50.0, 55.0, 60.0]:
+		engine = _engine(t, PackedVector2Array([Vector2(-600.0, 0.0), Vector2.ZERO]))
+		player = _her(t, Vector2(past, 0.0), Vector2.RIGHT)
+		lethal = false
 		for i in int(5.0 / STEP):
+			_step(engine, player)
+			lethal = lethal or engine.is_lethal_at(player.global_position)
+			if engine.is_parked:
+				break
+		var gap := engine._gap_to_her(engine.global_position, engine._heading)
+		t.check(engine.is_parked and gap > 0.0 and not lethal,
+				"%.0fpx past its kerb, it parks %.0fpx short of her and the day goes on"
+				% [past, gap])
+		player.free()
+		engine.free()
+	# Past it when it is created, clear of where its body parks: it does not wait for her, it
+	# drives on and parks. (Nearer than 43px its parked body would overlap hers, and it stands
+	# against her there rather than driving into her.)
+	for past: float in [60.0, 120.0, 250.0]:
+		engine = _engine(t, PackedVector2Array([Vector2(-200.0, 0.0), Vector2.ZERO]))
+		player = _her(t, Vector2(past, 0.0), Vector2.RIGHT)
+		for i in int(3.0 / STEP):
 			_step(engine, player)
 			if engine.is_parked:
 				break
-		t.check(engine.is_parked, "from %s, once she is out of its lane it drives on to the kerb"
-				% side)
+		t.check(engine.is_parked, "%.0fpx past its kerb when it is created, it drives on and parks"
+				% past)
 		player.free()
 		engine.free()
-	t.check(nearer_than_its_warning >= 2,
-			"the north-south places are nearer her than its warning reaches (%d of 4)"
-			% nearer_than_its_warning)
+	# And between it and its kerb she is still warned in full and struck.
+	engine = _engine(t, PackedVector2Array([Vector2(-700.0, 0.0), Vector2.ZERO]))
+	player = _her(t, Vector2(-100.0, 0.0), Vector2.LEFT)
+	var warned_at := -1.0
+	var struck_at := -1.0
+	for i in int(5.0 / STEP):
+		_step(engine, player)
+		var now := float(i) * STEP
+		if warned_at < 0.0 and engine.closes_on(player.global_position):
+			warned_at = now
+		if engine.is_lethal_at(player.global_position):
+			struck_at = now
+			break
+	t.check(struck_at > 0.0 and warned_at >= 0.0
+			and struck_at - warned_at >= Tuning.required_horn_time(),
+			"between it and its kerb she is warned %.2fs before the strike" % (struck_at - warned_at))
+	player.free()
+	engine.free()
 
 ## Behind it and beside it, driving, nothing strikes her.
 func _test_behind_and_beside_it_nothing_strikes(t) -> void:
@@ -272,6 +349,10 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 func _test_parked_its_field_is_a_points(t) -> void:
 	var def := _truck()
 	t.check(def.field_from_its_centre, "fire_truck's field is priced from its centre")
+	var moving := def.outer_radius * Tuning.field_scale(Tuning.field_eccentricity(def.speed))
+	t.check(is_equal_approx(def.field_reach(), moving),
+			"and its field's reach is a moving point's, %.0fpx, not its body's (%.0fpx)"
+			% [moving, def.field_reach()])
 	var engine := _engine(t, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(0.0, 0.0)]))
 	var player := _her(t, Vector2(300.0, 300.0), Vector2.UP)
 	for i in int(4.0 / STEP):

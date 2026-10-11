@@ -674,10 +674,15 @@ picture is anchored over that body as the patrol car's is. **While it drives dow
 kerb it is lethal only in front of it**, with a car's warning: the exclamation mark `CAR_HORN_TIME`
 (1.6s) of its travel before the strike, on top of the one-second badge it already has from off screen
 (M226; inbox #598, "fire truck has heavy penalty"), so it is warned of first and again in her lane.
-That holds where it is created too. Just out of sight up a north-south street — the view's 180px
-half height plus the engine's own picture — is nearer her than its warning reaches (1.7s of its
-190px/s), so with her in its lane there it waits,
-created standing like any car, until she is out of its way; it then drives on to the kerb.
+That holds where it is created too. Just out of sight on any street — up a north-south one the
+view's 180px half height plus the engine's own picture, across an east-west one its 320px half
+width plus the picture — is nearer her than its warning reaches her (1.7s of its 190px/s past the
+touch, which counts its body and hers), so with her in its lane there it waits, created standing
+like any car, until she is out of its way; it then drives on to the kerb. **Its kerb is where it
+stops, so nothing of it reaches past**: its warning, its strike, its doubled caret and its standing
+for her end at the touch it would make parked there (`EventInstance._route_left()`), so in its lane
+beyond the kerb she gets no mark, is never struck by an engine that parks short of her, and does
+not hold it off screen.
 Beside it and behind it it is a solid body that never strikes her. **Once it has parked** at the kerb
 across from the fire (`stops_where_it_arrives`) it is not driving, so it ends nothing from any side,
 and stays a solid body she walks round: it stands in the carriageway's near lane along the street, a

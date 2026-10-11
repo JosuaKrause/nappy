@@ -1596,8 +1596,11 @@ func as_warned_first() -> EventDef:
 ## `EventScheduler._keeps_its_field_clear`'s clearance, the streaming rect, and
 ## `EventInstance.expected_gross_at()`'s early-out. `half_length + outer_radius` for a segment (the
 ## along-axis reach, which is exactly the old flat `outer_radius` a row's radii were derived
-## *against* — see the catalogue's own docstrings; every emitting segment row is stationary, so its
-## own eccentricity is always zero and this figure never grows). Otherwise `outer_radius ·
+## *against* — see the catalogue's own docstrings) whose field is priced from that segment. This
+## figure does not grow with speed, so for the patrol car, a segment that drives, it is the reach
+## of its field standing.
+## A row whose field is priced from its centre (`field_from_its_centre`, the fire engine) is a
+## point for it, whatever its body. Otherwise `outer_radius ·
 ## Tuning.field_scale(e)`, `e` from whichever speed the row's own motion actually uses —
 ## `pursue_speed` for a pursuer, `speed` for an ordinary mobile row, zero (the plain disc) for
 ## anything standing still. A row cannot be both: `EventInstance.travel_velocity()` picks
@@ -1608,7 +1611,7 @@ func as_warned_first() -> EventDef:
 ## crosses no building — see docs/EVENTS.md, "Solid things are solid", and
 ## `EventInstance.is_lethal_at()`.
 func field_reach() -> float:
-	if shape != null and shape.kind == GroundShape.Kind.SEGMENT:
+	if shape != null and shape.kind == GroundShape.Kind.SEGMENT and not field_from_its_centre:
 		return shape.half_length + outer_radius
 	var moving_speed := pursue_speed if pursues else (speed if mobile else 0.0)
 	return outer_radius * Tuning.field_scale(Tuning.field_eccentricity(moving_speed))
