@@ -925,7 +925,8 @@ func _watch_blocked(here: Vector2) -> void:
 		# ends and read as having been stuck the whole time it was actually a conversation.
 		_blocked_since = -1.0
 		return
-	# What she moves by, not the raw keys: a key held through a gatehouse's release is ignored.
+	# What she moves by: the held input, which a gatehouse's release leaves steering her, so a key
+	# held through it that goes nowhere is blocked like any other.
 	var input_dir := _player.input_she_moves_by() if _player \
 			else Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if input_dir == Vector2.ZERO:
