@@ -225,8 +225,8 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## city. Dropping a share of the placed walls takes exactly that share away and moves nothing
 ## else: the fill itself is untouched, so every other row stands where it would have.
 ##
-## **Only the fill's own walls.** A scripted row, a one-shot and a spoiled park's guard are placed
-## for a reason that is not density, and nothing before `filled_from` is asked.
+## **Only the fill's own walls.** A scripted row, a one-shot and the spoilers in a park she used are
+## placed for a reason that is not density, and nothing before `filled_from` is asked.
 ##
 ## **Only ever a removal, so it is safe where a repair would not be**: every guarantee the passes
 ## after this make, and the corridor's own, is about reaching somewhere, and a wall taken off the

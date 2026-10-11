@@ -440,8 +440,8 @@ static func _barrier_tiles(map: CityMap, closed: Dictionary) -> Dictionary:
 ## adjacent strands of today's corridor are joined by — see `RouteTree.gaps()` — and shutting some
 ## of them is what stops two parallel routes from being one wide one. A closure is the *impassable*
 ## half of that, where a wall event is the costly half. `CLOSURE_GAP_BIAS` is the preference, and
-## the day's quota is what keeps it a *sometimes*: one street shut in act I and four in act IV
-## cannot close fifteen gaps however hard it aims at them.
+## the day's quota is what keeps it a *sometimes*: a handful of streets shut a day cannot close
+## fifteen gaps however hard it aims at them.
 ##
 ## The invariant below is unmoved and still does the deciding. A gap is off the tree like every
 ## other candidate, so nothing here can cut the corridor; what the check catches is the same thing

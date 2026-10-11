@@ -247,7 +247,8 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 		_map.hold_segment(segment.key())
 
 	# Off the catalogue's own budget on purpose — see `SealPlanner`'s own doc. It seals everything
-	# `EventScheduler` was not permitted to touch: every street off `tree`, hard or soft, plus the
+	# `EventScheduler` was not permitted to touch: every street off `tree` (a share of them from
+	# `Tuning.REGION_WALL_FIRST_DAY` on, see `SealPlanner._seals_this_street`), hard or soft, plus the
 	# mouths of any through-alley that never reaches it — except today's region boundary, wall or
 	# door, and any crossing alley, both skipped here: the wall already carries its own hard seal
 	# below, and a door or a crossing alley's own door is meant to stay open for the structure the

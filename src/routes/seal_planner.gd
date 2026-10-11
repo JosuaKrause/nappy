@@ -46,7 +46,7 @@ extends RefCounted
 ## `_hard_positions`.
 ##
 ## **A seal never stands in a street tree, and a felled one only stands where a tree stood.**
-## `plan_day` puts a seal on every off-tree street whether or not `EventScheduler` would have
+## `plan_day` puts a seal on the off-tree streets it seals whether or not `EventScheduler` would have
 ## offered that tile, so the scheduler's own refusal of a tree's ground cannot cover it — the
 ## refusal is applied here instead, at `_seal_along_tile`, which is the one place a seal's site is
 ## chosen. An ordinary seal steps along the street to the nearest tile whose cross-section is
