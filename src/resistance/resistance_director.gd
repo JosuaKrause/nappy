@@ -223,6 +223,9 @@ var _reach_reached: Dictionary
 ## Every alley mouth of `_mouths_of` (`_alley_mouths()`), built the first time a mark asks.
 var _mouths: Array[Vector2i] = []
 var _mouths_of: CityMap
+## The tile each of those mouths puts its mark on, one step in (`mark_tile_of()`), in the same
+## order and built with them.
+var _mark_tiles_of_mouths: Array[Vector2i] = []
 
 func setup(city: City, map: CityMap) -> void:
 	# The same self-registration `WorldContext` and `Stroller` use, so anything that needs to ask
@@ -344,16 +347,16 @@ var _pinned_mark := Vector2.INF
 var _pinned_neighbor := Vector2.INF
 
 ## A scene's mark at `_pinned_mark`, on the same ground the day's own draw keeps a mark to
-## (`_pick_reachable()` over `_alley_mouths()`): the centre of an alley mouth's tile that is legal,
-## unobstructed ground reachable from home. `Vector2.INF`, with the reason recorded, otherwise —
+## (`_pick_reachable()` over `_mark_tiles()`): the centre of the tile one step in from an alley's
+## mouth that is legal, unobstructed ground reachable from home. `Vector2.INF`, with the reason recorded, otherwise —
 ## a recipe's pin is refused rather than moved.
 func _the_pinned_mark() -> Vector2:
 	var tile := _map.world_to_tile(_pinned_mark)
 	var refusal := ""
 	if not _map.tile_to_world(tile).is_equal_approx(_pinned_mark):
 		refusal = "is not a tile centre"
-	elif not is_alley_mouth(_map, tile):
-		refusal = "is not an alley mouth"
+	elif not is_mark_tile(_map, tile):
+		refusal = "is not one tile in from an alley mouth"
 	elif not is_legal_ground(_map, tile, _walled_alleys()) or _map.is_obstructed(tile) \
 			or not _reachable_from_home(tile):
 		refusal = "is not open ground reachable from home today"
@@ -1423,13 +1426,21 @@ func _through_alley_span(at: Vector2) -> Array[Vector2]:
 		return span
 	return span
 
+## How far in from its mouth tile a mark at `at` stands, along the alley's `axis` from its nearer
+## edge `near`: 0 on the mouth tile's centre, one tile (32px) for a mark one tile in, which is where
+## a mark stands, and no more than that for any point further in. The guard moves in by the same distance (`_guard_two_thirds_through()`), so he
+## keeps the distance from the mark he had when it stood on the mouth.
+func _depth_of_the_mark(at: Vector2, near: Vector2, axis: Vector2) -> float:
+	return clampf((at - near).dot(axis) - Tuning.TILE_SIZE * 0.5, 0.0, Tuning.TILE_SIZE)
+
 ## Where a chalk mark's guard stands in a through-alley whose edges are `span`
 ## (`_through_alley_span()`): **two-thirds of the way through it**, from the edge nearer the mark at
-## `at` (`THROUGH_THE_ALLEY`), so he is inside the alley rather than at its edge, the player's own
-## reason. Where that point is `pursues_within + ContactPoint.REACH` (176px) or more from the mark,
+## `at` (`THROUGH_THE_ALLEY`) plus the tile the mark stands in from its mouth
+## (`_depth_of_the_mark()`), so he is inside the alley rather than at its edge, the player's own
+## reason, and as far from the mark as when it stood on the mouth. Where that point is `pursues_within + ContactPoint.REACH` (176px) or more from the mark,
 ## a touch of the mark from its own end never wakes him; in an alley too short for both — every
-## one-block alley: a mark stands on its end tile (`_alley_mouths()`), 16px in, so he stands about
-## 155px from it — he still stands two-thirds in, and reading the mark may wake him: *"Two-thirds
+## one-block alley: a mark stands one tile in from its end tile (`_mark_tiles()`), 48px in, so he
+## stands about 155px from it — he still stands two-thirds in, and reading the mark may wake him: *"Two-thirds
 ## wins"* (quiet-yak, inbox #471), which overturns M213's floor of 176px for those alleys.
 ##
 ## **Never within `min_distance` of the mark** — `inner_radius`, his catch, plus
@@ -1450,8 +1461,8 @@ func _guard_two_thirds_through(at: Vector2, span: Array[Vector2], min_distance: 
 	var axis := (far - near).normalized()
 	var lowest := (at - near).dot(axis) + min_distance
 	var highest := near.distance_to(far) - Tuning.TILE_SIZE * 0.5
-	var wanted := clampf(maxf(near.distance_to(far) * THROUGH_THE_ALLEY, lowest), lowest,
-			maxf(highest, lowest))
+	var two_thirds := near.distance_to(far) * THROUGH_THE_ALLEY + _depth_of_the_mark(at, near, axis)
+	var wanted := clampf(maxf(two_thirds, lowest), lowest, maxf(highest, lowest))
 	var step := Tuning.TILE_SIZE * 0.25
 	var offsets: Array[float] = [wanted]
 	var further := wanted + step
@@ -1485,7 +1496,8 @@ func _guard_spot(at: Vector2) -> Vector2:
 		return _far_alley_mouth(at)
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var axis := (span[1] - span[0]).normalized()
-	var along := maxf(span[0].distance_to(span[1]) * THROUGH_THE_ALLEY,
+	var along := maxf(span[0].distance_to(span[1]) * THROUGH_THE_ALLEY
+			+ _depth_of_the_mark(at, span[0], axis),
 			(at - span[0]).dot(axis) + robbery.inner_radius + ContactPoint.REACH)
 	return span[0] + axis * along
 
@@ -1617,6 +1629,21 @@ func _alley_ends(at: Vector2) -> Array[Vector2]:
 			ends.append(b)
 			ends.append(a)
 		return ends
+	if _map.tile_at(tile) == GameEnums.TileType.COURTYARD:
+		# A one-tile passage puts its mark on the courtyard tile just past it: the passage tile
+		# beside is the street end, and the courtyard's inner end is the far one.
+		for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+			var mouth := tile + step
+			if _map.tile_at(mouth) != GameEnums.TileType.ALLEY or not is_alley_mouth(_map, mouth) \
+					or mark_tile_of(_map, mouth) != tile:
+				continue
+			var inner_end := _courtyard_inner_end(at, tile)
+			if inner_end == Vector2.INF:
+				continue
+			ends.append(_map.tile_to_world(mouth))
+			ends.append(inner_end)
+			return ends
+		return ends
 	if _map.tile_at(tile) != GameEnums.TileType.ALLEY:
 		return ends
 	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
@@ -1701,15 +1728,16 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 	if step.is_pickup:
 		if _pinned_mark != Vector2.INF:
 			return _the_pinned_mark()
-		return _pick_reachable(_alley_mouths(), rng)
+		return _pick_reachable(_mark_tiles(), rng)
 	var candidates: Array[Vector2i] = []
 	for type in step.placement:
 		candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))
 	return _pick_near(candidates, rng, mark)
 
-## **A chalk mark only ever sits at an alley's mouth**: every tile the dawn draw (`_place()`) and
-## every relocation (`_nearest_alley_within()`) may put a mark on. *(2026-10-03, quiet-yak, inbox #486, the
-## player, asked whether a mark may sit in the middle of its alley: "Mouth only".)* A through-alley's mouths are
+## **A chalk mark's alley is chosen by its mouth**: every mouth the dawn draw (`_place()`) and every
+## relocation (`_nearest_alley_within()`) may choose, the mark standing one tile in from it
+## (`_mark_tiles()`). *(2026-10-03, quiet-yak, inbox #486, the player, asked whether a mark may sit
+## in the middle of its alley: "Mouth only".)* A through-alley's mouths are
 ## its end tiles along its long axis, both of them across its two-tile width
 ## (`CityMap.alley_rects`), so four to an alley; a courtyard passage's is its tile that opens onto
 ## ground that is neither alley nor courtyard — the street end. In `CityMap.tiles_of_type()`'s own
@@ -1718,11 +1746,59 @@ func _alley_mouths() -> Array[Vector2i]:
 	if _mouths_of == _map and not _mouths.is_empty():
 		return _mouths
 	_mouths = []
+	_mark_tiles_of_mouths = []
 	_mouths_of = _map
 	for tile in _map.tiles_of_type(GameEnums.TileType.ALLEY):
 		if is_alley_mouth(_map, tile):
 			_mouths.append(tile)
+			_mark_tiles_of_mouths.append(mark_tile_of(_map, tile))
 	return _mouths
+
+## **The tiles a chalk mark may stand on: one step into its alley from each mouth**
+## (`_alley_mouths()`, `mark_tile_of()`), so touching it within `ContactPoint.REACH` (36px) of its
+## centre, 48px in from the street's edge, takes her at least 12px inside the alley.
+## *(2026-10-10, azure-puffin, inbox #664, the player: "let's move the chalk mark one tile into the
+## alley so I actually have to enter the alley to activate it".)* Reachability, legal ground and the
+## tiles a completed step used (`GameState.completed_resistance_alley_tiles`) are all asked of
+## these tiles. In `_alley_mouths()`'s order, so a seeded draw over them is the same every time.
+func _mark_tiles() -> Array[Vector2i]:
+	_alley_mouths()
+	return _mark_tiles_of_mouths
+
+## The tile a mark stands on for the alley whose mouth is `mouth`: one step in from it along the
+## alley's long axis for a through-alley (`CityMap.alley_rects`), and for a courtyard's passage the
+## next tile toward the courtyard, which is courtyard ground where the passage is one tile long.
+## `mouth` itself when no tile lies in from it.
+static func mark_tile_of(map: CityMap, mouth: Vector2i) -> Vector2i:
+	for rect in map.alley_rects:
+		if not rect.has_point(mouth):
+			continue
+		var step := Vector2i.ZERO
+		if rect.size.y >= rect.size.x:
+			step = Vector2i.DOWN if mouth.y == rect.position.y else Vector2i.UP
+		else:
+			step = Vector2i.RIGHT if mouth.x == rect.position.x else Vector2i.LEFT
+		var inner := mouth + step
+		return inner if rect.has_point(inner) else mouth
+	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var inner := mouth + step
+		var type := map.tile_at(inner)
+		if (type == GameEnums.TileType.ALLEY or type == GameEnums.TileType.COURTYARD) \
+				and map.is_walkable(inner):
+			return inner
+	return mouth
+
+## Whether `tile` is where a mark stands: the tile `mark_tile_of()` names for some alley mouth.
+static func is_mark_tile(map: CityMap, tile: Vector2i) -> bool:
+	if not map.is_walkable(tile):
+		return false
+	if is_alley_mouth(map, tile) and mark_tile_of(map, tile) == tile:
+		return true
+	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var mouth := tile + step
+		if is_alley_mouth(map, mouth) and mark_tile_of(map, mouth) == tile and mouth != tile:
+			return true
+	return false
 
 ## Whether `tile` is an alley's mouth — see `_alley_mouths()`.
 static func is_alley_mouth(map: CityMap, tile: Vector2i) -> bool:
@@ -2935,7 +3011,7 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 	var nearest_distance := NOTICE_RADIUS
 	var nearest_any := Vector2.INF
 	var nearest_any_distance := NOTICE_RADIUS
-	for tile in _alley_mouths():
+	for tile in _mark_tiles():
 		var world := _map.tile_to_world(tile)
 		var distance := here.distance_to(world)
 		var unused := tile not in used

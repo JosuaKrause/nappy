@@ -5,7 +5,7 @@
   "extent": {"scope":"stretch"},
   "city": {"context_seed":1917501},
   "anchors": {
-    "mark": {"tile":[92,69]},
+    "mark": {"tile":[92,68]},
     "start": {"tile":[87,70]}
   },
   "setup": {
@@ -37,22 +37,22 @@
     }
   },
   "playback": {
-    "walk": "1.74@85@5.91w",
-    "duration": 9.74,
-    "capture_at": 8.7,
+    "walk": "1.74@85@0.45n0.45s5.91w0.9s",
+    "duration": 9.4,
+    "capture_at": 8.4,
     "observations": [
       {"tick":1,"subject":"mark","condition":"offered"},
       {"tick":1,"subject":"mark","condition":"unarrowed"},
       {"tick":1,"subject":"player","condition":"beyond","at":"mark","distance":150},
-      {"tick":60,"subject":"mark","condition":"done"},
-      {"tick":60,"subject":"task","condition":"offered"},
-      {"tick":60,"subject":"task","condition":"arrowed"},
-      {"tick":60,"subject":"task","condition":"off_screen"},
-      {"tick":60,"subject":"task","condition":"beyond","at":"mark","distance":540},
-      {"tick":60,"subject":"task","condition":"near","at":"mark","distance":644},
-      {"tick":292,"subject":"task","condition":"done"},
-      {"tick":292,"subject":"row:cat_dash","condition":"appeared"},
-      {"tick":150,"subject":"player","condition":"crowd","walkers":2,"cars":1}
+      {"tick":75,"subject":"mark","condition":"done"},
+      {"tick":75,"subject":"task","condition":"offered"},
+      {"tick":75,"subject":"task","condition":"arrowed"},
+      {"tick":75,"subject":"task","condition":"off_screen"},
+      {"tick":75,"subject":"task","condition":"beyond","at":"mark","distance":540},
+      {"tick":75,"subject":"task","condition":"near","at":"mark","distance":644},
+      {"tick":281,"subject":"task","condition":"done"},
+      {"tick":281,"subject":"row:cat_dash","condition":"appeared"},
+      {"tick":180,"subject":"player","condition":"crowd","walkers":2,"cars":1}
     ]
   },
   "stretch": {

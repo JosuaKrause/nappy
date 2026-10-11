@@ -218,11 +218,15 @@ touch".)*
 
 ### Risk
 
-- **A mark only ever sits at an alley's mouth**, the end tile of a through-alley or the street end
-  of a courtyard's passage, where it is drawn at dawn and wherever it moves to. *(2026-10-03, [quiet-yak](playtests/2026-10-03-quiet-yak.md), inbox #486,
-  asked whether a mark may sit in the middle of its alley: "Mouth only".)*
+- **A mark's alley is chosen by its mouth** (the end tile of a through-alley or the street end of a
+  courtyard's passage), at dawn and wherever it moves to, and **the mark stands one tile in from
+  it**, so she has to enter the alley to read it. *(2026-10-03, [quiet-yak](playtests/2026-10-03-quiet-yak.md), inbox #486,
+  asked whether a mark may sit in the middle of its alley: "Mouth only"; 2026-10-10,
+  [azure-puffin](playtests/2026-10-10-azure-puffin.md), inbox #664: "let's move the chalk mark one
+  tile into the alley so I actually have to enter the alley to activate it".)*
 - **Every mark is guarded**, from the day the first one can appear. Its own robber stands about
-  two-thirds of the way through the mark's own alley, counted from the mark's end: inside
+  two-thirds of the way through the mark's own alley, counted from the mark's end and one tile
+  further for the tile the mark stands in, so he is as far from it as ever: inside
   the alley rather than at its edge, where he would be easier to see and to avoid. Where the alley
   is long enough for that spot to be 176px or more from the mark (his 140px trigger range and the
   36px touch reach), walking in from the mark's own end, reading it and walking back out never

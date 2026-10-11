@@ -1326,14 +1326,20 @@ is not in sight and its dwell does not run — continuously, for `ResistanceDire
 enough, that walking past it rather than to it is a choice, not the instant its tile merely
 swept across the camera on the way to somewhere else. Until then, walking more than
 `ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
-alley mouth within that radius of her instead — a mark only ever sits at an alley's mouth, at
-dawn as on every move (*"Mouth only"*, 2026-10-03, inbox #486 in [quiet-yak](playtests/2026-10-03-quiet-yak.md)), on the path rather than off it, and never where any part of the mark's picture, or of the guard standing two-thirds
+alley mouth within that radius of her instead — a mark is only ever chosen at an alley's mouth, at
+dawn as on every move (*"Mouth only"*, 2026-10-03, inbox #486 in [quiet-yak](playtests/2026-10-03-quiet-yak.md)),
+and stands one tile in from it (a courtyard's one-tile passage puts it on the courtyard tile
+just past), 48px in from the street's edge, so that touching it, within the 36px touch reach of its
+centre, takes her at least 12px inside the alley, never from the pavement at the mouth
+(*"let's move the chalk mark one tile into the alley so I actually have to enter the alley to
+activate it"*, 2026-10-10, azure-puffin, inbox #664), on the path rather than off it, and never where any part of the mark's picture, or of the guard standing two-thirds
 through that alley (or at the courtyard's inner end, past a courtyard's passage), would be on her
 screen — the camera's whole view, a corner the joystick's controls cover included, since what
 stands under the controls is still drawn there — so neither is ever planted in front of her —
 skipping an alley a completed step's mark already stood at as long as some other one is still
 in reach. Its guard moves with it, to two-thirds of the way through that alley from the end
-nearer wherever the mark lands, never within 62px of the mark (the courtyard's inner end, for a
+nearer wherever the mark lands, plus the tile the mark stands in from that end so he keeps the
+distance from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end, for a
 courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
 his own `pursues_within` of her or in view when he is placed — so where that spot is 176px or
 more from the mark, entering the alley from the mark's own end, reading it and leaving the same way
