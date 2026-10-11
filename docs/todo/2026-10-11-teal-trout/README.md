@@ -23,9 +23,9 @@ than trigger at a distance, the policemen on foot and the guards, are under the 
 ([velvet-marten](../../playtests/2026-10-11-velvet-marten.md), #704: "whether the police and guards
 who notice and lunge count, -- yes, why wouldn't they?").
 
-*Proposed, not asked for:* the audit also lists the pursuers that arrive already charging, such as
-day 3's dog sited off screen, which have no neutral stage on screen. Whether they fall under the rule
-is the player's to say from the audit's table.
+**A pursuer that arrives already charging is outside the rule**, such as day 3's dog sited off
+screen, since it has no neutral or warning stage to show (#705: "whether chargers that arrive
+already charging count. -- how would that make sense?", read as no).
 
 **What it must keep.** The warning stage is a danger cue and falls under the cues rules (what may
 be drawn to signal danger, and no rings), and every pursuer keeps the events skill's telegraph

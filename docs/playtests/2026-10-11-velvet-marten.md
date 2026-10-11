@@ -1,8 +1,8 @@
-# Playtest velvet-marten — Two phone frame records, and eight notes from playing days 9 and 14
+# Playtest velvet-marten — Two phone frame records, and nine notes from playing days 9 and 14
 
 2026-10-11.
-Said in one session as eight notes the assistant captured into the inbox on GitHub Issues, #696, #697,
-#698, #699, #700, #701, #703 and #704, while the player recorded two frame records on the phone for M159 (a slow
+Said in one session as nine notes the assistant captured into the inbox on GitHub Issues, #696, #697,
+#698, #699, #700, #701, #703, #704 and #705, while the player recorded two frame records on the phone for M159 (a slow
 frame names the frame that was slow) and the assistant reported on them. Each note is recorded as it
 holds: first what its words answered, then the words themselves, whole, and each later word after
 what it answers. The questions and context are the assistant's; only the quoted lines are the
@@ -125,6 +125,16 @@ unchanged, under [velvet-marten-phone-records-2026-10-11](../evidence/velvet-mar
 
    > whether the police and guards who notice and lunge count, -- yes, why wouldn't they?
 
+## #705
+
+1. **What the note answered** (the assistant):
+
+   Answering the second of the two scope calls teal-trout (every charger is neutral, then warns, then charges; filed from #699 in PR #702) left under "Proposed, not asked for:": whether the pursuers that arrive already charging, such as day 3's dog sited off screen, which have no neutral stage on screen, fall under the three-stage rule. Read as: they do not, since a pursuer that arrives charging has no neutral or warning stage to show.
+
+2. **The note.**
+
+   > whether chargers that arrive already charging count. -- how would that make sense?
+
 ## Filed as
 
 - **#696**: a re-report, added to [M219](../todo/2026-09-26-M219/README.md), on a pedestrian street a
@@ -143,6 +153,7 @@ unchanged, under [velvet-marten-phone-records-2026-10-11](../evidence/velvet-mar
 - **#703**: the day-14 record's context in its evidence README and in M159's README.
 - **#704**: in teal-trout, the policemen on foot and the guards who notice her and lunge are under the
   rule.
+- **#705**: in teal-trout, a pursuer that arrives already charging is outside the rule.
 
 The day-9 record answers bouncy-swan's review item, "Save a frame record of a lag spike on the phone":
 it was saved straight after a big lag spike, which its longest frame names as `events`. That item
