@@ -36,6 +36,7 @@ func run(t) -> void:
 	GameSave.restore_run_data(baseline)
 	GameState.hard_mode = bool(baseline["hard_mode"])
 	GameState.checkpoint = baseline["checkpoint"]
+	DevFlags._invincible_override = null
 
 # ------------------------------------------------------------------ fixture ---
 
