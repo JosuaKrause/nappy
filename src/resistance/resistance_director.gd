@@ -645,11 +645,14 @@ func _ride_to_the_door(shell: EventInstance) -> void:
 
 ## Whether she can stand within `DOOR_REACH` of the door point `door` today: one of the three
 ## frontage-lane tiles the reach covers — the one straight below the door and the one either side of
-## it (45px from the door's point, inside the 50.6px reach) — is ground every contact here
-## keeps (`is_legal_ground()`, unobstructed, reachable from home). **A held segment is not a
-## refusal**: a region door's street or the street round her block is held so no *row* is sited on
-## it, and it is ground she walks on like any other (`allow_held`, as day 9's door is placed), so a
-## door on one is still the door. The shell's own tile is not what is asked, since the door can
+## it, those whose centre lies within `DOOR_REACH` (50.6px) of the door's point — is ground every
+## contact here keeps (`is_legal_ground()`, unobstructed, reachable from home). An entrance door
+## stands on a column's middle, so all three are 45px away; a storefront door stands on the seam
+## between two tiles, where they are 35.8px, 35.8px and 57.7px away and the third is dropped.
+## **A held segment is not a refusal**: a street held for the day (a region door's, the one round
+## her block, one a hard seal or a region wall holds) is held so no *row* is sited on it, and it is
+## ground she walks on like any other (`allow_held`, as day 9's door is placed), so a door on one
+## is still the door. The shell's own tile is not what is asked, since the door can
 ## stand several columns from the shell along the front.
 func _door_can_be_touched(door: Vector2) -> bool:
 	var frontage := _map.world_to_tile(door) + Vector2i.DOWN
@@ -2559,7 +2562,9 @@ static func is_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[R
 ## every other kind of placement.
 ##
 ## **`allow_held` skips only the `is_held_at` refusal, and only the two door placements pass it**
-## (`ResistanceSteps.stands_on_held_ground()`). Held ground means *no hazard or catalogue row may be
+## (`ResistanceSteps.stands_on_held_ground()`), apart from day 8's burnt building door, which asks
+## whether she can stand by the door through `_door_can_be_touched()` instead of placing a contact
+## from a pool. Held ground means *no hazard or catalogue row may be
 ## sited here*; a contact is neither, and for a step whose candidates are the held region-door
 ## segments themselves (`_place_at_a_door()`), or the station's front door on a street the spur
 ## made a region door, the filter would refuse the very ground the task points at.
