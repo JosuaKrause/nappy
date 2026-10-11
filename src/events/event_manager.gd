@@ -235,13 +235,15 @@ func send_a_pursuer() -> void:
 		# `VisitCounter`'s own "poster-pursuit" — see docs/TELEMETRY.md, "The page counts visits".
 		EventBus.poster_pursuit_sent.emit()
 
-## **The men an investigating police vehicle lets out.** *(merry-stork, the player: "an
-## investigating police car should not leave the street. it should stop if close to her and a
-## policeman should emerge and pursue her"; inbox #669: "Van stops, men get out (Recommended)".)*
+## **The men an investigating vehicle lets out.** *(merry-stork, the player: "an investigating
+## police car should not leave the street. it should stop if close to her and a policeman should
+## emerge and pursue her"; inbox #669: "Van stops, men get out (Recommended)" · "Same as the
+## police".)*
 ## Every vehicle that has just stopped for her (`EventInstance.officers_owed()`) — a patrol car's
-## one, the night raid's van's two — gets the day's pursuer on foot as he gets out of a police
-## vehicle (`EventCatalogue.out_of_the_car()`: a policeman through day 8, a guardsman from day 9,
-## whose catch is a stop) put down at its door on her side (`EventInstance.door_for_its_officer()`),
+## one, a hunting van's two — gets the day's pursuer on foot as he gets out of a vehicle
+## (`EventCatalogue.out_of_the_car()`: a policeman through day 8, a guardsman from day 9; out of the
+## patrol car on the `PRESSES` rung his catch is a stop, out of a `HUNTS` van it ends the day) put
+## down at its door on her side (`EventInstance.door_for_its_officer()`),
 ## spread along its flank `OFFICER_SPACING` apart when there are two, or on the other side where
 ## hers is not walkable, or at the vehicle itself where neither is. They appear in her view, so
 ## there is no badge: their notice is the sight of them, the door guard's
@@ -252,7 +254,8 @@ func _let_the_officers_out() -> void:
 		var owed := vehicle.officers_owed()
 		if owed <= 0:
 			continue
-		var def := EventCatalogue.out_of_the_car(_day)
+		var def := EventCatalogue.out_of_the_car(_day,
+				vehicle.def.heat_response != EventDef.HeatResponse.HUNTS)
 		for i in owed:
 			var along := (float(i) - float(owed - 1) * 0.5) * OFFICER_SPACING
 			var at := vehicle.door_for_its_officer(def, 1.0, along)
@@ -270,7 +273,7 @@ func _let_the_officers_out() -> void:
 				else "%d %s get out" % [owed, "guardsmen" if guards else "policemen"]
 		Telemetry.note("ahead", "%s at %s, %.0fpx from her, and %s"
 				% ["an investigating patrol stops" if vehicle.def.drives
-						else "the raid's van, standing,",
+						else "%s, standing," % vehicle.def.id,
 				TelemetryLog.tile(_map.world_to_tile(vehicle.global_position)),
 				vehicle.global_position.distance_to(_player.global_position), who])
 

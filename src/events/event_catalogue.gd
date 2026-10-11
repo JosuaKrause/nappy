@@ -63,10 +63,12 @@ static func all() -> Array[EventDef]:
 		for def in _all:
 			for level in heat_levels():
 				heated(def, level).validate()
-		# And the man an investigating police vehicle lets out, a copy of the day's pursuer on foot
-		# whose notice is the sight of him and whose catch is a stop — validated for the same reason.
+		# And the man an investigating vehicle lets out, a copy of the day's pursuer on foot whose
+		# notice is the sight of him — the patrol car's, whose catch is a stop, and a hunting van's,
+		# whose catch ends the day — validated for the same reason.
 		for day: int in [guardsmen_from_day() - 1, guardsmen_from_day()]:
 			out_of_the_car(day).validate()
+			out_of_the_car(day, false).validate()
 	return _all
 
 ## This row at a resistance level, derived once per run and kept.
@@ -1901,11 +1903,15 @@ static func _roadblock() -> EventDef:
 ## could never be a lasting fact about the world either way. Drawing and telemetry only — nothing
 ## here changes `contribution_at()`, spawns a body, or reaches into the crowd.
 ##
-## **`heat_response = HUNTS`, the lethal rung of the resistance's ladder.** Below
-## `Tuning.HEAT_HUNTS_LEVEL` it is untouched — population and intensity are `PRESSES`'s axes, not
-## this one's. At and above it, the derived copy stops idling for a stranger and starts hunting
-## her instead: see `EventDef.at_heat()`. It keeps `hard_fail` throughout, because a pursuer is
-## exempt from the rule that nothing else happens inside a lethal event's field.
+## **`heat_response = HUNTS`, the lethal rung of the resistance's ladder, hunted on foot**
+## (`hunts_on_foot`). Below `Tuning.HEAT_HUNTS_LEVEL` it is untouched — population and intensity
+## are `PRESSES`'s axes, not this one's. At and above it, the derived copy stops idling for a
+## stranger and hunts her with its men instead: it stays parked, solid, and once she is within
+## `Tuning.HEAT_HUNTS_WITHIN` of it along a clear line it lets `lets_out` (two) men out at its door,
+## `out_of_the_car()`'s hunting copy, whose catch ends the day — the van's own lethality, kept.
+## *(Inbox #669, asked whether the unmarked van should stop and let men out as the police vehicles
+## do: "Same as the police".)* The van keeps `hard_fail` throughout, so its own 54px still takes her
+## once its telegraph is over, as the cold van's does. See `EventDef.at_heat()`.
 static func _abduction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "abduction"
@@ -1935,6 +1941,8 @@ static func _abduction() -> EventDef:
 	def.max_per_day = 4
 	def.cost = 3
 	def.heat_response = EventDef.HeatResponse.HUNTS
+	def.hunts_on_foot = true
+	def.lets_out = 2
 	return def
 
 ## **A man in an alley who is worth crossing the road for, and who comes after you if you do not.**
@@ -2193,23 +2201,26 @@ static func on_foot_on(day: int) -> EventDef:
 	return by_id("guardsman_giving_chase" if day >= guardsmen_from_day()
 			else "policeman_giving_chase")
 
-## Derived copies of the pursuer on foot, as he gets out of a police vehicle, keyed by his row's id. See
-## `out_of_the_car()`.
+## Derived copies of the pursuer on foot, as he gets out of a vehicle, keyed by his row's id and
+## whether his catch is a stop. See `out_of_the_car()`.
 static var _out_of_the_car: Dictionary[String, EventDef] = {}
 
-## **The man an investigating police vehicle lets out** (`EventDef.investigates`) — the patrol
-## car's one, the night raid's van's two: the day's pursuer on foot (`on_foot_on()`, a policeman
+## **The man an investigating vehicle lets out** (`EventDef.investigates`) — the patrol car's one,
+## the hunting raid's and unmarked van's two: the day's pursuer on foot (`on_foot_on()`, a policeman
 ## through day 8, a guardsman from day 9), his own row, getting out at the vehicle's door in her
 ## view. *(merry-stork, the player: "it should stop if close to her and a policeman should emerge and
-## pursue her"; inbox #669, on the van: "Van stops, men get out (Recommended)".)*
+## pursue her"; inbox #669, on the raid's van: "Van stops, men get out (Recommended)", and on the
+## unmarked van: "Same as the police".)*
 ##
-## **His catch is a stop, not the end of the day** (`EventDef.stop_excitement`,
-## `Tuning.OFFICER_STOP_EXCITEMENT`): when he reaches her he stops, his field lands a substantial
-## cost on her, and he and every man his vehicle let out walk back to it. *(Inbox #669, the player:
-## "once the policeman reaches her they stop and walk back to the car" · "it needs to give a
-## substantial cost but not lethal directly" · "well if the excitement meter is already high it can
-## be lethal".)* So he is not `hard_fail`; only the torn poster's man is, sent rather than met
-## ("Ends the day (Recommended)", merry-stork).
+## **Out of the patrol car (`stops`), his catch is a stop, not the end of the day**
+## (`EventDef.stop_excitement`, `Tuning.OFFICER_STOP_EXCITEMENT`): when he reaches her he stops, his
+## field lands a substantial cost on her, and he and every man his vehicle let out walk back to it.
+## *(Inbox #669, the player: "once the policeman reaches her they stop and walk back to the car" ·
+## "it needs to give a substantial cost but not lethal directly" · "well if the excitement meter is
+## already high it can be lethal".)* **Out of a hunting van his catch ends the day**, as the van's
+## own hunt did — the top rung kills *(inbox #669, on the raid's men: "Ends the day (M56)"; the
+## unmarked van's men keep its lethality)* — and he walks back to it only once he has given up or run
+## out his chase.
 ##
 ## **In view, so not the badge: the sight of him is his notice.** He is not warned of before he
 ## exists and does not arrive chasing; he is the door guard getting out of his hut
@@ -2221,9 +2232,10 @@ static var _out_of_the_car: Dictionary[String, EventDef] = {}
 ##
 ## A derived copy rather than a catalogue row, as a heated row is: it is the same man, met another
 ## way.
-static func out_of_the_car(day: int) -> EventDef:
+static func out_of_the_car(day: int, stops := true) -> EventDef:
 	var on_foot := on_foot_on(day)
-	if not _out_of_the_car.has(on_foot.id):
+	var key := on_foot.id + (":stops" if stops else ":hunts")
+	if not _out_of_the_car.has(key):
 		var def := on_foot.duplicate() as EventDef
 		# The shape is a plain field `duplicate()` leaves behind; see `_policeman_giving_chase()`.
 		def.shape = on_foot.shape
@@ -2232,10 +2244,11 @@ static func out_of_the_car(day: int) -> EventDef:
 		def.offscreen_notice = Tuning.OFFSCREEN_NOTICE
 		def.telegraph_time = _alley_robbery().telegraph_time
 		def.sets_off_beside_her = true
-		def.hard_fail = false
-		def.stop_excitement = Tuning.OFFICER_STOP_EXCITEMENT
-		_out_of_the_car[on_foot.id] = def
-	return _out_of_the_car[on_foot.id]
+		if stops:
+			def.hard_fail = false
+			def.stop_excitement = Tuning.OFFICER_STOP_EXCITEMENT
+		_out_of_the_car[key] = def
+	return _out_of_the_car[key]
 
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##
@@ -2244,11 +2257,12 @@ static func out_of_the_car(day: int) -> EventDef:
 ## closed block and nothing more. At and above it, the derived copy `investigates`: the van stays
 ## where it stands, and the moment she is within `Tuning.HEAT_HUNTS_WITHIN` (180px) of it along a
 ## clear line it lets `lets_out` (two) men out at its door on her side, who pursue her under the
-## pursuit contract — `EventCatalogue.out_of_the_car()`, the patrol car's man, a guardsman on day 10.
-## The first to reach her stops her at a cost (`Tuning.OFFICER_STOP_EXCITEMENT`) and both walk back
-## to the van, which then stands over its block for the rest of the day. *(Inbox #669, the player:
-## "Van stops, men get out (Recommended)" — no police vehicle chases her like a running man,
-## azure-koala's finding 7.)* The van is never `hard_fail`, cold or hot. See `EventDef.at_heat()`.
+## pursuit contract — `EventCatalogue.out_of_the_car()`'s hunting copy, a guardsman on day 10 —
+## and whose catch ends the day, as M56 built the hunting raid *(inbox #669, the player: "Van stops,
+## men get out (Recommended)" — no vehicle chases her like a running man, azure-koala's finding 7 —
+## and "Ends the day (M56)")*. Men who give up or run out their chase walk back to the van, which
+## stands over its block for the rest of the day. The van itself is never `hard_fail`, cold or hot.
+## See `EventDef.at_heat()`.
 ##
 ## **It shares the patrol-and-van threshold rather than minting a third constant, and the calendar
 ## is why that is load-bearing.** The resistance's tasks before it fall on days 6 to 9, so on day

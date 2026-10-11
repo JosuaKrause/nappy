@@ -1,4 +1,4 @@
-# sandy-ferret — A torn poster sends a policeman on foot at once; a police car or the raid's van stops and lets men out · 2026-10-11
+# sandy-ferret — A torn poster sends a policeman on foot at once; a police car or a hunting van stops and lets men out · 2026-10-11
 
 
 The player ([olive-hedgehog](../playtests/2026-10-05-olive-hedgehog.md), inbox #591): "the poster
@@ -10,7 +10,8 @@ should stop if close to her and a policeman should emerge and pursue her". On th
 (inbox #669): "we make it somewhat costly. once the policeman reaches her they stop and walk back to
 the car", "it needs to give a substantial cost but not lethal directly", "well if the excitement
 meter is already high it can be lethal", and, on the night raid's van, "Van stops, men get out
-(Recommended)".
+(Recommended)"; asked then whether the raid's men end the day, "Ends the day (M56)", and whether
+the unmarked van should stop and let men out too, "Same as the police".
 
 **Built in PR #663.** A torn poster's pursuit marble calls `EventManager.send_a_pursuer()`: the
 0.5s screen-edge badge goes up at once, then `policeman_giving_chase` (through day 8) or
@@ -34,12 +35,14 @@ along its route the way it was going — standing first while she is in its way 
 the route ends. This was azure-koala's finding 7 ("police cars chasing the player behave like
 running people").
 
-**The night raid's van hunts on foot** (`EventDef.hunts_on_foot`): at `Tuning.HEAT_HUNTS_LEVEL`
-the hunting copy no longer pursues her; it stands where it is, never `hard_fail`, and once she is
-within 180px along a clear line lets two men out (`EventDef.lets_out`), guardsmen on day 10, who
-pursue her. Their catch is the car's man's stop: the first to reach her stops her and both walk
-back, and the van stands over its block for the rest of the day. No police vehicle pursues her at
-any heat; the unmarked van (`abduction`) still hunts as itself at `HEAT_HUNTS_LEVEL`.
+**The two vans hunt on foot** (`EventDef.hunts_on_foot`): at `Tuning.HEAT_HUNTS_LEVEL` the
+night raid's and the unmarked van's (`abduction`) hunting copies no longer pursue her; each stands
+where it is, as lethal as it is cold (the raid never, the unmarked van inside its own 54px once its
+telegraph is over), and once she is within 180px along a clear line lets two men out
+(`EventDef.lets_out`), the day's pursuer on foot, who pursue her. **Their catch ends the day**, as
+M56's hunting vans did: the raid's by the player's answer, the unmarked van's by keeping the
+lethality its own hunt had. A man who gives up walks back to his van, which stands as its cold row
+does. No vehicle pursues her at any heat.
 
 **This replaces:**
 
@@ -61,19 +64,19 @@ any heat; the unmarked van (`abduction`) still hunts as itself at `HEAT_HUNTS_LE
   junction box, and drives on along its route once its man is back in.
 - [M56](2026-09-02-M56-the-resistance-is-noticed-partly.md)'s "The raid hunts": "the derived copy
   pursues at 130px/s, notices her within 180px, chases for `PURSUIT_TIME` and is `hard_fail` inside
-  its 70px". The hunting raid's van lets men out instead, and their catch costs her rather than
-  ending the day.
+  its 70px", and its "The van takes somebody, and then it takes you": "At and above it the derived
+  copy gains `pursues`, 130px/s …". Both vans let men out instead; the men's catch ends the day, so
+  the lethality M56 gave the hunting rung stands, carried by the men rather than the vans.
 
 **Open to overturn, chosen while building:** "close" read as the car's 150px notice; the stop's
 size, 40 points over 1s (`Tuning.OFFICER_STOP_EXCITEMENT`, `OFFICER_STOP_SECONDS`) — over a
-conversation's 25 and three contacts, under the whole meter; the van's men cost her as the car's
-man does rather than ending the day (inbox #669 answered the car's man; the van's was read off the
-same answer, against M56's lethal hunting raid); the van lets two men out; one man reaching her calls
-every man of his vehicle back, so a vehicle costs her once; the men walk back along their own trail;
-a vehicle investigates once; the car drives on along its route after; the man out of a vehicle
-follows the door guard's in-view contract; the guardsman takes the policeman's numbers; one torn
-poster's pursuer at a time; nothing during the escape; ordinary patrols stay cars; `--force` no
-longer suppresses the tear's pursuer. Tests: `tests/test_pursuer_on_foot.gd` (including the
-junction box over real `_along_street_path()` routes on three seeds, and the van) and extensions to
-`test_posters`, `test_events_pursuit`, `test_no_pop_in`, `test_police_car`, `test_heat`. Pictures
-in [ferret-2026-10-10](../evidence/ferret-2026-10-10/README.md).
+conversation's 25 and three contacts, under the whole meter; the men walk back along their own
+trail; each van lets two men out, the day's pursuer on foot (a policeman out of an unmarked van on
+day 8); the unmarked van stays `hard_fail` itself while its men are out; a vehicle investigates
+once; the car drives on along its route after; the man out of a vehicle follows the door guard's
+in-view contract; the guardsman takes the policeman's numbers; one torn poster's pursuer at a time;
+nothing during the escape; ordinary patrols stay cars; `--force` no longer suppresses the tear's
+pursuer. Tests: `tests/test_pursuer_on_foot.gd` (including the junction box over real
+`_along_street_path()` routes on three seeds, and both vans) and extensions to `test_posters`,
+`test_events_pursuit`, `test_no_pop_in`, `test_police_car`, `test_heat`, `test_events_chat`.
+Pictures in [ferret-2026-10-10](../evidence/ferret-2026-10-10/README.md).

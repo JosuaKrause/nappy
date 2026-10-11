@@ -50,7 +50,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `sets_off_beside_her` | Whether a pursuer starts **inside its own stand-off**, spawned beside her rather than sited or noticing her outside it. Its notice then cannot be cut short by her being close and it never backs off: it holds its ground, follows at the stand-off once she is further, and chases when the notice has run its whole length. `door_guard` is the one row — see "Checkpoints". Any other pursuer takes the same ground once a wall has held its lunge back, and lunges when she is back at its stand-off with the line clear; its notice, unlike the door guard's, does not run out while she is inside the stand-off |
 | `lifts_for_traffic` | Whether this row is a **boom**: a bar across a door's carriageway that the cars raise and lower, solid to her only while it is down, and never an inspection. `checkpoint_gate` is the one row — see "Checkpoints" |
 | `barrier_structure` | Whether this row is a piece of the region boundary — a street being held. The four that are (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`, `roadblock`) charge the meter as **one** source, the strongest at her position, rather than as their sum; everything else in the catalogue still sums — see "Checkpoints" |
-| `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it stops near her and a man on foot gets out, whose catch costs her), `HUNTS` (it stops being a place and starts being a hunter; the raid's van hunts on foot, letting its men out) — see "The heat" |
+| `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it stops near her and a man on foot gets out, whose catch costs her), `HUNTS` (it stops being a place and starts being a hunter; the two vans hunt on foot, letting out men whose catch ends the day) — see "The heat" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
 | `shape` | The row's own `GroundShape` (`src/ground_shape.gd`) — a point or a segment, independent of the picture — that its shadow and, when it obstructs, its collision body are both derived from. Set by `EventDef.solid(shape)` for anything with `obstructs_radius`, or directly for anything with a `look` that does not obstruct; `null` only for `look == NONE` — see "Solid things are solid" |
 | `draws_body_shadow` | Whether `EventInstance._draw_body_shadow()` puts anything down for this row. `true` for every row but `burst_water_main`, whose crater is sunk into the road rather than standing on it |
@@ -301,8 +301,9 @@ the loose dog's 24 is not. Applied to every row by its numbers:
   its street to her, 32 points), day 13's column and the planned convoy (120px/s, down the road she is
   on, 30 points), and every pursuer — the day-3 dog and the dogs after it, the waiting robber and
   guard, the resistance's sent robber and guard, a torn poster's policeman or guardsman, the masked
-  man, and what hunts at heat (130px/s, at her, ends the day); and the men a police vehicle lets out
-  at heat (130px/s, at her, a stop of `Tuning.OFFICER_STOP_EXCITEMENT`, 40 points).
+  man, and what hunts at heat (130px/s, at her, ends the day); and the men a vehicle lets out
+  at heat (130px/s, at her: out of a patrol car a stop of `Tuning.OFFICER_STOP_EXCITEMENT`, 40
+  points; out of a hunting van, the end of the day).
 - **Do not**: the loose dog (132px/s at her, 24 points) and the cat (240px/s, across her line, about
   free) — the player's own — then `alley_mouse` (200px/s, across its alley, not at her),
   `pigeon_flock` (goes up where she walks in, a 45-point heavy hit but never coming toward her) and `police_patrol` (74px/s, slower than a walk, about 3
@@ -320,8 +321,9 @@ the loose dog's 24 is not. Applied to every row by its numbers:
 | `military_convoy`, planned or day-13 column | 120 | Along her road | 30% a pass | Yes | Heavy hit |
 | `charging_dog` | 130 | Yes | Ends the day | Yes | Fast, approaching, lethal |
 | Sent robber and van guard, a torn poster's policeman or guardsman | 130 | Yes | Ends the day | Yes | Already pursuing after the badge |
-| Waiting robber, door guard, masked pursuer, hunting abduction and roadblock | 130 | Once noticed | Ends the day | Yes | Pursuit approaches her |
-| The man a police vehicle lets out at heat — the patrol car's one, the raid van's two | 130 | After his notice, once out | A 40-point stop | Yes, in her view | Pursuit approaches her; his catch is a cost |
+| Waiting robber, door guard, masked pursuer, hunting roadblock | 130 | Once noticed | Ends the day | Yes | Pursuit approaches her |
+| The men a hunting van lets out — the raid's two, the unmarked van's two | 130 | After their notice, once out | Ends the day | Yes, in her view | Pursuit approaches her |
+| The man an investigating patrol car lets out | 130 | After his notice, once out | A 40-point stop | Yes, in her view | Pursuit approaches her; his catch is a cost |
 | `loose_dog` | 132 | Down her sidewalk | 24% a pass | No | Below the heavy-hit line; the player's explicit exception |
 | `cat_dash` | 240 | Across her line | About free | No | Crosses rather than approaches; the player's explicit exception |
 | `alley_mouse` | 200 | Across its alley | 13% walked through | No | Crosses rather than approaches; keeps its in-world crouch |
@@ -1359,23 +1361,23 @@ reaches her takes little of it off: it is a moment, not a place.
 `abduction`, `night_raid` and `roadblock` all carry `HUNTS`. Below its own threshold,
 `Tuning.HEAT_HUNTS_LEVEL`, each is untouched — population and intensity are `PRESSES`'s axes, not
 this one's, so neither multiplies nor gets louder as the resistance progresses. At and above it,
-`abduction` and `roadblock`'s derived copies gain `pursues`, a stand-off inside their own field, and
-a chase-length `duration` in place of their idling or static one, and they are `hard_fail`: the van
-keeps the lethality it already had, and the roadblock — a closed street that costs the meter and
-nothing more, cold — **gains** it, because the top rung kills by the ladder's own design. A pursuer
-is exempt from the rule that nothing else happens inside a lethal event's field — see "The contract
-is per event" below.
+`roadblock`'s derived copy gains `pursues`, a stand-off inside its own field, and a chase-length
+`duration` in place of its static one, and it is `hard_fail`: a closed street that costs the meter
+and nothing more, cold, **gains** lethality, because the top rung kills by the ladder's own design.
+A pursuer is exempt from the rule that nothing else happens inside a lethal event's field — see "The
+contract is per event" below.
 
-**`night_raid` hunts on foot** (`EventDef.hunts_on_foot`): its van is a police vehicle, and no
-police vehicle chases her like a running man *(azure-koala, finding 7: "police cars chasing the
-player behave like running people"; inbox #669, on the raid: "Van stops, men get out
-(Recommended)")*. At and above its threshold the derived copy `investigates` instead: the van stands
-where it always stands, never `hard_fail`, and once she is within `Tuning.HEAT_HUNTS_WITHIN` (180px)
-of it along a clear line it lets `lets_out` (two) men out at its door on her side — the patrol
-car's man, a guardsman on day 10 — who pursue her under the pursuit contract. Their catch is the
-patrol's man's stop: the first to reach her stops her, and both walk back to the van, so the raid
-costs her forty points, once, and never ends the day by itself. The van then stands over its block
-for the rest of the day, as the cold raid does.
+**The two vans hunt on foot** (`EventDef.hunts_on_foot`): no vehicle chases her like a running man
+*(azure-koala, finding 7: "police cars chasing the player behave like running people"; inbox #669,
+on the raid: "Van stops, men get out (Recommended)", and on the unmarked van: "Same as the
+police")*. At and above its threshold each derived copy `investigates` instead: the van stands where
+it always stands, as lethal as it is cold — `abduction`'s own 54px still takes her once its
+telegraph is over, `night_raid` never does — and once she is within `Tuning.HEAT_HUNTS_WITHIN`
+(180px) of it along a clear line it lets `lets_out` (two) men out at its door on her side, the day's
+pursuer on foot (a policeman on day 8, a guardsman from day 9), who pursue her under the pursuit
+contract. **Their catch ends the day** *(inbox #669, on the raid's men: "Ends the day (M56)"; the
+unmarked van's men keep the lethality its own hunt had)*. A man who gives up or runs out his chase
+walks back the way he came and gets in, and the van stands where it stood, as its cold row does.
 
 **`night_raid`'s own threshold is a calendar fact rather than a design one.** The tasks before it
 fall on days 6 to 9, so on day 10 — the only day the row ever appears — the most progress anybody
@@ -1423,7 +1425,7 @@ become, and that is the escalation working rather than a bug.** `EventInstance.i
 returns false for the whole time a `pursues_within` row is only `is_waiting()`, so a heated van
 standing at the kerb or a heated roadblock still manned can be brushed past for free until she
 comes inside its own trigger — the same shape `alley_robbery` already has, now arriving in both
-once they hunt. A heated raid is the same before it lets its men out, and never lethal after.
+once they hunt. A heated raid's van is never lethal itself; its men are.
 
 ### The density, and why it is caps before budget
 
@@ -1506,9 +1508,9 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `abduction` **`heat_response HUNTS`** | RECURRING | 8 | An unmarked van idles first — that idling *is* the telegraph, and it runs 4.6s because the inner radius is a `hard_fail`. Getting close does not excite the baby; it takes you. Solid at 22px, comfortably inside the 54 that takes her, so the metal is metal and touching it is still fatal. While she is close enough to watch (`outer_radius`), it draws its own bystander walked to it and taken — a scripted figure rather than a `CrowdAgent`, since the crowd is recycled as she moves and could never be a lasting fact about the world. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it, it stops idling for a stranger and starts hunting her instead — 130px/s once she comes within 180px, for the length of the chase rather than the length of the idle, `hard_fail` throughout. |
+| `abduction` **`heat_response HUNTS`** | RECURRING | 8 | An unmarked van idles first — that idling *is* the telegraph, and it runs 4.6s because the inner radius is a `hard_fail`. Getting close does not excite the baby; it takes you. Solid at 22px, comfortably inside the 54 that takes her, so the metal is metal and touching it is still fatal. While she is close enough to watch (`outer_radius`), it draws its own bystander walked to it and taken — a scripted figure rather than a `CrowdAgent`, since the crowd is recycled as she moves and could never be a lasting fact about the world. Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it, it stops idling for a stranger and **hunts on foot** (`hunts_on_foot`, inbox #669: "Same as the police"): it stays parked, solid and `hard_fail` as cold, and once she comes within 180px along a clear line it lets two men out at its door, who pursue her at 130px/s and whose catch ends the day ("The heat" above). |
 | `alley_robbery` **`hard_fail`** | RECURRING | 8 | **A man who is worth crossing the road for, and who comes after you if you do not.** Three numbers for three sentences: intensity 16 over a **200px** field, so the far end of an alley is already expensive and the meter is the only warning a robbery will ever give; `hard_fail` inside 26px with nothing between them, while he lunges from a 116px stand-off (`lunge_reach` 38), so the room between lunge and catch is 90px; and `pursues_within` 140, inside which he turns to face her and closes at 130px/s until she is inside his stand-off (a 1.8s notice at most), where he lunges: about 0.12s after he turns for a walker coming in, 0.2s for one standing at the edge of his range (measured with the real `EventInstance`, `tests/probes/tall_osprey_catch.gd`), and then chases at 130px/s. **He catches her only by touching her** (*"Only if the Robert touches the player should it end instantly"*, freckled-goose): his catch needs a clear line to her, so from the alley he never takes her round the building's corner at the mouth. **He notices her and lunges only along a clear line too** (*"yes noticing needs a clear line"*, leafy-puffin; *"obviously it needs a clear line"*, mossy-beaver): round the corner he has not seen her, and a wall between them inside his stand-off holds the lunge back. A held lunge does not fire from wherever the line clears — at the mouth that is a fraction of his stand-off — so he holds his ground the way the door guard does and lunges once she is back at his full stand-off, and his notice does not run out while she is inside it, so however she came the chase starts from his stand-off; standing beside him, he never sets off, and his field charges her for it. Waiting, he is drawn facing her only along a clear line. Every pursuer's notice, lunge and catch are the same (`docs/MECHANICS.md`, "Running that matters"). The alley is the warning and it is not the only one — a lethal thing that does nothing at all until it does everything is a thing with no telegraph. |
-| `night_raid` **`heat_response HUNTS`** | SCRIPTED | 10 | Enormous, static, pulsing, and it closes the block (`obstructs_radius` 44). Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it, it **hunts on foot** (`hunts_on_foot`, inbox #669: "Van stops, men get out (Recommended)"): the van stays where it stands, never `hard_fail`, and once she comes within 180px of it along a clear line it lets two men out at its door on her side — guardsmen on day 10 — who pursue her at 130px/s; the first to reach her stops her for 40 points and both walk back to the van ("The heat" above). The tasks before it fall on days 6 to 9, so on day 10 the most progress anybody can hold is four, which is `HEAT_HUNTS_LEVEL`: the raid hunts only a player who has done every task on time. **The raid at her own building is this row too**: two vans on the far sidewalk of her street, `RAID_VAN_OFFSET_TILES` either side of her door, with a `police_patrol` pacing the carriageway between them, placed by `ResistanceHappenings` once she is out of sight of her door — always cold, since men sent after her from her own door would make the doorstep the one place she is hunted. Her own sidewalk stays open past the door both ways. |
+| `night_raid` **`heat_response HUNTS`** | SCRIPTED | 10 | Enormous, static, pulsing, and it closes the block (`obstructs_radius` 44). Below `Tuning.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it, it **hunts on foot** (`hunts_on_foot`, inbox #669: "Van stops, men get out (Recommended)"): the van stays where it stands, never `hard_fail` itself, and once she comes within 180px of it along a clear line it lets two men out at its door on her side — guardsmen on day 10 — who pursue her at 130px/s and whose catch ends the day, as M56 built the hunting raid (inbox #669: "Ends the day (M56)"; "The heat" above). The tasks before it fall on days 6 to 9, so on day 10 the most progress anybody can hold is four, which is `HEAT_HUNTS_LEVEL`: the raid hunts only a player who has done every task on time. **The raid at her own building is this row too**: two vans on the far sidewalk of her street, `RAID_VAN_OFFSET_TILES` either side of her door, with a `police_patrol` pacing the carriageway between them, placed by `ResistanceHappenings` once she is out of sight of her door — always cold, since men sent after her from her own door would make the doorstep the one place she is hunted. Her own sidewalk stays open past the door both ways. |
 
 ### Act IV — Open conflict (days 12–14)
 
@@ -1567,16 +1569,17 @@ guard waiting at it, and the neighbor, which has neither (`ResistanceDirector.se
 Two rows the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0), sent by
 `EventManager.send_a_pursuer()` the moment a torn poster draws its pursuit marble ("A torn poster
 can send a pursuer on foot, at once" above), and the same man gets out of an investigating police
-vehicle that has stopped near her — one from a patrol car (`police_patrol` below), two from the
-hunting raid's van (`night_raid` below). **Out of a vehicle he is met in her view**, so he has no
+vehicle that has stopped near her — one from a patrol car (`police_patrol` below), two from a
+hunting van (`night_raid` and `abduction` below). **Out of a vehicle he is met in her view**, so he has no
 badge and does not arrive chasing: `EventCatalogue.out_of_the_car()` is a derived copy of the day's
 row that gets out as `door_guard` steps out of his hut (`sets_off_beside_her`) — for the alley
 robber's 1.8s notice he holds his ground while she is nearer than his 116px stand-off and follows at
 it once she is further, never lunging early, and then chases under the pursuit contract, which
-`EventCatalogue.all()` validates the copy against on load. **And his catch is a stop, not the end
-of the day** (`EventDef.stop_excitement`, "The heat" above): 40 points on her, and then he — and
-every man his vehicle let out — walks back the way he came and gets in at the door he got out of.
-Only the torn poster's man, sent rather than met, ends the day. *Read as, open to correction:*
+`EventCatalogue.all()` validates the copy against on load. **Out of a patrol car his catch is a
+stop, not the end of the day** (`EventDef.stop_excitement`, "The heat" above): 40 points on her, and
+then he walks back the way he came and gets in at the door he got out of. Out of a hunting van, as
+sent by a torn poster, his catch ends the day; a man who gives up walks back to his van the same
+way. *Read as, open to correction:*
 "close" in the player's words is the car's own notice reach, 150px along a clear line, and after
 he is back in the car drives on along its route rather than standing for the rest of the day. Which of the two is the day's is
 `EventCatalogue.on_foot_on()`: the policeman through day 8, the guardsman from day 9, the day the
@@ -1585,7 +1588,7 @@ day 9")*.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `policeman_giving_chase` **`hard_fail`** | SCRIPTED | day 4 | **The task robber's chase in a uniform**: every number is `robber_giving_chase`'s — 16 over a 26–200px field, 130px/s, the 26px catch with the 116px lunge, the day-3 dog's half-second badge, arriving already chasing, a chase that does not give up on a walker within `Tuning.PURSUIT_TIME` and that running shakes off, the walk-off at 100px/s. **His catch ends the day** *([merry-stork](playtests/2026-10-10-merry-stork.md), asked whether it ends the day or costs calm and ends the chase: "Ends the day (Recommended)")*: "The policeman caught up with you. They took you in." — as he is sent by a torn poster; out of a police vehicle his catch is a stop (above). His own look, `POLICEMAN_GIVING_CHASE`, draws `art/events/policeman_*` as the robber is drawn (waiting while a notice runs, the lunge with its stride once he chases), badged by the unsuffixed lunge. |
+| `policeman_giving_chase` **`hard_fail`** | SCRIPTED | day 4 | **The task robber's chase in a uniform**: every number is `robber_giving_chase`'s — 16 over a 26–200px field, 130px/s, the 26px catch with the 116px lunge, the day-3 dog's half-second badge, arriving already chasing, a chase that does not give up on a walker within `Tuning.PURSUIT_TIME` and that running shakes off, the walk-off at 100px/s. **His catch ends the day** *([merry-stork](playtests/2026-10-10-merry-stork.md), asked whether it ends the day or costs calm and ends the chase: "Ends the day (Recommended)")*: "The policeman caught up with you. They took you in." — as he is sent by a torn poster; out of a patrol car his catch is a stop, out of a hunting van it ends the day (above). His own look, `POLICEMAN_GIVING_CHASE`, draws `art/events/policeman_*` as the robber is drawn (waiting while a notice runs, the lunge with its stride once he chases), badged by the unsuffixed lunge. |
 | `guardsman_giving_chase` **`hard_fail`** | SCRIPTED | day 9 | **The same pursuer once guards are in the city**: every number the policeman's, the checkpoint guard's drawing (`GUARDSMAN_GIVING_CHASE`, `guard_standing_*` then `guard_lunging_*`, as `door_guard` is drawn), badged by the lunge's front diagonal, the one picture of the guard no other look stands for. "The guard caught up with you. They took you in." |
 
 ### The escape — the walk that is not a day
@@ -1846,7 +1849,7 @@ be on it, so an overlapping lethal field there is the city saying so rather than
 failure — `EventScheduler._role_for` gives such a placement the `WALL` role, and
 `_keeps_its_field_clear` reads that role directly. **A pursuer**, because it follows her rather
 than sitting on a tile the day chose, so there is no ground for the rule to be stated about —
-`charging_dog`, `alley_robbery` and a hunting `abduction` or `roadblock` all carry a
+`charging_dog`, `alley_robbery`, a hunting `roadblock` and the men a hunting van lets out all carry a
 lethal radius with them wherever she is, and `EventScheduler._keeps_its_field_clear` says so by name
 rather than leaving it to follow from the `WALL` case by coincidence.
 
@@ -2255,9 +2258,8 @@ Three rules underneath the table, in the order they matter:
    vehicle row draws a front, a back, a side and two diagonals through the same
    `EventInstance._draw_eight_view()` every other eight-view family in the catalogue uses.
    `police_patrol`, `fire_truck` and `military_convoy` read the octant from their own actual
-   travel, turning corners along their routes; `abduction` reads it from its placement heading
-   while idling or closing to its stand-off and from the chase direction once it hunts;
-   `night_raid`, `delivery_van`, `ice_cream_van` and `reversing_lorry` read it from their own
+   travel, turning corners along their routes; `abduction`, `night_raid`, `delivery_van`,
+   `ice_cream_van` and `reversing_lorry` read it from their own
    placement heading too, which in play never actually turns away from the kerb or the wall the
    lorry backs into, so only their side view is ever seen. Each is *its own* picture rather than
    the crowd's (whose cars are end-on because at that angle the front and the back of a car are

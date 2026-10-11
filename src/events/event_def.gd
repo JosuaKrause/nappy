@@ -547,8 +547,8 @@ func departure_speed() -> float:
 ## The only way it can be right is if the alternative is losing the day — so a pursuer is lethal,
 ## it is faster than a walk, and it is slower than a run. Those three together mean walking away
 ## does not work and running away does, which is the whole lesson. One kind of pursuer is a cost
-## rather than the end of the day: the man a police vehicle lets out, whose catch is a forty-point
-## stop (`stop_excitement`) — still more than any run away from him costs.
+## rather than the end of the day: the man an investigating patrol car lets out, whose catch is a
+## forty-point stop (`stop_excitement`) — still more than any run away from him costs.
 ##
 ## Its fairness contract is `Tuning.validate_pursuit()`, and it is stated over `RUN_SPEED`: a
 ## pursuit that cannot be outrun is not a lesson about running.
@@ -671,10 +671,9 @@ enum HeatResponse {
 	## lets out costs her when he reaches her rather than ending the day (`stop_excitement`). (The
 	## patrol that carries it strikes as a car does at every heat — `drives` — which is not a rung.)
 	PRESSES,
-	## **It stops being a place and starts being a hunter.** The lethal rung for `abduction` and
-	## `roadblock`, which hunt her themselves and end the day when they catch her. `night_raid` hunts
-	## on foot instead (`hunts_on_foot`): its van lets men out whose catch costs her, as the patrol's
-	## man's does.
+	## **It stops being a place and starts being a hunter.** The lethal rung: `roadblock`'s guard
+	## hunts her himself, and the two vans on it — `abduction` and `night_raid` — hunt on foot
+	## (`hunts_on_foot`), letting men out whose catch ends the day.
 	HUNTS,
 }
 
@@ -768,12 +767,12 @@ enum HeatResponse {
 ## that ends the day, and this is a car on a road.
 @export var drives := false
 
-## **A police vehicle that investigates: once it notices her it stops and lets men out on foot, who
-## pursue her; the vehicle itself never chases.** *(merry-stork, the player: "an investigating
-## police car should not leave the street. it should stop if close to her and a policeman should
-## emerge and pursue her"; inbox #669, on the night raid's van: "Van stops, men get out
-## (Recommended)".)* Two copies carry it, each made by `at_heat()`, with `pursues_within` as the
-## reach it notices her within — along a clear line, as every notice is
+## **A vehicle that investigates: once it notices her it stops and lets men out on foot, who pursue
+## her; the vehicle itself never chases.** *(merry-stork, the player: "an investigating police car
+## should not leave the street. it should stop if close to her and a policeman should emerge and
+## pursue her"; inbox #669, on the night raid's van: "Van stops, men get out (Recommended)", and on
+## the unmarked van: "Same as the police".)* Heated copies carry it, each made by `at_heat()`, with
+## `pursues_within` as the reach it notices her within — along a clear line, as every notice is
 ## (`EventInstance._investigate()`):
 ##
 ## - **`police_patrol`'s heated copy past `Tuning.HEAT_INVESTIGATES_LEVEL`**, a car that drives: it
@@ -781,29 +780,30 @@ enum HeatResponse {
 ##   junction box**: noticed with its body in one, it drives on until the body is clear of it and
 ##   stops there, since nothing stands in a box it cannot leave (sunny-finch). It lets one man out;
 ##   once he is back in, the car drives on along its route as a patrol does, and the end of its
-##   route is where it leaves.
-## - **`night_raid`'s hunting copy** (`hunts_on_foot`), a van that stands at the kerb: it stops
-##   nowhere, since it never moves, and lets `lets_out` men out; once they are back in, it stands
-##   over its block as the cold raid does.
+##   route is where it leaves. Its man's catch costs her and never ends the day by itself
+##   (`stop_excitement`).
+## - **`night_raid`'s and `abduction`'s hunting copies** (`hunts_on_foot`), vans that stand at the
+##   kerb: they stop nowhere, since they never move, and let `lets_out` men out, whose catch ends
+##   the day; men who give up walk back, and the van stands where it stood, as its cold row does.
 ##
 ## **It is not a pursuer**, so `validate()` refuses the two together: the vehicle stands, as a car
 ## stands for her, while its men — `EventCatalogue.out_of_the_car()`, a policeman through day 8 and
 ## a guardsman from day 9, put down at its door on her side by `EventManager` — pursue her under the
-## pursuit contract. **Their catch costs her and never ends the day by itself** (`stop_excitement`):
-## the first of them to reach her stops her, and then every man the vehicle let out walks back to
-## it. While a car stands for them it is not driving, so it neither warns nor strikes.
+## pursuit contract, and walk back to it when they are done. While a car stands for them it is not
+## driving, so it neither warns nor strikes.
 @export var investigates := false
 
 ## How many men an investigating vehicle lets out (`investigates`). One for the patrol car; the
-## night raid's van lets two out. *(Inbox #669: "Van stops, men get out" — men, so more than one;
-## two is chosen while building, open to overturn.)*
+## night raid's and the unmarked van let two out. *(Inbox #669: "Van stops, men get out" — men, so
+## more than one; two is chosen while building, open to overturn.)*
 @export var lets_out := 1
 
 ## **A `HUNTS` row whose hunting copy hunts on foot**: at `Tuning.HEAT_HUNTS_LEVEL` it does not
-## pursue her itself but `investigates`, letting `lets_out` men out who do. Only `night_raid`, a
-## police van — after inbox #669 ("Van stops, men get out (Recommended)") no police vehicle chases
-## her like a running man (azure-koala, finding 7: "police cars chasing the player behave like
-## running people"; inbox #664: "I was chased by police cars still which is just silly").
+## pursue her itself but `investigates`, letting `lets_out` men out who do, and whose catch ends the
+## day. `night_raid` and `abduction`, the two vans — after inbox #669 ("Van stops, men get out
+## (Recommended)" · "Same as the police") no vehicle chases her like a running man (azure-koala,
+## finding 7: "police cars chasing the player behave like running people"; inbox #664: "I was chased
+## by police cars still which is just silly"). The van keeps whatever `hard_fail` it has cold.
 @export var hunts_on_foot := false
 
 ## **A pursuer whose catch is a stop rather than the end of the day**, in points of the excitement
@@ -812,8 +812,8 @@ enum HeatResponse {
 ## and then he walks back to the vehicle that let him out. *(Inbox #669, the player: "once the
 ## policeman reaches her they stop and walk back to the car" · "it needs to give a substantial cost
 ## but not lethal directly" · "well if the excitement meter is already high it can be lethal".)*
-## Only the men an investigating police vehicle lets out carry it
-## (`EventCatalogue.out_of_the_car()`). `0.0`, the default, is a pursuer whose catch is what
+## Only the man an investigating patrol car lets out carries it (`EventCatalogue.out_of_the_car()`);
+## a hunting van's men end the day. `0.0`, the default, is a pursuer whose catch is what
 ## `hard_fail` says. A cost on the ordinary meter rather than a hold: `detain_seconds` is refused on
 ## a pursuer, since a thing that chases her has no business also deciding she cannot move.
 @export var stop_excitement := 0.0
@@ -1128,10 +1128,9 @@ func at_heat(level: int) -> EventDef:
 			# different question: not *how much does it cost to be near*, but *can I still be
 			# near it at all*.
 			if level >= Tuning.HEAT_HUNTS_LEVEL and hunts_on_foot:
-				# **A police van hunts with its men, not its wheels** (`hunts_on_foot`): it stays
-				# where it stands and lets them out once it notices her (`investigates`). The van
-				# itself stays what the cold row is — never `hard_fail`, so it kills nobody — and
-				# its men's catch costs her rather than ending the day (`stop_excitement`).
+				# **A van hunts with its men, not its wheels** (`hunts_on_foot`): it stays where it
+				# stands and lets them out once it notices her (`investigates`), and their catch
+				# ends the day. The van itself keeps the cold row's `hard_fail`, whichever it is.
 				hot.investigates = true
 				hot.pursues_within = Tuning.HEAT_HUNTS_WITHIN
 			elif level >= Tuning.HEAT_HUNTS_LEVEL:

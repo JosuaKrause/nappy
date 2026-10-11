@@ -69,12 +69,13 @@ func _test_the_ladder_has_a_top(t) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var out := EventCatalogue.out_of_the_car(day)
 		t.check(not out.hard_fail and out.stop_excitement > 0.0,
-				"day %d: the man a police vehicle lets out stops her rather than ending the day" % day)
+				"day %d: the man a patrol car lets out stops her rather than ending the day" % day)
 
 ## The lethal rung: below its own threshold a `HUNTS` row is untouched, and at or above it, it
 ## pursues, keeps `hard_fail`, and its derived numbers satisfy the pursuit contract measured from
-## its own data — or, a row that hunts on foot (`EventDef.hunts_on_foot`, the raid's van), it
-## lets its men out instead and is never a pursuer itself, the men's stand-off inside its notice. Checked over the response rather than over the one row that carries it, the same
+## its own data — or, a row that hunts on foot (`EventDef.hunts_on_foot`, the two vans), it lets
+## its men out instead, never a pursuer itself and as lethal as it is cold, its men's stand-off
+## inside its notice and their catch ending the day. Checked over the response rather than over the one row that carries it, the same
 ## shape `_test_the_ladder_has_a_top` uses, so a second `HUNTS` row added later inherits the promise
 ## without anybody having to remember to extend this loop.
 func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
@@ -87,10 +88,12 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
 			var hot := EventCatalogue.heated(def, level)
 			var should_hunt := level >= Tuning.HEAT_HUNTS_LEVEL
 			if def.hunts_on_foot:
-				t.check(hot.investigates == should_hunt and not hot.pursues and not hot.hard_fail,
+				t.check(hot.investigates == should_hunt and not hot.pursues
+						and hot.hard_fail == def.hard_fail,
 						"'%s' heat %d: it lets its men out iff at or past its own threshold, never "
-						% [def.id, level] + "chasing or killing itself")
-				var man := EventCatalogue.out_of_the_car(10)
+						% [def.id, level] + "chasing her itself")
+				var man := EventCatalogue.out_of_the_car(10, false)
+				t.check(man.hard_fail, "'%s': and its men's catch ends the day" % def.id)
 				var reach := Tuning.pursuit_standoff(man.pursue_speed, man.standoff_reach())
 				t.check(not should_hunt or (reach < hot.pursues_within
 						and hot.pursues_within <= hot.outer_radius),
@@ -121,7 +124,8 @@ func _cold_raid() -> EventDef:
 
 ## The raid's own hot shape, named rather than left to the generic `HUNTS` loop above: untouched
 ## below `Tuning.HEAT_HUNTS_LEVEL`, then letting its men out past it, the van itself never chasing
-## and never lethal (inbox #669: "Van stops, men get out (Recommended)") — and still `SCRIPTED` for
+## and never lethal, its men's catch ending the day (inbox #669: "Van stops, men get out
+## (Recommended)" · "Ends the day (M56)") — and still `SCRIPTED` for
 ## day 10 whatever the heat, since heat moves what a row does and never when it is allowed to
 ## appear.
 ##

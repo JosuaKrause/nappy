@@ -1065,7 +1065,7 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 		# kept closed, until the instance goes: a dog that has lost interest is still in the world
 		# for as long as it takes to trot out of shot, and none of that is the chase.
 		chase["gave_up"] = bool(chase["gave_up"]) or instance.gave_up
-		# A man a police vehicle let out whose catch is a stop: he reached her, and the day goes on.
+		# The man a patrol car let out, whose catch is a stop: he reached her, and the day goes on.
 		chase["stopped_her"] = bool(chase["stopped_her"]) or instance.has_stopped_her()
 		if _player.run_excess_ratio() > 0.0:
 			chase["ran"] = float(chase["ran"]) + delta

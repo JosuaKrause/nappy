@@ -28,9 +28,9 @@ func run(t) -> void:
 	_test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t)
 	_test_an_investigating_car_never_stops_in_a_junction_box(t)
 	_test_the_car_does_not_notice_her_through_a_building(t)
-	_test_the_raids_van_hunts_on_foot(t)
-	_test_no_police_vehicle_pursues_her(t)
-	_test_the_raids_van_stops_and_lets_men_out(t)
+	_test_the_hunting_vans_hunt_on_foot(t)
+	_test_no_vehicle_pursues_her(t)
+	_test_a_hunting_van_stops_and_lets_men_out(t)
 
 # ------------------------------------------------------------------ the rig ---
 
@@ -285,7 +285,7 @@ func _test_his_catch_ends_the_day_with_its_own_line(t) -> void:
 
 # ----------------------------------------------------------- out of the car ---
 
-## The man an investigating police vehicle lets out is the day's pursuer on foot, met in her view:
+## The man an investigating patrol car lets out is the day's pursuer on foot, met in her view:
 ## not warned of from off screen and not arriving chasing, but holding the door guard's ground for
 ## the alley robber's notice — at least `Tuning.PURSUIT_MIN_NOTICE` — and then chasing under the
 ## pursuit contract, which `validate()` holds him to. **His catch is a stop, never the end of the
@@ -296,7 +296,7 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 		var out := EventCatalogue.out_of_the_car(day)
 		var own := EventCatalogue.on_foot_on(day)
 		t.check(out.id == own.id and out.look == own.look,
-				"day %d: the man out of a police vehicle is %s" % [day, own.id])
+				"day %d: the man out of a patrol car is %s" % [day, own.id])
 		t.check(not out.hard_fail and is_equal_approx(out.stop_excitement,
 				Tuning.OFFICER_STOP_EXCITEMENT),
 				"day %d: and his catch is a stop of %.0f points, never the end of the day"
@@ -388,7 +388,7 @@ func _a_lane_beside_a_sidewalk(map: CityMap) -> Array:
 				return [map.tile_to_world(tile), map.tile_to_world(tile + Vector2i.UP)]
 	return []
 
-## One frame of what `EventManager` does for a police vehicle and its men, with her where she
+## One frame of what `EventManager` does for a vehicle and its men, with her where she
 ## stands: tell everything where she is, let out whoever is owed, tick every instance, and look for
 ## a day-ending catch.
 func _tick(events: EventManager) -> void:
@@ -589,95 +589,97 @@ func _body_on_a_junction(map: CityMap, car: EventInstance) -> bool:
 				return true
 	return false
 
-# ----------------------------------------------------------- the raid's van ---
+# ------------------------------------------------------------ the hunting vans ---
 
-## **The night raid's van stops and lets men out** *(inbox #669: "Van stops, men get out
-## (Recommended)")*: its hunting copy no longer pursues her itself — it investigates, never
-## `hard_fail` — and lets two men out; cold it is the closed block it always was.
-func _test_the_raids_van_hunts_on_foot(t) -> void:
-	var cold := EventCatalogue.by_id("night_raid")
-	t.check(cold.hunts_on_foot and cold.lets_out == 2, "the raid hunts on foot, with two men")
-	for level in EventCatalogue.heat_levels():
-		var hot := EventCatalogue.heated(cold, level)
-		var hunts := level >= Tuning.HEAT_HUNTS_LEVEL
-		t.check(not hot.pursues and not hot.hard_fail,
-				"heat %d: the van itself never chases her and never kills" % level)
-		t.check(hot.investigates == hunts, "heat %d: it lets men out iff it hunts" % level)
-		t.check(hot.validate(), "heat %d: and the raid is fair" % level)
-
-## **No police vehicle chases her like a running man, at any heat** *(azure-koala, finding 7:
-## "police cars chasing the player behave like running people"; inbox #664: "I was chased by police
-## cars still which is just silly")*: neither the patrol car nor the raid's van, nor any copy the
-## return leg or the raid makes of them.
-func _test_no_police_vehicle_pursues_her(t) -> void:
-	for id: String in ["police_patrol", "night_raid"]:
+## **A hunting van stops and lets men out** *(inbox #669: "Van stops, men get out (Recommended)",
+## and for the unmarked van "Same as the police")*: the night raid's and the unmarked van's hunting
+## copies no longer pursue her themselves — they investigate, keeping their cold `hard_fail` — and
+## let two men out, whose catch ends the day ("Ends the day (M56)"); cold each is what it always was.
+func _test_the_hunting_vans_hunt_on_foot(t) -> void:
+	for id: String in ["night_raid", "abduction"]:
+		var cold := EventCatalogue.by_id(id)
+		t.check(cold.hunts_on_foot and cold.lets_out == 2, "'%s' hunts on foot, with two men" % id)
 		for level in EventCatalogue.heat_levels():
-			t.check(not EventCatalogue.heated(EventCatalogue.by_id(id), level).pursues,
-					"'%s' at heat %d never pursues her" % [id, level])
+			var hot := EventCatalogue.heated(cold, level)
+			var hunts := level >= Tuning.HEAT_HUNTS_LEVEL
+			t.check(not hot.pursues and hot.hard_fail == cold.hard_fail,
+					"'%s' heat %d: the van itself never chases her, and is as lethal as cold"
+					% [id, level])
+			t.check(hot.investigates == hunts, "'%s' heat %d: it lets men out iff it hunts"
+					% [id, level])
+			t.check(hot.validate(), "'%s' heat %d: and it is fair" % [id, level])
+	for day: int in [8, 10]:
+		var man := EventCatalogue.out_of_the_car(day, false)
+		t.check(man.hard_fail and man.stop_excitement == 0.0 and man.validate(),
+				"day %d: a hunting van's man ends the day when he catches her" % day)
 
-## **The van stands, two men get out, the first to reach her stops her, and both walk back.** On a
-## real city on day 10, the raid's hunting copy at the kerb with her along the sidewalk from it:
-## once she is within its reach along a clear line, two guardsmen get out at its door, the van never
-## moves; standing still she is reached and stopped once, not twice, and the day does not end; both
-## men walk back and are gone at the van, which stands where it stood.
-func _test_the_raids_van_stops_and_lets_men_out(t) -> void:
-	var rig := _city_with_her(t, 10)
-	var city: City = rig[0]
-	var her: Node2D = rig[1]
-	var map := city.map
-	var start := map.world_to_tile(her.global_position)
-	var van_tile := Vector2i(-1, -1)
-	for dx: int in [5, -5, 4, -4]:
-		var tile := start + Vector2i(dx, 0)
-		var clear := true
-		for k in range(0, absi(dx) + 1):
-			clear = clear and map.tile_at(start + Vector2i(signi(dx) * k, 0)) \
-					== GameEnums.TileType.SIDEWALK
-		if clear:
-			van_tile = tile
-			break
-	t.check(van_tile != Vector2i(-1, -1), "found a sidewalk along from her to stand the van on")
-	if van_tile == Vector2i(-1, -1):
+## **No vehicle chases her like a running man, at any heat** *(azure-koala, finding 7: "police cars
+## chasing the player behave like running people"; inbox #664: "I was chased by police cars still
+## which is just silly")*: no row drawn as a vehicle (`EventInstance.WHEELS_BY_LOOK`) and no car
+## that drives pursues her at any heat.
+func _test_no_vehicle_pursues_her(t) -> void:
+	var vehicles := 0
+	for def in EventCatalogue.all():
+		if not (def.drives or EventInstance.WHEELS_BY_LOOK.has(def.look)):
+			continue
+		vehicles += 1
+		for level in EventCatalogue.heat_levels():
+			t.check(not EventCatalogue.heated(def, level).pursues,
+					"'%s' at heat %d never pursues her" % [def.id, level])
+	t.check(vehicles >= 3, "checked %d vehicle rows" % vehicles)
+
+## **The van stands, two men get out, and they hunt her.** On a real city on day 10, each hunting
+## van's copy at the kerb with her along the sidewalk from it: once she is within its reach along a
+## clear line, two guardsmen get out at its door with no badge, and the van never moves; standing
+## still she is caught by one of them, and the day ends in his name.
+func _test_a_hunting_van_stops_and_lets_men_out(t) -> void:
+	for id: String in ["night_raid", "abduction"]:
+		var rig := _city_with_her(t, 10)
+		var city: City = rig[0]
+		var her: Node2D = rig[1]
+		var map := city.map
+		var start := map.world_to_tile(her.global_position)
+		var van_tile := Vector2i(-1, -1)
+		for dx: int in [5, -5, 4, -4]:
+			var clear := true
+			for k in range(0, absi(dx) + 1):
+				clear = clear and map.tile_at(start + Vector2i(signi(dx) * k, 0)) \
+						== GameEnums.TileType.SIDEWALK
+			if clear:
+				van_tile = start + Vector2i(dx, 0)
+				break
+		t.check(van_tile != Vector2i(-1, -1), "found a sidewalk along from her to stand the van on")
+		if van_tile == Vector2i(-1, -1):
+			_done(city, her)
+			return
+		var hot := EventCatalogue.heated(EventCatalogue.by_id(id), Tuning.RESISTANCE_GOAL)
+		var van := city.events.spawn_extra(hot, map.tile_to_world(van_tile))
+		var where := van.global_position
+		var events := city.events
+		var men: Array[EventInstance] = []
+		var moved := 0.0
+		var struck := [""]
+		var on_struck := func(by: String) -> void: struck[0] = by
+		EventBus.hard_fail_triggered.connect(on_struck)
+		var elapsed := 0.0
+		events._find_player()
+		while elapsed < 30.0 and struck[0] == "":
+			_tick(events)
+			elapsed += STEP
+			moved = maxf(moved, van.global_position.distance_to(where))
+			if men.is_empty() and not van.its_officers().is_empty():
+				men = van.its_officers()
+				t.check(events.pending_warnings().is_empty(),
+						"'%s': they get out with no off-screen badge" % id)
+		EventBus.hard_fail_triggered.disconnect(on_struck)
+		t.check(men.size() == 2 and men.all(func(man: EventInstance) -> bool:
+				return is_instance_valid(man) and man.def.id == "guardsman_giving_chase"),
+				"'%s': two guardsmen got out of the van (%d)" % [id, men.size()])
+		t.check(moved < 0.01, "'%s': the van never moved (%.2fpx)" % [id, moved])
+		t.check(struck[0] == "guardsman_giving_chase",
+				"'%s': standing still she is caught and the day ends in his name (%s)"
+				% [id, struck[0]])
 		_done(city, her)
-		return
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("night_raid"), Tuning.RESISTANCE_GOAL)
-	var van := city.events.spawn_extra(hot, map.tile_to_world(van_tile))
-	var where := van.global_position
-	var events := city.events
-	var men: Array[EventInstance] = []
-	var stops := 0
-	var moved := 0.0
-	var struck := [""]
-	var on_struck := func(id: String) -> void: struck[0] = id
-	EventBus.hard_fail_triggered.connect(on_struck)
-	var elapsed := 0.0
-	events._find_player()
-	while elapsed < 30.0 and struck[0] == "":
-		_tick(events)
-		elapsed += STEP
-		moved = maxf(moved, van.global_position.distance_to(where))
-		if men.is_empty() and not van.its_officers().is_empty():
-			men = van.its_officers()
-			t.check(events.pending_warnings().is_empty(), "they get out with no off-screen badge")
-		if not men.is_empty() and men.all(func(man: EventInstance) -> bool:
-				return not is_instance_valid(man) or man.is_finished):
-			break
-	EventBus.hard_fail_triggered.disconnect(on_struck)
-	for man in men:
-		if is_instance_valid(man) and man.has_stopped_her():
-			stops += 1
-	t.check(men.size() == 2 and men.all(func(man: EventInstance) -> bool:
-			return is_instance_valid(man) and man.def.id == "guardsman_giving_chase"),
-			"two guardsmen got out of the van (%d)" % men.size())
-	t.check(moved < 0.01, "the van never moved (%.2fpx)" % moved)
-	t.check(stops == 1, "standing still she is stopped once, not once per man (%d)" % stops)
-	t.check(struck[0] == "", "and the day does not end (%s)" % struck[0])
-	t.check(men.size() == 2 and men.all(func(man: EventInstance) -> bool:
-			return is_instance_valid(man) and man.is_finished),
-			"both men walked back and got in")
-	t.check(not van.is_finished and not van.is_leaving,
-			"and the van stands where it stood, over its block")
-	_done(city, her)
 
 ## **It notices her only along a clear line**, as every notice does: within its reach but with a
 ## building between them, the car drives on rather than stopping.

@@ -2119,8 +2119,8 @@ func _process(delta: float) -> void:
 		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
 		# `_walkable_step`'s own note says why a moving pursuer may not keep a body: "giving a
 		# pursuer one would let a moving wall pin her against a building on a two-tile pavement."
-		# A hunting `abduction` is solid exactly while it is parked — the instant it stops waiting
-		# it is coming for her, and the body comes down the same frame.
+		# A hunting `abduction` or raid never gets here: it hunts on foot (`EventDef.hunts_on_foot`)
+		# and stays parked, solid, while its men come after her.
 		#
 		# **`body_stays_behind` is the other case, and it is not an exception to that rule.** The
 		# body still stops moving with the pursuer; it stops moving at all. A barrier built across
@@ -2539,8 +2539,9 @@ func its_officers() -> Array[EventInstance]:
 	return out
 
 ## **One of its men has stopped her: every man it let out walks back to it** — "once the policeman
-## reaches her they stop and walk back to the car" (inbox #669), so a van's two cost her once, not
-## twice. The one who stopped her stands with her through his stop first.
+## reaches her they stop and walk back to the car" (inbox #669), so a vehicle that let out more than
+## one man whose catch is a stop costs her once, not once a man. The one who stopped her stands with
+## her through his stop first.
 func _call_back_its_officers(stopped_by: EventInstance) -> void:
 	for officer in its_officers():
 		if officer != stopped_by:
@@ -2860,11 +2861,12 @@ func _victim_time_left() -> float:
 ## **Never starts without enough of the van's own life left to finish in.** A take cut short by the
 ## van disappearing mid-walk would read as a bug rather than as an abduction.
 ##
-## **A hunting van has other business.** The instant it stops waiting it is coming for her rather
-## than idling at the kerb, so an in-progress take is abandoned rather than finished: no victim is
-## drawn again, taken or not, and nothing is logged for a take that never completed.
+## **A hunting van has other business.** The instant it stops waiting it is letting its men out
+## after her (`EventDef.hunts_on_foot`) rather than idling at the kerb, so an in-progress take is
+## abandoned rather than finished: no victim is drawn again, taken or not, and nothing is logged for
+## a take that never completed.
 func _update_the_take() -> void:
-	if def.pursues and not is_waiting():
+	if (def.pursues or def.investigates) and not is_waiting():
 		_victim_taken_at = INF
 		return
 	if _victim_taken_at == INF:
@@ -5064,7 +5066,7 @@ func _draw_robber(canvas: CanvasItem = self) -> void:
 
 ## **The policeman on foot, drawn as the robber is**: his waiting posture while his notice runs —
 ## the one sent from off screen has none and is only ever drawn coming; the one who gets out of an
-## investigating police vehicle holds his ground in it (`EventDef.sets_off_beside_her`) — and while
+## investigating vehicle holds his ground in it (`EventDef.sets_off_beside_her`) — and while
 ## he stands with her through a stop (`has_stopped_her()`); his lunge, with its stride, once he gives
 ## chase and as he walks back to his vehicle. The switch is `_stands_still_now()`, the one
 ## `_draw_masked_pursuer()` reads for the guard. He faces her while he is after her (`_chase()`
@@ -5434,7 +5436,7 @@ func _draw_crater(canvas: CanvasItem = self) -> void:
 	_draw_at_anchor(canvas, IMPACT_CRATER, _CRATER_ANCHOR)
 
 ## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
-## its boom — the same man, and the guardsman a torn poster sends or a police vehicle lets out:
+## its boom — the same man, and the guardsman a torn poster sends or a vehicle lets out:
 ## the `guard_standing_*` family while the telegraph is running, and through a stop
 ## (`_stands_still_now()`), and `guard_lunging_*` once he is actually on her line — the same two
 ## postures
