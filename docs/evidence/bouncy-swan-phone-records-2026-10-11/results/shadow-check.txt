@@ -1,0 +1,3 @@
+shadowruns/track1.log: 7 looks, 1 sited, 0 mismatch lines; last: SHADOW n=7 best_of_agreed=158 disagreed=0 offers_agreed=11 disagreed=0
+shadowruns/track2.log: 106 looks, 4 sited, 0 mismatch lines; last: SHADOW n=106 best_of_agreed=161 disagreed=0 offers_agreed=225 disagreed=0
+shadowruns/track3.log: 75 looks, 2 sited, 0 mismatch lines; last: SHADOW n=75 best_of_agreed=171 disagreed=0 offers_agreed=370 disagreed=0
