@@ -31,7 +31,7 @@ siting check already keeps off her only way. A loss to it names its own cause, "
 never slowed down. You were in the road.", logged and counted as `fire-truck`
 (`lost-hard-fail-fire-truck` in GoatCounter). The picture is anchored over the body by the police
 car's helpers, now shared. `tests/test_fire_truck_body.gd` covers the row, the warning in full where the game creates the truck,
-from all four sides (failing from the north and south before it was created standing), nothing
+from all four sides (failing on every side before it was created standing), nothing
 reaching past its kerb (failing without the cut), nothing
 striking beside or behind, the parked body itself solid and harmless, the field priced from its
 centre, the distinct routes from home to every calm area kept with every tile the parked body touches

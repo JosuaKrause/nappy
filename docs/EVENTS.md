@@ -681,8 +681,9 @@ touch, which counts its body and hers), so with her in its lane there it waits, 
 like any car, until she is out of its way; it then drives on to the kerb. **Its kerb is where it
 stops, so nothing of it reaches past**: its warning, its strike, its doubled caret and its standing
 for her end at the touch it would make parked there (`EventInstance._route_left()`), so in its lane
-beyond the kerb she gets no mark, is never struck by an engine that parks short of her, and does
-not hold it off screen.
+beyond where its parked nose would touch her (about 43px past the kerb) she gets no mark, is never
+struck by an engine that parks short of her, and does not hold it off screen; nearer than that it
+waits for her or strikes as any car does.
 Beside it and behind it it is a solid body that never strikes her. **Once it has parked** at the kerb
 across from the fire (`stops_where_it_arrives`) it is not driving, so it ends nothing from any side,
 and stays a solid body she walks round: it stands in the carriageway's near lane along the street, a
