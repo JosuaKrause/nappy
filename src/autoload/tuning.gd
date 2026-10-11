@@ -396,14 +396,15 @@ const HEAT_INVESTIGATE_WITHIN := 150.0
 ## directly" · "well if the excitement meter is already high it can be lethal".)*
 ##
 ## **Substantial, and never the end of a day on its own** — the stop, and the whole encounter it
-## ends, since the car is quiet while it stands for him (`EventInstance.current_intensity()`): nearly
-## four contacts' worth (eleven points each, `BUMP_INTENSITY`) and well over a conversation's 25
-## (`CHAT_EXCITEMENT`), so being reached is a thing she pays for rather than a bump; and under
-## `METER_MAX` with the rest of the encounter, so from a calm meter it never ends the day — only on a meter already high enough that it carries her to the cap and past
-## `EXCITEMENT_OVERFLOW_TO_CRY` does it. It is his field, but it is spent in a second at its full
-## width, so walking away the instant he reaches her takes little of it off; a sleeping baby takes
-## `SLEEPING_SENSITIVITY` of it, as of everything.
-## Chosen while building, open to overturn.
+## ends, since the car is quiet from its stop until it has left her
+## (`EventInstance.is_quiet_for_its_man()`): nearly four contacts' worth (eleven points each,
+## `BUMP_INTENSITY`) and well over a conversation's 25 (`CHAT_EXCITEMENT`), so being reached is a
+## thing she pays for rather than a bump; and under `METER_MAX` with the rest of the encounter, so
+## from a calm meter it never ends the day — only on a meter already high enough that it carries
+## her to the cap and past `EXCITEMENT_OVERFLOW_TO_CRY` does it. It is his field, but it is spent in
+## a second at its full width, so walking away the instant he reaches her takes little of it off; a
+## sleeping baby takes `SLEEPING_SENSITIVITY` of it, as of everything. Chosen while building, open
+## to overturn.
 const OFFICER_STOP_EXCITEMENT := 40.0
 ## How long the stop lasts: he stands with her while his field lands `OFFICER_STOP_EXCITEMENT`,
 ## fading from twice its mean to nothing, and then walks back to the car. Short and sharp — "a

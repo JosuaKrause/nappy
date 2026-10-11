@@ -1370,14 +1370,17 @@ he reaches her — his catch's own 26px and clear line — he stands with her fo
 `Tuning.OFFICER_STOP_SECONDS` (1s) while his own field lands `Tuning.OFFICER_STOP_EXCITEMENT` (40
 points) on her, fading, and then walks back the way he came and gets in at the door he got out of
 (`EventDef.stop_excitement`). Walking away the instant he reaches her takes little of it off: it is
-a moment, not a place. **The car is quiet while it stands for him**: from the frame it stops until
-he is back in, its own field is off, so the encounter's cost is his — his notice, his chase and his
-stop. **The whole encounter never ends a calm day by itself**: standing still from an empty meter
-through all of it — the car coming up her street, the man's notice, chase, stop and walk back, and
-the car pulling up beside her after — lands under the whole meter
-(`tests/test_pursuer_on_foot.gd` measures it), while on a meter already high it carries her to the
-cap and past the push that ends it, the way any source does. With the car's field on beside his it
-reached the cap from empty.
+a moment, not a place. **The car is quiet until it has left her**: from the frame it stops for
+her, through his notice, chase, stop and walk back, and on as it drives on — past her, or standing
+at a line beside her — until it is outside its own field's reach of her, its field is off
+(`EventInstance.is_quiet_for_its_man()`), so the encounter's cost is his: his notice, his chase and
+his stop. A car that stood for a policeman does not then also cost her as a passing car; its strike
+and its horn are a driving car's and come back the moment it drives. *Chosen while building, open to
+overturn.* **The whole encounter never ends a calm day by itself**: standing still from an empty
+meter through all of it, until the car has left her field, it lands under the whole meter with room
+to spare — `tests/test_pursuer_on_foot.gd` measures it on a hand-made lane and over real patrol
+routes on three seeds and requires 10 points under the cap — while on a meter already high it
+carries her to the cap and past the push that ends it, the way any source does.
 
 `abduction`, `night_raid` and `roadblock` all carry `HUNTS`. Below its own threshold,
 `Tuning.HEAT_HUNTS_LEVEL`, each is untouched — population and intensity are `PRESSES`'s axes, not

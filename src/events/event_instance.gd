@@ -2457,6 +2457,8 @@ var _investigated := false
 ## (`_standing`, `_drive()`), and a van stands where it is.
 func _investigate() -> void:
 	if _investigated:
+		if not _left_her_once and _left_her():
+			_left_her_once = true
 		return
 	if is_waiting():
 		if not _seen_her and player_at != Vector2.INF \
@@ -2477,6 +2479,29 @@ func _investigate() -> void:
 	# A car that stood for its men has stood, so it pulls away only once she is out of its way —
 	# never into her (`_drive()`'s own rule for a car that has stood).
 	_standing = def.drives
+
+## **A car that stood for its man is quiet until it has left her: the man is the encounter.** From
+## the frame an investigating car stops for her, through his notice, chase, stop and walk back, and
+## on as it drives on — past her, or waiting at a line beside her — until it is outside its own
+## field's reach of her (`_left_her()`), its field is off. So what the encounter costs her is his
+## notice, his chase and his stop: substantial, and never the end of a calm day by itself for a
+## player who stands through all of it *(inbox #669: "a substantial cost but not lethal
+## directly")*. A car that stood for a policeman does not then also cost her as a passing car. Its
+## strike and its horn are a driving car's and come back the moment it drives. *Chosen while
+## building, open to overturn.*
+func is_quiet_for_its_man() -> bool:
+	return def.investigates and def.drives and not is_waiting() and not _left_her_once
+
+## True once an investigating car, done with its man, has been outside its own field's reach of her
+## — it stays an ordinary car from then on, whatever she does after. Latched once a frame by
+## `_investigate()`, so the field stays a pure query.
+var _left_her_once := false
+
+## Whether she is outside this car's field from where it is: further than its outer radius past its
+## own body, or nobody to be near.
+func _left_her() -> bool:
+	return player_at == Vector2.INF or global_position.distance_to(player_at) \
+			> def.outer_radius + def.shape.reach()
 
 ## Whether this investigating vehicle is running its route: before it has stopped for her, and
 ## again once it is done investigating. Always false for one that never moves.
@@ -3379,12 +3404,7 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# A silenced mast still stands, but its field is gone — unlike `is_finished`, which means
 		# the thing itself has left. See the field's own doc.
 		return 0.0
-	if def.investigates and def.drives and not _runs_its_route():
-		# **A car standing for its man is quiet: the man is the encounter.** From the frame it stops
-		# for her until he is back in, its own field is off, so what the encounter costs her is his
-		# notice, his chase and his stop — substantial, and never the end of a calm day by itself
-		# for a player who stands through all of it *(inbox #669: "a substantial cost but not
-		# lethal directly")*. With its field on beside his, a calm meter reached the cap.
+	if is_quiet_for_its_man():
 		return 0.0
 	if has_stopped_her():
 		# **The stop** (`EventDef.stop_excitement`): from twice its mean rate to nothing over

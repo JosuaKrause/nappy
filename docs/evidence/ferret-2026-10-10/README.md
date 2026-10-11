@@ -94,7 +94,7 @@ for at in 5.6 6.4 7.6 9.0 10.0 10.6; do
   tools/shot.sh "$OUT/car-stop-$at.png" $at --recipe "$EVIDENCE/car-stop.json" \
       --recipe-mode scripted --player-view --no-save --invincible
 done
-for at in 11.2 10.8 11.8; do
+for at in 10.8 11.2 11.8; do
   tools/shot.sh "$OUT/car-on-$at.png" $at --recipe "$EVIDENCE/car-drive-on.json" \
       --recipe-mode scripted --player-view --no-save --invincible
 done
@@ -115,16 +115,19 @@ done
 - `car-stop-9.0.png`: he has reached her and stopped her. He stands beside her and does not strike.
 - `car-stop-10.0.png`: he walks back to the car the way he came.
 - `car-stop-10.6.png`: he is at the car's door, getting in.
-- `car-on-a.png` (asked for 11.2s), `car-on-b.png` (10.8s), `car-on-c.png` (11.8s), from three runs
-  at the wider zoom, in the order the car moves: he is back in and the car still stands where it
-  stopped; then it has pulled north along its route; then it is further north, leaving the view. It
-  faces north in every frame and never turns round.
+- `car-on-a.png` (asked for 10.8s), `car-on-b.png` (11.2s), `car-on-c.png` (11.8s), from three runs
+  at the wider zoom, in the order the car moves. First he is back in and the car still stands where
+  it stopped, its tail just past the box. Then it has pulled north along its route. Then it is
+  further north, leaving the view. It faces north in every frame and never turns round.
 - `cost-8.8.png`, `cost-9.4.png`, `cost-10.4.png`, `cost-13.0.png`: **the cost, without
   `--invincible`, from an empty meter at the day's start, standing still.** The meter is about 42 as
   he lunges in and about 74 the moment after he reaches her. It is about 83 as he walks back, and
   about 87 once he is in and the car has gone. The day goes on: the run log has no `lost` line, and
   its chase line reads `policeman_giving_chase reached her and stopped her … | exc 84`.
-  `tests/test_pursuer_on_foot.gd` measures the same encounter on its own rig at 83.7 points.
+  At this revision the car's field came back once he was in, so the last two include it passing
+  her. At the branch's tip the car stays quiet until it has left her field, so the encounter lands
+  less. `tests/test_pursuer_on_foot.gd` measures the whole encounter at the branch's tip, over a
+  hand-made lane and real routes on three seeds.
 - `car9-7.6.png`, `car9-9.0.png`: the same on day 9. The car is stopped past the box with the
   guardsman at its door, then the guardsman stands beside her through his stop.
 

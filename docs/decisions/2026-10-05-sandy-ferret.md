@@ -31,15 +31,19 @@ her side, in her view, holds his ground for a 1.8s notice and then chases under 
 contract. **His catch is a stop, not the end of the day** (`EventDef.stop_excitement`): when he
 reaches her he stands with her for `Tuning.OFFICER_STOP_SECONDS` (1s) while his own field lands
 `Tuning.OFFICER_STOP_EXCITEMENT` (40 points), fading, then walks back the way he came and gets in
-at the door he got out of. **The car is quiet while it stands for him**, so the encounter's cost is
-his. Measured on `tests/test_pursuer_on_foot.gd`'s city rig, standing still from an empty meter
-through the whole encounter — the car coming up her street, the man's notice, chase, stop and walk
-back, and two seconds after — lands 83.7 points, under the whole meter: it never ends a calm day by
+at the door he got out of. **The car is quiet until it has left her**: from the frame it stops,
+through his notice, chase, stop and walk back, and on as it drives on past her or stands at a line
+beside her, until it is outside its own field's reach of her — so the encounter's cost is his.
+Measured by `tests/test_pursuer_on_foot.gd`, standing still from an empty meter through the whole
+encounter until the car has left her field, with no lights, over 37 encounters (a hand-made lane on
+days 8 and 9, and real `_along_street_path()` routes on seeds 4242, 90210 and 314159): 58.7 to 82.4
+points, under the whole meter; the test requires the worst under 90. It never ends a calm day by
 itself, and on a meter already high it carries her to the cap and past the push that ends it, as
-any source does. With the car's field on beside his, the re-review measured about 100 by the time
-he was back in, and a played run from 0 was lost crying to him in 9.7s; that is why the car is
-quiet. Inside a district door's hold, where only the door's toll reaches her, he does not stop her:
-he waits and stops her once she is let out. Once he is back in, the car drives on
+any source does. With the car's field on while it stood, the second review measured about 100 by
+the time he was back in, and a played run from 0 was lost crying to him in 9.7s; with the car quiet
+only while it stood, the third review measured a clean pass beside her at about 104 and a car then
+waiting at a line beside her at 134 to 138. Inside a district door's hold, where only the door's
+toll reaches her, he does not stop her: he waits and stops her once she is let out. Once he is back in, the car drives on
 along its route the way it was going — standing first while she is in its way — and leaves where
 the route ends. This was azure-koala's finding 7 ("police cars chasing the player behave like
 running people").
@@ -77,7 +81,8 @@ does and never leaves while a man of its own is still out. No vehicle pursues he
   copy gains `pursues`, 130px/s …". Both vans let men out instead; the men's catch ends the day, so
   the lethality M56 gave the hunting rung stands, carried by the men rather than the vans.
 
-**Open to overturn, chosen while building:** the car quiet while it stands for its man; the man
+**Open to overturn, chosen while building:** the car quiet from its stop until it has left her
+field; the man
 waiting out a hold rather than giving up his chase on it (the door's own guard gives up; "if she
 voluntarily goes to a hut the whole pursuit has been accomplished" was said of that guard only);
 "close" read as the car's 150px notice; the stop's

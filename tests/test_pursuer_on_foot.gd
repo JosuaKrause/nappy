@@ -33,13 +33,14 @@ func run(t) -> void:
 	_test_the_hunting_vans_hunt_on_foot(t)
 	_test_no_vehicle_pursues_her(t)
 	_test_a_hunting_van_stops_and_lets_men_out(t)
+	_test_a_hunting_van_waits_for_its_men(t)
 
 # ------------------------------------------------------------------ the rig ---
 
 ## A real city on `SEED`'s map in the tree, its events told it is `day`, and a stand-in for her at
 ## a sidewalk beside a building, returned as `[city, her]`.
-func _city_with_her(t, day: int) -> Array:
-	var map := CityGenerator.generate(SEED)
+func _city_with_her(t, day: int, seed_value := SEED) -> Array:
+	var map := CityGenerator.generate(seed_value)
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
 	city.build(map)
@@ -520,50 +521,112 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t) ->
 ## costs her substantially. *(Inbox #669, the player: "it needs to give a substantial cost but not
 ## lethal directly" · "well if the excitement meter is already high it can be lethal".)* On a real
 ## city through the manager's own steps, everything the day's events land on her where she stands,
-## from the heated patrol coming up her street to two seconds after its man is back in: the car's
-## approach, the man's notice and chase, his stop, his walk back. Standing still nothing decays
-## (`Tuning.EXCITEMENT_DECAY_IDLE` is 0), so this sum is the meter from 0: it must stay under
-## `Tuning.METER_MAX`, so the day's push at the cap is never reached, and over a stop's own worth.
+## from the heated patrol coming up her street until the car, done with its man, has left her field
+## or is gone: the car's approach, the man's notice and chase, his stop, his walk back, and the car
+## driving on past her. No lights, so no car is held beside her by one. Standing still nothing
+## decays (`Tuning.EXCITEMENT_DECAY_IDLE` is 0), so the sum is the meter from 0. Over the hand-made
+## lane on days 8 and 9 and over real `_along_street_path()` routes on three seeds, her standing
+## beside each at several places, the worst must stay under `Tuning.METER_MAX` by
+## `ENCOUNTER_MARGIN` — the cap never reached, let alone the push past it that ends the day — and
+## every encounter must cost more than his stop alone.
 func _test_the_whole_encounter_from_calm_never_ends_the_day(t) -> void:
 	t.check(is_zero_approx(Tuning.EXCITEMENT_DECAY_IDLE), "standing still, nothing decays")
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
+	var worst := 0.0
+	var least := INF
+	var encounters := 0
 	for day: int in [8, 9]:
 		var rig := _city_with_her(t, day)
 		var city: City = rig[0]
 		var her: Node2D = rig[1]
 		var spot := _a_lane_beside_a_sidewalk(city.map)
-		if spot.size() != 2:
-			t.check(false, "found a lane beside a sidewalk")
-			_done(city, her)
-			return
-		var lane: Vector2 = spot[0]
-		her.global_position = spot[1]
-		var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"),
-				Tuning.RESISTANCE_GOAL)
-		var route := PackedVector2Array([lane - Vector2(280.0, 0.0), lane + Vector2(400.0, 0.0)])
-		var car := city.events.spawn_extra(hot, route[0], route)
-		var events := city.events
-		events._find_player()
-		var landed := 0.0
-		var officer: EventInstance = null
-		var back_for := 0.0
-		var elapsed := 0.0
-		while elapsed < 30.0 and back_for < 2.0:
-			_tick(events)
-			elapsed += STEP
-			landed += events.total_excitement_at(her.global_position) * STEP
-			if officer == null and car.its_officer() != null:
-				officer = car.its_officer()
-			if officer != null and (not is_instance_valid(officer) or officer.is_finished):
-				back_for += STEP
-		t.check(officer != null and back_for >= 2.0, "day %d: the whole encounter played out" % day)
-		t.check(landed < Tuning.METER_MAX,
-				"day %d: standing still from a calm meter, the whole encounter lands %.1f, under "
-				% [day, landed] + "the whole meter")
-		t.check(landed > Tuning.OFFICER_STOP_EXCITEMENT,
-				"day %d: and costs her more than his stop alone (%.1f)" % [day, landed])
-		print("[test_pursuer_on_foot] day %d: the whole encounter, standing still from 0, lands %.1f"
-				% [day, landed])
+		if spot.size() == 2:
+			var lane: Vector2 = spot[0]
+			her.global_position = spot[1]
+			var landed := _the_whole_encounter(city, her, hot,
+					PackedVector2Array([lane - Vector2(280.0, 0.0), lane + Vector2(400.0, 0.0)]))
+			t.check(landed >= 0.0, "day %d: on the hand-made lane the man got out and was done" % day)
+			if landed >= 0.0:
+				encounters += 1
+				worst = maxf(worst, landed)
+				least = minf(least, landed)
 		_done(city, her)
+	for seed_value: int in [4242, 90210, 314159]:
+		var rig := _city_with_her(t, 8, seed_value)
+		var city: City = rig[0]
+		var her: Node2D = rig[1]
+		var map := city.map
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		var routes := 0
+		var tile := Vector2i(Tuning.STREET_WIDTH + 1, 0)
+		for attempt in 4000:
+			if routes >= 6:
+				break
+			tile = Vector2i(posmod(tile.x * 7 + 13 + attempt, map.size.x),
+					posmod(tile.y * 5 + 29 + attempt * 3, map.size.y))
+			if map.tile_at(tile) != GameEnums.TileType.ROAD or map.is_closed(tile):
+				continue
+			var route := EventScheduler._along_street_path(map, tile, hot, rng)
+			if route.size() < 2 or route[0].distance_to(route[1]) < 400.0:
+				continue
+			routes += 1
+			var along := (route[1] - route[0]).normalized()
+			for fraction: float in [0.4, 0.6, 0.8]:
+				var at := _beside(map, route[0].lerp(route[1], fraction), along)
+				if at == Vector2.INF:
+					continue
+				her.global_position = at
+				var landed := _the_whole_encounter(city, her, hot, route)
+				if landed < 0.0:
+					continue
+				encounters += 1
+				worst = maxf(worst, landed)
+				least = minf(least, landed)
+		_done(city, her)
+	print("[test_pursuer_on_foot] the whole encounter, standing still from 0, over %d encounters: "
+			% encounters + "%.1f to %.1f" % [least, worst])
+	t.check(encounters >= 20, "%d whole encounters played out" % encounters)
+	t.check(worst < Tuning.METER_MAX - ENCOUNTER_MARGIN,
+			"the worst of them lands %.1f, under the whole meter by %.0f" % [worst, ENCOUNTER_MARGIN])
+	t.check(least > Tuning.OFFICER_STOP_EXCITEMENT,
+			"and the least costs her more than his stop alone (%.1f)" % least)
+
+## How far under the whole meter the worst whole encounter has to stay: room for a source she
+## passes on the way, on top of the push at the cap (`Tuning.EXCITEMENT_OVERFLOW_TO_CRY`) that
+## would end the day.
+const ENCOUNTER_MARGIN := 10.0
+
+## Drives one heated patrol down `route` at her where she stands in `city`, through the manager's own
+## steps with no lights, until it has let its man out, he is done, and the car has left her field
+## or is gone — or 40s have passed, which leaves a car still standing beside her for her at a zebra
+## she waits at, quiet, since it has not left her. Answers what landed on her, or -1 when the car
+## never stopped for her or its man was not done. Everything the encounter put in the world is
+## retired.
+func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
+		route: PackedVector2Array) -> float:
+	var events := city.events
+	var car := events.spawn_extra(hot, route[0], route)
+	car.signals = null
+	events._find_player()
+	var landed := 0.0
+	var officer: EventInstance = null
+	var elapsed := 0.0
+	while elapsed < 40.0:
+		_tick(events)
+		elapsed += STEP
+		landed += events.total_excitement_at(her.global_position) * STEP
+		if officer == null and car.its_officer() != null:
+			officer = car.its_officer()
+		var out_of_reach := car.global_position.distance_to(her.global_position) \
+				> hot.outer_radius + hot.shape.reach()
+		if car.is_finished or car.is_leaving or (car._investigated and out_of_reach):
+			break
+	var finished := officer != null and (not is_instance_valid(officer) or officer.is_finished)
+	for instance in events.instances().duplicate():
+		events.retire(instance)
+	events._retire_finished()
+	return landed if finished else -1.0
 
 ## **It never stops in a junction box** *(sunny-finch: nothing enters a box it cannot leave)*, over
 ## real patrol routes rather than a hand-made one: on three seeds, `police_patrol`'s own
@@ -701,6 +764,46 @@ func _test_no_vehicle_pursues_her(t) -> void:
 			t.check(not EventCatalogue.heated(def, level).pursues,
 					"'%s' at heat %d never pursues her" % [def.id, level])
 	t.check(vehicles >= 3, "checked %d vehicle rows" % vehicles)
+
+## **A hunting van waits for its men**: its `duration` runs from its notice, but it does not leave
+## the kerb past `telegraph_time + duration` while a man it let out is still out; once he is back
+## in, it leaves.
+func _test_a_hunting_van_waits_for_its_men(t) -> void:
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)
+	t.check(hot.duration > 0.0, "the hunting van has a duration of its own (%.0fs)" % hot.duration)
+	var van := EventInstance.new()
+	van.setup(hot, Vector2.ZERO)
+	t.add_child(van)
+	van.set_process(false)
+	var far := Vector2(hot.pursues_within - 10.0, 0.0)
+	van.player_at = far
+	van._process(STEP)
+	t.check(van.officers_owed() == 2, "it notices her and owes two men")
+	var men: Array[EventInstance] = []
+	for i in 2:
+		var man := EventInstance.new()
+		man.setup(EventCatalogue.out_of_the_car(10, false), Vector2(0.0, -60.0))
+		van.let_out(man)
+		men.append(man)
+	var elapsed := 0.0
+	var past := hot.telegraph_time + hot.duration + 2.0
+	while elapsed < past:
+		van.player_at = Vector2(2000.0, 0.0)
+		van._process(STEP)
+		elapsed += STEP
+	t.check(not van.is_finished and not van.is_leaving,
+			"%.0fs after its notice, past its own %.0fs, it still stands with its men out"
+			% [elapsed, hot.telegraph_time + hot.duration])
+	men[0]._finish()
+	van._process(STEP)
+	t.check(not van.is_finished and not van.is_leaving, "with one man still out it still stands")
+	men[1]._finish()
+	van._process(STEP)
+	van._process(STEP)
+	t.check(van.is_finished or van.is_leaving, "once both are back in, it leaves")
+	for man in men:
+		man.free()
+	van.free()
 
 ## **The van stands, two men get out, and they hunt her.** On a real city on day 10, each hunting
 ## van's copy at the kerb with her along the sidewalk from it: once she is within its reach along a
