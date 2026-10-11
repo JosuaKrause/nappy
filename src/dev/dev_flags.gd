@@ -322,9 +322,11 @@ static func _web_query() -> String:
 ## The command line, or nothing at all outside a debug build — the one choke point every getter
 ## below reads through.
 static func _args() -> PackedStringArray:
+	if not enabled():
+		return PackedStringArray()
 	if not args_for_tests.is_empty():
 		return args_for_tests
-	return OS.get_cmdline_user_args() if enabled() else PackedStringArray()
+	return OS.get_cmdline_user_args()
 
 ## Command-line words a test stands in for the real ones, so a flag's own getter can be exercised
 ## (`--pelican`); empty outside a test.

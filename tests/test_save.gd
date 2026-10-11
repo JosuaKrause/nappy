@@ -539,8 +539,8 @@ func _test_a_save_from_before_the_fenced_park_still_loads(t) -> void:
 			"and none is fenced, rather than keeping whatever was in memory")
 	GameSave._clear_now()
 
-## **The walls survive the file, and a save from before there were posters loads with none up.**
-## `posters` rides at the top level for the reason `escape_section` does.
+## **The pelican bag's count survives the file, and a save from before it loads at 0.** `pelican`
+## rides at the top level beside `posters`, for the same reason.
 func _test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at_0(t) -> void:
 	GameState.start_run(656565)
 	GameState.pelican.draws = 9
@@ -561,6 +561,8 @@ func _test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at
 			"a save written before the bag loads at 0 over a run with a count (%d)"
 			% GameState.pelican.draws)
 
+## **The walls survive the file, and a save from before there were posters loads with none up.**
+## `posters` rides at the top level for the reason `escape_section` does.
 func _test_the_posters_survive_a_round_trip(t) -> void:
 	GameState.start_run(646464)
 	GameState.posters.paste(Vector2i(5, 6), PosterArt.Kind.LEADER, false, 1)
