@@ -1,7 +1,7 @@
 # Playtest coral-lark — The policeman on foot, lag spikes on the phone, the park cordon, day 11's mast
 
 2026-10-11.
-Said as four inbox notes on GitHub Issues, #669, #670, #680 and #684, and answered in comments on
+Said as five inbox notes on GitHub Issues, #669, #670, #680, #684 and #694, and answered in comments on
 them. Each note is recorded as it holds: first what its words answered, where a comment says so,
 then the words themselves, whole, and each later word after what it answers. The questions and
 context are the assistant's; only the quoted lines are the player's.
@@ -79,3 +79,13 @@ context are the assistant's; only the quoted lines are the player's.
 2. **The note.**
 
    > Exempt like fixed masts (Recommended)
+
+## #694
+
+1. **What the note answered** (the assistant):
+
+   After the assistant closed day 12's softlock (snowy-trout) as not reproduced on headless desktop runs, when it had happened on the phone, and then asked whether to reopen feathery-quail (police cars vanishing; one path found and fixed, not confirmed to be the player's case) and silver-osprey (the loose dog; "indefinitely" never reproduced literally) "until you've confirmed them on the phone".
+
+2. **The note.**
+
+   > I confirmed them since I filed them. if you can't reproduce just ask me to provide a frame record

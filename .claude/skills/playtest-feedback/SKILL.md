@@ -124,13 +124,14 @@ that stays after its run has been played is asked for twice.
 
 **A bug that does not reproduce here is not closed here.** *(2026-10-11, of day 12's softlock,
 closed after headless desktop rigs did not reproduce it, when the player had met it on the phone:
-"how can you close something as not-reproduced when it happened on a phone?")* A headless rig, a
-suite and a desktop run cannot see what only the player's device, build or timing shows: a long
-frame on a phone reads to the player as a lock and to a rig as nothing at all. So before a report
-is closed as not reproduced, the device and build it happened on are asked, on the note or in the
-conversation, and a run that could not have seen it on that device is said to be one: the entry
-stays open with what was ruled out, and a review item asks the player for the evidence that device
-can give (the frame record on the phone), rather than a record saying it did not come back.
+"how can you close something as not-reproduced when it happened on a phone?" · "I confirmed them
+since I filed them. if you can't reproduce just ask me to provide a frame record".)* A bug the player
+filed is confirmed by the filing; a headless rig, a suite or a desktop run that does not show it has
+only failed to see it, as a long frame on a phone reads to the player as a lock and to a rig as
+nothing at all. So when a report does not reproduce here, the player is asked for a frame record
+(`?debug=1&framerecord=1` on the phone, saved with the page's own button; `docs/TELEMETRY.md`,
+"Per-system frame records") by a review item and in the conversation, and the entry stays open,
+saying what was ruled out, until it comes.
 
 ## Never silently overturn a decision the player took
 
