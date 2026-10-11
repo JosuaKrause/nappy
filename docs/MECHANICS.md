@@ -1027,8 +1027,10 @@ telegraphs hands her more ground in two seconds than the entire chase can take b
 owed by an ordinary pursuer is `PURSUIT_MIN_NOTICE` seconds of visibly being closed on. `Tuning.validate_pursuit()` is the
 whole contract and it runs on load.
 
-**And it stops at walls.** A chase is a straight line at whatever is chasing her, and nothing about
-that line asks the city anything — so `EventInstance._walkable_step()` clamps every step of it to
+**And it stops at walls.** A chase is a straight line at whatever is chasing her (all but day 13's
+task guard, set on her from wherever he stands, who walks the way to her round buildings where no
+clear line runs to her: `docs/EVENTS.md`, the resistance's trap), and nothing about that line asks
+the city anything — so `EventInstance._walkable_step()` clamps every step of it to
 ground `CityMap.is_walkable()` agrees with, sliding along whichever single axis is still open when
 the direct line is not, rather than cutting the corner of a building the way an unclamped chase
 would. It is not a body — a pursuer stays exempt from `obstructs_radius` for the same reason

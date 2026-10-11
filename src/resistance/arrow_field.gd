@@ -68,6 +68,34 @@ static func start(map: CityMap, targets: Array[Dictionary],
 		field.anchors[target["key"]] = anchor_of(map, target)
 	return field
 
+## The ground a sweep runs over: each tile `UNREACHED`, or `BLOCKED` where she cannot walk right
+## now — today's closures (`CityMap.closed_tiles`, the fenced park's ground included), the soft
+## seals shut to walkers (`soft_sealed_tiles`), the tile under every stationary solid body standing
+## (`obstructed_tiles`) and a precinct's posts, and outside an authored scene's stretch. What that
+## record leaves out she walks through here as she does in the street: a mobile row, which moves out
+## of her way, and a door's own bodies, which let a walker through. One reading for every sweep, so
+## the red arrow and day 13's guard set on her (`EventInstance._paths_to_her`) never disagree about
+## where she can walk; a caller lays it out once for each state of what blocks her
+## (`CityMap.day_record_version`, `CityMap.obstruction_version`).
+static func ground_for(map: CityMap) -> PackedInt32Array:
+	var width := map.size.x
+	var ground := PackedInt32Array()
+	ground.resize(width * map.size.y)
+	ground.fill(UNREACHED)
+	# The authored scene's void is BUILDING to every live walking query, while a sweep reads the
+	# saved context's raw tile array for its inner loop, so the boundary goes into the ground.
+	if map.stretch_active:
+		for y in map.size.y:
+			for x in map.size.x:
+				if not map.in_stretch(Vector2i(x, y)):
+					ground[y * width + x] = BLOCKED
+	for blocked: Dictionary in [map.closed_tiles, map.soft_sealed_tiles, map.obstructed_tiles,
+			map.post_tiles()]:
+		for tile: Vector2i in blocked:
+			if map.in_bounds(tile):
+				ground[tile.y * width + tile.x] = BLOCKED
+	return ground
+
 ## Lays the field out on `ground` — every tile `UNREACHED`, or `BLOCKED` where she cannot walk
 ## today (`ResistanceDirector._ground_for_the_arrow()`) — and seeds the targets.
 func _begin(map: CityMap, ground: PackedInt32Array) -> void:
