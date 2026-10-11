@@ -80,6 +80,11 @@ class Planned extends RefCounted:
 	## `travelled`, or a row streamed out mid-chase comes back `is_waiting()`, having forgotten it.
 	## See `EventManager._stream_out()` and `_stream_in()`, and `EventInstance.resume()`.
 	var noticed_at := INF
+	## Whether the guard who set off from this roadblock's barrier was spent (or leaving) when it was
+	## last streamed out, and which side's post he left empty: what `EventInstance.
+	## come_back_as_the_barrier()` restores, so a re-streamed barrier is only the barrier.
+	var guard_spent := false
+	var chaser_side := 0
 
 	## False for an event the day has budgeted but not sited.
 	func is_placed() -> bool:
@@ -176,6 +181,30 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
+	var filled_from := _plan_through_the_fill(day, base, map, consumed_one_shots, scars, used_calm,
+			tree, heat, doors, standing, planned)
+	_thin_the_walls(day, _stream(base, WALL_THINNING_SALT), planned, filled_from)
+	_ensure_the_run_is_taught(day, planned, heat)
+
+	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in the
+	# park that is taken once she has reached it (PLAYTEST-122: "the day guarantees a second open
+	# park she can reach from the swing"). Both passes below are asked about the calm *other* than
+	# the target's: one of those areas is left clean, and a route to it is kept.
+	var target_calm := _calm_block_holding(map, target)
+	_ensure_one_usable_park(map, planned, used_calm, target_calm)
+	_ensure_the_city_is_still_walkable(map, planned, target, standing, target_calm)
+	_hand_to_her_walk(planned)
+	return planned
+
+## `build_day` up to and including the fill, appended to `planned`: the ambient rows, the scars,
+## the masts, the scripted rows, the one-shots, the spoilers in a park she used and the recurring
+## fill, each phase on its own stream off `base` (`_stream`). Answers the index the fill's own
+## placements start at, which is what `_thin_the_walls` asks about. A function of its own so a test
+## can hold the day before the thinning beside the day after it (`tests/test_events_scheduler.gd`).
+static func _plan_through_the_fill(day: int, base: int, map: CityMap,
+		consumed_one_shots: Array[String], scars: Array[Dictionary], used_calm: Array[Vector2i],
+		tree: RouteTree, heat: int, doors: PackedVector2Array, standing: Array[Planned],
+		planned: Array[Planned]) -> int:
 	# Which tiles each kind of event may stand on, worked out at most once per day. See
 	# `_ground_for`; it is threaded through rather than kept on the map because its lifetime is
 	# exactly one day and a cache with a shorter life than its invalidation rule is a bug waiting.
@@ -195,18 +224,47 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground,
 			leave_alone, corridor, heat, doors, standing)
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm, heat)
+	var filled_from := planned.size()
 	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, heat, doors, standing)
-	_ensure_the_run_is_taught(day, planned, heat)
+	return filled_from
 
-	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in the
-	# park that is taken once she has reached it (PLAYTEST-122: "the day guarantees a second open
-	# park she can reach from the swing"). Both passes below are asked about the calm *other* than
-	# the target's: one of those areas is left clean, and a route to it is kept.
-	var target_calm := _calm_block_holding(map, target)
-	_ensure_one_usable_park(map, planned, used_calm, target_calm)
-	_ensure_the_city_is_still_walkable(map, planned, target, standing, target_calm)
-	_hand_to_her_walk(planned)
-	return planned
+## **From the gatehouse day on, the fill keeps only a share of the walls it placed** —
+## `Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE`, rolled once per `WALL`-role placement the fill made, from
+## `filled_from` on. *(azure-puffin, point 4: "when the guard houses are set up the city gets much
+## harder to navigate let's loosen the density of the hard blocking events in that case"; "fewer of
+## all three".)* A wall is one of the three hard blockers off the tree, with the seals and the
+## closures, and the region wall dividing the city from `Tuning.REGION_WALL_FIRST_DAY` is what made
+## the three together too much.
+##
+## **A removal after the fill rather than a lighter weight in it, because a weight cannot make
+## fewer.** A wall's tile weights (`_copies_of`) only decide *where* a wall stands, never how many
+## the day places; and halving a wall row's weight in the roll left most of the walls standing and
+## respent the budget on friction, which is aimed at the routes she walks — the opposite of a looser
+## city. Dropping a share of the placed walls takes exactly that share away and moves nothing
+## else: the fill itself is untouched, so every other row stands where it would have.
+##
+## **Only the fill's own walls.** A scripted row, a one-shot and the spoilers in a park she used are
+## placed for a reason that is not density, and nothing before `filled_from` is asked.
+##
+## **Only ever a removal, so it is safe where a repair would not be**: every guarantee the passes
+## after this make, and the corridor's own, is about reaching somewhere, and a wall taken off the
+## ground only adds ground she can reach — the **city** skill's monotonic exception. Before
+## `_ensure_one_usable_park` and `_ensure_the_city_is_still_walkable`, so those two judge the day
+## that actually stands.
+static func _thin_the_walls(day: int, rng: RandomNumberGenerator, planned: Array[Planned],
+		filled_from: int) -> void:
+	if day < Tuning.REGION_WALL_FIRST_DAY:
+		return
+	for i in range(planned.size() - 1, filled_from - 1, -1):
+		var plan := planned[i]
+		if plan.role != GameEnums.BlockerRole.WALL or not plan.is_placed():
+			continue
+		if rng.randf() >= Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE:
+			planned.remove_at(i)
+
+## The phase salt `_thin_the_walls` draws its stream from — after `build_day`'s own three phases and
+## far below `FILL_SALT`, so it never shares a stream with the fill it thins.
+const WALL_THINNING_SALT := 4
 
 ## The calm block whose calm ground holds a tile of `target`, or `(-1, -1)` when none does — day
 ## 12's swing stands in its park; day 9's door and the station's door stand on streets.

@@ -845,7 +845,9 @@ func closures_for_day(day: int) -> int:
 	return CLOSURES_PER_ACT[clampi(act_for_day(day) - 1, 0, CLOSURES_PER_ACT.size() - 1)]
 
 # ------------------------------------------------------------------- the seals ---
-# `SealPlanner` closes every street off the day's route tree. See docs/CITY.md, "Sealing the tree".
+# `SealPlanner` closes the streets off the day's route tree — every one of them before
+# `REGION_WALL_FIRST_DAY`, `GATEHOUSE_DAY_SEAL_SHARE` of them from it. See docs/CITY.md, "Sealing the
+# tree".
 
 ## The fraction of the day's **soft** seal pairs that lose one body in the final thinning pass, so
 ## a wrong turn stays open long enough to be taken and discovered rather than reading as a wall on
@@ -933,6 +935,32 @@ const REGION_COUNT := 4
 ## across one of the doors this opens, on purpose: it is the day she finds out whether a stroller
 ## gets through.
 const REGION_WALL_FIRST_DAY := 9
+
+## **From the gatehouse day on, fewer hard blockers off the day's route tree** — *(azure-puffin,
+## point 4: "when the guard houses are set up the city gets much harder to navigate let's loosen the
+## density of the hard blocking events in that case"; asked which, "fewer of all three. gatehouses
+## stay and remain on the actual paths".)* The region wall and its doors divide the city into regions
+## from `REGION_WALL_FIRST_DAY`, so the three things that close the ground off the tree are thinned
+## from that day on, each by one share below. Nothing about the tree, the routing or the region plan
+## changes: these only take blockers away, and a blocker taken away only adds ground she can reach
+## (the **city** skill's one monotonic exception), so every reachability guarantee stays true.
+##
+## **How much is a proposal, not something the player asked for** — they said *fewer*, not how many
+## — so each share is a half and each is its own constant, to be moved against a played day.
+##
+## The share of off-tree streets `SealPlanner.plan_day` still seals, rolled once per street that
+## would otherwise carry a seal; the same share multiplies `ALLEY_MOUTH_SEAL_CHANCE` for a
+## through-alley's mouths.
+const GATEHOUSE_DAY_SEAL_SHARE := 0.5
+
+## The share of `closures_for_day()` that `ClosurePlanner` still closes, rounded to the nearest
+## street, a half up (`ClosurePlanner.closures_wanted`).
+const GATEHOUSE_DAY_CLOSURE_SHARE := 0.5
+
+## The share of the **wall**-role rows the day's fill placed that stay standing, rolled once per
+## placement (`EventScheduler._thin_the_walls`). A wall is only ever placed off the tree, so this is
+## the share of the catalogue's own blockers off it that the day keeps.
+const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
 
 ## Seconds a `checkpoint_hut`/`checkpoint_post` detention holds her — *(2026-09-10, playtest 55:
 ## "the checkpoint itself, 2s should be enough".)* Short rather than heavier than
@@ -1807,8 +1835,10 @@ const EVENT_WALL_GAP_WEIGHT := 6
 ##
 ## The other half of *"wall or event"*, and it is the **impassable** half: an event in a gap makes
 ## switching strands expensive and a closure makes it impossible, which is why having both is
-## variety rather than two names for the same thing. There is at most one closure a day in act I and
-## four in act IV, so this can be strong without closing many gaps — the quota is the limit.
+## variety rather than two names for the same thing. A day closes a handful of streets at most
+## (`ClosurePlanner.closures_wanted()`: `CLOSURES_PER_ACT`, and from `REGION_WALL_FIRST_DAY` on
+## `GATEHOUSE_DAY_CLOSURE_SHARE` of it), so this can be strong without closing many gaps — the quota
+## is the limit.
 const CLOSURE_GAP_BIAS := 4.0
 
 ## Where the line between *friction* and a *very costly* wall falls, in points of the meter it costs

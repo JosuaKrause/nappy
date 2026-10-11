@@ -1,6 +1,7 @@
 class_name SealPlanner
 extends RefCounted
-## Seals every street off the day's route tree — the placement M64 exists for.
+## Seals the streets off the day's route tree — every one of them before the gatehouse day, a share
+## of them from it — the placement M64 exists for.
 ##
 ## The design is `docs/DECISIONS.md`, "Nothing off the path". The corridor
 ## (`RouteTree.for_day`) is the day's only free way through; everything else in the lattice is
@@ -45,7 +46,7 @@ extends RefCounted
 ## `_hard_positions`.
 ##
 ## **A seal never stands in a street tree, and a felled one only stands where a tree stood.**
-## `plan_day` puts a seal on every off-tree street whether or not `EventScheduler` would have
+## `plan_day` puts a seal on the off-tree streets it seals whether or not `EventScheduler` would have
 ## offered that tile, so the scheduler's own refusal of a tree's ground cannot cover it — the
 ## refusal is applied here instead, at `_seal_along_tile`, which is the one place a seal's site is
 ## chosen. An ordinary seal steps along the street to the nearest tile whose cross-section is
@@ -80,7 +81,7 @@ extends RefCounted
 ## clause for it — a seal never standing on tree ground already covers the ground between the
 ## doorstep and the corridor, because that ground is now tree ground like any other.
 ##
-## **A final pass thins the seals**, after every street off the tree has one: a small fraction of
+## **A final pass thins the seals**, after every street it seals has one: a small fraction of
 ## the day's soft pairs drop one body, so a wrong turn stays open long enough to be taken rather
 ## than reading as a wall on sight. See `_thin_soft_pairs` for why this is not the repair pass
 ## `CLAUDE.md` warns against.
@@ -94,6 +95,10 @@ extends RefCounted
 ## `Tuning.ALLEY_MOUTH_SEAL_CHANCE` rolls each qualifying alley rather than sealing every one of
 ## them every day, so the alley reads as an occasional exception rather than a wall of its own. See
 ## `_seal_alley_mouths`.
+##
+## **From `Tuning.REGION_WALL_FIRST_DAY` on, only a share of those streets and alleys is sealed**
+## (`Tuning.GATEHOUSE_DAY_SEAL_SHARE`): the region wall divides the city into regions from that
+## day, and the player found the two together much harder to navigate. See `_seals_this_street`.
 ##
 ## **A crossing alley — one whose two mouths open onto two different regions' ground — is never one
 ## of these candidates**, whichever way the tree runs. `RegionPlanner` already decides it as a door
@@ -148,10 +153,11 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 
 # ------------------------------------------------------------------- planning ---
 
-## Every seal for the day: one per off-tree, real, non-home, non-spine, non-boundary street,
-## thinned by a small fraction, plus the mouths of any through-alley that rejoins the corridor at
-## neither end. Returned as `EventScheduler.Planned` so the caller (`EventManager.start_day`) can
-## simply append them to the day's plan.
+## Every seal for the day: one per off-tree, real, non-home, non-spine, non-boundary street — one in
+## `Tuning.GATEHOUSE_DAY_SEAL_SHARE` of them from `Tuning.REGION_WALL_FIRST_DAY` on — thinned by a
+## small fraction, plus the mouths of any through-alley that rejoins the corridor at neither end.
+## Returned as `EventScheduler.Planned` so the caller (`EventManager.start_day`) can simply append
+## them to the day's plan.
 ##
 ## `skip` is a set of keys to leave alone on top of the ordinary exclusions — today's region
 ## boundary, both wall and door, from `Tuning.REGION_WALL_FIRST_DAY` on. It carries two kinds of
@@ -195,6 +201,9 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 	# thinning pass below needs the segment back to mark the surviving side's own pavement tiles in
 	# `CityMap.soft_sealed_tiles` as well as to drop one body of the pair — see `_thin_soft_pairs`.
 	var soft_pairs: Array = []
+	# From the gatehouse day on, only a share of the streets below is sealed at all — see
+	# `_seals_this_street`. Asked once here so a day before it draws nothing extra from `rng`.
+	var thinned := day >= Tuning.REGION_WALL_FIRST_DAY
 	for segment in StreetNetwork.segments():
 		var key := segment.key()
 		if not map.has_street(key) or tree.is_on_the_tree(key) or skip.has(key):
@@ -202,6 +211,8 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 		if home and key == home.key():
 			continue
 		if _is_the_main_road(map, segment):
+			continue
+		if thinned and not _seals_this_street(rng):
 			continue
 		var candidate := _pick_candidate(day, rng, lined.has(key))
 		if not candidate:
@@ -381,6 +392,25 @@ const _FINALE_ALLEY_DEF := "collapsed_frontage"
 static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	return map.is_main_road(not segment.horizontal, segment.a.x)
 
+## Whether a street the loop in `plan_day` would seal is sealed today, from
+## `Tuning.REGION_WALL_FIRST_DAY` on — one roll per street against
+## `Tuning.GATEHOUSE_DAY_SEAL_SHARE`. *(azure-puffin, point 4: "when the guard houses are set up the
+## city gets much harder to navigate let's loosen the density of the hard blocking events in that
+## case"; "fewer of all three".)* The region wall already divides the city into regions from that day,
+## and a seal on every street off the tree as well is what made it hard to navigate.
+##
+## **Spread evenly rather than kept near the rim**, the same way `_thin_soft_pairs` picks which
+## pairs lose a body: an independent roll per street, so the streets left open are anywhere off the
+## tree rather than a band of it. The tree itself, and so every route and distance, is untouched —
+## the streets left open are still off the tree, they are only no longer walled.
+##
+## **Only ever a removal, so it is safe where a repair would not be**: every guarantee the sealing
+## carries (`tests/test_seals.gd`) is about reaching somewhere, and a street left unsealed only adds
+## ground she can reach — the **city** skill's monotonic exception, the same argument as the
+## thinning pass's.
+static func _seals_this_street(rng: RandomNumberGenerator) -> bool:
+	return rng.randf() < Tuning.GATEHOUSE_DAY_SEAL_SHARE
+
 ## The candidate id that is a felled street tree, and the one seal picture whose street is not a
 ## free choice: *(2026-09-11, the player: "fallen trees should only be possible on streets with
 ## trees and one spot should be empty (the fallen tree's spot)")*. Offered nowhere else — a gate
@@ -424,7 +454,7 @@ static func _effective_first_day(def: EventDef) -> int:
 ##
 ## **A seal never stands in a tree.** A seal is one of the day's bodies like any other
 ## (`docs/EVENTS.md`, "Where in the city, and why"), but it does not come through the scheduler's
-## candidate ground: `plan_day` puts one on every off-tree street whether or not the scheduler
+## candidate ground: `plan_day` puts one on each off-tree street it seals whether or not the scheduler
 ## would have offered that tile. So the refusal is applied here instead, at the one place a seal's
 ## site is chosen — the tile nearest the street's own midpoint whose cross-section carries no
 ## standing tree, searched outward from the middle so an ordinary seal barely moves. A street is
@@ -714,7 +744,8 @@ static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -
 # ----------------------------------------------------------------------- alleys ---
 
 ## Seals the mouths of every through-alley that touches the tree at neither end — and only a
-## `Tuning.ALLEY_MOUTH_SEAL_CHANCE` fraction of those, rolled once per qualifying alley. See the
+## `Tuning.ALLEY_MOUTH_SEAL_CHANCE` fraction of those, rolled once per qualifying alley, and from
+## `Tuning.REGION_WALL_FIRST_DAY` on that fraction times `Tuning.GATEHOUSE_DAY_SEAL_SHARE`. See the
 ## class doc, "What alleys are for" — the smallest reading of a detail the design leaves open, taken
 ## rather than guessed at: an alley that touches the corridor at either end is kept open outright
 ## (the way round a wall), and one that touches it at neither is a *candidate* to be walled at both
@@ -729,6 +760,11 @@ static func _seal_alley_mouths(map: CityMap, tree: RouteTree,
 	if def_id == "":
 		return planned
 	var mouth_def := sealed_variant(EventCatalogue.by_id(def_id), true)
+	# From the gatehouse day on, the same share `_seals_this_street` keeps of the streets, folded
+	# into the one roll each qualifying alley already gets rather than rolled a second time.
+	var chance := Tuning.ALLEY_MOUTH_SEAL_CHANCE
+	if day >= Tuning.REGION_WALL_FIRST_DAY:
+		chance *= Tuning.GATEHOUSE_DAY_SEAL_SHARE
 	for rect in map.alley_rects:
 		# A through-alley can be built over by a later generation pass (`CityGenerator.
 		# _make_the_pair_solid`), which does not retract it from `alley_rects` — so the ground is
@@ -754,7 +790,7 @@ static func _seal_alley_mouths(map: CityMap, tree: RouteTree,
 		# The roll is per qualifying alley, after the tree-connectivity rule already decided which
 		# alleys are candidates at all — so the fraction is of "alleys that would have been sealed",
 		# not of every alley in the city.
-		if rng.randf() >= Tuning.ALLEY_MOUTH_SEAL_CHANCE:
+		if rng.randf() >= chance:
 			continue
 		planned.append(_alley_mouth_plan(map, rect, vertical, true, mouth_def))
 		planned.append(_alley_mouth_plan(map, rect, vertical, false, mouth_def))

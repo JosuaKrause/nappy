@@ -885,7 +885,7 @@ which is the far corner of a 640x360 view with the camera's look-ahead on top of
 deleted, out of shot, where a deletion is what it looks like from the inside and nothing at all
 from the outside.
 
-Three things worth keeping straight:
+Four things worth keeping straight:
 
 - **It is over the moment it starts leaving.** A cat that trailed its field behind it for the two
   seconds it took to reach the kerb would be a worse bug than vanishing.
@@ -899,6 +899,16 @@ Three things worth keeping straight:
   `EventDef.stops_where_it_arrives` **parks and stays**, which is the fire engine at its fire.
   Parking is not an ending: it still emits, still carries its cue, and is still the same event —
   the standing field is the whole point of it.
+- **One thing leaves and is not deleted: the guard who set off from a barrier**
+  (`EventDef.body_stays_behind`). A roadblock has no departure speed, so he leaves at his chasing
+  pace. The barrier is its own node (`RoadblockBand`) and keeps charging what a waiting roadblock
+  charges (`def.intensity`) while he goes: the field is centred on the band, walled off from the
+  band, and carries a rim of its own on the band, while the man, who costs her nothing, has none.
+  He is in her view as he goes, so he is held to the rule above and not to `LEAVING_GIVES_UP`'s
+  clock (`_leaving_must_clear_sight`, as for a car): the instance goes back to being only the
+  barrier — waiting, solid, costing what a barrier costs — once he is out of her sight, or after
+  the backstop when there is no player to be out of sight of. The exception to "it is over the
+  moment it starts leaving" is the barrier, not the man.
 
 ## Scheduling
 
@@ -985,8 +995,8 @@ survives all of them together, and refuses the placement that would close it, in
 the pacing row that would land in a closed street and the standing row that would close an opening.
 See `docs/CITY.md`, "A pacing row is passed by waiting, or left at a crossing".
 
-**A seal is checked the same way in a different place.** `SealPlanner` puts a body on every
-off-tree street whether or not the scheduler would have offered that tile, so it never asks
+**A seal is checked the same way in a different place.** `SealPlanner` puts a body on the
+off-tree streets it seals whether or not the scheduler would have offered that tile, so it never asks
 `_open_ground_for` at all; `SealPlanner._seal_along_tile` applies the tree refusal at the one place
 a seal's site is chosen, stepping along the street from its midpoint to the nearest cross-section
 with no pit in it. The single exception in the whole game is `fallen_tree_seal`, which stands *on*
@@ -1121,6 +1131,19 @@ placing it. What the weight does move is the split: costly rows land on the corr
 than off it, and lethal rows land on the rim far more often than elsewhere, with the corridor's
 share drifting down over the run as it fills up and `EVENT_SPACING_SAME` pushes the overflow
 outward. The measurement that established this is in `docs/DECISIONS.md` under M50.
+
+**From the gatehouse day on, the fill keeps only a share of its walls, and that share is a count,
+not a weight.** *(azure-puffin, point 4: "when the guard houses are set up the city gets much harder
+to navigate let's loosen the density of the hard blocking events in that case"; "fewer of all
+three".)* From `Tuning.REGION_WALL_FIRST_DAY`, once the fill has spent the day's budget,
+`EventScheduler._thin_the_walls` rolls each wall-role placement it made against
+`Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE` and takes the rest back off the ground. A lighter weight could
+not do it, for the reason in the paragraph above: the tile weights only move *where* a wall stands,
+and a lighter row weight in the roll respends the budget on friction, which is aimed at the routes
+she walks. Only the fill's own walls are asked — a scripted row, a one-shot and the spoilers in a
+park she used are placed for a reason that is not density — and it is only a removal, so every guarantee
+about reaching somewhere still holds (the **city** skill's monotonic exception). The seals and the
+road closures are thinned from the same day: see `docs/CITY.md`, "How heavy" and "Sealing the tree".
 
 ### A set piece happens where she is going
 
@@ -1430,7 +1453,17 @@ standing at his. Two fields make that work and both are general rather than writ
   stops waiting, because a moving pursuer with a body is a wall. A barrier is not the man's own
   bulk: `EventInstance` pins it at the place it was left and draws it there for the rest of the
   event's life, so **the street he abandoned stays shut behind him**. Nothing appears and nothing
-  disappears.
+  disappears. **The barrier is furniture, not part of the man**: the band and the guard posted
+  beside it are their own y-sorted node (`EventInstance.RoadblockBand`) standing at the body, so
+  they never ride his stride bob and never re-sort with him, and the body is re-pinned through his
+  departure too. **It outlives the chase**: when the chase ends — she shook him off, or his chase
+  ran out — he walks away at his chasing pace, the barrier keeping its own field on while he goes,
+  and the instance goes back to being only the barrier, waiting, solid and costing what a barrier
+  costs, with the post he left empty. He does not come back for her, and **the guard still
+  standing at the other post is only a drawing from then on** (a choice open to overturn; the
+  alternative is that the one who chased walks back to his post and the barrier is armed again).
+  A barrier streamed out and in again comes back the same way: the plan carries the spent guard
+  (`Planned.guard_spent`, `chaser_side`). *("the guarded barriers disappear after shaking off the pursuer. that doesn't make sense.")*
 - **`EventDef.lethal_radius`**, and `lethal_reach()` is what every caller asks. The field and the
   killer are no longer the same object — the field is a street being held and is cored on the band
   at `inner_radius` 86, while what ends the day is a pair of arms at 28px, the same

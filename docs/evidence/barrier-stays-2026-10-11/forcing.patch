@@ -1,0 +1,20 @@
+diff --git i/src/dev/scene_recipe_runtime.gd w/src/dev/scene_recipe_runtime.gd
+index 4de407a4..0ae35a9d 100644
+--- i/src/dev/scene_recipe_runtime.gd
++++ w/src/dev/scene_recipe_runtime.gd
+@@ -867,9 +867,15 @@ func _event_plans(player_at: Vector2, errors: Array[String],
+ 			errors.append("event %s is outside authored bounds" % entry.name)
+ 			continue
+ 		var def := EventCatalogue.by_id(entry.row)
++		if def.heat_response != EventDef.HeatResponse.NONE:
++			def = EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL)
+ 		var plan: EventScheduler.Planned
+ 		if def.id == EventScheduler.WalkSiting.MAST_ROW:
+ 			plan = _mast_placement(def, at, plans, doors)
++		elif def.id == "roadblock":
++			var rb_rng := RandomNumberGenerator.new()
++			rb_rng.seed = 1
++			plan = EventScheduler._build_placement(def, map, map.world_to_tile(at), rb_rng)
+ 		elif finale:
+ 			plan = _finale_placement(def, at, player_at, finale, plans,
+ 					int(entry.get("route_seed", 1)))

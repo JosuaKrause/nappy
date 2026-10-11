@@ -473,11 +473,38 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 		walked += 0.1
 		nearest = minf(nearest, guard.global_position.distance_to(at))
 		lethal = guard.is_lethal_at(at)
-	t.check(lethal or nearest <= standoff + 1.0,
-			"(%s) he comes from %.0fpx away to her (nearest %.0fpx, stand-off %.0fpx, caught %s, %.1fs)"
-			% [what, start, nearest, standoff, lethal, walked])
+	# He comes straight at her (`EventInstance._chase()`), sliding along whatever wall is in the
+	# way, so where a building stands across his line he closes in until he is pressed against it
+	# and no further: what is asked then is that he ends nearer her than he started, within a tile
+	# and a half of where his own straight line to her first meets a building — stopped by it, not
+	# standing in the open.
+	var meets := _where_the_line_first_meets_a_building(map, guard.global_position, at)
+	var short_of_it := guard.global_position.distance_to(meets)
+	var against_it := meets != Vector2.INF and short_of_it <= Tuning.TILE_SIZE * 1.5
+	t.check(lethal or nearest <= standoff + 1.0
+			or (against_it and guard.global_position.distance_to(at) < start),
+			("(%s) he comes from %.0fpx away to her, or up against the building across his line " +
+			"(nearest %.0fpx, stand-off %.0fpx, caught %s, %.0fpx from where his line meets a " +
+			"building, %.1fs)") % [what, start, nearest, standoff, lethal, short_of_it, walked])
 	_tear_down(player, director, city)
 	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+
+## The last point of the straight line from `from` to `to` before it first enters ground she
+## cannot walk (`CityMap.is_walkable()`), stepped a few pixels at a time — where a man chasing her
+## in a straight line comes up against a building — or `Vector2.INF` when the line is walkable all
+## the way.
+static func _where_the_line_first_meets_a_building(map: CityMap, from: Vector2,
+		to: Vector2) -> Vector2:
+	var length := from.distance_to(to)
+	var last := from
+	var along := 0.0
+	while along <= length:
+		var point := from.move_toward(to, along)
+		if not map.is_walkable(map.world_to_tile(point)):
+			return last
+		last = point
+		along += 2.0
+	return Vector2.INF
 
 ## Walkable, open, unobstructed ground within `reach` of `body`, nearest the reach's edge first —
 ## where she stands to touch it — or `Vector2.INF`.

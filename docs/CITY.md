@@ -226,8 +226,10 @@ bodies never seal it off:
   rule about the tree, since friction stands on the corridor. `_ensure_the_city_is_still_walkable`
   drops the widest of them until some tile of the place is reachable from home under the discs of
   every obstructing or hard-fail body the day has — the seals and the region wall's own included,
-  which it never drops — the same question `ResistanceDirector._reachable_from_home()` asks. Only
-  ever a removal, which is the city's one monotonic exception.
+  which it never drops — the question `ResistanceDirector._reachable_from_home()` asks too, with
+  the soft seals' bands added since the red arrow reads those as shut. A soft seal stands only off
+  the tree, so the bands never cut the tree's way to the place. Only ever a removal, which is the
+  city's one monotonic exception.
 
 **What it promises is one tile of the place, not every tile of it and not a tile chosen ahead.** The
 pool is the tiles the contact may stand on (`ResistanceSteps.target_candidates`) that pass the
@@ -1365,10 +1367,19 @@ winnable with two cars standing in it.
 
 ### How heavy
 
-`CLOSURES_PER_ACT` is `[1, 2, 3, 4]` — four streets of a few hundred on the worst day. That is a
-city that has had a bad morning, not a city under siege, and it is deliberately light: the route
-pressure the player actually feels is at the scale of a *block*, and it comes from what is standing
-on the street rather than from what is shut.
+`CLOSURES_PER_ACT` is `[1, 2, 3, 4]` — a handful of streets of a few hundred on the worst day. That
+is a city that has had a bad morning, not a city under siege, and it is deliberately light: the
+route pressure the player actually feels is at the scale of a *block*, and it comes from what is
+standing on the street rather than from what is shut.
+
+**From the gatehouse day on, the day closes only a share of that**
+(`Tuning.GATEHOUSE_DAY_CLOSURE_SHARE`, rounded to the nearest street, a half up —
+`ClosurePlanner.closures_wanted`). *(azure-puffin, point 4: "when the guard houses are set up the
+city gets much harder to navigate let's loosen the density of the hard blocking events in that
+case"; "fewer of all three".)* The region wall divides the city from `Tuning.REGION_WALL_FIRST_DAY`,
+and the closures, the seals and the catalogue's walls off the tree are all thinned from that day so
+the two together stay navigable. The candidate order is unchanged — the same streets are tried
+first and the quota stops sooner — and a closure fewer only adds ground she can reach.
 
 ### Where a closure goes — a wall, off the corridor
 
@@ -1432,11 +1443,14 @@ day's tiles with every barrier tile added on top; what the flood never reaches i
 ### Sealing the tree
 
 **A road closure is not what makes off-corridor ground closed.** `ClosurePlanner` shuts a handful
-of streets a day — one in act I, rising to four — which is guidance at the scale of a route
-decision, not a wall around the whole city. `SealPlanner` (`src/routes/seal_planner.gd`) is the
+of streets a day — `Tuning.CLOSURES_PER_ACT`'s one in act I, rising act by act, and from the
+gatehouse day on a share of that (`Tuning.GATEHOUSE_DAY_CLOSURE_SHARE`, applied in
+`ClosurePlanner.closures_wanted()`) — which is guidance at the scale of a route decision, not a
+wall around the whole city. `SealPlanner` (`src/routes/seal_planner.gd`) is the
 separate pass that does that: every street off the day's tree, real and not the home's own —
-about 187 of the lattice's 264 on a typical day — carries a **seal**, so the corridor stops being
-the *cheapest* way through and becomes the *only* free one. It is planned the same morning as the
+about 187 of the lattice's 264 on a typical day — carries a **seal** (a share of them from the
+gatehouse day on, below), so the corridor stops being the *cheapest* way through and becomes the
+*only* free one. It is planned the same morning as the
 closures, off the same tree, and counted apart from the day's event budget: a seal is a fact about
 where she may walk, not a piece of the catalogue's variety.
 
@@ -1477,6 +1491,16 @@ round a wall the design asks for; one that touches it at neither end is a *candi
 at both mouths, so it can never bridge two sealed streets into a second city behind them — but only
 `Tuning.ALLEY_MOUTH_SEAL_CHANCE` of those candidates actually are, rolled once per qualifying alley,
 so an alley reads as the occasional exception rather than a wall of its own.
+
+**From the gatehouse day on, only a share of those streets is sealed.** *(azure-puffin, point 4:
+"when the guard houses are set up the city gets much harder to navigate"; "fewer of all three".)*
+From `Tuning.REGION_WALL_FIRST_DAY` the region wall divides the city, and a seal on every street off
+the tree as well made it too hard to find a way through. So `SealPlanner` rolls each street it would
+seal against `Tuning.GATEHOUSE_DAY_SEAL_SHARE` — an independent roll per street, spread evenly
+across the off-tree ground rather than kept near the rim, the same way the thinning below picks — and
+the alley-mouth chance is multiplied by the same share. The tree, the routing and the region plan
+are untouched: a street left unsealed is still off the tree, it is only no longer walled, and a
+barrier left out only adds ground she can reach.
 
 **A final pass thins the seals.** A small `Tuning.SEAL_THINNING_FRACTION` of the day's soft pairs
 lose one body — never a hard seal, never an alley mouth — so a wrong turn stays open long enough to

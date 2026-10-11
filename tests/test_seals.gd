@@ -1,6 +1,7 @@
 extends RefCounted
-## `SealPlanner`: every street off the day's tree carries a seal, the tree, the doorstep and the
-## main road never do, and sealing never breaks the day's own winnability.
+## `SealPlanner`: every street off the day's tree carries a seal (a share of them from the gatehouse
+## day), the tree, the doorstep and the main road never do, and sealing never breaks the day's own
+## winnability.
 ##
 ## `docs/DECISIONS.md`, "Place a seal off the tree, on every segment" is the design;
 ## `src/routes/seal_planner.gd` is the implementation. The winnability check here is a hard
@@ -24,7 +25,7 @@ var _maps: Array[CityMap] = []
 func run(t) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 91))
-	_test_every_off_tree_street_is_sealed(t)
+	_test_off_tree_streets_are_sealed(t)
 	_test_the_tree_and_the_doorstep_are_never_sealed(t)
 	_test_the_main_road_is_never_sealed(t)
 	_test_the_tree_itself_is_untouched(t)
@@ -112,9 +113,20 @@ func _sealed_segments(map: CityMap, planned: Array[EventScheduler.Planned]) -> D
 
 # ---------------------------------------------------------------------- the core ---
 
-## The whole point: a seal stands on every off-tree, real, non-home street, and nowhere else.
-func _test_every_off_tree_street_is_sealed(t) -> void:
+## How far the share of streets sealed from the gatehouse day on may sit from
+## `Tuning.GATEHOUSE_DAY_SEAL_SHARE`, over one seed's days from it to the end of the run — about a
+## thousand rolls, so a share honoured by the roll lands well inside this and one not honoured at
+## all (every street sealed, or none) lands well outside it.
+const _SEAL_SHARE_TOLERANCE := 0.1
+
+## The whole point: a seal stands on every off-tree, real, non-home street, and nowhere else —
+## before the gatehouse day. From `Tuning.REGION_WALL_FIRST_DAY` on, `Tuning.GATEHOUSE_DAY_SEAL_SHARE`
+## of those streets carry one (azure-puffin, point 4: "fewer of all three"), so there the check is
+## the share sealed over the seed's late days, and still never a seal off the candidates.
+func _test_off_tree_streets_are_sealed(t) -> void:
 	for map in _maps:
+		var late_candidates := 0
+		var late_sealed := 0
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var tree := _tree_for(map, day)
 			var home := ClosurePlanner.home_street(map)
@@ -126,9 +138,13 @@ func _test_every_off_tree_street_is_sealed(t) -> void:
 			for key in candidates:
 				if not sealed.has(key):
 					missing += 1
-			t.check(missing == 0,
-					"seed %d day %d: %d off-tree streets carry no seal (of %d candidates)"
-					% [map.seed_used, day, missing, candidates.size()])
+			if day >= Tuning.REGION_WALL_FIRST_DAY:
+				late_candidates += candidates.size()
+				late_sealed += candidates.size() - missing
+			else:
+				t.check(missing == 0,
+						"seed %d day %d: %d off-tree streets carry no seal (of %d candidates)"
+						% [map.seed_used, day, missing, candidates.size()])
 
 			var extra := 0
 			for key in sealed:
@@ -137,6 +153,14 @@ func _test_every_off_tree_street_is_sealed(t) -> void:
 			t.check(extra == 0,
 					"seed %d day %d: %d seals stand on a street that was never a candidate"
 					% [map.seed_used, day, extra])
+		t.check(late_candidates > 0,
+				"seed %d: the days from the gatehouse day had off-tree streets to seal (%d)"
+				% [map.seed_used, late_candidates])
+		var share := float(late_sealed) / maxf(1.0, float(late_candidates))
+		t.check(absf(share - Tuning.GATEHOUSE_DAY_SEAL_SHARE) <= _SEAL_SHARE_TOLERANCE,
+				"seed %d: from the gatehouse day %.2f of the off-tree streets are sealed (%d of %d), "
+				% [map.seed_used, share, late_sealed, late_candidates]
+				+ "the share asked for is %.2f" % Tuning.GATEHOUSE_DAY_SEAL_SHARE)
 
 func _test_the_tree_and_the_doorstep_are_never_sealed(t) -> void:
 	for map in _maps:
@@ -250,7 +274,7 @@ func _add_circle(map: CityMap, blocked: Dictionary, at: Vector2, radius: float) 
 ## checks below so the two only differ in what they flood against, not in how they build `blocked`.
 ## Not routed through `_seals_for`'s cache: the original pipeline plans a day's seals *after*
 ## its closures are already on the map (`map.close_streets(closures)` runs first), while the
-## cache's first fill (from `_test_every_off_tree_street_is_sealed`) plans them against a map
+## cache's first fill (from `_test_off_tree_streets_are_sealed`) plans them against a map
 ## with no closures applied at all. Sharing the two would silently change which ground a seal
 ## sees as taken on the one test that actually composes seals with closures.
 func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
