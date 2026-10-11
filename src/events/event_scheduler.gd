@@ -176,6 +176,30 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
+	var filled_from := _plan_through_the_fill(day, base, map, consumed_one_shots, scars, used_calm,
+			tree, heat, doors, standing, planned)
+	_thin_the_walls(day, _stream(base, WALL_THINNING_SALT), planned, filled_from)
+	_ensure_the_run_is_taught(day, planned, heat)
+
+	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in the
+	# park that is taken once she has reached it (PLAYTEST-122: "the day guarantees a second open
+	# park she can reach from the swing"). Both passes below are asked about the calm *other* than
+	# the target's: one of those areas is left clean, and a route to it is kept.
+	var target_calm := _calm_block_holding(map, target)
+	_ensure_one_usable_park(map, planned, used_calm, target_calm)
+	_ensure_the_city_is_still_walkable(map, planned, target, standing, target_calm)
+	_hand_to_her_walk(planned)
+	return planned
+
+## `build_day` up to and including the fill, appended to `planned`: the ambient rows, the scars,
+## the masts, the scripted rows, the one-shots, the spoilers in a park she used and the recurring
+## fill, each phase on its own stream off `base` (`_stream`). Answers the index the fill's own
+## placements start at, which is what `_thin_the_walls` asks about. A function of its own so a test
+## can hold the day before the thinning beside the day after it (`tests/test_events_scheduler.gd`).
+static func _plan_through_the_fill(day: int, base: int, map: CityMap,
+		consumed_one_shots: Array[String], scars: Array[Dictionary], used_calm: Array[Vector2i],
+		tree: RouteTree, heat: int, doors: PackedVector2Array, standing: Array[Planned],
+		planned: Array[Planned]) -> int:
 	# Which tiles each kind of event may stand on, worked out at most once per day. See
 	# `_ground_for`; it is threaded through rather than kept on the map because its lifetime is
 	# exactly one day and a cache with a shorter life than its invalidation rule is a bug waiting.
@@ -197,18 +221,7 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm, heat)
 	var filled_from := planned.size()
 	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, heat, doors, standing)
-	_thin_the_walls(day, _stream(base, WALL_THINNING_SALT), planned, filled_from)
-	_ensure_the_run_is_taught(day, planned, heat)
-
-	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in the
-	# park that is taken once she has reached it (PLAYTEST-122: "the day guarantees a second open
-	# park she can reach from the swing"). Both passes below are asked about the calm *other* than
-	# the target's: one of those areas is left clean, and a route to it is kept.
-	var target_calm := _calm_block_holding(map, target)
-	_ensure_one_usable_park(map, planned, used_calm, target_calm)
-	_ensure_the_city_is_still_walkable(map, planned, target, standing, target_calm)
-	_hand_to_her_walk(planned)
-	return planned
+	return filled_from
 
 ## **From the gatehouse day on, the fill keeps only a share of the walls it placed** —
 ## `Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE`, rolled once per `WALL`-role placement the fill made, from
@@ -1811,11 +1824,6 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ## furniture. **`WalkSiting.ahead_of()`/`off_her_path()` do not pass one** — the director hands
 ## them the whole of `_plans`, seals and the wall included, as their own `already`
 ## (`EventManager.start_day`), so they already ask every question `standing` exists to add here.
-static var DBG := {}
-static func _dbg(why: String, def: EventDef) -> void:
-	if def.id == "loudspeaker":
-		DBG[why] = int(DBG.get(why, 0)) + 1
-
 static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
@@ -1833,7 +1841,6 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := _build_placement(def, map, tile, rng)
 		if not candidate:
-			_dbg('build', def)
 			continue
 		candidate.role = role
 		# **A pacing row's role is decided here rather than in `_role_for`**, because what makes a
@@ -1850,13 +1857,11 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		# Before the spacing, because this one is about the *ground* rather than about what is
 		# already on it, and because it can never bend.
 		if _reaches_any(candidate, leave_alone):
-			_dbg('leave_alone', def)
 			continue
 		# And for the same reason: a region door keeps clear ground around itself on both sides, so
 		# that whichever side she is let out on is ground she can read before anything charges her.
 		# See `_clear_of_the_doors()` and `Tuning.CHECKPOINT_EVENT_GAP`.
 		if not _clear_of_the_doors(candidate.position, candidate.path, doors, def.field_reach()):
-			_dbg('doors', def)
 			continue
 		# And before the spacing for the same reason: a crossing a route has no way around is
 		# ground the row may not have, not a preference that bends. See
@@ -1864,20 +1869,17 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		# see this function's own doc — so a seal or the region wall already reaching this
 		# crossing is not invisible to it.
 		if not _leaves_the_route_junctions_open(candidate, map, corridor, ground, reach_context):
-			_dbg('junctions', def)
 			continue
 		# And the same for the stretch between two junctions, asked of the sidewalk the tree is
 		# actually walked along rather than of the street: the far side of a street answers a van,
 		# and nothing answers a van on the side the route is drawn down. See
 		# `_leaves_the_routes_sidewalk_open`.
 		if not _leaves_the_routes_sidewalk_open(candidate, map, corridor, ground, reach_context):
-			_dbg('sidewalk', def)
 			continue
 		# And the opening a pacing row's beat leaves is ground in its own right: the rows reaching
 		# one route street are asked together whether a walk along it survives, so nothing stands in
 		# the one end the yeller is away from. See `_leaves_a_pacing_beats_opening`.
 		if not _leaves_a_pacing_beats_opening(candidate, map, corridor, reach_context):
-			_dbg('pacing', def)
 			continue
 		var room := _room_around(candidate, already)
 		if room == INF:

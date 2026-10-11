@@ -98,17 +98,31 @@ func _test_closures_are_deterministic(t) -> void:
 
 ## The count is the act's, unless the invariant would not let the planner have that many —
 ## which is a floor it may fall short of, never a ceiling it may exceed.
+##
+## **And from the gatehouse day on it is fewer than the act's** — azure-puffin, point 4: "fewer of
+## all three". Asked against `Tuning.closures_for_day()`, the act's own quota, rather than against
+## `ClosurePlanner.closures_wanted()`, which would read the rule back to itself: on a day whose act
+## quota is more than one street, the day shuts fewer than that quota.
 func _test_closure_counts_follow_the_act(t) -> void:
+	var thinned_days := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var closures := _plan(map, day)
 			t.check(closures.size() <= ClosurePlanner.closures_wanted(day),
 					"seed %d day %d shuts at most the act's %d streets"
 					% [map.seed_used, day, ClosurePlanner.closures_wanted(day)])
+			if day >= Tuning.REGION_WALL_FIRST_DAY and Tuning.closures_for_day(day) > 1:
+				thinned_days += 1
+				t.check(closures.size() < Tuning.closures_for_day(day),
+						("seed %d day %d, from the gatehouse day, shuts fewer than the act's %d " +
+						"streets (%d)")
+						% [map.seed_used, day, Tuning.closures_for_day(day), closures.size()])
 			for closure in closures:
 				t.check(day >= int(RoadClosure.KINDS[closure.kind]["first_day"]),
 						"seed %d day %d: %s cannot happen yet"
 						% [map.seed_used, day, RoadClosure.display_name(closure.kind)])
+	t.check(thinned_days > 0,
+			"the sweep had days from the gatehouse day with an act quota above one (%d)" % thinned_days)
 
 ## Both mouths always come out, and nothing a closure marks closed ever stops being walkable —
 ## `close_streets` narrows *how much* of a street is unreachable, never whether the ground itself
