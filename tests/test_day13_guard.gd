@@ -231,11 +231,11 @@ static func _a_way_past(map: CityMap, guard: Vector2, body: Vector2, reach: floa
 			queue.append(next)
 	return false
 
-## Whether any part of a waiting robber standing at `feet` (22 by 44px above his feet, a few px to
-## spare) is in the test's view.
 func robbery_edge_of(roadblock: EventInstance) -> float:
 	return EventCatalogue.by_id("alley_robbery").pursues_within + ContactPoint.body_reach(roadblock)
 
+## Whether any part of a waiting robber standing at `feet` (22 by 44px above his feet, a few px to
+## spare) is in the test's view.
 func _guard_in_view(feet: Vector2) -> bool:
 	return _view.has_area() and _view.intersects(Rect2(feet + Vector2(-14.0, -48.0),
 			Vector2(28.0, 52.0)))
