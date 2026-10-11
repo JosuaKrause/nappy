@@ -9,8 +9,8 @@ extends RefCounted
 ## (`docs/TODO.md`, M181: "waiting at home, found gone, closing in front of her, coming on her
 ## way"): day 10's raid is **waiting at home** and the neighbor is gone from the next morning; day
 ## 11's market is **found gone**, a block ahead of her boarded up before she gets there, and it
-## stays boarded; day 12's park **closes in front of her** once she has reached its swing, and stays
-## requisitioned; day 13's column **comes down the main road on her way**, and the barricade it
+## stays boarded; day 12's park **closes in front of her** once she has reached its swing, the
+## police taping it off round its edge, and stays requisitioned; day 13's column **comes down the main road on her way**, and the barricade it
 ## stops at stays for the rest of the run.
 ##
 ## **Deterministic from the run seed and the day**, like every other placement: its own stream
@@ -67,11 +67,9 @@ var _market_owed := false
 var _siting: EventScheduler.WalkSiting = null
 ## The block boarded up today, `(-1, -1)` before then and on every other day. Kept for the tests.
 var market_block := Vector2i(-1, -1)
-## Day 12's park closing: its ground as rings, outermost first, and the clock to the next ring.
-var _closing: Array = []
-var _closing_every := 0.0
-var _closing_in := 0.0
-var _closing_park := Vector2i(-1, -1)
+## Day 12's park closing: the police cordon round it, from the touch of its swing for the rest of
+## the day, or null. Kept for the tests.
+var cordon: ParkCordon = null
 ## Whether today still owes the column, and its trucks once it has come. Kept for the tests.
 var _column_owed := false
 var column: Array[EventInstance] = []
@@ -100,8 +98,9 @@ func start_day(day: int, with_its_events := true) -> void:
 	_look_in = 0.0
 	_siting = null
 	market_block = Vector2i(-1, -1)
-	_closing.clear()
-	_closing_park = Vector2i(-1, -1)
+	if cordon:
+		cordon.clear()
+	cordon = null
 	column.clear()
 	_market_owed = with_its_events and day == MARKET_DAY
 	_column_owed = with_its_events and day == COLUMN_DAY
@@ -131,8 +130,8 @@ func tick(delta: float, her: Vector2, velocity: Vector2, shows: Callable) -> voi
 		_maybe_raid(her, shows)
 	if _market_owed:
 		_maybe_the_market(delta, her)
-	if not _closing.is_empty():
-		_close_a_ring(delta)
+	if cordon:
+		cordon.tick(delta, her, shows)
 	if _column_owed:
 		_maybe_the_column(her)
 
@@ -320,12 +319,13 @@ static func _distance_to_rect(point: Vector2, rect: Rect2) -> float:
 ## *"*then* the park starts to close which will force her to go to another park"* (PLAYTEST-119).
 ## Called by the director the instant the swing is reached. The park stops being forced open and
 ## takes its arc's requisition now (`CityState.take()`), so it is requisitioned for the rest of the
-## run; the city stops counting it as calm (`CityMap.recompute_calm()`); and its ground goes from
-## grass to churned mud a ring at a time from the edges in, over `Tuning.PARK_CLOSING_SECONDS`
-## (`City.close_ground()`), so the calm left under her shrinks toward the swing while she watches
-## and is gone before the baby could be settled in it. Mud is walkable ground: she is never shut
-## in, she only has to go elsewhere, and the day has kept a second clean park reachable for exactly
-## that (`docs/CITY.md`, "Guarantees"). Returns whether the park was taken.
+## run; the city stops counting it as calm (`CityMap.recompute_calm()`); and the police close it
+## with a cordon (`ParkCordon`): officers walk in from out of her sight and tape its edge a stretch at
+## a time, working round it from the side farthest from her, so the way out shrinks to a last gap
+## nearest where she stood, while others walk the park's people out. The ground stays grass. She
+## leaves through the gap; if it is taped with her inside, she is shut in and the day ends. The day
+## has kept a second clean park reachable for the baby (`docs/CITY.md`, "Guarantees"). Returns
+## whether the park was taken.
 func take_the_park() -> bool:
 	if not _map:
 		return false
@@ -334,50 +334,16 @@ func take_the_park() -> bool:
 	if park.x < 0 or not state or not state.take(_map.block_plans, park, _day):
 		return false
 	_map.recompute_calm(state)
-	var layout: BlockLayout = _map.block_layouts.get(park)
-	_closing = _rings_of(layout.open_rect) if layout else []
-	_closing_every = Tuning.PARK_CLOSING_SECONDS / maxf(1.0, float(_closing.size()))
-	_closing_in = 0.0
-	_closing_park = park
-	Telemetry.note("contact", "the park at block %s is being taken: %d rings over %.0fs"
-			% [park, _closing.size(), Tuning.PARK_CLOSING_SECONDS])
+	if cordon:
+		cordon.clear()
+	cordon = ParkCordon.new(_map, _city, park)
+	Telemetry.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
+			% park)
 	return true
 
-## Whether day 12's park is still closing. Kept for the tests.
+## Whether day 12's park is still being closed: its cordon has a gap left. Kept for the tests.
 func is_closing() -> bool:
-	return not _closing.is_empty()
-
-## `rect`'s calm tiles in rings from the outside in: ring 0 is the edge, the last ring the middle.
-func _rings_of(rect: Rect2i) -> Array:
-	var rings: Array = []
-	for y in range(rect.position.y, rect.end.y):
-		for x in range(rect.position.x, rect.end.x):
-			var tile := Vector2i(x, y)
-			if not Tile.is_calm(_map.tile_at(tile)):
-				continue
-			var ring := mini(mini(x - rect.position.x, rect.end.x - 1 - x),
-					mini(y - rect.position.y, rect.end.y - 1 - y))
-			while rings.size() <= ring:
-				rings.append([] as Array[Vector2i])
-			(rings[ring] as Array[Vector2i]).append(tile)
-	return rings
-
-func _close_a_ring(delta: float) -> void:
-	_closing_in -= delta
-	while _closing_in <= 0.0 and not _closing.is_empty():
-		var ring: Array[Vector2i] = _closing.pop_front()
-		if _city:
-			_city.close_ground(ring)
-		else:
-			for tile in ring:
-				_map.repaint_tile(tile, GameEnums.TileType.SPOILED)
-		_closing_in += _closing_every
-	if _closing.is_empty():
-		var layout: BlockLayout = _map.block_layouts.get(_closing_park)
-		if layout and _city and _city.events:
-			_city.events.take_away_within(_map.tile_rect_to_world(layout.open_rect),
-					["playground"] as Array[String])
-		Telemetry.note("contact", "the park at block %s is taken" % _closing_park)
+	return cordon != null and not cordon.is_closed()
 
 # ----------------------------------------------------------- day 13: the column ---
 

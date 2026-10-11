@@ -342,10 +342,25 @@ const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 ## waits (`EventDirector.ON_HER_WAY_AFTER`); if nothing on her way has qualified by this far into
 ## the day, it goes where she is not looking, so the city has lost it whichever way she walked.
 const MARKET_GONE_BY := 90.0
-## Day 12's park closes over this long once she has reached its swing, a ring of its ground at a
-## time from the edges in: long enough to see it coming, short enough that the baby cannot be
-## settled in what is left.
+## Day 12's park is cordoned off by the police once she has reached its swing (`ParkCordon`): the
+## last gap in their tape closes this long after the touch, however long their walk in took — the
+## taping is paced to it — unless that would tape faster than `PARK_CLOSING_STRETCH_MIN` a
+## stretch, when it closes later. Walking from the swing to the nearest edge takes about two
+## seconds, so walking gets her out; staying in the park this long shuts her in, which ends the
+## day. The ring-at-a-time mud's own figure, kept as the cordon's starting point; open to overturn
+## once the day is played.
 const PARK_CLOSING_SECONDS := 12.0
+## The fastest the cordon is taped: a stretch (about a tile of the edge) in no less than this.
+const PARK_CLOSING_STRETCH_MIN := 0.3
+## How fast the cordon's officers walk in and away: a brisk walk, slower than hers
+## (`WALK_SPEED`), so they never read as coming after her.
+const PARK_CLOSING_OFFICER_SPEED := 80.0
+## How many officers come to walk the park's people out; anyone past that many is sent off when
+## the cordon starts.
+const PARK_CLOSING_ESCORTS := 2
+## How fast the park's people walk out once an officer has sent them off: an unhurried walk, under
+## the officers' own pace so the officer walks out behind them.
+const PARK_CLOSING_LEAVE_SPEED := 50.0
 ## Day 13's column: this many army trucks down the main road, one behind the other this far apart.
 const COLUMN_TRUCKS := 3
 const COLUMN_SPACING := 128.0

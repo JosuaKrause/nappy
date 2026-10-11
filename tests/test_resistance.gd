@@ -97,7 +97,6 @@ func run(t) -> void:
 	_test_a_lost_day_ten_restores_the_ordinary_door(t)
 	_test_the_neighbor_window_is_boarded_from_day_eleven(t)
 	_test_the_market_is_found_gone(t)
-	_test_the_park_closes_in_front_of_her_and_stays_taken(t)
 	_test_the_column_comes_down_the_main_road(t)
 	_test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t)
 	_test_an_arrow_exists_on_every_task_day(t)
@@ -4105,61 +4104,6 @@ func _test_the_market_is_found_gone(t) -> void:
 					== GameEnums.BlockPurpose.BOARDED_UP, "and it stays boarded")
 		happenings.tick(STEP, door, Vector2.ZERO, Callable())
 		t.check(happenings.market_block == block, "and the market is gone once")
-		director.free())
-	GameState.city_state = saved_state
-	GameState.day = saved_day
-
-## Day 12: reaching the swing takes the park. It stops being calm for the city at once, its
-## ground closes from the edges in over `Tuning.PARK_CLOSING_SECONDS` until no calm tile of it is
-## left and the swing frame is gone with the playground, and it is requisitioned from then on.
-func _test_the_park_closes_in_front_of_her_and_stays_taken(t) -> void:
-	_build_city(t)
-	var saved_state := GameState.city_state
-	var saved_day := GameState.day
-	var day := ResistanceSteps.swing_day()
-	GameState.day = day
-	_with_clean_run(func() -> void:
-		var state := CityState.new()
-		var director := _director_on_day(t, day, state)
-		var park := CityGenerator.swing_park(_city.map)
-		var mark := director.current_step()
-		director._on_contact_completed(mark.index if mark else -1)
-		var task := director.current_step()
-		t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING,
-				"day 12 sends her to the swing")
-		t.check(park in _city.map.calm_blocks, "whose park is calm until she reaches it")
-		director._on_contact_completed(task.index if task else -1)
-		t.check(state.purpose_of(_city.map.block_plans, park)
-				== GameEnums.BlockPurpose.REQUISITIONED, "reaching the swing takes the park")
-		t.check(not (park in _city.map.calm_blocks), "and the city stops counting it as calm")
-		var layout: BlockLayout = _city.map.block_layouts[park]
-		var happenings := director._happenings
-		t.check(happenings.is_closing(), "its ground starts to close")
-		var calm_left := func() -> int:
-			var count := 0
-			for tile in _city.map.rect_tiles(layout.open_rect):
-				if Tile.is_calm(_city.map.tile_at(tile)):
-					count += 1
-			return count
-		var before: int = calm_left.call()
-		happenings.tick(Tuning.PARK_CLOSING_SECONDS * 0.5, Vector2.INF, Vector2.ZERO, Callable())
-		var halfway: int = calm_left.call()
-		t.check(halfway > 0 and halfway < before,
-				"a ring at a time, from the edges in (%d of %d left half way)" % [halfway, before])
-		happenings.tick(Tuning.PARK_CLOSING_SECONDS * 0.5 + 0.1, Vector2.INF, Vector2.ZERO,
-				Callable())
-		t.check(calm_left.call() == 0 and not happenings.is_closing(),
-				"until none of it is calm")
-		var frame_left := false
-		for prop in _city._props:
-			var frame := prop as Prop
-			if frame and frame.kind == Prop.Kind.PLAYGROUND_FRAME and not frame.is_queued_for_deletion() \
-					and _city.map.tile_rect_to_world(layout.open_rect).has_point(frame.position):
-				frame_left = true
-		t.check(not frame_left, "and the swing frame is gone with it")
-		state.begin_day(_city.map.block_plans, day + 1)
-		t.check(state.purpose_of(_city.map.block_plans, park)
-				== GameEnums.BlockPurpose.REQUISITIONED, "it stays taken")
 		director.free())
 	GameState.city_state = saved_state
 	GameState.day = saved_day

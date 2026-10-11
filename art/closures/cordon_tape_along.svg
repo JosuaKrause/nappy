@@ -1,0 +1,21 @@
+<!-- One stretch of the police cordon's tape seen along its length, for a cordon line running
+     away from the camera (`ParkCordon`): in this oblique view a ribbon running north to south
+     projects to a narrow upright band, drawn at hip height above its own ground line, so the
+     band stands 13.6px up the screen from the ground it runs over, where `cordon_post.svg`
+     carries it. The same blue and white as `cordon_tape_across.svg`, the bands crossing it every
+     8px so a stretch stacked on its neighbour meets it on the same phase. Its shadow runs down the
+     ground at the band's foot. Canvas 6x32, one tile's run; the code stretches it to the
+     stretch's own length. Feet-anchored at the bottom centre, the near end of the run. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="6" height="32" viewBox="0 0 6 32" shape-rendering="geometricPrecision" stroke-linejoin="round" stroke-linecap="round">
+  <defs>
+    <clipPath id="cordon-along-ribbon">
+      <rect x="1.6" y="0" width="2.8" height="32"/>
+    </clipPath>
+  </defs>
+  <rect x="1.6" y="0" width="2.8" height="32" fill="#e8ecf0"/>
+  <g clip-path="url(#cordon-along-ribbon)">
+    <path d="M1.6 -2 L4.4 -4 L4.4 0 L1.6 2 Z M1.6 6 L4.4 4 L4.4 8 L1.6 10 Z M1.6 14 L4.4 12 L4.4 16 L1.6 18 Z M1.6 22 L4.4 20 L4.4 24 L1.6 26 Z M1.6 30 L4.4 28 L4.4 32 L1.6 34 Z" fill="#31497a"/>
+    <path d="M3.6 0 L4.4 0 L4.4 32 L3.6 32 Z" fill="#22304f" fill-opacity="0.28"/>
+  </g>
+  <path d="M1.6 0 L1.6 32 M4.4 0 L4.4 32" fill="none" stroke="#22304f" stroke-width="0.7"/>
+</svg>

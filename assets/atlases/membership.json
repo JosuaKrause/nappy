@@ -162,7 +162,8 @@
       "padding": "transparent",
       "consumers": [
         "src/events/event_instance.gd",
-        "src/ui/danger_edge.gd"
+        "src/ui/danger_edge.gd",
+        "src/resistance/cordon_officer.gd"
       ],
       "members": [
         "art/checkpoints/boom_gate_ew_lowered.svg",
@@ -801,7 +802,8 @@
       "consumers": [
         "src/routes/closure_marker.gd",
         "src/city/traffic_light.gd",
-        "src/city/city_edge.gd"
+        "src/city/city_edge.gd",
+        "src/resistance/cordon_tape.gd"
       ],
       "members": [
         "art/closures/barrier_across.svg",
@@ -810,6 +812,9 @@
         "art/closures/park_rail_along.svg",
         "art/closures/park_post.svg",
         "art/closures/park_sign.svg",
+        "art/closures/cordon_post.svg",
+        "art/closures/cordon_tape_across.svg",
+        "art/closures/cordon_tape_along.svg",
         "art/closures/crashed_car.svg",
         "art/closures/crashed_car_vertical.svg",
         "art/closures/fallen_tree.svg",
