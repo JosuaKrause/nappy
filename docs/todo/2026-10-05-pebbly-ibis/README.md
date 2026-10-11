@@ -33,6 +33,6 @@ Offered a measurement of the real number of cyclists in a run, the player pointe
 
 > that would be a good use of the telemetry for individual events ;)
 
-**Built:** the shared bag and the pelican drawn from it, in the
-[pebbly-ibis record](../../decisions/2026-10-05-pebbly-ibis.md). What is left is
+The shared bag and the pelican drawn from it are in the
+[pebbly-ibis record](../../decisions/2026-10-05-pebbly-ibis.md). What stays open is
 [check-against-the-counter.md](check-against-the-counter.md).
