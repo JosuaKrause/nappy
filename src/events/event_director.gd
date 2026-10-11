@@ -609,6 +609,9 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 	if at.distance_to(_map.home_world_position()) < ON_HER_WAY_BEYOND_HOME:
 		return moved
 	var heading := velocity / speed
+	# One look's verdicts are shared by every copy it asks about, and dropped whenever what they
+	# were judged against changes. See `EventScheduler.WalkSiting.begin_look()`.
+	_siting.begin_look()
 	for plan in _on_her_way:
 		if plan.is_placed() and not _is_no_longer_on_her_way(plan, at, heading, elapsed):
 			continue
@@ -617,8 +620,14 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 		var band := _siting_band()
 		var rng := _walk_rng if plan.def.kind == GameEnums.EventKind.ONE_SHOT \
 				else (_place_rng if _placed_from_the_route.has(plan) else _crew_rng)
+		# A placed plan is asked about without its own body, which every other ask counts.
+		var asked_without_its_body := plan.is_placed()
+		if asked_without_its_body:
+			_siting.forget_the_verdicts()
 		var sited := _siting.ahead_of(plan.def, rng, _everything_but(plans, plan), at, heading,
 				band.x, band.y)
+		if asked_without_its_body:
+			_siting.forget_the_verdicts()
 		if not sited:
 			continue
 		plan.position = sited.position
@@ -627,6 +636,9 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 		plan.role = sited.role
 		_behind_her[plan] = 0.0
 		moved.append(plan)
+		# Placed or moved: a plan now stands where no verdict kept so far has seen it.
+		_siting.forget_the_verdicts()
+	_siting.end_look()
 	return moved
 
 ## **A recurring row is sited on her way one at a time**: the next of the day's crews waits while

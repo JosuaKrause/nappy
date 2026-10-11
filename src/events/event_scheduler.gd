@@ -1183,7 +1183,7 @@ class WalkSiting extends RefCounted:
 				widened += 1
 		var offered: Array[Vector2i] = offer[1]
 		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
-				_leave_alone, _corridor, _doors)
+				_leave_alone, _corridor, _doors, [], _look_verdicts)
 		if not candidate:
 			return _waited("every tile of its ground on her branch broke a placement rule")
 		if not _still_leaves_a_park_reachable(already, candidate, at):
@@ -1193,6 +1193,36 @@ class WalkSiting extends RefCounted:
 		if def.pastes_a_front:
 			candidate.facing = Vector2.UP
 		return candidate
+
+	## **Starts a look: from here every `ahead_of()` keeps its verdicts for the rest of the look**,
+	## so a candidate judged for one copy is not judged again for the next. The director asks about
+	## every copy still owed, from one place, against the same plans, and the rule chain
+	## (`EventScheduler._judge()`) reads only what of those plans is standing — every rule passes over
+	## a plan that is not placed — so the same row, role, tile and path get the same verdict for
+	## every copy, and every roll still happens. **The caller drops the verdicts the moment that
+	## stops being true** (`forget_the_verdicts()`): when it places or moves a plan, and around asking
+	## about a plan that is already placed, which is judged without its own body where every other
+	## ask counts it. `end_look()` drops them too, so nothing is carried into the next look, by when
+	## the world has moved on.
+	func begin_look() -> void:
+		_look_verdicts = {}
+		looks_begun += 1
+
+	## How many looks have begun. For `tests/test_siting_judges_once.gd`; nothing in the game reads
+	## it.
+	var looks_begun := 0
+
+	## The kept verdicts are no longer what a fresh judgement would say. See `begin_look()`.
+	func forget_the_verdicts() -> void:
+		if _look_verdicts != null:
+			_look_verdicts = {}
+
+	## Ends a look; `ahead_of()` keeps nothing past its own call again.
+	func end_look() -> void:
+		_look_verdicts = null
+
+	## The verdicts kept for the look under way, or null outside one.
+	var _look_verdicts: Variant = null
 
 	## What `ahead_of()` is offered, as `[how it was found, the tiles]`: the row's ground in the band
 	## ahead of her on her branch, or, with none there, widened along the same branch — twice the
@@ -1339,7 +1369,7 @@ class WalkSiting extends RefCounted:
 	func _accepted(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
 			offered: Array[Vector2i], role: GameEnums.BlockerRole, at: Vector2) -> Planned:
 		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
-				_leave_alone, _corridor, _doors)
+				_leave_alone, _corridor, _doors, [], _look_verdicts)
 		if candidate and _still_leaves_a_park_reachable(already, candidate, at):
 			return candidate
 		return null
@@ -1881,7 +1911,7 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
 		corridor: Corridor, doors: PackedVector2Array,
-		standing: Array[Planned] = []) -> Planned:
+		standing: Array[Planned] = [], kept: Variant = null) -> Planned:
 	var best: Planned = null
 	var best_room := -INF
 	# Built once per call rather than per try: neither `already` nor `standing` changes across the
@@ -1896,15 +1926,19 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# path come up, so its verdict is kept here, keyed by both. The roll and `_build_placement`'s
 	# own draws still happen on every try, in the same order, so the stream, and with it every
 	# placement, is what it would be if each try asked again.
-	var verdicts := {}
+	#
+	# `kept`, when a caller hands one in, is a dictionary of verdicts that outlives the call:
+	# `WalkSiting`'s for one look, shared by every copy the look asks about. It is that caller's to
+	# drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
+	var verdicts: Dictionary = kept if kept != null else {}
 	for _try in Tuning.EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := _build_placement(def, map, tile, rng)
 		if not candidate:
 			continue
-		# A tile and the path built on it are the whole of what a candidate is: its position and
-		# facing are the tile's own, and `def` is the call's.
-		var key: Variant = tile if candidate.path.is_empty() else [tile, candidate.path]
+		# The row, its role, the tile and the path built on it are the whole of what a candidate
+		# is: its position and facing are the tile's own.
+		var key := [def.get_instance_id(), role, tile, candidate.path]
 		var verdict: Array = verdicts.get(key, [])
 		if verdict.is_empty():
 			var room := _judge(candidate, role, map, tile, already, reach_context, ground,
