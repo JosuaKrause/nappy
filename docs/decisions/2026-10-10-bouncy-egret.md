@@ -88,7 +88,7 @@ straight at her, slides along the building he meets and stops 479px from her, so
 and a half of where his own straight line to her meets a building. That is a weaker check than
 [calm-pelican-14](2026-10-10-calm-pelican-14.md) built: a guard sent from across the city may never
 reach her, which is filed as
-[velvet-stork](../todo/2026-10-11-velvet-stork/README.md), day 13's guard reaches her from across
+[velvet-stork](2026-10-11-velvet-stork.md), day 13's guard reaches her from across
 the city.
 
 *Open to overturn once the player has played it:* the three shares (0.5 each); thinning the
