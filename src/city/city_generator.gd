@@ -147,6 +147,7 @@ static func _assign_street_kinds(map: CityMap, choices: Dictionary = {}) -> void
 		map.precinct_spans.clear()
 		for span: Array in choices.precincts:
 			map.precinct_spans.append(Vector4i(int(span[0]), int(span[1]), int(span[2]), int(span[3])))
+	map.index_posts()
 
 ## The two precincts, three blocks each: one at the shore, like a seaside promenade, and one inland.
 ## Three blocks and no more, because a precinct has to be a **place** rather than a kind of street.
@@ -1694,9 +1695,9 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 	# can be seen by counting calm blocks must not first walk eleven thousand tiles twice.
 	# Which reason comes back when several are true changes; whether a map is accepted does not.
 	var reached := map.reach_count(map.walk_field(map.home_rect.position))
-	if reached != map.count_walkable():
+	if reached != map.count_standable():
 		problems.append("%d of %d walkable tiles are cut off from the home" % [
-			map.count_walkable() - reached, map.count_walkable()])
+			map.count_standable() - reached, map.count_standable()])
 		if not all_problems:
 			return problems
 
