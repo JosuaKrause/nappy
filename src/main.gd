@@ -999,8 +999,6 @@ static func escape_part_for(raw: String) -> String:
 ## it emits, and `_on_finale_section_started()` clears it once she has been put down on the street,
 ## so nothing of the city is seen being assembled.
 func _on_escape_exit_requested() -> void:
-	# Before the city's brief, which shows the count and writes it.
-	_regain_a_nerve_for_leaving_the_building()
 	_build_the_finale_city()
 	_finale.enter_city()
 	# `VisitCounter`'s own "escape-city" — the building is behind her and the city section begins.
@@ -1009,12 +1007,6 @@ func _on_escape_exit_requested() -> void:
 	# so this is not repeated for it — see `EventBus.escape_lost`'s own doc for how a retry of
 	# either section is counted instead. See docs/TELEMETRY.md, "The page counts visits".
 	EventBus.escape_city_entered.emit()
-
-## **Getting out of the building gives a hard run a nerve back**, up to five. *(gentle-osprey, the
-## player: "Section won gives one back".)* A normal run's escape neither spends nor gives one.
-func _regain_a_nerve_for_leaving_the_building() -> void:
-	if GameState.hard_mode:
-		GameState.regain_a_nerve()
 
 ## A section is about to be walked — the first time, or again after a loss. Where she goes is this
 ## file's answer because only this file holds both worlds, and once she is standing there the

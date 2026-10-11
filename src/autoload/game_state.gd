@@ -29,8 +29,8 @@ var escape_section: int = 0
 ## begins and fixed for the rest of the run. *(gentle-osprey, the player: "a "Hard Mode" checkbox on
 ## the title screen (if new game) that decides whether checkpoints are available".)* **Hard mode is
 ## the run with no checkpoints**: the last nerve ends it with the bad ending, and the escape spends
-## and regains nerves as well (`spend_a_nerve_in_the_escape()`), and a won day gives no nerve back
-## (`regain_a_nerve_for_a_won_day()`). **Normal mode never reaches the
+## nerves as well (`spend_a_nerve_in_the_escape()`), and nothing, a won day or a won section, gives
+## one back (`regain_a_nerve_for_a_won_day()`). **Normal mode never reaches the
 ## bad ending**: the last nerve sends the run back to its latest checkpoint (`checkpoint`). Nothing
 ## else differs — *"hard mode doesn't affect gameplay -- only restart pacing"*.
 ##
@@ -376,8 +376,7 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 	_snapshot_what_the_attempt_can_spend()
 	# Excluded for the escape: `main._on_finale_escaped()` reaches this same call once she is out,
 	# and walking out of the city gives no nerve in either mode — a normal run's escape has none to
-	# give ("the escape doesn't have nerves", the player), and a hard run's one regain is getting out
-	# of the building (`main._on_escape_exit_requested()`). So the section she just walked out of,
+	# give ("the escape doesn't have nerves", the player), and a hard run gets none back at all. So the section she just walked out of,
 	# still on `escape_section` here (the `_end_run()` branch below is what clears it), says whether
 	# this call is one of theirs.
 	if escape_section == 0:

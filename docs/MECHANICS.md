@@ -1488,16 +1488,18 @@ minutes; at zero the way out is gone, and what she does about it is walk it agai
 has normal nerve counts and ends if nerves go to zero (instead of restarting indefinitely; this is
 only for normal mode)".)* She enters it with the nerves day 14 left her. A lost section costs one
 (`GameState.spend_a_nerve_in_the_escape()`, from `main._on_finale_section_lost()`), and the last one
-is the bad ending, on the `GAME OVER` screen, rather than the section again. Getting out of the
-building gives one back, up to five, before the city's brief comes up *("Section won gives one
-back")*; walking out of the city ends the run and gives none. Hard mode is the player choosing to
+is the bad ending, on the `GAME OVER` screen, rather than the section again. No section gives one
+back, so a hard run can be lost in the escape: gentle-osprey's *"Section won gives one back"* was
+overturned by the player (#718, dotted-hawk): *"No regain in escape either. Also, nerves behave the
+same in escape for hard mode so the game can actually be lost"*. Walking out of the city ends the
+run. Hard mode is the player choosing to
 have the wrong turn in the last minutes count.
 
 **Every section opens on its brief**, a first walk through it and a retry alike — the same screen
 between days that a resumed run opens on (`DaySummary.show_finale_brief()`), titled *"Escape the
 building"* or *"Escape the city"* where a day's number stands, and carrying the Nerve count as the
 run holds it — unchanged in a normal run, whose escape spends none, and in a hard run whatever its
-lost sections spent and its cleared building gave back. Continuing from it is the moment the
+lost sections spent. Continuing from it is the moment the
 section actually begins: the clock starts there and nowhere else, and the section's one hint line
 is said by the HUD as she starts walking. A retry is not told that line a second time, the way
 day 1 teaches tapping and then never again.
@@ -1610,7 +1612,7 @@ title as a new game begins (see "Two modes" below): a normal run goes back to it
 with five, and a hard run ends with the bad ending.
 
 **A normal run's escape gives none back**, on either of its two sections or on walking out at the
-end, and a hard run's gives one only for getting out of the building (see "The escape, which is the
+end, and so does a hard run's (see "The escape, which is the
 run's ending"): the run's last `finish_day()` call, from `main._on_finale_escaped()`, skips the gain
 in both because `GameState.escape_section` is still set to the section she just left. Day 14
 itself still gives a normal run one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s hand-over
