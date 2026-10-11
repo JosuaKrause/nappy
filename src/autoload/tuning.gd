@@ -409,7 +409,7 @@ const HEAT_INVESTIGATE_WITHIN := 150.0
 ## **What it costs when the man an investigating car let out reaches her**, in points of the
 ## excitement meter, landed on her standing beside him: he stops her, and his own field charges this
 ## over `OFFICER_STOP_SECONDS`, fading, before he walks back to his car (`EventDef.stop_excitement`).
-## *(Inbox #669, the player on PR #663: "we make it somewhat costly. once the policeman reaches her
+## *(Inbox #669 in coral-lark, the player on PR #663: "we make it somewhat costly. once the policeman reaches her
 ## they stop and walk back to the car" · "it needs to give a substantial cost but not lethal
 ## directly" · "well if the excitement meter is already high it can be lethal".)*
 ##

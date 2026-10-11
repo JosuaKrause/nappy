@@ -237,7 +237,7 @@ func send_a_pursuer() -> void:
 
 ## **The men an investigating vehicle lets out.** *(merry-stork, the player: "an investigating
 ## police car should not leave the street. it should stop if close to her and a policeman should
-## emerge and pursue her"; inbox #669: "Van stops, men get out (Recommended)" · "Same as the
+## emerge and pursue her"; inbox #669 in coral-lark: "Van stops, men get out (Recommended)" · "Same as the
 ## police".)*
 ## Every vehicle that has just stopped for her (`EventInstance.officers_owed()`) — a patrol car's
 ## one, a hunting van's two — gets the day's pursuer on foot as he gets out of a vehicle
@@ -1065,7 +1065,7 @@ func mast_foot(mast_id: String) -> Vector2:
 ## day's plan: `_room_around()`'s spacing, so it never stands inside anything else or inside a lethal
 ## row's field, the region doors' clear ground and the calm she has not used; a mast is exempt from
 ## the three rules that keep a line along her routes (the route junctions, the route sidewalks and a
-## pacing beat's opening), as the fixed ones are (inbox #684). Appended to the day's plan under
+## pacing beat's opening), as the fixed ones are (inbox #684 in coral-lark). Appended to the day's plan under
 ## `EventScheduler.added_mast_id()` with its body recorded, it streams in like any planned row,
 ## broadcasts on the one clock, is silenced by `silence_mast()`, counts for `silence_all_masts()`,
 ## and once silenced stands silenced on later days from its scar (`EventScheduler._place_masts()`).

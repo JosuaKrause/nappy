@@ -7,7 +7,7 @@ it should be a proper pursuer not a police car -- maybe a policeman on foot?" an
 switched to guardman on day 9"; in [merry-stork](../playtests/2026-10-10-merry-stork.md), his catch
 "Ends the day (Recommended)", and "an investigating police car should not leave the street. it
 should stop if close to her and a policeman should emerge and pursue her". On the review of PR #663
-(inbox #669): "we make it somewhat costly. once the policeman reaches her they stop and walk back to
+(inbox #669 in [coral-lark](../playtests/2026-10-11-coral-lark.md)): "we make it somewhat costly. once the policeman reaches her they stop and walk back to
 the car", "it needs to give a substantial cost but not lethal directly", "well if the excitement
 meter is already high it can be lethal", and, on the night raid's van, "Van stops, men get out
 (Recommended)"; asked then whether the raid's men end the day, "Ends the day (M56)", and whether

@@ -292,7 +292,7 @@ func _test_his_catch_ends_the_day_with_its_own_line(t) -> void:
 ## not warned of from off screen and not arriving chasing, but holding the door guard's ground for
 ## the alley robber's notice — at least `Tuning.PURSUIT_MIN_NOTICE` — and then chasing under the
 ## pursuit contract, which `validate()` holds him to. **His catch is a stop, never the end of the
-## day** *(inbox #669: "it needs to give a substantial cost but not lethal directly")*: standing
+## day** *(inbox #669 in coral-lark: "it needs to give a substantial cost but not lethal directly")*: standing
 ## beside him she is reached only after his notice, and stopped rather than struck.
 func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 	for day: int in [8, 9]:
@@ -330,7 +330,7 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 		t.check(not struck, "day %d: and his catch never strikes her" % day)
 		man.free()
 
-## **What reaching her costs** *(inbox #669, the player: "we make it somewhat costly" · "it needs
+## **What reaching her costs** *(inbox #669 in coral-lark, the player: "we make it somewhat costly" · "it needs
 ## to give a substantial cost but not lethal directly" · "well if the excitement meter is already
 ## high it can be lethal")*: substantial — over a conversation's cost and over three contacts — and
 ## under the whole meter, so it never ends a calm day by itself, but more than the push at the cap
@@ -518,7 +518,7 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t) ->
 		_done(city, her)
 
 ## **The whole encounter, from a calm meter, standing still, never ends the day by itself** — and
-## costs her substantially. *(Inbox #669, the player: "it needs to give a substantial cost but not
+## costs her substantially. *(Inbox #669 in coral-lark, the player: "it needs to give a substantial cost but not
 ## lethal directly" · "well if the excitement meter is already high it can be lethal".)* On a real
 ## city through the manager's own steps, everything the day's events land on her where she stands,
 ## from the heated patrol coming up her street until the car, done with its man, has left her field
@@ -728,7 +728,7 @@ func _body_on_a_junction(map: CityMap, car: EventInstance) -> bool:
 
 # ------------------------------------------------------------ the hunting vans ---
 
-## **A hunting van stops and lets men out** *(inbox #669: "Van stops, men get out (Recommended)",
+## **A hunting van stops and lets men out** *(inbox #669 in coral-lark: "Van stops, men get out (Recommended)",
 ## and for the unmarked van "Same as the police")*: the night raid's and the unmarked van's hunting
 ## copies no longer pursue her themselves — they investigate, keeping their cold `hard_fail` — and
 ## let two men out, whose catch ends the day ("Ends the day (M56)"); cold each is what it always was.

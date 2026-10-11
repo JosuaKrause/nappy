@@ -122,6 +122,16 @@ waiting on a person; when a run has looked at one, the verdict is in the playtes
 item's file is deleted in the same commit, whether the verdict was *fine* or a new finding. An item
 that stays after its run has been played is asked for twice.
 
+**A bug that does not reproduce here is not closed here.** *(2026-10-11, of day 12's softlock,
+closed after headless desktop rigs did not reproduce it, when the player had met it on the phone:
+"how can you close something as not-reproduced when it happened on a phone?")* A headless rig, a
+suite and a desktop run cannot see what only the player's device, build or timing shows: a long
+frame on a phone reads to the player as a lock and to a rig as nothing at all. So before a report
+is closed as not reproduced, the device and build it happened on are asked, on the note or in the
+conversation, and a run that could not have seen it on that device is said to be one: the entry
+stays open with what was ruled out, and a review item asks the player for the evidence that device
+can give (the frame record on the phone), rather than a record saying it did not come back.
+
 ## Never silently overturn a decision the player took
 
 **Recording a request is not the end of the obligation to it.** Once something has been asked for,

@@ -780,7 +780,7 @@ enum HeatResponse {
 ## **A vehicle that investigates: once it notices her it stops and lets men out on foot, who pursue
 ## her; the vehicle itself never chases.** *(merry-stork, the player: "an investigating police car
 ## should not leave the street. it should stop if close to her and a policeman should emerge and
-## pursue her"; inbox #669, on the night raid's van: "Van stops, men get out (Recommended)", and on
+## pursue her"; inbox #669 in coral-lark, on the night raid's van: "Van stops, men get out (Recommended)", and on
 ## the unmarked van: "Same as the police".)* Heated copies carry it, each made by `at_heat()`, with
 ## `pursues_within` as the reach it notices her within — along a clear line, as every notice is
 ## (`EventInstance._investigate()`):
@@ -804,13 +804,13 @@ enum HeatResponse {
 @export var investigates := false
 
 ## How many men an investigating vehicle lets out (`investigates`). One for the patrol car; the
-## night raid's and the unmarked van let two out. *(Inbox #669: "Van stops, men get out" — men, so
+## night raid's and the unmarked van let two out. *(Inbox #669 in coral-lark: "Van stops, men get out" — men, so
 ## more than one; two is chosen while building, open to overturn.)*
 @export var lets_out := 1
 
 ## **A `HUNTS` row whose hunting copy hunts on foot**: at `Tuning.HEAT_HUNTS_LEVEL` it does not
 ## pursue her itself but `investigates`, letting `lets_out` men out who do, and whose catch ends the
-## day. `night_raid` and `abduction`, the two vans — after inbox #669 ("Van stops, men get out
+## day. `night_raid` and `abduction`, the two vans — after inbox #669 in coral-lark ("Van stops, men get out
 ## (Recommended)" · "Same as the police") no vehicle chases her like a running man (azure-koala,
 ## finding 7: "police cars chasing the player behave like running people"; inbox #664: "I was chased
 ## by police cars still which is just silly"). The van keeps whatever `hard_fail` it has cold.
@@ -819,7 +819,7 @@ enum HeatResponse {
 ## **A pursuer whose catch is a stop rather than the end of the day**, in points of the excitement
 ## meter: when he reaches her — the catch's own reach and clear line (`lethal_reach()`) — he stops,
 ## his own field lands this much on her standing beside him over `Tuning.OFFICER_STOP_SECONDS`,
-## and then he walks back to the vehicle that let him out. *(Inbox #669, the player: "once the
+## and then he walks back to the vehicle that let him out. *(Inbox #669 in coral-lark, the player: "once the
 ## policeman reaches her they stop and walk back to the car" · "it needs to give a substantial cost
 ## but not lethal directly" · "well if the excitement meter is already high it can be lethal".)*
 ## Only the man an investigating patrol car lets out carries it (`EventCatalogue.out_of_the_car()`);

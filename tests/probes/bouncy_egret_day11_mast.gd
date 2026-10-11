@@ -9,7 +9,7 @@ extends RefCounted
 ## Each city runs `tests/test_resistance.gd`'s own rig: day 11 planned in the real day order and its
 ## mark read, which rigs the mast onto her route (`ResistanceDirector._rig_her_route_for()`).
 ##
-## Every mast is exempt from the three line rules (inbox #684), so the "junction" and "sidewalk"
+## Every mast is exempt from the three line rules (inbox #684 in coral-lark), so the "junction" and "sidewalk"
 ## counts below stay empty; they are kept so a regression of the exemption shows here. First, before
 ## she walks, every tile of the mast's ground on the route tree that a mast site may take
 ## (`WalkSiting._a_mast_may_stand()`) is asked the acceptance rules `EventScheduler._best_of()` asks, in order, and counted by the first that refuses it: the route junctions and the route

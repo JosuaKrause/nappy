@@ -4546,7 +4546,7 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 ##
 ## **The routed mast has a place on her route in every one of `DAY_ELEVEN_SEEDS`.** Every mast is
 ## exempt from the three rules that keep a line along her routes
-## (`EventScheduler._counts_against_the_line`; inbox #684), so the walk down the longest route puts it
+## (`EventScheduler._counts_against_the_line`; inbox #684 in coral-lark), so the walk down the longest route puts it
 ## down in every city. The suite's own city is walked in full; the others are asked the one question
 ## the walk asks, `WalkSiting.ahead_of()` from points along the longest route, without walking, which
 ## keeps six cities as cheap as one. A city that fails fails here rather than being skipped.
