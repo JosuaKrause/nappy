@@ -3276,10 +3276,158 @@ func leave_for_a_completed_task() -> void:
 	if player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
 		_heading = (global_position - player_at).normalized()
 
+## **Leaves down a way chosen for it**: walks `way`'s points in order at `speed` (0 keeps the row's
+## own departure speed), then **plans the rest from where she is now** (`_way_on_out_of_sight()`, a
+## short search over walkable ground) and walks that at the same pace, again each time it runs out,
+## until she could not be watching — `Tuning.OUT_OF_SIGHT` from her, the end every departure here
+## has. Steering straight away from her instead runs into walls and the city's edge, and sliding
+## along one at the size of whatever part of the step is left square to it is, beside the city's
+## edge, next to nothing: a person standing at the edge of her screen. Only where the search finds
+## nothing does it step away from her over walkable ground (`_walkable_step()`). **It never ends at
+## the way's last point**: that point was chosen out of her sight from where she was when the way
+## was planned, and she may since have walked there herself, so ending there would be a vanishing in
+## front of her (see "going away" above: the end of an event is a departure, not a deletion).
+##
+## For a departure that may not go in a straight line away from her: day 12's park people, walked
+## out through the cordon's last gap (`ParkCordon`) rather than through the tape. `speed` gives a
+## row that stands where it was placed, which has no departure of its own, a walking pace. An
+## instance already leaving on its own is turned onto the way. Like `leave_for_a_completed_task()`
+## it is a departure she may be standing beside, so `LEAVING_GIVES_UP` does not end it while she
+## could still be watching. `avoid` is ground the rest planned past the way's end never enters,
+## nor a step away from her where no rest is found: the cordon's park, whose grass is walkable and
+## whose tape is a body rather than a tile, so the nearest ground out of her sight is often across
+## it. Answers whether it is now leaving along the way: not for something finished, parked, a guard
+## leaving his barrier, or a row that ends rather than leaving (`spawns_on_finish`).
+func leave_along(way: PackedVector2Array, speed := 0.0, avoid := Rect2i()) -> bool:
+	if is_finished or is_parked or _guard_spent or _is_a_guard_leaving_his_barrier():
+		return false
+	_way_speed = speed
+	if not is_leaving:
+		_be_done(false)
+	if not is_leaving:
+		_way_speed = 0.0
+		return false
+	_way = way.duplicate()
+	_way_on = PackedVector2Array()
+	_way_avoids = avoid
+	_walks_a_way = true
+	_leaving_must_clear_sight = true
+	return true
+
+## What is left of the way `leave_along()` set, in order; empty once it is walked, or for any other
+## departure. The way planned on from its end (`_way_on_out_of_sight()`) is not part of it.
+func way_left() -> PackedVector2Array:
+	return _way
+
+## The way `leave_along()` set, each point dropped as it is reached; the way planned on from its
+## end, the same, and the tiles that one never enters; whether this departure walks one; and its
+## pace, 0 for the row's own.
+var _way := PackedVector2Array()
+var _way_on := PackedVector2Array()
+var _way_avoids := Rect2i()
+var _walks_a_way := false
+var _way_speed := 0.0
+
+## How many tiles `_way_on_out_of_sight()` looks at before it gives up: several times the tiles
+## within `Tuning.OUT_OF_SIGHT` of her, so it gives up only where walls leave no way out at all.
+const WAY_ON_SEARCH_LIMIT := 4096
+
+## Walks `step` pixels of `leave_along()`'s way; past its end, of a way planned on from where it
+## stands (`_way_on_out_of_sight()`, again each time one runs out while she could still be
+## watching); and only where none is found, or one is walked to its end inside this step, away from
+## her over walkable ground.
+func _walk_the_way(step: float) -> void:
+	var left := _walk_points(false, step)
+	if left <= 0.0:
+		return
+	if _way_on.is_empty() and _map and player_at != Vector2.INF:
+		_way_on = _way_on_out_of_sight()
+	left = _walk_points(true, left)
+	if left <= 0.0:
+		return
+	var away := _heading
+	if player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
+		away = (global_position - player_at).normalized()
+	var moved := _step_clear_of_the_avoided(away * left)
+	if moved.is_zero_approx() and player_at != Vector2.INF:
+		# Straight away from her is a wall or the city's edge: along it, whichever way takes it
+		# farther from her.
+		for side: Vector2 in [away.orthogonal(), -away.orthogonal()]:
+			var along := _step_clear_of_the_avoided(side * left)
+			if not along.is_zero_approx() and (global_position + along).distance_to(player_at) \
+					> (global_position + moved).distance_to(player_at):
+				moved = along
+	if moved.is_zero_approx():
+		return
+	_heading = moved.normalized()
+	position += moved
+	_path_travelled += moved.length()
+
+## `_walkable_step()`'s part of `delta_pos`, or none where that would end on `_way_avoids`.
+func _step_clear_of_the_avoided(delta_pos: Vector2) -> Vector2:
+	var moved := _walkable_step(delta_pos)
+	if _map and _way_avoids.has_point(_map.world_to_tile(global_position + moved)):
+		return Vector2.ZERO
+	return moved
+
+## Walks up to `step` pixels down `_way`, or `_way_on` when `planned`, dropping each point as it is
+## reached; answers how much of the step is left once that way is walked, 0 while it is not.
+func _walk_points(planned: bool, step: float) -> float:
+	var points := _way_on if planned else _way
+	var left := step
+	while left > 0.0 and not points.is_empty():
+		var toward := points[0] - global_position
+		if toward.length() > left:
+			_heading = toward.normalized()
+			position += _heading * left
+			_path_travelled += left
+			left = 0.0
+			break
+		position = points[0]
+		left -= toward.length()
+		_path_travelled += toward.length()
+		points.remove_at(0)
+	if planned:
+		_way_on = points
+	else:
+		_way = points
+	return left
+
+## **The rest of a way out, planned from where she is now**: the tile centres from the tile it
+## stands on to the nearest walkable tile more than `Tuning.OUT_OF_SIGHT` and a tile from her, by a
+## breadth-first search over the tiles `CityMap.is_walkable()` admits outside `_way_avoids`
+## (`leave_along()`'s `avoid`), square steps only, so that each leg stays on the two tiles it joins.
+## Empty when no such tile is found within `WAY_ON_SEARCH_LIMIT` tiles, and the step falls back to
+## walking away from her.
+func _way_on_out_of_sight() -> PackedVector2Array:
+	var start := _map.world_to_tile(global_position)
+	var came_from: Dictionary[Vector2i, Vector2i] = {start: start}
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	while head < queue.size() and head < WAY_ON_SEARCH_LIMIT:
+		var tile := queue[head]
+		head += 1
+		if _map.tile_to_world(tile).distance_to(player_at) \
+				> Tuning.OUT_OF_SIGHT + Tuning.TILE_SIZE:
+			var way := PackedVector2Array()
+			while tile != start:
+				way.insert(0, _map.tile_to_world(tile))
+				tile = came_from[tile]
+			return way
+		for step: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+			var next := tile + step
+			if not came_from.has(next) and _map.is_walkable(next) \
+					and not _way_avoids.has_point(next):
+				came_from[next] = tile
+				queue.append(next)
+	return PackedVector2Array()
+
 func _leave(delta: float) -> void:
 	_leaving_for += delta
 	var step := _leaving_speed() * delta
-	if not _trail.is_empty():
+	if _walks_a_way:
+		_walk_the_way(step)
+	elif not _trail.is_empty():
 		if not _walk_back(step):
 			return
 	else:
@@ -3304,6 +3452,8 @@ func _leave(delta: float) -> void:
 ## guard who set off from a barrier (`EventDef.body_stays_behind`): a roadblock has none of its own
 ## (it never travelled), and he leaves at the pace he chased at rather than vanishing in the street.
 func _leaving_speed() -> float:
+	if _way_speed > 0.0:
+		return _way_speed
 	if _is_a_guard_leaving_his_barrier():
 		return def.pursue_speed
 	return def.departure_speed()

@@ -3114,9 +3114,11 @@ func _on_contact_completed(step_index: int) -> void:
 	if step and step.target_kind == ResistanceSteps.TargetKind.MAST:
 		_silence_the_mast()
 	# Day 12's once-only happening: the park she was sent to starts to close the instant she has
-	# reached the swing, and stays taken — see `ResistanceHappenings.take_the_park()`.
+	# reached the swing, and stays taken — see `ResistanceHappenings.take_the_park()`. Its last gap
+	# is checked under this director's own answer to what the day has blocked.
 	if step and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
-		_happenings.take_the_park()
+		_ensure_reachability()
+		_happenings.take_the_park(_reach_blocked)
 	# Every task but the roadblock and the neighbor sends a pursuer after her from off screen; the
 	# roadblock keeps its guard waiting at the contact instead (`_begin_step()`), and done, sets him
 	# on her wherever he stands. Day 9's door sends none when she walked under its boom, whose own

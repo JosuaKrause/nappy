@@ -194,6 +194,10 @@ const _HARD_FAIL_TEXT := {
 	# it, since the regime never puts her in narrative danger directly (docs/NARRATIVE.md, the
 	# tone rules).
 	"door_guard": "You went under the barrier. They took you in.",
+	# Day 12's park, cordoned off by the police with her still inside (`ParkCordon`): not a catch
+	# but a place closed round her, said as plainly as the rest, with what it means left to the
+	# reader.
+	"park_cordon": "They taped the park shut with you inside.",
 }
 
 func _end(result: GameEnums.DayResult) -> void:

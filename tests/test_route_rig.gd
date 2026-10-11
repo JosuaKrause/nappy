@@ -918,11 +918,10 @@ func _test_nearest_calm_excludes_ground_the_day_has_spoiled(t) -> void:
 	rig.free()
 
 ## **Day 12: once the swing is reached, `calm` is the day's other calm area, not the swing's own
-## park.** The park leaves `CityMap.calm_blocks` the moment it is taken, but its grass goes to mud a
-## ring at a time, so right then most of it still reads calm tile by tile — and she is standing in
-## it, so the nearest calm tile by walking is the one under her. Taken here the way
-## `Happenings.take_the_park()` takes it, `CityState.take()` then `CityMap.recompute_calm()`, with
-## no ring closed yet.
+## park.** The park leaves `CityMap.calm_blocks` the moment it is taken, but its grass stays grass
+## while the police cordon it off (`ParkCordon`), so all of it still reads calm tile by tile — and
+## she is standing in it, so the nearest calm tile by walking is the one under her. Taken here the
+## way `Happenings.take_the_park()` takes it, `CityState.take()` then `CityMap.recompute_calm()`.
 func _test_calm_leaves_the_park_being_taken(t) -> void:
 	var fixture := _build_target_shape_fixture(t, 12)
 	var map: CityMap = (fixture["city"] as City).map
@@ -1045,9 +1044,10 @@ func _test_check_settled_waits_for_asleep(t) -> void:
 	rig.free()
 
 ## **Ground that goes from under her while she settles sends her to look again**, on the same
-## target: day 12's park turns to mud a ring at a time once the swing is reached, and a baby does
-## not settle on mud, so pacing on where the calm tile was never ends. Pinned with `set_tile()` on
-## the tile she paces on rather than by playing the park's closing forward.
+## target, since a baby does not settle on ground that is no longer calm and pacing on where the
+## calm tile was would never end. Nothing in the game repaints calm ground during a day (day 12's
+## park keeps its grass under the cordon, `ParkCordon`), so this holds the rig's own rule for
+## ground that stops being calm under her. Pinned with `set_tile()` on the tile she paces on.
 func _test_calm_ground_gone_under_her_looks_again(t) -> void:
 	var baby: Baby = _stroller.get_node("Baby")
 	baby.reset()

@@ -1247,8 +1247,8 @@ static func open_tile_for(purpose: GameEnums.BlockPurpose) -> GameEnums.TileType
 			return GameEnums.TileType.SPOILED
 
 ## Re-reads which blocks are calm and which playgrounds are open from `state`, after a block's
-## purpose changed during the day — day 12's park, taken once she has reached its swing. The
-## ground is not repainted here: that is `City.close_ground()`, a ring at a time.
+## purpose changed during the day — day 12's park, taken once she has reached its swing. No ground
+## is repainted: the park stays grass while the police cordon it off (`ParkCordon`).
 func recompute_calm(state: CityState) -> void:
 	_recompute_calm(state)
 
