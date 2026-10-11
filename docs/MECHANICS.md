@@ -531,8 +531,9 @@ Stepping into the carriageway in front of a moving car ends the day (`hard_fail`
 `car_strike`). The strike volume is a **box** — 26px along the car, 14px either side of its
 axis — from the car's centre forward, so it is the front half of the car and its sides; behind a
 car that drives away from her she is safe. A box rather than a radius, because a car is two tiles
-long and one wide and a radius that covered its length would kill people standing beside it. It only counts while she is standing on a road tile, and a car below
-`20 px/s` cannot run anybody over, so a car halted at a zebra is scenery.
+long and one wide and a radius that covered its length would kill people standing beside it. It
+only counts while she is standing on a road tile, and a car below `20 px/s` cannot run anybody
+over, so a car halted at a zebra is scenery.
 
 ### The traffic fairness contract
 
@@ -638,7 +639,7 @@ places. Turning toward its own kerb, the tail swings into the far lane, which is
 from it, the tail swings over the pavement of the street it is still leaving, so that arm does not
 begin until the tail is past the kerb — a body's half length into the junction.
 
-**Nothing is committed to before it has been checked.** The strike box swept along the curve is the
+**Nothing is committed to before it has been checked.** The car's whole body (52×28px, not just its front-half strike box) swept along the curve is the
 footprint, and it is validated against the pavement, closures, seals, walls, precinct paving and the
 edge of the map; the lane the car lands in must have a car's length free, and that place is *held*
 for every frame of the manoeuvre so nothing else turns or recycles into it; and there must be road

@@ -28,6 +28,7 @@ func run(t) -> void:
 		_test_the_rear_half_is_safe_and_the_front_half_is_not(t, car)
 		_test_a_car_pulling_away_from_a_stand_does_not_end_the_day(t, car)
 		_test_a_car_driving_at_her_still_does(t, car)
+		_test_a_fast_car_is_foreseen(t, car)
 	_city.free()
 
 func _rng() -> RandomNumberGenerator:
@@ -82,3 +83,16 @@ func _test_a_car_driving_at_her_still_does(t, car: CrowdAgent) -> void:
 		car.global_position += forward * 90.0 * STEP
 		struck = struck or _strike(car, her)
 	t.check(struck, "a car driving at her still ends the day")
+
+func _test_a_fast_car_is_foreseen(t, car: CrowdAgent) -> void:
+	# At the top speed the car covers 46px per 0.25s sample, more than the 26px strike box, so a
+	# sampled prediction can step over her; the closed form cannot.
+	var forward := car.heading()
+	var top := Tuning.CAR_SPEED.y
+	car._speed = top
+	var ahead := 100.0 + Tuning.CAR_STRIKE_HALF_LENGTH
+	t.check(car.will_be_lethal(car.global_position + forward * ahead),
+			"a car at top speed is foreseen to strike her 126px ahead, between two samples")
+	var beyond := top * Tuning.EXPECTED_IMPACT_HORIZON + Tuning.CAR_STRIKE_HALF_LENGTH + 40.0
+	t.check(not car.will_be_lethal(car.global_position + forward * beyond),
+			"and not one beyond the horizon")
