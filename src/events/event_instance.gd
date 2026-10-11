@@ -3279,8 +3279,8 @@ func leave_for_a_completed_task() -> void:
 ## **Leaves down a way chosen for it**: walks `way`'s points in order at `speed` (0 keeps the row's
 ## own departure speed), then walks on away from her, a step at a time over walkable ground
 ## (`_walkable_step()`, sliding along a wall rather than through it, and along the city's edge when
-## straight away from her is off it), until she could not be watching — `Tuning.OUT_OF_SIGHT` from her, the end every departure here has. **It never ends at
-## the way's last point**: that point was chosen out of her sight from where she was when the way
+## straight away from her is off it), until she could not be watching — `Tuning.OUT_OF_SIGHT`
+## from her, the end every departure here has. **It never ends at the way's last point**: that point was chosen out of her sight from where she was when the way
 ## was planned, and she may since have walked there herself, so ending there would be a vanishing
 ## in front of her (see "going away" above: the end of an event is a departure, not a deletion).
 ##

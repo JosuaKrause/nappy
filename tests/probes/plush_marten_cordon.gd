@@ -33,9 +33,9 @@ func run(t) -> void:
 		margins.append(margin)
 		closes.append(m.closed_at)
 		walks.append(walk_seconds)
-		print("seed %5d: park %3.0fx%3.0f, walk %3.0fpx (%.1fs), first seen %4.1fs (expected %4.1fs), "
-				% [seed_value, size.x, size.y, m.walk, walk_seconds, m.first_seen, m.first_in_view]
-				+ "deadline %4.1fs, " % m.deadline
+		print("seed %5d: park %3.0fx%3.0f, walk %3.0fpx (%.1fs), " % [seed_value, size.x, size.y,
+				m.walk, walk_seconds] + "first seen %4.1fs (expected %4.1fs), " % [m.first_seen,
+				m.first_in_view] + "deadline %4.1fs, " % m.deadline
 				+ "closed %4.1fs standing, %.1fs beyond the walk; " % [m.closed_at, margin]
 				+ "gap reaches home %s, other calm %s, clear %s (%s); walked out %s" % [
 				m.gap_reaches_home, m.other_calm_reached, m.gap_clear, m.gap_blocker, m.walked_out])

@@ -542,8 +542,8 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 				ended_in_view = shows.call(busker.def, last)
 			last = busker.global_position
 		t.check(busker.is_leaving and busker.is_finished,
-				"setting off %.0fs after the touch down the way out: the busker walked out ahead " % set_off
-				+ "of her is gone in the end (%.1fs)" % clock)
+				"setting off %.0fs after the touch down the way out: the busker walked out "
+				% set_off + "ahead of her is gone in the end (%.1fs)" % clock)
 		t.check(not ended_in_view, "and not where she can see him (%.0fpx from her)"
 				% last.distance_to(her[0]))
 		_end(fixture)
