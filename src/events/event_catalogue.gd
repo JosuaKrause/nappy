@@ -1918,7 +1918,7 @@ static func _roadblock() -> EventDef:
 ## stranger and hunts her with its men instead: it stays parked, solid, and once she is within
 ## `Tuning.HEAT_HUNTS_WITHIN` of it along a clear line it lets `lets_out` (two) men out at its door,
 ## `out_of_the_car()`'s hunting copy, whose catch ends the day — the van's own lethality, kept.
-## *(Inbox #669, asked whether the unmarked van should stop and let men out as the police vehicles
+## *(Inbox #669 in coral-lark, asked whether the unmarked van should stop and let men out as the police vehicles
 ## do: "Same as the police".)* The van keeps `hard_fail` throughout, so its own 54px still takes her
 ## once its telegraph is over, as the cold van's does. See `EventDef.at_heat()`.
 static func _abduction() -> EventDef:
@@ -2217,16 +2217,16 @@ static var _out_of_the_car: Dictionary[String, EventDef] = {}
 ## the hunting raid's and unmarked van's two: the day's pursuer on foot (`on_foot_on()`, a policeman
 ## through day 8, a guardsman from day 9), his own row, getting out at the vehicle's door in her
 ## view. *(merry-stork, the player: "it should stop if close to her and a policeman should emerge and
-## pursue her"; inbox #669, on the raid's van: "Van stops, men get out (Recommended)", and on the
+## pursue her"; inbox #669 in coral-lark, on the raid's van: "Van stops, men get out (Recommended)", and on the
 ## unmarked van: "Same as the police".)*
 ##
 ## **Out of the patrol car (`stops`), his catch is a stop, not the end of the day**
 ## (`EventDef.stop_excitement`, `Tuning.OFFICER_STOP_EXCITEMENT`): when he reaches her he stops, his
 ## field lands a substantial cost on her, and he and every man his vehicle let out walk back to it.
-## *(Inbox #669, the player: "once the policeman reaches her they stop and walk back to the car" ·
+## *(Inbox #669 in coral-lark, the player: "once the policeman reaches her they stop and walk back to the car" ·
 ## "it needs to give a substantial cost but not lethal directly" · "well if the excitement meter is
 ## already high it can be lethal".)* **Out of a hunting van his catch ends the day**, as the van's
-## own hunt did — the top rung kills *(inbox #669, on the raid's men: "Ends the day (M56)"; the
+## own hunt did — the top rung kills *(inbox #669 in coral-lark, on the raid's men: "Ends the day (M56)"; the
 ## unmarked van's men keep its lethality)* — and he walks back to it only once he has given up or run
 ## out his chase.
 ##
@@ -2266,7 +2266,7 @@ static func out_of_the_car(day: int, stops := true) -> EventDef:
 ## where it stands, and the moment she is within `Tuning.HEAT_HUNTS_WITHIN` (180px) of it along a
 ## clear line it lets `lets_out` (two) men out at its door on her side, who pursue her under the
 ## pursuit contract — `EventCatalogue.out_of_the_car()`'s hunting copy, a guardsman on day 10 —
-## and whose catch ends the day, as M56 built the hunting raid *(inbox #669, the player: "Van stops,
+## and whose catch ends the day, as M56 built the hunting raid *(inbox #669 in coral-lark, the player: "Van stops,
 ## men get out (Recommended)" — no vehicle chases her like a running man, azure-koala's finding 7 —
 ## and "Ends the day (M56)")*. Men who give up or run out their chase walk back to the van, which
 ## stands over its block for the rest of the day. The van itself is never `hard_fail`, cold or hot.

@@ -122,6 +122,18 @@ waiting on a person; when a run has looked at one, the verdict is in the playtes
 item's file is deleted in the same commit, whether the verdict was *fine* or a new finding. An item
 that stays after its run has been played is asked for twice.
 
+**A bug that does not reproduce here is not closed here.** *(2026-10-11, of day 12's softlock,
+closed after headless desktop rigs did not reproduce it, when the player had met it on the phone:
+"how can you close something as not-reproduced when it happened on a phone?" · "what is the point
+of an issue system if you just close items nilly willy?" · "I confirmed them since I filed them. if
+you can't reproduce just ask me to provide a frame record".)* A bug the player
+filed is confirmed by the filing; a headless rig, a suite or a desktop run that does not show it has
+only failed to see it: a long frame on a phone can read to the player as a lock and to a rig as
+nothing at all. So when a report does not reproduce here, the player is asked for a frame record
+(`?debug=1&framerecord=1` on the phone, saved with the page's own button; `docs/TELEMETRY.md`,
+"Per-system frame records") by a review item and in the conversation, and the entry stays open,
+saying what was ruled out, until it comes.
+
 ## Never silently overturn a decision the player took
 
 **Recording a request is not the end of the obligation to it.** Once something has been asked for,

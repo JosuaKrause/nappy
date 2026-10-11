@@ -2402,7 +2402,7 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ##   a fixture of the street it stands on: the six fixed ones are planted once by `MastSites`, off
 ##   the corridor-aware placement every other row here goes through, and stand at the same sites all
 ##   fourteen days. The two day 11 adds, the one queued near the mark and the one a rigged bag puts
-##   on her route, are exempt too (inbox #684, "Exempt like fixed masts"), because a mast's field
+##   on her route, are exempt too (inbox #684 in coral-lark, "Exempt like fixed masts"), because a mast's field
 ##   reaches the junction box at the end of whatever street it stands on, so held to the line it
 ##   would have almost no place on a route tree. A mast is asked none of the three rules that keep
 ##   a line along her routes (`_leaves_the_route_junctions_open`, `_leaves_the_routes_sidewalk_open`

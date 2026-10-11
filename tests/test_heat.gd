@@ -56,7 +56,7 @@ func _test_every_shape_of_every_row_is_fair(t) -> void:
 
 ## The rung that does not hunt never gains `hard_fail`, and it is checked over the response rather
 ## than over the one row that carries it, so a second `PRESSES` row added later inherits the
-## promise. Nor does the man it lets out end the day: his catch is a stop (inbox #669, "it needs to
+## promise. Nor does the man it lets out end the day: his catch is a stop (inbox #669 in coral-lark, "it needs to
 ## give a substantial cost but not lethal directly"). (The patrol that carries it strikes as a car
 ## does at every heat, `EventDef.drives`, which is not a rung — `tests/test_police_car.gd`.)
 func _test_the_ladder_has_a_top(t) -> void:
@@ -124,7 +124,7 @@ func _cold_raid() -> EventDef:
 
 ## The raid's own hot shape, named rather than left to the generic `HUNTS` loop above: untouched
 ## below `Tuning.HEAT_HUNTS_LEVEL`, then letting its men out past it, the van itself never chasing
-## and never lethal, its men's catch ending the day (inbox #669: "Van stops, men get out
+## and never lethal, its men's catch ending the day (inbox #669 in coral-lark: "Van stops, men get out
 ## (Recommended)" · "Ends the day (M56)") — and still `SCRIPTED` for
 ## day 10 whatever the heat, since heat moves what a row does and never when it is allowed to
 ## appear.

@@ -2476,7 +2476,7 @@ func _chase(delta: float) -> void:
 
 # ------------------------------------------------------------ the investigation ---
 # *(merry-stork, the player: "an investigating police car should not leave the street. it should
-# stop if close to her and a policeman should emerge and pursue her"; inbox #669: "once the
+# stop if close to her and a policeman should emerge and pursue her"; inbox #669 in coral-lark: "once the
 # policeman reaches her they stop and walk back to the car" · "Van stops, men get out
 # (Recommended)".)*
 
@@ -2532,7 +2532,7 @@ func _investigate() -> void:
 ## on as it drives on — past her, or waiting at a line beside her — until it is outside its own
 ## field's reach of her (`_left_her()`), its field is off. So what the encounter costs her is his
 ## notice, his chase and his stop: substantial, and never the end of a calm day by itself for a
-## player who stands through all of it *(inbox #669: "a substantial cost but not lethal
+## player who stands through all of it *(inbox #669 in coral-lark: "a substantial cost but not lethal
 ## directly")*. While she stays within its resting reach, a car that stood for a policeman does not
 ## then also cost her as a passing car. Once it has left her — measured at rest, while a moving car's
 ## field reaches further ahead (`GroundShape.eccentric_distance()`) — it is an ordinary car, and one
@@ -2613,7 +2613,7 @@ func its_officers() -> Array[EventInstance]:
 	return out
 
 ## **One of its men has stopped her: every man it let out walks back to it** — "once the policeman
-## reaches her they stop and walk back to the car" (inbox #669), so a vehicle that let out more than
+## reaches her they stop and walk back to the car" (inbox #669 in coral-lark), so a vehicle that let out more than
 ## one man whose catch is a stop costs her once, not once a man. The one who stopped her stands with
 ## her through his stop first.
 func _call_back_its_officers(stopped_by: EventInstance) -> void:
