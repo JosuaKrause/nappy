@@ -164,9 +164,10 @@ func _plan_the_raid() -> void:
 ## **What she comes home to**: the raid arrives once she has left, is `Tuning.OUT_OF_SIGHT` from
 ## her door and none of it would be on screen — each van's and the patrol car's whole drawing, at
 ## both ends of the car's beat, asked through `shows` — *nothing is seen to appear* — so it is
-## waiting at home rather than arriving in front of her. Cold, whatever the run's heat: `night_raid` hunts at
-## `Tuning.HEAT_HUNTS_LEVEL`, and a van that ran her down at her own door would make the doorstep
-## the one place the day cannot end, which is the opposite of what the raid was decided as.
+## waiting at home rather than arriving in front of her. Cold, whatever the run's heat: a heated
+## `night_raid` lets its men out after her at `Tuning.HEAT_HUNTS_LEVEL` (`EventDef.hunts_on_foot`),
+## and men sent after her from her own door would make the doorstep the one place she is hunted,
+## which is the opposite of what the raid was decided as.
 func _maybe_raid(her: Vector2, shows: Callable) -> void:
 	if not _city or not _city.events or her == Vector2.INF:
 		return

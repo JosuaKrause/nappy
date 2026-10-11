@@ -1,0 +1,31 @@
+diff --git i/src/city/poster_walls.gd w/src/city/poster_walls.gd
+index 6d122637..0cce0fd6 100644
+--- i/src/city/poster_walls.gd
++++ w/src/city/poster_walls.gd
+@@ -98,7 +98,7 @@ const PRESS_REACH := Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS + 4.0
+ ## pre-bag of one "no pursuit" marble, so the run's first tear is always safe, then bags of one
+ ## "pursuit" and nine "no pursuit", each refilled when empty — one tear in ten over every bag.
+ ## `true` is a pursuit marble. See `MarbleBag`.
+-const TEAR_PRE_BAG: Array[bool] = [false]
++const TEAR_PRE_BAG: Array[bool] = [true]
+ const TEAR_BAG: Array[bool] = [true, false, false, false, false, false, false, false, false, false]
+ 
+ var _city: City
+diff --git i/src/dev/scene_recipe_runtime.gd w/src/dev/scene_recipe_runtime.gd
+index 4de407a4..a00a6ab5 100644
+--- i/src/dev/scene_recipe_runtime.gd
++++ w/src/dev/scene_recipe_runtime.gd
+@@ -867,8 +867,12 @@ func _event_plans(player_at: Vector2, errors: Array[String],
+ 			errors.append("event %s is outside authored bounds" % entry.name)
+ 			continue
+ 		var def := EventCatalogue.by_id(entry.row)
++		if def.heat_response != EventDef.HeatResponse.NONE:
++			def = EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL)
+ 		var plan: EventScheduler.Planned
+-		if def.id == EventScheduler.WalkSiting.MAST_ROW:
++		if def.investigates and not def.drives:
++			plan = EventScheduler.Planned.new(def, at)
++		elif def.id == EventScheduler.WalkSiting.MAST_ROW:
+ 			plan = _mast_placement(def, at, plans, doors)
+ 		elif finale:
+ 			plan = _finale_placement(def, at, player_at, finale, plans,

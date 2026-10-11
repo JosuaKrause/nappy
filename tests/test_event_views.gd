@@ -522,7 +522,7 @@ func _test_chatting_mother_state_predicate_selects_the_conversation_posture(t) -
 ## Which catalogue row exercises each vehicle family's own heading source: `fire_truck`,
 ## `military_convoy` and `police_patrol` are mobile and reach every sector in real play;
 ## `delivery_van`, `ice_cream_van`, `reversing_lorry` and `abduction` (while idling) never turn away
-## from their own fixed siting, and `night_raid` only turns once it hunts — but `setup()`'s `face`
+## from their own fixed siting, and neither does `night_raid`, hot or cold — but `setup()`'s `face`
 ## argument sets `_heading` and the starting `_view_sector` the same way regardless, so every sector
 ## is reachable here for the purpose of pinning the table, whether or not the row would ever be
 ## seen at it in play.
@@ -583,7 +583,7 @@ func _test_vehicle_views_match_facings_csv_per_sector(t) -> void:
 
 ## M56's original hand-written `match` in `_draw_riot_van()`, transcribed as literal data
 ## independent of `EXPECTED_VIEW`/`EIGHT_VIEW_BY_SECTOR` above, so a later change to either of those
-## shared tables cannot silently change what a hunting night raid draws without this test noticing.
+## shared tables cannot silently change what the night raid's van draws without this test noticing.
 ## The texture per sector is exactly what the hand-written match once picked; the mirror at
 ## sectors 0 (E) and 4 (W) is corrected from it, since `riot_van.svg` is authored facing west
 ## (`facings.csv`) and the hand-written match had those two sectors backwards — every other sector

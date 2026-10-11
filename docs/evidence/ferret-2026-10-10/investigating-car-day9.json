@@ -1,0 +1,54 @@
+{
+ "version": 1,
+ "name": "An investigating car stops and a guardsman gets out on day 9 (evidence capture)",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "start": {
+   "world": [
+    1776,
+    2262
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 9,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "south"
+  },
+  "events": [
+   {
+    "name": "car",
+    "row": "police_patrol",
+    "at": [
+     1872,
+     2512
+    ],
+    "route_seed": 3
+   }
+  ]
+ },
+ "playback": {
+  "walk": "0.3s6p",
+  "duration": 10.0,
+  "capture_at": 0.3,
+  "camera": {
+   "zoom": 1.5
+  },
+  "observations": [
+   {
+    "tick": 3,
+    "subject": "player",
+    "condition": "moving"
+   }
+  ]
+ }
+}

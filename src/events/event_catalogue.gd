@@ -63,6 +63,12 @@ static func all() -> Array[EventDef]:
 		for def in _all:
 			for level in heat_levels():
 				heated(def, level).validate()
+		# And the man an investigating vehicle lets out, a copy of the day's pursuer on foot whose
+		# notice is the sight of him — the patrol car's, whose catch is a stop, and a hunting van's,
+		# whose catch ends the day — validated for the same reason.
+		for day: int in [guardsmen_from_day() - 1, guardsmen_from_day()]:
+			out_of_the_car(day).validate()
+			out_of_the_car(day, false).validate()
 	return _all
 
 ## This row at a resistance level, derived once per run and kept.
@@ -172,6 +178,12 @@ static func _build() -> Array[EventDef]:
 		# scheduler, spawned only by `ResistanceDirector` at the handover. See
 		# `_van_guard_giving_chase()`.
 		_van_guard_giving_chase(),
+
+		# The pursuer on foot a torn poster sends — never rolled by the ordinary scheduler and
+		# never in the day's queue, sent only by `EventManager.send_a_pursuer()`. A policeman
+		# through day 8, a guardsman from day 9: see `on_foot_on()`.
+		_policeman_giving_chase(),
+		_guardsman_giving_chase(),
 
 		# The finale — never rolled by the ordinary scheduler, placed only by `FinalePlanner` and
 		# `InteriorEvents`. See "the finale" below.
@@ -1587,21 +1599,22 @@ static func _charging_dog() -> EventDef:
 ##
 ## **A car, solid and lethal the way a car is** (`EventDef.drives`): *(leafy-puffin, inbox #648,
 ## offered "solid in every state, lethal only in front while driving": "yes to the police car
-## hitbox".)* She walks round its body whether it drives, stands or comes over to investigate, and
-## it ends the day only in front of it, while it drives its route, with her on the carriageway.
+## hitbox".)* She walks round its body whether it drives or stands, and it ends the day only in
+## front of it, while it drives its route, with her on the carriageway.
 ##
 ## **The patrol rung of the resistance's ladder.** `heat_response = PRESSES`: past
 ## `GameState.resistance_progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
-## it stops merely patrolling and starts investigating — see `EventDef.at_heat()`. It never gains
-## `hard_fail`, whatever the heat, and coming over to investigate never strikes her; the van is the
-## rung that hunts.
+## it stops merely patrolling and starts investigating: it stops on its road once she is close and
+## a policeman gets out and pursues her (`EventDef.investigates`, `out_of_the_car()`), whose catch
+## costs her and never ends the day by itself. The car never gains `hard_fail`, whatever the heat,
+## and never strikes her while it stands for him; the unmarked van is the rung that hunts.
 static func _police_patrol() -> EventDef:
 	var def := EventDef.new()
 	def.id = "police_patrol"
 	# It does not telegraph its coming (`EventDef.telegraphs`): 74px/s is slower than a walk, so it
 	# is not something fast coming at her, and its strike is a car's, warned the way a car warns
-	# (`EventDef.drives`) rather than with a badge from off screen. Its copies — the return's and a
-	# torn poster's down the road, and the investigating one at heat — carry it with them.
+	# (`EventDef.drives`) rather than with a badge from off screen. Its copies — the return's down
+	# the road, the raid's pacing car and the investigating one at heat — carry it with them.
 	def.telegraphs = false
 	def.display_name = "Patrol"
 	def.look = EventDef.Look.POLICE_CAR
@@ -1795,7 +1808,7 @@ static func _curfew_announce() -> EventDef:
 ## rounding (`GroundShape.BAND_RADIUS`) and clamped there — a field cannot start inside the capsule
 ## that is already solid. That clamp is no longer where `inner_radius` ends up; see below.
 ##
-## **`heat_response = HUNTS`, the lethal rung `abduction` and `night_raid` already climb**, and
+## **`heat_response = HUNTS`, the rung `abduction` and `night_raid` already climb**, and
 ## **two guards stand at the barrier from the moment it is placed**, one on each side of the band
 ## and clear of its picture. *(2026-09-19: "the guard needs to be at the barrier from the
 ## beginning, standing. only then does it make sense for it to start pursuing."; 2026-09-25: "have
@@ -1890,11 +1903,15 @@ static func _roadblock() -> EventDef:
 ## could never be a lasting fact about the world either way. Drawing and telemetry only — nothing
 ## here changes `contribution_at()`, spawns a body, or reaches into the crowd.
 ##
-## **`heat_response = HUNTS`, the lethal rung of the resistance's ladder.** Below
-## `Tuning.HEAT_HUNTS_LEVEL` it is untouched — population and intensity are `PRESSES`'s axes, not
-## this one's. At and above it, the derived copy stops idling for a stranger and starts hunting
-## her instead: see `EventDef.at_heat()`. It keeps `hard_fail` throughout, because a pursuer is
-## exempt from the rule that nothing else happens inside a lethal event's field.
+## **`heat_response = HUNTS`, the lethal rung of the resistance's ladder, hunted on foot**
+## (`hunts_on_foot`). Below `Tuning.HEAT_HUNTS_LEVEL` it is untouched — population and intensity
+## are `PRESSES`'s axes, not this one's. At and above it, the derived copy stops idling for a
+## stranger and hunts her with its men instead: it stays parked, solid, and once she is within
+## `Tuning.HEAT_HUNTS_WITHIN` of it along a clear line it lets `lets_out` (two) men out at its door,
+## `out_of_the_car()`'s hunting copy, whose catch ends the day — the van's own lethality, kept.
+## *(Inbox #669, asked whether the unmarked van should stop and let men out as the police vehicles
+## do: "Same as the police".)* The van keeps `hard_fail` throughout, so its own 54px still takes her
+## once its telegraph is over, as the cold van's does. See `EventDef.at_heat()`.
 static func _abduction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "abduction"
@@ -1908,13 +1925,12 @@ static func _abduction() -> EventDef:
 	def.outer_radius = 250.0
 	def.duration = 34.0
 	# hard_fail doubles the required margin: (250-54)/92 * 2 = 4.26s. It stays exactly this long
-	# once the van hunts, too: a pursuer's telegraph buys the notice of it coming rather than an
-	# escape distance (`Tuning.PURSUIT_MIN_NOTICE`, 1.5s), and 4.6s is comfortably over it.
+	# once the van hunts, too: the hunting van is still a place she can walk out of, and its 54px
+	# takes her only once this telegraph after its notice is over; its men carry their own notice.
 	def.telegraph_time = 4.6
 	# A van is a van: 22 + her own 14 leaves the 54 that takes her comfortably reachable, so the
-	# body only ever stops her during the idling, which is the phase where it has not happened yet.
-	# Once it hunts, `EventInstance` drops this body the moment it stops waiting — a moving wall on
-	# a two-tile pavement pins her against a building, the same reason a pursuer never carries one.
+	# body never shields her from the van's own reach. It keeps the body at every heat: hunting, it
+	# stays parked and lets its men out (`hunts_on_foot`), so nothing about a moving wall applies.
 	def.solid(GroundShape.point(VEHICLE_BODY))
 	def.hard_fail = true
 	def.weight = 2.0
@@ -1924,6 +1940,8 @@ static func _abduction() -> EventDef:
 	def.max_per_day = 4
 	def.cost = 3
 	def.heat_response = EventDef.HeatResponse.HUNTS
+	def.hunts_on_foot = true
+	def.lets_out = 2
 	return def
 
 ## **A man in an alley who is worth crossing the road for, and who comes after you if you do not.**
@@ -2125,15 +2143,125 @@ static func _van_guard_giving_chase() -> EventDef:
 	def.hard_fail = guard.hard_fail
 	return def
 
+# ------------------------------------------------------- the pursuer on foot ---
+
+## **A torn poster's pursuer: a policeman on foot, coming at her from off screen the moment the
+## tear draws its pursuit marble.** *(Inbox #591 in olive-hedgehog, the player: "the poster pursuit
+## should not be placed! it should happen instantly with the pursuer spawning off-screen! and it
+## should be a proper pursuer not a police car -- maybe a policeman on foot?" · "the pursuer is not
+## a scheduled event. it is instant!")* Nothing places it but `EventManager.send_a_pursuer()`:
+## `SCRIPTED` on day 0, the day nobody plays, so the roll, the day's queue, its stream and its
+## budget never reach it.
+##
+## **The robber a task sends, in a policeman's coat**: every number read off
+## `_robber_giving_chase()` — his field, his 130px/s, his 26px catch and 116px lunge, the dog's
+## half-second badge, arriving already chasing with no closing in, a chase that does not give up on
+## a walker within `Tuning.PURSUIT_TIME` and that running shakes off. **His catch ends the day**
+## *(merry-stork, the player, asked whether it ends the day or costs calm and ends the chase:
+## "Ends the day (Recommended)")*. What differs is the picture, `EventDef.Look.
+## POLICEMAN_GIVING_CHASE` (`art/events/policeman_*`, the robber's set one for one), and his line
+## when he catches her.
+##
+## **Through day 8 only**: from day 9 the same pursuit is a guardsman (`_guardsman_giving_chase()`,
+## `on_foot_on()`).
+static func _policeman_giving_chase() -> EventDef:
+	var robber := _robber_giving_chase()
+	var def := robber.duplicate() as EventDef
+	# `duplicate()` copies only the exported fields; the shape is a plain one (`EventDef.at_heat()`
+	# says why), shared rather than copied since nothing mutates a shape in place.
+	def.shape = robber.shape
+	def.id = "policeman_giving_chase"
+	def.display_name = "Policeman giving chase"
+	def.look = EventDef.Look.POLICEMAN_GIVING_CHASE
+	return def
+
+## **The same pursuer from day 9, once guards are in the city** *(inbox #591, the player: "and a
+## guardsman once they are in the city (earlier a guardsman won't make much sense)" · "policemen
+## get switched to guardman on day 9")*: the checkpoint guard's own drawing, `EventDef.Look.
+## GUARDSMAN_GIVING_CHASE`, drawn as `door_guard` is drawn. Every number is the policeman's — the
+## robber's — rather than the van guard's, since he replaces the policeman on the same errand and
+## nothing about the chase is the picture's to change.
+static func _guardsman_giving_chase() -> EventDef:
+	var def := _policeman_giving_chase()
+	def.id = "guardsman_giving_chase"
+	def.display_name = "Guardsman giving chase"
+	def.look = EventDef.Look.GUARDSMAN_GIVING_CHASE
+	return def
+
+## The first day the pursuer on foot is a guardsman rather than a policeman: the day the region's
+## doors and their guards first stand (`Tuning.REGION_WALL_FIRST_DAY`, day 9). *(Inbox #591, the
+## player: "policemen get switched to guardman on day 9".)*
+static func guardsmen_from_day() -> int:
+	return Tuning.REGION_WALL_FIRST_DAY
+
+## The pursuer on foot on `day`: the policeman through day 8, the guardsman from day 9
+## (`guardsmen_from_day()`).
+static func on_foot_on(day: int) -> EventDef:
+	return by_id("guardsman_giving_chase" if day >= guardsmen_from_day()
+			else "policeman_giving_chase")
+
+## Derived copies of the pursuer on foot, as he gets out of a vehicle, keyed by his row's id and
+## whether his catch is a stop. See `out_of_the_car()`.
+static var _out_of_the_car: Dictionary[String, EventDef] = {}
+
+## **The man an investigating vehicle lets out** (`EventDef.investigates`) — the patrol car's one,
+## the hunting raid's and unmarked van's two: the day's pursuer on foot (`on_foot_on()`, a policeman
+## through day 8, a guardsman from day 9), his own row, getting out at the vehicle's door in her
+## view. *(merry-stork, the player: "it should stop if close to her and a policeman should emerge and
+## pursue her"; inbox #669, on the raid's van: "Van stops, men get out (Recommended)", and on the
+## unmarked van: "Same as the police".)*
+##
+## **Out of the patrol car (`stops`), his catch is a stop, not the end of the day**
+## (`EventDef.stop_excitement`, `Tuning.OFFICER_STOP_EXCITEMENT`): when he reaches her he stops, his
+## field lands a substantial cost on her, and he and every man his vehicle let out walk back to it.
+## *(Inbox #669, the player: "once the policeman reaches her they stop and walk back to the car" ·
+## "it needs to give a substantial cost but not lethal directly" · "well if the excitement meter is
+## already high it can be lethal".)* **Out of a hunting van his catch ends the day**, as the van's
+## own hunt did — the top rung kills *(inbox #669, on the raid's men: "Ends the day (M56)"; the
+## unmarked van's men keep its lethality)* — and he walks back to it only once he has given up or run
+## out his chase.
+##
+## **In view, so not the badge: the sight of him is his notice.** He is not warned of before he
+## exists and does not arrive chasing; he is the door guard getting out of his hut
+## (`_door_guard()`, `EventDef.sets_off_beside_her`): for the alley robber's 1.8s notice he holds
+## his ground while she is nearer than his stand-off and follows at it once she is further, his
+## lunge never firing early, and then he chases under the pursuit contract
+## (`Tuning.validate_pursuit()`, which `all()` holds this copy to on load). Every other number is
+## his own row's.
+##
+## A derived copy rather than a catalogue row, as a heated row is: it is the same man, met another
+## way.
+static func out_of_the_car(day: int, stops := true) -> EventDef:
+	var on_foot := on_foot_on(day)
+	var key := on_foot.id + (":stops" if stops else ":hunts")
+	if not _out_of_the_car.has(key):
+		var def := on_foot.duplicate() as EventDef
+		# The shape is a plain field `duplicate()` leaves behind; see `_policeman_giving_chase()`.
+		def.shape = on_foot.shape
+		def.warned_first = false
+		def.arrives_chasing = false
+		def.offscreen_notice = Tuning.OFFSCREEN_NOTICE
+		def.telegraph_time = _alley_robbery().telegraph_time
+		def.sets_off_beside_her = true
+		if stops:
+			def.hard_fail = false
+			def.stop_excitement = Tuning.OFFICER_STOP_EXCITEMENT
+		_out_of_the_car[key] = def
+	return _out_of_the_car[key]
+
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##
-## **`heat_response = HUNTS`, the same rung `abduction` climbs.** Below `Tuning.HEAT_HUNTS_LEVEL`
-## it is untouched, exactly as it stands here — a closed block and nothing more. At and above it,
-## the derived copy pursues at `Tuning.HEAT_HUNTS_SPEED` (130px/s), notices her within
-## `Tuning.HEAT_HUNTS_WITHIN` (180px), chases for `Tuning.PURSUIT_TIME`, and is `hard_fail` — which
-## the cold row is not, so unlike `abduction` this row *gains* lethality at the threshold rather
-## than keeping it: the van stops emptying the building and comes for her instead, the abduction's
-## shape on a bigger vehicle. See `EventDef.at_heat()`.
+## **`heat_response = HUNTS`, the same rung `abduction` climbs, but it hunts on foot**
+## (`hunts_on_foot`). Below `Tuning.HEAT_HUNTS_LEVEL` it is untouched, exactly as it stands here — a
+## closed block and nothing more. At and above it, the derived copy `investigates`: the van stays
+## where it stands, and the moment she is within `Tuning.HEAT_HUNTS_WITHIN` (180px) of it along a
+## clear line it lets `lets_out` (two) men out at its door on her side, who pursue her under the
+## pursuit contract — `EventCatalogue.out_of_the_car()`'s hunting copy, a guardsman on day 10 —
+## and whose catch ends the day, as M56 built the hunting raid *(inbox #669, the player: "Van stops,
+## men get out (Recommended)" — no vehicle chases her like a running man, azure-koala's finding 7 —
+## and "Ends the day (M56)")*. Men who give up or run out their chase walk back to the van, which
+## stands over its block for the rest of the day. The van itself is never `hard_fail`, cold or hot.
+## See `EventDef.at_heat()`.
 ##
 ## **It shares the patrol-and-van threshold rather than minting a third constant, and the calendar
 ## is why that is load-bearing.** The resistance's tasks before it fall on days 6 to 9, so on day
@@ -2145,12 +2273,9 @@ static func _van_guard_giving_chase() -> EventDef:
 ## **The raid at her own building is this row as well**, spawned by `ResistanceHappenings` on the
 ## far sidewalk of her street and always cold — see `ResistanceHappenings._maybe_raid()`.
 ##
-## **The body is reachable, and `EventDef.validate()` is the check that says so.** `obstructs_radius`
-## 44 plus her own `PLAYER_BODY_RADIUS` 14 is 58, inside the 70 of `inner_radius`, so the lethal body
-## sits where the kill can still fire — the same arithmetic every other hunting row clears.
-## `EventInstance._process` drops the body the moment a pursuer stops waiting, generic to every
-## `pursues` row and unchanged here: a heated raid is solid at the kerb and comes down the frame it
-## starts hunting, same as `abduction`.
+## **Solid at every heat**: `obstructs_radius` 44, half its drawn width. The van never moves, so the
+## rule that takes a pursuer's body away — a moving wall pins her — never reaches it, and its men
+## get out beside that body (`EventInstance.door_for_its_officer()`).
 static func _night_raid() -> EventDef:
 	var def := EventDef.new()
 	def.id = "night_raid"
@@ -2168,6 +2293,8 @@ static func _night_raid() -> EventDef:
 	def.solid(GroundShape.point(44.0))
 	def.cost = 4
 	def.heat_response = EventDef.HeatResponse.HUNTS
+	def.hunts_on_foot = true
+	def.lets_out = 2
 	return def
 
 # ------------------------------------------------------------ Act IV: open (12+) ---

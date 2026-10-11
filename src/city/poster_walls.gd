@@ -375,7 +375,7 @@ func _job_for(tile: Vector2i) -> Dictionary:
 ## A door, portico or fire escape in the wall does not: she is still on the building's front, so a
 ## push held across the gap goes on and the next sheet tears at once.
 ##
-## A tear costs nothing and counts for nothing; what it can do is bring a patrol — see `_tear()`.
+## A tear costs nothing and counts for nothing; what it can do is bring a pursuer — see `_tear()`.
 func _push_to_tear(delta: float, at: Vector2, steering: Vector2) -> void:
 	var tile := _map.world_to_tile(at)
 	if not _by_tile.has(tile):
@@ -421,8 +421,8 @@ func _presses_into_the_front(tile: Vector2i, at: Vector2, steering: Vector2) -> 
 	var face := _map.tile_rect_to_world(Rect2i(tile, Vector2i.ONE)).position.y
 	return at.y - face <= PRESS_REACH
 
-## Tears the sheet on `tile`, one of the three tears, and draws a marble for whether a patrol
-## comes. Which tear is a hash of the run, the cell and the count rather than a roll, so nothing
+## Tears the sheet on `tile`, one of the three tears, and draws a marble for whether a pursuer on
+## foot comes after her (`EventManager.send_a_pursuer()`, at once). Which tear is a hash of the run, the cell and the count rather than a roll, so nothing
 ## draws from any stream; the marble comes from the bag's own.
 func _tear(tile: Vector2i) -> void:
 	var state := GameState.posters
@@ -444,7 +444,7 @@ func _tear(tile: Vector2i) -> void:
 	Telemetry.note("roll", "poster tear %d draws a %s marble, %d left in the bag"
 			% [state.tears, "pursuit" if pursuit else "no-pursuit", bag.left()])
 	if pursuit and _city and _city.events:
-		_city.events.send_a_patrol()
+		_city.events.send_a_pursuer()
 
 ## The run's marble bag, brought to where the run is: `PosterState.tears` marbles already drawn,
 ## from the bag's own stream off the run's seed, so a save, a lost day's give-back and a retry all
