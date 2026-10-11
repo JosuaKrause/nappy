@@ -98,8 +98,9 @@ signal pursuit_began(id: String)
 ## `EventInstance._be_done()`'s own moment a pursuit that had actually noticed her is over without
 ## catching her. `shaken_off` is `EventInstance.gave_up` — `_chase()`'s own record of whether she
 ## outran it (`Tuning.PURSUIT_SHAKEN_OFF`) rather than its `duration` simply running out. A catch
-## ends the day through `hard_fail_triggered` instead and never reaches `_be_done()`, so the two
-## never both fire for the same chase. Listen-only — see docs/TELEMETRY.md, "The page counts
+## never fires it: one that ends the day goes through `hard_fail_triggered` instead and never
+## reaches `_be_done()`, so the two never both fire for the same chase, and a patrol car's man
+## who reached her and stopped her (`EventInstance.has_stopped_her()`) caught her too. Listen-only — see docs/TELEMETRY.md, "The page counts
 ## visits".
 signal pursuit_ended(id: String, shaken_off: bool)
 
@@ -169,9 +170,9 @@ signal player_detained(id: String)
 ## `state.tear()` already refuses). Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The
 ## page counts visits".
 signal poster_torn()
-## `EventManager.send_a_patrol()`'s own moment a torn poster's pursuit marble sends a patrol
-## toward her — never a marble folded into a patrol already on its way, and nothing during the
-## escape. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
+## `EventManager.send_a_pursuer()`'s own moment a torn poster's pursuit marble sends a pursuer on
+## foot after her, as his warning goes up — never a marble drawn while one is still on his way or
+## after her, and nothing during the escape. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal poster_pursuit_sent()
 ## The blackout came and the masts went quiet with the power.
 signal city_went_quiet()

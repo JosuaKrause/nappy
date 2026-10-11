@@ -164,25 +164,194 @@ func _owe_the_return() -> void:
 		return
 	_director.owe_the_return(_day, GameState.resistance_progress)
 
-## A torn poster drew the pursuit marble: sends a `police_patrol` toward her from off screen, at the
-## run's own heat. See `EventDirector.send_a_patrol()` for how and when it is sited, and
-## `PosterWalls` for the bag it was drawn from. Nothing is sent during the escape.
+# --------------------------------------------------------- the pursuer on foot ---
+# *(Inbox #591 in olive-hedgehog, the player: "the poster pursuit should not be placed! it should
+# happen instantly with the pursuer spawning off-screen! and it should be a proper pursuer not a
+# police car -- maybe a policeman on foot?" · "the poster tear marble bag is a completely separate
+# marble bag than the event marbles. nothing influences across them. the pursuer is not a scheduled
+# event. it is instant! policemen get switched to guardman on day 9.")*
+
+## The pursuer on foot a torn poster sent, once he is in the world, or null. Kept only so a second
+## pursuit marble while he is still after her sends nobody more (`a_pursuer_is_after_her()`).
+var _sent_after_her: EventInstance = null
+## His warning while it is up, before he exists, or null.
+var _sent_warning: PendingWarning = null
+
+## **A torn poster drew the pursuit marble** (`PosterWalls`): the pursuer on foot is sent at her at
+## once — a policeman through day 8, a guardsman from day 9 (`EventCatalogue.on_foot_on()`). He is
+## warned and placed as a task's robber is (`ResistanceDirector._set_the_trap_on_her()`): the
+## screen-edge badge goes up alone at once for his half second (`EventDef.warned_for()`), pointing
+## where he will start (`_where_the_sent_pursuer_starts()`), and then he is created just out of sight
+## that way from where she is by then, already chasing (`spawn_warned()`, `EventDef.arrives_chasing`).
+## No wait for a heading or a street: the tear is the moment.
 ##
-## `EventBus.poster_pursuit_sent` fires only when this marble actually sends one — never for a
-## marble drawn while a patrol is already on its way, which the director folds into that patrol —
-## so the counter's `poster-pursuit` is one per patrol a tear sent.
-func send_a_patrol() -> void:
-	if _walking_the_finale:
+## **Outside the day's own plan, queue and streams.** He is not the scheduler's or the director's:
+## nothing here draws from a day stream, takes a turn in the director's queue or moves its clock,
+## so a tear and its pursuer change nothing the day's event bags draw — the tears' bag is its own
+## ("nothing influences across them"). Which of above and below he is tried from first is a hash of
+## the run and the tear count, not a roll.
+##
+## **One at a time, and nothing during the escape.** A pursuit marble drawn while his warning is up
+## or while he is still after her (`a_pursuer_is_after_her()`) sends nobody more; once he has caught
+## her, given up or run out his chase, the next marble sends the next one. *(Proposed, not asked
+## for: the README of sandy-ferret.)* `EventBus.poster_pursuit_sent` fires only when this sends one,
+## the moment his warning goes up, so the counter's `poster-pursuit` is one per pursuer sent.
+func send_a_pursuer() -> void:
+	if _walking_the_finale or not _find_player() or a_pursuer_is_after_her():
 		return
-	var already_on_its_way := _director.has_a_sent_patrol()
-	_director.send_a_patrol(GameState.resistance_progress)
-	if not already_on_its_way and _director.has_a_sent_patrol():
+	var def := EventCatalogue.on_foot_on(_day)
+	if not def:
+		return
+	var her := _player.global_position
+	var first_up := posmod(hash("%d:%d:tear-pursuer" % [GameState.run_seed,
+			GameState.posters.tears]), 2) == 0
+	var first := _where_the_sent_pursuer_starts(def, her, Vector2.ZERO, first_up)
+	if first[0] == Vector2.INF:
+		Telemetry.note("roll", "poster tear sends nobody: no walkable ground out of sight of her at %s"
+				% TelemetryLog.tile(_map.world_to_tile(her)))
+		return
+	# The bearing the badge points along, fixed now; where he is created is asked again along it
+	# when the badge's time is up, from wherever she is then.
+	var bearing: Vector2 = (first[0] - her).normalized()
+	var drawn: Array = [first]
+	var putting_up := [true]
+	var where := func(standing: Vector2) -> Vector2:
+		if putting_up[0]:
+			putting_up[0] = false
+			return first[0]
+		drawn[0] = _where_the_sent_pursuer_starts(def, standing, bearing, first_up)
+		return drawn[0][0]
+	var arrive := func(place: Vector2, standing: Vector2) -> bool:
+		_sent_after_her = spawn_warned(def, PackedVector2Array([place]))
+		var who := "a guardsman" if def.look == EventDef.Look.GUARDSMAN_GIVING_CHASE \
+				else "a policeman"
+		Telemetry.note("roll", "poster tear: %s sent after her from %s, %.0fpx off (%s)"
+				% [who, TelemetryLog.tile(_map.world_to_tile(place)),
+				standing.distance_to(place), "a clear run at her" if drawn[0][1]
+						else "no clear run at her"])
+		return true
+	_sent_warning = warn_first(def, her, where, arrive)
+	if _sent_warning:
 		# `VisitCounter`'s own "poster-pursuit" — see docs/TELEMETRY.md, "The page counts visits".
 		EventBus.poster_pursuit_sent.emit()
 
-## Whether a torn poster's patrol is on its way and not yet sited. For the tests.
-func has_a_sent_patrol() -> bool:
-	return _director.has_a_sent_patrol()
+## **The men an investigating vehicle lets out.** *(merry-stork, the player: "an investigating
+## police car should not leave the street. it should stop if close to her and a policeman should
+## emerge and pursue her"; inbox #669: "Van stops, men get out (Recommended)" · "Same as the
+## police".)*
+## Every vehicle that has just stopped for her (`EventInstance.officers_owed()`) — a patrol car's
+## one, a hunting van's two — gets the day's pursuer on foot as he gets out of a vehicle
+## (`EventCatalogue.out_of_the_car()`: a policeman through day 8, a guardsman from day 9; out of the
+## patrol car on the `PRESSES` rung his catch is a stop, out of a `HUNTS` van it ends the day) put
+## down at its door on her side (`EventInstance.door_for_its_officer()`),
+## spread along its flank `OFFICER_SPACING` apart when there are two, or on the other side where
+## hers is not walkable, or at the vehicle itself where neither is. They appear in her view, so
+## there is no badge: their notice is the sight of them, the door guard's
+## (`EventDef.sets_off_beside_her`). Outside the day's plan, like everything put down after dawn by
+## a director.
+func _let_the_officers_out() -> void:
+	for vehicle: EventInstance in _instances.duplicate():
+		var owed := vehicle.officers_owed()
+		if owed <= 0:
+			continue
+		var def := EventCatalogue.out_of_the_car(_day,
+				vehicle.def.heat_response != EventDef.HeatResponse.HUNTS)
+		for i in owed:
+			var along := (float(i) - float(owed - 1) * 0.5) * OFFICER_SPACING
+			var at := vehicle.door_for_its_officer(def, 1.0, along)
+			if not _map.is_walkable(_map.world_to_tile(at)):
+				at = vehicle.door_for_its_officer(def, -1.0, along)
+			if not _map.is_walkable(_map.world_to_tile(at)):
+				at = vehicle.global_position
+			var officer := _spawn_unplanned(def, at)
+			officer.player_at = _player.global_position
+			vehicle.let_out(officer)
+		# Under `ahead`: men put down from her walk, where she stood — no seed says where a vehicle
+		# noticed her. See docs/TELEMETRY.md, "The entry kinds".
+		var guards := def.look == EventDef.Look.GUARDSMAN_GIVING_CHASE
+		var who := ("a guardsman gets out" if guards else "a policeman gets out") if owed == 1 \
+				else "%d %s get out" % [owed, "guardsmen" if guards else "policemen"]
+		Telemetry.note("ahead", "%s at %s, %.0fpx from her, and %s"
+				% ["an investigating patrol stops" if vehicle.def.drives
+						else "%s, standing," % vehicle.def.id,
+				TelemetryLog.tile(_map.world_to_tile(vehicle.global_position)),
+				vehicle.global_position.distance_to(_player.global_position), who])
+
+## How far apart along a vehicle's flank its men get out when it lets out more than one, in px:
+## a body and a half of a man apart, so neither stands in the other.
+const OFFICER_SPACING := 28.0
+
+## Whether a torn poster's pursuer is on his way or after her: his warning is up, or he is in the
+## world and neither finished nor leaving.
+func a_pursuer_is_after_her() -> bool:
+	if _sent_warning != null and _pending.has(_sent_warning):
+		return true
+	return is_instance_valid(_sent_after_her) and not _sent_after_her.is_finished \
+			and not _sent_after_her.is_leaving
+
+## The torn poster's pursuer in the world, or null — for the tests.
+func sent_pursuer() -> EventInstance:
+	return _sent_after_her if is_instance_valid(_sent_after_her) else null
+
+## How far either side of straight up or straight down a start is tried, in radians — the robber's
+## own cone (`ResistanceDirector.ARRIVAL_CONE`), stepped rather than rolled.
+const SENT_CONE := PI / 6.0
+
+## **Where the pursuer a torn poster sends starts: just out of sight of her** (`PendingWarning.
+## just_out_of_sight()`, everything he can draw outside the camera's whole view, never nearer than
+## the view's half height), on legal ground (`ResistanceDirector.is_legal_ground()`: walkable, not
+## closed or held, not the home block, not a walled-off alley). `[position, clear]`: `Vector2.INF`
+## when no start qualifies, and whether the straight line from there to her is walkable and passes
+## through no body of the day's region wall or doors (`_a_clear_run_at()`).
+##
+## **The task robber's rule, with nothing drawn from a stream** (`ResistanceDirector.
+## _draw_arrival_position()`): `prefer`, the bearing his badge already points along, first when it
+## is asked again; then straight above or below her (`first_up` says which first), since the view is
+## shorter that way; then at `SENT_CONE` either side of each; then straight along her street either
+## way. **A clear run at her decides it**, since he chases in a straight line, sliding along whatever
+## wall is in the way; only where none has one does the first legal start stand in.
+func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2,
+		first_up: bool) -> Array:
+	var view := PendingWarning.seen_from(visible_view(), her)
+	var walled: Array[Rect2i] = []
+	var region: RegionPlanner.RegionPlan = _city.region_plan() if _city else null
+	if region:
+		walled = region.alley_walls
+	var bearings: Array[Vector2] = []
+	if prefer != Vector2.ZERO:
+		bearings.append(prefer)
+	var up := Vector2.UP if first_up else Vector2.DOWN
+	bearings.append_array([up, -up, up.rotated(SENT_CONE), up.rotated(-SENT_CONE),
+			-up.rotated(SENT_CONE), -up.rotated(-SENT_CONE), Vector2.RIGHT, Vector2.LEFT])
+	var fallback := Vector2.INF
+	for bearing in bearings:
+		var at := PendingWarning.just_out_of_sight(view, def, her, bearing)
+		var tile := _map.world_to_tile(at)
+		if not _map.in_bounds(tile) or not ResistanceDirector.is_legal_ground(_map, tile, walled):
+			continue
+		if not PendingWarning.is_out_of_sight(view, def, her, at):
+			continue
+		if _a_clear_run_at(at, her, region):
+			return [at, true]
+		if fallback == Vector2.INF:
+			fallback = at
+	return [fallback, false]
+
+## Whether every point on the straight line from `from` to `to` is walkable, at a quarter tile, and
+## the line passes through no body of the day's region wall or doors — a man walking through the
+## checkpoint she was inspected at is no run at her.
+func _a_clear_run_at(from: Vector2, to: Vector2, region: RegionPlanner.RegionPlan) -> bool:
+	var steps := ceili(from.distance_to(to) / (Tuning.TILE_SIZE * 0.25))
+	for i in steps + 1:
+		var point := from.lerp(to, float(i) / float(maxi(steps, 1)))
+		if not _map.is_walkable(_map.world_to_tile(point)):
+			return false
+	if region:
+		for body: EventScheduler.Planned in region.wall_bodies + region.door_bodies:
+			var nearest := Geometry2D.get_closest_point_to_segment(body.position, from, to)
+			if nearest.distance_to(body.position) <= body.def.obstructs_radius:
+				return false
+	return true
 
 ## Clears yesterday and plans today. `consumed_one_shots` is appended to in place.
 ##
@@ -403,6 +572,8 @@ func clear() -> void:
 	_last_seen_at = Vector2.INF
 	_walked_under = 0
 	_guard_after_her = null
+	_sent_after_her = null
+	_sent_warning = null
 	_sighted.clear()
 	_sight_reported.clear()
 	_pending.clear()
@@ -1233,6 +1404,7 @@ func _tick_the_events(delta: float) -> void:
 		_watch_the_encounters(delta)
 		_run_the_warnings(delta, _player.global_position)
 		_tell_them_where_she_is()
+		_let_the_officers_out()
 		_warn_about_the_ground_she_is_on()
 		_watch_the_door_lines()
 		_check_detentions()
@@ -1780,6 +1952,10 @@ func _tell_them_where_she_is() -> void:
 	var running: bool = stroller != null and stroller.run_excess_ratio() > 0.0
 	var awake: bool = stroller == null or stroller.baby_is_awake()
 	var strongest := _strongest_barrier_at(_player.global_position)
+	# Inside a district door's hold, nothing but the door's toll reaches her
+	# (`door_holding_her_at()`), so a man who would stop her waits for her outside
+	# (`EventInstance.she_is_held`).
+	var held := door_holding_her_at(_player.global_position) != null
 	# Her pram's own body, on her circumference along her facing — what a car that drives keeps clear
 	# of as well as her (`EventInstance.pram_at`). None while she carries the baby.
 	var pram := Vector2.INF
@@ -1790,6 +1966,7 @@ func _tell_them_where_she_is() -> void:
 		instance.pram_at = pram
 		instance.player_running = running
 		instance.baby_awake = awake
+		instance.she_is_held = held
 		instance.outranked_by_a_stronger_barrier = \
 				instance.def.barrier_structure and instance != strongest
 

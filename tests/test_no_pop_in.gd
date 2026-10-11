@@ -31,7 +31,9 @@ func run(t) -> void:
 static func _rows() -> Array[EventDef]:
 	var rows: Array[EventDef] = [EventCatalogue.by_id("cyclist"), EventCatalogue.by_id("loose_dog"),
 			EventManager.as_warned(EventCatalogue.by_id("charging_dog")),
-			EventCatalogue.by_id("robber_giving_chase"), EventCatalogue.by_id("van_guard_giving_chase")]
+			EventCatalogue.by_id("robber_giving_chase"), EventCatalogue.by_id("van_guard_giving_chase"),
+			EventCatalogue.by_id("policeman_giving_chase"),
+			EventCatalogue.by_id("guardsman_giving_chase")]
 	return rows
 
 ## The cameras she can be seen through, standing at `her`: on her, and led by her look-ahead

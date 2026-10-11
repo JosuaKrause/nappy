@@ -1012,7 +1012,7 @@ outcomes* rather than the same outcome at two prices:
 | | |
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
-| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
+| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`EventDef.stop_excitement`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
 | Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
@@ -1225,17 +1225,24 @@ The sheet shows one of the three tears and stays torn until a crew, or a dawn, p
 again. **A tear costs nothing on the meter and counts for nothing**: it is a gimmick, judged by
 feel.
 
-**What it can do is bring a patrol, and whether it does is drawn from a marble bag** rather than
+**What it can do is bring a pursuer on foot, and whether it does is drawn from a marble bag** rather than
 rolled (`MarbleBag`, PLAYTEST-125): each tear draws one marble at random and removes it, and an
 empty bag is filled again with the same set, so over every bag the share is exact where a roll at
 the same odds runs streaks. The run's first bag is a pre-bag of one "no pursuit" marble, so the
 first tear is always safe; every bag after it holds one "pursuit" and nine "no pursuit"
 (`PosterWalls.TEAR_PRE_BAG`, `TEAR_BAG`). The bag draws from a stream of its own off the run's
 seed, and its whole state is how many tears the run has made (`PosterState.tears`), so a save, a
-lost day and a retry all draw the same marbles. A pursuit marble sends a `police_patrol` toward
-her from off screen, down the carriageway lane driving toward her, under the lead the row already
-owes (`EventDirector.send_a_patrol()`) — sited once she walks on along the street, since a heading
-into a wall gives a car no street to come down. The same class is the bag her route's events are
+lost day and a retry all draw the same marbles. **A pursuit marble sends a pursuer on foot at
+once**, a policeman through day 8 and a guardsman from day 9 (`EventManager.send_a_pursuer()`;
+inbox #591: "the pursuer is not a scheduled event. it is instant! policemen get switched to guardman
+on day 9"): the screen-edge badge goes up the moment the marble is drawn, for half a second with
+nothing in the world, and then he is created just off screen already chasing, as a task's robber
+is — no wait for her to turn from the wall or for a street. Walking does not end his chase within
+`Tuning.PURSUIT_TIME`'s 30s; running shakes him off; **his catch ends the day**
+([merry-stork](playtests/2026-10-10-merry-stork.md): "Ends the day (Recommended)"). The tears' bag
+and the day's event bags never cross: a tear draws no event marble and moves no event's turn, and
+nothing an event does draws a tear's marble ("nothing influences across them"). A pursuit marble
+drawn while he is on his way or after her sends nobody more. The same class is the bag her route's events are
 drawn from (`docs/EVENTS.md`, "What she meets on her route is drawn from a marble bag").
 
 ## Telegraphing

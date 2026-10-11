@@ -65,7 +65,8 @@ extends Node
 ##   ended without: a mark never gives one of these any more, see `mark-*` above.
 ## - `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — every poster torn,
 ##   every mother who stops her to chat and every checkpoint hold.
-## - `nappy-day-N-poster-pursuit` — a tear that sends a patrol after her, beside its `poster-torn`.
+## - `nappy-day-N-poster-pursuit` — a tear that sends a pursuer on foot after her, beside its
+##   `poster-torn`.
 ## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
 ## - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: begun (the fresh
 ##   handover only), lost (either section, any attempt), or got out.
@@ -393,8 +394,9 @@ func _on_pelican_struck_her(_instance: Variant) -> void:
 func _on_poster_torn() -> void:
 	_send_event(_day_event_name(GameState.day, "poster-torn"))
 
-## A tear whose marble sends a patrol, beside that tear's own `poster-torn` (PLAYTEST-143: "we
-## need a telemetry item for ripping posters and pursuit triggered by poster ripping").
+## A tear whose marble sends a pursuer on foot after her, beside that tear's own `poster-torn`
+## (PLAYTEST-143: "we need a telemetry item for ripping posters and pursuit triggered by poster
+## ripping").
 func _on_poster_pursuit_sent() -> void:
 	_send_event(_day_event_name(GameState.day, "poster-pursuit"))
 

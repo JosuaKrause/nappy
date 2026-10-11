@@ -23,7 +23,7 @@ func run(t) -> void:
 	_test_the_take_begins_only_once_she_is_close(t)
 	_test_a_completed_take_is_logged_exactly_once(t)
 	_test_a_hunting_van_draws_no_victim(t)
-	_test_the_obstruction_comes_down_once_it_stops_waiting(t)
+	_test_a_hunting_van_stays_solid_once_it_notices_her(t)
 
 
 func _instance(t, def: EventDef, at := Vector2.ZERO,
@@ -305,7 +305,7 @@ func _test_a_completed_take_is_logged_exactly_once(t) -> void:
 	instance.free()
 	Telemetry.end_run()
 
-# `heat_response = HUNTS` turns the same row into a pursuer past `Tuning.HEAT_HUNTS_LEVEL` — see
+# `heat_response = HUNTS` turns the same row into a hunter on foot past `Tuning.HEAT_HUNTS_LEVEL` — see
 # docs/EVENTS.md, "The heat". Stated against the fully heated copy, the way `tests/test_heat.gd`'s
 # own pursuit tests are.
 
@@ -339,11 +339,10 @@ func _test_a_hunting_van_draws_no_victim(t) -> void:
 	instance.free()
 	Telemetry.end_run()
 
-## Anything that stands still is solid at the width it is drawn, and a hunting van is the first
-## row in the catalogue where that stops being true the instant it moves. `_walkable_step`'s own
-## note is why a moving pursuer may not keep one: a moving wall on a two-tile pavement pins her
-## against a building.
-func _test_the_obstruction_comes_down_once_it_stops_waiting(t) -> void:
+## Anything that stands still is solid at the width it is drawn, and a hunting van stands still:
+## it hunts on foot (`EventDef.hunts_on_foot`, inbox #669: "Same as the police"), letting its men
+## out rather than moving, so its body stays where it is once it has noticed her too.
+func _test_a_hunting_van_stays_solid_once_it_notices_her(t) -> void:
 	var hot := _hunting_abduction()
 	var instance := _instance(t, hot, Vector2.ZERO)
 	t.check(instance.is_solid(), "a hunting van still parked is solid, exactly like a cold one")
@@ -351,5 +350,6 @@ func _test_the_obstruction_comes_down_once_it_stops_waiting(t) -> void:
 	instance.player_at = Vector2(hot.pursues_within - 10.0, 0.0)
 	instance._process(STEP)
 	t.check(not instance.is_waiting(), "she is inside the trigger, so it stops waiting")
-	t.check(not instance.is_solid(), "and the body comes down the same frame")
+	t.check(instance.is_solid() and instance.officers_owed() == 2,
+			"and it stays solid where it stands, owing the two men it lets out")
 	instance.free()
