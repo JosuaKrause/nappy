@@ -164,6 +164,11 @@ react, not to plan. A bike on her own pavement is a road, and the answer to a ro
 decision — cross to the other side, or turn — made with the warning its screen-edge badge gives
 before it exists (see "Everything arrives from off screen"). The loose dog does not telegraph
 (see "What telegraphs") and is created at once just off screen down her sidewalk, with no badge.
+**A loose dog she turns away from still arrives, or is retired.** She may turn round or run after it is
+sent (`RUN_SPEED` 168 against its 132): a dog behind her that is closing — even at 40px/s on a walker
+going away — runs on and passes her, and one that is more than `Tuning.OUT_OF_SIGHT` from her and has
+not closed for two seconds is finished where it stands, out of sight, rather than run its whole route
+unseen (`EventInstance._give_up_what_cannot_reach_her()`).
 
 **And it comes down her own pavement, not the one across the carriageway.** *(2026-09-07: "also
 biker should be on the same side of the road not the other side".)* Sited along her literal heading,
@@ -910,6 +915,18 @@ Four things worth keeping straight:
   the backstop when there is no player to be out of sight of. The exception to "it is over the
   moment it starts leaving" is the barrier, not the man.
 
+**Streaming never ends a departure she could be watching.** A plan is streamed out by how far she is
+from its *route* (`Tuning.EVENT_STREAM_RADIUS` and its hysteresis), but a car that has run out of
+route carries on past its end, so a car she follows out of its street is a long way from the route
+while she walks a few paces behind it. An instance stays in the world while it is within
+`Tuning.OUT_OF_SIGHT` of her (`EventManager.stream_around()`), however far its route is; past that,
+streaming may take it, out of her view. An instance that is leaving and is streamed out anyway,
+beyond her sight, is over: its plan is spent (`EventManager._stream_out()`), as one that finished is,
+so an ended departure is not rebuilt (a person streamed out mid-`leave_along` does not stand in
+day 12's closed park again); only the guard walking away from a barrier comes back, as the barrier.
+`tests/test_patrol_vanish.gd` holds it, with the patrol's other departures: the end of its route and
+the investigating car driving on once its man is back in or has been shaken off by her running.
+
 ## Scheduling
 
 ```
@@ -1619,6 +1636,12 @@ One row the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resi
 Two rows the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resistance sets one
 on her the moment she has done a task, never at dawn — every task but the roadblock, which keeps a
 guard waiting at it, and the neighbor, which has neither (`ResistanceDirector.sets_a_trap_on_her()`).
+The roadblock's waiting guard comes after her the moment she has done its task, from wherever he
+stands, and he is the one pursuer who walks round buildings toward her: where no clear line runs to
+her he follows the walk to her over the ground she can walk, refreshed as she moves, rather than
+the straight line every other chase slides along walls
+(`EventInstance.notice_her_at()`, `_paths_to_her`), since he may start a city away. His notice,
+stand-off and lunge are every pursuer's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |

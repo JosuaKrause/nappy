@@ -15,8 +15,9 @@ extends RefCounted
 ## Whichever roadblock she touches, the guard comes after her the moment she has done it *(the
 ## player: "as long as he starts pursuing when you hit the task it's fine")*: parked at another
 ## roadblock, kept there by her view, he is chasing her the moment she touches the one she
-## approached, and comes all the way to her; and a guard who already noticed her is left on her
-## exactly as he was.
+## approached, and, with her standing there, comes all the way to her, walking round the buildings
+## between them; set on her with a building across his straight line, where a chase straight at her
+## stalls, he walks round it to her while she stands; and a guard who already noticed her is left on her exactly as he was.
 ##
 ## And day 13's own roadblock is placed under the day's rules, close by *(inbox #650 in mossy-beaver:
 ## "let's place one properly and guide to that -- just make sure it's closeby")*: on several cities,
@@ -50,6 +51,7 @@ func run(t) -> void:
 	_streams = "day13-guard:"
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, true)
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, false)
+	_test_the_guard_walks_round_a_building_to_her(t)
 	for seed_value in PLACEMENT_SEEDS:
 		_test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value)
 	GameState.completed_resistance_alley_tiles.assign(saved_alleys)
@@ -473,38 +475,108 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 		walked += 0.1
 		nearest = minf(nearest, guard.global_position.distance_to(at))
 		lethal = guard.is_lethal_at(at)
-	# He comes straight at her (`EventInstance._chase()`), sliding along whatever wall is in the
-	# way, so where a building stands across his line he closes in until he is pressed against it
-	# and no further: what is asked then is that he ends nearer her than he started, within a tile
-	# and a half of where his own straight line to her first meets a building — stopped by it, not
-	# standing in the open.
-	var meets := _where_the_line_first_meets_a_building(map, guard.global_position, at)
-	var short_of_it := guard.global_position.distance_to(meets)
-	var against_it := meets != Vector2.INF and short_of_it <= Tuning.TILE_SIZE * 1.5
-	t.check(lethal or nearest <= standoff + 1.0
-			or (against_it and guard.global_position.distance_to(at) < start),
-			("(%s) he comes from %.0fpx away to her, or up against the building across his line " +
-			"(nearest %.0fpx, stand-off %.0fpx, caught %s, %.0fpx from where his line meets a " +
-			"building, %.1fs)") % [what, start, nearest, standoff, lethal, short_of_it, walked])
+	# He walks round the buildings between them (`EventInstance._paths_to_her`), so he comes all
+	# the way to her stand-off however many blocks stood between them.
+	t.check(lethal or nearest <= standoff + 1.0,
+			"(%s) he comes from %.0fpx away to her (nearest %.0fpx, stand-off %.0fpx, caught %s, %.1fs)"
+			% [what, start, nearest, standoff, lethal, walked])
 	_tear_down(player, director, city)
 	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 
-## The last point of the straight line from `from` to `to` before it first enters ground she
-## cannot walk (`CityMap.is_walkable()`), stepped a few pixels at a time — where a man chasing her
-## in a straight line comes up against a building — or `Vector2.INF` when the line is walkable all
-## the way.
-static func _where_the_line_first_meets_a_building(map: CityMap, from: Vector2,
-		to: Vector2) -> Vector2:
-	var length := from.distance_to(to)
-	var last := from
-	var along := 0.0
-	while along <= length:
-		var point := from.move_toward(to, along)
-		if not map.is_walkable(map.world_to_tile(point)):
-			return last
-		last = point
-		along += 2.0
-	return Vector2.INF
+## **With a building between them, he walks round it to her.** On seed 4242's day 13, the task's
+## own guard is set on her where she stands a few blocks off with a building across his straight
+## line — a spot from which a chase straight at her, sliding along walls
+## (`EventInstance.walkable_step_on()`), never comes within his stand-off of her, and which she
+## could walk to from him — and he reaches her stand-off within the time his walk to her takes
+## at his speed, his notice and a margin on top.
+func _test_the_guard_walks_round_a_building_to_her(t) -> void:
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_failed := GameState.failed_resistance_steps.duplicate()
+	var saved_progress := GameState.resistance_progress
+	var saved_scars := GameState.scars.duplicate()
+	var saved_state := GameState.city_state
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+	GameState.scars = []
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director.contact_position())
+	_view = Rect2()
+	var mark := director.current_step()
+	if mark:
+		director._on_contact_completed(mark.index)
+	var guard: EventInstance = director._task_guard
+	t.check(guard != null and guard.is_waiting(), "(round a building) the task's guard is waiting")
+	if guard == null:
+		_tear_down(player, director, city)
+		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+		return
+	var map := city.map
+	# The red arrow shares `ArrowField.ground_for()` with the guard's walk; what is left to guard is
+	# the director's cache of it, which must equal a fresh layout of what blocks her now.
+	t.check(director._ground_for_the_arrow() == ArrowField.ground_for(map),
+			"(round a building) the red arrow's cached ground is the guard's walk's ground")
+	var standoff := Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach())
+	var from := guard.global_position
+	var walk := map.walk_field(map.world_to_tile(from))
+	var at := Vector2.INF
+	var tiles_to_her := -1
+	for radius in range(5, 16):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if at != Vector2.INF or maxi(absi(dx), absi(dy)) != radius:
+					continue
+				var tile := map.world_to_tile(from) + Vector2i(dx, dy)
+				if not map.is_walkable(tile) or map.is_closed(tile) or map.is_obstructed(tile) \
+						or map.soft_sealed_tiles.has(tile) or not map.reaches(walk, tile):
+					continue
+				var spot := map.tile_to_world(tile)
+				if map.clear_line(from, spot) \
+						or _a_straight_chase_reaches(map, from, spot, standoff,
+								guard.def.pursue_speed):
+					continue
+				at = spot
+				tiles_to_her = map.distance_at(walk, tile)
+	t.check(at != Vector2.INF,
+			"(round a building) there is a spot she can walk to with a building across his straight line, where a straight chase stalls")
+	if at == Vector2.INF:
+		_tear_down(player, director, city)
+		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+		return
+	player.global_position = at
+	guard.notice_her_at(at)
+	var allowed := guard.def.telegraph_time + tiles_to_her * Tuning.TILE_SIZE \
+			/ guard.def.pursue_speed * 1.5 + 2.0
+	var start := from.distance_to(at)
+	var nearest := start
+	var walked := 0.0
+	var lethal := false
+	while walked < allowed and not lethal and not guard.is_finished:
+		guard.player_at = at
+		guard._process(0.1)
+		walked += 0.1
+		nearest = minf(nearest, guard.global_position.distance_to(at))
+		lethal = guard.is_lethal_at(at)
+	t.check(lethal or nearest <= standoff + 1.0,
+			("(round a building) he walks round it from %.0fpx away to her stand-off within %.1fs " +
+			"(a walk of %d tiles; nearest %.0fpx, stand-off %.0fpx, caught %s, %.1fs)")
+			% [start, allowed, tiles_to_her, nearest, standoff, lethal, walked])
+	_tear_down(player, director, city)
+	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+
+## Whether a chase straight at `to` from `from`, sliding along walls as every pursuer's step does
+## (`EventInstance.walkable_step_on()`), ever comes within `standoff` of it in 30s at `speed`, in
+## steps of a tenth of a second.
+static func _a_straight_chase_reaches(map: CityMap, from: Vector2, to: Vector2,
+		standoff: float, speed: float) -> bool:
+	var at := from
+	for i in 300:
+		var toward := to - at
+		if toward.length() <= standoff:
+			return true
+		var step := toward.normalized() * minf(speed * 0.1, toward.length())
+		at += EventInstance.walkable_step_on(map, at, step)
+	return false
 
 ## Walkable, open, unobstructed ground within `reach` of `body`, nearest the reach's edge first —
 ## where she stands to touch it — or `Vector2.INF`.

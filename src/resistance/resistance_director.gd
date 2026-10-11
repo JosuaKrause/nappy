@@ -625,26 +625,45 @@ const DOOR_REACH := Tuning.TILE_SIZE * sqrt(0.5 * 0.5 + 1.5 * 1.5)
 ## Day 8's contact: it rides the burnt shell `shell` (so `rider_alive()` keeps answering for it) but
 ## stands on the door of the building behind it (`City.way_in_behind()`) and reaches `DOOR_REACH`
 ## from there. The shell has no body and draws nothing, so the door is where the task *is* — *"the
-## building is what needs to be burnt, not an object next to the building"*. **The door's own
-## frontage tile must be ground she can stand on**, the same refusals every contact here keeps
-## (`is_legal_ground()`, unobstructed, reachable from home): a door whose frontage something solid
-## stands on today gives way to the facade point straight behind the shell, one tile north of it,
-## which `DOOR_REACH` covers from the shell's own frontage-lane tile the same way. Draws nothing
-## from `_rng`, so the day's later draws are unmoved.
+## building is what needs to be burnt, not an object next to the building"*. **Some ground within
+## `DOOR_REACH` of the door must be ground she can stand on** (`_door_can_be_touched()`); only a
+## door none of whose reachable frontage can be stood on today (shut off from home, or solid
+## bodies on all of it) gives way to the facade point straight behind the shell, one tile north of
+## it, which `DOOR_REACH` covers from the shell's own frontage-lane tile the same way. Draws
+## nothing from `_rng`, so the day's later draws are unmoved.
 func _ride_to_the_door(shell: EventInstance) -> void:
 	var door := _city.way_in_behind(shell.global_position) if _city else Vector2.INF
-	if door != Vector2.INF:
-		var frontage := _map.world_to_tile(door) + Vector2i.DOWN
-		if not is_legal_ground(_map, frontage, _walled_alleys()) or _map.is_obstructed(frontage) \
-				or not _reachable_from_home(frontage):
-			Telemetry.note("contact", ("step %d: the burnt building's door at %s has no ground " +
-					"in front of it today — the facade behind the shell stands in")
-					% [_step.index, TelemetryLog.tile(_map.world_to_tile(door))])
-			door = Vector2.INF
+	if door != Vector2.INF and not _door_can_be_touched(door):
+		Telemetry.note("contact", ("step %d: the burnt building's door at %s has no ground " +
+				"within reach today — the facade behind the shell stands in")
+				% [_step.index, TelemetryLog.tile(_map.world_to_tile(door))])
+		door = Vector2.INF
 	if door == Vector2.INF:
 		door = shell.global_position + Vector2.UP * Tuning.TILE_SIZE
 	_contact.ride(_step, shell, door - shell.global_position)
 	_contact.reach = DOOR_REACH
+
+## Whether she can stand within `DOOR_REACH` of the door point `door` today: one of the three
+## frontage-lane tiles the reach covers — the one straight below the door and the one either side of
+## it, those whose centre lies within `DOOR_REACH` (50.6px) of the door's point — is ground every
+## contact here keeps (`is_legal_ground()`, unobstructed, reachable from home). An entrance door
+## stands on a column's middle, so all three are 45px away; a storefront door stands on the seam
+## between two tiles, where they are 35.8px, 35.8px and 57.7px away and the third is dropped.
+## **A held segment is not a refusal**: a street held for the day (a region door's, the one round
+## her block, one a hard seal or a region wall holds) is held so no *row* is sited on it, and it is
+## ground she walks on like any other (`allow_held`, as day 9's door is placed), so a door on one
+## is still the door. The shell's own tile is not what is asked, since the door can
+## stand several columns from the shell along the front.
+func _door_can_be_touched(door: Vector2) -> bool:
+	var frontage := _map.world_to_tile(door) + Vector2i.DOWN
+	var walled := _walled_alleys()
+	for across in [0, -1, 1]:
+		var tile: Vector2i = frontage + Vector2i(across, 0)
+		if door.distance_to(_map.tile_to_world(tile)) <= DOOR_REACH \
+				and is_legal_ground(_map, tile, walled, true) and not _map.is_obstructed(tile) \
+				and _reachable_from_home(tile):
+			return true
+	return false
 
 ## Day 3's fire, whose own siting rules `_fronts_a_fire_catches_on()` reuses.
 const FIRE_ROW := "burning_building"
@@ -2543,7 +2562,9 @@ static func is_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[R
 ## every other kind of placement.
 ##
 ## **`allow_held` skips only the `is_held_at` refusal, and only the two door placements pass it**
-## (`ResistanceSteps.stands_on_held_ground()`). Held ground means *no hazard or catalogue row may be
+## (`ResistanceSteps.stands_on_held_ground()`), apart from day 8's burnt building door, which asks
+## whether she can stand by the door through `_door_can_be_touched()` instead of placing a contact
+## from a pool. Held ground means *no hazard or catalogue row may be
 ## sited here*; a contact is neither, and for a step whose candidates are the held region-door
 ## segments themselves (`_place_at_a_door()`), or the station's front door on a street the spur
 ## made a region door, the filter would refuse the very ground the task points at.
@@ -2823,8 +2844,8 @@ func _reach_distance(instance: EventInstance) -> float:
 ## changes target while he is in her view and keeps him in it until she arrives**: then he is still
 ## at the one before, and only moving him in her view would put him at hers. **Wherever he is when
 ## she has done the task — in the band, on the ring past it, at another roadblock — he starts after
-## her the moment she has** (`_set_the_task_guard_on_her()`), and a chase begun round a corner can
-## lose her as any chase can.
+## her the moment she has** (`_set_the_task_guard_on_her()`), walking round the buildings between
+## them rather than stalling behind one (`EventInstance._paths_to_her`); running shakes him off.
 ##
 ## **A guard who has noticed her is not moved**, nor one whose chase is over: he is after her, or
 ## gone, and a move would take him off her or bring him back.
@@ -2885,9 +2906,12 @@ func _move_the_task_guard_to_her_target() -> void:
 ## pursuing when you hit the task it's fine")*. The moment she has touched the roadblock, a guard who
 ## has not yet noticed her notices her now (`EventInstance.notice_her_at()`) and starts after her
 ## from where he is: from the band with a clear line, as he would have; from the roadblock before,
-## from the ring past the band, or round a corner, the same. **He starts after her; he does not
-## always reach her**: he walks straight at her, sliding along walls (`EventInstance._chase()`), so a
-## chase begun round a corner can stall behind a building and lose her, as any chase can. He is
+## from the ring past the band, or round a corner, the same. **He starts after her and walks round
+## buildings to her** (`EventInstance._paths_to_her`): where no clear line runs to her he follows the
+## walk to her, refreshed as she moves, so from another roadblock he comes all the way to her unless
+## she leaves him behind: he gains on a walker only 38px a second (his 130 against
+## `Tuning.WALK_SPEED`'s 92), so from across the city a walk away can outlast his
+## `Tuning.PURSUIT_TIME` chase; running still shakes him off, as it does any chase. He is
 ## already in the world, so nothing appears: off screen he comes on from off screen, his badge up as
 ## he closes on her (`DangerEdge`), and in view he is the guard she can already see. The chase keeps
 ## every pursuit rule — his notice before any lunge, his stand-off while it runs, a lunge only along
@@ -3400,24 +3424,7 @@ func _ground_for_the_arrow() -> PackedInt32Array:
 	if versions == _arrow_ground_versions and not _arrow_ground.is_empty():
 		return _arrow_ground
 	_arrow_ground_versions = versions
-	var width := _map.size.x
-	var ground := PackedInt32Array()
-	ground.resize(width * _map.size.y)
-	ground.fill(ArrowField.UNREACHED)
-	# The authored scene's void is BUILDING to every live walking query. ArrowField reads the
-	# saved context's raw tile array for its inner loop, so put that same boundary into the ground
-	# it receives rather than letting the red arrow measure a route the player cannot walk.
-	if _map.stretch_active:
-		for y in _map.size.y:
-			for x in _map.size.x:
-				var tile := Vector2i(x, y)
-				if not _map.in_stretch(tile):
-					ground[y * width + x] = ArrowField.BLOCKED
-	for blocked: Dictionary in [_map.closed_tiles, _map.soft_sealed_tiles, _map.obstructed_tiles,
-			_map.post_tiles()]:
-		for tile: Vector2i in blocked:
-			if _map.in_bounds(tile):
-				ground[tile.y * width + tile.x] = ArrowField.BLOCKED
+	var ground := ArrowField.ground_for(_map)
 	_arrow_ground = ground
 	return _arrow_ground
 
