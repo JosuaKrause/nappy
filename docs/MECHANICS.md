@@ -1489,9 +1489,10 @@ has normal nerve counts and ends if nerves go to zero (instead of restarting ind
 only for normal mode)".)* She enters it with the nerves day 14 left her. A lost section costs one
 (`GameState.spend_a_nerve_in_the_escape()`, from `main._on_finale_section_lost()`), and the last one
 is the bad ending, on the `GAME OVER` screen, rather than the section again. No section gives one
-back, so a hard run can be lost in the escape *([mossy-kestrel](playtests/2026-10-11-mossy-kestrel.md), #718, the player: "No regain in escape either. Also,
-nerves behave the same in escape for hard mode so the game can actually be lost")*. Walking out of
-the city ends the run. Hard mode is the player choosing to
+back, so a hard run can be lost in the escape
+*([mossy-kestrel](playtests/2026-10-11-mossy-kestrel.md), #718, the player: "No regain in escape
+either. Also, nerves behave the same in escape for hard mode so the game can actually be lost")*.
+Walking out of the city ends the run. Hard mode is the player choosing to
 have the wrong turn in the last minutes count.
 
 **Every section opens on its brief**, a first walk through it and a retry alike — the same screen
@@ -1606,17 +1607,17 @@ she took, to the millisecond, which is the only number that screen carries.
 The run-level health bar. Starts at 5. Every lost day costs one, and in a normal run a day she
 **wins** gives one back, up to the same five (`GameState.regain_a_nerve_for_a_won_day()`) — so a bad
 single day is recoverable rather than a tight spot carried all the way to day 14. **A hard run's won
-day gives nothing back**: it starts with five and only loses them. **What 0 does is the run's mode**, chosen on the
-title as a new game begins (see "Two modes" below): a normal run goes back to its latest checkpoint
-with five, and a hard run ends with the bad ending.
+day gives nothing back**: it starts with five and only loses them. **What 0 does is the run's
+mode**, chosen on the title as a new game begins (see "Two modes" below): a normal run goes back to
+its latest checkpoint with five, and a hard run ends with the bad ending.
 
 **A normal run's escape gives none back**, on either of its two sections or on walking out at the
-end, and so does a hard run's (see "The escape, which is the
-run's ending"): the run's last `finish_day()` call, from `main._on_finale_escaped()`, skips the gain
-in both because `GameState.escape_section` is still set to the section she just left. Day 14
-itself still gives a normal run one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s hand-over
-to the escape rather than waiting for `finish_day()`, which by then is deciding the escape's ending
-instead of day 14's.
+end, and so does a hard run's (see "The escape, which is the run's ending"): the run's last
+`finish_day()` call, from `main._on_finale_escaped()`, skips the gain in both because
+`GameState.escape_section` is still set to the section she just left. Day 14 itself still gives a
+normal run one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s
+hand-over to the escape rather than waiting for `finish_day()`, which by then is deciding the
+escape's ending instead of day 14's.
 
 **Drawn as stars everywhere they show, never as a digit or a word for the count** — the HUD's
 debug header, the day brief, the day summary, the finale brief and the pause screen all read the

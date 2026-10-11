@@ -376,9 +376,9 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 	_snapshot_what_the_attempt_can_spend()
 	# Excluded for the escape: `main._on_finale_escaped()` reaches this same call once she is out,
 	# and walking out of the city gives no nerve in either mode — a normal run's escape has none to
-	# give ("the escape doesn't have nerves", the player), and a hard run gets none back at all. So the section she just walked out of,
-	# still on `escape_section` here (the `_end_run()` branch below is what clears it), says whether
-	# this call is one of theirs.
+	# give ("the escape doesn't have nerves", the player), and a hard run gets none back at all. So
+	# the section she just walked out of, still on `escape_section` here (the `_end_run()` branch
+	# below is what clears it), says whether this call is one of theirs.
 	if escape_section == 0:
 		regain_a_nerve_for_a_won_day()
 	if is_final_day():
@@ -390,10 +390,11 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 ## Gives one nerve back, capped at `Tuning.STARTING_NERVES` (5) — the run's own maximum, so a
 ## stretch of wins can never bank more than a single bad day ever costs. `finish_day()` reaches this
 ## for an ordinary won day through `regain_a_nerve_for_a_won_day()`, and `main._on_day_finished()`'s
-## hand-over to the escape reaches it the same way for day 14's own win, since a day that hands over never reaches `finish_day()` at all (that call
-## is deferred to `main._on_finale_escaped()`, once she is out, so day 14's calendar slot and ending
-## stay open for the escape to decide) — day 14 is still an ordinary day, and its win does not
-## become the escape's just because what follows it is.
+## hand-over to the escape reaches it the same way for day 14's own win, since a day that hands
+## over never reaches `finish_day()` at all (that call is deferred to `main._on_finale_escaped()`,
+## once she is out, so day 14's calendar slot and ending stay open for the escape to decide) — day
+## 14 is still an ordinary day, and its win does not become the escape's just because what follows
+## it is.
 func regain_a_nerve() -> void:
 	if nerves < Tuning.STARTING_NERVES:
 		nerves += 1
