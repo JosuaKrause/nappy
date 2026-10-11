@@ -14,7 +14,8 @@ steps toward the farthest of the next six tiles he can see along a walk to her; 
 goes straight at her as before, through a barrier as any chase does. The walk is a sweep out from
 her by `ArrowField`, the red arrow's own sliced sweep, over the ground she can walk (closures, soft
 seals, standing bodies and posts blocked), laid out by `ArrowField.ground_for()`, which the red
-arrow is to share (`tests/test_day13_guard.gd` checks the director's own copy matches it). It runs
+arrow shares (the director caches it per state of what blocks her, and `tests/test_day13_guard.gd`
+checks that cache equals a fresh layout). It runs
 500 tiles a frame, is used the moment it reaches his tile, and starts again once she has walked 2
 tiles, or, while he is far, a quarter of his walk to her. On the debug desktop build, with her
 walking away on seeds 4242, 90210 and 555, a sweep runs on 5% of his chase frames and a frame costs
