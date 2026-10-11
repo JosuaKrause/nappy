@@ -1,0 +1,65 @@
+diff --git i/src/main.gd w/src/main.gd
+index 5beea70d..73aa298e 100644
+--- i/src/main.gd
++++ w/src/main.gd
+@@ -2528,6 +2528,7 @@ func _process(delta: float) -> void:
+ 		_apply_orientation()
+ 	if not _player or not _baby:
+ 		return
++	_force_a_guard_round_a_building(delta)
+ 	if _finale:
+ 		_process_the_finale(delta)
+ 		_write_the_escape_readout(delta)
+@@ -3181,3 +3182,52 @@ func _notification(what: int) -> void:
+ 		_pause_on_focus_lost()
+ 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
+ 		_arm_the_return_window()
++
++
++# Capture-only forcing (velvet-stork evidence): one second into the day, the alley robbery is set on
++# her as day 13's task guard is (`EventInstance.notice_her_at()`), from a spot a few blocks off with
++# a building across his straight line, where a straight chase never comes within his stand-off.
++var _forced_guard_clock := 0.0
++var _forced_guard: EventInstance
++
++func _force_a_guard_round_a_building(delta: float) -> void:
++	if _forced_guard or not _city or not _city.events:
++		return
++	_forced_guard_clock += delta
++	if _forced_guard_clock < 1.0:
++		return
++	var map := _city.map
++	var her := _player.global_position
++	var robbery := EventCatalogue.by_id("alley_robbery")
++	var standoff := Tuning.pursuit_standoff(robbery.pursue_speed, robbery.standoff_reach())
++	var walk := map.walk_field(map.world_to_tile(her))
++	for radius in range(7, 16):
++		for dy in range(-radius, radius + 1):
++			for dx in range(-radius, radius + 1):
++				if maxi(absi(dx), absi(dy)) != radius:
++					continue
++				var tile := map.world_to_tile(her) + Vector2i(dx, dy)
++				if not map.is_walkable(tile) or map.is_closed(tile) or map.is_obstructed(tile) \
++						or map.soft_sealed_tiles.has(tile) or not map.reaches(walk, tile) \
++						or map.distance_at(walk, tile) > 30:
++					continue
++				var spot := map.tile_to_world(tile)
++				if map.clear_line(spot, her):
++					continue
++				var at := spot
++				var reached := false
++				for i in 300:
++					var toward := her - at
++					if toward.length() <= standoff:
++						reached = true
++						break
++					at += EventInstance.walkable_step_on(map, at,
++							toward.normalized() * minf(13.0, toward.length()))
++				if reached:
++					continue
++				_forced_guard = _city.events.spawn_extra(robbery, spot)
++				_forced_guard.notice_her_at(her)
++				print("[forcing] the guard is set on her from %s, %.0fpx off, a walk of %d tiles"
++						% [tile, spot.distance_to(her), map.distance_at(walk, tile)])
++				return
++	_forced_guard_clock = -INF
