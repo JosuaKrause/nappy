@@ -5029,7 +5029,12 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.ROADWORKS:
 			_draw_spread(_roadwork_segment_texture(_spread_vertical), BARRIER_END, canvas)
 		EventDef.Look.FIRE_ENGINE:
-			_draw_eight_view(FIRE_ENGINE_BY_VIEW, _heading, canvas, true)
+			# Drawn over its own body like the patrol car (`_police_car_anchor()`): the body is the
+			# truck's `shape`, and the shadow, which is that shape, stays under the node.
+			var engine_view := _select_view(_heading)
+			_draw_body_shadow(canvas, Vector2(0.0, -_current_bob()))
+			_draw_eight_view(FIRE_ENGINE_BY_VIEW, _heading, canvas, true, {}, false,
+					_police_car_anchor(engine_view))
 		EventDef.Look.BURNING_BUILDING:
 			_draw_fire(canvas)
 		EventDef.Look.BURNT_SHELL:
@@ -5210,6 +5215,27 @@ const POLICE_CAR_CANVAS_BOTTOM_MARGIN := {
 	"back_diagonal": 2.0,
 }
 
+## The same for the fire engine's views (`art/events/fire_engine*.svg`): the side view's tyres end
+## a row above its canvas's bottom, the front and back views' wheels five rows above theirs and the
+## diagonals' four.
+const FIRE_ENGINE_CANVAS_BOTTOM_MARGIN := {
+	"front": 5.0,
+	"back": 5.0,
+	"side": 1.0,
+	"front_diagonal": 4.0,
+	"back_diagonal": 4.0,
+}
+
+## The canvas margins of the car family `look` belongs to — a patrol car's or the fire engine's —
+## both bodies a segment `EventDef.drives` lays along the heading and a picture anchored over it.
+static func _canvas_margins(look: EventDef.Look) -> Dictionary:
+	return FIRE_ENGINE_CANVAS_BOTTOM_MARGIN if look == EventDef.Look.FIRE_ENGINE \
+			else POLICE_CAR_CANVAS_BOTTOM_MARGIN
+
+## Whether `look` is a body whose picture is anchored over it by `_police_car_anchor()`.
+static func _is_anchored_over_its_body(look: EventDef.Look) -> bool:
+	return look == EventDef.Look.POLICE_CAR or look == EventDef.Look.FIRE_ENGINE
+
 ## Where a police car's picture is anchored for `Sprites.draw_standing`, which bottom-centres it:
 ## **the drawn content's bottom edge lands on the southernmost point of its body**, the crowd car's
 ## own registration rule (`CrowdAgent._car_body_anchor()`), because every view is a standing
@@ -5222,13 +5248,13 @@ const POLICE_CAR_CANVAS_BOTTOM_MARGIN := {
 ## every sector boundary. The caret over it is lowered by the same amount (`_picture_drop_now()`).
 func _police_car_anchor(view: String) -> Vector2:
 	var south := def.shape.half_length * absf(_solid_axis().y) + def.shape.radius
-	return Vector2(0.0, south + float(POLICE_CAR_CANVAS_BOTTOM_MARGIN.get(view, 0.0)))
+	return Vector2(0.0, south + float(_canvas_margins(def.look).get(view, 0.0)))
 
 ## How far below its own node this instance's picture is drawn this frame — a police car's
 ## `_police_car_anchor()`, zero for every other row — so the caret over it stands the same height
 ## above the picture as it does over anything else.
 func _picture_drop_now() -> float:
-	if def.look != EventDef.Look.POLICE_CAR or def.shape == null:
+	if not _is_anchored_over_its_body(def.look) or def.shape == null:
 		return 0.0
 	return _police_car_anchor(EIGHT_VIEW_BY_SECTOR[_view_sector]).y
 
@@ -5236,11 +5262,12 @@ func _picture_drop_now() -> float:
 ## pointed straight down the screen, and its largest canvas margin (`_police_car_anchor()`); zero
 ## for every other row, whose pictures stand on the node. `footprint_of()` and `drawn_box()` add it.
 static func _picture_drop_of(row: EventDef) -> float:
-	if row.look != EventDef.Look.POLICE_CAR or row.shape == null:
+	if not _is_anchored_over_its_body(row.look) or row.shape == null:
 		return 0.0
+	var margins := _canvas_margins(row.look)
 	var margin := 0.0
-	for view: String in POLICE_CAR_CANVAS_BOTTOM_MARGIN:
-		margin = maxf(margin, float(POLICE_CAR_CANVAS_BOTTOM_MARGIN[view]))
+	for view: String in margins:
+		margin = maxf(margin, float(margins[view]))
 	return row.shape.reach() + margin
 
 ## `box` and the same box lowered by `_picture_drop_of(row)`, together: every place between the
