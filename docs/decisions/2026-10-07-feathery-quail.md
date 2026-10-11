@@ -27,8 +27,9 @@ finishes on its next frame, so the spending is tidiness rather than a visible fi
 park people from being rebuilt inside the closed park. No departure route or timing changed.
 `docs/EVENTS.md`'s "Going away" and the **events** skill's "Nothing vanishes" name the streaming
 path. `tests/test_patrol_vanish.gd` checks the car followed out of its street is kept, failing
-before the fix, and the leaving plan streamed out not rebuilt; the route's-end departure and the
-investigating car's stop are guards that already held. There is no picture: the case needs a played
+before the fix, and the leaving plan streamed out not rebuilt; the route's-end departure and both
+endings of the investigating car, its man stopping her or shaken off as she runs, are guards that
+already held. There is no picture: the case needs a played
 run of about 1,460px behind a leaving car, and the test judges "in sight" with the game's own visible
 view. [The review item](../review/2026-10-07-feathery-quail.md) asks the player to watch for it.
 
