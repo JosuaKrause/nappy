@@ -5,7 +5,7 @@
   "extent": {"scope":"stretch"},
   "city": {"context_seed":1917501},
   "anchors": {
-    "mark": {"tile":[66,146]},
+    "mark": {"tile":[66,147]},
     "neighbor": {"tile":[57,135]},
     "start": {"tile":[71,145]}
   },
@@ -45,23 +45,23 @@
     }
   },
   "playback": {
-    "walk": "3.48w3.0n1.5w8.0n",
-    "duration": 15.1,
-    "capture_at": 10.4,
+    "walk": "1.74w0.7s0.7n1.74w3.0n1.5w8.0n",
+    "duration": 17,
+    "capture_at": 11.8,
     "observations": [
       {"tick":1,"subject":"mark","condition":"offered"},
       {"tick":1,"subject":"mark","condition":"unarrowed"},
       {"tick":1,"subject":"player","condition":"beyond","at":"mark","distance":150},
-      {"tick":60,"subject":"mark","condition":"done"},
-      {"tick":60,"subject":"task","condition":"offered"},
-      {"tick":60,"subject":"task","condition":"arrowed"},
-      {"tick":60,"subject":"task","condition":"off_screen"},
-      {"tick":60,"subject":"task","condition":"beyond","at":"mark","distance":364},
-      {"tick":60,"subject":"task","condition":"near","at":"mark","distance":480},
-      {"tick":312,"subject":"task","condition":"offered"},
-      {"tick":450,"subject":"task","condition":"done"},
-      {"tick":452,"subject":"row:cat_dash","condition":"appeared"},
-      {"tick":300,"subject":"player","condition":"crowd","walkers":2,"cars":1}
+      {"tick":80,"subject":"mark","condition":"done"},
+      {"tick":80,"subject":"task","condition":"offered"},
+      {"tick":80,"subject":"task","condition":"arrowed"},
+      {"tick":80,"subject":"task","condition":"off_screen"},
+      {"tick":80,"subject":"task","condition":"beyond","at":"mark","distance":364},
+      {"tick":80,"subject":"task","condition":"near","at":"mark","distance":520},
+      {"tick":354,"subject":"task","condition":"offered"},
+      {"tick":505,"subject":"task","condition":"done"},
+      {"tick":507,"subject":"row:cat_dash","condition":"appeared"},
+      {"tick":342,"subject":"player","condition":"crowd","walkers":2,"cars":1}
     ]
   },
   "stretch": {
