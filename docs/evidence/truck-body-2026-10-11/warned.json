@@ -1,0 +1,12 @@
+{
+  "version": 1, "name": "Day 3: she walks west in the fire engine's lane past the kerb it parks at, and the warning goes up over her while it drives in behind her", "seed": 11,
+  "extent": {"scope": "full"}, "city": {"context_seed": 1917501},
+  "anchors": {"fire": {"world": [2128, 2704]}, "kerb": {"world": [2128, 2768]}, "start": {"world": [2624, 2704]}},
+  "setup": {"tutorial_complete": true, "day": 3, "parent": "mother", "player": {"at": "start", "facing": "west"}, "events": [{"name": "fire", "row": "burning_building", "at": "fire"}]},
+  "playback": {"walk": "0.7s6.2w", "duration": 8.4, "capture_at": 7.5,
+    "observations": [{"tick": 1, "subject": "fire", "condition": "off_screen"},
+      {"tick": 225, "subject": "row:fire_truck", "condition": "visible"},
+      {"tick": 225, "subject": "row:fire_truck", "condition": "moving"},
+      {"tick": 225, "subject": "row:fire_truck", "condition": "near_player", "distance": 260},
+      {"tick": 250, "subject": "row:fire_truck", "condition": "near", "at": "kerb", "distance": 24}]}
+}
