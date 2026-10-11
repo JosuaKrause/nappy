@@ -866,14 +866,16 @@ func _reaches_the_middle_of(tile: Vector2i, from: Vector2, delta: Vector2, depth
 				moved = true
 	return reached <= span.y
 
-## `is_walkable()` for the tile at (`x`, `y`), read straight off the grid: the line walk above asks
+## `is_walkable()` less the posts for the tile at (`x`, `y`), read straight off the grid: `wall_between()`'s
+## line walk above asks
 ## it for every tile a segment crosses, and most cross no building at all, so the one call stands
 ## for `is_walkable()`'s three. A recipe's exterior and a stretch's void still go through
 ## `tile_at()`.
 ##
-## **It deliberately ignores the precinct posts** (`post_tiles()`): the line walk asks whether a
-## segment is *seen* across, and a bollard blocks a body but not a line of
-## sight, so a post tile is open here though no step or flood may enter it.
+## **It deliberately ignores the precinct posts** (`post_tiles()`): `wall_between()` asks whether a
+## segment is *seen* across, and a bollard blocks a body but not that sight, so a post tile is open
+## here though no step or flood may enter it. `clear_line()`, the pursuers' notice and lunge line,
+## asks `is_walkable()` instead and is blocked by a post.
 func _open(x: int, y: int) -> bool:
 	if recipe_exterior or stretch_active:
 		return Tile.is_walkable(tile_at(Vector2i(x, y)))
