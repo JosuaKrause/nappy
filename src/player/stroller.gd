@@ -444,6 +444,7 @@ func step_back_in() -> void:
 
 func _physics_process(delta: float) -> void:
 	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	input_dir = _unless_held_through_a_release(input_dir)
 	if _detained_for > 0.0:
 		_detained_for = maxf(0.0, _detained_for - delta)
 		# Ignored rather than read: the run key doing nothing during a capture falls out of this
@@ -544,6 +545,35 @@ func hide_for_inspection() -> void:
 func show_after_inspection() -> void:
 	visible = true
 	_reset_interpolation_if_shown()
+	_stand_still_after_the_hold()
+
+## The input held when a hold let her out, which does not move her until it is released or changed;
+## `Vector2.ZERO` when nothing was held, or once the player has chosen.
+var _held_through_the_release := Vector2.ZERO
+
+## **Being let out leaves her standing still, whatever was held going in** *(2026-10-10, the player:
+## "there is a bug when leaving the guard huts that the player keeps moving in the previous
+## direction. let's reset the movement to 0 when leaving so the player has a choice")*. The teleport
+## zeroes her velocity, but a heading the controls still hold would accelerate her again on the
+## next frame. A heading a tap or a joystick drag locked in is dropped by the controls
+## themselves (`TouchControls.stand_still_after_hold()`); a key still physically down cannot be
+## dropped, so the same value read on the next frames is ignored until it is released or changes.
+func _stand_still_after_the_hold() -> void:
+	velocity = Vector2.ZERO
+	if is_inside_tree():
+		get_tree().call_group(HelpText.CONTROLS_GROUP, &"stand_still_after_hold")
+	_held_through_the_release = Input.get_vector(
+			"move_left", "move_right", "move_up", "move_down")
+
+## `input_dir` as the held-through-the-release rule leaves it: zero while it still equals what was
+## held at the release, the input itself the moment it differs.
+func _unless_held_through_a_release(input_dir: Vector2) -> Vector2:
+	if _held_through_the_release == Vector2.ZERO:
+		return input_dir
+	if input_dir == _held_through_the_release:
+		return Vector2.ZERO
+	_held_through_the_release = Vector2.ZERO
+	return input_dir
 
 ## Resets physics interpolation on her own body, but only where the reset can do anything.
 ##

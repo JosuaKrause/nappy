@@ -595,6 +595,14 @@ func _stop() -> void:
 		Input.action_press(&"run")
 	queue_redraw()
 
+## A gatehouse has let her out (`Stroller.show_after_inspection()`): the heading a tap or a drag
+## locked in before the hold is dropped, so she stands still until the player chooses again. A
+## finger still down chooses again by moving; one lifted or held still does not. Only what this node
+## itself holds is released, so a key held on the keyboard is `Stroller`'s to deal with.
+func stand_still_after_hold() -> void:
+	if _walking or _direction != Vector2.ZERO:
+		_stop()
+
 ## Where Run's disc is drawn: the focus opposite the steering one in `Mode.JOYSTICK`, from the
 ## first frame of play, or `Vector2.INF` in `Mode.TAP`, which draws no disc.
 func run_button_center() -> Vector2:
