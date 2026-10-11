@@ -1825,7 +1825,7 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	# every field that cache is keyed on, so biasing the cached array would bias the robber's
 	# ground too. Only the mouse asks the question at all.
 	if def.id == _MOUSE_ID:
-		open_candidates = _prefer_beside_a_sack_pile(open_candidates, map, day)
+		open_candidates = _prefer_beside_a_sack_pile(open_candidates, map, day, ground)
 	return _best_of(def, rng, map, open_candidates, role, already, ground, leave_alone, corridor,
 			doors, standing)
 
@@ -2063,13 +2063,19 @@ static func _refuses_required_alleys(def: EventDef) -> bool:
 ## room, the required-alley refusal above — still runs against the result unchanged. A day with no
 ## pile yet returns `candidates` untouched, which is every day before sacks reach the alleys at
 ## all.
+##
+## **The piles are found once a day**, kept in the day's `ground` like the trees: finding them is a
+## scan of every tile of the map, and the mouse can be rolled for many times in one day's fill.
 const _MOUSE_ID := "alley_mouse"
 const _MOUSE_PILE_ADJACENCY := 1
 const _MOUSE_PILE_EXTRA_COPIES := 4
 
 static func _prefer_beside_a_sack_pile(candidates: Array[Vector2i], map: CityMap,
-		day: int) -> Array[Vector2i]:
-	var piles := GarbageSacks.alley_pile_tiles(map, day)
+		day: int, ground := {}) -> Array[Vector2i]:
+	var key := "%s|%d" % [_SACK_PILES_KEY, day]
+	if not ground.has(key):
+		ground[key] = GarbageSacks.alley_pile_tiles(map, day)
+	var piles: Array[Vector2i] = ground[key]
 	if piles.is_empty():
 		return candidates
 	var weighted := candidates.duplicate()
@@ -2080,6 +2086,10 @@ static func _prefer_beside_a_sack_pile(candidates: Array[Vector2i], map: CityMap
 					weighted.append(tile)
 				break
 	return weighted
+
+## Where `_prefer_beside_a_sack_pile()` keeps the day's piles in `ground`, under a key no placement
+## question can collide with.
+const _SACK_PILES_KEY := "alley sack piles"
 
 ## The day's copy of `StreetTrees.footprint_tiles()`, kept in the same `ground` dictionary every
 ## other answer in this file is cached in and under a key no `"%s|%d"` placement question can
@@ -2665,12 +2675,13 @@ static func _a_beat_reaches_a_way_out(plan: Planned, map: CityMap) -> bool:
 	var from := map.world_to_tile(plan.path[0])
 	var to := map.world_to_tile(plan.path[plan.path.size() - 1])
 	var step := Vector2i(signi(to.x - from.x), signi(to.y - from.y))
+	# **Bounded by the run's own length rather than by reaching its end**: a run along one axis
+	# reaches `to` in exactly this many steps, and one that did not lie along an axis would step
+	# past `to` without ever landing on it.
 	var at := from
-	while true:
+	for _step in maxi(absi(to.x - from.x), absi(to.y - from.y)) + 1:
 		if CityMap.junction_at(at) != Vector2i(-1, -1) or _a_side_route_opens_off(map, at):
 			return true
-		if at == to or step == Vector2i.ZERO:
-			return false
 		at += step
 	return false
 

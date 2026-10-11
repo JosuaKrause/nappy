@@ -68,23 +68,29 @@ static func compute(map: CityMap) -> Array[Site]:
 
 ## Every site the fiction allows, de-duplicated and filtered, in a fixed order: junction corners,
 ## then commercial squares, then the main road.
+##
+## The points a region door could stand at are worked out once for every candidate
+## (`possible_door_points()`): they are the same for each, and rebuilding them per candidate is
+## every boundary segment of the city once per candidate.
 static func _eligible_candidates(map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
 	var seen := {}
+	var door_points := possible_door_points(map)
 	for at in _junction_sites(map):
-		_consider(found, seen, at, map)
+		_consider(found, seen, at, map, door_points)
 	for at in _square_sites(map):
-		_consider(found, seen, at, map)
+		_consider(found, seen, at, map, door_points)
 	for at in _main_road_sites(map):
-		_consider(found, seen, at, map)
+		_consider(found, seen, at, map, door_points)
 	return found
 
-static func _consider(found: Array[Vector2], seen: Dictionary, at: Vector2, map: CityMap) -> void:
+static func _consider(found: Array[Vector2], seen: Dictionary, at: Vector2, map: CityMap,
+		door_points: PackedVector2Array) -> void:
 	var key := Vector2i(roundi(at.x), roundi(at.y))
 	if seen.has(key):
 		return
 	seen[key] = true
-	if _is_eligible(at, map):
+	if _is_eligible(at, map, door_points):
 		found.append(at)
 
 ## A mast's own foot may stand on her own sidewalk or on a square's paving — never a road, a

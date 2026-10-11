@@ -1,0 +1,70 @@
+LOOK n=16 tick=1099 usec=2493 pos=(1072.0, 1713.748) walk=6506795393933588339 crew=-3064609088969048528 place=1328195906478635260
+  WHY best_of_refused offered=6 distinct=6 judged=6 best_of_us=27786 plans=432
+  WHY best_of_refused offered=6 distinct=6 judged=5 best_of_us=19082 plans=432
+  WHY best_of_refused offered=6 distinct=6 judged=6 best_of_us=21775 plans=432
+  WHY best_of_refused offered=6 distinct=6 judged=6 best_of_us=20862 plans=432
+  WHY best_of_refused offered=6 distinct=6 judged=6 best_of_us=20783 plans=432
+  WHY best_of_refused offered=6 distinct=6 judged=6 best_of_us=18878 plans=432
+  WHY best_of_refused offered=6 distinct=6 judged=6 best_of_us=23456 plans=432
+  WHY best_of_refused offered=6 distinct=6 judged=6 best_of_us=19300 plans=432
+  WHY best_of_refused offered=6 distinct=6 judged=6 best_of_us=21987 plans=432
+  WHY best_of_refused offered=6 distinct=6 judged=6 best_of_us=26152 plans=432
+LOOK n=17 tick=1130 usec=222138 pos=(1072.0, 1808.814) walk=6506795393933588339 crew=6079829459970763232 place=1328195906478635260
+  WHY best_of_refused offered=5 distinct=5 judged=5 best_of_us=20317 plans=432
+  WHY best_of_refused offered=5 distinct=5 judged=5 best_of_us=21771 plans=432
+  WHY best_of_refused offered=5 distinct=5 judged=5 best_of_us=15511 plans=432
+  WHY best_of_refused offered=5 distinct=5 judged=5 best_of_us=14905 plans=432
+  WHY best_of_refused offered=5 distinct=5 judged=5 best_of_us=17768 plans=432
+  WHY best_of_refused offered=5 distinct=5 judged=5 best_of_us=14895 plans=432
+  WHY best_of_refused offered=5 distinct=5 judged=5 best_of_us=19365 plans=432
+  WHY best_of_refused offered=5 distinct=5 judged=5 best_of_us=16814 plans=432
+  WHY best_of_refused offered=5 distinct=5 judged=5 best_of_us=20589 plans=432
+  WHY best_of_refused offered=5 distinct=5 judged=5 best_of_us=25330 plans=432
+LOOK n=18 tick=1161 usec=189960 pos=(1067.997, 1903.343) walk=6506795393933588339 crew=9037568424382400912 place=1328195906478635260
+  WHY best_of_refused offered=4 distinct=4 judged=4 best_of_us=15825 plans=432
+  WHY best_of_refused offered=4 distinct=4 judged=4 best_of_us=24510 plans=432
+  WHY best_of_refused offered=4 distinct=4 judged=4 best_of_us=15348 plans=432
+  WHY best_of_refused offered=4 distinct=4 judged=4 best_of_us=13188 plans=432
+  WHY best_of_refused offered=4 distinct=4 judged=4 best_of_us=13191 plans=432
+  WHY best_of_refused offered=4 distinct=4 judged=4 best_of_us=13709 plans=432
+  WHY best_of_refused offered=4 distinct=4 judged=4 best_of_us=17703 plans=432
+  WHY best_of_refused offered=4 distinct=4 judged=4 best_of_us=23508 plans=432
+  WHY best_of_refused offered=4 distinct=4 judged=4 best_of_us=14199 plans=432
+  WHY best_of_refused offered=4 distinct=4 judged=4 best_of_us=21914 plans=432
+LOOK n=19 tick=1192 usec=175635 pos=(1071.961, 1998.218) walk=6506795393933588339 crew=-5886307444954555072 place=1328195906478635260
+  WHY best_of_refused offered=1 distinct=1 judged=1 best_of_us=5079 plans=432
+  WHY best_of_refused offered=1 distinct=1 judged=1 best_of_us=3465 plans=432
+  WHY best_of_refused offered=1 distinct=1 judged=1 best_of_us=3453 plans=432
+  WHY best_of_refused offered=1 distinct=1 judged=1 best_of_us=3419 plans=432
+  WHY best_of_refused offered=1 distinct=1 judged=1 best_of_us=5158 plans=432
+  WHY best_of_refused offered=1 distinct=1 judged=1 best_of_us=6601 plans=432
+  WHY best_of_refused offered=1 distinct=1 judged=1 best_of_us=3481 plans=432
+  WHY best_of_refused offered=1 distinct=1 judged=1 best_of_us=3440 plans=432
+  WHY best_of_refused offered=1 distinct=1 judged=1 best_of_us=3430 plans=432
+  WHY best_of_refused offered=1 distinct=1 judged=1 best_of_us=3409 plans=432
+LOOK n=20 tick=1223 usec=43109 pos=(1072.0, 2093.284) walk=6506795393933588339 crew=-5886307444954555072 place=1328195906478635260
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=10651 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=13311 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=18524 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=12927 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=10315 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=13943 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=10273 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=12153 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=13810 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=12926 plans=432
+LOOK n=21 tick=1254 usec=131883 pos=(1072.0, 2188.35) walk=6506795393933588339 crew=4852787822393746672 place=1328195906478635260
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=19731 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=11366 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=15016 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=9859 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=11542 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=11630 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=11386 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=16563 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=13655 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=9885 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=14360 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=9921 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=15462 plans=432
+  WHY best_of_refused offered=3 distinct=3 judged=3 best_of_us=16651 plans=432
