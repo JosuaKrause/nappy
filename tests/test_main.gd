@@ -30,6 +30,7 @@ func run(t) -> void:
 	_test_add_touch_controls_builds_the_one_control_reader(t)
 	_test_on_title_start_sets_the_controls_mode(t)
 	_test_the_title_hides_the_graph_and_keeps_its_ring(t)
+	_test_the_title_joystick_buttons_carry_l_and_r(t)
 	_test_opening_the_title_reasserts_the_orientation_it_finds_stale(t)
 	_test_the_summary_and_pause_restart_signals_are_both_connected(t)
 	_test_no_interior_exists_outside_a_debug_build(t)
@@ -475,6 +476,19 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
 ## above is — `_open_the_title()`'s own `get_tree().paused = true` is guarded with
 ## `is_inside_tree()` for exactly this reason, the same shape `_on_title_start()`'s own last line
 ## already uses.
+## azure-puffin, #665: the title's two joystick buttons carry an "L" and an "R" so they read as
+## different settings; the tap button carries no mark.
+func _test_the_title_joystick_buttons_carry_l_and_r(t) -> void:
+	var title: TitleScreen = TITLE_SCREEN_SCENE.instantiate()
+	t.add_child(title)
+	var left := title.get_node("Root/Choice/LeftColumn/Left") as ModeButton
+	var right := title.get_node("Root/Choice/RightColumn/Right") as ModeButton
+	var tap := title.get_node("Root/Choice/TapColumn/Tap") as ModeButton
+	t.check((left.get_node("Letter") as Label).text == "L", "the left joystick button says L")
+	t.check((right.get_node("Letter") as Label).text == "R", "the right joystick button says R")
+	t.check(not tap.has_node("Letter"), "the tap button carries no letter")
+	title.free()
+
 func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._add_touch_controls()

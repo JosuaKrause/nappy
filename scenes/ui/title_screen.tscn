@@ -60,6 +60,7 @@ theme_override_constants/separation = 10
 size_flags_horizontal = 4
 script = ExtResource("2_mode_button")
 symbol = 2
+letter = "L"
 
 [node name="LeftCaption" type="Label" parent="Root/Choice/LeftColumn"]
 custom_minimum_size = Vector2(220, 0)
@@ -94,6 +95,7 @@ theme_override_constants/separation = 10
 size_flags_horizontal = 4
 script = ExtResource("2_mode_button")
 symbol = 2
+letter = "R"
 
 [node name="RightCaption" type="Label" parent="Root/Choice/RightColumn"]
 custom_minimum_size = Vector2(220, 0)
