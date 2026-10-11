@@ -234,11 +234,14 @@ finds it a site, which can be after an event behind it, or never. Three rigs sta
 - **After day 6's mark, a man shouting's marble is one of the next two** (`Tuning.TASK_CONTACT_WITHIN_THE_NEXT`;
   inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "maybe let's make the other rigged bags smaller, too"). A row the director does not
   otherwise site is a place, so when its marble comes up it is handed to her walk to site, the way
-  day 3's fire is (`EventScheduler.WalkSiting.ahead_of()`): on the branch of the day's routes she is
-  walking, past the streaming band so it is never seen to appear, under every acceptance rule a dawn
-  placement is, and moved ahead of her again if she turns away before it has been in the world. Its
-  marble spends its turn the moment it is drawn, so a place with no legal site yet — she is off the
-  day's routes, or walking home inside the streaming band of the branch's end — holds up none of the
+  day 3's fire is, but **on the street she is walking** rather than by the route band
+  (`EventScheduler.WalkSiting.ahead_on_her_street()`, the way day 7's van is): ahead of her, with
+  nothing it draws in the camera's view so it is never seen to appear, within the streaming radius so
+  it is in the world at once, under every acceptance rule a dawn placement is. The route band would put him
+  past her walk, on a branch she then leaves or never at all; the street she is on is where she
+  meets him, on most walks (`tests/test_day6_yeller_met.gd`). Its
+  marble spends its turn the moment it is drawn, so a place with no legal site yet — she is
+  standing still, or no ground ahead of her on her street takes him — holds up none of the
   events behind it, a return patrol included, and one that never finds a site is not met. He
   is a look-alike the day's any-instance contact follows her onto, besides the one her reading the
   mark spawns near it.
@@ -1218,8 +1221,9 @@ day's `RouteTree` she is walking**, and nowhere else: *"valid spawn locations ar
 The window is the day's own route rather than a line from her. `EventScheduler.WalkSiting.ahead_of()`
 walks the cells of every route through the cell she is standing on, in the direction that agrees
 with the way she is travelling, and offers the tiles of the row's own ground standing on them — a
-building face for the fire and the poster crews, a sidewalk for a man shouting, a mast's site for a
-mast (`WalkSiting._its_ground_on()`). **The far end of the
+building face for the fire and the poster crews, a mast's site for a mast
+(`WalkSiting._its_ground_on()`); day 7's route van and a man shouting a bag hands her (day 6's rigged
+one) are sited on the street she is walking instead (`ahead_on_her_street()`). **The far end of the
 band is read along that route** — `ON_HER_WAY_SIGHT` seconds of walking past the streaming band,
 through every corner and junction, which is how much further she actually has to walk. **The near
 end is a distance across the block**, the streaming radius plus its hysteresis, because that is what

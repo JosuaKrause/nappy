@@ -1140,8 +1140,9 @@ class WalkSiting extends RefCounted:
 	## twice over: it offers tiles on streets her route never reaches, and it prices a tile round
 	## the corner as nearer than it is to walk to. So the window is walked cell by cell down the
 	## route, through its corners and its junctions, and only the tiles of the row's ground on those
-	## cells are offered. A wall by its fit alone (day 7's route van) is sited on the street she is
-	## walking instead, just out of her sight (`ahead_on_her_street()`).
+	## cells are offered. A wall by its fit alone (day 7's route van) and a man shouting a bag hands
+	## her (day 6's rigged one) are sited on the street she is walking instead, just out of her sight
+	## (`ahead_on_her_street()`).
 	##
 	## **The far end is read along the route and the near end is a straight line**, and they are two
 	## different questions rather than one measured twice. Far is how much more walking there is
@@ -1169,7 +1170,8 @@ class WalkSiting extends RefCounted:
 		var role := EventScheduler._role_for(def, _day)
 		# A wall by its fit alone is never put on a sidewalk a route runs along, so it is put on the
 		# street she is walking instead, just out of her sight (`ahead_on_her_street()`).
-		if role == GameEnums.BlockerRole.WALL and not EventScheduler._is_a_wall_by_cost(def):
+		if (role == GameEnums.BlockerRole.WALL and not EventScheduler._is_a_wall_by_cost(def)) \
+				or def.id == _MET_ON_HER_STREET:
 			return ahead_on_her_street(def, rng, already, at, heading)
 		var ahead := _the_way_she_is_going(at, heading, far)
 		if ahead.is_empty():
@@ -1281,6 +1283,12 @@ class WalkSiting extends RefCounted:
 				(Tuning.VIEW_HALF_EXTENT + lead) * 2.0)
 		return view.intersects(drawn, true)
 
+	## **Day 6's man shouting is sited the same way**, though he is no wall: the rigged bag draws his
+	## marble so she meets him (olive-koala, statement 2: "guaranteed to encounter a yeller in the
+	## next three events"), and the route band of the branch she is walking lies past her walk — a
+	## branch she leaves, or 1,300px and more ahead — where the street she is on offers him within the
+	## streaming radius, in the world at once.
+	const _MET_ON_HER_STREET := "homeless_yeller"
 	## How far either side of her line of travel `ahead_on_her_street()` looks: the street she is on,
 	## from her sidewalk to the far kerb, and no further — a block's frontage is past it.
 	const _STREET_HALF_WIDTH := 5.0 * Tuning.TILE_SIZE
