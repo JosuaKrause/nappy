@@ -75,7 +75,7 @@ static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
 	# day that closes nothing says so, rather than leaving yesterday's fallen tree missing from the
 	# row. See `CityMap.set_closure_tree_pits`.
 	map.set_closure_tree_pits([] as Array[Vector2i])
-	var wanted := Tuning.closures_for_day(day)
+	var wanted := closures_wanted(day)
 	if wanted <= 0:
 		return chosen
 
@@ -125,6 +125,23 @@ static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
 					% [day, TelemetryLog.tile(segment.a)])
 	map.set_closure_tree_pits(emptied)
 	return chosen
+
+## How many streets the day closes: `Tuning.closures_for_day()`, and from
+## `Tuning.REGION_WALL_FIRST_DAY` on only `Tuning.GATEHOUSE_DAY_CLOSURE_SHARE` of that, rounded to
+## the nearest street. *(azure-puffin, point 4: "when the guard houses are set up the city gets much
+## harder to navigate let's loosen the density of the hard blocking events in that case"; "fewer of
+## all three".)* A closure is one of the three hard blockers off the tree, with the seals and the
+## wall-role catalogue rows, and the region wall dividing the city from that day is what made the
+## three together too much.
+##
+## **Fewer closures can only add ground she can reach** — every closure is off the tree and is only
+## ever a barrier — so the invariant below is no harder to keep with a smaller quota, and the day's
+## candidate order is unchanged: the same streets are tried first, and the quota stops sooner.
+static func closures_wanted(day: int) -> int:
+	var wanted := Tuning.closures_for_day(day)
+	if day >= Tuning.REGION_WALL_FIRST_DAY:
+		wanted = roundi(wanted * Tuning.GATEHOUSE_DAY_CLOSURE_SHARE)
+	return wanted
 
 ## The street the front door opens onto. Never closable — the home is a notch in a block with
 ## one exit, so sealing it seals the player in. docs/CITY.md states that exemption; this is where
@@ -423,8 +440,8 @@ static func _barrier_tiles(map: CityMap, closed: Dictionary) -> Dictionary:
 ## adjacent strands of today's corridor are joined by — see `RouteTree.gaps()` — and shutting some
 ## of them is what stops two parallel routes from being one wide one. A closure is the *impassable*
 ## half of that, where a wall event is the costly half. `CLOSURE_GAP_BIAS` is the preference, and
-## the day's quota is what keeps it a *sometimes*: one street shut in act I and four in act IV
-## cannot close fifteen gaps however hard it aims at them.
+## the day's quota is what keeps it a *sometimes*: a handful of streets shut a day cannot close
+## fifteen gaps however hard it aims at them.
 ##
 ## The invariant below is unmoved and still does the deciding. A gap is off the tree like every
 ## other candidate, so nothing here can cut the corridor; what the check catches is the same thing
@@ -505,8 +522,8 @@ static func _pick_weighted(weights: Array[float], rng: RandomNumberGenerator) ->
 ## Weight `fallen_tree` is multiplied by on a street `StreetTrees` planted, on top of the gate
 ## below rather than instead of it. **The gate is what the player asked for and the weight is what
 ## keeps the kind visible**: tree-lined streets are a small fraction of the city, and a day closes
-## between one and four streets, so a fallen tree offered at its plain 0.6 against roadworks and an
-## accident would be a picture almost nobody ever meets. On a street that has trees, it is the
+## a handful of streets (`closures_wanted()`), so a fallen tree offered at its plain 0.6 against
+## roadworks and an accident would be a picture almost nobody ever meets. On a street that has trees, it is the
 ## likeliest thing to have happened.
 const _FALLEN_TREE_STREET_BIAS := 6.0
 

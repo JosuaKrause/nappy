@@ -59,8 +59,8 @@ src/
     closure_marker.gd     one barrier panel, sign or piece of wreckage
 	route_tree.gd         the day's corridor: one branch per calm area, grown on the grid
 	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep
-	seal_planner.gd       seals every street off the day's route tree, and every street off the
-	                      escape's two chains
+	seal_planner.gd       seals every street off the day's route tree (a share of them from the
+	                      gatehouse day), and every street off the escape's two chains
 	region_planner.gd     partitions the lattice into regions; turns the day's tree into a wall with doors, and stands the checkpoint structure and gate state at every door
   crowd/
 	crowd.gd              owns the day's agents and the `crowd` atlas page, held for its own life

@@ -114,8 +114,8 @@ func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
 			if any_lined:
 				continue
 			bare_days += 1
-			t.check(closures.size() == Tuning.closures_for_day(day),
+			t.check(closures.size() == ClosurePlanner.closures_wanted(day),
 					"seed %d day %d closed %d of its %d streets with no tree-lined one among them"
-					% [map.seed_used, day, closures.size(), Tuning.closures_for_day(day)])
+					% [map.seed_used, day, closures.size(), ClosurePlanner.closures_wanted(day)])
 	t.check(bare_days > 0,
 			"the sweep had days whose closures were all on bare streets (%d)" % bare_days)

@@ -2630,6 +2630,13 @@ func _walled_alleys() -> Array[Rect2i]:
 ## `_pick_reachable()` already keeps for `is_obstructed()`. The blockers are the same list both
 ## times: the catalogue's own bodies, the seals and the region wall's, never a region door's.
 ##
+## **And the soft seals' bands on top (`CityMap.soft_sealed_tiles`), which the city's own question
+## does not ask**: the red arrow reads them as ground she cannot walk (`_ground_for_the_arrow()`),
+## so a mark or contact reached only through one is a place the arrow cannot lead her to. A thinned
+## soft pair's one body leaves a lane by its disc while its band shuts the whole sidewalk, so where
+## that band stands in front of an alley at both ends the disc alone answers the alley reachable and
+## the arrow does not.
+##
 ## **Without a `_city` (the bare-map rigs several tests in this file build)**, `_reach_blocked` is
 ## built from an empty blocker list — today's closures alone, which is `{}` for the same rigs since
 ## nothing ever calls `City.start_day()` on them either — so every walkable tile answers reachable
@@ -2661,6 +2668,8 @@ func _ensure_reachability() -> void:
 			if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
 				blockers.append(plan)
 	_reach_blocked = EventScheduler.blocked_by(_map, blockers)
+	# The arrow's own reading of a soft seal; see the doc above.
+	_reach_blocked.merge(_map.soft_sealed_tiles)
 	_reach_reached = _reach_grid.flood([_map.home_rect.position], _reach_blocked)
 
 ## Whether `tile` is reachable from home under the day's full obstruction, as it stands right now:
