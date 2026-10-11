@@ -22,7 +22,7 @@ func run(t) -> void:
 	_test_a_car_that_is_not_driving_strikes_nobody(t)
 	_test_off_the_carriageway_it_stops_for_her_pram(t)
 	_test_the_car_never_drives_into_her(t)
-	_test_an_investigating_car_never_pins_her_against_a_wall(t)
+	_test_an_investigating_car_never_leaves_the_carriageway(t)
 	_test_the_raids_car_never_reverses_onto_her(t)
 	_test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t)
 	_test_it_gives_way_at_a_zebra_she_waits_at(t)
@@ -83,11 +83,6 @@ func _walk(player: Stroller, heading: Vector2, distance: float) -> float:
 
 func _gap(car: EventInstance) -> float:
 	return car._gap_to_her(car.position, car._heading)
-
-## A chasing car stops a frame's step short of her at most: the step that would have touched her is
-## the one refused.
-func _one_step(def: EventDef) -> float:
-	return def.pursue_speed * STEP + EventInstance.DRIVEN_CLEARANCE
 
 # ----------------------------------------------------------------- the row ---
 
@@ -235,7 +230,7 @@ func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t) -> void:
 		car.free()
 
 ## A car that is not driving its route strikes nobody in front of it: leaving once it is over, and
-## the investigating car coming over to her, which stops against her instead.
+## the investigating car, which stops where it notices her and stands for the man it lets out.
 func _test_a_car_that_is_not_driving_strikes_nobody(t) -> void:
 	var leaving := _car(t, _patrol(), PackedVector2Array([Vector2(-300.0, 0.0), Vector2(600.0, 0.0)]))
 	var player := _her(t, Vector2(0.0, 0.0), Vector2.LEFT)
@@ -252,19 +247,19 @@ func _test_a_car_that_is_not_driving_strikes_nobody(t) -> void:
 			"it stops against her instead (closest %.2fpx)" % deepest)
 	leaving.free()
 	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
-	var investigating := _car(t, hot, PackedVector2Array([Vector2(-140.0, 0.0), Vector2(600.0, 0.0)]))
+	var start := Vector2(-140.0, 0.0)
+	var investigating := _car(t, hot, PackedVector2Array([start, Vector2(600.0, 0.0)]))
 	struck = false
-	deepest = INF
 	var noticed := false
+	var furthest := 0.0
 	for i in int(4.0 / STEP):
 		_drive(investigating, player)
 		noticed = noticed or not investigating.is_waiting()
 		struck = struck or investigating.is_lethal_at(player.global_position)
-		deepest = minf(deepest, _gap(investigating))
-	t.check(noticed, "the heated car noticed her and came over")
-	t.check(not struck, "coming over to investigate, it never strikes her")
-	t.check(deepest >= -0.01 and deepest < _one_step(hot),
-			"it comes right up to her and stops against her (closest %.2fpx)" % deepest)
+		furthest = maxf(furthest, investigating.global_position.distance_to(start))
+	t.check(noticed, "the heated car noticed her, in its lane %.0fpx ahead" % start.length())
+	t.check(not struck, "stopped to investigate, it never strikes her")
+	t.check(furthest < 0.01, "it stopped where it noticed her and came no nearer (%.2fpx)" % furthest)
 	investigating.free()
 	player.free()
 
@@ -377,9 +372,12 @@ func _test_the_car_never_drives_into_her(t) -> void:
 			% cases + "(closest %.2fpx)" % worst)
 	t.check(held > 0, "and some of them it stopped for (%d)" % held)
 
-## The investigating car comes over to her backed against a building and stops against her, and
-## she can always walk away from it — along the wall, the way the car is not.
-func _test_an_investigating_car_never_pins_her_against_a_wall(t) -> void:
+## **The investigating car stays on its route, here a lane.** *(merry-stork: "an investigating
+## police car should not leave the street. it should stop if close to her".)* Driving along the
+## street at her where she stands backed against a building, it notices her, stops in its lane —
+## on the road every frame — and comes no nearer, and she walks away along the wall. It goes where
+## its route goes and no further; a route drawn across a sidewalk would take it there.
+func _test_an_investigating_car_never_leaves_the_carriageway(t) -> void:
 	var map: CityMap = CityGenerator.generate(4242)
 	var wall := _a_wall(map)
 	t.check(wall.size() == 2, "found a sidewalk against a building")
@@ -390,19 +388,31 @@ func _test_an_investigating_car_never_pins_her_against_a_wall(t) -> void:
 	# Her back to the building, her pram toward the street.
 	var at := against + inward * (Tuning.TILE_SIZE * 0.5 - Tuning.PLAYER_BODY_RADIUS - 1.0)
 	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
-	# Driving along the street toward her, so it notices her outside its stand-off and comes over.
 	var lane := at - inward * 96.0
-	var route := PackedVector2Array([lane + inward.orthogonal() * 260.0,
-			lane - inward.orthogonal() * 400.0])
+	# Along the lane toward her from the street's far side, ending just past her: the street the
+	# sidewalk is found on runs out a few tiles the other way.
+	var route := PackedVector2Array([lane - inward.orthogonal() * 260.0,
+			lane + inward.orthogonal() * 60.0])
 	var car := _car(t, hot, route, map)
 	var player := _her(t, at, -inward)
-	var deepest := INF
+	t.check(Tile.is_road(map.tile_type_at_world(route[0]))
+			and Tile.is_road(map.tile_type_at_world(route[1])), "its route is on the carriageway")
+	var off_the_road := 0
+	var stopped_at := Vector2.INF
+	var moved_after := 0.0
 	for i in int(6.0 / STEP):
 		_drive(car, player)
-		deepest = minf(deepest, _gap(car))
-	t.check(not car.is_waiting(), "the heated car noticed her and came over")
-	t.check(deepest >= -0.01 and deepest < _one_step(hot),
-			"it came up to her and stopped against her, never into her (closest %.2fpx)" % deepest)
+		if not Tile.is_road(map.tile_type_at_world(car.global_position)):
+			off_the_road += 1
+		if stopped_at == Vector2.INF and not car.is_waiting():
+			stopped_at = car.global_position
+		elif stopped_at != Vector2.INF:
+			moved_after = maxf(moved_after, car.global_position.distance_to(stopped_at))
+	t.check(stopped_at != Vector2.INF, "the heated car noticed her")
+	t.check(off_the_road == 0, "and it was on the carriageway every frame (%d off it)" % off_the_road)
+	t.check(stopped_at != Vector2.INF and stopped_at.distance_to(at) <= hot.pursues_within + 0.5,
+			"it stopped once close to her (%.0fpx)" % stopped_at.distance_to(at))
+	t.check(moved_after < 0.01, "and never came over to her (%.2fpx)" % moved_after)
 	var freest := 0.0
 	for way in [inward.orthogonal(), -inward.orthogonal()]:
 		player.global_position = at
@@ -419,8 +429,6 @@ func _test_an_investigating_car_never_pins_her_against_a_wall(t) -> void:
 	player.free()
 	car.free()
 
-## `[centre of a sidewalk tile with a building on its far side, the way into the building]` on
-## `map`, along an east-west street, or empty.
 func _a_wall(map: CityMap) -> Array:
 	for y in range(1, map.size.y - 1):
 		for x in range(8, map.size.x - 8):
@@ -499,34 +507,66 @@ func _test_the_raids_car_never_reverses_onto_her(t) -> void:
 
 # --------------------------------------------------------------- leaving ---
 
-## The investigating car that ends its visit beside her turns away and drives off, and is never
-## finished while she could see it.
+## **The investigating car drives on along its route once its man is back in, and never turns round
+## in her view.** It stopped in its lane with her standing in it ahead; once the man it let out has
+## given up and walked back in, it goes on standing while she is in its way — never pulling away
+## into her, never striking her — and once she has stepped out of its lane it drives on the way it
+## was going, past her, facing the same way every frame, and is gone only once out of her sight.
 func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t) -> void:
 	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
 	var car := _car(t, hot, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(600.0, 0.0)]))
 	var player := _her(t, Vector2.ZERO, Vector2.LEFT)
-	var left_at := INF
+	var officer: EventInstance = null
+	var stopped_at := Vector2.INF
+	var struck := false
+	var stood_for_her := 0.0
+	var crept := 0.0
+	var turned := false
 	var vanished_near := false
-	var nearest_after := INF
-	for i in int(20.0 / STEP):
+	var aside := false
+	var elapsed := 0.0
+	while elapsed < 30.0:
 		_drive(car, player)
+		elapsed += STEP
+		struck = struck or car.is_lethal_at(player.global_position)
+		turned = turned or car.facing_now().dot(Vector2.RIGHT) < 0.999
+		if car.officers_owed() > 0:
+			officer = EventInstance.new()
+			officer.setup(EventCatalogue.out_of_the_car(6), car.door_for_its_officer(
+					EventCatalogue.out_of_the_car(6)))
+			t.add_child(officer)
+			officer.set_process(false)
+			car.let_out(officer)
+			stopped_at = car.global_position
+			officer.give_up_the_chase()
+		if officer and not officer.is_finished:
+			officer.player_at = player.global_position
+			officer._process(STEP)
+		elif officer and not aside:
+			# He is back in. She stays in its lane for two seconds, then steps out of it.
+			stood_for_her += STEP
+			if stood_for_her >= 2.0:
+				player.global_position = Vector2(0.0, -60.0)
+				aside = true
+			else:
+				crept = maxf(crept, car.global_position.distance_to(stopped_at))
 		if car.is_finished:
 			vanished_near = car.global_position.distance_to(player.global_position) \
 					<= Tuning.OUT_OF_SIGHT
 			break
-		if car.is_leaving:
-			if left_at == INF:
-				left_at = car.global_position.distance_to(player.global_position)
-			nearest_after = minf(nearest_after,
-					car.global_position.distance_to(player.global_position))
-	t.check(left_at < 60.0, "the investigating car came up to her and left from beside her (%.0fpx)"
-			% left_at)
-	t.check(nearest_after >= left_at - 0.01,
-			"it drove away from her, never nearer than where it set off (%.0f, %.0f)"
-			% [nearest_after, left_at])
+	t.check(stopped_at != Vector2.INF
+			and stopped_at.distance_to(Vector2.ZERO) <= hot.pursues_within + 0.5,
+			"the investigating car stopped close to her (%.0fpx)" % stopped_at.length())
+	t.check(stood_for_her >= 2.0 and crept < 0.01,
+			"with her in its lane ahead once he was back in, it stood rather than pulling away into "
+			+ "her (%.2fpx)" % crept)
+	t.check(not struck, "it never struck her, standing or driving on")
+	t.check(not turned, "it never turned round: it drove on the way it was going")
 	t.check(car.is_finished and not vanished_near,
 			"and it was gone only once out of her sight, never beside her (finished %s, at %.0fpx)"
 			% [car.is_finished, car.global_position.distance_to(player.global_position)])
+	if officer:
+		officer.free()
 	player.free()
 	car.free()
 

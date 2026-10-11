@@ -376,25 +376,41 @@ const HEAT_PRESSES_POPULATION := 1.6
 ## centre becomes 13.5/s. Deliberately the smaller of the two multipliers — an intensity rise is the
 ## one the player feels without seeing anything change, so it is the seasoning rather than the meal.
 const HEAT_PRESSES_INTENSITY := 1.35
-## The progress at which a pressing row stops merely running its route and starts coming over. As
-## close to half way through `RESISTANCE_GOAL` as a whole task lets it land (`roundi(5 / 2.0)`),
-## so the first half of the subquest is the city being *denser* and the second is it being
-## *interested* — two escalations rather than one continuous number nobody can name the moment of.
+## The progress at which a pressing row stops merely running its route and starts investigating —
+## stopping near her and letting a pursuer on foot out (`EventDef.investigates`). As close to half
+## way through `RESISTANCE_GOAL` as a whole task lets it land (`roundi(5 / 2.0)`), so the first half
+## of the subquest is the city being *denser* and the second is it being *interested* — two
+## escalations rather than one continuous number nobody can name the moment of.
 const HEAT_INVESTIGATES_LEVEL := 3
-## How fast it follows, and it is the same 130px/s every other pursuer in the game moves at.
-## `validate_pursuit` allows the band `WALK_SPEED + PURSUIT_MIN_MARGIN` to
-## `RUN_SPEED - PURSUIT_MIN_MARGIN` — 112 to 148 — and a second speed inside it would be a second
-## answer to "can I outrun this", which is the one question a pursuit is allowed to ask.
-const HEAT_INVESTIGATE_SPEED := 130.0
-## How close she has to come before it takes an interest, in px. It has to sit **outside** the
-## stand-off the contract computes (122px against a 44px inner radius at the speed above) or the
-## whole notice is spent standing still, and **inside** the row's own 185px outer radius or it
-## decides about her before she can feel it. `validate_pursuit` refuses both ends.
+## How close she has to come, along a clear line, before an investigating car stops and its
+## policeman gets out, in px — "close" in the player's "it should stop if close to her" (merry-stork).
+## **Inside the patrol's own 185px outer radius**, so it decides about her only once she can feel it,
+## and wider than the man's stand-off (116px), so he usually gets out with room to hold his ground
+## and the notice he owes her (`EventDef.sets_off_beside_her` covers him when she is nearer).
 const HEAT_INVESTIGATE_WITHIN := 150.0
-## How long it follows for once it has noticed, in seconds. Under `PURSUIT_TIME * 2`, and long
-## enough that running opens (`RUN_SPEED` - 130) x 4 = 152px — more than three times the 44px it is
-## expensive inside, so the answer to being investigated is legible as *leave*.
-const HEAT_INVESTIGATE_SECONDS := 4.0
+## **What it costs when the man an investigating car let out reaches her**, in points of the
+## excitement meter, landed on her standing beside him: he stops her, and his own field charges this
+## over `OFFICER_STOP_SECONDS`, fading, before he walks back to his car (`EventDef.stop_excitement`).
+## *(Inbox #669, the player on PR #663: "we make it somewhat costly. once the policeman reaches her
+## they stop and walk back to the car" · "it needs to give a substantial cost but not lethal
+## directly" · "well if the excitement meter is already high it can be lethal".)*
+##
+## **Substantial, and never the end of a day on its own** — the stop, and the whole encounter it
+## ends, since the car is quiet from its stop until it has left her
+## (`EventInstance.is_quiet_for_its_man()`): nearly four contacts' worth (eleven points each,
+## `BUMP_INTENSITY`) and well over a conversation's 25 (`CHAT_EXCITEMENT`), so being reached is a
+## thing she pays for rather than a bump; and under `METER_MAX` with the rest of the encounter, so
+## from a calm meter it never ends the day — only on a meter already high enough that it carries
+## her to the cap and past `EXCITEMENT_OVERFLOW_TO_CRY` does it. It is his field, but it is spent in
+## a second at its full width, so walking away the instant he reaches her takes little of it off; a
+## sleeping baby takes `SLEEPING_SENSITIVITY` of it, as of everything. Chosen while building, open
+## to overturn.
+const OFFICER_STOP_EXCITEMENT := 40.0
+## How long the stop lasts: he stands with her while his field lands `OFFICER_STOP_EXCITEMENT`,
+## fading from twice its mean to nothing, and then walks back to the car. Short and sharp — "a
+## sharp spike is a short duration at high intensity" (the **events** skill) — so the cost is the
+## moment he reaches her rather than a field she can stroll out of.
+const OFFICER_STOP_SECONDS := 1.0
 
 ## The progress at which a `HUNTS` row stops being a place and starts being a hunter. Its own
 ## number rather than the patrol's `HEAT_INVESTIGATES_LEVEL`, deliberately: sharing one would put
@@ -404,7 +420,8 @@ const HEAT_INVESTIGATE_SECONDS := 4.0
 ## task's worth of progress left before the goal — rather than the fraction that produced it.
 const HEAT_HUNTS_LEVEL := RESISTANCE_GOAL - 1
 ## How fast it hunts once it starts — the same 130px/s every other pursuer in the game moves at
-## (`charging_dog`, `alley_robbery`, the investigating patrol). `validate_pursuit` allows the band
+## (`charging_dog`, `alley_robbery`, the policeman an investigating patrol lets out).
+## `validate_pursuit` allows the band
 ## `WALK_SPEED + PURSUIT_MIN_MARGIN` to `RUN_SPEED - PURSUIT_MIN_MARGIN` — 112 to 148 — and a
 ## second speed inside it would be a second answer to "can I outrun this", which is the one
 ## question a pursuit is allowed to ask.
@@ -1639,6 +1656,14 @@ const TASK_CONTACT_WITHIN_THE_NEXT := 2
 ## the one near the mark the task points at first. *(inbox #561 in coral-bunny:
 ## "day 11 is going to be a x=3", then "let's make the other rigged bags smaller".)*
 const MAST_WITHIN_THE_NEXT := 2
+
+## The same for day 7: once she has read its mark, a second `delivery_van`'s marble is one of the
+## next this many events, and the van is put on her route once her walk finds it a site, besides the
+## one near the mark the task points at. *(inbox #586 in olive-hedgehog: "each olive badger rigged
+## bag should be 2 or 3. use your own judgement on how soon the events should happen"; inbox #650 in
+## mossy-beaver, of which forced cases get one: "I guess that leaves only the van?")* Two is the
+## filer's proposal inside the player's "2 or 3", the size day 6's and day 11's rigs have.
+const VAN_WITHIN_THE_NEXT := 2
 
 ## The same for each of the return leg's patrols (`RETURN_PATROLS_PER_ACT`): rigged into a bag of
 ## this many as the one before it is handed out, so they come one after another inside the leg.

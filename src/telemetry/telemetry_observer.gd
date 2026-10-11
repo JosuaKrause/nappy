@@ -924,7 +924,9 @@ func _watch_blocked(here: Vector2) -> void:
 		# ends and read as having been stuck the whole time it was actually a conversation.
 		_blocked_since = -1.0
 		return
-	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	# What she moves by, not the raw keys: a key held through a gatehouse's release is ignored.
+	var input_dir := _player.input_she_moves_by() if _player \
+			else Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if input_dir == Vector2.ZERO:
 		_blocked_since = -1.0
 		return
@@ -1049,7 +1051,7 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 		seen[id] = true
 		if not _chases.has(id):
 			_chases[id] = {"since": Telemetry.clock(), "closest": INF, "ran": 0.0,
-					"id": instance.def.id, "gave_up": false, "over": false}
+					"id": instance.def.id, "gave_up": false, "stopped_her": false, "over": false}
 			Telemetry.note("chase", "%s came for her at %s | %s" % [instance.def.id,
 					TelemetryLog.tile(_tile_of(instance.global_position)), _meters()])
 			# The one encounter in the game with a right answer, and the open question about it is
@@ -1065,6 +1067,8 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 		# kept closed, until the instance goes: a dog that has lost interest is still in the world
 		# for as long as it takes to trot out of shot, and none of that is the chase.
 		chase["gave_up"] = bool(chase["gave_up"]) or instance.gave_up
+		# The man a patrol car let out, whose catch is a stop: he reached her, and the day goes on.
+		chase["stopped_her"] = bool(chase["stopped_her"]) or instance.has_stopped_her()
 		if _player.run_excess_ratio() > 0.0:
 			chase["ran"] = float(chase["ran"]) + delta
 		if instance.is_leaving:
@@ -1080,7 +1084,8 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 
 func _write_the_chase(chase: Dictionary) -> void:
 	Telemetry.note("chase", "%s %s after %.1fs — closest %.0fpx, she ran %.1fs of it | %s" % [
-		chase["id"], "gave up" if chase["gave_up"] else "stopped chasing",
+		chase["id"], "gave up" if chase["gave_up"]
+				else ("reached her and stopped her" if chase["stopped_her"] else "stopped chasing"),
 		Telemetry.clock() - float(chase["since"]), chase["closest"], chase["ran"], _meters()])
 
 ## Live pursuits: instance id -> what has happened during it. Ids rather than references, for the

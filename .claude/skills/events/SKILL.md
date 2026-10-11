@@ -108,7 +108,8 @@ longer than 2s ... place the object immediately off screen so it will immediatel
 the screen turning off the warning ... they jump around wildly"; busy-quail, inbox #569: "1s warning
 should be enough".)* A row that arrives from off screen under the screen-edge badge — `cyclist`,
 `charging_dog` sent down her heading, the fire engine, the resistance's own
-`robber_giving_chase` and `van_guard_giving_chase`, day 13's column, each a row
+`robber_giving_chase` and `van_guard_giving_chase`, a torn poster's pursuer on foot
+(`policeman_giving_chase`, `guardsman_giving_chase`), day 13's column, each a row
 `warns_before_it_exists()` answers true for (flagged `warned_first` on its row, or made so by
 `EventManager.as_warned()`, which every warning goes through) — is a `PendingWarning` first
 (`EventManager.warn_first()`): nothing in the world, the badge up at once for the row's own
@@ -122,8 +123,8 @@ in")*, and `tests/test_no_pop_in.gd` holds it — a sidewalk for the bike, walka
 heading for the day-3 dog, the road on its way to the fire for the engine, its lane for the column,
 the director's own rules for the trap. A non-pursuer is created with its telegraph spent
 (`EventManager.spawn_warned()`); **a pursuer with its telegraph still to run**, since its telegraph
-is its approach — except one that `arrives_chasing` (the resistance's sent robber and guard: "the
-proximity rule is only for standing robbers"). Where its ground has no place when the second is up,
+is its approach — except one that `arrives_chasing` (the resistance's sent robber and guard, and a
+torn poster's pursuer on foot: "the proximity rule is only for standing robbers"). Where its ground has no place when the second is up,
 the warning is withdrawn; a withdrawn day-3 dog is owed again.
 
 **The warning time is the row's own number.** *(PLAYTEST-145: "I don't like that the warning is
@@ -200,8 +201,16 @@ traps:
   her.** A turn moves nothing, so the body check passes it — and the raid's pacing car reversing at
   the end of its beat turns her from behind a car driving away into the front of one, struck with
   next to no warning. The car stands instead.
-- **A car leaving must not vanish beside her.** A departure into her is refused every frame, so a
-  car that ends a visit to her turns away first and is gone only once she could not be watching.
+- **A car that stopped for her must not turn round on the spot, nor vanish beside her.** She is
+  nearly always ahead of the investigating car, so "leave the way that does not run at her" is a
+  180° turn in one frame in her view; once its man is back in it drives on along its route the way
+  it was going instead, a car that has stood, so it waits while she is in its way. Any car leaving
+  is gone only once she could not be watching.
+- **A car that stops where it noticed her stops in junction boxes**, standing in the crossing
+  traffic's way for a whole chase. One that notices her with any of its body on a junction drives on
+  until it is clear of the box (`EventInstance._stands_in_a_junction()`). A test on a hand-made
+  straight route away from junctions cannot see this; `tests/test_pursuer_on_foot.gd` drives real
+  routes on three seeds.
 
 **A body is a route cost, not a closure.** `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
 `obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can

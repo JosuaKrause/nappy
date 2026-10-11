@@ -109,7 +109,9 @@ the chalk mark at the named position, **unread** as the scene begins, and her st
 from it: touching the mark reads it, its words are announced and the task it unlocks is placed from
 where she stands then by the director's own placement, with its red arrow from that moment. Before
 she reads it no task is on offer and no arrow is drawn. The mark has to stand where a day's mark can, the centre
-of an alley mouth's tile on open ground reachable from home; a mark anywhere else is refused, never
+of the tile one step in from an alley's mouth (a courtyard's one-tile passage: the courtyard tile
+just past it) on open ground reachable from home; a mark anywhere else, the mouth's own tile
+included, is refused, never
 moved. Days 6 to 13 take `mark`; day 14's task, the power station's front door, has no mark and
 takes `task: {}`, and the scene starts with the resistance goal met, since the last night is
 offered only then. `neighbor` pins day 10's neighbor's start to a sidewalk tile the day's own draw
@@ -266,18 +268,23 @@ the task allows from where she reads the mark, which also tests that it is put o
 *(the player, inbox #502: "in the scene we can use the minimum distance which in turn also serves
 as test whether it will be properly off screen")*. Days 6, 7, 8, 11 and 13 leave the placement to
 the director, which puts the target where a path from her first reaches the 576px circle round her
-(`ResistanceDirector.NEAR_THE_MARK`), on the stretch, out of her view. Day 8's burnt building stands
+(`ResistanceDirector.NEAR_THE_MARK`), on the stretch, out of her view; day 13's roadblock is put
+there under every rule a roadblock the day plans is placed under, or, where those rules refuse all of
+that ground, on ground her paths reach up to a block further out, and where they refuse that too, on
+the circle's edge as the other targets are, outside those rules. Day 8's burnt building stands
 there for a run with no day-3 fire, its door a tile or two behind the shell. The targets whose
 place is fixed — day 9's district door, day 12's swing and day 14's station door — have no such
 rule, so their scenes put the mark or her start just past that same circle. Day 10's neighbor
 starts at their own least distance, 400px from her. Days 6 to 13 start her a walk from the mark,
-about 160px (5 tiles along a street, outside the 150px `ResistanceDirector.SEEN_DISTANCE` in which
+about 172px (5 tiles along a street, outside the 150px `ResistanceDirector.SEEN_DISTANCE` in which
 she notices a mark) and with a clear way to it; the mark is unread and no task is on offer until
 her walk touches it *(the player, inbox #555: "make them not start *on* the mark", answered
-"Unread, walk to it")*. She reads it up to the mark's 36px reach away, so the target stands its
+"Unread, walk to it")*. The mark stands one tile into its alley, so her walk turns into the alley
+off the street to read it, and back out. She reads it up to the mark's 36px reach away, so the target stands its
 distance from where she read it, and the assertions measure from the mark with that 36px of slack.
 The routes keep out of the robber's notice at the mark and, where the straight way to the target
-runs past him, go round. Each scene saves its own explicit context and uses run seed 11, so it starts the same way every time.
+runs past him, go round. Each scene saves its own explicit context and uses run seed 11 (day 7's uses 12, on which the bag
+her reading the mark rigs sends the cat before the van), so it starts the same way every time.
 
 Every task scene's route bag is the day's own ordinary bag with a cat in front of it, and each scene
 asserts that she saw the cat (`appeared`) and that walkers, and on days 6 to 11 a car, are moving
@@ -291,10 +298,10 @@ and holds every observation, and that nothing in the crowd appears or vanishes i
 | Recipe | Day and target | She starts | The target, as the scene asserts it |
 |---|---|---|---|
 | `task-06-note.json` | 6, a note for the man shouting | 5 tiles west of the mark, on the street, the mark unread | the man shouting up the street west of the mark, 540–644px from the mark, with the arrow on him |
-| `task-07-package.json` | 7, the package at the van | 5 tiles west of the mark, on the street, the mark unread | the van on the same street, 540–644px from the mark |
+| `task-07-package.json` | 7, the package at the van | 5 tiles west of the mark, on the street, the mark unread | the van 540–644px from the mark |
 | `task-08-burnt-shell.json` | 8, the burnt building | 5 tiles west of the mark, on the street, the mark unread | the shell 540–644px from the mark, the arrow on the door behind it |
 | `task-09-crossing.json` | 9, the crossing | 5 tiles west of the mark, the mark unread | the named district door's gatehouse, 540–676px from the mark; done by crossing the door |
-| `task-10-neighbor.json` | 10, warning the neighbor | 5 tiles east of the mark on the street above it, the mark unread | the neighbor, 400px or more from where she reads the mark (about 455px from it), walking home |
+| `task-10-neighbor.json` | 10, warning the neighbor | 5 tiles east of the mark on the street above it, the mark unread | the neighbor, 400px or more from where she reads the mark (about 494px from it), walking home |
 | `task-11-mast.json` | 11, silencing a mast | 5 tiles west of the mark, on the street, the mark unread | a mast put up for the task, 540–644px from the mark |
 | `task-11-two-masts.json` | 11, silencing a mast, with two masts answering | 5 tiles west of the mark, on the street, the mark unread | two authored masts, `south` (224px east of the mark, on the street her walk later goes up) and `north` (where the day's own generated mast stands): the red arrow starts on `south` and moves to `north` once her walk up the street beyond passes the point where `north` is the nearer on foot |
 | `task-12-swing.json` | 12, the swing | 5 tiles east of the mark on the street below it, the mark unread | the swing's base, 540–676px from the mark |

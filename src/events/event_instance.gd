@@ -357,6 +357,32 @@ const ROBBER_LUNGING_BY_VIEW_B := {
 	"front_diagonal": "events/robber_lunging_front_diagonal_b",
 	"back_diagonal": "events/robber_lunging_back_diagonal_b",
 }
+## The policeman on foot (`art/events/policeman_*`): the robber's set one for one — the same
+## canvases, anchors and postures, east-authored like the robber's — so he is drawn the way the
+## robber is (`_draw_policeman()`). The unsuffixed lunge is his badge silhouette (`icon_for()`).
+const POLICEMAN_LUNGING := "events/policeman_lunging"
+const POLICEMAN_WAITING_BY_VIEW := {
+	"front": "events/policeman_waiting_front",
+	"back": "events/policeman_waiting_back",
+	"side": "events/policeman_waiting_side",
+	"front_diagonal": "events/policeman_waiting_front_diagonal",
+	"back_diagonal": "events/policeman_waiting_back_diagonal",
+}
+const POLICEMAN_LUNGING_BY_VIEW := {
+	"front": "events/policeman_lunging_front",
+	"back": "events/policeman_lunging_back",
+	"side": "events/policeman_lunging_side",
+	"front_diagonal": "events/policeman_lunging_front_diagonal",
+	"back_diagonal": "events/policeman_lunging_back_diagonal",
+}
+## The lunge's own stride, as `ROBBER_LUNGING_BY_VIEW_B` is the robber's.
+const POLICEMAN_LUNGING_BY_VIEW_B := {
+	"front": "events/policeman_lunging_front_b",
+	"back": "events/policeman_lunging_back_b",
+	"side": "events/policeman_lunging_side_b",
+	"front_diagonal": "events/policeman_lunging_front_diagonal_b",
+	"back_diagonal": "events/policeman_lunging_back_diagonal_b",
+}
 const CHATTING_MOTHER_WALKING_BY_VIEW := {
 	"front": "events/chatting_mother_walking_front",
 	"back": "events/chatting_mother_walking_back",
@@ -853,6 +879,11 @@ static func icon_for(look: EventDef.Look) -> String:
 		# The same man again: `MASKED_PURSUER` already stands for the front (`GUARD_LUNGING`) and
 		# `DOOR_GUARD` for the side, so the guard the van's task sets on her is badged by the back.
 		EventDef.Look.VAN_GUARD_GIVING_CHASE: return str(GUARD_LUNGING_BY_VIEW["back"])
+		# The policeman's own lunge silhouette, the unsuffixed picture drawn for his badge.
+		EventDef.Look.POLICEMAN_GIVING_CHASE: return POLICEMAN_LUNGING
+		# The guard once more: the front, side and back of his lunge are taken, so the guardsman
+		# a torn poster sends from day 9 is badged by its front diagonal.
+		EventDef.Look.GUARDSMAN_GIVING_CHASE: return str(GUARD_LUNGING_BY_VIEW["front_diagonal"])
 		_: return ""
 
 ## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
@@ -1712,7 +1743,7 @@ const DRIVEN_CLEARANCE := 0.5
 ## for her then: it is still driving, and with her inside the strike area (`_in_front()`, which
 ## reaches `Tuning.PATROL_STRIKE_LEAD` past the touch for exactly this) `is_lethal_at()` ends the
 ## day. What it stands for is the rest — a flank or a corner turned into her, a pram poking over the
-## kerb, the investigating car coming over to her, a car leaving.
+## kerb, a car leaving.
 ##
 ## **No strike without its full warning, unless she steps into a moving car's path.** Three more
 ## refusals keep every other way of putting her in front of it out:
@@ -1922,15 +1953,17 @@ func is_driving() -> bool:
 
 ## Whether the car is on its route rather than in any other state: not standing still through a
 ## telegraph or parked, not leaving — it is over, and nothing that is over ends the day — and **not
-## coming over to investigate**: the heated copy that has noticed her is a pursuer closing on her,
-## not a car on its route, and it stops against her rather than striking her (see
-## `EventDef.at_heat()`).
+## stopped to investigate**: the heated copy that has noticed her stands where it stopped while the
+## man it let out pursues her (`EventDef.investigates`, `_investigate()`), and a standing car
+## strikes nobody. Once he is back in it drives its route again, and is a car on it like any other.
 func _drives_its_route() -> bool:
 	if not def.drives or is_finished or is_leaving or is_parked:
 		return false
 	if not def.mobile or path.size() < 2 or is_telegraphing_still():
 		return false
 	if def.pursues and not is_waiting():
+		return false
+	if def.investigates and not _runs_its_route():
 		return false
 	return def.speed >= Tuning.CAR_STRIKE_MIN_SPEED
 
@@ -2048,7 +2081,16 @@ func _process(delta: float) -> void:
 		return
 
 	_fly_the_flock(delta)
-	if def.pursues:
+	if def.investigates:
+		_investigate()
+		if _runs_its_route() and def.mobile and path.size() > 1:
+			_advance_along_path(delta)
+	elif def.pursues and has_stopped_her():
+		# **He has reached her and stopped her** (`EventDef.stop_excitement`): he stands with her
+		# while his field lands the stop, and then walks back to the vehicle that let him out.
+		if age - _stopped_her_at >= Tuning.OFFICER_STOP_SECONDS:
+			_be_done()
+	elif def.pursues:
 		# **A pursuer that has a route runs it until it notices her.** No field says so — see
 		# `EventDef.at_heat()`'s own note on `PRESSES` — it is read off the two flags a mobile
 		# pursuer already carries: while it is only `is_waiting()` it has not decided anything about
@@ -2058,6 +2100,8 @@ func _process(delta: float) -> void:
 		if is_waiting() and def.mobile and path.size() > 1:
 			_advance_along_path(delta)
 		_chase(delta)
+		_stop_her_if_he_has_reached_her()
+		_lay_the_trail()
 	elif def.pursues_within > 0.0:
 		# The same waiting state a pursuer gets, for a row that only waits and then runs its own
 		# path rather than turning to chase her once noticed — see `_check_for_notice()` and
@@ -2075,8 +2119,8 @@ func _process(delta: float) -> void:
 		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
 		# `_walkable_step`'s own note says why a moving pursuer may not keep a body: "giving a
 		# pursuer one would let a moving wall pin her against a building on a two-tile pavement."
-		# A hunting `abduction` is solid exactly while it is parked — the instant it stops waiting
-		# it is coming for her, and the body comes down the same frame.
+		# A hunting `abduction` or raid never gets here: it hunts on foot (`EventDef.hunts_on_foot`)
+		# and stays parked, solid, while its men come after her.
 		#
 		# **`body_stays_behind` is the other case, and it is not an exception to that rule.** The
 		# body still stops moving with the pursuer; it stops moving at all. A barrier built across
@@ -2383,6 +2427,235 @@ func _chase(delta: float) -> void:
 	# by distance so that a thing holding its ground reads as standing still.
 	_path_travelled += moved.length()
 
+# ------------------------------------------------------------ the investigation ---
+# *(merry-stork, the player: "an investigating police car should not leave the street. it should
+# stop if close to her and a policeman should emerge and pursue her"; inbox #669: "once the
+# policeman reaches her they stop and walk back to the car" · "Van stops, men get out
+# (Recommended)".)*
+
+## Whether this investigating vehicle has noticed her along a clear line, from that frame on —
+## `_noticed_at` waits until it has also stopped, which a car with its body in a junction box does
+## only once the body is clear of the box (`_stands_in_a_junction()`).
+var _seen_her := false
+## How many men this vehicle has stopped for and still owes: `EventDef.lets_out` from the frame it
+## stops until `EventManager` has put them all down (`let_out()`).
+var _officers_owed := 0
+## The men this vehicle let out, once they are in the world.
+var _officers: Array[EventInstance] = []
+## True once every man it let out is back in: a car drives its route again from here, and a van
+## stands where it always stood. It does not stop for her a second time.
+var _investigated := false
+
+## **An investigating vehicle notices her and stops** (`EventDef.investigates`): while it waits, a
+## car drives its route (`_process()`), and from the frame she is within `pursues_within` of it along
+## a clear line (`_clear_line_to()`, every notice's test) it has seen her. It stops — where it is,
+## on its route — as soon as its body is clear of every junction box (`_stands_in_a_junction()`),
+## which it is at once unless it saw her from inside one, and then owes the men it lets out
+## (`officers_owed()`). From then on it stands while they are out, and once every one of them is
+## back in (`_officer_is_back()`) — or it has none, streamed back in already stopped — it is done
+## investigating: a car drives on along its route, standing first while she is in its way
+## (`_standing`, `_drive()`), and a van stands where it is.
+func _investigate() -> void:
+	if _investigated:
+		if not _left_her_once and _left_her():
+			_left_her_once = true
+		return
+	if is_waiting():
+		if not _seen_her and player_at != Vector2.INF \
+				and global_position.distance_to(player_at) <= def.pursues_within \
+				and _clear_line_to(player_at):
+			_seen_her = true
+		if _seen_her and not _stands_in_a_junction():
+			_noticed_at = age
+			_officers_owed = def.lets_out
+		return
+	if _officers_owed > 0:
+		return
+	for officer in _officers:
+		if not _officer_is_back(officer):
+			return
+	_investigated = true
+	_officers.clear()
+	# A car that stood for its men has stood, so it pulls away only once she is out of its way —
+	# never into her (`_drive()`'s own rule for a car that has stood).
+	_standing = def.drives
+
+## **A car that stood for its man is quiet until it has left her: the man is the encounter.** From
+## the frame an investigating car stops for her, through his notice, chase, stop and walk back, and
+## on as it drives on — past her, or waiting at a line beside her — until it is outside its own
+## field's reach of her (`_left_her()`), its field is off. So what the encounter costs her is his
+## notice, his chase and his stop: substantial, and never the end of a calm day by itself for a
+## player who stands through all of it *(inbox #669: "a substantial cost but not lethal
+## directly")*. While she stays within its resting reach, a car that stood for a policeman does not
+## then also cost her as a passing car. Once it has left her — measured at rest, while a moving car's
+## field reaches further ahead (`GroundShape.eccentric_distance()`) — it is an ordinary car, and one
+## that then drives at her costs her as any car does. Its strike and its horn are a driving car's
+## and come back the moment it drives. *Chosen while building, open to overturn.*
+func is_quiet_for_its_man() -> bool:
+	return def.investigates and def.drives and not is_waiting() and not _left_her_once
+
+## True once an investigating car, done with its man, has been outside its own field's reach of her
+## — it stays an ordinary car from then on, whatever she does after. Latched once a frame by
+## `_investigate()`, so the field stays a pure query.
+var _left_her_once := false
+
+## Whether she is outside this car's field from where it is: further than its outer radius past its
+## own body, or nobody to be near.
+func _left_her() -> bool:
+	return player_at == Vector2.INF or global_position.distance_to(player_at) \
+			> def.outer_radius + def.shape.reach()
+
+## Whether this investigating vehicle is running its route: before it has stopped for her, and
+## again once it is done investigating. Always false for one that never moves.
+func _runs_its_route() -> bool:
+	return is_waiting() or _investigated
+
+## **Whether any part of this car's body stands in a junction box**: a tile under its spine, from
+## its tail to its nose, inside the crossing street's whole corridor as well as its own
+## (`CityMap.junction_at()`) — the box with its zebras, the ground a red light holds a car short of
+## (`_room_to_its_line()`). An investigating car never stops there: nothing stands in a box it
+## cannot leave, and the crossing traffic cannot see a patrol car's body to wait for it
+## (sunny-finch, the **crowd-traffic** skill). False for anything that does not drive.
+func _stands_in_a_junction() -> bool:
+	if not def.drives or _map == null or def.shape == null:
+		return false
+	var axis := _solid_axis()
+	var reach := def.shape.reach()
+	for i in JUNCTION_SAMPLES + 1:
+		var point := global_position + axis * lerpf(-reach, reach, float(i) / JUNCTION_SAMPLES)
+		if CityMap.junction_at(_map.world_to_tile(point)) != Vector2i(-1, -1):
+			return true
+	return false
+
+## How many steps `_stands_in_a_junction()` takes along the body: under a quarter tile each for the
+## patrol's 42px, so no tile under it is stepped over.
+const JUNCTION_SAMPLES := 8
+
+## Whether a man this vehicle let out is back in it — gone from the world, by getting in at its
+## door (`_walk_back()`) or by having been out of her sight — or no longer exists.
+static func _officer_is_back(officer: EventInstance) -> bool:
+	return not is_instance_valid(officer) or officer.is_finished
+
+## How many men this vehicle has stopped for and still owes. Read by
+## `EventManager._let_the_officers_out()`.
+func officers_owed() -> int:
+	return _officers_owed if not is_finished and not is_leaving else 0
+
+## Hands the vehicle one man `EventManager` put down at its door (`door_for_its_officer()`), so it
+## stands until he is back, and starts his trail at the door he got out of, which is where he walks
+## back to.
+func let_out(officer: EventInstance) -> void:
+	_officers_owed = maxi(_officers_owed - 1, 0)
+	_officers.append(officer)
+	officer._vehicle = self
+	officer._trail = PackedVector2Array([officer.global_position])
+
+## The first man this vehicle let out who is still in the world, or null.
+func its_officer() -> EventInstance:
+	for officer in _officers:
+		if is_instance_valid(officer):
+			return officer
+	return null
+
+## Every man this vehicle let out who is still in the world.
+func its_officers() -> Array[EventInstance]:
+	var out: Array[EventInstance] = []
+	for officer in _officers:
+		if is_instance_valid(officer):
+			out.append(officer)
+	return out
+
+## **One of its men has stopped her: every man it let out walks back to it** — "once the policeman
+## reaches her they stop and walk back to the car" (inbox #669), so a vehicle that let out more than
+## one man whose catch is a stop costs her once, not once a man. The one who stopped her stands with
+## her through his stop first.
+func _call_back_its_officers(stopped_by: EventInstance) -> void:
+	for officer in its_officers():
+		if officer != stopped_by:
+			officer._be_done()
+
+## Where a man gets out: beside the body's flank on her side, clear of it by his own reach, `along`
+## px from its middle along its length — `side` 1 for her side, -1 for the other.
+func door_for_its_officer(row: EventDef, side := 1.0, along := 0.0) -> Vector2:
+	var across := _heading.orthogonal()
+	if player_at != Vector2.INF and (player_at - global_position).dot(across) < 0.0:
+		across = -across
+	var reach := def.shape.radius + (row.shape.reach() if row.shape else 0.0) + 1.0
+	return global_position + across * side * reach + _heading * along
+
+# ------------------------------------------------------------------- the stop ---
+
+## The vehicle that let this man out, or null for everything else — a torn poster's man included.
+var _vehicle: EventInstance = null
+## The way he came, laid down every `TRAIL_STEP` px while he is out (`_lay_the_trail()`), from the
+## door: walked back in reverse, it is ground he has already walked, so no building stands between
+## him and his vehicle on the way back.
+var _trail := PackedVector2Array()
+## The age at which he reached her and stopped her (`EventDef.stop_excitement`), or `INF`.
+var _stopped_her_at := INF
+## Whether she is inside a district door's hold this frame, told by
+## `EventManager._tell_them_where_she_is()`. **A man who would stop her waits outside for her**: a
+## stop is a cost on the meter, and inside a hold nothing but the door's toll reaches her
+## (`EventManager.door_holding_her_at()`), so a stop made there would land nothing. He keeps after
+## her and stops her once she is let out — as a pursuer's chase goes on past a hut. *Chosen while
+## building, open to overturn: ending his chase on a hold, as the door's own guard's ends, is the
+## other way.*
+var she_is_held := false
+
+## How far apart the points of a man's trail are, in px: a third of a tile, so a corner he went
+## round is a corner on the way back.
+const TRAIL_STEP := 10.0
+
+## Whether this man has reached her and stopped her. See `EventDef.stop_excitement`.
+func has_stopped_her() -> bool:
+	return _stopped_her_at != INF
+
+## **His catch, made a stop** (`EventDef.stop_excitement`): chasing — his notice over and not a
+## man walking back — within his catch's own reach of her and along a clear line, which is the
+## very test `is_lethal_at()` asks of a man whose catch ends the day. From here he stands with her
+## (`_process()`), his field lands the stop (`current_intensity()`), and every man his vehicle let
+## out walks back to it.
+func _stop_her_if_he_has_reached_her() -> void:
+	if def.stop_excitement <= 0.0 or has_stopped_her() or player_at == Vector2.INF or she_is_held:
+		return
+	if is_finished or is_leaving or is_waiting() or is_telegraphing():
+		return
+	if global_position.distance_to(player_at) > def.lethal_reach() \
+			or not _clear_line_to(player_at):
+		return
+	_stopped_her_at = age
+	_heading = (player_at - global_position).normalized()
+	if is_instance_valid(_vehicle):
+		_vehicle._call_back_its_officers(self)
+
+## Lays the next point of his trail once he is `TRAIL_STEP` from the last. Only a man a vehicle let
+## out has one.
+func _lay_the_trail() -> void:
+	if _trail.is_empty():
+		return
+	if global_position.distance_to(_trail[_trail.size() - 1]) >= TRAIL_STEP:
+		_trail.append(global_position)
+
+## **He walks back the way he came, and gets in**: toward the last point of his trail, dropping each
+## point as he reaches it, and gone once he is at the door (`_finish()`). Back along his own trail
+## rather than straight at the vehicle, since a chase can take him round a corner the straight line
+## would cut through a building. True while he is still walking back.
+func _walk_back(step: float) -> bool:
+	while not _trail.is_empty():
+		var target := _trail[_trail.size() - 1]
+		var toward := target - global_position
+		if toward.length() > step:
+			_heading = toward.normalized()
+			position += _heading * step
+			_path_travelled += step
+			return true
+		position = target
+		step -= toward.length()
+		_path_travelled += toward.length()
+		_trail.remove_at(_trail.size() - 1)
+	_finish()
+	return false
+
 ## Ends this chase from outside `_chase()`'s own loop, in the one state `_chase()` reaches when she
 ## has outrun it: `gave_up` set, `_be_done()` called — the same departure, the same drawing and the
 ## same `TelemetryObserver._watch_the_chase()` "gave up" line as an ordinary shake-off, because it is
@@ -2398,6 +2671,26 @@ func give_up_the_chase() -> void:
 		return
 	gave_up = true
 	_be_done()
+
+## **Notices her now, wherever she is**: a waiting pursuer told to come after her by what she did
+## rather than by what it saw — day 13's waiting guard, the moment she has done the roadblock's task,
+## from wherever he stands (`ResistanceDirector._set_the_task_guard_on_her()`; inbox #651 follow-up,
+## the player: "as long as he starts pursuing when you hit the task it's fine"). The notice
+## `_chase()` makes, without its range and its clear line: the clock starts, he turns to her, and
+## from then on he is an ordinary pursuer — his notice runs before he may lunge, he closes only to
+## his stand-off while it runs, and he lunges only along a clear line. Noticed already inside his
+## stand-off, which only a wall between them allows here, the lunge is held as `_chase()` holds it
+## (`_lunge_held`). Nothing for a pursuer no longer waiting, or for a `her` of `Vector2.INF`.
+func notice_her_at(her: Vector2) -> void:
+	if not is_waiting() or her == Vector2.INF or is_finished:
+		return
+	player_at = her
+	_noticed_at = age
+	var toward := her - global_position
+	if toward.length() >= 1.0:
+		_heading = toward.normalized()
+	if toward.length() <= Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()):
+		_lunge_held = true
 
 ## `_chase()`'s own notice check, folded out for anything that waits on `pursues_within` without
 ## also `pursues` — a row that runs its own path once noticed rather than turning to chase her.
@@ -2623,11 +2916,12 @@ func _victim_time_left() -> float:
 ## **Never starts without enough of the van's own life left to finish in.** A take cut short by the
 ## van disappearing mid-walk would read as a bug rather than as an abduction.
 ##
-## **A hunting van has other business.** The instant it stops waiting it is coming for her rather
-## than idling at the kerb, so an in-progress take is abandoned rather than finished: no victim is
-## drawn again, taken or not, and nothing is logged for a take that never completed.
+## **A hunting van has other business.** The instant it stops waiting it is letting its men out
+## after her (`EventDef.hunts_on_foot`) rather than idling at the kerb, so an in-progress take is
+## abandoned rather than finished: no victim is drawn again, taken or not, and nothing is logged for
+## a take that never completed.
 func _update_the_take() -> void:
-	if def.pursues and not is_waiting():
+	if (def.pursues or def.investigates) and not is_waiting():
 		_victim_taken_at = INF
 		return
 	if _victim_taken_at == INF:
@@ -2896,12 +3190,12 @@ const LEAVING_GIVES_UP := 6.0
 func _be_done(may_park := true) -> void:
 	if is_finished or is_leaving or is_parked:
 		return
-	if def.pursues and _pursuit_began_reported:
+	if def.pursues and _pursuit_began_reported and not has_stopped_her():
 		# `VisitCounter`'s own "dog-shaken"/"dog-outlasted" — a pursuit that had actually begun is
 		# over without catching her, `gave_up` telling which of the two ways. A catch never reaches
-		# here: it ends the day through `_check_hard_fails()`'s own `hard_fail_triggered` instead,
-		# and this instance is never asked to finish after that. See `EventBus.pursuit_ended`'s own
-		# doc.
+		# here as one: it ends the day through `_check_hard_fails()`'s own `hard_fail_triggered`
+		# instead, and this instance is never asked to finish after that; and a man who stopped her
+		# (`has_stopped_her()`) caught her. See `EventBus.pursuit_ended`'s own doc.
 		EventBus.pursuit_ended.emit(def.id, gave_up)
 	if def.stops_where_it_arrives and may_park:
 		is_parked = true
@@ -2924,16 +3218,17 @@ func _be_done(may_park := true) -> void:
 			and not global_position.is_equal_approx(player_at):
 		_heading = (global_position - player_at).normalized()
 	if def.drives:
-		# **A car leaves the way it can, and never vanishes beside her.** One that ends a visit to
-		# her — the investigating car's chase running out — still faces her, and every step of a
-		# departure into her is refused (`_drive()`), so it turns away from her as
-		# `leave_for_a_completed_task()` turns anything; and a car that has a body she can stand
-		# against is gone only once she could not be watching (`_leaving_must_clear_sight`), not
-		# off `LEAVING_GIVES_UP`'s clock while she stands beside it.
+		# **A car leaves the way it can, and never vanishes beside her.** Every step of a departure
+		# into her is refused (`_drive()`), and a car that has a body she can stand against is gone
+		# only once she could not be watching (`_leaving_must_clear_sight`), not off
+		# `LEAVING_GIVES_UP`'s clock while she stands beside it. An investigating car reaches here
+		# only at the end of its route, which it drives on to once its man is back in
+		# (`_investigate()`), so it leaves the way it was going, as every patrol does.
 		_leaving_must_clear_sight = true
-		if def.pursues and _noticed_at != INF and player_at != Vector2.INF \
-				and not global_position.is_equal_approx(player_at):
-			_heading = (global_position - player_at).normalized()
+	if not _trail.is_empty():
+		# **A man a vehicle let out walks back to it** (`_walk_back()`) rather than away from her,
+		# and he is in her view as he goes, so he is gone only at its door or out of her sight.
+		_leaving_must_clear_sight = true
 
 ## Ends this instance early because a resistance step's contact rode on it and she has just
 ## completed the step — called by `ResistanceDirector._on_contact_completed()` on the instance
@@ -2968,8 +3263,12 @@ func leave_for_a_completed_task() -> void:
 func _leave(delta: float) -> void:
 	_leaving_for += delta
 	var step := def.departure_speed() * delta
-	position += _heading * step
-	_path_travelled += step
+	if not _trail.is_empty():
+		if not _walk_back(step):
+			return
+	else:
+		position += _heading * step
+		_path_travelled += step
 	var gone := player_at != Vector2.INF \
 			and global_position.distance_to(player_at) > Tuning.OUT_OF_SIGHT
 	# `LEAVING_GIVES_UP` is a backstop for a departure nobody could be watching (a headless rig, a
@@ -3030,6 +3329,12 @@ func _has_expired() -> bool:
 	if is_waiting():
 		# It has not happened yet, and it is not going to until she walks up to it.
 		return false
+	# **A vehicle waits for its men**: a hunting van's `duration` runs from its notice, and a van
+	# gone from the kerb would leave a man walking back to nothing. It may leave only once every
+	# man it let out is back in.
+	for officer in _officers:
+		if not _officer_is_back(officer):
+			return false
 	return def.duration > 0.0 and chase_age() >= def.telegraph_time + def.duration
 
 func _finish() -> void:
@@ -3101,6 +3406,16 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# A silenced mast still stands, but its field is gone — unlike `is_finished`, which means
 		# the thing itself has left. See the field's own doc.
 		return 0.0
+	if is_quiet_for_its_man():
+		return 0.0
+	if has_stopped_her():
+		# **The stop** (`EventDef.stop_excitement`): from twice its mean rate to nothing over
+		# `Tuning.OFFICER_STOP_SECONDS`, so its whole lands `stop_excitement` on her standing beside
+		# him — at the centre of his own field, which is where his catch puts her. A short sharp
+		# spike rather than a field she strolls out of, and his field, so walking away takes some
+		# of it off. Nothing after it: he is walking back by then (`_process()`).
+		var into := clampf((age - _stopped_her_at) / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
+		return 2.0 * def.stop_excitement / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
 	if is_chatting():
 		# A flat rate for the whole conversation rather than a falloff: she is inside `inner_radius`
 		# by construction (`detain_distance() < inner_radius`), so there is no distance to shape.
@@ -3420,50 +3735,12 @@ func is_lethal_at(world_position: Vector2) -> bool:
 ## Whether the straight line from this node to `world_position` crosses only ground
 ## `CityMap.is_walkable()` agrees with — the question a pursuer's catch asks, since a catch across a
 ## wall is a man reaching through a building, and the one its notice and its lunge ask in
-## `_chase()`, since he can neither see nor go for her through one. Every tile the segment enters is
-## asked, found by stepping from one tile boundary to the next along it rather than by sampling, so
-## a line that clips a building's corner by a pixel is blocked however short it is. A line through a
-## corner point exactly asks both tiles beside it. True with no map, which is every data-level rig
-## built without one, exactly as `_walkable_step()` is.
+## `_chase()`, since he can neither see nor go for her through one. `CityMap.clear_line()` walks it,
+## the one walk every caller asks, so a line that clips a building's corner by a pixel is blocked
+## however short it is. True with no map, which is every data-level rig built without one, exactly
+## as `_walkable_step()` is.
 func _clear_line_to(world_position: Vector2) -> bool:
-	if not _map:
-		return true
-	var from := global_position
-	var tile := _map.world_to_tile(from)
-	if not _map.is_walkable(tile):
-		return false
-	var delta := world_position - from
-	var size := float(Tuning.TILE_SIZE)
-	var step := Vector2i(int(signf(delta.x)), int(signf(delta.y)))
-	# The fraction of the segment at which it next crosses a vertical (x) or horizontal (y) tile
-	# boundary, and how much of the segment one whole tile takes on each axis.
-	var next_x := INF
-	var each_x := INF
-	if step.x != 0:
-		next_x = (float(tile.x + maxi(step.x, 0)) * size - from.x) / delta.x
-		each_x = size / absf(delta.x)
-	var next_y := INF
-	var each_y := INF
-	if step.y != 0:
-		next_y = (float(tile.y + maxi(step.y, 0)) * size - from.y) / delta.y
-		each_y = size / absf(delta.y)
-	while minf(next_x, next_y) <= 1.0:
-		if is_equal_approx(next_x, next_y):
-			if not _map.is_walkable(tile + Vector2i(step.x, 0)) \
-					or not _map.is_walkable(tile + Vector2i(0, step.y)):
-				return false
-			tile += step
-			next_x += each_x
-			next_y += each_y
-		elif next_x < next_y:
-			tile.x += step.x
-			next_x += each_x
-		else:
-			tile.y += step.y
-			next_y += each_y
-		if not _map.is_walkable(tile):
-			return false
-	return true
+	return not _map or _map.clear_line(global_position, world_position)
 
 ## One bounded integral cache per source, with a by-value key rather than a clock or identity.
 var _expected_landed_key: Array = []
@@ -3789,6 +4066,7 @@ func _picture_key() -> Vector4i:
 	flags = flags * 2 + (1 if is_telegraphing() else 0)
 	flags = flags * 2 + (1 if is_waiting() else 0)
 	flags = flags * 2 + (1 if is_chatting() else 0)
+	flags = flags * 2 + (1 if has_stopped_her() else 0)
 	flags = flags * 2 + (1 if is_its_guard_inside() else 0)
 	flags = flags * 2 + (1 if is_taking_a_victim() else 0)
 	flags = flags * 2 + (1 if _victim_gait_stepping() else 0)
@@ -3804,7 +4082,7 @@ func _picture_key() -> Vector4i:
 	flags = flags * 2 + (1 if mast and _mast_is_telegraphing_now() else 0)
 	var sector := EightDirection.update(_view_sector, _drawn_heading())
 	# A car's picture is anchored on its live heading (`_police_car_anchor()`), and its shadow and
-	# body turn with it, so a car coming over to her redraws as it turns rather than only when it
+	# body turn with it, so a car rounding a corner redraws as it turns rather than only when it
 	# crosses into another sector. Whole degrees, above the protest's own poses.
 	var turn := posmod(roundi(rad_to_deg(_heading.angle())), 360) if def.drives else 0
 	return Vector4i(
@@ -4390,8 +4668,13 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect(sources, [GUARD_STANDING])
 		EventDef.Look.IMPACT_CRATER:
 			_collect(sources, [IMPACT_CRATER])
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE:
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE, \
+				EventDef.Look.GUARDSMAN_GIVING_CHASE:
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
+		EventDef.Look.POLICEMAN_GIVING_CHASE:
+			_collect_views(sources, [POLICEMAN_WAITING_BY_VIEW, POLICEMAN_LUNGING_BY_VIEW,
+					POLICEMAN_LUNGING_BY_VIEW_B])
+			_collect(sources, [POLICEMAN_LUNGING])
 		EventDef.Look.STEAM:
 			_collect(sources, [STEAM, STEAM_B])
 		EventDef.Look.LOUDSPEAKER_MAST:
@@ -4557,8 +4840,11 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			_draw_at_anchor(canvas, GUARD_STANDING, _GUARD_ANCHOR)
 		EventDef.Look.IMPACT_CRATER:
 			_draw_crater(canvas)
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE:
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE, \
+				EventDef.Look.GUARDSMAN_GIVING_CHASE:
 			_draw_masked_pursuer(canvas)
+		EventDef.Look.POLICEMAN_GIVING_CHASE:
+			_draw_policeman(canvas)
 		EventDef.Look.STEAM:
 			_draw_simple(STEAM_B if _idle_stepping(STEAM_BILLOW_PERIOD) else STEAM, canvas)
 		EventDef.Look.LOUDSPEAKER_MAST:
@@ -4638,7 +4924,7 @@ const POLICE_CAR_CANVAS_BOTTOM_MARGIN := {
 ## is `half_length · |heading.y| + radius` — 12px driving east or west, 21 north or south — and
 ## the picture sits over the body she walks into rather than standing in front of it. Read off the
 ## live heading rather than the quantised view, the crowd car's reason: the body turns
-## continuously while a car comes over to her, and a picture anchored on the view would jump at
+## continuously as a car rounds a corner, and a picture anchored on the view would jump at
 ## every sector boundary. The caret over it is lowered by the same amount (`_picture_drop_now()`).
 func _police_car_anchor(view: String) -> Vector2:
 	var south := def.shape.half_length * absf(_solid_axis().y) + def.shape.radius
@@ -4802,6 +5088,28 @@ func _draw_robber(canvas: CanvasItem = self) -> void:
 	var view := _select_view(heading)
 	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
+
+## **The policeman on foot, drawn as the robber is**: his waiting posture while his notice runs —
+## the one sent from off screen has none and is only ever drawn coming; the one who gets out of an
+## investigating vehicle holds his ground in it (`EventDef.sets_off_beside_her`) — and while
+## he stands with her through a stop (`has_stopped_her()`); his lunge, with its stride, once he gives
+## chase and as he walks back to his vehicle. The switch is `_stands_still_now()`, the one
+## `_draw_masked_pursuer()` reads for the guard. He faces her while he is after her (`_chase()`
+## keeps `_heading` on her) and his vehicle's door as he walks back (`_walk_back()`).
+func _draw_policeman(canvas: CanvasItem = self) -> void:
+	_draw_body_shadow(canvas)
+	var waiting := _stands_still_now()
+	var by_view := POLICEMAN_WAITING_BY_VIEW if waiting else POLICEMAN_LUNGING_BY_VIEW
+	if not waiting and _gait_stepping():
+		by_view = POLICEMAN_LUNGING_BY_VIEW_B
+	var view := _select_view(_heading)
+	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+			EightDirection.is_mirrored(_view_sector))
+
+## Whether a man on foot is drawn standing rather than lunging: through his notice, and through a
+## stop he has made of his catch (`has_stopped_her()`) until he turns to walk back.
+func _stands_still_now() -> bool:
+	return is_telegraphing() or (has_stopped_her() and not is_leaving)
 
 ## Which way the waiting posture faces: her, whenever a caller has told this instance where she is
 ## (`set_player_at()`) and **nothing built stands between them** (`_clear_line_to()`, the test his
@@ -5153,8 +5461,10 @@ func _draw_crater(canvas: CanvasItem = self) -> void:
 	_draw_at_anchor(canvas, IMPACT_CRATER, _CRATER_ANCHOR)
 
 ## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
-## its boom — the same man: the `guard_standing_*` family while the telegraph is running
-## and `guard_lunging_*` once it is over and he is actually on her line — the same two postures
+## its boom — the same man, and the guardsman a torn poster sends or a vehicle lets out:
+## the `guard_standing_*` family while the telegraph is running, and through a stop
+## (`_stands_still_now()`), and `guard_lunging_*` once he is actually on her line — the same two
+## postures
 ## `_draw_roadblock()` swaps between when a heated roadblock's guards leave the post, on a row that
 ## was never a barrier and so has no band to swap *out of*. Read from his own travel heading
 ## through `_draw_eight_view()`, the same helper every other moving family uses, so he turns to
@@ -5164,7 +5474,7 @@ func _draw_crater(canvas: CanvasItem = self) -> void:
 ## body shadow — `def.shape`, a 9px point, at local origin — is exactly what `_draw_eight_view()`
 ## draws by default, so nothing here calls `_draw_shape_shadow()` separately any more.
 func _draw_masked_pursuer(canvas: CanvasItem = self) -> void:
-	var by_view := GUARD_STANDING_BY_VIEW if is_telegraphing() else GUARD_LUNGING_BY_VIEW
+	var by_view := GUARD_STANDING_BY_VIEW if _stands_still_now() else GUARD_LUNGING_BY_VIEW
 	_draw_eight_view(by_view, _heading, canvas)
 
 ## **Both halves have to be drawn**: the tables are what obstructs and the conversation is what it

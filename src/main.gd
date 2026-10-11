@@ -2058,7 +2058,7 @@ func _event_summary() -> String:
 ## `Crowd._strike()`), otherwise the id off whatever row actually struck her
 ## (`EventBus.hard_fail_triggered(instance.def.id)`, `EventManager._check_hard_fails()`) —
 ## hyphenated the same way every other cause name is, so a new hard-fail row (`roadblock`'s guard
-## once it hunts, `night_raid`, and everything already in the catalogue) is covered without a
+## once it hunts, and everything already in the catalogue) is covered without a
 ## second list naming it here. Pure, and tested directly — `tests/test_day_lost_to.gd`.
 ##
 ## `struck_by` is `EventManager.what_struck_her()` — the name the logs give the instance whose reach

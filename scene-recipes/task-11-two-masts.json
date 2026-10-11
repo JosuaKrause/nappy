@@ -5,7 +5,7 @@
   "extent": {"scope":"stretch"},
   "city": {"context_seed":1917501},
   "anchors": {
-    "mark": {"tile":[92,69]},
+    "mark": {"tile":[92,68]},
     "start": {"tile":[87,70]},
     "south_mast": {"world":[3184,2224]},
     "north_mast": {"world":[3440,1936]}
@@ -43,24 +43,24 @@
     }
   },
   "playback": {
-    "walk": "1.74e1.04w3.48s1.39e1.39s3.48e8.0n1.39e",
-    "duration": 22.9,
-    "capture_at": 21.4,
+    "walk": "1.74e0.45n0.45s1.04w3.48s1.39e1.39s3.48e8.0n1.39e",
+    "duration": 23.9,
+    "capture_at": 22.4,
     "observations": [
       {"tick":1,"subject":"mark","condition":"offered"},
       {"tick":1,"subject":"mark","condition":"unarrowed"},
       {"tick":1,"subject":"player","condition":"beyond","at":"mark","distance":150},
-      {"tick":60,"subject":"mark","condition":"done"},
-      {"tick":60,"subject":"task","condition":"offered"},
-      {"tick":60,"subject":"task","condition":"arrowed"},
-      {"tick":60,"subject":"task","condition":"near","at":"south_mast","distance":2},
-      {"tick":590,"subject":"task","condition":"near","at":"south_mast","distance":2},
-      {"tick":590,"subject":"task","condition":"arrowed"},
-      {"tick":625,"subject":"task","condition":"near","at":"north_mast","distance":2},
-      {"tick":625,"subject":"task","condition":"arrowed"},
-      {"tick":672,"subject":"task","condition":"done"},
-      {"tick":686,"subject":"row:cat_dash","condition":"appeared"},
-      {"tick":345,"subject":"player","condition":"crowd","walkers":2,"cars":1}
+      {"tick":75,"subject":"mark","condition":"done"},
+      {"tick":75,"subject":"task","condition":"offered"},
+      {"tick":75,"subject":"task","condition":"arrowed"},
+      {"tick":75,"subject":"task","condition":"near","at":"south_mast","distance":2},
+      {"tick":620,"subject":"task","condition":"near","at":"south_mast","distance":2},
+      {"tick":620,"subject":"task","condition":"arrowed"},
+      {"tick":655,"subject":"task","condition":"near","at":"north_mast","distance":2},
+      {"tick":655,"subject":"task","condition":"arrowed"},
+      {"tick":702,"subject":"task","condition":"done"},
+      {"tick":716,"subject":"row:cat_dash","condition":"appeared"},
+      {"tick":310,"subject":"player","condition":"crowd","walkers":2,"cars":1}
     ]
   },
   "stretch": {

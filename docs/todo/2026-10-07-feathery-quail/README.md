@@ -9,4 +9,4 @@ player's `now` band:
 
 The work is [follow-the-disappearing-patrol.md](follow-the-disappearing-patrol.md). This is a
 separate visibility/lifetime complaint from [sandy-ferret, the pursuit on
-foot](../2026-10-05-sandy-ferret/README.md); replacing the pursuit picture alone does not answer it.
+foot](../../decisions/2026-10-05-sandy-ferret.md); replacing the pursuit picture alone does not answer it.

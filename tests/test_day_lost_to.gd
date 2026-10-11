@@ -17,8 +17,8 @@ func run(t) -> void:
 
 ## `car_strike` is the one hard fail that is not a catalogue row and gets its own short name;
 ## every other reason is a `def.id`, hyphenated the same way every other cause name in this file
-## already is — `roadblock` and `night_raid` included, so a row that only turns lethal once the
-## resistance's heat reaches it (`EventDef.at_heat()`) needs no entry of its own here. Raw, unprefixed
+## already is — `roadblock` included, so a row that turns lethal only once the resistance's heat
+## reaches it (`EventDef.at_heat()`) needs no entry of its own here. Raw, unprefixed
 ## — `VisitCounter._loss_event_suffix()` is what folds it onto `lost-hard-fail`.
 func _test_hard_fail_cause_suffix(t) -> void:
 	t.check(MAIN_SCRIPT._hard_fail_cause_suffix("car_strike") == "car",
@@ -28,7 +28,7 @@ func _test_hard_fail_cause_suffix(t) -> void:
 	t.check(MAIN_SCRIPT._hard_fail_cause_suffix("roadblock") == "roadblock",
 		"a row whose id already has no underscore to hyphenate")
 	t.check(MAIN_SCRIPT._hard_fail_cause_suffix("night_raid") == "night-raid",
-		"a row that only turns lethal at heat, named off the same `def.id` either way")
+		"a row whose id has an underscore, named off the same `def.id` as every other")
 	t.check(MAIN_SCRIPT._hard_fail_cause_suffix("alley_robbery") == "alley-robbery",
 		"the chalk mark's own guard")
 

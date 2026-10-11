@@ -81,6 +81,7 @@ test_power_station.gd 17982
 test_prediction_reuse.gd 366
 test_presentation_mode.gd 17
 test_protest.gd 1142
+test_pursuer_on_foot.gd 2800
 test_quit_option.gd 1
 test_reachability_grid.gd 6992
 test_regions.gd 56902

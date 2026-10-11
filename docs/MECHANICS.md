@@ -258,6 +258,15 @@ along with her are the same drawing call that draws her, so nothing about them n
 switch. The meters keep running throughout — sleepiness still drains at the idle rate, because the
 baby is still there whether or not the player can see her.
 
+**She stands still on the far side until the player chooses where to go.** *(2026-10-10, the
+player: "there is a bug when leaving the guard huts that the player keeps moving in the previous
+direction. let's reset the movement to 0 when leaving so the player has a choice".)* The release
+zeroes her velocity, drops the heading a tap or a joystick drag had locked in
+(`TouchControls.stand_still_after_hold()`), and ignores a key still held until it is released or
+another is pressed (`Stroller.show_after_inspection()`). A finger still down chooses again by
+moving. It is one mechanism for every `redetains` hold: the street doors' gatehouses and the alley
+guard. `tests/test_checkpoints.gd` holds it for a key, a tap's heading and a joystick drag's.
+
 **The hold charges its toll and nothing else.** While she is inside a door — inside the trigger of
 a `redetains` instance whose hold is running — the only thing the meter sums is that hold's own
 flat `Tuning.CHAT_EXCITEMENT` (25) over `Tuning.CHECKPOINT_DETAIN_SECONDS`. Every other event field
@@ -1003,7 +1012,7 @@ outcomes* rather than the same outcome at two prices:
 | | |
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
-| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points |
+| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`EventDef.stop_excitement`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
 | Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
@@ -1216,17 +1225,24 @@ The sheet shows one of the three tears and stays torn until a crew, or a dawn, p
 again. **A tear costs nothing on the meter and counts for nothing**: it is a gimmick, judged by
 feel.
 
-**What it can do is bring a patrol, and whether it does is drawn from a marble bag** rather than
+**What it can do is bring a pursuer on foot, and whether it does is drawn from a marble bag** rather than
 rolled (`MarbleBag`, PLAYTEST-125): each tear draws one marble at random and removes it, and an
 empty bag is filled again with the same set, so over every bag the share is exact where a roll at
 the same odds runs streaks. The run's first bag is a pre-bag of one "no pursuit" marble, so the
 first tear is always safe; every bag after it holds one "pursuit" and nine "no pursuit"
 (`PosterWalls.TEAR_PRE_BAG`, `TEAR_BAG`). The bag draws from a stream of its own off the run's
 seed, and its whole state is how many tears the run has made (`PosterState.tears`), so a save, a
-lost day and a retry all draw the same marbles. A pursuit marble sends a `police_patrol` toward
-her from off screen, down the carriageway lane driving toward her, under the lead the row already
-owes (`EventDirector.send_a_patrol()`) — sited once she walks on along the street, since a heading
-into a wall gives a car no street to come down. The same class is the bag her route's events are
+lost day and a retry all draw the same marbles. **A pursuit marble sends a pursuer on foot at
+once**, a policeman through day 8 and a guardsman from day 9 (`EventManager.send_a_pursuer()`;
+inbox #591: "the pursuer is not a scheduled event. it is instant! policemen get switched to guardman
+on day 9"): the screen-edge badge goes up the moment the marble is drawn, for half a second with
+nothing in the world, and then he is created just off screen already chasing, as a task's robber
+is — no wait for her to turn from the wall or for a street. Walking does not end his chase within
+`Tuning.PURSUIT_TIME`'s 30s; running shakes him off; **his catch ends the day**
+([merry-stork](playtests/2026-10-10-merry-stork.md): "Ends the day (Recommended)"). The tears' bag
+and the day's event bags never cross: a tear draws no event marble and moves no event's turn, and
+nothing an event does draws a tear's marble ("nothing influences across them"). A pursuit marble
+drawn while he is on his way or after her sends nobody more. The same class is the bag her route's events are
 drawn from (`docs/EVENTS.md`, "What she meets on her route is drawn from a marble bag").
 
 ## Telegraphing
@@ -1326,14 +1342,20 @@ is not in sight and its dwell does not run — continuously, for `ResistanceDire
 enough, that walking past it rather than to it is a choice, not the instant its tile merely
 swept across the camera on the way to somewhere else. Until then, walking more than
 `ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
-alley mouth within that radius of her instead — a mark only ever sits at an alley's mouth, at
-dawn as on every move (*"Mouth only"*, 2026-10-03, inbox #486 in [quiet-yak](playtests/2026-10-03-quiet-yak.md)), on the path rather than off it, and never where any part of the mark's picture, or of the guard standing two-thirds
+alley mouth within that radius of her instead — a mark is only ever chosen at an alley's mouth, at
+dawn as on every move (*"Mouth only"*, 2026-10-03, inbox #486 in [quiet-yak](playtests/2026-10-03-quiet-yak.md)),
+and stands one tile in from it (a courtyard's one-tile passage puts it on the courtyard tile
+just past), 48px in from the street's edge, so that touching it, within the 36px touch reach of its
+centre, takes her at least 12px inside the alley, never from the pavement at the mouth
+(*"let's move the chalk mark one tile into the alley so I actually have to enter the alley to
+activate it"*, 2026-10-10, azure-puffin, inbox #664), on the path rather than off it, and never where any part of the mark's picture, or of the guard standing two-thirds
 through that alley (or at the courtyard's inner end, past a courtyard's passage), would be on her
 screen — the camera's whole view, a corner the joystick's controls cover included, since what
 stands under the controls is still drawn there — so neither is ever planted in front of her —
 skipping an alley a completed step's mark already stood at as long as some other one is still
 in reach. Its guard moves with it, to two-thirds of the way through that alley from the end
-nearer wherever the mark lands, never within 62px of the mark (the courtyard's inner end, for a
+nearer wherever the mark lands, plus the tile the mark stands in from that end so he keeps the
+distance from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end, for a
 courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
 his own `pursues_within` of her or in view when he is placed — so where that spot is 176px or
 more from the mark, entering the alley from the mark's own end, reading it and leaving the same way

@@ -148,9 +148,8 @@ const HOME_ARROW := Color("8fb4d9")
 ## has while it is active; the last night's task is active from dawn because it has no mark.
 ## *(PLAYTEST-117: "a red arrow (like the blue home arrow but red) to point to tasks where we need
 ## to go to a specific location"; busy-quail: "yeah let's just always do arrows".)* Distinct from
-## every
-## other red in this file — `SIGNAL_RED`, `MARK_LETHAL`, `GAME_OVER` — since none of those is
-## about a place to walk to.
+## every other red in this file — `SIGNAL_RED`, `MARK_LETHAL`, `GAME_OVER` — since none of those
+## is about a place to walk to.
 const TASK_ARROW := Color("d1453a")
 
 # ------------------------------------------------------------------ buttons ---

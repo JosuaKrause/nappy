@@ -92,7 +92,8 @@ func _test_a_failed_lesson_retry_leaves_the_director_running(t) -> void:
 ## A sent pursuer's badge is enough notice: a sustained run can end the chase before he is seen.
 ## Brief runs separated by walking do not accumulate into one escape.
 func _test_a_sent_pursuer_counts_running_before_he_is_visible(t) -> void:
-	for id: String in ["robber_giving_chase", "van_guard_giving_chase"]:
+	for id: String in ["robber_giving_chase", "van_guard_giving_chase", "policeman_giving_chase",
+			"guardsman_giving_chase"]:
 		var pursuer := EventInstance.new()
 		pursuer.setup(EventCatalogue.by_id(id), Vector2.ZERO)
 		pursuer.player_running = true
@@ -222,16 +223,20 @@ func _a_building_corner(map: CityMap) -> Dictionary:
 
 ## The alley robber's catch is smaller than his lunge's reach (tall-osprey, 2026-10-04): he catches
 ## at 26px and lunges from 116px (`lunge_reach` 38), so the room between lunge and catch is 90px, and
-## no other pursuer's lunge moves off its own catch.
+## no pursuer but the robber and the ones read off him moves its lunge off its own catch.
 func _test_the_robbers_lunge_is_further_out_than_his_catch(t) -> void:
-	for id in ["alley_robbery", "robber_giving_chase"]:
+	# The robber, and the pursuer on foot a torn poster sends, who is the task robber's chase in a
+	# uniform (`EventCatalogue._policeman_giving_chase()`).
+	var robbers := ["alley_robbery", "robber_giving_chase", "policeman_giving_chase",
+			"guardsman_giving_chase"]
+	for id: String in robbers:
 		var def := EventCatalogue.by_id(id)
 		t.close_to(def.lethal_reach(), 26.0, "'%s' catches at 26px" % id, 0.01)
 		t.close_to(Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()), 116.0,
 				"'%s' lunges from 116px" % id, 0.01)
 	for def in EventCatalogue.all():
 		t.check(not def.lunge_is_inside_the_catch(), "'%s' does not lunge from inside its catch" % def.id)
-		if def.pursues and def.id != "alley_robbery" and def.id != "robber_giving_chase":
+		if def.pursues and not robbers.has(def.id):
 			t.check(is_equal_approx(def.standoff_reach(), def.lethal_reach()),
 					"'%s' lunges from its own catch" % def.id)
 	# A `lunge_reach` inside the catch would stand the pursuer off closer than `PURSUIT_REACTION` of

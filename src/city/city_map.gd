@@ -685,6 +685,52 @@ func index_posts() -> void:
 func is_post(tile: Vector2i) -> bool:
 	return _post_tiles.has(tile)
 
+## Whether the straight line from `from` to `to` crosses only walkable ground (`is_walkable()`):
+## every tile the segment enters is asked, found by stepping from one tile boundary to the next
+## along it rather than by sampling, so a line that clips a building's corner by a pixel is blocked
+## however short it is, and a line through a corner point exactly asks both tiles beside it. **The
+## line a pursuer notices her along, lunges along and catches her along**
+## (`EventInstance._clear_line_to()`), and the line day 13's waiting guard is placed to have to the
+## roadblock he guards (`ResistanceDirector._roadblock_guard_spot()`) — one walk, so a spot chosen
+## for its line is one his notice sees from. *(leafy-puffin, inbox #648: "yes noticing needs a clear
+## line".)* Stricter than `wall_between()`, which asks how deep into a building a line runs.
+func clear_line(from: Vector2, to: Vector2) -> bool:
+	var tile := world_to_tile(from)
+	if not is_walkable(tile):
+		return false
+	var delta := to - from
+	var size := float(Tuning.TILE_SIZE)
+	var step := Vector2i(int(signf(delta.x)), int(signf(delta.y)))
+	# The fraction of the segment at which it next crosses a vertical (x) or horizontal (y) tile
+	# boundary, and how much of the segment one whole tile takes on each axis.
+	var next_x := INF
+	var each_x := INF
+	if step.x != 0:
+		next_x = (float(tile.x + maxi(step.x, 0)) * size - from.x) / delta.x
+		each_x = size / absf(delta.x)
+	var next_y := INF
+	var each_y := INF
+	if step.y != 0:
+		next_y = (float(tile.y + maxi(step.y, 0)) * size - from.y) / delta.y
+		each_y = size / absf(delta.y)
+	while minf(next_x, next_y) <= 1.0:
+		if is_equal_approx(next_x, next_y):
+			if not is_walkable(tile + Vector2i(step.x, 0)) \
+					or not is_walkable(tile + Vector2i(0, step.y)):
+				return false
+			tile += step
+			next_x += each_x
+			next_y += each_y
+		elif next_x < next_y:
+			tile.x += step.x
+			next_x += each_x
+		else:
+			tile.y += step.y
+			next_y += each_y
+		if not is_walkable(tile):
+			return false
+	return true
+
 ## Whether a building stands between two points deeply enough to keep a source's excitement at
 ## one from reaching the other: true when the straight segment between them passes the middle of a
 ## wall one tile thick, or one tile deep into any thicker building, measured from the nearest open
