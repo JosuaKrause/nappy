@@ -1,6 +1,8 @@
 Put a small "L" on the left joystick button and a small "R" on the right one on the title screen,
 so the two read as different settings at a glance. The captions stay "On-screen Controls" and "Tap
-to Go" (M88: "call the modes 'On-screen Controls' and 'Tap to Go' no further explanations"); the
+to Go" ([PLAYTEST-34](../../playtests/PLAYTEST-34.md), recorded in
+[M90](../../decisions/2026-09-07-M90-the-controls-do-what-the-hand-does.md): "call the modes
+'On-screen Controls' and 'Tap to Go' no further explanations"); the
 letter is a mark on the button, not a caption.
 
 **Proposed, not asked for** (open to the player's correction): the letter is a `Label` in the

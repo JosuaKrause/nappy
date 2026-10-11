@@ -17,4 +17,5 @@ path everywhere, the player answered:
 The guard houses are the region doors' gatehouses, which `RegionPlanner.plan_day` puts up from
 `Tuning.REGION_WALL_FIRST_DAY` (day 9). This loosens, from that day on, what
 [M64, off the path is closed](../../decisions/2026-09-03-M64-off-the-path-is-closed-sealing.md)
-puts off the day's route tree. The work is [fewer-hard-blockers.md](fewer-hard-blockers.md).
+puts off the day's route tree, and with it the rule behind M64,
+[M55, off the paths is the dangerous place](../../decisions/2026-09-01-M55-off-the-paths-is-the-dangerous-place-partly.md). The work is [fewer-hard-blockers.md](fewer-hard-blockers.md).

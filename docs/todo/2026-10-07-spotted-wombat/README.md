@@ -16,6 +16,7 @@ Re-reported in [azure-puffin](../../playtests/2026-10-10-azure-puffin.md), point
 
 > the guarded barriers disappear after shaking off the pursuer. that doesn't make sense.
 
-So the barrier also goes when the guard's pursuit ends: a shaken-off guard ends the roadblock's
-whole instance (`EventInstance._be_done()` finishes a row that does not depart, and
-`EventManager._retire_finished()` frees the barrier's body and picture with the guard).
+*The filer's reading of the code, for whoever picks this up to confirm:* a shaken-off guard
+appears to end the roadblock's whole instance (`EventInstance._be_done()` finishes a row that does
+not depart, and `EventManager._retire_finished()` frees the barrier's body and picture with the
+guard).

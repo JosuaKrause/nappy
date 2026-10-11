@@ -2,8 +2,7 @@ When she reaches day 12's swing, police officers are sent from beyond the camera
 appearing inside it) to the park, and close it with a cordon:
 
 - They reach the park's edge where they arrived and tape it one stretch at a time, working round
-  the edge from there, so the open part of the edge shrinks to a last gap. A taped stretch is
-  solid to her, as a park fence is.
+  the edge from there, so the open part of the edge shrinks to a last gap.
 - Other officers walk the park's people out (the crowd inside leaves through the open edge).
 - If the last gap is taped while she is inside the park, she is trapped, and the day ends. She
   leaves through the gap before it closes. The swing's key is in hand from her touch, as now.
@@ -11,6 +10,9 @@ appearing inside it) to the park, and close it with a cordon:
   stays taken for the rest of the run, as it does today, as the cordon rather than mud.
 
 **Proposed, not asked for** (open to the player's correction):
+
+- A taped stretch is solid to her, as the late park's fence is, so that the last gap is the only
+  way out and "trapped" means something.
 
 - The officers are policemen through the art the game already has (the sandy-ferret policeman on
   foot if that has landed, otherwise the existing police figure); the tape is the existing barrier

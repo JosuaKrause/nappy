@@ -22,4 +22,8 @@ while she is inside, the day ends; the ground stays grass.
 
 This replaces the closing `docs/NARRATIVE.md` describes for day 12 ("its grass going to mud from
 the edges in") and `Tuning.PARK_CLOSING_SECONDS`'s ring-at-a-time mud in
-`src/resistance/happenings.gd`. The work is [the-cordon.md](the-cordon.md).
+`src/resistance/happenings.gd`. It does not change how other spent parks are closed:
+[M129, regular spent parks are spoiled; one late park is fenced](../../decisions/2026-09-26-M129-regular-spent-parks-are-spoiled-one-late-park-is-fenced-corrected.md)
+and [M129, a spent park is closed](../../decisions/2026-09-26-M129-a-spent-park-is-closed.md) stay
+as they are, and the late park's fence is the solid edge the cordon's tape is proposed to match.
+The work is [the-cordon.md](the-cordon.md).
