@@ -512,9 +512,10 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 		return
 	var map := city.map
-	# The guard's walk and the red arrow read one ground, so they agree where she can walk.
+	# The red arrow shares `ArrowField.ground_for()` with the guard's walk; what is left to guard is
+	# the director's cache of it, which must equal a fresh layout of what blocks her now.
 	t.check(director._ground_for_the_arrow() == ArrowField.ground_for(map),
-			"(round a building) the red arrow's ground is the one the guard's walk is swept over")
+			"(round a building) the red arrow's cached ground is the guard's walk's ground")
 	var standoff := Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach())
 	var from := guard.global_position
 	var walk := map.walk_field(map.world_to_tile(from))

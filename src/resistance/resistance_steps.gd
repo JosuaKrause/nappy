@@ -148,8 +148,12 @@ static func sits_on_a_bare_point(step: Step) -> bool:
 ## Whether `step`'s contact may stand on held ground (`CityMap.is_held_at`). A hold keeps a
 ## catalogue row off ground something else has taken, and a contact is not a row: day 9's door
 ## stands on a region door's own segment, which is held so no row sits in the doorway, and the
-## station's front door can face a street the day's spur turned into a region door. Nothing else
-## asks this, so every other contact keeps the hold as one more refusal.
+## station's front door can face a street the day's spur turned into a region door. Day 8's burnt
+## building door is the third case, and it asks differently: its contact is not placed from a
+## candidate pool through this, but `ResistanceDirector._door_can_be_touched()` skips the hold for
+## where she *stands* within reach of the door, because the door on the facade is the task whatever
+## holds the street in front of it. Nothing else asks, so every other contact keeps the hold as
+## one more refusal.
 static func stands_on_held_ground(step: Step) -> bool:
 	return step != null and step.target_kind in [TargetKind.DOOR, TargetKind.STATION_DOOR]
 
