@@ -2432,6 +2432,13 @@ func _chase(delta: float) -> void:
 				step = 0.0
 		else:
 			step = minf(step, range_to_her - standoff)
+	# **Day 13's task guard walks round buildings toward her** (`_paths_to_her`): where no clear
+	# line runs to her he follows the walk to her instead of the straight line. Only the direction
+	# changes; how far he may close, and when he lunges, are decided above as for every pursuer.
+	if _paths_to_her:
+		_keep_the_way_to_her_fresh()
+		if step > 0.0:
+			_heading = _way_toward_her(_heading)
 	var moved := _walkable_step(_heading * step)
 	position += moved
 	# Ground covered, not ground gained: sliding along a wall is still moving, and the bob is driven
@@ -2692,11 +2699,15 @@ func give_up_the_chase() -> void:
 ## his stand-off while it runs, and he lunges only along a clear line. Noticed already inside his
 ## stand-off, which only a wall between them allows here, the lunge is held as `_chase()` holds it
 ## (`_lunge_held`). Nothing for a pursuer no longer waiting, or for a `her` of `Vector2.INF`.
+##
+## **From here he walks round buildings toward her** (`_paths_to_her`): set on her from wherever he
+## stands, he may start a city away with blocks between them.
 func notice_her_at(her: Vector2) -> void:
 	if not is_waiting() or her == Vector2.INF or is_finished:
 		return
 	player_at = her
 	_noticed_at = age
+	_paths_to_her = true
 	var toward := her - global_position
 	if toward.length() >= 1.0:
 		_heading = toward.normalized()
@@ -2789,6 +2800,180 @@ static func walkable_step_on(map: CityMap, from: Vector2, delta_pos: Vector2) ->
 				and map.is_walkable(map.world_to_tile(from + candidate)):
 			return candidate
 	return Vector2.ZERO
+
+# ------------------------------------------------------ the task guard's way to her ---
+# *(curly-gecko, the player: "as long as he starts pursuing when you hit the task it's fine".)*
+
+## Whether this pursuer walks the way to her round buildings rather than straight at her: set by
+## `notice_her_at()`, which only day 13's done task calls, for the waiting guard it sets on her
+## from wherever he stands — at another roadblock, a city away, with blocks between them. Every
+## other pursuer starts within sight of her or just off screen with a straight run at her, so it
+## keeps the straight line `_walkable_step()` slides along walls. *Proposed, not asked for:* the way
+## round is for this guard alone.
+##
+## **Where he has a clear line to her he goes straight at her**, exactly as before; only where a
+## building stands between them does he follow the walk instead. The walk is a sweep out from her
+## over the ground she can walk (`ArrowField`, the red arrow's own sweep, a slice a frame), and he
+## steps down it toward her, aiming at the farthest of the next few tiles he can see.
+var _paths_to_her := false
+## The sweep he follows (`ArrowField`, out from where she stood when it began), or null before the
+## first one has reached him.
+var _her_way: ArrowField
+## The ground `_her_way` was swept over, which is what the walk down it is asked against.
+var _her_way_ground := PackedInt32Array()
+## The sweep under way that will replace `_her_way`, its ground, and her tile it began from.
+var _her_way_next: ArrowField
+var _her_way_next_ground := PackedInt32Array()
+var _her_way_next_from := Vector2i(-1, -1)
+## Her tile `_her_way` was swept from.
+var _her_way_from := Vector2i(-1, -1)
+## The ground laid out for the sweeps, and the state of what blocks her it was laid out for
+## (`CityMap.day_record_version`, `CityMap.obstruction_version`).
+var _her_way_ground_laid := PackedInt32Array()
+var _her_way_ground_versions := Vector2i(-1, -1)
+## The tiles down `_her_way` from the tile he stood on when it was walked
+## (`_her_way_chain_from`), as world points, nearest first; walked again when he is on another tile
+## or the sweep changes.
+var _her_way_chain := PackedVector2Array()
+var _her_way_chain_from := Vector2i(-1, -1)
+var _her_way_chain_field: ArrowField
+
+## How many tiles of a sweep one frame of his chase runs: under half a millisecond, half the red
+## arrow's slice (`ResistanceDirector.ARROW_SWEEP_TILES_PER_FRAME`), since his runs whenever she
+## has moved on rather than only when the targets change. A sweep is adopted as soon as it has
+## reached his tile, so from close by it takes a frame or two.
+const WAY_SWEEP_TILES_PER_FRAME := 500
+## How far, in tiles either way, she walks from where his sweep began before another is begun,
+## at the least: close to her a sweep is a frame or two, and a walk two tiles stale is a corner cut
+## wrong.
+const WAY_REFRESH_TILES := 2
+## **And while he is far, a sweep is begun only once she has walked a quarter of his walk to her**
+## from where the last began. Far off, every sweep is many frames, and one begun every two tiles of
+## her walk kept a sweep under way on most frames of a chase she walked away from; a walk that is
+## a quarter stale still takes him the right way round the buildings, and it is refreshed more
+## often the nearer he comes.
+const WAY_REFRESH_SHARE := 4
+## How many tiles down the sweep he looks for the farthest he can see to aim at, so his walk
+## cuts the corners the four-way tile walk takes rather than zig-zagging along it.
+const WAY_LOOKAHEAD_TILES := 6
+## How far apart, in px, `_way_is_open()` asks the ground along a line to an aim.
+const WAY_LINE_SAMPLE := 8.0
+
+## Begins a fresh sweep out from her when she has walked on from where the last began or what
+## blocks her has changed, runs a slice of the one under way, and adopts it the moment it has
+## reached his tile. A sweep runs the walk out from her in rings, so every tile at most as far as
+## his is final once his is reached, and the walk down from his tile never asks one further out.
+func _keep_the_way_to_her_fresh() -> void:
+	if not _map or player_at == Vector2.INF:
+		return
+	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
+	if _her_way_next == null:
+		var her := _map.world_to_tile(player_at)
+		var stale := WAY_REFRESH_TILES
+		if _her_way != null:
+			var his := _her_way.length_at(_map.world_to_tile(global_position))
+			stale = maxi(stale, floori(float(his) / WAY_REFRESH_SHARE))
+		var moved := absi(her.x - _her_way_from.x) >= stale \
+				or absi(her.y - _her_way_from.y) >= stale
+		if _her_way != null and not moved and _her_way.versions == versions:
+			return
+		var target: Array[Dictionary] = [{"key": 0, "at": player_at, "reach": 0.0,
+				"beat": PackedVector2Array()}]
+		_her_way_next = ArrowField.start(_map, target, versions)
+		_her_way_next_ground = _ground_for_the_way(versions)
+		_her_way_next_from = her
+		# Laying out the ground is a frame's work of its own, like the sweep's own layout.
+		return
+	_her_way_next.advance(_map, _her_way_next_ground, WAY_SWEEP_TILES_PER_FRAME)
+	if _her_way_next.done or _her_way_next.length_at(_map.world_to_tile(global_position)) >= 0:
+		_her_way = _her_way_next
+		_her_way_ground = _her_way_next_ground
+		_her_way_from = _her_way_next_from
+		_her_way_next = null
+		_her_way_next_ground = PackedInt32Array()
+
+## The ground his sweeps run over, the red arrow's own (`ArrowField.ground_for()`): what she cannot
+## walk right now is blocked — today's closures, the soft seals, the tile under every stationary
+## body standing and a precinct's posts. So where no clear line runs to her he walks round what she
+## has to walk round; with a clear line he goes straight at her, through a barrier as any chase does
+## (`_walkable_step()` asks only the tiles). Laid out once for each state of what blocks her.
+func _ground_for_the_way(versions: Vector2i) -> PackedInt32Array:
+	if versions == _her_way_ground_versions and not _her_way_ground_laid.is_empty():
+		return _her_way_ground_laid
+	_her_way_ground_laid = ArrowField.ground_for(_map)
+	_her_way_ground_versions = versions
+	return _her_way_ground_laid
+
+## Which way he walks toward her: `straight` where he has a clear line to her or no sweep has
+## reached him yet, else toward the farthest of the next `WAY_LOOKAHEAD_TILES` tiles down the walk
+## that he can see along open ground (`_way_is_open()`), or the next one where he sees none.
+func _way_toward_her(straight: Vector2) -> Vector2:
+	if _her_way == null or _clear_line_to(player_at):
+		return straight
+	var here := _map.world_to_tile(global_position)
+	if here != _her_way_chain_from or _her_way != _her_way_chain_field:
+		_her_way_chain = _down_the_way(here)
+		_her_way_chain_from = here
+		_her_way_chain_field = _her_way
+	if _her_way_chain.is_empty():
+		return straight
+	var aim := _her_way_chain[0]
+	for i in range(_her_way_chain.size() - 1, 0, -1):
+		if _way_is_open(global_position, _her_way_chain[i]):
+			aim = _her_way_chain[i]
+			break
+	var toward := aim - global_position
+	return toward.normalized() if toward.length() >= 1.0 else straight
+
+## Up to `WAY_LOOKAHEAD_TILES` tiles down `_her_way` from `from`, each the open neighbour one step
+## nearer her, as tile centres: empty where `from` is no part of the walk or is already where the
+## sweep began.
+func _down_the_way(from: Vector2i) -> PackedVector2Array:
+	var chain := PackedVector2Array()
+	var tile := from
+	var length := _her_way.length_at(tile)
+	if length < 0:
+		return chain
+	for i in WAY_LOOKAHEAD_TILES:
+		var best := tile
+		var best_length := length
+		for offset: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + offset
+			if not _open_for_the_way(next):
+				continue
+			var next_length := _her_way.length_at(next)
+			if next_length >= 0 and next_length < best_length:
+				best = next
+				best_length = next_length
+		if best == tile:
+			break
+		tile = best
+		length = best_length
+		chain.append(_map.tile_to_world(tile))
+	return chain
+
+## Whether `tile` is ground his walk may step onto: walkable, and not blocked in the ground
+## `_her_way` was swept over. Asked before `ArrowField.length_at()`, which answers a blocked tile
+## through its neighbours and would otherwise lead him onto it.
+func _open_for_the_way(tile: Vector2i) -> bool:
+	if not _map.in_bounds(tile) or not _map.is_walkable(tile):
+		return false
+	return _her_way_ground[tile.y * _map.size.x + tile.x] != ArrowField.BLOCKED
+
+## Whether he can walk straight from `from` to `to`: a clear line (`CityMap.clear_line()`) that
+## also crosses nothing blocked in his sweep's ground, asked every `WAY_LINE_SAMPLE` px.
+func _way_is_open(from: Vector2, to: Vector2) -> bool:
+	if not _map.clear_line(from, to):
+		return false
+	var length := from.distance_to(to)
+	var along := WAY_LINE_SAMPLE
+	while along < length:
+		var tile := _map.world_to_tile(from.move_toward(to, along))
+		if not _map.in_bounds(tile) \
+				or _her_way_ground[tile.y * _map.size.x + tile.x] == ArrowField.BLOCKED:
+			return false
+		along += WAY_LINE_SAMPLE
+	return true
 
 ## How far along its route this instance has got, so streaming it out and back in can resume it
 ## instead of rewinding it. See `EventManager._stream_in`.
