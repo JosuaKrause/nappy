@@ -80,6 +80,11 @@ class Planned extends RefCounted:
 	## `travelled`, or a row streamed out mid-chase comes back `is_waiting()`, having forgotten it.
 	## See `EventManager._stream_out()` and `_stream_in()`, and `EventInstance.resume()`.
 	var noticed_at := INF
+	## Whether the guard who set off from this roadblock's barrier was spent (or leaving) when it was
+	## last streamed out, and which side's post he left empty: what `EventInstance.
+	## come_back_as_the_barrier()` restores, so a re-streamed barrier is only the barrier.
+	var guard_spent := false
+	var chaser_side := 0
 
 	## False for an event the day has budgeted but not sited.
 	func is_placed() -> bool:

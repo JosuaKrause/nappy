@@ -5,7 +5,10 @@ extends RefCounted
 ##
 ## Two symptoms, one cause each: `_draw()` lifts the whole canvas by the chaser's stride bob and the
 ## barrier was drawn inside the lift; and a chase that ended finished the instance, which is the
-## barrier's body and picture as well as the man.
+## barrier's body and picture as well as the man. The barrier's picture is now its own node
+## (`EventInstance.RoadblockBand`), standing at the body whatever the man does.
+
+const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 const STEP := 1.0 / 60.0
 
@@ -14,6 +17,8 @@ func run(t) -> void:
 	_test_a_shaken_off_guard_leaves_the_barrier_standing(t)
 	_test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t)
 	_test_a_guard_who_is_gone_does_not_come_back(t)
+	_test_the_barrier_keeps_its_field_while_he_walks_away(t)
+	_test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t)
 
 func _hot_roadblock() -> EventDef:
 	return EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
@@ -25,6 +30,7 @@ func _chasing(t, post: Vector2) -> Array:
 	guard.setup(hot, post)
 	t.add_child(guard)
 	guard.set_process(false)
+	guard._attach_the_band()
 	var her := post + Vector2(0.0, hot.pursues_within - 10.0)
 	guard.player_at = her
 	guard._process(STEP)
@@ -38,19 +44,20 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> vo
 	t.check(guard.has_left_its_body_behind(), "he has set off")
 	var worst := 0.0
 	var lifted := false
+	var band: Node2D = guard._band
+	t.check(band != null and band.is_inside_tree() and band.get_parent() == guard.get_parent(),
+			"the band is its own node beside the guard, so it sorts at its own feet")
 	for i in int(6.0 / STEP):
 		her = guard.global_position + Vector2(0.0, 200.0) # keeps him walking, never catches her
 		guard.player_at = her
 		guard._process(STEP)
-		var bob := guard._current_bob()
-		lifted = lifted or absf(bob) > 0.1
-		# The canvas is lifted by `bob` and the band is drawn at `_roadblock_band_at()` inside it.
-		var on_screen := guard.global_position + Vector2(0.0, bob) + guard._roadblock_band_at()
-		worst = maxf(worst, on_screen.distance_to(post))
+		lifted = lifted or absf(guard._current_bob()) > 0.1
+		worst = maxf(worst, band.global_position.distance_to(post))
 		if guard.is_finished:
 			break
-	t.check(lifted, "the chaser's stride does lift the canvas (the bob is the thing being undone)")
-	t.check(worst < 0.001, "the barrier is drawn on its body on every frame (off by %.3fpx)" % worst)
+	t.check(lifted, "the chaser's stride does lift his own canvas (the bob is the thing undone)")
+	t.check(guard.global_position.distance_to(post) > 20.0, "and he has walked away from the post")
+	t.check(worst < 0.001, "the band stays on its body on every frame (off by %.3fpx)" % worst)
 	guard.free()
 
 func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
@@ -101,8 +108,8 @@ func _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t) -> void:
 		guard.player_at = guard.global_position + Vector2(0.0, 400.0)
 		guard._process(STEP)
 		frames += 1
-	t.check(guard.is_leaving or not guard.is_finished, "his chase ends (%d frames)" % frames)
-	guard.give_up_the_chase() # a no-op once he is leaving; the departure below is the test
+	t.check(guard.is_leaving and not guard.gave_up,
+			"the clock, not her running, ends his chase (%d frames)" % frames)
 	var walked := 0
 	while guard.is_leaving and walked < int(30.0 / STEP):
 		guard.player_at = guard.global_position + Vector2(0.0, 400.0)
@@ -134,3 +141,88 @@ func _test_a_guard_who_is_gone_does_not_come_back(t) -> void:
 	t.check(not guard.is_leaving and not guard.is_finished,
 			"and a second give-up does not send the barrier away")
 	guard.free()
+
+func _test_the_barrier_keeps_its_field_while_he_walks_away(t) -> void:
+	var post := Vector2(400.0, 0.0)
+	var made := _chasing(t, post)
+	var guard: EventInstance = made[0]
+	guard.give_up_the_chase()
+	t.check(guard.is_leaving, "he is walking away")
+	var beside := post + Vector2(0.0, 40.0)
+	var held := true
+	var walked := 0
+	while guard.is_leaving and walked < int(30.0 / STEP):
+		guard.player_at = post + Vector2(0.0, 500.0)
+		guard._process(STEP)
+		held = held and guard.contribution_at(beside) > 0.0
+		walked += 1
+	t.check(held, "the barrier costs what it costs beside it on every frame of his leaving")
+	t.check(guard.contribution_at(beside) > 0.0, "and after it")
+	guard.free()
+
+## A heated roadblock streamed through `EventManager` itself, the only place the plan carries what
+## the instance forgets: shaken off and streamed out, it comes back as only the barrier.
+func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(4242))
+	city.events.stream_radius = INF
+	# A post on open street with a clear line to where she stands: the notice needs one.
+	var post := Vector2.INF
+	var reach := _hot_roadblock().pursues_within - 10.0
+	var home := city.map.doorstep_world_position()
+	for dy in range(-12, 13):
+		for dx in range(-12, 13):
+			var at: Vector2 = city.map.tile_to_world(city.map.world_to_tile(home) + Vector2i(dx, dy))
+			if post == Vector2.INF and city.map.clear_line(at, at + Vector2(0.0, reach)) \
+					and city.map.clear_line(at + Vector2(0.0, reach), at):
+				post = at
+	t.check(post != Vector2.INF, "the city has an open stretch to stand a roadblock on")
+	if post == Vector2.INF:
+		city.free()
+		return
+	var plan := EventScheduler.Planned.new(_hot_roadblock(), post)
+	city.events._stream_in(plan)
+	var guard: EventInstance = plan.live
+	t.check(guard != null, "the roadblock streams in")
+	if guard == null:
+		city.free()
+		return
+	guard._attach_the_band()
+	var her := post + Vector2(0.0, _hot_roadblock().pursues_within - 10.0)
+	guard.player_at = her
+	guard._process(STEP)
+	t.check(guard.has_left_its_body_behind() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.has_left_its_body_behind(), guard.is_waiting(), guard.global_position, guard.age])
+	var side := guard.chaser_side()
+	# Stream out in the middle of his walking away.
+	var frames := 0
+	while not guard.is_leaving and frames < int(60.0 / STEP):
+		guard.player_at = guard.global_position + Vector2(0.0, 300.0)
+		guard.player_running = true
+		guard._process(STEP)
+		frames += 1
+	t.check(guard.is_leaving, "she shook him off and he is walking away")
+	city.events._stream_out(plan)
+	t.check(plan.guard_spent and plan.chaser_side == side,
+			"the plan carries the spent guard and the side he left")
+	city.events._stream_in(plan)
+	var back: EventInstance = plan.live
+	t.check(back != null and back != guard, "a fresh instance comes back")
+	if back != null:
+		t.check(back.is_waiting() and not back.is_leaving and not back.is_finished,
+				"streamed out mid-walk, it comes back as the barrier and not as a chase")
+		t.check(back.is_solid() and back.body_position().is_equal_approx(post),
+				"solid where it was built")
+		t.check(back.chaser_side() == side, "with his post still empty")
+		# She walks up to it: nobody notices.
+		back.player_at = post + Vector2(0.0, 20.0)
+		for i in 120:
+			back._process(STEP)
+		t.check(back.is_waiting() and not back.is_lethal_at(back.player_at),
+				"she walks up to it and nothing sets off")
+		# Streamed out once more, spent for good this time.
+		city.events._stream_out(plan)
+		city.events._stream_in(plan)
+		t.check(plan.live != null and plan.live.is_waiting() and plan.live.is_a_spent_guard(),
+				"and a barrier streamed out and in again stays spent")
+	city.free()

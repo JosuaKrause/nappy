@@ -1,8 +1,10 @@
 # barrier-stays: the guard's barrier stays where it was built, 2026-10-11
 
-**Claim.** A roadblock's guard who has noticed her sets off from the barrier; the barrier band and its
-other guard do not move, bob or go with him; and after he has caught her and walked back, the barrier
-is still standing, solid, with the post he left empty.
+**Claim.** A roadblock's guard who has noticed her sets off from the barrier; the barrier and the
+other guard stay where they were while he chases; and once she has outrun him and he has walked
+away, the barrier is still standing, solid, with the post he left empty. The pictures are taken with
+the barrier as its own y-sorted node, so what is drawn over or under it does not change with where
+he walks.
 
 **Forcing edit.** `forcing.patch` is for the captures only and is never on the branch. It makes
 `SceneRecipeRuntime` install a recipe event that answers to heat as its fully heated copy (a recipe
@@ -28,18 +30,19 @@ for t in 0.3 0.7 1.2 2.0 3.5 25.0; do
 done
 ```
 
-- `guard-0.3.png`: before he sets off. The red-and-white barrier stands across the street with a
-  guard at each end of it, and she is on the sidewalk to the north.
-- `guard-0.7.png`: one guard has left his post and stands on the road at the barrier's north end,
-  his red caret over him, heading for her. The barrier and the other guard are where they were.
-- `guard-1.2.png`: he is on the north sidewalk, walking toward her, a good way from the barrier;
-  she has started running east. The barrier stands in the same place on the street, the other
-  guard beside it.
-- `guard-2.0.png`: she has outrun him. He has no caret and walks away west along the north sidewalk.
-  The barrier stands, with the one guard at its west end.
-- `guard-3.5.png`: he has walked farther west. The barrier still stands with the one guard.
-- `guard-25.0.png`: the chaser is not in the frame at all. The barrier stands where it was built,
-  with one guard at its west end and the east end empty.
+- `guard-0.3.png`: before he sets off. The barrier is an end-on column across the street, and a
+  guard stands on the south sidewalk on each side of it, one to the west and one to the east. She
+  is on the sidewalk to the north.
+- `guard-0.7.png`: the east guard has stepped out to the north end of the barrier with his red caret
+  up, heading for her. The west guard has not moved, and the barrier is where it was.
+- `guard-1.2.png`: he is on the north sidewalk, walking toward her, well away from the barrier; she
+  has started running east. The barrier stands in the same place on the street with the west guard
+  beside it.
+- `guard-2.0.png`: she has outrun him. He has no caret and walks away west along the north
+  sidewalk. The barrier stands with the west guard beside it.
+- `guard-3.5.png`: he has walked farther west. The barrier and the west guard are unchanged.
+- `guard-25.0.png`: the chaser is not in the frame. The barrier stands where it was built with the
+  west guard beside it, and the east post he left is empty.
 
 The camera follows her, so the barrier slides across the frame as she runs; what the pictures show
 is that it does not move on the street. The still pictures cannot show the stride bob the jump

@@ -652,6 +652,9 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# time, not because anything coordinates them frame to frame. See `_broadcast_clock` below.
 	var resume_age := _broadcast_clock if plan.mast_id != "" else plan.age
 	plan.live.resume(resume_age, plan.travelled, plan.noticed_at)
+	# A guard spent before the stream-out comes back as only his barrier, never as a guard again.
+	if plan.guard_spent:
+		plan.live.come_back_as_the_barrier(plan.chaser_side)
 	plan.live.silenced = plan.silenced
 	plan.was_live = true
 	_instances.append(plan.live)
@@ -688,6 +691,9 @@ func _stream_out(plan: EventScheduler.Planned) -> void:
 	plan.age = plan.live.age
 	plan.travelled = plan.live.path_travelled()
 	plan.noticed_at = plan.live.noticed_at()
+	if plan.live.is_a_spent_guard():
+		plan.guard_spent = true
+		plan.chaser_side = plan.live.chaser_side()
 	_map.release_obstruction(plan.live.get_instance_id())
 	_instances.erase(plan.live)
 	plan.live.queue_free()

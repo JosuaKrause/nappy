@@ -26,7 +26,17 @@ The stills, [barrier-stays-2026-10-11](../evidence/barrier-stays-2026-10-11/), f
 on seed 11 with a forcing patch, show one guard leaving the band, chasing, shaken off as she runs,
 walking away, and the band still standing with his end empty; the stride bob is in the test only.
 
+**Review (#676) changed three things.** The band and the guard posted beside it are their own
+y-sorted node (`EventInstance.RoadblockBand`) so they sort at the band's line instead of re-sorting
+with the man; the barrier keeps its own field on while he walks away rather than going dark for the
+walk; and the plan carries the spent guard (`Planned.guard_spent`, `chaser_side`), so a barrier
+streamed out and in again comes back as only the barrier, not as a fresh armed roadblock.
+
 *Proposed at filing and built, open to the player's correction:* the barrier stands for as long as the
 roadblock would have stood had he never set off, which is the rest of the day since a roadblock has
 no lifetime of its own, and the same holds whatever ends his chase. *Chosen where the entry was
 silent:* he does not come back for her, and he walks away rather than vanishing.
+**Also chosen, and open to overturn:** after the chase the guard still standing at the other post is
+a drawing for the rest of the day; nothing notices or chases from the instance again. *Alternative
+worth putting to the player:* the guard who chased walks back to his post and the barrier is armed
+again.

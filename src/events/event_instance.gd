@@ -1469,6 +1469,8 @@ func _ready() -> void:
 	if def.flock_size > 0:
 		_build_the_flock()
 	_build_scenery()
+	if def.look == EventDef.Look.ROADBLOCK:
+		_build_the_band()
 
 ## The whole A/B sources remain the badge and halo pictures. The visible scene is instead
 ## retained in painter-order layers behind this node's caret and ahead of its halo.
@@ -2054,10 +2056,9 @@ func _process(delta: float) -> void:
 		_fly_the_flock(delta)
 		_advance_gait(_path_travelled - _travelled_before)
 		if has_left_its_body_behind() and not is_finished:
-			# He walks off and the barrier does not go with him: its body and its picture stay
-			# where it was built through the departure as through the chase.
+			# He walks off and the barrier does not go with him: its body stays where it was built
+			# through the departure as through the chase (its picture is its own node).
 			_keep_the_body_where_it_was_left()
-			queue_redraw()
 		_redraw_if_the_picture_changed()
 		return
 
@@ -2147,13 +2148,12 @@ func _process(delta: float) -> void:
 	_advance_gait(_path_travelled - _travelled_before)
 	if _has_expired():
 		_be_done()
-	if has_left_its_body_behind():
-		# The body is a child of a node that is walking away, and the barrier is drawn at an offset
-		# back to it — so both have to be re-pinned and re-drawn on every frame he moves. A
-		# `_redraw_if_the_picture_changed()` alone cannot see this: the picture is the same picture
-		# at a different offset, and its hash is over states rather than over positions.
+	if has_left_its_body_behind() and not _guard_spent:
+		# The body is a child of a node that is walking away, so it is re-pinned on every frame he
+		# moves. The band's picture is its own node (`RoadblockBand`), which stands at the body and
+		# needs no redraw for it. A spent guard moves nothing, so there is nothing to re-pin.
 		_keep_the_body_where_it_was_left()
-		queue_redraw()
+	_move_the_band()
 	_redraw_if_the_picture_changed()
 
 # ------------------------------------------------------------------- the chat ---
@@ -2707,7 +2707,7 @@ func notice_her_at(her: Vector2) -> void:
 ## overwrites `_heading` from the path's own direction the instant it starts moving, so this only
 ## shows for whatever is left of the frame it happens on.
 func _check_for_notice() -> void:
-	if player_at == Vector2.INF or not is_waiting() or _guard_spent:
+	if player_at == Vector2.INF or not is_waiting():
 		return
 	var toward := player_at - global_position
 	if toward.length() > def.pursues_within:
@@ -3153,7 +3153,10 @@ func flock_velocities() -> Array[Vector2]:
 # away, the dog that lost interest trots off — and each of them is gone because it left.
 
 ## True once it has stopped being an event and is only getting out of shot. It emits nothing, it
-## cannot end the day, and it carries no cue: whatever it was, it is over.
+## cannot end the day, and it carries no cue: whatever it was, it is over. **The one exception is a
+## guard walking away from his barrier** (`EventDef.body_stays_behind`): the walk ends with the
+## instance still there as the barrier (`_stand_as_the_barrier()`), `is_leaving` cleared, and the
+## barrier keeps its own field on while he goes.
 var is_leaving := false
 
 ## True once a row that `EventDef.stops_where_it_arrives` has reached the end of its route and
@@ -3298,14 +3301,27 @@ func _leaving_speed() -> float:
 
 ## True once the guard who set off from a barrier is gone for good, and this instance is only the
 ## barrier: solid and costing what a barrier costs, for as long as the roadblock would have stood
-## had he never set off. He does not come back for her.
+## had he never set off. He does not come back for her, and **the guard who stayed at the other
+## post stays a drawing for the rest of the day**: nothing notices or chases from this instance
+## again. (A choice open to overturn; the alternative is that the one who chased walks back to his
+## post and the barrier is armed again.)
 var _guard_spent := false
 
+## Whether this is a spent guard, or one on his way out from a barrier: what a stream-out carries
+## (`EventScheduler.Planned.guard_spent`) so that a barrier streamed in again comes back as only
+## the barrier (`come_back_as_the_barrier()`), never as a guard who has forgotten and chases again.
+func is_a_spent_guard() -> bool:
+	return _guard_spent or (is_leaving and def.body_stays_behind and has_left_its_body_behind())
+
+## Which side's guard set off, the other half of what a stream-out carries; `0` while both stand.
+func chaser_side() -> int:
+	return _chaser_side
+
 ## **The barrier outlives its guard.** *(Playtest: "the guarded barriers disappear after shaking off
-## the pursuer. that doesn't make sense.")* A chase that ends — she shook him off, his time ran
-## out, a hold ended it — sends the man away (`_be_done()`), and once he is out of the picture the
-## instance goes back to being what it was before he set off: waiting, with its body and its picture
-## where they were built and the post he left empty. Nothing appears and nothing disappears.
+## the pursuer. that doesn't make sense.")* A chase that ends — she shook him off, or his time ran
+## out — sends the man away (`_be_done()`), and once he is out of the picture the instance goes
+## back to being what it was before he set off: waiting, with its body and its picture where they
+## were built and the post he left empty. Nothing appears and nothing disappears.
 func _stand_as_the_barrier() -> void:
 	_guard_spent = true
 	is_leaving = false
@@ -3314,7 +3330,21 @@ func _stand_as_the_barrier() -> void:
 	global_position = _body_left_at
 	_keep_the_body_where_it_was_left()
 	_invalidate_contribution_cache()
-	queue_redraw()
+	_move_the_band()
+
+## A fresh instance of a plan whose guard was already spent when it streamed out: only the barrier,
+## at the place the plan stands, waiting and solid, with the post `side` left empty. Called by
+## `EventManager._stream_in()` after `resume()`. Nothing is reported again.
+func come_back_as_the_barrier(side: int) -> void:
+	_guard_spent = true
+	_chaser_side = side
+	_body_left_at = global_position
+	_noticed_at = INF
+	is_leaving = false
+	_pursuit_began_reported = true
+	_keep_the_body_where_it_was_left()
+	_invalidate_contribution_cache()
+	_move_the_band()
 
 func _advance_along_path(delta: float) -> void:
 	# Movement starts when the telegraph does, so an approaching siren is audible and
@@ -3607,9 +3637,10 @@ var _contribution_cache := 0.0
 ## `CrowdAgent.contribution_at()`'s own doc names
 ## as the reason that method has no cache at all, since its position and jolt are written from
 ## outside its `_process()` the same way. `_finish()` and `_be_done()` both call this the instant
-## either flag flips to `true`; neither flag is ever cleared afterwards, so one invalidation at the
-## transition is the whole of what correctness needs — the very next call recomputes and caches the
-## now-permanent zero, and every call after that hits the cache honestly.
+## either flag flips to `true`. `is_finished` is never cleared, and `is_leaving` is cleared only by a
+## guard who leaves a barrier, which invalidates again as it does (`_stand_as_the_barrier()`), so one
+## invalidation at each transition is the whole of what correctness needs — the very next call
+## recomputes, and every call after that hits the cache honestly.
 func _invalidate_contribution_cache() -> void:
 	_contribution_age = -1.0
 
@@ -3688,8 +3719,16 @@ func _walled_off_now(source_at: Vector2, her_at: Vector2) -> bool:
 ## bodies' own projected places.
 func _field_at(world_position: Vector2, intensity_override: float,
 		velocity_override: Vector2) -> float:
-	if is_finished or is_leaving:
+	if is_finished:
 		return 0.0
+	if is_leaving:
+		# **A guard walking away from his barrier leaves the barrier's own field on**, centred on
+		# the band where it stands rather than on him; every other leaving event emits nothing.
+		if not (def.body_stays_behind and has_left_its_body_behind()):
+			return 0.0
+		var held := intensity_override if intensity_override >= 0.0 else current_intensity()
+		var shape_distance := _field_distance_at(_body_left_at, world_position, Vector2.ZERO)
+		return def.emission_at_distance(shape_distance, held)
 	var intensity := intensity_override if intensity_override >= 0.0 else current_intensity()
 	if not _flock.is_empty():
 		return _flock_contribution_at(world_position, intensity)
@@ -3706,9 +3745,14 @@ func _field_at(world_position: Vector2, intensity_override: float,
 ## same kernel with no body at all for the handful of emitting rows with no shape (`playground`,
 ## whose look is drawn by the park itself rather than by `EventInstance`).
 func _field_distance(world_position: Vector2, velocity: Vector2) -> float:
+	return _field_distance_at(global_position, world_position, velocity)
+
+## `_field_distance()` for a field centred somewhere other than this node: the band a guard has
+## walked away from.
+func _field_distance_at(centre: Vector2, world_position: Vector2, velocity: Vector2) -> float:
 	if def.shape != null:
-		return def.shape.field_distance(global_position, _solid_axis(), velocity, world_position)
-	return GroundShape.eccentric_distance(global_position, velocity, world_position)
+		return def.shape.field_distance(centre, _solid_axis(), velocity, world_position)
+	return GroundShape.eccentric_distance(centre, velocity, world_position)
 
 ## A flock is its birds, summed.
 ##
@@ -4007,6 +4051,7 @@ func _redraw_if_the_picture_changed() -> void:
 	_picture = key
 	if changed or _picture_never_settles():
 		queue_redraw()
+	_move_the_band(changed)
 
 ## How finely the key reads the two continuous quantities it carries: an eighth of a pixel of the
 ## body's own lift, and a hundred-and-twenty-eighth of the caret's swell, which moves that mark by
@@ -5188,32 +5233,81 @@ func _robber_waiting_heading() -> Vector2:
 ## So the street he abandoned stays visibly and physically shut behind him, and what she has to get
 ## away from is a man rather than a band of concrete.
 ##
-## **Everything is one node, so it y-sorts at one point**: the band's centre while both are
-## posted, the chaser once he has set off. A guard posted north or south of a broadside band sorts
-## at the band's line rather than at his own feet.
+## **Two nodes, so two sort points**: the instance sorts at the chaser's feet once he has set off, and
+## the band and the guards posted beside it sort at the band's line (`RoadblockBand`).
 func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	# **The barrier never rides the chaser's stride.** `_draw()` lifts the whole canvas by
 	# `_current_bob()` for anything that pursues or leaves, and the band and the posted guard are
-	# furniture of the street rather than part of the man who walked out of it, so they are drawn
-	# back down by the same amount (*"the guard pursuer makes his barrier jump up and down"*).
-	var band_at := _roadblock_band_at()
+	# furniture of the street rather than part of the man who walked out of it. On the screen they
+	# are their own node (`RoadblockBand`), standing at the body and sorting at its own feet; the
+	# halo ring's canvas has no such node and draws them back down by the lift
+	# (*"the guard pursuer makes his barrier jump up and down"*).
+	if canvas != self or _band == null:
+		_draw_the_band(canvas, _roadblock_band_at())
+	_draw_the_chaser(canvas)
+
+## The band and the guard posted at each end of it, drawn at `band_at` in `canvas`.
+func _draw_the_band(canvas: CanvasItem, band_at: Vector2) -> void:
 	_draw_spread(_roadblock_segment_texture(_spread_vertical), ROADBLOCK_END, canvas, band_at)
 	for side: int in def.guard_sides:
 		if side != _chaser_side:
 			_draw_posted_guard(canvas, band_at, side)
+
+## The man who set off, drawn on this node, which walks with him.
+func _draw_the_chaser(canvas: CanvasItem) -> void:
 	if _chaser_side == 0 or _guard_spent:
 		return
-	# His own small shadow — not the band's, which `_draw_spread()` above already drew at the post
-	# he left — so `_draw_eight_view()` below is asked not to draw one of its own; see that
-	# function's own doc comment.
+	# His own small shadow — not the band's — so `_draw_eight_view()` below is asked not to draw
+	# one of its own; see that function's own doc comment.
 	_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
 	var by_view := GUARD_LUNGING_BY_VIEW if not (is_telegraphing() or is_leaving) \
 			else GUARD_STANDING_BY_VIEW
 	_draw_eight_view(by_view, _heading, canvas, false, {}, false)
 
-## Where the band is drawn in this node's local space: back at `body_position()`, and drawn down
-## by the lift `_draw()` puts the whole canvas through, so on the screen it stands exactly where its
-## body does on every frame. Read by `tests/test_barrier_stays.gd`.
+## **The barrier's own node.** A y-sorted sibling of this instance standing at `body_position()`,
+## drawing the band and the posted guards, so that they sort at the band's line however far the
+## man who set off has walked from it. Freed with the instance.
+class RoadblockBand extends Node2D:
+	var instance: EventInstance
+
+	func _draw() -> void:
+		if instance != null and is_instance_valid(instance):
+			instance._draw_the_band(self, Vector2.ZERO)
+
+var _band: RoadblockBand
+
+func _build_the_band() -> void:
+	_band = RoadblockBand.new()
+	_band.instance = self
+	_band.name = "RoadblockBand"
+	_attach_the_band.call_deferred()
+
+## Idempotent, so a rig that never reaches the idle frame can call it itself.
+func _attach_the_band() -> void:
+	if _band == null or _band.is_inside_tree() or not is_inside_tree() or get_parent() == null:
+		return
+	get_parent().add_child(_band)
+	_move_the_band()
+
+## Keeps the band where its body is, shown while the instance is, and redrawn when asked.
+func _move_the_band(redraw := false) -> void:
+	if _band == null or not _band.is_inside_tree():
+		return
+	var at := body_position()
+	if not _band.global_position.is_equal_approx(at):
+		_band.global_position = at
+	_band.visible = not (_skip_draw or is_finished or is_suppressed_by_its_own_hold())
+	if redraw:
+		_band.queue_redraw()
+
+func _exit_tree() -> void:
+	if _band != null and is_instance_valid(_band):
+		_band.queue_free()
+	_band = null
+
+## Where the band is drawn in this node's local space when it is drawn on this node's own canvas (the
+## halo ring's): back at `body_position()`, and drawn down by the lift `_draw()` puts the whole canvas
+## through, so on the screen it stands exactly where its body does on every frame.
 func _roadblock_band_at() -> Vector2:
 	return body_position() - global_position + Vector2(0.0, -_current_bob())
 
