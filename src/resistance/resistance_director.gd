@@ -2538,8 +2538,9 @@ static func is_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[R
 ## reusing its own prop rather than "any alley she comes across" — but the avoidance never costs
 ## the placement guarantee itself: a candidate list whose only reachable tile happens to be a used
 ## one still returns it rather than `Vector2.INF`. `GameState.completed_resistance_alley_tiles`
-## only ever holds `ALLEY` tiles (see `_on_contact_completed()`), so this filter is a silent no-op
-## against every other kind of placement, none of which is ever an alley.
+## only ever holds the tiles a mark stood on (see `_on_contact_completed()`): `ALLEY` tiles, or the
+## courtyard tile a one-tile passage puts its mark on. So this filter is a silent no-op against
+## every other kind of placement.
 ##
 ## **`allow_held` skips only the `is_held_at` refusal, and only the two door placements pass it**
 ## (`ResistanceSteps.stands_on_held_ground()`). Held ground means *no hazard or catalogue row may be
@@ -2965,8 +2966,8 @@ func _track_sight_and_reposition(delta: float) -> void:
 		return
 	_move_the_mark(nearest)
 
-## The nearest alley mouth to `here` (`_alley_mouths()`), a through-alley's or a courtyard
-## passage's, that is not closed, is walkable, and is not held, on the home block, inside a walled-off crossing alley,
+## The nearest mark tile to `here` (`_mark_tiles()`, one step in from an alley mouth), a through-alley's
+## or a courtyard passage's, that is not closed, is walkable, and is not held, on the home block, inside a walled-off crossing alley,
 ## standing on a solid event body, or sealed off from home by the day's whole obstruction (see
 ## `_pick_reachable`'s own doc — the relocation is the same placement question as the initial
 ## roll, asked again, and the same refusal has to hold or a mark could relocate into a sealed
@@ -3059,8 +3060,8 @@ func _on_contact_completed(step_index: int) -> void:
 	Telemetry.note("contact", "step %d completed" % step_index)
 	var step := ResistanceSteps.by_index(step_index)
 	GameState.complete_resistance_step(step_index, step == null or step.grants_progress)
-	# Only a pickup's mark ever stands on an `ALLEY` tile — every other kind of contact sits on
-	# a rider or a computed point — so this is the one completion worth recording for
+	# Only a pickup's mark ever stands on a mark tile (an `ALLEY` tile, or a courtyard tile past a
+	# one-tile passage) — every other kind of contact sits on a rider or a computed point — so this is the one completion worth recording for
 	# `_pick_reachable()`/`_nearest_alley_within()` to avoid reusing later (M177).
 	if step and step.is_pickup and _contact:
 		GameState.record_completed_alley_tile(_map.world_to_tile(_contact.global_position))

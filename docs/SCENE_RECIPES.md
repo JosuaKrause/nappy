@@ -276,7 +276,7 @@ there for a run with no day-3 fire, its door a tile or two behind the shell. The
 place is fixed — day 9's district door, day 12's swing and day 14's station door — have no such
 rule, so their scenes put the mark or her start just past that same circle. Day 10's neighbor
 starts at their own least distance, 400px from her. Days 6 to 13 start her a walk from the mark,
-about 160px (5 tiles along a street, outside the 150px `ResistanceDirector.SEEN_DISTANCE` in which
+about 172px (5 tiles along a street, outside the 150px `ResistanceDirector.SEEN_DISTANCE` in which
 she notices a mark) and with a clear way to it; the mark is unread and no task is on offer until
 her walk touches it *(the player, inbox #555: "make them not start *on* the mark", answered
 "Unread, walk to it")*. The mark stands one tile into its alley, so her walk turns into the alley

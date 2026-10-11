@@ -45,7 +45,7 @@ func run(t) -> void:
 	_test_a_relocation_never_retires_a_guard_in_view_or_awake(t)
 	_test_the_guard_never_lands_inside_a_building(t)
 	_test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t)
-	_test_a_mark_only_ever_sits_at_an_alley_mouth(t)
+	_test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t)
 	_test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t)
 	_test_a_long_alleys_robber_stands_two_thirds_in_past_his_trigger(t)
 	_test_reading_a_mark_never_lands_her_in_his_catch(t)
@@ -1441,7 +1441,7 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 ## the call every move makes): every mark lands one tile in from a mouth, found here independently
 ## of the director — a through-alley's end tile along its long axis, or a passage tile beside ground
 ## that is neither alley nor courtyard — and never on the mouth itself.
-func _test_a_mark_only_ever_sits_at_an_alley_mouth(t) -> void:
+func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t) -> void:
 	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
 	GameState.completed_resistance_alley_tiles = []
 	var mark_step := ResistanceSteps.by_index(1)
