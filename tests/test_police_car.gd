@@ -152,7 +152,7 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t) -> void:
 	car._turn_the_body()
 	spine = Vector2.DOWN.rotated(collision.rotation)
 	t.check(absf(spine.dot(Vector2.RIGHT)) > 0.999, "and turned east, east-west (%s)" % spine)
-	t.check(car._police_car_anchor("side").y == shape.radius,
+	t.check(car._body_anchor("side").y == shape.radius,
 			"its side picture's bottom lands on its body's southern edge, %.0fpx below the node"
 			% shape.radius)
 	car.free()
@@ -673,7 +673,7 @@ func _test_its_caret_stands_over_its_picture(t) -> void:
 	_tell(car, player)
 	_already_driving(car)
 	var rect := car.mark_rect()
-	var anchor := car._police_car_anchor("side")
+	var anchor := car._body_anchor("side")
 	t.check(rect.has_area(), "the car in front of her is marked")
 	var above := anchor.y - (rect.position.y + rect.size.y)
 	# What any other row's caret clears its picture's bottom (its node) by, at the same swell.

@@ -1055,15 +1055,15 @@ static func box_of(row: EventDef) -> Rect2:
 
 ## **Everything a row can put on the screen**, standing on its feet at the origin, whichever way it
 ## faces: the union of every picture its look can draw (`family_sources()` — a cyclist coming down
-## the screen draws its front view, not the side view its badge shows) wherever it can stand (a
-## police car's lowered over its body, `_picture_drop_of()`), its body shadow (a disc of
-## its shape's radius at its feet), the loose dog's trailing lead, the bob and the excitement halo's
-## rim (`EntityHalo.HALO_MARGIN`). What a thing arriving from off screen is placed wholly outside the
-## camera's view by (`PendingWarning.just_out_of_sight()`), so nothing of it shows on the frame it
-## exists *(amendment 6 of M226, the player: "I don't want any pop in")*. And for a row that can be
-## marked — anything with a field or a lethal reach — the danger caret above its feet at its tallest
-## (`largest_mark_rect()`), which stands well above the picture. Empty for a row that draws nothing
-## of its own.
+## the screen draws its front view, not the side view its badge shows) wherever it can stand (the
+## picture of a car that drives is lowered over its body, `_picture_drop_of()`), its body shadow (a
+## disc of its shape's radius at its feet), the loose dog's trailing lead, the bob and the
+## excitement halo's rim (`EntityHalo.HALO_MARGIN`). What a thing arriving from off screen is placed
+## wholly outside the camera's view by (`PendingWarning.just_out_of_sight()`), so nothing of it
+## shows on the frame it exists *(amendment 6 of M226, the player: "I don't want any pop in")*. And
+## for a row that can be marked — anything with a field or a lethal reach — the danger caret above
+## its feet at its tallest (`largest_mark_rect()`), which stands well above the picture. Empty for a
+## row that draws nothing of its own.
 static func footprint_of(row: EventDef) -> Rect2:
 	var box := Rect2()
 	var any := false
@@ -4351,7 +4351,7 @@ func _picture_key() -> Vector4i:
 	flags = flags * 2 + (1 if mast and silenced else 0)
 	flags = flags * 2 + (1 if mast and _mast_is_telegraphing_now() else 0)
 	var sector := EightDirection.update(_view_sector, _drawn_heading())
-	# A car's picture is anchored on its live heading (`_police_car_anchor()`), and its shadow and
+	# A car's picture is anchored on its live heading (`_body_anchor()`), and its shadow and
 	# body turn with it, so a car rounding a corner redraws as it turns rather than only when it
 	# crosses into another sector. Whole degrees, above the protest's own poses.
 	var turn := posmod(roundi(rad_to_deg(_heading.angle())), 360) if def.drives else 0
@@ -5046,12 +5046,12 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.ROADWORKS:
 			_draw_spread(_roadwork_segment_texture(_spread_vertical), BARRIER_END, canvas)
 		EventDef.Look.FIRE_ENGINE:
-			# Drawn over its own body like the patrol car (`_police_car_anchor()`): the body is the
+			# Drawn over its own body like the patrol car (`_body_anchor()`): the body is the
 			# truck's `shape`, and the shadow, which is that shape, stays under the node.
 			var engine_view := _select_view(_heading)
 			_draw_body_shadow(canvas, Vector2(0.0, -_current_bob()))
 			_draw_eight_view(FIRE_ENGINE_BY_VIEW, _heading, canvas, true, {}, false,
-					_police_car_anchor(engine_view))
+					_body_anchor(engine_view))
 		EventDef.Look.BURNING_BUILDING:
 			_draw_fire(canvas)
 		EventDef.Look.BURNT_SHELL:
@@ -5089,12 +5089,12 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			# East-authored — see `ICE_CREAM_VAN` above — and now a real octant: `police_patrol` is
 			# mobile and turns corners along its own patrol route, so this is the first vehicle row
 			# whose diagonal views are ordinarily reachable rather than a dead branch. Drawn over
-			# its own body rather than standing on its node — see `_police_car_anchor()` — with the
+			# its own body rather than standing on its node — see `_body_anchor()` — with the
 			# shadow, which is the body's shape, under the node on the ground.
 			var view := _select_view(_heading)
 			_draw_body_shadow(canvas, Vector2(0.0, -_current_bob()))
 			_draw_eight_view(POLICE_CAR_BY_VIEW, _heading, canvas, false, {}, false,
-					_police_car_anchor(view))
+					_body_anchor(view))
 		EventDef.Look.POSTER_CREW:
 			var crew := POSTER_CREW_BY_VIEW_B if _idle_stepping(POSTER_CREW_PASTE_PERIOD) \
 					else POSTER_CREW_BY_VIEW
@@ -5249,34 +5249,37 @@ static func _canvas_margins(look: EventDef.Look) -> Dictionary:
 	return FIRE_ENGINE_CANVAS_BOTTOM_MARGIN if look == EventDef.Look.FIRE_ENGINE \
 			else POLICE_CAR_CANVAS_BOTTOM_MARGIN
 
-## Whether `look` is a body whose picture is anchored over it by `_police_car_anchor()`.
+## Whether `look` is a body whose picture is anchored over it by `_body_anchor()`: the patrol car's
+## and the fire engine's, the two looks of a car that drives (`EventDef.drives`).
 static func _is_anchored_over_its_body(look: EventDef.Look) -> bool:
 	return look == EventDef.Look.POLICE_CAR or look == EventDef.Look.FIRE_ENGINE
 
-## Where a police car's picture is anchored for `Sprites.draw_standing`, which bottom-centres it:
+## Where a car's picture is anchored for `Sprites.draw_standing`, which bottom-centres it — a car
+## that drives, the patrol car or the fire engine (`_is_anchored_over_its_body()`):
 ## **the drawn content's bottom edge lands on the southernmost point of its body**, the crowd car's
 ## own registration rule (`CrowdAgent._car_body_anchor()`), because every view is a standing
 ## elevation whose bottom row is the car's nearest ground contact. The body is its `shape`, a
 ## capsule centred on the node and laid along the heading (`EventDef.drives`), so its southern reach
-## is `half_length · |heading.y| + radius` — 12px driving east or west, 21 north or south — and
-## the picture sits over the body she walks into rather than standing in front of it. Read off the
-## live heading rather than the quantised view, the crowd car's reason: the body turns
-## continuously as a car rounds a corner, and a picture anchored on the view would jump at
-## every sector boundary. The caret over it is lowered by the same amount (`_picture_drop_now()`).
-func _police_car_anchor(view: String) -> Vector2:
+## is `half_length · |heading.y| + radius` — the patrol car's 12px driving east or west, 21
+## north or south — plus the view's own canvas margin (`_canvas_margins()`), and the picture sits
+## over the body she walks into rather than standing in front of it. Read off the live heading
+## rather than the quantised view, the crowd car's reason: the body turns continuously as a car
+## rounds a corner, and a picture anchored on the view would jump at every sector boundary. The
+## caret over it is lowered by the same amount (`_picture_drop_now()`).
+func _body_anchor(view: String) -> Vector2:
 	var south := def.shape.half_length * absf(_solid_axis().y) + def.shape.radius
 	return Vector2(0.0, south + float(_canvas_margins(def.look).get(view, 0.0)))
 
-## How far below its own node this instance's picture is drawn this frame — a police car's
-## `_police_car_anchor()`, zero for every other row — so the caret over it stands the same height
+## How far below its own node this instance's picture is drawn this frame — a car's
+## `_body_anchor()`, zero for every other row — so the caret over it stands the same height
 ## above the picture as it does over anything else.
 func _picture_drop_now() -> float:
 	if not _is_anchored_over_its_body(def.look) or def.shape == null:
 		return 0.0
-	return _police_car_anchor(EIGHT_VIEW_BY_SECTOR[_view_sector]).y
+	return _body_anchor(EIGHT_VIEW_BY_SECTOR[_view_sector]).y
 
-## The furthest below its own node a row's picture is ever drawn: a police car's body reach,
-## pointed straight down the screen, and its largest canvas margin (`_police_car_anchor()`); zero
+## The furthest below its own node a row's picture is ever drawn: a car's body reach, pointed
+## straight down the screen, and its look's largest canvas margin (`_body_anchor()`); zero
 ## for every other row, whose pictures stand on the node. `footprint_of()` and `drawn_box()` add it.
 static func _picture_drop_of(row: EventDef) -> float:
 	if not _is_anchored_over_its_body(row.look) or row.shape == null:

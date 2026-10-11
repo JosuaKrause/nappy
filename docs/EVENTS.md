@@ -605,7 +605,7 @@ down the road, the raid's pacing at her door, the investigating one at heat — 
 body, bumper to bumper) and 24px wide (the end views', flank to flank), centred on the node and laid along the car's heading,
 turning as it turns (`EventInstance._solid_axis()`). The same shape is its shadow, and its picture
 is drawn over it — the bottom of each view on the body's southern edge, the crowd car's own
-registration (`EventInstance._police_car_anchor()`) — so where she is stopped is where the car is
+registration (`EventInstance._body_anchor()`) — so where she is stopped is where the car is
 drawn. She walks round it whether it drives or stands.
 
 **It answers the pin the mobile exemption exists for, by never moving into her.** Each frame

@@ -351,7 +351,7 @@ func _test_a_loss_to_it_names_its_own_cause(t) -> void:
 func _test_its_picture_stands_over_its_body(t) -> void:
 	var engine := _engine(t, PackedVector2Array([Vector2.ZERO, Vector2(0.0, 600.0)]))
 	var shape := _truck().shape
-	t.check(is_equal_approx(engine._police_car_anchor("side").y,
+	t.check(is_equal_approx(engine._body_anchor("side").y,
 			shape.half_length * absf(engine._solid_axis().y) + shape.radius
 			+ float(EventInstance.FIRE_ENGINE_CANVAS_BOTTOM_MARGIN["side"])),
 			"the side view's bottom lands on the body's southern edge")
