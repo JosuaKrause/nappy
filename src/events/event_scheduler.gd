@@ -1173,24 +1173,15 @@ class WalkSiting extends RefCounted:
 		if (role == GameEnums.BlockerRole.WALL and not EventScheduler._is_a_wall_by_cost(def)) \
 				or def.id == _MET_ON_HER_STREET:
 			return ahead_on_her_street(def, rng, already, at, heading)
-		var ahead := _the_way_she_is_going(at, heading, far)
-		if ahead.is_empty():
-			return _waited("she is off the day's routes")
-		var offered := _its_ground_on(def, ahead, at, near, far)
-		if offered.is_empty():
-			# Widened along the same branch: twice the band first, then the whole of the route she
-			# is on. Stepped rather than straight to the end, because the widening is for "a little
-			# further along the way she is going" and `_best_of` takes the roomiest of what it is
-			# offered — handed the whole branch it picks the emptiest street on it, which is the far
-			# end of a walk she has not decided to take yet.
-			for wider in [far * 2.0, INF]:
-				ahead = _the_way_she_is_going(at, heading, wider)
-				offered = _its_ground_on(def, ahead, at, near, wider)
-				if not offered.is_empty():
-					break
-			if offered.is_empty():
+		var offer := _offer_ahead(def, at, heading, near, far)
+		match offer[0]:
+			_OFF_THE_ROUTES:
+				return _waited("she is off the day's routes")
+			_NONE_ON_THE_BRANCH:
 				return _waited("no tile of its ground on the branch ahead of her")
-			widened += 1
+			_WIDENED:
+				widened += 1
+		var offered: Array[Vector2i] = offer[1]
 		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
 				_leave_alone, _corridor, _doors)
 		if not candidate:
@@ -1202,6 +1193,54 @@ class WalkSiting extends RefCounted:
 		if def.pastes_a_front:
 			candidate.facing = Vector2.UP
 		return candidate
+
+	## What `ahead_of()` is offered, as `[how it was found, the tiles]`: the row's ground in the band
+	## ahead of her on her branch, or, with none there, widened along the same branch — twice the
+	## band first, then the whole of the route she is on. Stepped rather than straight to the end,
+	## because the widening is for "a little further along the way she is going" and `_best_of`
+	## takes the roomiest of what it is offered — handed the whole branch it picks the emptiest
+	## street on it, which is the far end of a walk she has not decided to take yet.
+	##
+	## **Worked out once per look, not once per copy.** It draws nothing from any stream and reads
+	## only the day's tree and the row's ground, so the answer for the same ground, the same place,
+	## heading and band is the same answer: the director asks it of every crew still owed in one look,
+	## from one place, and the last question asked is kept and given back.
+	func _offer_ahead(def: EventDef, at: Vector2, heading: Vector2, near: float,
+			far: float) -> Array:
+		var side := EventDef.Pavement.AT_THE_FRONT if def.pastes_a_front else def.pavement_side
+		var question := [def.placement, side, def.id == MAST_ROW, at, heading, near, far]
+		if question == _last_offer_question:
+			return _last_offer
+		offers_worked_out += 1
+		var nothing: Array[Vector2i] = []
+		var answer := [_OFF_THE_ROUTES, nothing]
+		var ahead := _the_way_she_is_going(at, heading, far)
+		if not ahead.is_empty():
+			var offered := _its_ground_on(def, ahead, at, near, far)
+			answer = [_IN_THE_BAND, offered]
+			if offered.is_empty():
+				answer = [_NONE_ON_THE_BRANCH, offered]
+				for wider in [far * 2.0, INF]:
+					ahead = _the_way_she_is_going(at, heading, wider)
+					offered = _its_ground_on(def, ahead, at, near, wider)
+					if not offered.is_empty():
+						answer = [_WIDENED, offered]
+						break
+		_last_offer_question = question
+		_last_offer = answer
+		return answer
+
+	## How `_offer_ahead()` found what it offers.
+	const _IN_THE_BAND := 0
+	const _WIDENED := 1
+	const _NONE_ON_THE_BRANCH := 2
+	const _OFF_THE_ROUTES := 3
+	## The last question `_offer_ahead()` answered, and its answer.
+	var _last_offer_question := []
+	var _last_offer := []
+	## How many times `_offer_ahead()` has worked an offer out rather than given the last one back.
+	## For `tests/test_siting_judges_once.gd`; nothing in the game reads it.
+	var offers_worked_out := 0
 
 	## **`ahead_of()` for a wall by its fit alone** — a row whose body leaves no line past it on the
 	## sidewalk it stands on: day 7's second van (`ResistanceDirector._rig_her_route_for()`). Its
@@ -1690,10 +1729,11 @@ class WalkSiting extends RefCounted:
 		return blockers
 
 	## Does at dawn the work the first `ahead_of()` would otherwise do in the middle of a walk: the
-	## scan for ground `def` may stand on and the set a cell asks about, the reachability grid, and
-	## the flood of the day as it is without the candidate. Together they are several physics frames,
-	## which at dawn is part of a load and mid-walk is a hitch on the one beat of the day she is meant
-	## to be watching. Nothing here rolls, so the day is the same day whether or not this ran.
+	## scan for ground `def` may stand on and the set a cell asks about, and the reachability grid.
+	## Both are scans of the whole city, which at dawn is part of a load and mid-walk is a hitch on
+	## the one beat of the day she is meant to be watching. The flood from her is not among them: it
+	## starts where she stands, so it can only run when a site is asked about. Nothing here rolls, so
+	## the day is the same day whether or not this ran.
 	func prepare(def: EventDef, already: Array[Planned]) -> void:
 		_ground_as_a_set(def)
 		_what_already_blocks(already)
@@ -1850,60 +1890,91 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	if not standing.is_empty():
 		reach_context = already.duplicate()
 		reach_context.append_array(standing)
+	# **Each candidate is judged once per call, and every try still rolls.** A pool of a few tiles
+	# — `WalkSiting.ahead_of()` often offers one — is rolled `EVENT_PLACEMENT_TRIES` times, and the
+	# rule chain against every plan of the day is the same question each time the same tile and
+	# path come up, so its verdict is kept here, keyed by both. The roll and `_build_placement`'s
+	# own draws still happen on every try, in the same order, so the stream, and with it every
+	# placement, is what it would be if each try asked again.
+	var verdicts := {}
 	for _try in Tuning.EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := _build_placement(def, map, tile, rng)
 		if not candidate:
 			continue
-		candidate.role = role
-		# **A pacing row's role is decided here rather than in `_role_for`**, because what makes a
-		# man walking a beat passable is where the beat runs and not what he emits: one that reaches
-		# a junction can be left at the crossing there while he is at the far end of his loop, and
-		# one that stays between two junctions cannot be left at all. The first is friction and
-		# belongs on the route like any other timing problem; the second is a wall and takes a
-		# wall's one rule with it — never on ground a route runs along. See
-		# `_a_pacing_beat_walls_a_sidewalk`.
-		if _a_pacing_beat_walls_a_sidewalk(candidate, map):
-			candidate.role = GameEnums.BlockerRole.WALL
-			if corridor and corridor.carries_a_route(tile):
-				continue
-		# Before the spacing, because this one is about the *ground* rather than about what is
-		# already on it, and because it can never bend.
-		if _reaches_any(candidate, leave_alone):
-			continue
-		# And for the same reason: a region door keeps clear ground around itself on both sides, so
-		# that whichever side she is let out on is ground she can read before anything charges her.
-		# See `_clear_of_the_doors()` and `Tuning.CHECKPOINT_EVENT_GAP`.
-		if not _clear_of_the_doors(candidate.position, candidate.path, doors, def.field_reach()):
-			continue
-		# And before the spacing for the same reason: a crossing a route has no way around is
-		# ground the row may not have, not a preference that bends. See
-		# `_leaves_the_route_junctions_open`. Asked over `reach_context` rather than `already` —
-		# see this function's own doc — so a seal or the region wall already reaching this
-		# crossing is not invisible to it.
-		if not _leaves_the_route_junctions_open(candidate, map, corridor, ground, reach_context):
-			continue
-		# And the same for the stretch between two junctions, asked of the sidewalk the tree is
-		# actually walked along rather than of the street: the far side of a street answers a van,
-		# and nothing answers a van on the side the route is drawn down. See
-		# `_leaves_the_routes_sidewalk_open`.
-		if not _leaves_the_routes_sidewalk_open(candidate, map, corridor, ground, reach_context):
-			continue
-		# And the opening a pacing row's beat leaves is ground in its own right: the rows reaching
-		# one route street are asked together whether a walk along it survives, so nothing stands in
-		# the one end the yeller is away from. See `_leaves_a_pacing_beats_opening`.
-		if not _leaves_a_pacing_beats_opening(candidate, map, corridor, reach_context):
-			continue
-		var room := _room_around(candidate, already)
-		if room == INF:
+		# A tile and the path built on it are the whole of what a candidate is: its position and
+		# facing are the tile's own, and `def` is the call's.
+		var key: Variant = tile if candidate.path.is_empty() else [tile, candidate.path]
+		var verdict: Array = verdicts.get(key, [])
+		if verdict.is_empty():
+			var room := _judge(candidate, role, map, tile, already, reach_context, ground,
+					leave_alone, corridor, doors)
+			verdict = [candidate.role, room]
+			verdicts[key] = verdict
+		candidate.role = verdict[0]
+		var judged: float = verdict[1]
+		if judged == INF:
 			return candidate
-		if room > best_room:
-			best_room = room
+		if judged > best_room:
+			best_room = judged
 			best = candidate
 	# Nothing comes back when every candidate broke a rule that does not bend — a lethal event
 	# with no clear ground, or a full pavement. The caller re-rolls; a scripted event that
 	# cannot be placed simply does not happen, which is the right failure direction.
 	return best
+
+## How many times `_judge()` has run, over the whole process. Nothing in the game reads it: it is
+## what lets `tests/test_siting_judges_once.gd` hold `_best_of()` to one judgement per candidate.
+static var judgements := 0
+
+## The rule chain `_best_of()` asks of one candidate: sets its role and answers its room, the
+## `_room_around()` answer, or `-INF` where a rule that cannot bend refuses it, which no room
+## beats — so a refused candidate is never the roomiest, as it never was when it was skipped.
+static func _judge(candidate: Planned, role: GameEnums.BlockerRole, map: CityMap, tile: Vector2i,
+		already: Array[Planned], reach_context: Array[Planned], ground: Dictionary,
+		leave_alone: Array[Rect2], corridor: Corridor, doors: PackedVector2Array) -> float:
+	judgements += 1
+	candidate.role = role
+	# **A pacing row's role is decided here rather than in `_role_for`**, because what makes a
+	# man walking a beat passable is where the beat runs and not what he emits: one that reaches
+	# a junction can be left at the crossing there while he is at the far end of his loop, and
+	# one that stays between two junctions cannot be left at all. The first is friction and
+	# belongs on the route like any other timing problem; the second is a wall and takes a
+	# wall's one rule with it — never on ground a route runs along. See
+	# `_a_pacing_beat_walls_a_sidewalk`.
+	if _a_pacing_beat_walls_a_sidewalk(candidate, map):
+		candidate.role = GameEnums.BlockerRole.WALL
+		if corridor and corridor.carries_a_route(tile):
+			return -INF
+	# Before the spacing, because this one is about the *ground* rather than about what is
+	# already on it, and because it can never bend.
+	if _reaches_any(candidate, leave_alone):
+		return -INF
+	# And for the same reason: a region door keeps clear ground around itself on both sides, so
+	# that whichever side she is let out on is ground she can read before anything charges her.
+	# See `_clear_of_the_doors()` and `Tuning.CHECKPOINT_EVENT_GAP`.
+	if not _clear_of_the_doors(candidate.position, candidate.path, doors,
+			candidate.def.field_reach()):
+		return -INF
+	# And before the spacing for the same reason: a crossing a route has no way around is
+	# ground the row may not have, not a preference that bends. See
+	# `_leaves_the_route_junctions_open`. Asked over `reach_context` rather than `already` —
+	# see `_best_of()`'s own doc — so a seal or the region wall already reaching this
+	# crossing is not invisible to it.
+	if not _leaves_the_route_junctions_open(candidate, map, corridor, ground, reach_context):
+		return -INF
+	# And the same for the stretch between two junctions, asked of the sidewalk the tree is
+	# actually walked along rather than of the street: the far side of a street answers a van,
+	# and nothing answers a van on the side the route is drawn down. See
+	# `_leaves_the_routes_sidewalk_open`.
+	if not _leaves_the_routes_sidewalk_open(candidate, map, corridor, ground, reach_context):
+		return -INF
+	# And the opening a pacing row's beat leaves is ground in its own right: the rows reaching
+	# one route street are asked together whether a walk along it survives, so nothing stands in
+	# the one end the yeller is away from. See `_leaves_a_pacing_beats_opening`.
+	if not _leaves_a_pacing_beats_opening(candidate, map, corridor, reach_context):
+		return -INF
+	return _room_around(candidate, already)
 
 ## The tiles an event of this kind may stand on today, worked out once and kept for the rest of
 ## the day's planning.
