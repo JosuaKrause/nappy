@@ -908,8 +908,9 @@ func _draw_focus_circles() -> void:
 ## The heading she is actually walking this instant, whichever of the two doors set it: a press or
 ## drag through `set_direction()` (`_set_axis()` presses these same four actions), or a real key
 ## through `_yield_to_the_keyboard()` overriding it. `Input.get_vector()` on `move_left`/
-## `move_right`/`move_up`/`move_down` is the exact read `Stroller._physics_process()` makes to
-## decide her own velocity, so this is not a second, independent notion of "what is pressed" that
+## `move_right`/`move_up`/`move_down` is the read `Stroller._physics_process()` makes to decide her
+## own velocity, and the rig's `Stroller.input_she_moves_by()` (that read less a key held through a
+## gatehouse's release) is what this defers to when the rig has it, so this is not a second, independent notion of "what is pressed" that
 ## could disagree with it — `.normalized()` on top guarantees a unit vector or exactly
 ## `Vector2.ZERO`, matching `heading_to()`'s own convention, rather than trusting whatever length a
 ## diagonal keyboard press or a partial controller strength happens to produce.
