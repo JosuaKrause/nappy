@@ -3932,9 +3932,16 @@ func _field_distance(world_position: Vector2, velocity: Vector2) -> float:
 ## `_field_distance()` for a field centred somewhere other than this node: the band a guard has
 ## walked away from.
 func _field_distance_at(centre: Vector2, world_position: Vector2, velocity: Vector2) -> float:
-	if def.shape != null:
-		return def.shape.field_distance(centre, _solid_axis(), velocity, world_position)
+	var shape := field_shape()
+	if shape != null:
+		return shape.field_distance(centre, _solid_axis(), velocity, world_position)
 	return GroundShape.eccentric_distance(centre, velocity, world_position)
+
+## The datum this row's field is priced from (`_field_distance_at()`) and drawn from (`DebugLayers`):
+## its `shape`, or none — a point at its centre — for a row whose field is priced from its centre
+## (`EventDef.field_from_its_centre`, the fire engine) or that has no shape.
+func field_shape() -> GroundShape:
+	return null if def.field_from_its_centre else def.shape
 
 ## A flock is its birds, summed.
 ##

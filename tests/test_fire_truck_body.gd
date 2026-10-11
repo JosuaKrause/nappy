@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_where_it_is_created_she_is_warned_in_full(t)
 	_test_behind_and_beside_it_nothing_strikes(t)
 	_test_parked_it_is_solid_and_harmless(t)
+	_test_parked_its_field_is_a_points(t)
 	_test_a_parked_body_closes_no_street(t)
 	_test_a_loss_to_it_names_its_own_cause(t)
 	_test_its_picture_stands_over_its_body(t)
@@ -251,6 +252,32 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 		t.check(not engine.is_lethal_at(walker.global_position),
 				"and standing against it ends nothing")
 		walker.free()
+	player.free()
+	engine.free()
+
+## Parked, its field is priced from its centre as it was before it had a body
+## (`EventDef.field_from_its_centre`): along its street it reaches as far as abeam, so the 340px
+## the fire's siting check closes about its kerb is the whole of it and a pass costs what
+## `docs/COSTS.md` says.
+func _test_parked_its_field_is_a_points(t) -> void:
+	var def := _truck()
+	t.check(def.field_from_its_centre, "fire_truck's field is priced from its centre")
+	var engine := _engine(t, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(0.0, 0.0)]))
+	var player := _her(t, Vector2(300.0, 300.0), Vector2.UP)
+	for i in int(4.0 / STEP):
+		_step(engine, player)
+		if engine.is_parked:
+			break
+	t.check(engine.is_parked and engine.travel_velocity().is_zero_approx(),
+			"the truck has parked and stands still")
+	var same := true
+	for d: float in [40.0, 100.0, 250.0, def.outer_radius - 5.0]:
+		var along := engine.contribution_at(Vector2(d, 0.0), -1.0, Vector2.ZERO)
+		var abeam := engine.contribution_at(Vector2(0.0, d), -1.0, Vector2.ZERO)
+		same = same and absf(along - abeam) < 0.0001 and along > 0.0
+	t.check(same, "along its street its field is what it is abeam, at every distance")
+	t.check(engine.contribution_at(Vector2(def.outer_radius + 5.0, 0.0), -1.0, Vector2.ZERO) == 0.0,
+			"and it ends at its 340px along the street, not past its body's end")
 	player.free()
 	engine.free()
 

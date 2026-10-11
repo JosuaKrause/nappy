@@ -677,8 +677,11 @@ Beside it and behind it it is a solid body that never strikes her. **Once it has
 across from the fire (`stops_where_it_arrives`) it is not driving, so it ends nothing from any side,
 and stays a solid body she walks round: it stands in the carriageway's near lane along the street, a
 capsule 26px across in a six-tile street, so the route-redundancy guarantee (a closure
-leaves distinct routes to a calm area) is untouched, and the day's own check for the fire's site already closes
-the engine's whole 340px field as ground she will not walk through. A loss to it reads "The fire
+leaves distinct routes to a calm area) is untouched. **Its field is still priced from its centre**,
+a point's (`EventDef.field_from_its_centre`), not from the body as a standing patrol car's is: the
+body it is given to be solid is not a reason for the street beside it to cost more, so a pass costs
+what this page and `docs/COSTS.md` say, and the day's own check for the fire's site, which closes
+340px about the kerb as ground she will not walk through, covers the whole of it. A loss to it reads "The fire
 engine never slowed down. You were in the road." and names `fire_truck` in the run log and the
 page's loss event (`lost-hard-fail-fire-truck`).
 

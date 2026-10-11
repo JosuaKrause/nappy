@@ -815,6 +815,9 @@ static func _fire_truck() -> EventDef:
 	# parked at the kerb (`is_parked` is not driving).
 	def.shape = GroundShape.segment(16.0, 13.0)
 	def.drives = true
+	# Its field stays a point's, priced from its centre: the body is not a reason for the street
+	# beside the parked engine to cost more than it did (`EventDef.field_from_its_centre`).
+	def.field_from_its_centre = true
 	def.intensity = 26.0
 	def.inner_radius = 70.0
 	def.outer_radius = 340.0

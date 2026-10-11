@@ -767,6 +767,14 @@ enum HeatResponse {
 ## that ends the day, and this is a car on a road.
 @export var drives := false
 
+## **Its field is priced from its centre, a point, rather than from its body** — `shape` is the body
+## and the shadow, and by default the field's datum too (`GroundShape.field_distance()`: a standing
+## capsule's field is a stadium about its spine). Set on `fire_truck` alone, whose field
+## `docs/COSTS.md` prices as a point's: the body it is given to be solid is not a reason for the
+## street beside a parked engine to cost more, and the 340px the fire's siting check closes about
+## its kerb (`EventScheduler.WalkSiting`) is then the whole of its field.
+@export var field_from_its_centre := false
+
 ## **A vehicle that investigates: once it notices her it stops and lets men out on foot, who pursue
 ## her; the vehicle itself never chases.** *(merry-stork, the player: "an investigating police car
 ## should not leave the street. it should stop if close to her and a policeman should emerge and

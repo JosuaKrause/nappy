@@ -180,7 +180,7 @@ func field_runs(view: Rect2) -> Array:
 		if offsets.is_empty():
 			var axis := instance.solid_axis()
 			var velocity := instance.travel_velocity()
-			var shape := instance.def.shape
+			var shape := instance.field_shape()
 			var spine := shape.half_length if shape != null else 0.0
 			for level: float in [instance.def.inner_radius, instance.def.outer_radius]:
 				if not _may_be_seen(view, source, level, spine):
