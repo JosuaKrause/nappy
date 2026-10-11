@@ -58,6 +58,15 @@ extends Button
 enum Symbol { RESTART, CONTINUE, JOYSTICK, TAP }
 @export var symbol: Symbol = Symbol.RESTART
 
+## An optional one-letter mark in the disc's lower-right, beside the glyph: the title's two joystick
+## buttons carry "L" and "R" so the two read as different settings at a glance *(2026-10-10,
+## azure-puffin: "add a little L and R to the two joystick buttons to make it clear that they lead
+## to different settings")*. It is text in the game's UI font, the glyph's own colour, not a
+## drawing, so the **never draw in code** rule is untouched. Empty means no mark.
+@export var letter := ""
+const _LETTER_SIZE := 18
+const _LETTER_INSET := 12.0
+
 ## Region names on the `ui` atlas group — `_enter_tree()`/`_exit_tree()` acquire and release it.
 const _RESTART_ICON := &"ui/restart"
 const _CONTINUE_ICON := &"ui/continue"
@@ -160,6 +169,25 @@ func _ready() -> void:
 	# `begin_hold()`/`end_hold()` above — never by `Button`'s own `pressed` signal, so it must not
 	# claim the event at all: `IGNORE` lets it fall straight through to the screen underneath.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_add_letter()
+
+## The mark is a child `Label` pinned to the disc's lower-right; it ignores the mouse like its
+## parent, so the screen's raw-touch reading is unchanged.
+func _add_letter() -> void:
+	if letter.is_empty():
+		return
+	var mark := Label.new()
+	mark.name = "Letter"
+	mark.text = letter
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mark.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	mark.offset_right = -_LETTER_INSET
+	mark.offset_bottom = -_LETTER_INSET * 0.5
+	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	mark.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	mark.add_theme_font_size_override("font_size", _LETTER_SIZE)
+	mark.add_theme_color_override("font_color", Palette.BUTTON_SYMBOL)
+	add_child(mark)
 
 ## The corner radius is a function of the rect, so it has to be rewritten whenever the rect
 ## changes — a stylebox is data Godot keeps, not something re-derived per frame. `_refresh_look()`
