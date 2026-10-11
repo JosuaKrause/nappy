@@ -745,13 +745,15 @@ enum HeatResponse {
 ## **A car: solid at its own `shape` in every state, and lethal only in front of it while it
 ## drives.** *(azure-koala, inbox #601: "police cars don't have a hitbox"; leafy-puffin, inbox
 ## #648, offered "solid in every state, lethal only in front while driving": "yes to the police car
-## hitbox".)* `police_patrol` carries it, and so does every copy of it.
+## hitbox".)* `police_patrol` and every copy of it carry it, and so does `fire_truck`
+## *(calm-kestrel, inbox #558: "Lethal driving, solid parked")*.
 ##
-## **It is the one body that moves, and it answers the reason a moving thing is otherwise exempt
-## from being solid** — a moving wall pins her. `EventInstance` never moves the body into her: a
-## step or a turn that would bring it into contact with her or her pram is refused and the car
-## stands where it is until she moves, a car stopping for her rather than a wall shoving her. She
-## is stopped by it the way she is stopped by anything solid, and nothing follows her into a wall.
+## **These are the only bodies that move, and the flag answers the reason a moving thing is
+## otherwise exempt from being solid** — a moving wall pins her. `EventInstance` never moves the
+## body into her: a step or a turn that would bring it into contact with her or her pram is refused
+## and the car stands where it is until she moves, a car stopping for her rather than a wall
+## shoving her. She is stopped by it the way she is stopped by anything solid, and nothing follows
+## her into a wall.
 ##
 ## **`obstructs_radius` stays zero, because it closes no ground**: it drives down a carriageway she
 ## walks round it on. So the planners' disc, the crowd's per-tile record and the director's refusal
@@ -766,6 +768,14 @@ enum HeatResponse {
 ## it drives — a route wall, a field kept clear, the doubled telegraph margin — is about a place
 ## that ends the day, and this is a car on a road.
 @export var drives := false
+
+## **Its field is priced from its centre, a point, rather than from its body** — `shape` is the body
+## and the shadow, and by default the field's datum too (`GroundShape.field_distance()`: a standing
+## capsule's field is a stadium about its spine). Set on `fire_truck` alone, whose field
+## `docs/COSTS.md` prices as a point's: the body it is given to be solid is not a reason for the
+## street beside a parked engine to cost more, and the 340px the fire's siting check closes about
+## its kerb (`EventScheduler.WalkSiting`) is then the whole of its field.
+@export var field_from_its_centre := false
 
 ## **A vehicle that investigates: once it notices her it stops and lets men out on foot, who pursue
 ## her; the vehicle itself never chases.** *(merry-stork, the player: "an investigating police car
@@ -1586,8 +1596,11 @@ func as_warned_first() -> EventDef:
 ## `EventScheduler._keeps_its_field_clear`'s clearance, the streaming rect, and
 ## `EventInstance.expected_gross_at()`'s early-out. `half_length + outer_radius` for a segment (the
 ## along-axis reach, which is exactly the old flat `outer_radius` a row's radii were derived
-## *against* — see the catalogue's own docstrings; every emitting segment row is stationary, so its
-## own eccentricity is always zero and this figure never grows). Otherwise `outer_radius ·
+## *against* — see the catalogue's own docstrings) whose field is priced from that segment. This
+## figure does not grow with speed, so for the patrol car, a segment that drives, it is the reach
+## of its field standing.
+## A row whose field is priced from its centre (`field_from_its_centre`, the fire engine) is a
+## point for it, whatever its body. Otherwise `outer_radius ·
 ## Tuning.field_scale(e)`, `e` from whichever speed the row's own motion actually uses —
 ## `pursue_speed` for a pursuer, `speed` for an ordinary mobile row, zero (the plain disc) for
 ## anything standing still. A row cannot be both: `EventInstance.travel_velocity()` picks
@@ -1598,7 +1611,7 @@ func as_warned_first() -> EventDef:
 ## crosses no building — see docs/EVENTS.md, "Solid things are solid", and
 ## `EventInstance.is_lethal_at()`.
 func field_reach() -> float:
-	if shape != null and shape.kind == GroundShape.Kind.SEGMENT:
+	if shape != null and shape.kind == GroundShape.Kind.SEGMENT and not field_from_its_centre:
 		return shape.half_length + outer_radius
 	var moving_speed := pursue_speed if pursues else (speed if mobile else 0.0)
 	return outer_radius * Tuning.field_scale(Tuning.field_eccentricity(moving_speed))
