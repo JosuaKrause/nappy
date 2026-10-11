@@ -42,6 +42,7 @@ func run(t) -> void:
 	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
 	_test_the_guard_follows_her_to_the_roadblock_she_approaches(t)
 	_test_set_on_her_inside_his_stand_off_he_holds(t)
+	_test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t)
 	# The probes' days on which a guard drawn with no way asked stood on her only way.
 	_streams = ""
 	for seed_value in [1234567, 314159]:
@@ -114,9 +115,18 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 			"the guard does not move while all the ground round the roadblock she approaches is in view")
 
 	# Only its band is in her view: he goes to the ring just past it, out of her view. The view
-	# changes here with her neither moving nor turning, which nothing in play does, so the search the
-	# step before found nothing for is forgotten by hand.
-	director._task_guard_found_nothing_for = []
+	# changes here with her neither moving nor turning, as the camera does easing on after she stops
+	# or the joystick scheme's corners switching, so the search the step before found nothing for
+	# stands until `TASK_GUARD_RETRY_SECONDS` have passed, and is then made again.
+	t.check(director._task_guard_found_nothing_for.size() > 0,
+			"the search that found him nowhere better is remembered")
+	var cached_at := first.global_position
+	_view = Rect2(around - Vector2.ONE * (robbery_edge_of(other) + 48.0),
+			Vector2.ONE * (robbery_edge_of(other) + 48.0) * 2.0)
+	director._move_the_task_guard_to_her_target()
+	t.check(director._task_guard == first and first.global_position == cached_at,
+			"a remembered failure is not searched again at once")
+	director._task_guard_found_nothing_age = ResistanceDirector.TASK_GUARD_RETRY_SECONDS
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var band_edge := robbery.pursues_within + ContactPoint.body_reach(other)
 	var band_seen := Vector2.ONE * (band_edge + 48.0)
@@ -223,6 +233,9 @@ static func _a_way_past(map: CityMap, guard: Vector2, body: Vector2, reach: floa
 
 ## Whether any part of a waiting robber standing at `feet` (22 by 44px above his feet, a few px to
 ## spare) is in the test's view.
+func robbery_edge_of(roadblock: EventInstance) -> float:
+	return EventCatalogue.by_id("alley_robbery").pursues_within + ContactPoint.body_reach(roadblock)
+
 func _guard_in_view(feet: Vector2) -> bool:
 	return _view.has_area() and _view.intersects(Rect2(feet + Vector2(-14.0, -48.0),
 			Vector2(28.0, 52.0)))
@@ -325,6 +338,60 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 			"walking away, he lunges only once she is back at his stand-off (%.0fpx, stand-off %.0fpx)"
 			% [lunged_at, standoff])
 	guard.free()
+
+## **`_on_her_side()` shuts what `_open_to_her()` shuts**: a soft-sealed tile or a tile with a body
+## on it, added after the director's reachability first ran, is not her side, as it is not open to
+## the fill.
+func _test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t) -> void:
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_failed := GameState.failed_resistance_steps.duplicate()
+	var saved_progress := GameState.resistance_progress
+	var saved_scars := GameState.scars.duplicate()
+	var saved_state := GameState.city_state
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+	GameState.scars = []
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director.contact_position())
+	var map := director._map
+	var body := director.contact_position()
+	var reach := ResistanceDirector._guard_notice_reach()
+	director._ensure_reachability()
+	var tile := Vector2i(-1, -1)
+	var her := Vector2.INF
+	var centre := map.world_to_tile(body)
+	var span := ceili((reach + 3.0 * Tuning.TILE_SIZE) / Tuning.TILE_SIZE)
+	for radius in range(span, span + 12):
+		for dx in range(-radius, radius + 1):
+			var cand := centre + Vector2i(dx, radius)
+			var at := map.tile_to_world(cand)
+			if not director._open_to_her(cand) or not director._open_to_her(cand + Vector2i.RIGHT) \
+					or at.distance_to(body) < reach + 2.0 * Tuning.TILE_SIZE:
+				continue
+			var side := ResistanceDirector.HerSide.new(body, at)
+			if director._on_her_side(side, cand + Vector2i.RIGHT):
+				tile = cand + Vector2i.RIGHT
+				her = at
+				break
+		if her != Vector2.INF:
+			break
+	t.check(her != Vector2.INF, "there is open ground on her side of a roadblock to test with")
+	if her != Vector2.INF:
+		map.seal_soft_tile(tile)
+		t.check(not director._open_to_her(tile)
+				and not director._on_her_side(ResistanceDirector.HerSide.new(body, her), tile),
+				"a tile soft-sealed after the reachability was built is not her side")
+		map.soft_sealed_tiles.erase(tile)
+		var other := tile + Vector2i.RIGHT
+		if director._on_her_side(ResistanceDirector.HerSide.new(body, her), other):
+			map.obstructed_tiles[other] = 1
+			t.check(not director._open_to_her(other)
+					and not director._on_her_side(ResistanceDirector.HerSide.new(body, her), other),
+					"a tile with a body on it is not her side")
+			map.obstructed_tiles.erase(other)
+	_tear_down(player, director, city)
+	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 
 ## **The done task sets the guard on her, wherever he stands.** With `parked`, she touches another
 ## live roadblock while the guard is held at the task's own by her view on him; without, he has

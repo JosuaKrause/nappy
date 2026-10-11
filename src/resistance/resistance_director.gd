@@ -181,10 +181,16 @@ var _task_guard_in_band := false
 ## the frame the arrow makes it rather than on the arrow's next clock.
 var _task_guard_asked_for: Variant = null
 ## What the last search of `_move_the_task_guard_to_her_target()` that found him nowhere better read
-## — the arrow's target, her tile and the way she faces (which together move her view), his tile and
-## the day's blocking versions — so it is not run again, twice a second, until one of them changes.
-## Empty when none has failed.
+## — the arrow's target, her tile and the way she faces, his tile and the day's blocking versions —
+## so it is not run again, twice a second, until one of them changes **or `TASK_GUARD_RETRY_SECONDS`
+## pass**: her view moves without any of those changing (the camera's look-ahead and smoothing ease
+## on after she stops, and the joystick scheme's covered corners come and go), and the director
+## holds no camera to key on. Empty when none has failed.
 var _task_guard_found_nothing_for: Array = []
+## Seconds since that search failed.
+var _task_guard_found_nothing_age := 0.0
+## How long a failed search stands before it is made again: longer than the camera takes to settle.
+const TASK_GUARD_RETRY_SECONDS := 3.0
 ## The stream the task guard's moves are drawn from — its own, seeded from the day's, so how often
 ## she changes target and how long a move waits on her view move nothing the day's own stream
 ## decides.
@@ -258,6 +264,7 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_task_guard_in_band = false
 	_task_guard_asked_for = null
 	_task_guard_found_nothing_for = []
+	_task_guard_found_nothing_age = 0.0
 	_task_guard_moves = null
 	_trap = null
 	_taken_neighbor = null
@@ -936,6 +943,10 @@ func _on_her_side(side: HerSide, tile: Vector2i) -> bool:
 			return false
 		_ensure_reachability()
 		side.blocked = _reach_blocked.duplicate()
+		for sealed: Vector2i in _map.soft_sealed_tiles:
+			side.blocked[sealed] = true
+		for body_tile: Vector2i in _map.obstructed_tiles:
+			side.blocked[body_tile] = true
 		var centre := _map.world_to_tile(side.body)
 		var span := ceili(reach / Tuning.TILE_SIZE)
 		for dy in range(-span, span + 1):
@@ -944,7 +955,7 @@ func _on_her_side(side: HerSide, tile: Vector2i) -> bool:
 				if _map.tile_to_world(near).distance_to(side.body) < reach:
 					side.blocked[near] = true
 		side.reached = _reach_grid.flood([_map.world_to_tile(side.her)], side.blocked)
-	return not side.reached.is_empty() and _reach_grid.reaches(tile, side.blocked, side.reached)
+	return _reach_grid.reaches(tile, side.blocked, side.reached)
 
 ## How far from a roadblock's body any guard round it can notice her: the farthest he stands
 ## (`TASK_GUARD_FARTHEST`), his notice (`pursues_within`), and a tile.
@@ -2612,6 +2623,7 @@ func _process(delta: float) -> void:
 		# Chosen again twice a second, and at once when what it points at has gone — finished, or
 		# freed as it streamed out — rather than leaving the arrow on nothing until the next tick.
 		_arrow_clock += delta
+		_task_guard_found_nothing_age += delta
 		if _arrow_clock >= ARROW_RETARGET_SECONDS \
 				or (_arrow_key != null and _arrow_position() == Vector2.INF):
 			_arrow_clock = 0.0
@@ -2759,7 +2771,8 @@ func _move_the_task_guard_to_her_target() -> void:
 	var asked := [_arrow_key, _map.world_to_tile(her), facing,
 			_map.world_to_tile(_task_guard.global_position), _map.obstruction_version,
 			_map.day_record_version]
-	if asked == _task_guard_found_nothing_for:
+	if asked == _task_guard_found_nothing_for \
+			and _task_guard_found_nothing_age < TASK_GUARD_RETRY_SECONDS:
 		return
 	var at := _roadblock_guard_spot(_task_guard_moves, target.body_position(),
 			_body_touch_reach(target), her, true, false)
@@ -2768,6 +2781,7 @@ func _move_the_task_guard_to_her_target() -> void:
 	# nearer.
 	if at == Vector2.INF or (over and not in_band):
 		_task_guard_found_nothing_for = asked
+		_task_guard_found_nothing_age = 0.0
 		return
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	if not robbery:
