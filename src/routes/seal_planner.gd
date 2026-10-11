@@ -81,7 +81,7 @@ extends RefCounted
 ## clause for it — a seal never standing on tree ground already covers the ground between the
 ## doorstep and the corridor, because that ground is now tree ground like any other.
 ##
-## **A final pass thins the seals**, after every street off the tree has one: a small fraction of
+## **A final pass thins the seals**, after every street it seals has one: a small fraction of
 ## the day's soft pairs drop one body, so a wrong turn stays open long enough to be taken rather
 ## than reading as a wall on sight. See `_thin_soft_pairs` for why this is not the repair pass
 ## `CLAUDE.md` warns against.
@@ -454,7 +454,7 @@ static func _effective_first_day(def: EventDef) -> int:
 ##
 ## **A seal never stands in a tree.** A seal is one of the day's bodies like any other
 ## (`docs/EVENTS.md`, "Where in the city, and why"), but it does not come through the scheduler's
-## candidate ground: `plan_day` puts one on every off-tree street whether or not the scheduler
+## candidate ground: `plan_day` puts one on each off-tree street it seals whether or not the scheduler
 ## would have offered that tile. So the refusal is applied here instead, at the one place a seal's
 ## site is chosen — the tile nearest the street's own midpoint whose cross-section carries no
 ## standing tree, searched outward from the middle so an ordinary seal barely moves. A street is

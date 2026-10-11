@@ -6,6 +6,13 @@ seals (market stall pairs on the upper-left street, cafe tables lower left) are 
 branch, and the debug readout's event total for the whole day falls from 527 to 373. The tree, the
 route overlay (layer 5) and the region wall's posts on the right edge are the same in both.
 
+**Not only taken away: what is left stands elsewhere.** The after still shows a construction band
+across the lower-left street (about x 320–510, y 635 in the 1280×720 frame) that is not in the
+before still, and the debug readout's nearest event changes from `market_stall` to `construction`.
+Fewer seals and closures leave the day's fill different ground to be offered, so the fill rolls
+other tiles: the day stands fewer blockers in total, and the ones it keeps are not all where they
+were on `main`.
+
 **Limits.** Each still is one frame of one seed and one day. It shows what stands near the
 doorstep, not the whole city. The per-day counts over several seeds come from the probe
 (`tools/test.sh probes/bouncy_egret_blockers.gd`). Both runs are `--invincible`, so the clock and

@@ -522,8 +522,8 @@ static func _pick_weighted(weights: Array[float], rng: RandomNumberGenerator) ->
 ## Weight `fallen_tree` is multiplied by on a street `StreetTrees` planted, on top of the gate
 ## below rather than instead of it. **The gate is what the player asked for and the weight is what
 ## keeps the kind visible**: tree-lined streets are a small fraction of the city, and a day closes
-## between one and four streets, so a fallen tree offered at its plain 0.6 against roadworks and an
-## accident would be a picture almost nobody ever meets. On a street that has trees, it is the
+## a handful of streets (`closures_wanted()`), so a fallen tree offered at its plain 0.6 against
+## roadworks and an accident would be a picture almost nobody ever meets. On a street that has trees, it is the
 ## likeliest thing to have happened.
 const _FALLEN_TREE_STREET_BIAS := 6.0
 

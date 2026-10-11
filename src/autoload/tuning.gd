@@ -827,7 +827,9 @@ func closures_for_day(day: int) -> int:
 	return CLOSURES_PER_ACT[clampi(act_for_day(day) - 1, 0, CLOSURES_PER_ACT.size() - 1)]
 
 # ------------------------------------------------------------------- the seals ---
-# `SealPlanner` closes every street off the day's route tree. See docs/CITY.md, "Sealing the tree".
+# `SealPlanner` closes the streets off the day's route tree — every one of them before
+# `REGION_WALL_FIRST_DAY`, `GATEHOUSE_DAY_SEAL_SHARE` of them from it. See docs/CITY.md, "Sealing the
+# tree".
 
 ## The fraction of the day's **soft** seal pairs that lose one body in the final thinning pass, so
 ## a wrong turn stays open long enough to be taken and discovered rather than reading as a wall on
@@ -1815,8 +1817,10 @@ const EVENT_WALL_GAP_WEIGHT := 6
 ##
 ## The other half of *"wall or event"*, and it is the **impassable** half: an event in a gap makes
 ## switching strands expensive and a closure makes it impossible, which is why having both is
-## variety rather than two names for the same thing. There is at most one closure a day in act I and
-## four in act IV, so this can be strong without closing many gaps — the quota is the limit.
+## variety rather than two names for the same thing. A day closes a handful of streets at most
+## (`ClosurePlanner.closures_wanted()`: `CLOSURES_PER_ACT`, and from `REGION_WALL_FIRST_DAY` on
+## `GATEHOUSE_DAY_CLOSURE_SHARE` of it), so this can be strong without closing many gaps — the quota
+## is the limit.
 const CLOSURE_GAP_BIAS := 4.0
 
 ## Where the line between *friction* and a *very costly* wall falls, in points of the meter it costs

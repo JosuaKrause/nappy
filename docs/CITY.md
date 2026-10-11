@@ -1428,8 +1428,10 @@ day's tiles with every barrier tile added on top; what the flood never reaches i
 ### Sealing the tree
 
 **A road closure is not what makes off-corridor ground closed.** `ClosurePlanner` shuts a handful
-of streets a day — one in act I, rising to four — which is guidance at the scale of a route
-decision, not a wall around the whole city. `SealPlanner` (`src/routes/seal_planner.gd`) is the
+of streets a day — `Tuning.CLOSURES_PER_ACT`'s one in act I, rising act by act, and from the
+gatehouse day on a share of that (`Tuning.GATEHOUSE_DAY_CLOSURE_SHARE`, applied in
+`ClosurePlanner.closures_wanted()`) — which is guidance at the scale of a route decision, not a
+wall around the whole city. `SealPlanner` (`src/routes/seal_planner.gd`) is the
 separate pass that does that: every street off the day's tree, real and not the home's own —
 about 187 of the lattice's 264 on a typical day — carries a **seal** (a share of them from the
 gatehouse day on, below), so the corridor stops being the *cheapest* way through and becomes the
