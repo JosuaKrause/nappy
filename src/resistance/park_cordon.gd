@@ -32,9 +32,10 @@ extends RefCounted
 ## - **Other officers walk the park's people out**: up to `Tuning.PARK_CLOSING_ESCORTS`, one to
 ##   each event standing in the park when it starts, who comes in from out of her sight along the
 ##   way out (`_exit`: through the last gap and along the ground outside it to where she cannot
-##   see), sends them off (`EventInstance.leave_for_a_completed_task()`, the ordinary departure)
-##   down that same way, walks out behind them, and is gone once out of her sight. What the day
-##   planned in the park that has not streamed in yet is taken out of the day. The crowd never
+##   see), sends them off down that same way (`EventInstance.leave_along()`, which walks on past
+##   its end until she could not be watching), walks out behind them, and is gone once out of her
+##   sight. Anyone in the park already leaving on their own is turned onto the way too. What the
+##   day planned in the park that has not streamed in yet is taken out of the day. The crowd never
 ##   walks a park, so it has no part in this.
 ## - **If the last gap is taped while she is inside the tape, the day ends**: she is shut in the
 ##   park, a hard fail of its own (`TRAPPED`, `DayController`'s sentence for it). Nothing else about
@@ -153,8 +154,10 @@ var officers: Array[Officer] = []
 var elapsed := 0.0
 ## When the last gap is to close, seconds after the touch (`_time_the_close()`).
 var deadline := Tuning.PARK_CLOSING_SECONDS
-## When the first officer was due to come into her view as she stood at the touch, and the walk
-## from there to the last gap, in seconds. Kept for the tests and the probe.
+## When the first officer is due to come into the camera's view of where she stood at the touch,
+## and the walk from there to the last gap, in seconds: what `deadline` was solved from.
+## `tests/test_park_cordon_seeds.gd` holds the first against when one is first seen, and the probe
+## prints both.
 var first_in_view := INF
 var walk_to_the_gap := 0.0
 ## The moment the last gap was taped, and whether she was inside it then. Kept for the tests.
@@ -526,12 +529,15 @@ func _seen(feet: Vector2, her: Vector2, shows: Callable) -> bool:
 ## than searched: walking in, he is seen at a fixed time; going round, at `t_edge + f·(T − t_edge)`,
 ## so `T − t_seen ≥ W` needs `T ≥ t_edge + W / (1 − f)`. The earlier of the two tapers sets it.
 ## A park neither of them comes into view of from where she stood closes on the plain clock, and
-## the run log says so.
+## the run log says so. **And never faster than `Tuning.PARK_CLOSING_STRETCH_MIN` a stretch**, the
+## floor `_reach_the_edge()` paces to, folded in here so that `deadline` is when the gap closes and
+## `first_in_view` is read off that, not off a close the floor then pushes later.
 func _time_the_close(her: Vector2, shows: Callable) -> void:
 	walk_to_the_gap = her.distance_to(last_gap) / Tuning.WALK_SPEED if her != Vector2.INF \
 			else 0.0
 	var wanted := walk_to_the_gap + Tuning.PARK_CLOSING_WARNING
 	var soonest := INF
+	var paced := Tuning.PARK_CLOSING_SECONDS
 	# Per taper, `[seen walking in at, reaches the edge at, share of the round walked when seen]`,
 	# so when he is first in view can be read off the deadline once it is set.
 	var sightings: Array[PackedFloat32Array] = []
@@ -541,6 +547,7 @@ func _time_the_close(her: Vector2, shows: Callable) -> void:
 		var walk_in := PackedVector2Array([officer.at])
 		walk_in.append_array(officer.path)
 		var t_edge := _length_of(walk_in) / officer.speed
+		paced = maxf(paced, t_edge + Tuning.PARK_CLOSING_STRETCH_MIN * officer.stretches.size())
 		var seen := _first_seen_along(walk_in, her, shows)
 		if seen >= 0.0:
 			sightings.append(PackedFloat32Array([seen / officer.speed, t_edge, 0.0]))
@@ -554,7 +561,7 @@ func _time_the_close(her: Vector2, shows: Callable) -> void:
 		var share := seen / length
 		sightings.append(PackedFloat32Array([-1.0, t_edge, share]))
 		soonest = minf(soonest, t_edge + wanted / (1.0 - share))
-	deadline = Tuning.PARK_CLOSING_SECONDS
+	deadline = paced
 	first_in_view = INF
 	if soonest == INF:
 		if her != Vector2.INF:
@@ -670,15 +677,25 @@ func _may_walk(tile: Vector2i, roads: bool) -> bool:
 		return false
 	return roads or _map.tile_at(tile) != GameEnums.TileType.ROAD
 
-## `_exit` from `from`: straight to inside the gap, then the way out. Reversed, so it can be walked
-## back a point at a time from its end.
-func _trail_out_from(from: Vector2) -> PackedVector2Array:
-	var trail := PackedVector2Array()
+## The way out from `from`, in order: all of `_exit` from inside the park, by way of the gap, or
+## from its point nearest `from` for someone already outside it, who is not walked back in.
+func _way_out_from(from: Vector2) -> PackedVector2Array:
+	if line.grow(WALKER_REACH).has_point(from) or _exit.is_empty():
+		return PackedVector2Array(_exit)
+	var nearest := INF
+	var start := 0
+	for i in _exit.size():
+		if _exit[i].distance_to(from) < nearest:
+			nearest = _exit[i].distance_to(from)
+			start = i
+	return _exit.slice(start)
+
+## `_exit` walked the other way, from its far end in through the gap: an escort's way in.
+func _way_in() -> PackedVector2Array:
+	var points := PackedVector2Array()
 	for i in range(_exit.size() - 1, -1, -1):
-		trail.append(_exit[i])
-	if not trail.is_empty() and from.distance_to(trail[trail.size() - 1]) < 1.0:
-		trail.remove_at(trail.size() - 1)
-	return trail
+		points.append(_exit[i])
+	return points
 
 # ------------------------------------------------------------- the park's people ---
 
@@ -703,7 +720,7 @@ func _send_escorts() -> void:
 	for live in _city.events.instances():
 		if not _walks_out(live):
 			continue
-		if sent >= Tuning.PARK_CLOSING_ESCORTS:
+		if live.is_leaving or sent >= Tuning.PARK_CLOSING_ESCORTS:
 			_send_off(live)
 			continue
 		var escort := Officer.new()
@@ -713,7 +730,7 @@ func _send_escorts() -> void:
 		escort.speed = Tuning.PARK_CLOSING_OFFICER_SPEED
 		escort.person = live
 		escort.at = _exit[_exit.size() - 1]
-		escort.path = _trail_out_from(Vector2.INF)
+		escort.path = _way_in()
 		escort.path.append(live.global_position)
 		officers.append(escort)
 		_make_figure(escort)
@@ -724,7 +741,7 @@ func _send_escorts() -> void:
 
 ## Whether a live event is one of the park's people, to be walked out.
 func _walks_out(live: EventInstance) -> bool:
-	if not live or not is_instance_valid(live) or live.is_finished or live.is_leaving:
+	if not live or not is_instance_valid(live) or live.is_finished:
 		return false
 	if not area.has_point(live.global_position):
 		return false
@@ -732,39 +749,20 @@ func _walks_out(live: EventInstance) -> bool:
 	return def.kind != GameEnums.EventKind.AMBIENT and not def.pursues and not def.drives \
 			and not def.warned_first and not def.arrives_chasing
 
-## Sends one person in the park off on foot, out through the last gap and down the way out: the
-## ordinary departure a finished task gives (`EventInstance.leave_for_a_completed_task()`, with no
-## field and no cue, gone once out of her sight), or the manager's own retirement for one that
-## cannot take it.
-##
-## **A row that stands where it was placed has no departure of its own** — `EventDef.
-## departure_speed()` is zero for it, and `EventInstance._be_done()` then simply ends it, which in
-## her view is a vanishing. So such a person is handed a copy of their own row that walks off at
-## `Tuning.PARK_CLOSING_LEAVE_SPEED` (`EventDef.departs_at`, the field the warned neighbor runs
-## by), the same picture and body, before being sent. The copy carries `shape` and `solid_parts`
-## over by hand, since `Resource.duplicate()` does not (`ResistanceHappenings._maybe_raid()`'s
-## patrol does the same).
-##
-## **And the way they walk is set on the instance's own trail** (`EventInstance._trail`, which
-## `_leave()` walks back a point at a time and ends at), since a departure otherwise goes in a
-## straight line away from her, through the tape and whatever building stands that way. That field
-## is private to `EventInstance`; a public way to leave along a path there would replace both this
-## and the copied row.
+## Sends one person in the park off on foot, out through the last gap and down the way out
+## (`EventInstance.leave_along()`: no field and no cue, and gone only once she could not be
+## watching, never at the way's end), or the manager's own retirement for one that cannot leave. One
+## already leaving on their own is turned onto the way rather than left to walk straight away from
+## her, through the tape. A row that stands where it was placed has no departure of its own, so it
+## walks out at `Tuning.PARK_CLOSING_LEAVE_SPEED`.
 func _send_off(person: EventInstance) -> void:
-	if not person or not is_instance_valid(person) or person.is_finished or person.is_leaving:
+	if not person or not is_instance_valid(person) or person.is_finished or _leaving.has(person):
 		return
-	if person.def.departure_speed() <= 0.0:
-		var walking: EventDef = person.def.duplicate()
-		walking.shape = person.def.shape
-		walking.solid_parts = person.def.solid_parts
-		walking.departs_at = Tuning.PARK_CLOSING_LEAVE_SPEED
-		person.def = walking
-	person.leave_for_a_completed_task()
-	if not person.is_leaving:
+	var speed := Tuning.PARK_CLOSING_LEAVE_SPEED if person.def.departure_speed() <= 0.0 else 0.0
+	if not person.leave_along(_way_out_from(person.global_position), speed):
 		if _city and _city.events:
 			_city.events.retire(person)
 		return
-	person._trail = _trail_out_from(person.global_position)
 	_leaving.append(person)
 
 # ----------------------------------------------------------------- walking ---
@@ -792,6 +790,12 @@ func _move(officer: Officer, delta: float, her: Vector2, shows: Callable) -> voi
 ## Walks `step` pixels down the officer's path, dropping each point he reaches. True once the path
 ## is walked.
 func _walk_path(officer: Officer, step: float) -> bool:
+	return _walk_path_for(officer, step) >= 0.0
+
+## `_walk_path()`, answering what is left of `step` once the path is walked, or -1 while it is not,
+## so a taper goes on into his next stretch in the same frame rather than losing the rest of it at
+## every stretch's end, which over a large park's forty-odd stretches makes the close late.
+func _walk_path_for(officer: Officer, step: float) -> float:
 	var left := step
 	while left > 0.0 and not officer.path.is_empty():
 		var to := officer.path[0]
@@ -805,7 +809,7 @@ func _walk_path(officer: Officer, step: float) -> bool:
 		else:
 			officer.at += officer.heading * left
 			left = 0.0
-	return officer.path.is_empty()
+	return left if officer.path.is_empty() else -1.0
 
 ## A taper at the edge: his pace round it is set so his last stretch is taped at `deadline`,
 ## counting the corners he walks round — so the two finish together and the last gap closes then —
@@ -840,21 +844,22 @@ func _begin_stretch(officer: Officer) -> void:
 	officer.path.append(_outside(_end_of(officer, stretch), stretch.outward))
 
 func _tape(officer: Officer, delta: float, her: Vector2) -> void:
-	if officer.next >= officer.stretches.size():
-		return
-	if not _walk_path(officer, officer.tape_speed * delta):
-		return
-	var stretch := officer.stretches[officer.next]
-	if stretch.needed and not stretch.taped:
-		officer.holding = _in_the_way(stretch, her) \
-				or (gap.has(stretch) and _still_to_come_out())
-		if officer.holding:
+	var left := officer.tape_speed * delta
+	while officer.next < officer.stretches.size():
+		left = _walk_path_for(officer, left)
+		if left < 0.0:
 			return
-		_tape_up(stretch)
-	_plant_a_post(_end_of(officer, stretch))
-	officer.next += 1
-	if officer.next < officer.stretches.size():
-		_begin_stretch(officer)
+		var stretch := officer.stretches[officer.next]
+		if stretch.needed and not stretch.taped:
+			officer.holding = _in_the_way(stretch, her) \
+					or (gap.has(stretch) and _still_to_come_out())
+			if officer.holding:
+				return
+			_tape_up(stretch)
+		_plant_a_post(_end_of(officer, stretch))
+		officer.next += 1
+		if officer.next < officer.stretches.size():
+			_begin_stretch(officer)
 
 ## Whether a body centred at `at` reaching `reach` from its centre overlaps where a stretch's tape
 ## would stand.
@@ -888,7 +893,8 @@ func _walkers() -> PackedVector2Array:
 	return found
 
 ## Whether anyone the cordon is walking out has still to come out through the last gap: an escort
-## not yet in, or one inside or at the line, or one of the park's people there.
+## not yet in, or one inside or at the line — walking someone out, or sent back out alone because
+## his person went before he reached them — or one of the park's people there.
 func _still_to_come_out() -> bool:
 	var at_the_line := line.grow(WALKER_REACH)
 	for officer in officers:
@@ -897,7 +903,7 @@ func _still_to_come_out() -> bool:
 		match officer.phase:
 			Officer.Phase.WAITING, Officer.Phase.APPROACH:
 				return true
-			Officer.Phase.ESCORTING:
+			Officer.Phase.ESCORTING, Officer.Phase.LEAVING:
 				if at_the_line.has_point(officer.at):
 					return true
 	for person in _leaving:
@@ -945,13 +951,17 @@ func _approach_the_person(officer: Officer, delta: float, her: Vector2) -> void:
 	if not person or not is_instance_valid(person) or person.is_finished:
 		_leave(officer)
 		return
+	# Someone who set off on their own before he reached them is turned onto the way out at once,
+	# and he walks out behind them from where he is.
+	var already := person.is_leaving and not _leaving.has(person)
 	if not officer.path.is_empty():
 		officer.path[officer.path.size() - 1] = person.global_position
-	_walk_path(officer, officer.speed * delta)
-	if officer.at.distance_to(person.global_position) <= ESCORT_REACH:
+	if not already:
+		_walk_path(officer, officer.speed * delta)
+	if already or officer.at.distance_to(person.global_position) <= ESCORT_REACH:
 		_send_off(person)
 		officer.phase = Officer.Phase.ESCORTING
-		officer.path = PackedVector2Array(_exit)
+		officer.path = _way_out_from(officer.at)
 
 ## Walks out behind the person he sent off, down the same way, never nearer them along it than
 ## `ESCORT_BEHIND` — measured along the way rather than straight, so he stays behind them rather
@@ -967,8 +977,7 @@ func _escort(officer: Officer, delta: float, her: Vector2, shows: Callable) -> v
 	var points := PackedVector2Array([officer.at])
 	points.append_array(officer.path)
 	var theirs := PackedVector2Array([person.global_position])
-	for i in range(person._trail.size() - 1, -1, -1):
-		theirs.append(person._trail[i])
+	theirs.append_array(person.way_left())
 	var room := _length_of(points) - _length_of(theirs) - ESCORT_BEHIND
 	if room > 0.0:
 		_walk_path(officer, minf(officer.speed * delta, room))
@@ -997,14 +1006,7 @@ func _close(her: Vector2, shows: Callable) -> void:
 ## where she can see: from inside the gap if he is in the park, else from its point nearest him.
 func _leave(officer: Officer) -> void:
 	officer.phase = Officer.Phase.LEAVING
-	var from := 0
-	if not line.grow(WALKER_REACH).has_point(officer.at):
-		var nearest := INF
-		for i in _exit.size():
-			if _exit[i].distance_to(officer.at) < nearest:
-				nearest = _exit[i].distance_to(officer.at)
-				from = i
-	officer.path = _exit.slice(from)
+	officer.path = _way_out_from(officer.at)
 
 ## An officer on his way is gone once none of him could be seen.
 func _maybe_gone(officer: Officer, her: Vector2, shows: Callable) -> void:

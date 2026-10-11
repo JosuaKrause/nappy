@@ -4,7 +4,8 @@ extends RefCounted
 ## suite measures it — with her at the swing and the camera on her — and printed as a table.
 ##
 ## For each seed it prints the park's size, the walk from the swing to the last gap and how long
-## that takes at `Tuning.WALK_SPEED`, when the first officer comes into her view, when the last gap
+## that takes at `Tuning.WALK_SPEED`, when the first officer comes into her view and when the
+## cordon expected it (`ParkCordon.first_in_view`), the close it paced to, when the last gap
 ## is taped with her standing at the swing, the margin between the two beyond the walk, whether
 ## the gap's outside reaches home and the day's other calm ground with the park blocked and stands
 ## clear of the day's bodies and fields, and whether setting off at a walk a second after first
@@ -32,8 +33,9 @@ func run(t) -> void:
 		margins.append(margin)
 		closes.append(m.closed_at)
 		walks.append(walk_seconds)
-		print("seed %5d: park %3.0fx%3.0f, walk %3.0fpx (%.1fs), first seen %4.1fs, " % [seed_value,
-				size.x, size.y, m.walk, walk_seconds, m.first_seen]
+		print("seed %5d: park %3.0fx%3.0f, walk %3.0fpx (%.1fs), first seen %4.1fs (expected %4.1fs), "
+				% [seed_value, size.x, size.y, m.walk, walk_seconds, m.first_seen, m.first_in_view]
+				+ "deadline %4.1fs, " % m.deadline
 				+ "closed %4.1fs standing, %.1fs beyond the walk; " % [m.closed_at, margin]
 				+ "gap reaches home %s, other calm %s, clear %s (%s); walked out %s" % [
 				m.gap_reaches_home, m.other_calm_reached, m.gap_clear, m.gap_blocker, m.walked_out])

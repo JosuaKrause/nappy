@@ -3276,10 +3276,87 @@ func leave_for_a_completed_task() -> void:
 	if player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
 		_heading = (global_position - player_at).normalized()
 
+## **Leaves down a way chosen for it**: walks `way`'s points in order at `speed` (0 keeps the row's
+## own departure speed), then walks on away from her, a step at a time over walkable ground
+## (`_walkable_step()`, sliding along a wall rather than through it, and along the city's edge when
+## straight away from her is off it), until she could not be watching — `Tuning.OUT_OF_SIGHT` from her, the end every departure here has. **It never ends at
+## the way's last point**: that point was chosen out of her sight from where she was when the way
+## was planned, and she may since have walked there herself, so ending there would be a vanishing
+## in front of her (see "going away" above: the end of an event is a departure, not a deletion).
+##
+## For a departure that may not go in a straight line away from her: day 12's park people, walked
+## out through the cordon's last gap (`ParkCordon`) rather than through the tape. `speed` gives a
+## row that stands where it was placed, which has no departure of its own, a walking pace. An
+## instance already leaving on its own is turned onto the way. Like `leave_for_a_completed_task()`
+## it is a departure she may be standing beside, so `LEAVING_GIVES_UP` does not end it while she
+## could still be watching. Answers whether it is now leaving along the way: not for something
+## finished, parked, a guard leaving his barrier, or a row that ends rather than leaving
+## (`spawns_on_finish`).
+func leave_along(way: PackedVector2Array, speed := 0.0) -> bool:
+	if is_finished or is_parked or _guard_spent or _is_a_guard_leaving_his_barrier():
+		return false
+	_way_speed = speed
+	if not is_leaving:
+		_be_done(false)
+	if not is_leaving:
+		_way_speed = 0.0
+		return false
+	_way = way.duplicate()
+	_walks_a_way = true
+	_leaving_must_clear_sight = true
+	return true
+
+## What is left of the way `leave_along()` set, in order; empty once it is walked, or for any other
+## departure.
+func way_left() -> PackedVector2Array:
+	return _way
+
+## The way `leave_along()` set, each point dropped as it is reached; whether this departure walks
+## one; and its pace, 0 for the row's own.
+var _way := PackedVector2Array()
+var _walks_a_way := false
+var _way_speed := 0.0
+
+## Walks `step` pixels of `leave_along()`'s way, and past its end away from her.
+func _walk_the_way(step: float) -> void:
+	var left := step
+	while left > 0.0 and not _way.is_empty():
+		var toward := _way[0] - global_position
+		if toward.length() > left:
+			_heading = toward.normalized()
+			position += _heading * left
+			_path_travelled += left
+			return
+		position = _way[0]
+		left -= toward.length()
+		_path_travelled += toward.length()
+		_way.remove_at(0)
+	if left <= 0.0:
+		return
+	var away := _heading
+	if player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
+		away = (global_position - player_at).normalized()
+	var moved := _walkable_step(away * left)
+	if moved.is_zero_approx() and player_at != Vector2.INF:
+		# Straight away from her is a wall or the city's edge: along it, whichever way takes it
+		# farther from her.
+		for side: Vector2 in [away.orthogonal(), -away.orthogonal()]:
+			var along := _walkable_step(side * left)
+			if not along.is_zero_approx() and (global_position + along).distance_to(player_at) \
+					> (global_position + moved).distance_to(player_at):
+				moved = along
+	if moved.is_zero_approx():
+		return
+	_heading = moved.normalized()
+	position += moved
+	_path_travelled += moved.length()
+
 func _leave(delta: float) -> void:
 	_leaving_for += delta
 	var step := _leaving_speed() * delta
-	if not _trail.is_empty():
+	if _walks_a_way:
+		_walk_the_way(step)
+	elif not _trail.is_empty():
 		if not _walk_back(step):
 			return
 	else:
@@ -3304,6 +3381,8 @@ func _leave(delta: float) -> void:
 ## guard who set off from a barrier (`EventDef.body_stays_behind`): a roadblock has none of its own
 ## (it never travelled), and he leaves at the pace he chased at rather than vanishing in the street.
 func _leaving_speed() -> float:
+	if _way_speed > 0.0:
+		return _way_speed
 	if _is_a_guard_leaving_his_barrier():
 		return def.pursue_speed
 	return def.departure_speed()

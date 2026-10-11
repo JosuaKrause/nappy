@@ -17,6 +17,8 @@ const PATIENCE := 40.0
 const REACTION := 2.0
 
 var _city: City
+## Where the swing is, set by `_at_the_swing()` before it runs its `before_the_touch`.
+var _swing_now := Vector2.ZERO
 
 func run(t) -> void:
 	_city = CITY_SCENE.instantiate()
@@ -30,6 +32,9 @@ func run(t) -> void:
 	_test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t)
 	_test_no_tape_goes_up_through_the_pram(t)
 	_test_the_parks_people_are_walked_out_through_the_gap(t)
+	_test_a_person_walked_out_never_ends_in_her_view(t)
+	_test_someone_already_leaving_is_walked_out_through_the_gap(t)
+	_test_an_escort_sent_back_alone_holds_the_gap(t)
 	_test_the_park_stays_taken_and_the_cordon_goes_with_the_day(t)
 	_city.free()
 
@@ -68,6 +73,7 @@ func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
 	t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING,
 			"day 12 sends her to the swing")
 	var swing := director.contact_position()
+	_swing_now = swing
 	if before_the_touch.is_valid():
 		before_the_touch.call()
 	director._on_contact_completed(task.index if task else -1)
@@ -496,6 +502,151 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
 			"the gap closes only once they are both out of it")
 	t.check(escort.phase == ParkCordon.Officer.Phase.GONE and not seen.gone_seen,
 			"and the officer is gone where she cannot see him (%.1fs)" % waited)
+	_end(fixture)
+
+## The suite's busker, standing in the park's north-west when the cordon starts.
+func _busker_in_the_park() -> EventInstance:
+	var park := CityGenerator.swing_park(_city.map)
+	var area := _city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(_city.map, park))
+	return _city.events.spawn_extra(EventCatalogue.by_id("busker"),
+			area.position + area.size * Vector2(0.25, 0.3))
+
+## **A person walked out never ends in her view** *("Nothing vanishes while you are looking at
+## it": the end of an event is a departure, not a deletion)*. The way out ends out of sight of where
+## she stood at the touch, and it is her way out too: she walks it at `Tuning.WALK_SPEED`, setting
+## off 4s and then 8s after the touch, and stops where it ends. The busker walked out down it is
+## seen to go on past her, and is gone only where the camera on her cannot see him.
+func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
+	for set_off: float in [4.0, 8.0]:
+		var person: Array = [null]
+		var fixture := _at_the_swing(t, func() -> void: person[0] = _busker_in_the_park())
+		var happenings: ResistanceHappenings = fixture.happenings
+		var busker: EventInstance = person[0]
+		var her := [fixture.swing]
+		var shows := _camera_on(her)
+		happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+		var way := PackedVector2Array(happenings.cordon._exit)
+		var clock := STEP
+		var last := busker.global_position
+		var ended_in_view := false
+		while clock < PATIENCE * 2.0 and not busker.is_finished:
+			if clock >= set_off and not way.is_empty():
+				her[0] = (her[0] as Vector2).move_toward(way[0], Tuning.WALK_SPEED * STEP)
+				if (her[0] as Vector2).distance_to(way[0]) < 0.5:
+					way.remove_at(0)
+			busker.player_at = her[0]
+			busker._process(STEP)
+			happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+			clock += STEP
+			if busker.is_finished:
+				ended_in_view = shows.call(busker.def, last)
+			last = busker.global_position
+		t.check(busker.is_leaving and busker.is_finished,
+				"setting off %.0fs after the touch down the way out: the busker walked out ahead " % set_off
+				+ "of her is gone in the end (%.1fs)" % clock)
+		t.check(not ended_in_view, "and not where she can see him (%.0fpx from her)"
+				% last.distance_to(her[0]))
+		_end(fixture)
+
+## **Someone already leaving on their own is walked out through the gap too**, rather than straight
+## away from her through the tape: once when they set off before the swing is touched, and once
+## when they set off after it, before their escort has reached them.
+func _test_someone_already_leaving_is_walked_out_through_the_gap(t) -> void:
+	for after_the_touch: float in [-1.0, 0.5]:
+		var person: Array = [null]
+		var fixture := _at_the_swing(t, func() -> void:
+			person[0] = _busker_in_the_park()
+			if after_the_touch < 0.0:
+				_set_off_on_their_own(person[0], _swing_now))
+		var happenings: ResistanceHappenings = fixture.happenings
+		var busker: EventInstance = person[0]
+		var her := [fixture.swing]
+		var shows := _camera_on(her)
+		var clock := 0.0
+		var crossed_at := Vector2.INF
+		var through_tape := 0
+		var last := busker.global_position
+		var cordon: ParkCordon = null
+		while clock < PATIENCE and is_instance_valid(busker) and not busker.is_finished:
+			if after_the_touch >= 0.0 and clock >= after_the_touch and not busker.is_leaving:
+				_set_off_on_their_own(busker, her[0])
+			busker.player_at = her[0]
+			busker._process(STEP)
+			happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+			cordon = happenings.cordon
+			clock += STEP
+			var now := busker.global_position
+			for stretch in cordon.stretches:
+				if stretch.taped and Geometry2D.segment_intersects_segment(last, now, stretch.a,
+						stretch.b) != null:
+					through_tape += 1
+			if cordon.line.has_point(last) and not cordon.line.has_point(now):
+				crossed_at = now
+			last = now
+		var when := "already leaving at the touch" if after_the_touch < 0.0 \
+				else "setting off %.1fs after it" % after_the_touch
+		t.check(crossed_at != Vector2.INF
+				and crossed_at.distance_to(cordon.last_gap) <= Tuning.TILE_SIZE * 1.5,
+				"a busker %s leaves the park through the last gap (%.0fpx from it)"
+				% [when, crossed_at.distance_to(cordon.last_gap)])
+		t.check(through_tape == 0, "without walking through tape (%d)" % through_tape)
+		_end(fixture)
+
+## Sends `person` off on a departure of their own, straight away from `her`: a copy of their row
+## with a walking pace, since a busker has none.
+func _set_off_on_their_own(person: EventInstance, her: Vector2) -> void:
+	var walking: EventDef = person.def.duplicate()
+	walking.shape = person.def.shape
+	walking.solid_parts = person.def.solid_parts
+	walking.departs_at = Tuning.PARK_CLOSING_LEAVE_SPEED
+	person.def = walking
+	person.player_at = her
+	person.leave_for_a_completed_task()
+
+## **An escort sent back out alone still holds the gap.** His person goes before he reaches them,
+## so he turns back from inside the park; until he is out, the last gap is not taped behind him, and
+## he never walks through tape.
+func _test_an_escort_sent_back_alone_holds_the_gap(t) -> void:
+	var person: Array = [null]
+	var fixture := _at_the_swing(t, func() -> void: person[0] = _busker_in_the_park())
+	var happenings: ResistanceHappenings = fixture.happenings
+	var busker: EventInstance = person[0]
+	var her := [fixture.swing]
+	var shows := _camera_on(her)
+	happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+	var cordon := happenings.cordon
+	var escort: ParkCordon.Officer = null
+	for officer in cordon.officers:
+		if officer.job == ParkCordon.Officer.Job.ESCORT:
+			escort = officer
+	var waited := 0.0
+	while waited < PATIENCE and escort and not (escort.phase == ParkCordon.Officer.Phase.APPROACH
+			and cordon.line.grow(-Tuning.TILE_SIZE).has_point(escort.at)):
+		happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+		waited += STEP
+	t.check(escort != null and cordon.line.has_point(escort.at),
+			"an escort is inside the park on his way to the busker (%.1fs)" % waited)
+	_city.events.retire(busker)
+	happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+	t.check(escort.phase == ParkCordon.Officer.Phase.LEAVING and cordon._still_to_come_out(),
+			"with the busker gone, he turns back, and the gap waits for him")
+	var last := escort.at
+	var through_tape := 0
+	var inside_at_the_close := false
+	while waited < PATIENCE * 2.0 and not cordon.is_closed():
+		var was_closed := cordon.is_closed()
+		happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+		waited += STEP
+		for stretch in cordon.stretches:
+			if stretch.taped and Geometry2D.segment_intersects_segment(last, escort.at, stretch.a,
+					stretch.b) != null:
+				through_tape += 1
+		if not was_closed and cordon.is_closed():
+			inside_at_the_close = cordon.line.has_point(escort.at)
+		last = escort.at
+	t.check(cordon.is_closed() and not inside_at_the_close,
+			"the gap closes only once he is out of it")
+	t.check(through_tape == 0, "and he never walks through tape (%d)" % through_tape)
 	_end(fixture)
 
 ## The park stays requisitioned the next morning, and the cordon's nodes and obstructed tiles go

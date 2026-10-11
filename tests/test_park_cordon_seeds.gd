@@ -59,6 +59,14 @@ func _check(t, seed_value: int, m: Dictionary) -> void:
 			% [m.walk, m.walk / Tuning.WALK_SPEED, Tuning.PARK_CLOSING_WARNING])
 	t.check(m.walked_out, "%s: setting off at a walk %.0fs after first sight gets her out"
 			% [what, REACTION])
+	# What the cordon says of itself is what happens: the close it logs and paces to, unless the
+	# park's people hold the gap, and when it expects an officer in her view.
+	t.check(m.people > 0 or absf(m.closed_at - m.deadline) <= 0.25,
+			"%s: the gap closes when the cordon said it would (%.1fs, said %.1fs)"
+			% [what, m.closed_at, m.deadline])
+	t.check(absf(m.first_seen - m.first_in_view) <= 0.25,
+			"%s: and an officer is first in view when it said (%.1fs, said %.1fs)"
+			% [what, m.first_seen, m.first_in_view])
 
 ## Day 12 on `seed_value`'s city, played twice from the swing's touch: once standing at the swing,
 ## and once walking out through the last gap `REACTION` after an officer first comes into view.
@@ -124,6 +132,12 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	result.closed_at = standing.closed_at
 	result.trapped_standing = standing.trapped
 	result.deadline = cordon.deadline
+	result.first_in_view = cordon.first_in_view
+	var people := cordon._leaving.size()
+	for officer in cordon.officers:
+		if officer.job == ParkCordon.Officer.Job.ESCORT:
+			people += 1
+	result.people = people
 	cordon.clear()
 	var again := ParkCordon.new(city.map, city, cordon.park, director._reach_blocked)
 	her[0] = swing
