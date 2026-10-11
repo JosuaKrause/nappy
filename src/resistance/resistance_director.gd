@@ -2823,8 +2823,8 @@ func _reach_distance(instance: EventInstance) -> float:
 ## changes target while he is in her view and keeps him in it until she arrives**: then he is still
 ## at the one before, and only moving him in her view would put him at hers. **Wherever he is when
 ## she has done the task — in the band, on the ring past it, at another roadblock — he starts after
-## her the moment she has** (`_set_the_task_guard_on_her()`), and a chase begun round a corner can
-## lose her as any chase can.
+## her the moment she has** (`_set_the_task_guard_on_her()`), walking round the buildings between
+## them rather than stalling behind one (`EventInstance._paths_to_her`); running shakes him off.
 ##
 ## **A guard who has noticed her is not moved**, nor one whose chase is over: he is after her, or
 ## gone, and a move would take him off her or bring him back.
@@ -2887,8 +2887,10 @@ func _move_the_task_guard_to_her_target() -> void:
 ## from where he is: from the band with a clear line, as he would have; from the roadblock before,
 ## from the ring past the band, or round a corner, the same. **He starts after her and walks round
 ## buildings to her** (`EventInstance._paths_to_her`): where no clear line runs to her he follows the
-## walk to her, refreshed as she moves, so from another roadblock he comes all the way to her;
-## running still shakes him off, as it does any chase. He is
+## walk to her, refreshed as she moves, so from another roadblock he comes all the way to her unless
+## she leaves him behind: he gains on a walker only 38px a second (his 130 against
+## `Tuning.WALK_SPEED`'s 92), so from across the city a walk away can outlast his
+## `Tuning.PURSUIT_TIME` chase; running still shakes him off, as it does any chase. He is
 ## already in the world, so nothing appears: off screen he comes on from off screen, his badge up as
 ## he closes on her (`DangerEdge`), and in view he is the guard she can already see. The chase keeps
 ## every pursuit rule — his notice before any lunge, his stand-off while it runs, a lunge only along

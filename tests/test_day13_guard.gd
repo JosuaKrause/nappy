@@ -15,9 +15,9 @@ extends RefCounted
 ## Whichever roadblock she touches, the guard comes after her the moment she has done it *(the
 ## player: "as long as he starts pursuing when you hit the task it's fine")*: parked at another
 ## roadblock, kept there by her view, he is chasing her the moment she touches the one she
-## approached, and comes all the way to her, walking round the buildings between them; set on her
-## with a building across his straight line, where a chase straight at her stalls, he walks round
-## it to her; and a guard who already noticed her is left on her exactly as he was.
+## approached, and, with her standing there, comes all the way to her, walking round the buildings
+## between them; set on her with a building across his straight line, where a chase straight at her
+## stalls, he walks round it to her while she stands; and a guard who already noticed her is left on her exactly as he was.
 ##
 ## And day 13's own roadblock is placed under the day's rules, close by *(inbox #650 in mossy-beaver:
 ## "let's place one properly and guide to that -- just make sure it's closeby")*: on several cities,
@@ -512,6 +512,9 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 		return
 	var map := city.map
+	# The guard's walk and the red arrow read one ground, so they agree where she can walk.
+	t.check(director._ground_for_the_arrow() == ArrowField.ground_for(map),
+			"(round a building) the red arrow's ground is the one the guard's walk is swept over")
 	var standoff := Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach())
 	var from := guard.global_position
 	var walk := map.walk_field(map.world_to_tile(from))
@@ -528,7 +531,8 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 					continue
 				var spot := map.tile_to_world(tile)
 				if map.clear_line(from, spot) \
-						or _a_straight_chase_reaches(map, from, spot, standoff):
+						or _a_straight_chase_reaches(map, from, spot, standoff,
+								guard.def.pursue_speed):
 					continue
 				at = spot
 				tiles_to_her = map.distance_at(walk, tile)
@@ -560,15 +564,16 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 
 ## Whether a chase straight at `to` from `from`, sliding along walls as every pursuer's step does
-## (`EventInstance.walkable_step_on()`), ever comes within `standoff` of it, in 30s at 130px/s.
+## (`EventInstance.walkable_step_on()`), ever comes within `standoff` of it in 30s at `speed`, in
+## steps of a tenth of a second.
 static func _a_straight_chase_reaches(map: CityMap, from: Vector2, to: Vector2,
-		standoff: float) -> bool:
+		standoff: float, speed: float) -> bool:
 	var at := from
 	for i in 300:
 		var toward := to - at
 		if toward.length() <= standoff:
 			return true
-		var step := toward.normalized() * minf(13.0, toward.length())
+		var step := toward.normalized() * minf(speed * 0.1, toward.length())
 		at += EventInstance.walkable_step_on(map, at, step)
 	return false
 

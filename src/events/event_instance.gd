@@ -2842,8 +2842,16 @@ var _her_way_chain_field: ArrowField
 ## has moved on rather than only when the targets change. A sweep is adopted as soon as it has
 ## reached his tile, so from close by it takes a frame or two.
 const WAY_SWEEP_TILES_PER_FRAME := 500
-## How far, in tiles either way, she walks from where his sweep began before another is begun.
+## How far, in tiles either way, she walks from where his sweep began before another is begun,
+## at the least: close to her a sweep is a frame or two, and a walk two tiles stale is a corner cut
+## wrong.
 const WAY_REFRESH_TILES := 2
+## **And while he is far, a sweep is begun only once she has walked a quarter of his walk to her**
+## from where the last began. Far off, every sweep is many frames, and one begun every two tiles of
+## her walk kept a sweep under way on most frames of a chase she walked away from; a walk that is
+## a quarter stale still takes him the right way round the buildings, and it is refreshed more
+## often the nearer he comes.
+const WAY_REFRESH_SHARE := 4
 ## How many tiles down the sweep he looks for the farthest he can see to aim at, so his walk
 ## cuts the corners the four-way tile walk takes rather than zig-zagging along it.
 const WAY_LOOKAHEAD_TILES := 6
@@ -2860,8 +2868,12 @@ func _keep_the_way_to_her_fresh() -> void:
 	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
 	if _her_way_next == null:
 		var her := _map.world_to_tile(player_at)
-		var moved := absi(her.x - _her_way_from.x) >= WAY_REFRESH_TILES \
-				or absi(her.y - _her_way_from.y) >= WAY_REFRESH_TILES
+		var stale := WAY_REFRESH_TILES
+		if _her_way != null:
+			var his := _her_way.length_at(_map.world_to_tile(global_position))
+			stale = maxi(stale, floori(float(his) / WAY_REFRESH_SHARE))
+		var moved := absi(her.x - _her_way_from.x) >= stale \
+				or absi(her.y - _her_way_from.y) >= stale
 		if _her_way != null and not moved and _her_way.versions == versions:
 			return
 		var target: Array[Dictionary] = [{"key": 0, "at": player_at, "reach": 0.0,
@@ -2879,32 +2891,17 @@ func _keep_the_way_to_her_fresh() -> void:
 		_her_way_next = null
 		_her_way_next_ground = PackedInt32Array()
 
-## The ground his sweeps run over: each tile `ArrowField.UNREACHED`, or `ArrowField.BLOCKED` where
-## she cannot walk right now — the red arrow's own reading of it
-## (`ResistanceDirector._ground_for_the_arrow()`): today's closures, the soft seals, the tile under
-## every stationary body standing and a precinct's posts, and outside an authored scene's stretch.
-## So he walks round what she has to walk round rather than through a barrier. Laid out once for
-## each state of what blocks her.
+## The ground his sweeps run over, the red arrow's own (`ArrowField.ground_for()`): what she cannot
+## walk right now is blocked — today's closures, the soft seals, the tile under every stationary
+## body standing and a precinct's posts. So where no clear line runs to her he walks round what she
+## has to walk round; with a clear line he goes straight at her, through a barrier as any chase does
+## (`_walkable_step()` asks only the tiles). Laid out once for each state of what blocks her.
 func _ground_for_the_way(versions: Vector2i) -> PackedInt32Array:
 	if versions == _her_way_ground_versions and not _her_way_ground_laid.is_empty():
 		return _her_way_ground_laid
-	var width := _map.size.x
-	var ground := PackedInt32Array()
-	ground.resize(width * _map.size.y)
-	ground.fill(ArrowField.UNREACHED)
-	if _map.stretch_active:
-		for y in _map.size.y:
-			for x in _map.size.x:
-				if not _map.in_stretch(Vector2i(x, y)):
-					ground[y * width + x] = ArrowField.BLOCKED
-	for blocked: Dictionary in [_map.closed_tiles, _map.soft_sealed_tiles, _map.obstructed_tiles,
-			_map.post_tiles()]:
-		for tile: Vector2i in blocked:
-			if _map.in_bounds(tile):
-				ground[tile.y * width + tile.x] = ArrowField.BLOCKED
-	_her_way_ground_laid = ground
+	_her_way_ground_laid = ArrowField.ground_for(_map)
 	_her_way_ground_versions = versions
-	return ground
+	return _her_way_ground_laid
 
 ## Which way he walks toward her: `straight` where he has a clear line to her or no sweep has
 ## reached him yet, else toward the farthest of the next `WAY_LOOKAHEAD_TILES` tiles down the walk

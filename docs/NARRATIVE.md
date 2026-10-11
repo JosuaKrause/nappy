@@ -267,9 +267,11 @@ touch".)*
   is in her view from the moment she turns toward another until she reaches it, or no spot round it
   leaves her a way past him. Wherever he stands when she has done the task — in the band, past it,
   at another roadblock — he starts after her the moment she has, if he has not noticed her yet, an
-  ordinary chase from there, except that he walks round the buildings between them toward her, so
-  from another roadblock he comes all the way to her; running still shakes him off. *(2026-10-10, the player: "as long as he starts pursuing when you hit the task it's
-  fine".)* Once he has noticed her he stays on her. *(2026-10-10, [lilac-marmot](playtests/2026-10-10-lilac-marmot.md):
+  ordinary chase from there, except that he walks round the buildings between them rather than
+  stalling behind one, so from another roadblock he comes all the way to her unless she leaves him
+  behind: walking away she loses ground to him only slowly, and from across the city his chase can
+  run out first; running still shakes him off. *(2026-10-10, the player: "as long as he starts
+  pursuing when you hit the task it's fine".)* Once he has noticed her he stays on her. *(2026-10-10, [lilac-marmot](playtests/2026-10-10-lilac-marmot.md):
   "just move the guard always to any roadblock she approaches. We can move the guard around
   offscreen as much as we want. If we need to move multiple times so be it".)* Seeded from the run and the day, so the distance or the alley that was
   safe on day 9 of this run is safe on day 9 every time you replay it — the pattern is learnable,
