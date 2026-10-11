@@ -98,6 +98,8 @@ class Officer extends RefCounted:
 	var next := 0
 	## Whether he is standing beside a stretch she is in, waiting for her to step off it.
 	var holding := false
+	## A taper's pace along the edge, set when he reaches it.
+	var tape_speed := 0.0
 	## An escort's person.
 	var person: EventInstance = null
 	var node: CordonOfficer = null
@@ -119,8 +121,6 @@ var closed_at := -1.0
 var trapped := false
 ## The point of the line nearest her when the officers set out, where the last gap closes.
 var last_gap := Vector2.INF
-## The taping pace, set when the first taper reaches the edge.
-var _tape_speed := 0.0
 var _started := false
 
 ## Starts closing `block`'s park: the line, its stretches and which of them need tape. Nothing is
@@ -458,29 +458,31 @@ func _walk_path(officer: Officer, step: float) -> bool:
 			left = 0.0
 	return officer.path.is_empty()
 
-## A taper at the edge: the taping pace is set the first time one gets there, so the last gap
-## closes `Tuning.PARK_CLOSING_SECONDS` after the touch, never faster than
+## A taper at the edge: his pace round it is set so his last stretch is taped
+## `Tuning.PARK_CLOSING_SECONDS` after the touch, counting the corners he walks round — so the two
+## finish together and the last gap closes then — never faster than
 ## `Tuning.PARK_CLOSING_STRETCH_MIN` a stretch.
 func _reach_the_edge(officer: Officer) -> void:
 	officer.phase = Officer.Phase.TAPING
-	if _tape_speed <= 0.0:
-		var longest := 0.0
-		var most := 1
-		for each in officers:
-			if each.job != Officer.Job.TAPE:
-				continue
-			var length := 0.0
-			for stretch in each.stretches:
-				length += stretch.length()
-			longest = maxf(longest, length)
-			most = maxi(most, each.stretches.size())
-		var left := maxf(Tuning.PARK_CLOSING_SECONDS - elapsed,
-				Tuning.PARK_CLOSING_STRETCH_MIN * most)
-		_tape_speed = longest / left
 	if officer.stretches.is_empty():
 		return
+	var left := maxf(Tuning.PARK_CLOSING_SECONDS - elapsed,
+			Tuning.PARK_CLOSING_STRETCH_MIN * officer.stretches.size())
+	officer.tape_speed = _round_length(officer) / left
 	_plant_a_post(_start_of(officer, officer.stretches[0]))
 	_begin_stretch(officer)
+
+## How far a taper walks round the edge: his stretches beside the line, and round the outside of
+## every corner between two of them.
+func _round_length(officer: Officer) -> float:
+	var length := 0.0
+	var side := Vector2i.ZERO
+	for stretch in officer.stretches:
+		if side != Vector2i.ZERO and side != stretch.outward:
+			length += OFFICER_OUTSIDE * 2.0
+		side = stretch.outward
+		length += stretch.length()
+	return length
 
 func _start_of(officer: Officer, stretch: Stretch) -> Vector2:
 	return stretch.a if officer.forward else stretch.b
@@ -504,7 +506,7 @@ func _begin_stretch(officer: Officer) -> void:
 func _tape(officer: Officer, delta: float, her: Vector2) -> void:
 	if officer.next >= officer.stretches.size():
 		return
-	if not _walk_path(officer, _tape_speed * delta):
+	if not _walk_path(officer, officer.tape_speed * delta):
 		return
 	var stretch := officer.stretches[officer.next]
 	if stretch.needed and not stretch.taped:

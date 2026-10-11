@@ -246,7 +246,7 @@ func _test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t) -> void:
 	var cordon := happenings.cordon
 	t.check(cordon.is_closed() and cordon.trapped, "standing at the swing, she is shut in")
 	t.check(cordon.closed_at >= Tuning.PARK_CLOSING_SECONDS - 0.05
-			and cordon.closed_at <= Tuning.PARK_CLOSING_SECONDS + 3.0,
+			and cordon.closed_at <= Tuning.PARK_CLOSING_SECONDS + 0.5,
 			"the last gap is taped about %.0fs after the touch (%.1fs)"
 			% [Tuning.PARK_CLOSING_SECONDS, cordon.closed_at])
 	var fails: Array[String] = listener[0]
