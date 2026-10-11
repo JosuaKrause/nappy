@@ -1,6 +1,6 @@
 {
  "version": 1,
- "name": "Day 13: a roadblock's guard sets off after her and the barrier stays (evidence capture)",
+ "name": "Day 13: a roadblock's guard sets off after her, she runs, he gives up, and the barrier stays (evidence capture)",
  "seed": 11,
  "extent": {
   "scope": "full"
@@ -37,11 +37,11 @@
   ]
  },
  "playback": {
-  "walk": "22p",
-  "duration": 24.0,
+  "walk": "0.5p1.5E30p",
+  "duration": 34.0,
   "capture_at": 0.3,
   "camera": {
-   "zoom": 1.0
+   "zoom": 0.65
   }
  }
 }
