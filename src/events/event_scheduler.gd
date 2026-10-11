@@ -1811,6 +1811,11 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ## furniture. **`WalkSiting.ahead_of()`/`off_her_path()` do not pass one** — the director hands
 ## them the whole of `_plans`, seals and the wall included, as their own `already`
 ## (`EventManager.start_day`), so they already ask every question `standing` exists to add here.
+static var DBG := {}
+static func _dbg(why: String, def: EventDef) -> void:
+	if def.id == "loudspeaker":
+		DBG[why] = int(DBG.get(why, 0)) + 1
+
 static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
@@ -1828,6 +1833,7 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := _build_placement(def, map, tile, rng)
 		if not candidate:
+			_dbg('build', def)
 			continue
 		candidate.role = role
 		# **A pacing row's role is decided here rather than in `_role_for`**, because what makes a
@@ -1844,11 +1850,13 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		# Before the spacing, because this one is about the *ground* rather than about what is
 		# already on it, and because it can never bend.
 		if _reaches_any(candidate, leave_alone):
+			_dbg('leave_alone', def)
 			continue
 		# And for the same reason: a region door keeps clear ground around itself on both sides, so
 		# that whichever side she is let out on is ground she can read before anything charges her.
 		# See `_clear_of_the_doors()` and `Tuning.CHECKPOINT_EVENT_GAP`.
 		if not _clear_of_the_doors(candidate.position, candidate.path, doors, def.field_reach()):
+			_dbg('doors', def)
 			continue
 		# And before the spacing for the same reason: a crossing a route has no way around is
 		# ground the row may not have, not a preference that bends. See
@@ -1856,17 +1864,20 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		# see this function's own doc — so a seal or the region wall already reaching this
 		# crossing is not invisible to it.
 		if not _leaves_the_route_junctions_open(candidate, map, corridor, ground, reach_context):
+			_dbg('junctions', def)
 			continue
 		# And the same for the stretch between two junctions, asked of the sidewalk the tree is
 		# actually walked along rather than of the street: the far side of a street answers a van,
 		# and nothing answers a van on the side the route is drawn down. See
 		# `_leaves_the_routes_sidewalk_open`.
 		if not _leaves_the_routes_sidewalk_open(candidate, map, corridor, ground, reach_context):
+			_dbg('sidewalk', def)
 			continue
 		# And the opening a pacing row's beat leaves is ground in its own right: the rows reaching
 		# one route street are asked together whether a walk along it survives, so nothing stands in
 		# the one end the yeller is away from. See `_leaves_a_pacing_beats_opening`.
 		if not _leaves_a_pacing_beats_opening(candidate, map, corridor, reach_context):
+			_dbg('pacing', def)
 			continue
 		var room := _room_around(candidate, already)
 		if room == INF:
