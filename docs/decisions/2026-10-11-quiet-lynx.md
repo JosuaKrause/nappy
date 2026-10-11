@@ -17,7 +17,8 @@ hard mode since hard mode doesn't affect gameplay -- only restart pacing".
 
 - **The title has one option.** A "Hard Mode" checkbox sits under "press a button to begin" when the
   title begins a new game, and never in front of a resumed save or the escape's title. A tap, a
-  click or `H` flips it and none of them starts the run. The mode is `GameState.hard_mode`, set when
+  click or `H` flips it and none of them starts the run. It is drawn at 1.5x with a 28-design-px reach, about a
+  50pt target on a phone held landscape. The mode is `GameState.hard_mode`, set when
   the title is dismissed and carried in the save as a top-level key, so a save without it reads as
   normal.
 - **A checkpoint is the whole save at its dawn.** `GameState.begin_day()` keeps `GameSave.run_data()`
@@ -27,7 +28,11 @@ hard mode since hard mode doesn't affect gameplay -- only restart pacing".
   save file carries and asserts each comes back as day 4's dawn, so a field added to the save later
   fails it until the checkpoint carries it too.
 - **Normal mode never reaches GAME OVER.** Its last lost nerve shows the lost-day summary, "Your
-  nerves gave out. Back to day N." with five stars and the ordinary continue; a resumed save that
+  nerves gave out. Back to day N." with five stars and the ordinary continue; that continue reloads the scene and starts the checkpoint's day
+  directly, on the run read back the way a load reads it (`GameSave.load_in_memory()`), so nothing
+  a later day put on the world, such as day 11's boarded window over the neighbor's flat, survives
+  the trip back (clearing the window at a dawn before day 11 was rejected: it fixes the one fact
+  found and not the next); a resumed save that
   spends the last nerve says "Left before the day ended. That was the last nerve — back to day N."
   The held restart still starts from scratch in both modes.
 - **Hard mode is the old run, and its escape spends nerves.** A lost section costs one and at zero
