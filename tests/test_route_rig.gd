@@ -416,12 +416,6 @@ func _test_unstick_tries_the_direction_away_from_what_caught_her_first(t) -> voi
 
 # --------------------------------------------------------- _reachable_point_near ---
 
-## **The rig never goes through a street door's boom** *(2026-09-24, the player: "The bot shouldn't
-## route through the boom either way.")*: a `checkpoint_gate` stood across a straight stretch of
-## road, and a plan from four tiles on one side of it to four tiles on the other, which the bare
-## grid walks straight down the road through it, never steps on ground where the boom — rather
-## than a hut — would be the body to take her. The gate is added to the day's plan by hand, since
-## this suite's day has no region door; it is the plan `RouteRig` reads doors from.
 ## **A plan across a precinct's mouth goes round the row on the pavement.** The posts shut the
 ## carriageway band (`City.bollard_positions()`, `tests/test_bollards.gd`), so a plan from the
 ## street side of the middle of the row to the precinct side must not step on a tile of the posts'
@@ -448,6 +442,12 @@ func _test_a_plan_never_goes_through_a_precincts_posts(t) -> void:
 			"a plan across a precinct's mouth goes round the row rather than through its posts")
 	rig.free()
 
+## **The rig never goes through a street door's boom** *(2026-09-24, the player: "The bot shouldn't
+## route through the boom either way.")*: a `checkpoint_gate` stood across a straight stretch of
+## road, and a plan from four tiles on one side of it to four tiles on the other, which the bare
+## grid walks straight down the road through it, never steps on ground where the boom — rather
+## than a hut — would be the body to take her. The gate is added to the day's plan by hand, since
+## this suite's day has no region door; it is the plan `RouteRig` reads doors from.
 func _test_a_plan_never_goes_through_the_boom(t) -> void:
 	var road := _find_straight_road(t)
 	if road == Vector2i(-1, -1):

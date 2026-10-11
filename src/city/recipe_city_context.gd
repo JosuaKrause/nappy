@@ -245,6 +245,7 @@ static func restore(data: Dictionary) -> CityMap:
 			map.zone_anchor[block] = zone.position
 	for value: Array in data.precincts:
 		map.precinct_spans.append(Vector4i(int(value[0]), int(value[1]), int(value[2]), int(value[3])))
+	map.index_posts()
 	for field: String in SETS:
 		var set: Dictionary = map.get(field)
 		for value: Array in data[field]:

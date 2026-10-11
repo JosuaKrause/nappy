@@ -18,7 +18,7 @@ func run(t) -> void:
 	_test_the_row_stops_her_and_the_pavement_does_not(t)
 	_test_the_row_stops_her_at_a_diagonal_from_every_offset(t)
 	_test_holding_a_diagonal_never_gets_her_past_the_row(t)
-	_test_no_route_of_the_day_goes_through_a_row(t)
+	_test_nothing_walks_through_the_row_but_her_own_body(t)
 
 func _prop(t, kind: Prop.Kind, at := Vector2.ZERO) -> Prop:
 	var prop := Prop.new()
@@ -202,6 +202,7 @@ func _test_holding_a_diagonal_never_gets_her_past_the_row(t) -> void:
 					held * Tuning.PLAYER_BODY_RADIUS
 			var past := false
 			var through_the_row := false
+			var crossed := false
 			for frame in 240:
 				var motion: Vector2 = held * STEP
 				var collision: KinematicCollision2D = player.move_and_collide(motion)
@@ -213,10 +214,13 @@ func _test_holding_a_diagonal_never_gets_her_past_the_row(t) -> void:
 					collision = player.move_and_collide(motion)
 					slides += 1
 				var progress := (player.global_position - start).dot(forward)
-				if progress > 60.0 + 2.0 * Tuning.PLAYER_BODY_RADIUS + 20.0:
-					past = true
+				# Where she is across the band the frame her centre first crosses the row's line.
+				if not crossed and progress > 60.0:
+					crossed = true
 					var lateral := player.global_position.x if vertical else player.global_position.y
 					through_the_row = lateral > first and lateral < last
+				if progress > 60.0 + 2.0 * Tuning.PLAYER_BODY_RADIUS + 20.0:
+					past = true
 					break
 			t.check(past and not through_the_row,
 					"holding a diagonal (%+.0f) from offset %d, she gets past the row only round its end"
@@ -224,27 +228,37 @@ func _test_holding_a_diagonal_never_gets_her_past_the_row(t) -> void:
 			player.free()
 	holder.free()
 
-## The day's routes (`RouteTree`) are what the route line draws and what the closures keep open, so
-## one that stepped from or onto a post's tile would be a route she cannot walk: the growth sees no
-## such step, and still grows routes into the precincts by the pavement beside the row. A route may
-## cross a row's cell on the tile column beside the post (a cell is two tiles square), so the check
-## is on the steps the growth is offered, not on which cells a route holds.
-func _test_no_route_of_the_day_goes_through_a_row(t) -> void:
-	var routes := 0
-	var steps_onto_posts := 0
-	for i in 12:
-		var map: CityMap = CityGenerator.generate(500 + i * 31)
-		if map.precinct_spans.is_empty():
-			continue
-		var posts := {}
-		for at in City.bollard_positions(map):
-			posts[map.world_to_tile(at)] = true
-		var tree := RouteTree.for_day(map, 6)
-		for node in tree.grid.node_count():
-			for edge: Array in tree._ways(node):
-				if posts.has(edge[1]) or posts.has(edge[2]):
-					steps_onto_posts += 1
-		for branch in tree.branches:
-			routes += branch.routes.size()
-	t.check(routes > 0, "the sweep grew routes (%d)" % routes)
-	t.check(steps_onto_posts == 0, "the growth is offered no step onto or off a post's tile (%d)" % steps_onto_posts)
+## **Everything that steps or floods for her or a pursuer sees the posts' tiles as blocked**, the
+## way her body does (`CityMap.post_tiles()`): a pursuer's step does not enter one, a flood from the
+## street side of a row reaches the precinct side only by the pavement (so it is longer than the
+## straight line down the band), and `ReachabilityGrid` has no node on a post's tile but joins the
+## two sides all the same.
+func _test_nothing_walks_through_the_row_but_her_own_body(t) -> void:
+	for seed_value in [1000, 500, 4242]:
+		var map: CityMap = CityGenerator.generate(seed_value)
+		var posts := City.bollard_positions(map)
+		var row: Dictionary = _rows(map)[0]
+		var vertical: bool = row.vertical
+		var along := Vector2(0.0, 1.0) if vertical else Vector2(1.0, 0.0)
+		var tile := Vector2i(1, 0) if vertical else Vector2i(0, 1)
+		var middle: Vector2 = posts[2]
+		for at in posts:
+			t.check(not map.is_walkable(map.world_to_tile(at)) and not map.is_open(map.world_to_tile(at)),
+					"a post's tile is neither walkable nor open")
+		# A pursuer walking straight down the band is not let onto the row's tile.
+		var before := middle - along * float(Tuning.TILE_SIZE)
+		var step := EventInstance.walkable_step_on(map, before, along * float(Tuning.TILE_SIZE))
+		t.check(not step.is_equal_approx(along * float(Tuning.TILE_SIZE)),
+				"a pursuer's step does not enter the row's tile (seed %d)" % seed_value)
+		# Reachability: round by the pavement, never through.
+		var from := map.world_to_tile(middle - along * float(Tuning.TILE_SIZE) * 3.0)
+		var to := map.world_to_tile(middle + along * float(Tuning.TILE_SIZE) * 3.0)
+		var field := map.walk_field(from)
+		t.check(map.reaches(field, to), "the two sides of the row are joined (seed %d)" % seed_value)
+		t.check(map.distance_at(field, to) > 6,
+				"and joined round the row, not down the band (%d tiles, seed %d)"
+				% [map.distance_at(field, to), seed_value])
+		var grid := ReachabilityGrid.build(map)
+		t.check(grid.node_at(map.world_to_tile(middle)) < 0, "the grid has no node on a post's tile")
+		var reached := grid.flood([from])
+		t.check(grid.reaches(to, {}, reached), "the grid joins the two sides of the row (seed %d)" % seed_value)

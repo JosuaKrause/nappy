@@ -70,10 +70,13 @@ facing, so a gap has to be narrower than her body to shut; 14px less two posts' 
 4.4px slit, and the row of five (4px in from either edge of the 64px band) is a wall to her at
 every facing. *(2026-10-10, the player: "it will make the middle of the road impassable when going
 from street to pedestrian road. that's okay. this is intended".)* The way from the street into the
-precinct is the pavement either side, so the row is a detour inside the junction box, never a cut. The
-day's routes (`RouteTree`) take no step onto or off a post's tile, so a route into a precinct, and
-the route line drawn from it, goes in by the pavement; the route rig (`--route`) blocks the tiles
-within her body's reach of a post in every plan, for the same reason.
+precinct is the pavement either side, so the row is a detour inside the junction box, never a cut. Every
+reader that asks where she or a pursuer can stand or step, and every flood that guarantees the
+city stays walkable, sees a post's tile as blocked (`CityMap.post_tiles()`, folded into
+`is_walkable()`, `is_open()`, `walk_field()`, `ReachabilityGrid` and the red arrow's ground), so a
+pursuer goes round by the pavement as she does and a winnability check counts the row as shut.
+The tile's type stays paving, so the ground and the crowd read it as before. The route rig also
+keeps every plan a body's width off a post.
 Crowd walkers have no bodies and walk through the posts; that is left as it is unless the player
 finds it reads wrong. **Nothing drives on the span itself, on either axis.** A
 street crossing it internally meets paving rather than a carriageway and gets no zebra — the box is

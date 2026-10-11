@@ -1066,7 +1066,7 @@ func _post_tiles() -> Dictionary:
 		return _post_cache
 	_post_cache_map = _city.map
 	_post_cache = {}
-	var reach := _BODY_CLEARANCE + GroundShape.point(AtlasLibrary.native_size(Prop.BOLLARD).x * 0.4).radius
+	var reach := _BODY_CLEARANCE + Prop.bollard_shape().radius
 	for at in City.bollard_positions(_city.map):
 		_post_cache.merge(_tiles_near_point(at, reach))
 	return _post_cache

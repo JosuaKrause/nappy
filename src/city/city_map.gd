@@ -657,7 +657,33 @@ func fill_rect(rect: Rect2i, type: GameEnums.TileType) -> void:
 			set_tile(Vector2i(x, y), type)
 
 func is_walkable(tile: Vector2i) -> bool:
-	return Tile.is_walkable(tile_at(tile))
+	return Tile.is_walkable(tile_at(tile)) and not is_post(tile)
+
+## The tiles a precinct's posts stand on (`City.bollard_positions()`), the carriageway band at each
+## mouth's two tiles at the row. The row shuts that band to her body *(2026-10-10, the player:
+## "it will make the middle of the road impassable when going from street to pedestrian road")*,
+## so every reader that asks where she or a pursuer can stand or step, and every flood that
+## guarantees the city stays walkable (`is_walkable()`, `is_open()`, `walk_field_from()`,
+## `ReachabilityGrid`, the red arrow's ground), sees these as blocked: the row is a detour by the
+## pavement beside it, never a cut, and nothing walks through it that she could not. The tile's
+## type stays `PEDESTRIAN`, so the ground, the street kinds and the crowd (which has no body) read
+## it as paving. Built by `index_posts()`, which whatever fills `precinct_spans` (the generator, a
+## recipe's saved context) calls once the spans are final; `is_walkable()` is the hottest question
+## the map answers, so the set is a record and not worked out per call.
+func post_tiles() -> Dictionary:
+	return _post_tiles
+
+var _post_tiles := {}
+
+## Records the post tiles from `precinct_spans`. Call it again whenever the spans change.
+func index_posts() -> void:
+	_post_tiles = {}
+	for at in City.bollard_positions(self):
+		_post_tiles[world_to_tile(at)] = true
+
+## Whether a precinct's post stands on `tile`.
+func is_post(tile: Vector2i) -> bool:
+	return _post_tiles.has(tile)
 
 ## Whether a building stands between two points deeply enough to keep a source's excitement at
 ## one from reaching the other: true when the straight segment between them passes the middle of a
@@ -800,7 +826,7 @@ func _reaches_the_middle_of(tile: Vector2i, from: Vector2, delta: Vector2, depth
 ## `tile_at()`.
 func _open(x: int, y: int) -> bool:
 	if recipe_exterior or stretch_active:
-		return is_walkable(Vector2i(x, y))
+		return Tile.is_walkable(tile_at(Vector2i(x, y)))
 	return x >= 0 and y >= 0 and x < size.x and y < size.y \
 			and _WALKABLE[tiles[y * size.x + x]] == 1
 
@@ -880,7 +906,7 @@ func pavement_inward(tile: Vector2i) -> Vector2i:
 ## put something — an event, a crowd agent, a resistance contact — wants this rather than
 ## `is_walkable`, or it will put it somewhere nobody can reach.
 func is_open(tile: Vector2i) -> bool:
-	return not closed_tiles.has(tile) and Tile.is_walkable(tile_at(tile))
+	return not closed_tiles.has(tile) and is_walkable(tile)
 
 ## The lattice as a route search must see it: the streets this city never had, plus whatever
 ## today has shut on top of them.
@@ -1250,6 +1276,9 @@ func walk_field_from(sources: Array, blocked: Dictionary = {}) -> PackedInt32Arr
 	for tile: Vector2i in blocked:
 		if in_bounds(tile):
 			field[tile.y * width + tile.x] = BLOCKED
+	for tile: Vector2i in post_tiles():
+		if in_bounds(tile):
+			field[tile.y * width + tile.x] = BLOCKED
 
 	var queue := PackedInt32Array()
 	queue.resize(cells)
@@ -1316,6 +1345,15 @@ func count_walkable() -> int:
 	var total := 0
 	for type in tiles:
 		total += _WALKABLE[type]
+	return total
+
+## `count_walkable()` less the tiles a post stands on, which are walkable ground nobody can stand
+## on (`post_tiles()`): what a sweep from the home (`walk_field()`) can reach at most.
+func count_standable() -> int:
+	var total := count_walkable()
+	for tile: Vector2i in _post_tiles:
+		if in_bounds(tile):
+			total -= _WALKABLE[tiles[tile.y * size.x + tile.x]]
 	return total
 
 ## Every calm tile in the city right now. It is the only ground a day can be won on, so it is what

@@ -173,14 +173,6 @@ var _absent := {}
 var _ways_cache := {}
 ## The same, for `_ways_including_the_spine` — the trunk's own fallback search.
 var _kerb_only_cache := {}
-## The tiles a precinct's posts stand on (`City.bollard_positions()`), built on first use. The
-## posts shut the carriageway band at each precinct mouth to her body *(2026-10-10, the player:
-## "it will make the middle of the road impassable when going from street to pedestrian road")*,
-## so no step of the growth crosses one: a route into a precinct goes by the pavement beside the
-## row, which stays open. A step is refused when either end of it is a post's tile, because a cell
-## is two tiles deep and a route inside the paving can reach the row's own cell from the far side.
-var _post_tile_set := {}
-var _post_tiles_built := false
 
 ## Segment key -> `true`, lazily derived from `_colours` the first time anything asks a
 ## segment-level question. A `ReachabilityGrid` node is a handful of tiles and a tree touches many
@@ -496,19 +488,9 @@ func _ways(node: int) -> Array:
 func _ways_uncached(node: int) -> Array:
 	var found: Array = []
 	for edge: Array in grid.neighbours(node):
-		if not _is_off_the_growths_graph(edge[2], true) and not _crosses_a_post(edge):
+		if not _is_off_the_growths_graph(edge[2], true):
 			found.append(edge)
 	return found
-
-## Whether an edge of the grid steps from or onto a tile a precinct's post stands on — see
-## `_post_tile_set`.
-func _crosses_a_post(edge: Array) -> bool:
-	if not _post_tiles_built:
-		_post_tiles_built = true
-		if _map:
-			for at in City.bollard_positions(_map):
-				_post_tile_set[_map.world_to_tile(at)] = true
-	return _post_tile_set.has(edge[1]) or _post_tile_set.has(edge[2])
 
 ## `_ways` with the main road allowed back in — what `_grow_the_trunk` falls back to on a day where
 ## the doorstep has no way out that avoids the spine, and nothing else calls it.
@@ -526,7 +508,7 @@ func _ways_including_the_spine(node: int) -> Array:
 		return cached
 	var found: Array = []
 	for edge: Array in grid.neighbours(node):
-		if not _is_off_the_growths_graph(edge[2], false) and not _crosses_a_post(edge):
+		if not _is_off_the_growths_graph(edge[2], false):
 			found.append(edge)
 	_kerb_only_cache[node] = found
 	return found

@@ -26,7 +26,8 @@ const SACK_PILE := &"props/garbage_sacks_pile"
 ## frame (`_playground_frame_shape()`). Computed once `_ready()` fires, by which point `city.gd`
 ## has already set `kind`, `variant` and `scale_factor` on the new node (`Prop.new()` then the
 ## three exports, then `add_child()`), and read by `_draw()` for the shadow. **No prop has a
-## body** except the bollard (`_add_bollard_body()`). A tree on a pavement is walked past exactly like a tree in a park *(2026-09-12, the
+## body** except the bollard (`_add_bollard_body()`). A tree on a pavement is walked past exactly
+## like a tree in a park *(2026-09-12, the
 ## player, PLAYTEST-58.md: "trees shouldn't have a hitbox at all. trees in parks don't why should
 ## the ones in the street be treated differently?")*; a sack or a pile carries none either, so the
 ## ground under it stays exactly as walkable as the pavement or alley it stands on. Decoration
@@ -44,7 +45,8 @@ func _ready() -> void:
 ## stops her *(2026-10-10, the player, azure-puffin, on the bollards: "it will make the middle of
 ## the road impassable when going from street to pedestrian road. that's okay. this is intended")*,
 ## and `City.BOLLARD_SPACING` keeps every gap between posts narrower than her body, so a row of
-## them shuts the carriageway band while the pavements beside it stay open. Open to overturn: the radius is the shadow's 0.4 of the 12px picture (4.8px), not the picture's 6px rim.
+## them shuts the carriageway band while the pavements beside it stay open. Open to overturn: the
+## radius is the shadow's 0.4 of the 12px picture (4.8px), not the picture's 6px rim.
 func _add_bollard_body() -> void:
 	var body := StaticBody2D.new()
 	body.name = "BollardBody"
@@ -52,6 +54,11 @@ func _add_bollard_body() -> void:
 	collision.shape = shape.collision_shape()
 	body.add_child(collision)
 	add_child(body)
+
+## A post's ground shape: a point of 0.4 of the 12px picture (4.8px), the one definition its body,
+## its shadow and anything planning round it (`RouteRig`) read.
+static func bollard_shape() -> GroundShape:
+	return GroundShape.point(AtlasLibrary.native_size(BOLLARD).x * 0.4)
 
 func _compute_shape() -> GroundShape:
 	match kind:
@@ -62,7 +69,7 @@ func _compute_shape() -> GroundShape:
 		Kind.PLAYGROUND_FRAME:
 			return _playground_frame_shape()
 		Kind.BOLLARD:
-			return GroundShape.point(AtlasLibrary.native_size(BOLLARD).x * 0.4)
+			return bollard_shape()
 		Kind.SACK:
 			return GroundShape.point(AtlasLibrary.native_size(SACK).x * 0.35)
 		Kind.SACK_PILE:
