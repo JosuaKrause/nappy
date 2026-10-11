@@ -25,7 +25,7 @@ extends CanvasLayer
 ## when the title begins a new game. *(gentle-osprey, the player: "a "Hard Mode" checkbox on the
 ## title screen (if new game) that decides whether checkpoints are available".)* Checked, the run
 ## has no checkpoints and its last nerve is the bad ending (`GameState.hard_mode`). It is quiet on
-## purpose — Godot's own `CheckBox`, small, in the tagline's colour, under the hint — because it is
+## purpose — Godot's own `CheckBox`, in the tagline's colour, under the hint — because it is
 ## a setting, not a way in: **pressing it never starts the run**, which still begins only from the
 ## three buttons or a key, so the box can be set and changed freely first. `H` toggles it from a
 ## keyboard, unnamed on screen like every other key here. It opens unchecked on every new game
@@ -91,13 +91,13 @@ const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
 @onready var _right_button: ModeButton = $Root/Choice/RightColumn/Right
 @onready var _hint: Label = $Root/Hint
 @onready var _version: Label = $Root/Version
-@onready var _hard_mode: CheckBox = $Root/HardModeRow/HardMode
+@onready var _hard_mode: CheckBox = $Root/HardMode
 ## The box's own edge, behind Godot's `unchecked` icon — which is a translucent dark square that
 ## disappears into the scrim and the cobbles behind it. A `StyleBoxFlat` in the title buttons' own
 ## fill and hover colours (`Palette.BUTTON_FILL`, `BUTTON_HOVER`), so the empty box reads as the
 ## same family as the three discs above it; the `checked` icon covers it whole. Engine data rather
 ## than anything drawn — see the **cues** rule, "Prefer the engine's data over any drawing at all".
-@onready var _hard_mode_frame: Panel = $Root/HardModeRow/HardMode/Frame
+@onready var _hard_mode_frame: Panel = $Root/HardMode/Frame
 
 ## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
 ## each use site, so a test — never itself a web export — can set this and drive both shapes.
@@ -241,6 +241,7 @@ func open(again := false, new_game := false) -> void:
 	if _hard_mode:
 		_hard_mode.visible = new_game
 		_hard_mode.button_pressed = new_game and GameState.hard_mode
+		_place_the_hard_mode_frame()
 	_hint.text = "press a button to walk again" if again else "press a button to begin"
 	# A press that closed this screen can leave a button's own forced-pressed look set — see
 	# `_acknowledge_and_begin()`'s own doc for why the release that would otherwise clear it may
@@ -278,9 +279,17 @@ func _toggle_hard_mode() -> void:
 ## never named on screen.
 const _HARD_MODE_KEY := KEY_H
 
-## How far past the checkbox's own rect a press still lands on it: a fingertip is wider than a
-## sixteen-pixel box, and nothing else on the screen stands within this of it.
-const _HARD_MODE_REACH := 14.0
+## How far past the checkbox's own rect a press still lands on it, on every side. The title is
+## authored in the 1280x720 design box and scaled to fit, so a phone held landscape (about 393pt
+## tall) shows it at about x0.55: this reach, in design px around the box at `_HARD_MODE_SCALE`,
+## makes the target about 92 design px tall, about 50pt there, over the 44pt a finger needs. The space it reaches into holds nothing else a press can
+## land on — the hint line above is not a target, and the buttons' catches end well above it.
+const _HARD_MODE_REACH := 28.0
+
+## How much larger than the theme's own the checkbox is drawn, box and label together — scaling the
+## control rather than raising its font, since the theme's box icon has one size and would be left
+## a small square beside a large label. On a landscape phone the label reads at about 12pt.
+const _HARD_MODE_SCALE := 1.5
 
 ## A touch or a left click on the checkbox flips it and is used up there, so it can never fall
 ## through to `_handle_mode_button_press()` and begin the run — read off the raw press position in
@@ -317,8 +326,14 @@ static func _hard_mode_frame_style() -> StyleBoxFlat:
 	return style
 
 ## Puts the frame exactly where `CheckBox` draws its icon: past the normal stylebox's left margin,
-## centred down the control, plus the theme's own `check_v_offset`.
+## centred down the control, plus the theme's own `check_v_offset`. And scales the control about its
+## own centre, which only its own minimum size says, and centres it across the design box. Not in a
+## container, which would put its scale back to one every time it laid the control out.
 func _place_the_hard_mode_frame() -> void:
+	_hard_mode.size = _hard_mode.get_combined_minimum_size()
+	_hard_mode.pivot_offset = _hard_mode.size * 0.5
+	_hard_mode.scale = Vector2.ONE * _HARD_MODE_SCALE
+	_hard_mode.position.x = (ScreenOrientation.DESIGN_SIZE.x - _hard_mode.size.x) * 0.5
 	var icon := _hard_mode.get_theme_icon("unchecked")
 	var style := _hard_mode.get_theme_stylebox("normal")
 	_hard_mode_frame.position = Vector2(style.get_margin(SIDE_LEFT),
@@ -329,8 +344,14 @@ func _place_the_hard_mode_frame() -> void:
 ## Whether `point`, in the 1280x720 design box, lands on the checkbox or within `_HARD_MODE_REACH`
 ## of it.
 func hard_mode_contains_design_point(point: Vector2) -> bool:
-	var local := _hard_mode.get_global_transform().affine_inverse() * point
-	return Rect2(Vector2.ZERO, _hard_mode.size).grow(_HARD_MODE_REACH).has_point(local)
+	return hard_mode_target().has_point(point)
+
+## The checkbox's tappable area in the 1280x720 design box: the box and its label as drawn, scale
+## included, grown by `_HARD_MODE_REACH` on every side.
+func hard_mode_target() -> Rect2:
+	var transform := _hard_mode.get_global_transform()
+	var drawn := transform * Rect2(Vector2.ZERO, _hard_mode.size)
+	return drawn.grow(_HARD_MODE_REACH)
 
 ## `space` or a direction key begins the run **in `Mode.TAP`**, and a press on one of the
 ## buttons begins it in whichever mode — and, for a joystick, side — that button names. *(2026-09-07: "using awsd or arrow keys

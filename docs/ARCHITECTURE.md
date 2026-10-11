@@ -452,8 +452,8 @@ method answers an `EventBus` signal — `run_begun`, `day_started`/`day_ended`, 
 `run_restarted`, `run_ended`, the resistance's own `resistance_contact_available`/
 `resistance_step_completed`/`_step_failed`/`_mark_seen`, `event_sighted`, `event_lit_unmet`,
 `city_gone_dark`, `pursuit_began`/`pursuit_ended`, `poster_torn`, `poster_pursuit_sent`,
-`player_detained`, `escape_begun`/`escape_city_entered`/`escape_lost`/`escape_out`, and
-`controls_chosen` — decides nothing and writes nothing back. Sends only on a released web build
+`player_detained`, `escape_begun`/`escape_city_entered`/`escape_lost`/`escape_out`,
+`controls_chosen`, `run_mode_chosen` and `went_back_to_a_checkpoint` — decides nothing and writes nothing back. Sends only on a released web build
 with `?debug=1` unasked and `window.goatcounter.count` actually present — `VisitCounter._should_send()` is the pure gate, and
 `tests/test_visit_counter.gd` drives its truth table and its event-name builders directly.
 

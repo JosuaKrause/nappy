@@ -1702,7 +1702,11 @@ ahead; winning day 14 still gives the neutral ending.
 
 **Out of nerves, a normal run's screen is the lost-day screen**, not an ending: it says where she
 goes back to — *"Your nerves gave out. Back to day 8."* — with five stars and the ordinary continue,
-which carries on into that dawn. The `GAME OVER` screen, which has no continue
+which carries on into that dawn. **The continue reloads the scene** and opens straight on the
+checkpoint's day, with no title and no brief, on the run read back the way a load reads it
+(`main._carry_the_run_into_the_next_boot()`, `GameSave.load_in_memory()`): the world is rebuilt
+from nothing, so it cannot keep anything a later day put on it — day 11's boarded window over the
+neighbor's flat is drawn on her building for the rest of the run, and no dawn takes it down. The `GAME OVER` screen, which has no continue
 ([PLAYTEST-28](playtests/PLAYTEST-28.md), finding 4: *"the game over screen cannot have a continue
 button"*), is a hard run's alone. **The held restart starts from scratch in both modes**, never from
 a checkpoint ([PLAYTEST-143](playtests/PLAYTEST-143.md): *"restart button restarts the game from

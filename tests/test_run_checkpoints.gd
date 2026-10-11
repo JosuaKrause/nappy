@@ -15,10 +15,13 @@ extends RefCounted
 
 const _SCRATCH_PATH := "user://test_run_checkpoints_scratch.json"
 const _SEED := 712044
+## The height of a phone held landscape, in points (an iPhone 15, 852x393).
+const _PHONE_LANDSCAPE_HEIGHT_PT := 393.0
 const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const TITLE := preload("res://scenes/ui/title_screen.tscn")
 const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
+const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 func run(t) -> void:
 	var baseline := GameSave.file_data(false)
@@ -27,10 +30,13 @@ func run(t) -> void:
 	_test_going_back_restores_every_field_the_save_carries(t)
 	_test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t)
 	_test_checkpoint_zero_is_day_one_of_the_same_city(t)
+	_test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpoint(t)
 	_test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t)
 	_test_choosing_hard_mode_drops_a_checkpoint_already_kept(t)
 	_test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t)
-	_test_a_hard_run_gets_a_nerve_back_for_leaving_the_building(t)
+	_test_only_a_hard_run_gets_a_nerve_back_for_leaving_the_building(t)
+	_test_leaving_the_building_gives_a_hard_run_its_nerve_on_the_citys_brief(t)
+	_test_parse_nerves_accepts_one_to_five_and_refuses_the_rest(t)
 	_test_the_lost_day_screen_says_where_she_goes_back_to(t)
 	_test_the_checkbox_shows_only_for_a_new_game(t)
 	_test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t)
@@ -226,6 +232,68 @@ func _test_checkpoint_zero_is_day_one_of_the_same_city(t) -> void:
 	t.check(GameState.player_is_male == parent, "pushed by the same parent")
 	t.check(events == [[1, 3]], "and the counter hears checkpoint 1 from day 3 (%s)" % [events])
 
+## **Going back is a boot, not a repaint.** Day 11 boards the neighbor's window on her own building
+## for the rest of the run (`City.board_neighbor_window()`), which nothing in a dawn takes down; a
+## run that loses its last nerve on day 11 and goes back to day 8 must not see it boarded, since
+## nothing after the checkpoint happened. Played through the real `main.tscn`: into day 8 (its
+## checkpoint) and on to day 11 on the same world, the last nerve lost there, and the lost-day
+## screen's continue. The world she then plays day 8 in — the next boot if the continue reloaded,
+## this one if it did not — has the window unboarded, and the run's checkpoint restart was counted
+## once and not followed by a second `run_begun`.
+func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpoint(t) -> void:
+	var main: Node2D = MAIN_SCENE.instantiate()
+	t.add_child(main)
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	main._on_title_start(ControlsMode.Mode.TAP)
+	GameState.day = 8
+	main._start_day()
+	for d in range(8, 11):
+		GameState.finish_day(GameEnums.DayResult.WON)
+		main._start_day()
+	t.check(GameState.day == 11 and GameState.checkpoint_day() == 8,
+			"day 11 is under way, with day 8 the checkpoint")
+	var boarded: Building = main._city._home_door_building()
+	t.check(boarded != null and boarded.neighbor_window_col >= 0,
+			"day 11 boarded the neighbor's window")
+
+	var back := []
+	var begun := []
+	var on_back := func(day: int, lost_day: int) -> void: back.append([day, lost_day])
+	var on_begun := func(day: int, resumed: bool) -> void: begun.append([day, resumed])
+	EventBus.went_back_to_a_checkpoint.connect(on_back)
+	EventBus.run_begun.connect(on_begun)
+	var reloads := []
+	main._reload_override = func() -> void: reloads.append(1)
+	GameState.nerves = 1
+	main._on_day_finished(GameEnums.DayResult.LOST_TIMEOUT)
+	t.check(GameState.day == 8 and main._summary.is_showing(), "the lost-day screen is up, at day 8")
+	main._on_summary_continued()
+
+	var playing := main
+	if reloads.size() == 1:
+		t.get_tree().paused = false
+		main.free()
+		playing = MAIN_SCENE.instantiate()
+		t.add_child(playing)
+		t.get_tree().process_frame.emit()
+		t.get_tree().process_frame.emit()
+	t.check(reloads.size() == 1, "the continue reloads the scene rather than repainting this one")
+	t.check(GameState.day == 8 and GameState.nerves == Tuning.STARTING_NERVES,
+			"she plays day 8 with every nerve")
+	var building: Building = playing._city._home_door_building()
+	t.check(building != null and building.neighbor_window_col < 0,
+			"and the neighbor's window is not boarded on day 8")
+	t.check(not playing._title.is_open() and not t.get_tree().paused,
+			"straight into the day, with no title in front of it")
+	t.check(back == [[8, 11]], "the checkpoint restart was counted once (%s)" % [back])
+	t.check(begun.is_empty(), "and the reload begins no new run (%s)" % [begun])
+	EventBus.went_back_to_a_checkpoint.disconnect(on_back)
+	EventBus.run_begun.disconnect(on_begun)
+	t.get_tree().paused = false
+	Telemetry.end_run()
+	playing.free()
+
 func _test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t) -> void:
 	GameState.start_run(_SEED)
 	GameState.choose_mode(true)
@@ -302,22 +370,58 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	DevFlags._invincible_override = null
 	GameState.ending = GameEnums.Ending.NONE
 
-## *(gentle-osprey, the player: "Section won gives one back".)* Read from the source, since the
-## handler builds the whole finale city on its next line: the regain is hard mode's alone, and it
-## comes before `enter_city()`, whose brief shows and saves the count.
-func _test_a_hard_run_gets_a_nerve_back_for_leaving_the_building(t) -> void:
-	var text := FileAccess.get_file_as_string("res://src/main.gd")
-	var handler := text.find("func _on_escape_exit_requested() -> void:")
-	var next := text.find("\nfunc ", handler + 1)
-	var body := text.substr(handler, next - handler)
-	var regain := body.find("if GameState.hard_mode:\n\t\tGameState.regain_a_nerve()")
-	var enter := body.find("_finale.enter_city()")
-	t.check(handler != -1 and regain != -1 and enter != -1 and regain < enter,
-			"leaving the building gives a hard run a nerve back before the city's brief")
+## *(gentle-osprey, the player: "Section won gives one back".)* The gate: a hard run gets one, up
+## to five, and a normal run's escape gets none.
+func _test_only_a_hard_run_gets_a_nerve_back_for_leaving_the_building(t) -> void:
+	var main: Node2D = MAIN_SCRIPT.new()
 	GameState.start_run(_SEED)
+	GameState.nerves = 3
+	main._regain_a_nerve_for_leaving_the_building()
+	t.check(GameState.nerves == 3, "a normal run's escape gives none back")
+	GameState.choose_mode(true)
+	main._regain_a_nerve_for_leaving_the_building()
+	t.check(GameState.nerves == 4, "a hard run gets one back")
 	GameState.nerves = Tuning.STARTING_NERVES
-	GameState.regain_a_nerve()
+	main._regain_a_nerve_for_leaving_the_building()
 	t.check(GameState.nerves == Tuning.STARTING_NERVES, "never past five")
+	main.free()
+	GameState.hard_mode = false
+
+## The same regain, reached the way she reaches it: a hard run handed over to the escape boots the
+## real `main.tscn` on the building, and the service door's own `exit_requested` — the signal the
+## building emits when she walks out of it — brings the city's brief up with one more star.
+func _test_leaving_the_building_gives_a_hard_run_its_nerve_on_the_citys_brief(t) -> void:
+	GameState.start_run(_SEED)
+	GameState.choose_mode(true)
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.nerves = 3
+	GameState.escape_section = FinaleController.Section.BUILDING
+	var main: Node2D = MAIN_SCENE.instantiate()
+	t.add_child(main)
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	t.check(main._interior != null and main._summary.is_showing(),
+			"the boot stands in the building on its brief")
+	t.check(main._interior.exit_requested.is_connected(main._on_escape_exit_requested),
+			"the service door is wired to the handler that leaves the building")
+	main._on_finale_summary_continued()
+	main._interior.exit_requested.emit()
+	t.check(GameState.nerves == 4, "leaving the building gave the hard run a nerve back")
+	var body: Label = main._summary.get_node("Root/Center/Lines/Body")
+	t.check(main._summary.is_showing() and body.text.contains(NerveDisplay.stars(4)),
+			"and the city's brief shows it ('%s')" % body.text)
+	t.get_tree().paused = false
+	Telemetry.end_run()
+	main.free()
+	GameState.escape_section = FinaleController.Section.NONE
+	GameState.hard_mode = false
+
+## `--nerves N`'s own parsing: a whole number from 1 to five, anything else refused as not given.
+func _test_parse_nerves_accepts_one_to_five_and_refuses_the_rest(t) -> void:
+	t.check(DevFlags.parse_nerves("1") == 1, "'1' is one nerve")
+	t.check(DevFlags.parse_nerves("5") == 5, "'5' is five")
+	for raw: String in ["0", "6", "x", "", "2.5", "-1"]:
+		t.check(DevFlags.parse_nerves(raw) == 0, "'%s' is refused as not given" % raw)
 
 # ---------------------------------------------------------------- the screens ---
 
@@ -367,9 +471,13 @@ func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
 	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
 			_side: ControlsMode.Side) -> void: started[0] += 1)
 	title.open(false, true)
-	title._hard_mode.get_parent().notification(Container.NOTIFICATION_SORT_CHILDREN)
-	var centre := title._hard_mode.get_global_rect().get_center()
+	var centre := title.hard_mode_target().get_center()
 	t.check(title._hard_mode.size.x > 0.0, "the box is laid out (%s)" % title._hard_mode.size)
+	# A phone held landscape is about 393pt tall and shows the 720-px-tall design box scaled to fit;
+	# a finger wants 44pt each way.
+	var on_a_phone := title.hard_mode_target().size * (_PHONE_LANDSCAPE_HEIGHT_PT / 720.0)
+	t.check(on_a_phone.x >= 44.0 and on_a_phone.y >= 44.0,
+			"the box is a 44pt target on a phone held landscape (%s pt)" % on_a_phone)
 
 	title._unhandled_input(_touch_at(centre))
 	t.check(title.hard_mode_checked(), "a touch checks it")

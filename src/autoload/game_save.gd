@@ -606,6 +606,11 @@ static func _read_now() -> Dictionary:
 	var state: Dictionary = data["state"]
 	if not GameState.snapshot_is_complete(state):
 		return {}
+	return _apply(data)
+
+## Everything a readable save puts back on `GameState`, from `_read_now()`'s file and from
+## `load_in_memory()`'s copy alike, and what it says about the day: `{"day_under_way": bool}`.
+static func _apply(data: Dictionary) -> Dictionary:
 	restore_run_data(data)
 	# The mode and the checkpoint, the same way again: a save from before there were two modes is a
 	# normal run, and one from before there were checkpoints goes back to day 1 of its own city.
@@ -613,6 +618,19 @@ static func _read_now() -> Dictionary:
 	var kept: Variant = data.get("checkpoint", {})
 	GameState.checkpoint = _usable_checkpoint(kept)
 	return {"day_under_way": bool(data.get("day_under_way", false))}
+
+## The run on `GameState` written out the way a save is and read straight back the way a save is —
+## through JSON and `_apply()` — without touching the disk. **A normal run sent back to its
+## checkpoint boots on this** (`main._carry_the_run_into_the_next_boot()`): the scene is reloaded,
+## so no node remembers anything after the checkpoint, and the run it boots on is exactly what a
+## load would give it, on every run, a dev-flagged or headless one with no save at all included.
+## Never reads the file, so a write the storage did not keep cannot hand the reload an older run.
+static func load_in_memory() -> void:
+	var parser := JSON.new()
+	if parser.parse(JSON.stringify(file_data(false))) != OK:
+		push_error("GameSave: the run could not be written out as JSON")
+		return
+	_apply(parser.data)
 
 ## A checkpoint read off disk, kept only when it could be given back: a dictionary whose `"state"`
 ## carries every field this build's snapshot does. Anything else — absent, garbled, or from a
