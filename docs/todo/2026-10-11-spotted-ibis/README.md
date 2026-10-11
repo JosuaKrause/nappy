@@ -1,4 +1,4 @@
-priority: now
+priority: next
 
 # spotted-ibis — Day 8's burnt-building door can be out of her reach · filed 2026-10-11
 
