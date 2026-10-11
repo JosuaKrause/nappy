@@ -3169,15 +3169,17 @@ var _leaving_for := 0.0
 ## True when `LEAVING_GIVES_UP` may not end this instance while she could still be watching it.
 ## Set by `leave_for_a_completed_task()`, whose departure starts with her beside it, and by
 ## `_be_done()` for every car that drives (`EventDef.drives`), whose body she can stand against so
-## a departure can be held up beside her (`_drive()`), and by `_be_done()` for a guard walking away
-## from his barrier, who is in her view as he goes. False for every other departure — see
+## a departure can be held up beside her (`_drive()`), by `_be_done()` for a guard walking away
+## from his barrier, who is in her view as he goes, and for the man a vehicle let out, who walks back
+## to it (`_walk_back()`). False for every other departure — see
 ## `_leave()` and `LEAVING_GIVES_UP`'s own doc for why those need no such wait.
 var _leaving_must_clear_sight := false
 
 ## The most it may spend on the way out. A backstop rather than a timing: with no player to be out
 ## of sight of — a headless rig, a streamed-out day — nothing else would ever end it. **Not a
 ## backstop for a departure she is actually standing next to**: `leave_for_a_completed_task()`, and
-## `_be_done()` for a car that drives, set `_leaving_must_clear_sight`, which keeps this clock from
+## `_be_done()` for a car that drives, a man walking back to his vehicle and a guard walking away
+## from his barrier, set `_leaving_must_clear_sight`, which keeps this clock from
 ## ending an instance she could still be watching — see `_leave()`.
 const LEAVING_GIVES_UP := 6.0
 
@@ -3288,8 +3290,9 @@ func _leave(delta: float) -> void:
 	# `LEAVING_GIVES_UP` is a backstop for a departure nobody could be watching (a headless rig, a
 	# streamed-out day) — not for one she is standing next to. `_leaving_must_clear_sight` holds
 	# the clock off until she genuinely could not be watching: no player to be out of sight of, or
-	# already past `OUT_OF_SIGHT`. Only a completed task's departure and a car that drives set the
-	# flag (see its doc); every other departure gives up on the clock as it always did.
+	# already past `OUT_OF_SIGHT`. A completed task's departure, a car that drives, the man walking
+	# back to the vehicle that let him out and the guard walking away from his barrier set the flag
+	# (see its doc); every other departure gives up on the clock as it always did.
 	var may_give_up := not _leaving_must_clear_sight or player_at == Vector2.INF or gone
 	if gone or (may_give_up and _leaving_for >= LEAVING_GIVES_UP):
 		if _is_a_guard_leaving_his_barrier():
@@ -4415,16 +4418,26 @@ func solid_axis() -> Vector2:
 ## `CrowdAgent.set_halo_strength()` gives its own rim; `release_halo()` is how it is given back.
 func set_halo_strength(strength: float, colour: Color) -> void:
 	# **While a guard walks away from his barrier the cost is the barrier's**, so the rim is on the
-	# band (`RoadblockBand`'s own) and not on the man, who is costing her nothing.
-	var on_the_band := is_leaving and _is_a_guard_leaving_his_barrier() and _band != null
-	_glow_the_band(strength if on_the_band and not is_finished else 0.0, colour)
-	if on_the_band:
-		strength = 0.0
+	# band (`RoadblockBand`'s own) and not on the man, who is costing her nothing. **An instance
+	# never holds two rims at once** (`ExcitementHalo` counts one block per instance against
+	# `EntityHalo.RIM_BUDGET`): the man's is given back on the spot as the band's is built, and the
+	# band's on the spot as the instance's own is wanted again once the barrier stands alone.
+	if is_leaving and _is_a_guard_leaving_his_barrier() and _band != null and not is_finished:
+		if _halo:
+			EntityHalo.release(_halo)
+			_halo = null
+		_glow_the_band(strength, colour)
+		return
+	if _band_halo and strength > 0.0 and not is_finished:
+		_release_the_band_halo()
+	else:
+		_glow_the_band(0.0, colour)
 	if strength <= 0.0 or is_finished:
 		if _halo:
 			_halo.set_glow(0.0, colour)
 			if _halo.is_faded_out():
-				release_halo()
+				EntityHalo.release(_halo)
+				_halo = null
 		return
 	if not _halo:
 		_build_halo()

@@ -18,6 +18,8 @@ func run(t) -> void:
 	_test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t)
 	_test_a_guard_who_is_gone_does_not_come_back(t)
 	_test_the_barrier_keeps_its_field_while_he_walks_away(t)
+	_test_he_is_never_removed_in_view_while_she_stays_near(t)
+	_test_the_barrier_rim_survives_the_departure(t)
 	_test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t)
 
 func _hot_roadblock() -> EventDef:
@@ -165,6 +167,58 @@ func _test_the_barrier_keeps_its_field_while_he_walks_away(t) -> void:
 	t.check(guard.contribution_at(beside) > 0.0, "and after it")
 	t.check(guard.global_position.distance_to(beside) > Tuning.OUT_OF_SIGHT or guard.is_waiting(),
 			"he does not vanish beside her: he is out of sight before the barrier stands alone")
+	guard.free()
+
+## The sight rule: with her staying within ~300px of him the backstop (`LEAVING_GIVES_UP`, 6s) must
+## not remove him in view; he is still leaving after 8s, well away from the post.
+func _test_he_is_never_removed_in_view_while_she_stays_near(t) -> void:
+	var post := Vector2(400.0, 0.0)
+	var made := _chasing(t, post)
+	var guard: EventInstance = made[0]
+	guard.give_up_the_chase()
+	var frames := 0
+	var last_leaving_at := guard.global_position
+	while guard.is_leaving and frames < int(8.0 / STEP):
+		guard.player_at = guard.global_position + Vector2(0.0, 250.0)
+		last_leaving_at = guard.global_position
+		guard._process(STEP)
+		frames += 1
+	t.check(frames == int(8.0 / STEP) and guard.is_leaving,
+			"he is still leaving after eight seconds with her near him (%d frames)" % frames)
+	t.check(last_leaving_at.distance_to(post) > 300.0 and not guard.is_waiting(),
+			"still walking away in view, not put back on the barrier (%.0fpx from it)"
+			% last_leaving_at.distance_to(post))
+	guard.free()
+
+## The band's rim is one object, lit on every frame he walks away, and the man holds none.
+func _test_the_barrier_rim_survives_the_departure(t) -> void:
+	var post := Vector2(400.0, 0.0)
+	var made := _chasing(t, post)
+	var guard: EventInstance = made[0]
+	guard.set_halo_strength(0.8, Color.RED) # the chase's own rim, on the man
+	t.check(guard._halo != null, "the man holds a rim while he chases")
+	guard.give_up_the_chase()
+	var beside := post + Vector2(0.0, 40.0)
+	var rim: EntityHalo = null
+	var same := true
+	var lit := true
+	var man_free := true
+	var frames := 0
+	while guard.is_leaving and frames < int(30.0 / STEP):
+		guard.player_at = beside
+		guard.set_halo_strength(0.8, Color.RED)
+		if rim == null:
+			rim = guard._band_halo
+		same = same and rim != null and guard._band_halo == rim
+		lit = lit and guard._band_halo != null and guard._band_halo._target_alpha > 0.0
+		man_free = man_free and guard._halo == null
+		# What `ExcitementHalo` does to an unpicked source in between.
+		guard.set_halo_strength(0.8, Color.RED)
+		frames += 1
+		guard._process(STEP)
+	t.check(frames > 60, "the departure lasts (%d frames)" % frames)
+	t.check(same and lit, "the band's rim is the same object and lit on every frame of it")
+	t.check(man_free, "and the instance never holds a second rim beside it")
 	guard.free()
 
 ## A heated roadblock streamed through `EventManager` itself, the only place the plan carries what
