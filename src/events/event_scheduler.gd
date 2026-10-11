@@ -2397,11 +2397,16 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ## reach. Five kinds of row are outside it, and each is outside for its own reason rather than for
 ## convenience:
 ##
-## - **a mast** (`Planned.mast_id != ""`) is planted once by `MastSites`, off the corridor-aware
-##   placement every other row here goes through — `_leaves_the_route_junctions_open` and the rest
-##   of this section have a `Corridor` to ask about; a fixture that stands at the same six sites all
-##   fourteen days does not. `MastSites._is_eligible()` keeps it off the home street and a calm
-##   interior instead, which is a per-run check rather than a per-day one.
+## - **a mast** (a `loudspeaker` plan, whether `MastSites` planted it or it is queued or routed) is
+##   a fixture of the street it stands on: the six fixed ones are planted once by `MastSites`, off
+##   the corridor-aware placement every other row here goes through, and stand at the same sites all
+##   fourteen days. The two day 11 adds, the one queued near the mark and the one a rigged bag puts
+##   on her route, are exempt too (inbox #684, "Exempt like fixed masts"), because a mast's field
+##   reaches the junction box at the end of whatever street it stands on, so held to the line it
+##   would have almost no place on a route tree. A mast is asked none of the three rules that keep
+##   a line along her routes (`_leaves_the_route_junctions_open`, `_leaves_the_routes_sidewalk_open`
+##   and `_leaves_a_pacing_beats_opening`). What every mast keeps is its site check (`MastSites._is_eligible()`: off the home
+##   street and a calm interior), door clearance, the unused calm, spacing and a way out.
 ## - **`scenery`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
 ##   count it as block, just count is scenery"* — which is the same exemption `_role_for` makes.
 ## - **a pursuer** follows her rather than sitting on a tile, and pays the telegraph contract
@@ -2427,7 +2432,8 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ## untouched — `_keeps_its_field_clear` is about keeping other events out of a lethal field, not
 ## about whether a line exists past one.
 static func _counts_against_the_line(plan: Planned) -> bool:
-	return plan.is_placed() and plan.mast_id == "" and _a_line_has_to_avoid(plan.def)
+	return plan.is_placed() and plan.mast_id == "" and plan.def.id != WalkSiting.MAST_ROW \
+			and _a_line_has_to_avoid(plan.def)
 
 ## The same exemptions asked of the **def** alone, for the one caller that has no placement to
 ## ask about: `_role_for` decides a role before any tile is chosen. Everything a placement adds —

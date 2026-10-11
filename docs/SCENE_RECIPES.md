@@ -94,8 +94,8 @@ scripted row no roll places, so it is accepted instead by the checks the day's m
 (`EventScheduler._place_masts()`): day 5 or later; a sidewalk or square tile a mast site would be
 offered (off the home street, its field off a calm interior and off every place a region door
 could stand); not closed, not on a held street, not on the home block; its field clear of the day's
-own doors; and clear of what is placed before it. The calm she has not used and the route junctions
-the day keeps open, which a mast queued for day 11's task also respects, are not asked. It gives
+own doors; and clear of what is placed before it. The calm she has not used, which a mast queued for
+day 11's task also respects, is not asked. It gives
 an optional `mast_id`, the identity day 11's task, its red arrow and the last night's blackout
 find a mast by (a string no other mast of the scene shares; `mast_id` on any other row is
 refused), and a mast without one is named as a mast added for day 11 is, from its foot
