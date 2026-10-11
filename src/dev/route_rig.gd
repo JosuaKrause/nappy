@@ -513,9 +513,9 @@ func _nearest_calm(toward_home: bool = false) -> Vector2:
 ## leaves `CityMap.calm_blocks` that instant (`Happenings.take_the_park()`), but its grass stays
 ## grass while the police cordon it off (`ParkCordon`), so its tiles still read calm one by one: a
 ## calm area chosen from the tiles alone is the swing's own park, which is taped shut round her
-## `Tuning.PARK_CLOSING_SECONDS` later, and being shut in ends the day. So the calm leg goes to the
-## day's second calm area, which the day keeps reachable for exactly this. On
-## every other day no lot's calm ground outlives its purpose, so this is the tiles unchanged.
+## seconds later (`ParkCordon.deadline`), and being shut in ends the day. So the calm leg goes to
+## the day's second calm area, which the day keeps reachable for exactly this. On every other day
+## no lot's calm ground outlives its purpose, so this is the tiles unchanged.
 func _calm_tiles_left() -> Array[Vector2i]:
 	var map := _city.map
 	var calm := {}

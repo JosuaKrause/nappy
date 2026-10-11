@@ -100,8 +100,9 @@ Whole districts close.
 open that morning whatever had already happened to it, and once she has reached its swing the
 police close it in front of her: officers walk in from out of her sight to the far side of the park
 and tape its edge off a stretch at a time, working round from where they arrived, while others walk
-the park's people out, until the open edge is one last gap nearest where she stood. She leaves
-through it; if it is taped with her still inside, she is shut in the park and the day ends. The
+the park's people out through it, until the open edge is one last gap near where she stood that
+still leads somewhere. She leaves through it; if it is taped with her still inside, she is shut in
+the park and the day ends. The
 grass stays grass, and the park stays taken. The day has kept another park open and in reach for
 the baby.
 

@@ -1722,9 +1722,13 @@ the purpose asked for — when moves, never what. Day 11's market is a commercia
 waiting to board up, boarded ahead of her and out of her sight, its buildings shuttered there and
 then (`City.present_block()`), except a building day 3's fire burned, which stays burnt. Day 12's park is taken the instant she reaches its swing, and the
 police cordon it off (`ParkCordon`): its ground stays grass, and its edge is taped a stretch at a
-time from the side farthest from her until one last gap, nearest where she stood, closes
-`Tuning.PARK_CLOSING_SECONDS` after the touch. A taped stretch is solid and obstructs its edge
-tiles; she is shut in, which ends the day, if she is still inside when the last gap closes. The
+time from the side opposite the last gap until only that gap is open. The gap is checked before it
+is accepted, as a closure is: of the edges whose outside ground still reaches home with the park
+blocked under the day's obstruction, and stands clear of every body and field, the one nearest
+where she stood. It closes `Tuning.PARK_CLOSING_SECONDS` after the touch, or later where the first
+officer would come into her view too late for her to walk to it with
+`Tuning.PARK_CLOSING_WARNING` to spare. A taped stretch is solid and obstructs its edge tiles; she
+is shut in, which ends the day, if she is still inside when the last gap closes. The
 tape stands for the rest of that day; no tile changes. `docs/NARRATIVE.md` says what each is; `ResistanceHappenings` is where they
 live.
 

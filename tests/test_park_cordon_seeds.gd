@@ -1,0 +1,222 @@
+extends RefCounted
+## Day 12's police cordon (`ParkCordon`) across a sweep of seeds, on every size of park the
+## generator builds, with her standing where the task sent her, at the swing.
+##
+## What one seed's park cannot show and a sweep can: **the last gap never strands her** — the
+## ground outside it reaches home and the day's other calm ground with the park's own ground
+## blocked, under the director's own answer to what the day has blocked (`EventScheduler.
+## blocked_by()`), and it stands clear of every body and every field a body carries; and **she
+## sees them coming in time** — the first officer is in the camera's view of the swing at least the
+## walk from the swing to the gap plus `Tuning.PARK_CLOSING_WARNING` before it closes, so setting
+## off at a walk a second after first sight gets her out. Both are checked here against the map
+## and the clock, not against what the cordon says of itself. `tests/probes/plush_marten_cordon.gd`
+## prints the same measurements as a table.
+
+const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The sweep, and a seed whose swing park is one of the largest calm zones (704 by 704px).
+const SEEDS_FROM := 1
+const SEEDS_TO := 40
+const LARGE_PARK_SEED := 90210
+const STEP := 1.0 / 60.0
+const PATIENCE := 60.0
+## How long after first seeing an officer she sets off walking in the walking check: less than
+## `Tuning.PARK_CLOSING_WARNING`, which is the time the cordon leaves her to see and decide.
+const REACTION := 1.0
+
+func run(t) -> void:
+	var seeds: Array[int] = []
+	for seed_value in range(SEEDS_FROM, SEEDS_TO + 1):
+		seeds.append(seed_value)
+	seeds.append(LARGE_PARK_SEED)
+	var measured := 0
+	var largest := 0.0
+	for seed_value in seeds:
+		var m := measure(t, seed_value)
+		if m.is_empty():
+			continue
+		measured += 1
+		largest = maxf(largest, (m.park_size as Vector2).x * (m.park_size as Vector2).y)
+		_check(t, seed_value, m)
+	t.check(measured >= 30, "the sweep measured a swing park on most seeds (%d of %d)"
+			% [measured, seeds.size()])
+	t.check(largest >= 704.0 * 704.0 - 1.0,
+			"and the largest calm zone the generator builds among them (%.0f px²)" % largest)
+
+func _check(t, seed_value: int, m: Dictionary) -> void:
+	var size: Vector2 = m.park_size
+	var what := "seed %d (%.0fx%.0f park)" % [seed_value, size.x, size.y]
+	t.check(m.gap_reaches_home, "%s: the ground outside the last gap reaches home with the park "
+			% what + "blocked")
+	t.check(m.other_calm_reached, "%s: and the day's other calm ground" % what)
+	t.check(m.gap_clear, "%s: the last gap stands clear of every body and field (%s)"
+			% [what, m.gap_blocker])
+	t.check(m.trapped_standing, "%s: standing at the swing, she is shut in (closed at %.1fs)"
+			% [what, m.closed_at])
+	t.check(m.first_seen >= 0.0 and m.closed_at - m.first_seen
+			>= m.walk / Tuning.WALK_SPEED + Tuning.PARK_CLOSING_WARNING - 2.0 * STEP,
+			"%s: the first officer is in her view %.1fs before the gap closes, " % [what,
+			m.closed_at - m.first_seen] + "the walk to it (%.0fpx, %.1fs) plus %.0fs"
+			% [m.walk, m.walk / Tuning.WALK_SPEED, Tuning.PARK_CLOSING_WARNING])
+	t.check(m.walked_out, "%s: setting off at a walk %.0fs after first sight gets her out"
+			% [what, REACTION])
+
+## Day 12 on `seed_value`'s city, played twice from the swing's touch: once standing at the swing,
+## and once walking out through the last gap `REACTION` after an officer first comes into view.
+## Answers what was measured, or `{}` when the day has no swing park.
+func measure(t, seed_value: int) -> Dictionary:
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(seed_value))
+	var saved := {
+		"state": GameState.city_state, "day": GameState.day,
+		"completed": GameState.completed_resistance_steps.duplicate(),
+		"failed": GameState.failed_resistance_steps.duplicate(),
+		"progress": GameState.resistance_progress,
+		"package": GameState.resistance_carrying_package,
+	}
+	GameState.completed_resistance_steps = []
+	GameState.failed_resistance_steps = []
+	GameState.resistance_progress = 0
+	GameState.resistance_carrying_package = false
+	var day := ResistanceSteps.swing_day()
+	GameState.day = day
+	var state := CityState.new()
+	GameState.city_state = state
+	state.begin_day(city.map.block_plans, day)
+	city.start_day(state, day, _rng(seed_value, day, "closures"))
+	city.events.start_day(day, _rng(seed_value, day, "events"), [],
+			city.map.doorstep_world_position())
+	var director := ResistanceDirector.new()
+	t.add_child(director)
+	director.set_process(false)
+	director.setup(city, city.map)
+	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
+	var result := {}
+	var mark := director.current_step()
+	director._on_contact_completed(mark.index if mark else -1)
+	var task := director.current_step()
+	if task and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
+		var swing := director.contact_position()
+		director._on_contact_completed(task.index)
+		var happenings: ResistanceHappenings = director._happenings
+		result = _measure_the_day(city, director, happenings, swing)
+		happenings.start_day(day + 1)
+	director.free()
+	city.free()
+	GameState.city_state = saved.state
+	GameState.day = saved.day
+	GameState.completed_resistance_steps = saved.completed
+	GameState.failed_resistance_steps = saved.failed
+	GameState.resistance_progress = saved.progress
+	GameState.resistance_carrying_package = saved.package
+	return result
+
+func _measure_the_day(city: City, director: ResistanceDirector,
+		happenings: ResistanceHappenings, swing: Vector2) -> Dictionary:
+	var her := [swing]
+	var shows := _camera_on(her)
+	happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+	var cordon := happenings.cordon
+	var result := {"park_size": cordon.area.size, "walk": swing.distance_to(cordon.last_gap)}
+	_measure_the_gap(city, director, cordon, result)
+	var standing := _play(cordon, her, shows, false)
+	result.first_seen = standing.first_seen
+	result.closed_at = standing.closed_at
+	result.trapped_standing = standing.trapped
+	result.deadline = cordon.deadline
+	cordon.clear()
+	var again := ParkCordon.new(city.map, city, cordon.park, director._reach_blocked)
+	her[0] = swing
+	again.tick(STEP, her[0], shows)
+	var walking := _play(again, her, shows, true)
+	result.walked_out = walking.closed_at >= 0.0 and not walking.trapped
+	again.clear()
+	return result
+
+## Checks the chosen gap against the map: the tile beyond each of its stretches' edge tiles reached
+## from home with the park's ground blocked under the director's `_reach_blocked`, some other calm
+## tile reached the same way, and the point a tile out from each stretch farther from every placed
+## body than its obstruction and her whole shape, and outside the field of any body that carries
+## one and the lethal reach of anything that ends the day.
+func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCordon,
+		result: Dictionary) -> void:
+	var map := city.map
+	var rect := ClosurePlanner.calm_area_rect(map, cordon.park)
+	var blocked: Dictionary = director._reach_blocked.duplicate()
+	for tile in map.rect_tiles(rect):
+		blocked[tile] = true
+	var field := map.walk_field(map.home_rect.position, blocked)
+	var reaches := not cordon.gap.is_empty()
+	var clear := true
+	var blocker := "none"
+	for stretch in cordon.gap:
+		var out := false
+		for tile in stretch.tiles:
+			out = out or map.reaches(field, tile + stretch.outward)
+		reaches = reaches and out
+		var point := (stretch.a + stretch.b) * 0.5 + Vector2(stretch.outward) * Tuning.TILE_SIZE
+		for plan in city.events.plans():
+			if plan.spent or not plan.is_placed() or cordon.area.has_point(plan.position):
+				continue
+			var def := plan.def
+			if def.obstructs_radius <= 0.0 and not def.hard_fail:
+				continue
+			var reach := def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+					+ Stroller.PRAM_BODY_RADIUS
+			if def.intensity > 0.0:
+				reach = maxf(reach, def.field_reach())
+			if def.hard_fail:
+				reach = maxf(reach, def.lethal_reach() + Tuning.PLAYER_BODY_RADIUS)
+			if point.distance_to(plan.position) < reach:
+				clear = false
+				blocker = "%s %.0fpx away, reach %.0fpx" % [def.id, point.distance_to(plan.position),
+						reach]
+	var other := false
+	for tile in map.calm_tiles():
+		if not rect.has_point(tile) and map.reaches(field, tile):
+			other = true
+			break
+	result.gap_reaches_home = reaches
+	result.gap_clear = clear
+	result.gap_blocker = blocker
+	result.other_calm_reached = other
+
+## Plays the cordon out with the camera on `her[0]`, watching for the first frame any taper's
+## figure is in its view. Walking, she sets off `REACTION` after that toward the last gap and on
+## out past it.
+func _play(cordon: ParkCordon, her: Array, shows: Callable, walks: bool) -> Dictionary:
+	var row := EventCatalogue.by_id(ParkCordon.OFFICER_ROW)
+	var first_seen := -1.0
+	var clock := STEP
+	var gap := cordon.last_gap
+	var out := gap + Vector2(cordon.gap[0].outward) * (ParkCordon.HER_REACH + Tuning.TILE_SIZE)
+	while not cordon.is_closed() and clock < PATIENCE:
+		if first_seen < 0.0:
+			for officer in cordon.officers:
+				if officer.job == ParkCordon.Officer.Job.TAPE \
+						and officer.phase != ParkCordon.Officer.Phase.GONE \
+						and shows.call(row, officer.at):
+					first_seen = clock
+		if walks and first_seen >= 0.0 and clock >= first_seen + REACTION:
+			var target := gap if (her[0] as Vector2).distance_to(gap) > 1.0 \
+					and cordon.line.has_point(her[0]) else out
+			her[0] = (her[0] as Vector2).move_toward(target, Tuning.WALK_SPEED * STEP)
+		cordon.tick(STEP, her[0], shows)
+		clock += STEP
+	return {"first_seen": first_seen, "closed_at": cordon.closed_at, "trapped": cordon.trapped}
+
+## What the camera sees with her at `her[0]`: the game's own view box round her, against the whole
+## of what `row` draws standing at `feet` — `ResistanceDirector._drawing_shows()`'s question.
+func _camera_on(her: Array) -> Callable:
+	return func(row: EventDef, feet: Vector2) -> bool:
+		var centre: Vector2 = her[0]
+		var view := Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+		var box := EventInstance.footprint_of(row)
+		if not box.has_area():
+			return view.has_point(feet)
+		return view.intersects(Rect2(feet + box.position, box.size))
+
+func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:%d:%s" % [seed_value, day, stream])
+	return rng

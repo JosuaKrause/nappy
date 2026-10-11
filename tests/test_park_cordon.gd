@@ -28,7 +28,8 @@ func run(t) -> void:
 	_test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t)
 	_test_walking_out_from_the_swing_gets_her_out_in_time(t)
 	_test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t)
-	_test_the_parks_people_are_walked_out(t)
+	_test_no_tape_goes_up_through_the_pram(t)
+	_test_the_parks_people_are_walked_out_through_the_gap(t)
 	_test_the_park_stays_taken_and_the_cordon_goes_with_the_day(t)
 	_city.free()
 
@@ -185,7 +186,8 @@ func _test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t) -> void:
 	_end(fixture)
 
 ## The tape goes up a stretch at a time from where the officers arrived, both ways round, so what
-## is open of the edge is always one gap, and the last of it is taped nearest where she stood.
+## is open of the edge is always one gap, and the last of it is taped nearest where she stood (on
+## this seed's park every edge leads home, so the nearest of all).
 func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t) -> void:
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
@@ -235,8 +237,9 @@ func _gaps_in(cordon: ParkCordon) -> int:
 		runs = 1
 	return runs
 
-## Standing at the swing: the last gap is taped with her inside, `Tuning.PARK_CLOSING_SECONDS`
-## after the touch, and that ends the day with the cordon's own reason, which has a sentence.
+## Standing at the swing: the last gap is taped with her inside — on this seed's small park, where
+## an officer is in her view almost at once, `Tuning.PARK_CLOSING_SECONDS` after the touch — and
+## that ends the day with the cordon's own reason, which has a sentence.
 func _test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t) -> void:
 	var listener := _listen_for_hard_fails()
 	var fixture := _at_the_swing(t)
@@ -353,9 +356,66 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t) -> void:
 			% [obstructed, needed])
 	_end(fixture)
 
-## Someone standing in the park when the cordon starts is walked out: an officer goes to them and
-## they leave.
-func _test_the_parks_people_are_walked_out(t) -> void:
+## **No tape goes up through the pram.** She stands facing the line just short of the last gap,
+## from outside nosing in and from inside about to leave, at 20 to 26px, where her body clears the
+## tape and the pram's circle (`Stroller.PRAM_BODY_RADIUS`, 8px, centred 14px out along her
+## facing) does not: no stretch is taped while any of her collision shape would overlap its body,
+## so the gap waits for her.
+func _test_no_tape_goes_up_through_the_pram(t) -> void:
+	var fixture := _at_the_swing(t)
+	var happenings: ResistanceHappenings = fixture.happenings
+	var director: ResistanceDirector = fixture.director
+	happenings.tick(STEP, fixture.swing, Vector2.ZERO, Callable())
+	var first := happenings.cordon
+	var stretch: ParkCordon.Stretch = first.gap[0]
+	var middle := (stretch.a + stretch.b) * 0.5
+	var outward := Vector2(stretch.outward)
+	first.clear()
+	var cases := 0
+	var through := 0
+	var held := 0
+	for distance: float in [20.0, 22.0, 24.0, 26.0]:
+		for side: float in [1.0, -1.0]:
+			# Outside she faces in; inside she faces out: the pram toward the line either way.
+			var her: Vector2 = middle + outward * distance * side
+			var facing := -outward * side
+			var cordon := ParkCordon.new(_city.map, _city, fixture.park, director._reach_blocked)
+			var waited := 0.0
+			while not cordon.is_closed() and waited < PATIENCE:
+				cordon.tick(STEP, her, Callable())
+				waited += STEP
+			cases += 1
+			for each in cordon.stretches:
+				if each.node and _overlaps_her(each.node.body_rect(), her, facing):
+					through += 1
+			if not cordon.is_closed():
+				held += 1
+			cordon.clear()
+	t.check(cases == 8, "she stood at 20 to 26px from the line, both sides of it (%d)" % cases)
+	t.check(through == 0, "and no stretch's tape went up through her body or the pram (%d)"
+			% through)
+	t.check(held == cases, "the gap she stands at stays open while she is there (%d of %d)"
+			% [held, cases])
+	_end(fixture)
+
+## Whether a tape body's rect overlaps her body's circle or the pram's, with her facing `facing`.
+func _overlaps_her(box: Rect2, her: Vector2, facing: Vector2) -> bool:
+	var pram := her + facing * Tuning.PLAYER_BODY_RADIUS
+	return _circle_meets(box, her, Tuning.PLAYER_BODY_RADIUS) \
+			or _circle_meets(box, pram, Stroller.PRAM_BODY_RADIUS)
+
+func _circle_meets(box: Rect2, centre: Vector2, radius: float) -> bool:
+	var nearest := Vector2(clampf(centre.x, box.position.x, box.end.x),
+			clampf(centre.y, box.position.y, box.end.y))
+	return nearest.distance_to(centre) < radius
+
+## **The park's people are walked out through the open edge** *(the entry: "the crowd inside
+## leaves through the open edge")*. A busker standing in the park when the cordon starts: an
+## officer comes in from out of her sight along the way out, reaches him and walks out behind him.
+## Neither steps across tape that is up or onto ground nobody walks (a building), the busker
+## crosses the line within the last gap, the gap closes only once both are through it, and the
+## officer is gone where she cannot see him, not a fixed walk away.
+func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
 	var person: Array = [null]
 	var fixture := _at_the_swing(t, func() -> void:
 		var park := CityGenerator.swing_park(_city.map)
@@ -363,22 +423,72 @@ func _test_the_parks_people_are_walked_out(t) -> void:
 		person[0] = _city.events.spawn_extra(EventCatalogue.by_id("busker"),
 				area.position + area.size * Vector2(0.25, 0.3)))
 	var happenings: ResistanceHappenings = fixture.happenings
-	var her := [fixture.swing]
 	var busker: EventInstance = person[0]
 	t.check(busker != null and not busker.is_leaving, "a busker stands in the park")
+	# She stays at the swing, where the way out was planned from.
+	var her := [fixture.swing]
 	var shows := _camera_on(her)
 	happenings.tick(STEP, her[0], Vector2.ZERO, shows)
-	var escorts := 0
-	for officer in happenings.cordon.officers:
+	var cordon := happenings.cordon
+	var escort: ParkCordon.Officer = null
+	for officer in cordon.officers:
 		if officer.job == ParkCordon.Officer.Job.ESCORT and officer.person == busker:
-			escorts += 1
-	t.check(escorts == 1, "an officer is sent for him (%d)" % escorts)
+			escort = officer
+	t.check(escort != null, "an officer is sent for him")
+	if escort == null:
+		_end(fixture)
+		return
+	t.check(not shows.call(EventCatalogue.by_id(ParkCordon.OFFICER_ROW), escort.at),
+			"from out of her sight")
+	var seen := {"through_tape": 0, "off_ground": 0, "crossed_at": Vector2.INF, "steps": 0,
+			"busker_left": false, "closed_with_them_inside": false, "gone_seen": false}
+	var last := {"busker": busker.global_position, "escort": escort.at}
 	var waited := 0.0
-	while waited < PATIENCE and is_instance_valid(busker) and not busker.is_leaving:
+	while waited < PATIENCE and escort.phase != ParkCordon.Officer.Phase.GONE:
+		if is_instance_valid(busker) and not busker.is_finished:
+			busker.player_at = her[0]
+			busker._process(STEP)
+		var was_closed := cordon.is_closed()
 		happenings.tick(STEP, her[0], Vector2.ZERO, shows)
 		waited += STEP
-	t.check(is_instance_valid(busker) and busker.is_leaving,
-			"who reaches him and walks him out (%.1fs)" % waited)
+		var walkers := {"escort": escort.at}
+		if is_instance_valid(busker) and not busker.is_finished:
+			walkers.busker = busker.global_position
+		else:
+			seen.busker_left = true
+		for who: String in walkers:
+			var now: Vector2 = walkers[who]
+			var before: Vector2 = last[who]
+			seen.steps += 1
+			if not _city.map.is_walkable(_city.map.world_to_tile(now)):
+				seen.off_ground += 1
+			for stretch in cordon.stretches:
+				if stretch.taped and Geometry2D.segment_intersects_segment(before, now,
+						stretch.a, stretch.b) != null:
+					seen.through_tape += 1
+			if who == "busker" and cordon.line.has_point(before) \
+					and not cordon.line.has_point(now):
+				seen.crossed_at = now
+			last[who] = now
+		if not was_closed and cordon.is_closed():
+			seen.closed_with_them_inside = cordon.line.has_point(escort.at) \
+					or (walkers.has("busker") and cordon.line.has_point(walkers.busker))
+		if escort.phase == ParkCordon.Officer.Phase.GONE:
+			seen.gone_seen = shows.call(EventCatalogue.by_id(ParkCordon.OFFICER_ROW), escort.at)
+	t.check(seen.steps > 0 and seen.through_tape == 0,
+			"neither the busker nor his escort steps across tape that is up (%d of %d steps)"
+			% [seen.through_tape, seen.steps])
+	t.check(seen.off_ground == 0, "or onto ground nobody walks (%d)" % seen.off_ground)
+	var crossed: Vector2 = seen.crossed_at
+	t.check(crossed != Vector2.INF
+			and crossed.distance_to(cordon.last_gap) <= Tuning.TILE_SIZE * 1.5,
+			"the busker leaves the park through the last gap (%.0fpx from it)"
+			% crossed.distance_to(cordon.last_gap))
+	t.check(seen.busker_left, "and is gone")
+	t.check(cordon.is_closed() and not seen.closed_with_them_inside,
+			"the gap closes only once they are both out of it")
+	t.check(escort.phase == ParkCordon.Officer.Phase.GONE and not seen.gone_seen,
+			"and the officer is gone where she cannot see him (%.1fs)" % waited)
 	_end(fixture)
 
 ## The park stays requisitioned the next morning, and the cordon's nodes and obstructed tiles go

@@ -320,13 +320,15 @@ static func _distance_to_rect(point: Vector2, rect: Rect2) -> float:
 ## Called by the director the instant the swing is reached. The park stops being forced open and
 ## takes its arc's requisition now (`CityState.take()`), so it is requisitioned for the rest of the
 ## run; the city stops counting it as calm (`CityMap.recompute_calm()`); and the police close it
-## with a cordon (`ParkCordon`): officers walk in from out of her sight and tape its edge a stretch at
-## a time, working round it from the side farthest from her, so the way out shrinks to a last gap
-## nearest where she stood, while others walk the park's people out. The ground stays grass. She
-## leaves through the gap; if it is taped with her inside, she is shut in and the day ends. The day
-## has kept a second clean park reachable for the baby (`docs/CITY.md`, "Guarantees"). Returns
+## with a cordon (`ParkCordon`): officers walk in from out of her sight and tape its edge a stretch
+## at a time, so the way out shrinks to a last gap — of the edges that still lead home, the one
+## nearest where she stood — while others walk the park's people out through it. The ground stays
+## grass. She leaves through the gap; if it is taped with her inside, she is shut in and the day
+## ends. The day has kept a second clean park reachable for the baby (`docs/CITY.md`,
+## "Guarantees"). `blocked` is the day's obstruction as the director's reachability answer has it
+## (`EventScheduler.blocked_by()`'s set), which the cordon's last gap is checked under. Returns
 ## whether the park was taken.
-func take_the_park() -> bool:
+func take_the_park(blocked: Dictionary = {}) -> bool:
 	if not _map:
 		return false
 	var park := CityGenerator.swing_park(_map)
@@ -336,7 +338,7 @@ func take_the_park() -> bool:
 	_map.recompute_calm(state)
 	if cordon:
 		cordon.clear()
-	cordon = ParkCordon.new(_map, _city, park)
+	cordon = ParkCordon.new(_map, _city, park, blocked)
 	Telemetry.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
 			% park)
 	return true

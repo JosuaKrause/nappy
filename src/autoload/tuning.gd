@@ -343,13 +343,16 @@ const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 ## the day, it goes where she is not looking, so the city has lost it whichever way she walked.
 const MARKET_GONE_BY := 90.0
 ## Day 12's park is cordoned off by the police once she has reached its swing (`ParkCordon`): the
-## last gap in their tape closes this long after the touch, however long their walk in took — the
-## taping is paced to it — unless that would tape faster than `PARK_CLOSING_STRETCH_MIN` a
-## stretch, when it closes later. Walking from the swing to the nearest edge takes about two
-## seconds, so walking gets her out; staying in the park this long shuts her in, which ends the
-## day. The ring-at-a-time mud's own figure, kept as the cordon's starting point; open to overturn
-## once the day is played.
+## last gap in their tape closes at the soonest this long after the touch, however long their walk
+## in took — the taping is paced to it. It closes later where the first officer would come into
+## her view of the swing too late for `PARK_CLOSING_WARNING` (a park larger than the view), or
+## where the taping would go faster than `PARK_CLOSING_STRETCH_MIN` a stretch. Staying in the park
+## until then shuts her in, which ends the day. Open to overturn once the day is played.
 const PARK_CLOSING_SECONDS := 12.0
+## How long, beyond the walk from where she stood at the touch to the cordon's last gap, the first
+## officer is in her view before the gap closes: time to see him and decide, so the officers'
+## arrival is a warning she can act on at a walk on every park (`ParkCordon._time_the_close()`).
+const PARK_CLOSING_WARNING := 2.0
 ## The fastest the cordon is taped: a stretch (about a tile of the edge) in no less than this.
 const PARK_CLOSING_STRETCH_MIN := 0.3
 ## How fast the cordon's officers walk in and away: a brisk walk, slower than hers
