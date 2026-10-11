@@ -595,12 +595,14 @@ func _stop() -> void:
 		Input.action_press(&"run")
 	queue_redraw()
 
-## A gatehouse has let her out (`Stroller.show_after_inspection()`): the heading a tap or a drag
-## locked in before the hold is dropped, so she stands still until the player chooses again. A
-## finger still down chooses again by moving; one lifted or held still does not. Only what this node
-## itself holds is released, so a key held on the keyboard is `Stroller`'s to deal with.
+## A gatehouse has let her out (`Stroller.show_after_inspection()`): a heading a tap or a drag locked
+## in is dropped when no finger is down, so she stands still until the player chooses again; with a
+## finger still down it stays and the finger keeps steering her. *(2026-10-11, #697: "if I don't
+## lift my finger during the move I don't expect the movement to get reset".)* A tap's locked heading
+## with its finger already up counts as lifted. Only what this node itself holds is released, so a
+## key held on the keyboard is not touched.
 func stand_still_after_hold() -> void:
-	if _walking or _direction != Vector2.ZERO:
+	if _drag_pointer_index == -1 and (_walking or _direction != Vector2.ZERO):
 		_stop()
 
 ## Where Run's disc is drawn: the focus opposite the steering one in `Mode.JOYSTICK`, from the
@@ -909,9 +911,8 @@ func _draw_focus_circles() -> void:
 ## drag through `set_direction()` (`_set_axis()` presses these same four actions), or a real key
 ## through `_yield_to_the_keyboard()` overriding it. `Input.get_vector()` on `move_left`/
 ## `move_right`/`move_up`/`move_down` is the read `Stroller._physics_process()` makes to decide her
-## own velocity, and the rig's `Stroller.input_she_moves_by()` (that read less a key held through a
-## gatehouse's release) is what this defers to when the rig has it, so this is not a second, independent notion of "what is pressed" that
-## could disagree with it — `.normalized()` on top guarantees a unit vector or exactly
+## own velocity, and the rig's `Stroller.input_she_moves_by()` is what this defers to when the rig has it, so this is not a second,
+## independent notion of "what is pressed" that could disagree with it — `.normalized()` on top guarantees a unit vector or exactly
 ## `Vector2.ZERO`, matching `heading_to()`'s own convention, rather than trusting whatever length a
 ## diagonal keyboard press or a partial controller strength happens to produce.
 ##
@@ -928,6 +929,5 @@ static func current_heading(rig: Node2D = null) -> Vector2:
 	if rig != null and rig.has_method(&"is_detained") and bool(rig.call(&"is_detained")):
 		return Vector2.ZERO
 	if rig != null and rig.has_method(&"input_she_moves_by"):
-		# Her own read, which leaves out a key held through a gatehouse's release.
 		return (rig.call(&"input_she_moves_by") as Vector2).normalized()
 	return Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down").normalized()
