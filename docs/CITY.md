@@ -211,8 +211,10 @@ bodies never seal it off:
   rule about the tree, since friction stands on the corridor. `_ensure_the_city_is_still_walkable`
   drops the widest of them until some tile of the place is reachable from home under the discs of
   every obstructing or hard-fail body the day has — the seals and the region wall's own included,
-  which it never drops — the same question `ResistanceDirector._reachable_from_home()` asks. Only
-  ever a removal, which is the city's one monotonic exception.
+  which it never drops — the question `ResistanceDirector._reachable_from_home()` asks too, with
+  the soft seals' bands added since the red arrow reads those as shut. A soft seal stands only off
+  the tree, so the bands never cut the tree's way to the place. Only ever a removal, which is the
+  city's one monotonic exception.
 
 **What it promises is one tile of the place, not every tile of it and not a tile chosen ahead.** The
 pool is the tiles the contact may stand on (`ResistanceSteps.target_candidates`) that pass the

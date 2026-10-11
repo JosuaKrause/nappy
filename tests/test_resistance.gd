@@ -4563,77 +4563,96 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 ## artificially to two arbitrary masts")* — the one near the mark, the routed one and a third one
 ## besides — and touching the third, which is neither, completes the task, silences that mast and
 ## scars its foot, and leaves the other two lit. Asking for the arrow along the way is a read.
+##
+## **The first of `DAY_ELEVEN_SEEDS` whose walk puts the routed mast down**: a place put on her
+## route waits, rather than being forced, wherever every tile of its ground on her branch breaks a
+## placement rule (`WalkSiting.ahead_of()`), so one city's walk down its longest route can end with
+## the mast still waiting, and the rest of the test needs one that did not.
 func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 	var saved_scars := GameState.scars.duplicate()
 	var saved_state := GameState.city_state
-	_build_city(t)
-	_with_clean_run(func() -> void:
-		GameState.scars = []
-		var read := _read_the_mark_on(t, 11, SEED)
-		var director: ResistanceDirector = read[0]
-		var player: Stroller = read[2]
-		var step := director.current_step()
-		var near := director._mast_id
-		t.check(step != null and near != "", "day 11's task is on offer at the mast near the mark")
-		var before := [director._arrow_key, director._mast_id, director.contact_position()]
-		var asked := director.red_arrow_target()
-		t.check(asked == director.contact_position() and director._arrow_nearest_next == null
-				and [director._arrow_key, director._mast_id, director.contact_position()] == before,
-				"asking for the arrow chooses nothing, sweeps nothing and moves no contact")
-		var at_the_mark := {}
-		for plan in _city.events.plans():
-			if plan.mast_id != "":
-				at_the_mark[plan.mast_id] = true
-		var routed := _walk_until_the_route_mast(at_the_mark, player)
-		t.check(routed != "", "walking the day's route puts the rigged mast down on seed %d" % SEED)
-		if routed == "" or step == null:
-			player.free()
-			director.free()
-			return
-		var keys: Array = []
-		for target in director._arrow_candidates(step):
-			keys.append(target["key"])
-		var third := ""
-		for key: String in keys:
-			if key != near and key != routed \
-					and _beside_the_mast(director, _city.events.mast_foot(key)) != Vector2.INF:
-				third = key
-		t.check(near in keys and routed in keys and third != "",
-				"the near mast, the routed one and a third all answer (%s)" % [keys])
-		if third == "":
-			player.free()
-			director.free()
-			return
-		var third_foot := _city.events.mast_foot(third)
-		var near_foot := _city.events.mast_foot(near)
-		player.global_position = _beside_the_mast(director, third_foot)
-		t.check(director.red_arrow_target().distance_to(near_foot) < 1.0
-				and director._mast_id == near,
-				"before the next choice the arrow and task still point at the near mast")
-		director._process(STEP)
-		t.check(director.red_arrow_target().distance_to(third_foot) < 1.0
-				and director._mast_id == third,
-				"following her between masts moves the task to the one she actually touches")
-		director._contact._physics_process(STEP)
-		t.check(step.index in GameState.completed_resistance_steps,
-				"touching the third mast completes the task")
-		var silenced := {}
-		for plan in _city.events.plans():
-			if plan.mast_id in [near, routed, third]:
-				silenced[plan.mast_id] = plan.silenced
-		t.check(silenced.get(third, false) and not silenced.get(near, true)
-				and not silenced.get(routed, true),
-				"and silences the mast she touched, not the near or the routed one (%s)" % silenced)
-		var scarred := []
-		for scar: Dictionary in GameState.scars:
-			if String(scar["id"]) == EventScheduler.SILENCED_MAST:
-				scarred.append(scar["position"])
-		t.check(scarred.size() == 1 and (scarred[0] as Vector2).distance_to(third_foot) < 1.0,
-				"and the one scar is that mast's foot")
-		player.free()
-		director.free())
+	var routed_on := [-1]
+	for seed_value: int in DAY_ELEVEN_SEEDS:
+		if routed_on[0] >= 0:
+			break
+		_build_city(t, seed_value)
+		_with_clean_run(func() -> void: _answer_day_eleven_at_any_live_mast(t, seed_value, routed_on))
+	t.check(routed_on[0] >= 0, "walking the day's route puts the rigged mast down on one of %s"
+			% [DAY_ELEVEN_SEEDS])
 	GameState.scars = saved_scars
 	GameState.city_state = saved_state
+
+## The cities `_test_day_eleven_answers_at_any_live_mast` tries in turn: the suite's own and the two
+## `_test_a_task_is_placed_near_its_mark` reads day 11 on as well.
+const DAY_ELEVEN_SEEDS: Array[int] = [SEED, 90210, 1234567]
+
+## One city's half of `_test_day_eleven_answers_at_any_live_mast`; sets `routed_on[0]` to the seed
+## once its walk has put the routed mast down, and checks the rest only then.
+func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -> void:
+	GameState.scars = []
+	var read := _read_the_mark_on(t, 11, seed_value)
+	var director: ResistanceDirector = read[0]
+	var player: Stroller = read[2]
+	var step := director.current_step()
+	var near := director._mast_id
+	t.check(step != null and near != "", "day 11's task is on offer at the mast near the mark")
+	var before := [director._arrow_key, director._mast_id, director.contact_position()]
+	var asked := director.red_arrow_target()
+	t.check(asked == director.contact_position() and director._arrow_nearest_next == null
+			and [director._arrow_key, director._mast_id, director.contact_position()] == before,
+			"asking for the arrow chooses nothing, sweeps nothing and moves no contact")
+	var at_the_mark := {}
+	for plan in _city.events.plans():
+		if plan.mast_id != "":
+			at_the_mark[plan.mast_id] = true
+	var routed := _walk_until_the_route_mast(at_the_mark, player)
+	if routed == "" or step == null:
+		player.free()
+		director.free()
+		return
+	routed_on[0] = seed_value
+	var keys: Array = []
+	for target in director._arrow_candidates(step):
+		keys.append(target["key"])
+	var third := ""
+	for key: String in keys:
+		if key != near and key != routed \
+				and _beside_the_mast(director, _city.events.mast_foot(key)) != Vector2.INF:
+			third = key
+	t.check(near in keys and routed in keys and third != "",
+			"the near mast, the routed one and a third all answer (%s)" % [keys])
+	if third == "":
+		player.free()
+		director.free()
+		return
+	var third_foot := _city.events.mast_foot(third)
+	var near_foot := _city.events.mast_foot(near)
+	player.global_position = _beside_the_mast(director, third_foot)
+	t.check(director.red_arrow_target().distance_to(near_foot) < 1.0
+			and director._mast_id == near,
+			"before the next choice the arrow and task still point at the near mast")
+	director._process(STEP)
+	t.check(director.red_arrow_target().distance_to(third_foot) < 1.0
+			and director._mast_id == third,
+			"following her between masts moves the task to the one she actually touches")
+	director._contact._physics_process(STEP)
+	t.check(step.index in GameState.completed_resistance_steps,
+			"touching the third mast completes the task")
+	var silenced := {}
+	for plan in _city.events.plans():
+		if plan.mast_id in [near, routed, third]:
+			silenced[plan.mast_id] = plan.silenced
+	t.check(silenced.get(third, false) and not silenced.get(near, true)
+			and not silenced.get(routed, true),
+			"and silences the mast she touched, not the near or the routed one (%s)" % silenced)
+	var scarred := []
+	for scar: Dictionary in GameState.scars:
+		if String(scar["id"]) == EventScheduler.SILENCED_MAST:
+			scarred.append(scar["position"])
+	t.check(scarred.size() == 1 and (scarred[0] as Vector2).distance_to(third_foot) < 1.0,
+			"and the one scar is that mast's foot")
+	player.free()
+	director.free()
 
 ## A single-target task keeps its arrow on its contact exactly, retargeting or not.
 func _test_a_single_target_arrow_stays_on_its_contact(t) -> void:
@@ -5092,16 +5111,22 @@ func _test_a_task_is_placed_near_its_mark(t) -> void:
 					var target := director.contact_position() if mast or director._rider == null \
 							else director._rider.global_position
 					var circle := _edge_of_her_circle(director, mark)
+					# Day 13's roadblock is offered the ground her paths reach out to each of
+					# `ROADBLOCK_WIDER_REACH` in turn where the day's rules refuse the whole edge
+					# (`_place_the_roadblock_near()`), and that is not a fallback.
+					var wider := director._paths_reach_between(mark, ResistanceDirector.NEAR_THE_MARK,
+							ResistanceDirector.ROADBLOCK_WIDER_REACH.back()) if day == 13 else {}
 					var on_it := false
 					var centre := _city.map.world_to_tile(target)
 					for step_to: Vector2i in [Vector2i.ZERO, Vector2i.LEFT, Vector2i.RIGHT,
 							Vector2i.UP, Vector2i.DOWN]:
 						var tile := centre + step_to
-						if circle[0].has(tile) or (mast and circle[1].has(tile)):
+						if circle[0].has(tile) or (mast and circle[1].has(tile)) or wider.has(tile):
 							on_it = true
 					t.check(on_it or director._fell_back,
 							("seed %d day %d: the task stands where her path reaches the circle's " +
-							"edge, or nothing there qualified") % [seed_value, day])
+							"edge (day 13: or the wider reach its roadblock is offered next), or " +
+							"nothing there qualified") % [seed_value, day])
 					if director._fell_back:
 						fell_back[0] += 1
 					if not mast:
