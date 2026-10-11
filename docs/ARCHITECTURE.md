@@ -125,7 +125,8 @@ src/
 	                      --start-escape reaches the same sequence directly
 	finale_controller.gd  the two sections, each of them a day with its own full clock; every
 	                      section opens on its own brief, and a lost one comes back to that brief
-	                      and starts again where it began, at no Nerve cost
+	                      and starts again where it began (a hard run's lost section costs a
+	                      Nerve, spent by main)
 	finale_planner.gd     the two chains — service exit, three calm areas, tunnel or bridge —
 	                      and the whole plan built off them
 	interior_events.gd    section one's events: the mouse, the masked man who keeps coming back,
