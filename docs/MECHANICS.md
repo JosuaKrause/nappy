@@ -1489,10 +1489,9 @@ has normal nerve counts and ends if nerves go to zero (instead of restarting ind
 only for normal mode)".)* She enters it with the nerves day 14 left her. A lost section costs one
 (`GameState.spend_a_nerve_in_the_escape()`, from `main._on_finale_section_lost()`), and the last one
 is the bad ending, on the `GAME OVER` screen, rather than the section again. No section gives one
-back, so a hard run can be lost in the escape: gentle-osprey's *"Section won gives one back"* was
-overturned by the player (#718, dotted-hawk): *"No regain in escape either. Also, nerves behave the
-same in escape for hard mode so the game can actually be lost"*. Walking out of the city ends the
-run. Hard mode is the player choosing to
+back, so a hard run can be lost in the escape *([mossy-kestrel](playtests/2026-10-11-mossy-kestrel.md), #718, the player: "No regain in escape either. Also,
+nerves behave the same in escape for hard mode so the game can actually be lost")*. Walking out of
+the city ends the run. Hard mode is the player choosing to
 have the wrong turn in the last minutes count.
 
 **Every section opens on its brief**, a first walk through it and a retry alike — the same screen
