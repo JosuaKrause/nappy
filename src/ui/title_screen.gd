@@ -13,11 +13,12 @@ extends CanvasLayer
 ##
 ## **What is behind it is the game, running.** Not a still, not a menu over black: the
 ## doorstep the run starts on, with the traffic driving and the events playing out on it and nobody
-## pushing a pram through them. The screen itself is therefore only two scrims, a handful of labels
-## and the three `ModeButton`s: the title and the two lines of controls across the top half, the
-## buttons across the bottom, and the street visible through both. `main._open_the_title()` is the
+## pushing a pram through them. The screen itself is therefore only two scrims, a handful of labels,
+## the three `ModeButton`s and, for a new game, the Hard Mode checkbox: the title and the two lines
+## of controls across the top half, the buttons and the checkbox across the bottom, and the street
+## visible through both. `main._open_the_title()` is the
 ## half that makes the city keep moving while everything that is a *day* stops; this class owns
-## its three buttons and a small handful of keys and nothing else.
+## its three buttons, the checkbox and a small handful of keys and nothing else.
 ##
 ## What it is not is a main menu. There is one option, no seed box and no load game, and none of
 ## those is what this screen exists for. **The one option is the Hard Mode checkbox**, shown only
@@ -237,8 +238,9 @@ func is_open() -> bool:
 ## here even though the key still works — `_can_quit` gates `_unhandled_input()` alone.
 func open(again := false, new_game := false) -> void:
 	visible = true
-	_hard_mode.visible = new_game
-	_hard_mode.button_pressed = new_game and GameState.hard_mode
+	if _hard_mode:
+		_hard_mode.visible = new_game
+		_hard_mode.button_pressed = new_game and GameState.hard_mode
 	_hint.text = "press a button to walk again" if again else "press a button to begin"
 	# A press that closed this screen can leave a button's own forced-pressed look set — see
 	# `_acknowledge_and_begin()`'s own doc for why the release that would otherwise clear it may
@@ -257,13 +259,19 @@ func close() -> void:
 	visible = false
 
 ## Whether the Hard Mode checkbox is checked — read by `main._on_title_start()` as the title is
-## dismissed, and only for a new game, the one time the box is shown.
+## dismissed, and only for a new game, the one time the box is shown. `false` for a `TitleScreen`
+## built without its scene, which has no box to check — the bare rigs `tests/test_save.gd` drives
+## `main._on_title_start()` through.
 func hard_mode_checked() -> bool:
-	return _hard_mode.visible and _hard_mode.button_pressed
+	return _hard_mode != null and _hard_mode.visible and _hard_mode.button_pressed
+
+## Whether the Hard Mode checkbox is on screen: only while the title begins a new game.
+func hard_mode_shown() -> bool:
+	return _hard_mode != null and _hard_mode.visible
 
 ## Flips the Hard Mode checkbox, if it is showing. Never starts the run.
 func _toggle_hard_mode() -> void:
-	if _hard_mode.visible:
+	if _hard_mode and _hard_mode.visible:
 		_hard_mode.button_pressed = not _hard_mode.button_pressed
 
 ## The key that flips the checkbox from a keyboard — `H`, for hard — and, like every key here,
@@ -280,7 +288,7 @@ const _HARD_MODE_REACH := 14.0
 ## rotated layer would otherwise put Godot's own hit test in the wrong place. On the press, like the
 ## buttons; the mouse branch is gated `not _touch` for the same doubled-press reason theirs is.
 func _handle_hard_mode_press(event: InputEvent) -> bool:
-	if not _hard_mode.visible:
+	if not hard_mode_shown():
 		return false
 	var position: Vector2
 	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
@@ -361,7 +369,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_begin(ControlsMode.Mode.TAP, ControlsMode.Side.LEFT, true)
 		return
 	if event is InputEventKey and event.pressed and not (event as InputEventKey).echo \
-			and (event as InputEventKey).keycode == _HARD_MODE_KEY and _hard_mode.visible:
+			and (event as InputEventKey).keycode == _HARD_MODE_KEY and hard_mode_shown():
 		get_viewport().set_input_as_handled()
 		_toggle_hard_mode()
 		return

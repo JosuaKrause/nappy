@@ -1417,7 +1417,8 @@ it is the same screen showing what a load already charged rather than what a day
 `GameState.play_seconds` is a second clock, over the whole run rather than one day: the sum of
 every second a day spent `WALKING` or `RETURNING` with the tree unpaused. Not wall time, and not
 the day timer above, which resets every day — a retried day's first attempt counts toward it, and
-neither the pause screen, the day summary nor the title screen do.
+neither the pause screen, the day summary nor the title screen do. It is part of a normal run's
+checkpoint, so going back to one puts it back to that dawn's reading (see "Two modes").
 
 It is hidden throughout play — no HUD, no pause screen, no day summary — and the ending screen is
 the only place it is shown, once, on every ending alike: bad, neutral and good all carry a line
@@ -1426,8 +1427,9 @@ under their own body text reading the run's length as `%d:%02d.%03d`, to the mil
 the millisecond calls it rather than carrying a second copy of the string.
 
 **The `BAD` ending's own line names the day the run reached** — *"You made it to day %d."*,
-beside "Time played" — the last day played rather than the last day completed, so a run that
-loses its last nerve on day 1 reads day 1, not 0. `GameState.day` already holds it: the calendar
+beside "Time played" — the last day played rather than the last day completed, so a hard run that
+loses its last nerve on day 1 reads day 1, not 0, and one that loses it in the escape reads day
+14. `GameState.day` already holds it: the calendar
 is never advanced past the day nerves ran out on, or past the day a load spent the last one on
 (`GameState.finish_day()` ends the run before it would move the calendar). The neutral and good
 endings say nothing about the day, since both are reached by finishing day 14.
@@ -1471,27 +1473,38 @@ only what happens at the end of one.
 place of a day's `%d:%02d` — and nothing else about it changes. Milliseconds ticking make the same
 countdown read as faster, which is the whole of the reason.
 
-**A lost section starts again where it began, and costs no Nerve.** Being taken, the meter reaching
-100 and the clock running out are the same three losses a day has, and every one of them puts her
-back at the start of the section she was in — the hallway outside her own door, or the service exit
-— with a fresh clock, the baby asleep with sleepiness full again, and `GameState` untouched. A
-fourteen-day run is never thrown by one wrong turn in the last minutes; at zero the way out is
-gone, and what she does about it is walk it again.
+**A lost section starts again where it began, and in a normal run costs no Nerve.** Being taken,
+the meter reaching 100 and the clock running out are the same three losses a day has, and every one
+of them puts her back at the start of the section she was in — the hallway outside her own door, or
+the service exit — with a fresh clock, the baby asleep with sleepiness full again, and, in a normal
+run, `GameState` untouched. A fourteen-day run is never thrown by one wrong turn in the last
+minutes; at zero the way out is gone, and what she does about it is walk it again.
+
+**A hard run's escape has nerves.** *(gentle-osprey, the player: "with hard mode the escape also
+has normal nerve counts and ends if nerves go to zero (instead of restarting indefinitely; this is
+only for normal mode)".)* She enters it with the nerves day 14 left her. A lost section costs one
+(`GameState.spend_a_nerve_in_the_escape()`, from `main._on_finale_section_lost()`), and the last one
+is the bad ending, on the `GAME OVER` screen, rather than the section again. Getting out of the
+building gives one back, up to five, before the city's brief comes up *("Section won gives one
+back")*; walking out of the city ends the run and gives none. Hard mode is the player choosing to
+have the wrong turn in the last minutes count.
 
 **Every section opens on its brief**, a first walk through it and a retry alike — the same screen
 between days that a resumed run opens on (`DaySummary.show_finale_brief()`), titled *"Escape the
-building"* or *"Escape the city"* where a day's number stands, and carrying the Nerve count
-unchanged, because nothing here spends one. Continuing from it is the moment the section actually
-begins: the clock starts there and nowhere else, and the section's one hint line is said by the
-HUD as she starts walking. A retry is not told that line a second time, the way day 1 teaches
-tapping and then never again.
+building"* or *"Escape the city"* where a day's number stands, and carrying the Nerve count as the
+run holds it — unchanged in a normal run, whose escape spends none, and in a hard run whatever its
+lost sections spent and its cleared building gave back. Continuing from it is the moment the
+section actually begins: the clock starts there and nowhere else, and the section's one hint line
+is said by the HUD as she starts walking. A retry is not told that line a second time, the way
+day 1 teaches tapping and then never again.
 
 **And the brief is the checkpoint a closed game comes back to.** A save is written as each brief
 comes up, carrying which section it is (`GameState.escape_section`, written beside the day-under-
 way flag rather than inside the run snapshot, so a save from before the escape existed still
 loads), and opening the game again puts that section's brief back up with a whole clock behind it
 — the same way closing a game mid-day comes back to that day's brief. Nothing about the escape is
-ever a day under way, so no nerve is charged for leaving one.
+ever a day under way, so no nerve is charged for leaving one, in either mode; a hard run's spent
+nerve is already on disk, written by the brief its lost section comes back to.
 
 **Everything around a day exists around a section too, built the same way.** `Esc`, the pause
 button and losing the window's focus open the same pause screen a day opens, with the same continue,
@@ -1587,12 +1600,15 @@ she took, to the millisecond, which is the only number that screen carries.
 
 The run-level health bar. Starts at 5. Every lost day costs one, and a day she **wins** gives one
 back, up to the same five (`GameState.regain_a_nerve()`) — so a bad single day is recoverable rather
-than a tight spot carried all the way to day 14. At 0 the run ends with the bad ending.
+than a tight spot carried all the way to day 14. **What 0 does is the run's mode**, chosen on the
+title as a new game begins (see "Two modes" below): a normal run goes back to its latest checkpoint
+with five, and a hard run ends with the bad ending.
 
-**The escape gives none back**, on either of its two sections or on walking out at the end: the
-run's last `finish_day()` call, from `main._on_finale_escaped()`, skips the gain because
-`GameState.escape_section` is still set to the section she just left. Day 14 itself still gives
-one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s hand-over
+**A normal run's escape gives none back**, on either of its two sections or on walking out at the
+end, and a hard run's gives one only for getting out of the building (see "The escape, which is the
+run's ending"): the run's last `finish_day()` call, from `main._on_finale_escaped()`, skips the gain
+in both because `GameState.escape_section` is still set to the section she just left. Day 14
+itself still gives one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s hand-over
 to the escape rather than waiting for `finish_day()`, which by then is deciding the escape's ending
 instead of day 14's.
 
@@ -1645,8 +1661,52 @@ happenings of days 10 to 13 come back the same way**, since each is kept in one 
 block day 11 boarded up and the park day 12 took are arc steps in `CityState`, the barricade day
 13's column left is a scar, and whether day 10's neighbor was taken is read off the completed steps
 (`GameState.neighbor_was_taken()`). A retry of any of those days meets its happening again.
-- **The run cannot end by running out of days while nerves remain.** The bad ending is the only
-  way to lose, and the run length becomes a promise rather than a budget.
+- **The run cannot end by running out of days while nerves remain.** The run length is a promise
+  rather than a budget. In a hard run the bad ending is the only way to lose; a normal run cannot
+  lose at all, only go back to a checkpoint.
+
+### Two modes
+
+**A new game offers a Hard Mode checkbox on the title, and the run keeps the answer.**
+*(gentle-osprey, the player: "a "Hard Mode" checkbox on the title screen (if new game) that decides
+whether checkpoints are available".)* It shows only when the title begins a new game — never in
+front of a resumed save, whose run already has its mode — opens unchecked every time, and is never
+remembered between sittings. A press on it, or `H` on a keyboard, flips it and never starts the run:
+the run still begins only from the title's three controls buttons or a key, so the box can be set
+first (`TitleScreen`). The mode is `GameState.hard_mode`, fixed for the run and carried in the save.
+**Nothing during play shows it** and nothing about the city, the events or a day's difficulty reads
+it: *"hard mode doesn't affect gameplay -- only restart pacing"*.
+
+- **Normal mode has checkpoints and never reaches the bad ending.** The checkpoints are days 4, 8 and
+  12, the first days of acts II, III and IV (`Tuning.ACT_START_DAYS`), and day 1 is checkpoint zero.
+  Spending the last nerve sends the run back to the latest checkpoint it has begun, with five
+  nerves, in the same city.
+- **Hard mode has none.** Its last nerve ends the run with the bad ending, on the `GAME OVER` screen,
+  and its escape spends nerves as well.
+
+**A checkpoint is the exact state of the run at that day's dawn.** *(gentle-osprey, the player:
+"store the exact state at the checkpoint -- continuing should not have anything that happened after
+the checkpoint".)* It is the whole run as the save carries it — the resistance's steps and progress,
+the scars and the spent one-shots, every block's arc, the posters, where she settled each day, the
+fenced park, the alleys a mark has used, and the run's clock — kept by `GameState.begin_day()` the
+first time a checkpoint day is begun, before anything of that day can have happened, and given back
+whole when a normal run spends its last nerve, with five nerves instead of whatever that dawn had. A
+retry of a checkpoint day, or a run sent back to one, keeps the checkpoint it has; only the next
+checkpoint day replaces it. Day 1 is not stored: the run's own seed rebuilds that dawn exactly. **The
+run clock goes back with it**, so time spent after a checkpoint is not part of the run's length.
+
+**A checkpoint cannot strand the good ending any more than the run already had.** Tasks belong to
+their days and a checkpoint restores exactly what the run had done by that dawn, so a run that
+neglected act II's tasks comes back to checkpoint 8 with the same tasks behind it and act III's still
+ahead; winning day 14 still gives the neutral ending.
+
+**Out of nerves, a normal run's screen is the lost-day screen**, not an ending: it says where she
+goes back to — *"Your nerves gave out. Back to day 8."* — with five stars and the ordinary continue,
+which carries on into that dawn. The `GAME OVER` screen, which has no continue
+([PLAYTEST-28](playtests/PLAYTEST-28.md), finding 4: *"the game over screen cannot have a continue
+button"*), is a hard run's alone. **The held restart starts from scratch in both modes**, never from
+a checkpoint ([PLAYTEST-143](playtests/PLAYTEST-143.md): *"restart button restarts the game from
+scratch"*), and goes back to the title, where the checkbox shows again.
 
 ## Saving and resuming
 
@@ -1684,13 +1744,15 @@ the run and the day, never the moment inside one (PLAYTEST-82).
 
 **A save holds the run, never the moment inside a day.** `GameState.save_snapshot()` — the seed,
 the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
-history has moved, where she settled each day and the run's clock — plus three facts the run does
-not know about itself: whether a day was under way when the file was written, which section of the
-escape it is in, if any (see "The escape, which is the run's ending"), and which alley tiles the
-resistance has already used for a completed mark, so a mark on a later day does not reuse one it
-does not have to. Her position and heading,
-the meter and the sleepiness, the day's own clock, every event instance and the crowd are not
-saved; the city and each day's plan need none of this either, since both are functions of the seed
+history has moved, where she settled each day and the run's clock — plus the facts that ride beside
+it: whether a day was under way when the file was written, which section of the escape it is in, if
+any (see "The escape, which is the run's ending"), which alley tiles the resistance has already used
+for a completed mark, so a mark on a later day does not reuse one it does not have to, the posters
+and the fenced park, **the run's mode, and its latest checkpoint** (see "Two modes"). A save written
+before there were two modes loads as a normal run, and one written before there were checkpoints
+goes back to day 1 of its own city when its nerves run out; neither changes
+`GameSave.FORMAT_VERSION`. Her position and heading, the meter and the sleepiness, the day's own
+clock, every event instance and the crowd are not saved; the city and each day's plan need none of this either, since both are functions of the seed
 and the day. Recording the moment itself would have to carry the crowd, every event instance and
 the random state, with every later change to any of them owing the save format its compatibility —
 the largest option, for a requirement (quitting is never an escape) a lost-day penalty already
@@ -1698,15 +1760,18 @@ satisfies at dawn instead.
 
 **Opening a game whose save says a day was under way loses that day**, through the same code path
 an ordinary lost day takes: one nerve, the resistance given back, the same day again, the last
-nerve ending the run exactly as it does there. **The title comes up on every boot of a day that has
+nerve doing exactly what it does there — a hard run ends, a normal one goes back to its
+checkpoint. **The title comes up on every boot of a day that has
 a save to come back to**, with the street outside her own front door running behind it exactly as
 it does for a fresh run. Pressing start with a save on disk brings up the day brief instead of
 starting the day outright — the screen `DaySummary` draws between days, carrying the day, the
 nerves and the morning's own line for the calendar day, plus the line that a day was lost to
 leaving it when the load itself charged the nerve above. Continuing from the day brief is the
 moment the day actually starts, and the moment the first of the two writes above says so. If the
-load spends the run's last nerve, the day brief never shows at all — the ending does, the same
-screen and the same continue any other run-ending reaches. A save written once a day has already
+load spends a hard run's last nerve, the day brief never shows at all — the ending does, the same
+screen and the same continue any other run-ending reaches. If it spends a normal run's, the day brief
+shows the checkpoint's day, with five stars and the line *"Left before the day ended. That was the
+last nerve — back to day 8."* A save written once a day has already
 ended at its own summary, or at a day brief before it is ever continued past, costs nothing:
 opening it again finds the same nerve count and shows the same screen, and pressing on from there
 is what actually spends anything.
@@ -1747,8 +1812,9 @@ it appears, and for as long as any change is still unanswered; it then fades ove
 hold after the answer** *(cozy-pelican: "we should show it until it is fully confirmed saved", and
 "okay always show it. but show it for at least a second")*. **Deleting the save file is a change
 too** *("show deleting the save file with a save symbol as well. every change in the save state
-needs to show the symbol")*: a run's end deletes it (`GameState._end_run()`: a day that ends the
-run, the charge a reopened save pays when it was the last nerve, and the escape walked out), and
+needs to show the symbol")*: a run's end deletes it (`GameState._end_run()`: a day that ends a
+hard run, the charge a reopened hard run's save pays when it was the last nerve, a hard run's last
+nerve lost in the escape, and the escape walked out), and
 so does the held restart, and each shows the symbol with the same timings and the same strike. On
 the web a deletion is kept only once IndexedDB has dropped the file, so `GameSave.clear()` runs the
 same copy a write does, with its retry and its timeout: the engine copies a removal on its own too,

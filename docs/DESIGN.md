@@ -59,7 +59,7 @@ Losing a day is not losing the run. It costs one point of **Nerves** (start of r
 
 | Ending | Condition |
 | --- | --- |
-| **Bad ending** | Nerves hit 0 — the mother breaks, leaves the city, nothing changes. |
+| **Bad ending** | Nerves hit 0 in hard mode — the mother breaks, leaves the city, nothing changes. A normal run never reaches it: at 0 it goes back to its latest checkpoint (day 1, 4, 8 or 12) with five nerves. |
 | **Neutral ending** | Survive all `RUN_LENGTH_DAYS` days without joining the resistance. The regime consolidates; you and the baby endure. |
 | **Good ending** | Reach `RESISTANCE_GOAL` resistance progress before the final day, then complete the final-day sabotage route. |
 

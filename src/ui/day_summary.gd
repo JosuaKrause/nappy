@@ -152,8 +152,9 @@ var _showing_ending := false
 ## **Continue does not show on an ending.** *(Playtest 28 finding 4: "the game over screen cannot
 ## have a continue button".)* Every other screen this row appears on carries on into a day that
 ## still has one — a normal run out of nerves included, whose lost-day screen carries on into its
-## checkpoint, so the game over screen is a hard run's alone; an ending has none, and the button was drawn as *continue* while doing exactly
-## what the catch-all underneath it already does — restart the run. `_buttons` itself stays
+## checkpoint, so the game over screen is a hard run's alone; an ending has none, and the button
+## was drawn as *continue* while doing exactly what the catch-all underneath it already does —
+## restart the run. `_buttons` itself stays
 ## visible for `_restart_button` even here: *"the restart button, hold and all"* is the player's
 ## own answer to whether the hold still earns its keep with no day left to protect.
 func _refresh_buttons() -> void:

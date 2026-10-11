@@ -70,7 +70,8 @@ extends Node
 ##   every mother who stops her to chat and every checkpoint hold.
 ## - `nappy-day-N-poster-pursuit` — a tear that sends a pursuer on foot after her, beside its
 ##   `poster-torn`.
-## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
+## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached (`bad`
+##   is a hard run's alone).
 ## - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: begun (the fresh
 ##   handover only), lost (either section, any attempt), or got out.
 ## - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — the "etc.": which
