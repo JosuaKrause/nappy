@@ -5406,7 +5406,10 @@ func _stands_on_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[
 ## (`EventScheduler.blocked_by()` over every placed, obstructing or hard-fail plan, flooded from
 ## home), built independently here so a sweep is not just asking the director to grade its own
 ## homework. A region door's own bodies are excluded, the same way `_ensure_reachability()`
-## excludes them and for the same reason — see that function's own doc. `[grid, blocked, reached]`.
+## excludes them and for the same reason — see that function's own doc. The soft seals' bands
+## (`CityMap.soft_sealed_tiles`) are blocked on top, as the director blocks them: the red arrow
+## reads a band as ground she cannot walk, so a place reached only through one is not a place the
+## arrow can lead her to. `[grid, blocked, reached]`.
 func _day_reachability(city: City) -> Array:
 	var region_plan: RegionPlanner.RegionPlan = city.region_plan()
 	var door_bodies: Array[EventScheduler.Planned] = region_plan.door_bodies if region_plan else []
@@ -5418,6 +5421,7 @@ func _day_reachability(city: City) -> Array:
 			blockers.append(plan)
 	var grid := ReachabilityGrid.build(city.map)
 	var blocked := EventScheduler.blocked_by(city.map, blockers)
+	blocked.merge(city.map.soft_sealed_tiles)
 	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
 
 ## Every mark and every contact a task activates stands on walkable, unobstructed ground — day 8's,
