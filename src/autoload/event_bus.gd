@@ -33,6 +33,16 @@ signal day_ended(day: int, result: GameEnums.DayResult)
 ## one early.
 signal run_restarted(day: int)
 signal run_ended(ending: GameEnums.Ending)
+## A fresh run's mode, the moment the title that chose it is dismissed — `hard` is the Hard Mode
+## checkbox's answer — with `day`, the day already begun behind the title. Never for a resumed run,
+## whose mode was chosen when it began. `main._on_title_start()` is the one emitter. Listen-only,
+## for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
+signal run_mode_chosen(hard: bool, day: int)
+## A normal run spent its last nerve on `lost_day` and went back to its checkpoint, `day` — 1 for
+## checkpoint zero, otherwise 4, 8 or 12 — with every nerve. Emitted by `GameState.finish_day()`
+## once the checkpoint is restored. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The
+## page counts visits".
+signal went_back_to_a_checkpoint(day: int, lost_day: int)
 ## `GameSave.write()`'s own moment a save was actually written — never a refused write (a dev or
 ## headless run, or a run that has already ended), which changes nothing. `result` is a
 ## `GameSave.Result` passed as `int`, for the same cross-script-enum reason `save_deleted` below

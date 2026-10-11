@@ -24,6 +24,14 @@ extends RefCounted
 ## before the one calm area a run could fence existed loads with none chosen, which is exactly what
 ## a run that has not reached act III looks like anyway.
 ##
+## **The mode and the checkpoint ride the same way.** `"hard_mode"` is absent from a save written
+## before there were two modes, which reads as normal mode; `"checkpoint"` is absent from one
+## written before there were checkpoints, which reads as checkpoint zero, day 1 of the same city —
+## see `GameState.checkpoint`. **A checkpoint is the run in exactly the shape the file carries it**
+## (`run_data()`, every key below but the ones about the file itself), so a field a later build adds
+## to the save is in every checkpoint the moment it is in `run_data()`, and `restore_run_data()` is
+## the one function that reads both back.
+##
 ## **One save, no slots.** `_DEFAULT_PATH` is the only file this ever reads or writes on a real
 ## run; `set_path_override()` is the one seam a test uses to point at a scratch file instead, and
 ## `uses_save()` is the one gate every read and write goes through so a dev flag, a headless boot
@@ -470,20 +478,7 @@ static func _write_now(day_under_way: bool) -> bool:
 	if not file:
 		push_warning("GameSave: could not open %s for writing" % _path())
 		return false
-	var alley_tiles: Array = []
-	for tile: Vector2i in GameState.completed_resistance_alley_tiles:
-		alley_tiles.append({"x": tile.x, "y": tile.y})
-	var stored := file.store_string(JSON.stringify({
-		"format_version": FORMAT_VERSION,
-		"build": TitleScreen.build_text(),
-		"day_under_way": day_under_way,
-		"escape_section": GameState.escape_section,
-		"completed_resistance_alley_tiles": alley_tiles,
-		"fenced_park": {"x": GameState.fenced_park.x, "y": GameState.fenced_park.y},
-		"fenced_park_act": GameState.fenced_park_act,
-		"posters": GameState.posters.to_data(),
-		"state": GameState.save_snapshot(),
-	}))
+	var stored := file.store_string(JSON.stringify(file_data(day_under_way)))
 	file.close()
 	if not stored:
 		push_warning("GameSave: could not write %s" % _path())
@@ -491,6 +486,76 @@ static func _write_now(day_under_way: bool) -> bool:
 	var state_word := "day under way" if day_under_way else "between days"
 	Telemetry.note("save", "wrote the save (%s)" % state_word)
 	return true
+
+## Everything the save file holds, as the plain JSON-safe dictionary `_write_now()` stringifies:
+## `run_data()`, plus the facts about the file and the run's mode rather than about where the run
+## stands — the format and the build that wrote it, whether a day was under way, the mode, and the
+## checkpoint. `FILE_KEYS` names those, and `tests/test_run_checkpoints.gd` reads every other key
+## off this function to check a checkpoint gives each one back.
+static func file_data(day_under_way: bool) -> Dictionary:
+	var data := run_data()
+	data["format_version"] = FORMAT_VERSION
+	data["build"] = TitleScreen.build_text()
+	data["day_under_way"] = day_under_way
+	data["hard_mode"] = GameState.hard_mode
+	data["checkpoint"] = GameState.checkpoint.duplicate(true)
+	return data
+
+## The keys of `file_data()` that are not the run's own state, and so are neither part of a
+## checkpoint nor given back by one: the file's format and build, whether a day was under way when
+## it was written, the mode (fixed for the run) and the checkpoint itself.
+const FILE_KEYS: Array[String] = [
+	"format_version", "build", "day_under_way", "hard_mode", "checkpoint",
+]
+
+## Where the run stands, in the shape the save carries it: `GameState.save_snapshot()` under
+## `"state"`, and the run's facts that ride beside it as top-level keys. This is also exactly what
+## a checkpoint is — `GameState._keep_a_checkpoint_if_one_is_due()` keeps it at a checkpoint day's
+## dawn — so the save and the checkpoint can never carry two different ideas of what a run is.
+static func run_data() -> Dictionary:
+	var alley_tiles: Array = []
+	for tile: Vector2i in GameState.completed_resistance_alley_tiles:
+		alley_tiles.append({"x": tile.x, "y": tile.y})
+	return {
+		"escape_section": GameState.escape_section,
+		"completed_resistance_alley_tiles": alley_tiles,
+		"fenced_park": {"x": GameState.fenced_park.x, "y": GameState.fenced_park.y},
+		"fenced_park_act": GameState.fenced_park_act,
+		"posters": GameState.posters.to_data(),
+		"state": GameState.save_snapshot(),
+	}
+
+## The other half of `run_data()`: puts every field it carries back on `GameState`, from a save
+## read off disk or from a checkpoint alike. `data["state"]` must already have passed
+## `GameState.snapshot_is_complete()`. Each rider is read with a default for its absence, so a save
+## from a build that never wrote it loads with the value a run that has not got that far holds.
+## Leaves `hard_mode` and `checkpoint` alone: they are the file's keys, not the run's state.
+static func restore_run_data(data: Dictionary) -> void:
+	GameState.restore_snapshot(data["state"])
+	# After the snapshot, never before: `restore_snapshot()` writes every field a run holds and
+	# this one is not among them, so a save from a build that never wrote the key leaves the run in
+	# the ordinary fourteen days rather than half-way into an escape it never reached.
+	GameState.escape_section = int(data.get("escape_section", 0))
+	# Same reasoning, same shape, for the alley tiles the resistance has already used this run: a
+	# save from a build that never wrote the key leaves the list empty rather than half-restored.
+	GameState.completed_resistance_alley_tiles.clear()
+	for raw: Dictionary in data.get("completed_resistance_alley_tiles", []):
+		GameState.completed_resistance_alley_tiles.append(Vector2i(int(raw["x"]), int(raw["y"])))
+	# And the one park barriers may already stand around, the same way again: a save from before
+	# `fenced_park` existed loads with none chosen, so act III can still choose one fresh — the same
+	# state a run that has not reached act III yet is already in.
+	var fenced_park: Variant = data.get("fenced_park", null)
+	if fenced_park is Dictionary:
+		GameState.fenced_park = Vector2i(int(fenced_park.get("x", -1)), int(fenced_park.get("y", -1)))
+	else:
+		GameState.fenced_park = Vector2i(-1, -1)
+	GameState.fenced_park_act = int(data.get("fenced_park_act", 0))
+	# And the walls, the same way again: a save from before there were posters loads with none up,
+	# and the next dawn pastes the city's from `PosterWalls.FIRST_DAY` onward.
+	GameState.posters.reset()
+	var posters: Variant = data.get("posters", {})
+	if posters is Dictionary:
+		GameState.posters.restore(posters)
 
 ## Tries to resume a run. Returns `{}` when there is nothing to resume — no file, a file this build
 ## cannot read, or a dev/headless run `uses_save()` already refused — and `{"day_under_way": bool}`
@@ -541,29 +606,41 @@ static func _read_now() -> Dictionary:
 	var state: Dictionary = data["state"]
 	if not GameState.snapshot_is_complete(state):
 		return {}
-	GameState.restore_snapshot(state)
-	# After the snapshot, never before: `restore_snapshot()` writes every field a run holds and
-	# this one is not among them, so a save from a build that never wrote the key leaves the run in
-	# the ordinary fourteen days rather than half-way into an escape it never reached.
-	GameState.escape_section = int(data.get("escape_section", 0))
-	# Same reasoning, same shape, for the alley tiles the resistance has already used this run: a
-	# save from a build that never wrote the key leaves the list empty rather than half-restored.
-	GameState.completed_resistance_alley_tiles.clear()
-	for raw: Dictionary in data.get("completed_resistance_alley_tiles", []):
-		GameState.completed_resistance_alley_tiles.append(Vector2i(int(raw["x"]), int(raw["y"])))
-	# And the one park barriers may already stand around, the same way again: a save from before
-	# `fenced_park` existed loads with none chosen, so act III can still choose one fresh — the same
-	# state a run that has not reached act III yet is already in.
-	var fenced_park: Variant = data.get("fenced_park", null)
-	if fenced_park is Dictionary:
-		GameState.fenced_park = Vector2i(int(fenced_park.get("x", -1)), int(fenced_park.get("y", -1)))
-	else:
-		GameState.fenced_park = Vector2i(-1, -1)
-	GameState.fenced_park_act = int(data.get("fenced_park_act", 0))
-	# And the walls, the same way again: a save from before there were posters loads with none up,
-	# and the next dawn pastes the city's from `PosterWalls.FIRST_DAY` onward.
-	GameState.posters.reset()
-	var posters: Variant = data.get("posters", {})
-	if posters is Dictionary:
-		GameState.posters.restore(posters)
+	return _apply(data)
+
+## Everything a readable save puts back on `GameState`, from `_read_now()`'s file and from
+## `load_in_memory()`'s copy alike, and what it says about the day: `{"day_under_way": bool}`.
+static func _apply(data: Dictionary) -> Dictionary:
+	restore_run_data(data)
+	# The mode and the checkpoint, the same way again: a save from before there were two modes is a
+	# normal run, and one from before there were checkpoints goes back to day 1 of its own city.
+	GameState.hard_mode = bool(data.get("hard_mode", false))
+	var kept: Variant = data.get("checkpoint", {})
+	GameState.checkpoint = _usable_checkpoint(kept)
 	return {"day_under_way": bool(data.get("day_under_way", false))}
+
+## The run on `GameState` written out the way a save is and read straight back the way a save is —
+## through JSON and `_apply()` — without touching the disk. **A normal run sent back to its
+## checkpoint boots on this** (`main._carry_the_run_into_the_next_boot()`): the scene is reloaded,
+## so no node remembers anything after the checkpoint, and the run it boots on is exactly what a
+## load would give it, on every run, a dev-flagged or headless one with no save at all included.
+## Never reads the file, so a write the storage did not keep cannot hand the reload an older run.
+static func load_in_memory() -> void:
+	var parser := JSON.new()
+	if parser.parse(JSON.stringify(file_data(false))) != OK:
+		push_error("GameSave: the run could not be written out as JSON")
+		return
+	_apply(parser.data)
+
+## A checkpoint read off disk, kept only when it could be given back: a dictionary whose `"state"`
+## carries every field this build's snapshot does. Anything else — absent, garbled, or from a
+## snapshot shape this build no longer reads — falls back to checkpoint zero (`{}`) rather than a
+## half-applied run, the same answer `_read_now()` gives a whole save it cannot read.
+static func _usable_checkpoint(raw: Variant) -> Dictionary:
+	if not raw is Dictionary:
+		return {}
+	var kept: Dictionary = raw
+	var state: Variant = kept.get("state", null)
+	if not state is Dictionary or not GameState.snapshot_is_complete(state):
+		return {}
+	return kept

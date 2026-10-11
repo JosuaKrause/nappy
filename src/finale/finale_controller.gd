@@ -8,7 +8,9 @@ extends Node
 ## under `--invincible` (`DayController._ignores_loss`). What the finale does *differently* is only
 ## what happens at the end: a day spends a Nerve and moves the calendar, and a lost section instead
 ## comes up on the brief screen and starts again where it began, with the clock back at full length
-## and the Nerves untouched (*"sounds good at that point you earned it"*). So this owns a
+## and, in a normal run, the Nerves untouched (*"sounds good at that point you earned it"*). A hard
+## run's lost section costs a Nerve, and its last one ends the run — `main` spends it on
+## `section_lost`, so this class never touches `GameState` in either mode. So this owns a
 ## `DayController` and turns its `day_finished` into a loss and a restart, rather than teaching
 ## that class a second mode: a finale mode on it
 ## would have to disable the home win, the calendar and the Nerve, which is more of that file than
@@ -101,8 +103,9 @@ func start_section() -> void:
 
 ## Capture, the meter at 100 and the clock at zero all arrive here, because all three are a day's
 ## own losing paths and `DayController` already tells them apart. Every one of them ends the
-## section she was in; nothing spends a Nerve, and `GameState` is not touched at all, which is what
-## "at no Nerve cost" is in code rather than in prose.
+## section she was in, and nothing here touches `GameState`: a normal run's "at no Nerve cost" is
+## this in code rather than in prose, and a hard run's Nerve is spent by `main`, which hears
+## `section_lost` and decides whether the run goes on.
 ##
 ## **It does not start the section again.** A lost day shows the screen between days before the
 ## next one begins, and a lost section owes the same pause — so this only says what happened, and

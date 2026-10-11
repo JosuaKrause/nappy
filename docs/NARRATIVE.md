@@ -407,7 +407,8 @@ act.
 
 ### Bad — Nerves at 0
 
-Whichever day it happens on, the run ends. The parent stops going out. The city continues without
+Hard mode's only: whichever day it happens on, the escape included, the run ends. A normal run
+never reaches it, going back to its latest checkpoint instead. The parent stops going out. The city continues without
 them. Short, flat epilogue text over a static shot of the apartment window.
 
 ### Neutral — survive 14 days, resistance incomplete

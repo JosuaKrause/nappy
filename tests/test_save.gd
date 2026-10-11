@@ -46,6 +46,9 @@ func run(t) -> void:
 	_test_day_under_way_load_costs_one_nerve(t)
 	_test_a_day_under_way_gives_back_the_fire_it_lit(t)
 	_test_day_under_way_load_on_the_last_nerve_ends_the_run(t)
+	_test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t)
+	_test_a_save_from_before_checkpoints_still_loads(t)
+	_test_the_mode_and_the_checkpoint_survive_a_round_trip(t)
 	_test_summary_load_costs_nothing(t)
 	_test_double_load_does_not_charge_twice(t)
 	_test_either_ending_clears_the_save(t)
@@ -116,6 +119,8 @@ func run(t) -> void:
 	GameState.completed_resistance_alley_tiles.clear()
 	GameState.fenced_park = Vector2i(-1, -1)
 	GameState.fenced_park_act = 0
+	GameState.hard_mode = false
+	GameState.checkpoint = {}
 
 # ---------------------------------------------------------------------- policy ---
 
@@ -198,7 +203,7 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 ## (`_test_a_save_from_before_the_fenced_park_still_loads()`).
 const _SAVED_OUTSIDE_THE_SNAPSHOT := [
 	"escape_section", "completed_resistance_alley_tiles", "posters",
-	"fenced_park", "fenced_park_act",
+	"fenced_park", "fenced_park_act", "hard_mode", "checkpoint",
 ]
 
 ## The guard the brief asks for: a field added to `GameState` later and forgotten in
@@ -649,10 +654,11 @@ func _test_a_day_under_way_gives_back_the_fire_it_lit(t) -> void:
 	t.check(GameState.scars.is_empty(),
 			"and takes the shell down with it, the same as any other lost day")
 
-## The last nerve ends the run exactly as it does when a day is lost by playing it out — and the
-## ending clears the save, since there is nothing left to resume.
+## In hard mode the last nerve ends the run exactly as it does when a day is lost by playing it out —
+## and the ending clears the save, since there is nothing left to resume.
 func _test_day_under_way_load_on_the_last_nerve_ends_the_run(t) -> void:
 	GameState.start_run(56)
+	GameState.choose_mode(true)
 	GameState.day = 9
 	GameState.nerves = 1
 	GameState.begin_day()
@@ -667,6 +673,88 @@ func _test_day_under_way_load_on_the_last_nerve_ends_the_run(t) -> void:
 				"the bad ending, the same as any other run out")
 		t.check(not GameSave.has_save(), "and the save that named the run is gone with it")
 	)
+	GameState.ending = GameEnums.Ending.NONE
+
+## The same load in a normal run goes back to its checkpoint instead, through the same call: the run
+## goes on, standing at the checkpoint's dawn with every nerve, and the save is still there to be
+## written over by the dawn `main._write_dawn_for_a_resumed_run()` writes next.
+func _test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t) -> void:
+	GameState.start_run(57)
+	GameState.day = 8
+	GameState.nerves = 2
+	GameState.begin_day()
+	t.check(GameState.checkpoint_day() == 8, "day 8's dawn is the run's checkpoint")
+	GameState.finish_day(GameEnums.DayResult.WON)
+	GameState.begin_day()
+	GameState.nerves = 1
+	_with_forced_save(func() -> void:
+		t.check(GameSave._write_now(true), "the mid-day save on day 9, one nerve left")
+		GameState.start_run(58)
+		var resume := GameSave._read_now()
+		t.check(resume.get("day_under_way") == true and GameState.checkpoint_day() == 8,
+				"the save comes back under way, its checkpoint with it")
+		t.check(GameState.a_loss_goes_back_to_the_checkpoint(),
+				"and losing the day it was left on goes back")
+		var continues := GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+		t.check(continues and GameState.ending == GameEnums.Ending.NONE,
+				"the run goes on rather than ending")
+		t.check(GameState.day == 8 and GameState.nerves == Tuning.STARTING_NERVES,
+				"back at day 8 with every nerve")
+		t.check(GameSave.has_save(), "and the save is not deleted")
+	)
+
+## A save written before there were two modes or checkpoints — no `hard_mode` key, no `checkpoint`
+## key — loads as a normal run whose checkpoint is day 1 of its own city, and `FORMAT_VERSION` is
+## what it always was.
+func _test_a_save_from_before_checkpoints_still_loads(t) -> void:
+	GameState.start_run(59)
+	GameState.day = 10
+	t.check(GameSave._write_now(false), "a save is written")
+	var file := FileAccess.open(GameSave._path(), FileAccess.READ)
+	var data: Dictionary = JSON.parse_string(file.get_as_text())
+	file.close()
+	data.erase("hard_mode")
+	data.erase("checkpoint")
+	_write_raw(JSON.stringify(data))
+	GameState.choose_mode(true)
+	GameState.checkpoint = {"state": {"day": 4}}
+	var resume := GameSave._read_now()
+	t.check(not resume.is_empty() and GameState.day == 10, "it still loads, on its own day")
+	t.check(not GameState.hard_mode, "as a normal run")
+	t.check(GameState.checkpoint.is_empty() and GameState.checkpoint_day() == 1,
+			"whose checkpoint is checkpoint zero, day 1")
+
+## The mode and the checkpoint survive a save, and a checkpoint this build could not give back is
+## dropped for checkpoint zero rather than half-applied later.
+func _test_the_mode_and_the_checkpoint_survive_a_round_trip(t) -> void:
+	GameState.start_run(60)
+	GameState.day = 4
+	GameState.begin_day()
+	t.check(GameState.checkpoint_day() == 4, "day 4's dawn is kept")
+	GameState.finish_day(GameEnums.DayResult.WON)
+	t.check(GameSave._write_now(false), "a save is written")
+	var kept := GameState.checkpoint.duplicate(true)
+	GameState.start_run(61)
+	GameSave._read_now()
+	t.check(GameState.checkpoint_day() == 4 and not GameState.hard_mode,
+			"a normal run comes back with its day 4 checkpoint")
+	t.check(int((GameState.checkpoint["state"] as Dictionary)["run_seed"])
+			== int((kept["state"] as Dictionary)["run_seed"]),
+			"the checkpoint read back is the one written")
+
+	GameState.choose_mode(true)
+	t.check(GameSave._write_now(false), "a hard run's save is written")
+	GameState.start_run(62)
+	GameSave._read_now()
+	t.check(GameState.hard_mode and GameState.checkpoint.is_empty(),
+			"a hard run comes back hard, with no checkpoint")
+
+	GameState.start_run(63)
+	GameState.checkpoint = {"state": {"day": 8}}
+	t.check(GameSave._write_now(false), "a save carrying a checkpoint with a broken snapshot")
+	GameSave._read_now()
+	t.check(GameState.checkpoint.is_empty(),
+			"falls back to checkpoint zero rather than keeping what it could not give back")
 
 ## A save written at a day's own summary (`day_under_way: false`) is never handed to
 ## `GameState.finish_day()` at all in `main._ready()` — asserted here as the shape of the contract
@@ -1299,6 +1387,7 @@ func _test_a_run_that_ends_shows_the_symbol_for_the_deletion(t) -> void:
 ## the symbol too, provided a symbol is listening when `main._ready()` charges it.
 func _test_a_resumed_run_ended_by_its_charge_shows_the_symbol(t) -> void:
 	GameState.start_run(62)
+	GameState.choose_mode(true)
 	GameState.day = 4
 	GameState.nerves = 1
 	GameState.begin_day()

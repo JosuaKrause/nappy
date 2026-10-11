@@ -30,7 +30,10 @@ extends Node
 ##
 ## The events, at least:
 ## - `nappy-run-fresh` / `nappy-run-resumed-day-N` — a run begun fresh, or resumed from the save.
-## - `nappy-day-N-began` — each day begun (a retry begins it again, for the day it repeats).
+## - `nappy-mode-hard` / `nappy-mode-normal` — a fresh run's mode, once, as its title is dismissed.
+## - `nappy-day-N-began` — each day begun (a retry begins it again, for the day it repeats), and
+##   `nappy-day-N-began-hard` beside it for a hard run's, so a normal run's count is the difference.
+## - `nappy-checkpoint-N-from-day-M` — a normal run out of nerves on day M, back at checkpoint N.
 ## - `nappy-day-N-won` / `nappy-day-N-lost-timeout` — a day's end that names nothing further: a win
 ##   needs no cause and a timeout's own name already says everything about a clock that ran out.
 ## - `nappy-day-N-lost-crying-<source>` / `nappy-day-N-lost-hard-fail-<what>` — a lost day's own
@@ -67,7 +70,8 @@ extends Node
 ##   every mother who stops her to chat and every checkpoint hold.
 ## - `nappy-day-N-poster-pursuit` — a tear that sends a pursuer on foot after her, beside its
 ##   `poster-torn`.
-## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
+## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached (`bad`
+##   is a hard run's alone).
 ## - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: begun (the fresh
 ##   handover only), lost (either section, any attempt), or got out.
 ## - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — the "etc.": which
@@ -105,6 +109,8 @@ func _ready() -> void:
 	EventBus.escape_lost.connect(_on_escape_lost)
 	EventBus.escape_out.connect(_on_escape_out)
 	EventBus.controls_chosen.connect(_on_controls_chosen)
+	EventBus.run_mode_chosen.connect(_on_run_mode_chosen)
+	EventBus.went_back_to_a_checkpoint.connect(_on_went_back_to_a_checkpoint)
 
 # ------------------------------------------------------------------- the gate ---
 
@@ -236,6 +242,28 @@ static func _loss_event_suffix(result: GameEnums.DayResult, cause: String) -> St
 static func _run_begun_name(day: int, resumed: bool) -> String:
 	return "nappy-run-resumed-day-%d" % day if resumed else "nappy-run-fresh"
 
+## A fresh run's mode. *(gentle-osprey, the player: "needs telemetry whether someone chooses hard
+## mode".)*
+static func _mode_event_name(hard: bool) -> String:
+	return "nappy-mode-hard" if hard else "nappy-mode-normal"
+
+## What a day begun sends: `began` for every run, and its hard-only copy beside it for a hard run.
+## *(gentle-osprey, the player: "we should also count regular day starts with mode. so we know how
+## far people get in each mode", answered "Add a hard-only copy".)* The plain name stays every
+## run's, so its series runs on unbroken and a normal run's count is the total less the hard one.
+## Nothing else splits by mode: *"hard mode doesn't affect gameplay -- only restart pacing"*.
+static func _day_began_names(day: int, hard: bool) -> Array[String]:
+	var names: Array[String] = [_day_event_name(day, "began")]
+	if hard:
+		names.append(_day_event_name(day, "began-hard"))
+	return names
+
+## A normal run back at checkpoint `checkpoint_day` (1, 4, 8 or 12) after losing its last nerve on
+## `lost_day`. *(gentle-osprey, the player: "whether they are restarting from a checkpoint after
+## losing all nerves".)*
+static func _checkpoint_event_name(checkpoint_day: int, lost_day: int) -> String:
+	return "nappy-checkpoint-%d-from-day-%d" % [checkpoint_day, lost_day]
+
 ## `keys` when a key began the run, whatever mode that gave it — the title begins a key's run in
 ## `Mode.TAP`, and a key player is not a tap player — otherwise the button pressed.
 static func _controls_event_name(mode: int, by_key: bool) -> String:
@@ -295,7 +323,19 @@ func _on_run_begun(day: int, resumed: bool) -> void:
 	_send_event(_run_begun_name(day, actually_resumed))
 
 func _on_day_started(day: int) -> void:
-	_send_event(_day_event_name(day, "began"))
+	for name in _day_began_names(day, GameState.hard_mode):
+		_send_event(name)
+
+## A fresh run's mode, from its title. **The day behind that title has already begun** — the first
+## morning is built and its `day_started` sent before the title is dismissed, while the run still
+## reads as normal — so a hard run sends that day's hard copy here, once its mode is known.
+func _on_run_mode_chosen(hard: bool, day: int) -> void:
+	_send_event(_mode_event_name(hard))
+	if hard:
+		_send_event(_day_event_name(day, "began-hard"))
+
+func _on_went_back_to_a_checkpoint(checkpoint_day: int, lost_day: int) -> void:
+	_send_event(_checkpoint_event_name(checkpoint_day, lost_day))
 
 ## The cause `day_lost_to` supplied for whichever day is currently ending, read once by
 ## `_on_day_ended()` immediately after and reset the moment it is read. `main._on_day_finished()`

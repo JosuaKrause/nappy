@@ -213,12 +213,25 @@ func _test_nerves_and_endings(t) -> void:
 	t.check(GameState.settled_in.get(2, Vector2i(-1, -1)) == Vector2i(-1, -1),
 			"and a lost attempt's calm block is forgotten with it")
 
-	# Burn the rest.
+	# Burn the rest, in hard mode — the one mode whose last nerve ends the run.
+	GameState.hard_mode = true
 	for i in Tuning.STARTING_NERVES - 1:
 		GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
 	t.check(GameState.nerves <= 0, "nerves run out")
-	t.check(GameState.ending == GameEnums.Ending.BAD, "running out of nerves is the bad ending")
+	t.check(GameState.ending == GameEnums.Ending.BAD,
+			"running out of nerves in hard mode is the bad ending")
 	t.check(GameState.day == 2, "having spent all three on the same day, which is now allowed")
+
+	# A normal run never reaches it: the same five losses send it back to day 1 of the same city.
+	GameState.start_run(SEED)
+	GameState.finish_day(GameEnums.DayResult.WON)
+	for i in Tuning.STARTING_NERVES:
+		t.check(GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT),
+				"every loss of a normal run continues it, the last one included")
+	t.check(GameState.ending == GameEnums.Ending.NONE, "so a normal run has no bad ending")
+	t.check(GameState.day == 1 and GameState.nerves == Tuning.STARTING_NERVES
+			and GameState.run_seed == SEED,
+			"it goes back to day 1 of the same city, with every nerve")
 
 	# The run length is a promise rather than a budget: with nerves left, the final day is
 	# played until it is won, and the only way to lose a run is to run out of nerves.

@@ -25,6 +25,10 @@ func run(t) -> void:
 	_test_loss_cause_names_every_day_result(t)
 	_test_loss_event_suffix_folds_a_cause_only_for_the_two_results_that_ever_have_one(t)
 	_test_run_begun_name(t)
+	_test_mode_event_name(t)
+	_test_day_began_names(t)
+	_test_checkpoint_event_name(t)
+	_test_a_hard_run_counts_its_days_twice_and_a_normal_run_once(t)
 	_test_controls_event_name(t)
 	_test_detention_suffix(t)
 	_test_is_pickup_step(t)
@@ -104,6 +108,50 @@ func _test_run_begun_name(t) -> void:
 	t.check(VISIT_COUNTER_SCRIPT._run_begun_name(9, true) == "nappy-run-resumed-day-9",
 		"a resumed run names the day it resumed on")
 
+func _test_mode_event_name(t) -> void:
+	t.check(VISIT_COUNTER_SCRIPT._mode_event_name(true) == "nappy-mode-hard", "a hard run")
+	t.check(VISIT_COUNTER_SCRIPT._mode_event_name(false) == "nappy-mode-normal", "a normal run")
+
+## Every run keeps the plain `began`, so its series runs on unbroken; a hard run adds its copy.
+func _test_day_began_names(t) -> void:
+	t.check(VISIT_COUNTER_SCRIPT._day_began_names(5, false) == ["nappy-day-5-began"],
+		"a normal run's day sends the plain name alone")
+	t.check(VISIT_COUNTER_SCRIPT._day_began_names(5, true)
+			== ["nappy-day-5-began", "nappy-day-5-began-hard"],
+		"a hard run's day sends the plain name and its hard-only copy")
+
+func _test_checkpoint_event_name(t) -> void:
+	t.check(VISIT_COUNTER_SCRIPT._checkpoint_event_name(8, 10) == "nappy-checkpoint-8-from-day-10",
+		"the checkpoint gone back to, and the day the last nerve was lost on")
+	t.check(VISIT_COUNTER_SCRIPT._checkpoint_event_name(1, 2) == "nappy-checkpoint-1-from-day-2",
+		"checkpoint zero is day 1")
+
+## The day a fresh run's title stands in front of has already begun as a normal run's by the time
+## the title says the run is hard, so the counter sends that day's hard copy with the mode; every
+## later day of a hard run sends it from `day_started` itself.
+func _test_a_hard_run_counts_its_days_twice_and_a_normal_run_once(t) -> void:
+	var saved := GameState.hard_mode
+	var counter := RecordingCounter.new()
+	GameState.hard_mode = false
+	counter._on_day_started(1)
+	counter._on_run_mode_chosen(true, 1)
+	GameState.hard_mode = true
+	counter._on_day_started(2)
+	t.check(counter.sent == ["nappy-day-1-began", "nappy-mode-hard", "nappy-day-1-began-hard",
+			"nappy-day-2-began", "nappy-day-2-began-hard"],
+			"a hard run's first day is counted hard once its mode is known (%s)" % [counter.sent])
+	counter.sent.clear()
+	GameState.hard_mode = false
+	counter._on_day_started(1)
+	counter._on_run_mode_chosen(false, 1)
+	counter._on_went_back_to_a_checkpoint(4, 7)
+	t.check(counter.sent == ["nappy-day-1-began", "nappy-mode-normal",
+			"nappy-checkpoint-4-from-day-7"],
+			"a normal run's days are counted once, and its checkpoint restart named (%s)"
+					% [counter.sent])
+	GameState.hard_mode = saved
+	counter.free()
+
 ## A key begins the run in `Mode.TAP`, and is still reported as keys: the name comes from the
 ## input that began the run, not the mode it fell back to.
 func _test_controls_event_name(t) -> void:
@@ -179,6 +227,8 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	counter._on_escape_lost()
 	counter._on_escape_out()
 	counter._on_controls_chosen(ControlsMode.Mode.TAP, true)
+	counter._on_run_mode_chosen(true, 1)
+	counter._on_went_back_to_a_checkpoint(4, 6)
 	var after := _gamestate_snapshot()
 	t.check(before == after,
 		"answering every signal the counter connects to leaves GameState untouched")

@@ -68,7 +68,19 @@ The events:
 
 - `nappy-run-fresh` / `nappy-run-resumed-day-N` — a run begun fresh, or resumed from the save, and
   on which day.
+- `nappy-mode-hard` / `nappy-mode-normal` — a fresh run's mode, the Hard Mode checkbox's answer, sent
+  once as its title is dismissed (`EventBus.run_mode_chosen`), beside that run's `nappy-run-fresh`.
+  A resumed run sends neither: its mode was counted when it began.
 - `nappy-day-N-began` — each day begun. A nerve-bought retry begins it again for the day it repeats.
+  **A hard run also sends `nappy-day-N-began-hard`** beside it, so `began` stays every run's
+  unbroken series and a normal run's count is the total less the hard one *(gentle-osprey, the
+  player: "so we know how far people get in each mode", answered "Add a hard-only copy")*. A fresh
+  run's first day has begun behind its title before the mode is known, so a hard run sends that
+  day's copy with `nappy-mode-hard`. **Nothing else splits by mode** — *"hard mode doesn't affect
+  gameplay -- only restart pacing"*.
+- `nappy-checkpoint-N-from-day-M` — a normal run that spent its last nerve on day M and went back to
+  checkpoint N: 1 (day 1 of the same city), 4, 8 or 12 (`EventBus.went_back_to_a_checkpoint`, from
+  `GameState.finish_day()`). Sent after day M's own `lost-*`.
 - `nappy-day-N-won` / `nappy-day-N-lost-timeout` — a day's end that names nothing further: a win
   needs no cause and a timeout's own name already says everything about a clock that ran out.
 - `nappy-day-N-lost-crying-<source>` / `nappy-day-N-lost-hard-fail-<what>` — a lost day's own name,
@@ -189,7 +201,8 @@ The events:
   nothing here, and nothing is sent during the escape.
 - `nappy-day-N-restarted` — a held restart, on the day it abandoned. Not fired for the ordinary
   return to the title after an ending already reported through `nappy-ending-*`.
-- `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached.
+- `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached. `bad` is a
+  hard run's alone: a normal run out of nerves sends `nappy-checkpoint-N-from-day-M` instead.
 - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: the fresh handover
   from a won day 14, either section lost on any attempt, or the tunnel or the bridge reached.
 - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — which button began
@@ -199,7 +212,8 @@ The events:
 
 Every signal named above that exists purely for this page — `day_lost_to`, `event_sighted`,
 `event_lit_unmet`, `city_gone_dark`, `escape_city_entered`, `pursuit_began`, `pursuit_ended`,
-`resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent`, `pelican_spawned`,
+`resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent`, `run_mode_chosen`,
+`went_back_to_a_checkpoint`, `pelican_spawned`,
 `pelican_sighted`, `pelican_excited_her`, `pelican_struck_her`, `encounter_seen`,
 `encounter_influenced`, `run_bout_began` — is listen-only: it rolls no RNG and
 changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so, the style the
@@ -556,7 +570,7 @@ is made as the warning goes up, so the first line already knows.
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The blackout came and the masts went off with the power — once she was far enough from the station after the sabotage, not at its door |
 | `home` / `lost` | observer | The outcome, the margin, and what was around when it happened. A crying or hard-fail day's `lost` line names what ended it as `to <cause>`, the cause the page's counter folds into its loss event (`main._loss_cause()`). In the escape a `lost` line also names the section and a `home` line the way out — see "The escape's log" |
-| `nerve` | `GameState` | Where the nerves went — which day, which act |
+| `nerve` | `GameState` | Where the nerves went — which day, which act, and in a hard run's escape; the run's mode once it is chosen; the dawn a normal run keeps as its checkpoint; and the checkpoint it went back to when its last nerve was spent, from which day |
 | `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log. Followed by whether the save was kept: on the web, a line when the browser's IndexedDB copy is confirmed ("the browser kept the save") or not ("the browser did not keep the save", with the browser's own error or the timeout); anywhere, a line when the save could not be kept at all ("the save was not kept": the file could not be written, or the page's storage was refused at boot). **Deleting the save file writes the same kind** — "deleted the save" when the file was removed, then on the web "the browser dropped the deleted save" or "the browser did not drop the deleted save" (with the browser's own error or the timeout), and "the deletion was not kept" when the file could not be removed or the page's storage was refused at boot; a deletion with no file to delete writes nothing. A held restart logs its deletion's first line, because it deletes the save before the run log closes; a web deletion's later answer is logged only if a log is open when it arrives, so it may land in the next run's log after the reload |
 | `shot` | `main.gd`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |

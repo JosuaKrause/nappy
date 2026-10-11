@@ -25,6 +25,33 @@ var ending: GameEnums.Ending = GameEnums.Ending.NONE
 ## loads (`snapshot_is_complete()`), answering `NONE` by absence.
 var escape_section: int = 0
 
+## Whether this run is in hard mode, chosen once on the title's Hard Mode checkbox as a new game
+## begins and fixed for the rest of the run. *(gentle-osprey, the player: "a "Hard Mode" checkbox on
+## the title screen (if new game) that decides whether checkpoints are available".)* **Hard mode is
+## the run with no checkpoints**: the last nerve ends it with the bad ending, and the escape spends
+## and regains nerves as well (`spend_a_nerve_in_the_escape()`). **Normal mode never reaches the
+## bad ending**: the last nerve sends the run back to its latest checkpoint (`checkpoint`). Nothing
+## else differs — *"hard mode doesn't affect gameplay -- only restart pacing"*.
+##
+## Not in `_SAVE_FIELDS`: it rides beside `escape_section` as its own top-level save key, so a save
+## written before there were two modes loads as normal mode by absence.
+var hard_mode := false
+
+## The run as it stood at the dawn of the latest checkpoint day it has reached — days 4, 8 and 12,
+## the first days of acts II, III and IV, read off `Tuning.ACT_START_DAYS` — in exactly the shape
+## the save carries the run (`GameSave.run_data()`), or `{}` before day 4. *(gentle-osprey, the
+## player: "store the exact state at the checkpoint -- continuing should not have anything that
+## happened after the checkpoint".)* Taken by `begin_day()` the first time a checkpoint day is
+## begun, never on a retry of it, so nothing of that day can have happened yet; given back by
+## `finish_day()` when a normal run spends its last nerve, with `Tuning.STARTING_NERVES`.
+##
+## **`{}` is checkpoint zero**, day 1 of the same city: `start_run(run_seed)` rebuilds that dawn
+## exactly, so nothing is stored for it — which is also what a save written before checkpoints
+## existed reads as. Never taken in hard mode, which has none.
+##
+## Not in `_SAVE_FIELDS`, for the same reason as `hard_mode`: a top-level save key of its own.
+var checkpoint: Dictionary = {}
+
 ## Seconds the world has actually been moving this run — advanced by exactly one owner,
 ## `main._process()`'s own day-loop branch, while a day is walking or returning home and the tree
 ## is not paused. Never shown during play; the ending screen is the only place it is read, through
@@ -215,6 +242,10 @@ func start_run(seed_value: int = 0) -> void:
 	sabotage_done = false
 	resistance_carrying_package = false
 	completed_resistance_alley_tiles.clear()
+	# A fresh run is a normal run with nothing to go back to but its own day 1 until the title says
+	# otherwise — `main._on_title_start()` sets `hard_mode` from the checkbox as the run begins.
+	hard_mode = false
+	checkpoint = {}
 	_snapshot_the_resistance()
 	print("[GameState] run started, seed=%d" % run_seed)
 
@@ -231,6 +262,49 @@ func begin_day() -> void:
 	resistance_carrying_package = false
 	_snapshot_the_resistance()
 	_snapshot_what_the_attempt_can_spend()
+	_keep_a_checkpoint_if_one_is_due()
+
+## Fixes a new game's mode, from the title's checkbox as it is dismissed (`main._on_title_start()`)
+## or from `--hard`. A hard run keeps no checkpoint, so one a `--day` boot already took behind the
+## title is dropped with the choice.
+func choose_mode(hard: bool) -> void:
+	hard_mode = hard
+	if hard:
+		checkpoint = {}
+	Telemetry.note("nerve", "%s: %s" % ["hard mode" if hard else "normal mode",
+			"the last nerve ends the run" if hard
+			else "the last nerve goes back to the latest checkpoint"])
+
+## Whether `for_day` is one of the days a normal run keeps a checkpoint at: the first day of every
+## act after the first, read off `Tuning.ACT_START_DAYS` (days 4, 8 and 12). Day 1 is checkpoint
+## zero, which `start_run()` rebuilds rather than anything storing it — see `checkpoint`.
+static func is_checkpoint_day(for_day: int) -> bool:
+	return for_day > 1 and for_day in Tuning.ACT_START_DAYS
+
+## The day the run goes back to when a normal run spends its last nerve: the latest checkpoint day
+## it has begun, or day 1 before day 4.
+func checkpoint_day() -> int:
+	if checkpoint.is_empty():
+		return 1
+	return int((checkpoint["state"] as Dictionary)["day"])
+
+## Whether losing the attempt now under way spends the run's last nerve and sends a normal run back
+## to its checkpoint — asked by `main` before `finish_day()`, which is what actually goes back, so
+## the screen that follows can say where she is going. Hard mode never goes back: its last nerve is
+## the bad ending.
+func a_loss_goes_back_to_the_checkpoint() -> bool:
+	return not hard_mode and nerves <= 1
+
+## Keeps today's dawn as the run's checkpoint the first time a checkpoint day is begun — after the
+## two photographs above, so the dawn fields it carries are this dawn's, and before anything of the
+## day can have happened. A retry of the same day, or a run sent back to it, finds the checkpoint
+## already on this day and keeps it as it is; only the next checkpoint day replaces it. **Not in
+## hard mode**, which has none, and not inside the escape, which is never a day.
+func _keep_a_checkpoint_if_one_is_due() -> void:
+	if hard_mode or escape_section != 0 or not is_checkpoint_day(day) or day <= checkpoint_day():
+		return
+	checkpoint = GameSave.run_data()
+	Telemetry.note("nerve", "day %d's dawn is the checkpoint a run out of nerves goes back to" % day)
 
 ## Record the outcome of the day. Returns true if the run continues.
 ##
@@ -261,8 +335,10 @@ func begin_day() -> void:
 ##   are all facts about the attempt, so a loss gives back the six fields `begin_day()`
 ##   photographed and the retry is offered the same step, in the same place, from the same seed.
 ##
-## The run can no longer end by running out of days while nerves remain, so the bad ending is
-## the only way to lose and the fourteen days become a promise rather than a budget.
+## The run can no longer end by running out of days while nerves remain, so the fourteen days are
+## a promise rather than a budget. **What the last nerve does depends on the mode**: hard mode's
+## run ends with the bad ending, and a normal run goes back to its latest checkpoint with every
+## nerve (`_go_back_to_the_checkpoint()`), which is why a normal run never ends badly.
 ##
 ## **A won day gives a nerve back**, up to `Tuning.STARTING_NERVES` (5) — the player's own reason:
 ## *"that way you can recover from a bad single day without being in a tight spot towards the end
@@ -286,8 +362,11 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 				% [day, current_act(), nerves,
 				"" if nerves <= 0 else " — day %d again" % day, also_undone])
 		if nerves <= 0:
-			_end_run(GameEnums.Ending.BAD)
-			return false
+			if hard_mode:
+				_end_run(GameEnums.Ending.BAD)
+				return false
+			_go_back_to_the_checkpoint()
+			return true
 		settled_in.erase(day)
 		return true
 	# A won day commits what it did: the attempt that stood is the one the next photograph starts
@@ -295,9 +374,11 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 	_snapshot_the_resistance()
 	_snapshot_what_the_attempt_can_spend()
 	# Excluded for the escape: `main._on_finale_escaped()` reaches this same call once she is out,
-	# and "the escape doesn't have nerves" (the player) — its own two sections give one back for
-	# nothing they do, so the section she just walked out of, still on `escape_section` here (the
-	# `_end_run()` branch below is what clears it), says whether this call is one of theirs.
+	# and walking out of the city gives no nerve in either mode — a normal run's escape has none to
+	# give ("the escape doesn't have nerves", the player), and a hard run's one regain is getting out
+	# of the building (`main._on_escape_exit_requested()`). So the section she just walked out of,
+	# still on `escape_section` here (the `_end_run()` branch below is what clears it), says whether
+	# this call is one of theirs.
 	if escape_section == 0:
 		regain_a_nerve()
 	if is_final_day():
@@ -317,6 +398,49 @@ func regain_a_nerve() -> void:
 	if nerves < Tuning.STARTING_NERVES:
 		nerves += 1
 		EventBus.nerves_changed.emit(nerves)
+
+## A lost section of the escape, in hard mode: one nerve, and the run ends with the bad ending at 0.
+## Returns whether the run goes on. *(gentle-osprey, the player: "with hard mode the escape also has
+## normal nerve counts and ends if nerves go to zero (instead of restarting indefinitely; this is
+## only for normal mode)".)* `main._on_finale_section_lost()` is the one caller, and only in hard
+## mode: a normal run's escape spends nothing.
+##
+## Nothing is given back with it, unlike a lost day: the escape never touches the resistance, the
+## city's arcs or the scars, so a lost section has nothing of its own to undo.
+func spend_a_nerve_in_the_escape() -> bool:
+	nerves -= 1
+	EventBus.nerves_changed.emit(nerves)
+	Telemetry.note("nerve", "spent a nerve in the escape; %d left" % nerves)
+	if nerves <= 0:
+		_end_run(GameEnums.Ending.BAD)
+		return false
+	return true
+
+## A normal run's last nerve, spent: the run as it stood at its latest checkpoint's dawn, every
+## field the save carries, with `Tuning.STARTING_NERVES`. *(gentle-osprey, the player: "store the
+## exact state at the checkpoint -- continuing should not have anything that happened after the
+## checkpoint".)* **Restored rather than repaired**, through the same `GameSave.restore_run_data()`
+## a save is read back with, so nothing a later field adds to the save can be left out of a
+## checkpoint by forgetting it here.
+##
+## Checkpoint zero (`checkpoint` empty) is day 1 of the same city: `start_run()` on the run's own
+## seed, keeping who is pushing the pram, since `--parent` may have chosen it over the seed's roll.
+func _go_back_to_the_checkpoint() -> void:
+	var lost_on := day
+	var kept := checkpoint
+	if kept.is_empty():
+		var parent_is_male := player_is_male
+		start_run(run_seed)
+		player_is_male = parent_is_male
+	else:
+		GameSave.restore_run_data(kept)
+		checkpoint = kept
+	nerves = Tuning.STARTING_NERVES
+	EventBus.nerves_changed.emit(nerves)
+	EventBus.resistance_progress_changed.emit(resistance_progress)
+	Telemetry.note("nerve", "out of nerves on day %d — back to day %d's dawn, with every nerve"
+			% [lost_on, day])
+	EventBus.went_back_to_a_checkpoint.emit(day, lost_on)
 
 func _end_run(which: GameEnums.Ending) -> void:
 	ending = which
