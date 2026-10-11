@@ -4539,27 +4539,32 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 ## besides — and touching the third, which is neither, completes the task, silences that mast and
 ## scars its foot, and leaves the other two lit. Asking for the arrow along the way is a read.
 ##
-## **The first of `DAY_ELEVEN_SEEDS` whose walk puts the routed mast down**: a place put on her
-## route waits, rather than being forced, wherever every tile of its ground on her branch breaks a
-## placement rule (`WalkSiting.ahead_of()`), so one city's walk down its longest route can end with
-## the mast still waiting, and the rest of the test needs one that did not.
+## **Every one of `DAY_ELEVEN_SEEDS` must put the routed mast down.** Every mast is exempt from the
+## two rules that keep a line along her routes (`EventScheduler._counts_against_the_line`; inbox
+## #684), so the walk down the longest route puts it down in every city; the cities are the suite's
+## own plus the five that were refused it while the rules held it to them, and a city that does not
+## fails here rather than being skipped for the next. The task's answers are checked on the first.
 func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 	var saved_scars := GameState.scars.duplicate()
 	var saved_state := GameState.city_state
 	var routed_on := [-1]
+	var missed: Array[int] = []
 	for seed_value: int in DAY_ELEVEN_SEEDS:
-		if routed_on[0] >= 0:
-			break
 		_build_city(t, seed_value)
+		var before: int = routed_on[0]
 		_with_clean_run(func() -> void: _answer_day_eleven_at_any_live_mast(t, seed_value, routed_on))
-	t.check(routed_on[0] >= 0, "walking the day's route puts the rigged mast down on one of %s"
-			% [DAY_ELEVEN_SEEDS])
+		if routed_on[0] == before:
+			missed.append(seed_value)
+	t.check(missed.is_empty(), "walking the day's route puts the rigged mast down in every city of %s (not in %s)"
+			% [DAY_ELEVEN_SEEDS, missed])
 	GameState.scars = saved_scars
 	GameState.city_state = saved_state
 
-## The cities `_test_day_eleven_answers_at_any_live_mast` tries in turn: the suite's own and the two
-## `_test_a_task_is_placed_near_its_mark` reads day 11 on as well.
-const DAY_ELEVEN_SEEDS: Array[int] = [SEED, 90210, 1234567]
+## The cities `_test_day_eleven_answers_at_any_live_mast` walks: the suite's own, the two
+## `_test_a_task_is_placed_near_its_mark` reads day 11 on as well, and the five whose route tree
+## offered the mast one tile or two while the line rules held it (4242, 314159, 555555, 8675309 and
+## 1234567 among them).
+const DAY_ELEVEN_SEEDS: Array[int] = [SEED, 90210, 1234567, 4242, 314159, 555555, 8675309]
 
 ## One city's half of `_test_day_eleven_answers_at_any_live_mast`; sets `routed_on[0]` to the seed
 ## once its walk has put the routed mast down, and checks the rest only then.
@@ -4585,7 +4590,12 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 		player.free()
 		director.free()
 		return
+	var first_city: bool = routed_on[0] < 0
 	routed_on[0] = seed_value
+	if not first_city:
+		player.free()
+		director.free()
+		return
 	var keys: Array = []
 	for target in director._arrow_candidates(step):
 		keys.append(target["key"])
