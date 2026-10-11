@@ -52,6 +52,7 @@ func run(t) -> void:
 			var waits: Dictionary = siting.waits if siting else {}
 			print("  seed %10d  %-6s  tree tiles %s  passing %s" % [seed_value,
 					"PUT" if result[0] != "" else "never", where[0], where[1]])
+			print("      walked %.1fs before it was put down" % suite._seconds_walked_to_the_route_mast)
 			print("      waits %s" % waits)
 			player.free()
 			director.free())

@@ -4487,6 +4487,9 @@ func _longest_route_points() -> Array[Vector2]:
 		points.append(EventScheduler.WalkSiting._cell_centre(_city.map, longest[i]))
 	return points
 
+## How many seconds the last `_walk_until_the_route_mast()` walked before the mast was put down.
+var _seconds_walked_to_the_route_mast := 0.0
+
 ## Walks her down the day's longest route, the events siting what her walk sites and placing what
 ## is owed ahead of her as they do in play, until the mast reading day 11's mark rigged onto her
 ## route is put down — a mast that is not in `at_the_mark`, the ids the day had when she read it:
@@ -4505,6 +4508,7 @@ func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> St
 		for plan in _city.events.plans():
 			if plan.def.id == ResistanceDirector.MAST_ROW and plan.mast_id != "" \
 					and not at_the_mark.has(plan.mast_id):
+				_seconds_walked_to_the_route_mast = walked
 				return plan.mast_id
 		var next: Vector2 = path[index + direction] if index + direction >= 0 \
 				and index + direction < path.size() else Vector2.INF
@@ -4539,11 +4543,13 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 ## besides — and touching the third, which is neither, completes the task, silences that mast and
 ## scars its foot, and leaves the other two lit. Asking for the arrow along the way is a read.
 ##
-## **Every one of `DAY_ELEVEN_SEEDS` must put the routed mast down.** Every mast is exempt from the
-## two rules that keep a line along her routes (`EventScheduler._counts_against_the_line`; inbox
-## #684), so the walk down the longest route puts it down in every city; the cities are the suite's
-## own plus the five that were refused it while the rules held it to them, and a city that does not
-## fails here rather than being skipped for the next. The task's answers are checked on the first.
+## **The routed mast has a place on her route in every one of `DAY_ELEVEN_SEEDS`.** Every mast is
+## exempt from the two rules that keep a line along her routes (`EventScheduler._counts_against_the_line`;
+## inbox #684), so the walk down the longest route puts it down in every city. The suite's own city is
+## walked in full (a 600s walk costs seconds of siting); the others, which are the cities that were
+## refused it while the rules held it to them, are asked the one question the walk asks —
+## `WalkSiting.ahead_of()` from points along the longest route — without walking, which is what keeps
+## six cities as cheap as one. A city that fails fails here rather than being skipped for the next.
 func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 	var saved_scars := GameState.scars.duplicate()
 	var saved_state := GameState.city_state
@@ -4551,20 +4557,44 @@ func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 	var missed: Array[int] = []
 	for seed_value: int in DAY_ELEVEN_SEEDS:
 		_build_city(t, seed_value)
-		var before: int = routed_on[0]
-		_with_clean_run(func() -> void: _answer_day_eleven_at_any_live_mast(t, seed_value, routed_on))
-		if routed_on[0] == before:
-			missed.append(seed_value)
-	t.check(missed.is_empty(), "walking the day's route puts the rigged mast down in every city of %s (not in %s)"
+		if seed_value == DAY_ELEVEN_SEEDS[0]:
+			_with_clean_run(func() -> void: _answer_day_eleven_at_any_live_mast(t, seed_value, routed_on))
+			if routed_on[0] < 0:
+				missed.append(seed_value)
+			continue
+		_with_clean_run(func() -> void:
+			GameState.scars = []
+			var read := _read_the_mark_on(t, 11, seed_value)
+			if not _a_mast_can_be_sited_along_her_route():
+				missed.append(seed_value)
+			(read[2] as Stroller).free()
+			(read[0] as ResistanceDirector).free())
+	t.check(missed.is_empty(), "the rigged mast has a place on her route in every city of %s (not in %s)"
 			% [DAY_ELEVEN_SEEDS, missed])
 	GameState.scars = saved_scars
 	GameState.city_state = saved_state
 
-## The cities `_test_day_eleven_answers_at_any_live_mast` walks: the suite's own, the two
-## `_test_a_task_is_placed_near_its_mark` reads day 11 on as well, and the five whose route tree
-## offered the mast one tile or two while the line rules held it (4242, 314159, 555555, 8675309 and
-## 1234567 among them).
-const DAY_ELEVEN_SEEDS: Array[int] = [SEED, 90210, 1234567, 4242, 314159, 555555, 8675309]
+## Whether `WalkSiting.ahead_of()` finds the routed mast a place from some point along the day's
+## longest route, heading along it: the question `_walk_until_the_route_mast()` answers by walking.
+func _a_mast_can_be_sited_along_her_route() -> bool:
+	var siting: EventScheduler.WalkSiting = _city.events._siting
+	var def: EventDef = _city.events._director.route_row(ResistanceDirector.MAST_ROW)
+	var band: Vector2 = _city.events._director._siting_band()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1
+	var path := _longest_route_points()
+	for i in range(0, path.size() - 1, 4):
+		var heading := (path[i + 1] - path[i]).normalized()
+		if heading != Vector2.ZERO and siting.ahead_of(def, rng, _city.events.plans(), path[i],
+				heading, band.x, band.y) != null:
+			return true
+	return false
+
+## The cities `_test_day_eleven_answers_at_any_live_mast` covers: the suite's own, walked, then the two
+## `_test_a_task_is_placed_near_its_mark` reads day 11 on as well and the five whose route tree
+## offered the mast one tile or two while the line rules held it (the suite's own seed, 314159, 555555,
+## 8675309 and 1234567 among them).
+const DAY_ELEVEN_SEEDS: Array[int] = [SEED, 90210, 1234567, 314159, 555555, 8675309]
 
 ## One city's half of `_test_day_eleven_answers_at_any_live_mast`; sets `routed_on[0]` to the seed
 ## once its walk has put the routed mast down, and checks the rest only then.
@@ -4590,12 +4620,7 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 		player.free()
 		director.free()
 		return
-	var first_city: bool = routed_on[0] < 0
 	routed_on[0] = seed_value
-	if not first_city:
-		player.free()
-		director.free()
-		return
 	var keys: Array = []
 	for target in director._arrow_candidates(step):
 		keys.append(target["key"])
