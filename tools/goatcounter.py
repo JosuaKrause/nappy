@@ -783,8 +783,15 @@ def release_windows(tags: list[tuple[str, datetime]], start: datetime, end: date
 
 
 def fetch_windows(fetch: Fetcher, windows: list[ReleaseWindow]) -> list[list[dict[str, Any]]]:
-    """The hits of each window, one read of the API per window."""
-    return [fetch_hits(fetch, window.start, window.end) for window in windows]
+    """The hits of each window, one read of the API per window. `fetch_hits` sends `end` unchanged
+    and the range is read as `[start, end]`, so a window followed by another is read up to one
+    second before that next window opens (the API rounds to the hour, so that is the previous
+    hour's last instant): no hour is read by two windows. The last window ends where the range does.
+    """
+    return [
+        fetch_hits(fetch, window.start, window.end - timedelta(seconds=1) if index + 1 < len(windows) else window.end)
+        for index, window in enumerate(windows)
+    ]
 
 
 def by_release_jsonable(windows: list[ReleaseWindow], results: list[dict[str, Any]]) -> dict[str, Any]:

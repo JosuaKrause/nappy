@@ -11,13 +11,15 @@ from __future__ import annotations
 import importlib.util
 import io
 import itertools
+import os
+import subprocess
 import tempfile
 import unittest
 import urllib.error
 import urllib.parse
 from collections.abc import Callable
 from contextlib import redirect_stderr, redirect_stdout
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, ClassVar
 from unittest import mock
@@ -1065,6 +1067,43 @@ class ReleaseWindowTests(unittest.TestCase):
             self.assertEqual(before.end, after.start)
 
 
+class ReadReleaseTagsTests(unittest.TestCase):
+    def run_git(self, root: Path, *args: str) -> None:
+        env = {
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+            "GIT_COMMITTER_DATE": "2026-10-03T12:00:00+00:00",
+            "GIT_AUTHOR_DATE": "2026-10-03T12:00:00+00:00",
+            "PATH": os.environ["PATH"],
+            "HOME": str(root),
+        }
+        subprocess.run(["git", *args], cwd=root, env=env, check=True, capture_output=True)
+
+    def test_reads_annotated_and_lightweight_v_tags_and_ignores_others(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.run_git(root, "init", "-q")
+            self.run_git(root, "commit", "-q", "--allow-empty", "-m", "one")
+            self.run_git(root, "tag", "v1.0.0")
+            self.run_git(root, "tag", "other")
+            self.run_git(root, "commit", "-q", "--allow-empty", "-m", "two")
+            self.run_git(root, "tag", "-a", "v1.1.0", "-m", "release")
+            tags = dict(goatcounter.read_release_tags(root))
+        self.assertEqual(sorted(tags), ["v1.0.0", "v1.1.0"])
+        self.assertEqual(tags["v1.0.0"].astimezone(UTC), datetime(2026, 10, 3, 12, tzinfo=UTC))
+        self.assertEqual(tags["v1.1.0"].astimezone(UTC), datetime(2026, 10, 3, 12, tzinfo=UTC))
+
+    def test_no_v_tags_is_an_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.run_git(root, "init", "-q")
+            self.run_git(root, "commit", "-q", "--allow-empty", "-m", "one")
+            with self.assertRaises(goatcounter.GoatCounterError):
+                goatcounter.read_release_tags(root)
+
+
 class ByReleaseCountTests(unittest.TestCase):
     def fetcher(self) -> Callable[[dict[str, Any]], dict[str, Any]]:
         # Every window sees one began hit whose count is the day-of-month its window opens on.
@@ -1073,6 +1112,24 @@ class ByReleaseCountTests(unittest.TestCase):
             return {"hits": [hit("nappy-day-1-began", opened.day, 1)], "more": False}
 
         return fetch
+
+    def test_adjacent_windows_are_read_over_disjoint_ranges_that_tile_the_range(self) -> None:
+        start, end = utc(10, 1, 0), utc(10, 20, 0)
+        windows = goatcounter.release_windows(TAGS, start, end)
+        reads: list[tuple[datetime, datetime]] = []
+
+        def fetch(params: dict[str, Any]) -> dict[str, Any]:
+            reads.append((goatcounter.parse_moment(params["start"]), goatcounter.parse_moment(params["end"])))
+            return {"hits": [], "more": False}
+
+        goatcounter.fetch_windows(fetch, windows)
+        self.assertEqual(reads[0][0], start)
+        self.assertEqual(reads[-1][1], end)
+        for (_, before_end), (after_start, _) in itertools.pairwise(reads):
+            # The read is [start, end]: the previous one stops a second short of the next one's start.
+            self.assertEqual(after_start - before_end, timedelta(seconds=1))
+        for read_start, read_end in reads:
+            self.assertLess(read_start, read_end)
 
     def test_each_window_is_read_over_its_own_range(self) -> None:
         windows = goatcounter.release_windows(TAGS, utc(10, 1, 0), utc(10, 20, 0))
