@@ -745,13 +745,15 @@ enum HeatResponse {
 ## **A car: solid at its own `shape` in every state, and lethal only in front of it while it
 ## drives.** *(azure-koala, inbox #601: "police cars don't have a hitbox"; leafy-puffin, inbox
 ## #648, offered "solid in every state, lethal only in front while driving": "yes to the police car
-## hitbox".)* `police_patrol` carries it, and so does every copy of it.
+## hitbox".)* `police_patrol` and every copy of it carry it, and so does `fire_truck`
+## *(calm-kestrel, inbox #558: "Lethal driving, solid parked")*.
 ##
-## **It is the one body that moves, and it answers the reason a moving thing is otherwise exempt
-## from being solid** — a moving wall pins her. `EventInstance` never moves the body into her: a
-## step or a turn that would bring it into contact with her or her pram is refused and the car
-## stands where it is until she moves, a car stopping for her rather than a wall shoving her. She
-## is stopped by it the way she is stopped by anything solid, and nothing follows her into a wall.
+## **These are the only bodies that move, and the flag answers the reason a moving thing is
+## otherwise exempt from being solid** — a moving wall pins her. `EventInstance` never moves the
+## body into her: a step or a turn that would bring it into contact with her or her pram is refused
+## and the car stands where it is until she moves, a car stopping for her rather than a wall
+## shoving her. She is stopped by it the way she is stopped by anything solid, and nothing follows
+## her into a wall.
 ##
 ## **`obstructs_radius` stays zero, because it closes no ground**: it drives down a carriageway she
 ## walks round it on. So the planners' disc, the crowd's per-tile record and the director's refusal

@@ -2129,8 +2129,8 @@ func _process(delta: float) -> void:
 	elif def.mobile and path.size() > 1 and not is_telegraphing_still() and not is_parked:
 		_advance_along_path(delta)
 
-	# A car that drives keeps its body through a chase (`EventDef.drives`): it is the one body that
-	# moves, and `_drive()` is what keeps it off her.
+	# A car that drives keeps its body through a chase (`EventDef.drives`): cars that drive are the
+	# only bodies that move, and `_drive()` is what keeps them off her.
 	if _obstruction and def.pursues and not def.drives and not is_waiting():
 		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
 		# `_walkable_step`'s own note says why a moving pursuer may not keep a body: "giving a
@@ -3984,7 +3984,7 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 ## Robert touches the player should it end instantly".)* The reach is unchanged; what is added is
 ## that nothing stands between them. Every other `hard_fail` row keeps the straight-line distance.
 ##
-## **A car that drives is the one row lethal without `hard_fail`** (`EventDef.drives`): it strikes
+## **Cars that drive are the only rows lethal without `hard_fail`** (`EventDef.drives`): one strikes
 ## her in front of its nose while it drives its route and she is on the carriageway, and nowhere
 ## else — not behind it, not beside it, not while it stands (`is_driving()`). A body touching her is
 ## not enough, and not needed: the strike reaches `Tuning.PATROL_STRIKE_LEAD` of its travel past the

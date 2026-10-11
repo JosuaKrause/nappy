@@ -179,7 +179,8 @@ is the event). `tests/test_events.gd` requires everything else to have one.
 
 ## A car that drives is a body that moves, and its strike is not the body
 
-`EventDef.drives` (`police_patrol` and every copy of it) is the one body that moves, and it answers
+`EventDef.drives` (`police_patrol` and every copy of it, and `fire_truck`) makes the only bodies
+that move, and it answers
 the pin the mobile exemption is for by **never moving into her**: `EventInstance._drive()` takes
 back any step or turn that would bring the body into her or her pram, and the car stands for her
 until she is out of its way. Its `obstructs_radius` stays zero — it closes no ground — and its

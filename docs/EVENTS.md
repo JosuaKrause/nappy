@@ -600,9 +600,9 @@ whole of its life. `basement_steam` is placed indoors, where there is no lattice
 hitbox"; leafy-puffin, inbox #648, offered "solid in every state, lethal only in front while
 driving": "yes to the police car hitbox".)* `police_patrol` and every copy of it — the return's
 down the road, the raid's pacing at her door, the investigating one at heat — carry
-`EventDef.drives`, which makes it the one body that moves. **The body is the car's drawn
-ground contact**: its `shape`, a capsule 42px long (the side view's body, bumper to bumper) and
-24px wide (the end views', flank to flank), centred on the node and laid along the car's heading,
+`EventDef.drives`, as the fire engine does (below), which makes them the only bodies that move.
+**The body is the car's drawn ground contact**: its `shape`, a capsule 42px long (the side view's
+body, bumper to bumper) and 24px wide (the end views', flank to flank), centred on the node and laid along the car's heading,
 turning as it turns (`EventInstance._solid_axis()`). The same shape is its shadow, and its picture
 is drawn over it — the bottom of each view on the body's southern edge, the crowd car's own
 registration (`EventInstance._police_car_anchor()`) — so where she is stopped is where the car is
