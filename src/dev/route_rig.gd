@@ -608,6 +608,8 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 		blocked[tile] = true
 	for tile: Vector2i in _latched_door_bodies():
 		blocked[tile] = true
+	for tile: Vector2i in _post_tiles():
+		blocked[tile] = true
 	for tile: Vector2i in hazards:
 		blocked[tile] = true
 	for tile: Vector2i in avoid:
@@ -1047,7 +1049,27 @@ func _standable_near(tile: Vector2i) -> Vector2i:
 func _hard_blocked(tile: Vector2i) -> bool:
 	var map := _city.map
 	return not map.is_open(tile) or map.is_soft_sealed(tile) or map.is_obstructed(tile) \
-			or _gate_ground().has(tile) or _latched_door_bodies().has(tile)
+			or _gate_ground().has(tile) or _latched_door_bodies().has(tile) \
+			or _post_tiles().has(tile)
+
+## Every tile whose centre lies within her body's reach of a precinct's post (`City.bollard_positions()`).
+## The posts close the carriageway band at each precinct mouth *(2026-10-10, the player: "it will
+## make the middle of the road impassable when going from street to pedestrian road")*, so the rig
+## never plans through the row and goes round by the pavement either side, which a post's 4.8px
+## radius plus her `_BODY_CLEARANCE` leaves open: the pavement tile beside the end post is 20px from
+## it. The posts are a fact about the lattice, so this is worked out once per map.
+var _post_cache := {}
+var _post_cache_map: CityMap
+
+func _post_tiles() -> Dictionary:
+	if _post_cache_map == _city.map:
+		return _post_cache
+	_post_cache_map = _city.map
+	_post_cache = {}
+	var reach := _BODY_CLEARANCE + Prop.bollard_shape().radius
+	for at in City.bollard_positions(_city.map):
+		_post_cache.merge(_tiles_near_point(at, reach))
+	return _post_cache
 
 ## What `_cheapest()` charges for stepping onto a tile `_plan()` would rather keep off, in tiles of
 ## ordinary walking on top of the step itself. **A door's reach costs most**, since walking into it

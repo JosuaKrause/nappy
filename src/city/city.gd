@@ -88,14 +88,15 @@ const _TREES := {
 	GameEnums.BlockPurpose.COURTYARD: 3,
 }
 
-## Distance between adjacent bollards' centres across a precinct's mouth, in px. A post stops her
-## and the gaps between posts stay passable, so a gap has to hold her whole collision shape: her
-## body (14px radius) plus the pram circle (8px radius) centred 14px out along her facing, which
-## follows the input and not her velocity, so with a diagonal held the pram sits to the side. Along
-## the row that is up to 2 x 14 + 8 = 36px. 46px less two posts' 4.8px radii leaves 36.4px clear.
-## That puts two posts on the 64px carriageway band, 9px in from either edge. Open to overturn;
-## `tests/test_bollards.gd` holds the clearance and the walks.
-const BOLLARD_SPACING := 46.0
+## Distance between adjacent bollards' centres across a precinct's mouth, in px. The row shuts the
+## carriageway band to her *(2026-10-10, the player, azure-puffin: "it will make the middle of the
+## road impassable when going from street to pedestrian road. that's okay. this is intended")*, so
+## every gap has to be narrower than her body alone: her circle is 28px across (14px radius) at
+## whatever facing, so a gap of 28px or more lets her through sideways-on, and the pram circle
+## only makes that harder. 14px less two posts' 4.8px radii leaves a 4.4px slit, and puts five
+## posts on the 64px band, 4px in from either edge. The pavements either side of the band stay
+## open. Open to overturn; `tests/test_bollards.gd` holds the walks.
+const BOLLARD_SPACING := 14.0
 
 ## The least two trees in one lot may stand apart, centre to centre — read off the picture rather
 ## than asked for. `Prop.TREES` (`tree_a.svg`, `tree_b.svg`) are both drawn 40px wide, and
