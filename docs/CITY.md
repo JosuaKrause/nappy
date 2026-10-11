@@ -1029,7 +1029,7 @@ for.** The crossing that breaks most routes is covered by two ordinary rows betw
 one corner and a yeller on the other — and a rule that only asked *does this one row take the whole
 box* would accept both of them.
 
-Four kinds of row are outside it, and each for a reason it already had. **A pursuer, and anything
+Six kinds of row are outside it, and each for a reason it already had. **A mast**, the six fixed ones and the two day 11 adds, is a fixture of the street it stands on and its field reaches the junction box at the end of any street, so none of the three line rules is asked of it. **Scenery** (a flock) is free already. **A pursuer, and anything
 the director sites in front of her**, pay the telegraph contract instead and have no tile the day
 chose. **A city-wide row** has no place, so there is no other side of the street to be on. **A
 region door and a moving row that does not pace are not blocks at all** — a door costs by design,

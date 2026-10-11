@@ -919,8 +919,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 ## held street and not on the home block; the mast's field is clear of the day's own doors
 ## (`EventScheduler.clear_of_the_doors()`); and no body placed before it is too near
 ## (`EventScheduler._room_around()`). It does not ask what `EventManager.queue_a_mast()`'s
-## `WalkSiting` asks beyond those: the calm she has not used and the route junctions and sidewalks
-## the day keeps open. The loudspeaker is a scripted row no catalogue roll places, so the ordinary
+## `WalkSiting` asks beyond those: the calm she has not used. The loudspeaker is a scripted row no catalogue roll places, so the ordinary
 ## placement refuses it.
 func _mast_placement(def: EventDef, at: Vector2, prior: Array[EventScheduler.Planned],
 		doors: PackedVector2Array) -> EventScheduler.Planned:

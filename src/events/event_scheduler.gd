@@ -2395,9 +2395,10 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ##   the corridor-aware placement every other row here goes through, and stand at the same sites all
 ##   fourteen days. The two day 11 adds, the one queued near the mark and the one a rigged bag puts
 ##   on her route, are exempt too (inbox #684, "Exempt like fixed masts"), because a mast's field
-##   reaches the junction box at the end of whatever street it stands on: on a city's route tree
-##   almost no tile passed both line rules and the routed mast was put down in about a third of
-##   cities. What every mast keeps is its site check (`MastSites._is_eligible()`: off the home
+##   reaches the junction box at the end of whatever street it stands on, so held to the line it
+##   would have almost no place on a route tree. A mast is asked none of the three rules that keep
+##   a line along her routes (`_leaves_the_route_junctions_open`, `_leaves_the_routes_sidewalk_open`
+##   and `_leaves_a_pacing_beats_opening`). What every mast keeps is its site check (`MastSites._is_eligible()`: off the home
 ##   street and a calm interior), door clearance, the unused calm, spacing and a way out.
 ## - **`scenery`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
 ##   count it as block, just count is scenery"* — which is the same exemption `_role_for` makes.

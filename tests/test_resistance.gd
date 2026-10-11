@@ -4495,6 +4495,7 @@ var _seconds_walked_to_the_route_mast := 0.0
 ## route is put down — a mast that is not in `at_the_mark`, the ids the day had when she read it:
 ## its mast id, or "" if the walk ends first.
 func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> String:
+	_seconds_walked_to_the_route_mast = 0.0
 	var path := _longest_route_points()
 	_city.events._find_player()
 	if path.size() < 2:
@@ -4544,12 +4545,11 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 ## scars its foot, and leaves the other two lit. Asking for the arrow along the way is a read.
 ##
 ## **The routed mast has a place on her route in every one of `DAY_ELEVEN_SEEDS`.** Every mast is
-## exempt from the two rules that keep a line along her routes (`EventScheduler._counts_against_the_line`;
-## inbox #684), so the walk down the longest route puts it down in every city. The suite's own city is
-## walked in full (a 600s walk costs seconds of siting); the others, which are the cities that were
-## refused it while the rules held it to them, are asked the one question the walk asks —
-## `WalkSiting.ahead_of()` from points along the longest route — without walking, which is what keeps
-## six cities as cheap as one. A city that fails fails here rather than being skipped for the next.
+## exempt from the three rules that keep a line along her routes
+## (`EventScheduler._counts_against_the_line`; inbox #684), so the walk down the longest route puts it
+## down in every city. The suite's own city is walked in full; the others are asked the one question
+## the walk asks, `WalkSiting.ahead_of()` from points along the longest route, without walking, which
+## keeps six cities as cheap as one. A city that fails fails here rather than being skipped.
 func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 	var saved_scars := GameState.scars.duplicate()
 	var saved_state := GameState.city_state
@@ -4590,10 +4590,9 @@ func _a_mast_can_be_sited_along_her_route() -> bool:
 			return true
 	return false
 
-## The cities `_test_day_eleven_answers_at_any_live_mast` covers: the suite's own, walked, then the two
-## `_test_a_task_is_placed_near_its_mark` reads day 11 on as well and the five whose route tree
-## offered the mast one tile or two while the line rules held it (the suite's own seed, 314159, 555555,
-## 8675309 and 1234567 among them).
+## The cities `_test_day_eleven_answers_at_any_live_mast` covers: the suite's own (walked), 90210 and
+## 1234567, which `_test_a_task_is_placed_near_its_mark` also reads day 11 on, and 314159, 555555 and
+## 8675309, cities whose route tree has few tiles a mast may take.
 const DAY_ELEVEN_SEEDS: Array[int] = [SEED, 90210, 1234567, 314159, 555555, 8675309]
 
 ## One city's half of `_test_day_eleven_answers_at_any_live_mast`; sets `routed_on[0]` to the seed
