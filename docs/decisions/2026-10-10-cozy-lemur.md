@@ -16,16 +16,27 @@ the band, that the pavement either side lets her pass, and that holding a diagon
 sliding round the row's end. `docs/CITY.md` says the row is a detour inside the junction box, never a
 cut.
 
-**The routes go round by the pavement.** Over 12 seeds, 42 route cells held a post's tile: the day's
-route tree ran down the carriageway band through the row, a route she cannot walk and a route line
-drawn through posts. `RouteTree._ways` and `_ways_including_the_spine` refuse a step onto or off a
-post's tile, the pavement entry staying open, and the route rig (`route_rig.gd`'s `_post_tiles()`)
-blocks every tile within her body's reach of a post; `tests/test_route_rig.gd` has a plan across a
-mouth going round the row. *Built where the entry said a route "must go round on the pavement";
-the change to `RouteTree` itself is open to overturn.*
+**Every flood and every step but the route tree's sees the posts.** `CityMap.post_tiles()`, built
+with the map (`index_posts()`), is folded into `is_walkable`, `is_open`, `walk_field_from` and
+`ReachabilityGrid.build`, so every winnability check (the scheduler's, `ClosurePlanner`'s,
+`RegionPlanner`'s), the red arrow's ground and every pursuer's step and catch line go round the row as
+her body does; the route rig blocks every tile within her body's reach of a post (`Prop.bollard_shape()`
+is the one definition of a post). `tests/test_bollards.gd` holds that a pursuer's step does not enter a
+post's tile, that a flood goes round the row, and that the grid has no node on a post's tile.
+
+**The route tree grows on the lattice without the posts** (`ReachabilityGrid.build(map, false)` in
+`RouteTree.for_day`), so it still draws a branch through a row's cell, where the walk goes round by the
+pavement inside the same junction box; the route line that shows it is a dev overlay. Both ways of
+making the tree see the posts were tried and rejected: a step filter in `RouteTree._ways`, and a
+post-aware grid, each re-grow the corridor on most days — measured by the reviewer over 20 seeds and 8
+days, the tree's cells differ on 146 of 160 days and the region doors on 64 of 80 from the region-wall
+day, with branches unchanged at 1,191 and second-route branches 788 to 793 — and each breaks six
+authored scene recipes (`task-09-crossing`, `trailer-choice`, `trailer-dog`, `trailer-gatehouse`, the
+two-mast task's mast site and a bounded-context check). *Open to overturn, at the cost of re-authoring
+those recipes.*
 
 *Left as it is, open to overturn:* crowd walkers have no bodies and still walk through the posts.
 
-The stills are in [bollards-2026-10-11](../evidence/bollards-2026-10-11/): the row at a precinct's west
-mouth on seed 500, day 1, and her stopped at it with the collision outlines drawn. The review item
+The stills are in [bollards-2026-10-11](../evidence/bollards-2026-10-11/): the row alone, her pram
+against the five posts (seed 624), and her going round by the pavement (seed 500). The review item
 [cozy-lemur](../review/2026-10-10-cozy-lemur.md) asks the player to walk one.
