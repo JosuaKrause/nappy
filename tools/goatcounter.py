@@ -8,6 +8,7 @@ Run it through the wrapper, which owns the environment:
     tools/goatcounter.sh --start 2026-09-01 --end 2026-09-15
     tools/goatcounter.sh --json
     tools/goatcounter.sh --encounters
+    tools/goatcounter.sh --by-release
 
 `VisitCounter` (`src/autoload/visit_counter.gd`) sends one GoatCounter event per moment worth
 counting, each path starting `nappy-`, to the game's own site, `nappy.goatcounter.com` -- see
@@ -84,6 +85,7 @@ import json
 import os
 import re
 import ssl
+import subprocess
 import sys
 import time
 import urllib.error
@@ -584,17 +586,20 @@ def split_losses(bucket: dict[str, int]) -> SplitLosses:
     return SplitLosses(totals, causes, consumed)
 
 
-def format_text(grouped: dict[str, Any], *, site: str, start: datetime, end: datetime, prefix: str) -> str:
-    lines = [f"GoatCounter events for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {prefix!r})"]
-    lines.append(
-        "Counts are attempts, not visitors -- every event opts out of the site's sessions, so it counts "
-        "every time it was sent, and a day's began includes every retry of it. The page visit, counted "
-        "once per visitor, is under --raw."
-    )
-
-    run_level: dict[str, int] = grouped["run_level"]
-    lines.append("")
+def format_text(
+    grouped: dict[str, Any], *, site: str, start: datetime, end: datetime, prefix: str, header: bool = True
+) -> str:
+    lines = []
+    if header:
+        lines.append(f"GoatCounter events for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {prefix!r})")
+        lines.append(
+            "Counts are attempts, not visitors -- every event opts out of the site's sessions, so it counts "
+            "every time it was sent, and a day's began includes every retry of it. The page visit, counted "
+            "once per visitor, is under --raw."
+        )
+        lines.append("")
     lines.append("Run-level:")
+    run_level: dict[str, int] = grouped["run_level"]
     if run_level:
         for name, count in _sorted_desc(run_level):
             lines.append(f"  {prefix}{name}: {count}")
@@ -685,20 +690,138 @@ def _encounter_lines(rows: dict[str, dict[str, Any]]) -> list[str]:
     return lines
 
 
-def format_encounters(table: dict[str, Any], *, site: str, start: datetime, end: datetime, prefix: str) -> str:
-    lines = [f"GoatCounter encounters for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {prefix!r})"]
-    lines.append(
-        "Per event type: encounters seen, how many of those influenced her, influenced / seen (blank when "
-        "nothing was seen), and the influences from encounters she never saw (unseen), which the ratio "
-        "leaves out."
-    )
-    lines.append("")
+def format_encounters(
+    table: dict[str, Any], *, site: str, start: datetime, end: datetime, prefix: str, header: bool = True
+) -> str:
+    lines = []
+    if header:
+        lines.append(f"GoatCounter encounters for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {prefix!r})")
+        lines.append(
+            "Per event type: encounters seen, how many of those influenced her, influenced / seen (blank when "
+            "nothing was seen), and the influences from encounters she never saw (unseen), which the ratio "
+            "leaves out."
+        )
+        lines.append("")
     lines.append("Overall:")
     lines.extend(_encounter_lines(table["overall"]))
     for day, rows in table["days"].items():
         lines.append("")
         lines.append(f"Day {day}:")
         lines.extend(_encounter_lines(rows))
+    return "\n".join(lines)
+
+
+# ----------------------------------------------------------------------------------- releases ---
+
+
+class ReleaseWindow(NamedTuple):
+    """One stretch of the range between two release days. `releases` is every `v*` tag whose day
+    opens it (two or more is a mixed day, never split), or empty for the days before the first
+    release; `start` and `end` are the stretch clipped to the range, `end` exclusive."""
+
+    releases: tuple[str, ...]
+    start: datetime
+    end: datetime
+
+    @property
+    def mixed(self) -> bool:
+        return len(self.releases) > 1
+
+    @property
+    def label(self) -> str:
+        if not self.releases:
+            return "before the first release"
+        if self.mixed:
+            return "mixed day: " + ", ".join(self.releases)
+        return self.releases[0]
+
+
+def read_release_tags(root: Path | None = None) -> list[tuple[str, datetime]]:
+    """Every `v*` tag in the repository with its date: the tagger's date for an annotated tag, the
+    commit's for a lightweight one (git's `creatordate`), as the moment it was made."""
+    try:
+        done = subprocess.run(
+            ["git", "for-each-ref", "refs/tags/v*", "--format=%(refname:short) %(creatordate:iso-strict)"],
+            cwd=root or _repo_root(),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise GoatCounterError(f"--by-release could not read the release tags from git: {exc}") from exc
+    tags: list[tuple[str, datetime]] = []
+    for line in done.stdout.splitlines():
+        name, _, stamp = line.partition(" ")
+        if name and stamp:
+            tags.append((name, datetime.fromisoformat(stamp)))
+    if not tags:
+        raise GoatCounterError("--by-release found no v* tags in this repository")
+    return tags
+
+
+def release_windows(tags: list[tuple[str, datetime]], start: datetime, end: datetime) -> list[ReleaseWindow]:
+    """`[start, end)` cut at the days releases went out. A tag's day is its date in UTC, the zone
+    every range here is read in; a window runs from a release day's midnight to the next release
+    day's, so every tag of one day opens the same window (mixed). The release already in force when
+    the range opens keeps its window, clipped to `start`; days before the first release at all form
+    one window with no release. Windows with no time in the range are dropped."""
+    by_day: dict[datetime, list[tuple[datetime, str]]] = {}
+    for name, moment in tags:
+        stamp = moment if moment.tzinfo else moment.replace(tzinfo=UTC)
+        day = stamp.astimezone(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        by_day.setdefault(day, []).append((stamp, name))
+    days = sorted(by_day)
+    opens: list[tuple[datetime, tuple[str, ...]]] = [(datetime.min.replace(tzinfo=UTC), ())]
+    opens.extend((day, tuple(name for _, name in sorted(by_day[day]))) for day in days)
+    windows: list[ReleaseWindow] = []
+    for index, (opened, releases) in enumerate(opens):
+        closed = opens[index + 1][0] if index + 1 < len(opens) else datetime.max.replace(tzinfo=UTC)
+        window_start, window_end = max(opened, start), min(closed, end)
+        if window_start < window_end:
+            windows.append(ReleaseWindow(releases, window_start, window_end))
+    return windows
+
+
+def fetch_windows(fetch: Fetcher, windows: list[ReleaseWindow]) -> list[list[dict[str, Any]]]:
+    """The hits of each window, one read of the API per window. `fetch_hits` sends `end` unchanged
+    and the range is read as `[start, end]`, so a window followed by another is read up to one
+    second before that next window opens (the API rounds to the hour, so that is the previous
+    hour's last instant): no hour is read by two windows. The last window ends where the range does.
+    """
+    return [
+        fetch_hits(fetch, window.start, window.end - timedelta(seconds=1) if index + 1 < len(windows) else window.end)
+        for index, window in enumerate(windows)
+    ]
+
+
+def by_release_jsonable(windows: list[ReleaseWindow], results: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "windows": [
+            {
+                "label": window.label,
+                "releases": list(window.releases),
+                "mixed": window.mixed,
+                "start": rfc3339(window.start),
+                "end": rfc3339(window.end),
+                "result": result,
+            }
+            for window, result in zip(windows, results, strict=True)
+        ]
+    }
+
+
+def format_by_release(windows: list[ReleaseWindow], bodies: list[str], *, title: str) -> str:
+    lines = [
+        title,
+        "Windows run from a release's day (UTC) to the next release's day; a day with several releases is mixed.",
+    ]
+    for window, body in zip(windows, bodies, strict=True):
+        lines.append("")
+        lines.append(f"=== {window.label} -- {rfc3339(window.start)} to {rfc3339(window.end)} ===")
+        lines.append(body)
+    if not windows:
+        lines.append("")
+        lines.append("(no time in range)")
     return "\n".join(lines)
 
 
@@ -764,6 +887,14 @@ def build_parser() -> argparse.ArgumentParser:
             "per day, instead of the funnel"
         ),
     )
+    parser.add_argument(
+        "--by-release",
+        action="store_true",
+        help=(
+            "group the funnel (or, with --encounters, the encounters) into one window per release, "
+            "from the v* tags' dates in git; a day with several releases is one mixed window"
+        ),
+    )
     mode.add_argument(
         "--check",
         action="store_true",
@@ -785,11 +916,58 @@ def resolve_range(args: argparse.Namespace) -> tuple[datetime, datetime]:
     return start, end
 
 
+def run_by_release(args: argparse.Namespace, site: str, token: str, start: datetime, end: datetime) -> int:
+    try:
+        windows = release_windows(read_release_tags(), start, end)
+        hit_lists = fetch_windows(make_fetcher(site, token), windows)
+    except GoatCounterError as exc:
+        print(f"goatcounter: {exc}", file=sys.stderr)
+        return 1
+    groups = [group_hits(hits, args.prefix) for hits in hit_lists]
+    if args.encounters:
+        tables = [encounter_table(group) for group in groups]
+        if args.json:
+            print(
+                json.dumps(
+                    by_release_jsonable(windows, [encounters_jsonable(t) for t in tables]), indent=2, sort_keys=True
+                )
+            )
+            return 0
+        bodies = [
+            format_encounters(t, site=site, start=w.start, end=w.end, prefix=args.prefix, header=False)
+            for w, t in zip(windows, tables, strict=True)
+        ]
+        title = (
+            f"GoatCounter encounters by release for {site} -- {rfc3339(start)} to {rfc3339(end)} "
+            f"(prefix {args.prefix!r})"
+        )
+    else:
+        if args.json:
+            print(json.dumps(by_release_jsonable(windows, [to_jsonable(g) for g in groups]), indent=2, sort_keys=True))
+            return 0
+        bodies = [
+            format_text(g, site=site, start=w.start, end=w.end, prefix=args.prefix, header=False)
+            for w, g in zip(windows, groups, strict=True)
+        ]
+        title = (
+            f"GoatCounter events by release for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {args.prefix!r})"
+        )
+    print(format_by_release(windows, bodies, title=title))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
     if args.days is not None and args.days <= 0:
         print("goatcounter: --days must be a positive number of days", file=sys.stderr)
+        return 2
+
+    if args.by_release and (args.raw or args.check):
+        print(
+            "goatcounter: --by-release groups the funnel or --encounters; it cannot combine with --raw or --check",
+            file=sys.stderr,
+        )
         return 2
 
     site = args.site or env_or_dotenv("GOATCOUNTER_SITE") or DEFAULT_SITE
@@ -831,6 +1009,9 @@ def main(argv: list[str] | None = None) -> int:
     except GoatCounterError as exc:
         print(f"goatcounter: {exc}", file=sys.stderr)
         return 2
+
+    if args.by_release:
+        return run_by_release(args, site, token, start, end)
 
     try:
         hits = fetch_hits(make_fetcher(site, token), start, end)
