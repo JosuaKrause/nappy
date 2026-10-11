@@ -597,7 +597,8 @@ func stream_around(at: Vector2) -> void:
 		if plan.live == null:
 			if distance <= stream_radius:
 				_stream_in(plan)
-		elif not plan.kept_live and distance > stream_radius + Tuning.EVENT_STREAM_HYSTERESIS:
+		elif not plan.kept_live and distance > stream_radius + Tuning.EVENT_STREAM_HYSTERESIS \
+				and not _could_be_watched(plan.live, at):
 			_stream_out(plan)
 
 ## The planned instance of the row `id` standing within a tile of `at`, put in the world now
@@ -688,6 +689,17 @@ func _spend_the_rest_of_the_group(chosen: EventScheduler.Planned) -> void:
 		if plan.live:
 			_stream_out(plan)
 
+## **Whether `instance` is near enough to `at` for her to be watching it** — within
+## `Tuning.OUT_OF_SIGHT`, the distance beyond which nothing can be seen. A plan is streamed out by how
+## far she is from its *route* (`EventScheduler.Planned.distance_from()`), but an instance that is
+## leaving carries on past the route's end, and a car she follows out of its street is a long way
+## from the route while she is a few paces behind it. Streaming that one out would delete it in
+## front of her (*nothing vanishes while you are looking at it*, "Going away" in `docs/EVENTS.md`),
+## so it stays until it is out of sight — where its own departure ends it anyway (`_leave()`).
+func _could_be_watched(instance: EventInstance, at: Vector2) -> bool:
+	return is_instance_valid(instance) \
+			and instance.global_position.distance_to(at) <= Tuning.OUT_OF_SIGHT
+
 func _stream_out(plan: EventScheduler.Planned) -> void:
 	plan.age = plan.live.age
 	plan.travelled = plan.live.path_travelled()
@@ -695,6 +707,14 @@ func _stream_out(plan: EventScheduler.Planned) -> void:
 	if plan.live.is_a_spent_guard():
 		plan.guard_spent = true
 		plan.chaser_side = plan.live.chaser_side()
+	# **A departure streamed out is over**, as one that finished is (`_mark_plan_spent()`): it is not
+	# rebuilt to run an ended event again. Walking back, it would be rebuilt 900px or more from her
+	# and finish out of view, so no car is seen coming back; what the spend keeps out is a person
+	# streamed out mid-`leave_along` standing in day 12's closed park again. A guard walking away from
+	# his barrier is the one that comes back, as only the barrier.
+	if plan.live.is_leaving and not plan.live.is_a_spent_guard():
+		plan.spent = true
+		_map.release_obstruction(plan.get_instance_id())
 	_map.release_obstruction(plan.live.get_instance_id())
 	_instances.erase(plan.live)
 	plan.live.queue_free()
