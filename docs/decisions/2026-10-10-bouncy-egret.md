@@ -67,18 +67,20 @@ seeds, then 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 25
 10946), 600s of walking the day's longest route back and forth puts it down on 10 on `main` (at
 aa3fe656) and on 8 on the branch: 5 against 2 on the review's ten, 5 against 6 on the other twenty.
 The cause is the same on both. Of the tiles of the mast's ground on the day's route tree that a mast
-site may take, every one but one to five per city breaks `_leaves_the_route_junctions_open` or
+site may take, every one but a handful per city (none in 7 of the 30, eight at most) breaks
+`_leaves_the_route_junctions_open` or
 `_leaves_the_routes_sidewalk_open` with the mast standing alone — its own field, which a line along
 the route has to get past, reaches the junction box at the end of whatever street it stands on —
-and those few tiles are the same tiles on `main` and on the branch (seeds 4242, 314159, 1234567,
-555555 and 8675309: 1, 1, 5, 2 and 1 tiles, most on the city's edge). What differs is whether her
-walk comes within reach of one and the siting's roll picks it, and fewer blockers only change which
-rolls a walk makes. So `tests/test_resistance.gd` checks the first of three seeds whose walk puts it
+and those few tiles are the same on `main` and on the branch on 28 of the 30 seeds (seeds 4242,
+314159, 1234567, 555555 and 8675309: 1, 1, 5, 2 and 1 tiles, most on the city's edge); on seed 144 the
+branch has one more, and on seed 4181 a day plan beside its only tile now refuses it. What differs
+otherwise is whether her walk comes within reach of one and the siting's roll picks it. So `tests/test_resistance.gd` checks the first of three seeds whose walk puts it
 down. Making it certain would change what a mast is held to — the city's six masts are already
 outside the line rules (`EventScheduler._counts_against_the_line`, "a mast is planted once by
 `MastSites`"), and [feathery-marmot](2026-10-03-feathery-marmot.md) puts a queued mast through "the
 route junctions and sidewalks the day keeps open" — which is the player's choice and is not made
-here.
+here; it is queued as [cozy-lynx](../todo/2026-10-11-cozy-lynx/README.md), day 11's rigged mast stands
+on her route.
 
 Day 13's guard, set on her from another roadblock 1,778px away with a building between them, comes
 straight at her, slides along the building he meets and stops 479px from her, so
