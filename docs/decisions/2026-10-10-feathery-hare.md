@@ -1,4 +1,4 @@
-# feathery-hare — The chalk mark stands one tile into its alley · 2026-10-11
+# feathery-hare — The chalk mark stands one tile into its alley · 2026-10-10
 
 [azure-puffin](../playtests/2026-10-10-azure-puffin.md), point 3, inbox #664:
 
@@ -15,11 +15,15 @@ pavement at the mouth, or with her centre on the street edge, she does not. Reac
 ([downy-otter](2026-09-27-downy-otter.md)), legal ground, relocation and the avoidance of a run's
 used alleys are asked of the mark's own tile (`_mark_tiles()`, `is_mark_tile()`).
 
-**The mark's guard moves in with it**, by the tile the mark stands in (`_depth_of_the_mark()`, capped
-at one tile), so he stands as far from the mark as before and
-[M213](2026-09-26-M213.md)'s 176px floor and quiet-yak's "Two-thirds wins" hold as they did;
-`_alley_ends()` reads a courtyard tile beside a passage mouth, so a courtyard mark's guard still
-stands at the court's inner end.
+**A through-alley's guard moves in with the mark**, by the tile the mark stands in
+(`_depth_of_the_mark()`, capped at one tile), so he stands as far from it as before and
+[M213](2026-09-26-M213.md)'s 176px floor and quiet-yak's "Two-thirds wins" hold as they did.
+**A courtyard's guard does not**: `_alley_ends()` reads a courtyard tile beside a passage mouth, so he
+still stands at the court's inner end, as far from the mark as the courtyard allows (the courtyard
+rule, where the player said "you just have to lure the robber out first"), and a mark one tile in is
+21 to 31px nearer him than one on the mouth was, over the reviewer's 171 passage mouths in 60 cities:
+in the common 4×4 court, 115px where it was 143px, inside his 140px notice. *Open to the player's
+correction.*
 
 **The task scenes follow.** The nine scene recipes' pinned marks (`scene-recipes/task-06` to
 `task-13`, `11-two-masts` included) stand one tile in, each walk turning into the alley and out, and
