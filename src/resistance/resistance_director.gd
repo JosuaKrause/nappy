@@ -3402,7 +3402,8 @@ func _ground_for_the_arrow() -> PackedInt32Array:
 				var tile := Vector2i(x, y)
 				if not _map.in_stretch(tile):
 					ground[y * width + x] = ArrowField.BLOCKED
-	for blocked: Dictionary in [_map.closed_tiles, _map.soft_sealed_tiles, _map.obstructed_tiles]:
+	for blocked: Dictionary in [_map.closed_tiles, _map.soft_sealed_tiles, _map.obstructed_tiles,
+			_map.post_tiles()]:
 		for tile: Vector2i in blocked:
 			if _map.in_bounds(tile):
 				ground[tile.y * width + tile.x] = ArrowField.BLOCKED

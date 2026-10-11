@@ -33,6 +33,7 @@ func run(t) -> void:
 	_test_a_replan_keeps_off_the_ground_round_what_caught_her(t)
 	_test_unstick_tries_the_direction_away_from_what_caught_her_first(t)
 	_test_a_door_between_two_lanes_opens_both_as_its_crossing(t)
+	_test_a_plan_never_goes_through_a_precincts_posts(t)
 	_test_a_plan_never_goes_through_the_boom(t)
 	_test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t)
 	_test_reachable_point_near_returns_centre_when_already_open(t)
@@ -414,6 +415,32 @@ func _test_unstick_tries_the_direction_away_from_what_caught_her_first(t) -> voi
 	rig.free()
 
 # --------------------------------------------------------- _reachable_point_near ---
+
+## **A plan across a precinct's mouth goes round the row on the pavement.** The posts shut the
+## carriageway band (`City.bollard_positions()`, `tests/test_bollards.gd`), so a plan from the
+## street side of the middle of the row to the precinct side must not step on a tile of the posts'
+## reach, and the pavement beside the row stays open, so there is a plan.
+func _test_a_plan_never_goes_through_a_precincts_posts(t) -> void:
+	var posts := City.bollard_positions(_city.map)
+	t.check(posts.size() >= 2, "the suite's city has a precinct with a row of posts")
+	if posts.size() < 2:
+		return
+	var rig := _rig(t)
+	var vertical := not is_equal_approx(posts[0].x, posts[1].x)
+	var count := posts.size() / (2 * _city.map.precinct_spans.size())
+	var middle := posts[count / 2]
+	var along := Vector2(0.0, 1.0) if vertical else Vector2(1.0, 0.0)
+	var from := _city.map.world_to_tile(middle - along * Tuning.TILE_SIZE * 3.0)
+	var to := _city.map.world_to_tile(middle + along * Tuning.TILE_SIZE * 3.0)
+	var shut := rig._post_tiles()
+	t.check(shut.has(_city.map.world_to_tile(middle)), "the row's own tile is blocked to every plan")
+	var planned := rig._plan(from, to)
+	var through := false
+	for tile in planned:
+		through = through or shut.has(tile)
+	t.check(not planned.is_empty() and not through,
+			"a plan across a precinct's mouth goes round the row rather than through its posts")
+	rig.free()
 
 ## **The rig never goes through a street door's boom** *(2026-09-24, the player: "The bot shouldn't
 ## route through the boom either way.")*: a `checkpoint_gate` stood across a straight stretch of
