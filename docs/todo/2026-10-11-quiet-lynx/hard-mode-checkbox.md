@@ -1,7 +1,7 @@
 # The Hard Mode checkbox and the mode carried in the save
 
 The title screen shows a **Hard Mode** checkbox, and only when the title is beginning a new game,
-meaning no resumable save is behind it (statement 1: *"a "Hard Mode" checkbox on the title screen
+meaning no resumable save is behind it (that reading of "(if new game)" is the filer's; the player said only this, statement 1: *"a "Hard Mode" checkbox on the title screen
 (if new game)"*). It decides whether checkpoints exist: checked, the run has none.
 
 The mode is fixed for the run and carried in the save, so a resumed run is in the mode it began in.
