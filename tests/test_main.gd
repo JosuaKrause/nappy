@@ -468,14 +468,6 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
 	ControlsMode._remembered_mode = ControlsMode.Mode.TAP
 	ControlsMode._remembered_side = ControlsMode.Side.LEFT
 
-## The correction to M153 the same evening: the graph's independence is from `4`, not from the
-## title screen, which still hides everything about a player who is not there — this graph
-## included. *(2026-09-15, the coordinator, relaying the player: "the graph must not draw over the
-## title screen ... the independence the player asked for is from the 4 key, not from the
-## title".)* Built the same lightweight, off-tree way `_test_on_title_start_sets_the_controls_mode`
-## above is — `_open_the_title()`'s own `get_tree().paused = true` is guarded with
-## `is_inside_tree()` for exactly this reason, the same shape `_on_title_start()`'s own last line
-## already uses.
 ## azure-puffin, #665: the title's two joystick buttons carry an "L" and an "R" so they read as
 ## different settings; the tap button carries no mark.
 func _test_the_title_joystick_buttons_carry_l_and_r(t) -> void:
@@ -487,8 +479,18 @@ func _test_the_title_joystick_buttons_carry_l_and_r(t) -> void:
 	t.check((left.get_node("Letter") as Label).text == "L", "the left joystick button says L")
 	t.check((right.get_node("Letter") as Label).text == "R", "the right joystick button says R")
 	t.check(not tap.has_node("Letter"), "the tap button carries no letter")
+	t.check((left.get_node("Letter") as Label).mouse_filter == Control.MOUSE_FILTER_IGNORE,
+			"the letter never catches a press meant for its button")
 	title.free()
 
+## The correction to M153 the same evening: the graph's independence is from `4`, not from the
+## title screen, which still hides everything about a player who is not there — this graph
+## included. *(2026-09-15, the coordinator, relaying the player: "the graph must not draw over the
+## title screen ... the independence the player asked for is from the 4 key, not from the
+## title".)* Built the same lightweight, off-tree way `_test_on_title_start_sets_the_controls_mode`
+## above is — `_open_the_title()`'s own `get_tree().paused = true` is guarded with
+## `is_inside_tree()` for exactly this reason, the same shape `_on_title_start()`'s own last line
+## already uses.
 func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._add_touch_controls()
