@@ -127,7 +127,7 @@ black, the end-on runs reading as posts.
 whether being shut in only by staying twelve seconds on most parks, and up to about 28 on the
 largest — the swing's robber usually runs her out within a couple — is the danger meant; and whether
 a large park's later close should instead come from bringing the officers into her view sooner.
-[snowy-trout](../todo/2026-10-07-snowy-trout/README.md), day 12's return softlock, does not reproduce
+[snowy-trout](2026-10-07-snowy-trout.md), day 12's return softlock, does not reproduce
 with the cordon: the route rig, run headless (`--fixed-fps 60`) with `--no-focus-pause --no-title`
 (without the two it did not move her) and `--invincible`, walks `mark,task,calm,home` on day 12 of seeds 4242, 11 and 13 (13's
 park a large one), touches the swing, settles the baby elsewhere while the park is cordoned off with
