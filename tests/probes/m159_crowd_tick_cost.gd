@@ -24,8 +24,15 @@ const STEP := 1.0 / 30.0
 ## seed every other crowd probe uses.
 const SEEDS: Array[int] = [478156010, 4242]
 ## Day 1 is the densest crowd and the phone record's own day; day 9 is the first with the region
-## wall, so its walkers have checkpoint huts to queue at and its cars a gate to stop for.
-const DAYS: Array[int] = [1, Tuning.REGION_WALL_FIRST_DAY]
+## wall, so its walkers have checkpoint huts to queue at and its cars a gate to stop for; day 14 has
+## the most huts and the most agents of the walled days.
+const DAYS: Array[int] = [1, Tuning.REGION_WALL_FIRST_DAY, 14]
+## The two walks the player rig follows over the same crowd. `street` is the fixed walk of
+## `_player_heading()`, which never reaches a walker; `walkers` walks at the nearest walker from
+## tick `CHASE_FROM`, so the player half (make way, bump, contact) and the player's field centre
+## moving through the crowd are in the hash too.
+const WALKS: Array[String] = ["street", "walkers"]
+const CHASE_FROM := 90
 const REPETITIONS := 3
 const WARMUP := 150
 const WINDOW := 600
@@ -49,22 +56,24 @@ func run(t) -> void:
 		t.add_child(city)
 		city.build(CityGenerator.generate(city_seed))
 		for day in DAYS:
-			for repetition in REPETITIONS:
-				var chains := {}
-				for mode in ["whole", "split"]:
-					var report := _run_once(city, rig, city_seed, day, mode)
-					report["repetition"] = repetition
-					chains[mode] = report.chain
-					print("CROWD_TICK_JSON " + JSON.stringify(report))
-				t.check(chains.whole == chains.split,
-						("seed %d, day %d, repetition %d: the split tick moves every agent exactly as "
-						+ "the real one") % [city_seed, day, repetition])
+			for walk in WALKS:
+				for repetition in REPETITIONS:
+					var chains := {}
+					for mode in ["whole", "split"]:
+						var report := _run_once(city, rig, city_seed, day, mode, walk)
+						report["repetition"] = repetition
+						chains[mode] = report.chain
+						print("CROWD_TICK_JSON " + JSON.stringify(report))
+					t.check(chains.whole == chains.split,
+							("seed %d, day %d, %s walk, repetition %d: the split tick moves every "
+							+ "agent exactly as the real one") % [city_seed, day, walk, repetition])
 		city.crowd._player = null
 		city.free()
 	rig.free()
 
 ## One day's warmup and window in one mode; returns the run's report.
-func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String) -> Dictionary:
+func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String,
+		walk: String) -> Dictionary:
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, day)
 	var closures := RandomNumberGenerator.new()
@@ -83,8 +92,11 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	var marks: Array[String] = []
 	var rows: Array = []
 	var here := start
+	var contact_ticks := 0
+	var held_ticks := 0
 	for tick in WARMUP + WINDOW:
-		var going := _player_heading(tick)
+		var going := _player_heading(tick) if walk == "street" or tick < CHASE_FROM \
+				else _heading_at_the_nearest_walker(crowd, here)
 		rig.global_position = here
 		rig.velocity = going * Tuning.WALK_SPEED
 		here += going * Tuning.WALK_SPEED * STEP
@@ -100,11 +112,18 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		else:
 			row = _split_tick(crowd)
 		chain = _chain(chain, crowd)
+		for agent in crowd.agents():
+			if agent.kind == CrowdAgent.Kind.WALKER:
+				if agent.touching:
+					contact_ticks += 1
+				if agent._door_state != CrowdAgent.DoorState.WALKING:
+					held_ticks += 1
 		if tick >= WARMUP:
 			rows.append(row)
 		if (tick + 1) % 150 == 0:
 			marks.append(chain.hex_encode())
 	return {"schema_version": 1, "seed": city_seed, "day": day, "mode": mode,
+		"walk": walk, "walker_contact_ticks": contact_ticks, "walker_door_ticks": held_ticks,
 		"agents": crowd.agent_count(), "huts": crowd._door_holds.size(), "gates": crowd._gates.size(), "step_seconds": STEP, "warmup_ticks": WARMUP,
 		"window_ticks": WINDOW, "columns": ["agents", "tick"] if mode == "whole" else PARTS,
 		"rows": rows, "chain": chain.hex_encode(), "chain_every_150_ticks": marks,
@@ -150,6 +169,22 @@ func _player_heading(tick: int) -> Vector2:
 	if tick < 90:
 		return Vector2.DOWN
 	return Vector2.RIGHT if (tick - 90) / 60 % 2 == 0 else Vector2.LEFT
+
+## Toward the walker nearest `here`, the first in the crowd's order on a tie; straight on south
+## when there is none or she is standing on it.
+func _heading_at_the_nearest_walker(crowd: Crowd, here: Vector2) -> Vector2:
+	var best := INF
+	var target := here
+	for agent in crowd.agents():
+		if agent.kind != CrowdAgent.Kind.WALKER:
+			continue
+		var distance := agent.global_position.distance_squared_to(here)
+		if distance < best:
+			best = distance
+			target = agent.global_position
+	if best < 4.0:
+		return Vector2.ZERO
+	return (target - here).normalized()
 
 ## The running digest: the previous one followed by every agent's position and speed, in the
 ## crowd's own order. Read after the tick and outside every timer.
