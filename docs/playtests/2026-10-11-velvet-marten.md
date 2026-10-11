@@ -1,8 +1,8 @@
 # Playtest velvet-marten — Two phone frame records, and six notes from playing days 9 and 14
 
 2026-10-11.
-Said in one session as six notes the assistant captured into the inbox on GitHub Issues, #696, #697,
-#698, #699, #700 and #701, while the player recorded two frame records on the phone for M159 (a slow
+Said in one session as seven notes the assistant captured into the inbox on GitHub Issues, #696, #697,
+#698, #699, #700, #701 and #703, while the player recorded two frame records on the phone for M159 (a slow
 frame names the frame that was slow) and the assistant reported on them. Each note is recorded as it
 holds: first what its words answered, then the words themselves, whole, and each later word after
 what it answers. The questions and context are the assistant's; only the quoted lines are the
@@ -105,6 +105,16 @@ unchanged, under [velvet-marten-phone-records-2026-10-11](../evidence/velvet-mar
 
    > the lag spike explanation might also be the explanation for the soft lock -- let's audit the placement code for guaranteed and bounded completion
 
+## #703
+
+1. **What the note answered** (the assistant):
+
+   Said while sending the second phone frame record (v0.27.1, `?debug=1&framerecord=1&seed=67&day=14`, file nappy-frames-seed67-2026-10-11T17-40-04.json) for M159, a slow frame names the frame that was slow. The agent had asked for recordings of day 9 (walled) and day 14 (densest) on seed 67.
+
+2. **The note.**
+
+   > No super lag spikes but a lot of stutter
+
 ## Filed as
 
 - **#696**: a re-report, added to [M219](../todo/2026-09-26-M219/README.md), on a pedestrian street a
@@ -116,7 +126,9 @@ unchanged, under [velvet-marten-phone-records-2026-10-11](../evidence/velvet-mar
 - **#700**: four items added to [M159](../todo/2026-09-19-M159/README.md), a slow frame names the frame
   that was slow: shadows baked into their own atlas, nothing off screen redrawn or animated, the
   frame drawn straight to the screen and then the pixel multiplier, and the readout's resolution and
-  refresh. The engine patch is recorded there as not now.
+  refresh. The engine patch is recorded there as not now. A fifth item, the cues and the events
+  doing less, is the filer's proposal from the investigators' candidates, marked so in its file.
+- **#703**: the day-14 record's context in its evidence README and in M159's README.
 - **#701**: an item added to [bouncy-swan](../todo/2026-10-11-bouncy-swan/README.md), the phone's lag
   spikes are found and fixed: event placement completes, always and within a bound.
 

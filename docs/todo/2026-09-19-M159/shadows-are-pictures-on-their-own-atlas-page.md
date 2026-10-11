@@ -14,7 +14,11 @@ shadow and the body") draws every shadow from the object's `GroundShape`; the sh
 source, and the bake draws it once into a picture on a shadow page that the object then draws as a
 sprite, tilted and squashed by its transform as now. The crowd car's capsule
 (`CrowdAgent._car_shadow_shape()`) is two ellipses' hull rather than one ellipse and gets its own
-picture. **It prepares [silver-egret](../2026-10-03-silver-egret/README.md), a shadow is where the object
+picture. **It is not M139's shadow pass**
+([M139](../../decisions/2026-09-14-M139-one-atlas-for-the-crowd-built-the-shadow-pass-measured-and-rejected.md)):
+that drew every agent's shadow from one canvas item spanning the field, which defeated the
+per-agent culling and was measured slower and reverted; here each object still draws its own
+shadow, as now, from a picture instead of a polygon. **It prepares [silver-egret](../2026-10-03-silver-egret/README.md), a shadow is where the object
 meets the ground**, which changes the shapes themselves: the page is where those better shadows
 land, so this item does not redesign any shadow, and silver-egret's pictures replace these when it
 is built.

@@ -34,7 +34,7 @@ lag spikes are found and fixed. What each column means is in [TELEMETRY.md](../.
   (2419, 1903): 775 ms, 748 ms of it `events`. That is the lag spike the player felt ("the last
   attempt had a big lag spike").
 - **Day 14** (the densest): 8,922 kept frames over about 312 s of play, no frame longer than about
-  110 ms. The player: "No super lag spikes but a lot of stutter".
+  110 ms. The player (#703 in velvet-marten): "No super lag spikes but a lot of stutter".
 
 `docs/evidence/m159-phone-frame-record-2026-10-04/analyse.py` prints the per-bucket tables for a
 record passed as its argument. It stops at its section 6 on a file without day 1, since that

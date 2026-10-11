@@ -15,5 +15,5 @@ up, the walker slows to a stop at the obstacle, and the ones behind it queue up.
 
 > I noticed people still pile up in the pedestrian zone instaed of turning around at barriers.
 
-Filed from `later` into `now` as a note from playing. "At barriers" names the obstacle: walkers pile
+Filed from `later` into `now` as a note from playing. *The filer's reading:* "at barriers" names the obstacle: walkers pile
 up at the barriers standing in a precinct, rather than turning round in front of them.

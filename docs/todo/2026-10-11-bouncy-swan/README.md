@@ -30,8 +30,7 @@ last few minutes, slow frames marked, and the page's own button saves it. M159 h
 tools and the phone constraint ([sunny-chipmunk](../../playtests/2026-10-03-sunny-chipmunk.md)).
 The work is [find-the-spikes.md](find-the-spikes.md) and [event-placement-completes-always-and-within-a-bound.md](event-placement-completes-always-and-within-a-bound.md).
 
-**A spike's frame record is in**: [velvet-marten](../../playtests/2026-10-11-velvet-marten.md)'s day-9 record on
-v0.27.1 holds a 775 ms frame, 748 ms of it `events`, kept under
+[Velvet-marten](../../playtests/2026-10-11-velvet-marten.md)'s day-9 frame record on v0.27.1 holds a 775 ms frame, 748 ms of it `events`, kept under
 [velvet-marten-phone-records-2026-10-11](../../evidence/velvet-marten-phone-records-2026-10-11/README.md). It is not
 day 12's park sequence, which snowy-trout's review item still asks to be replayed on the phone.
 
