@@ -39,7 +39,11 @@ ordinary notice without its range and clear-line test): his notice still runs be
 closes only to his stand-off while it does, and lunges only along a clear line; off screen he comes
 on with the screen-edge badge any closing pursuer gets. The player, asked
 ([2026-10-10-curly-gecko](../playtests/2026-10-10-curly-gecko.md)): "as long as he starts pursuing
-when you hit the task it's fine". `tests/test_day13_guard.gd` holds that he ends at the roadblock
+when you hit the task it's fine". *Read as, open to correction:* the question was about a guard
+left at another roadblock, and setting every guard who has not noticed her on her at completion,
+the one in the band with a clear line included, is the filer's reading of that answer; the narrower
+reading sets only a guard who is not at the roadblock she completed on her, and leaves the one there
+to notice her as any pursuer does. `tests/test_day13_guard.gd` holds that he ends at the roadblock
 she approaches with a clear line to it, takes the ring and then the band, never moves while either
 end is in view, and, held at another roadblock while she completes the task 1,680px away, is chasing
 her on completion and reaches her stand-off within 30s; removing the clear-line rule or either view
