@@ -235,7 +235,15 @@ nothing, cannot end the day and carries no cue, and moves until it is past `Tuni
 **Three things never leave**, and each would break something that reads the finishing position: a
 `spawns_on_finish` row stops where the thing it leaves belongs; a `stops_where_it_arrives` row parks
 and stays — still emitting, still the same event (the fire engine at its fire); and anything that
-was a *place* rather than a moment is simply over. The rest is `docs/EVENTS.md`, "Going away".
+was a *place* rather than a moment is simply over. **One thing leaves and is not deleted**: the
+guard who set off from a barrier (`EventDef.body_stays_behind`) walks away at his chasing pace, and
+the instance goes back to being only the barrier, which keeps charging what a waiting roadblock
+charges throughout (the field centred on the band, a rim of its own) — so "it is over the moment it
+starts leaving" holds for the man and not for the barrier he left. He is in her view as he goes, so
+he is held to the sight rule like a car (`_leaving_must_clear_sight`) rather than vanishing on the
+6-second backstop beside her; the backstop remains for a departure with no player to be out of
+sight of. A plan streamed out while he is spent or leaving must carry that (`Planned.guard_spent`), or the barrier
+comes back armed. The rest is `docs/EVENTS.md`, "Going away".
 
 ## Pursuits
 
