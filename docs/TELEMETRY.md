@@ -843,7 +843,9 @@ none, so the hand-over to it switches the timing off and hides the page's button
 **Getting it off the device.** On a page, a `save frames` button at the top of the page saves the
 record through the browser's own download — a page element over the canvas rather than a game
 control, so a tap on it never steers her, and the download starts inside the tap that asked for
-it. On the desktop it is written to `user://frame-records/` on every scene exit, the same file each
+it. The button answers the tap: its label reads `sent to your browser: <file name>` for six
+seconds, in words that say the download was handed over and not that it finished, which the page
+cannot observe. On the desktop it is written to `user://frame-records/` on every scene exit, the same file each
 time, and the path is printed. `--frame-record --after N` with `--walk` or `--press` is a timed
 rig that quits without a screenshot, the same way `--frame-trace --after N` is, headless or not.
 
