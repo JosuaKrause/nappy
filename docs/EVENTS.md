@@ -616,7 +616,9 @@ her no nearer is always allowed, so a car she has walked up against drives on al
 away from her rather than wedging. **A car that has stood for her drives on only once she is out
 of its way**: on its route it goes on standing while she is in its lane within its warning, so it
 never pulls away into her with less than the full warning below, and a car standing for her is
-harmless however she steps in front of it. **A turn that would newly put her in front of it** within its
+harmless however she steps in front of it. **A car is created standing**, under the same rule, so
+one created in her lane within its warning waits where it was created until she is out of its way
+rather than driving off at her: being put into her path is not her stepping into its path. **A turn that would newly put her in front of it** within its
 warning — the raid's pacing car reversing at the end of its beat with her standing behind it — is
 refused the same way, and the car stands. **It gives way where the crowd's cars do**: short of a
 zebra she is waiting at on a street whose traffic gives way, and at a red light, where
@@ -667,6 +669,10 @@ picture is anchored over that body as the patrol car's is. **While it drives dow
 kerb it is lethal only in front of it**, with a car's warning: the exclamation mark `CAR_HORN_TIME`
 (1.6s) of its travel before the strike, on top of the one-second badge it already has from off screen
 (M226; inbox #598, "fire truck has heavy penalty"), so it is warned of first and again in her lane.
+That holds where it is created too. Just out of sight up a north-south street — the view's 180px
+half height plus the engine's own picture — is nearer her than its warning reaches (1.7s of its
+190px/s), so with her in its lane there it waits,
+created standing like any car, until she is out of its way; it then drives on to the kerb.
 Beside it and behind it it is a solid body that never strikes her. **Once it has parked** at the kerb
 across from the fire (`stops_where_it_arrives`) it is not driving, so it ends nothing from any side,
 and stays a solid body she walks round: it stands in the carriageway's near lane along the street, a

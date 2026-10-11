@@ -1320,6 +1320,11 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_gait_phase = 0.0
 	_gait_moving = false
 	_idle_phase_offset = _position_roll(101)
+	# **A car that drives is created standing** (`_drive()`), so it drives off only once she is out
+	# of its way. Created just out of sight on a north-south street, the fire engine is nearer her
+	# than its warning reaches, and driving from its first frame it struck her inside the time it
+	# takes to walk off the road: put into her path, which is not her stepping into its path.
+	_standing = definition.drives
 	if definition.look == EventDef.Look.MOUSE:
 		# `alley_mouse` is `MAP`-placed rather than director-sited, so it arrives here with no
 		# route at all (`EventScheduler._build_placement`'s default case) — this is the one place

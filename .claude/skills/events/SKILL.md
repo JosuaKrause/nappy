@@ -186,7 +186,7 @@ until she is out of its way. Its `obstructs_radius` stays zero — it closes no 
 lethality is **a strike area ahead of its nose, only while it drives its route, only with her on
 the carriageway**, reaching `Tuning.PATROL_STRIKE_LEAD` past the touch so a car driving its nose
 into her strikes rather than stands. It gives way where the crowd's cars do — short of a zebra she
-is waiting at off the main road, and at a red light — so the zebra stays the safe way over. Four
+is waiting at off the main road, and at a red light — so the zebra stays the safe way over. Six
 traps:
 
 - **A strike stated over the touch alone never fires**, because the body stops her first — the
@@ -197,6 +197,11 @@ traps:
   her stepping into a moving car's path — the crowd car's contract, the carriageway and the horn,
   which is the one it keeps instead of a telegraph (**crowd-traffic**, "The traffic fairness
   contract").
+- **A car created in her lane must not drive off at her.** Just out of sight up a north-south
+  street is nearer her than a fast car's warning reaches — the fire engine's 1.7s of 190px/s
+  against the view's 180px half height — so one driving from its first frame strikes her inside
+  the time it takes to walk off the road. A car that drives is created standing
+  (`EventInstance.setup()`), so it waits until she is out of its way, as a car that has stood does.
 - **A heading change that newly brings her inside its warning's reach is refused like a step into
   her.** A turn moves nothing, so the body check passes it — and the raid's pacing car reversing at
   the end of its beat turns her from behind a car driving away into the front of one, struck with

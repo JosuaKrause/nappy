@@ -44,6 +44,12 @@ func _car(t, def: EventDef, route: PackedVector2Array, map: CityMap = null) -> E
 	car.set_process(false)
 	return car
 
+## `car` as one already driving its route with her ahead of it, the state a car closing on her is
+## in. A car is created standing (`EventInstance.setup()`) and would go on standing for her on its
+## first frame, so a rig that asks about the warning over a driving car puts it in that state.
+func _already_driving(car: EventInstance) -> void:
+	car._standing = false
+
 ## Her real rig, facing `facing`, with the pram body on her circumference as `_physics_process()`
 ## puts it.
 func _her(t, at: Vector2, facing: Vector2) -> Stroller:
@@ -665,6 +671,7 @@ func _test_its_caret_stands_over_its_picture(t) -> void:
 	var car := _car(t, _patrol(), PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)]))
 	var player := _her(t, Vector2(200.0, 0.0), Vector2.LEFT)
 	_tell(car, player)
+	_already_driving(car)
 	var rect := car.mark_rect()
 	var anchor := car._police_car_anchor("side")
 	t.check(rect.has_area(), "the car in front of her is marked")
@@ -763,6 +770,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t) -> void:
 	var car := _car(t, _patrol(), PackedVector2Array([Vector2.ZERO, Vector2(800.0, 0.0)]))
 	var player := _her(t, Vector2(150.0, 0.0), Vector2.LEFT)
 	_tell(car, player)
+	_already_driving(car)
 	var source := GDScript.new()
 	source.source_code = "extends Node\nvar list: Array[EventInstance] = []\n" \
 			+ "func instances() -> Array[EventInstance]:\n\treturn list\n"
