@@ -10,6 +10,8 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const CONTEXT := 1917501
 ## An alley mouth of that city, the mark most task scenes start at.
 const MOUTH := Vector2i(92, 69)
+## The tile one step into that alley from the mouth, where its mark stands.
+const MARK := Vector2i(92, 68)
 
 func run(t) -> void:
 	_test_the_schema_names_a_mark_on_the_days_that_have_one(t)
@@ -24,7 +26,9 @@ func run(t) -> void:
 			"tiles": GameState.completed_resistance_alley_tiles.duplicate(),
 			"state": GameState.city_state}
 	_test_a_pinned_mark_is_read_and_its_task_placed_near_it(t)
-	_test_a_mark_off_an_alley_mouth_is_refused_not_moved(t)
+	_test_a_mark_is_touched_only_from_inside_its_alley(t)
+	_test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t)
+	_test_a_mark_off_the_tile_in_from_a_mouth_is_refused_not_moved(t)
 	_test_a_neighbor_start_the_day_could_not_draw_is_refused(t)
 	_test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t)
 	GameState.day = saved.day
@@ -134,9 +138,9 @@ func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t) -> void:
 	var city: City = made[0]
 	var director: ResistanceDirector = made[1]
 	var map := city.map
-	var mark := map.tile_to_world(MOUTH)
+	var mark := map.tile_to_world(MARK)
 	var errors := director.start_recipe_task(7, GameState.day_rng(7, "resistance"), 300.0, mark)
-	t.check(errors.is_empty(), "a mark at an alley mouth is accepted: %s" % [errors])
+	t.check(errors.is_empty(), "a mark one tile in from an alley mouth is accepted: %s" % [errors])
 	# *(Inbox #555, "Unread, walk to it".)* The scene begins with the mark standing unread and no
 	# task on offer; a touch reads it and the task is placed then.
 	t.check(director._read_mark == null and director._contact != null
@@ -163,7 +167,53 @@ func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t) -> void:
 	director.free()
 	city.free()
 
-func _test_a_mark_off_an_alley_mouth_is_refused_not_moved(t) -> void:
+## *(feathery-hare; azure-puffin, inbox #664: "let's move the chalk mark one tile into the alley so
+## I actually have to enter the alley to activate it".)* The mark's centre is 48px in from the
+## street's edge and a touch reaches 36px: her centre 14px inside the alley (her body wholly past the
+## edge) touches it, standing on the pavement at the mouth, body wholly outside, does not, nor does
+## the centre on the street's edge.
+func _test_a_mark_is_touched_only_from_inside_its_alley(t) -> void:
+	var made := _day(t, 7)
+	var city: City = made[0]
+	var director: ResistanceDirector = made[1]
+	var map := city.map
+	var mark := map.tile_to_world(MARK)
+	var errors := director.start_recipe_task(7, GameState.day_rng(7, "resistance"), 300.0, mark)
+	t.check(errors.is_empty(), "the mark is accepted: %s" % [errors])
+	var outward := Vector2(MOUTH - MARK)
+	var street_edge := mark + outward * Tuning.TILE_SIZE * 1.5
+	var body := Tuning.PLAYER_BODY_RADIUS
+	t.check(director._contact.would_complete_at(street_edge - outward * body),
+			"standing in the alley, her body wholly past the street's edge, touches the mark")
+	t.check(not director._contact.would_complete_at(street_edge + outward * body),
+			"standing on the pavement at the mouth, her body wholly outside it, does not")
+	t.check(not director._contact.would_complete_at(street_edge),
+			"nor does her centre on the street's edge")
+	director.free()
+	city.free()
+
+## The guard keeps his distance from the mark (M213's floor and quiet-yak's "Two-thirds wins" weigh
+## exactly as before): a mark one tile in has him one tile further in than for a mark on the mouth.
+func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t) -> void:
+	var made := _day(t, 7)
+	var city: City = made[0]
+	var director: ResistanceDirector = made[1]
+	var map := city.map
+	var rng := RandomNumberGenerator.new()
+	var at_mouth := map.tile_to_world(MOUTH)
+	var at_mark := map.tile_to_world(MARK)
+	var from_mouth := director._guard_position(rng, at_mouth, true, Vector2.INF, false)
+	var from_mark := director._guard_position(rng, at_mark, true, Vector2.INF, false)
+	t.check(from_mouth != Vector2.INF and from_mark != Vector2.INF, "both marks get a guard")
+	t.check(is_equal_approx(from_mouth.distance_to(at_mouth), from_mark.distance_to(at_mark)),
+			"at the same distance from the mark (%.1fpx, %.1fpx)"
+			% [from_mouth.distance_to(at_mouth), from_mark.distance_to(at_mark)])
+	t.check(from_mark.distance_to(from_mouth) > Tuning.TILE_SIZE * 0.9,
+			"one tile further in")
+	director.free()
+	city.free()
+
+func _test_a_mark_off_the_tile_in_from_a_mouth_is_refused_not_moved(t) -> void:
 	var made := _day(t, 7)
 	var city: City = made[0]
 	var director: ResistanceDirector = made[1]
@@ -174,9 +224,13 @@ func _test_a_mark_off_an_alley_mouth_is_refused_not_moved(t) -> void:
 			"the probe stands inside the mark's own alley, not at its mouth")
 	var errors := director.start_recipe_task(7, GameState.day_rng(7, "resistance"), 300.0,
 			map.tile_to_world(inside))
-	t.check("\n".join(errors).contains("is not an alley mouth"),
+	t.check("\n".join(errors).contains("is not one tile in from an alley mouth"),
 			"a mark in the middle of an alley is refused: %s" % [errors])
 	t.check(director.current_step() == null, "and nothing is offered in its place")
+	errors = director.start_recipe_task(7, GameState.day_rng(7, "resistance"), 300.0,
+			map.tile_to_world(MOUTH))
+	t.check("\n".join(errors).contains("is not one tile in from an alley mouth"),
+			"and so is one on the mouth's own tile: %s" % [errors])
 	director.free()
 	city.free()
 
@@ -185,7 +239,7 @@ func _test_a_neighbor_start_the_day_could_not_draw_is_refused(t) -> void:
 	var city: City = made[0]
 	var director: ResistanceDirector = made[1]
 	var map := city.map
-	var mark := map.tile_to_world(Vector2i(66, 146))
+	var mark := map.tile_to_world(ResistanceDirector.mark_tile_of(map, Vector2i(66, 146)))
 	# A sidewalk a block from her door: a few tiles of walk from home, nowhere near the band of
 	# about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of walk the day draws a start from.
 	var near_home := Vector2i(62, 84)
@@ -209,7 +263,7 @@ func _test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t) -> void:
 	var made := _day(t, 11)
 	var city: City = made[0]
 	var director: ResistanceDirector = made[1]
-	var mark := city.map.tile_to_world(MOUTH)
+	var mark := city.map.tile_to_world(MARK)
 	var errors := director.start_recipe_task(11, GameState.day_rng(11, "resistance"), 300.0, mark)
 	t.check(errors.is_empty(), "day 11's mark is accepted: %s" % [errors])
 	director._contact.complete_now()

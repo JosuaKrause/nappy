@@ -45,7 +45,7 @@ func run(t) -> void:
 	_test_a_relocation_never_retires_a_guard_in_view_or_awake(t)
 	_test_the_guard_never_lands_inside_a_building(t)
 	_test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t)
-	_test_a_mark_only_ever_sits_at_an_alley_mouth(t)
+	_test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t)
 	_test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t)
 	_test_a_long_alleys_robber_stands_two_thirds_in_past_his_trigger(t)
 	_test_reading_a_mark_never_lands_her_in_his_catch(t)
@@ -720,11 +720,14 @@ func _rig_player(t, at: Vector2) -> Stroller:
 	player.global_position = at
 	return player
 
-## The world position of a through-alley tile more than `min_distance` from `at`, or `Vector2.INF`
+## The world position of a through-alley tile where a mark stands (one in from a mouth) more than
+## `min_distance` from `at`, or `Vector2.INF`
 ## if the test city has none. Used to put her far enough from the mark that the re-placement
 ## rule has to fire.
 func _alley_farther_than(min_distance: float, at: Vector2) -> Vector2:
 	for tile in _through_alleys():
+		if not _is_one_in_from_a_mouth(_city.map, tile):
+			continue
 		var world := _city.map.tile_to_world(tile)
 		if world.distance_to(at) > min_distance:
 			return world
@@ -1024,11 +1027,12 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 		var director := _director(t)
 		director.start_day(6, _rng(6, "resistance"), 300.0)
 		var refused := 0
-		var all_mouths := director._alley_mouths().duplicate()
-		for tile: Vector2i in all_mouths:
+		var all_marks := director._mark_tiles().duplicate()
+		for tile: Vector2i in all_marks:
 			var mark := _city.map.tile_to_world(tile)
 			var only: Array[Vector2i] = [tile]
 			director._mouths = only
+			director._mark_tiles_of_mouths = only
 			director._mouths_of = _city.map
 			# The mark's centre at these shares of the corner, its whole picture inside it.
 			for share: Vector2 in [Vector2(0.2, 0.8), Vector2(0.5, 0.5), Vector2(0.8, 0.8),
@@ -1049,6 +1053,7 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 						% [tile, share])
 		var none: Array[Vector2i] = []
 		director._mouths = none
+		director._mark_tiles_of_mouths = none
 		t.check(refused > 0, "relocations under the covered corner were asked (%d)" % refused)
 		director.free()
 
@@ -1427,15 +1432,16 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 			"a band with no walkable ground anywhere in it draws no guard at all")
 	director.free()
 
-## feathery-marmot, "a mark only ever sits at an alley's mouth" — *"Mouth only"* (the player,
-## 2026-10-03, quiet-yak, inbox #486, asked whether a mark may sit in the middle of its alley). Over six cities, forty dawn
+## feathery-marmot, "a mark's alley is chosen by its mouth" — *"Mouth only"* (the player,
+## 2026-10-03, quiet-yak, inbox #486, asked whether a mark may sit in the middle of its alley), and
+## feathery-hare, the mark stands one tile in from it (azure-puffin, inbox #664: "let's move the
+## chalk mark one tile into the alley so I actually have to enter the alley to activate it"). Over six cities, forty dawn
 ## draws each (`_place()`, the call `start_day()` makes) and a relocation asked from every
 ## twentieth alley tile and from a point 300px off it in four directions (`_nearest_alley_within()`,
-## the call every move makes): every mark lands on a mouth, found here independently of the
-## director — a through-alley's end tile along its long axis, or a passage tile beside ground that
-## is neither alley nor courtyard. Before, the dawn draw was uniform over every alley tile, an end
-## tile one draw in four, and a relocation took the nearest alley tile of any kind.
-func _test_a_mark_only_ever_sits_at_an_alley_mouth(t) -> void:
+## the call every move makes): every mark lands one tile in from a mouth, found here independently
+## of the director — a through-alley's end tile along its long axis, or a passage tile beside ground
+## that is neither alley nor courtyard — and never on the mouth itself.
+func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t) -> void:
 	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
 	GameState.completed_resistance_alley_tiles = []
 	var mark_step := ResistanceSteps.by_index(1)
@@ -1454,7 +1460,7 @@ func _test_a_mark_only_ever_sits_at_an_alley_mouth(t) -> void:
 			if at == Vector2.INF:
 				continue
 			drawn += 1
-			if _is_a_mouth(map, map.world_to_tile(at)):
+			if _is_one_in_from_a_mouth(map, map.world_to_tile(at)):
 				drawn_at_a_mouth += 1
 		var alleys := map.tiles_of_type(GameEnums.TileType.ALLEY)
 		for i in range(0, alleys.size(), 20):
@@ -1465,14 +1471,36 @@ func _test_a_mark_only_ever_sits_at_an_alley_mouth(t) -> void:
 				if to == Vector2.INF:
 					continue
 				moved += 1
-				if _is_a_mouth(map, map.world_to_tile(to)):
+				if _is_one_in_from_a_mouth(map, map.world_to_tile(to)):
 					moved_to_a_mouth += 1
 		director.free()
 	GameState.completed_resistance_alley_tiles = saved_tiles
 	t.check(drawn > 0 and drawn_at_a_mouth == drawn,
-			"every dawn mark is drawn at an alley's mouth (%d of %d)" % [drawn_at_a_mouth, drawn])
+			"every dawn mark is drawn one tile in from an alley's mouth (%d of %d)"
+			% [drawn_at_a_mouth, drawn])
 	t.check(moved > 0 and moved_to_a_mouth == moved,
 			"and every relocation lands on one (%d of %d)" % [moved_to_a_mouth, moved])
+
+## Whether `tile` is the one a mark stands on, worked out from the map alone: the second or the
+## second-to-last tile of a through-alley along its long axis, or the walkable alley or courtyard
+## tile beside a courtyard passage's mouth that is not itself a mouth.
+static func _is_one_in_from_a_mouth(map: CityMap, tile: Vector2i) -> bool:
+	for rect in map.alley_rects:
+		if rect.has_point(tile):
+			var vertical := rect.size.y >= rect.size.x
+			var along := tile.y - rect.position.y if vertical else tile.x - rect.position.x
+			var length := rect.size.y if vertical else rect.size.x
+			return along == 1 or along == length - 2
+	var type := map.tile_at(tile)
+	if not map.is_walkable(tile) or (type != GameEnums.TileType.ALLEY \
+			and type != GameEnums.TileType.COURTYARD):
+		return false
+	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var beside := tile + step
+		if map.tile_at(beside) == GameEnums.TileType.ALLEY and _is_a_mouth(map, beside) \
+				and not _is_a_mouth(map, tile):
+			return true
+	return false
 
 ## An alley's mouth, worked out from the map alone: the end tile of a through-alley along its long
 ## axis, or a courtyard passage's tile beside walkable ground that is neither alley nor courtyard.
@@ -1531,7 +1559,10 @@ func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t) -> void:
 			var axis := (ends[1] - ends[0]).normalized()
 			var near_edge := ends[0] - axis * Tuning.TILE_SIZE * 0.5
 			var length := ends[0].distance_to(ends[1]) + Tuning.TILE_SIZE
-			var two_thirds := near_edge + axis * length * 2.0 / 3.0
+			# A mark one tile in from its mouth's centre moves the guard in by that tile too.
+			var tile_in := clampf((mark - near_edge).dot(axis) - Tuning.TILE_SIZE * 0.5, 0.0,
+					Tuning.TILE_SIZE)
+			var two_thirds := near_edge + axis * (length * 2.0 / 3.0 + tile_in)
 			var catch_floor := mark + axis * min_distance
 			var expected := two_thirds
 			if (two_thirds - near_edge).dot(axis) < (catch_floor - near_edge).dot(axis):
