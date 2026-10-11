@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import itertools
 import tempfile
 import unittest
 import urllib.error
@@ -1006,6 +1007,144 @@ class MainTests(unittest.TestCase):
             goatcounter.main(["--raw", "--check"])
         self.assertNotEqual(raised.exception.code, 0)
         self.assertIn("usage", stderr.getvalue().lower())
+
+
+def utc(month: int, day: int, hour: int = 12) -> datetime:
+    return datetime(2026, month, day, hour, tzinfo=UTC)
+
+
+# Tags as git prints them: v1.0.0 on the 3rd, v1.1.0 on the 7th, v1.1.1 at 22:30 on the 7th at
+# UTC-4, which is already the 8th in UTC, v1.2.0 on the 12th.
+TAGS = [
+    ("v1.0.0", utc(10, 3)),
+    ("v1.1.0", utc(10, 7, 9)),
+    ("v1.1.1", datetime.fromisoformat("2026-10-07T22:30:00-04:00")),
+    ("v1.2.0", utc(10, 12)),
+]
+
+
+class ReleaseWindowTests(unittest.TestCase):
+    def test_a_window_runs_from_a_release_day_to_the_next_and_the_days_before_the_first_stand_alone(self) -> None:
+        windows = goatcounter.release_windows(TAGS, utc(10, 1, 0), utc(10, 20, 0))
+        self.assertEqual(
+            [(w.releases, w.start.day, w.end.day) for w in windows],
+            [((), 1, 3), (("v1.0.0",), 3, 7), (("v1.1.0",), 7, 8), (("v1.1.1",), 8, 12), (("v1.2.0",), 12, 20)],
+        )
+
+    def test_two_releases_on_one_utc_day_are_one_mixed_window_carrying_both(self) -> None:
+        tags = [("v1.0.0", utc(10, 3)), ("v1.0.1", utc(10, 7, 9)), ("v1.0.2", utc(10, 7, 20)), ("v1.1.0", utc(10, 12))]
+        windows = goatcounter.release_windows(tags, utc(10, 1, 0), utc(10, 20, 0))
+        mixed = [w for w in windows if w.mixed]
+        self.assertEqual(len(mixed), 1)
+        self.assertEqual(mixed[0].releases, ("v1.0.1", "v1.0.2"))
+        self.assertEqual((mixed[0].start.day, mixed[0].end.day), (7, 12))
+        self.assertEqual(mixed[0].label, "mixed day: v1.0.1, v1.0.2")
+
+    def test_a_tag_made_late_in_a_us_evening_belongs_to_the_next_utc_day(self) -> None:
+        windows = goatcounter.release_windows(TAGS, utc(10, 1, 0), utc(10, 20, 0))
+        self.assertEqual([w.releases for w in windows if w.start.day == 8], [("v1.1.1",)])
+
+    def test_the_days_before_the_first_release_are_a_window_with_no_release(self) -> None:
+        windows = goatcounter.release_windows(TAGS, utc(10, 1, 0), utc(10, 20, 0))
+        self.assertEqual(windows[0].releases, ())
+        self.assertEqual(windows[0].label, "before the first release")
+        self.assertEqual((windows[0].start, windows[0].end), (utc(10, 1, 0), utc(10, 3, 0)))
+
+    def test_a_range_opening_inside_a_release_clips_that_release_and_drops_the_earlier_ones(self) -> None:
+        windows = goatcounter.release_windows(TAGS, utc(10, 5, 0), utc(10, 9, 0))
+        self.assertEqual([w.releases for w in windows], [("v1.0.0",), ("v1.1.0",), ("v1.1.1",)])
+        self.assertEqual(windows[0].start, utc(10, 5, 0))
+        self.assertEqual(windows[-1].end, utc(10, 9, 0))
+
+    def test_the_windows_tile_the_range_without_gaps_or_overlap(self) -> None:
+        start, end = utc(10, 1, 0), utc(10, 20, 0)
+        windows = goatcounter.release_windows(TAGS, start, end)
+        self.assertEqual(windows[0].start, start)
+        self.assertEqual(windows[-1].end, end)
+        for before, after in itertools.pairwise(windows):
+            self.assertEqual(before.end, after.start)
+
+
+class ByReleaseCountTests(unittest.TestCase):
+    def fetcher(self) -> Callable[[dict[str, Any]], dict[str, Any]]:
+        # Every window sees one began hit whose count is the day-of-month its window opens on.
+        def fetch(params: dict[str, Any]) -> dict[str, Any]:
+            opened = goatcounter.parse_moment(params["start"])
+            return {"hits": [hit("nappy-day-1-began", opened.day, 1)], "more": False}
+
+        return fetch
+
+    def test_each_window_is_read_over_its_own_range(self) -> None:
+        windows = goatcounter.release_windows(TAGS, utc(10, 1, 0), utc(10, 20, 0))
+        results = goatcounter.fetch_windows(self.fetcher(), windows)
+        counts = [goatcounter.group_hits(hits, "nappy-")["days"][1]["began"] for hits in results]
+        self.assertEqual(counts, [1, 3, 7, 8, 12])
+
+    def test_the_funnel_prints_one_section_per_window_with_the_mixed_days_named(self) -> None:
+        tags = [("v1.0.0", utc(10, 3)), ("v1.0.1", utc(10, 7, 9)), ("v1.0.2", utc(10, 7, 20))]
+        stdout = io.StringIO()
+        with (
+            mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "secret"}, clear=True),
+            mock.patch.object(goatcounter, "make_fetcher", return_value=self.fetcher()),
+            mock.patch.object(goatcounter, "read_release_tags", return_value=tags),
+            redirect_stdout(stdout),
+        ):
+            code = goatcounter.main(["--start", "2026-10-01", "--end", "2026-10-20", "--by-release"])
+        self.assertEqual(code, 0)
+        text = stdout.getvalue()
+        self.assertIn("=== before the first release -- 2026-10-01T00:00:00Z to 2026-10-03T00:00:00Z ===", text)
+        self.assertIn("=== v1.0.0 -- 2026-10-03T00:00:00Z to 2026-10-07T00:00:00Z ===", text)
+        self.assertIn("=== mixed day: v1.0.1, v1.0.2 -- 2026-10-07T00:00:00Z to 2026-10-20T00:00:00Z ===", text)
+        self.assertIn("nappy-day-1-began: 7", text)
+
+    def test_encounters_work_by_release_and_json_carries_the_windows(self) -> None:
+        import json
+
+        def fetch(_params: dict[str, Any]) -> dict[str, Any]:
+            return {
+                "hits": [hit("nappy-day-1-seen-fire-truck", 4, 1), hit("nappy-day-1-influenced-fire-truck", 1, 2)],
+                "more": False,
+            }
+
+        stdout = io.StringIO()
+        with (
+            mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "secret"}, clear=True),
+            mock.patch.object(goatcounter, "make_fetcher", return_value=fetch),
+            mock.patch.object(goatcounter, "read_release_tags", return_value=TAGS),
+            redirect_stdout(stdout),
+        ):
+            code = goatcounter.main(
+                ["--start", "2026-10-01", "--end", "2026-10-20", "--by-release", "--encounters", "--json"]
+            )
+        self.assertEqual(code, 0)
+        windows = json.loads(stdout.getvalue())["windows"]
+        self.assertEqual(len(windows), 5)
+        self.assertEqual(windows[0]["releases"], [])
+        self.assertEqual(windows[2]["releases"], ["v1.1.0"])
+        self.assertEqual(windows[1]["result"]["overall"]["fire-truck"]["seen"], 4)
+
+    def test_by_release_with_raw_or_check_is_rejected_before_the_token_check_and_any_network_call(self) -> None:
+        for other in ("--raw", "--check"):
+            stderr = io.StringIO()
+            with mock.patch.dict("os.environ", {}, clear=True), redirect_stderr(stderr):
+                code = goatcounter.main(["--by-release", other])
+            self.assertEqual(code, 2, other)
+            self.assertIn("--by-release", stderr.getvalue())
+
+    def test_a_repository_without_release_tags_fails_before_any_network_call(self) -> None:
+        def never(*_args: Any, **_kwargs: Any) -> Any:
+            raise AssertionError("make_fetcher must not be called without tags")
+
+        stderr = io.StringIO()
+        with (
+            mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "secret"}, clear=True),
+            mock.patch.object(goatcounter, "make_fetcher", side_effect=never),
+            mock.patch.object(goatcounter, "read_release_tags", side_effect=goatcounter.GoatCounterError("no v* tags")),
+            redirect_stderr(stderr),
+        ):
+            code = goatcounter.main(["--by-release"])
+        self.assertEqual(code, 1)
+        self.assertIn("no v* tags", stderr.getvalue())
 
 
 if __name__ == "__main__":

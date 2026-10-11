@@ -49,7 +49,9 @@ flags a browser driven by WebDriver as a bot, which GoatCounter does not count, 
 it: it switches off the run log, and the counter writes none.
 
 `tools/goatcounter.sh` reads the site back with its read-only API key in `GOATCOUNTER_TOKEN`: the
-events as a funnel, and the page visit among every path under `--raw`. Its `--site` option and the
+events as a funnel, and the page visit among every path under `--raw`. `--by-release` splits the
+funnel (or `--encounters`) into one window per release, from the `v*` tags' dates in git, a day with
+several releases being one mixed window. Its `--site` option and the
 old site's key read that site's history.
 
 **The game counts how far a run gets, as anonymous GoatCounter events.**
