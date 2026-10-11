@@ -277,6 +277,15 @@ const _BUTTON_JS := """window.nappyFrameRecordHide = function () {
 	var shown = document.getElementById('nappy-frame-record');
 	if (shown) { shown.style.display = 'none'; }
 };
+window.nappyFrameRecordSent = function (name) {
+	var button = document.getElementById('nappy-frame-record');
+	if (!button) { return; }
+	button.textContent = 'sent to your browser: ' + name;
+	clearTimeout(window.nappyFrameRecordTimer);
+	window.nappyFrameRecordTimer = setTimeout(function () {
+		button.textContent = 'save frames';
+	}, 6000);
+};
 window.nappyFrameRecordButton = function (save) {
 	window.nappyFrameRecordSave = save;
 	var shown = document.getElementById('nappy-frame-record');
@@ -295,8 +304,13 @@ window.nappyFrameRecordButton = function (save) {
 	document.body.appendChild(button);
 };"""
 
+## The tap's answer: the button's label says the file was handed to the browser, with its name,
+## for six seconds. It does not say the download finished, which the page cannot observe.
 func _on_page_save(_arguments: Array) -> void:
-	save()
+	var file_name := save()
+	var window := JavaScriptBridge.get_interface("window")
+	if window != null and file_name != "":
+		window.call("nappyFrameRecordSent", file_name)
 
 func _refresh_hz() -> float:
 	if DisplayServer.get_name() == "headless":
