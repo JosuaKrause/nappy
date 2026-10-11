@@ -437,8 +437,11 @@ func _draw_bodies() -> void:
 	for node in collision_nodes_under(_player):
 		_draw_collision_node(node)
 	for agent in _strike_box_agents():
-		_draw_closed_polyline(_rect_corners(agent.global_position, agent.heading(),
-				Vector2(Tuning.CAR_STRIKE_HALF_LENGTH, Tuning.CAR_STRIKE_HALF_WIDTH)), FIELD_LETHAL)
+		# The front half only: from the car's centre forward, the same box `Crowd._strike()` tests.
+		var forward := agent.heading()
+		var half := Tuning.CAR_STRIKE_HALF_LENGTH * 0.5
+		_draw_closed_polyline(_rect_corners(agent.global_position + forward * half, forward,
+				Vector2(half, Tuning.CAR_STRIKE_HALF_WIDTH)), FIELD_LETHAL)
 
 ## How many outlines `_draw_bodies()` draws right now — the same `collision_nodes_under()` lists it
 ## draws from, plus a fast car's own strike box. The seam `tests/test_debug_layers.gd` checks

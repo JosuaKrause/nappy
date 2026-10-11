@@ -528,9 +528,10 @@ contacts still compose by plain addition, there is still no ordering to get wron
 ### A car is lethal
 
 Stepping into the carriageway in front of a moving car ends the day (`hard_fail`
-`car_strike`). The strike volume is a **box** — 26px along the car, 14px across — because a
-car is two tiles long and one wide, and a radius that covered its length would kill people
-standing beside it. It only counts while she is standing on a road tile, and a car below
+`car_strike`). The strike volume is a **box** — 26px along the car, 14px either side of its
+axis — from the car's centre forward, so it is the front half of the car and its sides; behind a
+car that drives away from her she is safe. A box rather than a radius, because a car is two tiles
+long and one wide and a radius that covered its length would kill people standing beside it. It only counts while she is standing on a road tile, and a car below
 `20 px/s` cannot run anybody over, so a car halted at a zebra is scenery.
 
 ### The traffic fairness contract

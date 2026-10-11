@@ -1289,7 +1289,7 @@ func expected_impact_at(player_position: Vector2) -> float:
 ## Whether this car's own strike box reaches her at some point before
 ## `Tuning.EXPECTED_IMPACT_HORIZON`, on its current course, her position held fixed — a car's
 ## equivalent of `EventInstance.will_be_lethal()`, over the same rectangle `Crowd._strike()` tests
-## for the actual collision. Never true for a walker: nothing about a pedestrian ends the day, and
+## for the actual collision: the car's front half, from its centre forward. Never true for a walker: nothing about a pedestrian ends the day, and
 ## never true for a car already too slow to strike at all (`Crowd._strike()`'s own guard).
 func will_be_lethal(player_position: Vector2) -> bool:
 	if kind != Kind.CAR or _speed < Tuning.CAR_STRIKE_MIN_SPEED:
@@ -1297,14 +1297,20 @@ func will_be_lethal(player_position: Vector2) -> bool:
 	var vel := velocity()
 	var forward := heading()
 	var side := Vector2(-forward.y, forward.x)
-	var dt := 0.25
-	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
-	for i in steps + 1:
-		var offset := player_position - (global_position + vel * (float(i) * dt))
-		if absf(offset.dot(forward)) <= Tuning.CAR_STRIKE_HALF_LENGTH \
-				and absf(offset.dot(side)) <= Tuning.CAR_STRIKE_HALF_WIDTH:
-			return true
-	return false
+	var offset := player_position - global_position
+	if absf(offset.dot(side)) > Tuning.CAR_STRIKE_HALF_WIDTH:
+		return false
+	# The box is the car's front half, 26px long, and a fast car covers more than that between
+	# two samples, so the question is answered on the line rather than by stepping: the car
+	# closes on her at `closing` px/s along its heading, and she is struck when the distance
+	# ahead of its centre falls into [0, CAR_STRIKE_HALF_LENGTH] within the horizon.
+	var ahead := offset.dot(forward)
+	if ahead < 0.0:
+		return false
+	var closing := vel.dot(forward)
+	if closing <= 0.0:
+		return ahead <= Tuning.CAR_STRIKE_HALF_LENGTH
+	return (ahead - Tuning.CAR_STRIKE_HALF_LENGTH) / closing <= Tuning.EXPECTED_IMPACT_HORIZON
 
 ## Duck-typed with `EventInstance`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
 ## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this

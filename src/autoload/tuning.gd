@@ -1390,7 +1390,10 @@ const BUMP_INNER_RADIUS := 30.0
 const BUMP_OUTER_RADIUS := 62.0
 
 ## The car's body, as a box rather than a circle: a car is two tiles long and one wide, and a
-## radius that covered its length would kill people standing beside it.
+## radius that covered its length would kill people standing beside it. The body is symmetric about
+## the car's centre, but only its *front half* kills (`Crowd._strike()`): the box runs from the
+## centre forward `CAR_STRIKE_HALF_LENGTH` and `CAR_STRIKE_HALF_WIDTH` either side of the axis, so
+## nobody dies behind a car that drives away from them.
 const CAR_STRIKE_HALF_LENGTH := 26.0
 const CAR_STRIKE_HALF_WIDTH := 14.0
 ## Below this a car cannot run anybody over, however close they stand to it. A car halted at a
