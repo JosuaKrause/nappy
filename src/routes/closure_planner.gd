@@ -75,7 +75,7 @@ static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
 	# day that closes nothing says so, rather than leaving yesterday's fallen tree missing from the
 	# row. See `CityMap.set_closure_tree_pits`.
 	map.set_closure_tree_pits([] as Array[Vector2i])
-	var wanted := Tuning.closures_for_day(day)
+	var wanted := closures_wanted(day)
 	if wanted <= 0:
 		return chosen
 
@@ -125,6 +125,23 @@ static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
 					% [day, TelemetryLog.tile(segment.a)])
 	map.set_closure_tree_pits(emptied)
 	return chosen
+
+## How many streets the day closes: `Tuning.closures_for_day()`, and from
+## `Tuning.REGION_WALL_FIRST_DAY` on only `Tuning.GATEHOUSE_DAY_CLOSURE_SHARE` of that, rounded to
+## the nearest street. *(azure-puffin, point 4: "when the guard houses are set up the city gets much
+## harder to navigate let's loosen the density of the hard blocking events in that case"; "fewer of
+## all three".)* A closure is one of the three hard blockers off the tree, with the seals and the
+## wall-role catalogue rows, and the region wall dividing the city from that day is what made the
+## three together too much.
+##
+## **Fewer closures can only add ground she can reach** — every closure is off the tree and is only
+## ever a barrier — so the invariant below is no harder to keep with a smaller quota, and the day's
+## candidate order is unchanged: the same streets are tried first, and the quota stops sooner.
+static func closures_wanted(day: int) -> int:
+	var wanted := Tuning.closures_for_day(day)
+	if day >= Tuning.REGION_WALL_FIRST_DAY:
+		wanted = roundi(wanted * Tuning.GATEHOUSE_DAY_CLOSURE_SHARE)
+	return wanted
 
 ## The street the front door opens onto. Never closable — the home is a notch in a block with
 ## one exit, so sealing it seals the player in. docs/CITY.md states that exemption; this is where

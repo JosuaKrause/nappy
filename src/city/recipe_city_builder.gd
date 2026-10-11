@@ -267,7 +267,7 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 		errors.append("closure.day: explicit setup.day is required for closure eligibility")
 		return
 	var day := int(setup.day)
-	if pins.size() > Tuning.closures_for_day(day):
+	if pins.size() > ClosurePlanner.closures_wanted(day):
 		errors.append("closure.count: exceeds the ordinary day's closure budget")
 		return
 	var state := CityState.new()

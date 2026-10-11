@@ -102,9 +102,9 @@ func _test_closure_counts_follow_the_act(t) -> void:
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var closures := _plan(map, day)
-			t.check(closures.size() <= Tuning.closures_for_day(day),
+			t.check(closures.size() <= ClosurePlanner.closures_wanted(day),
 					"seed %d day %d shuts at most the act's %d streets"
-					% [map.seed_used, day, Tuning.closures_for_day(day)])
+					% [map.seed_used, day, ClosurePlanner.closures_wanted(day)])
 			for closure in closures:
 				t.check(day >= int(RoadClosure.KINDS[closure.kind]["first_day"]),
 						"seed %d day %d: %s cannot happen yet"
