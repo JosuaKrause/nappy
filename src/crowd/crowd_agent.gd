@@ -1552,13 +1552,32 @@ func heading() -> Vector2:
 ## front of it* — the axis, the corridor, the lane and the way it is pointing. Two agents share
 ## a queue exactly when they share this. `Crowd` buckets on it once per frame rather than
 ## comparing every car against every other one.
-func lane_key() -> String:
+func lane_key() -> int:
 	return make_lane_key(_vertical, _corridor, _lane, _direction)
 
 ## The same key for a lane this agent is not in yet, which is what a car needs to ask whether the
 ## arm it is about to turn into has anybody in it.
-static func make_lane_key(vertical: bool, corridor: int, lane: int, direction: float) -> String:
-	return "%s:%d:%d:%d" % ["v" if vertical else "h", corridor, lane, signi(int(direction))]
+##
+## **An integer, packed from the four parts** (`_LANE_KEY_SLOTS` values each for the corridor and the
+## lane, one bit for the axis and two for the direction), because the key is built several times
+## for every car every tick and a formatted string was the largest single cost of the queue resolve.
+## Two lanes share a key exactly when the string version of it matched: the parts are offset so
+## that a corridor or lane of -1 (none) packs without colliding with a real one.
+static func make_lane_key(vertical: bool, corridor: int, lane: int, direction: float) -> int:
+	return (((corridor + 1) * _LANE_KEY_SLOTS + lane + 1) * 2 + (1 if vertical else 0)) * 4 \
+			+ signi(int(direction)) + 1
+
+## How many lanes (and so how many corridors) the packed key tells apart; both are far fewer.
+const _LANE_KEY_SLOTS := 64
+
+## The four parts a packed lane key was made from, in `make_lane_key()`'s argument order, for a
+## suite that stands a car in the lane a key names. The direction comes back as -1, 0 or 1.
+static func lane_key_parts(key: int) -> Array:
+	var direction := key % 4 - 1
+	var rest := key / 4
+	var vertical := rest % 2 == 1
+	rest /= 2
+	return [vertical, rest / _LANE_KEY_SLOTS - 1, rest % _LANE_KEY_SLOTS - 1, direction]
 
 ## How far along its own corridor it is, signed so that "ahead" is always *larger*. Only ever
 ## compared between two agents with the same `lane_key()`, where the direction is shared.
@@ -3001,9 +3020,9 @@ func turning_in() -> Vector2i:
 ## The lane a turning car has reserved a place in, and where in it — `Crowd` puts the pair into the
 ## index it rebuilds, so the reservation is visible to every car for the whole frame rather than
 ## only to the ones that happen to look after this one has moved.
-func turn_lane_key() -> String:
+func turn_lane_key() -> int:
 	if not _turn:
-		return ""
+		return -1
 	return make_lane_key(_turn.exit_vertical, _turn.exit_corridor, _turn.exit_lane,
 			_turn.exit_direction)
 

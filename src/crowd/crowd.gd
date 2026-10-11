@@ -530,7 +530,7 @@ func _resolve_the_queues() -> Dictionary:
 			lanes[key] = [] as Array[CrowdAgent]
 		lanes[key].append(agent)
 
-	for key: String in lanes:
+	for key: int in lanes:
 		var queue: Array[CrowdAgent] = lanes[key]
 		if queue.size() < 2:
 			continue
@@ -570,7 +570,7 @@ func _sort_by_kind() -> void:
 ## whenever the turn arrives, which can be seconds later and in front of her.
 func _index_the_queues(lanes: Dictionary) -> void:
 	var index := {}
-	for key: String in lanes:
+	for key: int in lanes:
 		var queue: Array[CrowdAgent] = lanes[key]
 		var positions := PackedFloat32Array()
 		positions.resize(queue.size())

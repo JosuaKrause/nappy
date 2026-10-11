@@ -1373,15 +1373,30 @@ func _test_the_morning_is_indexed_before_the_first_frame(t) -> void:
 ## *relationship* ("a correction is a nudge, not a teleport") rather than a measured number.
 func _test_a_car_looks_before_it_turns(t) -> void:
 	var index := TrafficIndex.new()
-	index.rebuild({"v:3:2:1": PackedFloat32Array([0.0, 400.0])})
-	t.check(not index.room_at("v:3:2:1", 20.0, Tuning.CAR_GAP_MIN),
+	var vertical_lane := CrowdAgent.make_lane_key(true, 3, 2, 1.0)
+	var horizontal_lane := CrowdAgent.make_lane_key(false, 1, 2, 1.0)
+	index.rebuild({vertical_lane: PackedFloat32Array([0.0, 400.0])})
+	t.check(not index.room_at(vertical_lane, 20.0, Tuning.CAR_GAP_MIN),
 			"there is no room a fifth of a car length behind a car")
-	t.check(not index.room_at("v:3:2:1", -30.0, Tuning.CAR_GAP_MIN),
+	t.check(not index.room_at(vertical_lane, -30.0, Tuning.CAR_GAP_MIN),
 			"nor just in front of one — a turn lands *in* a queue, so both sides count")
-	t.check(index.room_at("v:3:2:1", 200.0, Tuning.CAR_GAP_MIN),
+	t.check(index.room_at(vertical_lane, 200.0, Tuning.CAR_GAP_MIN),
 			"and there is room in the gap between the two of them")
-	t.check(index.room_at("h:1:2:1", 0.0, Tuning.CAR_GAP_MIN),
+	t.check(index.room_at(horizontal_lane, 0.0, Tuning.CAR_GAP_MIN),
 			"a lane with nobody in it is free")
+	# The packed key tells every lane a car can be in apart, and unpacks to what made it.
+	var seen := {}
+	var distinct := true
+	for vertical in [false, true]:
+		for corridor in range(-1, 12):
+			for lane in range(-1, 8):
+				for direction in [-1.0, 1.0]:
+					var key := CrowdAgent.make_lane_key(vertical, corridor, lane, direction)
+					distinct = distinct and not seen.has(key) \
+							and CrowdAgent.lane_key_parts(key) == [vertical, corridor, lane,
+									int(direction)]
+					seen[key] = true
+	t.check(distinct, "every axis, corridor, lane and direction packs to a key of its own")
 
 	_city.crowd.start_day(1, _rng(1))
 	var was: Dictionary = {}
@@ -1452,7 +1467,7 @@ func _closest_two_cars_in_a_lane() -> float:
 			lanes[key] = [] as Array[float]
 		lanes[key].append(agent.queue_position())
 	var closest := INF
-	for key: String in lanes:
+	for key: int in lanes:
 		var queue: Array[float] = lanes[key]
 		queue.sort()
 		for i in queue.size() - 1:

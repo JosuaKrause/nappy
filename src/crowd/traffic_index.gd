@@ -39,7 +39,7 @@ func rebuild(lanes: Dictionary) -> void:
 ## `at` is a `CrowdAgent.queue_position()` — signed so that "ahead" is larger — and the comparison
 ## is absolute, because a car that would land just *behind* another one is as much inside it as one
 ## that would land just in front.
-func room_at(key: String, at: float, clearance: float) -> bool:
+func room_at(key: int, at: float, clearance: float) -> bool:
 	var queue: PackedFloat32Array = _lanes.get(key, PackedFloat32Array())
 	for other in queue:
 		if absf(other - at) < clearance:
@@ -56,7 +56,7 @@ func room_at(key: String, at: float, clearance: float) -> bool:
 ##
 ## Claiming is what closes it, and it wants no bookkeeping: the next rebuild replaces the lot, so a
 ## claim only has to outlive the frame it was made in.
-func claim(key: String, at: float) -> void:
+func claim(key: int, at: float) -> void:
 	if not _lanes.has(key):
 		_lanes[key] = PackedFloat32Array()
 	var queue: PackedFloat32Array = _lanes[key]
@@ -78,7 +78,7 @@ func claim(key: String, at: float) -> void:
 ## `_land_the_turn()` is the only caller; the entry nearest `at` is the one dropped, since a claim is
 ## made at a point rather than by identity and two bookings a hair apart are the same piece of road
 ## either way.
-func give_back(key: String, at: float) -> void:
+func give_back(key: int, at: float) -> void:
 	var queue: PackedFloat32Array = _lanes.get(key, PackedFloat32Array())
 	var nearest := -1
 	var closest := INF
@@ -97,7 +97,7 @@ func give_back(key: String, at: float) -> void:
 ## "Last" is smallest, because `CrowdAgent.queue_position()` is signed so that ahead is larger. It is
 ## the one place in a lane that is free by construction, which is what a car with nowhere else to go
 ## needs — see `CrowdAgent._recycle`.
-func rearmost(key: String) -> float:
+func rearmost(key: int) -> float:
 	var queue: PackedFloat32Array = _lanes.get(key, PackedFloat32Array())
 	var lowest := INF
 	for at in queue:
@@ -109,6 +109,6 @@ func rearmost(key: String) -> float:
 ## away it grows for as long as the day lasts. See `test_crowd.gd`, "the index is emptied".
 func entry_count() -> int:
 	var total := 0
-	for key: String in _lanes:
+	for key: int in _lanes:
 		total += (_lanes[key] as PackedFloat32Array).size()
 	return total
