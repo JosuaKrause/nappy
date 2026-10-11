@@ -926,4 +926,7 @@ func _draw_focus_circles() -> void:
 static func current_heading(rig: Node2D = null) -> Vector2:
 	if rig != null and rig.has_method(&"is_detained") and bool(rig.call(&"is_detained")):
 		return Vector2.ZERO
+	if rig != null and rig.has_method(&"input_she_moves_by"):
+		# Her own read, which leaves out a key held through a gatehouse's release.
+		return (rig.call(&"input_she_moves_by") as Vector2).normalized()
 	return Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down").normalized()

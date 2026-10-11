@@ -619,6 +619,19 @@ func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
 				and stroller.velocity == Vector2.ZERO,
 				"%s: she has not moved a frame after the release (%s)" % [way, stroller.velocity])
 
+		t.check(stroller.input_she_moves_by() == Vector2.ZERO \
+				and TouchControls.current_heading(stroller) == Vector2.ZERO,
+				"%s: the knob and the blocked watch read nothing while she stands" % way)
+		if way == "a joystick drag's locked heading":
+			# The finger is still down: moving it steers her again.
+			controls._drag_pointer_index = 7
+			controls._on_drag(TouchControls.FOCUS_LEFT + Vector2(0.0, -60.0), 7)
+			for i in 5:
+				stroller._physics_process(STEP)
+			t.check(stroller.velocity.y < 0.0, "%s: a finger still down moves her again by moving" % way)
+			controls._on_pointer(Vector2.ZERO, false, 7)
+			_release_move_actions()
+			stroller._physics_process(STEP)
 		# A new input moves her: the other key, or a new press.
 		if way == "a key held down":
 			Input.action_press(&"move_up")
@@ -628,6 +641,10 @@ func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
 			stroller._physics_process(STEP)
 		t.check(stroller.velocity.y < 0.0, "%s: and a new input moves her" % way)
 
+		if way == "a key held down":
+			t.check(stroller.input_she_moves_by() != Vector2.ZERO \
+					and TouchControls.current_heading(stroller) != Vector2.ZERO,
+					"%s: the knob and the blocked watch read the new input" % way)
 		if way == "a key held down":
 			# Released, then pressed again, is a choice too.
 			_release_move_actions()

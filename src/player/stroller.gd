@@ -565,6 +565,15 @@ func _stand_still_after_the_hold() -> void:
 	_held_through_the_release = Input.get_vector(
 			"move_left", "move_right", "move_up", "move_down")
 
+## The held input as she moves by it: what `Input.get_vector()` says, less a key held through a
+## release. Read-only, for the telemetry's blocked watch and the joystick's knob, which must not
+## show or log a heading she is not walking.
+func input_she_moves_by() -> Vector2:
+	var raw := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if _held_through_the_release != Vector2.ZERO and raw == _held_through_the_release:
+		return Vector2.ZERO
+	return raw
+
 ## `input_dir` as the held-through-the-release rule leaves it: zero while it still equals what was
 ## held at the release, the input itself the moment it differs.
 func _unless_held_through_a_release(input_dir: Vector2) -> Vector2:
