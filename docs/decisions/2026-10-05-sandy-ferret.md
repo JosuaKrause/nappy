@@ -24,13 +24,22 @@ guard. `poster-pursuit` goes out when his warning goes up.
 
 **The investigating car** (`EventDef.investigates`) drives its route until she is within 150px
 along a clear line and stops on its route — never inside a junction box: seen from inside one, it
-drives on until its body is clear of the box and stops there. The day's man gets out at its door on
+drives on until its body is clear of the box and stops there. Stopping where it noticed her,
+25 of 125 cars on real `_along_street_path()` routes stood with their centre in a box (the first
+review's probe), and with the box rule switched off the suite's own real-route test counts 24. The day's man gets out at its door on
 her side, in her view, holds his ground for a 1.8s notice and then chases under the pursuit
 contract. **His catch is a stop, not the end of the day** (`EventDef.stop_excitement`): when he
 reaches her he stands with her for `Tuning.OFFICER_STOP_SECONDS` (1s) while his own field lands
 `Tuning.OFFICER_STOP_EXCITEMENT` (40 points), fading, then walks back the way he came and gets in
-at the door he got out of. Forty points never end a calm day; on a meter already high they carry her
-to the cap and past the push that ends it, as any source does. Once he is back in, the car drives on
+at the door he got out of. **The car is quiet while it stands for him**, so the encounter's cost is
+his. Measured on `tests/test_pursuer_on_foot.gd`'s city rig, standing still from an empty meter
+through the whole encounter — the car coming up her street, the man's notice, chase, stop and walk
+back, and two seconds after — lands 83.7 points, under the whole meter: it never ends a calm day by
+itself, and on a meter already high it carries her to the cap and past the push that ends it, as
+any source does. With the car's field on beside his, the re-review measured about 100 by the time
+he was back in, and a played run from 0 was lost crying to him in 9.7s; that is why the car is
+quiet. Inside a district door's hold, where only the door's toll reaches her, he does not stop her:
+he waits and stops her once she is let out. Once he is back in, the car drives on
 along its route the way it was going — standing first while she is in its way — and leaves where
 the route ends. This was azure-koala's finding 7 ("police cars chasing the player behave like
 running people").
@@ -42,7 +51,7 @@ telegraph is over), and once she is within 180px along a clear line lets two men
 (`EventDef.lets_out`), the day's pursuer on foot, who pursue her. **Their catch ends the day**, as
 M56's hunting vans did: the raid's by the player's answer, the unmarked van's by keeping the
 lethality its own hunt had. A man who gives up walks back to his van, which stands as its cold row
-does. No vehicle pursues her at any heat.
+does and never leaves while a man of its own is still out. No vehicle pursues her at any heat.
 
 **This replaces:**
 
@@ -68,7 +77,10 @@ does. No vehicle pursues her at any heat.
   copy gains `pursues`, 130px/s …". Both vans let men out instead; the men's catch ends the day, so
   the lethality M56 gave the hunting rung stands, carried by the men rather than the vans.
 
-**Open to overturn, chosen while building:** "close" read as the car's 150px notice; the stop's
+**Open to overturn, chosen while building:** the car quiet while it stands for its man; the man
+waiting out a hold rather than giving up his chase on it (the door's own guard gives up; "if she
+voluntarily goes to a hut the whole pursuit has been accomplished" was said of that guard only);
+"close" read as the car's 150px notice; the stop's
 size, 40 points over 1s (`Tuning.OFFICER_STOP_EXCITEMENT`, `OFFICER_STOP_SECONDS`) — over a
 conversation's 25 and three contacts, under the whole meter; the men walk back along their own
 trail; each van lets two men out, the day's pursuer on foot (a policeman out of an unmarked van on

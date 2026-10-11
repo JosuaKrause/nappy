@@ -25,7 +25,9 @@ func run(t) -> void:
 	_test_his_catch_ends_the_day_with_its_own_line(t)
 	_test_the_man_out_of_the_car_owes_the_pursuit_contract(t)
 	_test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t)
+	_test_he_waits_outside_a_hold_to_stop_her(t)
 	_test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t)
+	_test_the_whole_encounter_from_calm_never_ends_the_day(t)
 	_test_an_investigating_car_never_stops_in_a_junction_box(t)
 	_test_the_car_does_not_notice_her_through_a_building(t)
 	_test_the_hunting_vans_hunt_on_foot(t)
@@ -372,6 +374,29 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
 				"and once he turns to walk back he charges nothing (%.2f)" % after)
 		man.free()
 
+## **Inside a district door's hold he waits for her**: the door's toll is all that reaches her
+## there, so a stop would land nothing. Beside her through the whole hold he does not stop her; the
+## frame she is let out, he does.
+func _test_he_waits_outside_a_hold_to_stop_her(t) -> void:
+	var out := EventCatalogue.out_of_the_car(8)
+	var man := EventInstance.new()
+	man.setup(out, Vector2(60.0, 0.0))
+	var her := Vector2.ZERO
+	var elapsed := 0.0
+	man.she_is_held = true
+	while elapsed < out.telegraph_time + 4.0:
+		man.player_at = her
+		man._process(STEP)
+		elapsed += STEP
+	t.check(not man.has_stopped_her() and man.global_position.distance_to(her) <= out.lethal_reach(),
+			"held in a hut, he is beside her (%.0fpx) and has not stopped her"
+			% man.global_position.distance_to(her))
+	man.she_is_held = false
+	man.player_at = her
+	man._process(STEP)
+	t.check(man.has_stopped_her(), "let out, she is stopped at once")
+	man.free()
+
 ## A lane on an east-west street off the main road, with a sidewalk tile beside it: `[lane point,
 ## sidewalk point]` on `map`, or empty.
 func _a_lane_beside_a_sidewalk(map: CityMap) -> Array:
@@ -489,6 +514,55 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t) ->
 		t.check(drove_on >= 40.0, "day %d: and then the car drove on along its route (%.0fpx)"
 				% [day, drove_on])
 		t.check(not turned_round, "day %d: the way it was going, never turned round" % day)
+		_done(city, her)
+
+## **The whole encounter, from a calm meter, standing still, never ends the day by itself** — and
+## costs her substantially. *(Inbox #669, the player: "it needs to give a substantial cost but not
+## lethal directly" · "well if the excitement meter is already high it can be lethal".)* On a real
+## city through the manager's own steps, everything the day's events land on her where she stands,
+## from the heated patrol coming up her street to two seconds after its man is back in: the car's
+## approach, the man's notice and chase, his stop, his walk back. Standing still nothing decays
+## (`Tuning.EXCITEMENT_DECAY_IDLE` is 0), so this sum is the meter from 0: it must stay under
+## `Tuning.METER_MAX`, so the day's push at the cap is never reached, and over a stop's own worth.
+func _test_the_whole_encounter_from_calm_never_ends_the_day(t) -> void:
+	t.check(is_zero_approx(Tuning.EXCITEMENT_DECAY_IDLE), "standing still, nothing decays")
+	for day: int in [8, 9]:
+		var rig := _city_with_her(t, day)
+		var city: City = rig[0]
+		var her: Node2D = rig[1]
+		var spot := _a_lane_beside_a_sidewalk(city.map)
+		if spot.size() != 2:
+			t.check(false, "found a lane beside a sidewalk")
+			_done(city, her)
+			return
+		var lane: Vector2 = spot[0]
+		her.global_position = spot[1]
+		var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"),
+				Tuning.RESISTANCE_GOAL)
+		var route := PackedVector2Array([lane - Vector2(280.0, 0.0), lane + Vector2(400.0, 0.0)])
+		var car := city.events.spawn_extra(hot, route[0], route)
+		var events := city.events
+		events._find_player()
+		var landed := 0.0
+		var officer: EventInstance = null
+		var back_for := 0.0
+		var elapsed := 0.0
+		while elapsed < 30.0 and back_for < 2.0:
+			_tick(events)
+			elapsed += STEP
+			landed += events.total_excitement_at(her.global_position) * STEP
+			if officer == null and car.its_officer() != null:
+				officer = car.its_officer()
+			if officer != null and (not is_instance_valid(officer) or officer.is_finished):
+				back_for += STEP
+		t.check(officer != null and back_for >= 2.0, "day %d: the whole encounter played out" % day)
+		t.check(landed < Tuning.METER_MAX,
+				"day %d: standing still from a calm meter, the whole encounter lands %.1f, under "
+				% [day, landed] + "the whole meter")
+		t.check(landed > Tuning.OFFICER_STOP_EXCITEMENT,
+				"day %d: and costs her more than his stop alone (%.1f)" % [day, landed])
+		print("[test_pursuer_on_foot] day %d: the whole encounter, standing still from 0, lands %.1f"
+				% [day, landed])
 		_done(city, her)
 
 ## **It never stops in a junction box** *(sunny-finch: nothing enters a box it cannot leave)*, over

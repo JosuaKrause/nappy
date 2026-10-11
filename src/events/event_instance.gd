@@ -2566,6 +2566,14 @@ var _vehicle: EventInstance = null
 var _trail := PackedVector2Array()
 ## The age at which he reached her and stopped her (`EventDef.stop_excitement`), or `INF`.
 var _stopped_her_at := INF
+## Whether she is inside a district door's hold this frame, told by
+## `EventManager._tell_them_where_she_is()`. **A man who would stop her waits outside for her**: a
+## stop is a cost on the meter, and inside a hold nothing but the door's toll reaches her
+## (`EventManager.door_holding_her_at()`), so a stop made there would land nothing. He keeps after
+## her and stops her once she is let out — as a pursuer's chase goes on past a hut. *Chosen while
+## building, open to overturn: ending his chase on a hold, as the door's own guard's ends, is the
+## other way.*
+var she_is_held := false
 
 ## How far apart the points of a man's trail are, in px: a third of a tile, so a corner he went
 ## round is a corner on the way back.
@@ -2581,7 +2589,7 @@ func has_stopped_her() -> bool:
 ## (`_process()`), his field lands the stop (`current_intensity()`), and every man his vehicle let
 ## out walks back to it.
 func _stop_her_if_he_has_reached_her() -> void:
-	if def.stop_excitement <= 0.0 or has_stopped_her() or player_at == Vector2.INF:
+	if def.stop_excitement <= 0.0 or has_stopped_her() or player_at == Vector2.INF or she_is_held:
 		return
 	if is_finished or is_leaving or is_waiting() or is_telegraphing():
 		return
@@ -3294,6 +3302,12 @@ func _has_expired() -> bool:
 	if is_waiting():
 		# It has not happened yet, and it is not going to until she walks up to it.
 		return false
+	# **A vehicle waits for its men**: a hunting van's `duration` runs from its notice, and a van
+	# gone from the kerb would leave a man walking back to nothing. It may leave only once every
+	# man it let out is back in.
+	for officer in _officers:
+		if not _officer_is_back(officer):
+			return false
 	return def.duration > 0.0 and chase_age() >= def.telegraph_time + def.duration
 
 func _finish() -> void:
@@ -3364,6 +3378,13 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 	if silenced:
 		# A silenced mast still stands, but its field is gone — unlike `is_finished`, which means
 		# the thing itself has left. See the field's own doc.
+		return 0.0
+	if def.investigates and def.drives and not _runs_its_route():
+		# **A car standing for its man is quiet: the man is the encounter.** From the frame it stops
+		# for her until he is back in, its own field is off, so what the encounter costs her is his
+		# notice, his chase and his stop — substantial, and never the end of a calm day by itself
+		# for a player who stands through all of it *(inbox #669: "a substantial cost but not
+		# lethal directly")*. With its field on beside his, a calm meter reached the cap.
 		return 0.0
 	if has_stopped_her():
 		# **The stop** (`EventDef.stop_excitement`): from twice its mean rate to nothing over

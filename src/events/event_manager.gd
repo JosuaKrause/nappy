@@ -1952,6 +1952,10 @@ func _tell_them_where_she_is() -> void:
 	var running: bool = stroller != null and stroller.run_excess_ratio() > 0.0
 	var awake: bool = stroller == null or stroller.baby_is_awake()
 	var strongest := _strongest_barrier_at(_player.global_position)
+	# Inside a district door's hold, nothing but the door's toll reaches her
+	# (`door_holding_her_at()`), so a man who would stop her waits for her outside
+	# (`EventInstance.she_is_held`).
+	var held := door_holding_her_at(_player.global_position) != null
 	# Her pram's own body, on her circumference along her facing — what a car that drives keeps clear
 	# of as well as her (`EventInstance.pram_at`). None while she carries the baby.
 	var pram := Vector2.INF
@@ -1962,6 +1966,7 @@ func _tell_them_where_she_is() -> void:
 		instance.pram_at = pram
 		instance.player_running = running
 		instance.baby_awake = awake
+		instance.she_is_held = held
 		instance.outranked_by_a_stronger_barrier = \
 				instance.def.barrier_structure and instance != strongest
 

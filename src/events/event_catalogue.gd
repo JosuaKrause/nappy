@@ -1925,13 +1925,12 @@ static func _abduction() -> EventDef:
 	def.outer_radius = 250.0
 	def.duration = 34.0
 	# hard_fail doubles the required margin: (250-54)/92 * 2 = 4.26s. It stays exactly this long
-	# once the van hunts, too: a pursuer's telegraph buys the notice of it coming rather than an
-	# escape distance (`Tuning.PURSUIT_MIN_NOTICE`, 1.5s), and 4.6s is comfortably over it.
+	# once the van hunts, too: the hunting van is still a place she can walk out of, and its 54px
+	# takes her only once this telegraph after its notice is over; its men carry their own notice.
 	def.telegraph_time = 4.6
 	# A van is a van: 22 + her own 14 leaves the 54 that takes her comfortably reachable, so the
-	# body only ever stops her during the idling, which is the phase where it has not happened yet.
-	# Once it hunts, `EventInstance` drops this body the moment it stops waiting — a moving wall on
-	# a two-tile pavement pins her against a building, the same reason a pursuer never carries one.
+	# body never shields her from the van's own reach. It keeps the body at every heat: hunting, it
+	# stays parked and lets its men out (`hunts_on_foot`), so nothing about a moving wall applies.
 	def.solid(GroundShape.point(VEHICLE_BODY))
 	def.hard_fail = true
 	def.weight = 2.0

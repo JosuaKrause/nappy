@@ -206,10 +206,9 @@ traps:
   180° turn in one frame in her view; once its man is back in it drives on along its route the way
   it was going instead, a car that has stood, so it waits while she is in its way. Any car leaving
   is gone only once she could not be watching.
-- **A car that stops where it noticed her stops in junction boxes.** Measured on real
-  `_along_street_path()` routes, about one investigating car in five did, standing in the crossing
-  traffic's way for a whole chase; one that notices her with any of its body on a junction drives
-  on until it is clear of the box (`EventInstance._stands_in_a_junction()`). A test on a hand-made
+- **A car that stops where it noticed her stops in junction boxes**, standing in the crossing
+  traffic's way for a whole chase. One that notices her with any of its body on a junction drives on
+  until it is clear of the box (`EventInstance._stands_in_a_junction()`). A test on a hand-made
   straight route away from junctions cannot see this; `tests/test_pursuer_on_foot.gd` drives real
   routes on three seeds.
 
