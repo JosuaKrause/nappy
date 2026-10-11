@@ -1374,9 +1374,12 @@ a moment, not a place. **The car is quiet until it has left her**: from the fram
 her, through his notice, chase, stop and walk back, and on as it drives on — past her, or standing
 at a line beside her — until it is outside its own field's reach of her, its field is off
 (`EventInstance.is_quiet_for_its_man()`), so the encounter's cost is his: his notice, his chase and
-his stop. A car that stood for a policeman does not then also cost her as a passing car; its strike
-and its horn are a driving car's and come back the moment it drives. *Chosen while building, open to
-overturn.* **The whole encounter never ends a calm day by itself**: standing still from an empty
+his stop. While she stays within its resting reach, a car that stood for a policeman does not then
+also cost her as a passing car. Once it has left her — measured at rest, while a moving car's field
+reaches further ahead — it is an ordinary car, and one that then drives at her costs her as any car
+does. Its strike and its horn are a driving car's and come back the moment it drives. While it is
+quiet, its doubled caret, when it drives at her, stays at its smallest, since the mark swells with
+a source's strength. *Chosen while building, open to overturn.* **The whole encounter never ends a calm day by itself**: standing still from an empty
 meter through all of it, until the car has left her field, it lands under the whole meter with room
 to spare — `tests/test_pursuer_on_foot.gd` measures it on a hand-made lane and over real patrol
 routes on three seeds and requires 10 points under the cap — while on a meter already high it

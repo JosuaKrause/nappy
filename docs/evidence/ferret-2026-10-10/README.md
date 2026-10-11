@@ -27,12 +27,16 @@ Which revision each picture was taken at:
 | --- | --- | --- |
 | `tear-*.png` | `f0831d440772f936099ff1299ce314294de364f1` | the tear half |
 | `tear9-*.png`, `car9-*.png`, `van-*.png` | `3142600265f97e0295da6c63a9c02b94416140fe` | all of it |
-| `car-stop-*.png`, `car-on-*.png`, `cost-*.png`, `abduction-van-*.png` | `f55c2bb84e3816c9fc6716859914766407d60d62` | all of it |
+| `car-stop-*.png`, `abduction-van-*.png` | `f55c2bb84e3816c9fc6716859914766407d60d62` | all of it |
+| `car-on-*.png`, `cost-*.png` | `3c19c13c18285320c4b4ceaf474acb7e5b3ccba3` | all of it |
 
 At `3142600265…` the investigating car's own field was still on while it stood for its man, so
-`car9-*.png` show it haloed; nothing else in them differs from the later revision.
+`car9-*.png` show it haloed. Nothing else in them differs from the later revisions. At `f55c2bb8…`
+the car was quiet while it stood, as `car-stop-*.png` show, but its field came back once its man was
+in. From `3c19c13c…` it stays quiet until it has left her field, and `car-on-*.png` and `cost-*.png`
+show that.
 
-All three revisions are on the PR's branch. To rerun, start from the repository root of any clone
+All four revisions are on the PR's branch. To rerun, start from the repository root of any clone
 and copy this folder's files to a scratch directory first, since `forcing.patch` and the recipes
 are not at those revisions. Then set up a disposable checkout and write the stills into a fresh
 output directory. `GODOT` names the engine, as `tools/shot.sh` reads it:
@@ -40,7 +44,7 @@ output directory. `GODOT` names the engine, as `tools/shot.sh` reads it:
 ```sh
 EVIDENCE=$(mktemp -d) && cp docs/evidence/ferret-2026-10-10/{forcing.patch,*.json} "$EVIDENCE"
 git fetch origin refs/pull/663/head
-REV=f55c2bb84e3816c9fc6716859914766407d60d62   # or the revision the table names
+REV=3c19c13c18285320c4b4ceaf474acb7e5b3ccba3   # or the revision the table names
 RERUN=$(mktemp -d)/ferret && git worktree add --detach "$RERUN" "$REV"
 cd "$RERUN" && git apply "$EVIDENCE/forcing.patch"
 OUT=$(mktemp -d)   # the loops below write here
@@ -118,16 +122,15 @@ done
 - `car-on-a.png` (asked for 10.8s), `car-on-b.png` (11.2s), `car-on-c.png` (11.8s), from three runs
   at the wider zoom, in the order the car moves. First he is back in and the car still stands where
   it stopped, its tail just past the box. Then it has pulled north along its route. Then it is
-  further north, leaving the view. It faces north in every frame and never turns round.
+  further north, leaving the view. It faces north in every frame and never turns round. It is
+  drawn with no halo throughout, because it is quiet until it has left her field.
 - `cost-8.8.png`, `cost-9.4.png`, `cost-10.4.png`, `cost-13.0.png`: **the cost, without
   `--invincible`, from an empty meter at the day's start, standing still.** The meter is about 42 as
   he lunges in and about 74 the moment after he reaches her. It is about 83 as he walks back, and
-  about 87 once he is in and the car has gone. The day goes on: the run log has no `lost` line, and
-  its chase line reads `policeman_giving_chase reached her and stopped her … | exc 84`.
-  At this revision the car's field came back once he was in, so the last two include it passing
-  her. At the branch's tip the car stays quiet until it has left her field, so the encounter lands
-  less. `tests/test_pursuer_on_foot.gd` measures the whole encounter at the branch's tip, over a
-  hand-made lane and real routes on three seeds.
+  still 83 once he is in and the car has gone, since the car drove past her quiet. The day goes on:
+  the run log has no `lost` line, and its chase line reads `policeman_giving_chase reached her and
+  stopped her … | exc 83`. `tests/test_pursuer_on_foot.gd` measures the whole encounter at
+  `3c19c13c…` over a hand-made lane and real routes on three seeds: 58.7 to 82.4 points.
 - `car9-7.6.png`, `car9-9.0.png`: the same on day 9. The car is stopped past the box with the
   guardsman at its door, then the guardsman stands beside her through his stop.
 

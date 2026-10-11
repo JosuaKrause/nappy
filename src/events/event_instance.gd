@@ -2486,9 +2486,11 @@ func _investigate() -> void:
 ## field's reach of her (`_left_her()`), its field is off. So what the encounter costs her is his
 ## notice, his chase and his stop: substantial, and never the end of a calm day by itself for a
 ## player who stands through all of it *(inbox #669: "a substantial cost but not lethal
-## directly")*. A car that stood for a policeman does not then also cost her as a passing car. Its
-## strike and its horn are a driving car's and come back the moment it drives. *Chosen while
-## building, open to overturn.*
+## directly")*. While she stays within its resting reach, a car that stood for a policeman does not
+## then also cost her as a passing car. Once it has left her — measured at rest, while a moving car's
+## field reaches further ahead (`GroundShape.eccentric_distance()`) — it is an ordinary car, and one
+## that then drives at her costs her as any car does. Its strike and its horn are a driving car's
+## and come back the moment it drives. *Chosen while building, open to overturn.*
 func is_quiet_for_its_man() -> bool:
 	return def.investigates and def.drives and not is_waiting() and not _left_her_once
 
