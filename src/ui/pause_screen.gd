@@ -21,6 +21,9 @@ signal quit_requested()
 @onready var _root: Control = $Root
 @onready var _dim: ColorRect = $Root/Dim
 @onready var _standing: Label = $Root/Center/Lines/Standing
+@onready var _title: Label = $Root/Center/Lines/Title
+@onready var _continue_caption: Label = $Root/Center/Lines/Buttons/ContinueColumn/ContinueCaption
+@onready var _restart_caption: Label = $Root/Center/Lines/Buttons/RestartColumn/RestartCaption
 @onready var _body: HelpText = $Root/Center/Lines/Body
 ## Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space`/`esc`/`r`/`q`
 ## keep working, and the continue/restart pair already says what a tap does — there is nothing
@@ -34,7 +37,7 @@ signal quit_requested()
 ## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
 ## each use site, so a test — never itself a web export — can set this and drive both shapes.
 ## Gates only whether the key is **handled** in `_unhandled_input()` below; it names nothing on
-## screen any more — see `_BODY`'s own doc.
+## screen any more — see `Texts.WALKING_LESSON_PAUSE`'s own doc.
 var _can_quit := QuitOption.available()
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `_can_quit` follows: a test process is never a touch device. Still gates real platform
@@ -53,38 +56,9 @@ var _touch_controls: TouchControls
 func set_touch_controls(controls: TouchControls) -> void:
 	_touch_controls = controls
 
-## One body for every device. *(2026-09-06, the player: "in fact I said to remove the keyboard
-## inputs altogether but I'm willing to compromise on letting them stay silently".)* The keyboard
-## still walks, runs, pauses and restarts — nothing here stops reading `KEY_R`/`KEY_Q` or the
-## `move_*`/`run`/`pause` actions a key presses — but nothing on screen names a key any more, so
-## the keyboard and touch bodies collapse to the one shape that was always the touch body: naming
-## the tap is naming a control every device actually has, since a mouse click reads as one too.
-##
-## **Says two things and nothing else.** *(2026-09-07: "the movement tutorial should just say 'Tap
-## to walk' and 'Double tap to run'. no mention of tapping her or 'that way'.")* The struck clauses
-## named a stop she can still ask for — a press in the joystick's dead zone, or a mouse
-## click on her — the same way nothing here has ever named a key: stopping still works, and the
-## game simply stops teaching it, exactly as `HUD._teach_the_day()`'s own day-1 line already reads.
-##
-## Plain prose, not a string with its own `\n`: `_refresh_body()` breaks it onto more than one line
-## through `SentenceLines.break_for_help()`, the sentence-boundary rule every other screen's prose
-## goes through in `break_for_label()`, with each `{run}` measured as two letters wide, so this reads
-## exactly as it would in the source it was written in.
-##
-## **The run half names the run button in the joystick scheme only.** *(2026-10-04, the player, inbox
-## #533: "joystick run should now say hold <run button> or double tap to run where it makes
-## sense".)* The joystick scheme draws a run button from the first frame of play, so its line shows
-## it — `{run}` stands for the button's own symbol, see `HelpText` — and the tap scheme, which draws
-## none, keeps "double tap to run". That is the one place the body varies, and it varies by the
-## scheme the player chose, not by the device.
-const _BODY := "Tap to walk, %s. " \
-		+ "Walk to calm ground and stay moving; standing still settles nothing."
-const _RUN_TAP := "double tap to run"
-const _RUN_JOYSTICK := "hold " + HelpText.RUN_TOKEN + " or double tap to run"
-
 ## The body as the scheme in force words it.
 static func body_for(joystick: bool) -> String:
-	return _BODY % (_RUN_JOYSTICK if joystick else _RUN_TAP)
+	return Texts.WALKING_LESSON_PAUSE % (Texts.RUN_JOYSTICK if joystick else Texts.RUN_TAP)
 
 func _ready() -> void:
 	# Above the world and above the HUD, and it must keep running while everything else stops.
@@ -95,13 +69,16 @@ func _ready() -> void:
 	# `ScreenOrientation.pin_to_design_box()`.
 	ScreenOrientation.pin_to_design_box(_root)
 	visible = false
+	_title.text = Texts.PAUSE_TITLE
+	_continue_caption.text = Texts.BUTTON_CONTINUE
+	_restart_caption.text = Texts.BUTTON_HOLD_TO_RESTART
 	_refresh_body()
 	_refresh_buttons()
 	# Fires the instant the disc fills, not on release — see `ModeButton.hold_completed`'s own doc.
 	_restart_button.hold_completed.connect(func() -> void: restart_requested.emit())
 
 ## Its own function for the same reason it always was: so a test can call this again rather than
-## reaching for a fresh scene. Branches on the control scheme, not on `_touch` — see `_BODY`'s own
+## reaching for a fresh scene. Branches on the control scheme, not on `_touch` — see `Texts.WALKING_LESSON_PAUSE`'s own
 ## doc — and runs again on every `open()`, since the title screen can choose the scheme after this
 ## screen was built.
 func _refresh_body() -> void:
@@ -142,7 +119,7 @@ func _show_where_the_run_stands() -> void:
 	var nerves := GameState.nerves
 	# Stars, drawn through `NerveDisplay.stars()` — the same text the HUD, the day brief and the
 	# day summary all read the count through, never a digit.
-	_standing.text = "Day %d of %d     ·     Nerves left: %s" % [GameState.day,
+	_standing.text = Texts.PAUSE_STANDING % [GameState.day,
 			Tuning.RUN_LENGTH_DAYS, NerveDisplay.stars(nerves)]
 
 func open() -> void:

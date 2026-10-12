@@ -33,13 +33,11 @@ horizontal_alignment = 1
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
 theme_override_font_sizes/font_size = 64
-text = "Nappy"
 
 [node name="Line" type="Label" parent="Root/Top/Lines"]
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.72, 0.69, 0.64, 1)
 theme_override_font_sizes/font_size = 18
-text = "Fourteen days. One pram. Get her to sleep and get her home."
 
 [node name="Body" type="Label" parent="Root/Top/Lines"]
 horizontal_alignment = 1
@@ -69,7 +67,6 @@ horizontal_alignment = 1
 autowrap_mode = 3
 theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
 theme_override_font_sizes/font_size = 15
-text = "On-screen Controls"
 
 [node name="TapColumn" type="VBoxContainer" parent="Root/Choice"]
 theme_override_constants/separation = 10
@@ -86,7 +83,6 @@ horizontal_alignment = 1
 autowrap_mode = 3
 theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
 theme_override_font_sizes/font_size = 15
-text = "Tap to Go"
 
 [node name="RightColumn" type="VBoxContainer" parent="Root/Choice"]
 theme_override_constants/separation = 10
@@ -104,7 +100,6 @@ horizontal_alignment = 1
 autowrap_mode = 3
 theme_override_colors/font_color = Color(0.8, 0.78, 0.74, 1)
 theme_override_font_sizes/font_size = 15
-text = "On-screen Controls"
 
 [node name="Hint" type="Label" parent="Root"]
 anchor_right = 1.0
@@ -114,7 +109,6 @@ mouse_filter = 2
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.62, 0.6, 0.58, 1)
 theme_override_font_sizes/font_size = 13
-text = "press a button to begin"
 
 [node name="HardMode" type="CheckBox" parent="Root"]
 offset_top = 640.0
@@ -128,7 +122,6 @@ theme_override_colors/font_focus_color = Color(0.72, 0.69, 0.64, 1)
 theme_override_colors/checkbox_unchecked_color = Color(0.72, 0.69, 0.64, 1)
 theme_override_colors/checkbox_checked_color = Color(0.8, 0.78, 0.74, 1)
 theme_override_font_sizes/font_size = 15
-text = "Hard Mode"
 
 [node name="Frame" type="Panel" parent="Root/HardMode"]
 show_behind_parent = true

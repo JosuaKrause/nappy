@@ -16,12 +16,12 @@ func run(t) -> void:
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
-	for day in summary._DAY_BRIEF.keys():
-		_check_label(t, summary._DAY_BRIEF[day], brief, "day %d's brief" % day)
-	for ending in summary._ENDING_BODY.keys():
-		_check_label(t, summary._ENDING_BODY[ending], body, "ending %d's body" % ending)
-	for kind in summary._FINALE_BODY.keys():
-		_check_label(t, summary._FINALE_BODY[kind], body, "finale body %d" % kind)
+	for day in Texts.DAY_BRIEF.keys():
+		_check_label(t, Texts.DAY_BRIEF[day], brief, "day %d's brief" % day)
+	for ending in Texts.ENDING_BODY.keys():
+		_check_label(t, Texts.ENDING_BODY[ending], body, "ending %d's body" % ending)
+	for kind in Texts.FINALE_BODY.keys():
+		_check_label(t, Texts.FINALE_BODY[kind], body, "finale body %d" % kind)
 	_check_label(t, _MAIN._RESUMED_DAY_LOST_NOTE, note, "the resumed-day note")
 	_check_label(t, "She started crying after 0:10. There is no settling her now.", title,
 			"the lost-day title")

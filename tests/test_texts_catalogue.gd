@@ -1,0 +1,267 @@
+extends RefCounted
+## `Texts` (`src/ui/texts.gd`) is the one place the game's on-screen words live, and this is what
+## keeps them there: a quoted sentence anywhere else under `src/` fails the suite unless it is in
+## the allow-list below, which names every developer readout, log line and error message that is
+## not a text a player reads.
+##
+## **What counts as a sentence** is a quoted string with two words in it, a letter-run of two or
+## more followed by a space and another word or a `%` (so `"Day %d of %d"`, `"press a button"`
+## and `"The end."` are sentences, `"res://x"`, `"ui/pause"`, `"%d"` and `"A"` are not).
+## Comments are not code, and neither is the argument of a log or error call (`print`,
+## `push_warning`, `push_error`, `printerr`, `assert`, `Telemetry.note`), which may run over several
+## lines; both are skipped before a string is judged.
+##
+## A text added to a screen's own script therefore fails here, with the file, the line and the
+## text: it belongs in `Texts`, and the caller reads `Texts.<NAME>`. A developer readout is
+## the one other home, and goes into `_ALLOWED_FILES` (a whole file or folder, with the reason) or
+## `_ALLOWED_LITERALS` (one string in one file, with the reason).
+
+## A whole file or folder of developer-facing strings, by path prefix. Nobody plays these: they are
+## the dev overlay's own tooling, the run log, validation errors a generator reports about a map
+## it rejected, and the tuning table's own explanations.
+const _ALLOWED_FILES := {
+	"res://src/dev/": "developer tooling: rigs, recipes, previews and the dev flags' own messages",
+	"res://src/telemetry/": "the run log's own lines",
+	"res://src/autoload/telemetry.gd": "the run log's own lines",
+	"res://src/autoload/tuning.gd": "the tuning table's own validation messages",
+	"res://src/autoload/game_save.gd": "the save's own log and error lines",
+	"res://src/autoload/game_state.gd": "log notes about nerves and resistance work",
+	"res://src/autoload/visit_counter.gd": "the page-count script's own source",
+	"res://src/city/": "map validation errors and recipe checks, reported to a developer",
+	"res://src/routes/": "closure checks and the closure kinds' log names",
+	"res://src/crowd/": "placement checks reported to a developer",
+	"res://src/visuals/": "atlas and ground-layer errors reported to a developer",
+	"res://src/events/event_def.gd": "validation errors a malformed event row reports",
+	"res://src/events/event_scheduler.gd": "placement reasons written to the run log",
+	"res://src/events/event_manager.gd": "log notes about placement",
+	"res://src/resistance/resistance_director.gd": "the director's own log lines and setup errors",
+	"res://src/resistance/park_cordon.gd": "the cordon's own log lines",
+	"res://src/resistance/happenings.gd": "log lines",
+	"res://src/finale/": "the finale planner's own log lines",
+	"res://src/player/baby.gd": "the debug HUD's reason a baby is not settling",
+	"res://src/interior/interior_map.gd": "the stairwell grammar's maps, symbol rows and log lines",
+	"res://src/interior/interior_scene.gd": "log lines",
+	"res://src/ground_shape.gd": "log lines",
+}
+
+## One string in one file: a developer readout in a file whose other strings are held to the rule.
+const _ALLOWED_LITERALS := {
+	"res://src/ui/hud.gd": {
+		"asleep - go home": "the debug HUD's state line",
+		"crying - day lost": "the debug HUD's state line",
+		"   (not settling: %s)": "the debug HUD's state line",
+		"resistance %s": "the debug HUD's progress line",
+		"day %d / %d      act %d      nerves %s": "the debug HUD's header",
+	},
+}
+
+## Strings still to be moved into `Texts`, by file: a file listed here is not yet held to the rule.
+const _PENDING_FILES := [
+	"res://src/main.gd",
+	"res://src/day/day_controller.gd",
+	"res://src/events/event_catalogue.gd",
+	"res://src/resistance/resistance_steps.gd",
+]
+
+## Words a quoted string may carry that are not a sentence, kept out of the rule by name.
+const _NOT_A_SENTENCE := [
+	"res://", "user://", "uid://",
+]
+
+func run(t) -> void:
+	_test_a_sentence_is_found_and_a_name_is_not(t)
+	_test_a_comment_and_a_log_call_are_not_judged(t)
+	_test_a_log_call_over_several_lines_is_skipped_to_its_end(t)
+	_test_the_allow_list_names_only_paths_that_exist(t)
+	_test_no_sentence_is_quoted_outside_the_catalogue(t)
+	_test_the_catalogue_holds_what_the_screens_say(t)
+
+## Every quoted sentence in `source`, as `[line, text]` pairs, with comments and the arguments of
+## a log or error call left out.
+static func sentences_in(source: String) -> Array:
+	var found := []
+	var pending := 0
+	var number := 0
+	for line in source.split("\n"):
+		number += 1
+		var scan := _scan(line)
+		var code: String = scan[0]
+		var literals: Array = scan[1]
+		var in_log := pending > 0
+		var depth := pending
+		if not in_log:
+			var at := _log_call_at(code)
+			if at != -1:
+				in_log = true
+				depth = 0
+				for ch in code.substr(at):
+					if ch == "(":
+						depth += 1
+					elif ch == ")":
+						depth -= 1
+		else:
+			for ch in code:
+				if ch == "(":
+					depth += 1
+				elif ch == ")":
+					depth -= 1
+		pending = maxi(depth, 0) if in_log else 0
+		if in_log:
+			continue
+		for text: String in literals:
+			if is_sentence(text):
+				found.append([number, text])
+	return found
+
+## `[code, literals]` for one line: the line with every string's content blanked and any trailing
+## comment cut off (so a paren inside a string does not count), and the strings themselves.
+static func _scan(line: String) -> Array:
+	var code := ""
+	var literals := []
+	var quote := ""
+	var current := ""
+	var i := 0
+	while i < line.length():
+		var ch := line[i]
+		if quote != "":
+			if ch == "\\" and i + 1 < line.length():
+				current += ch + line[i + 1]
+				i += 2
+				continue
+			if ch == quote:
+				literals.append(current)
+				quote = ""
+				code += quote + "_"
+			else:
+				current += ch
+			i += 1
+			continue
+		if ch == "#":
+			break
+		if ch == "\"" or ch == "'":
+			quote = ch
+			current = ""
+		else:
+			code += ch
+		i += 1
+	return [code, literals]
+
+## Where a log or error call opens in `code`, or -1.
+static func _log_call_at(code: String) -> int:
+	var best := -1
+	for opener in ["print(", "push_warning(", "push_error(", "printerr(", "print_rich(",
+			"assert(", "Telemetry.note("]:
+		var at := code.find(opener)
+		while at != -1:
+			# A name that merely ends in the opener's own (`_print(`, `reprint(`) is not it.
+			if at == 0 or not (code[at - 1] == "_" or code[at - 1].to_lower() != code[at - 1].to_upper()
+					or code[at - 1].is_valid_int()):
+				if best == -1 or at < best:
+					best = at
+				break
+			at = code.find(opener, at + 1)
+	return best
+
+## Whether a quoted string is a sentence in the sense this suite's doc gives.
+static func is_sentence(text: String) -> bool:
+	for prefix: String in _NOT_A_SENTENCE:
+		if text.begins_with(prefix):
+			return false
+	var words := text.split(" ", false)
+	if words.size() < 2:
+		return false
+	for i in words.size() - 1:
+		var run := 0
+		var longest := 0
+		for ch in words[i]:
+			if ch.to_lower() != ch.to_upper():
+				run += 1
+				longest = maxi(longest, run)
+			else:
+				run = 0
+		var next: String = words[i + 1]
+		var starts_word: bool = next[0] == "%" or next[0].to_lower() != next[0].to_upper()
+		if longest >= 2 and starts_word:
+			return true
+	return false
+
+static func _scripts_under(directory: String) -> PackedStringArray:
+	var scripts := PackedStringArray()
+	var dir := DirAccess.open(directory)
+	if dir == null:
+		return scripts
+	for file in dir.get_files():
+		if file.ends_with(".gd"):
+			scripts.append(directory.path_join(file))
+	for child in dir.get_directories():
+		scripts.append_array(_scripts_under(directory.path_join(child)))
+	return scripts
+
+static func _allowed_file(path: String) -> bool:
+	for prefix: String in _ALLOWED_FILES:
+		if path.begins_with(prefix):
+			return true
+	return false
+
+func _test_a_sentence_is_found_and_a_name_is_not(t) -> void:
+	t.check(is_sentence("Day %d of %d"), "a format string with words in it is a sentence")
+	t.check(is_sentence("press a button to begin"), "a lowercase line is a sentence")
+	t.check(is_sentence("The end."), "two words and a full stop is a sentence")
+	t.check(not is_sentence("move_left"), "an action name is not")
+	t.check(not is_sentence("res://scenes/main.tscn"), "a resource path is not")
+	t.check(not is_sentence("ui/pause"), "an atlas key is not")
+	t.check(not is_sentence("%d"), "a bare format is not")
+	t.check(not is_sentence("Silence."), "a single word is a name to this rule, caught by a person")
+	t.check(not is_sentence(""), "an empty string is not")
+
+func _test_a_comment_and_a_log_call_are_not_judged(t) -> void:
+	var source := "var a := \"Plain words here\"\n" \
+			+ "# a comment with \"quoted words in it\"\n" \
+			+ "var b := 1 # \"and another trailing\"\n" \
+			+ "print(\"a log line\")\n" \
+			+ "push_warning(\"another log line\")\n" \
+			+ "Telemetry.note(\"kind\", \"a run log note\")\n" \
+			+ "var c := \"Second sentence here\"\n"
+	var found := sentences_in(source)
+	t.check(found.size() == 2 and found[0][0] == 1 and found[1][0] == 7,
+			"only the two plain strings are found, on lines 1 and 7 (found %s)" % [found])
+
+func _test_a_log_call_over_several_lines_is_skipped_to_its_end(t) -> void:
+	var source := "push_error(\"first line of it (not) \"\n" \
+			+ "\t\t+ \"second line of it\"\n" \
+			+ "\t\t+ str(some_call(1)))\n" \
+			+ "var shown := \"Words after it\"\n"
+	var found := sentences_in(source)
+	t.check(found.size() == 1 and found[0][0] == 4,
+			"a call that runs over three lines ends where its parens close (found %s)" % [found])
+	t.check(sentences_in("var reprint := \"a name with words\"\n").size() == 1,
+			"a name that ends in a log call's own is not a log call")
+
+func _test_the_allow_list_names_only_paths_that_exist(t) -> void:
+	for prefix: String in _ALLOWED_FILES:
+		var exists := DirAccess.dir_exists_absolute(prefix) or FileAccess.file_exists(prefix)
+		t.check(exists, "the allow-list's %s exists, so no entry outlives its file" % prefix)
+	for path: String in _ALLOWED_LITERALS:
+		t.check(FileAccess.file_exists(path), "the allow-list's %s exists" % path)
+
+func _test_no_sentence_is_quoted_outside_the_catalogue(t) -> void:
+	var scripts := _scripts_under("res://src")
+	t.check(scripts.has("res://src/ui/texts.gd"), "there were scripts to scan (%d), `Texts` among them"
+			% scripts.size())
+	for path in scripts:
+		if path == "res://src/ui/texts.gd" or _allowed_file(path) or path in _PENDING_FILES:
+			continue
+		var allowed: Dictionary = _ALLOWED_LITERALS.get(path, {})
+		for hit in sentences_in(FileAccess.get_file_as_string(path)):
+			if hit[1] in allowed:
+				continue
+			t.check(false, "%s:%d quotes \"%s\" -- a text the player reads goes in `Texts` "
+					% [path, hit[0], hit[1]]
+					+ "(src/ui/texts.gd), and a developer readout in this suite's allow-list")
+
+func _test_the_catalogue_holds_what_the_screens_say(t) -> void:
+	t.check(Texts.TITLE_NAME == "Nappy", "the title's name is the catalogue's")
+	t.check(Texts.DAY_BRIEF.size() == Tuning.RUN_LENGTH_DAYS,
+			"there is a brief for every day of the run")
+	for day in Tuning.RUN_LENGTH_DAYS:
+		t.check(Texts.DAY_BRIEF.has(day + 1), "day %d has a brief" % (day + 1))

@@ -53,11 +53,11 @@ const _STATE_TEXT := {
 
 func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(_root)
-	_sleepiness.label = "SLEEPINESS"
+	_sleepiness.label = Texts.METER_SLEEPINESS
 	_sleepiness.fill_colour = Color("4a5f9e")
 	_sleepiness.full_colour = Color("8fb4d9")
 
-	_excitement.label = "EXCITEMENT"
+	_excitement.label = Texts.METER_EXCITEMENT
 	_excitement.fill_colour = Color("d9a648")
 	_excitement.full_colour = Color("cf4436")
 	_excitement.markers = [Tuning.EXCITEMENT_CALM_THRESHOLD, Tuning.EXCITEMENT_WAKE_THRESHOLD]
@@ -167,7 +167,7 @@ func _teach_the_day(day: int) -> void:
 	_walked_today = false
 	_stood_for = 0.0
 	if day == 1:
-		# One wording for every device — see `PauseScreen._BODY`'s own doc — except that the run
+		# One wording for every device — see `Texts.WALKING_LESSON_PAUSE`'s own doc — except that the run
 		# half names the run button where the scheme draws one (`_run_phrase()`). The keyboard
 		# still walks and runs; nothing on screen names its keys.
 		_say_the_walking_lesson(HelpText.joystick_in_force(get_tree()))
@@ -228,7 +228,7 @@ func _teach_the_pause(delta: float) -> void:
 	# the line shows that icon where it says what to press rather than describing it. In every
 	# scheme, since the button is always drawn. `Esc` still pauses on a keyboard, but nothing on
 	# screen names it.
-	_say("Press %s to pause" % HelpText.PAUSE_TOKEN, TEACH_SECONDS)
+	_say(Texts.PAUSE_LESSON % HelpText.PAUSE_TOKEN, TEACH_SECONDS)
 
 ## The run is taught by the thing that requires it, at the moment it requires it — and only for
 ## that one lesson.
@@ -243,7 +243,7 @@ func _teach_the_pause(delta: float) -> void:
 ## it is a keybinding, not a warning, and a cue that keeps coming back is one that gets read once
 ## and then ignored. One wording for every device, except that the joystick scheme's line shows its
 ## run button (`_run_phrase()`): `Shift` still holds `run` on a keyboard, but nothing on screen
-## names it — see `PauseScreen._BODY`'s own doc.
+## names it — see `Texts.WALKING_LESSON_PAUSE`'s own doc.
 func _on_event_telegraphed(instance: EventInstance) -> void:
 	if _taught_run or not instance.def.pursues or GameState.day != Tuning.RUN_TAUGHT_DAY:
 		return
@@ -252,7 +252,7 @@ func _on_event_telegraphed(instance: EventInstance) -> void:
 	_say(phrase[0].to_upper() + phrase.substr(1), instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
 func _say_the_walking_lesson(joystick: bool) -> void:
-	_say("Tap to walk, %s" % _run_phrase(joystick), TEACH_SECONDS)
+	_say(Texts.WALKING_LESSON % _run_phrase(joystick), TEACH_SECONDS)
 
 ## The title opens after day 1 has started, so the lesson said at dawn was worded for whatever
 ## scheme was in force before the player chose one, and counted down hidden behind the title. Said
@@ -269,8 +269,8 @@ func _on_controls_chosen(mode: int, _by_key: bool) -> void:
 ## there it stays "double tap to run" — a symbol for a button that is not on screen would point at nothing.
 func _run_phrase(joystick: bool) -> String:
 	if joystick:
-		return "hold %s or double tap to run" % HelpText.RUN_TOKEN
-	return "double tap to run"
+		return Texts.RUN_JOYSTICK
+	return Texts.RUN_TAP
 
 func _say(line: String, seconds: float) -> void:
 	_teach.show_line(line)
@@ -434,7 +434,7 @@ func _refresh_resistance() -> void:
 ## The task line: always one short line, never wrapped. It is the short version of what the mark
 ## said big (`Step.header`, not `Step.brief`), and `tests/test_hud.gd` checks every step's fits.
 func _task_text(named: String) -> String:
-	return "out there: %s" % named.to_lower()
+	return Texts.TASK_LINE % named.to_lower()
 
 ## Forwarded from `main._apply_orientation()`. `HomeArrow` is the one child here that computes a
 ## screen position from a world one every frame rather than sitting still under `_root`'s own
@@ -466,7 +466,7 @@ func set_task_guidance(showing: bool, at: Vector2) -> void:
 		_task_arrow.hide_arrow()
 
 func _on_city_went_quiet() -> void:
-	_announcement = "The loudspeakers cut out mid-sentence."
+	_announcement = Texts.CITY_WENT_QUIET
 	_announcement_for = 7.0
 	_refresh_state()
 
