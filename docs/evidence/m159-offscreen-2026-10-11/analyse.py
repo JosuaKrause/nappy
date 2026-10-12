@@ -26,7 +26,8 @@ COLUMNS = [
 
 
 def summarise(path):
-    record = json.load(gzip.open(path, "rt"))
+    with gzip.open(path, "rt") as handle:
+        record = json.load(handle)
     index = {name: i for i, name in enumerate(record["columns"])}
     rows = record["rows"]
     frames = sorted(row[index["frame_usec"]] for row in rows)
@@ -51,7 +52,7 @@ def main():
     if not runs:
         sys.exit(f"no frame records in {args.out}")
     names = ["frames"] + [name for name, _ in COLUMNS]
-    lines = ["\t".join(["label", "mode", "day", "round"] + names + ["build"])]
+    lines = ["\t".join(["label", "mode", "day", "round", *names, "build"])]
     for key, run in sorted(runs.items()):
         values = [f"{run[n]:.1f}" for n in names]
         lines.append("\t".join(list(key) + values + [run["build"]]))
