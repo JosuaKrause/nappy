@@ -152,6 +152,7 @@ class BandTests(unittest.TestCase):
         self.assertEqual(inbox.bands(["queue_soon", "queue_now_please", "band: now", "Queue_now"]), [])
         self.assertEqual(inbox.band_text(["inbox"]), "no band")
         self.assertEqual(inbox.band_text(["queue_parked"]), "band parked")
+        self.assertEqual(inbox.bands(["inbox", "queue_bug"]), ["bug"])
 
     def test_two_bands_are_filed_under_neither(self) -> None:
         self.assertIn("filed under neither", inbox.band_text(["queue_now", "queue_later"]))

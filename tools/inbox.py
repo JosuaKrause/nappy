@@ -50,8 +50,8 @@ capture identity alone (a note the player wrote gets the player's own comments).
 HTML comment, so it does not show on the issue; it is not part of the words.
 
 **A band is a label** (dotted-quail, statement 2): `queue_now`, `queue_next`, `queue_later` or
-`queue_parked`, read by that exact pattern, so a label outside it is never taken for a band. A note
-with two band labels is filed under neither and asked about.
+`queue_parked` (and `queue_bug`, above `now`), read by that exact pattern, so a label outside it is
+never taken for a band. A note with two band labels is filed under neither and asked about.
 
 **Every write goes out as an agent identity, never as the player**: the role comes from `--role`
 or `NAPPY_AGENT_ROLE` (which `tools/agent-identity.py run <role> --` sets), and each write runs
@@ -95,8 +95,8 @@ APPEND_MARKER = "<!-- inbox-append: the player's further words, added by tools/i
 # failed post can never leave the context alone on the issue or duplicate it on a retry.
 WORDS_MARKER = "<!-- inbox-append: the player's words follow -->"
 INBOX_LABEL = "inbox"
-BANDS = ("now", "next", "later", "parked")
-BAND_LABEL = re.compile(r"^queue_(now|next|later|parked)$")
+BANDS = ("bug", "now", "next", "later", "parked")
+BAND_LABEL = re.compile(r"^queue_(bug|now|next|later|parked)$")
 # The roles an issue write may go out as, and the login each shows as.
 WRITE_ROLES = {"claude-orchestrator": "nappy-claude-orchestrator[bot]", "codex-coder": "nappy-codex-coder[bot]"}
 PLAYTESTS = "docs/playtests/"

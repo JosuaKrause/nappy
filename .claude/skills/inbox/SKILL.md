@@ -57,7 +57,10 @@ on a captured note alone, are the words `append` added (below).
 
 **`inbox` marks a note, and `queue_<band>` sets the band its work is filed in**: `queue_now`,
 `queue_next`, `queue_later`, `queue_parked` *(2026-09-27: "I created an issue with inbox label and
-with priority I choose the convention of queue_now, queue_next, queue_later, and queue_parked")*.
+with priority I choose the convention of queue_now, queue_next, queue_later, and queue_parked")*,
+and `queue_bug`, a band above `now` *(2026-10-11, mossy-ferret: "we need a new band "bug" that has
+priority over now")*. A note is never filed `bug` unless the player says so *("Only when you say
+so")*, and "up next" is not a label: it is an `upnext: true` line in the entry's opening block.
 A label outside that pattern is never taken for a band. The entry filed from a note opens with its
 band; a note with no band label is filed as **playtest-feedback** says, `now` for a note from
 playing and otherwise a band the filer proposes and names in its report; a note with two band

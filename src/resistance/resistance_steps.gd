@@ -277,21 +277,21 @@ static func _build() -> Array[Step]:
 	# is the approach: several homeless_yeller rows are already live, and the one carrying the
 	# contact looks exactly like the rest of them. A local rather than inline in the array below
 	# so `completes_at_inner_radius` can be set on it — see that field's own doc.
-	var note_for_a_stranger := _perform(2, "A note for a stranger", 6, "homeless_yeller",
+	var note_for_a_stranger := _perform(2, Texts.NOTE_TITLE, 6, "homeless_yeller",
 			[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], false,
-			TargetKind.EVENT, false, "the one who won't stop shouting")
+			TargetKind.EVENT, false, Texts.NOTE_HEADER)
 	note_for_a_stranger.completes_at_inner_radius = true
 
 	return [
-		_mark(1, "A chalk mark", 6, "Give it to the one who won't stop shouting."),
+		_mark(1, Texts.MARK_TITLE, 6, Texts.NOTE_BRIEF),
 		note_for_a_stranger,
 
 		# Day 7 · the package at a delivery_van's drop — one place, red arrow. From the group
 		# to the neighbor down the hall; carrying it makes the pram heavier for the rest of the
 		# day.
-		_mark(3, "Another mark", 7, "A van is waiting on the sidewalk. Don't come home empty-handed."),
-		_perform(4, "The package", 7, "delivery_van", [GameEnums.TileType.SIDEWALK], true,
-				TargetKind.EVENT, true, "a van, waiting"),
+		_mark(3, Texts.MARK_TITLE_MORE, 7, Texts.PACKAGE_BRIEF),
+		_perform(4, Texts.PACKAGE_TITLE, 7, "delivery_van", [GameEnums.TileType.SIDEWALK], true,
+				TargetKind.EVENT, true, Texts.PACKAGE_HEADER),
 
 		# Day 8 · leave something at the burnt shell from day 3 — one place, red arrow. What she
 		# carries is the neighbor's drawing, left in the stroller overnight, so the words say where
@@ -301,53 +301,50 @@ static func _build() -> Array[Step]:
 		# scar stands the row on a reachable front the fire could have caught on, records the scar
 		# there and burns the building behind it, so the words still lead to a burnt building — see
 		# `ResistanceDirector._begin_step()`.
-		_mark(5, "Another mark", 8,
-				"Take what's in the stroller to the burnt building."),
-		_perform(6, "The burnt shell", 8, "burnt_shell", [GameEnums.TileType.SIDEWALK], true,
-				TargetKind.SCAR, false, "the burnt building"),
+		_mark(5, Texts.MARK_TITLE_MORE, 8, Texts.BURNT_SHELL_BRIEF),
+		_perform(6, Texts.BURNT_SHELL_TITLE, 8, "burnt_shell", [GameEnums.TileType.SIDEWALK], true,
+				TargetKind.SCAR, false, Texts.BURNT_SHELL_HEADER),
 
 		# Day 9 · cross a named region door — one place, red arrow. The districts close that
 		# morning (`Tuning.REGION_WALL_FIRST_DAY`) and this is the day she finds out whether a
 		# stroller gets through one.
-		_mark(7, "Another mark", 9, "Cross at this district door. See if they let you through."),
-		_perform(8, "The crossing", 9, "", [], true, TargetKind.DOOR, false,
-				"the district door"),
+		_mark(7, Texts.MARK_TITLE_MORE, 9, Texts.CROSSING_BRIEF),
+		_perform(8, Texts.CROSSING_TITLE, 9, "", [], true, TargetKind.DOOR, false,
+				Texts.CROSSING_HEADER),
 
 		# Day 10 · warn the neighbor before the raid — one place, red arrow, and a deadline. The
 		# regime has found the worker; the neighbor is out in the city and walks home into the
 		# vans, and the walk is the deadline. Warned, they run; not warned, they are taken.
-		_mark(9, "Another mark", 10,
-				"They come for your neighbor tonight. Get to them first."),
-		_perform(10, "Warn the neighbor", 10, "neighbor", [GameEnums.TileType.SIDEWALK], true,
-				TargetKind.NEIGHBOR, false, "your neighbor, on the way home"),
+		_mark(9, Texts.MARK_TITLE_MORE, 10, Texts.NEIGHBOR_BRIEF),
+		_perform(10, Texts.NEIGHBOR_TITLE, 10, "neighbor", [GameEnums.TileType.SIDEWALK], true,
+				TargetKind.NEIGHBOR, false, Texts.NEIGHBOR_HEADER),
 
 		# Day 11 · silence any live loudspeaker mast, with the red arrow on the closest on foot. She
 		# reaches its foot, as she touches a mark, and it stays quiet for the rest of the run; its
 		# field makes the approach cost while it broadcasts, so timing it between broadcasts is the
 		# skill. The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no
 		# power of their own.
-		_mark(11, "Another mark", 11,
-				"Silence the loudspeaker mast. The wire is at its foot."),
-		_perform(12, "Silence a mast", 11, "", [], true, TargetKind.MAST, false,
-				"the loudspeaker mast"),
+		_mark(11, Texts.MARK_TITLE_MORE, 11, Texts.MAST_BRIEF),
+		_perform(12, Texts.MAST_TITLE, 11, "", [], true, TargetKind.MAST, false,
+				Texts.MAST_HEADER),
 
 		# Day 12 · the swing on the playground of one specific park — one place, red arrow. The
 		# park is the one the city chose for it (`CityGenerator._plan_the_swing_park()`), forced
 		# open today whatever its arc has reached, and taken once she has reached the swing.
-		_mark(13, "Another mark", 12, "Go to the swing. Get there before they close the gate."),
-		_perform(14, "The swing", 12, "", [], true, TargetKind.PARK_SWING, false,
-				"the park's own swing"),
+		_mark(13, Texts.MARK_TITLE_MORE, 12, Texts.SWING_BRIEF),
+		_perform(14, Texts.SWING_TITLE, 12, "", [], true, TargetKind.PARK_SWING, false,
+				Texts.SWING_HEADER),
 
 		# Day 13 · walk into a roadblock's band — any of them. The army arrived that morning;
 		# nobody looks twice at a parent walking a baby who won't settle. A roadblock is solid, so
 		# the words ask how close she gets rather than for a way through it.
-		_mark(15, "Another mark", 13,
-				"Walk up to the roadblock. See how close they let you come."),
-		_perform(16, "Into a roadblock's band", 13, "roadblock",
+		_mark(15, Texts.MARK_TITLE_MORE, 13, Texts.ROADBLOCK_BRIEF),
+		_perform(16, Texts.ROADBLOCK_TITLE, 13, "roadblock",
 				[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING], false, TargetKind.EVENT,
-				false, "the roadblock"),
+				false, Texts.ROADBLOCK_HEADER),
 
 		# The finale, offered only to a player who already did the work: the power station's
 		# front door, one place, by the red arrow. She hands the key over there and walks away.
-		_finale(17, "The last night", Tuning.RUN_LENGTH_DAYS, "the power station's front door"),
+		_finale(17, Texts.LAST_NIGHT_TITLE, Tuning.RUN_LENGTH_DAYS,
+				Texts.LAST_NIGHT_HEADER),
 	]

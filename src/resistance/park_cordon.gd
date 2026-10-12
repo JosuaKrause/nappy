@@ -57,7 +57,7 @@ extends RefCounted
 ## of `shows` for where an officer may be placed, so nothing of him is seen to appear.
 const OFFICER_ROW := "policeman_giving_chase"
 ## The hard fail being shut in the park sends, and the name the day's end and the page's counter
-## give it (`DayController._HARD_FAIL_TEXT`, `main._hard_fail_cause_suffix()`).
+## give it (`Texts.HARD_FAIL_TEXT`, `main._hard_fail_cause_suffix()`).
 const TRAPPED := "park_cordon"
 ## How far outside the tape the officers walk round it, off the park's own ground and on the
 ## sidewalk's edge, so they finish outside the cordon they made.

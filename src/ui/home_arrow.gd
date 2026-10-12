@@ -34,7 +34,7 @@ var colour := Palette.HOME_ARROW
 ## The word shown once `target` is on screen — "home" for the return-home arrow, "task" for the
 ## one pointing at a resistance task. The "%d m" distance readout while it is off screen is
 ## shared by both; only this word differs.
-var label_when_near := "home"
+var label_when_near := Texts.ARROW_HOME
 
 ## Whether `main` has decided a portrait touch window is presenting rotated. Set from outside —
 ## see `TouchControls.rotated`'s own doc for why this is a flag rather than a query at each use
@@ -84,7 +84,7 @@ func _draw() -> void:
 
 	var angle := offset.angle()
 	_draw_chevron(at, angle)
-	var label := label_when_near if pointing else "%d m" % roundi(_metres_to_target())
+	var label := label_when_near if pointing else Texts.DISTANCE_METRES % roundi(_metres_to_target())
 	var font := ThemeDB.fallback_font
 	var width := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
 	draw_string(font, at + Vector2(-width * 0.5, SIZE + 15.0), label,

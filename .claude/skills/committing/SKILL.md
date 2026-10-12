@@ -279,7 +279,7 @@ entry never edits a second one, and the end-of-session pass (**session-cleanup**
 line.
 
 **The queue's order is each entry's band line**, the first lines of its `README.md`
-(`priority: now|next|later|parked`, then any `after:` lines), and `tools/queue.sh` prints it.
+(`priority: bug|now|next|later|parked`, then any `after:` lines), and `tools/queue.sh` prints it.
 Setting or moving a band is the orchestrator's (**orchestrating**) and edits that one file, so it
 meets another PR only when both change the same entry; there is no shared order list for a PR to
 edit.

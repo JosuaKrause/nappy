@@ -82,7 +82,8 @@ In `docs/TODO.md` and the entries under `docs/todo/`:
   `TODO.md` to a folder that is gone.
 - **Every entry's band is still true.** `tools/queue.sh` prints the order the bands give; an entry
   the player has since put first, or set aside, moves with a one-line edit to its `priority:`
-  line, and an `after:` whose wait the entry's own text no longer states goes.
+  line, and an `after:` whose wait the entry's own text no longer states goes. An `upnext:` line on
+  an entry an open pull request is already building goes too.
 - **No status words in headings.** A heading names the work, never its state.
 - **Reassess anything long open.** An item nobody has touched in ten milestones is either still
   wanted, superseded, or already done by something else. Say which, in the entry. An open item with

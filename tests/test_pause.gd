@@ -503,7 +503,7 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 ## buttons do, `press a button` is what replaces it — still no key named, the same way `tap` never
 ## named one *(Playtest 29 finding 4: "in fact I said to remove the keyboard inputs altogether but
 ## I'm willing to compromise on letting them stay silently".)* Each caption says what its own
-## button does rather than naming the mode — see `_BODY`'s doc for why the teaching line itself does
+## button does rather than naming the mode — see `Texts.WALKING_LESSON_PAUSE`'s doc for why the teaching line itself does
 ## not change here at all (2026-09-07's M88 asked for the buttons back, not a new lesson).
 func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()

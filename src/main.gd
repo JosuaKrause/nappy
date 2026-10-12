@@ -293,17 +293,6 @@ var _went_back := false
 ## Cleared the instant that continue is read, since a day brief is shown at most once per boot.
 var _resume_gate_open := false
 
-## The day brief's own line for a resumed run whose save said a day was under way — drafted here
-## rather than on `DaySummary` itself, the same way every other screen's day-specific text is
-## assembled in `main.gd` and only drawn by the screen it is handed to.
-const _RESUMED_DAY_LOST_NOTE := \
-		"Left before the day ended. That cost a nerve — it starts over from dawn."
-
-## The same line when the nerve the load charged was a normal run's last, which sends it back to its
-## checkpoint rather than the same dawn — `%d` is the checkpoint's day.
-const _RESUMED_LAST_NERVE_NOTE := \
-		"Left before the day ended. That was the last nerve — back to day %d."
-
 ## Whether opening the save spent a normal run's last nerve and sent it back to its checkpoint —
 ## set once in `_ready()`, before the charge, and read by `_show_the_resume_gate()` for the line the
 ## day brief carries. A hard run's last nerve is `_run_over` instead.
@@ -1097,8 +1086,8 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 ## Static so a test can ask it without building the whole boot, the same split `escape_part_for()`
 ## already makes.
 static func finale_hint_for(section: int) -> String:
-	return "Escape the building" if section == FinaleController.Section.BUILDING \
-			else "Escape the city"
+	return Texts.ESCAPE_BUILDING if section == FinaleController.Section.BUILDING \
+			else Texts.ESCAPE_CITY
 
 ## The screen a section opens on — *"each the apartment and escape city are treated as their own
 ## 'days' with brief and restart checkpoint"*. The day brief's own form
@@ -1436,8 +1425,8 @@ func _resume_gate_note() -> String:
 	if not _resume.get("day_under_way", false):
 		return ""
 	if _resume_went_back:
-		return _RESUMED_LAST_NERVE_NOTE % GameState.day
-	return _RESUMED_DAY_LOST_NOTE
+		return Texts.RESUMED_LAST_NERVE % GameState.day
+	return Texts.RESUMED_DAY_LOST
 
 ## Hands the day already built and paused behind a gate — the title, on a fresh or a resumed run
 ## the load left with nothing charged, or the day brief the load put on top of it — over to the

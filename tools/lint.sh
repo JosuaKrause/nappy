@@ -23,7 +23,7 @@
 # docs/review and docs/playtests; a checkbox anywhere under
 # docs/todo/, where finishing an item deletes its file; a link in docs/TODO.md to an entry
 # folder that does not exist; and an entry's band line, which tools/queue.sh --check judges (no
-# `priority:` line opening its README.md, a band outside now/next/later/parked, an `after:` naming
+# `priority:` line opening its README.md, a band outside bug/now/next/later/parked, an `after:` naming
 # neither an open entry nor a closed one's record, an `after:` cycle, a band line below the opening
 # block), so the band set lives in that one script.
 #

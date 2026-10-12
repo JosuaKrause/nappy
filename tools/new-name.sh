@@ -45,7 +45,7 @@ docs/playtests, writes the thing it names with a heading and the date, and print
               or an old entry's milestone number such as M210) instead of a new one, with -2, -3
               and on when that file exists
   --priority B
-              todo only: the entry's band, now, next, later or parked (default: later);
+              todo only: the entry's band, bug, now, next, later or parked (default: later);
               tools/queue.sh prints the queue in the order the bands give
   --date D    the date in the name and the heading (default: today)
 
