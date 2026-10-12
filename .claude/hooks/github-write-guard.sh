@@ -1026,8 +1026,9 @@ def soft_subcommand_opener($t; $p; $level):
 # that git's own depth of parentheses, or the `)` that closes it. A substitution's own words are
 # deeper and stay inside (`git -C $(cd x; pwd) push`, `git $(echo push) origin v1`), while a later
 # command's are outside (`git -C $(git rev-parse --show-toplevel) log | grep merge` reads). A
-# quoted separator, a backtick and an unmatched parenthesis end nothing, so the span only ever
-# errs long, the safe direction. Two tables built once per command that names such a subcommand:
+# quoted separator and a backtick end nothing, and a command whose parentheses do not pair has no
+# table at all (every span runs to the command's end), so the span only ever errs long, the safe
+# direction. Two tables built once per command that names such a subcommand:
 # `nw`, the first index at or after each one holding a write's name, and `ce`, where each
 # word's command ends, from one pass forward for the depth and one back.
 def is_write_name($wn): IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am")
@@ -1040,20 +1041,27 @@ def write_tables($w; $w0; $lw; $wn; $need; $review):
   if ($need | not) then {nw: null, ce: null, na: null}
   else
     ($w0 | length) as $n
-    | [foreach $w0[] as $x ({d: 0, out: 0};
+    | [foreach $w0[] as $x ({d: 0, out: 0, clamped: false};
          if $x == "(" then .out = .d | .d += 1
-         elif $x == ")" then .d = ([.d - 1, 0] | max) | .out = .d
+         elif $x == ")" then (if .d == 0 then .clamped = true else . end) | .d = ([.d - 1, 0] | max) | .out = .d
          else .out = .d end;
-         .out)] as $depth
+         {out, clamped, d})] as $pass
+    | ($pass | map(.out)) as $depth
+    # A `)` with nothing open, or a `(` never closed, is a parenthesis this pass cannot pair (a
+    # `case` pattern's own `x)` among them: `git -C $(case x in x) echo y;; esac) push origin v1`
+    # closes the substitution early and puts the `;;` at the git's own depth). Then there is no
+    # table, and every word's command runs to the end of the whole command (`command_end`), the
+    # reading before the depth pass, so nothing it denied is let through.
+    | (($pass | last // {clamped: false, d: 0}) | .clamped or .d > 0) as $broken
     | {nw: (if $lw < 0 then null
             else [foreach range($n - 1; -1; -1) as $k ($n; if $w[$k] | is_write_name($wn) then $k else . end)]
                  | reverse + [$n] end),
-       ce: ([foreach range($n - 1; -1; -1) as $k ({ends: [], out: $n};
+       ce: (if $broken then null else [foreach range($n - 1; -1; -1) as $k ({ends: [], out: $n};
                ($depth[$k]) as $d
                | if $w0[$k] | IN(";", "&", "|", "\n") then .ends[$d] = $k | .out = $k
                  elif $w0[$k] == ")" then .ends[$d + 1] = $k | .out = (.ends[$d] // $n)
                  else .out = (.ends[$d] // $n) end;
-               .out)] | reverse + [$n]),
+               .out)] | reverse + [$n] end),
        na: (if $review | not then null
             else [foreach range($n - 1; -1; -1) as $k ($n; if $w0[$k] | may_approve then $k else . end)]
                  | reverse + [$n] end)}

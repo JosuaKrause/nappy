@@ -2356,6 +2356,12 @@ assert_write_guard "git -C \`pwd\` push -> deny" deny 'git -C `pwd` push origin 
 assert_write_guard "sh -c 'git -C \$(pwd) log | grep merge', a quoted separator ends nothing -> deny" deny \
     "sh -c 'git -C \$(pwd) log | grep merge'"
 assert_write_guard "an unmatched ) ends nothing -> deny" deny 'git -C $(pwd) log ) push'
+# #736's review, finding 3: a case pattern's own ) inside a substitution would close it early; a
+# command whose parentheses do not pair falls back to reading every span to the command's end.
+assert_write_guard "git -C \$(case x in x) echo y;; esac) push origin v1 -> deny, as on main" deny \
+    'git -C $(case x in x) echo y;; esac) push origin v1'
+assert_write_guard "( git -C \$(pwd) log, a ( never closed, then ; echo push -> deny (no table)" deny \
+    '( git -C $(pwd) log; echo push'
 paren_chain="$(printf '(%.0s' $(seq 1 30000))git -C \$(pwd) push"
 assert_write_guard_timed "30 000 open parentheses before git -C \$(pwd) push -> deny, decided quickly" deny "$paren_chain" 5
 paren_chain="$(printf 'git -C $(pwd) %.0s' $(seq 1 4600))push"
