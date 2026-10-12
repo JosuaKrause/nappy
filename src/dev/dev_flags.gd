@@ -162,7 +162,7 @@ static func enabled() -> bool:
 ## `?seed=`'s own positive integer (`seed_override()`), and, through `live_debug_requested()`
 ## below, the smaller bundle M193 opens on top of those two — `?day=`, `?invincible=1`,
 ## `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
-## `?groundmode=` and `?framerecord=1`.
+## `?groundmode=`, `?framerecord=1` and `?dpr=<x>` (`WebDisplay`).
 ## `Telemetry`'s own `?telemetry=1` is not part of any of this: it stays behind `enabled()` alone
 ## (docs/TELEMETRY.md, "`--spikes` is off by default"), since a stranger's browser collecting a
 ## trace is a different question from a stranger's browser reading a day number back. See
