@@ -18,12 +18,12 @@ extends RefCounted
 
 ## A whole file or folder of developer-facing strings, by path prefix. Nobody plays these: they are
 ## the dev overlay's own tooling, the run log, validation errors a generator reports about a map
-## it rejected, and the tuning table's own explanations.
+## it rejected, and the debug HUD's reasons. An entry that no longer shields a sentence fails, so
+## the list shrinks when a file stops needing it.
 const _ALLOWED_FILES := {
 	"res://src/dev/": "developer tooling: rigs, recipes, previews and the dev flags' own messages",
 	"res://src/telemetry/": "the run log's own lines",
 	"res://src/autoload/telemetry.gd": "the run log's own lines",
-	"res://src/autoload/tuning.gd": "the tuning table's own validation messages",
 	"res://src/autoload/game_save.gd": "the save's own log and error lines",
 	"res://src/autoload/game_state.gd": "log notes about nerves and resistance work",
 	"res://src/autoload/visit_counter.gd": "the page-count script's own source",
@@ -31,17 +31,11 @@ const _ALLOWED_FILES := {
 	"res://src/routes/": "closure checks and the closure kinds' log names",
 	"res://src/crowd/": "placement checks reported to a developer",
 	"res://src/visuals/": "atlas and ground-layer errors reported to a developer",
-	"res://src/events/event_def.gd": "validation errors a malformed event row reports",
 	"res://src/events/event_scheduler.gd": "placement reasons written to the run log",
 	"res://src/events/event_manager.gd": "log notes about placement",
 	"res://src/resistance/resistance_director.gd": "the director's own log lines and setup errors",
-	"res://src/resistance/park_cordon.gd": "the cordon's own log lines",
-	"res://src/resistance/happenings.gd": "log lines",
 	"res://src/finale/": "the finale planner's own log lines",
 	"res://src/player/baby.gd": "the debug HUD's reason a baby is not settling",
-	"res://src/interior/interior_map.gd": "the stairwell grammar's maps, symbol rows and log lines",
-	"res://src/interior/interior_scene.gd": "log lines",
-	"res://src/ground_shape.gd": "log lines",
 }
 
 ## One string in one file: a developer readout in a file whose other strings are held to the rule.
@@ -85,12 +79,6 @@ const _ALLOWED_LITERALS := {
 		"day %d / %d      act %d      nerves %s": "the debug HUD's header",
 	},
 }
-
-## Strings still to be moved into `Texts`, by file: a file listed here is not yet held to the rule.
-const _PENDING_FILES := [
-	"res://src/events/event_catalogue.gd",
-	"res://src/resistance/resistance_steps.gd",
-]
 
 ## Words a quoted string may carry that are not a sentence, kept out of the rule by name.
 const _NOT_A_SENTENCE := [
@@ -226,11 +214,12 @@ static func _scripts_under(directory: String) -> PackedStringArray:
 		scripts.append_array(_scripts_under(directory.path_join(child)))
 	return scripts
 
-static func _allowed_file(path: String) -> bool:
+## The allow-list entry that covers `path`, or "".
+static func _allowed_file(path: String) -> String:
 	for prefix: String in _ALLOWED_FILES:
 		if path.begins_with(prefix):
-			return true
-	return false
+			return prefix
+	return ""
 
 func _test_a_sentence_is_found_and_a_name_is_not(t) -> void:
 	t.check(is_sentence("Day %d of %d"), "a format string with words in it is a sentence")
@@ -277,16 +266,31 @@ func _test_no_sentence_is_quoted_outside_the_catalogue(t) -> void:
 	var scripts := _scripts_under("res://src")
 	t.check(scripts.has("res://src/ui/texts.gd"), "there were scripts to scan (%d), `Texts` among them"
 			% scripts.size())
+	var used_files := {}
+	var used_literals := {}
 	for path in scripts:
-		if path == "res://src/ui/texts.gd" or _allowed_file(path) or path in _PENDING_FILES:
+		if path == "res://src/ui/texts.gd":
+			continue
+		var hits := sentences_in(FileAccess.get_file_as_string(path))
+		var covered := _allowed_file(path)
+		if covered != "":
+			if not hits.is_empty():
+				used_files[covered] = true
 			continue
 		var allowed: Dictionary = _ALLOWED_LITERALS.get(path, {})
-		for hit in sentences_in(FileAccess.get_file_as_string(path)):
+		for hit in hits:
 			if hit[1] in allowed:
+				used_literals["%s|%s" % [path, hit[1]]] = true
 				continue
 			t.check(false, "%s:%d quotes \"%s\" -- a text the player reads goes in `Texts` "
 					% [path, hit[0], hit[1]]
 					+ "(src/ui/texts.gd), and a developer readout in this suite's allow-list")
+	for prefix: String in _ALLOWED_FILES:
+		t.check(used_files.has(prefix), "the allow-list's %s still shields a sentence -- drop it" % prefix)
+	for path: String in _ALLOWED_LITERALS:
+		for text: String in _ALLOWED_LITERALS[path]:
+			t.check(used_literals.has("%s|%s" % [path, text]),
+					"the allow-list's \"%s\" in %s is still quoted there -- drop it" % [text, path])
 
 func _test_the_catalogue_holds_what_the_screens_say(t) -> void:
 	t.check(Texts.TITLE_NAME == "Nappy", "the title's name is the catalogue's")
