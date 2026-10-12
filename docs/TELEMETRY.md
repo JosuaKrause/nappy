@@ -852,13 +852,20 @@ time, and the path is printed. `--frame-record --after N` with `--walk` or `--pr
 rig that quits without a screenshot, the same way `--frame-trace --after N` is, headless or not.
 
 The file is JSON: `columns`, `rows` (oldest first), `environment` (build, seed, ground mode, the
-scenery budget, display budget, clock step, renderer, and the browser's user agent on a page), a
+scenery budget, display budget, clock step, renderer, **the pixels the page draws** and the browser's user agent on a page), a
 note per bucket, and a `summary`. The summary has frame percentiles, the mean of every bucket over
 all frames and over the slow ones, and how often each bucket was the largest cost in a slow frame —
 all of it again for **the slow frames in which the scenery queue ran a job and those in which it
 did not**, which is the split the player's question about mode 2 needs: "my hypothesis is that
 mode 2 allows more expensive things to take up time as it limits itself to a very short time
 budget."
+
+**The pixels are in the file** so a frame's cost can be read against what it drew:
+`window_width`/`window_height` (the window the page has: CSS pixels on a page, pixels on the
+desktop), `device_pixel_ratio` (device pixels per CSS pixel, from `window.devicePixelRatio` on a
+page) and `drawn_width`/`drawn_height` (the size the engine actually draws, the canvas's backing
+store on a page). They are read when the record is saved, so they describe the window as it was
+then. The readout shows the same two lines, `window` and `drawn`, in its frame block.
 
 **Its own cost is in the file.** At setup the recorder times `FrameRecorder.CALIBRATION_PAIRS`
 enter/leave pairs on the device and records the mean as `timer_pair_usec`; a frame's
