@@ -5,7 +5,7 @@
 #               queue-only, docs-only and touches-code, flags every later job reads. A push to main
 #               is none of them, so everything runs on it.
 #   gates       the repository's consistency, on every run, needing no Godot: lint.sh,
-#               test_cli_help.sh, test_rules_hooks.sh, test_lib_agent_role.sh, pycheck.sh, the
+#               test_cli_help.sh, test_rules_hooks.sh, test_lib_agent_role.sh, test_agent_setup.sh, pycheck.sh, the
 #               telemetry table's check, and on a pull request the checks that read its files and
 #               its description.
 #   cost-table  cost-table.sh --check, the one consistency check that needs Godot, on every run:
@@ -134,6 +134,10 @@ jobs:
       # runs here too, before uv is installed.
       - name: Check the scripts that mint a fresh token per GitHub write
         run: ./tools/test_lib_agent_role.sh
+
+      # Needs nothing but bash and git: it builds a throwaway origin and clone itself.
+      - name: Check the agent setup script
+        run: ./tools/test_agent_setup.sh
 
       # The Python tooling: uv reads .python-version and uv.lock, so the interpreter and every
       # package are the ones the lockfile names rather than whatever the runner image ships.
