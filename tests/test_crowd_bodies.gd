@@ -335,12 +335,13 @@ func _test_a_precinct_blocked_across_its_width_turns_walkers_round(t, city: City
 	var gap := Vector2i(base + 2, wall + 2) if vertical else Vector2i(wall + 2, base + 2)
 	t.check(not walker._cannot_go_on(vertical, gap), "while the ground behind it is open")
 
-## The shape seed 67 day 3 stands in its east-west precinct and seed 24757 day 5 repeats: three
-## neighbouring rows, none of them full, that no lane runs through. A soft seal's lanes 0, 1, 4 and 5
-## come first, then a construction band over lanes 1 to 3, then café tables over lanes 4 and 5. A
-## walker in lane 2 or 3 passes the seal and meets the band; lanes 0, 4 and 5 beyond are open but
-## are not reached from it. Before the wall was a matter of reachability the walkers stood at the
-## seal, since no row was full and the sidestep had no better lane to go to.
+## The shape seed 67 day 3 stands in its east-west precinct and seed 24757 day 5 repeats, with the
+## seal's lanes stood in by bodies here: three neighbouring rows, none of them full, that no lane runs
+## through. Row 0 takes lanes 0, 1, 4 and 5 (a soft seal on a real day), then a construction band over
+## lanes 1 to 3, then café tables over lanes 4 and 5. A walker in lane 2 or 3 passes row 0 and meets
+## the band; lanes 0, 4 and 5 beyond are open but are not reached from it. With the wall decided one
+## row at a time the walkers stood at row 0, since no row was full and the sidestep had no better
+## lane to go to.
 func _test_partial_bodies_in_neighbouring_rows_wall_a_precinct(t, city: City,
 		map: CityMap) -> void:
 	_walk_at_a_precinct_wall(t, city, map,

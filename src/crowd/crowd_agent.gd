@@ -425,6 +425,13 @@ var _clock := 0.0
 ## long is left on it. See `step_aside()`.
 ## The way ahead, and the state it was worked out for. See `_look_ahead`.
 var _scan_at := Vector2i(-9999, -9999)
+## The answer of `_precinct_way_is_shut_cached()` and what it was asked for; dropped when a new
+## look-ahead scan starts, since the bodies on the map can change under a walker that stands still.
+var _way_shut_known := false
+var _way_shut := false
+var _way_shut_at := Vector2i.ZERO
+var _way_shut_vertical := false
+var _way_shut_direction := 0.0
 var _scan_vertical := false
 var _scan_direction := 0.0
 ## Tiles to the first thing this agent cannot pass, or `LOOKAHEAD_TILES + 1` for a clear road.
@@ -2090,7 +2097,8 @@ func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	# difference between a body and a seal. **A walker has the other lane of its own footway** and
 	# goes round (`_step_around_a_body`), so the way is only really shut to it once *every* lane of
 	# that footway is taken at the same point along the street; the other footway and the
-	# carriageway stay open.
+	# carriageway stay open. A precinct is one footway six lanes wide, shut when no lane runs
+	# through the rows ahead (`_precinct_way_is_shut`).
 	if kind == Kind.CAR:
 		return _map.is_obstructed(tile)
 	return _footway_is_shut(vertical, tile)
@@ -2126,13 +2134,13 @@ func _never_a_street_here(vertical: bool, tile: Vector2i) -> bool:
 # **The walker's answer is a sidestep and not a turn.** It has two lanes of footway, so it steers
 # into the other one for as long as the body is ahead of or beside it and steers back after — the
 # same detour a bump gives it, aimed at a lane rather than away from a person. Only when every lane
-# of its own footway is taken at one point along the street is the way actually shut, and that is
-# `_footway_is_shut()`, read through `_cannot_go_on` so the turn at the last junction is the one a
+# of its own footway is taken at one point along the street is the way actually shut (in a precinct,
+# when no lane runs through the rows ahead), and that is `_footway_is_shut()`, read through `_cannot_go_on` so the turn at the last junction is the one a
 # seal already produces.
 
-## Whether every lane of the footway `tile` belongs to is taken by a solid body at that point along
-## the street. `vertical` is the axis being travelled, so the tile's *other* coordinate is the one
-## across the street.
+## Whether the footway `tile` belongs to is shut to this walker. On an ordinary street that is every
+## lane of the pavement being taken by a solid body at that point along the street. `vertical` is the
+## axis being travelled, so the tile's *other* coordinate is the one across the street.
 ##
 ## **A precinct's footway is its whole width, and it is shut when no way through is left.** It has
 ## no carriageway, so "my own footway" is the street; one stall is stepped round across the six
@@ -2151,12 +2159,13 @@ func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
 	var along_tile := tile.y if vertical else tile.x
 	var corridor := across / CityMap.period()
 	var offsets := CrowdLanes.walkable_offsets(_map, vertical, corridor, along_tile)
-	# On an ordinary street the carriageway is not a footway; in a precinct it is paving like the rest.
+	# On an ordinary street the carriageway is not a footway; in a precinct it is paving like the
+	# rest.
 	if not offsets.has(offset):
 		return false
 	if offsets.size() != CrowdLanes.SIDEWALK_OFFSETS.size() and vertical == _vertical \
 			and corridor == _corridor:
-		return _precinct_way_is_shut(vertical, corridor)
+		return _precinct_way_is_shut_cached(vertical, corridor)
 	var base := corridor * CityMap.period()
 	for lane_offset in _footway_of(offsets, offset):
 		var lane_tile := Vector2i(base + lane_offset, along_tile) if vertical \
@@ -2165,6 +2174,20 @@ func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
 			return false
 	return true
 
+## `_precinct_way_is_shut()` worked out once per look-ahead scan: the answer reads only the walker's
+## own tile, heading and the map, so every blocked tile the scan probes shares it.
+func _precinct_way_is_shut_cached(vertical: bool, corridor: int) -> bool:
+	var here := _map.world_to_tile(position)
+	if _way_shut_known and here == _way_shut_at and vertical == _way_shut_vertical \
+			and _direction == _way_shut_direction:
+		return _way_shut
+	_way_shut_known = true
+	_way_shut_at = here
+	_way_shut_vertical = vertical
+	_way_shut_direction = _direction
+	_way_shut = _precinct_way_is_shut(vertical, corridor)
+	return _way_shut
+
 ## Whether a walker in a precinct has no way past what stands in the next `BODY_SCAN_TILES` rows
 ## ahead of it. A precinct's lanes are 0 to 5 across, a row is one tile along the street, and a lane
 ## tile is open by `_walker_lane_is_open` (bodies, closed ground and soft seals are not).
@@ -2172,9 +2195,9 @@ func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
 ## The lanes it can be in are walked forward a row at a time: the ones it holds that are open in the
 ## next row, then spread sideways through open lanes there. A lane is carried straight ahead and
 ## never diagonally, since a step between two blocked corners is not a gap a body fits through. When
-## no lane is carried the way is shut; a row with no blocked lane in it past the first body, or ground
-## that is no longer a precinct, is a way out. Run only for a probe on a blocked tile, so it costs nothing in a clear
-## street.
+## no lane is carried the way is shut; a row with no blocked lane in it past the first body, or
+## ground that is no longer a precinct, is a way out. Run only for a probe on a blocked tile, so it
+## costs nothing in a clear street.
 func _precinct_way_is_shut(vertical: bool, corridor: int) -> bool:
 	var step := signi(int(_direction))
 	var row0 := _map.world_to_tile(position)
@@ -2297,8 +2320,9 @@ func _step_around_a_body(here: Vector2i) -> void:
 			best_clear = clear
 	if best == _lane:
 		# Nothing on this footway is better than the lane it is already in. Where that is because
-		# every lane is taken at one point, `_footway_is_shut` has already told `_look_ahead` and
-		# `_divert` turns this walker at the last junction; there is no lane left to steer to.
+		# every lane is taken at one point, or in a precinct no lane runs through the rows ahead,
+		# `_footway_is_shut` has already told `_look_ahead` and `_divert` turns this walker; there is
+		# no lane left to steer to.
 		_stop_going_round_a_body()
 		return
 	var band := _pavement_band()
@@ -2407,6 +2431,7 @@ func _look_ahead() -> void:
 			else _map.world_to_tile(CarTurn.world(_vertical, _along(), _lane_centre))
 	if here == _scan_at and _vertical == _scan_vertical and _direction == _scan_direction:
 		return
+	_way_shut_known = false
 	_scan_at = here
 	_scan_vertical = _vertical
 	_scan_direction = _direction
