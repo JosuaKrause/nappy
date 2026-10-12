@@ -22,7 +22,7 @@ is mid-way through says so in its own text.
 **There is no order list to edit.** *(2026-09-26: "what's the point of any of this if there is
 still a centralized TODO.md ordering list? can we think of a better solution there? a priority
 system?", [2026-09-26-brisk-heron](playtests/2026-09-26-brisk-heron.md), statement 13.)* Each
-entry's `README.md` opens with its band, one of `now`, `next`, `later` and `parked`, and, where it
+entry's `README.md` opens with its band, one of `bug`, `now`, `next`, `later` and `parked`, and, where it
 truly waits on another entry, an `after:` line naming that entry's folder:
 
 ```
@@ -32,7 +32,7 @@ after: 2026-09-09-M100
 ## M56 — The resistance is noticed
 ```
 
-`tools/queue.sh` prints the queue from those lines: the bands in that order, `now` newest first
+`tools/queue.sh` prints the queue from those lines: the bands in that order, `bug` and `now` newest first
 *("for "now" do reverse chronological maybe?", statement 14)* and every other band oldest first by
 the date the folder's name starts with. Entries filed on the same day sort by name, not by when
 they were filed: old milestone numbers in number order, then named entries by their words, and
@@ -40,9 +40,15 @@ they were filed: old milestone numbers in number order, then named entries by th
 would is held back to straight behind it. An `after:` naming an entry that has closed (its folder
 gone, its record under `decisions/`) holds nothing back and prints as `<name>, closed`, and the
 end-of-session pass deletes the line, so closing an entry never edits another.
+**Up next is a marker beside the band, not a band.** *(2026-10-11, mossy-ferret: "maybe something to
+indicate what to work on next?" · "like "immediately after the current items are done" next, not the
+band next".)* An entry's opening block may carry `upnext: true` beside `priority:`; the entry keeps
+its band, and `tools/queue.sh` prints every marked entry first, under an `up next` heading ahead of
+`bug`. The queue move that starts the work drops the line. `bug` is the band above `now`, for what
+the player calls a bug; a note from playing is still filed `now` unless the player names `bug`.
 `tools/queue.sh --band now` prints one band. Moving an entry between bands edits one line of one
-file, and `tools/lint.sh` rejects an entry with no band, a band outside the four, an `after:`
-naming neither an open entry nor a closed one, an `after:` cycle, and a band line anywhere but the
+file, and `tools/lint.sh` rejects an entry with no band, a band outside the five, an `upnext:` line with any value but `true`, an `after:`
+naming neither an open entry nor a closed one, an `after:` cycle, and a band or `upnext:` line anywhere but the
 opening lines of the `README.md`.
 
 **A band is chosen on what the entry does to the route decision, and nothing goes lower for being a

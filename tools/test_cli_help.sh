@@ -1033,6 +1033,29 @@ add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 printf 'priority: next\n' >> "$queue_repo/docs/todo/2026-09-03-slow-owl/README.md"
 queue_check_fails "queue.sh --check rejects a band line below the opening block" "outside the opening block"
 add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nupnext: yes')" "slow-owl — Parked"
+queue_check_fails "queue.sh --check rejects an upnext with any value but true" "takes only"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nupnext: true\nupnext: true')" "slow-owl — Parked"
+queue_check_fails "queue.sh --check rejects a repeated upnext" "twice"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
+printf 'upnext: true\n' >> "$queue_repo/docs/todo/2026-09-03-slow-owl/README.md"
+queue_check_fails "queue.sh --check rejects an upnext below the opening block" "outside the opening block"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
+# A bug entry prints before now (newest first among bugs); an upnext entry prints first under its
+# heading with its own band shown, and leaves its band's place.
+add_entry 2026-09-10-sad-hen "priority: bug" "sad-hen — Older bug"
+add_entry 2026-09-11-red-elk "priority: bug" "red-elk — Newer bug"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nupnext: true')" "slow-owl — Parked"
+order="$(cd "$queue_repo" && ./tools/queue.sh 2>/dev/null | awk 'NF { print $1 " " $2 }' | tr '\n' ' ')"
+check_that "queue.sh prints an upnext entry first under its heading, then bug (newest first) ahead of now" \
+    '[[ "$order" == "up next parked 2026-09-03-slow-owl bug 2026-09-11-red-elk bug 2026-09-10-sad-hen now 2026-09-22-busy-otter "* ]]'
+(cd "$queue_repo" && ./tools/queue.sh --check)
+status=$?
+band_out="$(cd "$queue_repo" && ./tools/queue.sh --band bug | awk '{ print $2 }' | tr '\n' ' ')"
+check_that "queue.sh --check passes an upnext beside a band, and --band bug lists the bugs without a heading" \
+    '[[ $status -eq 0 && "$band_out" == "2026-09-11-red-elk 2026-09-10-sad-hen " ]]'
+rm -rf "$queue_repo/docs/todo/2026-09-10-sad-hen" "$queue_repo/docs/todo/2026-09-11-red-elk"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 
 # ------------------------------------ update-pr.sh stops a branch still on the old single queue ---
 # A throwaway origin whose base has the old single-file queue, a main that has it as files, and two

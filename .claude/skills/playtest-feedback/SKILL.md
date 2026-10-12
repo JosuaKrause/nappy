@@ -69,10 +69,10 @@ already have one.
 
 - **A playtest** is `docs/playtests/<name>.md`.
 - **A queue entry** is a folder, `docs/todo/<name>/`. Its `README.md` opens with the entry's
-  band, `priority: now|next|later|parked`, and an `after: <entry folder>` line for each entry it
+  band, `priority: bug|now|next|later|parked`, optionally an `upnext: true` line (print first, whatever the band, until the work starts), and an `after: <entry folder>` line for each entry it
   truly waits on; `tools/queue.sh` prints the queue in the order the bands give, and there is no
   order list to edit *(2026-09-26: "a priority system?", brisk-heron, statement 13)*.
-  **A playtest note is filed `now`** unless the player names another band, since a note from
+  **A playtest note is filed `now`** unless the player names another band (`bug` only when the player says so), since a note from
   playing is a bug report *(2026-09-27: "btw all notes I have from playtesting should be filed
   under now first unless otherwise stated" · "since those are bug reports")*: pass
   `--priority now` to `tools/new-name.sh todo`, which writes `priority: later` otherwise. For
