@@ -89,7 +89,7 @@ func _process(delta: float) -> void:
 			# zero to begin with; kept for a day started with no time left at all.
 			time_remaining = 0.0
 		else:
-			failure_reason = "Dusk. You are still out."
+			failure_reason = Texts.DAY_LOST_DUSK
 			_end(GameEnums.DayResult.LOST_TIMEOUT)
 			return
 
@@ -137,7 +137,7 @@ func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 		GameEnums.BabyState.CRYING:
 			if _ignores_loss(GameEnums.DayResult.LOST_CRYING):
 				return
-			failure_reason = "She started crying. There is no settling her now."
+			failure_reason = Texts.DAY_LOST_CRYING
 			_end(GameEnums.DayResult.LOST_CRYING)
 		GameEnums.BabyState.AWAKE:
 			# Woken on the way home: back to walking her down again.
@@ -149,7 +149,7 @@ func _on_hard_fail(reason: String) -> void:
 		return
 	if _ignores_loss(GameEnums.DayResult.LOST_HARD_FAIL):
 		return
-	failure_reason = _HARD_FAIL_TEXT.get(reason, "It went wrong.")
+	failure_reason = Texts.HARD_FAIL_TEXT.get(reason, Texts.DAY_LOST_DEFAULT)
 	hard_fail_reason = reason
 	_end(GameEnums.DayResult.LOST_HARD_FAIL)
 
@@ -158,49 +158,6 @@ func _on_hard_fail(reason: String) -> void:
 ## asleep and the summary still shows. See `DevFlags.invincible()`.
 func _ignores_loss(result: GameEnums.DayResult) -> bool:
 	return result != GameEnums.DayResult.WON and DevFlags.invincible()
-
-const _HARD_FAIL_TEXT := {
-	"abduction": "The van door opened. Nobody saw where you went.",
-	"alley_robbery": "They were waiting in the alley.",
-	# The same man, sent after her by a handed-over task rather than met in an alley, so the line
-	# is the alley robber's with the alley taken out of it.
-	"robber_giving_chase": "They were waiting for you.",
-	# The van's own guard, sent after her the same way — but he is the door's own man rather than
-	# the alley's, so his line follows `door_guard`'s tone (a detention, not a killing) with the
-	# package named as the reason, the same "what is lost is named, never dwelt on" rule.
-	"van_guard_giving_chase": "He caught up with the package still on her. They took her in.",
-	# The pursuer on foot a torn poster sends, or an investigating car lets out — the robber's line
-	# in a uniform: who caught her, then what it means, plainly, with the poster left unnamed, since
-	# the same man gets out of a car that never saw one torn.
-	"policeman_giving_chase": "The policeman caught up with you. They took you in.",
-	"guardsman_giving_chase": "The guard caught up with you. They took you in.",
-	"firefight": "You walked into the middle of it.",
-	# Not an event, and the only hard fail the player can walk into rather than be caught by.
-	"car_strike": "It never slowed down. You were in the road.",
-	# The patrol car strikes the way a car does, in front of it on the carriageway, so its line is
-	# the car's with the car named.
-	"police_patrol": "The patrol car never slowed down. You were in the road.",
-	# The fire engine, driving to the fire down a street she stood in: a car's line with the engine named.
-	"fire_truck": "The fire engine never slowed down. You were in the road.",
-	# Act I's two, and they are deliberately the most ordinary sentences in this table:
-	# the danger act I was missing is not sinister, it is a street.
-	"cyclist": "The bell, and then the bike. She is screaming.",
-	"reversing_lorry": "It never saw you. Nobody was looking behind it.",
-	# The escape's own catch, on the stairs rather than the street — the same figure as
-	# `roadblock`'s guard (`EventCatalogue`, `masked_pursuer`'s own doc), and the same tone rule
-	# the rest of this table already keeps: what is lost is named, never dwelt on.
-	"masked_pursuer": "He caught you on the stairs.",
-	# The door's own guard, after she walked under a raised boom rather than through a hut: a
-	# detention, not a death — *"She gets detained/imprisoned or whatever in that case"* — said as
-	# plainly as the rest of the table, with the reason in the first half and the baby left out of
-	# it, since the regime never puts her in narrative danger directly (docs/NARRATIVE.md, the
-	# tone rules).
-	"door_guard": "You went under the barrier. They took you in.",
-	# Day 12's park, cordoned off by the police with her still inside (`ParkCordon`): not a catch
-	# but a place closed round her, said as plainly as the rest, with what it means left to the
-	# reader.
-	"park_cordon": "They taped the park shut with you inside.",
-}
 
 func _end(result: GameEnums.DayResult) -> void:
 	if not is_running():

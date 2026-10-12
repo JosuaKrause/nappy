@@ -211,7 +211,7 @@ static func _build() -> Array[EventDef]:
 static func _neighbor() -> EventDef:
 	var def := EventDef.new()
 	def.id = "neighbor"
-	def.display_name = "Neighbor"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.NEIGHBOR
@@ -271,7 +271,7 @@ static func neighbor_heading_home() -> EventDef:
 static func _playground() -> EventDef:
 	var def := EventDef.new()
 	def.id = "playground"
-	def.display_name = "Playground"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.AMBIENT
 	def.ambient_source = EventDef.AmbientSource.PLAYGROUND
 	def.look = EventDef.Look.NONE  # The park's swing frame already draws it.
@@ -325,7 +325,7 @@ static func _playground() -> EventDef:
 static func _cat_dash() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cat_dash"
-	def.display_name = "Cat"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CAT
 	def.shape = GroundShape.point(7.0)
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
@@ -428,7 +428,7 @@ static func _alley_mouse() -> EventDef:
 	# dashes across its alley rather than at her, and costs about an eighth of the meter to walk
 	# through; no badge, outside the telegraph contract.
 	def.telegraphs = false
-	def.display_name = "Mouse"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.MOUSE
 	def.shape = GroundShape.point(4.0)
 	def.placement = [GameEnums.TileType.ALLEY]
@@ -537,7 +537,7 @@ static func _alley_mouse() -> EventDef:
 static func _homeless_yeller() -> EventDef:
 	var def := EventDef.new()
 	def.id = "homeless_yeller"
-	def.display_name = "Man shouting"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.YELLER
 	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
@@ -602,7 +602,7 @@ static func _homeless_yeller() -> EventDef:
 static func _dog_walker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "dog_walker"
-	def.display_name = "Dog walker"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.DOG_WALKER
 	# The walker's own point, not the dog's — the dog on its lead is a per-part shadow drawn at
 	# its own literal radius directly, the same as the abduction's victim or the checkpoint hut's
@@ -655,7 +655,7 @@ static func _dog_walker() -> EventDef:
 static func _cafe_tables() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cafe_tables"
-	def.display_name = "Café tables"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CAFE
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 12.0
@@ -690,7 +690,7 @@ static func _cafe_tables() -> EventDef:
 static func _delivery_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "delivery_van"
-	def.display_name = "Delivery van"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.DELIVERY_VAN
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
@@ -741,7 +741,7 @@ static func _delivery_van() -> EventDef:
 static func _busker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "busker"
-	def.display_name = "Busker"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.BUSKER
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.PARK, GameEnums.TileType.SQUARE]
@@ -773,7 +773,7 @@ static func _busker() -> EventDef:
 static func _construction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "construction"
-	def.display_name = "Roadworks"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROADWORKS
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -804,7 +804,7 @@ static func _construction() -> EventDef:
 static func _fire_truck() -> EventDef:
 	var def := EventDef.new()
 	def.id = "fire_truck"
-	def.display_name = "Fire engine"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.FIRE_ENGINE
@@ -880,7 +880,7 @@ static func _fire_truck() -> EventDef:
 static func _burning_building() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burning_building"
-	def.display_name = "Burning building"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.ONE_SHOT
 	def.look = EventDef.Look.BURNING_BUILDING
 	def.first_day = 3
@@ -923,7 +923,7 @@ static func _burning_building() -> EventDef:
 static func _burnt_shell() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burnt_shell"
-	def.display_name = "Burnt-out building"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURNT_SHELL
@@ -1000,7 +1000,7 @@ static func _burnt_shell() -> EventDef:
 static func _loose_dog() -> EventDef:
 	var def := EventDef.new()
 	def.id = "loose_dog"
-	def.display_name = "Loose dog"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.LOOSE_DOG
 	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
@@ -1041,7 +1041,7 @@ static func _loose_dog() -> EventDef:
 static func _market_stall() -> EventDef:
 	var def := EventDef.new()
 	def.id = "market_stall"
-	def.display_name = "Market stall"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.STALL
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.intensity = 14.0
@@ -1090,7 +1090,7 @@ static func _market_stall() -> EventDef:
 static func _leaf_blower() -> EventDef:
 	var def := EventDef.new()
 	def.id = "leaf_blower"
-	def.display_name = "Leaf blower"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.LEAF_BLOWER
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.PARK,
 			GameEnums.TileType.SQUARE]
@@ -1219,7 +1219,7 @@ static func _pigeon_flock() -> EventDef:
 	# where she walks in rather than coming at her, and they cannot end the day; no badge, outside the
 	# telegraph contract.
 	def.telegraphs = false
-	def.display_name = "Pigeons"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.BIRDS
 	# A flock has no single body — each bird casts its own shadow at its own faded radius (see
 	# `EventInstance._draw_birds`) — so this is a nominal point at one bird's own base radius
@@ -1314,7 +1314,7 @@ static func _pigeon_flock() -> EventDef:
 static func _cyclist() -> EventDef:
 	var def := EventDef.new()
 	def.id = "cyclist"
-	def.display_name = "Cyclist"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CYCLIST
 	def.shape = GroundShape.point(12.0)
 	def.first_day = 2
@@ -1362,7 +1362,7 @@ static func _cyclist() -> EventDef:
 static func _ice_cream_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "ice_cream_van"
-	def.display_name = "Ice cream van"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ICE_CREAM_VAN
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -1400,7 +1400,7 @@ static func _ice_cream_van() -> EventDef:
 static func _reversing_lorry() -> EventDef:
 	var def := EventDef.new()
 	def.id = "reversing_lorry"
-	def.display_name = "Reversing lorry"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.LORRY
 	def.first_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -1464,7 +1464,7 @@ static func _reversing_lorry() -> EventDef:
 static func _chatting_mother() -> EventDef:
 	var def := EventDef.new()
 	def.id = "chatting_mother"
-	def.display_name = "Another mother"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CHATTING_MOTHER
 	def.shape = GroundShape.point(14.0)
 	def.first_day = 1
@@ -1538,7 +1538,7 @@ static func _chatting_mother() -> EventDef:
 static func _charging_dog() -> EventDef:
 	var def := EventDef.new()
 	def.id = "charging_dog"
-	def.display_name = "Charging dog"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CHARGING_DOG
 	def.shape = GroundShape.point(13.0)
 	def.first_day = Tuning.RUN_TAUGHT_DAY
@@ -1625,7 +1625,7 @@ static func _police_patrol() -> EventDef:
 	# (`EventDef.drives`) rather than with a badge from off screen. Its copies — the return's down
 	# the road, the raid's pacing car and the investigating one at heat — carry it with them.
 	def.telegraphs = false
-	def.display_name = "Patrol"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POLICE_CAR
 	# **The body is its drawn ground contact** — 42px long, the side view's body from bumper to
 	# bumper (`police_car.svg`, x 2 to 44), and 24px wide, the end views' body from flank to flank
@@ -1680,7 +1680,7 @@ static func _police_patrol() -> EventDef:
 static func _poster_crew() -> EventDef:
 	var def := EventDef.new()
 	def.id = "poster_crew"
-	def.display_name = "Poster crew"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POSTER_CREW
 	def.first_day = 4
 	def.act_tag = 2
@@ -1719,7 +1719,7 @@ static func _poster_crew() -> EventDef:
 static func _poster_crew_square() -> EventDef:
 	var def := EventDef.new()
 	def.id = "poster_crew_square"
-	def.display_name = "Poster crew"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POSTER_CREW_SQUARE
 	def.first_day = 4
 	def.act_tag = 2
@@ -1745,7 +1745,7 @@ static func _poster_crew_square() -> EventDef:
 static func _loudspeaker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "loudspeaker"
-	def.display_name = "Loudspeaker mast"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.LOUDSPEAKER_MAST
@@ -1776,7 +1776,7 @@ static func _loudspeaker() -> EventDef:
 static func _curfew_announce() -> EventDef:
 	var def := EventDef.new()
 	def.id = "curfew_announce"
-	def.display_name = "Curfew announcement"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.NONE
@@ -1878,7 +1878,7 @@ static func _curfew_announce() -> EventDef:
 static func _roadblock() -> EventDef:
 	var def := EventDef.new()
 	def.id = "roadblock"
-	def.display_name = "Roadblock"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROADBLOCK
 	def.first_day = 7
 	def.act_tag = 2
@@ -1924,7 +1924,7 @@ static func _roadblock() -> EventDef:
 static func _abduction() -> EventDef:
 	var def := EventDef.new()
 	def.id = "abduction"
-	def.display_name = "Unmarked van"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.UNMARKED_VAN
 	def.first_day = 8
 	def.act_tag = 3
@@ -1980,7 +1980,7 @@ static func _abduction() -> EventDef:
 static func _alley_robbery() -> EventDef:
 	var def := EventDef.new()
 	def.id = "alley_robbery"
-	def.display_name = "Robbery"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROBBER
 	def.shape = GroundShape.point(9.0)
 	def.first_day = 8
@@ -2075,7 +2075,7 @@ static func _robber_giving_chase() -> EventDef:
 	var alley := _alley_robbery()
 	var def := EventDef.new()
 	def.id = "robber_giving_chase"
-	def.display_name = "Robber giving chase"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.ROBBER_GIVING_CHASE
@@ -2129,7 +2129,7 @@ static func _van_guard_giving_chase() -> EventDef:
 	var alley := _alley_robbery()
 	var def := EventDef.new()
 	def.id = "van_guard_giving_chase"
-	def.display_name = "Van guard giving chase"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.VAN_GUARD_GIVING_CHASE
@@ -2180,7 +2180,7 @@ static func _policeman_giving_chase() -> EventDef:
 	# says why), shared rather than copied since nothing mutates a shape in place.
 	def.shape = robber.shape
 	def.id = "policeman_giving_chase"
-	def.display_name = "Policeman giving chase"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POLICEMAN_GIVING_CHASE
 	return def
 
@@ -2193,7 +2193,7 @@ static func _policeman_giving_chase() -> EventDef:
 static func _guardsman_giving_chase() -> EventDef:
 	var def := _policeman_giving_chase()
 	def.id = "guardsman_giving_chase"
-	def.display_name = "Guardsman giving chase"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.GUARDSMAN_GIVING_CHASE
 	return def
 
@@ -2288,7 +2288,7 @@ static func out_of_the_car(day: int, stops := true) -> EventDef:
 static func _night_raid() -> EventDef:
 	var def := EventDef.new()
 	def.id = "night_raid"
-	def.display_name = "Raid"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 10
 	def.look = EventDef.Look.RIOT_VAN
@@ -2316,7 +2316,7 @@ static func _night_raid() -> EventDef:
 static func _military_convoy() -> EventDef:
 	var def := EventDef.new()
 	def.id = "military_convoy"
-	def.display_name = "Convoy"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ARMY_TRUCK
 	def.shape = GroundShape.point(26.0)
 	def.first_day = 13
@@ -2349,7 +2349,7 @@ static func _military_convoy() -> EventDef:
 static func _barricade() -> EventDef:
 	var def := EventDef.new()
 	def.id = "barricade"
-	def.display_name = "Barricade"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BARRICADE
@@ -2386,7 +2386,7 @@ static func _barricade() -> EventDef:
 static func _protest() -> EventDef:
 	var def := EventDef.new()
 	def.id = "protest"
-	def.display_name = "Protest"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.PROTEST
 	def.first_day = 12
 	def.act_tag = 4
@@ -2427,7 +2427,7 @@ static func _protest() -> EventDef:
 static func _firefight() -> EventDef:
 	var def := EventDef.new()
 	def.id = "firefight"
-	def.display_name = "Firefight"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 13
 	def.look = EventDef.Look.FIREFIGHT
@@ -2467,7 +2467,7 @@ static func _firefight() -> EventDef:
 static func _fallen_tree() -> EventDef:
 	var def := EventDef.new()
 	def.id = "fallen_tree"
-	def.display_name = "Fallen tree"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.FALLEN_TREE
@@ -2504,7 +2504,7 @@ static func _fallen_tree() -> EventDef:
 static func _car_accident() -> EventDef:
 	var def := EventDef.new()
 	def.id = "car_accident"
-	def.display_name = "Car accident"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.CAR_ACCIDENT
@@ -2551,7 +2551,7 @@ static func _car_accident_parts() -> Array[EventDef.SolidPart]:
 static func _skip() -> EventDef:
 	var def := EventDef.new()
 	def.id = "skip"
-	def.display_name = "Skip"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.SKIP
@@ -2570,7 +2570,7 @@ static func _skip() -> EventDef:
 static func _scaffolding() -> EventDef:
 	var def := EventDef.new()
 	def.id = "scaffolding"
-	def.display_name = "Scaffolding"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.SCAFFOLDING
@@ -2590,7 +2590,7 @@ static func _scaffolding() -> EventDef:
 static func _burst_water_main() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burst_water_main"
-	def.display_name = "Burst water main"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURST_MAIN
@@ -2617,7 +2617,7 @@ static func _burst_water_main() -> EventDef:
 static func _moving_van() -> EventDef:
 	var def := EventDef.new()
 	def.id = "moving_van"
-	def.display_name = "Moving van"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.MOVING_VAN
@@ -2640,7 +2640,7 @@ static func _moving_van() -> EventDef:
 static func _burnt_out_car() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burnt_out_car"
-	def.display_name = "Burnt-out car"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURNT_OUT_CAR
@@ -2660,7 +2660,7 @@ static func _burnt_out_car() -> EventDef:
 static func _collapsed_frontage() -> EventDef:
 	var def := EventDef.new()
 	def.id = "collapsed_frontage"
-	def.display_name = "Collapsed frontage"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.COLLAPSED_FRONTAGE
@@ -2718,7 +2718,7 @@ static func _collapsed_frontage() -> EventDef:
 static func _checkpoint_hut() -> EventDef:
 	var def := EventDef.new()
 	def.id = "checkpoint_hut"
-	def.display_name = "Checkpoint hut"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_HUT
@@ -2754,7 +2754,7 @@ static func _checkpoint_hut() -> EventDef:
 static func _checkpoint_gate() -> EventDef:
 	var def := EventDef.new()
 	def.id = "checkpoint_gate"
-	def.display_name = "Checkpoint gate"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_GATE
@@ -2775,7 +2775,7 @@ static func _checkpoint_gate() -> EventDef:
 static func _checkpoint_post() -> EventDef:
 	var def := EventDef.new()
 	def.id = "checkpoint_post"
-	def.display_name = "Checkpoint guard"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_POST
@@ -2815,7 +2815,7 @@ static func _checkpoint_post() -> EventDef:
 static func _door_guard() -> EventDef:
 	var def := EventDef.new()
 	def.id = "door_guard"
-	def.display_name = "Guard giving chase"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.DOOR_GUARD
@@ -2866,7 +2866,7 @@ static func _door_guard() -> EventDef:
 static func _finale_explosion() -> EventDef:
 	var def := EventDef.new()
 	def.id = "finale_explosion"
-	def.display_name = "Explosion"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.NONE
@@ -2902,7 +2902,7 @@ static func _finale_explosion() -> EventDef:
 static func _impact_crater() -> EventDef:
 	var def := EventDef.new()
 	def.id = "impact_crater"
-	def.display_name = "Crater"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.IMPACT_CRATER
@@ -2935,7 +2935,7 @@ static func _impact_crater() -> EventDef:
 static func _masked_pursuer() -> EventDef:
 	var def := EventDef.new()
 	def.id = "masked_pursuer"
-	def.display_name = "Masked man"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.MASKED_PURSUER
@@ -2985,7 +2985,7 @@ static func _masked_pursuer() -> EventDef:
 static func _basement_steam() -> EventDef:
 	var def := EventDef.new()
 	def.id = "basement_steam"
-	def.display_name = "Steam"
+	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.STEAM

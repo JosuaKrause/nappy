@@ -473,7 +473,7 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 ## The brief is drawn to be noticed, and it is a static fact about the calendar day rather than a
 ## queue that empties once read — `docs/TODO.md`, M181, the resistance has a reason, and a task
 ## is one day: the day brief carries no task and no mark's words, only the morning's own line from
-## `DaySummary._DAY_BRIEF`. `show_day()` reads it off `GameState.day` directly, whichever
+## `Texts.DAY_BRIEF`. `show_day()` reads it off `GameState.day` directly, whichever
 ## `DayResult` this is, so a lost day's own line reads exactly as it did this morning and a second
 ## call shows the same words again rather than nothing.
 func _test_the_day_brief_shows_the_days_own_line(t) -> void:
@@ -484,7 +484,7 @@ func _test_the_day_brief_shows_the_days_own_line(t) -> void:
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
-	var expected := SentenceLines.break_for_label(summary._DAY_BRIEF[6], summary._brief)
+	var expected := SentenceLines.break_for_label(Texts.DAY_BRIEF[6], summary._brief)
 	summary.show_day(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 2)
 	t.check(summary._brief.text == expected,
 			"the morning's own line for the calendar day, whichever DayResult this is")
@@ -595,7 +595,7 @@ func _test_nerves_are_stars_never_numbers(t) -> void:
 	summary.free()
 	t.get_tree().paused = saved_paused
 
-## The day 7 brief breaks its line before "The same face is on most of them." — `_DAY_BRIEF[7]` is
+## The day 7 brief breaks its line before "The same face is on most of them." — `Texts.DAY_BRIEF[7]` is
 ## plain prose with no break of its own; `SentenceLines.break_for_label()` (see its own suite,
 ## `tests/test_sentence_lines.gd`) is what puts one in, at the only sentence end there is to choose.
 func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:

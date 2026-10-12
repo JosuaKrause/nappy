@@ -4,7 +4,7 @@ extends RefCounted
 ##
 ## Every one of these checks fails against the code before this file's own change: before
 ## `SentenceLines` existed, `DaySummary.show_day()` wrote `_elapsed_line()`'s two sentences onto
-## `_title` unbroken, and `_DAY_BRIEF`'s day-1 entry had no break in it at all — both pinned checks
+## `_title` unbroken, and `Texts.DAY_BRIEF`'s day-1 entry had no break in it at all — both pinned checks
 ## below would have read the whole thing as a single line with no `\n` in it.
 
 const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
@@ -69,7 +69,7 @@ func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t) -> void:
 ## *(2026-09-27, the player's second example, asked whether every sentence gets its own line or the
 ## break falls only where the text must wrap: "same for \"She won't settle indoors. It is quiet in
 ## the park. Walk until she sleeps, then bring her home.\" the newline goes after park" — the
-## latter.)* Day 1's own `_DAY_BRIEF` entry is exactly this three-sentence text.
+## latter.)* Day 1's own `Texts.DAY_BRIEF` entry is exactly this three-sentence text.
 func _test_day_ones_brief_breaks_after_the_park_not_after_every_sentence(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
@@ -101,8 +101,8 @@ func _test_every_day_brief_breaks_only_between_sentences(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
-	for day in summary._DAY_BRIEF.keys():
-		var source: String = summary._DAY_BRIEF[day]
+	for day in Texts.DAY_BRIEF.keys():
+		var source: String = Texts.DAY_BRIEF[day]
 		_check_breaks_only_between_sentences(t, source, brief, "day %d's brief" % day)
 	summary.queue_free()
 
@@ -110,23 +110,22 @@ func _test_every_ending_and_finale_body_breaks_only_between_sentences(t) -> void
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
-	for ending in summary._ENDING_BODY.keys():
-		var source: String = summary._ENDING_BODY[ending]
+	for ending in Texts.ENDING_BODY.keys():
+		var source: String = Texts.ENDING_BODY[ending]
 		_check_breaks_only_between_sentences(t, source, body, "the %s ending's body" % ending)
-	for kind in summary._FINALE_BODY.keys():
-		var source: String = summary._FINALE_BODY[kind]
+	for kind in Texts.FINALE_BODY.keys():
+		var source: String = Texts.FINALE_BODY[kind]
 		_check_breaks_only_between_sentences(t, source, body, "the finale body for exit kind %d" % kind)
 	summary.queue_free()
 
-## `main._RESUMED_DAY_LOST_NOTE` (`src/main.gd`) — the day brief's own line for a resumed run whose
-## save said a day was under way. Quoted here rather than read off `main.gd`, which this item's own
-## fence keeps untouched: the two sentences the note is made of.
+## `Texts.RESUMED_DAY_LOST` (`src/ui/texts.gd`) — the day brief's own line for a resumed run whose
+## save said a day was under way: the two sentences the note is made of.
 func _test_the_resumed_day_note_breaks_only_between_sentences(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
 	_check_breaks_only_between_sentences(t,
-			"Left before the day ended. That cost a nerve — it starts over from dawn.", note,
+			Texts.RESUMED_DAY_LOST, note,
 			"the resumed-day note")
 	summary.queue_free()
 

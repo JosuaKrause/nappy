@@ -15,7 +15,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | Field | Meaning |
 | --- | --- |
 | `id` | Unique string key |
-| `display_name` | For the day summary / codex |
+| `display_name` | For the day summary / codex; every row's name is `Texts.EVENT_NAMES[id]` in the text catalogue |
 | `kind` | `RECURRING`, `ONE_SHOT`, `SCRIPTED`, `AMBIENT` |
 | `first_day` | Earliest day it can appear (1-based) |
 | `last_day` | Latest day it can appear (`0` = never expires) |

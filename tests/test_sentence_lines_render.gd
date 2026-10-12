@@ -7,7 +7,6 @@ const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCENE := preload("res://scenes/ui/pause_screen.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 
-const _MAIN := preload("res://src/main.gd")
 
 func run(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
@@ -16,16 +15,16 @@ func run(t) -> void:
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
-	for day in summary._DAY_BRIEF.keys():
-		_check_label(t, summary._DAY_BRIEF[day], brief, "day %d's brief" % day)
-	for ending in summary._ENDING_BODY.keys():
-		_check_label(t, summary._ENDING_BODY[ending], body, "ending %d's body" % ending)
-	for kind in summary._FINALE_BODY.keys():
-		_check_label(t, summary._FINALE_BODY[kind], body, "finale body %d" % kind)
-	_check_label(t, _MAIN._RESUMED_DAY_LOST_NOTE, note, "the resumed-day note")
+	for day in Texts.DAY_BRIEF.keys():
+		_check_label(t, Texts.DAY_BRIEF[day], brief, "day %d's brief" % day)
+	for ending in Texts.ENDING_BODY.keys():
+		_check_label(t, Texts.ENDING_BODY[ending], body, "ending %d's body" % ending)
+	for kind in Texts.FINALE_BODY.keys():
+		_check_label(t, Texts.FINALE_BODY[kind], body, "finale body %d" % kind)
+	_check_label(t, Texts.RESUMED_DAY_LOST, note, "the resumed-day note")
 	_check_label(t, "She started crying after 0:10. There is no settling her now.", title,
 			"the lost-day title")
-	var hard_fails: Dictionary = DayController._HARD_FAIL_TEXT
+	var hard_fails: Dictionary = Texts.HARD_FAIL_TEXT
 	for reason in hard_fails.keys():
 		var line: String = summary._elapsed_line(GameEnums.DayResult.LOST_HARD_FAIL,
 				hard_fails[reason], "10:00")

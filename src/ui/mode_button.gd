@@ -63,7 +63,11 @@ enum Symbol { RESTART, CONTINUE, JOYSTICK, TAP }
 ## azure-puffin: "add a little L and R to the two joystick buttons to make it clear that they lead
 ## to different settings")*. It is text in the game's UI font, the glyph's own colour, not a
 ## drawing, so the **never draw in code** rule is untouched. Empty means no mark.
-@export var letter := ""
+@export var letter := "":
+	set(value):
+		letter = value
+		if is_node_ready():
+			_refresh_letter()
 const _LETTER_SIZE := 18
 const _LETTER_INSET := 12.0
 
@@ -173,6 +177,13 @@ func _ready() -> void:
 
 ## The mark is a child `Label` pinned to the disc's lower-right; it ignores the mouse like its
 ## parent, so the screen's raw-touch reading is unchanged.
+func _refresh_letter() -> void:
+	var old := get_node_or_null("Letter")
+	if old:
+		remove_child(old)
+		old.queue_free()
+	_add_letter()
+
 func _add_letter() -> void:
 	if letter.is_empty():
 		return
