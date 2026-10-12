@@ -39,9 +39,9 @@ compared across revisions is the claim that no agent moved. The probe also recor
 | `ab` | `12b15892` | **A** a walker's redraw computes `velocity()` once, not twice (a third call, `_advance_walker_gait()`, stays), and `velocity()` skips the pocket factor for a walker (always exactly 1.0); **B** `_has_left_the_field()` reads both rooms beyond the map once and builds the field's along bounds inline |
 | `huts` | `bacb7b4d` | **C** huts and gates bucketed by the column and row they stand on (128px) once a tick; a walker or car looks only at the buckets its line covers, the exact tests unchanged |
 | `keys` | `7101db02` | integer lane keys in place of formatted strings (`CrowdAgent.make_lane_key()`, `TrafficIndex`) |
-| `e` | `e-has-stretch-member.patch` on `keys` | **dropped**: `CrowdField.has_stretch()` as a stored member read directly by the agent frame |
+| `e` | `e-has-stretch-member.patch.gz` on `keys` | **dropped**: `CrowdField.has_stretch()` as a stored member read directly by the agent frame |
 
-`e` is a diff, not a commit on the branch: apply the patch on `keys` (`git apply`) to rebuild it.
+`e` is a diff, not a commit on the branch: gunzip the patch and apply it on `keys` (`git apply`) to rebuild it (it is gzipped because it carries tab-indented GDScript's own whitespace, which a whitespace check refuses as plain text).
 Its measurement ran from a local commit of that patch on top of `keys`.
 
 ## Parity: every agent identical on every tick
@@ -98,6 +98,8 @@ The queue resolve fell from 121.5 to 100.2 (seed 4242, day 1) and from 122.5 to 
 (`split` sums), on days 9 and 14 the resolve by 16 to 24%. Whole-tick median, `keys` against
 `huts`: day 1 -13% and -12%, day 9 -3% and -10%, day 14 -2% and -11%.
 
+The lane-keys commit message says day 1 improved "about 4 to 8%"; the retained measurement above (about 13% against `huts`) is the figure to believe.
+
 ### The whole step, `ab` to `keys` (run 3, whole-tick median, microseconds)
 
 | seed | day | `ab` | `keys` | change |
@@ -140,7 +142,7 @@ hash as two integers with no formatting, and the function is cars only).
 
 ## Retained, and how to rerun
 
-Footprint: 10 files, about 3.3 MB (the three `.jsonl.gz` files are 1.3, 0.8 and 1.2 MB: each
+Footprint: 10 files, about 3.3 MB, the patch 0.7 KB gzipped (the three `.jsonl.gz` files are 1.3, 0.8 and 1.2 MB: each
 `whole` run keeps its per-tick numbers so the distributions can be recomputed).
 
 - `run.sh <scratch-dir> <rounds> <label=sha>...` makes a sparse detached worktree per revision in a
