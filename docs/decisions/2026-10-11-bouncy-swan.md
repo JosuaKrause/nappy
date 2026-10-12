@@ -32,6 +32,7 @@ search, day 13's column), and none holds up anything a day needs to end. Day 12'
 finding 9) is very likely this family on v0.25.4, but nothing in placement locks the game outright;
 it stays open in the entry until a phone frame record on day 12 settles it.
 
-*Chosen by the implementer, open to overturn:* the memo keys (the row's id, its role, the tile and
-the path); verdicts are also dropped after siting a route place; the look-wide verdicts are used
-only inside the director's look; a test rather than a probe pins it.
+*Chosen by the implementer, open to overturn:* the memo keys (the row definition's own object, its
+role, the tile and the path); verdicts are dropped before and after re-asking about a plan already
+placed, which is then judged without its own body; the look-wide verdicts are used only inside the
+director's look; a test rather than a probe pins it.
