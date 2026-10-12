@@ -132,6 +132,7 @@ func run(t) -> void:
 	_test_robber_lunging_faces_her_through_the_chase(t)
 	_test_cat_state_predicate_selects_the_telegraph_posture(t)
 	_test_chatting_mother_state_predicate_selects_the_conversation_posture(t)
+	_test_masked_man_is_drawn_standing_until_he_goes(t)
 	_test_vehicle_views_match_facings_csv_per_sector(t)
 	_test_riot_van_reproduces_its_octant_table_with_the_corrected_side_mirror(t)
 	_test_kerb_parked_vans_keep_their_axis_chosen_view(t)
@@ -512,6 +513,26 @@ func _test_chatting_mother_state_predicate_selects_the_conversation_posture(t) -
 	t.check(not instance.is_chatting(), "she is only strolling until spoken to")
 	instance.start_chat()
 	t.check(instance.is_chatting(), "and talking for the length of the conversation")
+	instance.free()
+
+## The masked man on the escape's stairs stands while he waits for her and through his notice, and
+## is drawn lunging (`_draw_masked_pursuer()` reads `_stands_still_now()`) only once the notice is
+## over and he runs his line.
+func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
+	var def := EventCatalogue.by_id("masked_pursuer")
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	t.check(instance.is_waiting() and instance._stands_still_now(),
+			"waiting at the foot of the shaft he is drawn standing")
+	# Inside `pursues_within` (900px) along a clear line: one step notices her.
+	instance.player_at = Vector2(0.0, def.pursues_within - 100.0)
+	instance._process(STEP)
+	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he has noticed her")
+	t.check(instance._stands_still_now(), "and spends the notice standing")
+	for i in int(round((def.telegraph_time + 0.05) / STEP)):
+		instance._process(STEP)
+	t.check(not instance.is_telegraphing() and not instance._stands_still_now(),
+			"once the notice is over he is drawn lunging")
 	instance.free()
 
 # --------------------------------------------------------------- M108's vehicle item ---
