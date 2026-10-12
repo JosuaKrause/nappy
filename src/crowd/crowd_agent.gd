@@ -2134,12 +2134,12 @@ func _never_a_street_here(vertical: bool, tile: Vector2i) -> bool:
 ## the street. `vertical` is the axis being travelled, so the tile's *other* coordinate is the one
 ## across the street.
 ##
-## **A precinct's footway is its whole width, and it is shut only when all six lanes are taken.** It
-## has no carriageway, so there are no two footways and "my own footway" is the street; one stall
-## is stepped round across the six lanes (`_step_around_a_body`) and leaves it open. A body that
-## takes every lane at one point — a wall of stalls, a fallen tree, a seal — is a street the walker
-## cannot pass, and it turns round in front of it as on any other street instead of slowing to a
-## stop at the body with the walkers behind it queueing.
+## **A precinct's footway is its whole width, and it is shut when no way through is left.** It has
+## no carriageway, so "my own footway" is the street; one stall is stepped round across the six
+## lanes (`_step_around_a_body`) and leaves it open. What shuts it is what leaves this walker no way
+## past, whether one body across all six lanes or several in neighbouring rows that no lane runs
+## through: see `_precinct_way_is_shut`. It then turns round in front of it as on any other street
+## instead of slowing to a stop at the body with the walkers behind it queueing.
 func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
 	# The cheap half first: a walker's own tile is nearly always clear, and this runs per probe.
 	if not _map.is_obstructed(tile):
@@ -2154,6 +2154,9 @@ func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
 	# On an ordinary street the carriageway is not a footway; in a precinct it is paving like the rest.
 	if not offsets.has(offset):
 		return false
+	if offsets.size() != CrowdLanes.SIDEWALK_OFFSETS.size() and vertical == _vertical \
+			and corridor == _corridor:
+		return _precinct_way_is_shut(vertical, corridor)
 	var base := corridor * CityMap.period()
 	for lane_offset in _footway_of(offsets, offset):
 		var lane_tile := Vector2i(base + lane_offset, along_tile) if vertical \
@@ -2161,6 +2164,71 @@ func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
 		if _walker_lane_is_open(lane_tile):
 			return false
 	return true
+
+## Whether a walker in a precinct has no way past what stands in the next `BODY_SCAN_TILES` rows
+## ahead of it. A precinct's lanes are 0 to 5 across, a row is one tile along the street, and a lane
+## tile is open by `_walker_lane_is_open` (bodies, closed ground and soft seals are not).
+##
+## The lanes it can be in are walked forward a row at a time: the ones it holds that are open in the
+## next row, then spread sideways through open lanes there. A lane is carried straight ahead and
+## never diagonally, since a step between two blocked corners is not a gap a body fits through. When
+## no lane is carried the way is shut; a row with no blocked lane in it past the first body, or ground
+## that is no longer a precinct, is a way out. Run only for a probe on a blocked tile, so it costs nothing in a clear
+## street.
+func _precinct_way_is_shut(vertical: bool, corridor: int) -> bool:
+	var step := signi(int(_direction))
+	var row0 := _map.world_to_tile(position)
+	var from_row := row0.y if vertical else row0.x
+	var cross_tile := row0.x if vertical else row0.y
+	var base := corridor * CityMap.period()
+	var lane := cross_tile - base
+	if lane < 0 or lane >= CrowdLanes.PRECINCT_OFFSETS.size():
+		lane = _lane
+	var reach: Array[bool] = []
+	reach.resize(CrowdLanes.PRECINCT_OFFSETS.size())
+	reach.fill(false)
+	if not _precinct_lane_open(vertical, base, from_row, lane):
+		return false
+	reach[lane] = true
+	reach = _spread_through_open_lanes(vertical, base, from_row, reach)
+	var met_a_body := false
+	for i in range(1, BODY_SCAN_TILES + 1):
+		var row := from_row + step * i
+		if CrowdLanes.walkable_offsets(_map, vertical, corridor, row).size() \
+				== CrowdLanes.SIDEWALK_OFFSETS.size():
+			return false
+		var carried: Array[bool] = []
+		carried.resize(reach.size())
+		var any_carried := false
+		var any_blocked := false
+		for l in reach.size():
+			var open := _precinct_lane_open(vertical, base, row, l)
+			any_blocked = any_blocked or not open
+			carried[l] = reach[l] and open
+			any_carried = any_carried or carried[l]
+		if not any_blocked and met_a_body:
+			return false
+		met_a_body = met_a_body or any_blocked
+		if not any_carried:
+			return true
+		reach = _spread_through_open_lanes(vertical, base, row, carried)
+	return false
+
+func _precinct_lane_open(vertical: bool, base: int, row: int, lane: int) -> bool:
+	return _walker_lane_is_open(Vector2i(base + lane, row) if vertical \
+			else Vector2i(row, base + lane))
+
+## `reach` grown sideways in one row through the open lanes next to a lane it already holds.
+func _spread_through_open_lanes(vertical: bool, base: int, row: int,
+		reach: Array[bool]) -> Array[bool]:
+	var grown := reach.duplicate()
+	for l in range(1, grown.size()):
+		if grown[l - 1] and _precinct_lane_open(vertical, base, row, l):
+			grown[l] = true
+	for l in range(grown.size() - 2, -1, -1):
+		if grown[l + 1] and _precinct_lane_open(vertical, base, row, l):
+			grown[l] = true
+	return grown
 
 ## The lanes of one footway: the pair `offset` belongs to on an ordinary street, and the whole
 ## width of a precinct, which has one footway and it is the street.
