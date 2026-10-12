@@ -57,6 +57,7 @@ func run(t) -> void:
 	_test_the_morning_is_indexed_before_the_first_frame(t)
 	_test_a_car_can_honour_the_headway_it_keeps(t)
 	_test_a_car_looks_before_it_turns(t)
+	_test_a_body_finds_what_stands_across_a_bucket_edge(t)
 	_test_the_traffic_index_is_emptied_every_frame(t)
 	_test_a_main_road_is_kept_by_its_lights(t)
 	_test_a_signal_gives_her_time_to_cross(t)
@@ -1371,6 +1372,83 @@ func _test_the_morning_is_indexed_before_the_first_frame(t) -> void:
 ## Two halves. The index, on its own, is the question a turning car asks; and the whole crowd, run
 ## for a minute, must not correct anybody by more than a car's own length in a single frame — a
 ## *relationship* ("a correction is a nudge, not a teleport") rather than a measured number.
+## The checkpoint passes look only at the buckets a body's line covers (`Crowd._near_a_line()`), and
+## a hut or gate within the lane tolerance can stand in the next bucket over: 128px buckets put an
+## edge 64px into an odd corridor's street, between its lanes. Dropping either neighbour, or the
+## hut tie going to the later hut, moves no hash the cost probe walks, so they are checked here.
+func _test_a_body_finds_what_stands_across_a_bucket_edge(t) -> void:
+	var crowd := _city.crowd
+	var edge := 128.0 * 3.0
+	# Both axes, both directions, and a gate's wider tolerance. A column holds points by x (a body
+	# heading north or south looks along it), a row by y.
+	var lines := crowd._bucket_by_line([Vector2(edge + 20.0, edge - 20.0),
+			Vector2(edge - 20.0, edge + 20.0)])
+	var walker_tolerance := Tuning.WALKER_DOOR_LANE_TOLERANCE
+	for tolerance in [walker_tolerance, Tuning.GATE_LANE_TOLERANCE]:
+		var from_below: Array[int] = crowd._near_a_line(lines, 2, Vector2.DOWN,
+				Vector2(edge - 10.0, 0.0), tolerance)
+		t.check(from_below.has(0),
+				"a body heading south finds a point 30px east of it across a bucket edge (%d)" % tolerance)
+		var from_above: Array[int] = crowd._near_a_line(lines, 2, Vector2.DOWN,
+				Vector2(edge + 10.0, 0.0), tolerance)
+		t.check(from_above.has(1),
+				"and one 30px west of it across the edge, the other way (%d)" % tolerance)
+		var row_from_below: Array[int] = crowd._near_a_line(lines, 2, Vector2.RIGHT,
+				Vector2(0.0, edge - 10.0), tolerance)
+		t.check(row_from_below.has(1),
+				"a body heading east finds a point 30px south of it across a bucket edge (%d)" % tolerance)
+		var row_from_above: Array[int] = crowd._near_a_line(lines, 2, Vector2.RIGHT,
+				Vector2(0.0, edge + 10.0), tolerance)
+		t.check(row_from_above.has(0),
+				"and one 30px north of it across the edge, the other way (%d)" % tolerance)
+	# A walker finds a hut across the edge, and of two huts at the same distance the lower index
+	# wins whichever bucket is visited first. The huts stand on corridor tiles either side of a
+	# bucket edge at a multiple of four tiles.
+	var column := -1
+	for k in range(1, 40):
+		if CityMap.corridor_offset(4 * k) >= 0 and CityMap.corridor_offset(4 * k - 1) >= 0:
+			column = 4 * k
+			break
+	t.check(column > 0, "a pair of corridor tiles straddles a bucket edge")
+	if column < 0:
+		return
+	var edge_x := float(column * Tuning.TILE_SIZE)
+	var above := WalkerDoorHold.new()
+	above.position = Vector2(edge_x + 16.0, 300.0)
+	var below := WalkerDoorHold.new()
+	below.position = Vector2(edge_x - 16.0, 300.0)
+	var kept := crowd._door_holds
+	var walker := CrowdAgent.new()
+	walker.kind = CrowdAgent.Kind.WALKER
+	walker._vertical = true
+	walker._direction = 1.0
+	walker.position = Vector2(edge_x + 10.0, 250.0)
+	crowd._door_holds = [above] as Array[WalkerDoorHold]
+	walker.door_ahead = null
+	walker.door_ahead_along = INF
+	crowd._find_the_hut_in_front_of(walker, crowd._bucket_by_line([above.position]))
+	t.check(walker.door_ahead == above, "a walker finds a hut in its own bucket")
+	crowd._door_holds = [below] as Array[WalkerDoorHold]
+	walker.door_ahead = null
+	walker.door_ahead_along = INF
+	crowd._find_the_hut_in_front_of(walker, crowd._bucket_by_line([below.position]))
+	t.check(walker.door_ahead == below, "and one in the bucket below, across the edge")
+	walker.position = Vector2(edge_x, 250.0)
+	for order in [[above, below], [below, above]]:
+		var holds: Array[WalkerDoorHold] = []
+		holds.assign(order)
+		crowd._door_holds = holds
+		walker.door_ahead = null
+		walker.door_ahead_along = INF
+		crowd._find_the_hut_in_front_of(walker, crowd._bucket_by_line(
+				[order[0].position, order[1].position]))
+		t.check(walker.door_ahead == order[0],
+				"two huts the same distance ahead: the one first in the day's order is its hut")
+	crowd._door_holds = kept
+	walker.free()
+	above = null
+	below = null
+
 func _test_a_car_looks_before_it_turns(t) -> void:
 	var index := TrafficIndex.new()
 	var vertical_lane := CrowdAgent.make_lane_key(true, 3, 2, 1.0)

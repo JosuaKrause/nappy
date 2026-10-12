@@ -6,8 +6,10 @@ extends RefCounted
 ##
 ## Every run starts the seed's city on the day (`City.start_day()`: the day's closures and region
 ## plan), starts the day's crowd from a fixed RNG seed with the day's gates, and walks a player
-## rig down from the doorstep and back and forth along the street (`_player_heading()`), one agent frame
-## (`CrowdAgent._process()`) and one crowd tick per simulated thirtieth of a second. The first
+## rig down from the doorstep and then along one of two walks (`WALKS`): back and forth along the
+## street (`_player_heading()`), which never reaches a walker, or at the nearest walker
+## (`_heading_at_the_nearest_walker()`). One agent frame (`CrowdAgent._process()`) and one crowd
+## tick run per simulated thirtieth of a second. The first
 ## `WARMUP` ticks are not timed; the next `WINDOW` are.
 ##
 ## **Two modes over the same simulation.** `whole` calls the real `Crowd._physics_process()` and
@@ -122,7 +124,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 			rows.append(row)
 		if (tick + 1) % 150 == 0:
 			marks.append(chain.hex_encode())
-	return {"schema_version": 1, "seed": city_seed, "day": day, "mode": mode,
+	return {"schema_version": 2, "seed": city_seed, "day": day, "mode": mode,
 		"walk": walk, "walker_contact_ticks": contact_ticks, "walker_door_ticks": held_ticks,
 		"agents": crowd.agent_count(), "huts": crowd._door_holds.size(), "gates": crowd._gates.size(), "step_seconds": STEP, "warmup_ticks": WARMUP,
 		"window_ticks": WINDOW, "columns": ["agents", "tick"] if mode == "whole" else PARTS,

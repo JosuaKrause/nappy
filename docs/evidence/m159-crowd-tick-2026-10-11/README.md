@@ -23,7 +23,7 @@ nearest walker, so the player half (make way, bump, contact) and the field centr
 the crowd are in the hash. Each run reports how many walker-ticks the player was touching a walker
 and how many walker-ticks a walker was in a door state other than walking (the workload table in
 each report): both are nonzero in every case that can have them, so the hash covers the
-checkpoint pass and the bump. Seeds 478156010 (the phone record's) and 4242; 150 warmup ticks, 600
+checkpoint hut pass and the bump (the gate pass is covered by the hash only through the cars it stops). Seeds 478156010 (the phone record's) and 4242; 150 warmup ticks, 600
 timed.
 
 **Parity.** After every tick a running SHA-256 folds in every agent's position and speed. The probe

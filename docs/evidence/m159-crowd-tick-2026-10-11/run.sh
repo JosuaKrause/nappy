@@ -41,7 +41,7 @@ done
 
 export GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 REPO="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
-FILES="src/crowd/crowd.gd src/crowd/crowd_agent.gd tests/probes/m159_crowd_tick_cost.gd"
+FILES="src/crowd/crowd.gd src/crowd/crowd_agent.gd src/crowd/traffic_index.gd tests/probes/m159_crowd_tick_cost.gd"
 
 mkdir -p "$SCRATCH/out"
 SCRATCH="$(cd "$SCRATCH" && pwd)"
@@ -67,7 +67,7 @@ for spec in "$@"; do
 	(cd "$SCRATCH/$label" && ./tools/check.sh > "$SCRATCH/out/$label-import.log" 2>&1)
 done
 
-printf 'round\tlabel\tcommit\tstarted\tload_1m\tcrowd.gd\tcrowd_agent.gd\tprobe\n' \
+printf 'round\tlabel\tcommit\tstarted\tload_1m\tcrowd.gd\tcrowd_agent.gd\ttraffic_index.gd\tprobe\n' \
 	> "$SCRATCH/out/runs.tsv"
 for round in $(seq 1 "$ROUNDS"); do
 	for label in $LABELS; do
