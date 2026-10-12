@@ -1,0 +1,16 @@
+# With the look's shared verdicts (fork 1(b)), shadow.py on the branch at its look-memo commit.
+# Day 9, seed 67, the phone's three attempts replayed under --invincible:
+shadow2runs/track1.log: 7 looks, 1 sited, 0 mismatch lines; last: SHADOW n=7 best_of_agreed=158 disagreed=0 offers_agreed=11 disagreed=0
+shadow2runs/track2.log: 106 looks, 4 sited, 0 mismatch lines; last: SHADOW n=106 best_of_agreed=161 disagreed=0 offers_agreed=225 disagreed=0
+shadow2runs/track3.log: 75 looks, 2 sited, 0 mismatch lines; last: SHADOW n=75 best_of_agreed=171 disagreed=0 offers_agreed=370 disagreed=0
+# The route rig under --invincible: day 12 (--meters 100 0 --route mark,task,home) on seeds 13, 4242, 11; days 6 and 7 (--route mark,task,calm,home) on seed 4242:
+shadow2day12/seed13.log: 40 looks, 0 sited, 0 mismatch lines; last: SHADOW n=40 best_of_agreed=305 disagreed=0 offers_agreed=306 disagreed=0
+shadow2day12/seed4242.log: 63 looks, 3 sited, 0 mismatch lines; last: SHADOW n=63 best_of_agreed=173 disagreed=0 offers_agreed=130 disagreed=0
+shadow2day12/seed11.log: 80 looks, 1 sited, 0 mismatch lines; last: SHADOW n=80 best_of_agreed=184 disagreed=0 offers_agreed=660 disagreed=0
+shadow2day12/day6_4242.log: 22 looks, 1 sited, 0 mismatch lines; last: SHADOW n=22 best_of_agreed=142 disagreed=0 offers_agreed=136 disagreed=0
+shadow2day12/day7_4242.log: 29 looks, 2 sited, 0 mismatch lines; last: SHADOW n=29 best_of_agreed=148 disagreed=0 offers_agreed=143 disagreed=0
+
+# Before it, with the per-call verdicts only:
+shadowruns/track1.log: 7 looks, 1 sited, 0 mismatch lines; last: SHADOW n=7 best_of_agreed=158 disagreed=0 offers_agreed=11 disagreed=0
+shadowruns/track2.log: 106 looks, 4 sited, 0 mismatch lines; last: SHADOW n=106 best_of_agreed=161 disagreed=0 offers_agreed=225 disagreed=0
+shadowruns/track3.log: 75 looks, 2 sited, 0 mismatch lines; last: SHADOW n=75 best_of_agreed=171 disagreed=0 offers_agreed=370 disagreed=0

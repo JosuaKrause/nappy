@@ -1,0 +1,39 @@
+== runs/before1.log vs runs/after1.log
+ticks compared: 1..939; looks 11/11; sited 0/0
+looks identical (position, stream states): True
+sited plans identical (position, path, facing, role): True
+stalled look n=3 tick=677 at (2412.871, 1872.614): siting 291662 us before, 14869 us after
+  its whole events tick: 292219 us before, 15317 us after
+  before siting per look n=11 median=939 p95=291662 p99=291662 max=291662 (us)
+  after siting per look n=11 median=930 p95=14869 p99=14869 max=14869 (us)
+  before events tick, look ticks n=11 median=1415 p95=292219 p99=292219 max=292219 (us)
+  before events tick, every tick n=939 median=495 p95=632 p99=1396 max=292219 (us)
+  after events tick, look ticks n=11 median=1411 p95=15317 p99=15317 max=15317 (us)
+  after events tick, every tick n=939 median=491 p95=599 p99=1409 max=15317 (us)
+  after, judgements counter at the stalled look: JUDGE n=3 judgements=810 offers=3
+== runs/before2.log vs runs/after2.log
+ticks compared: 1..938; looks 11/11; sited 0/0
+looks identical (position, stream states): True
+sited plans identical (position, path, facing, role): True
+stalled look n=3 tick=676 at (2412.871, 1872.614): siting 288642 us before, 14850 us after
+  its whole events tick: 289183 us before, 15311 us after
+  before siting per look n=11 median=1034 p95=288642 p99=288642 max=288642 (us)
+  after siting per look n=11 median=914 p95=14850 p99=14850 max=14850 (us)
+  before events tick, look ticks n=11 median=1591 p95=289183 p99=289183 max=289183 (us)
+  before events tick, every tick n=938 median=512 p95=617 p99=1503 max=289183 (us)
+  after events tick, look ticks n=11 median=1374 p95=15311 p99=15311 max=15311 (us)
+  after events tick, every tick n=938 median=484 p95=599 p99=1346 max=25358 (us)
+  after, judgements counter at the stalled look: JUDGE n=3 judgements=810 offers=3
+== runs/before3.log vs runs/after3.log
+ticks compared: 1..939; looks 11/11; sited 0/0
+looks identical (position, stream states): True
+sited plans identical (position, path, facing, role): True
+stalled look n=3 tick=676 at (2412.871, 1872.614): siting 275041 us before, 14864 us after
+  its whole events tick: 275517 us before, 15317 us after
+  before siting per look n=11 median=1005 p95=275041 p99=275041 max=275041 (us)
+  after siting per look n=11 median=912 p95=14864 p99=14864 max=14864 (us)
+  before events tick, look ticks n=11 median=1538 p95=275517 p99=275517 max=275517 (us)
+  before events tick, every tick n=939 median=517 p95=609 p99=1444 max=275517 (us)
+  after events tick, look ticks n=11 median=1391 p95=15317 p99=15317 max=15317 (us)
+  after events tick, every tick n=939 median=489 p95=608 p99=1363 max=15317 (us)
+  after, judgements counter at the stalled look: JUDGE n=3 judgements=810 offers=3
