@@ -1,6 +1,8 @@
 """Adds a shadow check to a scratch checkout of the branch. Never applied to the branch itself.
 
 Every `_best_of()` call also runs the loop that judges every try afresh, on a copy of the stream,
+with no verdict kept from anywhere, against the real call, which keeps its verdicts for the call
+and, inside a look, for the look,
 and every `_offer_ahead()` answered from the last question is worked out again; each prints a
 SHADOW line counting agreements and disagreements.
 
@@ -18,7 +20,7 @@ def sub(old, new):
     s = s.replace(old, new)
 
 
-sub("""	var verdicts := {}
+sub("""	var verdicts: Dictionary = kept if kept != null else {}
 	for _try in Tuning.EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]""",
 """	var shadow_rng := RandomNumberGenerator.new()
@@ -40,7 +42,7 @@ sub("""	var verdicts := {}
 			shadow_room = s_room
 			shadow_best = s_candidate
 	var real := _best_of_kept(def, rng, map, open_candidates, role, already, ground, leave_alone,
-			corridor, doors, reach_context)
+			corridor, doors, reach_context, kept)
 	var same := (real == null and shadow_best == null) or (real != null and shadow_best != null
 			and real.position == shadow_best.position and real.path == shadow_best.path
 			and real.facing == shadow_best.facing and real.role == shadow_best.role)
@@ -60,10 +62,11 @@ static var shadow_offers_disagreed := 0
 static func _best_of_kept(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
-		corridor: Corridor, doors: PackedVector2Array, reach_context: Array[Planned]) -> Planned:
+		corridor: Corridor, doors: PackedVector2Array, reach_context: Array[Planned],
+		kept: Variant) -> Planned:
 	var best: Planned = null
 	var best_room := -INF
-	var verdicts := {}
+	var verdicts: Dictionary = kept if kept != null else {}
 	for _try in Tuning.EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]""")
 

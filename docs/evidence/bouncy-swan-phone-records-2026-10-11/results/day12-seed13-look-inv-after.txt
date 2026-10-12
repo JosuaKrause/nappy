@@ -1,0 +1,421 @@
+[Main] day 12 started in 1913 ms (act 4): 397 events (31 live, 30 ahead), 86 crowd, 180s | calm: 1 park, 2 courtyard, 3 forest | closed: accident v(8,4), cordoned off v(6,5)
+ASK look=1 poster_crew usec=106 sited=false
+ASK look=1 poster_crew usec=85 sited=false
+ASK look=1 poster_crew usec=82 sited=false
+ASK look=1 poster_crew usec=80 sited=false
+ASK look=1 poster_crew usec=82 sited=false
+ASK look=1 poster_crew usec=84 sited=false
+ASK look=1 poster_crew usec=80 sited=false
+ASK look=1 poster_crew usec=80 sited=false
+ASK look=1 poster_crew usec=80 sited=false
+ASK look=1 poster_crew usec=80 sited=false
+LOOK n=1 tick=566 usec=984 pos=(1657.429, 2256.0) walk=6506795393933588339 crew=-7039413061573328176 place=1328195906478635260
+JUDGE n=1 judgements=734 offers=1
+ASK look=2 poster_crew usec=121 sited=false
+ASK look=2 poster_crew usec=101 sited=false
+ASK look=2 poster_crew usec=97 sited=false
+ASK look=2 poster_crew usec=95 sited=false
+ASK look=2 poster_crew usec=95 sited=false
+ASK look=2 poster_crew usec=95 sited=false
+ASK look=2 poster_crew usec=94 sited=false
+ASK look=2 poster_crew usec=94 sited=false
+ASK look=2 poster_crew usec=95 sited=false
+ASK look=2 poster_crew usec=94 sited=false
+LOOK n=2 tick=658 usec=1182 pos=(1415.216, 2256.0) walk=6506795393933588339 crew=-7039413061573328176 place=1328195906478635260
+JUDGE n=2 judgements=734 offers=2
+ASK look=3 poster_crew usec=118 sited=false
+ASK look=3 poster_crew usec=99 sited=false
+ASK look=3 poster_crew usec=108 sited=false
+ASK look=3 poster_crew usec=94 sited=false
+ASK look=3 poster_crew usec=95 sited=false
+ASK look=3 poster_crew usec=95 sited=false
+ASK look=3 poster_crew usec=94 sited=false
+ASK look=3 poster_crew usec=94 sited=false
+ASK look=3 poster_crew usec=97 sited=false
+ASK look=3 poster_crew usec=108 sited=false
+LOOK n=3 tick=689 usec=1199 pos=(1320.15, 2256.0) walk=6506795393933588339 crew=-7039413061573328176 place=1328195906478635260
+JUDGE n=3 judgements=734 offers=3
+ASK look=4 poster_crew usec=135 sited=false
+ASK look=4 poster_crew usec=108 sited=false
+ASK look=4 poster_crew usec=105 sited=false
+ASK look=4 poster_crew usec=105 sited=false
+ASK look=4 poster_crew usec=102 sited=false
+ASK look=4 poster_crew usec=104 sited=false
+ASK look=4 poster_crew usec=104 sited=false
+ASK look=4 poster_crew usec=102 sited=false
+ASK look=4 poster_crew usec=101 sited=false
+ASK look=4 poster_crew usec=100 sited=false
+LOOK n=4 tick=720 usec=1287 pos=(1225.084, 2256.0) walk=6506795393933588339 crew=-7039413061573328176 place=1328195906478635260
+JUDGE n=4 judgements=734 offers=4
+ASK look=5 poster_crew usec=116 sited=false
+ASK look=5 poster_crew usec=100 sited=false
+ASK look=5 poster_crew usec=96 sited=false
+ASK look=5 poster_crew usec=96 sited=false
+ASK look=5 poster_crew usec=94 sited=false
+ASK look=5 poster_crew usec=94 sited=false
+ASK look=5 poster_crew usec=94 sited=false
+ASK look=5 poster_crew usec=94 sited=false
+ASK look=5 poster_crew usec=94 sited=false
+ASK look=5 poster_crew usec=94 sited=false
+LOOK n=5 tick=751 usec=1160 pos=(1130.017, 2256.0) walk=6506795393933588339 crew=-7039413061573328176 place=1328195906478635260
+JUDGE n=5 judgements=734 offers=5
+ASK look=6 poster_crew usec=5058 sited=false
+ASK look=6 poster_crew usec=225 sited=false
+ASK look=6 poster_crew usec=220 sited=false
+ASK look=6 poster_crew usec=222 sited=false
+ASK look=6 poster_crew usec=222 sited=false
+ASK look=6 poster_crew usec=221 sited=false
+ASK look=6 poster_crew usec=219 sited=false
+ASK look=6 poster_crew usec=219 sited=false
+ASK look=6 poster_crew usec=221 sited=false
+ASK look=6 poster_crew usec=216 sited=false
+LOOK n=6 tick=782 usec=7258 pos=(1072.257, 2216.544) walk=6506795393933588339 crew=8241099362828551808 place=1328195906478635260
+JUDGE n=6 judgements=736 offers=6
+ASK look=7 poster_crew usec=5166 sited=false
+ASK look=7 poster_crew usec=231 sited=false
+ASK look=7 poster_crew usec=221 sited=false
+ASK look=7 poster_crew usec=219 sited=false
+ASK look=7 poster_crew usec=220 sited=false
+ASK look=7 poster_crew usec=226 sited=false
+ASK look=7 poster_crew usec=228 sited=false
+ASK look=7 poster_crew usec=225 sited=false
+ASK look=7 poster_crew usec=222 sited=false
+ASK look=7 poster_crew usec=224 sited=false
+LOOK n=7 tick=813 usec=7380 pos=(1072.003, 2121.479) walk=6506795393933588339 crew=-3064609088969048528 place=1328195906478635260
+JUDGE n=7 judgements=739 offers=7
+ASK look=8 poster_crew usec=384 sited=false
+ASK look=8 poster_crew usec=120 sited=false
+ASK look=8 poster_crew usec=110 sited=false
+ASK look=8 poster_crew usec=116 sited=false
+ASK look=8 poster_crew usec=108 sited=false
+ASK look=8 poster_crew usec=101 sited=false
+ASK look=8 poster_crew usec=112 sited=false
+ASK look=8 poster_crew usec=102 sited=false
+ASK look=8 poster_crew usec=108 sited=false
+ASK look=8 poster_crew usec=101 sited=false
+LOOK n=8 tick=844 usec=1559 pos=(1072.0, 2026.413) walk=6506795393933588339 crew=-3064609088969048528 place=1328195906478635260
+JUDGE n=8 judgements=739 offers=8
+ASK look=9 poster_crew usec=368 sited=false
+ASK look=9 poster_crew usec=109 sited=false
+ASK look=9 poster_crew usec=105 sited=false
+ASK look=9 poster_crew usec=103 sited=false
+ASK look=9 poster_crew usec=103 sited=false
+ASK look=9 poster_crew usec=102 sited=false
+ASK look=9 poster_crew usec=103 sited=false
+ASK look=9 poster_crew usec=107 sited=false
+ASK look=9 poster_crew usec=107 sited=false
+ASK look=9 poster_crew usec=104 sited=false
+LOOK n=9 tick=875 usec=1523 pos=(1072.0, 1931.347) walk=6506795393933588339 crew=-3064609088969048528 place=1328195906478635260
+JUDGE n=9 judgements=739 offers=9
+ASK look=10 poster_crew usec=285 sited=false
+ASK look=10 poster_crew usec=89 sited=false
+ASK look=10 poster_crew usec=86 sited=false
+ASK look=10 poster_crew usec=85 sited=false
+ASK look=10 poster_crew usec=84 sited=false
+ASK look=10 poster_crew usec=84 sited=false
+ASK look=10 poster_crew usec=83 sited=false
+ASK look=10 poster_crew usec=84 sited=false
+ASK look=10 poster_crew usec=84 sited=false
+ASK look=10 poster_crew usec=84 sited=false
+LOOK n=10 tick=906 usec=1199 pos=(1072.0, 1836.281) walk=6506795393933588339 crew=-3064609088969048528 place=1328195906478635260
+JUDGE n=10 judgements=739 offers=10
+ASK look=11 poster_crew usec=101 sited=false
+ASK look=11 poster_crew usec=83 sited=false
+ASK look=11 poster_crew usec=82 sited=false
+ASK look=11 poster_crew usec=84 sited=false
+ASK look=11 poster_crew usec=80 sited=false
+ASK look=11 poster_crew usec=80 sited=false
+ASK look=11 poster_crew usec=81 sited=false
+ASK look=11 poster_crew usec=81 sited=false
+ASK look=11 poster_crew usec=80 sited=false
+ASK look=11 poster_crew usec=80 sited=false
+LOOK n=11 tick=937 usec=980 pos=(1072.0, 1741.215) walk=6506795393933588339 crew=-3064609088969048528 place=1328195906478635260
+JUDGE n=11 judgements=739 offers=11
+ASK look=12 poster_crew usec=150 sited=false
+ASK look=12 poster_crew usec=197 sited=false
+ASK look=12 poster_crew usec=114 sited=false
+ASK look=12 poster_crew usec=98 sited=false
+ASK look=12 poster_crew usec=87 sited=false
+ASK look=12 poster_crew usec=238 sited=false
+ASK look=12 poster_crew usec=723 sited=false
+ASK look=12 poster_crew usec=1321 sited=false
+ASK look=12 poster_crew usec=421 sited=false
+ASK look=12 poster_crew usec=294 sited=false
+LOOK n=12 tick=968 usec=4277 pos=(1072.0, 1646.148) walk=6506795393933588339 crew=-3064609088969048528 place=1328195906478635260
+JUDGE n=12 judgements=739 offers=12
+ASK look=13 poster_crew usec=125 sited=false
+ASK look=13 poster_crew usec=83 sited=false
+ASK look=13 poster_crew usec=81 sited=false
+ASK look=13 poster_crew usec=80 sited=false
+ASK look=13 poster_crew usec=80 sited=false
+ASK look=13 poster_crew usec=81 sited=false
+ASK look=13 poster_crew usec=80 sited=false
+ASK look=13 poster_crew usec=81 sited=false
+ASK look=13 poster_crew usec=80 sited=false
+ASK look=13 poster_crew usec=79 sited=false
+LOOK n=13 tick=999 usec=1026 pos=(1072.0, 1551.082) walk=6506795393933588339 crew=-3064609088969048528 place=1328195906478635260
+JUDGE n=13 judgements=739 offers=13
+ASK look=14 poster_crew usec=105 sited=false
+ASK look=14 poster_crew usec=86 sited=false
+ASK look=14 poster_crew usec=84 sited=false
+ASK look=14 poster_crew usec=85 sited=false
+ASK look=14 poster_crew usec=84 sited=false
+ASK look=14 poster_crew usec=80 sited=false
+ASK look=14 poster_crew usec=80 sited=false
+ASK look=14 poster_crew usec=80 sited=false
+ASK look=14 poster_crew usec=80 sited=false
+ASK look=14 poster_crew usec=80 sited=false
+LOOK n=14 tick=1034 usec=1000 pos=(1072.0, 1523.616) walk=6506795393933588339 crew=-3064609088969048528 place=1328195906478635260
+JUDGE n=14 judgements=739 offers=14
+ASK look=15 poster_crew usec=101 sited=false
+ASK look=15 poster_crew usec=83 sited=false
+ASK look=15 poster_crew usec=81 sited=false
+ASK look=15 poster_crew usec=81 sited=false
+ASK look=15 poster_crew usec=81 sited=false
+ASK look=15 poster_crew usec=81 sited=false
+ASK look=15 poster_crew usec=81 sited=false
+ASK look=15 poster_crew usec=80 sited=false
+ASK look=15 poster_crew usec=80 sited=false
+ASK look=15 poster_crew usec=81 sited=false
+LOOK n=15 tick=1065 usec=968 pos=(1072.0, 1618.682) walk=6506795393933588339 crew=-3064609088969048528 place=1328195906478635260
+JUDGE n=15 judgements=739 offers=15
+ASK look=16 poster_crew usec=106 sited=false
+ASK look=16 poster_crew usec=86 sited=false
+ASK look=16 poster_crew usec=84 sited=false
+ASK look=16 poster_crew usec=84 sited=false
+ASK look=16 poster_crew usec=83 sited=false
+ASK look=16 poster_crew usec=84 sited=false
+ASK look=16 poster_crew usec=83 sited=false
+ASK look=16 poster_crew usec=83 sited=false
+ASK look=16 poster_crew usec=83 sited=false
+ASK look=16 poster_crew usec=83 sited=false
+LOOK n=16 tick=1096 usec=1018 pos=(1072.0, 1713.748) walk=6506795393933588339 crew=-3064609088969048528 place=1328195906478635260
+JUDGE n=16 judgements=739 offers=16
+ASK look=17 poster_crew usec=12751 sited=false
+ASK look=17 poster_crew usec=180 sited=false
+ASK look=17 poster_crew usec=175 sited=false
+ASK look=17 poster_crew usec=173 sited=false
+ASK look=17 poster_crew usec=176 sited=false
+ASK look=17 poster_crew usec=173 sited=false
+ASK look=17 poster_crew usec=175 sited=false
+ASK look=17 poster_crew usec=171 sited=false
+ASK look=17 poster_crew usec=172 sited=false
+ASK look=17 poster_crew usec=171 sited=false
+LOOK n=17 tick=1127 usec=14503 pos=(1072.0, 1808.814) walk=6506795393933588339 crew=6079829459970763232 place=1328195906478635260
+JUDGE n=17 judgements=745 offers=17
+ASK look=18 poster_crew usec=11900 sited=false
+ASK look=18 poster_crew usec=193 sited=false
+ASK look=18 poster_crew usec=183 sited=false
+ASK look=18 poster_crew usec=182 sited=false
+ASK look=18 poster_crew usec=185 sited=false
+ASK look=18 poster_crew usec=181 sited=false
+ASK look=18 poster_crew usec=180 sited=false
+ASK look=18 poster_crew usec=184 sited=false
+ASK look=18 poster_crew usec=181 sited=false
+ASK look=18 poster_crew usec=180 sited=false
+LOOK n=18 tick=1158 usec=13703 pos=(1068.503, 1903.688) walk=6506795393933588339 crew=9037568424382400912 place=1328195906478635260
+JUDGE n=18 judgements=750 offers=18
+ASK look=19 poster_crew usec=10772 sited=false
+ASK look=19 poster_crew usec=210 sited=false
+ASK look=19 poster_crew usec=190 sited=false
+ASK look=19 poster_crew usec=187 sited=false
+ASK look=19 poster_crew usec=185 sited=false
+ASK look=19 poster_crew usec=184 sited=false
+ASK look=19 poster_crew usec=184 sited=false
+ASK look=19 poster_crew usec=184 sited=false
+ASK look=19 poster_crew usec=184 sited=false
+ASK look=19 poster_crew usec=195 sited=false
+LOOK n=19 tick=1189 usec=14844 pos=(1071.959, 1998.443) walk=6506795393933588339 crew=-5886307444954555072 place=1328195906478635260
+JUDGE n=19 judgements=754 offers=19
+ASK look=20 poster_crew usec=2908 sited=false
+ASK look=20 poster_crew usec=184 sited=false
+ASK look=20 poster_crew usec=180 sited=false
+ASK look=20 poster_crew usec=179 sited=false
+ASK look=20 poster_crew usec=178 sited=false
+ASK look=20 poster_crew usec=178 sited=false
+ASK look=20 poster_crew usec=177 sited=false
+ASK look=20 poster_crew usec=178 sited=false
+ASK look=20 poster_crew usec=178 sited=false
+ASK look=20 poster_crew usec=181 sited=false
+LOOK n=20 tick=1220 usec=4699 pos=(1072.0, 2093.509) walk=6506795393933588339 crew=-5886307444954555072 place=1328195906478635260
+JUDGE n=20 judgements=755 offers=20
+ASK look=21 poster_crew usec=7980 sited=false
+ASK look=21 poster_crew usec=186 sited=false
+ASK look=21 poster_crew usec=181 sited=false
+ASK look=21 poster_crew usec=179 sited=false
+ASK look=21 poster_crew usec=179 sited=false
+ASK look=21 poster_crew usec=178 sited=false
+ASK look=21 poster_crew usec=178 sited=false
+ASK look=21 poster_crew usec=178 sited=false
+ASK look=21 poster_crew usec=179 sited=false
+ASK look=21 poster_crew usec=178 sited=false
+LOOK n=21 tick=1251 usec=9752 pos=(1072.0, 2188.575) walk=6506795393933588339 crew=4852787822393746672 place=1328195906478635260
+JUDGE n=21 judgements=758 offers=21
+ASK look=22 poster_crew usec=7653 sited=false
+ASK look=22 poster_crew usec=183 sited=false
+ASK look=22 poster_crew usec=175 sited=false
+ASK look=22 poster_crew usec=176 sited=false
+ASK look=22 poster_crew usec=175 sited=false
+ASK look=22 poster_crew usec=174 sited=false
+ASK look=22 poster_crew usec=175 sited=false
+ASK look=22 poster_crew usec=174 sited=false
+ASK look=22 poster_crew usec=174 sited=false
+ASK look=22 poster_crew usec=174 sited=false
+LOOK n=22 tick=1282 usec=9392 pos=(1072.0, 2283.642) walk=6506795393933588339 crew=1928179750122283168 place=1328195906478635260
+JUDGE n=22 judgements=761 offers=22
+ASK look=23 poster_crew usec=105 sited=false
+ASK look=23 poster_crew usec=84 sited=false
+ASK look=23 poster_crew usec=82 sited=false
+ASK look=23 poster_crew usec=82 sited=false
+ASK look=23 poster_crew usec=80 sited=false
+ASK look=23 poster_crew usec=80 sited=false
+ASK look=23 poster_crew usec=80 sited=false
+ASK look=23 poster_crew usec=80 sited=false
+ASK look=23 poster_crew usec=80 sited=false
+ASK look=23 poster_crew usec=80 sited=false
+LOOK n=23 tick=1313 usec=1006 pos=(1072.0, 2378.708) walk=6506795393933588339 crew=1928179750122283168 place=1328195906478635260
+JUDGE n=23 judgements=761 offers=23
+ASK look=24 poster_crew usec=119 sited=false
+ASK look=24 poster_crew usec=98 sited=false
+ASK look=24 poster_crew usec=95 sited=false
+ASK look=24 poster_crew usec=95 sited=false
+ASK look=24 poster_crew usec=93 sited=false
+ASK look=24 poster_crew usec=94 sited=false
+ASK look=24 poster_crew usec=94 sited=false
+ASK look=24 poster_crew usec=93 sited=false
+ASK look=24 poster_crew usec=93 sited=false
+ASK look=24 poster_crew usec=93 sited=false
+LOOK n=24 tick=1344 usec=1141 pos=(1132.452, 2413.887) walk=6506795393933588339 crew=1928179750122283168 place=1328195906478635260
+JUDGE n=24 judgements=761 offers=24
+ASK look=25 poster_crew usec=109 sited=false
+ASK look=25 poster_crew usec=87 sited=false
+ASK look=25 poster_crew usec=85 sited=false
+ASK look=25 poster_crew usec=84 sited=false
+ASK look=25 poster_crew usec=84 sited=false
+ASK look=25 poster_crew usec=84 sited=false
+ASK look=25 poster_crew usec=84 sited=false
+ASK look=25 poster_crew usec=83 sited=false
+ASK look=25 poster_crew usec=84 sited=false
+ASK look=25 poster_crew usec=84 sited=false
+LOOK n=25 tick=1375 usec=1014 pos=(1227.514, 2414.659) walk=6506795393933588339 crew=1928179750122283168 place=1328195906478635260
+JUDGE n=25 judgements=761 offers=25
+ASK look=26 poster_crew usec=7582 sited=false
+ASK look=26 poster_crew usec=182 sited=false
+ASK look=26 poster_crew usec=177 sited=false
+ASK look=26 poster_crew usec=176 sited=false
+ASK look=26 poster_crew usec=176 sited=false
+ASK look=26 poster_crew usec=175 sited=false
+ASK look=26 poster_crew usec=175 sited=false
+ASK look=26 poster_crew usec=176 sited=false
+ASK look=26 poster_crew usec=176 sited=false
+ASK look=26 poster_crew usec=176 sited=false
+LOOK n=26 tick=1406 usec=9330 pos=(1322.577, 2415.434) walk=6506795393933588339 crew=4674963194018074704 place=1328195906478635260
+JUDGE n=26 judgements=764 offers=26
+ASK look=27 poster_crew usec=7967 sited=false
+ASK look=27 poster_crew usec=189 sited=false
+ASK look=27 poster_crew usec=183 sited=false
+ASK look=27 poster_crew usec=185 sited=false
+ASK look=27 poster_crew usec=181 sited=false
+ASK look=27 poster_crew usec=181 sited=false
+ASK look=27 poster_crew usec=185 sited=false
+ASK look=27 poster_crew usec=180 sited=false
+ASK look=27 poster_crew usec=181 sited=false
+ASK look=27 poster_crew usec=181 sited=false
+LOOK n=27 tick=1437 usec=9800 pos=(1417.641, 2415.986) walk=6506795393933588339 crew=-6075174557796699136 place=1328195906478635260
+JUDGE n=27 judgements=767 offers=27
+ASK look=28 poster_crew usec=7615 sited=false
+ASK look=28 poster_crew usec=179 sited=false
+ASK look=28 poster_crew usec=175 sited=false
+ASK look=28 poster_crew usec=171 sited=false
+ASK look=28 poster_crew usec=172 sited=false
+ASK look=28 poster_crew usec=172 sited=false
+ASK look=28 poster_crew usec=171 sited=false
+ASK look=28 poster_crew usec=172 sited=false
+ASK look=28 poster_crew usec=171 sited=false
+ASK look=28 poster_crew usec=171 sited=false
+LOOK n=28 tick=1531 usec=9351 pos=(1656.722, 2415.215) walk=6506795393933588339 crew=7051168465389882288 place=1328195906478635260
+JUDGE n=28 judgements=770 offers=28
+ASK look=29 poster_crew usec=7702 sited=false
+ASK look=29 poster_crew usec=190 sited=false
+ASK look=29 poster_crew usec=181 sited=false
+ASK look=29 poster_crew usec=180 sited=false
+ASK look=29 poster_crew usec=179 sited=false
+ASK look=29 poster_crew usec=179 sited=false
+ASK look=29 poster_crew usec=178 sited=false
+ASK look=29 poster_crew usec=179 sited=false
+ASK look=29 poster_crew usec=178 sited=false
+ASK look=29 poster_crew usec=178 sited=false
+LOOK n=29 tick=1562 usec=9500 pos=(1751.779, 2415.993) walk=6506795393933588339 crew=8532857170248062816 place=1328195906478635260
+JUDGE n=29 judgements=773 offers=29
+ASK look=30 poster_crew usec=5394 sited=false
+ASK look=30 poster_crew usec=186 sited=false
+ASK look=30 poster_crew usec=181 sited=false
+ASK look=30 poster_crew usec=178 sited=false
+ASK look=30 poster_crew usec=179 sited=false
+ASK look=30 poster_crew usec=178 sited=false
+ASK look=30 poster_crew usec=178 sited=false
+ASK look=30 poster_crew usec=178 sited=false
+ASK look=30 poster_crew usec=178 sited=false
+ASK look=30 poster_crew usec=178 sited=false
+LOOK n=30 tick=1593 usec=7189 pos=(1846.845, 2416.0) walk=6506795393933588339 crew=1969171574083540752 place=1328195906478635260
+JUDGE n=30 judgements=775 offers=30
+ASK look=31 poster_crew usec=104 sited=false
+ASK look=31 poster_crew usec=86 sited=false
+ASK look=31 poster_crew usec=85 sited=false
+ASK look=31 poster_crew usec=84 sited=false
+ASK look=31 poster_crew usec=84 sited=false
+ASK look=31 poster_crew usec=84 sited=false
+ASK look=31 poster_crew usec=83 sited=false
+ASK look=31 poster_crew usec=83 sited=false
+ASK look=31 poster_crew usec=83 sited=false
+ASK look=31 poster_crew usec=84 sited=false
+LOOK n=31 tick=1624 usec=1014 pos=(1941.912, 2416.0) walk=6506795393933588339 crew=1969171574083540752 place=1328195906478635260
+JUDGE n=31 judgements=775 offers=31
+ASK look=32 poster_crew usec=106 sited=false
+ASK look=32 poster_crew usec=87 sited=false
+ASK look=32 poster_crew usec=85 sited=false
+ASK look=32 poster_crew usec=84 sited=false
+ASK look=32 poster_crew usec=84 sited=false
+ASK look=32 poster_crew usec=84 sited=false
+ASK look=32 poster_crew usec=84 sited=false
+ASK look=32 poster_crew usec=84 sited=false
+ASK look=32 poster_crew usec=84 sited=false
+ASK look=32 poster_crew usec=84 sited=false
+LOOK n=32 tick=1655 usec=1026 pos=(2036.978, 2416.0) walk=6506795393933588339 crew=1969171574083540752 place=1328195906478635260
+JUDGE n=32 judgements=775 offers=32
+ASK look=33 poster_crew usec=107 sited=false
+ASK look=33 poster_crew usec=87 sited=false
+ASK look=33 poster_crew usec=85 sited=false
+ASK look=33 poster_crew usec=84 sited=false
+ASK look=33 poster_crew usec=84 sited=false
+ASK look=33 poster_crew usec=84 sited=false
+ASK look=33 poster_crew usec=83 sited=false
+ASK look=33 poster_crew usec=83 sited=false
+ASK look=33 poster_crew usec=84 sited=false
+ASK look=33 poster_crew usec=84 sited=false
+LOOK n=33 tick=1686 usec=1027 pos=(2132.044, 2416.0) walk=6506795393933588339 crew=1969171574083540752 place=1328195906478635260
+JUDGE n=33 judgements=775 offers=33
+ASK look=34 poster_crew usec=116 sited=false
+ASK look=34 poster_crew usec=101 sited=false
+ASK look=34 poster_crew usec=85 sited=false
+ASK look=34 poster_crew usec=84 sited=false
+ASK look=34 poster_crew usec=84 sited=false
+ASK look=34 poster_crew usec=84 sited=false
+ASK look=34 poster_crew usec=99 sited=false
+ASK look=34 poster_crew usec=95 sited=false
+ASK look=34 poster_crew usec=84 sited=false
+ASK look=34 poster_crew usec=83 sited=false
+LOOK n=34 tick=1717 usec=1066 pos=(2227.11, 2416.0) walk=6506795393933588339 crew=1969171574083540752 place=1328195906478635260
+JUDGE n=34 judgements=775 offers=34
+LOOK n=35 tick=1748 usec=6 pos=(2256.006, 2482.897) walk=6506795393933588339 crew=1969171574083540752 place=1328195906478635260
+JUDGE n=35 judgements=775 offers=34
+LOOK n=36 tick=1779 usec=7 pos=(2256.0, 2577.963) walk=6506795393933588339 crew=1969171574083540752 place=1328195906478635260
+JUDGE n=36 judgements=775 offers=34
+LOOK n=37 tick=1810 usec=6 pos=(2257.78, 2672.182) walk=6506795393933588339 crew=1969171574083540752 place=1328195906478635260
+JUDGE n=37 judgements=775 offers=34
+LOOK n=38 tick=1841 usec=6 pos=(2319.587, 2704.027) walk=6506795393933588339 crew=1969171574083540752 place=1328195906478635260
+JUDGE n=38 judgements=775 offers=34
+LOOK n=39 tick=1872 usec=6 pos=(2414.654, 2704.0) walk=6506795393933588339 crew=1969171574083540752 place=1328195906478635260
+JUDGE n=39 judgements=775 offers=34
+LOOK n=40 tick=1903 usec=5 pos=(2509.72, 2704.0) walk=6506795393933588339 crew=1969171574083540752 place=1328195906478635260
+JUDGE n=40 judgements=775 offers=34
