@@ -1255,9 +1255,17 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 ## noise, and the noise is attributable, so an ordinary walker is exactly as much a source as a
 ## honking car — `ExcitementHalo`'s own floor and cap are what keep a busy pavement legible rather
 ## than a special case here.
+##
+## **A body past `CrowdAgent.silent_beyond()` is skipped without a call into it**: that is a reach
+## no agent's own early-out in `contribution_at()` exceeds, so the answer is the same and the
+## several hundred agents of a busy day out of earshot cost one distance each.
 func excitement_sources_at(world_position: Vector2) -> Array:
 	var sources: Array = []
+	var reach := CrowdAgent.silent_beyond()
+	var reach_squared := reach * reach
 	for agent in _agents:
+		if agent.global_position.distance_squared_to(world_position) > reach_squared:
+			continue
 		var contribution := agent.contribution_at(world_position)
 		if contribution > 0.0:
 			sources.append([agent, contribution])

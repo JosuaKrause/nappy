@@ -409,7 +409,24 @@ var _jolt := 0.0
 var _jolt_for := 1.0
 var _jolt_intensity := 0.0
 var _jolt_inner := 0.0
-var _jolt_outer := 0.0
+var _jolt_outer := 0.0:
+	set(value):
+		_jolt_outer = value
+		_widest_jolt_outer = maxf(_widest_jolt_outer, value)
+
+## The widest `_jolt_outer` any agent has carried in this process — it only ever grows, through
+## the setter above, however the radius is written. What `silent_beyond()` is stated over, so a
+## jolt wider than any `startle()` passes today still counts the moment it exists.
+static var _widest_jolt_outer := 0.0
+
+## A distance from any agent beyond which its field is exactly zero: the reach
+## `contribution_at()` rejects past, taken over both kinds and the widest jolt there has been.
+## `Crowd.excitement_sources_at()` asks it once a sweep and skips a body past it without calling
+## into the body at all, which is most of the crowd most of the time.
+static func silent_beyond() -> float:
+	var outer := maxf(maxf(Tuning.CAR_OUTER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS),
+			_widest_jolt_outer)
+	return outer / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
 
 ## `[when, points]` entries landed on her from this agent, `when` stamped from `_clock` in
 ## seconds, for whatever is still inside `ExcitementHalo.WINDOW` — a true sliding sum rather than
