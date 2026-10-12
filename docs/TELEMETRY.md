@@ -901,6 +901,13 @@ what its callbacks took, as `frame/work`, then its largest costs under short nam
 `slow 41.2/39.0 ms  crowd 12.3  draw 9.8  proc 6.1` — or `outside callbacks` in their place. Three
 costs are shown when they fit the readout's width at its font, fewer when they do not.
 
+**The readout's text is re-set four times a second** (`Main.READOUT_INTERVAL`), not every frame:
+setting about thirty lines of text each frame added draw calls and drawing work to every record
+taken under `?debug=1`, which the record then measured as the game's. A slow frame is not lost to
+it: the ledger keeps the last slow frame and the readout names the latest one at each refresh, the
+record keeps every one, and the spike view is fed every frame. Turning the readout on shows it at
+once.
+
 ---
 
 ## Three constraints on the implementation

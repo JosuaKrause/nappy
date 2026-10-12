@@ -148,6 +148,14 @@ var _rig_quit_game_seconds := 0.0
 ## live page's ?debug=1 reaches the debug flags". The snapshot key and the layer-toggle keys keep
 ## reading `_debug` alone: a release page can ask `?layers=` for a picture already drawn a
 ## particular way, never toggle one by hand with no keyboard event the page itself sent.
+## How often the readout's text is re-set, in seconds. Re-setting some thirty lines of text every
+## frame adds draw calls and drawing work to every phone record taken under `?debug=1`, so the
+## text is built a few times a second instead. Nothing the readout shows is lost by it: `FrameCost`
+## hands its numbers over once a second, the frame record keeps every slow frame and the readout
+## names the latest one at each refresh, and the spike view (`_frame_graph`) is fed every frame.
+const READOUT_INTERVAL := 0.25
+## Seconds until the readout's text is next rebuilt; 0 or less means the next frame rebuilds it.
+var _readout_wait := 0.0
 var _readout_requested := DevFlags.readout_requested()
 ## `DevFlags.skip_words()`, read once for the same reason `_readout_requested` is: so a test can
 ## set it directly, and so the readout's own `skip` line below is not re-splitting `--skip`'s
@@ -2567,6 +2575,9 @@ func _process(delta: float) -> void:
 	# `_layer_readout_on` is this layer's own `4` key: off, the string is not assembled either,
 	# the same "gated rather than merely hidden" rule holds.
 	if not (_debug or _readout_requested) or not _layer_readout_on:
+		_readout_wait = 0.0
+		return
+	if not _readout_due(delta):
 		return
 	var tile := _city.map.world_to_tile(_player.global_position)
 	if _build_text == "":
@@ -2608,6 +2619,15 @@ func _process(delta: float) -> void:
 		"esc         pause  (r restart, q quit)",
 	])
 
+## Whether this frame rebuilds the readout's text: the first frame after it is switched on, and then
+## every `READOUT_INTERVAL`. Counts the frames' own `delta`, so a slow frame does not shorten the wait.
+func _readout_due(delta: float) -> bool:
+	_readout_wait -= delta
+	if _readout_wait > 0.0:
+		return false
+	_readout_wait = READOUT_INTERVAL
+	return true
+
 ## The frame record's readout line, beneath the frame block, or nothing when no record runs.
 func _frame_record_lines() -> Array[String]:
 	if _frame_recorder == null:
@@ -2644,6 +2664,9 @@ func _write_the_escape_readout(delta: float) -> void:
 	if _frame_graph:
 		_frame_graph.push(delta)
 	if not (_debug or _readout_requested) or not _layer_readout_on:
+		_readout_wait = 0.0
+		return
+	if not _readout_due(delta):
 		return
 	if _build_text == "":
 		_build_text = TitleScreen.build_text()

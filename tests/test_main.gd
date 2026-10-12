@@ -210,6 +210,22 @@ func _test_the_readout_flag_shows_it_on_a_release_build(t) -> void:
 	t.check("seed" in main._status.text and "fps" in main._status.text,
 			"?debug=1 on a release build assembles the same readout a debug build gets")
 
+	# The text is re-set a few times a second, not every frame: a changed seed line shows only once
+	# the interval has run out, and the first frame after the layer is switched on shows at once.
+	var first: String = main._status.text
+	GameState.run_seed += 1
+	main._process(0.016)
+	t.check(main._status.text == first, "a frame inside the interval leaves the readout's text alone")
+	main._process(MAIN_SCRIPT.READOUT_INTERVAL)
+	t.check(main._status.text != first, "the interval's end rebuilds it")
+	GameState.run_seed -= 1
+	main._layer_readout_on = false
+	main._process(0.016)
+	main._layer_readout_on = true
+	main._status.text = ""
+	main._process(0.016)
+	t.check(main._status.text != "", "switching the layer back on rebuilds it at once")
+
 	main._status.free()
 	main.free()
 	hud.free()
