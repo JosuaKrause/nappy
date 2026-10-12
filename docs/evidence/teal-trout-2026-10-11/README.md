@@ -4,9 +4,9 @@
 draws while neutral, what changes when she comes close, and what it draws while charging, and the
 code that picks each picture. Each row is backed by one frame-locked clip of that charger going
 through its stages, from a scene recipe that stands her in front of it, and a strip of its key
-frames. It is the evidence for [teal-trout](../../todo/2026-10-11-teal-trout/README.md)'s first
-item, *every charger's three stages are listed*, and for the player's choice of what the warning
-stage looks like; it proposes no drawing.
+frames. It is the audit behind [teal-trout](../../todo/2026-10-11-teal-trout/README.md), *every
+charger is neutral, then warns, then charges*, and the evidence for the player's choice of what
+the warning stage looks like; it proposes no drawing.
 
 **Scope**, from [velvet-marten](../../playtests/2026-10-11-velvet-marten.md): #699 asks for
 "neutral (with neutral visuals), warning (when the player gets close; needs to be visually
@@ -28,23 +28,42 @@ after the table, as are the pursuers left out by #705.
   (`_chase()`, `event_instance.gd:2372`).
 - **Charge** is the lunge and the chase after it.
 
-The cues every row shares are not part of its picture but sit on top of it, and they change with
-the stage too: the caret over the thing (`_draw_mark()`, `event_instance.gd:5004`) **flashes for
-the whole warning** (`event_instance.gd:5011`) and is steady while charging; it is never doubled
-red while waiting, because `will_be_lethal()` refuses a waiting row (`event_instance.gd:4458`). The
-exclamation mark over her goes up for a `hard_fail` row closing on her. Those are the existing
-vocabulary (the **cues** skill), so the warning stage's own picture is what the table is about.
+Three cues every row shares sit on top of its picture. They are the existing vocabulary (the
+**cues** skill), and none of them is keyed to the stage itself, so the warning stage's own picture
+is what the table is about; but each can change what a stage looks like, and the table says where
+it does:
+
+- **The caret over the thing** (`_draw_mark()`, `event_instance.gd:5004`) shows only when
+  `_caret_strength()` (`event_instance.gd:4938`) wants one: doubled red when the thing's own
+  course, with her held still, reaches the radius that ends the day within
+  `Tuning.EXPECTED_IMPACT_HORIZON` (5s) (`will_be_lethal()`, which refuses a waiting row,
+  `event_instance.gd:4458`, so a waiting charger never has one), or amber when it is projected to
+  net her `Tuning.EXPECTED_IMPACT_POINTS` (40 points) or more over that horizon. **When it shows
+  during the warning it flashes** (`event_instance.gd:5011`), and it is steady while charging. A
+  pursuer holding still at its stand-off can have neither, which is the dog's case below.
+- **The halo**, a thin rim traced round the thing's own silhouette (`EntityHalo`, built by
+  `_build_halo()`, `event_instance.gd:1645`), shows whenever the thing's field is charging her
+  meter by more than `ExcitementHalo.CONTRIBUTION_FLOOR` (1 point a second) (`select_sources()`,
+  `src/ui/excitement_halo.gd:141`). It follows her distance from the field, not the stage: a
+  waiting charger emits at full strength (`_notice_damping()`, `event_instance.gd:3979`), so a
+  charger whose field reaches further than its trigger already has its halo while neutral (the
+  robber's 200px field against his 140px trigger), and one whose trigger is at or inside its
+  field's edge gets it at about the moment it notices her (the dog's 130px trigger in its 150px
+  field, the hunting roadblock's 180px in its 180px). **In the clips the halo comes on with the
+  warning for the dog, the roadblock's guard, the policeman and the van's men**, so for those it is
+  the one change on the thing itself between neutral and warning.
+- **The exclamation mark over her** goes up for a `hard_fail` row closing on her.
 
 ## The table
 
 | Charger | Row or class | Neutral (waiting) | When she comes close (warning) | Charging | Short of |
 |---|---|---|---|---|---|
-| **Charging dog**, from day 4, placed on the map | `charging_dog` (`src/events/event_catalogue.gd:1538`; trigger 130px from day 4, `:1576`) | Its running picture, `CHARGING_DOG_BY_VIEW` frame a, held still (`event_instance.gd:5341`; frame b only while it covers ground, `_gait_stepping()`, `:4714`): legs stretched mid-gallop, the "looks like it's flying" of #698 | **The same picture.** It turns to face her (`event_instance.gd:2398`, in `_chase()`'s notice) and closes to its 104px stand-off at a gallop (frames a and b by distance walked, `event_instance.gd:5341`), then holds it standing still on frame a. **No caret over the dog while it holds** (seen in the clip): held still, neither its doubled red caret (its own course reaching her) nor its amber one (what it is projected to net her) comes up, so only the amber exclamation mark over her says anything | The same picture, galloping (a and b), with the doubled red caret | **Neutral and warning both.** All three stages are one picture; the wait is a gallop frozen in the air, and the warning is only the dog turning and the mark over her |
-| **Alley robber**, and the resistance's guards who are the same row | `alley_robbery` (`event_catalogue.gd:1980`, trigger 140px `:2022`); the chalk mark's guard and day 13's roadblock-task guard are `alley_robbery` instances (`src/resistance/resistance_director.gd:753`, set on her by `notice_her_at()` at `:2928`) | `ROBBER_WAITING_BY_VIEW`, hood up and hands in his coat, turned toward her along a clear line (`event_instance.gd:5674`–`5675`, `_robber_waiting_heading()` `:5719`) | `ROBBER_LUNGING_BY_VIEW`, leaning over a forward leg, from the frame he notices her (`event_instance.gd:5675`); he closes to his 116px stand-off with the lunge's stride frames; flashing doubled red caret | `ROBBER_LUNGING_BY_VIEW` and its stride `_B` (`event_instance.gd:5678`–`5679`), steady caret | **Warning reads as the charge.** Neutral is distinct; the warning is already the lunge picture, told from the chase only by the caret flashing. Standing at his edge, the warning lasted about 0.6s in the clip |
-| **Hunting roadblock's guard** (heat 4) | `roadblock` at `HeatResponse.HUNTS` (`event_catalogue.gd:1878`; `EventDef.at_heat()` sets the 180px trigger, `src/events/event_def.gd:1145`) | Two guards posted at the band, `GUARD_STANDING_BY_VIEW`, facing out from it (`_draw_posted_guard()`, `event_instance.gd:5845`) | The guard on her side becomes the chaser at his own post (`_set_off_from_the_near_post()`, `event_instance.gd:1580`) and is drawn **`GUARD_STANDING_BY_VIEW` still** (`_draw_the_chaser()`, `event_instance.gd:5785`–`5786`), turned toward her, with a flashing doubled red caret; while he closes to his stand-off he glides toward her in that standing picture | `GUARD_LUNGING_BY_VIEW` (`event_instance.gd:5785`), steady caret | **Warning reads as neutral.** The same standing guard, only turned to her, sliding closer and under a flashing caret |
+| **Charging dog**, from day 4, placed on the map | `charging_dog` (`src/events/event_catalogue.gd:1538`; trigger 130px from day 4, `:1576`) | Its running picture, `CHARGING_DOG_BY_VIEW` frame a, held still (`event_instance.gd:5341`; frame b only while it covers ground, `_gait_stepping()`, `:4714`): legs stretched mid-gallop, the "looks like it's flying" of #698 | **The same picture.** It turns to face her (`event_instance.gd:2398`, in `_chase()`'s notice) and closes to its 104px stand-off at a gallop (frames a and b by distance walked, `event_instance.gd:5341`), then holds it standing still on frame a. **No caret over the dog while it holds** (seen in the clip): held still, neither its doubled red caret (its own course reaching her) nor its amber one (what it is projected to net her) comes up; what changes on the dog is the halo, which came on as she reached its trigger, and the amber exclamation mark over her | The same picture, galloping (a and b), halo on, with the doubled red caret | **Neutral and warning both.** All three stages are one picture; the wait is a gallop frozen in the air, and the warning is the dog turning, its halo coming on (because her distance is now inside its field, not because it noticed her) and the mark over her |
+| **Alley robber**, and the resistance's guards who are the same row | `alley_robbery` (`event_catalogue.gd:1980`, trigger 140px `:2022`); the chalk mark's guard and day 13's roadblock-task guard are `alley_robbery` instances (`src/resistance/resistance_director.gd:753`, set on her by `notice_her_at()` at `:2928`) | `ROBBER_WAITING_BY_VIEW`, hood up and hands in his coat, turned toward her along a clear line (`event_instance.gd:5674`–`5675`, `_robber_waiting_heading()` `:5719`); his halo is already on while she is inside his 200px field | `ROBBER_LUNGING_BY_VIEW`, leaning over a forward leg, from the frame he notices her (`event_instance.gd:5675`); he closes to his 116px stand-off with the lunge's stride frames; flashing doubled red caret | `ROBBER_LUNGING_BY_VIEW` and its stride `_B` (`event_instance.gd:5678`–`5679`), steady caret | **Warning reads as the charge.** Neutral is distinct; the warning is already the lunge picture, told from the chase only by the caret flashing (the halo is on in all three stages here). Standing at his edge, the warning lasted about 0.6s in the clip |
+| **Hunting roadblock's guard** (heat 4) | `roadblock` at `HeatResponse.HUNTS` (`event_catalogue.gd:1878`; `EventDef.at_heat()` sets the 180px trigger, `src/events/event_def.gd:1145`) | Two guards posted at the band, `GUARD_STANDING_BY_VIEW`, facing out from it (`_draw_posted_guard()`, `event_instance.gd:5845`) | The guard on her side becomes the chaser at his own post (`_set_off_from_the_near_post()`, `event_instance.gd:1580`) and is drawn **`GUARD_STANDING_BY_VIEW` still** (`_draw_the_chaser()`, `event_instance.gd:5785`–`5786`), turned toward her, with a flashing doubled red caret and his halo, which comes on as her distance reaches his field; while he closes to his stand-off he glides toward her in that standing picture | `GUARD_LUNGING_BY_VIEW` (`event_instance.gd:5785`), steady caret | **Warning is the neutral picture with a halo.** The same standing guard, only turned to her, sliding closer, rimmed by his halo and under a flashing caret; the picture itself does not change |
 | **Door guard**, after she walks through a door uninspected | `door_guard` (`event_catalogue.gd:2815`), sent by `EventManager._set_a_guard_on_her()` (`src/events/event_manager.gd:2272`) | None of its own: it is not in the world until she crosses. The guards drawn at the huts (`GUARD_STANDING`, `_draw_checkpoint_hut()`, `event_instance.gd:6510`) stay at their posts | A new guard steps out of the hut's wall in `GUARD_STANDING_BY_VIEW` and holds his ground for his 1.8s notice (`_draw_masked_pursuer()` via `_stands_still_now()`, `event_instance.gd:6145`, `:5708`) | `GUARD_LUNGING_BY_VIEW` (`event_instance.gd:6145`) | **Neutral, and a warning distinct from neutral.** His trigger is her crossing, not her nearness, and the man who warns is drawn exactly as the hut guards are. **No clip** (below) |
-| **Policeman out of an investigating patrol car** (heat 3) | `police_patrol` at `HeatResponse.PRESSES`, past `HEAT_INVESTIGATES_LEVEL` (`event_catalogue.gd:1620`; `event_def.gd:1129`); the man is `EventCatalogue.out_of_the_car()` (`event_catalogue.gd:2243`) | The patrol car driving its route, `POLICE_CAR_BY_VIEW` (`event_instance.gd:5352`): the same picture as every cold patrol car | The car stops on its route (`_investigate()`, `event_instance.gd:2505`) and a policeman appears at its door in `POLICEMAN_WAITING_BY_VIEW`, holding his ground for his notice and following her at his stand-off in that standing picture, with no caret over him in the clip (`_draw_policeman()`, `event_instance.gd:5698`–`5699`) | `POLICEMAN_LUNGING_BY_VIEW` and its stride (`event_instance.gd:5699`) | **Nothing missing as a sequence**: a driving car, a stopped car with a standing man, a running man. The neutral car is indistinguishable from a patrol that will never stop, and his catch is a stop rather than the end of the day |
-| **Men out of a hunting van** (heat 4) | `abduction` (unmarked van, `event_catalogue.gd:1924`) and `night_raid` (`:2288`) with `hunts_on_foot`, 180px trigger (`event_def.gd:1149`); the men are `out_of_the_car(day, false)` | The van parked, `UNMARKED_VAN_BY_VIEW` (`_draw_abduction()`, `event_instance.gd:6414`) or `RIOT_VAN_BY_VIEW` (`:5374`). The unmarked van still walks a bystander to it and takes them while it waits (seen in the clip) | Two men appear at its door, standing (a policeman's waiting picture through day 8, a guard's standing picture from day 9), flashing doubled red carets | Lunging pictures, steady carets | **Nothing missing as a sequence**, as for the patrol car. The van is the neutral stage and looks the same as a van that will not hunt |
+| **Policeman out of an investigating patrol car** (heat 3) | `police_patrol` at `HeatResponse.PRESSES`, past `HEAT_INVESTIGATES_LEVEL` (`event_catalogue.gd:1620`; `event_def.gd:1129`); the man is `EventCatalogue.out_of_the_car()` (`event_catalogue.gd:2243`) | The patrol car driving its route, `POLICE_CAR_BY_VIEW` (`event_instance.gd:5352`): the same picture as every cold patrol car | The car stops on its route (`_investigate()`, `event_instance.gd:2505`) and a policeman appears at its door in `POLICEMAN_WAITING_BY_VIEW`, holding his ground for his notice and following her at his stand-off in that standing picture, with his halo from the moment he appears and no caret over him in the clip (`_draw_policeman()`, `event_instance.gd:5698`–`5699`) | `POLICEMAN_LUNGING_BY_VIEW` and its stride (`event_instance.gd:5699`) | **Nothing missing as a sequence**: a driving car, a stopped car with a standing man, a running man. The neutral car is indistinguishable from a patrol that will never stop, and his catch is a stop rather than the end of the day |
+| **Men out of a hunting van** (heat 4) | `abduction` (unmarked van, `event_catalogue.gd:1924`) and `night_raid` (`:2288`) with `hunts_on_foot`, 180px trigger (`event_def.gd:1149`); the men are `out_of_the_car(day, false)` | The van parked, `UNMARKED_VAN_BY_VIEW` (`_draw_abduction()`, `event_instance.gd:6414`) or `RIOT_VAN_BY_VIEW` (`:5374`). The unmarked van still walks a bystander to it and takes them while it waits (seen in the clip) | Two men appear at its door, standing (a policeman's waiting picture through day 8, a guard's standing picture from day 9), with their halos and flashing doubled red carets. The van's own halo is on in every stage while she is inside its field | Lunging pictures, steady carets | **Nothing missing as a sequence**, as for the patrol car. The van is the neutral stage and looks the same as a van that will not hunt |
 
 ## Listed by the queue entry, but not charging her
 
@@ -72,7 +91,7 @@ second.
 **Charging dog** ([dog.mp4](dog.mp4), recipe [dog.json](recipes/dog.json), day 5). Waiting until
 about 2.0s; noticed her and holding its stand-off until it lunged at about 3.6s, when she walked
 on; the catch by about 4.1s. The waiting dog, the holding dog and the charging dog are the same
-gallop; while it holds there is no caret over it at all.
+gallop; while it holds there is no caret over it at all, and the halo is the one change on it.
 
 ![The charging dog: neutral, warning twice, charge twice](strip-dog.png)
 
@@ -83,8 +102,9 @@ her by about 1.9s, while she stood at the edge of his trigger.
 ![The alley robber: neutral, warning twice, charge](strip-robber.png)
 
 **Hunting roadblock's guard** ([roadblock.mp4](roadblock.mp4), [roadblock.json](recipes/roadblock.json),
-day 7, heat 4). Posted until about 3.6s; standing, turned to her, under a flashing caret, and
-walking toward her still in the standing picture, until he lunges at about 4.1s.
+day 7, heat 4). Posted until about 3.6s; standing, turned to her, rimmed by his halo and under a
+flashing caret, and walking toward her still in the standing picture, until he lunges at about
+4.1s.
 
 ![The hunting roadblock's guard: neutral, warning twice, charge twice](strip-roadblock.png)
 

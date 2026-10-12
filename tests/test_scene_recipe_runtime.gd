@@ -108,6 +108,7 @@ func _ready() -> void:
 
 func run(t) -> void:
 	_test_schema(t)
+	_test_heat_installs_the_heated_row(t)
 	_test_a_task_gone_after_the_read(t)
 	_test_arguments(t)
 	_test_inputs(t)
@@ -181,6 +182,47 @@ func _test_schema(t) -> void:
 	for recipe in invalid:
 		t.check(not SceneRecipeRuntime.validate_runtime(recipe).is_empty(),
 				"malformed runtime data is rejected: %s" % [recipe])
+
+## `heat` changes the row a recipe installs, not only what its schema accepts: the same patrol car
+## on the same road is the cold patrol with no trigger, and at `Tuning.HEAT_INVESTIGATES_LEVEL` the
+## investigating copy that stops for her from `Tuning.HEAT_INVESTIGATE_WITHIN`, the shape a played
+## day's dawn gives it (`EventCatalogue.heated()`). Installed through the runtime's own `_event_plans()`
+## against a real city, so a field the runtime read and then ignored would fail here.
+func _test_heat_installs_the_heated_row(t) -> void:
+	const CITY_SCENE := preload("res://scenes/world/city.tscn")
+	var saved_day := GameState.day
+	GameState.day = 6
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(4242))
+	var state := CityState.new()
+	state.begin_day(city.map.block_plans, GameState.day)
+	city.start_day(state, GameState.day, GameState.day_rng(GameState.day, "closures"))
+	var installed := {}
+	for heat: Variant in [null, Tuning.HEAT_INVESTIGATES_LEVEL]:
+		var entry := {"name": "car", "row": "police_patrol", "at": [4560, 3984]}
+		if heat != null:
+			entry["heat"] = heat
+		var runtime := SceneRecipeRuntime.new()
+		runtime.configure({"data": {"setup": {"day": GameState.day, "events": [entry]}},
+				"manifest": {}, "anchors": {}, "map": city.map}, false)
+		runtime._city = city
+		var errors: Array[String] = []
+		for plan in runtime._event_plans(Vector2(4624, 3728), errors):
+			if plan.get_meta("recipe_name", "") == "car":
+				installed[heat] = plan.def
+		t.check(errors.is_empty(), "the patrol car is installed at heat %s: %s" % [heat, errors])
+		runtime.free()
+	var cold: EventDef = installed.get(null)
+	var hot: EventDef = installed.get(Tuning.HEAT_INVESTIGATES_LEVEL)
+	t.check(cold != null and not cold.investigates and is_zero_approx(cold.pursues_within),
+			"with no heat the recipe installs the cold patrol, no trigger")
+	t.check(hot != null and hot.investigates
+			and is_equal_approx(hot.pursues_within, Tuning.HEAT_INVESTIGATE_WITHIN),
+			"at the investigating level it installs the copy that stops for her from %.0fpx"
+			% Tuning.HEAT_INVESTIGATE_WITHIN)
+	city.free()
+	GameState.day = saved_day
 
 ## A task gone after she read the mark is one of two things. Placed and then gone, it expired as a
 ## played day's task can (day 10's neighbor home first): the manifest records the tick, `task`
