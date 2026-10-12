@@ -16,9 +16,10 @@ longer carry shown text, their scripts set it in `_ready()`. `docs/ARCHITECTURE.
 
 **The check** is `tests/test_texts_catalogue.gd`: it fails on a quoted sentence (two words or more)
 in any `.gd` under `src/` but the catalogue, skipping comments and the arguments of `print`,
-`push_warning`, `push_error`, `printerr`, `assert` and `Telemetry.note`. Its allow-list names each
-developer readout and log line with a reason, and an entry that no longer shields a sentence fails,
-so the list can only shrink.
+`push_warning`, `push_error`, `printerr`, `assert` and `Telemetry.note` (only those arguments, not
+the rest of their line). Its allow-list names each file or single string it exempts with a reason,
+folders only where every file in them is a readout or a log, and an entry that no longer shields a
+sentence fails, so a stale exemption cannot stay; a new one is caught only in review.
 
 **The form, the check and the file were the filer's proposal** (one GDScript file of constants over a
 doc listing where texts live, a resource file, or Godot's translation tables), built as proposed.
@@ -32,8 +33,9 @@ doc listing where texts live, a resource file, or Godot's translation tables), b
 - Nothing under `src/interior/` or `src/finale/` is a shown text: the indoor section lines come from
   `main.finale_hint_for()`, which moved.
 - A scene's placeholder that is always overwritten before it shows stayed in its scene.
-- A single-word text (`Silence.`, `SLEEPINESS`) is in the catalogue, but the check needs two words,
-  so a new single-word text elsewhere passes it.
+- A single-word text (`Silence.`, `SLEEPINESS`, the arrows' `home` and `task`, the joystick
+  buttons' `L` and `R`) is in the catalogue, but the check needs two words, so a new single-word
+  text elsewhere passes it.
 
 **Verified** by the named suites the moves touch, a comparison of every string literal in the moved
 files on `main` against the catalogue (one difference, the joystick run line, rebuilt from the same
