@@ -1703,3 +1703,28 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 	if at_intensity >= 0.0 and intensity > 0.0:
 		core *= at_intensity / intensity
 	return maxf(field, Tuning.falloff(at_distance, core, inner_radius, core_radius, falloff_power))
+
+## A straight-line distance from a live instance's node beyond which its field is exactly zero,
+## whatever its intensity, speed, heading or the way its shape lies — so
+## `EventInstance.contribution_at()` can answer zero for a far source without working the field
+## out, which is most of the catalogue most of the time.
+##
+## **Why it is safe.** `emission_at_distance()` is zero once the field distance it is handed is
+## past every radius it reads: `inner_radius`, `outer_radius` and, with a core, `core_radius`. The
+## field distance is never shorter than the straight distance less the body's own `shape.reach()`
+## (a body's spine lies inside that disc), shrunk by at most `1 − Tuning.FIELD_ECCENTRICITY_MAX`
+## for a moving source's forward stretch (`GroundShape.eccentric_distance()`). The extra pixel
+## swallows the last bit a rotation can round. A flock and a guard walking away from his barrier
+## centre their fields elsewhere, so the instance does not ask this for them.
+##
+## **Not `field_reach()`**, which is the field's own extent for the planners and leaves out the
+## inner radius, a core, a rectangle's corners and the stretch of a row that does not move; this
+## one is the looser figure nothing can be past and still charge her. Worked out on every call
+## rather than kept, since a row's radii and shape are plain fields a rig may change after an
+## instance has read them.
+func silent_beyond() -> float:
+	var level := maxf(inner_radius, outer_radius)
+	if core_intensity > 0.0:
+		level = maxf(level, core_radius)
+	var body := shape.reach() if shape != null else 0.0
+	return body + (level + 1.0) / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
