@@ -322,7 +322,15 @@ static func _web_query() -> String:
 ## The command line, or nothing at all outside a debug build — the one choke point every getter
 ## below reads through.
 static func _args() -> PackedStringArray:
-	return OS.get_cmdline_user_args() if enabled() else PackedStringArray()
+	if not enabled():
+		return PackedStringArray()
+	if not args_for_tests.is_empty():
+		return args_for_tests
+	return OS.get_cmdline_user_args()
+
+## Command-line words a test stands in for the real ones, so a flag's own getter can be exercised
+## (`--pelican`); empty outside a test.
+static var args_for_tests := PackedStringArray()
 
 ## The same, for a caller that needs to test for a flag's bare presence rather than a value —
 ## `main._somebody_is_playing()` is the one case, and it must see no rig flags at all outside a
@@ -473,8 +481,8 @@ static func forced_interval() -> float:
 
 const _FORCED_INTERVAL_DEFAULT := 6.0
 
-## `--pelican` — every cyclist the day sends is drawn as the pelican that is otherwise about one in
-## four hundred (`EventManager.rolls_a_pelican()`), so the drawing can be looked at on demand rather
+## `--pelican` — every cyclist the day sends is drawn as the pelican that is otherwise one in a run's
+## bag of four hundred (`EventManager.rolls_a_pelican()`), so the drawing can be looked at on demand rather
 ## than waited for. A picture only, like the pelican itself: the riders, their warnings and their
 ## fields are the ones the run would have had. `--force cyclist --pelican` sends one every few
 ## seconds.

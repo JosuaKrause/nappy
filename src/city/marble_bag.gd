@@ -34,6 +34,17 @@ extends RefCounted
 ## leaves the bag marble where it is (`rig()`), so a rigged bag only ever holds plain marbles and is
 ## spent in as many draws as its size.
 ##
+## **A marble may be a shared bag.** *(pebbly-ibis, inbox #575 in feathery-lynx: "a shared marble bag
+## -- the shared marble bag would contain its own marbles but can appear in regular bags multiple
+## times. each time the shared on is drawn a marble *from* the shared one is drawn. if it's empty it
+## gets refilled (unlike the nested one)".)* `MarbleBag.shared()` makes one: the same object put in
+## any number of regular bags, once or several times each, is **one bag**, so every regular bag that
+## draws it draws from the same marbles and the same stream. Drawing a shared marble draws from the
+## shared bag and that is the answer, and the shared marble is spent like a plain one, so a regular
+## bag holding k of them draws the shared bag exactly k times per fill. The shared bag itself is
+## filled again from its own marbles whenever it runs empty, and never retired — which is what sets
+## it apart from the nested bag above, whose inner bag of n is spent after n draws for good.
+##
 ## **A run's draws are reproducible from its seed**: the stream is the bag's own, and the marble a
 ## draw takes is chosen the first time it is asked about (`peek()`), so asking first and drawing
 ## later takes the same marble as drawing at once. With nothing put in front after the start, the
@@ -50,6 +61,9 @@ var _rng := RandomNumberGenerator.new()
 var _picked := -1
 ## Marbles drawn so far.
 var drawn := 0
+## Whether this bag is a shared bag (`shared()`): a marble in other bags that is drawn from rather
+## than spent whole, and that is filled again when empty rather than retired.
+var _is_shared := false
 
 ## `ordinary` fills every bag that is not put in front, and `pre_bag`, when it holds any marble, is
 ## drawn from first. `seed_value` is the bag's own stream.
@@ -58,6 +72,18 @@ func _init(pre_bag: Array, ordinary: Array, seed_value: int) -> void:
 	_rng.seed = seed_value
 	if not pre_bag.is_empty():
 		_queue.append(pre_bag.duplicate())
+
+## A shared bag of `marbles`, with its own stream off `seed_value`: put it as a marble in any
+## number of regular bags and each draw of it there draws a marble from this one bag, which is filled
+## again from `marbles` whenever it runs empty. See the class note.
+static func shared(marbles: Array, seed_value: int) -> MarbleBag:
+	var bag := MarbleBag.new([], marbles, seed_value)
+	bag._is_shared = true
+	return bag
+
+## Whether this bag is a shared bag (`shared()`).
+func is_shared() -> bool:
+	return _is_shared
 
 ## A bag of the keys of `weights` in proportion to their weights: `marbles_per_weight` marbles per
 ## unit of weight, rounded, and at least one of each, in `weights`' own order so a seeded draw over
@@ -92,7 +118,7 @@ func draw() -> Variant:
 	var marble: Variant = _peek_the_marble()
 	if _picked < 0:
 		return marble
-	if marble is MarbleBag:
+	if marble is MarbleBag and not (marble as MarbleBag)._is_shared:
 		# Back in at once: the bag marble stays where it is until its inner bag is spent.
 		var inner := marble as MarbleBag
 		var given: Variant = inner.draw()
@@ -101,13 +127,15 @@ func draw() -> Variant:
 		if inner.ran_empty():
 			_retire(inner)
 		return given
+	# A shared bag's marble is spent like a plain one, and its draw is the answer.
+	var answer: Variant = (marble as MarbleBag).draw() if marble is MarbleBag else marble
 	var bag: Array = _queue[0]
 	bag.remove_at(_picked)
 	_picked = -1
 	if bag.is_empty():
 		_queue.pop_front()
 	drawn += 1
-	return marble
+	return answer
 
 ## Whether the draws so far have emptied every bag in the queue — the last draw took the last
 ## marble there was, and only a fresh fill of the ordinary set could give another. A bag marble whose
@@ -207,6 +235,13 @@ func _take(count: int, keep_out: Array) -> Array:
 			at += 1
 			continue
 		var i := open[_rng.randi_range(0, open.size() - 1)]
+		if bag[i] is MarbleBag and (bag[i] as MarbleBag)._is_shared:
+			# A shared bag's marble is spent like a plain one, its draw taken in its place.
+			taken.append((bag[i] as MarbleBag).draw())
+			bag.remove_at(i)
+			if bag.is_empty():
+				_queue.remove_at(at)
+			continue
 		if bag[i] is MarbleBag:
 			# Drawn from, not taken: the bag marble stays where it is until its inner bag is spent.
 			var inner := bag[i] as MarbleBag

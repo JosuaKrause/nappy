@@ -101,6 +101,11 @@ var city_state := CityState.new()
 ## top-level save key, so a save written before there were posters still loads, with bare walls.
 var posters := PosterState.new()
 
+## How many cyclists the run has drawn from its one pelican bag — see `PelicanState`. Photographed
+## and given back with the rest of what an attempt spends, and a top-level save key of its own like
+## `posters`, so a save written before it loads at 0.
+var pelican := PelicanState.new()
+
 ## Whether the day-14 sabotage actually went through. Reaching RESISTANCE_GOAL earns the
 ## chance at the good ending; this is doing it.
 var sabotage_done := false
@@ -237,6 +242,7 @@ func start_run(seed_value: int = 0) -> void:
 	scars.clear()
 	city_state.reset()
 	posters.reset()
+	pelican.reset()
 	settled_in.clear()
 	fenced_park = Vector2i(-1, -1)
 	fenced_park_act = 0
@@ -560,6 +566,7 @@ func _snapshot_what_the_attempt_can_spend() -> void:
 	_dawn_scars = scars.duplicate()
 	_dawn_city_state = city_state.snapshot()
 	posters.photograph()
+	pelican.photograph()
 
 ## Puts the city back where the lost day found it. A one-shot the attempt spent is owed again, the
 ## shell it left is gone, and the block it burned is back at the step it was on this morning.
@@ -573,6 +580,7 @@ func _give_back_what_the_attempt_spent() -> void:
 	scars = _dawn_scars.duplicate()
 	city_state.restore(_dawn_city_state)
 	posters.give_back()
+	pelican.give_back()
 
 ## Puts the resistance back where the lost day found it, and says so for the `nerve` entry —
 ## "" when the day touched none of it, which is most days.

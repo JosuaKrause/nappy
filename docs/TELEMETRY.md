@@ -124,7 +124,7 @@ The events:
   `nappy-day-N-lost-hard-fail-charging-dog` instead, off the pair above, and never also sends
   `dog-outlasted`.
 - `nappy-day-N-pelican-spawned` / `nappy-day-N-pelican-seen` / `nappy-day-N-pelican-excited` /
-  `nappy-day-N-pelican-hit` — the one cyclist in about four hundred drawn as a pelican, as its own
+  `nappy-day-N-pelican-hit` — the one cyclist in four hundred drawn as a pelican from the run's one shared bag (a run meets at most one), as its own
   entry *(inbox #527 in [azure-tapir](playtests/2026-10-04-azure-tapir.md), the player: "when the pelican spawns, when it's on screen, and when it's
   hitting the player. it must appear as its own entry and it needs to be more granular than
   standard event telemetry")*, each once per pelican: created where its warning pointed
