@@ -72,6 +72,11 @@ and range). `provenance.tsv` is the run order, commits, load and the hashes of t
 files. The records themselves (3.9 MB) are not kept; a rerun takes a fresh scratch directory and
 its numbers will differ a little.
 
+**The measured revision is the branch's first commit.** Two review fixes came after it and were
+not measured again: a street fire's reach now holds its whole burning front, which only widens the
+box a day's one or two fires are asked about, and a car's redraw records its mark when it draws,
+which asks the caret the same frame's `_draw()` asks anyway, cached against the car's clock.
+
 **One run was rejected and retaken:** round 2's windowed day 1 on the branch ran beside two other
 engines the runner had waited five minutes for (its frames were 12.0ms against 7.0 to 7.7ms for
 the other two); it is retaken in the same slot after the rotation, and the rejected run's line is
@@ -81,7 +86,7 @@ Medians of three runs [range], per frame:
 
 | | base | branch |
 |---|---|---|
-| **windowed day 1** `_draw()` crowd / events / badges / other | 10.6 / 2.9 / 1.0 / 3.3 | 1.5 / 0.2 / 0 / 1.2 |
+| **windowed day 1** `_draw()` crowd / events / badges / other | 10.6 / 2.9 / 1.0 / 3.3 | 1.4 / 0.2 / 0 / 1.2 |
 | `draw` bucket | 544µs [494..575] | 138µs [129..155] |
 | `events` + `cues` | 2220µs | 1944µs |
 | `crowd` | 2274µs [2217..2362] | 2163µs [2135..2183] |
@@ -94,7 +99,9 @@ Medians of three runs [range], per frame:
 | frame mean | 6.27ms [6.13..6.58] | 5.75ms [5.73..6.16] |
 | draw calls / render objects | 376.9 / 991.9 | 376.9 / 993.3 |
 | **headless day 1** `events` / `cues` | 805µs / 1363µs | 449µs / 1587µs |
+| headless day 1 `crowd` | 2208µs [2197..2212] | 2271µs [2267..2352] |
 | **headless day 14** `events` / `cues` | 1295µs / 1103µs | 862µs / 1292µs |
+| headless day 14 `crowd` | 1129µs [1107..1141] | 1103µs [972..1112] |
 
 What the table says, and what it does not:
 
@@ -108,8 +115,12 @@ What the table says, and what it does not:
   `expected_gross_at()`) now pays for work the events' caret had done earlier in the frame and left
   for it to reuse. `events` plus `cues` still fell by 0.13 to 0.28ms. Taking the halo's own work
   down is the sibling item, "the cues and the events step less", not this one.
-- **`crowd` did not rise**, so the box test each agent now makes costs no more than the car caret
-  projections it skips.
+- **`crowd` rose on headless day 1 and fell everywhere else.** Headless day 1 went from 2208µs
+  [2197..2212] to 2271µs [2267..2352], about 60µs or 3%, in every run, and that is the cleanest
+  reading of what the box test costs: 234 agents each ask it every frame, about a quarter of a
+  microsecond apiece, and a headless run has no drawing to save. Where there are fewer agents or a
+  window to draw into, the car caret projections it skips cover it: headless day 14 fell from
+  1129 to 1103µs, and windowed `crowd` fell on both days (2274 to 2163µs, 940 to 890µs).
 - **The whole frame fell by about 1.3ms on day 1 and 0.5ms on day 14 windowed**, more than the
   buckets above explain on day 1, where `render` also moved by run-to-run noise (2.5 to 3.1ms in the
   branch's three runs). Three runs a side on a shared desktop establish the direction, not the
