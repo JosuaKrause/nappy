@@ -2208,6 +2208,30 @@ assert_write_guard "unconfigured: git rel -> deny, a tag push" deny 'git rel'
 assert_write_guard "unconfigured: git sh -> deny, never asked" deny 'git sh'
 write_guard_switch=""
 write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
+# #736's review, finding 1: where git's own options hold an unquoted substitution or a backtick,
+# its subcommand cannot be placed, so an alias standing for a write counts as a write's name inside
+# that git's own command, and an inline alias setting is read to that command's end.
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
+assert_write_guard "git -C \$(git rev-parse --show-toplevel) ci -> deny" deny 'git -C $(git rev-parse --show-toplevel) ci -m x'
+assert_write_guard "git -C \$(pwd) m main -> deny" deny 'git -C $(pwd) m main'
+assert_write_guard "git -C \$(pwd) ship origin v1 -> deny" deny 'git -C $(pwd) ship origin v1'
+assert_write_guard "git -C \$(pwd) sh, a ! alias -> deny" deny 'git -C $(pwd) sh'
+assert_write_guard "git -C \$(pwd) up, a chain -> deny" deny 'git -C $(pwd) up -m x'
+assert_write_guard "git -C \`pwd\` ci -> deny" deny 'git -C `pwd` ci -m x'
+assert_write_guard "git -c user.name=\$(whoami) ci -> deny" deny 'git -c user.name=$(whoami) ci -m x'
+assert_write_guard "git --git-dir=\$(pwd)/.git ci -> deny" deny 'git --git-dir=$(pwd)/.git ci -m x'
+assert_write_guard "git -C \$(pwd) --no-pager ci -> deny" deny 'git -C $(pwd) --no-pager ci -m x'
+assert_write_guard "git -C \$(pwd) -c alias.x=push x, an inline alias past the substitution -> deny" deny \
+    'git -C $(pwd) -c alias.x=push x origin v1'
+assert_write_guard "a reviewer's git -C \$(pwd) ship -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git -C $(pwd) ship origin v1'
+assert_write_guard "a reviewer's git -C \$(pwd) push -> deny (the subcommand cannot be read)" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git -C $(pwd) push origin v1'
+assert_write_guard "a coder's git -C \$(pwd) ship -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git -C $(pwd) ship origin feature/x'
+assert_write_guard "git -C \$(pwd) st, an alias to a read -> allow" allow 'git -C $(pwd) st'
+assert_write_guard "git -C \$(pwd) log | grep ci, the alias name in a later command -> allow" allow \
+    'git -C $(pwd) log | grep ci'
 # With aliases to look up, the longest commands the guard reads are still decided well inside the
 # hook's timeout: every git's subcommand an alias, and every git's option run reaching the end of a
 # chain of inline alias settings.

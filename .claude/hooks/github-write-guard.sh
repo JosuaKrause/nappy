@@ -76,7 +76,12 @@
 # session's directory, and a subcommand that is an alias and not one of git's own built-ins (which
 # git never lets an alias shadow) is replaced by what it stands for, followed through a chain of
 # aliases, so the player's `git ci -m wip` (`ci` = `commit`) is a commit and `git m main` a merge,
-# while `git st` (`status -sb`) stays a read. An alias that runs a shell command (`!...`), and one
+# while `git st` (`status -sb`) stays a read. Where git's own options hold an unquoted substitution
+# or a backtick, the subcommand cannot be placed, so an alias standing for a write (or one that
+# cannot be read) counts as a write's name inside that git's own command, as `push` does (`git -C
+# $(pwd) ci -m x` is denied), and an inline alias setting is looked for up to that command's end
+# (`git -C $(pwd) -c alias.x=push x`); a reviewer is refused any git whose subcommand cannot be
+# read, since it may push. An alias that runs a shell command (`!...`), and one
 # with no value, a loop or git's own options at its start, cannot be read and is a write, push-like
 # for a reviewer. An alias set on the command line (`git -c alias.ship=push ship origin v1`,
 # `-calias.x=...`, `--config-env alias.x=VAR`) is denied whatever it says, as an inline
@@ -587,6 +592,20 @@ def options_table($g; $owners):
   | resolve;
 def after_options($t; $i): $t.ao[$i] // $i;
 
+# The configured aliases that stand for a commit-making or pushing subcommand, or that cannot be
+# read (`expand_alias`'s markers), by lowercased name. Where a git's own options hold an unquoted
+# substitution, its subcommand cannot be placed, so `splice_aliases` cannot replace it; there such
+# a name counts as a write's name inside the git's own command (`write_tables`), as `push` does,
+# so `git -C $(pwd) ci -m x` (`ci` = `commit`) is denied like `git -C $(pwd) commit -m x`.
+def alias_write_names($git):
+  if $git == null or (($git.aliases // {}) | length) == 0 then {}
+  else reduce ($git.aliases | keys[]) as $k ({};
+         ($k | expand_alias($git)) as $x
+         | if $x != null and (($x[0] | startswith("\u0007"))
+                              or ($x[0] | IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am")))
+           then .[$k] = true else . end)
+  end;
+
 # Replaces every git subcommand that is an alias with the words it stands for (`expand_alias`,
 # above), on the leveled parts, before the tables below are built from them. The subcommand is
 # where git's own option run ends, read grouped by shell word and, where the command has quoted
@@ -1007,8 +1026,10 @@ def soft_subcommand_opener($t; $p; $level):
 # errs long, the safe direction. Two tables built once per command that names such a subcommand:
 # `nw`, the first index at or after each one holding a write's name, and `ce`, where each
 # word's command ends, from one pass forward for the depth and one back.
-def write_tables($w; $w0; $lw):
-  if $lw < 0 then {nw: null, ce: null}
+def is_write_name($wn): IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am")
+  or ($wn[ascii_downcase] // false);
+def write_tables($w; $w0; $lw; $wn; $need):
+  if ($need | not) then {nw: null, ce: null}
   else
     ($w0 | length) as $n
     | [foreach $w0[] as $x ({d: 0, out: 0};
@@ -1016,9 +1037,9 @@ def write_tables($w; $w0; $lw):
          elif $x == ")" then .d = ([.d - 1, 0] | max) | .out = .d
          else .out = .d end;
          .out)] as $depth
-    | {nw: ([foreach range($n - 1; -1; -1) as $k ($n;
-               if $w[$k] | IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am")
-               then $k else . end)] | reverse + [$n]),
+    | {nw: (if $lw < 0 then null
+            else [foreach range($n - 1; -1; -1) as $k ($n; if $w[$k] | is_write_name($wn) then $k else . end)]
+                 | reverse + [$n] end),
        ce: ([foreach range($n - 1; -1; -1) as $k ({ends: [], out: $n};
                ($depth[$k]) as $d
                | if $w0[$k] | IN(";", "&", "|", "\n") then .ends[$d] = $k | .out = $k
@@ -1026,8 +1047,11 @@ def write_tables($w; $w0; $lw):
                  else .out = (.ends[$d] // $n) end;
                .out)] | reverse + [$n])}
   end;
+# Where the command of the word at `$i` ends: the table's answer, or the whole command's end
+# when there is no table.
+def command_end($t; $i): ($t.ce // [])[$i] // ($t.w0 | length);
 def write_in_command($t; $from; $i):
-  $t.nw != null and ($t.nw[$from] // ($t.nw | length)) < ($t.ce[$i] // ($t.nw | length));
+  $t.nw != null and ($t.nw[$from] // ($t.nw | length)) < command_end($t; $i);
 def opener_counts($w0):
   [0] + [foreach range(0; $w0 | length) as $k (0; . + (if opener_at($w0; $k) then 1 else 0 end))];
 def openers_between($t; $a; $b):
@@ -1095,7 +1119,10 @@ def detect_git($w; $t; $i; $n; $cmd_pos):
       # An alias set on the command line (`git -c alias.ship=push ship origin v1`, `--config-env
       # alias.x=VAR`, `-calias.x=...`) is denied whatever it says, as an inline
       # `push.default=matching` is: the alias git would run is the one this setting defines.
-      elif alias_set_between($t; $i + 1; [$sub, $n] | min) then
+      elif alias_set_between($t; $i + 1;
+                (if openers_between($t; $i + 1; [$sub + 1, $n] | min) or (($w[$sub] // "") | contains("$"))
+                    or soft_subcommand_opener($t; $sub; $t.lv[$i + 1] // 0)
+                 then command_end($t; $i) else [$sub, $n] | min end)) then
         {next: ([$sub, $i + 1] | max), reason: "git with an alias set on the command line"}
       elif ($sub >= $n) or ($w[$sub] | is_sep) then null
       else
@@ -1551,6 +1578,7 @@ def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
 def is_push_like($reason):
   ($reason | startswith("git push")) or ($reason | startswith("tools/"))
   or ($reason == "git with an input-supplied subcommand")
+  or ($reason == "git with a shell expansion before its subcommand")
   or ($reason | IN("git with an alias set on the command line", "git alias that runs a shell command",
                    "git alias that cannot be read"));
 def is_merge_like($reason):
@@ -1604,7 +1632,7 @@ def command_words($t; $tp; $i):
   + (if $t.cw2 == null then [] else [$t.cw2[$i] // $i] end)
   + (if $tp == null then []
      else [command_word($tp; $i)] + (if $tp.cw2 == null then [] else [$tp.cw2[$i] // $i] end) end);
-def findings($w; $w0; $levels; $unsure):
+def findings($w; $w0; $levels; $unsure; $wn):
   # Levels that are all 0 group nothing, and the plain reading would be the same one again.
   (if $levels | any(. > 0) then $levels else null end) as $lv
   | ($w | length) as $n
@@ -1637,9 +1665,7 @@ def findings($w; $w0; $levels; $unsure):
   # The last word that names a commit-making or pushing git subcommand: a git whose option run
   # holds a command substitution, or whose subcommand is an expansion, is a write only when one
   # follows (`detect_git`).
-  | ([range(0; $n)
-      | select($w[.] | IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am"))]
-     | last // -1) as $lw
+  | ([range(0; $n) | select($w[.] | is_write_name($wn))] | last // -1) as $lw
   # A command with no wrapper word needs no table of wrapper options.
   | (if any($w[]; is_wrapper_word(.)) then $w | wrapper_owners else null end) as $owners
   | (if $lv == null then null else {lv: $lv, ends: word_ends($lv)} end) as $g
@@ -1647,14 +1673,15 @@ def findings($w; $w0; $levels; $unsure):
   | ($w | options_table($g; null)) as $ao
   | (if $owners == null then null else $w | options_table($g; $owners) end) as $wo
   | (if $wo == null then null else $w | command_table($wo; $g; $inputs) end) as $cw2
-  | write_tables($w; $w0; $lw) as $wt
+  | alias_setting_counts($w) as $ac
+  | write_tables($w; $w0; $lw; $wn; $lw >= 0 or $ac != null) as $wt
   | {ao: $ao, cw: ($w | command_table($ao; $g; $inputs)),
      cw2: $cw2,
      sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li, lra: $lra, lap: $lap, ra: $ra,
      xargs: (if $inputs != null
              then xargs_context($w0; $lv; $unsure; $inputs) else null end),
      oc: (if $unsure then opener_counts($w0) else null end),
-     ac: alias_setting_counts($w), nw: $wt.nw, ce: $wt.ce} as $t
+     ac: $ac, nw: $wt.nw, ce: $wt.ce} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
        | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null; $inputs))
@@ -1810,7 +1837,7 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
       | ($marked | drop("\u0003") | split_words | leveled_parts | splice_aliases($git)) as $parts
       | ($parts | map(.w)) as $w0
       | ($w0 | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
-      | (findings($w; $w0; $parts | map(.c); $unsure)) as $result
+      | (findings($w; $w0; $parts | map(.c); $unsure; alias_write_names($git))) as $result
       | if ($result.out | length) == 0 then empty else $result end
     end
 end
