@@ -66,5 +66,15 @@ review that it still allows is allowed on `main` too or is a named gap. The dens
 takes about 5 s against about 4 s before, inside the hook's 10 s timeout, under timed tests; the
 guard's test file takes about 8 to 9 minutes rather than 6.
 
+**The guard fails closed, and passes no long text as an argument.** CI on Linux found two 64 KB
+commands allowed: their joined findings went to `jq` as one argument, which Linux refuses over 128 KB
+and macOS does not, and a hook that prints nothing lets the command through. The jq program, git's
+alias table and the reason now go in through a file or stdin, and the flagged list is capped. When
+jq cannot print the answer, a fixed deny is printed instead; when jq is missing, a command that names
+git, gh or a pushing script is denied and anything else is let through, so installing jq stays
+possible. Both were open on `main` before. The tests shim jq and git to refuse an argument over
+128 KB, as Linux does, and force each failure. `.claude/hooks/git-grep-guard.sh` has the same two
+patterns and is not changed here.
+
 **For any agent working on the guard:** it denies a Bash command whose text mentions a write,
 heredocs and test strings included, so edit scripts go in a file and run from there.
