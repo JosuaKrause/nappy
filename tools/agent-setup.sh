@@ -43,9 +43,10 @@ origin/main (one list, so the checks that read docs/evidence/ keep what they rea
   --release <branch>      adds "cleanup: ready" to the header, which tools/prune-merged.sh needs
                           before it removes the worktree. Only after the agent's processes stop.
   --detach <ref> <name>   a review agent's scratch checkout: the same sparse worktree under
-                          .claude/worktrees/<name>, detached at <ref> (a commit, or a branch
-                          fetched from origin), with no branch and no brief, so agent-status.sh
-                          never counts it as an agent. Remove it with `git worktree remove`.
+                          .claude/worktrees/<name>, detached at <ref> (origin/<branch> or a
+                          branch name, fetched from origin first; or a commit), with no
+                          branch and no brief, so agent-status.sh never counts it as an agent.
+                          Remove it with `git worktree remove`.
   --help, -h              print this and do nothing else.
 
   tools/agent-setup.sh jolly-bunny feature/jolly-bunny-agent-setup
@@ -199,9 +200,15 @@ if [[ $mode == setup ]]; then
         err "brief already exists: $brief"; failures=1
     fi
 else
-    commit="$(git -C "$main" rev-parse --verify --quiet "$ref^{commit}")" || commit=""
-    if [[ -z "$commit" ]] && git -C "$main" fetch --quiet origin "$ref" 2>/dev/null; then
+    # The remote's current head wins over a stale local tracking ref: `origin/<branch>` and a
+    # bare branch name are fetched from origin first. A SHA, a tag or anything origin does not
+    # have falls back to what resolves locally.
+    commit=""
+    if git -C "$main" fetch --quiet origin "${ref#origin/}" 2>/dev/null; then
         commit="$(git -C "$main" rev-parse --verify --quiet FETCH_HEAD^{commit})" || commit=""
+    fi
+    if [[ -z "$commit" ]]; then
+        commit="$(git -C "$main" rev-parse --verify --quiet "$ref^{commit}")" || commit=""
     fi
     [[ -n "$commit" ]] || { err "cannot resolve $ref to a commit"; failures=1; }
 fi

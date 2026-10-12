@@ -92,8 +92,9 @@ acts as**, its fence, whether the evidence is a still or a burst, whether the ca
 invincible, whether this is a local-full-run case, and a paragraph on the other live agents and the
 files they own (written by hand from the briefs' fences; they are prose, so nothing generates it).
 The spawn prompt `agent-setup.sh` prints names the brief and the contract. Every later
-`SendMessage` that changes the agent's scope or task is appended under `## Amendment <ISO date>`, so the file on disk stays what the agent was
-actually told rather than what it was told at spawn time.
+`SendMessage` that changes the agent's scope or task is appended under `## Amendment <ISO
+date>`, so the file on disk stays what the agent was actually told rather than what it was told at
+spawn time.
 
 **Any agent started into an existing worktree gets its `agent:` line appended the moment its id
 is known** (`tools/agent-setup.sh --agent <branch> <id>`) — a fresh spawn and a replacement into a

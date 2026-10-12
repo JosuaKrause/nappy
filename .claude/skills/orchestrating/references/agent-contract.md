@@ -83,8 +83,8 @@ Never search with an unrestricted `git grep` (always `-I` and a text pathspec); 
 The player welcomes repeated feedback and prefers seeing an attempt to waiting through a long
 internal revision loop. For artwork, sound or any visual or audible result:
 
-- Ask for a prompt preview in the player's requested format, naming the visual point that remains
-  uncertain. Keep cheap integrity checks and provenance, but do not hold a useful attempt for
+- Come back early with a preview yourself: a prompt preview in the player's requested format,
+  naming the visual point that remains uncertain. Keep cheap integrity checks and provenance, but do not hold a useful attempt for
   polish or repeated generation. The player's response steers the next pass while independent work
   continues.
 - The player's CLI cannot display images: push the review artifacts first, then embed them in the

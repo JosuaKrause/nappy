@@ -218,6 +218,28 @@ check "--detach keeps the evidence SVG" test -f "$dwt/docs/evidence/run/keep.svg
 check "--detach leaves docs/reference out" test ! -e "$dwt/docs/reference/photo.txt"
 same "--detach uses the same patterns" "$(sparse_line "$out")" "$(sparse_line "$dout")"
 check "--detach writes no brief" test ! -e "$briefs/review-one.md"
+# A stale local tracking ref must not win: push a new commit to origin from another clone.
+git clone -q "$work/origin.git" "$work/pusher"
+git -C "$work/pusher" checkout -q -b feature/live
+echo more > "$work/pusher/src/b.gd"
+git -C "$work/pusher" add -A && git -C "$work/pusher" commit -q -m live
+git -C "$work/pusher" push -q origin feature/live
+git -C "$main" fetch -q origin feature/live:refs/remotes/origin/feature/live
+echo newer > "$work/pusher/src/c.gd"
+git -C "$work/pusher" add -A && git -C "$work/pusher" commit -q -m newer
+git -C "$work/pusher" push -q origin feature/live
+new_sha="$(git -C "$work/pusher" rev-parse HEAD)"
+stale_sha="$(git -C "$main" rev-parse origin/feature/live)"
+"$tool" --detach origin/feature/live review-live >/dev/null 2>&1
+same "--detach origin/<branch> lands on the remote's current head, not the stale ref" \
+    "$new_sha" "$(git -C "$main/.claude/worktrees/review-live" rev-parse HEAD 2>/dev/null)"
+check "the stale local ref was behind" test "$stale_sha" != "$new_sha"
+"$tool" --detach feature/live review-bare >/dev/null 2>&1
+same "--detach of a bare branch name lands on the remote's head" \
+    "$new_sha" "$(git -C "$main/.claude/worktrees/review-bare" rev-parse HEAD 2>/dev/null)"
+"$tool" --detach "$head_sha" review-sha >/dev/null 2>&1
+same "--detach of a SHA lands on it" \
+    "$head_sha" "$(git -C "$main/.claude/worktrees/review-sha" rev-parse HEAD 2>/dev/null)"
 refuse "--detach of an unknown ref refused" "$tool" --detach no-such-ref review-two
 check "--detach refusal made no worktree" test ! -e "$main/.claude/worktrees/review-two"
 refuse "--detach onto an existing path refused" "$tool" --detach origin/main review-one
