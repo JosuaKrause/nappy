@@ -100,7 +100,7 @@ func _refresh_buttons() -> void:
 ## `GameState.finish_day()` has already charged whatever the load itself costs, so `day` and
 ## `nerves` are already the numbers the retry (or the day exactly as the save left it) actually
 ## has. Three things, no more: the day, the nerves, and the morning's own line from `Texts.DAY_BRIEF`.
-## `lost_note` is `main._RESUMED_DAY_LOST_NOTE` when the load itself spent a nerve, or `""` for a
+## `lost_note` is `Texts.RESUMED_DAY_LOST` when the load itself spent a nerve, or `""` for a
 ## save that cost nothing, in which case this is exactly what a fresh day 1 skips by going
 ## straight from the title into `main._engage_the_day()` instead. Continuing from here reaches
 ## that same function, through `main._on_summary_continued()`'s own `_resume_gate_open` branch —

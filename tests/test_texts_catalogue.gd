@@ -46,6 +46,37 @@ const _ALLOWED_FILES := {
 
 ## One string in one file: a developer readout in a file whose other strings are held to the rule.
 const _ALLOWED_LITERALS := {
+	"res://src/main.gd": {
+		"the authored escape attempt was lost": "a scene recipe's playback error, written to its manifest",
+		"build %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"seed  %d   day %d": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"skip  %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"phase %s  %.0fs left": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"tile  %d, %d  (%s)": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"calm  %s    alley  %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"speed       %6.1f": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"run excess  %6.2f": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"events      %6d live of %d": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"ahead owed  %6d": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"crowd       %6d": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"nearest     %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"incoming    %6.2f /s": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"decay       %6.2f /s": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"net         %6.2f /s": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"arrows/WASD walk": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"shift       run": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"esc         pause  (r restart, q quit)": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"seed  %d   escape": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"section %s  %.1fs left": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"calm  %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"tile  %d, %d  (building)": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"events      %6d live": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"%s %s age=%.1f/%.1f %.0fpx i=%.1f": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"no baby yet": "the run log's capture context",
+		"exc %d, sleep %d": "the run log's capture context",
+		"asked for a picture at %s": "a run-log line",
+		"asked for an animation burst at %s": "a run-log line",
+	},
 	"res://src/ui/hud.gd": {
 		"asleep - go home": "the debug HUD's state line",
 		"crying - day lost": "the debug HUD's state line",
@@ -57,7 +88,6 @@ const _ALLOWED_LITERALS := {
 
 ## Strings still to be moved into `Texts`, by file: a file listed here is not yet held to the rule.
 const _PENDING_FILES := [
-	"res://src/main.gd",
 	"res://src/events/event_catalogue.gd",
 	"res://src/resistance/resistance_steps.gd",
 ]

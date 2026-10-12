@@ -7,7 +7,6 @@ const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCENE := preload("res://scenes/ui/pause_screen.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 
-const _MAIN := preload("res://src/main.gd")
 
 func run(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
@@ -22,7 +21,7 @@ func run(t) -> void:
 		_check_label(t, Texts.ENDING_BODY[ending], body, "ending %d's body" % ending)
 	for kind in Texts.FINALE_BODY.keys():
 		_check_label(t, Texts.FINALE_BODY[kind], body, "finale body %d" % kind)
-	_check_label(t, _MAIN._RESUMED_DAY_LOST_NOTE, note, "the resumed-day note")
+	_check_label(t, Texts.RESUMED_DAY_LOST, note, "the resumed-day note")
 	_check_label(t, "She started crying after 0:10. There is no settling her now.", title,
 			"the lost-day title")
 	var hard_fails: Dictionary = Texts.HARD_FAIL_TEXT

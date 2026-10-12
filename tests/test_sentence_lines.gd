@@ -118,7 +118,7 @@ func _test_every_ending_and_finale_body_breaks_only_between_sentences(t) -> void
 		_check_breaks_only_between_sentences(t, source, body, "the finale body for exit kind %d" % kind)
 	summary.queue_free()
 
-## `main._RESUMED_DAY_LOST_NOTE` (`src/main.gd`) — the day brief's own line for a resumed run whose
+## `Texts.RESUMED_DAY_LOST` (`src/main.gd`) — the day brief's own line for a resumed run whose
 ## save said a day was under way. Quoted here rather than read off `main.gd`, which this item's own
 ## fence keeps untouched: the two sentences the note is made of.
 func _test_the_resumed_day_note_breaks_only_between_sentences(t) -> void:

@@ -223,8 +223,11 @@ const HARD_FAIL_TEXT := {
 # ----------------------------------------------------------------- resumed day ---
 # The day brief's note for a run opened from a save that said a day was under way.
 
+## The day brief's own line for a resumed run whose save said a day was under way — handed to
+## `DaySummary` by `main.gd`, which knows what opening the save cost.
 const RESUMED_DAY_LOST := "Left before the day ended. That cost a nerve — it starts over from dawn."
-## `%d` is the checkpoint's day.
+## The same line when the nerve the load charged was a normal run's last, which sends it back to its
+## checkpoint rather than the same dawn — `%d` is the checkpoint's day.
 const RESUMED_LAST_NERVE := "Left before the day ended. That was the last nerve — back to day %d."
 
 # --------------------------------------------------------------------- endings ---
