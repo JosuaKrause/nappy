@@ -39,7 +39,7 @@ point at.** On days 9 and 14 of v0.27.1 the renderer's own work (`render`) is th
 nearly every frame, mostly outside the engine's measured canvas render, and day 14's frames sit at
 the 33ms line between two refreshes and three, which the player felt as "a lot of stutter" (#703). The
 player chose what comes next: [shadows baked into their own page](shadows-are-pictures-on-their-own-atlas-page.md),
-[nothing off screen redrawn or animated](nothing-off-screen-is-redrawn-or-animated.md),
+nothing off screen redrawn or animated (the [M159-10 record](../../decisions/2026-09-19-M159-10.md)),
 [the frame straight to the screen, then fewer pixels](the-frame-goes-straight-to-the-screen-then-fewer-pixels.md),
 and the readout's resolution and refresh (the [M159-9 record](../../decisions/2026-09-19-M159-9.md)).
 [The cues and the events doing less](the-cues-and-the-events-step-less.md), the filer's proposal, and

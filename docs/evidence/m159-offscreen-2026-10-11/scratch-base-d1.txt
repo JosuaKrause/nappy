@@ -1,0 +1,43 @@
+frames 3811
+arrow_draw_n_inactive              mean/frame       2.00  p50      2.0  max        4
+arrow_draw_us_inactive             mean/frame       2.25  p50      2.0  max       10
+arrow_hide_redraw_inactive         mean/frame       2.00  p50      2.0  max        2
+box_h                              mean/frame     488.00  p50    488.0  max      488
+box_w                              mean/frame     768.00  p50    768.0  max      768
+crowd_bob_only_in                  mean/frame       1.05  p50      1.0  max        6
+crowd_bob_only_off                 mean/frame       4.31  p50      4.0  max       27
+crowd_caret_n_in                   mean/frame       7.05  p50      7.0  max       13
+crowd_caret_n_off                  mean/frame      21.11  p50     21.0  max       28
+crowd_caret_us_in                  mean/frame     106.19  p50    102.0  max      266
+crowd_caret_us_off                 mean/frame     219.46  p50    214.0  max      412
+crowd_draw_n                       mean/frame      15.95  p50     15.0  max      468
+crowd_draw_n_in                    mean/frame       3.07  p50      3.0  max       96
+crowd_draw_n_off                   mean/frame      12.88  p50     12.0  max      372
+crowd_draw_us                      mean/frame     563.18  p50    545.0  max    15313
+crowd_n                            mean/frame     234.00  p50    234.0  max      234
+crowd_n_in                         mean/frame      49.08  p50     48.0  max       63
+crowd_n_off                        mean/frame     184.92  p50    186.0  max      198
+crowd_redraw_car_in                mean/frame       1.06  p50      1.0  max        6
+crowd_redraw_car_off               mean/frame       4.79  p50      5.0  max       28
+crowd_redraw_walker_in             mean/frame       2.00  p50      2.0  max       41
+crowd_redraw_walker_off            mean/frame       8.04  p50      8.0  max      159
+edge_draw_n_empty                  mean/frame       1.00  p50      1.0  max        2
+edge_draw_us_empty                 mean/frame       1.93  p50      2.0  max       19
+ev_caret_n                         mean/frame      33.06  p50     34.0  max      102
+ev_caret_us                        mean/frame     157.92  p50    141.0  max      436
+ev_draw_n                          mean/frame       2.81  p50      3.0  max       68
+ev_draw_us                         mean/frame     330.25  p50    319.0  max     3871
+ev_key_us_in                       mean/frame      39.80  p50     21.0  max      232
+ev_key_us_off                      mean/frame     400.37  p50    402.0  max      651
+ev_n_in                            mean/frame       1.53  p50      2.0  max        2
+ev_n_off                           mean/frame      31.52  p50     32.0  max       33
+ev_redraw_in                       mean/frame       0.33  p50      0.0  max        1
+ev_redraw_off                      mean/frame       2.47  p50      2.0  max       33
+ev_redraw_unsettled_off            mean/frame       1.00  p50      1.0  max        1
+meter_draw_n                       mean/frame       0.00  p50      0.0  max        2
+meter_draw_us                      mean/frame       0.29  p50      0.0  max     1094
+crowd draw us/call 35.319959846627285
+event draw us/call 117.57029425502103
+event key us/call in 26.00960219478738 off 12.703700003330336
+event caret us/computation 4.77610945336804
+crowd caret us/call in 15.06794995904386 off 10.398107741847252

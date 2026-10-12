@@ -39,6 +39,7 @@ test_day_loop.gd 1788
 test_day_lost_to.gd 14
 test_debug_layers.gd 3450
 test_dev_rig.gd 5544
+test_drawn_view.gd 82
 test_event_manager.gd 59767
 test_event_redraw.gd 57
 test_event_spacing.gd 15

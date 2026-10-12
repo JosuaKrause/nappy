@@ -388,6 +388,9 @@ var _picture := Vector3i(-1, -1, -1)
 var _drawn_heading := Vector2i.ZERO
 ## Whether this car's own caret was up last frame, so it gets one redraw to come off with.
 var _was_marked := false
+## True while what this agent shows is not being kept current because none of it can be on the
+## screen (`DrawnView`), so the first frame it is back in the box redraws it whatever the key says.
+var _picture_is_stale := false
 
 ## Built lazily on this agent's own first non-zero glow, and freed once it has faded all the way
 ## back out — see `set_halo_strength()`. A halo built for every agent in a crowd of a couple of
@@ -700,6 +703,13 @@ func _beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
 ## How far past a body's centre its picture may reach, for `_beyond_every_view()`: two tiles, more than
 ## a car's half length and its shadow.
 const ENTRY_PICTURE_ROOM := 2.0 * Tuning.TILE_SIZE
+
+## Everything this agent's own drawing can cover, relative to its position — what
+## `_redraw_if_the_picture_changed()` asks `DrawnView` about. `ENTRY_PICTURE_ROOM` either side, and
+## above that a car's doubled caret at its tallest (`_draw_mark()`): the upper chevron's top stands
+## `MARK_HEIGHT + 10 + 1.65 × MARK_WIDTH` above the node, about 65px, with its outline's width on top.
+const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDTH * 1.65 + 4.0),
+		ENTRY_PICTURE_ROOM * 2.0, MARK_HEIGHT + 10.0 + MARK_WIDTH * 1.65 + 4.0 + ENTRY_PICTURE_ROOM)
 
 ## Whether a tile's own street segment is shut to this agent the way a hard blocker is: held for
 ## today (`CityMap.is_held_at` — a hard seal's segment, a region wall, a closure, or the streets
@@ -1061,11 +1071,17 @@ func _hold_inside_the_tile(stood_on: Vector2i, along_axis: bool) -> void:
 	else:
 		_set_cross(held)
 
-## Asks for a redraw when what this agent is showing has actually changed.
+## Asks for a redraw when what this agent is showing has actually changed, and answers whether it
+## asked.
 ##
 ## Moving a Node2D does not invalidate its draw list — the transform is applied when it is
 ## replayed — so an agent only redraws when its picture actually changes. At this population that
 ## is the difference between five hundred redraws a frame and a handful.
+##
+## **And only while any of it can be on the screen** (`DrawnView`, `DRAWN_REACH`). Most of the
+## crowd is off screen, and those agents were most of the redraws and every car's caret projection;
+## the key is still kept every frame, so nothing about the picture's own state depends on where the
+## camera is, and an agent coming back into the box redraws once on that frame whatever the key says.
 ##
 ## **A term missing from the key is a frozen picture rather than a crash**, the same rule
 ## `EventInstance._redraw_if_the_picture_changed()` states for the catalogue's own gate — so the key
@@ -1082,7 +1098,7 @@ func _hold_inside_the_tile(stood_on: Vector2i, along_axis: bool) -> void:
 ## rest of its run in that lane, since nothing about the quantised picture ever changes again. The
 ## rim does not go with it: `EntityHalo` re-traces the body every frame it is drawn, so the halo
 ## stands where the car should be and the car does not. That is exactly what the player saw.
-func _redraw_if_the_picture_changed() -> void:
+func _redraw_if_the_picture_changed() -> bool:
 	var third: int
 	var view: int
 	if kind == Kind.WALKER:
@@ -1098,16 +1114,30 @@ func _redraw_if_the_picture_changed() -> void:
 		view = _frame()
 	var picture := Vector3i(view, 1 if _flipped() else 0, third)
 	var drawn_heading := _drawn_heading_key()
-	if picture != _picture or drawn_heading != _drawn_heading:
-		_picture = picture
-		_drawn_heading = drawn_heading
+	var changed := picture != _picture or drawn_heading != _drawn_heading
+	_picture = picture
+	_drawn_heading = drawn_heading
+	# Off screen nothing is redrawn and no caret is projected (`DrawnView`): the picture is left as
+	# it was, and the first frame any of it is back inside the box redraws it from what it is now,
+	# caret included, which is before the margin has let any of it onto the screen.
+	if not DrawnView.shows(self, DRAWN_REACH):
+		_picture_is_stale = true
+		return false
+	if changed or _picture_is_stale:
+		_picture_is_stale = false
+		# What this redraw puts up is the mark as it stands now — the same answer `_draw()` asks
+		# for, cached against the clock — so a mark that drops on the next frame is taken off.
+		_was_marked = kind == Kind.CAR and _caret_strength() > 0
 		queue_redraw()
+		return true
 	# A marked car draws a caret that can breathe with its own horn, and a projected approach
 	# can change its strength frame to frame with nothing else about the picture moving. The
 	# one frame after the mark comes down is what takes the caret off again.
-	elif kind == Kind.CAR and (_caret_strength() > 0 or _was_marked):
+	if kind == Kind.CAR and (_caret_strength() > 0 or _was_marked):
 		_was_marked = _caret_strength() > 0
 		queue_redraw()
+		return true
+	return false
 
 ## How finely the redraw key reads a car's own live heading: each component of the unit vector to
 ## the nearest hundred-and-twenty-eighth. That is at most 1/256 of error per component, so the

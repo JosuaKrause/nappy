@@ -47,9 +47,15 @@ func show_toward(world_position: Vector2) -> void:
 	target = world_position
 	active = true
 
-func hide_arrow() -> void:
+## Takes the arrow off, and answers whether that asked for a redraw. `Hud` calls it every frame the
+## arrow is not wanted, and an arrow already off has nothing to take away, so only the frame it goes
+## from shown to hidden redraws.
+func hide_arrow() -> bool:
+	if not active:
+		return false
 	active = false
 	queue_redraw()
+	return true
 
 func _process(_delta: float) -> void:
 	if active:
