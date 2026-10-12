@@ -86,6 +86,10 @@ const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
 @onready var _root: Control = $Root
 @onready var _name: Label = $Root/Top/Lines/Title
 @onready var _body: Label = $Root/Top/Lines/Body
+@onready var _premise: Label = $Root/Top/Lines/Line
+@onready var _left_caption: Label = $Root/Choice/LeftColumn/LeftCaption
+@onready var _tap_caption: Label = $Root/Choice/TapColumn/TapCaption
+@onready var _right_caption: Label = $Root/Choice/RightColumn/RightCaption
 @onready var _left_button: ModeButton = $Root/Choice/LeftColumn/Left
 @onready var _tap_button: ModeButton = $Root/Choice/TapColumn/Tap
 @onready var _right_button: ModeButton = $Root/Choice/RightColumn/Right
@@ -111,26 +115,21 @@ var _can_quit := QuitOption.available()
 ## click from the same finger, and without the gate a single press on a button would be read twice.
 var _touch := TouchInput.available()
 
-## One body for every device — see `PauseScreen._BODY`'s own doc for the same collapse made
-## there. *(2026-09-06, the player: "in fact I said to remove the keyboard inputs altogether but
-## I'm willing to compromise on letting them stay silently".)* The keyboard still walks and runs;
-## nothing on screen names a key for it any more. `TouchInput.available()` used to choose between
-## this and a keyboard body — with only one body left, this screen has no more use for that fact
-## and keeps no member for it.
-##
-## **Says two things and nothing else.** *(2026-09-07: "the movement tutorial should just say 'Tap
-## to walk' and 'Double tap to run'. no mention of tapping her or 'that way'.")* The struck clauses
-## named a stop she can still ask for — a press in the joystick's dead zone, or a mouse
-## click on her — the same way nothing here has ever named a key: stopping still works, and the
-## game simply stops teaching it, exactly as `HUD._teach_the_day()`'s own day-1 line already reads.
-const _BODY := "Tap to walk, double tap to run.\n" \
-		+ "Walk to calm ground and stay moving; standing still settles nothing."
 
 func _ready() -> void:
 	# **The title has a colour of its own**, or the screen is four labels in one warm off-white and
 	# the name of the game is only the biggest of them. `Palette.TITLE_TEXT` is the doorstep it is
 	# standing in front of; see the note there for why it is not one of the danger colours.
 	_name.add_theme_color_override("font_color", Palette.TITLE_TEXT)
+	_name.text = Texts.TITLE_NAME
+	_left_button.letter = Texts.TITLE_LETTER_LEFT
+	_right_button.letter = Texts.TITLE_LETTER_RIGHT
+	_premise.text = Texts.TITLE_PREMISE
+	_left_caption.text = Texts.TITLE_CAPTION_JOYSTICK
+	_tap_caption.text = Texts.TITLE_CAPTION_TAP
+	_right_caption.text = Texts.TITLE_CAPTION_JOYSTICK
+	_hint.text = Texts.TITLE_HINT_BEGIN
+	_hard_mode.text = Texts.TITLE_HARD_MODE
 	_refresh_body()
 	_version.text = version_text()
 	# Above the pause screen: this is the outermost frame the game runs inside, and nothing should
@@ -163,10 +162,10 @@ static func _place_column(column: Control, centre: Vector2) -> void:
 	column.size = Vector2(_COLUMN_WIDTH, column.size.y)
 
 ## Its own function, rather than inline in `_ready()`, matching `PauseScreen._refresh_body()` —
-## kept even though `_BODY` no longer varies, so a test can call this again rather than reaching
+## kept even though `Texts.TITLE_BODY` no longer varies, so a test can call this again rather than reaching
 ## for a fresh scene.
 func _refresh_body() -> void:
-	_body.text = _BODY
+	_body.text = Texts.TITLE_BODY
 
 ## Whether the screen's own layer is presenting rotated — computed fresh rather than pushed in from
 ## `main`, the same reason `PauseScreen._wants_rotation()` and `DaySummary._wants_rotation()` are:
@@ -242,7 +241,7 @@ func open(again := false, new_game := false) -> void:
 		_hard_mode.visible = new_game
 		_hard_mode.button_pressed = new_game and GameState.hard_mode
 		_place_the_hard_mode_frame()
-	_hint.text = "press a button to walk again" if again else "press a button to begin"
+	_hint.text = Texts.TITLE_HINT_AGAIN if again else Texts.TITLE_HINT_BEGIN
 	# A press that closed this screen can leave a button's own forced-pressed look set — see
 	# `_acknowledge_and_begin()`'s own doc for why the release that would otherwise clear it may
 	# never reach `_unhandled_input()` at all, once `visible` has already gone false. Cleared here

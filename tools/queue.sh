@@ -3,7 +3,7 @@
 # edit, so two pull requests collide on the queue only when they change the same entry.
 #
 #   tools/queue.sh               # every open entry, in order
-#   tools/queue.sh --band now    # one band's entries, in the same order
+#   tools/queue.sh --band now    # one band's entries, in the same order (no "up next" heading)
 #   tools/queue.sh --check       # the band lines' errors only, as tools/lint.sh reports them
 #
 # Every entry's docs/todo/<name>/README.md opens with its band line, then any `after:` lines, then a
@@ -14,8 +14,9 @@
 #
 #   ## M56 — The resistance is noticed
 #
-# The band is one of now, next, later and parked (2026-09-26-brisk-heron, statements 13-14: "a
-# priority system?" · "for "now" do reverse chronological maybe?"). An `after:` line names another
+# The band is one of bug, now, next, later and parked (2026-09-26-brisk-heron, statements 13-14: "a
+# priority system?" · "for "now" do reverse chronological maybe?"; bug: mossy-ferret, "a new band
+# "bug" that has priority over now"). An `after:` line names another
 # entry's folder, in full, that this one truly waits on; an entry may carry several. An `after:`
 # naming an entry that is closed -- no folder under docs/todo/, but a record under docs/decisions/
 # named after it, `<name>.md` or `<name>-<n>.md` -- is a wait that is over: it holds nothing back
@@ -28,12 +29,21 @@
 # `now` reverses that as well. An entry never prints before an open entry it waits on: one that
 # would is held back to straight behind the last of them, wherever that is, and one already behind
 # them stays where it is. A line is the band, the folder's name, the heading without its dated
-# tail, and what the entry waits on.
+# tail, and what the entry waits on. `bug`, like `now`, is newest first.
+#
+# An entry may also carry `upnext: true` in the opening block, beside `priority:`: "immediately
+# after the current items are done" (mossy-ferret), which is not a band. The entry keeps its real
+# band, shown on its line, and every marked entry prints first, under an `up next` heading and
+# ahead of `bug`, in the order the bands give; the line is dropped when the work starts, which puts
+# the entry back in its band. A marked entry whose `after:` names an open entry is not pulled into
+# the section: it stays held behind what it waits on, in its band, and only a closed `after:` leaves
+# it free. Every marked line ends in `[up next]`, in the section or not. `--band B` lists a band's
+# entries, the ones in the section first, with no heading.
 #
 # --check reports, as `<file>:<line>: <label>` lines and a non-zero exit, an entry with no
 # `priority:` line opening its README.md, a band outside the set, an `after:` naming neither an
-# open entry nor a closed one, an `after:` cycle, and a `priority:` or `after:` line anywhere but
-# the opening block. tools/lint.sh runs it, so the band set and the rules live here only. Printing
+# open entry nor a closed one, an `after:` cycle, an `upnext:` line with any value but `true` or
+# repeated, and a `priority:`, `after:` or `upnext:` line anywhere but the opening block. tools/lint.sh runs it, so the band set and the rules live here only. Printing
 # the queue refuses on the same errors.
 #
 # Bash 3.2-safe, like the rest of tools/ -- see tools/lint.sh's own header.
@@ -42,17 +52,20 @@ set -uo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root" || exit 1
 
-BANDS="now next later parked"
+BANDS="bug now next later parked"
 
 usage() {
     cat <<'EOF'
-usage: tools/queue.sh [--help|-h] [--band now|next|later|parked] [--check]
+usage: tools/queue.sh [--help|-h] [--band bug|now|next|later|parked] [--check]
 
 Prints the open queue in order, from the band line every docs/todo/<entry>/README.md opens with
-(`priority: now|next|later|parked`, then any `after: <entry folder name>` lines). The bands come
-in that order; within `now` the newest entry first, within the others the oldest first, by the
-date the folder's name starts with. Entries filed on the same day sort by name (old milestone
-numbers in number order, then named entries by their words; reversed in `now`), not by filing
+(`priority: bug|now|next|later|parked`, then any `after: <entry folder name>` lines and an optional
+`upnext: true`). The bands come in that order; within `bug` and `now` the newest entry first,
+within the others the oldest first, by the date the folder's name starts with. Every `upnext: true`
+entry prints first, under an `up next` heading, with its real band shown, unless its `after:`
+names an open entry: then it stays behind that entry in its band. Every marked line ends in
+`[up next]`. Entries filed on the same day sort by name (old milestone
+numbers in number order, then named entries by their words; reversed in `bug` and `now`), not by filing
 order. An entry never prints before an open entry its `after:` names: it is held back to straight
 behind it. An `after:` naming a closed entry (a record under docs/decisions/ by that name) holds
 nothing back and prints as `<name>, closed`. A line is the band, the entry's folder name, its
@@ -90,7 +103,7 @@ done
 if [[ -n "$band" ]]; then
     case " $BANDS " in
         *" $band "*) ;;
-        *) fail_usage "unknown band: $band (now, next, later or parked)" ;;
+        *) fail_usage "unknown band: $band (bug, now, next, later or parked)" ;;
     esac
 fi
 if [[ "$check" -eq 1 && -n "$band" ]]; then
@@ -124,10 +137,10 @@ parse() {
         function finish() {
             if (file == "") return
             if (!has_priority) {
-                print "E", file ":1: no `priority:` line opening the entry (its README.md starts with `priority: now|next|later|parked`)"
+                print "E", file ":1: no `priority:` line opening the entry (its README.md starts with `priority: bug|now|next|later|parked`)"
                 band = "?"
             }
-            print "R", (band in rank) ? rank[band] : 9, key, name, band, afters, title
+            print "R", (band in rank) ? rank[band] : 9, key, name, band, afters, title, upnext
         }
         FNR == 1 {
             finish()
@@ -136,7 +149,7 @@ parse() {
             date = substr(name, 1, 10); rest = substr(name, 12)
             if (rest ~ /^M[0-9]+$/) rest = sprintf("M%08d", substr(rest, 2) + 0)
             key = date " " rest
-            band = ""; afters = ""; title = ""; has_priority = 0; opening = 1
+            band = ""; afters = ""; title = ""; has_priority = 0; opening = 1; upnext = 0
         }
         {
             line = $0
@@ -145,7 +158,7 @@ parse() {
                 band = line; sub(/^priority:[ \t]*/, "", band); sub(/[ \t]+$/, "", band)
                 has_priority = 1
                 if (!(band in rank))
-                    print "E", file ":" FNR ": band outside now, next, later and parked: `" line "`"
+                    print "E", file ":" FNR ": band outside bug, now, next, later and parked: `" line "`"
                 next
             }
             if (opening && FNR > 1 && has_priority && line ~ /^after:/) {
@@ -156,8 +169,17 @@ parse() {
                     afters = afters (afters == "" ? "" : ",") target ":" FNR
                 next
             }
+            if (opening && FNR > 1 && has_priority && line ~ /^upnext:/) {
+                value = line; sub(/^upnext:[ \t]*/, "", value); sub(/[ \t]+$/, "", value)
+                if (value != "true")
+                    print "E", file ":" FNR ": `upnext:` takes only `true`: `" line "`"
+                else if (upnext)
+                    print "E", file ":" FNR ": `upnext: true` twice in the opening block"
+                upnext = 1
+                next
+            }
             opening = 0
-            if (line ~ /^(priority|after):/)
+            if (line ~ /^(priority|after|upnext):/)
                 print "E", file ":" FNR ": a band line outside the opening block of the file: `" line "`"
             if (title == "" && line ~ /^#/) {
                 title = line
@@ -177,10 +199,10 @@ for dir in ${missing[@]+"${missing[@]}"}; do
 done
 records="$(printf '%s\n' "$parsed" | awk -F'\t' '$1 == "R"' | cut -f2-)"
 
-# The base order: `now` newest first, the rest oldest first, bands in sequence.
+# The base order: `bug` and `now` newest first, the rest oldest first, bands in sequence.
 base="$(
-    printf '%s\n' "$records" | awk -F'\t' '$1 == 0' | LC_ALL=C sort -t "$(printf '\t')" -k2,2r
-    printf '%s\n' "$records" | awk -F'\t' '$1 != 0 && NF' | LC_ALL=C sort -t "$(printf '\t')" -k1,1n -k2,2
+    printf '%s\n' "$records" | awk -F'\t' '$1 <= 1 && NF' | LC_ALL=C sort -t "$(printf '\t')" -k1,1n -k2,2r
+    printf '%s\n' "$records" | awk -F'\t' '$1 > 1 && NF' | LC_ALL=C sort -t "$(printf '\t')" -k1,1n -k2,2
 )"
 
 # The closed entries: a decision record named after an entry, `<name>.md` or `<name>-<n>.md`, is
@@ -199,7 +221,7 @@ done)"
 ordered="$(printf '%s\n' "$base" | CLOSED="$closed" awk -F'\t' '
     BEGIN { m = split(ENVIRON["CLOSED"], c, "\n"); for (i = 1; i <= m; i++) if (c[i] != "") done[c[i]] = 1 }
     NF {
-        n++; name[n] = $3; band[n] = $4; title[n] = $6; after[n] = $5
+        n++; name[n] = $3; band[n] = $4; title[n] = $6; after[n] = $5; mark[n] = $7
         idx[$3] = n
     }
     END {
@@ -235,7 +257,7 @@ ordered="$(printf '%s\n' "$base" | CLOSED="$closed" awk -F'\t' '
             }
             if (!found) break
             placed[found] = 1; placed_count++
-            print "O\t" band[found] "\t" name[found] "\t" title[found] "\t" after[found]
+            print "O\t" band[found] "\t" name[found] "\t" title[found] "\t" after[found] "\t" ((mark[found] == 1 && deps[found] == 0) ? 1 : 0) "\t" mark[found]
         }
         if (placed_count == n) exit
         # What is left waits on a cycle or is in one; strip the ones nothing left waits on until
@@ -276,13 +298,19 @@ fi
 
 printf '%s\n' "$ordered" | awk -F'\t' -v only="$band" '
     $1 == "O" && (only == "" || $2 == only) {
-        n++; b[n] = $2; nm[n] = $3; t[n] = $4; a[n] = $5
+        n++; b[n] = $2; nm[n] = $3; t[n] = $4; a[n] = $5; u[n] = $6; m[n] = $7
         if (length($3) > width) width = length($3)
     }
+    function show(i,    waits) {
+        waits = ""
+        if (a[i] != "") { waits = a[i]; gsub(/;/, "; ", waits); waits = "  (after " waits ")" }
+        printf "%-6s  %-" width "s  %s%s%s\n", b[i], nm[i], t[i], waits, (m[i] == 1 ? "  [up next]" : "")
+    }
     END {
-        for (i = 1; i <= n; i++) {
-            waits = ""
-            if (a[i] != "") { waits = a[i]; gsub(/;/, "; ", waits); waits = "  (after " waits ")" }
-            printf "%-6s  %-" width "s  %s%s\n", b[i], nm[i], t[i], waits
-        }
+        # Marked entries first (under a heading on the whole queue), then everything else.
+        for (i = 1; i <= n; i++) if (u[i] == 1) up_count++
+        if (up_count > 0 && only == "") print "up next"
+        for (i = 1; i <= n; i++) if (u[i] == 1) show(i)
+        if (up_count > 0 && only == "" && up_count < n) print ""
+        for (i = 1; i <= n; i++) if (u[i] != 1) show(i)
     }'

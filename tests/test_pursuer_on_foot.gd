@@ -283,7 +283,7 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t) -
 func _test_his_catch_ends_the_day_with_its_own_line(t) -> void:
 	for id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
 		t.check(EventCatalogue.by_id(id).hard_fail, "'%s' is a hard fail" % id)
-		var line: String = DayController._HARD_FAIL_TEXT.get(id, "")
+		var line: String = Texts.HARD_FAIL_TEXT.get(id, "")
 		t.check(line != "", "'%s' has its own loss line" % id)
 
 # ----------------------------------------------------------- out of the car ---

@@ -504,11 +504,11 @@ func _passes(map: CityMap, at: Vector2, along: Vector2, body: GroundShape,
 # -------------------------------------------------------------------- loss ---
 
 func _test_a_loss_to_it_names_its_own_cause(t) -> void:
-	var line: String = DayController._HARD_FAIL_TEXT.get("fire_truck", "")
+	var line: String = Texts.HARD_FAIL_TEXT.get("fire_truck", "")
 	t.check(line != "" and "fire engine" in line,
 			"a loss to it reads its own line: '%s'" % line)
-	t.check(line != DayController._HARD_FAIL_TEXT.get("police_patrol", "")
-			and line != DayController._HARD_FAIL_TEXT.get("car_strike", ""),
+	t.check(line != Texts.HARD_FAIL_TEXT.get("police_patrol", "")
+			and line != Texts.HARD_FAIL_TEXT.get("car_strike", ""),
 			"and not the patrol car's or a crowd car's")
 	t.check(MAIN_SCRIPT._hard_fail_cause_suffix("fire_truck", "fire_truck") == "fire-truck",
 			"the run log and the page's counter name the cause 'fire-truck'")

@@ -1127,7 +1127,7 @@ func _test_title_leads_to_the_day_brief_with_nothing_charged(t) -> void:
 		_free_gate_main(t, main)
 	)
 
-## The same path with a nerve charged: the day brief carries `main._RESUMED_DAY_LOST_NOTE`.
+## The same path with a nerve charged: the day brief carries `Texts.RESUMED_DAY_LOST`.
 func _test_title_leads_to_the_day_brief_with_a_charged_nerve(t) -> void:
 	GameState.start_run(235)
 	_with_forced_save(func() -> void:
@@ -1136,7 +1136,7 @@ func _test_title_leads_to_the_day_brief_with_a_charged_nerve(t) -> void:
 
 		main._on_title_start(ControlsMode.Mode.TAP)
 		t.check(main._summary._note.visible
-				and main._summary._note.text == _MAIN_SCRIPT._RESUMED_DAY_LOST_NOTE,
+				and main._summary._note.text == Texts.RESUMED_DAY_LOST,
 				"the day brief carries the lost-day line the load itself charged")
 
 		_free_gate_main(t, main)

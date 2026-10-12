@@ -83,7 +83,8 @@ touches (the path table in `CLAUDE.md`). Look for:
 
 The reviewer does not edit the branch, check it out in a worktree an agent is using, or merge. It
 may run a suite from a checkout of its own, sparse unless the PR's evidence or references are what
-it is checking (**orchestrating**, "Create sparse worktrees"), and never runs `git grep`
+it is checking (**orchestrating**, "Create sparse worktrees"; `tools/agent-setup.sh --detach <ref>
+<name>` makes it, detached at the PR head, with no branch and no brief), and never runs `git grep`
 over a folder that holds images (see **using-tools**).
 
 ## The findings go on the PR

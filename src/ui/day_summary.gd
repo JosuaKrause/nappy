@@ -26,7 +26,7 @@ signal restart_requested()
 @onready var _note: Label = $Root/Center/Lines/Note
 @onready var _body: Label = $Root/Center/Lines/Body
 ## The morning's own line — one or two plain sentences saying what is true of the city by that
-## day, from `_DAY_BRIEF` below — its own label, not a line folded into `_body`, because a screen
+## day, from `Texts.DAY_BRIEF` — its own label, not a line folded into `_body`, because a screen
 ## full of ordinary lines is exactly what playtest 69 missed it in ("the day text needs to be
 ## bigger to be able to be noticed"). Bigger and its own color (`Palette.CHALK_DONE`) is what
 ## makes it the thing the screen is telling you rather than one more line.
@@ -44,6 +44,8 @@ signal restart_requested()
 @onready var _continue_column: VBoxContainer = $Root/Center/Lines/Buttons/ContinueColumn
 @onready var _continue_button: ModeButton = $Root/Center/Lines/Buttons/ContinueColumn/Continue
 @onready var _restart_button: ModeButton = $Root/Center/Lines/Buttons/RestartColumn/Restart
+@onready var _continue_caption: Label = $Root/Center/Lines/Buttons/ContinueColumn/ContinueCaption
+@onready var _restart_caption: Label = $Root/Center/Lines/Buttons/RestartColumn/RestartCaption
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `TitleScreen` and `PauseScreen` each read it once into their own member instead of asking at
@@ -52,76 +54,6 @@ signal restart_requested()
 ## `_handle_restart_touch()` below.
 var _touch := TouchInput.available()
 
-## One or two plain sentences a morning, in American English, under `docs/NARRATIVE.md`'s tone
-## rules — nobody explains the politics, the danger is noise, nothing triumphant. Each names the
-## thing that day introduces, so this is also where a new obstacle is first heard of; a line is
-## not tied to its own day's resistance task or once-only happening, so one that would give a
-## task away says something else that is true that morning instead. Read directly off
-## `GameState.day` rather than a parameter, since the same table has to answer for both
-## `show_day_brief()` (a resumed run's own gate) and `show_day()` (the ordinary transition every
-## other day reaches this screen through) — a static fact about the calendar day, never about
-## what an attempt touched, so a lost day's own line reads exactly as it did this morning.
-##
-## Written as plain prose, one space between sentences and no `\n` of its own: `SentenceLines
-## .break_for_label()` breaks a multi-sentence entry onto more than one line only where `_brief`'s
-## own width needs it to, at whichever sentence end splits it most evenly.
-const _DAY_BRIEF := {
-	1: "She won't settle indoors. It is quiet in the park. Walk until she sleeps, then bring "
-			+ "her home.",
-	2: "There are bicycles on the sidewalk again.",
-	3: "The streets smell of smoke today.",
-	4: "It feels like there are more police around now.",
-	5: "They put up masts at the intersections overnight.",
-	6: "A curfew was announced today. There is not as much time. There are rumors of chalk "
-			+ "messages in alleys.",
-	7: "There are more posters than yesterday. The same face is on most of them.",
-	8: "A van took someone from the next street before dawn.",
-	9: "They have closed the districts off from each other. There are gatehouses at the crossings.",
-	10: "The stores on the square are boarded up.",
-	11: "A door down the hall was sealed in the night. The name is still on the bell.",
-	12: "They are fencing off the parks.",
-	13: "There are army trucks on the main road.",
-	14: "The last night.",
-}
-
-const _ENDING_TITLE := {
-	GameEnums.Ending.BAD: "You stop going out.",
-	GameEnums.Ending.NEUTRAL: "The city is quiet now.",
-	GameEnums.Ending.GOOD: "Silence.",
-}
-
-## The one line on the ending screen that is not writing.
-##
-## Every ending title in this file is a **sentence out of the fiction** — *"You stop going out."*,
-## *"Silence."* — which is right for what they are and is exactly why they do not read as the end
-## of anything on their own. A run that has finished has to say so before it says anything else.
-##
-## **It is not the same word for all three, and that is a decision rather than the request being
-## trimmed.** The screen the complaint came off is the `BAD` one, where the nerves ran out, and
-## `GAME OVER` is what that is. Stamping it over a run somebody *won* would be telling them they
-## lost. `THE END` is the same size, the same weight and the same job on the other two.
-const _ENDING_HEADING := {
-	GameEnums.Ending.BAD: "GAME OVER",
-	GameEnums.Ending.NEUTRAL: "THE END",
-	GameEnums.Ending.GOOD: "THE END",
-}
-
-## Plain prose, one space between sentences: `show_ending()` breaks it onto more than one line
-## through `SentenceLines.break_for_label()`, the same helper `_DAY_BRIEF` and every other screen's
-## prose goes through, rather than a `\n` typed into each entry.
-const _ENDING_BODY := {
-	GameEnums.Ending.BAD:
-		"There is nothing left in you for another walk. "
-		+ "The city goes on without the two of you in it.",
-	GameEnums.Ending.NEUTRAL:
-		"She sleeps through most nights now. "
-		+ "The streets you learned to avoid are empty of everything worth avoiding. "
-		+ "Nobody is out.",
-	GameEnums.Ending.GOOD:
-		"The loudspeakers cut out mid-sentence. "
-		+ "For the first time since the masts went up, you walk home in the quiet.",
-}
-
 func _ready() -> void:
 	# The summary has to keep running while it pauses everything behind it.
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -129,6 +61,8 @@ func _ready() -> void:
 	# `main._apply_orientation()`) has a stationary 1280x720 footprint to rotate — see
 	# `ScreenOrientation.pin_to_design_box()`.
 	ScreenOrientation.pin_to_design_box(_root)
+	_continue_caption.text = Texts.BUTTON_CONTINUE
+	_restart_caption.text = Texts.BUTTON_HOLD_TO_RESTART
 	# Coloured here rather than in the scene so `Palette` stays the one place a runtime colour is
 	# decided — which is what its own class comment asks for.
 	_heading.add_theme_color_override("font_color", Palette.GAME_OVER)
@@ -165,8 +99,8 @@ func _refresh_buttons() -> void:
 ## button has been pressed — `main._show_the_resume_gate()`'s own call, made after
 ## `GameState.finish_day()` has already charged whatever the load itself costs, so `day` and
 ## `nerves` are already the numbers the retry (or the day exactly as the save left it) actually
-## has. Three things, no more: the day, the nerves, and the morning's own line from `_DAY_BRIEF`.
-## `lost_note` is `main._RESUMED_DAY_LOST_NOTE` when the load itself spent a nerve, or `""` for a
+## has. Three things, no more: the day, the nerves, and the morning's own line from `Texts.DAY_BRIEF`.
+## `lost_note` is `Texts.RESUMED_DAY_LOST` when the load itself spent a nerve, or `""` for a
 ## save that cost nothing, in which case this is exactly what a fresh day 1 skips by going
 ## straight from the title into `main._engage_the_day()` instead. Continuing from here reaches
 ## that same function, through `main._on_summary_continued()`'s own `_resume_gate_open` branch —
@@ -176,11 +110,11 @@ func show_day_brief(day: int, nerves: int, lost_note: String = "") -> void:
 	_showing_ending = false
 	_note.text = SentenceLines.break_for_label(lost_note, _note)
 	_note.visible = lost_note != ""
-	_title.text = "Day %d of %d" % [day, Tuning.RUN_LENGTH_DAYS]
+	_title.text = Texts.SUMMARY_DAY % [day, Tuning.RUN_LENGTH_DAYS]
 	# Stars, through the same `NerveDisplay.stars()` the HUD, the day summary and the pause screen
 	# all read the count through — never a digit.
-	_body.text = "Nerves left: %s" % NerveDisplay.stars(nerves)
-	var brief_text: String = _DAY_BRIEF.get(day, "")
+	_body.text = Texts.SUMMARY_NERVES % NerveDisplay.stars(nerves)
+	var brief_text: String = Texts.DAY_BRIEF.get(day, "")
 	_brief.text = SentenceLines.break_for_label(brief_text, _brief)
 	_brief.visible = brief_text != ""
 	_hint.text = ""
@@ -219,25 +153,25 @@ func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
 	_title.text = SentenceLines.break_for_label(
 			_elapsed_line(result, reason, GameState.format_clock_seconds(elapsed_seconds)), _title)
 	var retrying := result != GameEnums.DayResult.WON and nerves > 0
-	var lines: Array[String] = ["Day %d of %d" % [GameState.day, Tuning.RUN_LENGTH_DAYS]]
+	var lines: Array[String] = [Texts.SUMMARY_DAY % [GameState.day, Tuning.RUN_LENGTH_DAYS]]
 	lines.append("")
 	# The state she carries into the coming day, shown on a win as much as a loss, and drawn as
 	# stars — never a digit — the way every other screen that shows the count now does.
-	lines.append("Nerves left: %s" % NerveDisplay.stars(nerves))
+	lines.append(Texts.SUMMARY_NERVES % NerveDisplay.stars(nerves))
 	# The calendar does not move on a loss, so the screen says so rather than leaving the player
 	# to notice tomorrow that it is still today — or, when the last nerve sent a normal run back,
 	# which day it went back to, and why every star is there again.
 	if back_to_checkpoint:
 		lines.append(back_to_line(GameState.day))
 	elif retrying:
-		lines.append("You try day %d again." % GameState.day)
+		lines.append(Texts.SUMMARY_TRY_AGAIN % GameState.day)
 	# The tally is the only place the subquest is ever spelled out. In the world it is chalk on
 	# a wall.
 	if GameState.has_joined_resistance():
 		lines.append("")
 		lines.append(_resistance_tally_line())
 	_body.text = "\n".join(lines)
-	var brief_text: String = _DAY_BRIEF.get(GameState.day, "")
+	var brief_text: String = Texts.DAY_BRIEF.get(GameState.day, "")
 	_brief.text = SentenceLines.break_for_label(brief_text, _brief)
 	_brief.visible = brief_text != ""
 	# Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still
@@ -262,33 +196,33 @@ func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
 func _elapsed_line(result: GameEnums.DayResult, reason: String, clock: String) -> String:
 	match result:
 		GameEnums.DayResult.WON:
-			return "She fell asleep after %s." % clock
+			return Texts.SUMMARY_FELL_ASLEEP % clock
 		GameEnums.DayResult.LOST_TIMEOUT:
 			return reason
 		GameEnums.DayResult.LOST_CRYING:
 			var cut := reason.find(". ")
 			if cut == -1:
-				return "%s after %s." % [reason, clock]
-			return "%s after %s.%s" % [reason.substr(0, cut), clock, reason.substr(cut + 1)]
+				return Texts.SUMMARY_REASON_AFTER % [reason, clock]
+			return Texts.SUMMARY_REASON_AFTER_REST % [reason.substr(0, cut), clock, reason.substr(cut + 1)]
 		_:
-			return "%s After %s." % [reason, clock]
+			return Texts.SUMMARY_REASON_THEN_CLOCK % [reason, clock]
 
 ## What the lost-day screen says when a normal run's last nerve sent it back to `day`, its
 ## checkpoint.
 static func back_to_line(day: int) -> String:
-	return "Your nerves gave out. Back to day %d." % day
+	return Texts.SUMMARY_BACK_TO_CHECKPOINT % day
 
 ## The tally alone. The morning's own line is `_brief`'s job now — a static fact about the
 ## calendar day, shown unconditionally in `show_day()` — so this stays about progress and losses
 ## only, which is why it is still gated on `has_joined_resistance()` at the call site.
 func _resistance_tally_line() -> String:
 	if GameState.sabotage_available():
-		return "You have done enough. There is one more night."
+		return Texts.SUMMARY_TALLY_DONE
 	var done := GameState.resistance_progress
 	var lost := GameState.failed_resistance_steps.size()
-	var line := "Errands run: %d of %d" % [done, Tuning.RESISTANCE_GOAL]
+	var line := Texts.SUMMARY_TALLY % [done, Tuning.RESISTANCE_GOAL]
 	if lost > 0:
-		line += "   (%d contact%s lost)" % [lost, "" if lost == 1 else "s"]
+		line += Texts.SUMMARY_TALLY_LOST_ONE if lost == 1 else Texts.SUMMARY_TALLY_LOST % lost
 	return line
 
 ## The last screen of a run. `space` — or a tap — goes back to the title, which is where the next
@@ -306,15 +240,15 @@ func _resistance_tally_line() -> String:
 ## (`GameState.finish_day()` ends the run before it would move the calendar) or past the day a
 ## load spent the last nerve on.
 func show_ending(ending: GameEnums.Ending, day: int) -> void:
-	_heading.text = _ENDING_HEADING.get(ending, "THE END")
+	_heading.text = Texts.ENDING_HEADING.get(ending, Texts.ENDING_HEADING_DEFAULT)
 	_heading.show()
-	_title.text = _ENDING_TITLE.get(ending, "The end.")
+	_title.text = Texts.ENDING_TITLE.get(ending, Texts.ENDING_TITLE_DEFAULT)
 	# The one place `GameState.play_seconds` is ever shown — never during play, on every ending
 	# alike. `GameState.format_clock()` is the shared formatter so this line and the finale's own
 	# clock, once that is built, never carry two copies of the same format string.
-	var day_line := "\nYou made it to day %d." % day if ending == GameEnums.Ending.BAD else ""
-	var ending_body := SentenceLines.break_for_label(_ENDING_BODY.get(ending, ""), _body)
-	_body.text = "%s\n\nTime played: %s%s" \
+	var day_line := Texts.ENDING_DAY_REACHED % day if ending == GameEnums.Ending.BAD else ""
+	var ending_body := SentenceLines.break_for_label(Texts.ENDING_BODY.get(ending, ""), _body)
+	_body.text = Texts.ENDING_PLAYED \
 			% [ending_body, GameState.format_clock(GameState.play_seconds), day_line]
 	_hint.text = ""
 	# The ending is not a day summary and has no morning line of its own to show.
@@ -338,13 +272,13 @@ func show_ending(ending: GameEnums.Ending, day: int) -> void:
 ## `exit_kind` is a `CityEdge.Kind`, passed as an `int` because a cross-script enum is not the same
 ## type as itself as a parameter — see the **godot** skill.
 func show_finale(exit_kind: int, seconds: float) -> void:
-	_heading.text = "THE END"
+	_heading.text = Texts.FINALE_HEADING
 	_heading.show()
-	_title.text = "You are out."
+	_title.text = Texts.FINALE_TITLE
 	_showing_ending = false
 	var finale_body := SentenceLines.break_for_label(
-			_FINALE_BODY.get(exit_kind, _FINALE_BODY[CityEdge.Kind.BRIDGE]), _body)
-	_body.text = "%s\n\nOut in: %s" % [finale_body, GameState.format_clock(seconds)]
+			Texts.FINALE_BODY.get(exit_kind, Texts.FINALE_BODY[CityEdge.Kind.BRIDGE]), _body)
+	_body.text = Texts.FINALE_OUT_IN % [finale_body, GameState.format_clock(seconds)]
 	_hint.text = ""
 	_brief.visible = false
 	_present()
@@ -373,23 +307,10 @@ func show_finale_brief(hint: String, nerves: int) -> void:
 	_title.text = SentenceLines.break_for_label(hint, _title)
 	# Stars, through the same `NerveDisplay.stars()` every screen that shows a nerve count now
 	# reads through — never a digit.
-	_body.text = "Nerves left: %s" % NerveDisplay.stars(nerves)
+	_body.text = Texts.SUMMARY_NERVES % NerveDisplay.stars(nerves)
 	_brief.visible = false
 	_hint.text = ""
 	_present()
-
-## What is behind her, and it is the same sentence either way: she is out, nobody is following,
-## and the city is still there. The two differ only in what she is standing on. Plain prose, one
-## space between sentences: `show_finale()` breaks it through `SentenceLines.break_for_label()`,
-## the same helper the rest of this file's prose goes through, rather than a `\n` of its own.
-const _FINALE_BODY := {
-	CityEdge.Kind.TUNNEL:
-		"The mountain closes over the road behind you. "
-		+ "She does not wake.",
-	CityEdge.Kind.BRIDGE:
-		"The water is under you and the city is behind you. "
-		+ "She does not wake.",
-}
 
 func _present() -> void:
 	_root.show()

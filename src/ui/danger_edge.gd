@@ -400,7 +400,7 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 		if not wheels.is_empty():
 			draw_texture_rect(AtlasLibrary.region(StringName(wheels)), rect, false)
 
-	var label := "%d m" % roundi(distance / Tuning.TILE_SIZE * 1.5)
+	var label := Texts.DISTANCE_METRES % roundi(distance / Tuning.TILE_SIZE * 1.5)
 	var font := ThemeDB.fallback_font
 	var width := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
 	var text_at := at + Vector2(-width * 0.5, ICON * 0.72 + 16.0)

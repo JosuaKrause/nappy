@@ -1415,7 +1415,7 @@ renders every caller's text at its label's width and asserts that each sentence 
 label's own line count is the number of lines `SentenceLines` returned.
 
 **Everything below that one line is the coming day's, not the day that just ended.** The day
-number, the nerves carried into it and the morning's own line (`_DAY_BRIEF`, below) all read off
+number, the nerves carried into it and the morning's own line (`Texts.DAY_BRIEF`, below) all read off
 `GameState.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
 today again (a loss with nerves left retries the same day) — never off the day that just ended.
 The day brief a resumed run opens on (`DaySummary.show_day_brief()`) is built the same way, since

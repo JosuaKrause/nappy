@@ -106,6 +106,7 @@ test_still_watch.gd 11
 test_stroller.gd 38
 test_stroller_gait.gd 10
 test_telemetry.gd 66513
+test_texts_catalogue.gd 109
 test_touch.gd 34
 test_trailer_flags.gd 11
 test_turns.gd 2995

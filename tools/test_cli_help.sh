@@ -258,6 +258,12 @@ assert_exit "serve-web.sh --help"  zero ./tools/serve-web.sh --help
 assert_exit "sound-lab.sh --help"  zero ./tools/sound-lab.sh --help
 assert_exit "sound-lab.sh -h"      zero ./tools/sound-lab.sh -h
 assert_exit "release.sh --help"    zero ./tools/release.sh --help
+assert_exit "agent-setup.sh --help"  zero ./tools/agent-setup.sh --help
+assert_exit "agent-setup.sh -h"      zero ./tools/agent-setup.sh -h
+assert_exit "agent-setup.sh unknown" nonzero ./tools/agent-setup.sh --not-a-flag
+assert_exit "agent-setup.sh missing include path" nonzero ./tools/agent-setup.sh a feature/a --include
+assert_exit "agent-setup.sh stray word" nonzero ./tools/agent-setup.sh only-one
+assert_exit "agent-setup.sh --detach without a name" nonzero ./tools/agent-setup.sh --detach HEAD
 assert_exit "run.sh --help"        zero ./tools/run.sh --help
 assert_exit "shot.sh --help"       zero ./tools/shot.sh --help
 assert_exit "trailer.sh --help"    zero ./tools/trailer.sh --help
@@ -1032,6 +1038,46 @@ add_entry 2026-09-25-lazy-cat "priority: later" "lazy-cat — Waited on"
 add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 printf 'priority: next\n' >> "$queue_repo/docs/todo/2026-09-03-slow-owl/README.md"
 queue_check_fails "queue.sh --check rejects a band line below the opening block" "outside the opening block"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nupnext: yes')" "slow-owl — Parked"
+queue_check_fails "queue.sh --check rejects an upnext with any value but true" "takes only"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nupnext: true\nupnext: true')" "slow-owl — Parked"
+queue_check_fails "queue.sh --check rejects a repeated upnext" "twice"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
+printf 'upnext: true\n' >> "$queue_repo/docs/todo/2026-09-03-slow-owl/README.md"
+queue_check_fails "queue.sh --check rejects an upnext below the opening block" "outside the opening block"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
+# A bug entry prints before now (newest first among bugs); an upnext entry prints first under its
+# heading with its own band shown, and leaves its band's place.
+add_entry 2026-09-10-sad-hen "priority: bug" "sad-hen — Older bug"
+add_entry 2026-09-11-red-elk "priority: bug" "red-elk — Newer bug"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nupnext: true')" "slow-owl — Parked"
+order="$(cd "$queue_repo" && ./tools/queue.sh 2>/dev/null | awk 'NF { print $1 " " $2 }' | tr '\n' ' ')"
+check_that "queue.sh prints an upnext entry first under its heading, then bug (newest first) ahead of now" \
+    '[[ "$order" == "up next parked 2026-09-03-slow-owl bug 2026-09-11-red-elk bug 2026-09-10-sad-hen now 2026-09-22-busy-otter "* ]]'
+(cd "$queue_repo" && ./tools/queue.sh --check)
+status=$?
+band_out="$(cd "$queue_repo" && ./tools/queue.sh --band bug | awk '{ print $2 }' | tr '\n' ' ')"
+check_that "queue.sh --check passes an upnext beside a band, and --band bug lists the bugs without a heading" \
+    '[[ $status -eq 0 && "$band_out" == "2026-09-11-red-elk 2026-09-10-sad-hen " ]]'
+# A marked entry waiting on an open entry stays behind it, in its band, tagged; once what it waits
+# on is closed it joins the section.
+add_entry 2026-09-12-wet-fox "$(printf 'priority: bug\nupnext: true\nafter: 2026-09-11-red-elk')" "wet-fox — Marked, waits"
+line="$(cd "$queue_repo" && ./tools/queue.sh | grep wet-fox)"
+order="$(cd "$queue_repo" && ./tools/queue.sh 2>/dev/null | awk 'NF && $1 != "up" { print $2 }' | tr '\n' ' ')"
+band_line="$(cd "$queue_repo" && ./tools/queue.sh --band bug | grep wet-fox)"
+check_that "queue.sh holds a marked entry behind an open after, in its band, and still shows it marked" \
+    '[[ "$order" == "2026-09-03-slow-owl 2026-09-11-red-elk 2026-09-12-wet-fox 2026-09-10-sad-hen "* && "$line" == *"(after 2026-09-11-red-elk)  [up next]" && "$band_line" == *"[up next]" ]]'
+printf '# red-elk — Built · 2026-09-13\n' > "$queue_repo/docs/decisions/2026-09-11-red-elk.md"
+rm -rf "$queue_repo/docs/todo/2026-09-11-red-elk"
+order="$(cd "$queue_repo" && ./tools/queue.sh 2>/dev/null | awk 'NF && $1 != "up" { print $2 }' | tr '\n' ' ')"
+line="$(cd "$queue_repo" && ./tools/queue.sh | grep wet-fox)"
+check_that "queue.sh pulls a marked entry into up next once its after is closed" \
+    '[[ "$order" == "2026-09-12-wet-fox 2026-09-03-slow-owl "* && "$line" == *"closed)  [up next]" ]]'
+rm -f "$queue_repo/docs/decisions/2026-09-11-red-elk.md"
+rm -rf "$queue_repo/docs/todo/2026-09-12-wet-fox"
+add_entry 2026-09-11-red-elk "priority: bug" "red-elk — Newer bug"
+rm -rf "$queue_repo/docs/todo/2026-09-10-sad-hen" "$queue_repo/docs/todo/2026-09-11-red-elk"
 add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 
 # ------------------------------------ update-pr.sh stops a branch still on the old single queue ---
