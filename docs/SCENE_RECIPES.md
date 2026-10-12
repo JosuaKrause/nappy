@@ -87,9 +87,12 @@ game's own. A route bag also switches on the rest of what the director does whil
 a played day: a place a marble puts on her route is sited on her way, and on days 8 to 14, once the
 baby sleeps and the walk home begins, the act III and IV return patrols are owed.
 
-An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path` and `age`.
-The ordinary scheduler's ground, route, spacing, protected-door and corridor checks accept
-its site. An authored path must equal that production route. A `loudspeaker` row is a mast, a
+An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path`, `age` and
+`heat`. `heat` (an integer from 0 to `Tuning.RESISTANCE_GOAL`) installs the row in the shape a
+played day's dawn puts it in at that resistance progress (`EventCatalogue.heated()`): the
+investigating patrol car, the hunting roadblock and the hunting vans, which no authored day
+otherwise reaches. The ordinary scheduler's ground, route, spacing, protected-door and corridor
+checks accept its site, checked against that shape. An authored path must equal that production route. A `loudspeaker` row is a mast, a
 scripted row no roll places, so it is accepted instead by the checks the day's masts pass
 (`EventScheduler._place_masts()`): day 5 or later; a sidewalk or square tile a mast site would be
 offered (off the home street, its field off a calm interior and off every place a region door

@@ -32,6 +32,15 @@ be drawn to signal danger, and no rings), and every pursuer keeps the events ski
 fairness contract. A charger's warning must not read as one of the existing cues meaning something
 else.
 
-The work is [audit-every-charger.md](audit-every-charger.md), then
-[the-waiting-dog-rests.md](the-waiting-dog-rests.md) and one change per charger the audit finds
-short of a stage.
+**The audit** ([teal-trout-2026-10-11](../../evidence/teal-trout-2026-10-11/README.md), a table and
+a clip of each charger) found these short of a stage, each an item here:
+[the-dog-rests-then-warns.md](the-dog-rests-then-warns.md) (neutral and warning both),
+[the-robbers-warning-is-not-his-lunge.md](the-robbers-warning-is-not-his-lunge.md),
+[the-roadblock-guards-warning.md](the-roadblock-guards-warning.md) and
+[the-door-guards-stages.md](the-door-guards-stages.md). The policeman out of an investigating patrol
+car and the men out of a hunting van show three distinct stages. The alley mouse, the pigeon flock
+and the masked man do not charge her; the masked man's stages are drawn inverted, which is
+[the-masked-man-waits-standing.md](the-masked-man-waits-standing.md).
+
+**Open, for the player:** what a warning looks like. The cues rules limit what may signal danger,
+and the existing flashing caret already marks a warning over most of them.

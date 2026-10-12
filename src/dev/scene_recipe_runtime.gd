@@ -222,7 +222,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if not entry is Dictionary:
 				errors.append(where + " entries must be objects")
 				continue
-			_keys(entry, ["name", "row", "at", "path", "age", "route_seed", "mast_id"] if collection == "events"
+			_keys(entry, ["name", "row", "at", "path", "age", "route_seed", "mast_id", "heat"] if collection == "events"
 					else ["name", "kind", "at", "direction", "speed"], where, errors)
 			var label: Variant = entry.get("name")
 			if not label is String or str(label).is_empty() or names.has(label):
@@ -245,6 +245,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 						mast_ids[mast_id] = true
 				_number(entry.get("age", 0), where + ".age", 0, 3600, errors)
 				_number(entry.get("route_seed", 1), where + ".route_seed", 0, 2147483647, errors, true)
+				_number(entry.get("heat", 0), where + ".heat", 0, Tuning.RESISTANCE_GOAL, errors, true)
 				if not entry.get("path", []) is Array:
 					errors.append(where + ".path must be an array")
 				else:
@@ -867,6 +868,10 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 			errors.append("event %s is outside authored bounds" % entry.name)
 			continue
 		var def := EventCatalogue.by_id(entry.row)
+		# A row at a resistance level, the shape a played day's dawn puts it in at that progress
+		# (`EventCatalogue.heated()`), for the heated rungs no ordinary authored day reaches.
+		if entry.has("heat"):
+			def = EventCatalogue.heated(def, int(entry.heat))
 		var plan: EventScheduler.Planned
 		if def.id == EventScheduler.WalkSiting.MAST_ROW:
 			plan = _mast_placement(def, at, plans, doors)

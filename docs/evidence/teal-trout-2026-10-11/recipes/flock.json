@@ -1,0 +1,11 @@
+{
+  "version": 1, "name": "teal-trout: a pigeon flock waits, notices her, and goes up", "seed": 4242,
+  "extent": {"scope": "full"}, "city": {"context_seed": 4242},
+  "anchors": {"start": {"tile": [145, 113]}, "flock": {"tile": [144, 121]}},
+  "setup": {"tutorial_complete": true, "day": 5, "parent": "mother",
+    "player": {"at": "start", "facing": "south"},
+    "events": [{"name": "flock", "row": "pigeon_flock", "at": "flock"}]},
+  "playback": {"walk": "1p1.2s1p1.8s", "duration": 5.0, "capture_at": 1.0,
+    "camera": {"fixed": true, "fixed_offset": [-20, 120]},
+    "observations": [{"tick": 10, "subject": "flock", "condition": "visible"}]}
+}
