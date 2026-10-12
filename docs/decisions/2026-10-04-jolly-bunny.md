@@ -7,7 +7,8 @@ etc?" The player read the orchestrator's answer and proposal and filed it ("file
 can pick it up later"); CLAUDE.md's rule that a manual sequence done a second time becomes a script
 is the reason.
 
-**Built, of the filed proposal, all but the generated live-agents paragraph.** `tools/agent-setup.sh <name> <branch> [--include <path>...]`
+**Built, of the filed proposal, all but the generated live-agents paragraph.**
+`tools/agent-setup.sh <name> <branch> [--include <path>...]`
 runs the disk preflight, makes the sparse worktree under `.claude/worktrees/<name>` from
 `origin/main` with no upstream, its exclusions read from the `gates` job's sparse checkout in
 `.github/workflows/ci.yml` (so there is one list) plus `docs/reference/` and
