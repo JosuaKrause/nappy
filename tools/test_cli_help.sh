@@ -258,6 +258,12 @@ assert_exit "serve-web.sh --help"  zero ./tools/serve-web.sh --help
 assert_exit "sound-lab.sh --help"  zero ./tools/sound-lab.sh --help
 assert_exit "sound-lab.sh -h"      zero ./tools/sound-lab.sh -h
 assert_exit "release.sh --help"    zero ./tools/release.sh --help
+assert_exit "agent-setup.sh --help"  zero ./tools/agent-setup.sh --help
+assert_exit "agent-setup.sh -h"      zero ./tools/agent-setup.sh -h
+assert_exit "agent-setup.sh unknown" nonzero ./tools/agent-setup.sh --not-a-flag
+assert_exit "agent-setup.sh missing include path" nonzero ./tools/agent-setup.sh a feature/a --include
+assert_exit "agent-setup.sh stray word" nonzero ./tools/agent-setup.sh only-one
+assert_exit "agent-setup.sh --detach without a name" nonzero ./tools/agent-setup.sh --detach HEAD
 assert_exit "run.sh --help"        zero ./tools/run.sh --help
 assert_exit "shot.sh --help"       zero ./tools/shot.sh --help
 assert_exit "trailer.sh --help"    zero ./tools/trailer.sh --help
