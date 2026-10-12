@@ -588,15 +588,25 @@ func clear() -> void:
 ## The hysteresis is not a nicety. Without it a player pacing on the boundary of an event's
 ## reach rebuilds it every other frame, and since a rebuilt instance starts its telegraph again
 ## that is an event permanently crouching at her and never arriving.
+##
+## **Asked of every plan on every physics tick**, several hundred of them, most of which stand at one
+## point: so a point plan's distance is worked out here rather than through `Planned.is_placed()`
+## and `Planned.distance_from()`, which answer the same number by the same expression, and only a
+## route goes to `distance_from()`.
 func stream_around(at: Vector2) -> void:
+	var stream_out_beyond := stream_radius + Tuning.EVENT_STREAM_HYSTERESIS
 	for plan in _plans:
-		if plan.spent or not plan.is_placed():
+		if plan.spent:
 			continue
-		var distance := plan.distance_from(at)
+		var position := plan.position
+		if position == Vector2.INF:
+			continue
+		var distance := position.distance_to(at) if plan.path.size() < 2 \
+				else plan.distance_from(at)
 		if plan.live == null:
 			if distance <= stream_radius:
 				_stream_in(plan)
-		elif not plan.kept_live and distance > stream_radius + Tuning.EVENT_STREAM_HYSTERESIS \
+		elif not plan.kept_live and distance > stream_out_beyond \
 				and not _could_be_watched(plan.live, at):
 			_stream_out(plan)
 
@@ -2107,13 +2117,16 @@ func _hold_that_would_begin(at: Vector2) -> EventInstance:
 			continue
 		if not instance.def.redetains and instance.has_chatted():
 			continue
+		# Every test here is a pure filter, so their order decides nothing but the cost: the range
+		# comes before the boom's, which walks every live instance, since a door she is not inside
+		# is almost every door.
+		var range_to := instance.global_position.distance_to(at)
+		if range_to > instance.def.detain_distance() or range_to >= nearest_range:
+			continue
 		var latch: ReleaseLatch = _door_release_latches.get(instance)
 		if latch and latch.holds():
 			continue
 		if instance.def.redetains and _on_a_booms_carriageway(instance, at):
-			continue
-		var range_to := instance.global_position.distance_to(at)
-		if range_to > instance.def.detain_distance() or range_to >= nearest_range:
 			continue
 		nearest = instance
 		nearest_range = range_to

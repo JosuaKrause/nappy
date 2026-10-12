@@ -4257,7 +4257,8 @@ func is_lethal_at(world_position: Vector2) -> bool:
 	if def.drives:
 		return is_driving() and _meets_her(global_position, _heading, world_position,
 				_short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, _route_left(_path_travelled)))
-	if is_finished or is_leaving or is_waiting() or not def.hard_fail or is_telegraphing():
+	# The row's own flag first: it is the one most rows fail, and the two calls after it are pure.
+	if not def.hard_fail or is_finished or is_leaving or is_waiting() or is_telegraphing():
 		return false
 	if global_position.distance_to(world_position) > def.lethal_reach():
 		return false
