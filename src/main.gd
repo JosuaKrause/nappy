@@ -343,6 +343,7 @@ func _ready() -> void:
 	# nothing earlier is reachable from GDScript at all — and ahead of the escape's own boot branch
 	# just below, so either path gets it from this one call.
 	_lock_out_a_rig()
+	WebDisplay.apply(get_viewport())
 	_return_viewport = get_viewport()
 	_end_the_return_window(true)
 	_return_viewport.set_disable_input(false)
