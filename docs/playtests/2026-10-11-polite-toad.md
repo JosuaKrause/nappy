@@ -25,7 +25,6 @@ questions are the assistant's; only the quoted lines are the player's.
 
 - **#722**, in [teal-trout](../todo/2026-10-11-teal-trout/README.md), every charger is neutral, then
   warns, then charges: every charger the player triggers, and that is not already charging, has a
-  rest pose and an alert pose of its own; the door guard is under the rule. The two questions about
-  the shared pelican bag were answered in the session (what it is, and that "leave it" meant keeping
-  the pelican's draw where it is rather than inside the route bags); the player has not chosen, so
-  nothing is filed for them.
+  rest pose and an alert pose, each distinct from its other stages; the door guard is under the
+  rule. Nothing is filed for the two questions about the shared pelican bag: the player has not
+  chosen.
