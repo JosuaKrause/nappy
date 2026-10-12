@@ -42,5 +42,10 @@ car and the men out of a hunting van show three distinct stages. The alley mouse
 and the masked man do not charge her; the masked man's stages are drawn inverted, which is
 [the-masked-man-waits-standing.md](the-masked-man-waits-standing.md).
 
-**Open, for the player:** what a warning looks like. The cues rules limit what may signal danger,
-and the existing flashing caret already marks a warning over most of them.
+**Each charger the player triggers, and that is not already charging, has a rest pose and an alert
+pose of its own** ([polite-toad](../../playtests/2026-10-11-polite-toad.md), #722: "yes a distinct
+alert and rest post for each charger that gets triggered by the player (and isn't already
+charging)"), answering the proposal of an alert stance distinct from both resting and lunging, such
+as the dog standing stiff facing her, the robber's hands out of his coat, or a guard square-on with a
+hand raised. The poses come back as a review sheet first. The cues rules still limit what may signal
+danger.
