@@ -808,7 +808,7 @@ other one `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles, 128px) before it gets th
 once it is past — the same sidestep a bump gives it, aimed at a lane rather than away from a person.
 Only a body that takes **every** lane of one footway at the same point along the street shuts that
 footway, and then the walker walks up to it and about-faces in front of it — with the other footway
-and the carriageway still open, which is the whole difference between a body and a seal. A car has
+and the carriageway still open, which is the whole difference between a body and a seal. A precinct is one footway six lanes wide: a body in some of its lanes is stepped round, and only one that takes all six is a wall the walker turns round in front of. A car has
 one lane per direction and the oncoming one is not an option, so a body on its own lane tile shuts
 that direction to it and it turns at the last junction; a car already past the last junction stops
 behind the body the way it stops behind a queue, and the oncoming lane keeps flowing.

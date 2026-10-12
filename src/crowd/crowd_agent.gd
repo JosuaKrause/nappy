@@ -2134,22 +2134,25 @@ func _never_a_street_here(vertical: bool, tile: Vector2i) -> bool:
 ## the street. `vertical` is the axis being travelled, so the tile's *other* coordinate is the one
 ## across the street.
 ##
-## **A precinct is never shut this way, and the guard is not only about crashing.** It is six lanes
-## wide with no carriageway, so it has no footways to have a far side and "every lane of my own
-## footway" would mean the whole street — one stall would turn the crowd out of the busiest pavement
-## in the city. It is stepped round across all six lanes instead.
+## **A precinct's footway is its whole width, and it is shut only when all six lanes are taken.** It
+## has no carriageway, so there are no two footways and "my own footway" is the street; one stall
+## is stepped round across the six lanes (`_step_around_a_body`) and leaves it open. A body that
+## takes every lane at one point — a wall of stalls, a fallen tree, a seal — is a street the walker
+## cannot pass, and it turns round in front of it as on any other street instead of slowing to a
+## stop at the body with the walkers behind it queueing.
 func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
 	# The cheap half first: a walker's own tile is nearly always clear, and this runs per probe.
 	if not _map.is_obstructed(tile):
 		return false
 	var across := tile.x if vertical else tile.y
 	var offset := CityMap.corridor_offset(across)
-	if offset < 0 or CityMap.is_road_offset(offset):
+	if offset < 0:
 		return false
 	var along_tile := tile.y if vertical else tile.x
 	var corridor := across / CityMap.period()
 	var offsets := CrowdLanes.walkable_offsets(_map, vertical, corridor, along_tile)
-	if offsets.size() != CrowdLanes.SIDEWALK_OFFSETS.size():
+	# On an ordinary street the carriageway is not a footway; in a precinct it is paving like the rest.
+	if not offsets.has(offset):
 		return false
 	var base := corridor * CityMap.period()
 	for lane_offset in _footway_of(offsets, offset):

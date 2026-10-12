@@ -31,6 +31,7 @@ func run(t) -> void:
 	_test_a_walker_passes_a_crash_on_its_pavement(t, city, map)
 	_test_a_row_at_the_kerb_leaves_both_lanes_driving(t, city, map)
 	_test_a_row_across_the_whole_street_still_turns_a_car(t, city, map)
+	_test_a_precinct_blocked_across_its_width_turns_walkers_round(t, city, map)
 
 	city.free()
 	_test_nobody_ever_stands_in_a_body_on_a_real_day(t)
@@ -74,15 +75,16 @@ func _stand_a_body(map: CityMap, corridor: int, lanes: Array, from: int, to: int
 ## An agent on one lane of one corridor, walking or driving at a given along position, added to the
 ## day's (emptied) crowd so `Crowd.step()` moves it exactly as it moves anybody.
 func _agent_on(city: City, map: CityMap, kind: CrowdAgent.Kind, corridor: int, lane: int,
-		along: float, direction: float) -> CrowdAgent:
+		along: float, direction: float, vertical := true,
+		offsets: Array[int] = CrowdLanes.SIDEWALK_OFFSETS) -> CrowdAgent:
 	var agent := CrowdAgent.new()
 	agent.setup(kind, map, city.crowd.field(), 1, 0.0)
-	agent._vertical = true
+	agent._vertical = vertical
 	agent._corridor = corridor
 	agent._lane = lane
 	agent._direction = direction
 	agent._lane_centre = CrowdLanes.lane_centre(corridor, lane) if kind == CrowdAgent.Kind.CAR \
-			else CrowdLanes.walker_lane_centre(corridor, lane, CrowdLanes.SIDEWALK_OFFSETS)
+			else CrowdLanes.walker_lane_centre(corridor, lane, offsets)
 	agent._speed = 60.0 if kind == CrowdAgent.Kind.WALKER else 130.0
 	agent._cruise = agent._speed
 	agent._set_along(along)
@@ -307,6 +309,98 @@ func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, ci
 			"while the oncoming lane keeps flowing past it (%.0fpx covered)"
 			% (oncoming_started - oncoming.position.y))
 	map.clear_day_obstructions()
+
+# ------------------------------------------------------------ a precinct ---
+
+## A precinct is one footway six lanes wide. A body in one of its lanes is stepped round, and a body
+## across all six is a street the walker cannot pass, so it turns round in front of it as on any
+## other street instead of slowing to a stop with the walkers behind it queueing.
+## *(PLAYTEST-143 statement 5, and velvet-marten #696: "people still pile up in the pedestrian zone
+## instead of turning around at barriers".)*
+##
+## Six walkers, one per lane, start a few tiles short of the wall and walk at it. Counted: the
+## frames in which a walker is within a tile and a half of the wall, and the walkers that end up on
+## the wall's far side of where they started, which is none either way; before the change the six
+## stand at the wall for the whole run.
+func _test_a_precinct_blocked_across_its_width_turns_walkers_round(t, city: City,
+		map: CityMap) -> void:
+	var span := Vector4i(-1, -1, -1, -1)
+	for candidate in map.precinct_spans:
+		span = candidate
+		break
+	t.check(span.x >= 0, "this city has a precinct to wall off")
+	if span.x < 0:
+		return
+	var vertical := span.x == 1
+	var corridor := span.y
+	var base := corridor * CityMap.period()
+	# A wall mid-block, with five tiles of plain street (no junction band) short of it to walk.
+	var wall := -1
+	for along in range(span.z * CityMap.period() + 12, (span.w + 1) * CityMap.period()):
+		var clear := true
+		for i in range(1, 6):
+			var tile := Vector2i(base + 2, along - i) if vertical else Vector2i(along - i, base + 2)
+			if CityMap.corridor_offset(along - i) >= 0 or not map.is_street(tile):
+				clear = false
+				break
+		if clear:
+			wall = along
+			break
+	t.check(wall > 0, "the precinct has five tiles of plain street to walk at a wall")
+	if wall < 0:
+		return
+	var lanes: Array[int] = CrowdLanes.PRECINCT_OFFSETS
+	_stand_a_body(map, corridor, lanes, wall, wall) if vertical else \
+			_stand_a_body_across(map, corridor, lanes, wall)
+	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
+	city.crowd.clear()
+
+	var walkers: Array[CrowdAgent] = []
+	for lane in lanes:
+		walkers.append(_agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, lane,
+				float(wall - 4) * Tuning.TILE_SIZE, 1.0, vertical, lanes))
+	var probe := Vector2i(base + 2, wall) if vertical else Vector2i(wall, base + 2)
+	t.check(walkers[0]._cannot_go_on(vertical, probe),
+			"a body across all six lanes of a precinct is a wall to a walker on it")
+	t.check(walkers[0]._footway_is_shut(vertical, Vector2i(base, wall) if vertical \
+			else Vector2i(wall, base)), "and so is the lane at its edge")
+	var gap := Vector2i(base + 2, wall + 2) if vertical else Vector2i(wall + 2, base + 2)
+	t.check(not walkers[0]._cannot_go_on(vertical, gap), "while the ground behind it is open")
+
+	var at := map.tile_to_world(probe)
+	var wall_px := float(wall) * Tuning.TILE_SIZE
+	var standing := 0
+	var inside := 0
+	var turned := 0
+	for frame in int(round(20.0 / STEP)):
+		city.crowd.set_focus(at)
+		city.crowd.step(STEP)
+		for walker in walkers:
+			var along := walker._along() if walker._vertical == vertical else INF
+			if walker._vertical == vertical and wall_px - along < 1.5 * Tuning.TILE_SIZE \
+					and along < wall_px:
+				standing += 1
+			if map.is_obstructed(map.world_to_tile(walker.position)):
+				inside += 1
+	for walker in walkers:
+		if walker._vertical != vertical or walker._direction < 0.0:
+			turned += 1
+	t.check(inside == 0, "nobody walks into the wall (%d frames somebody did)" % inside)
+	t.check(turned == walkers.size(),
+			"every walker has turned round or off the street (%d of %d)" % [turned, walkers.size()])
+	# A turned walker is at the wall for about the stride it takes to turn; a queue is at it for
+	# the whole twenty seconds. Six walkers over 1200 frames is 7200 walker-frames; a stride is a
+	# few dozen each.
+	t.check(standing < 6 * 150,
+			"and they do not stand at it (%d walker-frames within 1.5 tiles of it)" % standing)
+	map.clear_day_obstructions()
+
+## `_stand_a_body` for a horizontal corridor: the lanes are rows and `wall` is a column.
+func _stand_a_body_across(map: CityMap, corridor: int, lanes: Array, wall: int) -> void:
+	var tiles: Array[Vector2i] = []
+	for lane: int in lanes:
+		tiles.append(Vector2i(wall, corridor * CityMap.period() + lane))
+	map.obstruct_tiles(1, tiles)
 
 # --------------------------------------------------------- a body in pieces ---
 # `EventManager.obstructed_footprint()` rasterises `EventDef.parts()` rather than the row's one
