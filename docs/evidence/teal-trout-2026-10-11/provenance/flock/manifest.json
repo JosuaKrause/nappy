@@ -1,0 +1,225 @@
+{
+	"anchors": {
+		"flock": [
+			4624.0,
+			3888.0
+		],
+		"start": [
+			4656.0,
+			3632.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 4242.0
+	},
+	"classification": "normal",
+	"context_seed": 4242,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {
+			"pigeon_flock": 1
+		},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"final_actors": {
+		"flock": {
+			"position": [
+				4624.0,
+				3888.0
+			],
+			"pursuing": false,
+			"row": "pigeon_flock",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				4656.0,
+				3902.1321
+			],
+			"speed": 92.0
+		}
+	},
+	"final_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"initial_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"initial_actors": {
+		"flock": {
+			"position": [
+				4624.0,
+				3888.0
+			],
+			"pursuing": false,
+			"row": "pigeon_flock",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				4656.0,
+				3632.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				4624.0,
+				3888.0
+			],
+			"row": "pigeon_flock"
+		}
+	],
+	"observations": [
+		{
+			"condition": "visible",
+			"passed": true,
+			"player_at": [
+				4656.0,
+				3632.0
+			],
+			"state": {
+				"position": [
+					4624.0,
+					3888.0
+				],
+				"pursuing": false,
+				"row": "pigeon_flock",
+				"telegraphing": false
+			},
+			"subject": "flock",
+			"tick": 10.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "teal-trout: a pigeon flock waits, notices her, and goes up",
+	"recipe_sha256": "9d3d2648681edb47182e9716870e763dc3bdfde2cb803a500b94c9e10d864a9c",
+	"scope": "full",
+	"seed": 4242,
+	"setup": {
+		"day": 5.0,
+		"events": [
+			{
+				"at": "flock",
+				"name": "flock",
+				"row": "pigeon_flock"
+			}
+		],
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "south"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

@@ -1,0 +1,227 @@
+{
+	"anchors": {
+		"start": [
+			4624.0,
+			3632.0
+		],
+		"van": [
+			4528.0,
+			3888.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 4242.0
+	},
+	"classification": "normal",
+	"context_seed": 4242,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {
+			"abduction": 1,
+			"policeman_giving_chase": 2
+		},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"final_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				4624.0,
+				3777.866
+			],
+			"speed": 0.0
+		},
+		"van": {
+			"position": [
+				4512.0,
+				3888.0
+			],
+			"pursuing": false,
+			"row": "abduction",
+			"telegraphing": true
+		}
+	},
+	"final_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"initial_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"initial_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				4624.0,
+				3632.0
+			],
+			"speed": 0.0
+		},
+		"van": {
+			"position": [
+				4512.0,
+				3888.0
+			],
+			"pursuing": false,
+			"row": "abduction",
+			"telegraphing": false
+		}
+	},
+	"initial_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				4528.0,
+				3888.0
+			],
+			"row": "abduction"
+		}
+	],
+	"observations": [
+		{
+			"condition": "visible",
+			"passed": true,
+			"player_at": [
+				4624.0,
+				3632.0
+			],
+			"state": {
+				"position": [
+					4512.0,
+					3888.0
+				],
+				"pursuing": false,
+				"row": "abduction",
+				"telegraphing": false
+			},
+			"subject": "van",
+			"tick": 10.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "teal-trout: a hunting unmarked van lets two men out",
+	"recipe_sha256": "0d6a5d9061bccefc603e6d94a8415779230bf9f7ece7f9791966b4228a08316c",
+	"scope": "full",
+	"seed": 4242,
+	"setup": {
+		"day": 8.0,
+		"events": [
+			{
+				"at": "van",
+				"heat": 4.0,
+				"name": "van",
+				"row": "abduction"
+			}
+		],
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "south"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

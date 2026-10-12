@@ -49,7 +49,9 @@ flags a browser driven by WebDriver as a bot, which GoatCounter does not count, 
 it: it switches off the run log, and the counter writes none.
 
 `tools/goatcounter.sh` reads the site back with its read-only API key in `GOATCOUNTER_TOKEN`: the
-events as a funnel, and the page visit among every path under `--raw`. Its `--site` option and the
+events as a funnel, and the page visit among every path under `--raw`. `--by-release` splits the
+funnel (or `--encounters`) into one window per release, from the `v*` tags' dates in git, a day with
+several releases being one mixed window. Its `--site` option and the
 old site's key read that site's history.
 
 **The game counts how far a run gets, as anonymous GoatCounter events.**
@@ -122,7 +124,7 @@ The events:
   `nappy-day-N-lost-hard-fail-charging-dog` instead, off the pair above, and never also sends
   `dog-outlasted`.
 - `nappy-day-N-pelican-spawned` / `nappy-day-N-pelican-seen` / `nappy-day-N-pelican-excited` /
-  `nappy-day-N-pelican-hit` — the one cyclist in about four hundred drawn as a pelican, as its own
+  `nappy-day-N-pelican-hit` — the one cyclist in four hundred drawn as a pelican from the run's one shared bag (a run meets at most one), as its own
   entry *(inbox #527 in [azure-tapir](playtests/2026-10-04-azure-tapir.md), the player: "when the pelican spawns, when it's on screen, and when it's
   hitting the player. it must appear as its own entry and it needs to be more granular than
   standard event telemetry")*, each once per pelican: created where its warning pointed
@@ -843,7 +845,9 @@ none, so the hand-over to it switches the timing off and hides the page's button
 **Getting it off the device.** On a page, a `save frames` button at the top of the page saves the
 record through the browser's own download — a page element over the canvas rather than a game
 control, so a tap on it never steers her, and the download starts inside the tap that asked for
-it. On the desktop it is written to `user://frame-records/` on every scene exit, the same file each
+it. The button answers the tap: its label reads `sent to your browser: <file name>` for six
+seconds, in words that say the download was handed over and not that it finished, which the page
+cannot observe. On the desktop it is written to `user://frame-records/` on every scene exit, the same file each
 time, and the path is printed. `--frame-record --after N` with `--walk` or `--press` is a timed
 rig that quits without a screenshot, the same way `--frame-trace --after N` is, headless or not.
 

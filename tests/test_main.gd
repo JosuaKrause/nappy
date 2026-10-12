@@ -1179,6 +1179,19 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	t.check(GameState.nerves == 4,
 			"day 14's win still gives a nerve back, and exactly once, through the direct call")
 
+	# The same hand-over in a hard run gives nothing back: reverting the branch to a bare
+	# `GameState.regain_a_nerve()` makes this the one that fails.
+	GameState.start_run(SEED)
+	GameState.choose_mode(true)
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+	GameState.sabotage_done = true
+	GameState.nerves = 3
+	main._on_day_finished(GameEnums.DayResult.WON)
+	t.check(GameState.escape_section == FinaleController.Section.BUILDING,
+			"a hard run's day 14 also hands over to the escape")
+	t.check(GameState.nerves == 3, "and its win gives a hard run no nerve back")
+
 	# The other side of the same day: the legwork done and the last night skipped is still the
 	# neutral ending it has always been, and must not reach the escape.
 	GameState.start_run(SEED)

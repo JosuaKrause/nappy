@@ -496,6 +496,7 @@ func _save_game_state() -> Dictionary:
 		"snapshot": GameState.save_snapshot(),
 		"escape_section": GameState.escape_section,
 		"posters": GameState.posters.to_data(),
+		"pelican": GameState.pelican.to_data(),
 		"fenced_park": GameState.fenced_park,
 		"fenced_park_act": GameState.fenced_park_act,
 		"alley_tiles": GameState.completed_resistance_alley_tiles.duplicate(),
@@ -505,6 +506,7 @@ func _restore_game_state(saved: Dictionary) -> void:
 	GameState.restore_snapshot(saved["snapshot"])
 	GameState.escape_section = saved["escape_section"]
 	GameState.posters.restore(saved["posters"])
+	GameState.pelican.restore(saved["pelican"])
 	GameState.fenced_park = saved["fenced_park"]
 	GameState.fenced_park_act = saved["fenced_park_act"]
 	GameState.completed_resistance_alley_tiles.assign(saved["alley_tiles"])

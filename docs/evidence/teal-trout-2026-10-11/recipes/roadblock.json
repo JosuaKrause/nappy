@@ -1,0 +1,11 @@
+{
+  "version": 1, "name": "teal-trout: a hunting roadblock's guard waits at his post, notices her, and sets off", "seed": 4242,
+  "extent": {"scope": "full"}, "city": {"context_seed": 4242},
+  "anchors": {"start": {"tile": [145, 113]}, "block": {"tile": [142, 121]}},
+  "setup": {"tutorial_complete": true, "day": 7, "parent": "mother",
+    "player": {"at": "start", "facing": "south"},
+    "events": [{"name": "block", "row": "roadblock", "at": "block", "heat": 4}]},
+  "playback": {"walk": "1p1.0s1.5p1.5s", "duration": 5.0, "capture_at": 1.0,
+    "camera": {"fixed": true, "fixed_offset": [-40, 110]},
+    "observations": [{"tick": 10, "subject": "block", "condition": "visible"}]}
+}

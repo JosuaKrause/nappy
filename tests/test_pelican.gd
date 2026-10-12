@@ -1,10 +1,13 @@
 extends RefCounted
-## The pelican that about one cyclist in four hundred is instead *(minty-hedgehog, statement 8:
-## "One in ~400 bikers should be a pelican riding a bicycle instead. Needs to be svg only")*.
+## The pelican, drawn from one shared bag of 399 cyclists and 1 pelican per run *(minty-hedgehog,
+## statement 8: "One in ~400 bikers should be a pelican riding a bicycle instead. Needs to be svg
+## only"; pebbly-ibis, inbox #575 in feathery-lynx: "have one shared biker/pelican marble bag with
+## 399 bikers and 1 pelican and the same bag is used throughout the run")*.
 ##
-## What a picture cannot show: that the share is the player's number over many runs and comes from
-## the run's own seed, that the roll is one draw per cyclist from a stream nothing else touches, that
-## a rider created as the pelican rides as one to the end, and that the pelican is the cyclist row in
+## What a picture cannot show: that a run meets at most one pelican, that the bag is the run's own
+## and comes from its seed, that a lost day and a resumed save draw the same cyclists and pelican the
+## day first did, that the draw is one marble per cyclist from a bag nothing else touches, that a
+## rider created as the pelican rides as one to the end, and that the pelican is the cyclist row in
 ## everything a player can feel — and that the telemetry tells the pelican apart from its warning to
 ## its hit, which the page's counter (`tests/test_visit_counter.gd`) and the loss cause
 ## (`tests/test_day_lost_to.gd`) then name. Whether it reads as a pelican is the drawing's review sheet,
@@ -17,21 +20,22 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
-## Run seeds and days the share is measured over, and the cyclists rolled on each of those days:
-## 480,000 rolls, about 1,200 pelicans expected, with a standard deviation near 35.
-const SHARE_SEEDS := 200
-const SHARE_DAYS: Array[int] = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-const SHARE_ROLLS_PER_DAY := 200
-## How far the measured share may sit from `EventManager.PELICAN_SHARE`, as a fraction of it —
-## about three and a half standard deviations at the counts above.
-const SHARE_TOLERANCE := 0.1
+## Run seeds the bag is measured over, and the cyclists a run is given in the measurement: a little
+## over the 26 a run meets on average (`docs/todo/2026-10-05-pebbly-ibis/README.md`), so the share of
+## runs with a pelican is near 30/400, 7.5%: 400 runs, 30 expected, a standard deviation near 5.3.
+const SHARE_SEEDS := 400
+const CYCLISTS_PER_RUN := 30
 
 var _city: City
 
 func run(t) -> void:
-	_test_about_one_cyclist_in_400_is_a_pelican(t)
+	var saved := _save_the_run()
+	_test_a_run_meets_at_most_one_pelican_and_about_one_cyclist_in_400_is_it(t)
 	_test_the_seed_decides_which_cyclist_is_the_pelican(t)
-	_test_only_a_cyclist_draws_from_the_pelican_stream(t)
+	_test_only_a_cyclist_draws_from_the_bag(t)
+	_test_the_bag_follows_the_run_and_the_count(t)
+	_test_the_dev_flag_makes_every_cyclist_a_pelican(t)
+	_test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t)
 	_test_the_pelican_never_becomes_a_png(t)
 	_city = CITY_SCENE.instantiate()
 	t.add_child(_city)
@@ -41,60 +45,104 @@ func run(t) -> void:
 	_test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t)
 	_test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t)
 	_city.free()
+	_restore_the_run(saved)
 
 func _day_rng() -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [SEED, Tuning.RUN_TAUGHT_DAY])
 	return rng
 
-## The share over many runs is the player's own, through the same stream and the same roll
-## `EventManager.rolls_a_pelican()` uses — `GameState.day_rng()` under each run seed in turn, and
-## `EventManager.pelican_roll()` against `PELICAN_SHARE`.
-func _test_about_one_cyclist_in_400_is_a_pelican(t) -> void:
-	var saved_seed := GameState.run_seed
-	var rolls := 0
-	var pelicans := 0
+## The run's bag holds 399 cyclists and 1 pelican, so 400 cyclists in a run are exactly one pelican
+## and 800 are exactly two; and over many runs of about a run's cyclists the share of runs with a
+## pelican is the cyclists drawn over 400.
+func _test_a_run_meets_at_most_one_pelican_and_about_one_cyclist_in_400_is_it(t) -> void:
+	_new_run(1)
+	var all := _rolls_for(1, [EventCatalogue.by_id("cyclist")], 800)
+	var first := all.slice(0, 400)
+	var second := all.slice(400)
+	t.check(first.count(true) == 1 and second.count(true) == 1,
+			"a bag of 400 holds exactly one pelican, and is filled again after them: %d, %d"
+			% [first.count(true), second.count(true)])
 	var runs_with_one := 0
+	var two_in_a_run := 0
 	for run_seed in range(1, SHARE_SEEDS + 1):
-		GameState.run_seed = run_seed
-		var this_run := 0
-		for day in SHARE_DAYS:
-			var rng := GameState.day_rng(day, EventManager.PELICAN_STREAM)
-			for _i in SHARE_ROLLS_PER_DAY:
-				rolls += 1
-				if EventManager.pelican_roll(rng, EventManager.PELICAN_SHARE):
-					this_run += 1
-		pelicans += this_run
-		if this_run > 0:
+		var this_run := _rolls_for(run_seed, [EventCatalogue.by_id("cyclist")], CYCLISTS_PER_RUN)
+		if this_run.has(true):
 			runs_with_one += 1
-	GameState.run_seed = saved_seed
-	var share := float(pelicans) / float(rolls)
-	t.check(absf(share - EventManager.PELICAN_SHARE) <= EventManager.PELICAN_SHARE * SHARE_TOLERANCE,
-			"one cyclist in %.0f is a pelican over %d rolls, against the player's one in %.0f"
-			% [1.0 / maxf(share, 0.000001), rolls, 1.0 / EventManager.PELICAN_SHARE])
-	t.check(runs_with_one > SHARE_SEEDS / 2,
-			("the pelicans are spread over the runs rather than bunched into a few: %d of %d runs "
-			% [runs_with_one, SHARE_SEEDS]) + "of 2,400 cyclists meet at least one")
+		if this_run.count(true) > 1:
+			two_in_a_run += 1
+	t.check(two_in_a_run == 0, "no run of %d cyclists meets two pelicans (%d of %d did)"
+			% [CYCLISTS_PER_RUN, two_in_a_run, SHARE_SEEDS])
+	var expected := SHARE_SEEDS * CYCLISTS_PER_RUN / 400.0
+	t.check(absf(runs_with_one - expected) <= 4.0 * sqrt(expected),
+			"%d of %d runs meet a pelican, against %.0f expected from %d cyclists in 400"
+			% [runs_with_one, SHARE_SEEDS, expected, CYCLISTS_PER_RUN])
 
-## Two managers on the same day of the same run roll the same riders, one draw per cyclist in the
-## order they are created; another day rolls others.
+## Two managers on the same run roll the same riders, one draw per cyclist in the order they are
+## created, whatever the day; another run rolls others.
 func _test_the_seed_decides_which_cyclist_is_the_pelican(t) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
-	var first := _rolls(5, [cyclist], 4000)
-	var again := _rolls(5, [cyclist], 4000)
-	var other_day := _rolls(6, [cyclist], 4000)
-	t.check(first.has(true), "the day's 4,000 cyclists include a pelican (a guard that the "
+	var first := _rolls_for(5, [cyclist], 400)
+	var again := _rolls_for(5, [cyclist], 400)
+	var other_run := _rolls_for(6, [cyclist], 400)
+	t.check(first.has(true), "the run's 400 cyclists include a pelican (a guard that the "
 			+ "comparisons below compare something)")
-	t.check(first == again, "the same run and day make the same cyclists the pelican")
-	t.check(first != other_day, "another day makes others the pelican")
+	t.check(first == again, "the same run makes the same cyclists the pelican")
+	t.check(first != other_run, "another run makes others the pelican")
 
-## A row that is not a cyclist is never the pelican and draws nothing from its stream, so the loose
+## The bag is rebuilt when the run's seed or the count it was left at disagrees with it, and only
+## then: one manager kept across a new run, and across a count a lost day put back, draws what a
+## fresh manager would.
+func _test_the_bag_follows_the_run_and_the_count(t) -> void:
+	var cyclist := EventCatalogue.by_id("cyclist")
+	var manager := EventManager.new()
+	_new_run(11)
+	var first: Array[bool] = []
+	for _i in 400:
+		first.append(manager.rolls_a_pelican(cyclist))
+	var fresh_11 := _rolls_for(11, [cyclist], 400)
+	t.check(first == fresh_11, "a manager's draws are a fresh manager's")
+	_new_run(12)
+	var other: Array[bool] = []
+	for _i in 400:
+		other.append(manager.rolls_a_pelican(cyclist))
+	t.check(other == _rolls_for(12, [cyclist], 400) and other != first,
+			"the same manager on another run's seed draws that run's bag")
+	_new_run(12)
+	GameState.pelican.draws = 0
+	var again: Array[bool] = []
+	for _i in 400:
+		again.append(manager.rolls_a_pelican(cyclist))
+	t.check(again == other, "and a count put back to 0 starts that bag again")
+	GameState.pelican.draws = 100
+	var from_100: Array[bool] = []
+	for _i in 300:
+		from_100.append(manager.rolls_a_pelican(cyclist))
+	t.check(from_100 == other.slice(100), "and put back to 100 carries on from the hundredth")
+	manager.free()
+
+## `--pelican` through the flag's own getter: every cyclist is the pelican, a loose dog still is
+## not, and the bag draws what it would have.
+func _test_the_dev_flag_makes_every_cyclist_a_pelican(t) -> void:
+	var cyclist := EventCatalogue.by_id("cyclist")
+	var plain := _rolls_for(5, [cyclist], 40)
+	DevFlags.args_for_tests = PackedStringArray(["--pelican"])
+	t.check(DevFlags.pelican(), "the flag is read from the command line")
+	var flagged := _rolls_for(5, [cyclist], 40)
+	var dog := _rolls_for(5, [EventCatalogue.by_id("loose_dog")], 5)
+	DevFlags.args_for_tests = PackedStringArray()
+	t.check(flagged.count(true) == 40 and dog.count(true) == 0,
+			"with it every cyclist is a pelican and no dog is")
+	t.check(GameState.pelican.draws == 0 and _rolls_for(5, [cyclist], 40) == plain,
+			"and without it the same run draws as before")
+
+## A row that is not a cyclist is never the pelican and draws nothing from the bag, so the loose
 ## dogs sent between two cyclists do not move which of them it is.
-func _test_only_a_cyclist_draws_from_the_pelican_stream(t) -> void:
+func _test_only_a_cyclist_draws_from_the_bag(t) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var dog := EventCatalogue.by_id("loose_dog")
-	var cyclists_only := _rolls(5, [cyclist], 4000)
-	var with_dogs := _rolls(5, [cyclist, dog, dog], 12000)
+	var cyclists_only := _rolls_for(5, [cyclist], 400)
+	var with_dogs := _rolls_for(5, [cyclist, dog, dog], 1200)
 	var cyclists_among_dogs: Array[bool] = []
 	var any_dog_pelican := false
 	for i in with_dogs.size():
@@ -105,6 +153,47 @@ func _test_only_a_cyclist_draws_from_the_pelican_stream(t) -> void:
 	t.check(not any_dog_pelican, "a loose dog is never the pelican")
 	t.check(cyclists_among_dogs == cyclists_only,
 			"the dogs sent between them do not change which cyclist is the pelican")
+	t.check(GameState.pelican.draws == 400, "and the count the save keeps is cyclists only (%d)"
+			% GameState.pelican.draws)
+
+## *(inbox #575: "save it in the standard save file to reset the bag to the beginning of the day on
+## a lost day".)* A lost day gives the count back to the day's dawn and a save written mid-day reads
+## it back, and a manager that meets either draws the cyclists, and the pelican, the day first drew.
+func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t) -> void:
+	var cyclist := EventCatalogue.by_id("cyclist")
+	# Some run whose pelican is among the day's cyclists, so the comparison compares one.
+	# The day is draws 7 to 26, so the window searched is that one.
+	var seed_value := 1
+	for candidate in range(1, 2000):
+		if _rolls_for(candidate, [cyclist], 27).slice(7).has(true):
+			seed_value = candidate
+			break
+	_new_run(seed_value)
+	var yesterday := _rolls(cyclist, 7, seed_value)
+	t.check(yesterday.size() == 7 and GameState.pelican.draws == 7, "a run's earlier day draws 7")
+	GameState._snapshot_what_the_attempt_can_spend()
+	var day := _rolls(cyclist, 20, seed_value)
+	t.check(day.has(true), "the day holds the pelican (a guard that the comparisons compare one)")
+	var saved := GameState.pelican.to_data()
+	GameState._give_back_what_the_attempt_spent()
+	t.check(GameState.pelican.draws == 7, "a lost day sets the count back to the day's dawn")
+	t.check(_rolls(cyclist, 20, seed_value) == day,
+			"and the retry draws the same cyclists and pelican the day first did")
+	t.check(GameSave.run_data().has("pelican")
+			and int(GameSave.run_data()["pelican"]["draws"]) == GameState.pelican.draws,
+			"the standard save carries the count under its own key")
+	GameState.pelican.reset()
+	GameState.pelican.restore(JSON.parse_string(JSON.stringify(saved)))
+	t.check(GameState.pelican.draws == 27,
+			"a save read back keeps the count (%d)" % GameState.pelican.draws)
+	GameState.pelican.give_back()
+	t.check(_rolls(cyclist, 20, seed_value) == day,
+			"and keeps the dawn too: a day lost after a resume draws the same again")
+	GameState.pelican.reset()
+	t.check(GameState.pelican.draws == 0 and GameState.pelican.to_data().get("draws") == 0,
+			"a new run starts from the full bag")
+	GameState.pelican.restore({})
+	t.check(GameState.pelican.draws == 0, "and a save written before the bag loads at 0")
 
 ## *(minty-hedgehog: "converted to PNG during atlas creation but otherwise it will always stay SVG
 ## never become a converted PNG".)* The default bake takes an illustrated PNG wherever one stands
@@ -129,15 +218,37 @@ func _test_the_pelican_never_becomes_a_png(t) -> void:
 	t.check(converted.is_empty(), "and none has an illustrated PNG beside it (%s)"
 			% ", ".join(converted))
 
-## `count` answers of a fresh manager on `day` of the current run, asked for `defs` in turn.
-func _rolls(day: int, defs: Array[EventDef], count: int) -> Array[bool]:
+## Starts a run of `run_seed` with the full bag.
+func _new_run(run_seed: int) -> void:
+	GameState.run_seed = run_seed
+	GameState.pelican.reset()
+
+## `count` answers of a fresh manager on run `run_seed`, asked for `defs` in turn, from a full bag.
+func _rolls_for(run_seed: int, defs: Array[EventDef], count: int) -> Array[bool]:
+	_new_run(run_seed)
 	var manager := EventManager.new()
-	manager._day = day
 	var answers: Array[bool] = []
 	for i in count:
 		answers.append(manager.rolls_a_pelican(defs[i % defs.size()]))
 	manager.free()
 	return answers
+
+## `count` answers of a fresh manager for the cyclist `def`, from wherever `GameState.pelican` stands.
+func _rolls(def: EventDef, count: int, run_seed: int) -> Array[bool]:
+	GameState.run_seed = run_seed
+	var manager := EventManager.new()
+	var answers: Array[bool] = []
+	for _i in count:
+		answers.append(manager.rolls_a_pelican(def))
+	manager.free()
+	return answers
+
+func _save_the_run() -> Dictionary:
+	return {"seed": GameState.run_seed, "pelican": GameState.pelican.to_data()}
+
+func _restore_the_run(saved: Dictionary) -> void:
+	GameState.run_seed = saved["seed"]
+	GameState.pelican.restore(saved["pelican"])
 
 ## A rider created as the pelican, through the path every cyclist takes (`spawn_warned()`, handed
 ## the roll its warning made), is drawn as the pelican on its first frame and on its last; one
@@ -251,9 +362,9 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	Telemetry.begin_day(Tuning.RUN_TAUGHT_DAY, 1, SEED, SEED, 180.0)
 
 	var before := events.instances().size()
-	events.pelican_share = 1.0
+	events.pelican_rig = EventManager.PelicanRig.ALWAYS
 	events._warn_down_her_line(def, her, Vector2.UP)
-	events.pelican_share = EventManager.PELICAN_SHARE
+	events.pelican_rig = EventManager.PelicanRig.BAG
 	var warning: PendingWarning = events.pending_warnings().back() \
 			if not events.pending_warnings().is_empty() else null
 	t.check(warning != null and warning.is_pelican and warning.logged_name() == "pelican",

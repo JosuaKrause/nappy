@@ -1,0 +1,11 @@
+{
+  "version": 1, "name": "teal-trout: an alley mouse waits, notices her, and dashes across its alley", "seed": 4242,
+  "extent": {"scope": "full"}, "city": {"context_seed": 4242},
+  "anchors": {"start": {"tile": [141, 122]}, "mouse": {"tile": [135, 122]}},
+  "setup": {"tutorial_complete": true, "day": 5, "parent": "mother",
+    "player": {"at": "start", "facing": "west"},
+    "events": [{"name": "mouse", "row": "alley_mouse", "at": "mouse"}]},
+  "playback": {"walk": "1p0.7w3.3p", "duration": 5.0, "capture_at": 1.0,
+    "camera": {"fixed": true, "fixed_offset": [-90, 0]},
+    "observations": [{"tick": 10, "subject": "mouse", "condition": "visible"}]}
+}

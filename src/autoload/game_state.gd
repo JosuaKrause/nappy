@@ -29,7 +29,8 @@ var escape_section: int = 0
 ## begins and fixed for the rest of the run. *(gentle-osprey, the player: "a "Hard Mode" checkbox on
 ## the title screen (if new game) that decides whether checkpoints are available".)* **Hard mode is
 ## the run with no checkpoints**: the last nerve ends it with the bad ending, and the escape spends
-## and regains nerves as well (`spend_a_nerve_in_the_escape()`). **Normal mode never reaches the
+## nerves as well (`spend_a_nerve_in_the_escape()`), and nothing, a won day or a won section, gives
+## one back (`regain_a_nerve_for_a_won_day()`). **Normal mode never reaches the
 ## bad ending**: the last nerve sends the run back to its latest checkpoint (`checkpoint`). Nothing
 ## else differs — *"hard mode doesn't affect gameplay -- only restart pacing"*.
 ##
@@ -99,6 +100,11 @@ var city_state := CityState.new()
 ## tears did not happen. Not in `_SAVE_FIELDS`: it rides beside `escape_section` as its own
 ## top-level save key, so a save written before there were posters still loads, with bare walls.
 var posters := PosterState.new()
+
+## How many cyclists the run has drawn from its one pelican bag — see `PelicanState`. Photographed
+## and given back with the rest of what an attempt spends, and a top-level save key of its own like
+## `posters`, so a save written before it loads at 0.
+var pelican := PelicanState.new()
 
 ## Whether the day-14 sabotage actually went through. Reaching RESISTANCE_GOAL earns the
 ## chance at the good ending; this is doing it.
@@ -236,6 +242,7 @@ func start_run(seed_value: int = 0) -> void:
 	scars.clear()
 	city_state.reset()
 	posters.reset()
+	pelican.reset()
 	settled_in.clear()
 	fenced_park = Vector2i(-1, -1)
 	fenced_park_act = 0
@@ -375,12 +382,11 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 	_snapshot_what_the_attempt_can_spend()
 	# Excluded for the escape: `main._on_finale_escaped()` reaches this same call once she is out,
 	# and walking out of the city gives no nerve in either mode — a normal run's escape has none to
-	# give ("the escape doesn't have nerves", the player), and a hard run's one regain is getting out
-	# of the building (`main._on_escape_exit_requested()`). So the section she just walked out of,
-	# still on `escape_section` here (the `_end_run()` branch below is what clears it), says whether
-	# this call is one of theirs.
+	# give ("the escape doesn't have nerves", the player), and a hard run gets none back at all. So
+	# the section she just walked out of, still on `escape_section` here (the `_end_run()` branch
+	# below is what clears it), says whether this call is one of theirs.
 	if escape_section == 0:
-		regain_a_nerve()
+		regain_a_nerve_for_a_won_day()
 	if is_final_day():
 		_end_run(GameEnums.Ending.GOOD if earned_good_ending() else GameEnums.Ending.NEUTRAL)
 		return false
@@ -388,16 +394,24 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 	return true
 
 ## Gives one nerve back, capped at `Tuning.STARTING_NERVES` (5) — the run's own maximum, so a
-## stretch of wins can never bank more than a single bad day ever costs. `finish_day()` calls this
-## for an ordinary won day; `main._on_day_finished()`'s hand-over to the escape calls it directly
-## for day 14's own win, since a day that hands over never reaches `finish_day()` at all (that call
-## is deferred to `main._on_finale_escaped()`, once she is out, so day 14's calendar slot and ending
-## stay open for the escape to decide) — day 14 is still an ordinary day, and its win does not
-## become the escape's just because what follows it is.
+## stretch of wins can never bank more than a single bad day ever costs. `finish_day()` reaches this
+## for an ordinary won day through `regain_a_nerve_for_a_won_day()`, and `main._on_day_finished()`'s
+## hand-over to the escape reaches it the same way for day 14's own win, since a day that hands
+## over never reaches `finish_day()` at all (that call is deferred to `main._on_finale_escaped()`,
+## once she is out, so day 14's calendar slot and ending stay open for the escape to decide) — day
+## 14 is still an ordinary day, and its win does not become the escape's just because what follows
+## it is.
 func regain_a_nerve() -> void:
 	if nerves < Tuning.STARTING_NERVES:
 		nerves += 1
 		EventBus.nerves_changed.emit(nerves)
+
+## **A won day gives a hard run nothing back.** *(dotted-hawk, the player: "can we make hard mode
+## not regenerate nerves as well?")* Nerves are restart pacing, so this is where Hard Mode's
+## difference lives; nothing during a day reads the mode.
+func regain_a_nerve_for_a_won_day() -> void:
+	if not hard_mode:
+		regain_a_nerve()
 
 ## A lost section of the escape, in hard mode: one nerve, and the run ends with the bad ending at 0.
 ## Returns whether the run goes on. *(gentle-osprey, the player: "with hard mode the escape also has
@@ -552,6 +566,7 @@ func _snapshot_what_the_attempt_can_spend() -> void:
 	_dawn_scars = scars.duplicate()
 	_dawn_city_state = city_state.snapshot()
 	posters.photograph()
+	pelican.photograph()
 
 ## Puts the city back where the lost day found it. A one-shot the attempt spent is owed again, the
 ## shell it left is gone, and the block it burned is back at the step it was on this morning.
@@ -565,6 +580,7 @@ func _give_back_what_the_attempt_spent() -> void:
 	scars = _dawn_scars.duplicate()
 	city_state.restore(_dawn_city_state)
 	posters.give_back()
+	pelican.give_back()
 
 ## Puts the resistance back where the lost day found it, and says so for the `nerve` entry —
 ## "" when the day touched none of it, which is most days.

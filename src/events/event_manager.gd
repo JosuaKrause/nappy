@@ -35,10 +35,10 @@ var _city: City
 var _map: CityMap
 var _player: Node2D
 var _hard_failed := false
-## Today's own day number, kept for the two RNG streams drawn while the day runs:
+## Today's own day number, kept for the RNG stream drawn while the day runs:
 ## `_summon_the_sighted_row()`'s — the direction a summoned row enters from is a coin flip like any
-## other placement, and it has to come from the day's own seed to stay deterministic — and the
-## pelican's (`rolls_a_pelican()`).
+## other placement, and it has to come from the day's own seed to stay deterministic. The pelican's
+## bag (`rolls_a_pelican()`) is the run's, not the day's, and does not read it.
 var _day := 0
 
 ## True between `start_finale()` and the next `start_day()`: this walk is the escape, not a day.
@@ -578,7 +578,6 @@ func clear() -> void:
 	_sighted.clear()
 	_sight_reported.clear()
 	_pending.clear()
-	_pelican_rng = null
 	_unseen_pelicans.clear()
 	_encounters.end_day()
 	_broadcast_clock = 0.0
@@ -818,18 +817,23 @@ func _spawn_unplanned(def: EventDef, at: Vector2,
 # Needs to be svg only".)* A picture and nothing else: the rider it is drawn for keeps the row's
 # own def, field, lethal radius, speed and cost (`EventInstance.is_pelican`).
 
-## About one cyclist in four hundred, the player's own number.
-const PELICAN_SHARE := 1.0 / 400.0
-## The `GameState.day_rng()` stream the roll draws from — its own, so a cyclist drawing from it
+## The run's pelican bag holds this many cyclists and one pelican, the player's own one in four
+## hundred *(pebbly-ibis, inbox #575 in feathery-lynx: "have one shared biker/pelican marble bag with
+## 399 bikers and 1 pelican and the same bag is used throughout the run")*.
+const CYCLISTS_IN_THE_BAG := 399
+const PELICANS_IN_THE_BAG := 1
+## The stream the bag draws from, hashed with the run's seed: its own, so a cyclist drawing from it
 ## moves nothing any other stream decides.
-const PELICAN_STREAM := "pelican"
+const PELICAN_STREAM := "pelican-bag"
 
-## The share `rolls_a_pelican()` rolls against: `PELICAN_SHARE`, and a variable rather than the
-## constant read directly so a rig can make every rider one or the other, the way `stream_radius`
-## lets one turn the streaming off.
-var pelican_share := PELICAN_SHARE
-## Today's pelican stream, made from `_day` on the day's first roll and dropped by `clear()`.
-var _pelican_rng: RandomNumberGenerator
+## What a rig makes `rolls_a_pelican()` answer: the bag's own marble, or every rider one or the
+## other, the way `stream_radius` lets one turn the streaming off.
+enum PelicanRig { BAG, ALWAYS, NEVER }
+var pelican_rig := PelicanRig.BAG
+## The run's bag, brought to where the run is by `_the_pelican_bag()`; a shared bag (`MarbleBag.shared()`)
+## whose marbles are `true` for the pelican and `false` for a cyclist.
+var _pelican_bag: MarbleBag = null
+var _pelican_bag_seed := 0
 
 ## Whether the rider about to be warned of for `def` is drawn as the pelican. Asked once per
 ## rider, **as its warning goes up** (`_warn_down_her_line()`), and handed to `spawn_warned()` when
@@ -844,22 +848,42 @@ var _pelican_rng: RandomNumberGenerator
 ## a pelican. A warning that never finds a place to stand has still spent its roll, which the seed
 ## and her walk decide the same way.
 ##
-## **One draw from the day's own `PELICAN_STREAM` per cyclist**, rolled whatever the answer, so the
-## run's seed and the order the day sends its cyclists in decide which of them is the pelican, the
-## same way they decide everything else the director sends. Nothing but a cyclist draws from it.
-## `--pelican` (`DevFlags.pelican()`) answers yes for every one without changing what is drawn.
+## **One marble from the run's one pelican bag per cyclist** — 399 cyclists and 1 pelican, the same
+## bag for every day of the run, so a full run meets at most one pelican. The run's seed and the
+## order it sends its cyclists in decide which of them is the pelican, the same way they decide
+## everything else the director sends. Nothing but a cyclist draws from it. The count drawn is kept
+## in `GameState.pelican` (saved, and set back to the day's dawn by a lost day), and the bag is
+## rebuilt from it. `--pelican` (`DevFlags.pelican()`) answers yes for every one without changing
+## what is drawn.
 func rolls_a_pelican(def: EventDef) -> bool:
 	if def.look != EventDef.Look.CYCLIST:
 		return false
-	if _pelican_rng == null:
-		_pelican_rng = GameState.day_rng(_day, PELICAN_STREAM)
-	var rolled := pelican_roll(_pelican_rng, pelican_share)
-	return rolled or DevFlags.pelican()
+	var drew: bool = _the_pelican_bag().draw()
+	GameState.pelican.draws += 1
+	match pelican_rig:
+		PelicanRig.ALWAYS:
+			return true
+		PelicanRig.NEVER:
+			return false
+	return drew or DevFlags.pelican()
 
-## One roll of `rng` against `share`. Static and separate so a test can measure the share over
-## many seeds through the same arithmetic the game uses.
-static func pelican_roll(rng: RandomNumberGenerator, share: float) -> bool:
-	return rng.randf() < share
+## The run's pelican bag with `GameState.pelican.draws` marbles already drawn, from the bag's own
+## stream off the run's seed, so a save, a lost day's give-back and a retry all draw the cyclists the
+## run would have drawn. Rebuilt whenever the run, or the count a save or a lost day put back,
+## disagrees with the bag.
+func _the_pelican_bag() -> MarbleBag:
+	var seed_value := hash("%d:%s" % [GameState.run_seed, PELICAN_STREAM])
+	if _pelican_bag == null or _pelican_bag_seed != seed_value \
+			or _pelican_bag.drawn != GameState.pelican.draws:
+		var marbles := []
+		marbles.resize(CYCLISTS_IN_THE_BAG)
+		marbles.fill(false)
+		for _i in PELICANS_IN_THE_BAG:
+			marbles.append(true)
+		_pelican_bag = MarbleBag.shared(marbles, seed_value)
+		_pelican_bag_seed = seed_value
+		_pelican_bag.skip(GameState.pelican.draws)
+	return _pelican_bag
 
 ## Makes `instance` the pelican, as it is created: the picture (`EventInstance.is_pelican`) and the
 ## pelican's own telemetry — `EventBus.pelican_spawned` now, and a place on the list
