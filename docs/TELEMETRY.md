@@ -868,6 +868,8 @@ store on a page). They are read when the record is saved, so they describe the w
 then. A page that cannot say its window size or ratio writes `-1` for `window_width`,
 `window_height` and `device_pixel_ratio` (and the readout says `window  unknown`) rather than the
 desktop's answer. The readout shows the same two lines, `window` and `drawn`, in its frame block.
+Under `?dpr=<x>` (`WebDisplay`, a debug build or a page with `?debug=1`) the ratio is the one the
+page was capped to, `min(the browser's ratio, x)`, and the drawn size is the window times it.
 
 **Its own cost is in the file.** At setup the recorder times `FrameRecorder.CALIBRATION_PAIRS`
 enter/leave pairs on the device and records the mean as `timer_pair_usec`; a frame's
