@@ -4099,8 +4099,17 @@ func contribution_at(world_position: Vector2, intensity_override := -1.0,
 ## **Nothing reaches her through a building**: a field is zero wherever `_walled_off()` says a
 ## building stands between this node and the point. Asked only once the field is positive, so a
 ## source out of reach costs no line at all.
+##
+## **A source beyond `EventDef.silent_beyond()` of the point answers zero before anything else is
+## asked** — its intensity, its velocity, its shape — since that field is zero there by
+## construction and the wall is only asked of a positive one. Not for a flock or anything leaving:
+## a flock's birds and a guard's band stand away from this node.
 func _contribution_at_uncached(world_position: Vector2, intensity_override: float,
 		velocity_override: Vector2) -> float:
+	if not is_leaving and _flock.is_empty():
+		var reach := def.silent_beyond()
+		if global_position.distance_squared_to(world_position) > reach * reach:
+			return 0.0
 	var field := _field_at(world_position, intensity_override, velocity_override)
 	# From where the field is centred: the band while a guard walks away from it, this node else.
 	var source_at := _body_left_at if is_leaving and _is_a_guard_leaving_his_barrier() \
@@ -4248,7 +4257,8 @@ func is_lethal_at(world_position: Vector2) -> bool:
 	if def.drives:
 		return is_driving() and _meets_her(global_position, _heading, world_position,
 				_short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, _route_left(_path_travelled)))
-	if is_finished or is_leaving or is_waiting() or not def.hard_fail or is_telegraphing():
+	# The row's own flag first: it is the one most rows fail, and the two calls after it are pure.
+	if not def.hard_fail or is_finished or is_leaving or is_waiting() or is_telegraphing():
 		return false
 	if global_position.distance_to(world_position) > def.lethal_reach():
 		return false

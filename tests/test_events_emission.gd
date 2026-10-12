@@ -20,6 +20,9 @@ func run(t) -> void:
 	_test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t)
 	_test_duration_and_finish(t)
 	_test_an_event_leaves_rather_than_vanishing(t)
+	_test_no_field_reaches_past_silent_beyond(t)
+	_test_contribution_skips_only_silence(t)
+	_test_flocks_and_a_leaving_guard_are_not_skipped(t)
 
 
 func _instance(t, def: EventDef, at := Vector2.ZERO,
@@ -244,3 +247,107 @@ func _test_an_event_leaves_rather_than_vanishing(t) -> void:
 	_advance(alone, def.telegraph_time + def.duration + EventInstance.LEAVING_GIVES_UP + 0.2)
 	t.check(alone.is_finished, "with nobody watching it leaves on a timer rather than for ever")
 	alone.free()
+
+## `EventInstance.contribution_at()` answers zero for a point past `EventDef.silent_beyond()`
+## without working the field out, so for every row in the catalogue the field itself has to be
+## zero there: at every bearing, standing or at a speed past the most a field stretches, with the
+## body lying either way, and at a peak no row carries. A row that adds a radius to its field and
+## not to `silent_beyond()` fails here rather than going quiet a tile early. Flocks are left out,
+## since a flock's birds are not at its node and the instance does not ask it of them.
+func _test_no_field_reaches_past_silent_beyond(t) -> void:
+	var heard_inside := 0
+	var heard_past := 0
+	var rows := 0
+	for def: EventDef in EventCatalogue.all():
+		if def.flock_size > 0:
+			continue
+		rows += 1
+		var peak := maxf(maxf(def.intensity, def.core_intensity), 1.0) * 2.0
+		var past := def.silent_beyond() + 0.01
+		for facing: Vector2 in [Vector2.RIGHT, Vector2(1.0, 1.0).normalized()]:
+			var instance := EventInstance.new()
+			instance.setup(def, Vector2.ZERO, PackedVector2Array(), facing)
+			for heading in 8:
+				var moving := Vector2.RIGHT.rotated(heading * TAU / 8.0) * 10000.0
+				for velocity: Vector2 in [Vector2.ZERO, moving]:
+					if instance._field_at(Vector2.ZERO, peak, velocity) > 0.0:
+						heard_inside += 1
+					for bearing in 24:
+						var at := Vector2.RIGHT.rotated(bearing * TAU / 24.0) * past
+						if instance._field_at(at, peak, velocity) != 0.0:
+							heard_past += 1
+			instance.free()
+	t.check(rows > 0 and heard_inside > 0,
+			"the sweep asked %d rows and heard them at their node" % rows)
+	t.check(heard_past == 0,
+			"no row's field reaches past its silent_beyond() (%d samples did)" % heard_past)
+
+## The other half of the bound: `contribution_at()` itself, with its early-out, answers exactly what
+## the field answers (`_field_at()`, nothing skipped; no wall grid, so no wall either) inside and
+## just past `silent_beyond()`, for every non-flock row and for two made-up bodies long and wide
+## enough that only the body's own reach in the bound keeps their far end heard. The node stands
+## off the origin, so a bound measured from anywhere but the node the field is centred on fails.
+func _test_contribution_skips_only_silence(t) -> void:
+	var rows: Array[EventDef] = []
+	for def: EventDef in EventCatalogue.all():
+		if def.flock_size <= 0:
+			rows.append(def)
+	for shape: GroundShape in [GroundShape.segment(500.0, 10.0),
+			GroundShape.rect(Vector2(400.0, 300.0))]:
+		var long_body: EventDef = EventCatalogue.by_id("scaffolding").duplicate()
+		long_body.intensity = 10.0
+		long_body.inner_radius = 20.0
+		long_body.outer_radius = 60.0
+		long_body.core_intensity = 0.0
+		long_body.solid(shape)
+		rows.append(long_body)
+	var node := Vector2(300.0, -200.0)
+	var differed := 0
+	var heard := 0
+	var heard_by_its_body := 0
+	for def in rows:
+		var bodyless := (maxf(def.inner_radius, def.outer_radius) + 1.0) \
+				/ (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
+		var instance := EventInstance.new()
+		instance.setup(def, node, PackedVector2Array(), Vector2.RIGHT)
+		var reach := def.silent_beyond()
+		for bearing in 24:
+			var direction := Vector2.RIGHT.rotated(bearing * TAU / 24.0)
+			for share: float in [0.0, 0.3, 0.6, 0.8, 0.85, 0.9, 0.999, 1.001, 1.5]:
+				var at := node + direction * reach * share
+				for velocity: Vector2 in [Vector2.INF, direction * -10000.0]:
+					var field := instance._field_at(at, -1.0, velocity)
+					if instance.contribution_at(at, -1.0, velocity) != field:
+						differed += 1
+					if field > 0.0:
+						heard += 1
+						if reach * share > bodyless:
+							heard_by_its_body += 1
+		instance.free()
+	t.check(heard > 0 and heard_by_its_body > 0,
+			"the parity hears rows (%d samples), some only through their body's reach (%d)"
+			% [heard, heard_by_its_body])
+	t.check(differed == 0,
+			"contribution_at() answers what the field answers, skip or no skip (%d differed)"
+			% differed)
+
+## A flock's birds and a guard's band charge from away from the instance's node, so
+## `contribution_at()` does not skip them by the node's distance: a bird, and a band, put far past
+## `silent_beyond()` are still heard where they are.
+func _test_flocks_and_a_leaving_guard_are_not_skipped(t) -> void:
+	var flock := EventInstance.new()
+	flock.setup(EventCatalogue.by_id("pigeon_flock"), Vector2.ZERO)
+	flock._build_the_flock()
+	var far_bird := Vector2(flock.def.silent_beyond() * 3.0, 0.0)
+	flock._flock[0].at = far_bird
+	t.check(flock.contribution_at(far_bird) > 0.0,
+			"a bird far past its flock's silent_beyond() is still heard where it is")
+	flock.free()
+	var guard := EventInstance.new()
+	guard.setup(EventCatalogue.by_id("roadblock"), Vector2.ZERO)
+	var band := Vector2(guard.def.silent_beyond() * 3.0, 0.0)
+	guard._body_left_at = band
+	guard.is_leaving = true
+	t.check(guard.contribution_at(band) > 0.0,
+			"a guard walking away still charges at the band he left, however far from him")
+	guard.free()

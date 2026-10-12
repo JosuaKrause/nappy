@@ -2,10 +2,15 @@ extends RefCounted
 ## Contribution parity covers the elliptical boundary, transient jolts and externally moved bodies.
 
 func run(t) -> void:
+	# `CrowdAgent._widest_jolt_outer` is a static that only grows, and every suite after this one in
+	# the same process would otherwise ask the crowd's sweep with the jolts written below, which
+	# skips nothing. Kept here and written back before any check is made.
+	var widest_before := CrowdAgent._widest_jolt_outer
 	var agent := CrowdAgent.new()
 	var mismatches := 0
 	var positive := 0
 	var zero := 0
+	var wider_than_the_crowds := 0
 	for kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 		agent.kind = kind
 		for pace in [0.0, 74.0, 185.0, 700.0]:
@@ -21,6 +26,8 @@ func run(t) -> void:
 						else Tuning.PEDESTRIAN_OUTER_RADIUS
 					outer = maxf(outer, jolt_radius)
 					var bound := outer / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
+					if bound > CrowdAgent.silent_beyond():
+						wider_than_the_crowds += 1
 					for bearing in 24:
 						var direction := Vector2.RIGHT.rotated(bearing * TAU / 24.0)
 						for distance in [0.0, outer * 0.5, outer, bound - 0.001,
@@ -46,7 +53,70 @@ func run(t) -> void:
 			mismatches += 1
 	t.check(positive > 0 and zero > 0, "parity covers contributing and silent bodies")
 	t.check(mismatches == 0, "every tested contribution exactly matches the unfiltered kernel")
+	# `Crowd.excitement_sources_at()` skips a body past `silent_beyond()` without asking it, so no
+	# body's own early-out may reach further, however its jolt's radius was written.
+	t.check(wider_than_the_crowds == 0,
+			"no kind, pace or jolt reaches past the distance the crowd's sweep skips beyond")
+	var sweep := _sweep_parity()
+	agent.set("_jolt_outer", 2000.0)
+	var widened := CrowdAgent.silent_beyond()
+	CrowdAgent._widest_jolt_outer = widest_before
 	agent.free()
+	t.check(widened >= 2000.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX),
+			"a jolt radius written straight to the field still widens what the sweep asks")
+	t.check(sweep.x > 0 and sweep.y > 0,
+			"the sweep's parity covers bodies it hears (%d) and bodies it skips (%d)"
+			% [sweep.x, sweep.y])
+	t.check(sweep.z == 0, "Crowd.excitement_sources_at() returns exactly the unfiltered pairs "
+			+ "(%d samples differed)" % sweep.z)
+
+## `Crowd.excitement_sources_at()` against an unfiltered loop over the same agents: the same
+## agents, in the same order, with the same contributions, at points among a crowd of walkers and
+## cars near and far — a horn-startled car among them, heard from further than any unstartled body
+## reaches. Returns (bodies heard, bodies past the skip, samples that differed).
+static func _sweep_parity() -> Vector3i:
+	var crowd := Crowd.new()
+	var agents: Array[CrowdAgent] = []
+	for i in 40:
+		var body := CrowdAgent.new()
+		body.kind = CrowdAgent.Kind.CAR if i % 3 == 0 else CrowdAgent.Kind.WALKER
+		body._speed = [0.0, 30.0, 185.0, 700.0][i % 4]
+		body._vertical = i % 2 == 0
+		body._direction = 1.0 if i % 5 < 3 else -1.0
+		body.position = Vector2.RIGHT.rotated(i * 2.4) * (12.0 + i * 31.0)
+		if i % 7 == 0:
+			body.startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
+		agents.append(body)
+	var loud := CrowdAgent.new()
+	loud.kind = CrowdAgent.Kind.CAR
+	loud._speed = 700.0
+	loud._vertical = false
+	loud._direction = -1.0
+	loud.position = Vector2(600.0, 0.0)
+	loud.startle(30.0, 1.0, 45.0, 400.0)
+	agents.append(loud)
+	crowd._agents = agents
+	var heard := 0
+	var skipped := 0
+	var differed := 0
+	var reach := CrowdAgent.silent_beyond()
+	for sample in 30:
+		var at := Vector2.RIGHT.rotated(sample * 0.9) * (sample * 23.0)
+		var expected: Array = []
+		for body in agents:
+			var contribution := body.contribution_at(at)
+			if contribution > 0.0:
+				expected.append([body, contribution])
+			if body.global_position.distance_to(at) > reach:
+				skipped += 1
+		heard += expected.size()
+		if crowd.excitement_sources_at(at) != expected:
+			differed += 1
+	crowd._agents = []
+	for body in agents:
+		body.free()
+	crowd.free()
+	return Vector3i(heard, skipped, differed)
 
 ## Frozen full calculation is the oracle: the production early rejection must only remove zeros.
 static func full_contribution(agent: CrowdAgent, at: Vector2) -> float:
