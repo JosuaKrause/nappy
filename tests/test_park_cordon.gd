@@ -261,7 +261,7 @@ func _test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t) -> void:
 	var fails: Array[String] = listener[0]
 	t.check(fails.size() == 1 and fails[0] == ParkCordon.TRAPPED,
 			"and it ends the day as the cordon's own hard fail (%s)" % [fails])
-	t.check(DayController._HARD_FAIL_TEXT.has(ParkCordon.TRAPPED),
+	t.check(Texts.HARD_FAIL_TEXT.has(ParkCordon.TRAPPED),
 			"which the day's end has a sentence for")
 	_stop_listening(listener)
 	_end(fixture)

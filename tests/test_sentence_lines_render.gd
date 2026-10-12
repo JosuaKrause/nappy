@@ -25,7 +25,7 @@ func run(t) -> void:
 	_check_label(t, _MAIN._RESUMED_DAY_LOST_NOTE, note, "the resumed-day note")
 	_check_label(t, "She started crying after 0:10. There is no settling her now.", title,
 			"the lost-day title")
-	var hard_fails: Dictionary = DayController._HARD_FAIL_TEXT
+	var hard_fails: Dictionary = Texts.HARD_FAIL_TEXT
 	for reason in hard_fails.keys():
 		var line: String = summary._elapsed_line(GameEnums.DayResult.LOST_HARD_FAIL,
 				hard_fails[reason], "10:00")

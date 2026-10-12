@@ -58,7 +58,6 @@ const _ALLOWED_LITERALS := {
 ## Strings still to be moved into `Texts`, by file: a file listed here is not yet held to the rule.
 const _PENDING_FILES := [
 	"res://src/main.gd",
-	"res://src/day/day_controller.gd",
 	"res://src/events/event_catalogue.gd",
 	"res://src/resistance/resistance_steps.gd",
 ]
