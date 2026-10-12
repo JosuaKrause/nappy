@@ -6,6 +6,7 @@ func run(t) -> void:
 	var mismatches := 0
 	var positive := 0
 	var zero := 0
+	var wider_than_the_crowds := 0
 	for kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 		agent.kind = kind
 		for pace in [0.0, 74.0, 185.0, 700.0]:
@@ -21,6 +22,8 @@ func run(t) -> void:
 						else Tuning.PEDESTRIAN_OUTER_RADIUS
 					outer = maxf(outer, jolt_radius)
 					var bound := outer / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
+					if bound > CrowdAgent.silent_beyond():
+						wider_than_the_crowds += 1
 					for bearing in 24:
 						var direction := Vector2.RIGHT.rotated(bearing * TAU / 24.0)
 						for distance in [0.0, outer * 0.5, outer, bound - 0.001,
@@ -46,6 +49,13 @@ func run(t) -> void:
 			mismatches += 1
 	t.check(positive > 0 and zero > 0, "parity covers contributing and silent bodies")
 	t.check(mismatches == 0, "every tested contribution exactly matches the unfiltered kernel")
+	# `Crowd.excitement_sources_at()` skips a body past `silent_beyond()` without asking it, so no
+	# body's own early-out may reach further, however its jolt's radius was written.
+	t.check(wider_than_the_crowds == 0,
+			"no kind, pace or jolt reaches past the distance the crowd's sweep skips beyond")
+	agent.set("_jolt_outer", 2000.0)
+	t.check(CrowdAgent.silent_beyond() >= 2000.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX),
+			"a jolt radius written straight to the field still widens what the sweep asks")
 	agent.free()
 
 ## Frozen full calculation is the oracle: the production early rejection must only remove zeros.

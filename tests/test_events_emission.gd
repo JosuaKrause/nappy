@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t)
 	_test_duration_and_finish(t)
 	_test_an_event_leaves_rather_than_vanishing(t)
+	_test_no_field_reaches_past_silent_beyond(t)
 
 
 func _instance(t, def: EventDef, at := Vector2.ZERO,
@@ -244,3 +245,37 @@ func _test_an_event_leaves_rather_than_vanishing(t) -> void:
 	_advance(alone, def.telegraph_time + def.duration + EventInstance.LEAVING_GIVES_UP + 0.2)
 	t.check(alone.is_finished, "with nobody watching it leaves on a timer rather than for ever")
 	alone.free()
+
+## `EventInstance.contribution_at()` answers zero for a point past `EventDef.silent_beyond()`
+## without working the field out, so for every row in the catalogue the field itself has to be
+## zero there: at every bearing, standing or at a speed past the most a field stretches, with the
+## body lying either way, and at a peak no row carries. A row that adds a radius to its field and
+## not to `silent_beyond()` fails here rather than going quiet a tile early. Flocks are left out,
+## since a flock's birds are not at its node and the instance does not ask it of them.
+func _test_no_field_reaches_past_silent_beyond(t) -> void:
+	var heard_inside := 0
+	var heard_past := 0
+	var rows := 0
+	for def: EventDef in EventCatalogue.all():
+		if def.flock_size > 0:
+			continue
+		rows += 1
+		var peak := maxf(maxf(def.intensity, def.core_intensity), 1.0) * 2.0
+		var past := def.silent_beyond() + 0.01
+		for facing: Vector2 in [Vector2.RIGHT, Vector2(1.0, 1.0).normalized()]:
+			var instance := EventInstance.new()
+			instance.setup(def, Vector2.ZERO, PackedVector2Array(), facing)
+			for heading in 8:
+				var moving := Vector2.RIGHT.rotated(heading * TAU / 8.0) * 10000.0
+				for velocity: Vector2 in [Vector2.ZERO, moving]:
+					if instance._field_at(Vector2.ZERO, peak, velocity) > 0.0:
+						heard_inside += 1
+					for bearing in 24:
+						var at := Vector2.RIGHT.rotated(bearing * TAU / 24.0) * past
+						if instance._field_at(at, peak, velocity) != 0.0:
+							heard_past += 1
+			instance.free()
+	t.check(rows > 0 and heard_inside > 0,
+			"the sweep asked %d rows and heard them at their node" % rows)
+	t.check(heard_past == 0,
+			"no row's field reaches past its silent_beyond() (%d samples did)" % heard_past)

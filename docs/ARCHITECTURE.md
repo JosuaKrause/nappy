@@ -501,6 +501,11 @@ the day's live event count never grows past a few dozen, so a hash would have be
 code and more ways to be wrong in exchange for nothing measurable. Revisit if an act ever
 wants hundreds of sources.
 
+A far source is cheap in the scan without one. An event further from her than
+`EventDef.silent_beyond()` answers zero before its intensity, speed or shape is read, and the crowd's
+half skips a body past `CrowdAgent.silent_beyond()` without calling into it. Each is a distance no
+field can reach past, at any speed or heading, so the sums are the same to the last bit.
+
 ## Determinism
 
 Two independent RNG streams, both derived from `run_seed`:
