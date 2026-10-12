@@ -85,11 +85,18 @@
 # with no value, a loop or git's own options at its start, cannot be read and is a write, push-like
 # for a reviewer. An alias set on the command line (`git -c alias.ship=push ship origin v1`,
 # `-calias.x=...`, `--config-env alias.x=VAR`) is denied whatever it says, as an inline
-# `push.default=matching` is, also push-like. **What the lookup cannot see is an accepted gap**:
-# an alias a separate `git config` defines earlier in the same command (`git config alias.x push
-# && git x`), one in another repository's own config that `-C` or `--git-dir` names, one a config
-# file pulled in by `-c include.path=...` defines, and one passed through the environment
-# (`GIT_CONFIG_PARAMETERS`, `GIT_CONFIG_COUNT`) -- each a deliberate shape. A `git-<name>` program
+# `push.default=matching` is, also push-like. So is the same setting written as an assignment
+# anywhere before the git in the command (`GIT_CONFIG_KEY_0=alias.ship GIT_CONFIG_VALUE_0=push git
+# ship`, a key that is an expansion, any `GIT_CONFIG_PARAMETERS=...`, `export` or `env` in front of
+# either). **An alias in any config git reads from somewhere other than the session directory's
+# own at the moment the hook runs is an accepted gap**, each a deliberate shape: one a separate
+# `git config` defines earlier in the same command (`git config alias.x push && git x`); one in
+# another repository's config, reached by `cd /other && git x`, `-C`, `--git-dir` or `GIT_DIR=`;
+# one in another global config, through `GIT_CONFIG_GLOBAL=`, `HOME=` or `XDG_CONFIG_HOME=`; one a
+# file pulled in by `-c include.path=...` defines; one in the environment the session inherited
+# or an earlier command exported; and, in Codex, one in the directory a shell call names as its
+# own `workdir`, since `tools/codex-hooks.py` passes the guard only the command and the
+# session's `cwd`. A `git-<name>` program
 # on the PATH, which git runs before an alias of the same name, is judged as the alias, the safe
 # direction.
 # A push under xargs/gxargs or GNU parallel/env_parallel cannot be read to its end: input can
@@ -1084,6 +1091,12 @@ def sets_alias: test("^(-c|--config-env=)?alias\\."; "i");
 def alias_setting_counts($w):
   if any($w[]; sets_alias) | not then null
   else [0] + [foreach $w[] as $x (0; . + (if $x | sets_alias then 1 else 0 end))] end;
+# The same setting written as an assignment (`GIT_CONFIG_KEY_0=alias.x`, a key that is an expansion,
+# any `GIT_CONFIG_PARAMETERS=`), counted the same way: a git with one anywhere before it is denied.
+def env_sets_alias: test("^(GIT_CONFIG_KEY_[0-9]+=(alias\\.|.*\\$)|GIT_CONFIG_PARAMETERS=)"; "i");
+def env_alias_setting_counts($w):
+  if any($w[]; env_sets_alias) | not then null
+  else [0] + [foreach $w[] as $x (0; . + (if $x | env_sets_alias then 1 else 0 end))] end;
 def alias_set_between($t; $a; $b):
   $t.ac != null and $b > $a and ($t.ac[$b] - $t.ac[$a]) > 0;
 
@@ -1138,7 +1151,8 @@ def detect_git($w; $t; $i; $n; $cmd_pos):
       # An alias set on the command line (`git -c alias.ship=push ship origin v1`, `--config-env
       # alias.x=VAR`, `-calias.x=...`) is denied whatever it says, as an inline
       # `push.default=matching` is: the alias git would run is the one this setting defines.
-      elif alias_set_between($t; $i + 1;
+      elif ($t.ec != null and ($t.ec[$i] // 0) > 0)
+           or alias_set_between($t; $i + 1;
                 (if openers_between($t; $i + 1; [$sub + 1, $n] | min) or (($w[$sub] // "") | contains("$"))
                     or soft_subcommand_opener($t; $sub; $t.lv[$i + 1] // 0)
                  then command_end($t; $i) else [$sub, $n] | min end)) then
@@ -1697,7 +1711,7 @@ def findings($w; $w0; $levels; $unsure; $wn):
      xargs: (if $inputs != null
              then xargs_context($w0; $lv; $unsure; $inputs) else null end),
      oc: (if $unsure then opener_counts($w0) else null end),
-     ac: $ac, nw: $wt.nw, ce: $wt.ce, na: $wt.na} as $t
+     ac: $ac, ec: env_alias_setting_counts($w), nw: $wt.nw, ce: $wt.ce, na: $wt.na} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
        | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null; $inputs))

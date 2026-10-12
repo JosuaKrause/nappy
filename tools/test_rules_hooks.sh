@@ -2256,6 +2256,21 @@ assert_write_guard "an inline alias, wrapped as a coder -> allow" allow \
     'uv run python tools/agent-identity.py run claude-coder -- git -c alias.ship=push ship origin feature/x'
 assert_write_guard "an inline alias, wrapped as a reviewer -> deny" deny \
     'uv run python tools/agent-identity.py run claude-reviewer -- git -c alias.ship=push ship origin feature/x'
+# #736's review, finding 5: the inline alias setting written as an assignment before the git.
+assert_write_guard "GIT_CONFIG_KEY_0=alias.ship ... git ship -> deny" deny \
+    'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.ship GIT_CONFIG_VALUE_0=push git ship origin v1'
+assert_write_guard "GIT_CONFIG_PARAMETERS naming an alias -> deny" deny \
+    "GIT_CONFIG_PARAMETERS=\"'alias.ship'='push'\" git ship origin v1"
+assert_write_guard "env GIT_CONFIG_KEY_0=ALIAS.ship ... git ship -> deny" deny \
+    'env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=ALIAS.ship GIT_CONFIG_VALUE_0=push git ship origin v1'
+assert_write_guard "export GIT_CONFIG_KEY_0=alias.ship; git ship -> deny" deny \
+    'export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.ship GIT_CONFIG_VALUE_0=push; git ship origin v1'
+assert_write_guard "GIT_CONFIG_KEY_0=\$K, a key that is an expansion -> deny" deny \
+    'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=$K GIT_CONFIG_VALUE_0=push git ship origin v1'
+assert_write_guard "an env alias setting, wrapped as a coder -> allow" allow \
+    'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.ship GIT_CONFIG_VALUE_0=push uv run python tools/agent-identity.py run claude-coder -- git ship origin feature/x'
+assert_write_guard "GIT_CONFIG_KEY_0=user.name, a setting that is no alias -> allow" allow \
+    'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x git log -1'
 assert_write_guard "git -c user.name=x log, a setting that is no alias -> allow" allow 'git -c user.name=x log -1'
 assert_write_guard "git log --grep alias.x, an alias key after the subcommand -> allow" allow 'git log --grep alias.x'
 
