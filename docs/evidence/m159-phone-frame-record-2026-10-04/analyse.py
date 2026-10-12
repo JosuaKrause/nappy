@@ -52,6 +52,12 @@ JOBS = [
 # Day 1's first forty seconds against the rest: the run's own time series (section 3) shows the
 # whole frame slowing after about forty seconds, on the same streets she walked fast before.
 SPLIT_SECONDS = 40.0
+# The stretch the fits of sections 5-7 are made within: day 1's first forty seconds when the
+# record holds enough one-step frames of it, otherwise the stretch it holds most of (`main()` sets
+# it), so a record that starts on a later day is fitted to its own steadiest stretch.
+FIRST_STRETCH = "day 1, first 40s"
+STEADY = FIRST_STRETCH
+MIN_STEADY_FRAMES = 30
 
 Row = dict[str, int]
 
@@ -267,6 +273,19 @@ def phase(rows: list[Row], row: Row) -> str:
     return "day 1, first 40s" if seconds(rows, row) < SPLIT_SECONDS else "day 1, after 40s"
 
 
+def steady_words() -> str:
+    """The stretch as the tables' prose names it."""
+    return "day 1's first 40s" if STEADY == FIRST_STRETCH else STEADY
+
+
+def choose_steady(rows: list[Row]) -> str:
+    """The stretch of one-step frames the fits are made within; see `STEADY`."""
+    held = Counter(phase(rows, r) for r in rows if r["physics_steps"] == 1)
+    if held[FIRST_STRETCH] >= MIN_STEADY_FRAMES or not held:
+        return FIRST_STRETCH
+    return held.most_common(1)[0][0]
+
+
 def buckets(record: dict[str, object], rows: list[Row]) -> None:
     heading("4. Which system the time goes to")
     ordered = sorted(rows, key=lambda r: r["frame_usec"])
@@ -380,13 +399,13 @@ def steps(rows: list[Row]) -> None:
     # bucket (section 6), so a bare one-against-two comparison overstates what the step adds.
     # Comparing within 5ms bands of the previous frame's length takes most of that out.
     print(
-        "What one more step adds, matched on the previous frame's length (day 1's first 40s, "
+        f"What one more step adds, matched on the previous frame's length ({steady_words()}, "
         "two-step mean less one-step mean in each 5ms band of the previous frame, weighted by "
         "the two-step frames in it):\n"
     )
     groups: dict[tuple[int, int], list[Row]] = defaultdict(list)
     for before, row in pairwise(rows):
-        if row["process_frame"] == before["process_frame"] + 1 and phase(rows, row) == "day 1, first 40s":
+        if row["process_frame"] == before["process_frame"] + 1 and phase(rows, row) == STEADY:
             groups[(row["physics_steps"], before["frame_usec"] // 5000 * 5)].append(row)
     bands = [low for (n, low) in groups if n == 2 and groups.get((1, low)) and len(groups[(2, low)]) >= 8]
     weight = sum(len(groups[(2, low)]) for low in bands)
@@ -454,9 +473,7 @@ def tracking(rows: list[Row]) -> None:
     # phone's speed drifts), so a fit on draw calls alone credits the drift to the counter and to
     # the intercept; the second and third models hold the previous frame's length fixed.
     steady_pairs = [
-        (before, row)
-        for before, row in consecutive
-        if phase(rows, row) == "day 1, first 40s" and row["physics_steps"] == 1
+        (before, row) for before, row in consecutive if phase(rows, row) == STEADY and row["physics_steps"] == 1
     ]
     steady = [row for _, row in steady_pairs]
     calls = [float(r["draw_calls"]) for r in steady]
@@ -465,7 +482,7 @@ def tracking(rows: list[Row]) -> None:
     primitives = [float(r["primitives"]) for r in steady]
     drawn = [float(r["draw_usec"]) for r in steady]
     print(
-        f"Draw fitted by least squares within one stretch and one step count (day 1's first 40s, one"
+        f"Draw fitted by least squares within one stretch and one step count ({steady_words()}, one"
         f" step, previous frame kept: {len(steady)} frames; draw calls {min(calls):.0f}-{max(calls):.0f},"
         f" previous frame {min(previous):.1f}-{max(previous):.1f}ms):\n"
     )
@@ -498,12 +515,12 @@ def tracking(rows: list[Row]) -> None:
         [(f"{b}-{b + 49}", len(v), median(v)) for b, v in sorted(bins.items())],
     )
     print(
-        "By the previous frame's length and this frame's step count (day 1's first 40s, medians;"
+        f"By the previous frame's length and this frame's step count ({steady_words()}, medians;"
         " groups of fewer than 8 frames left out):\n"
     )
     by_previous: dict[tuple[int, int], list[Row]] = defaultdict(list)
     for before, row in consecutive:
-        if phase(rows, row) == "day 1, first 40s" and row["physics_steps"] in (1, 2):
+        if phase(rows, row) == STEADY and row["physics_steps"] in (1, 2):
             by_previous[(row["physics_steps"], before["frame_usec"] // 5000 * 5)].append(row)
     table(
         ["steps", "previous frame, ms", "frames", "draw", "cues", "process_rest", "crowd"],
@@ -555,7 +572,7 @@ def workload(rows: list[Row]) -> None:
     heading("7. Crowd, events and cues against what is alive")
     agents = Counter(r["crowd_agents"] for r in rows)
     print(f"crowd_agents takes the values {dict(agents)}: no variation to track.\n")
-    steady = [r for r in rows if phase(rows, r) == "day 1, first 40s" and r["physics_steps"] == 1]
+    steady = [r for r in rows if phase(rows, r) == STEADY and r["physics_steps"] == 1]
     bins: dict[int, list[Row]] = defaultdict(list)
     for r in steady:
         bins[r["live_events"] // 4 * 4].append(r)
@@ -579,7 +596,7 @@ def workload(rows: list[Row]) -> None:
         (before, row)
         for before, row in pairwise(rows)
         if row["process_frame"] == before["process_frame"] + 1
-        and phase(rows, row) == "day 1, first 40s"
+        and phase(rows, row) == STEADY
         and row["physics_steps"] == 1
     ]
     live = [float(r["live_events"]) for _, r in pairs]
@@ -602,7 +619,7 @@ def workload(rows: list[Row]) -> None:
             )
         )
     out.append(("all four", f"{totals[0]:.0f}us", "", "", f"{totals[1]:.0f}us"))
-    print(f"Slope per live event, day 1's first 40s, one step, previous frame kept ({len(pairs)} frames):\n")
+    print(f"Slope per live event, {steady_words()}, one step, previous frame kept ({len(pairs)} frames):\n")
     table(
         ["bucket", "per live event, alone", "correlation", "R2", "per live event, previous frame held fixed"],
         out,
@@ -708,9 +725,7 @@ def counts(record: dict[str, object], rows: list[Row]) -> None:
         ],
     )
     every = sorted(sum(r[name] for name in kinds) for r in rows)
-    print(
-        f"all kinds together: mean {mean(every):.1f}, p95 {pct(every, 0.95)}, max {every[-1]} a frame\n"
-    )
+    print(f"all kinds together: mean {mean(every):.1f}, p95 {pct(every, 0.95)}, max {every[-1]} a frame\n")
     cpu = [r["render_cpu_usec"] for r in rows if "render_cpu_usec" in r]
     if cpu:
         reported = sum(1 for c in cpu if c)
@@ -743,8 +758,15 @@ def main(argv: list[str]) -> int:
         print(f"unrecognized argument(s): {' '.join(argv)}\n\n{__doc__}", file=sys.stderr)
         return 2
     record, rows = load(Path(argv[0]) if argv else DEFAULT)
-    for section in SECTIONS:
-        section(record, rows)
+    global STEADY
+    STEADY = choose_steady(rows)
+    for number, section in enumerate(SECTIONS, start=1):
+        # A section that the record cannot fill says so and the report goes on: a record without
+        # day 1, or with a stretch too short for a fit, still has the sections after it.
+        try:
+            section(record, rows)
+        except (ValueError, ZeroDivisionError, KeyError, IndexError, statistics.StatisticsError) as reason:
+            print(f"(section {number} skipped: the record does not hold what it needs: {reason!r})\n")
     return 0
 
 
