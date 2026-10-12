@@ -5703,10 +5703,12 @@ func _draw_policeman(canvas: CanvasItem = self) -> void:
 	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
-## Whether a man on foot is drawn standing rather than lunging: through his notice, and through a
-## stop he has made of his catch (`has_stopped_her()`) until he turns to walk back.
+## Whether a man on foot is drawn standing rather than lunging: while he waits for her to come
+## near (`is_waiting()`, which `is_telegraphing()` is false for, the masked man at the foot of the
+## shaft being the one who does), through his notice, and through a stop he has made of his catch
+## (`has_stopped_her()`) until he turns to walk back.
 func _stands_still_now() -> bool:
-	return is_telegraphing() or (has_stopped_her() and not is_leaving)
+	return is_waiting() or is_telegraphing() or (has_stopped_her() and not is_leaving)
 
 ## Which way the waiting posture faces: her, whenever a caller has told this instance where she is
 ## (`set_player_at()`) and **nothing built stands between them** (`_clear_line_to()`, the test his
@@ -6130,7 +6132,7 @@ func _draw_crater(canvas: CanvasItem = self) -> void:
 
 ## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
 ## its boom — the same man, and the guardsman a torn poster sends or a vehicle lets out:
-## the `guard_standing_*` family while the telegraph is running, and through a stop
+## the `guard_standing_*` family while he waits for her, while the telegraph is running, and through a stop
 ## (`_stands_still_now()`), and `guard_lunging_*` once he is actually on her line — the same two
 ## postures
 ## `_draw_roadblock()` swaps between when a heated roadblock's guards leave the post, on a row that
