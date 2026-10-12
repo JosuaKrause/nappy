@@ -39,8 +39,8 @@ a clip of each charger) found these short of a stage, each an item here:
 [the-roadblock-guards-warning.md](the-roadblock-guards-warning.md) and
 [the-door-guards-stages.md](the-door-guards-stages.md). The policeman out of an investigating patrol
 car and the men out of a hunting van show three distinct stages. The alley mouse, the pigeon flock
-and the masked man do not charge her; the masked man's stages are drawn inverted, which is
-[the-masked-man-waits-standing.md](the-masked-man-waits-standing.md).
+and the masked man do not charge her; the masked man waits standing and is drawn lunging
+only once he goes (the [teal-trout-2 record](../../decisions/2026-10-11-teal-trout-2.md)).
 
 **Each charger the player triggers, and that is not already charging, has a rest pose and an alert
 pose, each distinct from its other stages** ([polite-toad](../../playtests/2026-10-11-polite-toad.md), #722: "yes a distinct
