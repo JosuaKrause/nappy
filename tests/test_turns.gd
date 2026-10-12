@@ -549,12 +549,12 @@ func _test_a_turn_merges_into_a_lane_without_resetting_it(t) -> void:
 ## standing traffic in a lane a turn has just booked a place in, which is not a lane the placement
 ## helper could have known about before the turn was planned. `CrowdAgent.queue_position()` is
 ## `along * direction`, and therefore its own inverse for a direction of plus or minus one.
-func _join_the_lane(car: CrowdAgent, key: String, at: float) -> void:
-	var parts := key.split(":")
-	car._vertical = parts[0] == "v"
-	car._corridor = int(parts[1])
-	car._lane = int(parts[2])
-	car._direction = float(int(parts[3]))
+func _join_the_lane(car: CrowdAgent, key: int, at: float) -> void:
+	var parts := CrowdAgent.lane_key_parts(key)
+	car._vertical = parts[0]
+	car._corridor = parts[1]
+	car._lane = parts[2]
+	car._direction = float(parts[3])
 	car._lane_centre = CrowdLanes.lane_centre(car._corridor, car._lane)
 	car._turn = null
 	car._turn_run_up = 0.0

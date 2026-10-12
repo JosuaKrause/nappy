@@ -1076,9 +1076,20 @@ func _hold_inside_the_tile(stood_on: Vector2i, along_axis: bool) -> void:
 ## rim does not go with it: `EntityHalo` re-traces the body every frame it is drawn, so the halo
 ## stands where the car should be and the car does not. That is exactly what the player saw.
 func _redraw_if_the_picture_changed() -> void:
-	var third := _walker_gait_frame() if kind == Kind.WALKER \
-			else roundi(_body_bob() * CAR_BOB_STEPS_PER_PX)
-	var picture := Vector3i(_frame(), 1 if _flipped() else 0, third)
+	var third: int
+	var view: int
+	if kind == Kind.WALKER:
+		# One `velocity()` serves the gait and the sector: the same value `_walker_gait_frame()` and
+		# `_walker_heading()` would each have computed, nothing between them moves it.
+		var along := velocity()
+		third = _walker_gait_frame_at(along)
+		_walker_view = EightDirection.update(_walker_view, _walker_heading_at(along),
+				WALKER_IDLE_SPEED)
+		view = _walker_view
+	else:
+		third = roundi(_body_bob() * CAR_BOB_STEPS_PER_PX)
+		view = _frame()
+	var picture := Vector3i(view, 1 if _flipped() else 0, third)
 	var drawn_heading := _drawn_heading_key()
 	if picture != _picture or drawn_heading != _drawn_heading:
 		_picture = picture
@@ -1450,7 +1461,10 @@ func speed() -> float:
 ## anywhere either, so its field is a plain falloff rather than one stretched forward, and its
 ## projected impact and expected approach both answer "nowhere" the way a stopped body's should.
 func velocity() -> Vector2:
-	return heading() * _speed * _yield_factor() * _hold_factor() * _pocket_factor()
+	var moving := heading() * _speed * _yield_factor() * _hold_factor()
+	# A walker is never in a pocket, so its factor is exactly one and multiplying by it changes no
+	# bit; only a car pays for the pocket lookup.
+	return moving * _pocket_factor() if kind == Kind.CAR else moving
 
 ## True while travelling along a vertical corridor. What decides whether two cars at the same
 ## junction are crossing each other's path or merely queueing behind one another.
@@ -1538,13 +1552,32 @@ func heading() -> Vector2:
 ## front of it* — the axis, the corridor, the lane and the way it is pointing. Two agents share
 ## a queue exactly when they share this. `Crowd` buckets on it once per frame rather than
 ## comparing every car against every other one.
-func lane_key() -> String:
+func lane_key() -> int:
 	return make_lane_key(_vertical, _corridor, _lane, _direction)
 
 ## The same key for a lane this agent is not in yet, which is what a car needs to ask whether the
 ## arm it is about to turn into has anybody in it.
-static func make_lane_key(vertical: bool, corridor: int, lane: int, direction: float) -> String:
-	return "%s:%d:%d:%d" % ["v" if vertical else "h", corridor, lane, signi(int(direction))]
+##
+## **An integer, packed from the four parts** (`_LANE_KEY_SLOTS` values each for the corridor and the
+## lane, one bit for the axis and two for the direction), because the key is built several times
+## for every car every tick and a formatted string was the largest single cost of the queue resolve.
+## Two lanes share a key exactly when the string version of it matched: the parts are offset so
+## that a corridor or lane of -1 (none) packs without colliding with a real one.
+static func make_lane_key(vertical: bool, corridor: int, lane: int, direction: float) -> int:
+	return (((corridor + 1) * _LANE_KEY_SLOTS + lane + 1) * 2 + (1 if vertical else 0)) * 4 \
+			+ signi(int(direction)) + 1
+
+## How many lanes (and so how many corridors) the packed key tells apart; both are far fewer.
+const _LANE_KEY_SLOTS := 64
+
+## The four parts a packed lane key was made from, in `make_lane_key()`'s argument order, for a
+## suite that stands a car in the lane a key names. The direction comes back as -1, 0 or 1.
+static func lane_key_parts(key: int) -> Array:
+	var direction := key % 4 - 1
+	var rest := key / 4
+	var vertical := rest % 2 == 1
+	rest /= 2
+	return [vertical, rest / _LANE_KEY_SLOTS - 1, rest % _LANE_KEY_SLOTS - 1, direction]
 
 ## How far along its own corridor it is, signed so that "ahead" is always *larger*. Only ever
 ## compared between two agents with the same `lane_key()`, where the direction is shared.
@@ -2987,9 +3020,9 @@ func turning_in() -> Vector2i:
 ## The lane a turning car has reserved a place in, and where in it — `Crowd` puts the pair into the
 ## index it rebuilds, so the reservation is visible to every car for the whole frame rather than
 ## only to the ones that happen to look after this one has moved.
-func turn_lane_key() -> String:
+func turn_lane_key() -> int:
 	if not _turn:
-		return ""
+		return -1
 	return make_lane_key(_turn.exit_vertical, _turn.exit_corridor, _turn.exit_lane,
 			_turn.exit_direction)
 
@@ -3057,10 +3090,14 @@ func _has_left_the_field() -> bool:
 	var at := _along()
 	# Heading out, a spine car goes at the departure depth; heading in, it is still arriving and
 	# keeps the entry depth, or it would be recycled the frame after it came into existence.
-	var north_room := _room_beyond_the_map(false)
-	if _direction > 0.0 and kind == Kind.CAR and _map.is_main_road(_vertical, _corridor):
-		north_room = _entry_room(false)
-	if at < -north_room or at > limit + _room_beyond_the_map(true):
+	# What `_room_beyond_the_map()` answers for both ends, asked once: a tile for everybody but a
+	# car on the spine.
+	var north_room := float(Tuning.TILE_SIZE)
+	var south_room := north_room
+	if kind == Kind.CAR and _map.is_main_road(_vertical, _corridor):
+		north_room = _entry_room(false) if _direction > 0.0 else TUNNEL_ROOM
+		south_room = BRIDGE_RUN
+	if at < -north_room or at > limit + south_room:
 		return true
 
 	# Across the axis first: a street the box has stopped reaching at all. This is not the rare
@@ -3084,7 +3121,10 @@ func _has_left_the_field() -> bool:
 	if at < 0.0 or at > limit:
 		return false
 
-	var bounds := field.along_bounds(_vertical)
+	# `field.along_bounds(_vertical)` built inline from the world size already held: `field.map` is
+	# the map every agent is set up with (`Crowd` makes the one field and hands it to all of them).
+	var here: float = field.centre.y if _vertical else field.centre.x
+	var bounds := Vector2(maxf(0.0, here - field.radius), minf(limit, here + field.radius))
 	if _direction > 0.0:
 		return at > bounds.y or at < bounds.x - ENTRY_SPREAD
 	return at < bounds.x or at > bounds.y + ENTRY_SPREAD
@@ -3585,7 +3625,10 @@ func _flipped() -> bool:
 ## it has not yet arrived. Zero once it has arrived with no detour running, which a stopped walker
 ## (give-way, queue, halted) always has, since `_yield_factor()` also zeroes the along term then.
 func _walker_heading() -> Vector2:
-	var along := velocity()
+	return _walker_heading_at(velocity())
+
+## `_walker_heading()` for a `velocity()` the caller already holds.
+func _walker_heading_at(along: Vector2) -> Vector2:
 	var cross_gap := _lane_centre + _detour - _cross()
 	if is_zero_approx(cross_gap):
 		return along
@@ -3620,7 +3663,11 @@ func _advance_walker_gait(delta: float) -> void:
 ## own `stepping` test, read here off `WALKER_IDLE_SPEED` instead of the mother's own small gait
 ## floor, since a walker already has that threshold for exactly "is this body actually moving".
 func _walker_gait_frame() -> int:
-	if velocity().length() <= WALKER_IDLE_SPEED:
+	return _walker_gait_frame_at(velocity())
+
+## `_walker_gait_frame()` for a `velocity()` the caller already holds.
+func _walker_gait_frame_at(along: Vector2) -> int:
+	if along.length() <= WALKER_IDLE_SPEED:
 		return 0
 	return 1 if sin(_walker_gait_phase * 2.0) > 0.0 else 0
 

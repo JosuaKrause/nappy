@@ -530,7 +530,7 @@ func _resolve_the_queues() -> Dictionary:
 			lanes[key] = [] as Array[CrowdAgent]
 		lanes[key].append(agent)
 
-	for key: String in lanes:
+	for key: int in lanes:
 		var queue: Array[CrowdAgent] = lanes[key]
 		if queue.size() < 2:
 			continue
@@ -570,7 +570,7 @@ func _sort_by_kind() -> void:
 ## whenever the turn arrives, which can be seconds later and in front of her.
 func _index_the_queues(lanes: Dictionary) -> void:
 	var index := {}
-	for key: String in lanes:
+	for key: int in lanes:
 		var queue: Array[CrowdAgent] = lanes[key]
 		var positions := PackedFloat32Array()
 		positions.resize(queue.size())
@@ -746,40 +746,103 @@ func _stop_for_gates(delta: float) -> void:
 	# to hold for a gate below.
 	for agent in _cars:
 		agent.gate_hold = INF
+	var count := _gates.size()
+	if count == 0:
+		return
 	var car_length := Tuning.CAR_STRIKE_HALF_LENGTH * 2.0
-	for gate in _gates:
-		var nearest: CrowdAgent = null
-		var nearest_along := INF
-		var anybody_within_a_length := false
-		for agent in _cars:
-			var offset: Vector2 = gate.position - agent.global_position
-			var along := offset.dot(agent.heading())
-			var across := (offset - agent.heading() * along).length()
+	# **Each car looks only at the gates on its own line**, those within the lane tolerance of the
+	# line it is driving along (`_gates_near_a_line()`), instead of every gate looking at every
+	# car. The accumulators below are per gate and every gate sees the cars in the crowd's own
+	# order, so what each gate ends up knowing is what the gate-by-gate scan found, tie for tie.
+	var lines := _bucket_by_line(_gates.map(func(gate): return gate.position))
+	var nearest: Array[CrowdAgent] = []
+	nearest.resize(count)
+	var nearest_along := PackedFloat64Array()
+	nearest_along.resize(count)
+	nearest_along.fill(INF)
+	var anybody_within_a_length := PackedByteArray()
+	anybody_within_a_length.resize(count)
+	for agent in _cars:
+		var forward := agent.heading()
+		var here := agent.global_position
+		for index in _near_a_line(lines, count, forward, here, Tuning.GATE_LANE_TOLERANCE):
+			var offset: Vector2 = _gates[index].position - here
+			var along := offset.dot(forward)
+			var across := (offset - forward * along).length()
 			if across > Tuning.GATE_LANE_TOLERANCE:
 				continue
 			if absf(along) <= car_length:
-				anybody_within_a_length = true
+				anybody_within_a_length[index] = 1
 			if along <= 0.0 or along > Tuning.CAR_JUNCTION_SIGHT:
 				continue
-			if along < nearest_along:
-				nearest_along = along
-				nearest = agent
+			if along < nearest_along[index]:
+				nearest_along[index] = along
+				nearest[index] = agent
+	for index in count:
+		var gate := _gates[index]
+		var closest := nearest[index]
 		if gate.raised:
 			# Stays up for a platoon rather than slamming shut between cars, and over her while she
 			# is under it; lowers the moment the road either side of it is actually clear.
-			gate.raised = anybody_within_a_length or _is_she_under(gate)
+			gate.raised = anybody_within_a_length[index] == 1 or _is_she_under(gate)
 			if not gate.raised:
 				gate.stopped_for = 0.0
 			continue
-		if not nearest or nearest_along >= Tuning.braking_distance(nearest.speed()) \
+		if not closest or nearest_along[index] >= Tuning.braking_distance(closest.speed()) \
 				+ Tuning.CAR_STOP_LINE_SETBACK:
 			gate.stopped_for = 0.0
 			continue
-		nearest.gate_hold = maxf(0.0, nearest_along - Tuning.CAR_STOP_LINE_SETBACK)
-		if nearest.speed() < Tuning.CAR_STOPPED_SPEED:
+		closest.gate_hold = maxf(0.0, nearest_along[index] - Tuning.CAR_STOP_LINE_SETBACK)
+		if closest.speed() < Tuning.CAR_STOPPED_SPEED:
 			gate.stopped_for += delta
 			if gate.stopped_for >= Tuning.GATE_STOP_SECONDS:
 				gate.raised = true
+
+## How wide a bucket of `_bucket_by_line()` is. Wider than a lane tolerance's whole span (64px for a
+## hut, 80px for a gate), so a body's reach covers two buckets at most.
+const _LINE_BUCKET := 128.0
+
+## Points sorted by the column and the row they stand on: `[columns, rows]`, each a dictionary from
+## a bucket (`floori(coordinate / _LINE_BUCKET)`) to the indices of the points in it, ascending.
+## A body travelling along a line can only be in front of a point whose other coordinate is within
+## a tolerance of its own, which is the whole of what this is for.
+func _bucket_by_line(points: Array) -> Array[Dictionary]:
+	var columns := {}
+	var rows := {}
+	for index in points.size():
+		var at: Vector2 = points[index]
+		var column := floori(at.x / _LINE_BUCKET)
+		var row := floori(at.y / _LINE_BUCKET)
+		if not columns.has(column):
+			columns[column] = [] as Array[int]
+		if not rows.has(row):
+			rows[row] = [] as Array[int]
+		columns[column].append(index)
+		rows[row].append(index)
+	return [columns, rows]
+
+## The indices of the points `_bucket_by_line()` holds that a body at `here` heading `forward` could
+## have within `tolerance` of its line: a superset, every candidate still gets the exact test. A
+## heading along neither axis (a car mid-turn) has no line to look along, so it is every point.
+## Lowest bucket first and ascending inside one bucket, which is not the points' own order across
+## two buckets — callers that break a tie by index say so.
+func _near_a_line(lines: Array[Dictionary], count: int, forward: Vector2, here: Vector2,
+		tolerance: float) -> Array[int]:
+	var found: Array[int] = []
+	if (forward.x == 0.0) == (forward.y == 0.0):
+		for index in count:
+			found.append(index)
+		return found
+	# Along a column (x fixed, heading north or south) the other coordinate is x.
+	var buckets: Dictionary = lines[0] if forward.x == 0.0 else lines[1]
+	var centre := here.x if forward.x == 0.0 else here.y
+	# A pixel of margin beyond the tolerance, so a float on the edge of a bucket is still found.
+	var first := floori((centre - tolerance - 1.0) / _LINE_BUCKET)
+	var last := floori((centre + tolerance + 1.0) / _LINE_BUCKET)
+	for bucket in range(first, last + 1):
+		if buckets.has(bucket):
+			found.append_array(buckets[bucket])
+	return found
 
 ## Tells every walker which checkpoint hut, if any, is standing in front of it and how far off —
 ## the sidewalk's own version of `_stop_for_gates()` above, and computed the same way: from the
@@ -811,27 +874,52 @@ func _hold_walkers_at_doors(delta: float) -> void:
 	# made in `start_day()`, with a new crowd behind them, so no walker can be holding one.
 	if _door_holds.is_empty():
 		return
+	# Bucketed by the line each hut stands on, so a walker looks at the huts on its own line and not
+	# at all of them.
+	var lines := _bucket_by_line(_door_holds.map(func(hold): return hold.position))
 	for agent in _walkers:
 		agent.door_ahead = null
 		agent.door_ahead_along = INF
-		_find_the_hut_in_front_of(agent)
+		_find_the_hut_in_front_of(agent, lines)
 		agent.advance_the_door_hold(delta)
 
-func _find_the_hut_in_front_of(agent: CrowdAgent) -> void:
+func _find_the_hut_in_front_of(agent: CrowdAgent, lines: Array[Dictionary]) -> void:
 	var forward := agent.heading()
 	var vertical := agent.travelling_vertically()
-	for hold in _door_holds:
-		var offset: Vector2 = hold.position - agent.global_position
-		var along := offset.dot(forward)
-		if along < 0.0 or along > CrowdAgent.LOOKAHEAD or along >= agent.door_ahead_along:
-			continue
-		if (offset - forward * along).length() > Tuning.WALKER_DOOR_LANE_TOLERANCE:
-			continue
-		var across_coordinate: float = hold.position.x if vertical else hold.position.y
-		if CityMap.corridor_offset(floori(across_coordinate / float(Tuning.TILE_SIZE))) < 0:
-			continue
-		agent.door_ahead = hold
-		agent.door_ahead_along = along
+	if (forward.x == 0.0) == (forward.y == 0.0):
+		# No line to look along: every hut, in the day's order.
+		for index in _door_holds.size():
+			_consider_the_hut(agent, forward, vertical, index)
+		return
+	# Only the huts within the lane tolerance of the walker's own line can pass the exact test in
+	# `_consider_the_hut()`; a pixel of margin keeps a float on a bucket's edge in.
+	var buckets: Dictionary = lines[0] if forward.x == 0.0 else lines[1]
+	var centre := agent.global_position.x if forward.x == 0.0 else agent.global_position.y
+	var first := floori((centre - Tuning.WALKER_DOOR_LANE_TOLERANCE - 1.0) / _LINE_BUCKET)
+	var last := floori((centre + Tuning.WALKER_DOOR_LANE_TOLERANCE + 1.0) / _LINE_BUCKET)
+	for bucket in range(first, last + 1):
+		if buckets.has(bucket):
+			for index: int in buckets[bucket]:
+				_consider_the_hut(agent, forward, vertical, index)
+
+## One hut's chance to be the one in front of this walker: nearest wins, and the first in the day's
+## order wins a tie in distance, as the scan in that order gave it (the buckets are visited lowest
+## first, which across two of them is not that order).
+func _consider_the_hut(agent: CrowdAgent, forward: Vector2, vertical: bool, index: int) -> void:
+	var hold := _door_holds[index]
+	var offset: Vector2 = hold.position - agent.global_position
+	var along := offset.dot(forward)
+	if along < 0.0 or along > CrowdAgent.LOOKAHEAD or along > agent.door_ahead_along:
+		return
+	if along == agent.door_ahead_along and _door_holds.find(agent.door_ahead) < index:
+		return
+	if (offset - forward * along).length() > Tuning.WALKER_DOOR_LANE_TOLERANCE:
+		return
+	var across_coordinate: float = hold.position.x if vertical else hold.position.y
+	if CityMap.corridor_offset(floori(across_coordinate / float(Tuning.TILE_SIZE))) < 0:
+		return
+	agent.door_ahead = hold
+	agent.door_ahead_along = along
 
 ## Whether there is somewhere on the far side for this car to be.
 ##
