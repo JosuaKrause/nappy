@@ -1,0 +1,18 @@
+{
+  "scales": [
+    1.0,
+    6.0
+  ],
+  "rows": [
+    [
+      "art/events/robber_waiting_front.svg",
+      "art/events/robber_alert_front.svg",
+      "art/events/robber_lunging_front.svg"
+    ],
+    [
+      "art/events/robber_waiting_side.svg",
+      "art/events/robber_alert_side.svg",
+      "art/events/robber_lunging_side.svg"
+    ]
+  ]
+}
