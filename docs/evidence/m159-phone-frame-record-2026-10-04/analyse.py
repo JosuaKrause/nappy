@@ -221,6 +221,9 @@ def over_time(rows: list[Row]) -> None:
         ],
         out,
     )
+    if not any(r["day"] == 1 for r in rows):
+        print("(no day 1 in this record)\n")
+        return
     print("Same streets, out and back (day 1, her y in a band; out = first 25s, back = after 45s):\n")
     out = []
     for low, high in [(1800, 2200), (2200, 2600), (2600, 2800)]:
@@ -761,11 +764,11 @@ def main(argv: list[str]) -> int:
     global STEADY
     STEADY = choose_steady(rows)
     for number, section in enumerate(SECTIONS, start=1):
-        # A section that the record cannot fill says so and the report goes on: a record without
-        # day 1, or with a stretch too short for a fit, still has the sections after it.
+        # A section that the record cannot fill (an empty sequence, a fit of nothing) says so and the
+        # report goes on. A missing column is a bug in the analyser and still raises.
         try:
             section(record, rows)
-        except (ValueError, ZeroDivisionError, KeyError, IndexError, statistics.StatisticsError) as reason:
+        except (ValueError, ZeroDivisionError, statistics.StatisticsError) as reason:  # empty data only
             print(f"(section {number} skipped: the record does not hold what it needs: {reason!r})\n")
     return 0
 

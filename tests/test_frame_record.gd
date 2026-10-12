@@ -17,6 +17,7 @@ func run(t) -> void:
 	_test_top_costs_order_and_leave_out_the_wait(t)
 	_test_the_readout_line(t)
 	_test_the_view_size(t)
+	_test_the_environment_carries_the_view(t)
 	_test_the_report_round_trips(t)
 	_test_the_static_switch_charges_the_ledger(t)
 	_test_the_flag_and_its_page_word(t)
@@ -532,3 +533,12 @@ func _test_the_view_size(t) -> void:
 			"the readout says the window and what is drawn")
 	for line in lines:
 		t.check(FrameRecorder.fits_the_readout(line), "the line fits the readout: %s" % line)
+
+## The record's environment carries the pixels the page draws, as the file a phone hands over.
+func _test_the_environment_carries_the_view(t) -> void:
+	var recorder := FrameRecorder.new()
+	recorder.ledger = FrameLedger.new(8, 16667)
+	var environment: Dictionary = JSON.parse_string(recorder.report_text())["environment"]
+	for key in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
+		t.check(environment.has(key), "the record's environment carries %s" % key)
+	recorder.free()

@@ -169,12 +169,20 @@ static func view_size() -> Dictionary:
 	var window := Vector2(drawn)
 	var ratio := DisplayServer.screen_get_scale()
 	if OS.get_name() == "Web":
+		# What the page cannot say is recorded as unknown, -1, rather than as the desktop's
+		# answer to the same question.
+		window = Vector2(-1.0, -1.0)
+		ratio = -1.0
 		var reading: Variant = JavaScriptBridge.eval(
 				"[window.innerWidth, window.innerHeight, window.devicePixelRatio]")
 		if reading is JavaScriptObject:
 			var numbers: JavaScriptObject = reading
-			window = Vector2(float(numbers.get("0")), float(numbers.get("1")))
-			ratio = float(numbers.get("2"))
+			var width: Variant = numbers.get("0")
+			var height: Variant = numbers.get("1")
+			var scale: Variant = numbers.get("2")
+			if width is float and height is float and scale is float and scale > 0.0:
+				window = Vector2(width, height)
+				ratio = scale
 	return {"window_width": roundi(window.x), "window_height": roundi(window.y),
 		"device_pixel_ratio": snappedf(ratio, 0.01),
 		"drawn_width": drawn.x, "drawn_height": drawn.y}
@@ -182,9 +190,12 @@ static func view_size() -> Dictionary:
 ## The two readout lines for `view_size()`, in the readout's own fixed-width style.
 static func view_lines() -> Array[String]:
 	var view := view_size()
+	var window := "unknown"
+	if view["device_pixel_ratio"] > 0.0:
+		window = "%dx%d @%.2f" % [view["window_width"], view["window_height"],
+			view["device_pixel_ratio"]]
 	return [
-		"window      %dx%d @%.2f" % [view["window_width"], view["window_height"],
-			view["device_pixel_ratio"]],
+		"window      %s" % window,
 		"drawn       %dx%d" % [view["drawn_width"], view["drawn_height"]],
 	]
 

@@ -140,14 +140,6 @@ var _rig_quit_deadline_msec := 0
 ## `rig_kill_after_movie_seconds`).
 var _rig_quit_game_seconds := 0.0
 
-## Whether the readout was asked for by the page's own `?debug=1` (or the command line's
-## `--debug`) — `DevFlags.readout_requested()`, read once for the same reason `_debug` is: so a
-## test can set it directly and check the release shape. `_status.visible` and the text assembly
-## in `_process()` read `_debug or _readout_requested`, and so now do `_add_debug_layers()` and
-## `_add_route_lines()` — see docs/DECISIONS.md, M133, "the readout on the live page", and M193, "the
-## live page's ?debug=1 reaches the debug flags". The snapshot key and the layer-toggle keys keep
-## reading `_debug` alone: a release page can ask `?layers=` for a picture already drawn a
-## particular way, never toggle one by hand with no keyboard event the page itself sent.
 ## How often the readout's text is re-set, in seconds. Re-setting some thirty lines of text every
 ## frame adds draw calls and drawing work to every phone record taken under `?debug=1`, so the
 ## text is built a few times a second instead. Nothing the readout shows is lost by it: `FrameCost`
@@ -156,6 +148,15 @@ var _rig_quit_game_seconds := 0.0
 const READOUT_INTERVAL := 0.25
 ## Seconds until the readout's text is next rebuilt; 0 or less means the next frame rebuilds it.
 var _readout_wait := 0.0
+
+## Whether the readout was asked for by the page's own `?debug=1` (or the command line's
+## `--debug`) — `DevFlags.readout_requested()`, read once for the same reason `_debug` is: so a
+## test can set it directly and check the release shape. `_status.visible` and the text assembly
+## in `_process()` read `_debug or _readout_requested`, and so now do `_add_debug_layers()` and
+## `_add_route_lines()` — see docs/DECISIONS.md, M133, "the readout on the live page", and M193, "the
+## live page's ?debug=1 reaches the debug flags". The snapshot key and the layer-toggle keys keep
+## reading `_debug` alone: a release page can ask `?layers=` for a picture already drawn a
+## particular way, never toggle one by hand with no keyboard event the page itself sent.
 var _readout_requested := DevFlags.readout_requested()
 ## `DevFlags.skip_words()`, read once for the same reason `_readout_requested` is: so a test can
 ## set it directly, and so the readout's own `skip` line below is not re-splitting `--skip`'s
