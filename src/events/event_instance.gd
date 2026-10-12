@@ -4489,14 +4489,55 @@ func will_be_lethal(player_position: Vector2) -> bool:
 ## The key is stored on every tick whether or not it asked for a draw, so the *transition out of*
 ## a never-settling state — a van that has finished taking its victim — is still a change the
 ## comparison can see.
-func _redraw_if_the_picture_changed() -> void:
+##
+## **Off screen none of it runs** (`DrawnView`, `_drawn_reach()`): no key, no caret projection and
+## no redraw, never-settling pictures included, since most of a day's live instances are off screen
+## and the key's caret was the projection's only caller there. The picture is left as it was, and
+## the first tick any of it is back inside the box redraws it from what it is now, caret included,
+## before the margin has let any of it onto the screen. The band and the scenery are still moved
+## and shown as before. Answers whether it asked for a draw.
+func _redraw_if_the_picture_changed() -> bool:
 	_update_scenery()
+	if not _in_the_drawn_view():
+		_picture_is_stale = true
+		_move_the_band()
+		return false
 	var key := _picture_key()
-	var changed := key != _picture
+	var changed := key != _picture or _picture_is_stale
 	_picture = key
-	if changed or _picture_never_settles():
+	_picture_is_stale = false
+	var asked := changed or _picture_never_settles()
+	if asked:
 		queue_redraw()
 	_move_the_band(changed)
+	return asked
+
+## True while what this instance shows is not being kept current because none of it can be on the
+## screen, so the first tick it is back in the box redraws it whatever the key says.
+var _picture_is_stale := false
+
+## Whether anything this instance draws can be on the screen (`DrawnView`): its own picture, caret
+## and spread about its feet, or the band it left at its post (`RoadblockBand`, whose redraw rides on
+## this gate). A flock that is leaving is always drawn, since its birds fly off past any reach.
+func _in_the_drawn_view() -> bool:
+	if is_leaving and not _flock.is_empty():
+		return true
+	var reach := _drawn_reach()
+	if DrawnView.shows(self, reach):
+		return true
+	return _band != null and _band.is_inside_tree() and DrawnView.shows(_band, reach)
+
+## Everything this instance can draw about its feet: the row's whole footprint, caret included
+## (`footprint_of()`), with the run its own street gives a spread (`drawn_box()`), and the caret at
+## its tallest for a row with no picture of its own to carry one. Worked out once.
+func _drawn_reach() -> Rect2:
+	if not _drawn_reach_known:
+		_drawn_reach_known = true
+		_drawn_reach_box = footprint_of(def).merge(drawn_box()).merge(largest_mark_rect())
+	return _drawn_reach_box
+
+var _drawn_reach_box := Rect2()
+var _drawn_reach_known := false
 
 ## How finely the key reads the two continuous quantities it carries: an eighth of a pixel of the
 ## body's own lift, and a hundred-and-twenty-eighth of the caret's swell, which moves that mark by

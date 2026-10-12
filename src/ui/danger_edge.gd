@@ -179,11 +179,25 @@ func _process(delta: float) -> void:
 	else:
 		_watch_the_edge(delta)
 
-## The badges' measurement, timed under `FrameRecord.CUES`.
-func _watch_the_edge(delta: float) -> void:
+## The badges' measurement, timed under `FrameRecord.CUES`, and their redraw; answers whether it
+## asked for one.
+##
+## The camera moves under the badges every frame, so while any is up the edge redraws every frame —
+## a handful of chevrons — and a badge is drawn on the frame `_measure()` first puts it up. With none
+## up this frame and none drawn the frame before, there is nothing on the edge to change, so it does
+## not redraw at all.
+func _watch_the_edge(delta: float) -> bool:
 	_measure(delta)
-	# The camera moves under it every frame, so it redraws every frame — a handful of chevrons.
-	queue_redraw()
+	var badges := not _coming.is_empty()
+	var asked := badges or _drew_badges
+	_drew_badges = badges
+	if asked:
+		queue_redraw()
+	return asked
+
+## Whether the last redraw put any badge on the edge, so the frame after the last one comes down
+## redraws once to take it off.
+var _drew_badges := false
 
 ## Works out what is actually coming at her, once per frame.
 ##
