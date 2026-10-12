@@ -29,7 +29,7 @@
 #
 # A "write" is `git push`; a commit-making git verb (`commit` always; `cherry-pick`/`revert`/`am`
 # unless they carry `--abort`/`--quit`; `merge` unless `--abort`/`--no-commit`/`--ff-only`; `rebase`
-# unless `--abort` or `--show-current-patch`, which only prints; `pull` unless `--ff-only`, the
+# unless `--abort`, or `--show-current-patch` as its one argument, which only prints; `pull` unless `--ff-only`, the
 # only shape that cannot make a commit of its own);
 # any `gh` noun's verb that is not on one short, shared read list (`view`, `list`, `status`,
 # `diff`, `checks`, `checkout`, `watch`, `download`, `clone`, `token`) -- every noun, not only
@@ -846,7 +846,7 @@ def xargs_context($w; $lv; $unsure; $inputs):
 # `git <subcommand>`: push, and every subcommand that can create a commit under the invoking
 # user's own name -- commit always; cherry-pick/revert/am/merge/rebase/pull unless they carry an
 # abort-like or safe flag (`--abort`/`--quit` for cherry-pick/revert/am, `--abort`/`--no-commit`/
-# `--ff-only` for merge, `--abort` or `--show-current-patch` for rebase, `--ff-only` for pull, which is the only shape of
+# `--ff-only` for merge, `--abort`, or `--show-current-patch` as its one argument, for rebase, `--ff-only` for pull, which is the only shape of
 # `git pull` that cannot make a commit of its own). Everything else (status, log, diff, fetch,
 # branch, ...) is a read or a local-only change.
 #
@@ -1171,9 +1171,13 @@ def detect_git($w; $t; $i; $n; $cmd_pos):
               as $sc
             | {next: $sc.end, reason: (if $sc.found then null else "git merge" end)}
           elif $subcmd == "rebase" then
-            (segment_scan($w; $sub + 1; $n; ["--abort", "--show-current-patch"] | fixed_flags(input_tokens($t; $i))))
-              as $sc
-            | {next: $sc.end, reason: (if $sc.found then null else "git rebase" end)}
+            (segment_scan($w; $sub + 1; $n; ["--abort"] | fixed_flags(input_tokens($t; $i)))) as $sc
+            # `--show-current-patch` only prints, and git refuses it beside any other argument, so
+            # it reads only as the one word after `rebase`: elsewhere it can be an option's value
+            # (`git rebase -x --show-current-patch main` rebases, running it as the exec command).
+            | ($w[$sub + 1] == "--show-current-patch" and $sc.end == $sub + 2
+               and (["--show-current-patch"] | fixed_flags(input_tokens($t; $i)) | length) > 0) as $show
+            | {next: $sc.end, reason: (if $sc.found or $show then null else "git rebase" end)}
           elif $subcmd == "pull" then
             (segment_scan($w; $sub + 1; $n; ["--ff-only"] | fixed_flags(input_tokens($t; $i)))) as $sc
             | {next: $sc.end, reason: (if $sc.found then null else "git pull" end)}

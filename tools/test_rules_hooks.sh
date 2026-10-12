@@ -2369,6 +2369,12 @@ assert_write_guard_timed "64 KB of git -C \$(pwd), then push -> deny, decided qu
 # Finding 5: git rebase --show-current-patch only prints and reads; the two dry runs stay accepted
 # false denies (the header says why), so they are asked about where no identity can work.
 assert_write_guard "git rebase --show-current-patch -> allow" allow 'git rebase --show-current-patch'
+# #736's review, finding 4: --show-current-patch reads only as rebase's one argument; as an option's
+# value it really rebases.
+assert_write_guard "git rebase -x --show-current-patch main -> deny (it rebases)" deny 'git rebase -x --show-current-patch main'
+assert_write_guard "git rebase main -m --show-current-patch -> deny" deny 'git rebase main -m --show-current-patch'
+assert_write_guard "git rebase --show-current-patch main -> deny" deny 'git rebase --show-current-patch main'
+assert_write_guard "git rebase --show-current-patch; git status -> allow" allow 'git rebase --show-current-patch; git status'
 assert_write_guard "git push --dry-run -> deny (an accepted false deny)" deny 'git push --dry-run origin feature/x'
 assert_write_guard "git commit --dry-run -> deny (an accepted false deny)" deny 'git commit --dry-run'
 
