@@ -118,6 +118,11 @@ runs of the same revision.
     on all 27;
   - asks four crews about a one-tile offer inside a look and outside one. They judge it once and
     four times, with the same answers and the same streams.
+  - pins the drops. A crew is accepted on a one-tile offer inside a look, then a crew of the same
+    row stands on that tile. The next copy is refused once the verdicts are dropped, where the kept
+    ones would accept it. Walking day 3 out and back with four fires owed, the director drops the
+    verdicts just before and after every ask about a placed plan and after every plan it places or
+    moves. Removing any one of its three drops fails a check.
 - **A shadow check** (`shadow.py`). In a scratch copy of the branch, every `_best_of()` call also
   runs the loop that judges every try, keeping nothing, on a copy of the stream. Every kept offer
   is worked out again. With both steps:

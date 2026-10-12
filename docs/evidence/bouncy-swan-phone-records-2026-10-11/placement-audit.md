@@ -14,7 +14,7 @@ For each site the table gives four things:
 - whether a refusal can repeat every look or every frame for as long as the day lasts, and what it
   holds up while it repeats.
 
-The line numbers are those of this branch's last commit.
+The line numbers are those of the commit that last changed this file (`git log -1 -- <this file>`).
 
 **Words used below.**
 
@@ -189,13 +189,13 @@ All of these run inside the day's load, once per `build_day()`. None repeats dur
 | `event_director.gd:648` `_waits_its_turn()` | Later crews of a row wait while one is placed and not yet in the world | Over `_on_her_way` | O(owed) | A crew left behind her that cannot be re-sited keeps the others waiting until a later look moves it or it streams in; it holds up crews only, and it is also what keeps most looks cheap |
 | `event_director.gd:828` `due()` | Hands out the next owed moment | No loop | One siting: `_crossing_ahead_of()`, `_toward_her()` (≤ 13 × 7 × 2 tile checks) or `_toward_her_on_the_road()` | **Yes, every second of walking** (`_next_in = 1.0` at `:871` and `:880`), and **the head is not popped**, so every moment behind it waits, return patrols included. A return patrol's road siting is empty anywhere she is not beside a plain sidewalk edge (park, square, junction, precinct). It holds up moments, not the day |
 | `event_director.gd:451` `_next_on_the_route()` | Skips the marbles of rows that have met their `max_per_day` | `for _i in ROUTE_SKIP_LIMIT` (64) | 64 peeks and draws | A bag that names nothing pops the slot with the clock still due, so the next slot is asked the next frame; the owed list drains |
-| `event_manager.gd:1634` the owed pursuer | Re-sends day 3's dog (or a sprinkled one) that had nowhere to stand | Retried after each second of walking; one slot | One `PendingWarning.along_her_heading()` (≤ 25 tile checks) | Yes, without a cap; it holds up that dog only, and does not hold up `due()` |
-| `event_manager.gd:1449` `_summon_what_has_been_sighted()` | Warns of the fire engine once the fire is seen | `for plan in _plans`; 2 headings | 2 × `PendingWarning.on_its_route()`, ≤ ~750 out-of-sight checks each | **Yes, every frame** the fire is in view with no road out of sight; a withdrawn warning re-arms it. It holds up the engine only |
-| `event_manager.gd:1297` `_run_the_warnings()` | Moves each warning with her; at its time asks its place again, then creates or withdraws | Over the pending warnings | Each warning's own place function | A withdrawal re-arms only the engine (`:1504`) and the owed dog (`:1774`); the cyclist, a torn poster's pursuer, the resistance trap and day 13's column are not sent again |
+| `event_manager.gd:1658` the owed pursuer | Re-sends day 3's dog (or a sprinkled one) that had nowhere to stand | Retried after each second of walking; one slot | One `PendingWarning.along_her_heading()` (≤ 25 tile checks) | Yes, without a cap; it holds up that dog only, and does not hold up `due()` |
+| `event_manager.gd:1473` `_summon_what_has_been_sighted()` | Warns of the fire engine once the fire is seen | `for plan in _plans`; 2 headings | 2 × `PendingWarning.on_its_route()`, ≤ ~750 out-of-sight checks each | **Yes, every frame** the fire is in view with no road out of sight; a withdrawn warning re-arms it. It holds up the engine only |
+| `event_manager.gd:1321` `_run_the_warnings()` | Moves each warning with her; at its time asks its place again, then creates or withdraws | Over the pending warnings | Each warning's own place function | A withdrawal re-arms only the engine (`:1528`) and the owed dog (`:1798`); the cyclist, a torn poster's pursuer, the resistance trap and day 13's column are not sent again |
 | `pending_warning.gd:233` `on_its_route()` | The engine's place up its road | `while up <= reach`; `up` grows by 8px and the road is finite | ≤ road length / 8px | INF |
 | `pending_warning.gd:185` `route_down_her_line()` | Keeps a row's far end on the map | `while not bounds.has_point(behind) and behind.distance_to(place) > TILE_SIZE`; each step moves `behind` toward `place` | ≤ the line's length in tiles | n/a |
 | `event_instance.gd:3665` `_way_on_out_of_sight()` | A leaving body's way on to where she cannot see it | `while head < queue.size() and head < WAY_ON_SEARCH_LIMIT` (4096) | ≤ 4096 tiles of breadth-first fill | **Yes, every frame** a leaving body's search finds nothing. It holds up the body's going, not the day. Caching a failed search would change when it is asked again, so it is a fork |
-| `event_manager.gd:1074`, `:1098` `queue_a_mast()`, `queue_a_task_row()` | Day 11's mast near the mark; day 13's roadblock | One siting each; ≤ 3 rings for the roadblock | One `WalkSiting.new()` (a route tree and corridor) when none exists, then one `_best_of()` | No; each has its fallback |
+| `event_manager.gd:1098`, `:1122` `queue_a_mast()`, `queue_a_task_row()` | Day 11's mast near the mark; day 13's roadblock | One siting each; ≤ 3 rings for the roadblock | One `WalkSiting.new()` (a route tree and corridor) when none exists, then one `_best_of()` | No; each has its fallback |
 
 ### D. Outside this branch's fence, read where events call them
 

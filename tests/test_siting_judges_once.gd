@@ -14,7 +14,11 @@ extends "res://tests/events_shared_city.gd"
 ##   it asks, and judges no more candidates than there are distinct ones offered to each copy;
 ## - inside a look (`WalkSiting.begin_look()`, which the director starts on every look), copies
 ##   asked about against the same plans share their verdicts: four crews offered one tile judge it
-##   once, not four times, and are answered what four separate asks answer, from the same stream.
+##   once, not four times, and are answered what four separate asks answer, from the same stream;
+## - and the shared verdicts are dropped the moment they stop being true: a crew accepted on a tile
+##   in a look, then a crew standing on that tile, and the next copy is refused once the verdicts
+##   are dropped, where the kept ones would accept it; and the director drops them before and after
+##   asking about a plan already placed and after every plan it places or moves.
 
 const STEP := 1.0 / 60.0
 
@@ -22,6 +26,8 @@ func run(t) -> void:
 	_test_one_judgement_per_candidate(t)
 	_test_one_offer_per_look(t)
 	_test_a_look_shares_its_verdicts(t)
+	_test_a_dropped_verdict_is_judged_again(t)
+	_test_the_director_drops_the_verdicts(t)
 
 ## What `_best_of()` answered before its verdicts were kept: every try judged afresh. Answers the
 ## placement and how many distinct candidates the tries built.
@@ -245,3 +251,154 @@ func _longest_route(day: int) -> PackedVector2Array:
 	for i in best.size():
 		points.append(EventScheduler.WalkSiting._cell_centre(_map(), best[best.size() - 1 - i]))
 	return points
+
+## A crew accepted on a one-tile offer inside a look, and then a crew of the same row standing on
+## that very tile: the next copy is refused (nothing is ever drawn inside anything else,
+## `Tuning.EVENT_SPACING_ANY`) — but only once the look's verdicts are dropped. Kept, they answer
+## from before the crew stood there and accept it, which is the placement no fresh judgement makes
+## and why the director drops them.
+func _test_a_dropped_verdict_is_judged_again(t) -> void:
+	var map := _map()
+	var day := 9
+	var already := _planned(day)
+	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
+			[] as Array[Vector2i], PackedVector2Array())
+	var crew := EventScheduler._for_day(EventCatalogue.by_id("poster_crew"), day)
+	for tile in EventScheduler._open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
+		siting.fronts[tile] = true
+	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
+	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
+	# Down the day's longest route until the band ahead of her offers one tile that a crew is
+	# accepted on.
+	var route := _longest_route(day)
+	var spot := Vector2.INF
+	var heading := Vector2.ZERO
+	for i in range(1, route.size()):
+		var toward := (route[i] - route[i - 1]).normalized()
+		var offer := siting._offer_ahead(crew, route[i - 1], toward, near, far)
+		if (offer[1] as Array).size() != 1:
+			continue
+		if siting.ahead_of(crew, RandomNumberGenerator.new(), already, route[i - 1], toward, near,
+				far):
+			spot = route[i - 1]
+			heading = toward
+			break
+	t.check(spot != Vector2.INF, "somewhere on the route accepts a crew on a single tile")
+	if spot == Vector2.INF:
+		return
+	var answers := {}
+	for dropped in [true, false]:
+		siting.begin_look()
+		var first := siting.ahead_of(crew, RandomNumberGenerator.new(), already, spot, heading,
+				near, far)
+		var standing := already.duplicate()
+		standing.append(EventScheduler.Planned.new(crew, first.position))
+		if dropped:
+			siting.forget_the_verdicts()
+		answers[dropped] = siting.ahead_of(crew, RandomNumberGenerator.new(), standing, spot,
+				heading, near, far)
+		siting.end_look()
+	t.check(answers[true] == null,
+			"with the verdicts dropped, a copy is refused the tile a crew now stands on")
+	t.check(answers[false] != null,
+			"kept, the verdicts would have accepted it (the check above is not vacuous)")
+
+## Spies on what the director asks of the siting and when it drops the verdicts.
+class SpySiting extends EventScheduler.WalkSiting:
+	## One entry per call, in order: `["ask", the plan asked about was placed, it was sited]`,
+	## `["forget"]` or `["end"]`.
+	var calls: Array = []
+	## The plans the director is handed, to tell which one an ask is about: the one `already`
+	## leaves out.
+	var plans: Array[EventScheduler.Planned] = []
+
+	func ahead_of(def: EventDef, rng: RandomNumberGenerator,
+			already: Array[EventScheduler.Planned], at: Vector2, heading: Vector2, near: float,
+			far: float) -> EventScheduler.Planned:
+		var others := {}
+		for plan in already:
+			others[plan] = true
+		var placed := false
+		for plan in plans:
+			if not others.has(plan):
+				placed = plan.is_placed()
+		var sited := super.ahead_of(def, rng, already, at, heading, near, far)
+		calls.append(["ask", placed, sited != null])
+		return sited
+
+	func forget_the_verdicts() -> void:
+		calls.append(["forget"])
+		super.forget_the_verdicts()
+
+	func end_look() -> void:
+		calls.append(["end"])
+		super.end_look()
+
+## Day 3 with four fires owed, walked out down the day's longest route and back again, so fires are
+## sited ahead of her and then left behind and moved: the director drops the look's verdicts just
+## before and just after asking about a plan already placed, and once more after each plan it
+## places or moves.
+func _test_the_director_drops_the_verdicts(t) -> void:
+	var map := _map()
+	var day := Tuning.RUN_TAUGHT_DAY
+	var consumed: Array[String] = []
+	var plans := EventScheduler.build_day(day, _rng(day), map, consumed)
+	var fire: EventDef = null
+	for plan in plans:
+		if plan.def.id == "burning_building":
+			fire = plan.def
+	for _i in 3:
+		plans.append(EventScheduler.Planned.new(fire, Vector2.INF))
+	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), [] as Array[Vector2i],
+			PackedVector2Array())
+	siting.plans = plans
+	var director := EventDirector.new(map)
+	director.start_day(day, plans, _rng(day), siting)
+	var out := _longest_route(day)
+	var there_and_back := PackedVector2Array(out)
+	for i in range(out.size() - 2, -1, -1):
+		there_and_back.append(out[i])
+	var at := there_and_back[0]
+	for i in range(1, there_and_back.size()):
+		var toward := there_and_back[i] - at
+		while toward.length() > Tuning.WALK_SPEED * STEP:
+			var velocity := toward.normalized() * Tuning.WALK_SPEED
+			at += velocity * STEP
+			director.site_what_is_on_her_way(STEP, at, velocity, plans)
+			toward = there_and_back[i] - at
+	var calls := siting.calls
+	var placed_asks := 0
+	var first_sitings := 0
+	var bracketed := 0
+	var dropped_after := 0
+	for i in calls.size():
+		if calls[i][0] != "ask":
+			continue
+		var placed: bool = calls[i][1]
+		var sited: bool = calls[i][2]
+		var forgets := 0
+		var j := i + 1
+		while j < calls.size() and calls[j][0] == "forget":
+			forgets += 1
+			j += 1
+		# The last of them is the next ask's own when that ask is about a placed plan.
+		if j < calls.size() and calls[j][0] == "ask" and calls[j][1]:
+			forgets -= 1
+		# Once for the placed plan's own body, once more for a plan placed or moved.
+		var owed := (1 if placed else 0) + (1 if sited else 0)
+		if placed:
+			placed_asks += 1
+			if i > 0 and calls[i - 1][0] == "forget" and forgets == owed:
+				bracketed += 1
+		elif sited:
+			first_sitings += 1
+			if forgets == owed:
+				dropped_after += 1
+	t.check(placed_asks > 0, "fires left behind her were asked about again (%d)" % placed_asks)
+	t.check(first_sitings > 0, "fires were sited for the first time (%d)" % first_sitings)
+	t.check(bracketed == placed_asks,
+			"the verdicts are dropped just before and after asking about a placed plan (%d of %d)"
+			% [bracketed, placed_asks])
+	t.check(dropped_after == first_sitings,
+			"the verdicts are dropped after each plan the look places (%d of %d)"
+			% [dropped_after, first_sitings])
