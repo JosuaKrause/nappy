@@ -24,6 +24,7 @@ func run(t) -> void:
 	_test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t)
 	_test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t)
 	_test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t)
+	_test_a_wide_burning_front_redraws_while_any_of_it_shows(t)
 	_test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t)
 	_test_a_hidden_arrow_redraws_once(t)
 
@@ -227,6 +228,63 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	_look_from(screen, Vector2.ZERO)
 	t.check(cyclist._redraw_if_the_picture_changed(),
 			"back on screen with the same key, it redraws once")
+	screen.free()
+	DrawnView.forget()
+
+## **A street fire burns along the whole front of its building, far past its own picture, and it is
+## redrawn on every tick any of that front can be on the screen** — its flames flicker and its
+## smoke billows, so a front whose far end showed while the fire's own point was still out of the
+## box would stand frozen there. The front here is set by hand, 640px of it running east from just
+## west of the fire's point, the width `_facade_runs_at()` gives a long building; the screen pans
+## along it from the east, so the far end shows long before the point does. What can be seen is
+## worked out from the flames' and plumes' own numbers (`_flames_across()`, `_smoke_across()`, the
+## tallest flicker), not from the box the gate asks with.
+func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
+	var def := EventCatalogue.by_id("burning_building")
+	t.check(def != null and def.obstructs_radius <= 0.0, "burning_building is the street fire")
+	if not def:
+		return
+	var screen := _screen(t, Vector2(2000.0, 0.0))
+	var fire := EventInstance.new()
+	fire.setup(def, Vector2(0.0, 180.0))
+	fire.set_process(false)
+	fire._fire_facade = PackedVector2Array([Vector2(-40.0, 600.0)])
+	fire._fire_facade_found = true
+	screen.add_child(fire)
+	var drawn := Rect2()
+	var any := false
+	for flame in EventInstance._flames_across(fire._fire_facade):
+		var tallest := (EventInstance._FIRE_HEIGHT + EventInstance._FIRE_HEIGHT_TALL) * 1.25
+		var one := Rect2(flame.x - flame.y * 0.5, -tallest, flame.y, tallest)
+		drawn = one if not any else drawn.merge(one)
+		any = true
+	for plume in EventInstance._smoke_across(fire._fire_facade):
+		var top := -(EventInstance._FIRE_HEIGHT + EventInstance._FIRE_HEIGHT_TALL) \
+				- EventInstance._SMOKE_SIZE.y
+		drawn = drawn.merge(Rect2(plume.x - plume.y * 0.5, top, plume.y, EventInstance._SMOKE_SIZE.y))
+	t.check(fire._drawn_reach().encloses(drawn) and fire.drawn_rect_now().encloses(drawn),
+			"the reach and the drawn rect hold the whole front and its smoke (%s)" % drawn)
+	var shown_unasked := 0
+	var shown_point_outside := 0
+	var left := 1200.0
+	while left > -700.0:
+		_look_from(screen, Vector2(left, 0.0))
+		var asked := fire._redraw_if_the_picture_changed()
+		var on_screen := _world_shown(Vector2(left, 0.0)).intersects(
+				Rect2(fire.global_position + drawn.position, drawn.size))
+		if on_screen and not asked:
+			shown_unasked += 1
+		var point := Rect2(fire.global_position + EventInstance.footprint_of(def).position,
+				EventInstance.footprint_of(def).size)
+		if on_screen and not DrawnView.box_of(screen).intersects(point):
+			shown_point_outside += 1
+		left -= 8.0
+	t.check(shown_point_outside > 20,
+			"the front showed on %d frames while the fire's own picture was out of the box"
+			% shown_point_outside)
+	t.check(shown_unasked == 0,
+			"and every frame any of the front showed, the fire was redrawn (%d were not)"
+			% shown_unasked)
 	screen.free()
 	DrawnView.forget()
 

@@ -1118,6 +1118,9 @@ func _redraw_if_the_picture_changed() -> bool:
 		return false
 	if changed or _picture_is_stale:
 		_picture_is_stale = false
+		# What this redraw puts up is the mark as it stands now — the same answer `_draw()` asks
+		# for, cached against the clock — so a mark that drops on the next frame is taken off.
+		_was_marked = kind == Kind.CAR and _caret_strength() > 0
 		queue_redraw()
 		return true
 	# A marked car draws a caret that can breathe with its own horn, and a projected approach

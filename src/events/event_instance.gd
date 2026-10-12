@@ -4529,11 +4529,15 @@ func _in_the_drawn_view() -> bool:
 
 ## Everything this instance can draw about its feet: the row's whole footprint, caret included
 ## (`footprint_of()`), with the run its own street gives a spread (`drawn_box()`), and the caret at
-## its tallest for a row with no picture of its own to carry one. Worked out once.
+## its tallest for a row with no picture of its own to carry one, and a street fire's whole burning
+## front and its smoke (`_fire_front_box()`). Worked out once: nothing here moves with the instance.
 func _drawn_reach() -> Rect2:
 	if not _drawn_reach_known:
 		_drawn_reach_known = true
 		_drawn_reach_box = footprint_of(def).merge(drawn_box()).merge(largest_mark_rect())
+		var front := _fire_front_box()
+		if front.has_area():
+			_drawn_reach_box = _drawn_reach_box.merge(front)
 	return _drawn_reach_box
 
 var _drawn_reach_box := Rect2()
@@ -5088,8 +5092,9 @@ static func largest_mark_rect() -> Rect2:
 
 ## The rectangle, in this node's own space, of what it draws this frame: its picture (the box of
 ## every picture its look can draw, since which view is drawn turns with its heading), its shadow at
-## its feet, and its danger caret as `_draw_mark()` would draw it now (`mark_rect()`, which asks the
-## instance's own projection of her). What `tests/test_no_pop_in.gd` checks against the view on a
+## its feet, its danger caret as `_draw_mark()` would draw it now (`mark_rect()`, which asks the
+## instance's own projection of her), and a street fire's whole burning front and smoke
+## (`_fire_front_box()`). What `tests/test_no_pop_in.gd` checks against the view on a
 ## thing's first frame: the caret is measured from the drawing's own numbers, not from
 ## `footprint_of()`'s worst case, so a footprint that leaves it out fails there.
 func drawn_rect_now() -> Rect2:
@@ -5111,6 +5116,9 @@ func drawn_rect_now() -> Rect2:
 	var mark := mark_rect()
 	if mark.has_area():
 		rect = rect.merge(mark)
+	var front := _fire_front_box()
+	if front.has_area():
+		rect = rect.merge(front)
 	return rect
 
 ## The single body-drawing entry point `_draw()` calls for the primary render and `EntityHalo`
@@ -5926,11 +5934,8 @@ func _draw_fire(canvas: CanvasItem = self) -> void:
 	if def.obstructs_radius > 0.0:
 		_draw_fire_where_it_stands(canvas)
 		return
-	if not _fire_facade_found:
-		_fire_facade = _facade_runs_at(_map, global_position)
-		_fire_facade_found = true
 	var against_the_wall := _wall_offset()
-	var flames := _flames_across(_fire_facade)
+	var flames := _flames_across(_fire_facade_runs())
 	for i in flames.size():
 		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
 		var height := (_FIRE_HEIGHT + i % 2 * _FIRE_HEIGHT_TALL) * flicker
@@ -5938,12 +5943,36 @@ func _draw_fire(canvas: CanvasItem = self) -> void:
 				Vector2(flames[i].y, height))
 	# Neighboring plumes billow out of step, so a long front's smoke does not pulse as one.
 	var billowing := _idle_stepping(STEAM_BILLOW_PERIOD)
-	var plumes := _smoke_across(_fire_facade)
+	var plumes := _smoke_across(_fire_facade_runs())
 	for i in plumes.size():
 		var picture := STEAM_B if billowing != (i % 2 == 1) else STEAM
 		Sprites.draw_standing(canvas, _drawn(picture), against_the_wall
 				+ Vector2(plumes[i].x, -(_FIRE_HEIGHT + _FIRE_HEIGHT_TALL)),
 				Vector2(plumes[i].y, _SMOKE_SIZE.y))
+
+## `_fire_facade`, worked out on its first ask.
+func _fire_facade_runs() -> PackedVector2Array:
+	if not _fire_facade_found:
+		_fire_facade = _facade_runs_at(_map, global_position)
+		_fire_facade_found = true
+	return _fire_facade
+
+## **Everything a street fire draws, in its own space, which is far more than its picture**: the
+## whole burning front (`_fire_facade_runs()`), half a tile toward the wall (`_wall_offset()`), from
+## the ground up to the top of the smoke over the tallest flame — the flames' own flicker never
+## reaches past it. Empty for anything but a fire with no body, whose drawing is its picture. Read
+## by `_drawn_reach()` and `drawn_rect_now()`; a sited fire never moves, so neither changes.
+func _fire_front_box() -> Rect2:
+	if def.look != EventDef.Look.BURNING_BUILDING or def.obstructs_radius > 0.0:
+		return Rect2()
+	var top := -(_FIRE_HEIGHT + _FIRE_HEIGHT_TALL) - _SMOKE_SIZE.y
+	var box := Rect2()
+	var any := false
+	for run in _fire_facade_runs():
+		var one := Rect2(run.x, top, run.y - run.x, -top)
+		box = one if not any else box.merge(one)
+		any = true
+	return Rect2(box.position + _wall_offset(), box.size).grow(1.0) if any else Rect2()
 
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars, over the body's
 ## own shadow: five flames 11px apart, spanning the ±31px the 30px body is half of.
