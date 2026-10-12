@@ -1924,10 +1924,16 @@ fi
 # any other value, and every unwrapped write is denied, exactly as on a machine with identities.
 # *(2026-10-02: "Make it so it can be easily turned off and refuse again later. So I can turn it
 # on/off without approval hacks"; then "Yes default to refusing".)* It is read from the environment
-# the session was started with --
-# a cloud environment's own variables (its settings, then Edit; a new session picks a change up),
-# or the shell that launched Claude Code -- which is what keeps it the player's: a command an agent
-# runs cannot change the environment this hook is started in.
+# the session was started with -- a cloud environment's own variables (its settings, then Edit; a
+# new session picks a change up), or the shell that launched Claude Code. It is an environment
+# variable because the session sets it, not a command *(busy-ibis, statement 8: "env was chosen
+# because it's set by the session and not directly. but even with tricks like updating the
+# settings all it will do is prompt the command to me anyway")*. An agent could still switch it on
+# with an ordinary file write -- the `env` key of `.claude/settings.local.json`, or making a machine
+# with identities look like one without (`NAPPY_AGENTS_DIR`, or moving `~/.config/nappy-agents`) --
+# and this hook does not stop that; switched on any of those ways, all it does is put each ordinary
+# write in front of the player as a prompt, which only the player can approve. That a session
+# leaves the switch alone is **committing**'s rule, not something this hook enforces.
 askable_reasons='["git commit","git push","git cherry-pick","git revert","git am","git merge",
 "git rebase","git pull","gh pr create","gh pr comment","gh pr edit","gh pr ready"]'
 decision="deny"
