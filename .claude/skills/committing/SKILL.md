@@ -35,7 +35,12 @@ triggered it".)* In Claude Code:
   and retiring its branch — and cuts a release. The orchestrator identity never writes on such a
   pull request.
 - **`claude-reviewer`** posts every review and its findings, on either kind of pull request
-  (**pr-review**).
+  (**pr-review**), and **is the only Claude Code identity that approves one** *(busy-ibis,
+  statement 9: "we can prevent approvals from non-reviewers")*: GitHub stops only a pull
+  request's own author from approving it, so without the rule the coder and the orchestrator
+  could approve each other's pull requests toward the approval `main` requires. The guard below
+  denies an approving review under any other identity; a COMMENT or REQUEST_CHANGES review stays
+  open to every one.
 
 A pull request has no code changes when CI calls it docs-only: `tools/ci_classify.py` decides that
 from the files it changes, and **verify**'s "What `test` means on each kind of pull request" says
@@ -87,7 +92,12 @@ that pushes or posts internally, in command position, unless the same command is
 <role> --`, so the rule holds even when a session forgets it. **A `gh issue` write it denies
 wrapped or not, and an issue write through `gh api` the same way** (all but a comment, which a
 pull request's own conversation shares), since an agent writes an issue only through
-`tools/inbox.py`, whose own writes run in a process of their own that the hook never sees. A
+`tools/inbox.py`, whose own writes run in a process of their own that the hook never sees. **An
+approving review it denies under every identity but a reviewer's**, and a review whose event it
+cannot read (a body from `--input`) counts as one, so a coder's or the orchestrator's review names
+its event inline (`-f event=COMMENT`) and sends its body with `-F body=@file`. **A git alias it
+reads as the command it stands for**, asking git in the session's directory, and an alias set on
+the command line (`git -c alias.*`) it denies whatever it says. A
 write named in a commit message or a PR body denies like the write itself, so a message is
 written to a file and passed with `-F file` or `--body-file file`, or given to a wrapped `git
 commit -F - <<'EOF'` that is the whole command, one of the three shapes whose text the hook

@@ -149,6 +149,13 @@
 #     alias is asked about or denied as what it stands for; an alias set on the command line
 #     (-c alias.*, attached, any case, quoted, --config-env either way) denies wrapped as a reviewer
 #     or unwrapped; and the longest alias chains are decided well inside the timeout
+#   - an approving review (gh pr review --approve/-a, a gh api review POST or pending review's
+#     events with event=APPROVE, an unreadable event or an --input body, a GraphQL
+#     addPullRequestReview/submitPullRequestReview naming APPROVE) denies unwrapped and under
+#     claude-coder, claude-orchestrator and codex-coder, and allows under claude-reviewer and
+#     codex-reviewer; a COMMENT, REQUEST_CHANGES or pending review allows under every role; input
+#     that can add a flag to a review counts as an approval, and on the API's review endpoint
+#     refuses a reviewer too
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -2223,6 +2230,67 @@ assert_write_guard "an inline alias, wrapped as a reviewer -> deny" deny \
 assert_write_guard "git -c user.name=x log, a setting that is no alias -> allow" allow 'git -c user.name=x log -1'
 assert_write_guard "git log --grep alias.x, an alias key after the subcommand -> allow" allow 'git log --grep alias.x'
 
+# Only a reviewer identity approves a pull request (busy-ibis, statement 9: "we can prevent
+# approvals from non-reviewers"): every approving form is denied unless wrapped as claude-reviewer
+# or codex-reviewer, and a COMMENT or REQUEST_CHANGES review stays open to every identity.
+for write_guard_role in claude-coder claude-orchestrator codex-coder claude-reviewer codex-reviewer; do
+    case "$write_guard_role" in
+        *-reviewer) write_guard_expected=allow ;;
+        *) write_guard_expected=deny ;;
+    esac
+    write_guard_wrap="uv run python tools/agent-identity.py run $write_guard_role --"
+    for write_guard_cmd in \
+        'gh pr review 5 --approve' \
+        'gh pr review 5 -a -b ready' \
+        'gh pr review 5 -ab ready' \
+        'gh pr review 5 --body "$(cat review.md)" --approve' \
+        'gh api repos/o/r/pulls/5/reviews -f event=APPROVE -f body=ready' \
+        'gh api repos/o/r/pulls/5/reviews -F event=approve' \
+        'gh api repos/o/r/pulls/5/reviews --field=event=APPROVE' \
+        'gh api repos/o/r/pulls/5/reviews --input review.json' \
+        'gh api repos/o/r/pulls/5/reviews -F event=@event.txt' \
+        'gh api repos/o/r/pulls/5/reviews -f event="$EVENT"' \
+        'gh api -X POST repos/o/r/pulls/5/reviews/77/events -f event=APPROVE' \
+        "gh api graphql -f query='mutation { addPullRequestReview(input: {pullRequestId: \"x\", event: APPROVE}) { clientMutationId } }'" \
+        "gh api graphql -f query='mutation { submitPullRequestReview(input: {pullRequestReviewId: \"x\", event: \$e}) { clientMutationId } }' -f e=APPROVE"
+    do
+        assert_write_guard "$write_guard_role: $write_guard_cmd -> $write_guard_expected" "$write_guard_expected" \
+            "$write_guard_wrap $write_guard_cmd"
+    done
+    for write_guard_cmd in \
+        'gh pr review 5 --comment -b noted' \
+        'gh pr review 5 --request-changes -b fix' \
+        'gh pr review 5 --comment -b noted; ls -a' \
+        'gh api repos/o/r/pulls/5/reviews -f event=COMMENT -F body=@review.md' \
+        'gh api repos/o/r/pulls/5/reviews -f event=REQUEST_CHANGES -f body=fix' \
+        'gh api repos/o/r/pulls/5/reviews -f body=pending' \
+        "gh api graphql -f query='mutation { addPullRequestReview(input: {pullRequestId: \"x\", event: COMMENT}) { clientMutationId } }'" \
+        "gh api graphql -f query='mutation { addPullRequestReviewThread(input: {body: \"approve\"}) { clientMutationId } }'"
+    do
+        assert_write_guard "$write_guard_role: $write_guard_cmd -> allow" allow "$write_guard_wrap $write_guard_cmd"
+    done
+done
+assert_write_guard "an approval, unwrapped -> deny" deny 'gh pr review 5 --approve'
+assert_write_guard "reading the reviews -> allow" allow "gh api repos/o/r/pulls/5/reviews --jq '.[].state'"
+assert_write_guard_reason "an orchestrator's approval names the reviewer identities" \
+    'uv run python tools/agent-identity.py run claude-orchestrator -- gh pr review 5 --approve' \
+    "Only a reviewer approves"
+assert_write_guard_reason "an unwrapped approval gets the same reason" 'gh pr review 5 -a' "outside a reviewer identity"
+# Input that can add a flag to a review: an approval for a coder, and, on the API's review
+# endpoint, a refusal for a reviewer too, since input could make the same call a merge-type one.
+assert_write_guard "a coder's xargs gh pr review -> deny (input can add --approve)" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- sh -c 'echo 5 | xargs gh pr review'"
+assert_write_guard "a coder's xargs -I{} gh pr review {} -> deny ({} can be --approve)" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- sh -c 'echo 5 | xargs -I{} gh pr review {} --comment -b x'"
+assert_write_guard "a reviewer's xargs gh pr review -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-reviewer -- sh -c 'echo 5 | xargs gh pr review'"
+assert_write_guard "a coder's xargs gh api .../reviews -> deny" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- sh -c 'echo x | xargs gh api repos/o/r/pulls/5/reviews -f body=x'"
+assert_write_guard "a reviewer's xargs gh api .../reviews -> deny" deny \
+    "uv run python tools/agent-identity.py run claude-reviewer -- sh -c 'echo x | xargs gh api repos/o/r/pulls/5/reviews -f body=x'"
+assert_write_guard "a coder's merge is still a coder's -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr merge 5 --squash'
+
 # A wrapped heredoc body that names a write is a false deny, and its message says why and points
 # at a body file rather than claiming the command is unwrapped and stopping there.
 wrapped_heredoc_pr="uv run python tools/agent-identity.py run claude-coder -- gh pr create --title t --body \"\$(cat <<'EOF'
@@ -2676,6 +2744,7 @@ write_guard_asked=(
 # an issue (bouncy-heron statement 14: "an agent shouldn't use gh issue directly"); a merge, a
 # release, a gh api write and a pushing tools/ script.
 write_guard_never_asked=(
+    'gh pr review 5 --approve'
     'git -c alias.ship=push ship origin feature/x'
     'echo push | xargs -rIstatus git status origin v1'
     'echo merge | xargs -rIview gh pr view 3'

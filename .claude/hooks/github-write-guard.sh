@@ -175,6 +175,25 @@
 # `tools/agent-identity.py` itself refuses to mint a token for a name outside its own `ROLE_NAMES`,
 # which is the actual enforcement for an unknown or misspelled role.
 #
+# **Only a reviewer identity approves a pull request, the mirror of that rule** (busy-ibis,
+# statement 9: "we can prevent approvals from non-reviewers"). GitHub stops only a pull request's
+# own author from approving it, so `claude-coder` and `claude-orchestrator` could each approve the
+# other's, and that approval counts toward the one `main` requires. So an approving review is
+# denied, wrapped or not, unless the wrapping role is `claude-reviewer` or `codex-reviewer`:
+# `gh pr review` with `--approve` (or `--approve=...`, `-a`, a short cluster starting with it)
+# before its command's next `;`, `&`, `|` or newline; a `gh api` write to `pulls/<n>/reviews` or
+# `pulls/<n>/reviews/<id>/events` whose `event` field is APPROVE in any case, or cannot be read
+# (`event=@file`, `event=$E`, empty), or whose body comes from `--input`, which is how every
+# review here is posted and which this cannot read; and a GraphQL call naming
+# `addPullRequestReview` or `submitPullRequestReview` when the word APPROVE appears from its start
+# on. Under xargs or GNU parallel, a `gh pr review` or a review endpoint that input can add a flag
+# to counts too, and the endpoint's form refuses a reviewer as well, since input could make the
+# same call a merge-type one. A COMMENT or REQUEST_CHANGES review, and a pending one with no event,
+# stay open to every identity. **Accepted gaps**: a GraphQL review whose query or event this cannot
+# read (a query from a file, an event in a variable set elsewhere), and an endpoint whose
+# `reviews` itself an expansion supplies (`pulls/5/$R`); an unrelated later `-a` or APPROVE in the
+# same command is a false deny, the safe direction.
+#
 # The escape is `tools/agent-identity.py run <role> -- <command>`, with or without a `uv run
 # python` (or bare `python`/`python3`) in front, and with or without `run`'s own `--repo
 # OWNER/REPO` between `run` and `<role>`: everything at and after that literal `--`, up to the
@@ -1172,6 +1191,13 @@ def issue_endpoint:
   sub("[?#].*$"; "")
   | test("(?i)(^|/)(repos/.*|repositories/[^/]+)/issues(/|$)")
     and (test("(?i)/issues/[^/]+/comments/?$") | not);
+# A review of a pull request (`pulls/<n>/reviews`) or the submission of a pending one
+# (`pulls/<n>/reviews/<id>/events`), judged on the path before any `?` or `#` and on every
+# non-option word of the call, as the issue endpoint is. Only GitHub's pull-request reviews have a
+# path ending in `reviews`.
+def review_endpoint:
+  (ascii_downcase | contains("review"))
+  and (sub("[?#].*$"; "") | test("(?i)(^|/)reviews(/[^/]+/events)?/?$"));
 def issue_mutation_re:
   "(^|[^A-Za-z])(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert|replace|apply|reject)[A-Za-z0-9]*(Issue|Labelable|Assignable|Lockable|BlockedBy|LinkedBranch)";
 # The words worth testing against it: one naming none of its nouns cannot match.
@@ -1188,6 +1214,12 @@ def gh_api_field_value($v):
     ($v | sub("(?i)^query="; "")) as $q
     | if ($q == "") or ($q | startswith("@")) or ($q | contains("$")) then .query_hidden = true
       else .query_visible = true end
+  # A review's `event`: APPROVE, or a value this cannot read (a file, a shell expansion, empty),
+  # counts as an approval (`detect_gh_api`).
+  elif $v | test("(?i)^event=") then
+    ($v | sub("(?i)^event="; "")) as $e
+    | if ($e == "") or ($e | startswith("@")) or ($e | contains("$")) or ($e | test("(?i)^approve$"))
+      then .approve_event = true else . end
   else . end;
 
 def write_tool_names: ["release.sh", "prune-merged.sh", "land-prs.sh", "update-pr.sh"];
@@ -1229,7 +1261,7 @@ def gh_api_method($m):
 def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
   {i: $start, method: null, field: false, late_field: false, other_call: false,
    endpoint: null,
-   merge_type: false, issue_endpoint: false,
+   merge_type: false, issue_endpoint: false, review_endpoint: false, approve_event: false, input: false,
    query_visible: false, query_hidden: false, crossed_at: null, cont: false, sub_left: 0}
   | (until(.i >= $n or ($w[.i] | is_hard_sep)
           or ($bounded and ($w[.i] | is_sep))
@@ -1256,10 +1288,10 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
           .field = true | .late_field = (.late_field or .other_call)
           | gh_api_field_value($x | .[2:]) | .i += 1
         elif $x == "--input" then
-          .field = true | .late_field = (.late_field or .other_call) | .query_hidden = true
+          .field = true | .late_field = (.late_field or .other_call) | .query_hidden = true | .input = true
           | (if $has_value then .i += 2 else .i += 1 end)
         elif $x | startswith("--input=") then
-          .field = true | .late_field = (.late_field or .other_call) | .query_hidden = true
+          .field = true | .late_field = (.late_field or .other_call) | .query_hidden = true | .input = true
           | .i += 1
         elif $x | gh_api_value_flag then (if $has_value then .i += 2 else .i += 1 end)
         elif $x | startswith("-") then .i += 1
@@ -1285,6 +1317,7 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
                      or ($x | test("(?i)/git/refs(/|$)")))
              then .merge_type = true else . end)
           | (if ($x | contains("/")) and ($x | issue_endpoint) then .issue_endpoint = true else . end)
+          | (if $x | review_endpoint then .review_endpoint = true else . end)
           | .i += 1
         end)
   | .resume = (.crossed_at // .i)) as $r
@@ -1292,6 +1325,8 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
   | if ($r.endpoint // "") | test("(?i)(^|/)graphql$") then
       (if $lm >= $start and ($t.li // -1) >= $start then {next: $r.resume, reason: "gh api graphql issue mutation"}
        elif $r.query_hidden and ($t.li // -1) >= 0 then {next: $r.resume, reason: "gh api graphql issue mutation"}
+       elif $lm >= $start and ($t.lra // -1) >= $start and ($t.lap // -1) >= $start
+       then {next: $r.resume, reason: "gh api graphql approving review"}
        elif $lm >= $start then {next: $r.resume, reason: "gh api graphql mutation"}
        elif $r.query_hidden or ($r.query_visible | not)
        then {next: $r.resume, reason: "gh api graphql with a query not written inline"}
@@ -1300,13 +1335,18 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
     elif $is_get and ($r.late_field | not) then {next: $r.resume, reason: null}
     elif ($r.method != null) or $r.field then
       {next: $r.resume,
-       reason: (if $r.issue_endpoint then "gh api issue write" elif $r.merge_type then "gh api merge-type"
-                else "gh api" end)}
+       reason: (($r.review_endpoint and ($r.approve_event or $r.input)) as $approves
+                | if $r.issue_endpoint then "gh api issue write"
+                  elif $r.merge_type and $approves then "gh api merge-type approving review"
+                  elif $r.merge_type then "gh api merge-type"
+                  elif $approves then "gh api approving review"
+                  else "gh api" end)}
     else {next: $r.resume, reason: null}
     end
   | .scan_end = (if $r.crossed_at == null then null else $r.i end)
   | .end = $r.i
   | .issue_endpoint = $r.issue_endpoint
+  | .review_endpoint = $r.review_endpoint
   | .graphql = (($r.endpoint // "") | test("(?i)(^|/)graphql$"));
 
 # Every `gh` noun writes unless its verb is on one shared list of reads (`view`, `list`, `status`,
@@ -1361,9 +1401,13 @@ def detect_gh($w; $t; $i; $n; $lm; $bounded; $cmd_pos):
           elif $noun == "api" then
             detect_gh_api($w; $t; $noun_i + 1; $n; $lm; $bounded) as $api
             # Input that can add `-X PATCH -f state=closed` to a written issue endpoint makes an
-            # issue write, denied wrapped or not like a written one.
-            | if $api.reason == null and input_supplies_gh_api($w; $t; $i; $noun_i + 1; $api)
+            # issue write, denied wrapped or not like a written one, and input that can add
+            # `-f event=APPROVE` to a written review endpoint makes an approval.
+            | if ($api.reason == null
+                  or ($api.review_endpoint and ($api.reason | IN("gh api", "gh api merge-type"))))
+                 and input_supplies_gh_api($w; $t; $i; $noun_i + 1; $api)
               then $api | .reason = (if $api.issue_endpoint then "gh api issue write"
+                                     elif $api.review_endpoint then "gh api review with input-supplied arguments"
                                      else "gh api with input-supplied arguments" end)
               else $api end
           else
@@ -1379,6 +1423,17 @@ def detect_gh($w; $t; $i; $n; $lm; $bounded; $cmd_pos):
               else
                 ($w[$verb_i]) as $verb
                 | if $verb | ascii_downcase | IN(generic_reads[]) then null
+                  # `gh pr review` approves with `--approve` or `-a` before its command's next
+                  # `;`, `&`, `|` or newline (`review_approves`), or with a flag input appends.
+                  elif $noun == "pr" and ($verb | ascii_downcase) == "review" then
+                    {next: ($verb_i + 1),
+                     reason: (if ($t.ra[$verb_i + 1] // false) then "gh pr review --approve"
+                              elif ($t.xargs[$i].active // false)
+                                   and input_supplies_gh_api($w; $t; $i; $verb_i + 1;
+                                         {graphql: false,
+                                          end: segment_scan($w; $verb_i + 1; $n; []).end})
+                              then "gh pr review with input-supplied arguments"
+                              else "gh pr review" end)}
                   else {next: ($verb_i + 1), reason: ("gh " + $noun + " " + $verb)}
                   end
               end
@@ -1460,7 +1515,18 @@ def is_push_like($reason):
 def is_merge_like($reason):
   ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type")
   or ($reason == "gh with an input-supplied noun or verb")
-  or ($reason == "gh api with input-supplied arguments");
+  or ($reason == "gh api with input-supplied arguments")
+  or ($reason | IN("gh api merge-type approving review", "gh api review with input-supplied arguments"));
+# **Only a reviewer identity approves a pull request** (busy-ibis, statement 9: "we can prevent
+# approvals from non-reviewers"): GitHub stops only a pull request's own author from approving it,
+# so `claude-coder` and `claude-orchestrator` could each approve the other's, and that approval
+# counts toward the one `main` requires. An approving review is denied unless the command is
+# wrapped as `claude-reviewer` or `codex-reviewer`, the mirror of the rule that a reviewer never
+# pushes or merges; a COMMENT or REQUEST_CHANGES review stays open to every identity.
+def is_approval($reason):
+  $reason | IN("gh pr review --approve", "gh pr review with input-supplied arguments",
+               "gh api approving review", "gh api merge-type approving review",
+               "gh api review with input-supplied arguments", "gh api graphql approving review");
 # A direct issue write, denied wrapped or not: `gh issue`'s own write verbs, and the API's. The
 # input-wrapper forms count too (`detect_gh`): `gh issue` whose verb input supplies starts with
 # `gh issue `, and a `gh` whose noun input supplies may be handed `issue close 5`.
@@ -1507,6 +1573,26 @@ def findings($w; $w0; $levels; $unsure):
      else [range(0; $n)
            | select($w[.] | may_name_issue_mutation and test(issue_mutation_re))]
           | last // -1 end) as $li
+  # GraphQL's review mutations (`addPullRequestReview`, `submitPullRequestReview`, not their
+  # `...Comment`/`...Thread` relatives) and the word APPROVE, read only once a mutation is there:
+  # a GraphQL call is an approving review when both appear from its start on. A later, unrelated
+  # APPROVE in the same command makes a false deny, the safe direction.
+  | (if $lm < 0 then -1
+     else [range(0; $n) | select($w[.] | test("(?i)(add|submit)PullRequestReview([^A-Za-z]|$)"))]
+          | last // -1 end) as $lra
+  | (if $lra < 0 then -1
+     else [range(0; $n) | select($w[.] | test("(?i)approve"))] | last // -1 end) as $lap
+  # For every index, whether a `gh pr review` flag that approves (`--approve`, `--approve=...`, `-a`
+  # or a short cluster that starts with it, `-ab text`) stands at or after it before the next `;`,
+  # `&`, `|` or newline of the command as written. A parenthesis or a backtick does not end it, so
+  # an unquoted `$(cat f)` body before `--approve` hides nothing; one pass from the end, built only
+  # when the command holds a `review`.
+  | (if any($w[]; . == "review") | not then null
+     else [foreach ($w0 | reverse)[] as $x (false;
+             if $x | IN(";", "&", "|", "\n") then false
+             elif ($x | startswith("--approve")) or ($x | test("^-a")) then true
+             else . end)]
+          | reverse end) as $ra
   # The last word that names a commit-making or pushing git subcommand: a git whose option run
   # holds a command substitution, or whose subcommand is an expansion, is a write only when one
   # follows (`detect_git`).
@@ -1522,7 +1608,7 @@ def findings($w; $w0; $levels; $unsure):
   | (if $wo == null then null else $w | command_table($wo; $g; $inputs) end) as $cw2
   | {ao: $ao, cw: ($w | command_table($ao; $g; $inputs)),
      cw2: $cw2,
-     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li,
+     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li, lra: $lra, lap: $lap, ra: $ra,
      xargs: (if $inputs != null
              then xargs_context($w0; $lv; $unsure; $inputs) else null end),
      oc: (if $unsure then opener_counts($w0) else null end),
@@ -1535,7 +1621,8 @@ def findings($w; $w0; $levels; $unsure):
      else null end) as $tp
   | ($t | .tp = $tp) as $t
   | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false, wrapped: false,
-     cmd_words: command_words($t; $tp; 0), out: [], reviewer_push: false, issue_write: false, scanned_to: -1}
+     cmd_words: command_words($t; $tp; 0), out: [], reviewer_push: false, issue_write: false, approval: false,
+     scanned_to: -1}
   | until(.i >= $n;
       . as $state
       | ($w[$state.i]) as $x
@@ -1573,13 +1660,16 @@ def findings($w; $w0; $levels; $unsure):
                        and ((reviewer_roles | index($state.wrap_role)) != null)
                     then .out += [$hit.reason] | .reviewer_push = true
                     elif is_issue_write($hit.reason) then .out += [$hit.reason] | .issue_write = true
+                    elif is_approval($hit.reason) and ((reviewer_roles | index($state.wrap_role)) == null)
+                    then .out += [$hit.reason] | .approval = true
                     else . end)
                  else .out += [$hit.reason]
-                   | (if is_issue_write($hit.reason) then .issue_write = true else . end) end
+                   | (if is_issue_write($hit.reason) then .issue_write = true else . end)
+                   | (if is_approval($hit.reason) then .approval = true else . end) end
                | .i = $hit.next)
             end
         end)
-  | {out, reviewer_push, wrapped, issue_write};
+  | {out, reviewer_push, wrapped, issue_write, approval};
 
 # **The three shapes whose text is told apart for certain** (the header's list): the command with
 # that text taken out, or the command unchanged, to be read as it stands. Every shape is matched
@@ -1730,6 +1820,7 @@ if ! result=$(printf '%s' "$input" | jq -c --argjson git "$git_json" "$check_pro
 	reviewer_push=false
 	wrapped=false
 	issue_write=false
+	approval=false
 	too_long=false
 elif [ -z "$result" ]; then
 	exit 0
@@ -1738,6 +1829,7 @@ else
 	reviewer_push=$(printf '%s' "$result" | jq -r '.reviewer_push')
 	wrapped=$(printf '%s' "$result" | jq -r '.wrapped')
 	issue_write=$(printf '%s' "$result" | jq -r '.issue_write // false')
+	approval=$(printf '%s' "$result" | jq -r '.approval // false')
 	too_long=$(printf '%s' "$result" | jq -r '.too_long // false')
 fi
 
@@ -1769,6 +1861,15 @@ or claude-orchestrator when the pull request has no code changes. \
 If this is a comment or review whose own text only mentions a path such as /merge, /contents/ or \
 /git/refs, send the body from a file with --input (or -F body=@file) so its words are not read as \
 the endpoint. See committing and pr-review."
+elif [ "$approval" = "true" ]; then
+	reason="This command approves a pull request ($flagged) outside a reviewer identity. Only a \
+reviewer approves: a review's APPROVE runs through 'uv run python tools/agent-identity.py run \
+claude-reviewer -- <command>' (Codex: codex-reviewer), under pr-review, and never as claude-coder, \
+claude-orchestrator or codex-coder, since GitHub stops only a pull request's own author and that \
+approval would count toward the one main requires. Any identity may post a COMMENT or \
+REQUEST_CHANGES review. A review whose event the guard cannot read (a body from --input, \
+event=@file or a variable) counts as an approval: name the event inline (-f event=COMMENT) and send \
+the body with -F body=@file. See committing and pr-review."
 else
 	reason="This command writes to GitHub ($flagged) outside any agent identity. A write is a git \
 push; a commit-making git verb (commit, cherry-pick/revert/am, merge/rebase past --abort, pull \

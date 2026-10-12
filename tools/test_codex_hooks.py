@@ -864,6 +864,17 @@ class CodexHooksTest(unittest.TestCase):
         self.assertEqual(specific["permissionDecision"], "deny")
         self.assertIn("git with an alias set on the command line", specific["permissionDecisionReason"])
 
+    def test_github_write_guard_lets_only_a_reviewer_approve(self) -> None:
+        # Codex's coder may comment on a review but never approve one; its reviewer may.
+        wrap = "uv run python tools/agent-identity.py run {} -- gh api repos/o/r/pulls/5/reviews --input review.json"
+        output = self.call_raw(command=wrap.format("codex-coder"))
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("Only a reviewer approves", specific["permissionDecisionReason"])
+        text = self.call(tool="Bash", command=wrap.format("codex-reviewer"))
+        self.assertIn("committing", text)
+
     def test_paths_outside_repository_do_not_load_rules(self) -> None:
         text = self.call(
             command="*** Update File: ../outside/src/events/a.gd\n*** Update File: /tmp/outside/src/city/b.gd\n"
