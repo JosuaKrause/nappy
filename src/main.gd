@@ -999,8 +999,6 @@ static func escape_part_for(raw: String) -> String:
 ## it emits, and `_on_finale_section_started()` clears it once she has been put down on the street,
 ## so nothing of the city is seen being assembled.
 func _on_escape_exit_requested() -> void:
-	# Before the city's brief, which shows the count and writes it.
-	_regain_a_nerve_for_leaving_the_building()
 	_build_the_finale_city()
 	_finale.enter_city()
 	# `VisitCounter`'s own "escape-city" — the building is behind her and the city section begins.
@@ -1009,12 +1007,6 @@ func _on_escape_exit_requested() -> void:
 	# so this is not repeated for it — see `EventBus.escape_lost`'s own doc for how a retry of
 	# either section is counted instead. See docs/TELEMETRY.md, "The page counts visits".
 	EventBus.escape_city_entered.emit()
-
-## **Getting out of the building gives a hard run a nerve back**, up to five. *(gentle-osprey, the
-## player: "Section won gives one back".)* A normal run's escape neither spends nor gives one.
-func _regain_a_nerve_for_leaving_the_building() -> void:
-	if GameState.hard_mode:
-		GameState.regain_a_nerve()
 
 ## A section is about to be walked — the first time, or again after a loss. Where she goes is this
 ## file's answer because only this file holds both worlds, and once she is standing there the
@@ -2318,12 +2310,12 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# on the spot, set `ending`, and clear the save the escape's own checkpoints need. The run ends
 	# when she is out of the city (`_on_finale_escaped()`), and only then.
 	if _hands_over_to_the_escape(result):
-		# Day 14 is still an ordinary won day, so it still gives a nerve back — the same gain
-		# `GameState.finish_day()` grants every other won day, called here directly because this
+		# Day 14 is still an ordinary won day, so it still gives a normal run a nerve back — the
+		# same gain `GameState.finish_day()` grants every other won day, called here directly because this
 		# branch is the one day whose win never reaches that function at all (see the comment
 		# above). Before `show_day()` reads `GameState.nerves` a few lines down, so the summary
 		# shows the count after the gain.
-		GameState.regain_a_nerve()
+		GameState.regain_a_nerve_for_a_won_day()
 		GameState.escape_section = FinaleController.Section.BUILDING
 		_save_now(false)
 		_summary.show_day(result, _day.failure_reason, GameState.nerves, elapsed_seconds)

@@ -8,6 +8,7 @@
 #   tools/goatcounter.sh --start 2026-09-01 --end 2026-09-15
 #   tools/goatcounter.sh --json
 #   tools/goatcounter.sh --encounters                 # influenced / seen per event type, by day
+#   tools/goatcounter.sh --by-release                 # one window per release (with --encounters too)
 #   tools/goatcounter.sh --raw                        # every path and count, unfiltered
 #   tools/goatcounter.sh --check                      # does the key read statistics, and what else
 #
@@ -25,6 +26,7 @@ usage() {
 	cat <<'EOF'
 usage: tools/goatcounter.sh [--help|-h] [--days N] [--start DATE] [--end DATE]
                              [--prefix PREFIX] [--site URL] [--json]
+                             [--by-release]
                              [--raw | --encounters | --check]
 
 Prints the nappy- GoatCounter event counts as a per-day funnel for a date range, reading the API
@@ -37,7 +39,10 @@ from before the page counted everything on the game's site. Default range is the
 instead of plain text. --encounters prints, in place of the funnel, each event type's encounters
 seen, how many of those influenced her, influenced / seen (blank when nothing was seen) and the
 influences from encounters she never saw, overall and per day. --raw prints every path and its count for the range, unfiltered by
---prefix -- events and the page visit alike. --check proves the key works with
+--prefix -- events and the page visit alike. --by-release groups the funnel, or with --encounters the encounters, into one window per release:
+the v* tags' dates from git (a tag's own date, its UTC day) open a window that runs to the next
+release's day, and a day with several releases is one mixed window naming them all; the days before
+the first release form a window of their own. It cannot combine with --raw or --check. --check proves the key works with
 GET /api/v0/stats/total (needs only "Read statistics", the one permission every read-only key
 has) and reports its permissions too if GET /api/v0/me allows it -- GET /api/v0/me is optional
 extra information, and a 403/404 from it does not fail the check, since the statistics call
@@ -50,6 +55,8 @@ web request.
   tools/goatcounter.sh --start 2026-09-01 --end 2026-09-15
   tools/goatcounter.sh --json
   tools/goatcounter.sh --encounters
+  tools/goatcounter.sh --by-release
+  tools/goatcounter.sh --by-release --encounters
   tools/goatcounter.sh --raw
   tools/goatcounter.sh --check
 EOF
@@ -63,7 +70,7 @@ done
 
 for arg in "$@"; do
 	case "$arg" in
-		--days|--start|--end|--prefix|--site|--json|--raw|--encounters|--check) ;;
+		--days|--start|--end|--prefix|--site|--json|--raw|--encounters|--check|--by-release) ;;
 		-*)
 			echo "unknown option: $arg" >&2
 			echo >&2

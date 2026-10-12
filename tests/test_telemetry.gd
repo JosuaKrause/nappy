@@ -29,7 +29,6 @@ func run(t) -> void:
 	_test_a_retried_section_restarts_its_snapshot_schedule(t)
 	_test_a_stuck_player_is_logged_once(t)
 	_test_a_free_walk_is_never_logged_as_blocked(t)
-	_test_a_key_held_through_a_gatehouse_release_is_never_logged_as_blocked(t)
 	_test_idling_with_no_input_is_never_logged_as_blocked(t)
 	_test_a_capture_is_never_logged_as_blocked(t)
 	_test_the_map_picture_covers_the_city_and_marks_it(t)
@@ -488,33 +487,6 @@ func _test_a_free_walk_is_never_logged_as_blocked(t) -> void:
 
 	t.check(_blocked_lines(t).is_empty(), "walking freely for 3s is never logged as blocked")
 	observer.free()
-
-## A key still down when a gatehouse lets her out does not move her (`Stroller` ignores it until it
-## is released or changed), so the watch must read what steers her and not the raw key: she is
-## standing, not blocked.
-func _test_a_key_held_through_a_gatehouse_release_is_never_logged_as_blocked(t) -> void:
-	var stroller: Stroller = (load("res://scenes/player/stroller.tscn") as PackedScene).instantiate()
-	t.add_child(stroller)
-	stroller.set_physics_process(false)
-	var observer := _blocked_rig()
-	observer._player = stroller
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-
-	Input.action_press("move_right")
-	stroller.show_after_inspection()
-	const STEP := 1.0 / 60.0
-	var clock := Telemetry.clock()
-	for i in int(round(2.0 / STEP)):
-		clock += STEP
-		Telemetry.set_clock(clock)
-		observer._watch_blocked(Vector2(100.0, 100.0))
-	Input.action_release("move_right")
-
-	t.check(_blocked_lines(t).is_empty(),
-			"a key held through a release for 2s is standing still, never logged as blocked")
-	observer.free()
-	stroller.free()
 
 ## `is_idle()` elsewhere in this file is the legitimate stand-still, and it is a different
 ## condition from this one on purpose: idling asks nothing about input at all, so a player who

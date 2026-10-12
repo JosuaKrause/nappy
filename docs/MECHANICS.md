@@ -258,14 +258,16 @@ along with her are the same drawing call that draws her, so nothing about them n
 switch. The meters keep running throughout — sleepiness still drains at the idle rate, because the
 baby is still there whether or not the player can see her.
 
-**She stands still on the far side until the player chooses where to go.** *(2026-10-10, the
-player: "there is a bug when leaving the guard huts that the player keeps moving in the previous
-direction. let's reset the movement to 0 when leaving so the player has a choice".)* The release
-zeroes her velocity, drops the heading a tap or a joystick drag had locked in
-(`TouchControls.stand_still_after_hold()`), and ignores a key still held until it is released or
-another is pressed (`Stroller.show_after_inspection()`). A finger still down chooses again by
-moving. It is one mechanism for every `redetains` hold: the street doors' gatehouses and the alley
-guard. `tests/test_checkpoints.gd` holds it for a key, a tap's heading and a joystick drag's.
+**An input held through the release keeps steering her; one lifted during the hold leaves her
+standing still.** *(2026-10-11, the player: "with the gatehouses if I don't lift my finger during
+the move I don't expect the movement to get reset. so, only reset if I lift my finger. basically
+keep updating navigation"; for a key: "Keyboard holding is the same as finger holding. If I don't
+lift it I expect it to remain active".)* The release zeroes her velocity. A key, a held finger and a
+joystick drag still down at the release steer her from that frame on; one let go during the hold is
+gone, so she stands still until the player chooses again. A tap's or a drag's locked heading whose
+finger is already up counts as let go and is dropped (`TouchControls.stand_still_after_hold()`). It
+is one mechanism for every `redetains` hold: the street doors' gatehouses and the alley guard.
+`tests/test_checkpoints.gd` holds both halves for a key, a tap's finger and a joystick drag's.
 
 **The hold charges its toll and nothing else.** While she is inside a door — inside the trigger of
 a `redetains` instance whose hold is running — the only thing the meter sums is that hold's own
@@ -1488,16 +1490,18 @@ minutes; at zero the way out is gone, and what she does about it is walk it agai
 has normal nerve counts and ends if nerves go to zero (instead of restarting indefinitely; this is
 only for normal mode)".)* She enters it with the nerves day 14 left her. A lost section costs one
 (`GameState.spend_a_nerve_in_the_escape()`, from `main._on_finale_section_lost()`), and the last one
-is the bad ending, on the `GAME OVER` screen, rather than the section again. Getting out of the
-building gives one back, up to five, before the city's brief comes up *("Section won gives one
-back")*; walking out of the city ends the run and gives none. Hard mode is the player choosing to
+is the bad ending, on the `GAME OVER` screen, rather than the section again. No section gives one
+back, so a hard run can be lost in the escape
+*([mossy-kestrel](playtests/2026-10-11-mossy-kestrel.md), #718, the player: "No regain in escape
+either. Also, nerves behave the same in escape for hard mode so the game can actually be lost")*.
+Walking out of the city ends the run. Hard mode is the player choosing to
 have the wrong turn in the last minutes count.
 
 **Every section opens on its brief**, a first walk through it and a retry alike — the same screen
 between days that a resumed run opens on (`DaySummary.show_finale_brief()`), titled *"Escape the
 building"* or *"Escape the city"* where a day's number stands, and carrying the Nerve count as the
 run holds it — unchanged in a normal run, whose escape spends none, and in a hard run whatever its
-lost sections spent and its cleared building gave back. Continuing from it is the moment the
+lost sections spent. Continuing from it is the moment the
 section actually begins: the clock starts there and nowhere else, and the section's one hint line
 is said by the HUD as she starts walking. A retry is not told that line a second time, the way
 day 1 teaches tapping and then never again.
@@ -1602,19 +1606,20 @@ she took, to the millisecond, which is the only number that screen carries.
 
 ## Nerves
 
-The run-level health bar. Starts at 5. Every lost day costs one, and a day she **wins** gives one
-back, up to the same five (`GameState.regain_a_nerve()`) — so a bad single day is recoverable rather
-than a tight spot carried all the way to day 14. **What 0 does is the run's mode**, chosen on the
-title as a new game begins (see "Two modes" below): a normal run goes back to its latest checkpoint
-with five, and a hard run ends with the bad ending.
+The run-level health bar. Starts at 5. Every lost day costs one, and in a normal run a day she
+**wins** gives one back, up to the same five (`GameState.regain_a_nerve_for_a_won_day()`) — so a bad
+single day is recoverable rather than a tight spot carried all the way to day 14. **A hard run's won
+day gives nothing back**: it starts with five and only loses them. **What 0 does is the run's
+mode**, chosen on the title as a new game begins (see "Two modes" below): a normal run goes back to
+its latest checkpoint with five, and a hard run ends with the bad ending.
 
 **A normal run's escape gives none back**, on either of its two sections or on walking out at the
-end, and a hard run's gives one only for getting out of the building (see "The escape, which is the
-run's ending"): the run's last `finish_day()` call, from `main._on_finale_escaped()`, skips the gain
-in both because `GameState.escape_section` is still set to the section she just left. Day 14
-itself still gives one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s hand-over
-to the escape rather than waiting for `finish_day()`, which by then is deciding the escape's ending
-instead of day 14's.
+end, and so does a hard run's (see "The escape, which is the run's ending"): the run's last
+`finish_day()` call, from `main._on_finale_escaped()`, skips the gain in both because
+`GameState.escape_section` is still set to the section she just left. Day 14 itself still gives a
+normal run one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s
+hand-over to the escape rather than waiting for `finish_day()`, which by then is deciding the
+escape's ending instead of day 14's.
 
 **Drawn as stars everywhere they show, never as a digit or a word for the count** — the HUD's
 debug header, the day brief, the day summary, the finale brief and the pause screen all read the
@@ -1679,7 +1684,12 @@ remembered between sittings. A press on it, or `H` on a keyboard, flips it and n
 the run still begins only from the title's three controls buttons or a key, so the box can be set
 first (`TitleScreen`). The mode is `GameState.hard_mode`, fixed for the run and carried in the save.
 **Nothing during play shows it** and nothing about the city, the events or a day's difficulty reads
-it: *"hard mode doesn't affect gameplay -- only restart pacing"*.
+it: *"hard mode doesn't affect gameplay -- only restart pacing"*. **Gameplay is anything that
+happens during a day** *(dotted-hawk, the player: "by gameplay I mean -- enemies are not harder. or
+excitement or sleepiness doesn't move in on different values", "or distribution of events doesn't
+change", "anything that happens *during* a day is gameplay")*: how hard the enemies are, the values
+excitement and sleepiness move by, and the distribution of events. Hard Mode changes none of it;
+nerves, which decide only when a run ends, are restart pacing, and that is where it differs.
 
 - **Normal mode has checkpoints and never reaches the bad ending.** The checkpoints are days 4, 8 and
   12, the first days of acts II, III and IV (`Tuning.ACT_START_DAYS`), and day 1 is checkpoint zero.
