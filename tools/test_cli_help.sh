@@ -263,6 +263,7 @@ assert_exit "agent-setup.sh -h"      zero ./tools/agent-setup.sh -h
 assert_exit "agent-setup.sh unknown" nonzero ./tools/agent-setup.sh --not-a-flag
 assert_exit "agent-setup.sh missing include path" nonzero ./tools/agent-setup.sh a feature/a --include
 assert_exit "agent-setup.sh stray word" nonzero ./tools/agent-setup.sh only-one
+assert_exit "agent-setup.sh --detach without a name" nonzero ./tools/agent-setup.sh --detach HEAD
 assert_exit "run.sh --help"        zero ./tools/run.sh --help
 assert_exit "shot.sh --help"       zero ./tools/shot.sh --help
 assert_exit "trailer.sh --help"    zero ./tools/trailer.sh --help

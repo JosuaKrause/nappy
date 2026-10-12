@@ -5,9 +5,9 @@
 #               queue-only, docs-only and touches-code, flags every later job reads. A push to main
 #               is none of them, so everything runs on it.
 #   gates       the repository's consistency, on every run, needing no Godot: lint.sh,
-#               test_cli_help.sh, test_rules_hooks.sh, test_lib_agent_role.sh, test_agent_setup.sh, pycheck.sh, the
-#               telemetry table's check, and on a pull request the checks that read its files and
-#               its description.
+#               test_cli_help.sh, test_rules_hooks.sh, test_lib_agent_role.sh, test_agent_setup.sh,
+#               pycheck.sh, the telemetry table's check, and on a pull request the checks that
+#               read its files and its description.
 #   cost-table  cost-table.sh --check, the one consistency check that needs Godot, on every run:
 #               docs/COSTS.md against the code it is generated from.
 #   game        the game's own gates, skipped on a docs-only pull request: check.sh's boot check,

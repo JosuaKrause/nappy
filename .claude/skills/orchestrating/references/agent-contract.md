@@ -29,8 +29,10 @@ tag.
 
 ## Identity
 
-The identity is chosen by what the pull request will contain (**committing**, "Who a commit and a
-pull request are from"), and every commit-push, push and `gh pr create` goes out as it:
+Every commit-push, push and pull-request creation goes out as the GitHub role **the brief names**.
+A brief that names none leaves the choice to you, by what the pull request will contain
+(**committing**, "Who a commit and a pull request are from"; `tools/ci_classify.py` is what calls a
+pull request docs-only):
 
 - in Claude Code, `claude-coder` for a PR that changes code, `claude-orchestrator` for a docs-only
   one, `claude-reviewer` for a review;
@@ -48,7 +50,8 @@ report — never fall back to a direct call. Open a ready (non-draft) PR.
 (untracked, the orchestrator's). Stay inside the brief's fence; other live agents own the files the
 brief's live-agents paragraph lists, and where two fences name one file, touch only your own lines
 and keep each hunk small. Before pushing your last commit, `git fetch origin main` and merge it if
-it moved.
+it moved, as **merging-main** says (explicit theirs/ours/base review, then a semantic
+reconciliation of the merge result).
 
 **A doc sentence outside your files that your change makes untrue**: fix it if it is in a file you
 own, otherwise report the sentence and its replacement.
@@ -74,6 +77,27 @@ Keep engine runs short and sequential: several agents share the machine. **Disk*
 build, export or capture batch, check headroom as **orchestrating** says
 (`tools/lib_disk_headroom.sh`, sourced under bash); a low-disk warning means stop and report it.
 Never search with an unrestricted `git grep` (always `-I` and a text pathspec); prefer `rg`.
+
+## Visual attempts come back early
+
+The player welcomes repeated feedback and prefers seeing an attempt to waiting through a long
+internal revision loop. For artwork, sound or any visual or audible result:
+
+- Ask for a prompt preview in the player's requested format, naming the visual point that remains
+  uncertain. Keep cheap integrity checks and provenance, but do not hold a useful attempt for
+  polish or repeated generation. The player's response steers the next pass while independent work
+  continues.
+- The player's CLI cannot display images: push the review artifacts first, then embed them in the
+  PR description as images with commit-pinned URLs, as **committing** says. A local file link is
+  not a delivered visual review.
+- **A delivered review file stays byte-for-byte unchanged.** Render into job-owned scratch, wait
+  for the writer to finish, then copy the completed artifact to a new versioned delivery filename
+  and record its hash. Once the player has a link, no render or copy overwrites that file: further
+  attempts get new filenames. Independent work can continue while the player reviews, but it cannot
+  change the artifact being reviewed.
+- Label an attempt's actual verification limits: an existing file and plausible stream metadata do
+  not prove its audio or picture matches the requested result.
+- Showing an attempt does not authorize runtime installation.
 
 ## Forks come back, never guessed
 

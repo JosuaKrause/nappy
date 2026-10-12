@@ -86,21 +86,25 @@ spawned: <ISO date>
 Then a blank line, then the brief. **The shared half of a brief is a file, not a paste**:
 `references/agent-contract.md` holds the read-first order, git and commit cadence, the identity by
 PR kind and its fallback, the scope fence over the queue and the archive, verify's gate, headless
-first, disk, forks, no merge and the report. A brief carries its task, its task-specific read-first
-items, its fence, whether the evidence is a still or a burst, whether the capture may be invincible,
-whether this is a local-full-run case, and a paragraph on the other live agents and the files they
-own (written by hand from the briefs' fences; they are prose, so nothing generates it). The spawn
-prompt `agent-setup.sh` prints names the brief and the contract. Every later `SendMessage` that changes the agent's scope or
-task is appended under `## Amendment <ISO date>`, so the file on disk stays what the agent was
+first, `--no-save` and the dev flags, the visual-attempts rule, disk, forks, no merge and the
+report. A brief carries its task, its task-specific read-first items, **the GitHub role the agent
+acts as**, its fence, whether the evidence is a still or a burst, whether the capture may be
+invincible, whether this is a local-full-run case, and a paragraph on the other live agents and the
+files they own (written by hand from the briefs' fences; they are prose, so nothing generates it).
+The spawn prompt `agent-setup.sh` prints names the brief and the contract. Every later
+`SendMessage` that changes the agent's scope or task is appended under `## Amendment <ISO date>`, so the file on disk stays what the agent was
 actually told rather than what it was told at spawn time.
 
 **Any agent started into an existing worktree gets its `agent:` line appended the moment its id
-is known** (`tools/agent-setup.sh --agent <branch> <id>`) — a fresh spawn and a replacement into a dead agent's worktree alike; see "An agent
-that died mid-task is replaced in its own worktree" for the replacement case.
+is known** (`tools/agent-setup.sh --agent <branch> <id>`) — a fresh spawn and a replacement into a
+dead agent's worktree alike; see "An agent that died mid-task is replaced in its own worktree" for
+the replacement case.
 
 Every agent prompt contains, explicitly — in the brief or, for the items the contract covers
-(identity, commit cadence, the standing fence, verify's gate, headless first, forks, no merge, the
-report), by naming `references/agent-contract.md`:
+(commit cadence, the standing fence, verify's gate, headless first and `--no-save`, the
+visual-attempts rule, disk, forks, no merge, the report), by naming
+`references/agent-contract.md`; the role is always the brief's own line, since an agent with no
+role named has nothing to check `status` against:
 
 - **A read-first list, in order**: `CLAUDE.md`, the entry's folder under `docs/todo/` (its
   `README.md` and every item file), the records under `docs/decisions/` that carry its design (by
@@ -208,7 +212,9 @@ under `.claude/worktrees/<name>` (the path-triggered rules hook loads only for p
 project, so a worktree under `$TMPDIR` gets no rules), and starts the agent in it without
 isolation; the brief carries the `worktree:` line and the agent's `agent:` line the moment its id
 is known, as for any agent started into an existing worktree. A review agent's scratch checkout is
-made sparse the same way. Worktrees share history, so clone
+made sparse with `tools/agent-setup.sh --detach <ref> <name>`: the same patterns, detached at
+`<ref>`, with no branch and no brief, so `agent-status.sh` never counts it as an agent. Worktrees
+share history, so clone
 depth does not avoid repeated working files. Before checkout, import, build or capture batches,
 check free space on the destination volume against the estimated peak working set plus explicit
 headroom (`tools/lib_disk_headroom.sh` holds the measured estimates, worktrees' included); an unknown
@@ -225,8 +231,8 @@ processes stop and useful artifacts are retained (`tools/agent-setup.sh --releas
 **One repo takes several agents at once when each works in its own git worktree** (each gets a
 checkout under `.claude/worktrees/` and its own branch: a sparse one the orchestrator made, as
 above, or the harness's full one through worktree isolation when the task needs the excluded
-folders; the path-triggered rules hook works in either unchanged). What makes it safe is not the worktrees —
-merging is what collides — so parallelism is planned at the file level, before spawning:
+folders; the path-triggered rules hook works in either unchanged). What makes it safe is not the
+worktrees — merging is what collides — so parallelism is planned at the file level, before spawning:
 
 - **Partition by files, not by topic.** List what each milestone will touch and spawn together
   only sets that are disjoint. Docs count: two agents "on different features" that both rewrite
@@ -321,8 +327,9 @@ merging is what collides — so parallelism is planned at the file level, before
   been reviewed, and that it may not even compile.
 
   **Starting the replacement includes updating ownership.** Right after spawning it, run
-  `tools/agent-setup.sh --agent <branch> <new id>` to append `agent: <new id>` to the worktree's brief, and write the `worktree:` line if it is missing. If
-  no brief exists, create one with the header and a pointer to where the original brief is.
+  `tools/agent-setup.sh --agent <branch> <new id>` to append `agent: <new id>` to the worktree's
+  brief, and write the `worktree:` line if it is missing. If no brief exists, create one with the
+  header and a pointer to where the original brief is.
   `agent-status.sh` reads the last `agent:` line, and a non-isolated agent's meta names no
   worktree, so skipping this step leaves the worktree credited to the dead agent.
 
@@ -340,8 +347,8 @@ merging is what collides — so parallelism is planned at the file level, before
 - **No agent runs `git stash`.** `refs/stash` is one stack shared by every worktree of the
   repository, so a `git stash pop` applies whichever stash is on top, which may be a sibling
   agent's. To test another head, add a temporary worktree under `.claude/worktrees/` (`git
-  worktree add --detach <path> <sha>`, made sparse with the same patterns
-  as in "Create sparse worktrees before materializing files") and remove it afterwards. To set work aside, `git add -A` (so untracked
+  worktree add --detach <path> <sha>`, made sparse with the same patterns: `tools/agent-setup.sh
+  --detach <sha> <name>`) and remove it afterwards. To set work aside, `git add -A` (so untracked
   files are kept) and make a WIP commit on the branch, kept local and unpushed; undo it with
   `git reset HEAD~1`, which leaves the changes unstaged as a pop would. Once it is pushed it is
   not undone: a follow-up commit continues from it. A brief for an agent says so.
