@@ -1783,6 +1783,11 @@ func contribution_at(world_position: Vector2, ...) -> float:
     return 0.0 if field > 0.0 and _walled_off(global_position, world_position) else field
 ```
 
+A source further from the point than `EventDef.silent_beyond()` answers zero before any of that is
+read: past every radius the field reads, plus the body's reach, over the most a moving field
+stretches, so nothing it skips could have charged her. A flock and a guard leaving his barrier,
+whose fields are not centred on the node, always work it out.
+
 Because it is a pure query there is no ordering to get wrong, events compose by simple
 addition, and an instance can be tested without a scene.
 

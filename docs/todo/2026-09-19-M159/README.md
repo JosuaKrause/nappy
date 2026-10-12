@@ -43,7 +43,7 @@ nothing off screen redrawn or animated (the [M159-10 record](../../decisions/202
 [the frame straight to the screen, then fewer pixels](the-frame-goes-straight-to-the-screen-then-fewer-pixels.md),
 and the readout's resolution and refresh (the [M159-9 record](../../decisions/2026-09-19-M159-9.md)).
 [The cues and the events doing less](the-cues-and-the-events-step-less.md), the filer's proposal, and
-[the cheaper tick](make-the-physics-tick-cheaper.md) take the game's own work down beside them.
+the cheaper tick (the [M159-12 record](../../decisions/2026-09-19-M159-12.md)) take the game's own work down beside them.
 Day 9's long spike is [bouncy-swan](../2026-10-11-bouncy-swan/README.md)'s.
 
 The [scenery residency record](../../decisions/2026-09-19-M159-4.md) carries loading,
