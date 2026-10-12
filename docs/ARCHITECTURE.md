@@ -277,7 +277,7 @@ flags": "on the published site behind debug=1 we'd want some of the debug flags 
 invincible, etc.) so debugging the live build is easier".)* `DevFlags.live_debug_requested()` —
 `enabled()` or `readout_requested()` — is the gate: `?day=`, `?invincible=1`, `?layers=`,
 `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
-`?groundmode=` and `?framerecord=1` each read it; the frame record is the one of them that hands
+`?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
 over a file, through the browser's download when its page button is tapped.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
 drives input, takes a picture or writes a file — the frame record's download aside — stay behind
