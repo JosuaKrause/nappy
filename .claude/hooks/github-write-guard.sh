@@ -1046,7 +1046,7 @@ def soft_subcommand_opener($t; $p; $level):
 # `nw`, the first index at or after each one holding a write's name, and `ce`, where each
 # word's command ends, from one pass forward for the depth and one back.
 def is_write_name($wn): IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am")
-  or ($wn[ascii_downcase] // false);
+  or (($wn | length) > 0 and ($wn[ascii_downcase] // false));
 # A `gh pr review` word that may approve: `--approve`, `--approve=...`, `-a` or a short cluster that
 # starts with it (`-ab text`), and any word an expansion can turn into one (`$A`, `"$A"`,
 # `"${FLAGS[@]}"`, `$(...)`, a backtick), the same rule as a review `event` the guard cannot read.
@@ -1702,7 +1702,7 @@ def command_words($t; $tp; $i):
   + (if $t.cw2 == null then [] else [$t.cw2[$i] // $i] end)
   + (if $tp == null then []
      else [command_word($tp; $i)] + (if $tp.cw2 == null then [] else [$tp.cw2[$i] // $i] end) end);
-def findings($w; $w0; $levels; $unsure; $wn):
+def findings($w; $w0; $levels; $unsure; $wn; $has):
   # Levels that are all 0 group nothing, and the plain reading would be the same one again.
   (if $levels | any(. > 0) then $levels else null end) as $lv
   | ($w | length) as $n
@@ -1732,8 +1732,8 @@ def findings($w; $w0; $levels; $unsure; $wn):
   | ($w | options_table($g; null)) as $ao
   | (if $owners == null then null else $w | options_table($g; $owners) end) as $wo
   | (if $wo == null then null else $w | command_table($wo; $g; $inputs) end) as $cw2
-  | alias_setting_counts($w) as $ac
-  | (any($w[]; . == "review") or any($w[]; . == "alias")) as $review
+  | (if $has.alias then alias_setting_counts($w) else null end) as $ac
+  | ($has.review and (any($w[]; . == "review") or any($w[]; . == "alias"))) as $review
   | write_tables($w; $w0; $lw; $wn; $lw >= 0 or $ac != null or $review; $review) as $wt
   | {ao: $ao, cw: ($w | command_table($ao; $g; $inputs)),
      cw2: $cw2,
@@ -1741,7 +1741,7 @@ def findings($w; $w0; $levels; $unsure; $wn):
      xargs: (if $inputs != null
              then xargs_context($w0; $lv; $unsure; $inputs) else null end),
      oc: (if $unsure then opener_counts($w0) else null end),
-     ac: $ac, ec: env_alias_setting_counts($w), nw: $wt.nw, ce: $wt.ce, na: $wt.na, nr: $wt.nr} as $t
+     ac: $ac, ec: (if $has.env then env_alias_setting_counts($w) else null end), nw: $wt.nw, ce: $wt.ce, na: $wt.na, nr: $wt.nr} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
        | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null; $inputs))
@@ -1866,6 +1866,11 @@ def text_shape:
 # own cost stays well under a second whatever it is given.
 def too_long: 65536;
 def hard_cap: 1048576;
+# A case-insensitive regex for a word whose letters may stand apart by any of the characters the
+# reading drops (backslash-newline, a backslash, a quote, a `$`), as `names_a_write_tool` reads.
+def loose_re($word):
+  "(?:\\\\\n|[\\\\\"'$])*" as $skip
+  | "(?i)" + ($word | split("") | map(if . == "." then "\\." else . end) | join($skip));
 def names_a_write_tool:
   "(?:\\\\\n|[\\\\\"'$])*" as $skip
   | "(?i)" + (["git", "gh", "release.sh", "prune-merged.sh", "land-prs.sh", "update-pr.sh"]
@@ -1895,9 +1900,15 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
       | (($marked | contains("\u0003"))
          or ($bare | drop("\\\n") | test("\\$\\(|`|<<|\\$\\{|\\$\\$'"))) as $unsure
       | ($marked | drop("\u0003") | split_words | leveled_parts | splice_aliases($git)) as $parts
+      # Whether the command could hold an alias setting, an assignment setting one, or a `review`
+      # or `alias` word at all, each one regex over the whole text (letters apart only by what the
+      # reading drops), so a long command holding none builds none of their per-word tables.
+      | {alias: ($bare | test(loose_re("alias."))),
+         env: ($bare | test("(?i)GIT_CONFIG_(KEY_|PARAMETERS)")),
+         review: ($bare | test(loose_re("review") + "|" + loose_re("alias")))} as $has
       | ($parts | map(.w)) as $w0
       | ($w0 | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
-      | (findings($w; $w0; $parts | map(.c); $unsure; alias_write_names($git))) as $result
+      | (findings($w; $w0; $parts | map(.c); $unsure; alias_write_names($git); $has)) as $result
       | if ($result.out | length) == 0 then empty else $result end
     end
 end
