@@ -161,6 +161,13 @@
 #     a backtick, a quoted script and an unmatched parenthesis still deny), decided quickly behind
 #     30 000 open parentheses and through 64 KB of such gits; git rebase --show-current-patch
 #     reads, and git push --dry-run and git commit --dry-run stay accepted false denies
+#   - #736's review: an alias behind an unquoted substitution in git's options, and an inline alias
+#     setting past one, deny (a reviewer's unreadable git subcommand too); a gh pr review word an
+#     expansion can make an approving flag counts as one, and a ; inside a substitution ends
+#     nothing; unpaired parentheses fall back to the whole command; --show-current-patch reads
+#     only as rebase's one argument; an alias set by a GIT_CONFIG_* assignment denies; a gh alias
+#     set naming a review, gh alias import, a GraphQL review whose event is read from a file or an
+#     expansion, and a percent-encoded review path count as approvals
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -2356,6 +2363,26 @@ assert_write_guard "a coder's comment review with its body from a file -> allow"
     'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 --comment --body-file review.md'
 assert_write_guard "a \$ after the review's own command ends -> allow" allow \
     'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 -c -b x; echo $HOME'
+
+# #736's review, finding 6: a gh alias that stands for an approval, a GraphQL review whose event is
+# read from a file or an expansion, and a percent-encoded review path.
+for write_guard_cmd in \
+    "uv run python tools/agent-identity.py run claude-coder -- gh alias set ap 'pr review --approve'" \
+    "uv run python tools/agent-identity.py run claude-orchestrator -- gh alias set --shell ap 'gh pr Review -a \$1'" \
+    'uv run python tools/agent-identity.py run claude-coder -- gh alias set ap "$X"' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh alias import aliases.yml' \
+    "uv run python tools/agent-identity.py run claude-coder -- gh api graphql -f query='mutation(\$e:PullRequestReviewEvent!){addPullRequestReview(input:{pullRequestId:\"x\",event:\$e}){clientMutationId}}' -F e=@e.txt" \
+    "uv run python tools/agent-identity.py run claude-coder -- gh api graphql -f query='mutation(\$e:PullRequestReviewEvent!){addPullRequestReview(input:{pullRequestId:\"x\",event:\$e}){clientMutationId}}' -f e=\$E" \
+    'uv run python tools/agent-identity.py run claude-coder -- gh api repos/o/r/pulls/5/review%73 -f event=APPROVE'
+do
+    assert_write_guard "$write_guard_cmd -> deny" deny "$write_guard_cmd"
+done
+assert_write_guard "a reviewer's gh alias set for a review -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-reviewer -- gh alias set ap 'pr review --approve'"
+assert_write_guard "a coder's gh alias set naming no review -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- gh alias set co 'pr checkout'"
+assert_write_guard "a coder's GraphQL review whose event is written COMMENT -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- gh api graphql -f query='mutation{addPullRequestReview(input:{pullRequestId:\"x\",event:COMMENT}){clientMutationId}}' -F body=x"
 
 # #448's review, finding 4: a git whose options hold an unquoted substitution is a write only when
 # a write's name stands inside its own command, so a later command's grep pattern no longer counts;

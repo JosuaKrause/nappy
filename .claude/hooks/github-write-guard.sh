@@ -212,13 +212,20 @@
 # (`event=@file`, `event=$E`, empty), or whose body comes from `--input`, which is how every
 # review here is posted and which this cannot read; and a GraphQL call naming
 # `addPullRequestReview` or `submitPullRequestReview` when the word APPROVE appears from its start
-# on. Under xargs or GNU parallel, a `gh pr review` or a review endpoint that input can add a flag
+# on, or when a field of the same call is read from a file or an expansion (`-F e=@e.txt`, `-f
+# e=$E`), the same rule as an unreadable REST event; a `gh alias set` whose own command names
+# `review` or holds an expansion, and every `gh alias import`, since the alias later stands for
+# the review and its call names none. A path with a `%` under `pulls` counts as a review endpoint,
+# since it is not decoded here. Under xargs or GNU parallel, a `gh pr review` or a review endpoint that input can add a flag
 # to counts too, and the endpoint's form refuses a reviewer as well, since input could make the
 # same call a merge-type one. A COMMENT or REQUEST_CHANGES review, and a pending one with no event,
-# stay open to every identity. **Accepted gaps**: a GraphQL review whose query or event this cannot
-# read (a query from a file, an event in a variable set elsewhere), and an endpoint whose
-# `reviews` itself an expansion supplies (`pulls/5/$R`); an unrelated later `-a` or APPROVE in the
-# same command is a false deny, the safe direction.
+# stay open to every identity. **Accepted gaps**: a GraphQL review whose mutation this cannot read
+# (a query from a file, `--input`, `-f query="$(cat q)"`; denying every hidden GraphQL query to a
+# non-reviewer would deny far more than reviews); an endpoint an expansion supplies whole or in
+# its `reviews` (`gh api $E`, `pulls/5/$R`); a gh alias for an approval already in gh's own config
+# before the session (`gh ap 5` names no review); and a client other than gh (`curl` with `gh auth
+# token`, the guard's general gap). An unrelated later `-a`, APPROVE, `$` or `review` in the same
+# command is a false deny, the safe direction.
 #
 # The escape is `tools/agent-identity.py run <role> -- <command>`, with or without a `uv run
 # python` (or bare `python`/`python3`) in front, and with or without `run`'s own `--repo
@@ -1044,8 +1051,11 @@ def is_write_name($wn): IN("push", "commit", "merge", "rebase", "pull", "cherry-
 # starts with it (`-ab text`), and any word an expansion can turn into one (`$A`, `"$A"`,
 # `"${FLAGS[@]}"`, `$(...)`, a backtick), the same rule as a review `event` the guard cannot read.
 def may_approve: startswith("--approve") or test("^-a") or contains("$") or . == "`";
+# A `gh alias set` word that may define a review: one naming `review` in any case, or one an
+# expansion supplies.
+def may_name_review: (ascii_downcase | contains("review")) or contains("$") or . == "`";
 def write_tables($w; $w0; $lw; $wn; $need; $review):
-  if ($need | not) then {nw: null, ce: null, na: null}
+  if ($need | not) then {nw: null, ce: null, na: null, nr: null}
   else
     ($w0 | length) as $n
     | [foreach $w0[] as $x ({d: 0, out: 0, clamped: false};
@@ -1071,6 +1081,9 @@ def write_tables($w; $w0; $lw; $wn; $need; $review):
                .out)] | reverse + [$n] end),
        na: (if $review | not then null
             else [foreach range($n - 1; -1; -1) as $k ($n; if $w0[$k] | may_approve then $k else . end)]
+                 | reverse + [$n] end),
+       nr: (if $review | not then null
+            else [foreach range($n - 1; -1; -1) as $k ($n; if $w0[$k] | may_name_review then $k else . end)]
                  | reverse + [$n] end)}
   end;
 # Where the command of the word at `$i` ends: the table's answer, or the whole command's end
@@ -1301,8 +1314,11 @@ def issue_endpoint:
 # non-option word of the call, as the issue endpoint is. Only GitHub's pull-request reviews have a
 # path ending in `reviews`.
 def review_endpoint:
-  (ascii_downcase | contains("review"))
-  and (sub("[?#].*$"; "") | test("(?i)(^|/)reviews(/[^/]+/events)?/?$"));
+  ((ascii_downcase | contains("review"))
+   and (sub("[?#].*$"; "") | test("(?i)(^|/)reviews(/[^/]+/events)?/?$")))
+  # A percent-encoded path (`review%73`, `reviews%2F`) is not read for what it decodes to; one
+  # under `pulls` counts as a review.
+  or (contains("%") and (ascii_downcase | test("pull|review")));
 def issue_mutation_re:
   "(^|[^A-Za-z])(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert|replace|apply|reject)[A-Za-z0-9]*(Issue|Labelable|Assignable|Lockable|BlockedBy|LinkedBranch)";
 # The words worth testing against it: one naming none of its nouns cannot match.
@@ -1321,6 +1337,8 @@ def gh_api_field_value($v):
       else .query_visible = true end
   # A review's `event`: APPROVE, or a value this cannot read (a file, a shell expansion, empty),
   # counts as an approval (`detect_gh_api`).
+  elif ($v | test("^[^=]*=")) and (($v | sub("^[^=]*="; "")) | startswith("@") or contains("$"))
+       and ($v | test("(?i)^event=") | not) then .hidden_field = true
   elif $v | test("(?i)^event=") then
     ($v | sub("(?i)^event="; "")) as $e
     | if ($e == "") or ($e | startswith("@")) or ($e | contains("$")) or ($e | test("(?i)^approve$"))
@@ -1367,6 +1385,7 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
   {i: $start, method: null, field: false, late_field: false, other_call: false,
    endpoint: null,
    merge_type: false, issue_endpoint: false, review_endpoint: false, approve_event: false, input: false,
+   hidden_field: false,
    query_visible: false, query_hidden: false, crossed_at: null, cont: false, sub_left: 0}
   | (until(.i >= $n or ($w[.i] | is_hard_sep)
           or ($bounded and ($w[.i] | is_sep))
@@ -1430,7 +1449,8 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
   | if ($r.endpoint // "") | test("(?i)(^|/)graphql$") then
       (if $lm >= $start and ($t.li // -1) >= $start then {next: $r.resume, reason: "gh api graphql issue mutation"}
        elif $r.query_hidden and ($t.li // -1) >= 0 then {next: $r.resume, reason: "gh api graphql issue mutation"}
-       elif $lm >= $start and ($t.lra // -1) >= $start and ($t.lap // -1) >= $start
+       elif $lm >= $start and ($t.lra // -1) >= $start
+            and (($t.lap // -1) >= $start or $r.hidden_field or $r.approve_event)
        then {next: $r.resume, reason: "gh api graphql approving review"}
        elif $lm >= $start then {next: $r.resume, reason: "gh api graphql mutation"}
        elif $r.query_hidden or ($r.query_visible | not)
@@ -1542,6 +1562,15 @@ def detect_gh($w; $t; $i; $n; $lm; $bounded; $cmd_pos):
                                           end: segment_scan($w; $verb_i + 1; $n; []).end})
                               then "gh pr review with input-supplied arguments"
                               else "gh pr review" end)}
+                  # A gh alias can stand for an approval (`gh alias set ap 'pr review --approve'`,
+                  # then `gh ap 5`), and the later call names none: a `gh alias set` whose own
+                  # command names `review` or holds an expansion, and every `gh alias import`, whose
+                  # aliases come from a file, are approvals.
+                  elif $noun == "alias" and $verb == "import" then
+                    {next: ($verb_i + 1), reason: "gh alias import"}
+                  elif $noun == "alias" and $verb == "set"
+                       and $t.nr != null and ($t.nr[$verb_i + 1] // $n) < command_end($t; $verb_i) then
+                    {next: ($verb_i + 1), reason: "gh alias set for a review"}
                   else {next: ($verb_i + 1), reason: ("gh " + $noun + " " + $verb)}
                   end
               end
@@ -1635,7 +1664,8 @@ def is_merge_like($reason):
 def is_approval($reason):
   $reason | IN("gh pr review --approve", "gh pr review with input-supplied arguments",
                "gh api approving review", "gh api merge-type approving review",
-               "gh api review with input-supplied arguments", "gh api graphql approving review");
+               "gh api review with input-supplied arguments", "gh api graphql approving review",
+               "gh alias set for a review", "gh alias import");
 # A direct issue write, denied wrapped or not: `gh issue`'s own write verbs, and the API's. The
 # input-wrapper forms count too (`detect_gh`): `gh issue` whose verb input supplies starts with
 # `gh issue `, and a `gh` whose noun input supplies may be handed `issue close 5`.
@@ -1703,7 +1733,7 @@ def findings($w; $w0; $levels; $unsure; $wn):
   | (if $owners == null then null else $w | options_table($g; $owners) end) as $wo
   | (if $wo == null then null else $w | command_table($wo; $g; $inputs) end) as $cw2
   | alias_setting_counts($w) as $ac
-  | any($w[]; . == "review") as $review
+  | (any($w[]; . == "review") or any($w[]; . == "alias")) as $review
   | write_tables($w; $w0; $lw; $wn; $lw >= 0 or $ac != null or $review; $review) as $wt
   | {ao: $ao, cw: ($w | command_table($ao; $g; $inputs)),
      cw2: $cw2,
@@ -1711,7 +1741,7 @@ def findings($w; $w0; $levels; $unsure; $wn):
      xargs: (if $inputs != null
              then xargs_context($w0; $lv; $unsure; $inputs) else null end),
      oc: (if $unsure then opener_counts($w0) else null end),
-     ac: $ac, ec: env_alias_setting_counts($w), nw: $wt.nw, ce: $wt.ce, na: $wt.na} as $t
+     ac: $ac, ec: env_alias_setting_counts($w), nw: $wt.nw, ce: $wt.ce, na: $wt.na, nr: $wt.nr} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
        | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null; $inputs))
