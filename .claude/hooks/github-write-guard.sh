@@ -28,8 +28,9 @@
 # flag after that argument is not seen.
 #
 # A "write" is `git push`; a commit-making git verb (`commit` always; `cherry-pick`/`revert`/`am`
-# unless they carry `--abort`/`--quit`; `merge`/`rebase` unless `--abort`/`--no-commit`/
-# `--ff-only`; `pull` unless `--ff-only`, the only shape that cannot make a commit of its own);
+# unless they carry `--abort`/`--quit`; `merge` unless `--abort`/`--no-commit`/`--ff-only`; `rebase`
+# unless `--abort`, or `--show-current-patch` as its one argument, which only prints; `pull` unless `--ff-only`, the
+# only shape that cannot make a commit of its own);
 # any `gh` noun's verb that is not on one short, shared read list (`view`, `list`, `status`,
 # `diff`, `checks`, `checkout`, `watch`, `download`, `clone`, `token`) -- every noun, not only
 # `pr`/`issue`/`release`, so `gh workflow run`, `gh run rerun`, `gh repo edit`, `gh label create`,
@@ -62,11 +63,42 @@
 # end the option run or are taken for the subcommand, and so can a subcommand that is itself an
 # expansion (`git $(echo push) origin v1`): that `git` is a write when a commit-making or
 # pushing subcommand's name (`push`, `commit`, `merge`, `rebase`, `pull`, `cherry-pick`, `revert`,
-# `am`) appears anywhere after it in the command, and that `gh` always is. A separator where the
+# `am`) appears after it within its own command -- up to the first `;`, `&`, `|` or newline
+# outside quotes at that git's own depth of parentheses (`write_tables`), so the substitution's
+# own words count and a later command's do not: `git -C $(git rev-parse --show-toplevel) log |
+# grep merge` reads -- and that `gh` always is. A separator where the
 # subcommand belongs inside a quoted script is unreadable too (`bash -c 'git -C $(pwd) push'`):
 # quoting the script hides the substitution's opener, not the write that follows it. When the
 # option's own argument is quoted (`git -C "$(pwd)" push`), the substitution is one argument and
 # the subcommand is read as usual.
+# A git alias is read as the command it stands for (busy-ibis, statement 7: "let's do A for
+# aliases"): before the command is read, this script asks git for every `alias.*` it knows in the
+# session's directory, and a subcommand that is an alias and not one of git's own built-ins (which
+# git never lets an alias shadow) is replaced by what it stands for, followed through a chain of
+# aliases, so the player's `git ci -m wip` (`ci` = `commit`) is a commit and `git m main` a merge,
+# while `git st` (`status -sb`) stays a read. Where git's own options hold an unquoted substitution
+# or a backtick, the subcommand cannot be placed, so an alias standing for a write (or one that
+# cannot be read) counts as a write's name inside that git's own command, as `push` does (`git -C
+# $(pwd) ci -m x` is denied), and an inline alias setting is looked for up to that command's end
+# (`git -C $(pwd) -c alias.x=push x`); a reviewer is refused any git whose subcommand cannot be
+# read, since it may push. An alias that runs a shell command (`!...`), and one
+# with no value, a loop or git's own options at its start, cannot be read and is a write, push-like
+# for a reviewer. An alias set on the command line (`git -c alias.ship=push ship origin v1`,
+# `-calias.x=...`, `--config-env alias.x=VAR`) is denied whatever it says, as an inline
+# `push.default=matching` is, also push-like. So is the same setting written as an assignment
+# anywhere before the git in the command (`GIT_CONFIG_KEY_0=alias.ship GIT_CONFIG_VALUE_0=push git
+# ship`, a key that is an expansion, any `GIT_CONFIG_PARAMETERS=...`, `export` or `env` in front of
+# either). **An alias in any config git reads from somewhere other than the session directory's
+# own at the moment the hook runs is an accepted gap**, each a deliberate shape: one a separate
+# `git config` defines earlier in the same command (`git config alias.x push && git x`); one in
+# another repository's config, reached by `cd /other && git x`, `-C`, `--git-dir` or `GIT_DIR=`;
+# one in another global config, through `GIT_CONFIG_GLOBAL=`, `HOME=` or `XDG_CONFIG_HOME=`; one a
+# file pulled in by `-c include.path=...` defines; one in the environment the session inherited
+# or an earlier command exported; and, in Codex, one in the directory a shell call names as its
+# own `workdir`, since `tools/codex-hooks.py` passes the guard only the command and the
+# session's `cwd`. A `git-<name>` program
+# on the PATH, which git runs before an alias of the same name, is judged as the alias, the safe
+# direction.
 # A push under xargs/gxargs or GNU parallel/env_parallel cannot be read to its end: input can
 # append or replace refspecs, even when the written words name only a branch. For a git or gh the
 # wrapper runs (in command position, or anywhere when the wrapper's options cannot be read), a
@@ -95,6 +127,12 @@
 # denial can merge too, so reviewer wrappers cannot exempt it either. GNU parallel with no command
 # of its own (`parallel ::: tools/update-pr.sh`) runs each argument as a command, so its command
 # position is unreadable too.
+# **Two dry runs are accepted false denies** (#448's review, finding 5): `git push --dry-run` (or
+# `-n`) and `git commit --dry-run` write nothing, yet are read as the push and the commit they
+# name -- denied on a machine with identities, asked about where none can work. Telling a real
+# `--dry-run` from a commit message's words, an option's value (`git push -o --dry-run origin v1`
+# pushes `v1`) or a later `--no-dry-run` needs each subcommand's own option table, and a misread
+# is a push as the player; wrapping the dry run in an identity costs nothing.
 # A backslash-escaped separator outside quotes (`xargs -d \; git push origin`) is an argument the
 # shell hands to the wrapper, so it neither ends the wrapper's command nor leaves an option
 # without its value; inside a quoted script a soft separator still ends the script's own command.
@@ -158,6 +196,36 @@
 # does not recognise as a reviewer is not specially blocked here either way:
 # `tools/agent-identity.py` itself refuses to mint a token for a name outside its own `ROLE_NAMES`,
 # which is the actual enforcement for an unknown or misspelled role.
+#
+# **Only a reviewer identity approves a pull request, the mirror of that rule** (busy-ibis,
+# statement 9: "we can prevent approvals from non-reviewers"). GitHub stops only a pull request's
+# own author from approving it, so `claude-coder` and `claude-orchestrator` could each approve the
+# other's, and that approval counts toward the one `main` requires. So an approving review is
+# denied, wrapped or not, unless the wrapping role is `claude-reviewer` or `codex-reviewer`:
+# `gh pr review` with `--approve` (or `--approve=...`, `-a`, a short cluster starting with it), or
+# with a word an expansion can turn into one (`$A`, `"$A"`, `"${FLAGS[@]}"`, `$(...)`, a backtick:
+# the same rule as an unreadable `event` below, so a review's body comes from `--body-file`, not
+# `--body "$(cat f)"`), inside its own command -- up to its next `;`, `&`, `|` or newline outside
+# quotes at its own depth of parentheses, so a `;` inside a substitution ends nothing; a `gh api`
+# write to `pulls/<n>/reviews` or
+# `pulls/<n>/reviews/<id>/events` whose `event` field is APPROVE in any case, or cannot be read
+# (`event=@file`, `event=$E`, empty), or whose body comes from `--input`, which is how every
+# review here is posted and which this cannot read; and a GraphQL call naming
+# `addPullRequestReview` or `submitPullRequestReview` when the word APPROVE appears from its start
+# on, or when a field of the same call is read from a file or an expansion (`-F e=@e.txt`, `-f
+# e=$E`), the same rule as an unreadable REST event; a `gh alias set` whose own command names
+# `review` or holds an expansion, and every `gh alias import`, since the alias later stands for
+# the review and its call names none. A path with a `%` under `pulls` counts as a review endpoint,
+# since it is not decoded here. Under xargs or GNU parallel, a `gh pr review` or a review endpoint that input can add a flag
+# to counts too, and the endpoint's form refuses a reviewer as well, since input could make the
+# same call a merge-type one. A COMMENT or REQUEST_CHANGES review, and a pending one with no event,
+# stay open to every identity. **Accepted gaps**: a GraphQL review whose mutation this cannot read
+# (a query from a file, `--input`, `-f query="$(cat q)"`; denying every hidden GraphQL query to a
+# non-reviewer would deny far more than reviews); an endpoint an expansion supplies whole or in
+# its `reviews` (`gh api $E`, `pulls/5/$R`); a gh alias for an approval already in gh's own config
+# before the session (`gh ap 5` names no review); and a client other than gh (`curl` with `gh auth
+# token`, the guard's general gap). An unrelated later `-a`, APPROVE, `$` or `review` in the same
+# command is a false deny, the safe direction.
 #
 # The escape is `tools/agent-identity.py run <role> -- <command>`, with or without a `uv run
 # python` (or bare `python`/`python3`) in front, and with or without `run`'s own `--repo
@@ -415,6 +483,48 @@ def leveled_parts:
 def is_sep: IN(";", "&", "|", "(", ")", "`", "\n", "\u0001");
 def is_hard_sep: IN(";", "&", "|", "(", ")", "`", "\n");
 
+# **A git alias is read as the command it stands for** (busy-ibis, statement 7: "let's do A for
+# aliases"). `$git` is what the shell half of this script asked git before the reading started
+# (`git_table`, below): `aliases`, every `alias.*` key git's own config gives in the session's
+# directory, by its lowercased name, and `builtins`, git's own built-in commands, which git never
+# lets an alias shadow. A subcommand that is neither a built-in nor an alias is left as it is
+# written. One that is an alias is replaced by the alias's words, in the same shell word's place,
+# before anything else reads the command, so `git ci -m x` (`ci` = `commit`) is the commit it is
+# and `git m main` (`m` = `merge`) the merge; an alias naming another alias is followed to the
+# end. git's own reading of an alias value honours quotes and backslashes; these are dropped and
+# the value split at whitespace, the same way this script reads the command itself. Three kinds
+# are not read at all and become a marker word that `detect_git` denies: an alias that runs a
+# shell command (`!...`, U+0007 then `!`), and one that has no value, names itself through a
+# chain, or starts with one of git's own options, which git reads again (U+0007 then `?`). A
+# word of the alias that is a separator character on its own is not one to git, so it is kept
+# from reading as one. An alias that expands to a read stays a read.
+def alias_value($git; $name):
+  ($name | ascii_downcase) as $k
+  | if ($git.builtins[$name] // false) then {kind: "builtin"}
+    elif ($git.aliases | has($k)) then {kind: "alias", value: $git.aliases[$k]}
+    else {kind: "other"} end;
+def alias_split: gsub("[\"'\\\\]"; "") | [splits("[ \t\n]+") | select(length > 0)];
+def expand_alias($git):
+  . as $first
+  | if alias_value($git; $first).kind != "alias" then null
+    else
+      {words: [$first], seen: [], out: null}
+      | until(.out != null;
+          (.words[0]) as $head
+          | ($head | ascii_downcase) as $key
+          | alias_value($git; $head) as $a
+          | if $a.kind != "alias" then .out = .words
+            elif any(.seen[]; . == $key) or (.seen | length) >= 16 then .out = ["\u0007?"]
+            elif ($a.value | type) != "string" then .out = ["\u0007?"]
+            elif $a.value | test("^[ \t\n]*!") then .out = ["\u0007!"]
+            else ($a.value | alias_split) as $x
+              | if ($x | length) == 0 or ($x[0] | startswith("-")) then .out = ["\u0007?"]
+                else .seen += [$key] | .words = $x + .words[1:] end
+            end)
+      | .out
+      | map(if is_sep then "\u0007" + . else . end)
+    end;
+
 # Global options taking a separate argument -- git's, gh's and agent-identity.py run's own
 # --repo alike, one small list, fail-safe: an option not on it is skipped as one word, so an
 # unfamiliar flag can never hide the word after it (the same call git-grep-guard.sh's
@@ -499,6 +609,49 @@ def options_table($g; $owners):
     + [$n]
   | resolve;
 def after_options($t; $i): $t.ao[$i] // $i;
+
+# The configured aliases that stand for a commit-making or pushing subcommand, or that cannot be
+# read (`expand_alias`'s markers), by lowercased name. Where a git's own options hold an unquoted
+# substitution, its subcommand cannot be placed, so `splice_aliases` cannot replace it; there such
+# a name counts as a write's name inside the git's own command (`write_tables`), as `push` does,
+# so `git -C $(pwd) ci -m x` (`ci` = `commit`) is denied like `git -C $(pwd) commit -m x`.
+def alias_write_names($git):
+  if $git == null or (($git.aliases // {}) | length) == 0 then {}
+  else reduce ($git.aliases | keys[]) as $k ({};
+         ($k | expand_alias($git)) as $x
+         | if $x != null and (($x[0] | startswith("\u0007"))
+                              or ($x[0] | IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am")))
+           then .[$k] = true else . end)
+  end;
+
+# Replaces every git subcommand that is an alias with the words it stands for (`expand_alias`,
+# above), on the leveled parts, before the tables below are built from them. The subcommand is
+# where git's own option run ends, read grouped by shell word and, where the command has quoted
+# words, word by word too, the second reading an unsure command gets (see `findings`).
+def splice_aliases($git):
+  if $git == null or (($git.aliases // {}) | length) == 0 then .
+  else
+    . as $parts
+    | ($parts | map(.w)) as $w
+    | ($w | length) as $n
+    | [range(0; $n) | select($w[.] | named("git"))] as $gits
+    | if ($gits | length) == 0 then $parts
+      else
+        ($parts | map(.c)) as $levels
+        | (if $levels | any(. > 0) then {lv: $levels, ends: word_ends($levels)} else null end) as $g
+        | ($w | options_table($g; null)) as $ao
+        | (if $g == null then null else $w | options_table(null; null) end) as $ao0
+        | (reduce $gits[] as $i ({};
+             .[$ao[$i + 1] | tostring] = true
+             | if $ao0 == null then . else .[$ao0[$i + 1] | tostring] = true end)) as $subs
+        | [range(0; $n) as $k
+           | $parts[$k]
+           | if $subs[$k | tostring] then
+               (.w | expand_alias($git)) as $x
+               | if $x == null then . else (.c) as $c | $x[] | {w: ., c: $c} end
+             else . end]
+      end
+  end;
 
 # A word shaped like a shell assignment (`FOO=1`, `NAPPY_AGENT_ROLE=x`) -- these precede a real
 # command without ending "command position" the way any other word would.
@@ -707,7 +860,7 @@ def xargs_context($w; $lv; $unsure; $inputs):
 # `git <subcommand>`: push, and every subcommand that can create a commit under the invoking
 # user's own name -- commit always; cherry-pick/revert/am/merge/rebase/pull unless they carry an
 # abort-like or safe flag (`--abort`/`--quit` for cherry-pick/revert/am, `--abort`/`--no-commit`/
-# `--ff-only` for merge, `--abort` for rebase, `--ff-only` for pull, which is the only shape of
+# `--ff-only` for merge, `--abort`, or `--show-current-patch` as its one argument, for rebase, `--ff-only` for pull, which is the only shape of
 # `git pull` that cannot make a commit of its own). Everything else (status, log, diff, fetch,
 # branch, ...) is a read or a local-only change.
 #
@@ -882,10 +1035,83 @@ def expansion_opener($t; $p): opener_at($t.w0; $p);
 def soft_subcommand_opener($t; $p; $level):
   ($t.w0[$p] == "\u0001" and ($t.lv[$p] // 0) <= $level)
   or ($p > 0 and $t.w0[$p - 1] == "\u0001" and ($t.lv[$p - 1] // 0) <= $level);
+# Whether a commit-making or pushing subcommand's name stands from `$from` on inside the command
+# the git at `$i` belongs to: up to the first `;`, `&`, `|` or newline written outside quotes at
+# that git's own depth of parentheses, or the `)` that closes it. A substitution's own words are
+# deeper and stay inside (`git -C $(cd x; pwd) push`, `git $(echo push) origin v1`), while a later
+# command's are outside (`git -C $(git rev-parse --show-toplevel) log | grep merge` reads). A
+# quoted separator and a backtick end nothing, and a command whose parentheses do not pair has no
+# table at all (every span runs to the command's end), so the span only ever errs long, the safe
+# direction. Two tables built once per command that names such a subcommand:
+# `nw`, the first index at or after each one holding a write's name, and `ce`, where each
+# word's command ends, from one pass forward for the depth and one back.
+def is_write_name($wn): IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am")
+  or (($wn | length) > 0 and ($wn[ascii_downcase] // false));
+# A `gh pr review` word that may approve: `--approve`, `--approve=...`, `-a` or a short cluster that
+# starts with it (`-ab text`), and any word an expansion can turn into one (`$A`, `"$A"`,
+# `"${FLAGS[@]}"`, `$(...)`, a backtick), the same rule as a review `event` the guard cannot read.
+def may_approve: startswith("--approve") or test("^-a") or contains("$") or . == "`";
+# A `gh alias set` word that may define a review: one naming `review` in any case, or one an
+# expansion supplies.
+def may_name_review: (ascii_downcase | contains("review")) or contains("$") or . == "`";
+def write_tables($w; $w0; $lw; $wn; $need; $review):
+  if ($need | not) then {nw: null, ce: null, na: null, nr: null}
+  else
+    ($w0 | length) as $n
+    | [foreach $w0[] as $x ({d: 0, out: 0, clamped: false};
+         if $x == "(" then .out = .d | .d += 1
+         elif $x == ")" then (if .d == 0 then .clamped = true else . end) | .d = ([.d - 1, 0] | max) | .out = .d
+         else .out = .d end;
+         {out, clamped, d})] as $pass
+    | ($pass | map(.out)) as $depth
+    # A `)` with nothing open, or a `(` never closed, is a parenthesis this pass cannot pair (a
+    # `case` pattern's own `x)` among them: `git -C $(case x in x) echo y;; esac) push origin v1`
+    # closes the substitution early and puts the `;;` at the git's own depth). Then there is no
+    # table, and every word's command runs to the end of the whole command (`command_end`), the
+    # reading before the depth pass, so nothing it denied is let through.
+    | (($pass | last // {clamped: false, d: 0}) | .clamped or .d > 0) as $broken
+    | {nw: (if $lw < 0 then null
+            else [foreach range($n - 1; -1; -1) as $k ($n; if $w[$k] | is_write_name($wn) then $k else . end)]
+                 | reverse + [$n] end),
+       ce: (if $broken then null else [foreach range($n - 1; -1; -1) as $k ({ends: [], out: $n};
+               ($depth[$k]) as $d
+               | if $w0[$k] | IN(";", "&", "|", "\n") then .ends[$d] = $k | .out = $k
+                 elif $w0[$k] == ")" then .ends[$d + 1] = $k | .out = (.ends[$d] // $n)
+                 else .out = (.ends[$d] // $n) end;
+               .out)] | reverse + [$n] end),
+       na: (if $review | not then null
+            else [foreach range($n - 1; -1; -1) as $k ($n; if $w0[$k] | may_approve then $k else . end)]
+                 | reverse + [$n] end),
+       nr: (if $review | not then null
+            else [foreach range($n - 1; -1; -1) as $k ($n; if $w0[$k] | may_name_review then $k else . end)]
+                 | reverse + [$n] end)}
+  end;
+# Where the command of the word at `$i` ends: the table's answer, or the whole command's end
+# when there is no table.
+def command_end($t; $i): ($t.ce // [])[$i] // ($t.w0 | length);
+def write_in_command($t; $from; $i):
+  $t.nw != null and ($t.nw[$from] // ($t.nw | length)) < command_end($t; $i);
 def opener_counts($w0):
   [0] + [foreach range(0; $w0 | length) as $k (0; . + (if opener_at($w0; $k) then 1 else 0 end))];
 def openers_between($t; $a; $b):
   $t.oc != null and ($t.oc[$b] - $t.oc[$a]) > 0;
+
+# An alias set on the command line (`-c alias.x=...`, `-calias.x=...`, `--config-env alias.x=VAR`,
+# `--config-env=alias.x=VAR`), counted the same way: the number of such words before each index,
+# built once per command that holds one, so whether a git's own option run sets one is a
+# subtraction (in `git -c git -c ...` every run reaches the end of the chain).
+def sets_alias: test("^(-c|--config-env=)?alias\\."; "i");
+def alias_setting_counts($w):
+  if any($w[]; sets_alias) | not then null
+  else [0] + [foreach $w[] as $x (0; . + (if $x | sets_alias then 1 else 0 end))] end;
+# The same setting written as an assignment (`GIT_CONFIG_KEY_0=alias.x`, a key that is an expansion,
+# any `GIT_CONFIG_PARAMETERS=`), counted the same way: a git with one anywhere before it is denied.
+def env_sets_alias: test("^(GIT_CONFIG_KEY_[0-9]+=(alias\\.|.*\\$)|GIT_CONFIG_PARAMETERS=)"; "i");
+def env_alias_setting_counts($w):
+  if any($w[]; env_sets_alias) | not then null
+  else [0] + [foreach $w[] as $x (0; . + (if $x | env_sets_alias then 1 else 0 end))] end;
+def alias_set_between($t; $a; $b):
+  $t.ac != null and $b > $a and ($t.ac[$b] - $t.ac[$a]) > 0;
 
 # A read exception rests on a written flag (`--dry-run`, `--version`, `--help`, `--abort`,
 # `--ff-only`, ...), and input placed at a replacement token inside that flag replaces it: `ls |
@@ -929,16 +1155,27 @@ def detect_git($w; $t; $i; $n; $cmd_pos):
     (after_options($t; $i + 1)) as $sub
     | if unreadable_input_word($w; $t; $i; $sub; $n; $cmd_pos) then
         {next: ([$sub, $i + 1] | max), reason: "git with an input-supplied subcommand"}
-      elif $t.lw > $i
+      elif write_in_command($t; $i + 1; $i)
          and (openers_between($t; $i + 1; [$sub + 1, $n] | min)
               or (($w[$sub] // "") | contains("$"))
-              or ($t.lw > $sub and soft_subcommand_opener($t; $sub; $t.lv[$i + 1] // 0)))
+              or (write_in_command($t; $sub + 1; $i) and soft_subcommand_opener($t; $sub; $t.lv[$i + 1] // 0)))
       then
         {next: ([$sub, $i + 1] | max), reason: "git with a shell expansion before its subcommand"}
+      # An alias set on the command line (`git -c alias.ship=push ship origin v1`, `--config-env
+      # alias.x=VAR`, `-calias.x=...`) is denied whatever it says, as an inline
+      # `push.default=matching` is: the alias git would run is the one this setting defines.
+      elif ($t.ec != null and ($t.ec[$i] // 0) > 0)
+           or alias_set_between($t; $i + 1;
+                (if openers_between($t; $i + 1; [$sub + 1, $n] | min) or (($w[$sub] // "") | contains("$"))
+                    or soft_subcommand_opener($t; $sub; $t.lv[$i + 1] // 0)
+                 then command_end($t; $i) else [$sub, $n] | min end)) then
+        {next: ([$sub, $i + 1] | max), reason: "git with an alias set on the command line"}
       elif ($sub >= $n) or ($w[$sub] | is_sep) then null
       else
         ($w[$sub]) as $subcmd
-        | if $subcmd == "push" then
+        | if $subcmd == "\u0007!" then {next: ($sub + 1), reason: "git alias that runs a shell command"}
+          elif $subcmd == "\u0007?" then {next: ($sub + 1), reason: "git alias that cannot be read"}
+          elif $subcmd == "push" then
             (push_scan($w; $t; $sub + 1; $n)) as $sc
             | (config_push_scan($w; $t; $i + 1; $sub)) as $cf
             | ($sc.tags or $cf.tags
@@ -962,7 +1199,12 @@ def detect_git($w; $t; $i; $n; $cmd_pos):
             | {next: $sc.end, reason: (if $sc.found then null else "git merge" end)}
           elif $subcmd == "rebase" then
             (segment_scan($w; $sub + 1; $n; ["--abort"] | fixed_flags(input_tokens($t; $i)))) as $sc
-            | {next: $sc.end, reason: (if $sc.found then null else "git rebase" end)}
+            # `--show-current-patch` only prints, and git refuses it beside any other argument, so
+            # it reads only as the one word after `rebase`: elsewhere it can be an option's value
+            # (`git rebase -x --show-current-patch main` rebases, running it as the exec command).
+            | ($w[$sub + 1] == "--show-current-patch" and $sc.end == $sub + 2
+               and (["--show-current-patch"] | fixed_flags(input_tokens($t; $i)) | length) > 0) as $show
+            | {next: $sc.end, reason: (if $sc.found or $show then null else "git rebase" end)}
           elif $subcmd == "pull" then
             (segment_scan($w; $sub + 1; $n; ["--ff-only"] | fixed_flags(input_tokens($t; $i)))) as $sc
             | {next: $sc.end, reason: (if $sc.found then null else "git pull" end)}
@@ -1067,6 +1309,16 @@ def issue_endpoint:
   sub("[?#].*$"; "")
   | test("(?i)(^|/)(repos/.*|repositories/[^/]+)/issues(/|$)")
     and (test("(?i)/issues/[^/]+/comments/?$") | not);
+# A review of a pull request (`pulls/<n>/reviews`) or the submission of a pending one
+# (`pulls/<n>/reviews/<id>/events`), judged on the path before any `?` or `#` and on every
+# non-option word of the call, as the issue endpoint is. Only GitHub's pull-request reviews have a
+# path ending in `reviews`.
+def review_endpoint:
+  ((ascii_downcase | contains("review"))
+   and (sub("[?#].*$"; "") | test("(?i)(^|/)reviews(/[^/]+/events)?/?$")))
+  # A percent-encoded path (`review%73`, `reviews%2F`) is not read for what it decodes to; one
+  # under `pulls` counts as a review.
+  or (contains("%") and (ascii_downcase | test("pull|review")));
 def issue_mutation_re:
   "(^|[^A-Za-z])(create|close|reopen|update|delete|transfer|pin|unpin|lock|unlock|add|remove|clear|reprioritize|mark|unmark|set|convert|replace|apply|reject)[A-Za-z0-9]*(Issue|Labelable|Assignable|Lockable|BlockedBy|LinkedBranch)";
 # The words worth testing against it: one naming none of its nouns cannot match.
@@ -1083,6 +1335,14 @@ def gh_api_field_value($v):
     ($v | sub("(?i)^query="; "")) as $q
     | if ($q == "") or ($q | startswith("@")) or ($q | contains("$")) then .query_hidden = true
       else .query_visible = true end
+  # A review's `event`: APPROVE, or a value this cannot read (a file, a shell expansion, empty),
+  # counts as an approval (`detect_gh_api`).
+  elif ($v | test("^[^=]*=")) and (($v | sub("^[^=]*="; "")) | startswith("@") or contains("$"))
+       and ($v | test("(?i)^event=") | not) then .hidden_field = true
+  elif $v | test("(?i)^event=") then
+    ($v | sub("(?i)^event="; "")) as $e
+    | if ($e == "") or ($e | startswith("@")) or ($e | contains("$")) or ($e | test("(?i)^approve$"))
+      then .approve_event = true else . end
   else . end;
 
 def write_tool_names: ["release.sh", "prune-merged.sh", "land-prs.sh", "update-pr.sh"];
@@ -1124,7 +1384,8 @@ def gh_api_method($m):
 def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
   {i: $start, method: null, field: false, late_field: false, other_call: false,
    endpoint: null,
-   merge_type: false, issue_endpoint: false,
+   merge_type: false, issue_endpoint: false, review_endpoint: false, approve_event: false, input: false,
+   hidden_field: false,
    query_visible: false, query_hidden: false, crossed_at: null, cont: false, sub_left: 0}
   | (until(.i >= $n or ($w[.i] | is_hard_sep)
           or ($bounded and ($w[.i] | is_sep))
@@ -1151,10 +1412,10 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
           .field = true | .late_field = (.late_field or .other_call)
           | gh_api_field_value($x | .[2:]) | .i += 1
         elif $x == "--input" then
-          .field = true | .late_field = (.late_field or .other_call) | .query_hidden = true
+          .field = true | .late_field = (.late_field or .other_call) | .query_hidden = true | .input = true
           | (if $has_value then .i += 2 else .i += 1 end)
         elif $x | startswith("--input=") then
-          .field = true | .late_field = (.late_field or .other_call) | .query_hidden = true
+          .field = true | .late_field = (.late_field or .other_call) | .query_hidden = true | .input = true
           | .i += 1
         elif $x | gh_api_value_flag then (if $has_value then .i += 2 else .i += 1 end)
         elif $x | startswith("-") then .i += 1
@@ -1180,6 +1441,7 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
                      or ($x | test("(?i)/git/refs(/|$)")))
              then .merge_type = true else . end)
           | (if ($x | contains("/")) and ($x | issue_endpoint) then .issue_endpoint = true else . end)
+          | (if $x | review_endpoint then .review_endpoint = true else . end)
           | .i += 1
         end)
   | .resume = (.crossed_at // .i)) as $r
@@ -1187,6 +1449,9 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
   | if ($r.endpoint // "") | test("(?i)(^|/)graphql$") then
       (if $lm >= $start and ($t.li // -1) >= $start then {next: $r.resume, reason: "gh api graphql issue mutation"}
        elif $r.query_hidden and ($t.li // -1) >= 0 then {next: $r.resume, reason: "gh api graphql issue mutation"}
+       elif $lm >= $start and ($t.lra // -1) >= $start
+            and (($t.lap // -1) >= $start or $r.hidden_field or $r.approve_event)
+       then {next: $r.resume, reason: "gh api graphql approving review"}
        elif $lm >= $start then {next: $r.resume, reason: "gh api graphql mutation"}
        elif $r.query_hidden or ($r.query_visible | not)
        then {next: $r.resume, reason: "gh api graphql with a query not written inline"}
@@ -1195,13 +1460,18 @@ def detect_gh_api($w; $t; $start; $n; $lm; $bounded):
     elif $is_get and ($r.late_field | not) then {next: $r.resume, reason: null}
     elif ($r.method != null) or $r.field then
       {next: $r.resume,
-       reason: (if $r.issue_endpoint then "gh api issue write" elif $r.merge_type then "gh api merge-type"
-                else "gh api" end)}
+       reason: (($r.review_endpoint and ($r.approve_event or $r.input)) as $approves
+                | if $r.issue_endpoint then "gh api issue write"
+                  elif $r.merge_type and $approves then "gh api merge-type approving review"
+                  elif $r.merge_type then "gh api merge-type"
+                  elif $approves then "gh api approving review"
+                  else "gh api" end)}
     else {next: $r.resume, reason: null}
     end
   | .scan_end = (if $r.crossed_at == null then null else $r.i end)
   | .end = $r.i
   | .issue_endpoint = $r.issue_endpoint
+  | .review_endpoint = $r.review_endpoint
   | .graphql = (($r.endpoint // "") | test("(?i)(^|/)graphql$"));
 
 # Every `gh` noun writes unless its verb is on one shared list of reads (`view`, `list`, `status`,
@@ -1256,9 +1526,13 @@ def detect_gh($w; $t; $i; $n; $lm; $bounded; $cmd_pos):
           elif $noun == "api" then
             detect_gh_api($w; $t; $noun_i + 1; $n; $lm; $bounded) as $api
             # Input that can add `-X PATCH -f state=closed` to a written issue endpoint makes an
-            # issue write, denied wrapped or not like a written one.
-            | if $api.reason == null and input_supplies_gh_api($w; $t; $i; $noun_i + 1; $api)
+            # issue write, denied wrapped or not like a written one, and input that can add
+            # `-f event=APPROVE` to a written review endpoint makes an approval.
+            | if ($api.reason == null
+                  or ($api.review_endpoint and ($api.reason | IN("gh api", "gh api merge-type"))))
+                 and input_supplies_gh_api($w; $t; $i; $noun_i + 1; $api)
               then $api | .reason = (if $api.issue_endpoint then "gh api issue write"
+                                     elif $api.review_endpoint then "gh api review with input-supplied arguments"
                                      else "gh api with input-supplied arguments" end)
               else $api end
           else
@@ -1274,6 +1548,29 @@ def detect_gh($w; $t; $i; $n; $lm; $bounded; $cmd_pos):
               else
                 ($w[$verb_i]) as $verb
                 | if $verb | ascii_downcase | IN(generic_reads[]) then null
+                  # `gh pr review` approves with a word that may approve (`may_approve`) inside its
+                  # own command -- up to its next `;`, `&`, `|` or newline outside quotes at its own
+                  # depth of parentheses, so a `;` inside a substitution ends nothing -- or with a
+                  # flag input appends.
+                  elif $noun == "pr" and ($verb | ascii_downcase) == "review" then
+                    {next: ($verb_i + 1),
+                     reason: (if $t.na != null and ($t.na[$verb_i + 1] // $n) < command_end($t; $verb_i)
+                              then "gh pr review --approve"
+                              elif ($t.xargs[$i].active // false)
+                                   and input_supplies_gh_api($w; $t; $i; $verb_i + 1;
+                                         {graphql: false,
+                                          end: segment_scan($w; $verb_i + 1; $n; []).end})
+                              then "gh pr review with input-supplied arguments"
+                              else "gh pr review" end)}
+                  # A gh alias can stand for an approval (`gh alias set ap 'pr review --approve'`,
+                  # then `gh ap 5`), and the later call names none: a `gh alias set` whose own
+                  # command names `review` or holds an expansion, and every `gh alias import`, whose
+                  # aliases come from a file, are approvals.
+                  elif $noun == "alias" and $verb == "import" then
+                    {next: ($verb_i + 1), reason: "gh alias import"}
+                  elif $noun == "alias" and $verb == "set"
+                       and $t.nr != null and ($t.nr[$verb_i + 1] // $n) < command_end($t; $verb_i) then
+                    {next: ($verb_i + 1), reason: "gh alias set for a review"}
                   else {next: ($verb_i + 1), reason: ("gh " + $noun + " " + $verb)}
                   end
               end
@@ -1349,11 +1646,26 @@ def detect_wrapper($w; $t; $i; $n):
 def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
 def is_push_like($reason):
   ($reason | startswith("git push")) or ($reason | startswith("tools/"))
-  or ($reason == "git with an input-supplied subcommand");
+  or ($reason == "git with an input-supplied subcommand")
+  or ($reason == "git with a shell expansion before its subcommand")
+  or ($reason | IN("git with an alias set on the command line", "git alias that runs a shell command",
+                   "git alias that cannot be read"));
 def is_merge_like($reason):
   ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type")
   or ($reason == "gh with an input-supplied noun or verb")
-  or ($reason == "gh api with input-supplied arguments");
+  or ($reason == "gh api with input-supplied arguments")
+  or ($reason | IN("gh api merge-type approving review", "gh api review with input-supplied arguments"));
+# **Only a reviewer identity approves a pull request** (busy-ibis, statement 9: "we can prevent
+# approvals from non-reviewers"): GitHub stops only a pull request's own author from approving it,
+# so `claude-coder` and `claude-orchestrator` could each approve the other's, and that approval
+# counts toward the one `main` requires. An approving review is denied unless the command is
+# wrapped as `claude-reviewer` or `codex-reviewer`, the mirror of the rule that a reviewer never
+# pushes or merges; a COMMENT or REQUEST_CHANGES review stays open to every identity.
+def is_approval($reason):
+  $reason | IN("gh pr review --approve", "gh pr review with input-supplied arguments",
+               "gh api approving review", "gh api merge-type approving review",
+               "gh api review with input-supplied arguments", "gh api graphql approving review",
+               "gh alias set for a review", "gh alias import");
 # A direct issue write, denied wrapped or not: `gh issue`'s own write verbs, and the API's. The
 # input-wrapper forms count too (`detect_gh`): `gh issue` whose verb input supplies starts with
 # `gh issue `, and a `gh` whose noun input supplies may be handed `issue close 5`.
@@ -1390,7 +1702,7 @@ def command_words($t; $tp; $i):
   + (if $t.cw2 == null then [] else [$t.cw2[$i] // $i] end)
   + (if $tp == null then []
      else [command_word($tp; $i)] + (if $tp.cw2 == null then [] else [$tp.cw2[$i] // $i] end) end);
-def findings($w; $w0; $levels; $unsure):
+def findings($w; $w0; $levels; $unsure; $wn; $has):
   # Levels that are all 0 group nothing, and the plain reading would be the same one again.
   (if $levels | any(. > 0) then $levels else null end) as $lv
   | ($w | length) as $n
@@ -1400,12 +1712,19 @@ def findings($w; $w0; $levels; $unsure):
      else [range(0; $n)
            | select($w[.] | may_name_issue_mutation and test(issue_mutation_re))]
           | last // -1 end) as $li
+  # GraphQL's review mutations (`addPullRequestReview`, `submitPullRequestReview`, not their
+  # `...Comment`/`...Thread` relatives) and the word APPROVE, read only once a mutation is there:
+  # a GraphQL call is an approving review when both appear from its start on. A later, unrelated
+  # APPROVE in the same command makes a false deny, the safe direction.
+  | (if $lm < 0 then -1
+     else [range(0; $n) | select($w[.] | test("(?i)(add|submit)PullRequestReview([^A-Za-z]|$)"))]
+          | last // -1 end) as $lra
+  | (if $lra < 0 then -1
+     else [range(0; $n) | select($w[.] | test("(?i)approve"))] | last // -1 end) as $lap
   # The last word that names a commit-making or pushing git subcommand: a git whose option run
   # holds a command substitution, or whose subcommand is an expansion, is a write only when one
   # follows (`detect_git`).
-  | ([range(0; $n)
-      | select($w[.] | IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am"))]
-     | last // -1) as $lw
+  | ([range(0; $n) | select($w[.] | is_write_name($wn))] | last // -1) as $lw
   # A command with no wrapper word needs no table of wrapper options.
   | (if any($w[]; is_wrapper_word(.)) then $w | wrapper_owners else null end) as $owners
   | (if $lv == null then null else {lv: $lv, ends: word_ends($lv)} end) as $g
@@ -1413,12 +1732,16 @@ def findings($w; $w0; $levels; $unsure):
   | ($w | options_table($g; null)) as $ao
   | (if $owners == null then null else $w | options_table($g; $owners) end) as $wo
   | (if $wo == null then null else $w | command_table($wo; $g; $inputs) end) as $cw2
+  | (if $has.alias then alias_setting_counts($w) else null end) as $ac
+  | ($has.review and (any($w[]; . == "review") or any($w[]; . == "alias"))) as $review
+  | write_tables($w; $w0; $lw; $wn; $lw >= 0 or $ac != null or $review; $review) as $wt
   | {ao: $ao, cw: ($w | command_table($ao; $g; $inputs)),
      cw2: $cw2,
-     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li,
+     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li, lra: $lra, lap: $lap,
      xargs: (if $inputs != null
              then xargs_context($w0; $lv; $unsure; $inputs) else null end),
-     oc: (if $unsure then opener_counts($w0) else null end)} as $t
+     oc: (if $unsure then opener_counts($w0) else null end),
+     ac: $ac, ec: (if $has.env then env_alias_setting_counts($w) else null end), nw: $wt.nw, ce: $wt.ce, na: $wt.na, nr: $wt.nr} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
        | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null; $inputs))
@@ -1427,7 +1750,8 @@ def findings($w; $w0; $levels; $unsure):
      else null end) as $tp
   | ($t | .tp = $tp) as $t
   | {i: 0, wrap_from: null, wrap_role: null, wrap_inner: false, wrapped: false,
-     cmd_words: command_words($t; $tp; 0), out: [], reviewer_push: false, issue_write: false, scanned_to: -1}
+     cmd_words: command_words($t; $tp; 0), out: [], reviewer_push: false, issue_write: false, approval: false,
+     scanned_to: -1}
   | until(.i >= $n;
       . as $state
       | ($w[$state.i]) as $x
@@ -1465,13 +1789,16 @@ def findings($w; $w0; $levels; $unsure):
                        and ((reviewer_roles | index($state.wrap_role)) != null)
                     then .out += [$hit.reason] | .reviewer_push = true
                     elif is_issue_write($hit.reason) then .out += [$hit.reason] | .issue_write = true
+                    elif is_approval($hit.reason) and ((reviewer_roles | index($state.wrap_role)) == null)
+                    then .out += [$hit.reason] | .approval = true
                     else . end)
                  else .out += [$hit.reason]
-                   | (if is_issue_write($hit.reason) then .issue_write = true else . end) end
+                   | (if is_issue_write($hit.reason) then .issue_write = true else . end)
+                   | (if is_approval($hit.reason) then .approval = true else . end) end
                | .i = $hit.next)
             end
         end)
-  | {out, reviewer_push, wrapped, issue_write};
+  | {out, reviewer_push, wrapped, issue_write, approval};
 
 # **The three shapes whose text is told apart for certain** (the header's list): the command with
 # that text taken out, or the command unchanged, to be read as it stands. Every shape is matched
@@ -1539,13 +1866,20 @@ def text_shape:
 # own cost stays well under a second whatever it is given.
 def too_long: 65536;
 def hard_cap: 1048576;
+# A case-insensitive regex for a word whose letters may stand apart by any of the characters the
+# reading drops (backslash-newline, a backslash, a quote, a `$`), as `names_a_write_tool` reads.
+def loose_re($word):
+  "(?:\\\\\n|[\\\\\"'$])*" as $skip
+  | "(?i)" + ($word | split("") | map(if . == "." then "\\." else . end) | join($skip));
 def names_a_write_tool:
   "(?:\\\\\n|[\\\\\"'$])*" as $skip
   | "(?i)" + (["git", "gh", "release.sh", "prune-merged.sh", "land-prs.sh", "update-pr.sh"]
              | map(split("") | map(if . == "." then "\\." else . end) | join($skip))
              | join("|"));
 
-if (.tool_name | IN("Bash", "Monitor")) | not then empty else
+# `$git_in` is `git_table`'s answer, read from a file (`--slurpfile`) rather than an argument.
+($git_in[0]) as $git
+| if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
   | if length > hard_cap then
@@ -1567,30 +1901,101 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
            else swap(","; "\u0004") | swap("["; "\u0004") | swap("]"; "\u0004") end) as $marked
       | (($marked | contains("\u0003"))
          or ($bare | drop("\\\n") | test("\\$\\(|`|<<|\\$\\{|\\$\\$'"))) as $unsure
-      | ($marked | drop("\u0003") | split_words | leveled_parts) as $parts
+      | ($marked | drop("\u0003") | split_words | leveled_parts | splice_aliases($git)) as $parts
+      # Whether the command could hold an alias setting, an assignment setting one, or a `review`
+      # or `alias` word at all, each one regex over the whole text (letters apart only by what the
+      # reading drops), so a long command holding none builds none of their per-word tables.
+      | {alias: ($bare | test(loose_re("alias."))),
+         env: ($bare | test("(?i)GIT_CONFIG_(KEY_|PARAMETERS)")),
+         review: ($bare | test(loose_re("review") + "|" + loose_re("alias")))} as $has
       | ($parts | map(.w)) as $w0
       | ($w0 | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
-      | (findings($w; $w0; $parts | map(.c); $unsure)) as $result
+      | (findings($w; $w0; $parts | map(.c); $unsure; alias_write_names($git); $has)) as $result
       | if ($result.out | length) == 0 then empty else $result end
     end
 end
 
 JQ
 
-command -v jq >/dev/null 2>&1 || exit 0
-if ! result=$(jq -c "$check_program" 2>/dev/null); then
+input=$(cat)
+
+# **Every failure of the guard's own machinery denies** (fails closed). A hook that errors or prints
+# nothing lets the command through in both Claude Code and Codex, so the guard never answers
+# "allow" by breaking: no jq at all, the program failing, and the answer failing to print are
+# each a deny. No text larger than a few kilobytes is ever an argument to another program -- the
+# program, git's answer, the command and the reason all go through stdin or a file -- since Linux
+# refuses any one argument over 128 KB (MAX_ARG_STRLEN) where macOS does not, and that refusal is
+# exactly such a failure.
+deny_unread() {
+	printf '%s\n' "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"$1\"}}"
+	exit 0
+}
+# With no jq the command cannot be read at all: one naming git, gh or a pushing script anywhere in
+# the hook's payload (quotes, backslashes and `$` taken out) is denied, and any other is let
+# through, so installing jq is not itself refused.
+if ! command -v jq >/dev/null 2>&1; then
+	if printf '%s' "$input" | tr -d "\\\\\"'\$" | grep -qiE 'git|gh|release\.sh|prune-merged|land-prs|update-pr'; then
+		deny_unread "The write guard needs jq to read this command, and jq is not installed, so a command naming git, gh or a pushing tools/ script is denied unread. Install jq. See .claude/hooks/github-write-guard.sh."
+	fi
+	exit 0
+fi
+
+# What git's aliases stand for, read for `splice_aliases` (above): asked of git itself, in the
+# directory the session's command runs in (the hook JSON's `cwd`, else this one), so the
+# player's global aliases, the repository's own and any file they include all count. Only a
+# command of the two guarded tools that names git, with quotes, backslashes, `$` and newlines
+# taken out as the reading takes them out, and that is short enough to be read at all, asks;
+# every other command reads with no aliases, and so does any command where git or its config
+# cannot answer. The built-ins are asked for only when there is an alias to tell them from.
+git_table() {
+	local dir aliases builtins
+	command -v git >/dev/null 2>&1 || { printf 'null'; return; }
+	dir=$(printf '%s' "$input" | jq -r --argjson cap 65536 '
+		if (.tool_name | IN("Bash", "Monitor")) | not then "-" else
+		  (.tool_input.command // ""
+		   | if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end) as $c
+		  | if ($c | length) > $cap or ($c | test("(?i)g[\\\\\"'\''$\n]*i[\\\\\"'\''$\n]*t") | not) then "-"
+		    else (.cwd // "" | if type == "string" and length > 0 then . else "." end) end
+		end' 2>/dev/null) || { printf 'null'; return; }
+	if [ "$dir" = "-" ]; then printf 'null'; return; fi
+	[ -d "$dir" ] || dir=.
+	aliases=$(git -C "$dir" config -z --get-regexp '^alias\.' 2>/dev/null | jq -Rsc '
+		[split("\u0000")[] | select(length > 0)
+		 | (index("\n")) as $k
+		 | if $k == null then {key: .[6:], value: null} else {key: .[6:$k], value: .[$k + 1:]} end
+		 | .key |= ascii_downcase]
+		| from_entries' 2>/dev/null) || aliases='{}'
+	[ -n "$aliases" ] || aliases='{}'
+	if [ "$aliases" = '{}' ]; then
+		printf '{"aliases":{},"builtins":{}}'
+		return
+	fi
+	builtins=$(git --list-cmds=builtins 2>/dev/null | jq -Rsc '[split("\n")[] | select(length > 0) | {key: ., value: true}] | from_entries' 2>/dev/null) \
+		|| builtins='{}'
+	[ -n "$builtins" ] || builtins='{}'
+	printf '{"aliases":%s,"builtins":%s}' "$aliases" "$builtins"
+}
+git_json=$(git_table)
+
+if ! result=$(printf '%s' "$input" \
+		| jq -c --slurpfile git_in <(printf '%s' "$git_json") -f <(printf '%s' "$check_program") 2>/dev/null); then
 	flagged="(the guard's own jq program failed on this command, so it could not be checked)"
 	reviewer_push=false
 	wrapped=false
 	issue_write=false
+	approval=false
 	too_long=false
 elif [ -z "$result" ]; then
 	exit 0
 else
-	flagged=$(printf '%s' "$result" | jq -r '.out | join("; ")')
+	flagged=$(printf '%s' "$result" | jq -r '
+		.out | reduce .[] as $x ([]; if index([$x]) != null then . else . + [$x] end)
+		| join("; ") | if length > 1000 then .[:1000] + " ..." else . end') \
+		|| flagged="(the guard could not list what it flagged)"
 	reviewer_push=$(printf '%s' "$result" | jq -r '.reviewer_push')
 	wrapped=$(printf '%s' "$result" | jq -r '.wrapped')
 	issue_write=$(printf '%s' "$result" | jq -r '.issue_write // false')
+	approval=$(printf '%s' "$result" | jq -r '.approval // false')
 	too_long=$(printf '%s' "$result" | jq -r '.too_long // false')
 fi
 
@@ -1622,6 +2027,16 @@ or claude-orchestrator when the pull request has no code changes. \
 If this is a comment or review whose own text only mentions a path such as /merge, /contents/ or \
 /git/refs, send the body from a file with --input (or -F body=@file) so its words are not read as \
 the endpoint. See committing and pr-review."
+elif [ "$approval" = "true" ]; then
+	reason="This command approves a pull request ($flagged) outside a reviewer identity. Only a \
+reviewer approves: a review's APPROVE runs through 'uv run python tools/agent-identity.py run \
+claude-reviewer -- <command>' (Codex: codex-reviewer), under pr-review, and never as claude-coder, \
+claude-orchestrator or codex-coder, since GitHub stops only a pull request's own author and that \
+approval would count toward the one main requires. Any identity may post a COMMENT or \
+REQUEST_CHANGES review. A review whose event or flags the guard cannot read (a body from --input, \
+event=@file, a variable or a \$(...) among gh pr review's words) counts as an approval: name the \
+event inline (-f event=COMMENT, gh pr review --comment) and send the body from a file (-F \
+body=@file, --body-file file). See committing and pr-review."
 else
 	reason="This command writes to GitHub ($flagged) outside any agent identity. A write is a git \
 push; a commit-making git verb (commit, cherry-pick/revert/am, merge/rebase past --abort, pull \
@@ -1676,10 +2091,16 @@ fi
 # any other value, and every unwrapped write is denied, exactly as on a machine with identities.
 # *(2026-10-02: "Make it so it can be easily turned off and refuse again later. So I can turn it
 # on/off without approval hacks"; then "Yes default to refusing".)* It is read from the environment
-# the session was started with --
-# a cloud environment's own variables (its settings, then Edit; a new session picks a change up),
-# or the shell that launched Claude Code -- which is what keeps it the player's: a command an agent
-# runs cannot change the environment this hook is started in.
+# the session was started with -- a cloud environment's own variables (its settings, then Edit; a
+# new session picks a change up), or the shell that launched Claude Code. It is an environment
+# variable because the session sets it, not a command *(busy-ibis, statement 8: "env was chosen
+# because it's set by the session and not directly. but even with tricks like updating the
+# settings all it will do is prompt the command to me anyway")*. An agent could still switch it on
+# with an ordinary file write -- the `env` key of `.claude/settings.local.json`, or making a machine
+# with identities look like one without (`NAPPY_AGENTS_DIR`, or moving `~/.config/nappy-agents`) --
+# and this hook does not stop that; switched on any of those ways, all it does is put each ordinary
+# write in front of the player as a prompt, which only the player can approve. That a session
+# leaves the switch alone is **committing**'s rule, not something this hook enforces.
 askable_reasons='["git commit","git push","git cherry-pick","git revert","git am","git merge",
 "git rebase","git pull","gh pr create","gh pr comment","gh pr edit","gh pr ready"]'
 decision="deny"
@@ -1698,11 +2119,14 @@ such writes refused instead, remove NAPPY_ASK_FOR_PLAYER_WRITES=1 from the envir
 starts with."
 fi
 
-jq -n --arg reason "$reason" --arg decision "$decision" '{
+# The reason goes in on stdin. If even this fails, a fixed deny is printed instead, never nothing.
+if ! printf '%s' "$reason" | jq -Rsc --arg decision "$decision" '{
   hookSpecificOutput: {
     hookEventName: "PreToolUse",
     permissionDecision: $decision,
-    permissionDecisionReason: $reason
+    permissionDecisionReason: .
   }
-}'
+}' 2>/dev/null; then
+	deny_unread "The write guard could not print its own answer, so this command is denied unread. See .claude/hooks/github-write-guard.sh."
+fi
 exit 0

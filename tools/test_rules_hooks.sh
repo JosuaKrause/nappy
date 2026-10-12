@@ -139,6 +139,35 @@
 #   - input-wrapper clusters and values share one parser: flag-shaped values never select a new
 #     replacement token, unknown option arity fails closed, and a long chain of consumed values
 #     named xargs stays bounded; the corresponding known reads and identity controls still pass
+#   - every write-guard case runs in a repository of its own under a global git config this suite
+#     writes and no system config, so the machine's own aliases never change a result; with
+#     aliases configured, a git alias is read as the command it stands for (ci = commit denies,
+#     a chain is followed, an alias's own refspec is read, a lone ; in it stays a word), a ! alias,
+#     a looping one, one with no value and one starting with git's own options deny, an alias to
+#     a read and a built-in an alias cannot shadow allow, a coder's wrapper exempts each and a
+#     reviewer's does not exempt a push or an unreadable one, and where no identity can work an
+#     alias is asked about or denied as what it stands for; an alias set on the command line
+#     (-c alias.*, attached, any case, quoted, --config-env either way) denies wrapped as a reviewer
+#     or unwrapped; and the longest alias chains are decided well inside the timeout
+#   - an approving review (gh pr review --approve/-a, a gh api review POST or pending review's
+#     events with event=APPROVE, an unreadable event or an --input body, a GraphQL
+#     addPullRequestReview/submitPullRequestReview naming APPROVE) denies unwrapped and under
+#     claude-coder, claude-orchestrator and codex-coder, and allows under claude-reviewer and
+#     codex-reviewer; a COMMENT, REQUEST_CHANGES or pending review allows under every role; input
+#     that can add a flag to a review counts as an approval, and on the API's review endpoint
+#     refuses a reviewer too
+#   - a git whose options hold an unquoted substitution is a write only when a write's name stands
+#     inside its own command (git -C $(...) log | grep merge allows; the substitution's own words,
+#     a backtick, a quoted script and an unmatched parenthesis still deny), decided quickly behind
+#     30 000 open parentheses and through 64 KB of such gits; git rebase --show-current-patch
+#     reads, and git push --dry-run and git commit --dry-run stay accepted false denies
+#   - #736's review: an alias behind an unquoted substitution in git's options, and an inline alias
+#     setting past one, deny (a reviewer's unreadable git subcommand too); a gh pr review word an
+#     expansion can make an approving flag counts as one, and a ; inside a substitution ends
+#     nothing; unpaired parentheses fall back to the whole command; --show-current-patch reads
+#     only as rebase's one argument; an alias set by a GIT_CONFIG_* assignment denies; a gh alias
+#     set naming a review, gh alias import, a GraphQL review whose event is read from a file or an
+#     expansion, and a percent-encoded review path count as approvals
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -225,7 +254,12 @@ assert_decided_in_time() {
     fi
 }
 assert_guard_timed() { assert_decided_in_time "$1" guard_decision "$2" "$3" "${4:-8}"; }
-assert_write_guard_timed() { assert_decided_in_time "$1" write_guard_decision "$2" "$3" "${4:-8}"; }
+# The write guard's timed cases are its long commands, so each runs with jq and git behind the
+# shims below, which refuse an argument over 128 KB the way Linux does.
+assert_write_guard_timed() {
+    local write_guard_path="$write_guard_shims"
+    assert_decided_in_time "$1" write_guard_decision "$2" "$3" "${4:-8}"
+}
 
 # Prints the sorted, comma-joined, deduplicated list of skill names project-rules.sh injected for
 # one Edit of $3 (a path relative to $root), for session $1 and agent $2 ("" for the main session).
@@ -1008,10 +1042,50 @@ write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
 mkdir -p "$write_guard_agents"
 write_guard_remote=""
 write_guard_switch=""
+# The guard asks git what an alias stands for, in the directory the hook JSON names, so every case
+# runs in a repository of its own under a global config this suite writes and with no system
+# config: the machine's own aliases (the player's `ci` = `commit`) never change a result. The
+# default config holds no alias; the alias cases switch `write_guard_gitconfig` to one that does.
+write_guard_repo="${TMPDIR:-/tmp}/write-guard-repo"
+git init -q "$write_guard_repo"
+write_guard_no_aliases="${TMPDIR:-/tmp}/write-guard-gitconfig-empty"
+: > "$write_guard_no_aliases"
+write_guard_gitconfig="$write_guard_no_aliases"
+# Linux refuses any one argument over 128 KB (MAX_ARG_STRLEN) and macOS does not, so a guard that
+# hands a long text to another program as an argument passes on a Mac and fails, open, on CI. jq and
+# git are shimmed here to refuse such an argument the way Linux does; `write_guard_path` puts the
+# shims first on the guard's PATH (every timed case does), and `write_guard_fail_jq` makes the jq
+# shim fail outright on a call with an argument holding that text, for the fail-closed cases.
+write_guard_shims="${TMPDIR:-/tmp}/write-guard-shims"
+mkdir -p "$write_guard_shims"
+for write_guard_tool in jq git; do
+    write_guard_real="$(command -v "$write_guard_tool")"
+    {
+        printf '#!/usr/bin/env bash\n'
+        printf 'for a in "$@"; do\n'
+        printf '    if [ "${#a}" -gt 131072 ]; then echo "%s: Argument list too long" >&2; exit 126; fi\n' "$write_guard_tool"
+        printf '    if [ -n "${WRITE_GUARD_FAIL_JQ:-}" ] && [ "%s" = jq ]; then\n' "$write_guard_tool"
+        printf '        case "$a" in *"$WRITE_GUARD_FAIL_JQ"*) echo "jq: made to fail" >&2; exit 5 ;; esac\n'
+        printf '    fi\n'
+        printf 'done\n'
+        printf 'exec %q "$@"\n' "$write_guard_real"
+    } > "$write_guard_shims/$write_guard_tool"
+    chmod +x "$write_guard_shims/$write_guard_tool"
+done
+write_guard_path=""
+write_guard_fail_jq=""
+write_guard_env() {
+    env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES -u GIT_CONFIG_PARAMETERS -u GIT_CONFIG_COUNT \
+        PATH="${write_guard_path:+$write_guard_path:}$PATH" ${write_guard_fail_jq:+WRITE_GUARD_FAIL_JQ=$write_guard_fail_jq} \
+        GIT_CONFIG_GLOBAL="$write_guard_gitconfig" GIT_CONFIG_NOSYSTEM=1 "$@"
+}
+write_guard_payload() {
+    jq -Rs --arg t "${1:-Bash}" --arg d "$write_guard_repo" '{tool_name:$t, cwd:$d, tool_input:{command:.}}'
+}
 write_guard_decision() {
     local cmd="$1" tool="${2:-Bash}" raw
-    raw=$(printf '%s' "$cmd" | jq -Rs --arg t "$tool" '{tool_name:$t, tool_input:{command:.}}' \
-        | env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES \
+    raw=$(printf '%s' "$cmd" | write_guard_payload "$tool" \
+        | write_guard_env \
             ${write_guard_remote:+CLAUDE_CODE_REMOTE=true} ${write_guard_switch:+NAPPY_ASK_FOR_PLAYER_WRITES=$write_guard_switch} \
             NAPPY_AGENTS_DIR="$write_guard_agents" "$root/.claude/hooks/github-write-guard.sh")
     if [ -z "$raw" ]; then
@@ -2076,8 +2150,8 @@ assert_write_guard_reason() {
         return
     fi
     local raw
-    raw=$(printf '%s' "$2" | jq -Rs '{tool_name:"Bash", tool_input:{command:.}}' \
-        | env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES NAPPY_AGENTS_DIR="$write_guard_agents" \
+    raw=$(printf '%s' "$2" | write_guard_payload \
+        | write_guard_env NAPPY_AGENTS_DIR="$write_guard_agents" \
             "$root/.claude/hooks/github-write-guard.sh" | jq -r '.hookSpecificOutput.permissionDecisionReason // ""')
     case "$raw" in
         *"$3"*) echo "ok   $1" ;;
@@ -2098,6 +2172,322 @@ assert_write_guard_reason "a gh api issue write's deny points at tools/inbox.py 
 assert_write_guard_reason "the reviewer deny names claude-orchestrator too" \
     'uv run python tools/agent-identity.py run claude-reviewer -- gh pr merge 1' \
     "or claude-orchestrator when the pull request has no code changes"
+
+# A git alias is read as the command it stands for (busy-ibis, statement 7: "let's do A for
+# aliases"): the guard asks git what an unknown subcommand stands for and judges that instead.
+# These cases run under a global config of their own; git config writes it, so its quoting is
+# git's own.
+write_guard_aliases="${TMPDIR:-/tmp}/write-guard-gitconfig-aliases"
+: > "$write_guard_aliases"
+while IFS='=' read -r write_guard_alias_name write_guard_alias_value; do
+    git config --file "$write_guard_aliases" "alias.$write_guard_alias_name" "$write_guard_alias_value"
+done <<'EOF'
+ci=commit
+m=merge
+ms=merge --no-ff --no-commit
+st=status -sb
+lg=log --graph --pretty=format:'%h (%cr)'
+ship=push
+rel=push origin v1.0.0
+up=ci
+sh=!git push origin v1.0.0
+spaced=  !git push origin v1.0.0
+loop=loop2
+loop2=loop
+opt=-c alias.y=push y
+semi=push origin ; v1.0.0
+log=push
+EOF
+printf '[alias]\n\tbare\n' >> "$write_guard_aliases"
+write_guard_gitconfig="$write_guard_aliases"
+assert_write_guard "git ci (ci = commit) -> deny, the commit it is" deny 'git ci -m wip'
+assert_write_guard_reason "and its reason names the commit" 'git ci -m wip' "(git commit)"
+assert_write_guard "git CI, an alias name in another case -> deny (git looks aliases up in any case)" deny \
+    'git CI -m wip'
+assert_write_guard "git m main (m = merge) -> deny" deny 'git m main'
+assert_write_guard "git -C /x ci, an option before the alias -> deny" deny 'git -C /x ci -m wip'
+assert_write_guard "bash -c 'git ci', an alias inside a quoted script -> deny" deny "bash -c 'git ci -m wip'"
+assert_write_guard "an alias in a mention (echo git ci) -> deny, as any mention of a write" deny 'echo run git ci later'
+assert_write_guard "git up (up = ci = commit), a chain followed to its end -> deny" deny 'git up -m wip'
+assert_write_guard "git ship origin feature/x (ship = push) -> deny" deny 'git ship origin feature/x'
+assert_write_guard_reason "an alias's own refspec is read (rel = push origin v1.0.0)" 'git rel' \
+    "(git push of a tag or every branch)"
+assert_write_guard_reason "a lone ; in an alias is a word to git, not a separator" 'git semi' \
+    "(git push of a tag or every branch)"
+assert_write_guard_reason "git sh (a ! alias runs a shell command) -> deny" 'git sh' \
+    "(git alias that runs a shell command)"
+assert_write_guard_reason "a ! alias with leading spaces -> deny" 'git spaced' "(git alias that runs a shell command)"
+assert_write_guard_reason "an alias chain that loops -> deny" 'git loop' "(git alias that cannot be read)"
+assert_write_guard_reason "an alias that starts with git's own options -> deny" 'git opt' "(git alias that cannot be read)"
+assert_write_guard_reason "an alias with no value -> deny" 'git bare' "(git alias that cannot be read)"
+assert_write_guard "git ms (merge --no-ff --no-commit), an alias that expands to a read -> allow" allow 'git ms main'
+assert_write_guard "git st (status -sb) -> allow" allow 'git st'
+assert_write_guard "git lg, an alias with quoted parentheses -> allow" allow 'git lg -5'
+assert_write_guard "git log, a built-in an alias cannot shadow (log = push) -> allow" allow 'git log --oneline'
+assert_write_guard "git ci, wrapped as a coder -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git ci -m wip'
+assert_write_guard "git sh, wrapped as a coder -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git sh'
+assert_write_guard "git ship, wrapped as a reviewer -> deny (reviewers never push)" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git ship origin feature/x'
+assert_write_guard "git sh, wrapped as a reviewer -> deny (it may push)" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git sh'
+assert_write_guard "git ci, wrapped as a reviewer -> allow (a reviewer may commit, as before)" allow \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git ci -m wip'
+# Where no identity can work and the player's switch is on, an alias is asked about or denied as
+# the command it stands for.
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-no-alias-agents"
+write_guard_switch=1
+assert_write_guard "unconfigured: git ci -> ask, the commit it is" ask 'git ci -m wip'
+assert_write_guard "unconfigured: git ship origin feature/x -> ask, a branch push" ask 'git ship origin feature/x'
+assert_write_guard "unconfigured: git rel -> deny, a tag push" deny 'git rel'
+assert_write_guard "unconfigured: git sh -> deny, never asked" deny 'git sh'
+write_guard_switch=""
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
+# #736's review, finding 1: where git's own options hold an unquoted substitution or a backtick,
+# its subcommand cannot be placed, so an alias standing for a write counts as a write's name inside
+# that git's own command, and an inline alias setting is read to that command's end.
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
+assert_write_guard "git -C \$(git rev-parse --show-toplevel) ci -> deny" deny 'git -C $(git rev-parse --show-toplevel) ci -m x'
+assert_write_guard "git -C \$(pwd) m main -> deny" deny 'git -C $(pwd) m main'
+assert_write_guard "git -C \$(pwd) ship origin v1 -> deny" deny 'git -C $(pwd) ship origin v1'
+assert_write_guard "git -C \$(pwd) sh, a ! alias -> deny" deny 'git -C $(pwd) sh'
+assert_write_guard "git -C \$(pwd) up, a chain -> deny" deny 'git -C $(pwd) up -m x'
+assert_write_guard "git -C \`pwd\` ci -> deny" deny 'git -C `pwd` ci -m x'
+assert_write_guard "git -c user.name=\$(whoami) ci -> deny" deny 'git -c user.name=$(whoami) ci -m x'
+assert_write_guard "git --git-dir=\$(pwd)/.git ci -> deny" deny 'git --git-dir=$(pwd)/.git ci -m x'
+assert_write_guard "git -C \$(pwd) --no-pager ci -> deny" deny 'git -C $(pwd) --no-pager ci -m x'
+assert_write_guard "git -C \$(pwd) -c alias.x=push x, an inline alias past the substitution -> deny" deny \
+    'git -C $(pwd) -c alias.x=push x origin v1'
+assert_write_guard "a reviewer's git -C \$(pwd) ship -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git -C $(pwd) ship origin v1'
+assert_write_guard "a reviewer's git -C \$(pwd) push -> deny (the subcommand cannot be read)" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git -C $(pwd) push origin v1'
+assert_write_guard "a coder's git -C \$(pwd) ship -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git -C $(pwd) ship origin feature/x'
+assert_write_guard "git -C \$(pwd) st, an alias to a read -> allow" allow 'git -C $(pwd) st'
+assert_write_guard "git -C \$(pwd) log | grep ci, the alias name in a later command -> allow" allow \
+    'git -C $(pwd) log | grep ci'
+# With aliases to look up, the longest commands the guard reads are still decided well inside the
+# hook's timeout: every git's subcommand an alias, and every git's option run reaching the end of a
+# chain of inline alias settings.
+alias_chain="$(printf 'git ci %.0s' $(seq 1 9300))"
+assert_write_guard_timed "64 KB of git ci, every subcommand an alias -> deny, decided quickly" deny "$alias_chain" 5
+alias_chain="$(printf 'git -c alias.x=y %.0s' $(seq 1 3800))ci"
+assert_write_guard_timed "64 KB of git -c alias.x=y, every run to the end -> deny, decided quickly" deny "$alias_chain" 5
+write_guard_gitconfig="$write_guard_no_aliases"
+assert_write_guard "git ci with no such alias -> allow (an unknown subcommand is left as written)" allow 'git ci -m wip'
+
+# An alias set on the command line is denied whatever it says, as an inline push.default=matching
+# is, in every spelling git takes.
+assert_write_guard "git -c alias.ship=push ship origin v1 -> deny" deny 'git -c alias.ship=push ship origin v1'
+assert_write_guard "git -calias.ship=push, attached -> deny" deny 'git -calias.ship=push ship origin v1'
+assert_write_guard "git -c ALIAS.ship=push, the key in another case -> deny" deny 'git -c ALIAS.ship=push ship origin v1'
+assert_write_guard "git -c 'alias.ship=push origin v1', quoted with spaces -> deny" deny \
+    "git -c 'alias.ship=push origin v1' ship"
+assert_write_guard "git --config-env=alias.ship=SHIP -> deny" deny 'git --config-env=alias.ship=SHIP ship origin v1'
+assert_write_guard "git --config-env alias.ship=SHIP, separate -> deny" deny 'git --config-env alias.ship=SHIP ship origin v1'
+assert_write_guard "git -c alias.st=status st, even a read -> deny" deny 'git -c alias.st=status st'
+assert_write_guard "an inline alias, wrapped as a coder -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- git -c alias.ship=push ship origin feature/x'
+assert_write_guard "an inline alias, wrapped as a reviewer -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git -c alias.ship=push ship origin feature/x'
+# #736's review, finding 5: the inline alias setting written as an assignment before the git.
+assert_write_guard "GIT_CONFIG_KEY_0=alias.ship ... git ship -> deny" deny \
+    'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.ship GIT_CONFIG_VALUE_0=push git ship origin v1'
+assert_write_guard "GIT_CONFIG_PARAMETERS naming an alias -> deny" deny \
+    "GIT_CONFIG_PARAMETERS=\"'alias.ship'='push'\" git ship origin v1"
+assert_write_guard "env GIT_CONFIG_KEY_0=ALIAS.ship ... git ship -> deny" deny \
+    'env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=ALIAS.ship GIT_CONFIG_VALUE_0=push git ship origin v1'
+assert_write_guard "export GIT_CONFIG_KEY_0=alias.ship; git ship -> deny" deny \
+    'export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.ship GIT_CONFIG_VALUE_0=push; git ship origin v1'
+assert_write_guard "GIT_CONFIG_KEY_0=\$K, a key that is an expansion -> deny" deny \
+    'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=$K GIT_CONFIG_VALUE_0=push git ship origin v1'
+assert_write_guard "an env alias setting, wrapped as a coder -> allow" allow \
+    'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.ship GIT_CONFIG_VALUE_0=push uv run python tools/agent-identity.py run claude-coder -- git ship origin feature/x'
+assert_write_guard "GIT_CONFIG_KEY_0=user.name, a setting that is no alias -> allow" allow \
+    'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x git log -1'
+assert_write_guard "git -c user.name=x log, a setting that is no alias -> allow" allow 'git -c user.name=x log -1'
+assert_write_guard "git log --grep alias.x, an alias key after the subcommand -> allow" allow 'git log --grep alias.x'
+
+# Only a reviewer identity approves a pull request (busy-ibis, statement 9: "we can prevent
+# approvals from non-reviewers"): every approving form is denied unless wrapped as claude-reviewer
+# or codex-reviewer, and a COMMENT or REQUEST_CHANGES review stays open to every identity.
+for write_guard_role in claude-coder claude-orchestrator codex-coder claude-reviewer codex-reviewer; do
+    case "$write_guard_role" in
+        *-reviewer) write_guard_expected=allow ;;
+        *) write_guard_expected=deny ;;
+    esac
+    write_guard_wrap="uv run python tools/agent-identity.py run $write_guard_role --"
+    for write_guard_cmd in \
+        'gh pr review 5 --approve' \
+        'gh pr review 5 -a -b ready' \
+        'gh pr review 5 -ab ready' \
+        'gh pr review 5 --body "$(cat review.md)" --approve' \
+        'gh api repos/o/r/pulls/5/reviews -f event=APPROVE -f body=ready' \
+        'gh api repos/o/r/pulls/5/reviews -F event=approve' \
+        'gh api repos/o/r/pulls/5/reviews --field=event=APPROVE' \
+        'gh api repos/o/r/pulls/5/reviews --input review.json' \
+        'gh api repos/o/r/pulls/5/reviews -F event=@event.txt' \
+        'gh api repos/o/r/pulls/5/reviews -f event="$EVENT"' \
+        'gh api -X POST repos/o/r/pulls/5/reviews/77/events -f event=APPROVE' \
+        "gh api graphql -f query='mutation { addPullRequestReview(input: {pullRequestId: \"x\", event: APPROVE}) { clientMutationId } }'" \
+        "gh api graphql -f query='mutation { submitPullRequestReview(input: {pullRequestReviewId: \"x\", event: \$e}) { clientMutationId } }' -f e=APPROVE"
+    do
+        assert_write_guard "$write_guard_role: $write_guard_cmd -> $write_guard_expected" "$write_guard_expected" \
+            "$write_guard_wrap $write_guard_cmd"
+    done
+    for write_guard_cmd in \
+        'gh pr review 5 --comment -b noted' \
+        'gh pr review 5 --request-changes -b fix' \
+        'gh pr review 5 --comment -b noted; ls -a' \
+        'gh api repos/o/r/pulls/5/reviews -f event=COMMENT -F body=@review.md' \
+        'gh api repos/o/r/pulls/5/reviews -f event=REQUEST_CHANGES -f body=fix' \
+        'gh api repos/o/r/pulls/5/reviews -f body=pending' \
+        "gh api graphql -f query='mutation { addPullRequestReview(input: {pullRequestId: \"x\", event: COMMENT}) { clientMutationId } }'" \
+        "gh api graphql -f query='mutation { addPullRequestReviewThread(input: {body: \"approve\"}) { clientMutationId } }'"
+    do
+        assert_write_guard "$write_guard_role: $write_guard_cmd -> allow" allow "$write_guard_wrap $write_guard_cmd"
+    done
+done
+assert_write_guard "an approval, unwrapped -> deny" deny 'gh pr review 5 --approve'
+assert_write_guard "reading the reviews -> allow" allow "gh api repos/o/r/pulls/5/reviews --jq '.[].state'"
+assert_write_guard_reason "an orchestrator's approval names the reviewer identities" \
+    'uv run python tools/agent-identity.py run claude-orchestrator -- gh pr review 5 --approve' \
+    "Only a reviewer approves"
+assert_write_guard_reason "an unwrapped approval gets the same reason" 'gh pr review 5 -a' "outside a reviewer identity"
+# Input that can add a flag to a review: an approval for a coder, and, on the API's review
+# endpoint, a refusal for a reviewer too, since input could make the same call a merge-type one.
+assert_write_guard "a coder's xargs gh pr review -> deny (input can add --approve)" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- sh -c 'echo 5 | xargs gh pr review'"
+assert_write_guard "a coder's xargs -I{} gh pr review {} -> deny ({} can be --approve)" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- sh -c 'echo 5 | xargs -I{} gh pr review {} --comment -b x'"
+assert_write_guard "a reviewer's xargs gh pr review -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-reviewer -- sh -c 'echo 5 | xargs gh pr review'"
+assert_write_guard "a coder's xargs gh api .../reviews -> deny" deny \
+    "uv run python tools/agent-identity.py run claude-coder -- sh -c 'echo x | xargs gh api repos/o/r/pulls/5/reviews -f body=x'"
+assert_write_guard "a reviewer's xargs gh api .../reviews -> deny" deny \
+    "uv run python tools/agent-identity.py run claude-reviewer -- sh -c 'echo x | xargs gh api repos/o/r/pulls/5/reviews -f body=x'"
+assert_write_guard "a coder's merge is still a coder's -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr merge 5 --squash'
+
+# #736's review, finding 2: a gh pr review word an expansion can turn into an approving flag counts
+# as one, the same rule as an unreadable REST event, and a ; inside a substitution does not end the
+# review's command.
+for write_guard_cmd in \
+    'A=--approve; uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 $A' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 "$A"' \
+    'uv run python tools/agent-identity.py run claude-orchestrator -- gh pr review 5 -b x "${FLAGS[@]}"' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 $(echo --approve)' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 `echo -a`' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 --body $(echo a; echo b) --approve' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 --body "$(echo a; echo b)" --approve' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 --comment --body "$(cat review.md)"'
+do
+    assert_write_guard "$write_guard_cmd -> deny" deny "$write_guard_cmd"
+done
+assert_write_guard "a reviewer's gh pr review 5 \$A -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh pr review 5 $A'
+assert_write_guard "a coder's comment review with its body from a file -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 --comment --body-file review.md'
+assert_write_guard "a \$ after the review's own command ends -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 -c -b x; echo $HOME'
+
+# #736's review, finding 6: a gh alias that stands for an approval, a GraphQL review whose event is
+# read from a file or an expansion, and a percent-encoded review path.
+for write_guard_cmd in \
+    "uv run python tools/agent-identity.py run claude-coder -- gh alias set ap 'pr review --approve'" \
+    "uv run python tools/agent-identity.py run claude-orchestrator -- gh alias set --shell ap 'gh pr Review -a \$1'" \
+    'uv run python tools/agent-identity.py run claude-coder -- gh alias set ap "$X"' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh alias import aliases.yml' \
+    "uv run python tools/agent-identity.py run claude-coder -- gh api graphql -f query='mutation(\$e:PullRequestReviewEvent!){addPullRequestReview(input:{pullRequestId:\"x\",event:\$e}){clientMutationId}}' -F e=@e.txt" \
+    "uv run python tools/agent-identity.py run claude-coder -- gh api graphql -f query='mutation(\$e:PullRequestReviewEvent!){addPullRequestReview(input:{pullRequestId:\"x\",event:\$e}){clientMutationId}}' -f e=\$E" \
+    'uv run python tools/agent-identity.py run claude-coder -- gh api repos/o/r/pulls/5/review%73 -f event=APPROVE'
+do
+    assert_write_guard "$write_guard_cmd -> deny" deny "$write_guard_cmd"
+done
+assert_write_guard "a reviewer's gh alias set for a review -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-reviewer -- gh alias set ap 'pr review --approve'"
+assert_write_guard "a coder's gh alias set naming no review -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- gh alias set co 'pr checkout'"
+assert_write_guard "a coder's GraphQL review whose event is written COMMENT -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- gh api graphql -f query='mutation{addPullRequestReview(input:{pullRequestId:\"x\",event:COMMENT}){clientMutationId}}' -F body=x"
+
+# #448's review, finding 4: a git whose options hold an unquoted substitution is a write only when
+# a write's name stands inside its own command, so a later command's grep pattern no longer counts;
+# the substitution's own words and a quoted script's still do.
+assert_write_guard "git -C \$(...) log | grep merge -> allow" allow \
+    'git -C $(git rev-parse --show-toplevel) log --oneline | grep merge'
+assert_write_guard "git -C \$(...) log; echo push -> allow" allow 'git -C $(git rev-parse --show-toplevel) log; echo push'
+assert_write_guard "( git -C \$(pwd) log ) ; grep merge -> allow" allow '( git -C $(pwd) log ) ; grep merge'
+assert_write_guard "git -C \$(cd x; pwd) push, a separator inside the substitution -> deny" deny \
+    'git -C $(cd x; pwd) push origin main'
+assert_write_guard "git \$(echo push) origin v1, the write inside the substitution -> deny" deny 'git $(echo push) origin v1'
+assert_write_guard "git -C \`pwd\` push -> deny" deny 'git -C `pwd` push origin main'
+assert_write_guard "sh -c 'git -C \$(pwd) log | grep merge', a quoted separator ends nothing -> deny" deny \
+    "sh -c 'git -C \$(pwd) log | grep merge'"
+assert_write_guard "an unmatched ) ends nothing -> deny" deny 'git -C $(pwd) log ) push'
+# #736's review, finding 3: a case pattern's own ) inside a substitution would close it early; a
+# command whose parentheses do not pair falls back to reading every span to the command's end.
+assert_write_guard "git -C \$(case x in x) echo y;; esac) push origin v1 -> deny, as on main" deny \
+    'git -C $(case x in x) echo y;; esac) push origin v1'
+assert_write_guard "( git -C \$(pwd) log, a ( never closed, then ; echo push -> deny (no table)" deny \
+    '( git -C $(pwd) log; echo push'
+paren_chain="$(printf '(%.0s' $(seq 1 30000))git -C \$(pwd) push"
+assert_write_guard_timed "30 000 open parentheses before git -C \$(pwd) push -> deny, decided quickly" deny "$paren_chain" 5
+paren_chain="$(printf 'git -C $(pwd) %.0s' $(seq 1 4600))push"
+assert_write_guard_timed "64 KB of git -C \$(pwd), then push -> deny, decided quickly" deny "$paren_chain" 5
+# Finding 5: git rebase --show-current-patch only prints and reads; the two dry runs stay accepted
+# false denies (the header says why), so they are asked about where no identity can work.
+assert_write_guard "git rebase --show-current-patch -> allow" allow 'git rebase --show-current-patch'
+# #736's review, finding 4: --show-current-patch reads only as rebase's one argument; as an option's
+# value it really rebases.
+assert_write_guard "git rebase -x --show-current-patch main -> deny (it rebases)" deny 'git rebase -x --show-current-patch main'
+assert_write_guard "git rebase main -m --show-current-patch -> deny" deny 'git rebase main -m --show-current-patch'
+assert_write_guard "git rebase --show-current-patch main -> deny" deny 'git rebase --show-current-patch main'
+assert_write_guard "git rebase --show-current-patch; git status -> allow" allow 'git rebase --show-current-patch; git status'
+assert_write_guard "git push --dry-run -> deny (an accepted false deny)" deny 'git push --dry-run origin feature/x'
+assert_write_guard "git commit --dry-run -> deny (an accepted false deny)" deny 'git commit --dry-run'
+
+# A failure of the guard's own machinery denies, never allows: the answer failing to print, the
+# program failing, and no jq at all (where only a command naming git, gh or a pushing script is
+# denied, so installing jq is not refused). And a reason longer than any one argument may be is
+# cut short and passed on stdin, under the shims' Linux argument limit.
+write_guard_path="$write_guard_shims"
+write_guard_fail_jq="hookSpecificOutput"
+assert_write_guard "the answer fails to print: git push -> deny" deny 'git push origin main'
+assert_write_guard "the answer fails to print: ls -> allow (no answer was needed)" allow 'ls -la'
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-no-fail-agents"
+write_guard_switch=1
+assert_write_guard "the answer fails to print where it would ask: git commit -> deny" deny 'git commit -m x'
+write_guard_switch=""
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
+write_guard_fail_jq="--slurpfile"
+assert_write_guard "the program fails: git status -> deny" deny 'git status'
+write_guard_fail_jq=""
+assert_write_guard_reason "a reason from thousands of findings names each kind once" \
+    "$(printf 'git -c alias.x=y %.0s' $(seq 1 3800))ci" "(git with an alias set on the command line) outside"
+write_guard_path=""
+write_guard_nojq="${TMPDIR:-/tmp}/write-guard-nojq"
+mkdir -p "$write_guard_nojq"
+for write_guard_tool in bash cat tr grep env; do
+    ln -sf "$(command -v "$write_guard_tool")" "$write_guard_nojq/$write_guard_tool"
+done
+write_guard_nojq_decision() {
+    local raw
+    raw=$(printf '%s' "$1" | write_guard_payload | env -i PATH="$write_guard_nojq" HOME="$HOME" \
+        "$root/.claude/hooks/github-write-guard.sh")
+    if [ -z "$raw" ]; then printf 'allow'; else printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'; fi
+}
+for write_guard_case in "deny:git push origin main" "deny:gh pr merge 5" "allow:brew install jq"; do
+    checks=$((checks + 1))
+    write_guard_got="$(write_guard_nojq_decision "${write_guard_case#*:}")"
+    if [ "$write_guard_got" = "${write_guard_case%%:*}" ]; then
+        echo "ok   no jq: ${write_guard_case#*:} -> ${write_guard_case%%:*}"
+    else
+        fail "no jq: ${write_guard_case#*:}: expected ${write_guard_case%%:*}, got $write_guard_got"
+    fi
+done
 
 # A wrapped heredoc body that names a write is a false deny, and its message says why and points
 # at a body file rather than claiming the command is unwrapped and stopping there.
@@ -2478,6 +2868,7 @@ assert_write_guard_reason "xargs input makes push refspecs unreadable" \
 # option's argument is one word; and a quoted separator is not the push's own when it belongs to
 # another command (a commit message) or sits at the push's own level in a quoted script.
 write_guard_asked=(
+    'git commit --dry-run'
     $'git commit -m "$(cat <<\'EOF\'\nNames passed through xargs git\nare read.\nEOF\n)"'
     'gxargs git status; git push origin feature/x'
     'env_parallel gh pr view && git push origin feature/x'
@@ -2552,6 +2943,9 @@ write_guard_asked=(
 # an issue (bouncy-heron statement 14: "an agent shouldn't use gh issue directly"); a merge, a
 # release, a gh api write and a pushing tools/ script.
 write_guard_never_asked=(
+    'git -C $(cd x; pwd) push origin main'
+    'gh pr review 5 --approve'
+    'git -c alias.ship=push ship origin feature/x'
     'echo push | xargs -rIstatus git status origin v1'
     'echo merge | xargs -rIview gh pr view 3'
     'echo push | xargs -rI status git status origin v1'
@@ -2809,6 +3203,8 @@ write_guard_never_asked=(
 )
 # A read, and `git tag` itself, which changes only the local repository, stay allowed.
 write_guard_allowed=(
+    'git -C $(git rev-parse --show-toplevel) log --oneline | grep merge'
+    'git rebase --show-current-patch'
     'xargs -rIother -E -Istatus git status'
     'xargs -rIother -E -Iview gh pr view'
     'xargs -rIother -E xargs git status'
