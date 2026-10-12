@@ -254,7 +254,12 @@ assert_decided_in_time() {
     fi
 }
 assert_guard_timed() { assert_decided_in_time "$1" guard_decision "$2" "$3" "${4:-8}"; }
-assert_write_guard_timed() { assert_decided_in_time "$1" write_guard_decision "$2" "$3" "${4:-8}"; }
+# The write guard's timed cases are its long commands, so each runs with jq and git behind the
+# shims below, which refuse an argument over 128 KB the way Linux does.
+assert_write_guard_timed() {
+    local write_guard_path="$write_guard_shims"
+    assert_decided_in_time "$1" write_guard_decision "$2" "$3" "${4:-8}"
+}
 
 # Prints the sorted, comma-joined, deduplicated list of skill names project-rules.sh injected for
 # one Edit of $3 (a path relative to $root), for session $1 and agent $2 ("" for the main session).
@@ -1046,8 +1051,32 @@ git init -q "$write_guard_repo"
 write_guard_no_aliases="${TMPDIR:-/tmp}/write-guard-gitconfig-empty"
 : > "$write_guard_no_aliases"
 write_guard_gitconfig="$write_guard_no_aliases"
+# Linux refuses any one argument over 128 KB (MAX_ARG_STRLEN) and macOS does not, so a guard that
+# hands a long text to another program as an argument passes on a Mac and fails, open, on CI. jq and
+# git are shimmed here to refuse such an argument the way Linux does; `write_guard_path` puts the
+# shims first on the guard's PATH (every timed case does), and `write_guard_fail_jq` makes the jq
+# shim fail outright on a call with an argument holding that text, for the fail-closed cases.
+write_guard_shims="${TMPDIR:-/tmp}/write-guard-shims"
+mkdir -p "$write_guard_shims"
+for write_guard_tool in jq git; do
+    write_guard_real="$(command -v "$write_guard_tool")"
+    {
+        printf '#!/usr/bin/env bash\n'
+        printf 'for a in "$@"; do\n'
+        printf '    if [ "${#a}" -gt 131072 ]; then echo "%s: Argument list too long" >&2; exit 126; fi\n' "$write_guard_tool"
+        printf '    if [ -n "${WRITE_GUARD_FAIL_JQ:-}" ] && [ "%s" = jq ]; then\n' "$write_guard_tool"
+        printf '        case "$a" in *"$WRITE_GUARD_FAIL_JQ"*) echo "jq: made to fail" >&2; exit 5 ;; esac\n'
+        printf '    fi\n'
+        printf 'done\n'
+        printf 'exec %q "$@"\n' "$write_guard_real"
+    } > "$write_guard_shims/$write_guard_tool"
+    chmod +x "$write_guard_shims/$write_guard_tool"
+done
+write_guard_path=""
+write_guard_fail_jq=""
 write_guard_env() {
     env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES -u GIT_CONFIG_PARAMETERS -u GIT_CONFIG_COUNT \
+        PATH="${write_guard_path:+$write_guard_path:}$PATH" ${write_guard_fail_jq:+WRITE_GUARD_FAIL_JQ=$write_guard_fail_jq} \
         GIT_CONFIG_GLOBAL="$write_guard_gitconfig" GIT_CONFIG_NOSYSTEM=1 "$@"
 }
 write_guard_payload() {
@@ -2419,6 +2448,46 @@ assert_write_guard "git rebase --show-current-patch main -> deny" deny 'git reba
 assert_write_guard "git rebase --show-current-patch; git status -> allow" allow 'git rebase --show-current-patch; git status'
 assert_write_guard "git push --dry-run -> deny (an accepted false deny)" deny 'git push --dry-run origin feature/x'
 assert_write_guard "git commit --dry-run -> deny (an accepted false deny)" deny 'git commit --dry-run'
+
+# A failure of the guard's own machinery denies, never allows: the answer failing to print, the
+# program failing, and no jq at all (where only a command naming git, gh or a pushing script is
+# denied, so installing jq is not refused). And a reason longer than any one argument may be is
+# cut short and passed on stdin, under the shims' Linux argument limit.
+write_guard_path="$write_guard_shims"
+write_guard_fail_jq="hookSpecificOutput"
+assert_write_guard "the answer fails to print: git push -> deny" deny 'git push origin main'
+assert_write_guard "the answer fails to print: ls -> allow (no answer was needed)" allow 'ls -la'
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-no-fail-agents"
+write_guard_switch=1
+assert_write_guard "the answer fails to print where it would ask: git commit -> deny" deny 'git commit -m x'
+write_guard_switch=""
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
+write_guard_fail_jq="--slurpfile"
+assert_write_guard "the program fails: git status -> deny" deny 'git status'
+write_guard_fail_jq=""
+assert_write_guard_reason "a reason from thousands of findings names each kind once" \
+    "$(printf 'git -c alias.x=y %.0s' $(seq 1 3800))ci" "(git with an alias set on the command line) outside"
+write_guard_path=""
+write_guard_nojq="${TMPDIR:-/tmp}/write-guard-nojq"
+mkdir -p "$write_guard_nojq"
+for write_guard_tool in bash cat tr grep env; do
+    ln -sf "$(command -v "$write_guard_tool")" "$write_guard_nojq/$write_guard_tool"
+done
+write_guard_nojq_decision() {
+    local raw
+    raw=$(printf '%s' "$1" | write_guard_payload | env -i PATH="$write_guard_nojq" HOME="$HOME" \
+        "$root/.claude/hooks/github-write-guard.sh")
+    if [ -z "$raw" ]; then printf 'allow'; else printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'; fi
+}
+for write_guard_case in "deny:git push origin main" "deny:gh pr merge 5" "allow:brew install jq"; do
+    checks=$((checks + 1))
+    write_guard_got="$(write_guard_nojq_decision "${write_guard_case#*:}")"
+    if [ "$write_guard_got" = "${write_guard_case%%:*}" ]; then
+        echo "ok   no jq: ${write_guard_case#*:} -> ${write_guard_case%%:*}"
+    else
+        fail "no jq: ${write_guard_case#*:}: expected ${write_guard_case%%:*}, got $write_guard_got"
+    fi
+done
 
 # A wrapped heredoc body that names a write is a false deny, and its message says why and points
 # at a body file rather than claiming the command is unwrapped and stopping there.

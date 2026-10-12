@@ -1877,7 +1877,9 @@ def names_a_write_tool:
              | map(split("") | map(if . == "." then "\\." else . end) | join($skip))
              | join("|"));
 
-if (.tool_name | IN("Bash", "Monitor")) | not then empty else
+# `$git_in` is `git_table`'s answer, read from a file (`--slurpfile`) rather than an argument.
+($git_in[0]) as $git
+| if (.tool_name | IN("Bash", "Monitor")) | not then empty else
   (.tool_input.command // "")
   | (if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end)
   | if length > hard_cap then
@@ -1915,8 +1917,28 @@ end
 
 JQ
 
-command -v jq >/dev/null 2>&1 || exit 0
 input=$(cat)
+
+# **Every failure of the guard's own machinery denies** (fails closed). A hook that errors or prints
+# nothing lets the command through in both Claude Code and Codex, so the guard never answers
+# "allow" by breaking: no jq at all, the program failing, and the answer failing to print are
+# each a deny. No text larger than a few kilobytes is ever an argument to another program -- the
+# program, git's answer, the command and the reason all go through stdin or a file -- since Linux
+# refuses any one argument over 128 KB (MAX_ARG_STRLEN) where macOS does not, and that refusal is
+# exactly such a failure.
+deny_unread() {
+	printf '%s\n' "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"$1\"}}"
+	exit 0
+}
+# With no jq the command cannot be read at all: one naming git, gh or a pushing script anywhere in
+# the hook's payload (quotes, backslashes and `$` taken out) is denied, and any other is let
+# through, so installing jq is not itself refused.
+if ! command -v jq >/dev/null 2>&1; then
+	if printf '%s' "$input" | tr -d "\\\\\"'\$" | grep -qiE 'git|gh|release\.sh|prune-merged|land-prs|update-pr'; then
+		deny_unread "The write guard needs jq to read this command, and jq is not installed, so a command naming git, gh or a pushing tools/ script is denied unread. Install jq. See .claude/hooks/github-write-guard.sh."
+	fi
+	exit 0
+fi
 
 # What git's aliases stand for, read for `splice_aliases` (above): asked of git itself, in the
 # directory the session's command runs in (the hook JSON's `cwd`, else this one), so the
@@ -1955,7 +1977,8 @@ git_table() {
 }
 git_json=$(git_table)
 
-if ! result=$(printf '%s' "$input" | jq -c --argjson git "$git_json" "$check_program" 2>/dev/null); then
+if ! result=$(printf '%s' "$input" \
+		| jq -c --slurpfile git_in <(printf '%s' "$git_json") -f <(printf '%s' "$check_program") 2>/dev/null); then
 	flagged="(the guard's own jq program failed on this command, so it could not be checked)"
 	reviewer_push=false
 	wrapped=false
@@ -1965,7 +1988,10 @@ if ! result=$(printf '%s' "$input" | jq -c --argjson git "$git_json" "$check_pro
 elif [ -z "$result" ]; then
 	exit 0
 else
-	flagged=$(printf '%s' "$result" | jq -r '.out | join("; ")')
+	flagged=$(printf '%s' "$result" | jq -r '
+		.out | reduce .[] as $x ([]; if index([$x]) != null then . else . + [$x] end)
+		| join("; ") | if length > 1000 then .[:1000] + " ..." else . end') \
+		|| flagged="(the guard could not list what it flagged)"
 	reviewer_push=$(printf '%s' "$result" | jq -r '.reviewer_push')
 	wrapped=$(printf '%s' "$result" | jq -r '.wrapped')
 	issue_write=$(printf '%s' "$result" | jq -r '.issue_write // false')
@@ -2093,11 +2119,14 @@ such writes refused instead, remove NAPPY_ASK_FOR_PLAYER_WRITES=1 from the envir
 starts with."
 fi
 
-jq -n --arg reason "$reason" --arg decision "$decision" '{
+# The reason goes in on stdin. If even this fails, a fixed deny is printed instead, never nothing.
+if ! printf '%s' "$reason" | jq -Rsc --arg decision "$decision" '{
   hookSpecificOutput: {
     hookEventName: "PreToolUse",
     permissionDecision: $decision,
-    permissionDecisionReason: $reason
+    permissionDecisionReason: .
   }
-}'
+}' 2>/dev/null; then
+	deny_unread "The write guard could not print its own answer, so this command is denied unread. See .claude/hooks/github-write-guard.sh."
+fi
 exit 0
