@@ -16,6 +16,8 @@ func run(t) -> void:
 	_test_the_ring_keeps_the_latest_frames(t)
 	_test_top_costs_order_and_leave_out_the_wait(t)
 	_test_the_readout_line(t)
+	_test_the_view_size(t)
+	_test_the_environment_carries_the_view(t)
 	_test_the_report_round_trips(t)
 	_test_the_static_switch_charges_the_ledger(t)
 	_test_the_flag_and_its_page_word(t)
@@ -518,3 +520,25 @@ func _drive(ledger: FrameLedger, start: int, length: int, bucket: int, spent: in
 	ledger.switch_to(outer, start + 100 + spent)
 	ledger.keep = true
 	ledger.process_end(start + 200 + spent)
+
+
+func _test_the_view_size(t) -> void:
+	var view := FrameRecorder.view_size()
+	for key in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
+		# A headless window reports 0 by 0, so only the keys and the ratio are pinned.
+		t.check(view.has(key), "the view size carries %s" % key)
+	t.check(view["device_pixel_ratio"] > 0.0, "the ratio is never 0")
+	var lines := FrameRecorder.view_lines()
+	t.check(lines.size() == 2 and lines[0].begins_with("window") and lines[1].begins_with("drawn"),
+			"the readout says the window and what is drawn")
+	for line in lines:
+		t.check(FrameRecorder.fits_the_readout(line), "the line fits the readout: %s" % line)
+
+## The record's environment carries the pixels the page draws, as the file a phone hands over.
+func _test_the_environment_carries_the_view(t) -> void:
+	var recorder := FrameRecorder.new()
+	recorder.ledger = FrameLedger.new(8, 16667)
+	var environment: Dictionary = JSON.parse_string(recorder.report_text())["environment"]
+	for key in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
+		t.check(environment.has(key), "the record's environment carries %s" % key)
+	recorder.free()

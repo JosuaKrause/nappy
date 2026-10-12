@@ -159,6 +159,46 @@ static func clock_resolution() -> int:
 		least = to - from if least == 0 else mini(least, to - from)
 	return least
 
+## How many pixels the page draws, as the record's environment and the readout say it:
+## `window_width`/`window_height` is the window the page has (CSS pixels on a page, pixels on the
+## desktop), `device_pixel_ratio` is how many device pixels a CSS pixel is, and `drawn_width`/
+## `drawn_height` is the size the engine actually draws (the canvas's backing store on a page).
+## Without it a phone's frame cost cannot be read against the pixels behind it.
+static func view_size() -> Dictionary:
+	var drawn := DisplayServer.window_get_size()
+	var window := Vector2(drawn)
+	var ratio := DisplayServer.screen_get_scale()
+	if OS.get_name() == "Web":
+		# What the page cannot say is recorded as unknown, -1, rather than as the desktop's
+		# answer to the same question.
+		window = Vector2(-1.0, -1.0)
+		ratio = -1.0
+		var reading: Variant = JavaScriptBridge.eval(
+				"[window.innerWidth, window.innerHeight, window.devicePixelRatio]")
+		if reading is JavaScriptObject:
+			var numbers: JavaScriptObject = reading
+			var width: Variant = numbers.get("0")
+			var height: Variant = numbers.get("1")
+			var scale: Variant = numbers.get("2")
+			if width is float and height is float and scale is float and scale > 0.0:
+				window = Vector2(width, height)
+				ratio = scale
+	return {"window_width": roundi(window.x), "window_height": roundi(window.y),
+		"device_pixel_ratio": snappedf(ratio, 0.01),
+		"drawn_width": drawn.x, "drawn_height": drawn.y}
+
+## The two readout lines for `view_size()`, in the readout's own fixed-width style.
+static func view_lines() -> Array[String]:
+	var view := view_size()
+	var window := "unknown"
+	if view["device_pixel_ratio"] > 0.0:
+		window = "%dx%d @%.2f" % [view["window_width"], view["window_height"],
+			view["device_pixel_ratio"]]
+	return [
+		"window      %s" % window,
+		"drawn       %dx%d" % [view["drawn_width"], view["drawn_height"]],
+	]
+
 ## The readout's line. See `FrameLedger.readout_line()`.
 func readout_line() -> String:
 	return ledger.readout_line(fits_the_readout)
@@ -198,6 +238,7 @@ func report_text() -> String:
 	metadata["display_server"] = DisplayServer.get_name()
 	metadata["main_thread_is_render_thread"] = RenderingServer.is_on_render_thread()
 	metadata["render_cpu_reported"] = _render_cpu_reported()
+	metadata.merge(view_size(), true)
 	metadata["saved_at"] = Time.get_datetime_string_from_system()
 	if OS.get_name() == "Web":
 		var agent: Variant = JavaScriptBridge.eval("navigator.userAgent")

@@ -140,6 +140,15 @@ var _rig_quit_deadline_msec := 0
 ## `rig_kill_after_movie_seconds`).
 var _rig_quit_game_seconds := 0.0
 
+## How often the readout's text is re-set, in seconds. Re-setting some thirty lines of text every
+## frame adds draw calls and drawing work to every phone record taken under `?debug=1`, so the
+## text is built a few times a second instead. Nothing the readout shows is lost by it: `FrameCost`
+## hands its numbers over once a second, the frame record keeps every slow frame and the readout
+## names the latest one at each refresh, and the spike view (`_frame_graph`) is fed every frame.
+const READOUT_INTERVAL := 0.25
+## Seconds until the readout's text is next rebuilt; 0 or less means the next frame rebuilds it.
+var _readout_wait := 0.0
+
 ## Whether the readout was asked for by the page's own `?debug=1` (or the command line's
 ## `--debug`) — `DevFlags.readout_requested()`, read once for the same reason `_debug` is: so a
 ## test can set it directly and check the release shape. `_status.visible` and the text assembly
@@ -1697,16 +1706,16 @@ func _add_debug_mode_note() -> void:
 ## `CanvasLayer` rather than under `_debug_layers` — it lives beside the readout, on the readout's
 ## own key, not among the four `_debug_layers` keys `1`-`3` and `5` toggle.
 ##
-## Left-aligned with `_status` (`offset_left`, 960px in the design box) and placed a fixed 600px
-## below its own top (`offset_top`, 14px): the readout's block gains its 30th line only under
-## `--skip`, and 30 lines at this label's own font size (17px tall, 3px between lines — measured
-## off a headless `Label`, since neither number is exposed as a theme constant) reach about 597px
+## Left-aligned with `_status` (`offset_left`, 960px in the design box) and placed a fixed 646px
+## below its own top (`offset_top`, 14px): the readout's block gains its 32nd line only under
+## `--skip`, and 32 lines at this label's own font size (17px tall, 3px between lines — measured
+## off a headless `Label`, since neither number is exposed as a theme constant) reach about 637px
 ## from the block's own top, so a fixed offset clears both shapes with a few pixels to spare
 ## instead of re-measuring `_status`'s rendered height every frame for a difference that never
 ## exceeds one line. **Below the block, not above it**, because the joystick focus ring `docs/
 ## DECISIONS.md` (M139, "the phone reading") already finds under the readout's own lines — a 48px
 ## ring centred at y=480 in the same design box reaches no further down than y=528 — comfortably
-## above this box's own top at y=614, so the graph clears the ring by placement rather than by
+## above this box's own top at y=660, so the graph clears the ring by placement rather than by
 ## being moved out of its way.
 func _add_frame_graph() -> void:
 	if not (_debug or _readout_requested):
@@ -1714,7 +1723,7 @@ func _add_frame_graph() -> void:
 	_frame_graph = FrameGraph.new()
 	_frame_graph.name = "FrameGraph"
 	_frame_graph.text_colour = _status.get_theme_color("font_color")
-	_frame_graph.position = Vector2(_status.offset_left, 614.0)
+	_frame_graph.position = Vector2(_status.offset_left, 660.0)
 	_layer_graph_on = _graph_starts_on(DevFlags.spikes_requested(), DevFlags.layers_override())
 	_frame_graph.visible = _layer_graph_on
 	_status_layer.add_child(_frame_graph)
@@ -2567,6 +2576,9 @@ func _process(delta: float) -> void:
 	# `_layer_readout_on` is this layer's own `4` key: off, the string is not assembled either,
 	# the same "gated rather than merely hidden" rule holds.
 	if not (_debug or _readout_requested) or not _layer_readout_on:
+		_readout_wait = 0.0
+		return
+	if not _readout_due(delta):
 		return
 	var tile := _city.map.world_to_tile(_player.global_position)
 	if _build_text == "":
@@ -2597,7 +2609,7 @@ func _process(delta: float) -> void:
 		"crowd       %6d" % _city.crowd.agent_count(),
 		"nearest     %s" % _nearest_event_text(),
 		"",
-	] + FrameCost.readout_lines() + _frame_record_lines() + [
+	] + FrameCost.readout_lines() + FrameRecorder.view_lines() + _frame_record_lines() + [
 		"",
 		"incoming    %6.2f /s" % _baby.last_incoming,
 		"decay       %6.2f /s" % _baby.last_decay,
@@ -2607,6 +2619,15 @@ func _process(delta: float) -> void:
 		"shift       run",
 		"esc         pause  (r restart, q quit)",
 	])
+
+## Whether this frame rebuilds the readout's text: the first frame after it is switched on, and then
+## every `READOUT_INTERVAL`. Counts the frames' own `delta`, so a slow frame does not shorten the wait.
+func _readout_due(delta: float) -> bool:
+	_readout_wait -= delta
+	if _readout_wait > 0.0:
+		return false
+	_readout_wait = READOUT_INTERVAL
+	return true
 
 ## The frame record's readout line, beneath the frame block, or nothing when no record runs.
 func _frame_record_lines() -> Array[String]:
@@ -2644,6 +2665,9 @@ func _write_the_escape_readout(delta: float) -> void:
 	if _frame_graph:
 		_frame_graph.push(delta)
 	if not (_debug or _readout_requested) or not _layer_readout_on:
+		_readout_wait = 0.0
+		return
+	if not _readout_due(delta):
 		return
 	if _build_text == "":
 		_build_text = TitleScreen.build_text()
@@ -2672,7 +2696,7 @@ func _write_the_escape_readout(delta: float) -> void:
 		"nearest     %s" % _nearest_event_text(),
 		"",
 	]
-	_status.text = "\n".join(lines + FrameCost.readout_lines() + [
+	_status.text = "\n".join(lines + FrameCost.readout_lines() + FrameRecorder.view_lines() + [
 		"",
 		"incoming    %6.2f /s" % _baby.last_incoming,
 		"decay       %6.2f /s" % _baby.last_decay,
