@@ -222,7 +222,7 @@ func _resistance_tally_line() -> String:
 	var lost := GameState.failed_resistance_steps.size()
 	var line := Texts.SUMMARY_TALLY % [done, Tuning.RESISTANCE_GOAL]
 	if lost > 0:
-		line += Texts.SUMMARY_TALLY_LOST % [lost, "" if lost == 1 else "s"]
+		line += Texts.SUMMARY_TALLY_LOST_ONE if lost == 1 else Texts.SUMMARY_TALLY_LOST % lost
 	return line
 
 ## The last screen of a run. `space` — or a tap — goes back to the title, which is where the next

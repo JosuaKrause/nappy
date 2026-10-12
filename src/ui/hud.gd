@@ -65,7 +65,7 @@ func _ready() -> void:
 	# Colored here rather than in the scene so `Palette` stays the one place a runtime color is
 	# decided — the same call `_heading.add_theme_color_override()` makes in `DaySummary._ready()`.
 	_task_arrow.colour = Palette.TASK_ARROW
-	_task_arrow.label_when_near = "task"
+	_task_arrow.label_when_near = Texts.ARROW_TASK
 
 	EventBus.sleepiness_changed.connect(_on_sleepiness_changed)
 	EventBus.excitement_changed.connect(_on_excitement_changed)

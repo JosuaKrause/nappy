@@ -47,6 +47,9 @@ const TITLE_CAPTION_TAP := "Tap to Go"
 const TITLE_HINT_BEGIN := "press a button to begin"
 const TITLE_HINT_AGAIN := "press a button to walk again"
 const TITLE_HARD_MODE := "Hard Mode"
+## The mark in the lower right of the two joystick buttons, which tells them apart.
+const TITLE_LETTER_LEFT := "L"
+const TITLE_LETTER_RIGHT := "R"
 
 # --------------------------------------------------------------------- pause ---
 # Shown by `PauseScreen`: where the run stands, the line that names the screen, the walking
@@ -107,6 +110,12 @@ const METER_SLEEPINESS := "SLEEPINESS"
 const METER_EXCITEMENT := "EXCITEMENT"
 ## The task line: `%s` is the step's header, lowercased.
 const TASK_LINE := "out there: %s"
+## The word an arrow shows once its target is on screen (the return-home arrow, the task arrow),
+## and its distance readout while the target is off screen (`%d` metres), shared with the
+## screen-edge badge.
+const ARROW_HOME := "home"
+const ARROW_TASK := "task"
+const DISTANCE_METRES := "%d m"
 
 # ------------------------------------------------------------------ day briefs ---
 # Shown by `DaySummary` on the screen between two days, under the day and the nerves. One or two
@@ -169,8 +178,9 @@ const SUMMARY_REASON_THEN_CLOCK := "%s After %s."
 const SUMMARY_TALLY_DONE := "You have done enough. There is one more night."
 ## `%d` errands run, `%d` the goal.
 const SUMMARY_TALLY := "Errands run: %d of %d"
-## Appended to the tally; `%d` contacts lost and `%s` the plural ending.
-const SUMMARY_TALLY_LOST := "   (%d contact%s lost)"
+## Appended to the tally: one contact lost, and `%d` of them when there are more.
+const SUMMARY_TALLY_LOST_ONE := "   (1 contact lost)"
+const SUMMARY_TALLY_LOST := "   (%d contacts lost)"
 
 ## What a day's loss says. The key is the id of what ended the day (an event's id, or a
 ## `ParkCordon` cause); `DAY_LOST_DEFAULT` answers one that has no line of its own.

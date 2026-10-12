@@ -122,6 +122,8 @@ func _ready() -> void:
 	# standing in front of; see the note there for why it is not one of the danger colours.
 	_name.add_theme_color_override("font_color", Palette.TITLE_TEXT)
 	_name.text = Texts.TITLE_NAME
+	_left_button.letter = Texts.TITLE_LETTER_LEFT
+	_right_button.letter = Texts.TITLE_LETTER_RIGHT
 	_premise.text = Texts.TITLE_PREMISE
 	_left_caption.text = Texts.TITLE_CAPTION_JOYSTICK
 	_tap_caption.text = Texts.TITLE_CAPTION_TAP
