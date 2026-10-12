@@ -265,7 +265,7 @@ its first frame back.** `DrawnView` (`src/ui/drawn_view.gd`) is the one box, the
 tiles, that `CrowdAgent` and `EventInstance` skip their redraw and caret projection outside of. The
 box a thing is tested against has to hold every pixel its `_draw()` can reach, not the picture at its
 own point: a street fire's flames run the whole burning front, hundreds of pixels from where it
-stands, and a box of its point alone froze them on screen. And it redraws on the first frame back
+stands, and a box of its point alone freezes them on screen. And it redraws on the first frame back
 whatever its key says, since nothing kept the picture current while it was away, so a caret owed on
 that frame is drawn on it.
 
