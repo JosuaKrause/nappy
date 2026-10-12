@@ -94,8 +94,9 @@ wrapped or not, and an issue write through `gh api` the same way** (all but a co
 pull request's own conversation shares), since an agent writes an issue only through
 `tools/inbox.py`, whose own writes run in a process of their own that the hook never sees. **An
 approving review it denies under every identity but a reviewer's**, and a review whose event it
-cannot read (a body from `--input`) counts as one, so a coder's or the orchestrator's review names
-its event inline (`-f event=COMMENT`) and sends its body with `-F body=@file`. **A git alias it
+cannot read (a body from `--input`, a `$(...)` among `gh pr review`'s words) counts as one, so a
+coder's or the orchestrator's review names its event inline (`-f event=COMMENT`, `gh pr review
+--comment`) and sends its body from a file (`-F body=@file`, `--body-file file`). **A git alias it
 reads as the command it stands for**, asking git in the session's directory, and an alias set on
 the command line (`git -c alias.*`) it denies whatever it says. A
 write named in a commit message or a PR body denies like the write itself, so a message is

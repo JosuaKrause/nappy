@@ -2320,6 +2320,28 @@ assert_write_guard "a reviewer's xargs gh api .../reviews -> deny" deny \
 assert_write_guard "a coder's merge is still a coder's -> allow" allow \
     'uv run python tools/agent-identity.py run claude-coder -- gh pr merge 5 --squash'
 
+# #736's review, finding 2: a gh pr review word an expansion can turn into an approving flag counts
+# as one, the same rule as an unreadable REST event, and a ; inside a substitution does not end the
+# review's command.
+for write_guard_cmd in \
+    'A=--approve; uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 $A' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 "$A"' \
+    'uv run python tools/agent-identity.py run claude-orchestrator -- gh pr review 5 -b x "${FLAGS[@]}"' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 $(echo --approve)' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 `echo -a`' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 --body $(echo a; echo b) --approve' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 --body "$(echo a; echo b)" --approve' \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 --comment --body "$(cat review.md)"'
+do
+    assert_write_guard "$write_guard_cmd -> deny" deny "$write_guard_cmd"
+done
+assert_write_guard "a reviewer's gh pr review 5 \$A -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-reviewer -- gh pr review 5 $A'
+assert_write_guard "a coder's comment review with its body from a file -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 --comment --body-file review.md'
+assert_write_guard "a \$ after the review's own command ends -> allow" allow \
+    'uv run python tools/agent-identity.py run claude-coder -- gh pr review 5 -c -b x; echo $HOME'
+
 # #448's review, finding 4: a git whose options hold an unquoted substitution is a write only when
 # a write's name stands inside its own command, so a later command's grep pattern no longer counts;
 # the substitution's own words and a quoted script's still do.

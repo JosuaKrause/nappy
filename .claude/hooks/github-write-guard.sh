@@ -195,8 +195,12 @@
 # own author from approving it, so `claude-coder` and `claude-orchestrator` could each approve the
 # other's, and that approval counts toward the one `main` requires. So an approving review is
 # denied, wrapped or not, unless the wrapping role is `claude-reviewer` or `codex-reviewer`:
-# `gh pr review` with `--approve` (or `--approve=...`, `-a`, a short cluster starting with it)
-# before its command's next `;`, `&`, `|` or newline; a `gh api` write to `pulls/<n>/reviews` or
+# `gh pr review` with `--approve` (or `--approve=...`, `-a`, a short cluster starting with it), or
+# with a word an expansion can turn into one (`$A`, `"$A"`, `"${FLAGS[@]}"`, `$(...)`, a backtick:
+# the same rule as an unreadable `event` below, so a review's body comes from `--body-file`, not
+# `--body "$(cat f)"`), inside its own command -- up to its next `;`, `&`, `|` or newline outside
+# quotes at its own depth of parentheses, so a `;` inside a substitution ends nothing; a `gh api`
+# write to `pulls/<n>/reviews` or
 # `pulls/<n>/reviews/<id>/events` whose `event` field is APPROVE in any case, or cannot be read
 # (`event=@file`, `event=$E`, empty), or whose body comes from `--input`, which is how every
 # review here is posted and which this cannot read; and a GraphQL call naming
@@ -1028,8 +1032,12 @@ def soft_subcommand_opener($t; $p; $level):
 # word's command ends, from one pass forward for the depth and one back.
 def is_write_name($wn): IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am")
   or ($wn[ascii_downcase] // false);
-def write_tables($w; $w0; $lw; $wn; $need):
-  if ($need | not) then {nw: null, ce: null}
+# A `gh pr review` word that may approve: `--approve`, `--approve=...`, `-a` or a short cluster that
+# starts with it (`-ab text`), and any word an expansion can turn into one (`$A`, `"$A"`,
+# `"${FLAGS[@]}"`, `$(...)`, a backtick), the same rule as a review `event` the guard cannot read.
+def may_approve: startswith("--approve") or test("^-a") or contains("$") or . == "`";
+def write_tables($w; $w0; $lw; $wn; $need; $review):
+  if ($need | not) then {nw: null, ce: null, na: null}
   else
     ($w0 | length) as $n
     | [foreach $w0[] as $x ({d: 0, out: 0};
@@ -1045,7 +1053,10 @@ def write_tables($w; $w0; $lw; $wn; $need):
                | if $w0[$k] | IN(";", "&", "|", "\n") then .ends[$d] = $k | .out = $k
                  elif $w0[$k] == ")" then .ends[$d + 1] = $k | .out = (.ends[$d] // $n)
                  else .out = (.ends[$d] // $n) end;
-               .out)] | reverse + [$n])}
+               .out)] | reverse + [$n]),
+       na: (if $review | not then null
+            else [foreach range($n - 1; -1; -1) as $k ($n; if $w0[$k] | may_approve then $k else . end)]
+                 | reverse + [$n] end)}
   end;
 # Where the command of the word at `$i` ends: the table's answer, or the whole command's end
 # when there is no table.
@@ -1491,11 +1502,14 @@ def detect_gh($w; $t; $i; $n; $lm; $bounded; $cmd_pos):
               else
                 ($w[$verb_i]) as $verb
                 | if $verb | ascii_downcase | IN(generic_reads[]) then null
-                  # `gh pr review` approves with `--approve` or `-a` before its command's next
-                  # `;`, `&`, `|` or newline (`review_approves`), or with a flag input appends.
+                  # `gh pr review` approves with a word that may approve (`may_approve`) inside its
+                  # own command -- up to its next `;`, `&`, `|` or newline outside quotes at its own
+                  # depth of parentheses, so a `;` inside a substitution ends nothing -- or with a
+                  # flag input appends.
                   elif $noun == "pr" and ($verb | ascii_downcase) == "review" then
                     {next: ($verb_i + 1),
-                     reason: (if ($t.ra[$verb_i + 1] // false) then "gh pr review --approve"
+                     reason: (if $t.na != null and ($t.na[$verb_i + 1] // $n) < command_end($t; $verb_i)
+                              then "gh pr review --approve"
                               elif ($t.xargs[$i].active // false)
                                    and input_supplies_gh_api($w; $t; $i; $verb_i + 1;
                                          {graphql: false,
@@ -1651,17 +1665,6 @@ def findings($w; $w0; $levels; $unsure; $wn):
           | last // -1 end) as $lra
   | (if $lra < 0 then -1
      else [range(0; $n) | select($w[.] | test("(?i)approve"))] | last // -1 end) as $lap
-  # For every index, whether a `gh pr review` flag that approves (`--approve`, `--approve=...`, `-a`
-  # or a short cluster that starts with it, `-ab text`) stands at or after it before the next `;`,
-  # `&`, `|` or newline of the command as written. A parenthesis or a backtick does not end it, so
-  # an unquoted `$(cat f)` body before `--approve` hides nothing; one pass from the end, built only
-  # when the command holds a `review`.
-  | (if any($w[]; . == "review") | not then null
-     else [foreach ($w0 | reverse)[] as $x (false;
-             if $x | IN(";", "&", "|", "\n") then false
-             elif ($x | startswith("--approve")) or ($x | test("^-a")) then true
-             else . end)]
-          | reverse end) as $ra
   # The last word that names a commit-making or pushing git subcommand: a git whose option run
   # holds a command substitution, or whose subcommand is an expansion, is a write only when one
   # follows (`detect_git`).
@@ -1674,14 +1677,15 @@ def findings($w; $w0; $levels; $unsure; $wn):
   | (if $owners == null then null else $w | options_table($g; $owners) end) as $wo
   | (if $wo == null then null else $w | command_table($wo; $g; $inputs) end) as $cw2
   | alias_setting_counts($w) as $ac
-  | write_tables($w; $w0; $lw; $wn; $lw >= 0 or $ac != null) as $wt
+  | any($w[]; . == "review") as $review
+  | write_tables($w; $w0; $lw; $wn; $lw >= 0 or $ac != null or $review; $review) as $wt
   | {ao: $ao, cw: ($w | command_table($ao; $g; $inputs)),
      cw2: $cw2,
-     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li, lra: $lra, lap: $lap, ra: $ra,
+     sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li, lra: $lra, lap: $lap,
      xargs: (if $inputs != null
              then xargs_context($w0; $lv; $unsure; $inputs) else null end),
      oc: (if $unsure then opener_counts($w0) else null end),
-     ac: $ac, nw: $wt.nw, ce: $wt.ce} as $t
+     ac: $ac, nw: $wt.nw, ce: $wt.ce, na: $wt.na} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
        | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null; $inputs))
@@ -1936,9 +1940,10 @@ reviewer approves: a review's APPROVE runs through 'uv run python tools/agent-id
 claude-reviewer -- <command>' (Codex: codex-reviewer), under pr-review, and never as claude-coder, \
 claude-orchestrator or codex-coder, since GitHub stops only a pull request's own author and that \
 approval would count toward the one main requires. Any identity may post a COMMENT or \
-REQUEST_CHANGES review. A review whose event the guard cannot read (a body from --input, \
-event=@file or a variable) counts as an approval: name the event inline (-f event=COMMENT) and send \
-the body with -F body=@file. See committing and pr-review."
+REQUEST_CHANGES review. A review whose event or flags the guard cannot read (a body from --input, \
+event=@file, a variable or a \$(...) among gh pr review's words) counts as an approval: name the \
+event inline (-f event=COMMENT, gh pr review --comment) and send the body from a file (-F \
+body=@file, --body-file file). See committing and pr-review."
 else
 	reason="This command writes to GitHub ($flagged) outside any agent identity. A write is a git \
 push; a commit-making git verb (commit, cherry-pick/revert/am, merge/rebase past --abort, pull \
