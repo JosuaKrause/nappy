@@ -1356,29 +1356,16 @@ func _test_the_morning_is_indexed_before_the_first_frame(t) -> void:
 			"before the first frame, a look at the road sees every car the morning placed "
 			+ "(%d of %d unseen)" % [unseen, cars])
 
-## **A turn is a placement, and it has to look before it commits.** *(M38: "when a car turns into an
-## occupied lane the other car just disappears.")*
-##
-## The test above is the one that has always been here, and it passes either way: the separation
-## works, and that is the problem. `_divert()` picked an arm of a junction out of the tile map alone,
-## so a car diverting round a closure materialised wherever that lane happened to be occupied — and
-## the M27 rule that separation is positional then resolved it the only way it can, by *moving* a
-## body. Resolving a queue front-to-back cascades, so the correction is the shortfall plus everything
-## ahead of it. A probe parked at a closure measured turns landing 66px from another car 152px from
-## the player, and **1627 corrections over ninety seconds with a worst of 134px** — two car lengths
-## of road, gone in one frame, in plain sight. It is 146 and 66px now. The queue was always legal
-## afterwards, which is exactly why nothing caught it.
-##
-## Two halves. The index, on its own, is the question a turning car asks; and the whole crowd, run
-## for a minute, must not correct anybody by more than a car's own length in a single frame — a
-## *relationship* ("a correction is a nudge, not a teleport") rather than a measured number.
 ## The checkpoint passes look only at the buckets a body's line covers (`Crowd._near_a_line()`), and
 ## a hut or gate within the lane tolerance can stand in the next bucket over: 128px buckets put an
 ## edge 64px into an odd corridor's street, between its lanes. Dropping either neighbour, or the
 ## hut tie going to the later hut, moves no hash the cost probe walks, so they are checked here.
 func _test_a_body_finds_what_stands_across_a_bucket_edge(t) -> void:
 	var crowd := _city.crowd
-	var edge := 128.0 * 3.0
+	var bucket: float = Crowd._LINE_BUCKET
+	t.check(bucket == float(4 * Tuning.TILE_SIZE),
+			"a bucket is four tiles wide, which the hut test below straddles in whole tiles")
+	var edge := bucket * 3.0
 	# Both axes, both directions, and a gate's wider tolerance. A column holds points by x (a body
 	# heading north or south looks along it), a row by y.
 	var lines := crowd._bucket_by_line([Vector2(edge + 20.0, edge - 20.0),
@@ -1405,9 +1392,10 @@ func _test_a_body_finds_what_stands_across_a_bucket_edge(t) -> void:
 	# wins whichever bucket is visited first. The huts stand on corridor tiles either side of a
 	# bucket edge at a multiple of four tiles.
 	var column := -1
+	var tiles := roundi(bucket / float(Tuning.TILE_SIZE))
 	for k in range(1, 40):
-		if CityMap.corridor_offset(4 * k) >= 0 and CityMap.corridor_offset(4 * k - 1) >= 0:
-			column = 4 * k
+		if CityMap.corridor_offset(tiles * k) >= 0 and CityMap.corridor_offset(tiles * k - 1) >= 0:
+			column = tiles * k
 			break
 	t.check(column > 0, "a pair of corridor tiles straddles a bucket edge")
 	if column < 0:
@@ -1449,6 +1437,22 @@ func _test_a_body_finds_what_stands_across_a_bucket_edge(t) -> void:
 	above = null
 	below = null
 
+## **A turn is a placement, and it has to look before it commits.** *(M38: "when a car turns into an
+## occupied lane the other car just disappears.")*
+##
+## The test above is the one that has always been here, and it passes either way: the separation
+## works, and that is the problem. `_divert()` picked an arm of a junction out of the tile map alone,
+## so a car diverting round a closure materialised wherever that lane happened to be occupied — and
+## the M27 rule that separation is positional then resolved it the only way it can, by *moving* a
+## body. Resolving a queue front-to-back cascades, so the correction is the shortfall plus everything
+## ahead of it. A probe parked at a closure measured turns landing 66px from another car 152px from
+## the player, and **1627 corrections over ninety seconds with a worst of 134px** — two car lengths
+## of road, gone in one frame, in plain sight. It is 146 and 66px now. The queue was always legal
+## afterwards, which is exactly why nothing caught it.
+##
+## Two halves. The index, on its own, is the question a turning car asks; and the whole crowd, run
+## for a minute, must not correct anybody by more than a car's own length in a single frame — a
+## *relationship* ("a correction is a nudge, not a teleport") rather than a measured number.
 func _test_a_car_looks_before_it_turns(t) -> void:
 	var index := TrafficIndex.new()
 	var vertical_lane := CrowdAgent.make_lane_key(true, 3, 2, 1.0)
