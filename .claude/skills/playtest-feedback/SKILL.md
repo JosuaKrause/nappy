@@ -69,14 +69,18 @@ already have one.
 
 - **A playtest** is `docs/playtests/<name>.md`.
 - **A queue entry** is a folder, `docs/todo/<name>/`. Its `README.md` opens with the entry's
-  band, `priority: now|next|later|parked`, and an `after: <entry folder>` line for each entry it
-  truly waits on; `tools/queue.sh` prints the queue in the order the bands give, and there is no
+  band, `priority: bug|now|next|later|parked`, optionally an `upnext: true` line (it prints
+  first, whatever the band, until the work starts), and an `after: <entry folder>` line for each
+  entry it truly waits on; `tools/queue.sh` prints the queue in the order the bands give, and there is no
   order list to edit *(2026-09-26: "a priority system?", brisk-heron, statement 13)*.
   **A playtest note is filed `now`** unless the player names another band, since a note from
   playing is a bug report *(2026-09-27: "btw all notes I have from playtesting should be filed
   under now first unless otherwise stated" · "since those are bug reports")*: pass
   `--priority now` to `tools/new-name.sh todo`, which writes `priority: later` otherwise. For
-  anything else, a band the player did not name is the filer's proposal and the report says so. The rest of the `README.md` holds the player's words, the playtest links and the
+  anything else, a band the player did not name is the filer's proposal and the report says so.
+  **`bug` is never proposed or defaulted, for any entry**: it is filed only when the player names
+  it *(2026-10-11, asked whether notes from playing now default to `bug`: "Only when you say
+  so")*. The rest of the `README.md` holds the player's words, the playtest links and the
   context. **Each item is a file
   of its own** beside it, under a short descriptive name (`stack-in-front.md`), written in full
   prose with no checkbox *(2026-09-26: "that way completing a task is just deleting the file and no
