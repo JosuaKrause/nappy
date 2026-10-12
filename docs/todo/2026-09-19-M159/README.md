@@ -41,7 +41,7 @@ the 33ms line between two refreshes and three, which the player felt as "a lot o
 player chose what comes next: [shadows baked into their own page](shadows-are-pictures-on-their-own-atlas-page.md),
 [nothing off screen redrawn or animated](nothing-off-screen-is-redrawn-or-animated.md),
 [the frame straight to the screen, then fewer pixels](the-frame-goes-straight-to-the-screen-then-fewer-pixels.md),
-and [the readout's resolution and refresh](the-readout-says-its-resolution-and-refreshes-less-often.md).
+and the readout's resolution and refresh (the [2026-09-19-M15 record](../../decisions/2026-09-19-M159-9)).
 [The cues and the events doing less](the-cues-and-the-events-step-less.md), the filer's proposal, and
 [the cheaper tick](make-the-physics-tick-cheaper.md) take the game's own work down beside them.
 Day 9's long spike is [bouncy-swan](../2026-10-11-bouncy-swan/README.md)'s.
