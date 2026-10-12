@@ -28,8 +28,9 @@
 # flag after that argument is not seen.
 #
 # A "write" is `git push`; a commit-making git verb (`commit` always; `cherry-pick`/`revert`/`am`
-# unless they carry `--abort`/`--quit`; `merge`/`rebase` unless `--abort`/`--no-commit`/
-# `--ff-only`; `pull` unless `--ff-only`, the only shape that cannot make a commit of its own);
+# unless they carry `--abort`/`--quit`; `merge` unless `--abort`/`--no-commit`/`--ff-only`; `rebase`
+# unless `--abort` or `--show-current-patch`, which only prints; `pull` unless `--ff-only`, the
+# only shape that cannot make a commit of its own);
 # any `gh` noun's verb that is not on one short, shared read list (`view`, `list`, `status`,
 # `diff`, `checks`, `checkout`, `watch`, `download`, `clone`, `token`) -- every noun, not only
 # `pr`/`issue`/`release`, so `gh workflow run`, `gh run rerun`, `gh repo edit`, `gh label create`,
@@ -62,7 +63,10 @@
 # end the option run or are taken for the subcommand, and so can a subcommand that is itself an
 # expansion (`git $(echo push) origin v1`): that `git` is a write when a commit-making or
 # pushing subcommand's name (`push`, `commit`, `merge`, `rebase`, `pull`, `cherry-pick`, `revert`,
-# `am`) appears anywhere after it in the command, and that `gh` always is. A separator where the
+# `am`) appears after it within its own command -- up to the first `;`, `&`, `|` or newline
+# outside quotes at that git's own depth of parentheses (`write_tables`), so the substitution's
+# own words count and a later command's do not: `git -C $(git rev-parse --show-toplevel) log |
+# grep merge` reads -- and that `gh` always is. A separator where the
 # subcommand belongs inside a quoted script is unreadable too (`bash -c 'git -C $(pwd) push'`):
 # quoting the script hides the substitution's opener, not the write that follows it. When the
 # option's own argument is quoted (`git -C "$(pwd)" push`), the substitution is one argument and
@@ -111,6 +115,12 @@
 # denial can merge too, so reviewer wrappers cannot exempt it either. GNU parallel with no command
 # of its own (`parallel ::: tools/update-pr.sh`) runs each argument as a command, so its command
 # position is unreadable too.
+# **Two dry runs are accepted false denies** (#448's review, finding 5): `git push --dry-run` (or
+# `-n`) and `git commit --dry-run` write nothing, yet are read as the push and the commit they
+# name -- denied on a machine with identities, asked about where none can work. Telling a real
+# `--dry-run` from a commit message's words, an option's value (`git push -o --dry-run origin v1`
+# pushes `v1`) or a later `--no-dry-run` needs each subcommand's own option table, and a misread
+# is a push as the player; wrapping the dry run in an identity costs nothing.
 # A backslash-escaped separator outside quotes (`xargs -d \; git push origin`) is an argument the
 # shell hands to the wrapper, so it neither ends the wrapper's command nor leaves an option
 # without its value; inside a quoted script a soft separator still ends the script's own command.
@@ -813,7 +823,7 @@ def xargs_context($w; $lv; $unsure; $inputs):
 # `git <subcommand>`: push, and every subcommand that can create a commit under the invoking
 # user's own name -- commit always; cherry-pick/revert/am/merge/rebase/pull unless they carry an
 # abort-like or safe flag (`--abort`/`--quit` for cherry-pick/revert/am, `--abort`/`--no-commit`/
-# `--ff-only` for merge, `--abort` for rebase, `--ff-only` for pull, which is the only shape of
+# `--ff-only` for merge, `--abort` or `--show-current-patch` for rebase, `--ff-only` for pull, which is the only shape of
 # `git pull` that cannot make a commit of its own). Everything else (status, log, diff, fetch,
 # branch, ...) is a read or a local-only change.
 #
@@ -988,6 +998,36 @@ def expansion_opener($t; $p): opener_at($t.w0; $p);
 def soft_subcommand_opener($t; $p; $level):
   ($t.w0[$p] == "\u0001" and ($t.lv[$p] // 0) <= $level)
   or ($p > 0 and $t.w0[$p - 1] == "\u0001" and ($t.lv[$p - 1] // 0) <= $level);
+# Whether a commit-making or pushing subcommand's name stands from `$from` on inside the command
+# the git at `$i` belongs to: up to the first `;`, `&`, `|` or newline written outside quotes at
+# that git's own depth of parentheses, or the `)` that closes it. A substitution's own words are
+# deeper and stay inside (`git -C $(cd x; pwd) push`, `git $(echo push) origin v1`), while a later
+# command's are outside (`git -C $(git rev-parse --show-toplevel) log | grep merge` reads). A
+# quoted separator, a backtick and an unmatched parenthesis end nothing, so the span only ever
+# errs long, the safe direction. Two tables built once per command that names such a subcommand:
+# `nw`, the first index at or after each one holding a write's name, and `ce`, where each
+# word's command ends, from one pass forward for the depth and one back.
+def write_tables($w; $w0; $lw):
+  if $lw < 0 then {nw: null, ce: null}
+  else
+    ($w0 | length) as $n
+    | [foreach $w0[] as $x ({d: 0, out: 0};
+         if $x == "(" then .out = .d | .d += 1
+         elif $x == ")" then .d = ([.d - 1, 0] | max) | .out = .d
+         else .out = .d end;
+         .out)] as $depth
+    | {nw: ([foreach range($n - 1; -1; -1) as $k ($n;
+               if $w[$k] | IN("push", "commit", "merge", "rebase", "pull", "cherry-pick", "revert", "am")
+               then $k else . end)] | reverse + [$n]),
+       ce: ([foreach range($n - 1; -1; -1) as $k ({ends: [], out: $n};
+               ($depth[$k]) as $d
+               | if $w0[$k] | IN(";", "&", "|", "\n") then .ends[$d] = $k | .out = $k
+                 elif $w0[$k] == ")" then .ends[$d + 1] = $k | .out = (.ends[$d] // $n)
+                 else .out = (.ends[$d] // $n) end;
+               .out)] | reverse + [$n])}
+  end;
+def write_in_command($t; $from; $i):
+  $t.nw != null and ($t.nw[$from] // ($t.nw | length)) < ($t.ce[$i] // ($t.nw | length));
 def opener_counts($w0):
   [0] + [foreach range(0; $w0 | length) as $k (0; . + (if opener_at($w0; $k) then 1 else 0 end))];
 def openers_between($t; $a; $b):
@@ -1046,10 +1086,10 @@ def detect_git($w; $t; $i; $n; $cmd_pos):
     (after_options($t; $i + 1)) as $sub
     | if unreadable_input_word($w; $t; $i; $sub; $n; $cmd_pos) then
         {next: ([$sub, $i + 1] | max), reason: "git with an input-supplied subcommand"}
-      elif $t.lw > $i
+      elif write_in_command($t; $i + 1; $i)
          and (openers_between($t; $i + 1; [$sub + 1, $n] | min)
               or (($w[$sub] // "") | contains("$"))
-              or ($t.lw > $sub and soft_subcommand_opener($t; $sub; $t.lv[$i + 1] // 0)))
+              or (write_in_command($t; $sub + 1; $i) and soft_subcommand_opener($t; $sub; $t.lv[$i + 1] // 0)))
       then
         {next: ([$sub, $i + 1] | max), reason: "git with a shell expansion before its subcommand"}
       # An alias set on the command line (`git -c alias.ship=push ship origin v1`, `--config-env
@@ -1085,7 +1125,8 @@ def detect_git($w; $t; $i; $n; $cmd_pos):
               as $sc
             | {next: $sc.end, reason: (if $sc.found then null else "git merge" end)}
           elif $subcmd == "rebase" then
-            (segment_scan($w; $sub + 1; $n; ["--abort"] | fixed_flags(input_tokens($t; $i)))) as $sc
+            (segment_scan($w; $sub + 1; $n; ["--abort", "--show-current-patch"] | fixed_flags(input_tokens($t; $i))))
+              as $sc
             | {next: $sc.end, reason: (if $sc.found then null else "git rebase" end)}
           elif $subcmd == "pull" then
             (segment_scan($w; $sub + 1; $n; ["--ff-only"] | fixed_flags(input_tokens($t; $i)))) as $sc
@@ -1606,13 +1647,14 @@ def findings($w; $w0; $levels; $unsure):
   | ($w | options_table($g; null)) as $ao
   | (if $owners == null then null else $w | options_table($g; $owners) end) as $wo
   | (if $wo == null then null else $w | command_table($wo; $g; $inputs) end) as $cw2
+  | write_tables($w; $w0; $lw) as $wt
   | {ao: $ao, cw: ($w | command_table($ao; $g; $inputs)),
      cw2: $cw2,
      sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li, lra: $lra, lap: $lap, ra: $ra,
      xargs: (if $inputs != null
              then xargs_context($w0; $lv; $unsure; $inputs) else null end),
      oc: (if $unsure then opener_counts($w0) else null end),
-     ac: alias_setting_counts($w)} as $t
+     ac: alias_setting_counts($w), nw: $wt.nw, ce: $wt.ce} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
        | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null; $inputs))

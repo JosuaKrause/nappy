@@ -156,6 +156,11 @@
 #     codex-reviewer; a COMMENT, REQUEST_CHANGES or pending review allows under every role; input
 #     that can add a flag to a review counts as an approval, and on the API's review endpoint
 #     refuses a reviewer too
+#   - a git whose options hold an unquoted substitution is a write only when a write's name stands
+#     inside its own command (git -C $(...) log | grep merge allows; the substitution's own words,
+#     a backtick, a quoted script and an unmatched parenthesis still deny), decided quickly behind
+#     30 000 open parentheses and through 64 KB of such gits; git rebase --show-current-patch
+#     reads, and git push --dry-run and git commit --dry-run stay accepted false denies
 #
 # Needs nothing but bash and the hooks under test -- no uv, no Godot -- so it can run anywhere
 # tools/test_cli_help.sh does, right beside it in CI.
@@ -2291,6 +2296,30 @@ assert_write_guard "a reviewer's xargs gh api .../reviews -> deny" deny \
 assert_write_guard "a coder's merge is still a coder's -> allow" allow \
     'uv run python tools/agent-identity.py run claude-coder -- gh pr merge 5 --squash'
 
+# #448's review, finding 4: a git whose options hold an unquoted substitution is a write only when
+# a write's name stands inside its own command, so a later command's grep pattern no longer counts;
+# the substitution's own words and a quoted script's still do.
+assert_write_guard "git -C \$(...) log | grep merge -> allow" allow \
+    'git -C $(git rev-parse --show-toplevel) log --oneline | grep merge'
+assert_write_guard "git -C \$(...) log; echo push -> allow" allow 'git -C $(git rev-parse --show-toplevel) log; echo push'
+assert_write_guard "( git -C \$(pwd) log ) ; grep merge -> allow" allow '( git -C $(pwd) log ) ; grep merge'
+assert_write_guard "git -C \$(cd x; pwd) push, a separator inside the substitution -> deny" deny \
+    'git -C $(cd x; pwd) push origin main'
+assert_write_guard "git \$(echo push) origin v1, the write inside the substitution -> deny" deny 'git $(echo push) origin v1'
+assert_write_guard "git -C \`pwd\` push -> deny" deny 'git -C `pwd` push origin main'
+assert_write_guard "sh -c 'git -C \$(pwd) log | grep merge', a quoted separator ends nothing -> deny" deny \
+    "sh -c 'git -C \$(pwd) log | grep merge'"
+assert_write_guard "an unmatched ) ends nothing -> deny" deny 'git -C $(pwd) log ) push'
+paren_chain="$(printf '(%.0s' $(seq 1 30000))git -C \$(pwd) push"
+assert_write_guard_timed "30 000 open parentheses before git -C \$(pwd) push -> deny, decided quickly" deny "$paren_chain" 5
+paren_chain="$(printf 'git -C $(pwd) %.0s' $(seq 1 4600))push"
+assert_write_guard_timed "64 KB of git -C \$(pwd), then push -> deny, decided quickly" deny "$paren_chain" 5
+# Finding 5: git rebase --show-current-patch only prints and reads; the two dry runs stay accepted
+# false denies (the header says why), so they are asked about where no identity can work.
+assert_write_guard "git rebase --show-current-patch -> allow" allow 'git rebase --show-current-patch'
+assert_write_guard "git push --dry-run -> deny (an accepted false deny)" deny 'git push --dry-run origin feature/x'
+assert_write_guard "git commit --dry-run -> deny (an accepted false deny)" deny 'git commit --dry-run'
+
 # A wrapped heredoc body that names a write is a false deny, and its message says why and points
 # at a body file rather than claiming the command is unwrapped and stopping there.
 wrapped_heredoc_pr="uv run python tools/agent-identity.py run claude-coder -- gh pr create --title t --body \"\$(cat <<'EOF'
@@ -2670,6 +2699,7 @@ assert_write_guard_reason "xargs input makes push refspecs unreadable" \
 # option's argument is one word; and a quoted separator is not the push's own when it belongs to
 # another command (a commit message) or sits at the push's own level in a quoted script.
 write_guard_asked=(
+    'git commit --dry-run'
     $'git commit -m "$(cat <<\'EOF\'\nNames passed through xargs git\nare read.\nEOF\n)"'
     'gxargs git status; git push origin feature/x'
     'env_parallel gh pr view && git push origin feature/x'
@@ -2744,6 +2774,7 @@ write_guard_asked=(
 # an issue (bouncy-heron statement 14: "an agent shouldn't use gh issue directly"); a merge, a
 # release, a gh api write and a pushing tools/ script.
 write_guard_never_asked=(
+    'git -C $(cd x; pwd) push origin main'
     'gh pr review 5 --approve'
     'git -c alias.ship=push ship origin feature/x'
     'echo push | xargs -rIstatus git status origin v1'
@@ -3003,6 +3034,8 @@ write_guard_never_asked=(
 )
 # A read, and `git tag` itself, which changes only the local repository, stay allowed.
 write_guard_allowed=(
+    'git -C $(git rev-parse --show-toplevel) log --oneline | grep merge'
+    'git rebase --show-current-patch'
     'xargs -rIother -E -Istatus git status'
     'xargs -rIother -E -Iview gh pr view'
     'xargs -rIother -E xargs git status'
