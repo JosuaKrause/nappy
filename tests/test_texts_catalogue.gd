@@ -27,19 +27,27 @@ const _ALLOWED_FILES := {
 	"res://src/autoload/game_save.gd": "the save's own log and error lines",
 	"res://src/autoload/game_state.gd": "log notes about nerves and resistance work",
 	"res://src/autoload/visit_counter.gd": "the page-count script's own source",
-	"res://src/city/": "map validation errors and recipe checks, reported to a developer",
-	"res://src/routes/": "closure checks and the closure kinds' log names",
-	"res://src/crowd/": "placement checks reported to a developer",
-	"res://src/visuals/": "atlas and ground-layer errors reported to a developer",
+	"res://src/city/building.gd": "map validation errors and recipe checks, reported to a developer",
+	"res://src/city/city_generator.gd": "map validation errors and recipe checks, reported to a developer",
+	"res://src/city/recipe_city_builder.gd": "map validation errors and recipe checks, reported to a developer",
+	"res://src/city/recipe_city_context.gd": "map validation errors and recipe checks, reported to a developer",
+	"res://src/routes/road_closure.gd": "the closure kinds' log names",
+	"res://src/crowd/crowd_agent.gd": "placement checks reported to a developer",
+	"res://src/crowd/crowd.gd": "placement checks reported to a developer",
+	"res://src/visuals/atlas_library.gd": "atlas and ground-layer errors reported to a developer",
+	"res://src/visuals/ground_layers.gd": "atlas and ground-layer errors reported to a developer",
 	"res://src/events/event_scheduler.gd": "placement reasons written to the run log",
 	"res://src/events/event_manager.gd": "log notes about placement",
 	"res://src/resistance/resistance_director.gd": "the director's own log lines and setup errors",
-	"res://src/finale/": "the finale planner's own log lines",
 	"res://src/player/baby.gd": "the debug HUD's reason a baby is not settling",
 }
 
 ## One string in one file: a developer readout in a file whose other strings are held to the rule.
 const _ALLOWED_LITERALS := {
+	"res://src/finale/finale_planner.gd": {
+		"%s via %d calm, %d cells%s": "the planner's summary line, written to the run log",
+		"%d open streets, %d placements": "the planner's summary line, written to the run log",
+	},
 	"res://src/main.gd": {
 		"the authored escape attempt was lost": "a scene recipe's playback error, written to its manifest",
 		"build %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
@@ -89,95 +97,71 @@ func run(t) -> void:
 	_test_a_sentence_is_found_and_a_name_is_not(t)
 	_test_a_comment_and_a_log_call_are_not_judged(t)
 	_test_a_log_call_over_several_lines_is_skipped_to_its_end(t)
+	_test_a_log_call_hides_only_its_own_arguments(t)
 	_test_the_allow_list_names_only_paths_that_exist(t)
 	_test_no_sentence_is_quoted_outside_the_catalogue(t)
 	_test_the_catalogue_holds_what_the_screens_say(t)
 
-## Every quoted sentence in `source`, as `[line, text]` pairs, with comments and the arguments of
-## a log or error call left out.
+## Every quoted sentence in `source`, as `[line, text]` pairs. Comments are skipped, and so are the
+## arguments of a log or error call (from its opening paren to the one that closes it, over as
+## many lines as that takes) -- and only those: a string before the call on the same line, or after
+## its closing paren, is judged like any other.
 static func sentences_in(source: String) -> Array:
 	var found := []
-	var pending := 0
+	var log_depth := 0
 	var number := 0
 	for line in source.split("\n"):
 		number += 1
-		var scan := _scan(line)
-		var code: String = scan[0]
-		var literals: Array = scan[1]
-		var in_log := pending > 0
-		var depth := pending
-		if not in_log:
-			var at := _log_call_at(code)
-			if at != -1:
-				in_log = true
-				depth = 0
-				for ch in code.substr(at):
-					if ch == "(":
-						depth += 1
-					elif ch == ")":
-						depth -= 1
-		else:
-			for ch in code:
+		var quote := ""
+		var current := ""
+		var i := 0
+		while i < line.length():
+			var ch := line[i]
+			if quote != "":
+				if ch == "\\" and i + 1 < line.length():
+					current += ch + line[i + 1]
+					i += 2
+					continue
+				if ch == quote:
+					quote = ""
+					if log_depth == 0 and is_sentence(current):
+						found.append([number, current])
+				else:
+					current += ch
+				i += 1
+				continue
+			if ch == "#":
+				break
+			if ch == "\"" or ch == "'":
+				quote = ch
+				current = ""
+			elif log_depth > 0:
 				if ch == "(":
-					depth += 1
+					log_depth += 1
 				elif ch == ")":
-					depth -= 1
-		pending = maxi(depth, 0) if in_log else 0
-		if in_log:
-			continue
-		for text: String in literals:
-			if is_sentence(text):
-				found.append([number, text])
+					log_depth -= 1
+			else:
+				var opener := _log_opener_at(line, i)
+				if opener != "":
+					log_depth = 1
+					i += opener.length()
+					continue
+			i += 1
 	return found
 
-## `[code, literals]` for one line: the line with every string's content blanked and any trailing
-## comment cut off (so a paren inside a string does not count), and the strings themselves.
-static func _scan(line: String) -> Array:
-	var code := ""
-	var literals := []
-	var quote := ""
-	var current := ""
-	var i := 0
-	while i < line.length():
-		var ch := line[i]
-		if quote != "":
-			if ch == "\\" and i + 1 < line.length():
-				current += ch + line[i + 1]
-				i += 2
-				continue
-			if ch == quote:
-				literals.append(current)
-				quote = ""
-				code += quote + "_"
-			else:
-				current += ch
-			i += 1
-			continue
-		if ch == "#":
-			break
-		if ch == "\"" or ch == "'":
-			quote = ch
-			current = ""
-		else:
-			code += ch
-		i += 1
-	return [code, literals]
-
-## Where a log or error call opens in `code`, or -1.
-static func _log_call_at(code: String) -> int:
-	var best := -1
+## The log call's opener (`print(`, `Telemetry.note(` ...) that starts at `at` in `line`, or "".
+## A name that merely ends in one (`reprint(`, `_assert(`) is not it.
+static func _log_opener_at(line: String, at: int) -> String:
+	if at > 0:
+		var before := line[at - 1]
+		if before == "_" or before == "." or before.to_lower() != before.to_upper() \
+				or before.is_valid_int():
+			return ""
 	for opener in ["print(", "push_warning(", "push_error(", "printerr(", "print_rich(",
 			"assert(", "Telemetry.note("]:
-		var at := code.find(opener)
-		while at != -1:
-			# A name that merely ends in the opener's own (`_print(`, `reprint(`) is not it.
-			if at == 0 or not (code[at - 1] == "_" or code[at - 1].to_lower() != code[at - 1].to_upper()
-					or code[at - 1].is_valid_int()):
-				if best == -1 or at < best:
-					best = at
-				break
-			at = code.find(opener, at + 1)
-	return best
+		if line.substr(at, opener.length()) == opener:
+			return opener
+	return ""
 
 ## Whether a quoted string is a sentence in the sense this suite's doc gives.
 static func is_sentence(text: String) -> bool:
@@ -243,6 +227,13 @@ func _test_a_comment_and_a_log_call_are_not_judged(t) -> void:
 	var found := sentences_in(source)
 	t.check(found.size() == 2 and found[0][0] == 1 and found[1][0] == 7,
 			"only the two plain strings are found, on lines 1 and 7 (found %s)" % [found])
+
+func _test_a_log_call_hides_only_its_own_arguments(t) -> void:
+	var probe := sentences_in("print(\"x\"); _say(\"Walk faster now please\", 1.0)\n")
+	t.check(probe.size() == 1 and probe[0][1] == "Walk faster now please",
+			"a text after a log call's closing paren on the same line is still judged (%s)" % [probe])
+	probe = sentences_in("var shown := \"Two words\" if ok else \"no log here\"; print(\"a log line\")\n")
+	t.check(probe.size() == 2, "texts before a log call on its line are judged too (%s)" % [probe])
 
 func _test_a_log_call_over_several_lines_is_skipped_to_its_end(t) -> void:
 	var source := "push_error(\"first line of it (not) \"\n" \
