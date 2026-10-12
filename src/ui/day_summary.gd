@@ -26,7 +26,7 @@ signal restart_requested()
 @onready var _note: Label = $Root/Center/Lines/Note
 @onready var _body: Label = $Root/Center/Lines/Body
 ## The morning's own line — one or two plain sentences saying what is true of the city by that
-## day, from `Texts.DAY_BRIEF` below — its own label, not a line folded into `_body`, because a screen
+## day, from `Texts.DAY_BRIEF` — its own label, not a line folded into `_body`, because a screen
 ## full of ordinary lines is exactly what playtest 69 missed it in ("the day text needs to be
 ## bigger to be able to be noticed"). Bigger and its own color (`Palette.CHALK_DONE`) is what
 ## makes it the thing the screen is telling you rather than one more line.

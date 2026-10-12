@@ -28,12 +28,10 @@ extends RefCounted
 
 const TITLE_NAME := "Nappy"
 const TITLE_PREMISE := "Fourteen days. One pram. Get her to sleep and get her home."
-## One body for every device — see `Texts.WALKING_LESSON_PAUSE`'s own doc for the same collapse made
-## there. *(2026-09-06, the player: "in fact I said to remove the keyboard inputs altogether but
-## I'm willing to compromise on letting them stay silently".)* The keyboard still walks and runs;
-## nothing on screen names a key for it any more. `TouchInput.available()` used to choose between
-## this and a keyboard body — with only one body left, this screen has no more use for that fact
-## and keeps no member for it.
+## One body for every device, the same collapse `WALKING_LESSON_PAUSE` makes (see its doc).
+## *(2026-09-06, the player: "in fact I said to remove the keyboard inputs altogether but I'm
+## willing to compromise on letting them stay silently".)* The keyboard still walks and runs;
+## nothing on screen names a key for it.
 ##
 ## **Says two things and nothing else.** *(2026-09-07: "the movement tutorial should just say 'Tap
 ## to walk' and 'Double tap to run'. no mention of tapping her or 'that way'.")* The struck clauses
@@ -118,20 +116,16 @@ const ARROW_TASK := "task"
 const DISTANCE_METRES := "%d m"
 
 # ------------------------------------------------------------------ day briefs ---
-# Shown by `DaySummary` on the screen between two days, under the day and the nerves. One or two
-# plain sentences a morning, under `docs/NARRATIVE.md`'s tone rules: nobody explains the politics,
-# the danger is noise, nothing triumphant. Each names what that day introduces, and a line that
-# would give a task away says something else that is true that morning instead.
+# Shown by `DaySummary` on the screen between two days, under the day and the nerves.
 
 ## One or two plain sentences a morning, in American English, under `docs/NARRATIVE.md`'s tone
 ## rules — nobody explains the politics, the danger is noise, nothing triumphant. Each names the
 ## thing that day introduces, so this is also where a new obstacle is first heard of; a line is
 ## not tied to its own day's resistance task or once-only happening, so one that would give a
-## task away says something else that is true that morning instead. Read directly off
-## `GameState.day` rather than a parameter, since the same table has to answer for both
-## `show_day_brief()` (a resumed run's own gate) and `show_day()` (the ordinary transition every
-## other day reaches this screen through) — a static fact about the calendar day, never about
-## what an attempt touched, so a lost day's own line reads exactly as it did this morning.
+## task away says something else that is true that morning instead. Looked up by the calendar day
+## alone — `DaySummary.show_day_brief(day, …)` (a resumed run's own gate) is handed the day and
+## `show_day()` (the ordinary transition) reads `GameState.day` — never by what an attempt
+## touched, so a lost day's own line reads exactly as it did this morning.
 ##
 ## Written as plain prose, one space between sentences and no `\n` of its own: `SentenceLines
 ## .break_for_label()` breaks a multi-sentence entry onto more than one line only where `_brief`'s
@@ -291,7 +285,7 @@ const ENDING_PLAYED := "%s\n\nTime played: %s%s"
 
 const FINALE_HEADING := "THE END"
 const FINALE_TITLE := "You are out."
-## The same sentence either way; the two differ in what she stands on. The key is a `CityEdge.Kind`.
+## The key is a `CityEdge.Kind`.
 ## What is behind her, and it is the same sentence either way: she is out, nobody is following,
 ## and the city is still there. The two differ only in what she is standing on. Plain prose, one
 ## space between sentences: `show_finale()` breaks it through `SentenceLines.break_for_label()`,
