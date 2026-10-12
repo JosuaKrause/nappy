@@ -2,7 +2,7 @@ priority: next
 
 # tiny-alpaca — What a seal leaves open on a pedestrian street · filed 2026-10-11
 
-Found by the review of [M219](../../decisions/2026-09-26-M219.md)'s pull request (#727), not
+Found by the review of #727 (M219, on a pedestrian street a blocked walker turns round), not
 reported by the player: "Soft seals (`SS..SS`) and two-body hard seals (`OO..OO`, such as a pair of
 `cafe_tables`, `market_stall` or `delivery_van`) are placed in a precinct as if lanes 2-3 were a
 carriageway. So a seal in a pedestrian zone has a two-lane hole that walkers walk through (seed 67:
