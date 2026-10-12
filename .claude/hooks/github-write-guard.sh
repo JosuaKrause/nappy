@@ -67,6 +67,22 @@
 # quoting the script hides the substitution's opener, not the write that follows it. When the
 # option's own argument is quoted (`git -C "$(pwd)" push`), the substitution is one argument and
 # the subcommand is read as usual.
+# A git alias is read as the command it stands for (busy-ibis, statement 7: "let's do A for
+# aliases"): before the command is read, this script asks git for every `alias.*` it knows in the
+# session's directory, and a subcommand that is an alias and not one of git's own built-ins (which
+# git never lets an alias shadow) is replaced by what it stands for, followed through a chain of
+# aliases, so the player's `git ci -m wip` (`ci` = `commit`) is a commit and `git m main` a merge,
+# while `git st` (`status -sb`) stays a read. An alias that runs a shell command (`!...`), and one
+# with no value, a loop or git's own options at its start, cannot be read and is a write, push-like
+# for a reviewer. An alias set on the command line (`git -c alias.ship=push ship origin v1`,
+# `-calias.x=...`, `--config-env alias.x=VAR`) is denied whatever it says, as an inline
+# `push.default=matching` is, also push-like. **What the lookup cannot see is an accepted gap**:
+# an alias a separate `git config` defines earlier in the same command (`git config alias.x push
+# && git x`), one in another repository's own config that `-C` or `--git-dir` names, one a config
+# file pulled in by `-c include.path=...` defines, and one passed through the environment
+# (`GIT_CONFIG_PARAMETERS`, `GIT_CONFIG_COUNT`) -- each a deliberate shape. A `git-<name>` program
+# on the PATH, which git runs before an alias of the same name, is judged as the alias, the safe
+# direction.
 # A push under xargs/gxargs or GNU parallel/env_parallel cannot be read to its end: input can
 # append or replace refspecs, even when the written words name only a branch. For a git or gh the
 # wrapper runs (in command position, or anywhere when the wrapper's options cannot be read), a
@@ -415,6 +431,48 @@ def leveled_parts:
 def is_sep: IN(";", "&", "|", "(", ")", "`", "\n", "\u0001");
 def is_hard_sep: IN(";", "&", "|", "(", ")", "`", "\n");
 
+# **A git alias is read as the command it stands for** (busy-ibis, statement 7: "let's do A for
+# aliases"). `$git` is what the shell half of this script asked git before the reading started
+# (`git_table`, below): `aliases`, every `alias.*` key git's own config gives in the session's
+# directory, by its lowercased name, and `builtins`, git's own built-in commands, which git never
+# lets an alias shadow. A subcommand that is neither a built-in nor an alias is left as it is
+# written. One that is an alias is replaced by the alias's words, in the same shell word's place,
+# before anything else reads the command, so `git ci -m x` (`ci` = `commit`) is the commit it is
+# and `git m main` (`m` = `merge`) the merge; an alias naming another alias is followed to the
+# end. git's own reading of an alias value honours quotes and backslashes; these are dropped and
+# the value split at whitespace, the same way this script reads the command itself. Three kinds
+# are not read at all and become a marker word that `detect_git` denies: an alias that runs a
+# shell command (`!...`, U+0007 then `!`), and one that has no value, names itself through a
+# chain, or starts with one of git's own options, which git reads again (U+0007 then `?`). A
+# word of the alias that is a separator character on its own is not one to git, so it is kept
+# from reading as one. An alias that expands to a read stays a read.
+def alias_value($git; $name):
+  ($name | ascii_downcase) as $k
+  | if ($git.builtins[$name] // false) then {kind: "builtin"}
+    elif ($git.aliases | has($k)) then {kind: "alias", value: $git.aliases[$k]}
+    else {kind: "other"} end;
+def alias_split: gsub("[\"'\\\\]"; "") | [splits("[ \t\n]+") | select(length > 0)];
+def expand_alias($git):
+  . as $first
+  | if alias_value($git; $first).kind != "alias" then null
+    else
+      {words: [$first], seen: [], out: null}
+      | until(.out != null;
+          (.words[0]) as $head
+          | ($head | ascii_downcase) as $key
+          | alias_value($git; $head) as $a
+          | if $a.kind != "alias" then .out = .words
+            elif any(.seen[]; . == $key) or (.seen | length) >= 16 then .out = ["\u0007?"]
+            elif ($a.value | type) != "string" then .out = ["\u0007?"]
+            elif $a.value | test("^[ \t\n]*!") then .out = ["\u0007!"]
+            else ($a.value | alias_split) as $x
+              | if ($x | length) == 0 or ($x[0] | startswith("-")) then .out = ["\u0007?"]
+                else .seen += [$key] | .words = $x + .words[1:] end
+            end)
+      | .out
+      | map(if is_sep then "\u0007" + . else . end)
+    end;
+
 # Global options taking a separate argument -- git's, gh's and agent-identity.py run's own
 # --repo alike, one small list, fail-safe: an option not on it is skipped as one word, so an
 # unfamiliar flag can never hide the word after it (the same call git-grep-guard.sh's
@@ -499,6 +557,35 @@ def options_table($g; $owners):
     + [$n]
   | resolve;
 def after_options($t; $i): $t.ao[$i] // $i;
+
+# Replaces every git subcommand that is an alias with the words it stands for (`expand_alias`,
+# above), on the leveled parts, before the tables below are built from them. The subcommand is
+# where git's own option run ends, read grouped by shell word and, where the command has quoted
+# words, word by word too, the second reading an unsure command gets (see `findings`).
+def splice_aliases($git):
+  if $git == null or (($git.aliases // {}) | length) == 0 then .
+  else
+    . as $parts
+    | ($parts | map(.w)) as $w
+    | ($w | length) as $n
+    | [range(0; $n) | select($w[.] | named("git"))] as $gits
+    | if ($gits | length) == 0 then $parts
+      else
+        ($parts | map(.c)) as $levels
+        | (if $levels | any(. > 0) then {lv: $levels, ends: word_ends($levels)} else null end) as $g
+        | ($w | options_table($g; null)) as $ao
+        | (if $g == null then null else $w | options_table(null; null) end) as $ao0
+        | (reduce $gits[] as $i ({};
+             .[$ao[$i + 1] | tostring] = true
+             | if $ao0 == null then . else .[$ao0[$i + 1] | tostring] = true end)) as $subs
+        | [range(0; $n) as $k
+           | $parts[$k]
+           | if $subs[$k | tostring] then
+               (.w | expand_alias($git)) as $x
+               | if $x == null then . else (.c) as $c | $x[] | {w: ., c: $c} end
+             else . end]
+      end
+  end;
 
 # A word shaped like a shell assignment (`FOO=1`, `NAPPY_AGENT_ROLE=x`) -- these precede a real
 # command without ending "command position" the way any other word would.
@@ -887,6 +974,17 @@ def opener_counts($w0):
 def openers_between($t; $a; $b):
   $t.oc != null and ($t.oc[$b] - $t.oc[$a]) > 0;
 
+# An alias set on the command line (`-c alias.x=...`, `-calias.x=...`, `--config-env alias.x=VAR`,
+# `--config-env=alias.x=VAR`), counted the same way: the number of such words before each index,
+# built once per command that holds one, so whether a git's own option run sets one is a
+# subtraction (in `git -c git -c ...` every run reaches the end of the chain).
+def sets_alias: test("^(-c|--config-env=)?alias\\."; "i");
+def alias_setting_counts($w):
+  if any($w[]; sets_alias) | not then null
+  else [0] + [foreach $w[] as $x (0; . + (if $x | sets_alias then 1 else 0 end))] end;
+def alias_set_between($t; $a; $b):
+  $t.ac != null and $b > $a and ($t.ac[$b] - $t.ac[$a]) > 0;
+
 # A read exception rests on a written flag (`--dry-run`, `--version`, `--help`, `--abort`,
 # `--ff-only`, ...), and input placed at a replacement token inside that flag replaces it: `ls |
 # xargs -I--dry-run tools/update-pr.sh --dry-run` runs `tools/update-pr.sh 3`. So under an active
@@ -935,10 +1033,17 @@ def detect_git($w; $t; $i; $n; $cmd_pos):
               or ($t.lw > $sub and soft_subcommand_opener($t; $sub; $t.lv[$i + 1] // 0)))
       then
         {next: ([$sub, $i + 1] | max), reason: "git with a shell expansion before its subcommand"}
+      # An alias set on the command line (`git -c alias.ship=push ship origin v1`, `--config-env
+      # alias.x=VAR`, `-calias.x=...`) is denied whatever it says, as an inline
+      # `push.default=matching` is: the alias git would run is the one this setting defines.
+      elif alias_set_between($t; $i + 1; [$sub, $n] | min) then
+        {next: ([$sub, $i + 1] | max), reason: "git with an alias set on the command line"}
       elif ($sub >= $n) or ($w[$sub] | is_sep) then null
       else
         ($w[$sub]) as $subcmd
-        | if $subcmd == "push" then
+        | if $subcmd == "\u0007!" then {next: ($sub + 1), reason: "git alias that runs a shell command"}
+          elif $subcmd == "\u0007?" then {next: ($sub + 1), reason: "git alias that cannot be read"}
+          elif $subcmd == "push" then
             (push_scan($w; $t; $sub + 1; $n)) as $sc
             | (config_push_scan($w; $t; $i + 1; $sub)) as $cf
             | ($sc.tags or $cf.tags
@@ -1349,7 +1454,9 @@ def detect_wrapper($w; $t; $i; $n):
 def reviewer_roles: ["claude-reviewer", "codex-reviewer"];
 def is_push_like($reason):
   ($reason | startswith("git push")) or ($reason | startswith("tools/"))
-  or ($reason == "git with an input-supplied subcommand");
+  or ($reason == "git with an input-supplied subcommand")
+  or ($reason | IN("git with an alias set on the command line", "git alias that runs a shell command",
+                   "git alias that cannot be read"));
 def is_merge_like($reason):
   ($reason == "gh pr merge") or ($reason == "gh pr update-branch") or ($reason == "gh api merge-type")
   or ($reason == "gh with an input-supplied noun or verb")
@@ -1418,7 +1525,8 @@ def findings($w; $w0; $levels; $unsure):
      sw: ($w | script_table), w0: $w0, lv: $lv, lw: $lw, li: $li,
      xargs: (if $inputs != null
              then xargs_context($w0; $lv; $unsure; $inputs) else null end),
-     oc: (if $unsure then opener_counts($w0) else null end)} as $t
+     oc: (if $unsure then opener_counts($w0) else null end),
+     ac: alias_setting_counts($w)} as $t
   | (if $unsure and $lv != null
      then ($w | options_table(null; null)) as $ao0
        | $t | .ao = $ao0 | .cw = ($w | command_table($ao0; null; $inputs))
@@ -1567,7 +1675,7 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
            else swap(","; "\u0004") | swap("["; "\u0004") | swap("]"; "\u0004") end) as $marked
       | (($marked | contains("\u0003"))
          or ($bare | drop("\\\n") | test("\\$\\(|`|<<|\\$\\{|\\$\\$'"))) as $unsure
-      | ($marked | drop("\u0003") | split_words | leveled_parts) as $parts
+      | ($marked | drop("\u0003") | split_words | leveled_parts | splice_aliases($git)) as $parts
       | ($parts | map(.w)) as $w0
       | ($w0 | if $unsure then map(if is_sep then "\u0001" else . end) else . end) as $w
       | (findings($w; $w0; $parts | map(.c); $unsure)) as $result
@@ -1578,7 +1686,46 @@ end
 JQ
 
 command -v jq >/dev/null 2>&1 || exit 0
-if ! result=$(jq -c "$check_program" 2>/dev/null); then
+input=$(cat)
+
+# What git's aliases stand for, read for `splice_aliases` (above): asked of git itself, in the
+# directory the session's command runs in (the hook JSON's `cwd`, else this one), so the
+# player's global aliases, the repository's own and any file they include all count. Only a
+# command of the two guarded tools that names git, with quotes, backslashes, `$` and newlines
+# taken out as the reading takes them out, and that is short enough to be read at all, asks;
+# every other command reads with no aliases, and so does any command where git or its config
+# cannot answer. The built-ins are asked for only when there is an alias to tell them from.
+git_table() {
+	local dir aliases builtins
+	command -v git >/dev/null 2>&1 || { printf 'null'; return; }
+	dir=$(printf '%s' "$input" | jq -r --argjson cap 65536 '
+		if (.tool_name | IN("Bash", "Monitor")) | not then "-" else
+		  (.tool_input.command // ""
+		   | if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end) as $c
+		  | if ($c | length) > $cap or ($c | test("(?i)g[\\\\\"'\''$\n]*i[\\\\\"'\''$\n]*t") | not) then "-"
+		    else (.cwd // "" | if type == "string" and length > 0 then . else "." end) end
+		end' 2>/dev/null) || { printf 'null'; return; }
+	if [ "$dir" = "-" ]; then printf 'null'; return; fi
+	[ -d "$dir" ] || dir=.
+	aliases=$(git -C "$dir" config -z --get-regexp '^alias\.' 2>/dev/null | jq -Rsc '
+		[split("\u0000")[] | select(length > 0)
+		 | (index("\n")) as $k
+		 | if $k == null then {key: .[6:], value: null} else {key: .[6:$k], value: .[$k + 1:]} end
+		 | .key |= ascii_downcase]
+		| from_entries' 2>/dev/null) || aliases='{}'
+	[ -n "$aliases" ] || aliases='{}'
+	if [ "$aliases" = '{}' ]; then
+		printf '{"aliases":{},"builtins":{}}'
+		return
+	fi
+	builtins=$(git --list-cmds=builtins 2>/dev/null | jq -Rsc '[split("\n")[] | select(length > 0) | {key: ., value: true}] | from_entries' 2>/dev/null) \
+		|| builtins='{}'
+	[ -n "$builtins" ] || builtins='{}'
+	printf '{"aliases":%s,"builtins":%s}' "$aliases" "$builtins"
+}
+git_json=$(git_table)
+
+if ! result=$(printf '%s' "$input" | jq -c --argjson git "$git_json" "$check_program" 2>/dev/null); then
 	flagged="(the guard's own jq program failed on this command, so it could not be checked)"
 	reviewer_push=false
 	wrapped=false

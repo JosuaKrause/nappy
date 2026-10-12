@@ -40,9 +40,18 @@ class CodexHooksTest(unittest.TestCase):
         # no identity directory, would otherwise turn an ordinary write into an ask (see
         # test_github_write_guard_ask_reaches_codex_as_a_deny for that path).
         (self.base / "agents").mkdir()
-        self.env = dict(os.environ, TMPDIR=str(self.base / "state"), NAPPY_AGENTS_DIR=str(self.base / "agents"))
-        self.env.pop("CLAUDE_CODE_REMOTE", None)
-        self.env.pop("NAPPY_ASK_FOR_PLAYER_WRITES", None)
+        # The write guard asks git what an alias stands for, so git's config is pinned too: an empty
+        # global file and no system one, so the machine's own aliases never change a result.
+        (self.base / "gitconfig").write_text("")
+        self.env = dict(
+            os.environ,
+            TMPDIR=str(self.base / "state"),
+            NAPPY_AGENTS_DIR=str(self.base / "agents"),
+            GIT_CONFIG_GLOBAL=str(self.base / "gitconfig"),
+            GIT_CONFIG_NOSYSTEM="1",
+        )
+        for name in ("CLAUDE_CODE_REMOTE", "NAPPY_ASK_FOR_PLAYER_WRITES", "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT"):
+            self.env.pop(name, None)
 
     def make_repo(self, name: str) -> Path:
         root = self.base / name
@@ -832,6 +841,28 @@ class CodexHooksTest(unittest.TestCase):
         assert output is not None
         self.assertEqual(output["hookSpecificOutput"]["permissionDecision"], "deny")
         self.assertIn("-I", output["hookSpecificOutput"]["permissionDecisionReason"])
+
+    def test_github_write_guard_reads_an_alias_in_the_payloads_directory(self) -> None:
+        # The guard asks git about an alias in the directory the payload's cwd names, which the
+        # adapter passes on unchanged: an alias the repository there defines is read as the
+        # command it stands for, and the same word elsewhere is left as written.
+        subprocess.run(["git", "init", "-q", str(self.root)], check=True, env=self.env)
+        subprocess.run(["git", "-C", str(self.root), "config", "alias.ci", "commit"], check=True, env=self.env)
+        output = self.call_raw(command="git ci -m wip")
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("(git commit)", specific["permissionDecisionReason"])
+        elsewhere = self.make_repo("elsewhere")
+        output = self.call_raw(command="git ci -m wip", root=elsewhere)
+        self.assertIsNone((output or {}).get("hookSpecificOutput", {}).get("permissionDecision"))
+
+    def test_github_write_guard_denies_an_alias_set_on_the_command_line(self) -> None:
+        output = self.call_raw(command="git -c alias.ship=push ship origin v1")
+        assert output is not None
+        specific = output["hookSpecificOutput"]
+        self.assertEqual(specific["permissionDecision"], "deny")
+        self.assertIn("git with an alias set on the command line", specific["permissionDecisionReason"])
 
     def test_paths_outside_repository_do_not_load_rules(self) -> None:
         text = self.call(
