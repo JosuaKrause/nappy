@@ -1,0 +1,39 @@
+diff --git i/src/crowd/crowd_agent.gd w/src/crowd/crowd_agent.gd
+index cd7878c8..1c996671 100644
+--- i/src/crowd/crowd_agent.gd
++++ w/src/crowd/crowd_agent.gd
+@@ -988,7 +988,7 @@ func _process(delta: float) -> void:
+ 		_consider_turning()
+ 		_advance_walker_gait(delta)
+ 	_look_ahead()
+-	if field.has_stretch() and _walks_off_the_stretch() and _out_of_view():
++	if field.stretching and _walks_off_the_stretch() and _out_of_view():
+ 		_recycle()
+ 		_redraw_if_the_picture_changed()
+ 		return
+diff --git i/src/crowd/crowd_field.gd w/src/crowd/crowd_field.gd
+index 3e33a45d..3964b467 100644
+--- i/src/crowd/crowd_field.gd
++++ w/src/crowd/crowd_field.gd
+@@ -58,8 +58,12 @@ func _init(city_map: CityMap, at := Vector2.ZERO) -> void:
+ 	map = city_map
+ 	centre = at
+ 
++## True once `use_stretch()` has put the box over a stretch; read by every agent every frame, so a
++## member and not a rectangle test behind a call.
++var stretching := false
++
+ func has_stretch() -> bool:
+-	return _stretch_box.has_area()
++	return stretching
+ 
+ ## Puts the box over the map's stretch and reads its ends (`CityMap.stretch`): the crowd of a task
+ ## scene walks the stretch and nothing else.
+@@ -71,6 +75,7 @@ func use_stretch() -> void:
+ 				box = Rect2i(x, y, 1, 1) if not box.has_area() else box.expand(Vector2i(x, y)) \
+ 						.expand(Vector2i(x + 1, y + 1))
+ 	_stretch_box = map.tile_rect_to_world(box)
++	stretching = _stretch_box.has_area()
+ 	stretch_ends = stretch_ends_of(map)
+ 	centre = _looking_at
+ 
