@@ -1054,6 +1054,23 @@ status=$?
 band_out="$(cd "$queue_repo" && ./tools/queue.sh --band bug | awk '{ print $2 }' | tr '\n' ' ')"
 check_that "queue.sh --check passes an upnext beside a band, and --band bug lists the bugs without a heading" \
     '[[ $status -eq 0 && "$band_out" == "2026-09-11-red-elk 2026-09-10-sad-hen " ]]'
+# A marked entry waiting on an open entry stays behind it, in its band, tagged; once what it waits
+# on is closed it joins the section.
+add_entry 2026-09-12-wet-fox "$(printf 'priority: bug\nupnext: true\nafter: 2026-09-11-red-elk')" "wet-fox — Marked, waits"
+line="$(cd "$queue_repo" && ./tools/queue.sh | grep wet-fox)"
+order="$(cd "$queue_repo" && ./tools/queue.sh 2>/dev/null | awk 'NF && $1 != "up" { print $2 }' | tr '\n' ' ')"
+band_line="$(cd "$queue_repo" && ./tools/queue.sh --band bug | grep wet-fox)"
+check_that "queue.sh holds a marked entry behind an open after, in its band, and still shows it marked" \
+    '[[ "$order" == "2026-09-03-slow-owl 2026-09-11-red-elk 2026-09-12-wet-fox 2026-09-10-sad-hen "* && "$line" == *"(after 2026-09-11-red-elk)  [up next]" && "$band_line" == *"[up next]" ]]'
+printf '# red-elk — Built · 2026-09-13\n' > "$queue_repo/docs/decisions/2026-09-11-red-elk.md"
+rm -rf "$queue_repo/docs/todo/2026-09-11-red-elk"
+order="$(cd "$queue_repo" && ./tools/queue.sh 2>/dev/null | awk 'NF && $1 != "up" { print $2 }' | tr '\n' ' ')"
+line="$(cd "$queue_repo" && ./tools/queue.sh | grep wet-fox)"
+check_that "queue.sh pulls a marked entry into up next once its after is closed" \
+    '[[ "$order" == "2026-09-12-wet-fox 2026-09-03-slow-owl "* && "$line" == *"closed)  [up next]" ]]'
+rm -f "$queue_repo/docs/decisions/2026-09-11-red-elk.md"
+rm -rf "$queue_repo/docs/todo/2026-09-12-wet-fox"
+add_entry 2026-09-11-red-elk "priority: bug" "red-elk — Newer bug"
 rm -rf "$queue_repo/docs/todo/2026-09-10-sad-hen" "$queue_repo/docs/todo/2026-09-11-red-elk"
 add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 

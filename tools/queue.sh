@@ -35,7 +35,10 @@
 # after the current items are done" (mossy-ferret), which is not a band. The entry keeps its real
 # band, shown on its line, and every marked entry prints first, under an `up next` heading and
 # ahead of `bug`, in the order the bands give; the line is dropped when the work starts, which puts
-# the entry back in its band. `--band B` lists a band's entries, marked ones first, with no heading.
+# the entry back in its band. A marked entry whose `after:` names an open entry is not pulled into
+# the section: it stays held behind what it waits on, in its band, and only a closed `after:` leaves
+# it free. Every marked line ends in `[up next]`, in the section or not. `--band B` lists a band's
+# entries, the ones in the section first, with no heading.
 #
 # --check reports, as `<file>:<line>: <label>` lines and a non-zero exit, an entry with no
 # `priority:` line opening its README.md, a band outside the set, an `after:` naming neither an
@@ -59,7 +62,9 @@ Prints the open queue in order, from the band line every docs/todo/<entry>/READM
 (`priority: bug|now|next|later|parked`, then any `after: <entry folder name>` lines and an optional
 `upnext: true`). The bands come in that order; within `bug` and `now` the newest entry first,
 within the others the oldest first, by the date the folder's name starts with. Every `upnext: true`
-entry prints first, under an `up next` heading, with its real band shown. Entries filed on the same day sort by name (old milestone
+entry prints first, under an `up next` heading, with its real band shown, unless its `after:`
+names an open entry: then it stays behind that entry in its band. Every marked line ends in
+`[up next]`. Entries filed on the same day sort by name (old milestone
 numbers in number order, then named entries by their words; reversed in `bug` and `now`), not by filing
 order. An entry never prints before an open entry its `after:` names: it is held back to straight
 behind it. An `after:` naming a closed entry (a record under docs/decisions/ by that name) holds
@@ -216,7 +221,7 @@ done)"
 ordered="$(printf '%s\n' "$base" | CLOSED="$closed" awk -F'\t' '
     BEGIN { m = split(ENVIRON["CLOSED"], c, "\n"); for (i = 1; i <= m; i++) if (c[i] != "") done[c[i]] = 1 }
     NF {
-        n++; name[n] = $3; band[n] = $4; title[n] = $6; after[n] = $5; up[n] = $7
+        n++; name[n] = $3; band[n] = $4; title[n] = $6; after[n] = $5; mark[n] = $7
         idx[$3] = n
     }
     END {
@@ -252,7 +257,7 @@ ordered="$(printf '%s\n' "$base" | CLOSED="$closed" awk -F'\t' '
             }
             if (!found) break
             placed[found] = 1; placed_count++
-            print "O\t" band[found] "\t" name[found] "\t" title[found] "\t" after[found] "\t" up[found]
+            print "O\t" band[found] "\t" name[found] "\t" title[found] "\t" after[found] "\t" ((mark[found] == 1 && deps[found] == 0) ? 1 : 0) "\t" mark[found]
         }
         if (placed_count == n) exit
         # What is left waits on a cycle or is in one; strip the ones nothing left waits on until
@@ -293,13 +298,13 @@ fi
 
 printf '%s\n' "$ordered" | awk -F'\t' -v only="$band" '
     $1 == "O" && (only == "" || $2 == only) {
-        n++; b[n] = $2; nm[n] = $3; t[n] = $4; a[n] = $5; u[n] = $6
+        n++; b[n] = $2; nm[n] = $3; t[n] = $4; a[n] = $5; u[n] = $6; m[n] = $7
         if (length($3) > width) width = length($3)
     }
     function show(i,    waits) {
         waits = ""
         if (a[i] != "") { waits = a[i]; gsub(/;/, "; ", waits); waits = "  (after " waits ")" }
-        printf "%-6s  %-" width "s  %s%s\n", b[i], nm[i], t[i], waits
+        printf "%-6s  %-" width "s  %s%s%s\n", b[i], nm[i], t[i], waits, (m[i] == 1 ? "  [up next]" : "")
     }
     END {
         # Marked entries first (under a heading on the whole queue), then everything else.

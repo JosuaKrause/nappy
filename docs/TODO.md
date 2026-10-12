@@ -36,18 +36,21 @@ after: 2026-09-09-M100
 *("for "now" do reverse chronological maybe?", statement 14)* and every other band oldest first by
 the date the folder's name starts with. Entries filed on the same day sort by name, not by when
 they were filed: old milestone numbers in number order, then named entries by their words, and
-`now` reverses that too. An entry never prints before an open entry its `after:` names; one that
+`bug` and `now` reverse that too. An entry never prints before an open entry its `after:` names; one that
 would is held back to straight behind it. An `after:` naming an entry that has closed (its folder
 gone, its record under `decisions/`) holds nothing back and prints as `<name>, closed`, and the
 end-of-session pass deletes the line, so closing an entry never edits another.
+
 **Up next is a marker beside the band, not a band.** *(2026-10-11, mossy-ferret: "maybe something to
 indicate what to work on next?" · "like "immediately after the current items are done" next, not the
 band next".)* An entry's opening block may carry `upnext: true` beside `priority:`; the entry keeps
 its band, and `tools/queue.sh` prints every marked entry first, under an `up next` heading ahead of
-`bug`. The queue move that starts the work drops the line. `bug` is the band above `now`, for what
+`bug`, unless its `after:` names an open entry: it then stays behind that entry, in its band, as
+every entry does. Every marked line ends in `[up next]`. The queue move that starts the work drops
+the line, and the end-of-session pass drops it from an entry an open pull request is building. `bug` is the band above `now`, for what
 the player calls a bug; a note from playing is still filed `now` unless the player names `bug`.
 `tools/queue.sh --band now` prints one band. Moving an entry between bands edits one line of one
-file, and `tools/lint.sh` rejects an entry with no band, a band outside the five, an `upnext:` line with any value but `true`, an `after:`
+file, and `tools/lint.sh` rejects an entry with no band, a band outside the five, an `upnext:` line with any value but `true` or a second one, an `after:`
 naming neither an open entry nor a closed one, an `after:` cycle, and a band or `upnext:` line anywhere but the
 opening lines of the `README.md`.
 
