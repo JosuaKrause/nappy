@@ -272,10 +272,16 @@ it was written from. The traps:
 - **Clamping the approach at zero is not a stand-off.** The pursuer stands still while *she* closes
   the gap and dies on the first lethal frame. It closes to its stand-off
   (`Tuning.pursuit_standoff()`) and lunges the moment she reaches it, so the chase starts at the
-  stand-off however she came. A wall between them that holds the lunge back is the same trap: at an
+  stand-off however she came. **A pursuer that [stands still](../../../docs/playtests/2026-10-17-woolly-penguin.md#748)
+  for its notice (`EventDef.stands_for_its_notice`) closes nothing and keeps every lunge**, which
+  is what keeps standing from being this trap: walking in, she is lunged at from the full
+  stand-off; staying out, she is chased from wherever she is when the notice runs out, which is
+  further. A wall between them that holds the lunge back is the same trap: at an
   alley mouth the line clears with her already inside the stand-off. The notice, the lunge and the
   catch all ask for a clear line, so a held lunge is not deferred until the line clears: the pursuer
-  holds the door guard's ground (`EventInstance._lunge_held`) and lunges once she is back at the
+  holds the ground of one that sets off beside her (`EventInstance._lunge_held`) — it stands while
+  she is nearer than the stand-off and follows at it once she is further, or only stands if it
+  stands for its notice — and lunges once she is back at the
   full stand-off, and its notice does not run out while she is inside it (`_pause_a_held_notice()`)
   — a notice ending there is the same trap, reached by her standing still.
 - **A break-off stated as a distance needs two inequalities, and they fight.**
