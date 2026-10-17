@@ -1542,7 +1542,8 @@ to draw in either section, since neither has a day's route tree. **The run log w
 it watches a day** — see `docs/TELEMETRY.md`, "The escape's log".
 
 What a day has that a section does not is the home-guidance arrow, since escaping owes no return
-leg to point one at. The save indicator is built only for a run's own escape, never the flag's,
+leg to point one at; what guides her in the city is the route's yellow kerb tint, on the escape's
+streets as on a day's (below). The save indicator is built only for a run's own escape, never the flag's,
 since a dev-flagged boot writes nothing a symbol could ever announce.
 
 **Section one is a route with the first turn already taken.** A fallen ceiling fills the top
@@ -1616,6 +1617,29 @@ barrier with a guard standing at it from the moment it is placed; when he notice
 for her, on foot, and the barrier he leaves stays drawn and stays shut across the road behind him.
 What takes the baby is his own reach (`EventCatalogue.MASKED_MAN_REACH`, 28px, the same as the man
 on the stairs) — nothing about the barricade catches her. See `docs/EVENTS.md`, "The heat".
+
+**Nothing on the walk closes a street.** *(Inbox #747: "one sidewalk must be open if they're
+en-route. the escape's street should not have fully blocking events like in the normal game.")*
+A roadblock's band leaves the far sidewalk open past it, a parked van shuts the sidewalk it stands
+on, and a burst's crater narrows the road's edge — and every street either chain walks keeps at
+least one of its two sidewalks walkable from junction to junction past all of them together,
+standing as they stand for the whole walk: the hunting van stays parked, the band stays after its
+guard has gone, and the crater stays where the burst was. The seals off the chains count too: an
+unused alley's mouth wall lies along the chain street it opens onto and takes the outer edge of that
+sidewalk. **And nothing standing on the walk cuts it anywhere else**: where a chain leaves a street
+in the middle of a block, through an alley, a park or a courtyard, the ground around a placement
+still joins up everything it joined without it, so a van and a roadblock either side of an alley's
+mouth cannot shut it while the street's far sidewalk stays open. Each placement is checked before
+it is accepted (`EventScheduler._the_escape_accepts()`: the day's own sidewalk-band reading asked of
+both bands, and the day's junction rule asked of the ground around the placement), so a van and a
+roadblock can stand on the same side of a street and never on opposite sides of it, and the walk
+from the service exit reaches both exits past everything that stands on it.
+
+**And the streets of the walk carry the route's kerb tint**, the faint yellow on the curbstones a
+day's route streets carry (`docs/CITY.md`, "Guiding her to the calm"), on both kerb lines of every
+street either chain runs through. *(Inbox #747: "yes, of course the yellow tint. we spent the whole
+game establishing that why would it be different in the last section?")* A street a chain only
+turns at is sealed and plain.
 
 **It ends on the tunnel or the bridge**, within `Tuning.FINALE_EXIT_REACH` of the exit `CityEdge`
 draws, on a summary screen with the way out behind her and nothing triumphant on it — and the clock

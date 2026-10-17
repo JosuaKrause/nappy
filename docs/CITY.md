@@ -652,7 +652,8 @@ a shut street is the street with nobody on it, and that is legible from a block 
   `Tuning.ROUTE_KERB_TINT_ALPHA`). The tint marks the whole street the day's route tree runs
   along, both kerb lines, from intersection to intersection (`Corridor.depth() == 0`) — never a
   street the tree only crosses at a junction, since a junction cell belongs to no street segment
-  (`StreetNetwork.segment_containing`). The trial's question is whether a hint this quiet can stay
+  (`StreetNetwork.segment_containing`). In the escape it marks the streets the two chains run
+  through (`City.tint_the_escape_route()`, from the finale plan's `open_streets`). The trial's question is whether a hint this quiet can stay
   below being noticed as one; alpha zero is the off switch the moment it cannot. "Planning-time
   legibility" is named a paragraph above as not existing.
 - **The main road as a soft block** — the one thing in the design that would divide the city into
