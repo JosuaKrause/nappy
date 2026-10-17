@@ -357,6 +357,16 @@ const ROBBER_LUNGING_BY_VIEW_B := {
 	"front_diagonal": "events/robber_lunging_front_diagonal_b",
 	"back_diagonal": "events/robber_lunging_back_diagonal_b",
 }
+## His warning, between the wait and the lunge: both hands out of his coat, held low, walking at her
+## through his notice *(inbox #748: "robber can walk towards her")*. 26×44 against the waiting
+## picture's 22×44, the body moved with the canvas, so the swap keeps his feet where they were.
+const ROBBER_ALERT_BY_VIEW := {
+	"front": "events/robber_alert_front",
+	"back": "events/robber_alert_back",
+	"side": "events/robber_alert_side",
+	"front_diagonal": "events/robber_alert_front_diagonal",
+	"back_diagonal": "events/robber_alert_back_diagonal",
+}
 ## The policeman on foot (`art/events/policeman_*`): the robber's set one for one — the same
 ## canvases, anchors and postures, east-authored like the robber's — so he is drawn the way the
 ## robber is (`_draw_policeman()`). The unsuffixed lunge is his badge silhouette (`icon_for()`).
@@ -512,6 +522,29 @@ const CHARGING_DOG_BY_VIEW_B := {
 	"side": "events/charging_dog_b",
 	"front_diagonal": "events/charging_dog_front_diagonal_b",
 	"back_diagonal": "events/charging_dog_back_diagonal_b",
+}
+## **The dog that waits for her has a stage of its own on each side of the gallop** *(velvet-marten,
+## #698: "the waiting charging dog needs a proper resting frame when in wait. It looks like it's
+## flying"; polite-toad, #722: "a distinct alert and rest post for each charger that gets triggered
+## by the player")*: sitting, ears soft and tail on the ground, while it waits, and up on four stiff
+## legs with its hackles raised and its jaw shut on its teeth while it stands for its notice, the
+## open red jaw kept for the charge. Each is one still picture — "nobody walks -- only the robber"
+## (inbox #748) — on the gallop's own canvases and bottom-centre anchor, so the swap does not move
+## the dog. Drawn from the SVGs: the gallop keeps its comic transfers, and the player judges the
+## style switch in the game (inbox #748: "yes that's what I've been saying all along").
+const CHARGING_DOG_RESTING_BY_VIEW := {
+	"front": "events/charging_dog_resting_front",
+	"back": "events/charging_dog_resting_back",
+	"side": "events/charging_dog_resting",
+	"front_diagonal": "events/charging_dog_resting_front_diagonal",
+	"back_diagonal": "events/charging_dog_resting_back_diagonal",
+}
+const CHARGING_DOG_ALERT_BY_VIEW := {
+	"front": "events/charging_dog_alert_front",
+	"back": "events/charging_dog_alert_back",
+	"side": "events/charging_dog_alert",
+	"front_diagonal": "events/charging_dog_alert_front_diagonal",
+	"back_diagonal": "events/charging_dog_alert_back_diagonal",
 }
 const CYCLIST_BY_VIEW := {
 	"front": "events/cyclist_front",
@@ -734,6 +767,18 @@ const GUARD_LUNGING_BY_VIEW := {
 	"side": "checkpoints/guard_lunging_side",
 	"front_diagonal": "checkpoints/guard_lunging_front_diagonal",
 	"back_diagonal": "checkpoints/guard_lunging_back_diagonal",
+}
+## **A guard who has noticed her stands square-on with one hand raised, palm out** *(inbox #748:
+## "guards should lift their hand in warning")*, held still for his notice: the hunting roadblock's
+## guard at his post and the door guard where he stepped out, never the masked man, the van's guard
+## or the guardsman, who keep their standing picture (`masked_pursuer_pictures()`). 22×44 front and
+## back, 26×44 side and diagonals, bottom-centre anchored like the standing family.
+const GUARD_ALERT_BY_VIEW := {
+	"front": "checkpoints/guard_alert_front",
+	"back": "checkpoints/guard_alert_back",
+	"side": "checkpoints/guard_alert_side",
+	"front_diagonal": "checkpoints/guard_alert_front_diagonal",
+	"back_diagonal": "checkpoints/guard_alert_back_diagonal",
 }
 const BOOM_GATE_NS_LOWERED := "checkpoints/boom_gate_ns_lowered"
 const BOOM_GATE_NS_RAISED := "checkpoints/boom_gate_ns_raised"
@@ -2346,6 +2391,12 @@ var _notice_paused_for := 0.0
 ## back. An ordinary pursuer's notice is *the sight of it coming*, and `Tuning.PURSUIT_MIN_NOTICE`
 ## bounds its approach. A sent pursuer instead arrives chasing after its offscreen badge alone.
 ##
+## **A pursuer that waited for her and stands for its notice is the exception the player asked for**
+## (`EventDef.stands_for_its_notice`, inbox #748: "robber can walk towards her but guards should lift
+## their hand in warning"; "nobody walks -- only the robber"): the head start is hers to take, and
+## what keeps it a chase is the rest of this function — the lunge the moment she walks inside its
+## stand-off, and a chase faster than her walk once the notice runs out.
+##
 ## **But it closes to a stand-off and holds it, rather than arriving.** The paragraph above buys the
 ## notice in seconds and says nothing about *where* the pursuer spends them: sited across her line a
 ## couple of hundred pixels ahead — which is where she was already walking — it closes the gap in
@@ -2461,6 +2512,12 @@ func _chase(delta: float) -> void:
 				step = 0.0
 		else:
 			step = minf(step, range_to_her - standoff)
+		# **A pursuer that stands for its notice closes nothing** (`EventDef.stands_for_its_notice`,
+		# inbox #748: "nobody walks -- only the robber"), and every lunge decided above still
+		# fires: only the closing stops, so she is never the one who walks the last of the gap into
+		# a catch from a standing start.
+		if is_standing_for_its_notice():
+			step = 0.0
 	# **Day 13's task guard walks round buildings toward her** (`_paths_to_her`): where no clear
 	# line runs to her he follows the walk to her instead of the straight line. Only the direction
 	# changes; how far he may close, and when he lunges, are decided above as for every pursuer.
@@ -3852,6 +3909,15 @@ func is_telegraphing() -> bool:
 		return false
 	return chase_age() < def.telegraph_time
 
+## True while a pursuer that noticed her stands for its notice in its alert pose rather than closing
+## on her (`EventDef.stands_for_its_notice`): the dog that waited, the hunting roadblock's guard, the
+## door guard. **Asked of the def the instance was handed**, so the day-3 dog — the same row, sent
+## down her heading with no trigger to have waited behind — is false here and spends its telegraph
+## coming, which is the lesson; and false for anything that has not noticed her yet or has lunged.
+func is_standing_for_its_notice() -> bool:
+	return def.stands_for_its_notice and is_telegraphing() \
+			and (def.pursues_within > 0.0 or def.sets_off_beside_her)
+
 ## True for a pursuer that is only standing there, because she has not come near enough for it to
 ## take an interest. It emits at full strength, it is not lethal, and it does not move.
 ## See `EventDef.pursues_within`.
@@ -5237,7 +5303,8 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.LORRY:
 			_collect_views(sources, [LORRY_BY_VIEW, LORRY_WHEELS_BY_VIEW])
 		EventDef.Look.CHARGING_DOG:
-			_collect_views(sources, [CHARGING_DOG_BY_VIEW, CHARGING_DOG_BY_VIEW_B])
+			_collect_views(sources, [CHARGING_DOG_RESTING_BY_VIEW, CHARGING_DOG_ALERT_BY_VIEW,
+					CHARGING_DOG_BY_VIEW, CHARGING_DOG_BY_VIEW_B])
 		EventDef.Look.CHATTING_MOTHER:
 			_collect_views(sources, [CHATTING_MOTHER_WALKING_BY_VIEW,
 					CHATTING_MOTHER_WALKING_BY_VIEW_B, CHATTING_MOTHER_TALKING_BY_VIEW])
@@ -5249,11 +5316,16 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect_views(sources, [POSTER_CREW_SQUARE_BY_VIEW])
 		EventDef.Look.ROADBLOCK:
 			_collect(sources, [ROADBLOCK_SEGMENT, ROADBLOCK_SEGMENT_VERTICAL, ROADBLOCK_END])
-			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
+			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
+					GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.UNMARKED_VAN:
 			_collect_views(sources, [UNMARKED_VAN_BY_VIEW, UNMARKED_VAN_WHEELS_BY_VIEW,
 					VAN_VICTIM_BY_VIEW, VAN_VICTIM_BY_VIEW_B])
-		EventDef.Look.ROBBER, EventDef.Look.ROBBER_GIVING_CHASE:
+		EventDef.Look.ROBBER:
+			_collect_views(sources, [ROBBER_WAITING_BY_VIEW, ROBBER_ALERT_BY_VIEW,
+					ROBBER_LUNGING_BY_VIEW, ROBBER_LUNGING_BY_VIEW_B])
+		EventDef.Look.ROBBER_GIVING_CHASE:
+			# Sent already chasing: no notice, so no alert to draw.
 			_collect_views(sources, [ROBBER_WAITING_BY_VIEW, ROBBER_LUNGING_BY_VIEW,
 					ROBBER_LUNGING_BY_VIEW_B])
 		EventDef.Look.RIOT_VAN:
@@ -5294,7 +5366,10 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect(sources, [GUARD_STANDING])
 		EventDef.Look.IMPACT_CRATER:
 			_collect(sources, [IMPACT_CRATER])
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE, \
+		EventDef.Look.DOOR_GUARD:
+			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
+					GUARD_LUNGING_BY_VIEW])
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.VAN_GUARD_GIVING_CHASE, \
 				EventDef.Look.GUARDSMAN_GIVING_CHASE:
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.POLICEMAN_GIVING_CHASE:
@@ -5330,6 +5405,18 @@ func rider_pictures() -> Array[Dictionary]:
 	if is_pelican:
 		return [PELICAN_BY_VIEW, PELICAN_BY_VIEW_B]
 	return [CYCLIST_BY_VIEW, CYCLIST_BY_VIEW_B]
+
+## The charging dog's two frames for this stage, `[by_view, by_view_b]`, `by_view_b` empty for a
+## still pose: sitting while it waits (`is_waiting()`), its alert while it stands for its notice
+## (`is_standing_for_its_notice()`), and the gallop otherwise — the charge, the day-3 dog's approach,
+## and the trot away when it gives up. The one place the choice is read, so the draw, its halo and a
+## test ask the same question.
+func charging_dog_pictures() -> Array[Dictionary]:
+	if is_waiting():
+		return [CHARGING_DOG_RESTING_BY_VIEW, {}]
+	if is_standing_for_its_notice():
+		return [CHARGING_DOG_ALERT_BY_VIEW, {}]
+	return [CHARGING_DOG_BY_VIEW, CHARGING_DOG_BY_VIEW_B]
 
 func _draw_body(canvas: CanvasItem = self) -> void:
 	if is_suppressed_by_its_own_hold():
@@ -5397,7 +5484,8 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 			# actually reachable; the row keeps drawing exactly the side view it always did.
 			_draw_eight_view(LORRY_BY_VIEW, _heading, canvas)
 		EventDef.Look.CHARGING_DOG:
-			_draw_eight_view(CHARGING_DOG_BY_VIEW, _heading, canvas, false, CHARGING_DOG_BY_VIEW_B)
+			var dog := charging_dog_pictures()
+			_draw_eight_view(dog[0], _heading, canvas, false, dog[1])
 		EventDef.Look.CHATTING_MOTHER:
 			_draw_chatting_mother(canvas)
 		EventDef.Look.POLICE_CAR:
@@ -5720,22 +5808,19 @@ func _draw_cat(canvas: CanvasItem = self) -> void:
 	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
-## Hood up and hands in the coat while he is only somewhere; leaning out over a forward leg once
-## he has taken an interest.
+## Hood up and hands in the coat while he is only somewhere; both hands out of the coat, walking at
+## her, through his notice; leaning out over a forward leg once he lunges.
 ##
-## The same rule as the cat above, at the one row where reading it wrong ends the run: the two
-## postures are the two states `EventDef.pursues_within` invented, and `is_waiting()` is exactly
-## the line between them. What the player has to be able to see from an alley mouth is not "there
-## is a man there" but *which of the two men that is* — so the change of posture happens on the
-## frame he notices her, before the telegraph has finished and well before he moves.
+## The same rule as the cat above, at the one row where reading it wrong ends the run: the postures
+## are the states `EventDef.pursues_within` invented, and `is_waiting()` and `is_telegraphing()` are
+## exactly the lines between them. What the player has to be able to see from an alley mouth is not
+## "there is a man there" but *which of the three men that is* — so the change of posture happens on
+## the frame he notices her, and again on the frame he lunges *(velvet-marten, #699: "warning (when
+## the player gets close; needs to be visually distinct), and then the actual charging")*.
 func _draw_robber(canvas: CanvasItem = self) -> void:
 	_draw_body_shadow(canvas)
 	var waiting := is_waiting()
-	var by_view := ROBBER_WAITING_BY_VIEW if waiting else ROBBER_LUNGING_BY_VIEW
-	# The waiting posture holds still by construction — he has nothing to stride toward yet — so
-	# only the lunge gets a second frame.
-	if not waiting and _gait_stepping():
-		by_view = ROBBER_LUNGING_BY_VIEW_B
+	var by_view := robber_pictures()
 	# Once he has noticed her, `_chase()` already keeps `_heading` pointed at her for every frame of
 	# the telegraph and the lunge alike — `_draw_body()`'s ordinary reading, `_heading`. Before that
 	# he has nothing of his own to face except the alley he was sited in, and a man only watching
@@ -5744,6 +5829,17 @@ func _draw_robber(canvas: CanvasItem = self) -> void:
 	var view := _select_view(heading)
 	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
+
+## The robber's picture for this frame: waiting, his alert through his notice (`is_telegraphing()`,
+## which the sent robber, arriving already chasing, never is), and the lunge with its stride frame
+## once he goes. The waiting posture holds still by construction — he has nothing to stride toward
+## yet. The one place the choice is read, so the draw, its halo and a test ask the same question.
+func robber_pictures() -> Dictionary:
+	if is_waiting():
+		return ROBBER_WAITING_BY_VIEW
+	if is_telegraphing():
+		return ROBBER_ALERT_BY_VIEW
+	return ROBBER_LUNGING_BY_VIEW_B if _gait_stepping() else ROBBER_LUNGING_BY_VIEW
 
 ## **The policeman on foot, drawn as the robber is**: his waiting posture while his notice runs —
 ## the one sent from off screen has none and is only ever drawn coming; the one who gets out of an
@@ -5801,8 +5897,8 @@ func _robber_waiting_heading() -> Vector2:
 ##   blocked" — this node *is* him: it steps out to his post and `_chase()` walks it at her
 ##   (`_leave_the_body_behind()`). The barrier he left is drawn back at `body_position()`, where
 ##   its collision body is pinned (`EventDef.body_stays_behind`), and the other guard still stands
-##   at his post beside it. `guard_standing_*` while his notice runs and `guard_lunging_*`
-##   once he is actually giving chase, the same `is_telegraphing()` switch `_draw_robber()` reads —
+##   at his post beside it. `guard_alert_*`, hand raised, while he stands at that post for his
+##   notice (`chaser_pictures()`), and `guard_lunging_*` once he is actually giving chase —
 ##   each read from his own travel heading through `_draw_eight_view()`, so he turns to face where
 ##   he is going rather than only mirroring east/west (PLAYTEST-128, M56: "the masked pursuer and
 ##   the heated roadblock guard face where they are heading").
@@ -5844,9 +5940,17 @@ func _draw_the_chaser(canvas: CanvasItem) -> void:
 	# His own small shadow — not the band's — so `_draw_eight_view()` below is asked not to draw
 	# one of its own; see that function's own doc comment.
 	_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
-	var by_view := GUARD_LUNGING_BY_VIEW if not (is_telegraphing() or is_leaving) \
-			else GUARD_STANDING_BY_VIEW
-	_draw_eight_view(by_view, _heading, canvas, false, {}, false)
+	_draw_eight_view(chaser_pictures(), _heading, canvas, false, {}, false)
+
+## The hunting roadblock's guard who set off, by stage: his alert, hand raised, while he stands at
+## his post for his notice (`is_standing_for_its_notice()`), his lunge once he gives chase, and his
+## standing picture as he walks away when the chase is over.
+func chaser_pictures() -> Dictionary:
+	if is_standing_for_its_notice():
+		return GUARD_ALERT_BY_VIEW
+	if is_telegraphing() or is_leaving:
+		return GUARD_STANDING_BY_VIEW
+	return GUARD_LUNGING_BY_VIEW
 
 ## **The barrier's own node.** A y-sorted sibling of this instance standing at `body_position()`,
 ## drawing the band and the posted guards, so that they sort at the band's line however far the
@@ -6213,10 +6317,10 @@ func _draw_crater(canvas: CanvasItem = self) -> void:
 ## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
 ## its boom — the same man, and the guardsman a torn poster sends or a vehicle lets out:
 ## the `guard_standing_*` family while he waits for her, while the telegraph is running, and through a stop
-## (`_stands_still_now()`), and `guard_lunging_*` once he is actually on her line — the same two
-## postures
-## `_draw_roadblock()` swaps between when a heated roadblock's guards leave the post, on a row that
-## was never a barrier and so has no band to swap *out of*. Read from his own travel heading
+## (`_stands_still_now()`), and `guard_lunging_*` once he is actually on her line — except the door
+## guard, who holds `guard_alert_*` for his notice instead (`masked_pursuer_pictures()`), as a
+## heated roadblock's guard does at his post, on a row that was never a barrier and so has no band
+## to swap *out of*. Read from his own travel heading
 ## through `_draw_eight_view()`, the same helper every other moving family uses, so he turns to
 ## face where he is going on every step of the shaft rather than only mirroring east/west
 ## (PLAYTEST-128, M56). No `side_faces_west` override: `guard_lunging_side.svg`'s own comment says
@@ -6224,8 +6328,17 @@ func _draw_crater(canvas: CanvasItem = self) -> void:
 ## body shadow — `def.shape`, a 9px point, at local origin — is exactly what `_draw_eight_view()`
 ## draws by default, so nothing here calls `_draw_shape_shadow()` separately any more.
 func _draw_masked_pursuer(canvas: CanvasItem = self) -> void:
-	var by_view := GUARD_STANDING_BY_VIEW if _stands_still_now() else GUARD_LUNGING_BY_VIEW
-	_draw_eight_view(by_view, _heading, canvas)
+	_draw_eight_view(masked_pursuer_pictures(), _heading, canvas)
+
+## The guard-drawn pursuer's picture for this frame. **The door guard alone takes the alert**, hand
+## raised, for the notice he stands where he stepped out (`is_standing_for_its_notice()`, read off
+## his row's `EventDef.stands_for_its_notice`): the masked man, the van's guard and the guardsman
+## share this drawing and none of their rows sets it, so each keeps `guard_standing_*` while
+## `_stands_still_now()` and `guard_lunging_*` after.
+func masked_pursuer_pictures() -> Dictionary:
+	if is_standing_for_its_notice():
+		return GUARD_ALERT_BY_VIEW
+	return GUARD_STANDING_BY_VIEW if _stands_still_now() else GUARD_LUNGING_BY_VIEW
 
 ## **Both halves have to be drawn**: the tables are what obstructs and the conversation is what it
 ## emits, so a café drawn as furniture alone is the loudest pleasant thing in act I looking like

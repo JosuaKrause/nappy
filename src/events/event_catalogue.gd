@@ -1586,6 +1586,12 @@ static func _charging_dog() -> EventDef:
 	def.telegraph_time = 4.5
 	def.pursues = true
 	def.pursue_speed = 130.0
+	# **The dog that waited stands for its notice** *(inbox #748: "dog also doesn't walk -- only
+	# one is the robber")*: from day 4, once it notices her, it holds its ground in its alert pose
+	# for this 4.5s rather than closing, and lunges the moment she comes inside its 104px stand-off.
+	# The day-3 dog sent down her heading has no wait to notice her from, so its approach is still
+	# this telegraph (`EventInstance.is_standing_for_its_notice()`).
+	def.stands_for_its_notice = true
 	# Its badge alone, sent at her down her heading, before it is placed just out of sight
 	# (`EventDef.warned_for()`): half a second, the gold timing's off-screen part, under the one-second
 	# ceiling and not lengthened to it. See `EventDef.offscreen_notice` for where 0.5 came from.
@@ -1892,6 +1898,9 @@ static func _roadblock() -> EventDef:
 	# this post and the masked man on the escape's stairs are the same figure doing the same thing.
 	def.lethal_radius = MASKED_MAN_REACH
 	def.body_stays_behind = true
+	# His notice, once the hunting copy pursues, is spent at his post with his hand raised rather
+	# than walking at her *(inbox #748: "guards should lift their hand in warning")*.
+	def.stands_for_its_notice = true
 	def.barrier_structure = true
 	def.weight = 2.0
 	def.max_per_day = 6
@@ -2811,7 +2820,8 @@ static func _checkpoint_post() -> EventDef:
 ##
 ## **`sets_off_beside_her`, because he does.** A hut's width from her is well inside his 106px
 ## stand-off, so the ordinary rule would lunge on his first frame; instead his notice is spent
-## holding his ground and then following at the stand-off, and cannot be cut short. See that field.
+## standing where he stepped out with his hand raised (`stands_for_its_notice`, inbox #748: "guards
+## should lift their hand in warning"), and cannot be cut short. See both fields.
 static func _door_guard() -> EventDef:
 	var def := EventDef.new()
 	def.id = "door_guard"
@@ -2829,6 +2839,7 @@ static func _door_guard() -> EventDef:
 	def.pursues = true
 	def.pursue_speed = Tuning.HEAT_HUNTS_SPEED
 	def.sets_off_beside_her = true
+	def.stands_for_its_notice = true
 	def.hard_fail = true
 	return def
 

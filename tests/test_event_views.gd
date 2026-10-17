@@ -41,12 +41,15 @@ const FAMILY_DICTS := {
 	"leaf_blower": EventInstance.LEAF_BLOWER_BY_VIEW,
 	"robber_waiting": EventInstance.ROBBER_WAITING_BY_VIEW,
 	"robber_lunging": EventInstance.ROBBER_LUNGING_BY_VIEW,
+	"robber_alert": EventInstance.ROBBER_ALERT_BY_VIEW,
 	"chatting_mother_walking": EventInstance.CHATTING_MOTHER_WALKING_BY_VIEW,
 	"chatting_mother_talking": EventInstance.CHATTING_MOTHER_TALKING_BY_VIEW,
 	"cat_crouched": EventInstance.CAT_CROUCHED_BY_VIEW,
 	"cat_running": EventInstance.CAT_RUNNING_BY_VIEW,
 	"dog": EventInstance.DOG_BY_VIEW,
 	"charging_dog": EventInstance.CHARGING_DOG_BY_VIEW,
+	"charging_dog_resting": EventInstance.CHARGING_DOG_RESTING_BY_VIEW,
+	"charging_dog_alert": EventInstance.CHARGING_DOG_ALERT_BY_VIEW,
 	"cyclist": EventInstance.CYCLIST_BY_VIEW,
 	"pelican_cyclist": EventInstance.PELICAN_BY_VIEW,
 	"pigeon": EventInstance.PIGEON_BY_VIEW,
@@ -62,6 +65,7 @@ const FAMILY_DICTS := {
 	"mouse": EventInstance.MOUSE_BY_VIEW,
 	"guard_standing": EventInstance.GUARD_STANDING_BY_VIEW,
 	"guard_lunging": EventInstance.GUARD_LUNGING_BY_VIEW,
+	"guard_alert": EventInstance.GUARD_ALERT_BY_VIEW,
 }
 
 ## The animal/rider families whose `"side"` entry is required to be the exact pre-existing
@@ -133,6 +137,12 @@ func run(t) -> void:
 	_test_cat_state_predicate_selects_the_telegraph_posture(t)
 	_test_chatting_mother_state_predicate_selects_the_conversation_posture(t)
 	_test_masked_man_is_drawn_standing_until_he_goes(t)
+	_test_the_waiting_dog_rests_stands_alert_and_gallops(t)
+	_test_the_day_3_dog_gallops_through_its_approach(t)
+	_test_the_robber_waits_walks_alert_and_lunges(t)
+	_test_the_roadblock_guard_raises_his_hand_at_his_post(t)
+	_test_the_door_guard_raises_his_hand_where_he_stepped_out(t)
+	_test_no_other_guard_drawn_pursuer_takes_the_alert(t)
 	_test_vehicle_views_match_facings_csv_per_sector(t)
 	_test_riot_van_reproduces_its_octant_table_with_the_corrected_side_mirror(t)
 	_test_kerb_parked_vans_keep_their_axis_chosen_view(t)
@@ -419,6 +429,13 @@ func _test_state_pairs_stay_visually_distinct(t) -> void:
 		["cat_crouched", "cat_running"], ["robber_waiting", "robber_lunging"],
 		["chatting_mother_walking", "chatting_mother_talking"], ["pigeon", "pigeon_down"],
 		["guard_standing", "guard_lunging"],
+		# Every charger's three stages, each distinct from its neighbours *(velvet-marten, #699:
+		# "neutral (with neutral visuals), warning (...needs to be visually distinct), and then the
+		# actual charging")*.
+		["charging_dog_resting", "charging_dog_alert"], ["charging_dog_alert", "charging_dog"],
+		["charging_dog_resting", "charging_dog"],
+		["robber_waiting", "robber_alert"], ["robber_alert", "robber_lunging"],
+		["guard_standing", "guard_alert"], ["guard_alert", "guard_lunging"],
 	]
 	for pair in pairs:
 		var a: Dictionary = FAMILY_DICTS[pair[0]]
@@ -534,6 +551,174 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 	t.check(not instance.is_telegraphing() and not instance._stands_still_now(),
 			"once the notice is over he is drawn lunging")
 	instance.free()
+
+# ----------------------------------------------------------- every charger's three stages ---
+# *(velvet-marten, #699: "entities that charge towards the player when the player gets too close need
+# three stages: neutral (with neutral visuals), warning (...), and then the actual charging";
+# polite-toad, #722: "a distinct alert and rest post for each charger that gets triggered by the
+# player"; inbox #748: "robber can walk towards her but guards should lift their hand in warning",
+# "nobody walks -- only the robber".)* Each test walks one charger through its stages and pins the
+# picture query its `_draw_*` reads (`charging_dog_pictures()`, `robber_pictures()`,
+# `chaser_pictures()`, `masked_pursuer_pictures()`), and whether it moves while it warns.
+
+## Steps `instance` for `seconds` with her held at `her`.
+func _hold(instance: EventInstance, her: Vector2, seconds: float) -> void:
+	instance.player_at = her
+	for i in int(round(seconds / STEP)):
+		instance._process(STEP)
+
+func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
+	var def := EventScheduler._for_day(EventCatalogue.by_id("charging_dog"),
+			Tuning.RUN_TAUGHT_DAY + 1)
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	_hold(instance, Vector2(def.pursues_within + 60.0, 0.0), 1.0)
+	var pictures := instance.charging_dog_pictures()
+	t.check(instance.is_waiting() and pictures[0] == EventInstance.CHARGING_DOG_RESTING_BY_VIEW
+			and pictures[1].is_empty(), "waiting for her, the dog sits, with no stride frame")
+	# Inside its trigger and outside its stand-off, where she stands until its notice runs out.
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	var her := Vector2((def.pursues_within + standoff) * 0.5, 0.0)
+	_hold(instance, her, STEP)
+	t.check(instance.is_standing_for_its_notice(), "it notices her and stands for its notice")
+	t.check(instance._heading.is_equal_approx(her.normalized()), "turned to face her")
+	var still := true
+	var alert := true
+	for i in int(round((def.telegraph_time - 0.1) / STEP)):
+		instance._process(STEP)
+		still = still and instance.global_position.is_equal_approx(Vector2.ZERO) \
+				and not instance._gait_stepping()
+		pictures = instance.charging_dog_pictures()
+		alert = alert and pictures[0] == EventInstance.CHARGING_DOG_ALERT_BY_VIEW \
+				and pictures[1].is_empty()
+	t.check(alert, "its alert, a still picture, for the whole notice")
+	t.check(still, "and it does not move toward her while it warns")
+	_hold(instance, her, 0.2)
+	pictures = instance.charging_dog_pictures()
+	t.check(not instance.is_telegraphing() and pictures[0] == EventInstance.CHARGING_DOG_BY_VIEW
+			and pictures[1] == EventInstance.CHARGING_DOG_BY_VIEW_B,
+			"once its notice is over it gallops, both frames")
+	instance.free()
+
+## **The day-3 dog's telegraph is its approach**, so it is drawn galloping at her for all of it and
+## never stands: the same row handed to the director with no trigger to have waited behind.
+func _test_the_day_3_dog_gallops_through_its_approach(t) -> void:
+	var def := EventCatalogue.by_id("charging_dog")
+	t.check(def.pursues_within <= 0.0, "on the teaching day the dog does not wait")
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	_hold(instance, Vector2(400.0, 0.0), 1.0)
+	t.check(instance.is_telegraphing() and not instance.is_standing_for_its_notice(),
+			"its approach is its telegraph, and it does not stand for it")
+	t.check(instance.charging_dog_pictures()[0] == EventInstance.CHARGING_DOG_BY_VIEW,
+			"drawn galloping")
+	t.check(instance.global_position.x > 100.0, "and coming (%.0fpx in a second)"
+			% instance.global_position.x)
+	instance.free()
+
+func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
+	var def := EventCatalogue.by_id("alley_robbery")
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	_hold(instance, Vector2(def.pursues_within + 40.0, 0.0), 0.5)
+	t.check(instance.is_waiting() and instance.robber_pictures() == EventInstance.ROBBER_WAITING_BY_VIEW,
+			"waiting, hood up and hands in his coat")
+	var her := Vector2(def.pursues_within - 4.0, 0.0)
+	_hold(instance, her, STEP)
+	t.check(instance.is_telegraphing() and not instance.is_standing_for_its_notice(),
+			"he notices her, and he does not stand for it")
+	t.check(instance.robber_pictures() == EventInstance.ROBBER_ALERT_BY_VIEW,
+			"drawn in his alert, hands out of his coat")
+	_hold(instance, her, 0.05)
+	t.check(instance.is_telegraphing() and instance.global_position.x > 1.0,
+			"walking at her through his notice (%.1fpx)" % instance.global_position.x)
+	t.check(instance.robber_pictures() == EventInstance.ROBBER_ALERT_BY_VIEW,
+			"still in his alert while he walks")
+	_hold(instance, her, 0.5)
+	t.check(not instance.is_telegraphing()
+			and instance.robber_pictures() in [EventInstance.ROBBER_LUNGING_BY_VIEW,
+					EventInstance.ROBBER_LUNGING_BY_VIEW_B],
+			"once she is inside his stand-off he lunges")
+	instance.free()
+	# The sent robber arrives chasing, with no notice to be alert through.
+	var sent := EventInstance.new()
+	sent.setup(EventCatalogue.by_id("robber_giving_chase"), Vector2.ZERO)
+	_hold(sent, Vector2(300.0, 0.0), STEP)
+	t.check(sent.robber_pictures() != EventInstance.ROBBER_ALERT_BY_VIEW,
+			"the robber a task sends is drawn coming from his first frame")
+	sent.free()
+
+func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.HEAT_HUNTS_LEVEL)
+	var guard := EventInstance.new()
+	guard.setup(hot, Vector2.ZERO)
+	t.add_child(guard)
+	guard.set_process(false)
+	guard._attach_the_band()
+	var her := Vector2(0.0, hot.pursues_within - 10.0)
+	_hold(guard, her, STEP)
+	t.check(guard.chaser_side() != 0 and guard.is_standing_for_its_notice(),
+			"the guard on her side has noticed her and stands for his notice")
+	t.check(guard.chaser_pictures() == EventInstance.GUARD_ALERT_BY_VIEW, "hand raised")
+	var post := guard.global_position
+	_hold(guard, her, hot.telegraph_time - 0.2)
+	t.check(guard.global_position.is_equal_approx(post)
+			and guard.chaser_pictures() == EventInstance.GUARD_ALERT_BY_VIEW,
+			"at his post, hand raised, for the whole notice")
+	_hold(guard, her, 0.3)
+	t.check(not guard.is_telegraphing()
+			and guard.chaser_pictures() == EventInstance.GUARD_LUNGING_BY_VIEW,
+			"then he lunges")
+	guard.free()
+
+func _test_the_door_guard_raises_his_hand_where_he_stepped_out(t) -> void:
+	var def := EventCatalogue.by_id("door_guard")
+	var guard := EventInstance.new()
+	guard.setup(def, Vector2(32.0, 48.0))
+	# She walks away from him through his notice: once she is past his stand-off a pursuer that
+	# sets off beside her would follow; standing for his notice, he does not.
+	var her := Vector2(1.0, 0.0)
+	var still := true
+	var alert := true
+	for i in int(round((def.telegraph_time - 0.1) / STEP)):
+		her.x += Tuning.WALK_SPEED * STEP
+		_hold(guard, her, STEP)
+		still = still and guard.global_position.is_equal_approx(Vector2(32.0, 48.0))
+		alert = alert and guard.masked_pursuer_pictures() == EventInstance.GUARD_ALERT_BY_VIEW
+	t.check(alert, "the door guard holds his hand raised for his whole notice")
+	t.check(still, "and stands where he stepped out while she walks away")
+	_hold(guard, her, 0.2)
+	t.check(not guard.is_telegraphing()
+			and guard.masked_pursuer_pictures() == EventInstance.GUARD_LUNGING_BY_VIEW,
+			"then he lunges")
+	guard.free()
+
+## **The door guard's alert is his alone.** The masked man, the van's guard, the guardsman and the
+## guardsman a hunting van lets out are drawn by the same `_draw_masked_pursuer()`, and each keeps
+## the standing picture for whatever notice it has (the teal-trout-2 record: the masked man waits
+## standing).
+func _test_no_other_guard_drawn_pursuer_takes_the_alert(t) -> void:
+	var rows: Array[EventDef] = [
+		EventCatalogue.by_id("masked_pursuer"),
+		EventCatalogue.by_id("van_guard_giving_chase"),
+		EventCatalogue.by_id("guardsman_giving_chase"),
+		EventCatalogue.out_of_the_car(EventCatalogue.guardsmen_from_day(), false),
+	]
+	for def in rows:
+		t.check(not def.stands_for_its_notice, "'%s' does not stand for its notice" % def.id)
+		var instance := EventInstance.new()
+		instance.setup(def, Vector2.ZERO)
+		var standing := false
+		var alert := false
+		for i in int(round(3.0 / STEP)):
+			_hold(instance, Vector2(0.0, 100.0), STEP)
+			var pictures := instance.masked_pursuer_pictures()
+			alert = alert or pictures == EventInstance.GUARD_ALERT_BY_VIEW
+			standing = standing or pictures == EventInstance.GUARD_STANDING_BY_VIEW
+		t.check(not alert, "'%s' never draws the door guard's alert" % def.id)
+		if def.telegraph_time > 0.0:
+			t.check(standing, "'%s' stands in his standing picture for his notice" % def.id)
+		instance.free()
 
 # --------------------------------------------------------------- M108's vehicle item ---
 # `EventInstance._draw_eight_view()`'s `side_faces_west` parameter, and the per-family binding in

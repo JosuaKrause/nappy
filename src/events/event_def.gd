@@ -589,19 +589,40 @@ func departure_speed() -> float:
 ## Whether this pursuer **sets off beside her** — spawned already inside its own stand-off
 ## (`Tuning.pursuit_standoff()`), rather than sited or noticing her outside it the way every other
 ## pursuer is. `door_guard` is the one row: he steps out of a hut a few strides from where she has
-## just walked under the boom.
+## just walked under the boom. The men an investigating vehicle lets out are copies that carry it
+## too (`EventCatalogue.out_of_the_car()`).
 ##
 ## **Its notice cannot be the approach, so it is the ground held.** An ordinary pursuer spends its
 ## telegraph closing to the stand-off, holding it, and lunging the moment she comes inside it —
 ## which, from a hut's width away, is a lunge on its first frame and a catch with no notice at all.
 ## So through the telegraph this one never lunges early and never backs off: it holds its ground
-## while she is nearer than the stand-off and follows at the stand-off once she is further, and the
+## while she is nearer than the stand-off and follows at the stand-off once she is further — or, if
+## it also `stands_for_its_notice` as `door_guard` does, holds its ground throughout — and the
 ## chase starts when the notice has run its whole length. Walking away still loses — at the end of
-## the notice he is at the stand-off and faster than her walk — and running still wins. The price
+## the notice he is at the stand-off, or where he stood, and faster than her walk — and running
+## still wins. The price
 ## is the trap a stand-off exists to avoid, and it is taken knowingly: a player who walks *into*
 ## him during his notice is caught when it ends, having been shown him standing there for all of
 ## it. `EventInstance._chase()` reads it.
 @export var sets_off_beside_her := false
+## Whether this pursuer **stands still for its notice**, turned to her in its alert pose, rather than
+## closing on her while it warns. *(Inbox #748, the player: "robber can walk towards her but guards
+## should lift their hand in warning"; "nobody walks -- only the robber".)* `charging_dog`,
+## `roadblock` (read once its hunting copy pursues) and `door_guard` set it; `alley_robbery` does
+## not, and walks at her through his notice.
+##
+## **It still lunges the moment she comes inside its stand-off**, along a clear line, exactly as a
+## pursuer that closes does (`EventInstance._chase()`): only the closing stops. Clamping the approach
+## at zero *without* that lunge is the **events** skill's trap — she walks the last of the gap
+## herself and is caught from a standing start the frame the notice ends. With it, the chase starts
+## from the full stand-off when she walks in, and from wherever she stood when the notice runs out
+## otherwise, which is further away.
+##
+## **Read only on an instance that noticed her**: one that waited for her (`pursues_within` on the
+## def it was handed) or one that sets off beside her. A pursuer whose telegraph *is* its approach —
+## the day-3 dog sent down her heading, and the same dog sprinkled in later — keeps closing, since
+## its approach is the lesson (`EventInstance.is_standing_for_its_notice()`).
+@export var stands_for_its_notice := false
 ## What `pursues_within_on()` answers once `day` is past `spawn_mode_switches_after_day`. Unread
 ## while that is 0.
 @export var pursues_within_after_first_day := 0.0
@@ -1322,6 +1343,17 @@ func validate() -> bool:
 	# The same shape: a stand-off rule for something that never chases is a decision nothing reads.
 	if sets_off_beside_her and not pursues:
 		push_error("event '%s' sets off beside her but never pursues" % id)
+		return false
+	# And standing for a notice is a decision about a pursuer that notices her. A cold row that only
+	# pursues once it hunts (`HeatResponse.HUNTS`, the roadblock) carries it for its hunting copy,
+	# which is validated in its own right.
+	if stands_for_its_notice and not pursues and heat_response != HeatResponse.HUNTS:
+		push_error("event '%s' stands for its notice but never pursues" % id)
+		return false
+	if stands_for_its_notice and pursues and pursues_within <= 0.0 \
+			and pursues_within_after_first_day <= 0.0 and not sets_off_beside_her:
+		push_error("event '%s' stands for a notice it never takes: it neither waits for her nor "
+				% id + "sets off beside her")
 		return false
 	# A flag nothing can read is a decision that silently did not happen: without a trigger there is
 	# no waiting state for `quiet_until_noticed` to quieten.

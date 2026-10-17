@@ -33,6 +33,7 @@ func run(t) -> void:
 	_test_the_run_is_always_taught(t)
 	_test_a_paced_event_walks_a_beat(t)
 	_test_a_pursuer_can_wait(t)
+	_test_a_pursuer_that_stands_for_its_notice_leaves_room_to_answer(t)
 	_test_a_pursuer_stops_at_walls(t)
 	_test_the_robbers_lunge_is_further_out_than_his_catch(t)
 	_test_the_robber_does_not_catch_her_through_a_wall(t)
@@ -901,6 +902,104 @@ func _test_a_pursuer_can_wait(t) -> void:
 	_advance(instance, def.telegraph_time + 0.1)
 	t.check(not instance.is_telegraphing(), "then the notice is over")
 	instance.free()
+
+## **A pursuer that stands for its notice still leaves room to answer, and walking still loses.**
+## *(Inbox #748: "robber can walk towards her but guards should lift their hand in warning"; "nobody
+## walks -- only the robber".)* The dog that waited (any day past `RUN_TAUGHT_DAY`) and the hunting
+## roadblock's guard hold their ground in their alert pose for their notice instead of closing to
+## their stand-off, so the rigs above, which walk the cold catalogue, never meet them. Each is walked
+## here five ways from just inside its trigger: into it, into it and running the moment it lunges,
+## standing, away at a walk, and away at a run. What has to hold is what holds for a pursuer that
+## closes — the lunge from the full stand-off when she walks in, nothing lethal in the notice,
+## walking away caught, running shaken off — and that it does not move while it warns. The numbers
+## each walk produced are printed rather than asserted. The door guard, who sets off beside her, is
+## walked at a door in `tests/test_checkpoints.gd`.
+func _test_a_pursuer_that_stands_for_its_notice_leaves_room_to_answer(t) -> void:
+	var rows: Array[EventDef] = [
+		EventScheduler._for_day(EventCatalogue.by_id("charging_dog"), Tuning.RUN_TAUGHT_DAY + 1),
+		EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.HEAT_HUNTS_LEVEL),
+	]
+	for def in rows:
+		t.check(def.pursues and def.pursues_within > 0.0 and def.stands_for_its_notice,
+				"'%s' waits for her and stands for its notice" % def.id)
+		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+		var walked_in := _standing_rig(t, def, -Tuning.WALK_SPEED)
+		t.check(walked_in["stood"], "'%s' holds its ground while she walks in (moved %.1fpx)"
+				% [def.id, walked_in["moved_in_notice"]])
+		t.close_to(walked_in["at_the_lunge"], standoff,
+				"walking into '%s' it lunges at its full stand-off" % def.id, 8.0)
+		t.check(not walked_in["lethal_while_telegraphing"],
+				"and nothing '%s' does during its notice can end the day" % def.id)
+		var answered := _standing_rig(t, def, -Tuning.WALK_SPEED, 0.0)
+		t.check(not answered["caught"] and answered["gave_up"],
+				"running from '%s' the moment it lunges shakes it off (closest %.0fpx)"
+				% [def.id, answered["closest"]])
+		var stood := _standing_rig(t, def, 0.0)
+		t.check(stood["stood"] and stood["caught"],
+				"standing in front of '%s' is caught once its notice runs out" % def.id)
+		t.check(stood["at_the_lunge"] > standoff,
+				"from further than its stand-off, since it never closed (%.0fpx of %.0fpx)"
+				% [stood["at_the_lunge"], standoff])
+		var walked_off := _standing_rig(t, def, Tuning.WALK_SPEED)
+		t.check(walked_off["stood"] and walked_off["caught"] and not walked_off["gave_up"],
+				"walking away from '%s' still loses (caught %.1fs in)" % [def.id,
+				walked_off["ended_at"]])
+		var ran := _standing_rig(t, def, Tuning.RUN_SPEED)
+		t.check(not ran["caught"] and ran["gave_up"],
+				"running away from '%s' shakes it off (%.1fs in)" % [def.id, ran["ended_at"]])
+		print(("[test_events_pursuit] '%s' standing for its %.1fs notice, stand-off %.0fpx: walked "
+				+ "in, lunge at %.0fpx; answered at the lunge, closest %.0fpx; stood, lunge at "
+				+ "%.0fpx and caught at %.2fs; walked away, lunge at %.0fpx and caught at %.2fs; ran, "
+				+ "shaken off at %.2fs") % [def.id, def.telegraph_time, standoff,
+				walked_in["at_the_lunge"], answered["closest"], stood["at_the_lunge"],
+				stood["ended_at"], walked_off["at_the_lunge"], walked_off["ended_at"],
+				ran["ended_at"]])
+
+## Walks her from just inside `def`'s trigger, along +y from where it stands, at `player_speed`
+## (positive is away, negative into it, zero standing) and — when `reaction` is finite — turning to
+## run, accelerating as she really does, `reaction` seconds after it lunges. In the tree, since a
+## roadblock's guard steps out to his post beside its band on the frame he notices her.
+func _standing_rig(t, def: EventDef, player_speed: float, reaction := INF) -> Dictionary:
+	var instance := _instance(t, def, Vector2.ZERO)
+	instance._attach_the_band()
+	var her := Vector2(0.0, _sited_at(def))
+	var speed := player_speed
+	var elapsed := 0.0
+	var since_the_lunge := INF
+	var held_at := Vector2.INF
+	var result := {"caught": false, "gave_up": false, "lethal_while_telegraphing": false,
+			"at_the_lunge": INF, "ended_at": INF, "moved_in_notice": 0.0, "stood": false,
+			"closest": INF}
+	var noticed := false
+	while elapsed < 20.0 and not instance.is_finished and not instance.is_leaving \
+			and not result["caught"]:
+		if since_the_lunge != INF and since_the_lunge >= reaction:
+			speed = move_toward(speed, Tuning.RUN_SPEED, Tuning.ACCELERATION * STEP)
+		her.y += speed * STEP
+		instance.player_at = her
+		instance.player_running = speed > Tuning.WALK_SPEED
+		instance._process(STEP)
+		elapsed += STEP
+		if since_the_lunge != INF:
+			since_the_lunge += STEP
+		if instance.is_telegraphing():
+			noticed = true
+			if held_at == Vector2.INF:
+				held_at = instance.global_position
+			result["moved_in_notice"] = maxf(float(result["moved_in_notice"]),
+					instance.global_position.distance_to(held_at))
+		elif noticed and since_the_lunge == INF:
+			since_the_lunge = 0.0
+			result["at_the_lunge"] = instance.global_position.distance_to(her)
+		result["closest"] = minf(float(result["closest"]), instance.global_position.distance_to(her))
+		if instance.is_lethal_at(her):
+			result["caught"] = true
+			result["lethal_while_telegraphing"] = instance.is_telegraphing()
+	result["gave_up"] = instance.gave_up
+	result["ended_at"] = elapsed
+	result["stood"] = noticed and float(result["moved_in_notice"]) < 0.5
+	instance.free()
+	return result
 
 ## **The robber stops at walls.** A pursuing `EventInstance` moves by setting its own position, and
 ## nothing in the event system has ever collided with the city — harmless while every mobile row
