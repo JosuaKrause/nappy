@@ -272,8 +272,8 @@ it was written from. The traps:
 - **Clamping the approach at zero is not a stand-off.** The pursuer stands still while *she* closes
   the gap and dies on the first lethal frame. It closes to its stand-off
   (`Tuning.pursuit_standoff()`) and lunges the moment she reaches it, so the chase starts at the
-  stand-off however she came. **A pursuer that [stands still](../../../docs/playtests/2026-10-17-woolly-penguin.md#748)
-  for its notice (`EventDef.stands_for_its_notice`) closes nothing and keeps every lunge**, which
+  stand-off however she came. **A pursuer that stands still for its notice
+  (`EventDef.stands_for_its_notice`; woolly-penguin #748) closes nothing and keeps every lunge**, which
   is what keeps standing from being this trap: walking in, she is lunged at from the full
   stand-off; staying out, she is chased from wherever she is when the notice runs out, which is
   further. A wall between them that holds the lunge back is the same trap: at an
