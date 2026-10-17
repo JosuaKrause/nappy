@@ -315,7 +315,8 @@ func _test_contribution_skips_only_silence(t) -> void:
 			var direction := Vector2.RIGHT.rotated(bearing * TAU / 24.0)
 			for share: float in [0.0, 0.3, 0.6, 0.8, 0.85, 0.9, 0.999, 1.001, 1.5]:
 				var at := node + direction * reach * share
-				for velocity: Vector2 in [Vector2.INF, direction * -10000.0]:
+				for velocity: Vector2 in [Vector2.INF, direction * -10000.0,
+						direction * 10000.0]:
 					var field := instance._field_at(at, -1.0, velocity)
 					if instance.contribution_at(at, -1.0, velocity) != field:
 						differed += 1
