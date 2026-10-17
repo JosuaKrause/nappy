@@ -87,7 +87,7 @@ game's own. A route bag also switches on the rest of what the director does whil
 a played day: a place a marble puts on her route is sited on her way, and on days 8 to 14, once the
 baby sleeps and the walk home begins, the act III and IV return patrols are owed.
 
-An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path`, `age` and
+An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path`, `age`, `hold` and
 `heat`. `heat` (an integer from 0 to `Tuning.RESISTANCE_GOAL`) installs the row in the shape a
 played day's dawn puts it in at that resistance progress (`EventCatalogue.heated()`): the
 investigating patrol car, the hunting roadblock and the hunting vans, which no authored day
@@ -102,7 +102,12 @@ day 11's task also respects, is not asked. It gives
 an optional `mast_id`, the identity day 11's task, its red arrow and the last night's blackout
 find a mast by (a string no other mast of the scene shares; `mast_id` on any other row is
 refused), and a mast without one is named as a mast added for day 11 is, from its foot
-(`EventScheduler.added_mast_id()`). Director pursuers use the real
+(`EventScheduler.added_mast_id()`). `hold: true` keeps the event for the whole scene, for a recording that must not lose it: it is
+never streamed out, and once it is leaving (a charging dog that gave up because she ran) the
+recipe walks it on, away from her at the row's own departure speed and gait, instead of the
+game's removal, which takes it out once it is 420px from her or 6 seconds into leaving, inside
+the picture on a wide frame. The game's despawn rules are unchanged; a held event is simply
+never removed, and `trailer-dog.json` holds its dog. Director pursuers use the real
 ahead-of-player siting. `age` may advance through the initial warning only; active movement is
 simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direction` and optional
 `speed`; production lane, ground, speed and car-gap checks apply.
