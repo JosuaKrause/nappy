@@ -33,7 +33,7 @@ func run(t) -> void:
 	_test_the_finale_city_has_nobody_in_it(t)
 	_test_the_escape_streets_carry_the_route_tint(t)
 	_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
-	_test_the_clock_reads_milliseconds_only_in_the_finale(t)
+	_test_the_clock_reads_hundredths_only_in_the_finale(t)
 	_test_a_lost_section_starts_again_and_costs_no_nerve(t)
 	_test_each_section_opens_on_its_own_brief(t)
 	_test_the_two_sections_are_named_for_the_player(t)
@@ -555,9 +555,9 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 # ------------------------------------------------------------------ the clock ---
 
 ## *"The timer also shows milliseconds. This makes the timer appear faster than just the seconds
-## alone which adds additional tension."* The only thing that changes, so both shapes are checked
-## off the same signal and the same time.
-func _test_the_clock_reads_milliseconds_only_in_the_finale(t) -> void:
+## alone which adds additional tension."* Tried as hundredths (inbox #746). The only thing that
+## changes, so both shapes are checked off the same signal and the same time.
+func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
 	t.add_child(hud)
 	hud.set_process(false)
@@ -566,8 +566,8 @@ func _test_the_clock_reads_milliseconds_only_in_the_finale(t) -> void:
 	t.check(clock.text == "1:05", "a day's clock reads to the second (got '%s')" % clock.text)
 	hud.set_finale(true)
 	EventBus.day_time_changed.emit(65.5, 180.0)
-	t.check(clock.text == "1:05.500",
-			"the escape's clock reads to the millisecond (got '%s')" % clock.text)
+	t.check(clock.text == "1:05.50",
+			"the escape's clock reads to the hundredth (got '%s')" % clock.text)
 	# Freed rather than queued for the same reason the cities are: nothing here yields a frame, and
 	# a HUD left listening to `EventBus.day_time_changed` answers the next suite's emit as well.
 	hud.free()
