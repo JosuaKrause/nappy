@@ -915,6 +915,9 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		if plan.age > plan.def.telegraph_time:
 			errors.append("event %s.age cannot skip active simulation; use playback warmup" % entry.name)
 		plan.set_meta("recipe_name", entry.name)
+		if bool(entry.get("hold", false)) and not _departs_in_a_straight_line(def):
+			errors.append("event %s.hold is for a pursuer that leaves in a straight line (a dog, a"
+					+ " man on foot); %s drives, lets men out, parks, hands on or leaves a barrier" % [entry.name, def.id])
 		plan.set_meta("recipe_hold", bool(entry.get("hold", false)))
 		if def.id == EventScheduler.WalkSiting.MAST_ROW:
 			# Every mast the game stands has an id, and the director's lists and the blackout
@@ -1052,6 +1055,13 @@ func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 	fixed.force_update_scroll()
 	_fixed_camera = fixed
 
+## Whether a row's departure is the plain walk straight away from her that `_process()` reproduces for
+## a held event: a pursuer on foot. Not a car, not a row that lets men out (`investigates`), parks or
+## hands on to something (`spawns_on_finish`), and not a guard leaving his barrier.
+static func _departs_in_a_straight_line(def: EventDef) -> bool:
+	return def.pursues and not def.investigates and not def.drives and not def.stops_where_it_arrives \
+			and def.spawns_on_finish == "" and not def.body_stays_behind
+
 ## The events the recipe asked to keep (`hold`), so a recording never loses one to the game's own
 ## despawn: see `_process()`.
 var _held: Array[EventInstance] = []
@@ -1062,8 +1072,11 @@ var _held: Array[EventInstance] = []
 ## day, and a dog vanishing in the middle of a trailer shot. Once a held event is leaving, its own
 ## process is switched off and this walks it on instead, the same straight departure away from her
 ## at the row's own departure speed and gait (`EventInstance._leave()`'s plain branch), with the
-## removal left out. Nothing else about the event changes; the game's despawn rules are untouched.
+## removal left out, and only for a row whose departure is that plain walk (`hold` on any other row
+## fails the recipe, `_departs_in_a_straight_line()`). Nothing else about the event changes; the game's despawn rules are untouched.
 func _process(delta: float) -> void:
+	if get_tree().paused:
+		return
 	for instance in _held:
 		if not is_instance_valid(instance) or instance.is_finished or not instance.is_leaving:
 			continue

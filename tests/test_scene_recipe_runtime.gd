@@ -108,11 +108,20 @@ func _ready() -> void:
 
 func run(t) -> void:
 	_test_schema(t)
+	_test_hold_is_for_a_straight_departure(t)
 	_test_heat_installs_the_heated_row(t)
 	_test_a_task_gone_after_the_read(t)
 	_test_arguments(t)
 	_test_inputs(t)
 	_test_real_argv_and_failure(t)
+
+## `hold` reproduces a plain walk away, so it is refused for every row whose departure is anything else.
+func _test_hold_is_for_a_straight_departure(t) -> void:
+	t.check(SceneRecipeRuntime._departs_in_a_straight_line(EventCatalogue.by_id("charging_dog")),
+			"a dog may be held")
+	for row: String in ["fire_truck", "delivery_van", "roadblock"]:
+		t.check(not SceneRecipeRuntime._departs_in_a_straight_line(EventCatalogue.by_id(row)),
+				"%s is refused: it does not leave in a straight line" % row)
 
 func _test_schema(t) -> void:
 	var valid := {"setup": {"day": 1, "parent": "mother"},

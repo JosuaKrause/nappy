@@ -106,7 +106,8 @@ refused), and a mast without one is named as a mast added for day 11 is, from it
 never streamed out, and once it is leaving (a charging dog that gave up because she ran) the
 recipe walks it on, away from her at the row's own departure speed and gait, instead of the
 game's removal, which takes it out once it is 420px from her or 6 seconds into leaving, inside
-the picture on a wide frame. The game's despawn rules are unchanged; a held event is simply
+the picture on a wide frame. `hold` is limited to a pursuer on foot that leaves in a straight line; on a car, a row that lets men out,
+parks or hands on, or a guard leaving his barrier the recipe fails with a message naming the row. The game's despawn rules are unchanged; a held event is simply
 never removed, and `trailer-dog.json` holds its dog. Director pursuers use the real
 ahead-of-player siting. `age` may advance through the initial warning only; active movement is
 simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direction` and optional
