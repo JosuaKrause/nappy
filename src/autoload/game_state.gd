@@ -60,13 +60,24 @@ var checkpoint: Dictionary = {}
 var play_seconds: float = 0.0
 
 ## `%d:%02d.%03d` — minutes, seconds, milliseconds — the one format a run's own length is ever
-## shown in, so a second clock reading to the millisecond has this to call rather than a second
-## copy of the string. `DaySummary.show_ending()` is the only caller so far; the finale's own
-## clock is not built yet, and calls this the same way once it is.
+## shown in: the ending screens (`DaySummary.show_ending()`, the escape's own out line) and the
+## run log. A still number, so the millisecond is kept. The escape's live clock is not this: it
+## ticks on screen, and a screen cannot show a thousandth, so it reads
+## `format_clock_hundredths()`.
 static func format_clock(seconds: float) -> String:
 	var total_ms := int(round(seconds * 1000.0))
 	var total_seconds := total_ms / 1000
 	return "%d:%02d.%03d" % [total_seconds / 60, total_seconds % 60, total_ms % 1000]
+
+## `%d:%02d.%02d` — minutes, seconds, hundredths — the escape's live clock in the HUD. Truncates
+## like `format_clock_seconds()`, so a countdown never reads lower than it is. *(inbox #746, the
+## player: "escape clocke we can try 100s but it's not going to be much better? framerate is too
+## low? all of this was on phone.")* A tried precision: the hundredth changes on almost every frame
+## at 60 fps and on every frame at 30 fps.
+static func format_clock_hundredths(seconds: float) -> String:
+	var total_cs := int(seconds * 100.0 + 0.0001)
+	var total_seconds := total_cs / 100
+	return "%d:%02d.%02d" % [total_seconds / 60, total_seconds % 60, total_cs % 100]
 
 ## `%d:%02d` — minutes and seconds, no millisecond term — the day clock's own shape wherever it is
 ## shown: the HUD corner while a day runs (`hud.gd`'s `_on_day_time_changed()`) and the day summary
