@@ -116,6 +116,7 @@ what she is doing, times what she is standing on.
 | Ordinary street | `1.0` | `6.0/s` |
 | Alley | `0.58` | `3.5/s` |
 | Main road | `0.02` | `0.12/s` |
+| Escape basement | `0.0` | `0.0/s` (see "the meter does not fall in the basement", below) |
 
 **The decay is what the bar shows.** A player watching the meter on a street with nothing on it is
 watching this number and nothing else, so it is set from a *net* measurement rather than from

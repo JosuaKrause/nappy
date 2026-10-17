@@ -1635,6 +1635,11 @@ func _test_the_meter_does_not_fall_in_the_basement(t: Node) -> void:
 		var at := scene.tile_to_world(scene.waypoint(part))
 		t.check(scene.decay_multiplier(at) == 1.0,
 				"%s is ordinary ground for the meter" % part)
+	var f := InteriorMap.build()
+	t.check(scene.decay_multiplier(scene.tile_to_world(f.door("lobby:basement").tile)) == 1.0,
+			"the lobby's basement door is still ordinary ground")
+	t.check(scene.decay_multiplier(scene.tile_to_world(f.door("basement:entry").tile)) == 0.0,
+			"the basement's entry tile gives nothing back")
 	scene.free()
 
 ## **A vent that is there all the time, blowing or not, is what a player can plan around.** Each
