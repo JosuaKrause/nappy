@@ -87,6 +87,17 @@ answered as **playtest-feedback** asks. The script tags the note with the label 
 only it sets, and opens it as `claude-orchestrator` (Codex: `codex-coder`), which is what makes a
 captured note count as the player's.
 
+**Every line a note holds is a direct quote of the player or is marked as the agent's** (inbox
+#767), so nobody filing it later takes an interpretation for something the player said. The body,
+and the words an `append` adds, are direct quotes and nothing else: no summary, no reading, no
+question restated, not even the line of the agent's that the words reply to. A line the player did
+not say that reaches a body anyway is the player's statement to everybody who files it, so it is
+corrected by a new note the player's words open, saying which line it overrides. What the words
+answered goes in `--context-file`, the agent's side, and **a reading of the player's words there is
+labelled as one**: `Read as:`, then the reading, never written as though the player had said it. A
+fact, a question or an option there needs no label; the comment's own header already makes it the
+agent's.
+
 **A further word on the topic of a note already open is appended to that note, never captured as a
 new one** (olive-tapir). When the agent already knows an open captured note on the topic, one it
 captured or read this session, the player's next words on it go onto that note:
@@ -139,8 +150,11 @@ request carries the whole batch:
   carries it as its first comment, then the body quoted in `> ` lines, then the player's
   comments and the words appended to it, in the order they were said, each after what it answers
   (the first comment's context, the question before it, or the context its append comment holds). Wrapping and the `> ` markers are free; every
-  word, letter case and punctuation mark is copied as it stands. A playtest file is a primary
-  source and is never rewritten afterwards.
+  word, letter case and punctuation mark is copied as it stands. Only the `> ` lines are the
+  player's; every other sentence in the file is the assistant's or the filer's, and a reading of the
+  player's words among them keeps its `Read as:` label (inbox #767). A line a later note overrides
+  is still copied, since it is in the note, and the file says beside it which note overrides it. A
+  playtest file is a primary source and is never rewritten afterwards.
 - **File the queue from it** exactly as **playtest-feedback** says, each entry opening with the
   note's band.
 - **Patch the citations of the notes just copied**, before the pull request is opened. Records,
