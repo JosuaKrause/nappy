@@ -915,9 +915,9 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		if plan.age > plan.def.telegraph_time:
 			errors.append("event %s.age cannot skip active simulation; use playback warmup" % entry.name)
 		plan.set_meta("recipe_name", entry.name)
-		if bool(entry.get("hold", false)) and not _departs_in_a_straight_line(def):
-			errors.append("event %s.hold is for a pursuer that leaves in a straight line (a dog, a"
-					+ " man on foot); %s drives, lets men out, parks, hands on or leaves a barrier" % [entry.name, def.id])
+		if bool(entry.get("hold", false)):
+			if hold_refusal(def) != "":
+				errors.append(hold_refusal_message(str(entry.name), def))
 		plan.set_meta("recipe_hold", bool(entry.get("hold", false)))
 		if def.id == EventScheduler.WalkSiting.MAST_ROW:
 			# Every mast the game stands has an id, and the director's lists and the blackout
@@ -1055,12 +1055,27 @@ func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 	fixed.force_update_scroll()
 	_fixed_camera = fixed
 
-## Whether a row's departure is the plain walk straight away from her that `_process()` reproduces for
-## a held event: a pursuer on foot. Not a car, not a row that lets men out (`investigates`), parks or
-## hands on to something (`spawns_on_finish`), and not a guard leaving his barrier.
-static func _departs_in_a_straight_line(def: EventDef) -> bool:
-	return def.pursues and not def.investigates and not def.drives and not def.stops_where_it_arrives \
-			and def.spawns_on_finish == "" and not def.body_stays_behind
+## Why `hold` is refused for a row, or "" when it may be held. `_process()` reproduces only the plain
+## walk straight away from her that a pursuer on foot leaves by, so every row whose departure is
+## anything else is refused, each with its own reason.
+static func hold_refusal(def: EventDef) -> String:
+	if not def.pursues:
+		return "does not pursue her, so it has no straight walk away to hold"
+	if def.drives:
+		return "drives, and a car leaves by its own rules"
+	if def.investigates:
+		return "lets men out, who walk back to it"
+	if def.stops_where_it_arrives:
+		return "parks where it arrives"
+	if def.spawns_on_finish != "":
+		return "hands on to another event when it finishes"
+	if def.body_stays_behind:
+		return "leaves a barrier standing as a guard walks off"
+	return ""
+
+## The error a refused `hold` reports, naming the event and the row.
+static func hold_refusal_message(event_name: String, def: EventDef) -> String:
+	return "event %s.hold is refused: row %s %s" % [event_name, def.id, hold_refusal(def)]
 
 ## The events the recipe asked to keep (`hold`), so a recording never loses one to the game's own
 ## despawn: see `_process()`.
@@ -1073,13 +1088,26 @@ var _held: Array[EventInstance] = []
 ## process is switched off and this walks it on instead, the same straight departure away from her
 ## at the row's own departure speed and gait (`EventInstance._leave()`'s plain branch), with the
 ## removal left out, and only for a row whose departure is that plain walk (`hold` on any other row
-## fails the recipe, `_departs_in_a_straight_line()`). Nothing else about the event changes; the game's despawn rules are untouched.
+## fails the recipe, `hold_refusal()`), and the scene fails if a held event is sent along a set path
+## or otherwise stops leaving in a straight line mid-scene (day 12's park cordon does that).
+## Nothing else about the event changes; the game's despawn rules are untouched.
 func _process(delta: float) -> void:
 	if get_tree().paused:
 		return
 	for instance in _held:
 		if not is_instance_valid(instance) or instance.is_finished or not instance.is_leaving:
 			continue
+		if instance._walks_a_way or not instance._trail.is_empty() \
+				or instance._is_a_guard_leaving_his_barrier():
+			manifest["playback_error"] = "held event %s no longer leaves in a straight line" \
+					% instance.def.id
+			manifest["stopped_tick"] = tick
+			push_error(manifest["playback_error"])
+			if _active:
+				write_manifest()
+				_active = false
+				get_tree().quit(1)
+			return
 		instance.set_process(false)
 		var before := instance._path_travelled
 		var step := instance._leaving_speed() * delta
