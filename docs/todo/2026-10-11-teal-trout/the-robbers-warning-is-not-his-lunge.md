@@ -7,5 +7,4 @@ roadblock-task guard are the same row and change with it. He gets an alert pose 
 **Where it stands.** While warning he walks toward her (inbox #748: "robber can walk towards her";
 "nobody walks -- only the robber"), in a two-frame walk drawn in all five views
 ([teal-trout-4](../../decisions/2026-10-11-teal-trout-4.md)), not wired into the game. Left: the
-player's look at the walk, then the wiring (the dog's and guards' stages are being wired on
-`feature/teal-trout-wiring`), its tests and a clip judged at game zoom on the alley's own ground.
+player's look at the walk, then the wiring, its tests and a clip judged at game zoom on the alley's own ground.
