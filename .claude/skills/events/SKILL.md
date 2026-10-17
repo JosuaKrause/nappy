@@ -287,7 +287,7 @@ it was written from. The traps:
   inside his own stand-off (`EventDef.charges_at_once`: no notice of his own, telegraph 0; at an
   alley's door, half a second standing first). So his charge is not met at the stand-off with
   `PURSUIT_REACTION` to answer it, and a walker under the boom is caught in under half a second by
-  design: the answer is the warning, not to go under or to go under running, which
+  design: the answer is the warning: don't go under, or go under running, which
   `tests/test_checkpoints.gd` walks. **No other row may carry `charges_at_once` without the player's
   word**: on any other pursuer it is exactly the trap above.
 - **A break-off stated as a distance needs two inequalities, and they fight.**

@@ -254,6 +254,21 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	if post == Vector2.INF:
 		city.free()
 		return
+	# The page's charging counter, read off the signals: one warning, one charge, one ending, and
+	# nothing more for the barrier streamed back in, at the day's end included.
+	var counted: Array[String] = []
+	var listen: Array[Callable] = [
+		func(id: String) -> void: counted.append("warned:" + id),
+		func(id: String) -> void: counted.append("chased:" + id),
+		func(id: String) -> void: counted.append("caught:" + id),
+		func(id: String, shaken_off: bool) -> void:
+			counted.append(("shaken:" if shaken_off else "outlasted:") + id),
+		func(id: String) -> void: counted.append("ended:" + id)]
+	EventBus.pursuit_warned.connect(listen[0])
+	EventBus.pursuit_began.connect(listen[1])
+	EventBus.pursuit_caught.connect(listen[2])
+	EventBus.pursuit_ended.connect(listen[3])
+	EventBus.pursuit_cut_short.connect(listen[4])
 	var plan := EventScheduler.Planned.new(_hot_roadblock(), post)
 	city.events._stream_in(plan)
 	var guard: EventInstance = plan.live
@@ -300,4 +315,13 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		city.events._stream_in(plan)
 		t.check(plan.live != null and plan.live.is_waiting() and plan.live.is_a_spent_guard(),
 				"and a barrier streamed out and in again stays spent")
+		city.events.end_the_charges_still_running()
+		t.check(counted == ["warned:roadblock", "chased:roadblock", "shaken:roadblock"],
+				"the page counts one warning, one charge and its one ending, nothing for the barrier "
+				+ "streamed back in, the day's end included (%s)" % [counted])
+	EventBus.pursuit_warned.disconnect(listen[0])
+	EventBus.pursuit_began.disconnect(listen[1])
+	EventBus.pursuit_caught.disconnect(listen[2])
+	EventBus.pursuit_ended.disconnect(listen[3])
+	EventBus.pursuit_cut_short.disconnect(listen[4])
 	city.free()

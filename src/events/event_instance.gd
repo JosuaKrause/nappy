@@ -2428,9 +2428,12 @@ func report_the_charge_cut_short() -> void:
 	_charge_ended = true
 	EventBus.pursuit_cut_short.emit(charger_name())
 
-## Sends `EventBus.pursuit_warned` once for this instance: its warning has gone up.
+## Sends `EventBus.pursuit_warned` once for this instance: its warning has gone up. Never for one
+## that charges at once (`EventDef.charges_at_once`, the checkpoint guard): his warning was the hut's
+## or the post's guard's raised hand, counted where it went up (`EventManager._warn_at_the_doors()`),
+## so a crossing counts one warning at an alley's door as at a boom.
 func _report_the_warning() -> void:
-	if _warning_reported or not counts_a_charge():
+	if _warning_reported or not counts_a_charge() or def.charges_at_once:
 		return
 	_warning_reported = true
 	EventBus.pursuit_warned.emit(charger_name())
@@ -3998,7 +4001,11 @@ func come_back_as_the_barrier(side: int) -> void:
 	_body_left_at = global_position
 	_noticed_at = INF
 	is_leaving = false
+	# Its charge, and the warning before it, were counted before it streamed out and are over:
+	# nothing about them is counted again, its end at the day's end included.
 	_pursuit_began_reported = true
+	_warning_reported = true
+	_charge_ended = true
 	_keep_the_body_where_it_was_left()
 	_invalidate_contribution_cache()
 	_move_the_band()
@@ -6611,8 +6618,9 @@ func _draw_masked_pursuer(canvas: CanvasItem = self) -> void:
 ## after his wait, which his row's `pursues_within` gives him and no other guard-drawn row has).
 ## *(Inbox #764, the player: an event that does not spawn already charging always needs a
 ## warning.)* The van's guard a task sends and the guardsman a torn poster sends arrive charging and
-## never give one, and nor does the door guard, whose warning was the hut's guard's
-## (`EventDef.charges_at_once`). Otherwise `guard_standing_*` while `_stands_still_now()` — the masked man's wait,
+## never give one, nor does the door guard at a boom, whose warning was the hut's guard's
+## (`EventDef.charges_at_once`); at an alley's door he stands in his alert for his half second
+## (`EventCatalogue.alley_door_guard()`). Otherwise `guard_standing_*` while `_stands_still_now()` — the masked man's wait,
 ## a stop — and `guard_lunging_*` after.
 func masked_pursuer_pictures() -> Dictionary:
 	if is_standing_for_its_notice() or (def.pursues_within > 0.0 and is_telegraphing()):

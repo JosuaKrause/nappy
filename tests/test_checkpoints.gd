@@ -2092,6 +2092,11 @@ func _test_the_alley_door_guard_waits_half_a_second(t) -> void:
 			and is_equal_approx(def.telegraph_time, EventCatalogue.ALLEY_DOOR_GUARD_WAIT),
 			"the alley door's guard is a valid charger that waits %.1fs" % def.telegraph_time)
 	var lines: Array[String] = []
+	# His own instance sends no warning: the post's guard's raised hand was it, counted where it
+	# went up (`EventManager._warn_at_the_doors()`), so a crossing counts one, as at a boom.
+	var warned: Array[String] = []
+	var on_warned := func(id: String) -> void: warned.append(id)
+	EventBus.pursuit_warned.connect(on_warned)
 	for across: float in [16.0, 32.0, 48.0]:
 		var guard_at := Vector2(32.0, across)
 		var her_at := Vector2(1.0, 0.0)
@@ -2107,6 +2112,8 @@ func _test_the_alley_door_guard_waits_half_a_second(t) -> void:
 				"caught at %.2fs" % away["ended_at"] if away["caught"] else "free"])
 		t.check(not away["caught"],
 				"%.0fpx across: running away from him the moment she passes escapes" % across)
+	EventBus.pursuit_warned.disconnect(on_warned)
+	t.check(warned.is_empty(), "and his own instance counts no warning of its own (%s)" % [warned])
 	print("[test_checkpoints] alley door guard: " + "; ".join(lines))
 
 ## Walks her from `her_at` along `heading`, walking until `reaction` seconds and at `speed`
