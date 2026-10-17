@@ -4896,7 +4896,10 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 						< Tuning.STREET_WIDTH * Tuning.TILE_SIZE
 						and guard.global_position.distance_to(first_guard.global_position
 								if first_guard else Vector2.INF) > 100.0,
-						"and he steps out of the named door's hut, not the other door's")
+						"and he steps out of the named door's hut, not the other door's (%.0fpx from it, %.0fpx from the other's)"
+						% [guard.global_position.distance_to(director._door_at),
+						guard.global_position.distance_to(first_guard.global_position
+								if first_guard else Vector2.INF)])
 			player.free()
 			director.free()
 		t.check(crossings == 2,

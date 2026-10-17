@@ -51,6 +51,7 @@ func run(t) -> void:
 	_streams = "day13-guard:"
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, true)
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, false)
+	_test_out_of_her_view_the_done_task_sends_him_under_a_badge(t)
 	_test_the_guard_walks_round_a_building_to_her(t)
 	for seed_value in PLACEMENT_SEEDS:
 		_test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value)
@@ -458,6 +459,19 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	director._on_contact_completed(step.index)
 	t.check(not guard.is_finished and not guard.is_waiting(),
 			"(%s) the moment she has done the task, he is after her" % what)
+	if parked:
+		# In her view his warning is a second, standing with it up *(inbox #764, the player: "yes,
+		# we can do a 1s on screen and 1s off-screen warning if they were not visible")*.
+		t.check(guard.is_standing_for_its_notice()
+				and is_equal_approx(guard.notice_time(), Tuning.WARNING_ALONE_MAX),
+				"(%s) in her view he stands with his warning up for %.1fs" % [what, guard.notice_time()])
+		var held_at := guard.global_position
+		guard.player_at = at
+		guard._process(Tuning.WARNING_ALONE_MAX - 0.1)
+		t.check(guard.is_telegraphing() and guard.global_position == held_at,
+				"(%s) still standing just short of that second" % what)
+		guard._process(0.2)
+		t.check(not guard.is_telegraphing(), "(%s) and then he charges" % what)
 	if not parked:
 		t.check(guard.noticed_at() == noticed_before,
 				"(%s) a guard already after her is left as he was" % what)
@@ -480,6 +494,52 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	t.check(lethal or nearest <= standoff + 1.0,
 			"(%s) he comes from %.0fpx away to her (nearest %.0fpx, stand-off %.0fpx, caught %s, %.1fs)"
 			% [what, start, nearest, standoff, lethal, walked])
+	_tear_down(player, director, city)
+	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+
+## **Out of her view, the done task sends him at her under a badge** *(inbox #764, the player: "yes,
+## we can do a 1s on screen and 1s off-screen warning if they were not visible")*: the waiting guard
+## is taken out of the world unseen and sent as a task's robber is
+## (`ResistanceDirector._send_at_her()`): the screen-edge badge alone for `Tuning.WARNING_ALONE_MAX`,
+## then he arrives charging (`EventCatalogue.task_guard_sent()`).
+func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_failed := GameState.failed_resistance_steps.duplicate()
+	var saved_progress := GameState.resistance_progress
+	var saved_scars := GameState.scars.duplicate()
+	var saved_state := GameState.city_state
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+	GameState.scars = []
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director.contact_position())
+	_view = Rect2()
+	var mark := director.current_step()
+	if mark:
+		director._on_contact_completed(mark.index)
+	var step := director.current_step()
+	var guard: EventInstance = director._task_guard
+	t.check(step != null and guard != null and guard.is_waiting(),
+			"the task offers a roadblock, guarded by a waiting guard")
+	if step == null or guard == null:
+		_tear_down(player, director, city)
+		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+		return
+	var touched: EventInstance = director._rider
+	var at := _beside(city.map, touched.body_position(), ContactPoint.body_reach(touched))
+	player.global_position = at
+	director._on_contact_completed(step.index)
+	t.check(director._task_guard == null and guard.is_finished,
+			"out of her view the waiting guard is taken out of the world")
+	var warning: PendingWarning = null
+	for pending in city.events.pending_warnings():
+		if pending.def.id == "robber_giving_chase":
+			warning = pending
+	t.check(warning != null and is_equal_approx(warning.def.warned_for(), Tuning.WARNING_ALONE_MAX)
+			and warning.def.arrives_chasing,
+			"and sent at her under a %.1fs badge, to arrive charging"
+			% (warning.def.warned_for() if warning else -1.0))
 	_tear_down(player, director, city)
 	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 

@@ -101,17 +101,27 @@ signal event_sighted(id: String)
 ## row's own `def.id`. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts
 ## visits".
 signal event_lit_unmet(id: String)
-## `EventInstance._chase()`'s own moment a pursuer stops merely waiting and turns to come for
-## her — see `EventDef.pursues_within`. `id` is the pursuer's own `def.id`; `VisitCounter` only
-## names `charging_dog`'s. Listen-only — see docs/TELEMETRY.md, "The page counts visits".
+# **A charge, counted on its own whatever the day does** *(inbox #764, the player: "Ending a day and
+# a charging counter are not the same thing"; "Charging is independent of an ended day")*. Each
+# signal below carries the charger's name, `EventInstance.charger_name()`: its row's own `def.id`,
+# or `charging_dog_tutorial` for the day-3 lesson's dog. `VisitCounter` sends a counter of its own
+# for every charger. Listen-only — see docs/TELEMETRY.md, "The page counts visits".
+
+## `EventInstance._chase()`'s own moment a pursuer that warns by radius
+## (`EventInstance.warns_by_radius()`) first notices her and starts warning: a warning, which she can
+## walk out of, rather than a charge, which `pursuit_began` is sent for. Once per instance.
+signal pursuit_warned(id: String)
+## `EventInstance._chase()`'s own moment a pursuer comes for her: its charge, the first frame of a
+## pursuer with no wait, or the end of the notice of one that sets off beside her. Once per instance.
 signal pursuit_began(id: String)
-## `EventInstance._be_done()`'s own moment a pursuit that had actually noticed her is over without
-## catching her. `shaken_off` is `EventInstance.gave_up` — `_chase()`'s own record of whether she
-## outran it (`Tuning.PURSUIT_SHAKEN_OFF`) rather than its `duration` simply running out. A catch
-## never fires it: one that ends the day goes through `hard_fail_triggered` instead and never
-## reaches `_be_done()`, so the two never both fire for the same chase, and a patrol car's man
-## who reached her and stopped her (`EventInstance.has_stopped_her()`) caught her too. Listen-only — see docs/TELEMETRY.md, "The page counts
-## visits".
+## A charge that caught her (`EventInstance.report_the_catch()`): a catch that ends the day, sent
+## ahead of `hard_fail_triggered` and beside it, or a patrol car's man stopping her, which does not.
+## Once per instance; the charge then sends no `pursuit_ended`.
+signal pursuit_caught(id: String)
+## `EventInstance._be_done()`'s own moment a charge that had begun is over without catching her.
+## `shaken_off` is `EventInstance.gave_up` — `_chase()`'s own record of whether she outran it
+## (`Tuning.PURSUIT_SHAKEN_OFF`) rather than its `duration` simply running out. Never for a charge
+## that caught her (`pursuit_caught`), so a charge that ends ends in exactly one of the three.
 signal pursuit_ended(id: String, shaken_off: bool)
 
 # Encounters and bouts of running, for the page's counter — `EncounterWatch`, which `EventManager`

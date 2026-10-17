@@ -27,7 +27,7 @@ func run(t) -> void:
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
 	_test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t)
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
-	_test_a_door_is_always_within_his_own_notice_from_his_line(t)
+	_test_she_has_to_run_to_the_door_once_he_charges(t)
 	_test_another_masked_man_comes_up_the_same_shaft(t)
 	_test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t)
 	_test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t)
@@ -1045,79 +1045,110 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 	events.free()
 	scene.free()
 
-## The counterplay he is built around, asked from **every** cell of his line rather than from the
-## one that happens to be nearest a door.
-##
-## *"Going into a corridor and letting them pass"* is only an answer if she can reach a corridor in
-## the notice he gives her, and he now comes again and again — so a stretch of shaft where the
-## nearest door is four seconds' walk away would be a stretch where the answer is not available at
-## all, however long the gap between his runs is. The margin is stated as his own
-## `telegraph_time` against `Tuning.WALK_SPEED`: he stands still for the whole of it
-## (`still_while_telegraphing`), so that is exactly the time she has before he moves at all, and he
-## then takes longer still to arrive.
-##
-## Distances are eight-connected walking distances with a diagonal step costing what a diagonal
-## step costs, because the flights are runs of diagonal cells and counting them as unit steps would
-## flatter the answer by 40%.
-func _test_a_door_is_always_within_his_own_notice_from_his_line(t: Node) -> void:
+## **She has to run to the door** *(inbox #764, the player: "player should have to run to the
+## door")*. He warns while she is in the stairwell and runs his line once she is within
+## `masked_pursuer.charges_within` of him (`EventInstance._warn_on_its_line()`), so where she meets
+## that distance is a fact of the escape as built: walking down the shaft toward the lobby, past the
+## first floor's door. Driven with the real man on the real shaft: she walks down his line from the
+## first floor's landing, and the frame he runs she turns for that door — the nearest off his line —
+## accelerating as she really does, at a walk or at a run. A walker is caught on the stairs; a runner
+## reaches the door and steps through it, clear of his reach.
+func _test_she_has_to_run_to_the_door_once_he_charges(t: Node) -> void:
+	const STEP := 1.0 / 60.0
 	var f := InteriorMap.build()
-	var scene := InteriorScene.new()
-	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 4242
-	events.setup(scene, rng)
-	var man: EventInstance = null
-	for instance in events.instances():
-		if instance.def.id == "masked_pursuer":
-			man = instance
-	t.check(man != null, "a masked man is on the stairs")
-	if man:
+	for speed: float in [Tuning.WALK_SPEED, Tuning.RUN_SPEED]:
+		var scene := InteriorScene.new()
+		t.add_child(scene)
+		var events := InteriorEvents.new()
+		t.add_child(events)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 4242
+		events.setup(scene, rng)
+		var man: EventInstance = null
+		for instance in events.instances():
+			if instance.def.id == "masked_pursuer":
+				man = instance
+		t.check(man != null, "a masked man is on the stairs")
+		if not man:
+			events.free()
+			scene.free()
+			return
 		var part := "stairwell_%s" % ("right" if events.burning_side() == "left" else "left")
-		var doors: Array[Vector2i] = []
-		for id: String in f.doors:
-			if id.begins_with("%s:" % part):
-				doors.append((f.doors[id] as InteriorMapPlan.Door).tile)
-		t.check(doors.size() == 4, "the shaft has its four doors to step through (%d)" % doors.size())
-		var to_a_door := _walk_distance_to_nearest(f, doors)
-		var worst := 0.0
-		var worst_at := Vector2i.ZERO
-		var asked := 0
-		for point in man.path:
-			var here := scene.world_to_tile(point)
-			if not to_a_door.has(here):
-				t.check(false, "no door is walkable from %s on his line" % here)
-				continue
-			asked += 1
-			var reach: float = to_a_door[here]
-			if reach > worst:
-				worst = reach
-				worst_at = here
-		t.check(asked == man.path.size(), "every cell of his line was asked (%d)" % asked)
-		var seconds := worst / Tuning.WALK_SPEED
-		t.check(seconds <= man.def.telegraph_time,
-				("the furthest cell of his line, %s, is %.0fpx from a door — %.2fs at %.0fpx/s "
-				% [worst_at, worst, seconds, Tuning.WALK_SPEED])
-				+ "against the %.2fs he stands still for" % man.def.telegraph_time)
-		print("The masked man's notice: worst cell on his line is %.0fpx from a door (%.2fs of %.2fs)"
-				% [worst, seconds, man.def.telegraph_time])
-	events.free()
-	scene.free()
+		var landing := scene.tile_to_world(f.waypoints["%s:landing_first" % part])
+		var door := scene.tile_to_world((f.doors["%s:landing_first" % part] as InteriorMapPlan.Door).tile)
+		var line := man.path
+		var cum: Array[float] = [0.0]
+		for i in range(1, line.size()):
+			cum.append(cum[i - 1] + line[i].distance_to(line[i - 1]))
+		var landing_at := 0.0
+		var nearest := INF
+		for i in line.size():
+			if line[i].distance_to(landing) < nearest:
+				nearest = line[i].distance_to(landing)
+				landing_at = cum[i]
+		var along := landing_at
+		var velocity := -Tuning.WALK_SPEED
+		var charged_at := INF
+		var caught := false
+		var through := false
+		var off := 0.0
+		var elapsed := 0.0
+		while elapsed < 20.0 and not caught and not through:
+			var her: Vector2
+			if off > 0.0:
+				off += speed * STEP
+				her = landing.lerp(door, minf(off / landing.distance_to(door), 1.0))
+				through = off >= landing.distance_to(door)
+			else:
+				if charged_at != INF:
+					velocity = move_toward(velocity, speed, Tuning.ACCELERATION * STEP)
+				var next := clampf(along + velocity * STEP, 0.0, cum[cum.size() - 1])
+				if charged_at != INF and next >= landing_at:
+					next = landing_at
+					off = 0.0001
+				along = next
+				her = _point_along(line, cum, along)
+			man.player_at = her
+			man._process(STEP)
+			elapsed += STEP
+			if charged_at == INF and not man.is_waiting() and not man.is_telegraphing():
+				charged_at = man.global_position.distance_to(her)
+			caught = man.is_lethal_at(her)
+		t.check(charged_at != INF and absf(charged_at - man.def.charges_within) < 4.0,
+				"he runs once she is within %.0fpx of him (%.0fpx)" % [man.def.charges_within, charged_at])
+		if speed == Tuning.WALK_SPEED:
+			t.check(caught and not through, "turning for the first floor's door at a walk, she is caught")
+		else:
+			t.check(through and not caught, "at a run she reaches it and steps through")
+		print("The masked man, at %.0fpx/s: charged at %.0fpx, %s at %.2fs" % [speed, charged_at,
+				"caught" if caught else ("through the door" if through else "neither"), elapsed])
+		events.free()
+		scene.free()
+
+## The point `along` px down `line` from its start, `cum` its running lengths.
+static func _point_along(line: PackedVector2Array, cum: Array[float], along: float) -> Vector2:
+	for i in range(1, line.size()):
+		if along <= cum[i]:
+			var span := cum[i] - cum[i - 1]
+			return line[i - 1].lerp(line[i], 0.0 if span <= 0.0 else (along - cum[i - 1]) / span)
+	return line[line.size() - 1]
 
 ## *"Then the pursuing guy should respawn forcing to switch the side again."*
 ##
 ## Driven through `InteriorEvents._physics_process()` and each instance's own `_process()`, the two
-## calls the running game makes every frame, with her standing on the shaft's top landing for the
-## whole run — inside `masked_pursuer.pursues_within` of its foot, so every man that appears
-## notices her and runs rather than waiting at the bottom for ever.
+## calls the running game makes every frame, with her standing on the lobby's door at the shaft's
+## foot for the whole run — off his line, clear of his reach, and inside
+## `masked_pursuer.charges_within` of where each man appears, so every man that appears notices her,
+## warns her and runs rather than waiting at the bottom for ever.
 ##
 ## Three contracts, and the second is what keeps the first fair:
 ##
 ## - **More than one of him over a section**, or "switch the side again" has nothing behind it.
-## - **Every one of them spends his whole notice standing still.** A respawned pursuer that
-##   inherited an old instance's clock would arrive at speed, which is the exact thing
-##   `still_while_telegraphing` exists to prevent, and no screenshot could ever catch it.
+## - **Every one of them warns her standing still before he runs.** Appearing with her already
+##   inside his charge distance, he warns for `Tuning.WARNING_ALONE_MAX` first
+##   (`EventInstance._warn_on_its_line()`); a respawned pursuer that inherited an old instance's
+##   state would arrive at speed, which is the exact thing `still_while_telegraphing` exists to
+##   prevent, and no screenshot could ever catch it.
 ## - **The gap is the stated one**, measured from him leaving the top of the shaft to the next one
 ##   appearing at the foot, rather than read off the constant.
 func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
@@ -1130,13 +1161,16 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 	rng.seed = 4242
 	events.setup(scene, rng)
 	var part := "stairwell_%s" % ("right" if events.burning_side() == "left" else "left")
-	var her := scene.tile_to_world(scene.waypoint(part))
+	var plan := InteriorMap.build()
+	var her := scene.tile_to_world((plan.doors["%s:landing_lobby" % part] as InteriorMapPlan.Door).tile)
 
 	var appeared: Array[float] = []
 	var left: Array[float] = []
 	var known := {}
 	var moved_while_telegraphing := 0
 	var first_step_age: Array[float] = []
+	# The age each man stopped waiting at: his warning's own start, since his notice clock is held.
+	var warned_at: Array[float] = []
 	var at := 0.0
 	while at < Tuning.FINALE_LENGTH_SECONDS:
 		events._physics_process(STEP)
@@ -1150,15 +1184,18 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 				known[id] = appeared.size()
 				appeared.append(at)
 				first_step_age.append(-1.0)
+				warned_at.append(INF)
 			var before := instance.global_position
 			var was_leaving := instance.is_leaving
 			instance._process(STEP)
 			var which: int = known[id]
+			if warned_at[which] == INF and not instance.is_waiting():
+				warned_at[which] = instance.age
 			if not before.is_equal_approx(instance.global_position):
 				if instance.is_telegraphing():
 					moved_while_telegraphing += 1
 				if first_step_age[which] < 0.0:
-					first_step_age[which] = instance.chase_age()
+					first_step_age[which] = instance.age - warned_at[which]
 			if instance.is_leaving and not was_leaving:
 				left.append(at)
 		at += STEP
@@ -1172,8 +1209,9 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 		if first_step_age[i] < 0.0:
 			continue
 		notices += 1
-		t.check(first_step_age[i] >= EventCatalogue.by_id("masked_pursuer").telegraph_time - STEP,
-				"man %d took his first step %.2fs in, after his whole notice" % [i, first_step_age[i]])
+		t.check(first_step_age[i] >= Tuning.WARNING_ALONE_MAX - STEP,
+				"man %d took his first step %.2fs into his warning, after the second it owes"
+				% [i, first_step_age[i]])
 	t.check(notices >= 2, "at least two of them actually ran (%d)" % notices)
 	var gaps := 0
 	for i in range(1, appeared.size()):
@@ -1197,9 +1235,9 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 ## Asked as a flood from her own door across the whole building, doors included, with **both of the
 ## things that actually close ground taken out of the walkable set**: the collapse, and every cell
 ## within the fire's own blocking reach. The masked man closes nothing — he is mobile and carries
-## no body — so what he owes is the door margin
-## `_test_a_door_is_always_within_his_own_notice_from_his_line` measures, and it is named here
-## rather than repeated.
+## no body — so what he owes is the run to the door
+## `_test_she_has_to_run_to_the_door_once_he_charges` measures, and it is named here rather than
+## repeated.
 ##
 ## Non-vacuous on purpose: both closures are counted, so a build where the fire stood somewhere
 ## harmless or the rubble was never laid would fail the guard rather than pass the flood.

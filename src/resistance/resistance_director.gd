@@ -1081,12 +1081,19 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 	var def := EventCatalogue.by_id(_trap_row_id(step))
 	if not def:
 		return
+	_send_at_her(def, is_at_a_front_door(step))
+
+## Sends `def` at her from off screen, warned first: its badge alone along a bearing fixed now, then
+## created just out of sight of her where its ground has a place (`_draw_arrival_position()`), as
+## `_trap` — a task's trap, and day 13's guard set on her from out of her view.
+func _send_at_her(def: EventDef, front_door: bool) -> void:
+	if not _city or not _city.events:
+		return
 	var her := _player_position()
 	if her == Vector2.INF:
 		her = contact_position()
 	if her == Vector2.INF:
 		return
-	var front_door := is_at_a_front_door(step)
 	var first := _draw_arrival_position(_rng, her, def, front_door)
 	if first[0] == Vector2.INF:
 		Telemetry.note("roll", "task handed over unguarded: no walkable ground out of sight of her "
@@ -2916,6 +2923,13 @@ func _move_the_task_guard_to_her_target() -> void:
 ## he closes on her (`DangerEdge`), and in view he is the guard she can already see. The chase keeps
 ## every pursuit rule — his notice before any lunge, his stand-off while it runs, a lunge only along
 ## a clear line. A guard already after her, or whose chase is over, is left as he is.
+##
+## **His warning is a second, seen or not** *(inbox #764, the player: "yes, we can do a 1s on screen
+## and 1s off-screen warning if they were not visible")*. In her view (`_guard_shows()`) he stands
+## where he is with his warning up for `Tuning.WARNING_ALONE_MAX` and then charges. Out of it he is
+## taken out of the world unseen and sent at her as a task's robber is
+## (`_send_at_her()`, `EventCatalogue.task_guard_sent()`): the screen-edge badge alone for the same
+## second, then he arrives charging from just out of sight.
 func _set_the_task_guard_on_her() -> void:
 	if not _task_guard or not is_instance_valid(_task_guard) or _task_guard.is_finished \
 			or not _task_guard.is_waiting():
@@ -2925,9 +2939,17 @@ func _set_the_task_guard_on_her() -> void:
 		her = _contact.global_position
 	if her == Vector2.INF:
 		return
-	_task_guard.notice_her_at(her)
-	Telemetry.note("roll", "the roadblock is done: the task's guard comes after her from %.0fpx away"
-			% _task_guard.global_position.distance_to(her))
+	if _guard_shows(_task_guard.global_position):
+		_task_guard.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
+		Telemetry.note("roll", "the roadblock is done: the task's guard, in her view, warns her and "
+				+ "comes after her from %.0fpx away" % _task_guard.global_position.distance_to(her))
+		return
+	var away := _task_guard.global_position.distance_to(her)
+	_city.events.retire(_task_guard)
+	_task_guard = null
+	Telemetry.note("roll", "the roadblock is done: the task's guard, out of her view %.0fpx away, "
+			% away + "is sent at her under a badge")
+	_send_at_her(EventCatalogue.task_guard_sent(), false)
 
 ## The live, unfinished event instance `key` names by its instance id, or null.
 static func _live_instance(key: Variant) -> EventInstance:

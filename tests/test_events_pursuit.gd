@@ -271,11 +271,12 @@ func _test_the_robbers_lunge_is_further_out_than_his_catch(t) -> void:
 func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 	var pursuers := 0
 	for def in EventCatalogue.all():
-		# A pursuer that sets off beside her is never sited by the director, so this rig's geometry
-		# is not its own; `tests/test_checkpoints.gd` walks `door_guard` at a door instead.
+		# A pursuer that sets off beside her, or charges at once at a door, is never sited by the
+		# director, so this rig's geometry is not its own; `tests/test_checkpoints.gd` walks
+		# `door_guard` at a door instead.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
 		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
-		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing:
+		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing or def.charges_at_once:
 			continue
 		pursuers += 1
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
@@ -353,7 +354,7 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 		# Sited beside her rather than by the director — see `_test_a_pursuer_leaves_room_to_answer`.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
 		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
-		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing:
+		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing or def.charges_at_once:
 			continue
 		var at_once := _answer_rig(def, 0.0)
 		t.check(not at_once["caught"],
@@ -410,7 +411,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 		# Sited beside her by construction, which is what its own stand-off rule answers.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
 		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
-		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing:
+		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing or def.charges_at_once:
 			continue
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 		var floor_lead := PendingWarning.least_distance()

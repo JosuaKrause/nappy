@@ -45,6 +45,10 @@ func run(t) -> void:
 	_test_pending_events_queue_until_present_and_flush_in_order(t)
 	_test_send_event_never_queues_when_it_may_never_send(t)
 	_test_a_chase_is_reported_once_however_the_pursuer_arrived(t)
+	_test_a_waiting_dog_is_counted_warned_then_chased(t)
+	_test_every_charger_has_its_own_counter(t)
+	_test_a_charge_ends_in_exactly_one_of_three(t)
+	_test_the_lesson_dog_has_its_own_set(t)
 	_test_the_pelican_is_its_own_entry(t)
 	_test_a_day_lost_to_the_pelican_names_the_pelican(t)
 	_test_encounters_and_runs_are_named_by_their_day_and_row(t)
@@ -206,7 +210,9 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	counter._on_event_sighted("burning_building")
 	counter._on_event_lit_unmet("burning_building")
 	counter._on_city_gone_dark()
+	counter._on_pursuit_warned("charging_dog")
 	counter._on_pursuit_began("charging_dog")
+	counter._on_pursuit_caught("alley_robbery")
 	counter._on_pursuit_ended("charging_dog", true)
 	counter._on_encounter_seen(1, "homeless_yeller")
 	counter._on_encounter_influenced(1, "homeless_yeller", true)
@@ -477,6 +483,177 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 		"created where its warning pointed, its chase is reported once (%s)" % [began])
 	warned.free()
 	EventBus.pursuit_began.disconnect(on_began)
+
+## **A waiting dog's warning is its own level below its charge** *(inbox #764, the player: dog-chased
+## implies the charge; a warning level of its own)*. Walked with the real `EventInstance` and the
+## real signals, read off `RecordingCounter`: the dog that waits past `Tuning.RUN_TAUGHT_DAY` sends
+## `dog-warned` once when it starts warning her, nothing for a warning she walks out of or a second
+## warning, and `dog-chased` only at its charge; the alley robber's warning sends his own
+## `alley-robbery-warned`.
+func _test_a_waiting_dog_is_counted_warned_then_chased(t) -> void:
+	var counter := RecordingCounter.new()
+	var listening := _listen(counter)
+	var day := GameState.day
+	var def := EventScheduler._for_day(EventCatalogue.by_id("charging_dog"), Tuning.RUN_TAUGHT_DAY + 1)
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	var dog := _charger(t, def)
+	_walk(dog, Vector2(def.pursues_within - 10.0, 0.0), 1.0)
+	t.check(counter.sent == ["nappy-day-%d-dog-warned" % day],
+		"warning her, the dog is counted warned and not chased (%s)" % [counter.sent])
+	_walk(dog, Vector2(def.pursues_within + 10.0, 0.0), 0.5)
+	_walk(dog, Vector2(def.pursues_within - 10.0, 0.0), 0.5)
+	t.check(counter.sent.size() == 1, "walked out of and back into, it is not counted again (%s)"
+		% [counter.sent])
+	_walk(dog, Vector2(standoff - 2.0, 0.0), 0.2)
+	t.check(counter.sent == ["nappy-day-%d-dog-warned" % day, "nappy-day-%d-dog-chased" % day],
+		"its charge is counted chased (%s)" % [counter.sent])
+	dog.free()
+	counter.sent.clear()
+	var robber := _charger(t, EventCatalogue.by_id("alley_robbery"))
+	_walk(robber, Vector2(170.0, 0.0), 1.0 / 60.0)
+	t.check(counter.sent == ["nappy-day-%d-alley-robbery-warned" % day],
+		"the robber's warning is counted under his own name (%s)" % [counter.sent])
+	robber.free()
+	_unlisten(listening)
+	counter.free()
+
+## **Every charger has a counter of its own, named by its row** *(inbox #764, the player: "Ending a
+## day and a charging counter are not the same thing")*, the dog keeping its `dog-*` names and the
+## day-3 lesson's dog its own `dog-tutorial-*`.
+func _test_every_charger_has_its_own_counter(t) -> void:
+	var names := {"charging_dog": "dog", "charging_dog_tutorial": "dog-tutorial",
+			"alley_robbery": "alley-robbery", "roadblock": "roadblock", "door_guard": "door-guard",
+			"robber_giving_chase": "robber-giving-chase",
+			"van_guard_giving_chase": "van-guard-giving-chase",
+			"policeman_giving_chase": "policeman-giving-chase",
+			"guardsman_giving_chase": "guardsman-giving-chase"}
+	for id: String in names.keys():
+		t.check(VISIT_COUNTER_SCRIPT.charger_counter_name(id) == names[id],
+			"'%s' is counted as '%s'" % [id, VISIT_COUNTER_SCRIPT.charger_counter_name(id)])
+	var counter := RecordingCounter.new()
+	var day := GameState.day
+	counter._on_pursuit_began("door_guard")
+	counter._on_pursuit_caught("door_guard")
+	counter._on_pursuit_began("policeman_giving_chase")
+	counter._on_pursuit_ended("policeman_giving_chase", true)
+	t.check(counter.sent == ["nappy-day-%d-door-guard-chased" % day,
+			"nappy-day-%d-door-guard-caught" % day,
+			"nappy-day-%d-policeman-giving-chase-chased" % day,
+			"nappy-day-%d-policeman-giving-chase-shaken" % day],
+		"each charger's charge and its end go under its own name (%s)" % [counter.sent])
+	counter.free()
+
+## **A charge ends in exactly one of caught, shaken off and outlasted, whatever the day does**
+## *(inbox #764, the player: "Charging is independent of an ended day")*. The real instance and
+## signals, for a sent robber, who charges from his first frame: caught (`report_the_catch()`, what
+## `EventManager._check_hard_fails()` and a patrol car's man stopping her call) and then finished
+## anyway, as a day that goes on under `--invincible` would; run off; and walked away from until his
+## clock runs out. Each sends `-chased` and then one end, and a catch said twice is counted once.
+func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
+	var counter := RecordingCounter.new()
+	var listening := _listen(counter)
+	var day := GameState.day
+	var def := EventCatalogue.by_id("robber_giving_chase")
+	var name := "nappy-day-%d-robber-giving-chase-" % day
+
+	var caught := _charger(t, def)
+	_walk(caught, Vector2(300.0, 0.0), 0.2)
+	caught.report_the_catch()
+	caught.report_the_catch()
+	caught._be_done()
+	t.check(counter.sent == [name + "chased", name + "caught"],
+		"caught, it is counted caught once and never also outlasted (%s)" % [counter.sent])
+	caught.free()
+
+	counter.sent.clear()
+	var shaken := _charger(t, def)
+	var step := 1.0 / 60.0
+	var her := Vector2(300.0, 0.0)
+	for i in int(round(3.0 / step)):
+		her.x += Tuning.RUN_SPEED * step
+		shaken.player_at = her
+		shaken.player_running = true
+		shaken._process(step)
+		if shaken.is_leaving:
+			break
+	t.check(counter.sent == [name + "chased", name + "shaken"],
+		"run off, it is counted shaken (%s)" % [counter.sent])
+	shaken.free()
+
+	counter.sent.clear()
+	var outlasted := _charger(t, def)
+	for i in int(round((def.telegraph_time + def.duration + 1.0) / step)):
+		outlasted.player_at = outlasted.global_position + Vector2(400.0, 0.0)
+		outlasted._process(step)
+		if outlasted.is_leaving:
+			break
+	t.check(counter.sent == [name + "chased", name + "outlasted"],
+		"its clock run out, it is counted outlasted (%s)" % [counter.sent])
+	outlasted.free()
+	_unlisten(listening)
+	counter.free()
+
+## **The day-3 lesson's dog has its own set and not the dog's** *(PLAYTEST-141: "we need to record
+## like dog tutorial")*: `EventInstance.is_the_lesson`, which `EventManager._create()` sets on the
+## first dog it makes on `Tuning.RUN_TAUGHT_DAY`, names its charge `dog-tutorial-*`; a second dog
+## that day is an ordinary `dog`.
+func _test_the_lesson_dog_has_its_own_set(t) -> void:
+	var counter := RecordingCounter.new()
+	var listening := _listen(counter)
+	var day := GameState.day
+	var def := EventCatalogue.by_id("charging_dog")
+	var lesson := _charger(t, def)
+	lesson.is_the_lesson = true
+	t.check(lesson.charger_name() == "charging_dog_tutorial", "the lesson's dog is named apart")
+	_walk(lesson, Vector2(400.0, 0.0), def.telegraph_time + 0.5)
+	lesson.report_the_catch()
+	t.check(counter.sent == ["nappy-day-%d-dog-tutorial-chased" % day,
+			"nappy-day-%d-dog-tutorial-caught" % day],
+		"it sends its own set, and none of the dog's (%s)" % [counter.sent])
+	lesson.free()
+	counter.sent.clear()
+	var later := _charger(t, def)
+	_walk(later, Vector2(400.0, 0.0), def.telegraph_time + 0.5)
+	t.check(counter.sent == ["nappy-day-%d-dog-chased" % day],
+		"a dog that is not the lesson's is an ordinary dog (%s)" % [counter.sent])
+	later.free()
+	_unlisten(listening)
+	counter.free()
+
+## Connects `counter` to the four charging signals, as the real counter is; answers what
+## `_unlisten()` takes.
+func _listen(counter: Node) -> Array[Callable]:
+	var calls: Array[Callable] = [
+		func(id: String) -> void: counter._on_pursuit_warned(id),
+		func(id: String) -> void: counter._on_pursuit_began(id),
+		func(id: String) -> void: counter._on_pursuit_caught(id),
+		func(id: String, shaken_off: bool) -> void: counter._on_pursuit_ended(id, shaken_off)]
+	EventBus.pursuit_warned.connect(calls[0])
+	EventBus.pursuit_began.connect(calls[1])
+	EventBus.pursuit_caught.connect(calls[2])
+	EventBus.pursuit_ended.connect(calls[3])
+	return calls
+
+func _unlisten(calls: Array[Callable]) -> void:
+	EventBus.pursuit_warned.disconnect(calls[0])
+	EventBus.pursuit_began.disconnect(calls[1])
+	EventBus.pursuit_caught.disconnect(calls[2])
+	EventBus.pursuit_ended.disconnect(calls[3])
+
+## A charger at the origin, in the tree, stepped by hand.
+func _charger(t: Node, def: EventDef) -> EventInstance:
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	t.add_child(instance)
+	instance.set_process(false)
+	return instance
+
+## Steps `instance` for `seconds` with her held at `her`.
+func _walk(instance: EventInstance, her: Vector2, seconds: float) -> void:
+	var step := 1.0 / 60.0
+	for i in maxi(1, int(round(seconds / step))):
+		instance.player_at = her
+		instance._process(step)
 
 ## The pelican's own four moments, each its own day-numbered event *(inbox #527 in azure-tapir, the player: "when
 ## the pelican spawns, when it's on screen, and when it's hitting the player. it must appear as its

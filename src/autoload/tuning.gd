@@ -2028,9 +2028,10 @@ const WARNING_ALONE_MAX := 1.0
 ##
 ## **Two other kinds of pursuer are owed something else.** A sent robber or guard has no approach:
 ## its badge is the notice, and an offscreen run can shake it off. A pursuer that sets off beside her
-## (the man a vehicle lets out, the door guard) is the badge's kind too: it exists only to charge
-## her, and what she is owed is the indicator that it is about to, for at least the off-screen
-## charger's `OFFSCREEN_WARNING_MIN` (inbox #764). A pursuer that waited for her warns by radius
+## (the man a vehicle lets out) is the badge's kind too: it exists only to charge her, and what she
+## is owed is the indicator that it is about to, for at least the off-screen charger's
+## `OFFSCREEN_WARNING_MIN` (inbox #764). A door's guard owes none of his own: his warning came
+## before he was set on her (`EventDef.charges_at_once`). A pursuer that waited for her warns by radius
 ## rather than by any clock (`EventInstance.warns_by_radius()`): it charges only when she crosses
 ## its stand-off, so this floor bounds nothing it does.
 const PURSUIT_MIN_NOTICE := 1.5
@@ -2648,10 +2649,10 @@ const FINALE_DISTANT_FLASH_SHAPE_B := 12.343
 ##
 ## **Stated against what one run costs her rather than against a feeling.** A shaft is three floors
 ## of eight tiles (768px) and he runs it at `HEAT_HUNTS_SPEED` (130px/s), so a run is about six
-## seconds, and he spends `masked_pursuer.telegraph_time` (3.6s) standing at the foot before it.
-## Six seconds of nothing against that is a shaft that is his about two thirds of the time: long
-## enough that stepping out of a door and straight back in is a real answer, short enough that
-## waiting one out and strolling down is not. It is a first number and the one to move if the
+## seconds, and before it he stands at the foot with his hand raised until she comes within
+## `masked_pursuer.charges_within` of him. Six seconds of nothing between his runs is long enough
+## that stepping out of a door and straight back in is a real answer, short enough that waiting one
+## out and strolling down is not. It is a first number and the one to move if the
 ## shaft reads as either a corridor with a man in it or a corridor with a man near it.
 const FINALE_PURSUER_RESPAWN_SECONDS := 6.0
 

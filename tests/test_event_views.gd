@@ -145,7 +145,7 @@ func run(t) -> void:
 	_test_the_day_3_dog_gallops_through_its_approach(t)
 	_test_the_robber_waits_walks_alert_and_lunges(t)
 	_test_the_roadblock_guard_raises_his_hand_at_his_post(t)
-	_test_the_door_guard_raises_his_hand_where_he_stepped_out(t)
+	_test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t)
 	_test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t)
 	_test_no_guard_who_arrives_charging_takes_the_alert(t)
 	_test_vehicle_views_match_facings_csv_per_sector(t)
@@ -550,21 +550,23 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 	t.check(instance.is_waiting() and instance._stands_still_now()
 			and instance.masked_pursuer_pictures() == EventInstance.GUARD_STANDING_BY_VIEW,
 			"waiting at the foot of the shaft he is drawn standing")
-	# Inside `pursues_within` (900px) along a clear line: one step notices her.
-	instance.player_at = Vector2(0.0, def.pursues_within - 100.0)
+	# Inside `pursues_within` (900px), outside `charges_within`: one step notices her, and he warns
+	# for as long as she stays there, longer than his `telegraph_time`.
+	instance.player_at = Vector2(0.0, def.charges_within + 100.0)
 	instance._process(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he has noticed her")
 	var alert := true
-	for i in int(round((def.telegraph_time - 0.05) / STEP)):
+	for i in int(round((def.telegraph_time + 2.0) / STEP)):
 		alert = alert and instance._stands_still_now() \
 				and instance.masked_pursuer_pictures() == EventInstance.GUARD_ALERT_BY_VIEW
 		instance._process(STEP)
-	t.check(alert, "and spends the whole notice standing with his hand raised")
+	t.check(alert, "and stands with his hand raised for as long as she stays out of his reach")
+	instance.player_at = Vector2(0.0, def.charges_within - 10.0)
 	for i in int(round(0.1 / STEP)):
 		instance._process(STEP)
 	t.check(not instance.is_telegraphing() and not instance._stands_still_now()
 			and instance.masked_pursuer_pictures() == EventInstance.GUARD_LUNGING_BY_VIEW,
-			"once the notice is over he is drawn lunging")
+			"once she comes within his charge distance he is drawn lunging")
 	instance.free()
 
 # ----------------------------------------------------------- every charger's three stages ---
@@ -738,27 +740,27 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 			"then she crosses his stand-off and he lunges")
 	guard.free()
 
-func _test_the_door_guard_raises_his_hand_where_he_stepped_out(t) -> void:
+func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> void:
+	# The warning is the hut's guard's, drawn while she is near the raised boom
+	# (`EventInstance.guard_warns_her`, set by `EventManager._warn_at_the_doors()`); the man set on
+	# her when she goes under it charges from his first frame (`EventDef.charges_at_once`).
 	var def := EventCatalogue.by_id("door_guard")
+	t.check(def.charges_at_once and is_zero_approx(def.telegraph_time),
+			"the door guard owes no notice of his own")
 	var guard := EventInstance.new()
-	guard.setup(def, Vector2(32.0, 48.0))
-	# She walks away from him through his notice: once she is past his stand-off a pursuer that
-	# sets off beside her would follow; standing for his notice, he does not.
-	var her := Vector2(1.0, 0.0)
-	var still := true
-	var alert := true
-	for i in int(round((def.telegraph_time - 0.1) / STEP)):
-		her.x += Tuning.WALK_SPEED * STEP
-		_hold(guard, her, STEP)
-		still = still and guard.global_position.is_equal_approx(Vector2(32.0, 48.0))
-		alert = alert and guard.masked_pursuer_pictures() == EventInstance.GUARD_ALERT_BY_VIEW
-	t.check(alert, "the door guard holds his hand raised for his whole notice")
-	t.check(still, "and stands where he stepped out while she walks away")
-	_hold(guard, her, 0.2)
-	t.check(not guard.is_telegraphing()
+	guard.setup(def, Vector2(32.0, 80.0))
+	_hold(guard, Vector2(1.0, 0.0), STEP)
+	t.check(not guard.is_telegraphing() and not guard.is_standing_for_its_notice()
 			and guard.masked_pursuer_pictures() == EventInstance.GUARD_LUNGING_BY_VIEW,
-			"then he lunges")
+			"set on her, he lunges from his first frame")
 	guard.free()
+	var hut := EventInstance.new()
+	hut.setup(EventCatalogue.by_id("checkpoint_hut"), Vector2.ZERO)
+	hut.guard_warns_her = true
+	t.check(hut.guard_warns_her and EventInstance.GUARD_ALERT_BY_VIEW["front"] \
+			in EventInstance.family_sources(EventDef.Look.CHECKPOINT_HUT),
+			"and the hut's guard has his raised hand to warn her with")
+	hut.free()
 
 ## **The man a vehicle lets out raises his hand and stands still, then charges.** *(Inbox #764, the
 ## player: van guardsmen about to charge hold up their hands; events that spawn with the sole purpose

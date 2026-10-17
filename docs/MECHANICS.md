@@ -1062,7 +1062,7 @@ pursuer holds the ground a pursuer that sets off beside her holds (`EventDef.set
 it stands while she is nearer than the stand-off, follows at the stand-off once she is further, and
 lunges the moment she is back at the full stand-off with the line clear. A pursuer that stands for
 its notice (`EventDef.stands_for_its_notice`: the dog that waited, the hunting roadblock's guard,
-the door guard) follows nowhere: it stands where it is and lunges the same way. **A pursuer that
+the man a vehicle lets out) follows nowhere: it stands where it is and lunges the same way. **A pursuer that
 waited for her has no notice clock** (`EventInstance.warns_by_radius()`): it charges only when she
 crosses its stand-off along a clear line, so the chase starts from the full stand-off however she
 came, and where the wall keeps the line from clearing until she is out of its radius, it never

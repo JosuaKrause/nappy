@@ -213,7 +213,7 @@ static func _indoor_fire() -> EventDef:
 ## and the rubble shuts the right one off the top floor, so the walk is left, across a hallway,
 ## right — and a man who was spent after one run left the second half of that with nothing in it.
 ## `_send_the_masked_man_again()` owns the clock; this is only the placement, called again with a
-## fresh instance each time so the telegraph, the wait and the line are the ones the first man had.
+## fresh instance each time so the wait, the warning and the line are the ones the first man had.
 ##
 ## **His path is the staircase itself**, asked of the map rather than drawn between the two
 ## landings: the landings alternate between the grammar's two `F` columns, so a straight line from
@@ -472,9 +472,10 @@ func _retire_finished() -> void:
 ## is processing at all (see `stand_down()`).
 ##
 ## **A fresh instance rather than a rewound one**, which is what keeps him fair: a new
-## `EventInstance` waits at the foot until she is within `masked_pursuer.pursues_within` and then
-## spends its whole `telegraph_time` standing there before it moves, so every run he makes gives
-## the same notice the first one did. Resuming an old instance would hand her a man already at
+## `EventInstance` waits at the foot until she is within `masked_pursuer.pursues_within`, then warns
+## her standing there with his hand raised until she comes within `charges_within` of him — for at
+## least `Tuning.WARNING_ALONE_MAX` if she was already that near when he appeared
+## (`EventInstance._warn_on_its_line()`) — so every run he makes gives the warning the first one did. Resuming an old instance would hand her a man already at
 ## speed, which is the one thing `still_while_telegraphing` exists to prevent.
 func _send_the_masked_man_again(delta: float) -> void:
 	if _pursuer != null:
