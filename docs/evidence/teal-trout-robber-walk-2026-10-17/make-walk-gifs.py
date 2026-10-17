@@ -6,8 +6,8 @@ Usage: uv run python make-walk-gifs.py --repo REPO_ROOT --spec walk-v1.json --go
 Each frame is a sheet from ../teal-trout-views-2026-10-17/render-sheet.gd (the engine's own SVG
 parser, the sidewalk's ground colour, one block per scale stacked top to bottom); Pillow, already
 in the repository's Python environment, joins each view's two sheets into a GIF that alternates
-them every `frame_ms` milliseconds, forever. FRESH_DIR must not exist: a delivered GIF is never
-overwritten.
+them every `frame_ms` milliseconds, forever, named with the spec's `version` (v1 when
+absent). FRESH_DIR must not exist: a delivered GIF is never overwritten.
 """
 
 import argparse
@@ -66,7 +66,7 @@ def main() -> int:
         if len({image.size for image in sheets}) != 1:
             print(f"{view}: the frames' sheets differ in size, so the cycle would jump", file=sys.stderr)
             return 1
-        gif = out / f"robber-walk-{view}-v1.gif"
+        gif = out / f"robber-walk-{view}-{spec.get('version', 'v1')}.gif"
         sheets[0].save(
             gif, save_all=True, append_images=sheets[1:], duration=spec["frame_ms"], loop=0, disposal=1, optimize=False
         )

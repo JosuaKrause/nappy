@@ -10,6 +10,7 @@ to right: **waiting** (`art/events/robber_waiting_side.svg`), **alert A**, the o
 
 Rendered from `robber-side-choice-v1.json` with the second sheet's
 `docs/evidence/teal-trout-views-2026-10-17/render-sheet.gd` (its README gives the command), Godot
-4.7's own SVG parser, at commit a87a0a05. The recipe names the paths the two alerts had at that commit, so it is
+4.7's own SVG parser, at commit a87a0a05. `robber-side-choice-v1.png` has the SHA-256
+`67e2983b55634124184179db932684c66746182a2f37af3c9dd817bd4893f5f5`. The recipe names the paths the two alerts had at that commit, so it is
 rerun there. The player read A and B as the two frames of his walk while he warns
 ([teal-trout-robber-walk-2026-10-17](../teal-trout-robber-walk-2026-10-17/README.md)).
