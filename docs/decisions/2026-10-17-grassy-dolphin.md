@@ -5,7 +5,8 @@ floor down from what it was before breaking the escape sequence left right left 
 before. The steam should have a stronger impact." Asked how strong, the player (inbox #747): "steam
 should be 40 to 50."
 
-**The fire was never moved by a change.** Since M102 `InteriorEvents._place_the_fire()` put the fire
+**The fire was never moved by a change.** Since M165 (commit 849c5334)
+`InteriorEvents._place_the_fire()` put the fire
 in the left shaft and rolled its floor between the two `InteriorScene.inner_floor_approaches()`:
 the second floor's, which shuts the flight from 2 to 1 and makes the walk left (3 to 2), right (2 to
 1), left (1 to the lobby), and the first floor's, which leaves only left then right. 976 of 2000
