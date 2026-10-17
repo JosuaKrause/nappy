@@ -378,27 +378,34 @@ var _camera_easing_back := false
 ## back to, so the setting lives in the scene and never in two places.
 var _camera_smoothing_when_free := true
 
-func _ready() -> void:
-	add_to_group("player")
-	# Three references rather than a load: `main`'s boot has already taken every one of these
-	# pages and holds them for the life of the process, so each of these only bumps a count that
-	# proves the page is there while she draws from it. **The parent is read once, here**, and
-	# `_exit_tree()` gives back the same one — `is_male` is bound before she enters the tree
-	# (`main._make_player()`) and `docs/GRAPHICS.md` holds it fixed for the run, so the two can
-	# never name different pages.
+## Takes her three groups each time she enters the tree, the other half of `_exit_tree()`'s
+## release. **On entering, not in `_ready()`**, because she can leave the tree and come back:
+## the escape moves her from the building to the city (`main._build_the_finale_city()`), and
+## `_ready()` runs only once in a node's life while `_exit_tree()` runs on every exit, so a pair
+## split across the two gave her pages back once more than it took them (the rule
+## `Building._enter_tree()` states for the same reason). Three references rather than a load:
+## `main`'s boot has already taken every one of these pages and holds them for the life of the
+## process, so each of these only bumps a count that proves the page is there while she draws
+## from it. **The parent is read here**, and `_exit_tree()` gives back the same one — `is_male`
+## is bound before she enters the tree (`main._make_player()`) and `docs/GRAPHICS.md` holds it
+## fixed for the run, so the two can never name different pages.
+func _enter_tree() -> void:
 	_parent_atlas = parent_atlas(is_male)
 	AtlasLibrary.acquire(_parent_atlas)
 	AtlasLibrary.acquire(STROLLER_ATLAS)
 	AtlasLibrary.acquire(INDICATOR_ATLAS)
+
+func _ready() -> void:
+	add_to_group("player")
 	if _pram_collision:
 		_pram_collision.disabled = carrying
 	# Read off the scene rather than written down here, so the camera's own smoothing stays a
 	# property of the camera and a focus can switch it off without owning the default.
 	_camera_smoothing_when_free = _camera.position_smoothing_enabled
 
-## Hands all three of her groups back — the other half of `_ready()`'s own acquire. **A reference
-## taken and never released is a page held at shutdown**, so nothing here waits for it to be asked
-## for again. A second rig alive at the same time would simply hold a second reference on the same
+## Hands all three of her groups back — the other half of `_enter_tree()`'s own acquire. **A
+## reference taken and never released is a page held at shutdown**, so nothing here waits for it
+## to be asked for again. A second rig alive at the same time would simply hold a second reference on the same
 ## page rather than lose it, since `AtlasLibrary` counts references rather than owners; there is
 ## never more than one of her in a running game. In the running game none of these three drops a
 ## page: the boot's own residency is still holding each of them underneath her.

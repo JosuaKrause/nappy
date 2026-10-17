@@ -48,8 +48,12 @@ built. The building's pictures and its fade stay.
 - `run-170256-seed4216201080-v0.28.0-4-g2148e837/` is the player's run, kept under its own name. It
   was built from `v0.28.0-4-g2148e837`, which is commit `2148e837`, `main` at PR #774. It was
   booted with `--start-escape` (so day 1) and played through the building into the city.
-  - `run.log` is the whole log. The `plan` line matches the reproduction's plan exactly, and the
-    `blocked` line (pressed 0°, north, for 1.0s at 75,27 without moving) is the wall. The roadblock
+  - `run.log` is the whole log. Its `plan` line (`tunnel via 3 calm, 119 cells | bridge via 3
+    calm, 177 cells | 33 open streets, 642 placements`) is the one `main` prints when the test
+    boots it on the same seed and day. The plans the test and the sweep make themselves match it
+    in chains, cells and streets, with fewer placements (561), because they plan without the
+    events (`FinalePlanner.plan(..., false)`), and the chains, cells and streets are all they read.
+    The `blocked` line (pressed 0°, north, for 1.0s at 75,27 without moving) is the wall. The roadblock
     chase before it is the context for #771.
   - `asked/002-attempt1-asked.png` is the player's still: 74,27, speed 0.0, 148.9s left, open
     sidewalk ahead.

@@ -728,9 +728,10 @@ func clear_fade() -> void:
 ## solid along the city's whole width, so left in place they are a wall across the city that
 ## nothing draws (inbox #777). Only the blockers go: the building's pictures stay, under the city's
 ## own, and so does its fade, which `clear_fade()` still lifts over the street. Freed at once
-## rather than queued, so no physics frame of the city section runs with them in it; the caller is
-## the exit's own tween callback, never a physics query. Nothing walks the building again on this
-## boot — a lost city section starts the city again — so nothing rebuilds them.
+## rather than queued, so nothing else in this same call, the city's build and its first streaming
+## pass included, finds them in the space; the caller is the exit's own tween callback, never a
+## physics query. Nothing walks the building again on this boot — a lost city section starts the
+## city again — so nothing rebuilds them.
 func take_the_walls_out() -> void:
 	if _collision == null:
 		return

@@ -38,8 +38,13 @@ func run(t) -> void:
 	t.get_tree().process_frame.emit()
 	t.check(main._interior != null, "the boot stands in the building")
 	main._on_finale_summary_continued()
+	var before := _her_page_counts(main._player)
 	main._interior.exit_requested.emit()
 	main._on_finale_summary_continued()
+	var after := _her_page_counts(main._player)
+	t.check(after == before,
+			"walking her out into the city leaves her pages' counts as they were (%s, then %s)"
+			% [before, after])
 	t.check(main._city != null and main._finale.section == FinaleController.Section.CITY,
 			"and the service door has put her in the city")
 	if main._city != null:
@@ -48,15 +53,10 @@ func run(t) -> void:
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
-	# Without it, `tests/test_run_checkpoints.gd` run after this suite boots `main.tscn` into
-	# engine errors ("Atlas group 'ui' was read from disk outside a loading window", "Released
-	# atlas group 'father' that was not acquired"): this escape boot leaves its held pages behind.
-	# Nothing of this boot is left in the tree, so dropping every page desyncs no live consumer.
-	AtlasLibrary.reset_for_tests()
 	GameState.escape_section = saved_section
 
-## The player's own moment: on the sidewalk at 74,27 with the street open ahead of her, a step north
-## goes nowhere.
+## The player's own moment: on the sidewalk at 74,27, with the street open ahead of her, a step
+## north is not stopped.
 func _test_she_can_walk_north_from_where_the_player_stood(t, main: Node2D) -> void:
 	var player: Stroller = main._player
 	var city: City = main._city
@@ -109,6 +109,15 @@ func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) ->
 	t.check(foreign == 0,
 			"no body outside the city stands on them (%d of %d tiles, under %s; first %s)"
 			% [foreign, asked, owners.keys(), first])
+
+## Her three pages' reference counts — the parent's, the stroller's and the `ui` page — in that
+## order. **The walk-out moves her from the building to the city**, out of the tree and back in,
+## and a page taken once but given back on every exit leaves the next boot in the same process
+## reading it from disk outside the loading window.
+static func _her_page_counts(player: Stroller) -> Array[int]:
+	return [AtlasLibrary.reference_count(Stroller.parent_atlas(player.is_male)),
+			AtlasLibrary.reference_count(Stroller.STROLLER_ATLAS),
+			AtlasLibrary.reference_count(Stroller.INDICATOR_ATLAS)]
 
 ## `body`'s path below `main`, so a failure names the subtree the body belongs to.
 static func _owner_path(main: Node, body: Object) -> String:
