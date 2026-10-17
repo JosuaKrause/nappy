@@ -11,7 +11,8 @@ its rest and alert need theirs before they are wired in, or the dog changes styl
 stages; the illustrated-png rules apply to them.
 Evidence is a clip of the dog waiting, warning and charging, from the audit's `dog.json` recipe.
 
-**Where it stands.** The dog's rest (`charging_dog_resting*`) and alert (`charging_dog_alert*`) is drawn in all five views and approved as drawn
-([teal-trout-3](../../decisions/2026-10-11-teal-trout-3.md)), not wired into the game. Left: the
-answers to the questions that record leaves open (the review item), then the wiring, its tests and
-its clip.
+**Where it stands.** The dog's rest (`charging_dog_resting*`) and alert (`charging_dog_alert*`) is drawn in all five views, not wired into the game
+([teal-trout-3](../../decisions/2026-10-11-teal-trout-3.md)). The front and side were approved on
+PR #726; the back and diagonals wait on the player's look. Left: the player's look at the back and diagonal views and the answers to the questions that record
+leaves open (the review item), the ten comic transfers of those pictures, then the
+wiring, its tests and its clip.

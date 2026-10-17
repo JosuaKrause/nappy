@@ -7,7 +7,7 @@ a held boom or past an alley post, one guard at a time. *Proposed, not asked for
 guards already standing at the hut's posts, his alert is the new alert pose held for his notice
 after he steps out, and his charge is the lunge.
 
-**Where it stands.** The guards' alert (`guard_alert_*`) is drawn in all five views and approved as drawn
-([teal-trout-3](../../decisions/2026-10-11-teal-trout-3.md)), not wired into the game. Left: the
-answers to the questions that record leaves open (the review item), then the wiring, its tests and
-its clip.
+**Where it stands.** The guards' alert (`guard_alert_*`) is drawn in all five views, not wired into the game
+([teal-trout-3](../../decisions/2026-10-11-teal-trout-3.md)). The front and side were approved on
+PR #726; the back and diagonals wait on the player's look. Left: the player's look at the back and diagonal views and the answers to the questions that record
+leaves open (the review item), then the wiring and its tests.
