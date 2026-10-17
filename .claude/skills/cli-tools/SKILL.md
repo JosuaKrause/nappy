@@ -5,8 +5,8 @@ description: What every command-line entry point owes — help on --help and -h,
 
 # Command-line entry points
 
-**Everything reachable from a shell [prints help and refuses what it does not
-understand](../../../docs/decisions/2026-09-11-M100-small-real-and-nobodys-every-command-line-entry-point-owes-help.md).**
+**Everything reachable from a shell prints help and refuses what it does not
+understand** (M100-small-real-and-nobodys-every-command-line-entry-point-owes-help).
 That is every script in `tools/`,
 shell or Python, and the game's own dev-flag surface behind `tools/run.sh`, `tools/shot.sh` and the
 web build's query string.

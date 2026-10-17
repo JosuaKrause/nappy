@@ -64,7 +64,7 @@ or edge correction. The reproducible accepted example is
 
 The one programmatic limb repaint in the dog families is a seam the player asked for by name:
 the black line between the body and the lighter hind leg in the side dog's opposite step,
-[removed as a recipe step](../../../../docs/playtests/2026-09-27-dotted-panda.md#statements) so
+removed as a recipe step (dotted-panda) so
 that it stays reproducible, while the darker hind leg, which needs it, keeps its line. It is not a general permission. A seam like it is done only
 on the player's request for that seam, as a named step of the family's own recipe: a fixed box
 in the registered plane that bounds every changed pixel, a stated operation inside it, a build

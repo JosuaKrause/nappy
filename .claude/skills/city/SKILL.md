@@ -111,9 +111,9 @@ is the crowd, the danger is the events, the shape is the closures. A noisy roadw
 as the `construction` event. **Do not let a closure emit**; it would be a third thing for
 `City.total_excitement_at` to sum, and that list is exactly two long on purpose.
 
-**One seal is loud, and it is the shape of the exception that matters.** `car_accident` is [solid
+**One seal is loud, and it is the shape of the exception that matters.** `car_accident` is solid
 only where its two cars
-are](../../../docs/playtests/PLAYTEST-63.md#a-car-crash-is-solid-where-its-picture-is-empty), so its picture's own
+are (PLAYTEST-63), so its picture's own
 gaps are walkable and `Tuning.CAR_ACCIDENT_INTENSITY` is what stands in them, an excitement field
 that keeps her from walking past. **That is a catalogue row
 emitting, not a closure emitting** — a seal is an `EventDef`, so nothing is added to the sum. A

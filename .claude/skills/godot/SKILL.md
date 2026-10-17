@@ -54,8 +54,8 @@ one of those feature families, follow
 [Turning a module back on](../../../tools/web-template/README.md#turning-a-module-back-on).
 
 **Never tie a feature straight to the environment. Tie it to a flag the environment *informs*, and
-leave the override**, so that, for one, [telemetry can be had when it is
-needed](../../../docs/playtests/PLAYTEST-25.md#the-cause-found-and-reproduced).
+leave the override**, so that, for one, telemetry can be had when it is
+needed (PLAYTEST-25).
 
 So `OS.has_feature("web")`, `OS.is_debug_build()` and `DisplayServer.is_touchscreen_available()` are
 allowed to **answer** the flag. They may not **be** it. The platform is the default; the flag is the

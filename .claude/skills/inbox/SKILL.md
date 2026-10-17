@@ -6,9 +6,9 @@ description: The player's inbox on GitHub Issues — where it is found at the st
 # The inbox
 
 **GitHub Issues are the
-[player's inbox](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-list), and nothing
-else.** A note is an open issue carrying the label `inbox`, and an issue without it is
-[never filed](../../../docs/playtests/2026-10-03-plaid-tapir.md#statements), whoever opened it:
+player's inbox, and nothing
+else** (bouncy-heron). A note is an open issue carrying the label `inbox`, and an issue without it is
+never filed (plaid-tapir), whoever opened it:
 `tools/inbox.py`
 skips it and refuses to close a batch naming it, and CI's `tools/ci_transcription.py` fails a
 filing pull request that names it. The player writes one at any time, edits it
@@ -18,7 +18,7 @@ entry is reviewed when it enters the queue (`tools/decisions.sh leafy-finch` has
 and the options weighed against them).
 
 `tools/inbox.py` is the tool, and **the
-[one way an agent writes an issue](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-list)**.
+one way an agent writes an issue** (bouncy-heron).
 `.claude/hooks/github-write-guard.sh` denies a direct `gh issue` write, wrapped
 in an identity or not, and an issue write through `gh api` the same way, all but a comment POST to
 `issues/N/comments`, which a pull request's own conversation comments share.
@@ -39,14 +39,14 @@ A blank note comes from the issue template `.github/ISSUE_TEMPLATE/inbox-note.md
 ## Whose notes count
 
 **Only an issue the player opened, or one the capture script (`tools/inbox.py capture`) opened
-for them, [is a note](../../../docs/playtests/2026-09-27-bouncy-heron.md#who-may-write-to-the-inbox)**,
+for them, is a note** (bouncy-heron),
 so people outside the project do not put work into the queue. The repository is
 public and the template's label goes on any issue opened with it, so the label alone admits
 anybody: an issue from outside the project is welcome as something to look at and is
-[never an automatic call for action](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-filings-review). A
+never an automatic call for action (bouncy-heron). A
 captured note counts when it was opened as `nappy-claude-orchestrator[bot]` or
 `nappy-codex-coder[bot]` and carries the capture script's tag,
-[the label `captured`](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-filings-review). The player's own comments are the player's words, and so,
+the label `captured` (bouncy-heron). The player's own comments are the player's words, and so,
 on a captured note alone, are the words `append` added (below).
 `tools/inbox.py` skips everything else with a line saying so, and CI's transcription check
 (`tools/ci_transcription.py`) fails a filing that names any other issue.
@@ -54,10 +54,10 @@ on a captured note alone, are the words `append` added (below).
 ## The labels
 
 **`inbox` marks a note, and `queue_<band>` sets the
-[band its work is filed in](../../../docs/playtests/2026-09-27-dotted-quail.md#statements)**:
+band its work is filed in** (dotted-quail):
 `queue_now`, `queue_next`, `queue_later`, `queue_parked`, and `queue_bug`,
-[a band above `now`](../../../docs/playtests/2026-10-11-mossy-ferret.md#710). A note is never
-filed `bug` [unless the player says so](../../../docs/playtests/2026-10-11-mossy-ferret.md#710), and "up next" is not a label: it is an `upnext: true` line in the entry's opening block.
+a band above `now` (mossy-ferret #710). A note is never
+filed `bug` unless the player says so (mossy-ferret #710), and "up next" is not a label: it is an `upnext: true` line in the entry's opening block.
 A label outside that pattern is never taken for a band. The entry filed from a note opens with its
 band; a note with no band label is filed as **playtest-feedback** says, `now` for a note from
 playing and otherwise a band the filer proposes and names in its report; a note with two band
@@ -68,10 +68,10 @@ labels is filed under neither and asked about on its issue.
 **When the player says something in a session that should outlive it — a thought for the queue, a
 correction to a task — capture it into the inbox, in one call, before going on with anything
 else**, so the words are safe even if the session is cleared before a filing pull request exists.
-The player's worry was [words lost](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-question)
+The player's worry was words lost (bouncy-heron)
 when a session is cleared before an agent writes them down, and **which messages to capture is the
 agent's judgment**: no hook reminds it, and
-[the conversation is not recorded as a whole](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-list).
+the conversation is not recorded as a whole (bouncy-heron).
 
 ```sh
 cat > /tmp/note.md <<'NOTE'
@@ -96,8 +96,8 @@ only it sets, and opens it as `claude-orchestrator` (Codex: `codex-coder`), whic
 captured note count as the player's.
 
 **A further word on the topic of a note already open is
-[appended to that note](../../../docs/decisions/2026-10-03-olive-tapir.md), never captured as a
-new one.** When the agent already knows an open captured note on the topic, one it captured or read
+appended to that note, never captured as a
+new one** (olive-tapir). When the agent already knows an open captured note on the topic, one it captured or read
 this session, the player's next words on it go onto that note:
 
 ```sh
@@ -105,7 +105,7 @@ uv run python tools/inbox.py --role claude-orchestrator append N --body-file /tm
 ```
 
 **Only when the agent
-[already knows the note](../../../docs/decisions/2026-10-03-olive-tapir.md)**: the inbox is never searched or read to look for an overlap, and
+already knows the note** (olive-tapir): the inbox is never searched or read to look for an overlap, and
 with no such note in hand the words are captured as a new note. The words go into a file first,
 exactly as for `capture`, and are the player's verbatim. `append` posts them as one comment under
 the same identity rules as `capture`, led by a marker line (an HTML comment, invisible on the
@@ -120,13 +120,13 @@ the filing treats the words like the body.
 ## Asking about a note
 
 **An ingestion
-[never waits on a question](../../../docs/playtests/2026-10-03-minty-hedgehog.md#how-an-ingestion-treats-open-questions)**,
+never waits on a question** (minty-hedgehog),
 since its point is to get the notes into the repository fast, and most questions need exploring
 once the task is picked up anyway. Every note is filed as it stands, and a
 question it leaves open is written into its queue entry, marked open, for whoever picks the task up.
 
 **A question about a note can still be
-[asked on its issue](../../../docs/playtests/2026-09-27-dotted-quail.md#statements)**, when the filer has one before the batch is filed; the answer is filed with the note,
+asked on its issue** (dotted-quail), when the filer has one before the batch is filed; the answer is filed with the note,
 and the batch does not wait for it:
 
 ```sh
@@ -195,8 +195,8 @@ request carries the whole batch:
   fails a note that is not the player's or whose text, appended words included, is not in a playtest
   file the pull request adds, word for word.
 - **Right after pushing the pull request,
-  [close the batch](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-filings-review) in one
-  call**:
+  close the batch in one
+  call** (bouncy-heron):
 
   ```sh
   uv run python tools/inbox.py --role claude-orchestrator close --pr P

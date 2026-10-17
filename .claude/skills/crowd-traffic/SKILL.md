@@ -171,9 +171,9 @@ measured to reach. A walker's answer costs a stride and can be taken anywhere, s
 the barrier is the **next tile** (`CrowdAgent._acts_on_a_barrier_within()`).
 
 **Deciding early is not free: a street a walker gives up from a junction away is a street with
-nobody on it for its whole length.** A walker [gives up only where it touches an impassable wall and goes on into the section until it
+nobody on it for its whole length.** A walker gives up only where it touches an impassable wall and goes on into the section until it
 cannot
-continue](../../../docs/playtests/PLAYTEST-78.md#the-crowd-gives-up-on-a-street-at-an-event-and-should-only-give-up-at-what-stops-it).
+continue (PLAYTEST-78).
 So a walker
 picking an arm asks only whether the arm is street **at all** (`_no_street_ahead()`), never what is
 standing down it; the record a walker is stopped by is the bodies themselves, while the
@@ -265,8 +265,8 @@ doubled hard-fail margin.
 
 **The rear half of a crowd car is safe on purpose.** `Crowd._strike()` and
 `CrowdAgent.will_be_lethal()` test only the box from the car's centre forward (26px long, 14px
-either side), never its whole 52×28px body: [a car is lethal only in front of it while it
-drives](../../../docs/playtests/2026-10-03-minty-hedgehog.md#433--walking-behind-a-car-can-end-the-day),
+either side), never its whole 52×28px body: a car is lethal only in front of it while it
+drives (minty-hedgehog #433),
 and one that starts moving while she walks behind it is driving away from her. Keep the
 horn, the caret and the strike on the same box, and do not widen it back to the body.
 

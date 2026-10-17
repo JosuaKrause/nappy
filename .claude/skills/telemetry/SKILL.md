@@ -43,11 +43,11 @@ Anything needing a per-frame check goes in `TelemetryObserver`, **not** in the g
 telemetry stays out of the files that decide things, which is what makes the rule easy to keep.
 
 **The one exception is the per-system frame record's timing wrap** (`FrameRecord`, docs/TELEMETRY.md,
-"Per-system frame records"). It records [what makes a frame spill over its 2ms
-budget](../../../docs/playtests/2026-10-03-quiet-yak.md#510--ground-mode-2-the-default-record-what-causes-spillover-past-the-2ms-budget),
+"Per-system frame records"). It records what makes a frame spill over its 2ms
+budget (quiet-yak #510),
 since the stutter comes with many objects on screen and influence, pathing or drawing may each be
-the culprit, and the player [accepted the exception
-itself](../../../docs/playtests/2026-10-04-azure-tapir.md#526--answers-robber-keeps-the-108px-stand-off-pelican-merges-m159-choices-accepted-recorder-ships-in-the-next-release)
+the culprit, and the player accepted the exception
+itself (azure-tapir #526)
 on 2026-10-04. A phone has no
 profiler, so the only way to know what a system cost in a frame is to time it where it runs, and
 an observer cannot do that from outside. The wrap is a single branch in front of an unchanged

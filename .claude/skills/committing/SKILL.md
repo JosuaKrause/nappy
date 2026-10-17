@@ -11,13 +11,13 @@ the current session** — see "Merging".
 ## Who a commit and a pull request are from
 
 **Every GitHub write goes out as an agent identity, and
-[only that identity](../../../docs/decisions/2026-09-27-tall-egret.md) — never as the player on an
-agent's own say-so.** The one exception is a write the player approves themself at the guard's
+only that identity — never as the player on an
+agent's own say-so** (tall-egret). The one exception is a write the player approves themself at the guard's
 prompt, below.
 
 **Which identity a write goes out as follows
-[what the write does](../../../docs/playtests/2026-09-27-bouncy-heron.md#an-orchestrator-identity),
-not which session makes it.** In Claude Code:
+what the write does,
+not which session makes it** (bouncy-heron). In Claude Code:
 
 - **`claude-orchestrator`** makes every issue write — capturing a note into the inbox with its
   labels, asking a question on one, closing a filed batch and reopening it, each through
@@ -32,7 +32,7 @@ not which session makes it.** In Claude Code:
   pull request.
 - **`claude-reviewer`** posts every review and its findings, on either kind of pull request
   (**pr-review**), and **is the
-  [only Claude Code identity that approves one](../../../docs/playtests/2026-10-03-busy-ibis.md)**:
+  only Claude Code identity that approves one** (busy-ibis):
   GitHub stops only a pull
   request's own author from approving it, so without the rule the coder and the orchestrator
   could approve each other's pull requests toward the approval `main` requires. The guard below
@@ -44,7 +44,7 @@ from the files it changes, and **verify**'s "What `test` means on each kind of p
 which files those are. The identity is chosen when the pull request is opened, from what it is
 going to contain. So the orchestrating session writes as `claude-coder` when it merges a code pull
 request, and a spawned agent writes as `claude-orchestrator` when it opens a docs-only one. **It
-is [a convention, not a hard rule](../../../docs/playtests/2026-09-27-bouncy-heron.md#an-orchestrator-identity)**:
+is a convention, not a hard rule** (bouncy-heron):
 a pull request that starts docs-only and later gains code keeps the orchestrator's
 earlier writes and takes the coder's from then on, and nothing — no hook, no CI check — compares a
 pull request's authors with what it contains. Codex has no orchestrator identity: its issue writes
@@ -66,19 +66,19 @@ session, or a machine with no identity directory — the guard below can ask the
 ordinary write instead of denying it: a local commit or history step (`git commit`, `merge`,
 `rebase`, `pull`, `cherry-pick`, `revert`, `am`), a push of a branch, or a pull-request write
 (`gh pr create`, `comment`, `edit`, `ready`) goes to them as
-[a permission prompt](../../../docs/decisions/2026-10-02-frosty-pelican.md) for that one
+a permission prompt (frosty-pelican) for that one
 command, which only they can approve. Every other write is never asked about, only denied — among them a push of a tag, of
 every branch or of a `*` pattern (a pushed `v*` tag publishes the site), a push naming a shell
 expansion (`"$TAG"` can be a `v*` tag) or one the guard cannot read to its end, a forced,
 deleting, mirroring or pruning push, a pull request's merge, a release and a `gh issue` write —
 since a prompt is too easy to click through for any of them, and for the last because the player
 wants an agent's issue writes to
-[go through a script](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-list) rather than a
+go through a script (bouncy-heron) rather than a
 direct `gh issue` command; that script, `tools/inbox.py`, never writes as the
 player, so where no identity can work an issue write is not made at all. **That asking is
 off unless the player switches it on** with `NAPPY_ASK_FOR_PLAYER_WRITES=1` in the environment a
 session starts with (a cloud environment's own variables, or the launching shell); unset,
-[every unwrapped write is denied](../../../docs/decisions/2026-10-02-frosty-pelican.md). A session never sets or clears it for itself. Anything the guard
+every unwrapped write is denied (frosty-pelican). A session never sets or clears it for itself. Anything the guard
 denies the session stops on and tells the player about, and Codex stops on every one of them —
 except a direct `gh issue` write, which is made again through `tools/inbox.py` instead. A
 `PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a
@@ -106,7 +106,7 @@ something to wrap and retry.**
 **Inside an isolated agent worktree, Claude Code's permission check can refuse the `uv run`
 form of the wrapper; the same wrapper run by the worktree's own interpreter,
 `.venv/bin/python tools/agent-identity.py run <role> -- <command>`, is
-[the fallback](../../../docs/playtests/2026-09-27-round-moose.md#statements).** It is the same script with the same token and the
+the fallback** (round-moose). It is the same script with the same token and the
 same identity, and `github-write-guard.sh` accepts it as wrapped. A worktree with no `.venv` yet
 gets one from `uv sync`. The fallback changes only how the wrapper is started: when it is refused
 too, or `status` reports the role not usable, the agent stops and reports, as above, and never
@@ -139,7 +139,7 @@ session does not carry over. Finishing implementation, opening a PR and green CI
 merge permission. Leave the PR open and report its link when permission has not been given.
 
 **A PR merges only after
-[its review](../../../docs/decisions/2026-09-26-how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it.md).**
+its review** (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it).
 A review under **pr-review** has posted the verdict
 *ready* on the PR against its current head, or against a head whose later pushes were reviewed
 too; a merge of `main` whose result is Git's own needs no second review (**pr-review**).
@@ -242,7 +242,7 @@ believing rather than explaining away.
 
 **Every pull request reaches `main` as one squashed commit whose message is the PR's title and
 description**; the repository's
-[squash defaults](../../../docs/decisions/2026-09-19-pull-requests-are-squash-merged.md) are set
+squash defaults (pull-requests-are-squash-merged) are set
 to exactly that. So `git log` and
 `git blame` on `main` show one reviewed text per work item, and a branch's own commits — the
 WIP ones and the merges of `main` among them — are scratch that never lands.
@@ -326,7 +326,7 @@ PR's own doc work goes.
 ## A PR description never links a file by branch name
 
 **An image or file in a PR description is linked by commit hash,
-[never by branch](../../../docs/decisions/2026-09-09-tooling-audit-python-3-14-ruff-mypy-and-links-that-outlive-a-branch.md).**
+never by branch** (tooling-audit-python-3-14-ruff-mypy-and-links-that-outlive-a-branch).
 A URL of
 the shape `.../blob/feature/<thing>/docs/evidence/x.png?raw=true` or
 `raw.githubusercontent.com/<owner>/<repo>/feature/<thing>/...` works while the branch exists and
@@ -348,7 +348,7 @@ pictures embedded, and lists the superseded passes last as plain links (woolly-f
 history, and the reviewer has to work out which picture is the one being asked about.
 
 A branch commit's URL
-[survives both the squash and the branch's deletion](../../../docs/decisions/2026-09-19-pull-requests-are-squash-merged.md)
+survives both the squash and the branch's deletion (pull-requests-are-squash-merged)
 because GitHub keeps
 every pull request's commits reachable under `refs/pull/<n>/head`. **The hash has to be the one
 the file was committed in or a later commit on the branch**, so write the description after the

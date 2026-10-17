@@ -156,7 +156,7 @@ apologise for.
   `tests/`, none of `docs/TELEMETRY.md`, `docs/COSTS.md` or `docs/ARCHITECTURE.md`, which the
   game's own checks read, and no `.gdignore`, which decides whether Godot imports `docs/` at all:
   every consistency check ran and passed, and
-  [the game's tests were skipped](../../../docs/playtests/2026-09-27-bouncy-heron.md#which-tests-a-docs-only-pr-skips),
+  the game's tests were skipped (bouncy-heron),
   since nothing they read changed. A pull request touching `src/` or `tests/` is
   never docs-only, so it never skips them.
 - **On a queue update** — every file under `docs/todo/`, `docs/review/` or `docs/playtests/`: as
@@ -326,8 +326,8 @@ somewhere.
   carriageway.
 - **`--after` is in seconds, not frames.** The windowed build draws ~110fps, so a frame count is
   quietly useless.
-- **[`--press snapshot_burst <seconds>` records a burst](../../../docs/playtests/PLAYTEST-56.md#the-mid-turn-capture-is-a-burst)
-  instead of a still** (woolly-finch). A still lands on a two-second turn, a stride or a
+- **`--press snapshot_burst <seconds>` records a burst
+  instead of a still** (PLAYTEST-56; woolly-finch). A still lands on a two-second turn, a stride or a
   wing beat by luck, and cannot establish that motion was smooth; the burst is the same rig with
   thirty-six frames over three seconds and a timing record, so **evidence about anything that
   moves is a burst, not a screenshot**. `tools/shot.sh out.png 10 --seed 4242 --spawn
@@ -365,8 +365,8 @@ Test what a screenshot cannot see, and screenshot what a test cannot judge.
   a street.
 - **A test asserting a relationship beats one asserting a value.** `intensity < walking decay`
   survives rebalancing; `intensity == 3.2` does not.
-- **A test that only [doubles the work of a change](../../../docs/playtests/PLAYTEST-67.md#the-tests-are-slow-again) is
-  deleted, not maintained.** The shape is a test that **reads a design decision back to itself** —
+- **A test that only doubles the work of a change is
+  deleted, not maintained** (PLAYTEST-67). The shape is a test that **reads a design decision back to itself** —
   asserting `act_for_day(4) == 2` when `ACT_START_DAYS` is `[1, 4, 8, 12]` is the table restated, so
   moving an act boundary means editing the constant *and* editing the test, and no arrangement of
   those two numbers was ever going to disagree.

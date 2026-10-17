@@ -12,7 +12,7 @@ the whole queue and the player's words.
 
 Use Sonnet in Claude Code for implementation, Haiku for a wait — polling a check, retargeting a PR,
 removing a worktree, pulling `main` — and a stronger model when a milestone's geometry or contracts
-warrant it, by judgement (woolly-finch). **In Claude Code, [drawing is Opus's](../../../docs/playtests/PLAYTEST-123.md#statements)**: an agent that makes or revises artwork — SVG,
+warrant it, by judgement (woolly-finch). **In Claude Code, drawing is Opus's** (PLAYTEST-123): an agent that makes or revises artwork — SVG,
 PNG, a review sheet — runs on Opus, since the result is judged by eye and a weaker first pass costs
 the player a review round;
 Codex has its own model hierarchy and keeps its own tiering for art (woolly-finch). In Codex, pick the subagent
@@ -28,7 +28,7 @@ delegation is unavailable, do the bounded work locally and retain the same verif
 
 **A usage or quota limit is already over by the time the orchestrator hears of it**, in Claude
 Code and in Codex alike. Nothing about delegation changes because of one: no fewer agents, no
-cheaper models, no implementing locally to save quota. Do not carry [a limit message](../../../docs/decisions/2026-09-12-codex-delegation-after-visible-usage-limit-messages.md)
+cheaper models, no implementing locally to save quota. Do not carry a limit message (codex-delegation-after-visible-usage-limit-messages)
 from an earlier agent or turn forward as a reason to do anything differently (woolly-finch). What an interruption does change is which
 agents can continue — see "Recovering from an interruption".
 
@@ -197,7 +197,7 @@ role named has nothing to check `status` against:
 
 ## Running agents in parallel
 
-**[Create sparse worktrees](../../../docs/playtests/2026-10-03-busy-ibis.md) before materializing files, with `tools/agent-setup.sh`.** It runs the
+**Create sparse worktrees before materializing files, with `tools/agent-setup.sh`** (busy-ibis). It runs the
 disk preflight, `git worktree add --no-checkout --no-track` onto a new branch from `origin/main`
 (so the branch inherits no upstream), enables non-cone sparse checkout and only then materializes
 HEAD. The patterns are the `gates` job's sparse checkout in `.github/workflows/ci.yml` — the one
@@ -219,7 +219,7 @@ depth does not avoid repeated working files. Before checkout, import, build or c
 check free space on the destination volume against the estimated peak working set plus explicit
 headroom (`tools/lib_disk_headroom.sh` holds the measured estimates, worktrees' included); an unknown
 peak or inadequate room means measure or reduce the batch before starting. **A low-disk warning
-from a tool, or a check that leaves less than the reserve, [stops new work](../../../docs/playtests/2026-10-03-quiet-yak.md#496--disk-check-warns-below-the-reserve-and-refuses-only-when-the-job-cant-fit-a-warning-stops-new-work).**
+from a tool, or a check that leaves less than the reserve, stops new work** (quiet-yak #496).
 It is guidance, not a hard hook. The orchestrator starts no new agent or worktree and an agent starts no new task or batch until the
 space is sorted out by **session-cleanup**'s storage steps; work already running may finish, and
 an agent reports the warning in its report rather than leaving it in a log.
