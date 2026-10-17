@@ -26,9 +26,11 @@ inside it without the placement must still be connected with it, and so must the
 the exits where they fall inside; that is the day's junction rule asked of a box round the
 placement, and it keeps an alley's mouth open as well as the street. Since the seals alone leave
 both exits reachable, every accepted placement does too. A refused candidate is rolled again or
-not placed; nothing is repaired afterwards and no event's lifetime changes. Over seeds 1 to 20 the
-chain streets keep their pressure: 610 vans as before, 530 roadblocks where there were 553. Planning
-costs about 110ms more inside a plan. `City.tint_the_escape_route()` tints both kerb lines of every
+not placed; nothing is repaired afterwards and no event's lifetime changes. Over seeds 1 to 20, against `main`, the
+chain streets keep their pressure: 610 vans and 201 explosions as before, 530 roadblocks where there
+were 588. Planning costs more: `FinalePlanner.plan` averages about 320 to 400ms where `main` takes
+226 to 255ms (worst 557ms against 370ms), on the desktop, paid on entering the city section and on
+every restart; on the phone it is likely several times that, not yet measured. `City.tint_the_escape_route()` tints both kerb lines of every
 street the plan's chains run through, after every plan, restarts included. `tests/test_finale.gd`
 floods from the service exit past every body, seed 23 among its seeds, and requires both exits (it
 fails on `main`; a sweep of seeds 1 to 80 finds none failing), and checks through `Main` that the
