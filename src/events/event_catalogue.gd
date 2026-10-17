@@ -2992,7 +2992,13 @@ static func _basement_steam() -> EventDef:
 	def.solid(GroundShape.point(STEAM_VENT_BODY))
 	def.solid_once_it_starts = true
 	def.act_tag = 4
-	def.intensity = 14.0
+	# **25, so one blow costs 40 to 50 points awake** at the 30px a vent holds her out *(inbox #747,
+	# "steam should be 40 to 50")*: 44 awake, 24 asleep. At 14 it cost 25 awake. The pulse is kept,
+	# since it is what makes the blow swell and fall back rather than hold flat. What bounds it from
+	# above is the pocket between two vents, shut at both ends for 2s at most: the cost there scales
+	# with this, and `_test_no_pocket_between_two_vents_outlasts_the_noise` keeps it under the meter
+	# (84 of 100 at 25; 29 is the most the meter allows).
+	def.intensity = 25.0
 	def.inner_radius = 24.0
 	def.outer_radius = 90.0
 	# Well under a walk, so the escape distance is the falloff band: `(90 − 24) / WALK_SPEED` is
