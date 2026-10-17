@@ -42,6 +42,7 @@ const FAMILY_DICTS := {
 	"robber_waiting": EventInstance.ROBBER_WAITING_BY_VIEW,
 	"robber_lunging": EventInstance.ROBBER_LUNGING_BY_VIEW,
 	"robber_alert": EventInstance.ROBBER_ALERT_BY_VIEW,
+	"robber_alert_b": EventInstance.ROBBER_ALERT_BY_VIEW_B,
 	"chatting_mother_walking": EventInstance.CHATTING_MOTHER_WALKING_BY_VIEW,
 	"chatting_mother_talking": EventInstance.CHATTING_MOTHER_TALKING_BY_VIEW,
 	"cat_crouched": EventInstance.CAT_CROUCHED_BY_VIEW,
@@ -435,6 +436,7 @@ func _test_state_pairs_stay_visually_distinct(t) -> void:
 		["charging_dog_resting", "charging_dog_alert"], ["charging_dog_alert", "charging_dog"],
 		["charging_dog_resting", "charging_dog"],
 		["robber_waiting", "robber_alert"], ["robber_alert", "robber_lunging"],
+		["robber_waiting", "robber_alert_b"], ["robber_alert_b", "robber_lunging"],
 		["guard_standing", "guard_alert"], ["guard_alert", "guard_lunging"],
 	]
 	for pair in pairs:
@@ -628,12 +630,27 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 	t.check(instance.is_telegraphing() and not instance.is_standing_for_its_notice(),
 			"he notices her, and he does not stand for it")
 	t.check(instance.robber_pictures() == EventInstance.ROBBER_ALERT_BY_VIEW,
-			"drawn in his alert, hands out of his coat")
-	_hold(instance, her, 0.05)
-	t.check(instance.is_telegraphing() and instance.global_position.x > 1.0,
+			"drawn in his alert, hands out of his coat, on its first frame before he has moved")
+	# **His alert is a walk, two frames on his stride** (`_gait_stepping()`): walking at her slowly
+	# through his notice he shows both, and nothing but his alert, until he lunges.
+	var alert_frames := {}
+	var other := 0
+	while instance.is_telegraphing():
+		_hold(instance, her, STEP)
+		if not instance.is_telegraphing():
+			break
+		var pictures := instance.robber_pictures()
+		if pictures == EventInstance.ROBBER_ALERT_BY_VIEW:
+			alert_frames["a"] = true
+		elif pictures == EventInstance.ROBBER_ALERT_BY_VIEW_B:
+			alert_frames["b"] = true
+		else:
+			other += 1
+	t.check(instance.global_position.x > 30.0,
 			"walking at her through his notice (%.1fpx)" % instance.global_position.x)
-	t.check(instance.robber_pictures() == EventInstance.ROBBER_ALERT_BY_VIEW,
-			"still in his alert while he walks")
+	t.check(alert_frames.size() == 2 and other == 0,
+			"his alert walk shows both its frames (%s) and nothing else (%d frames)"
+			% [", ".join(alert_frames.keys()), other])
 	_hold(instance, her, def.telegraph_time)
 	t.check(not instance.is_telegraphing()
 			and instance.robber_pictures() in [EventInstance.ROBBER_LUNGING_BY_VIEW,

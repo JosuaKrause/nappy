@@ -367,6 +367,17 @@ const ROBBER_ALERT_BY_VIEW := {
 	"front_diagonal": "events/robber_alert_front_diagonal",
 	"back_diagonal": "events/robber_alert_back_diagonal",
 }
+## The alert walk's other frame, alternated with `ROBBER_ALERT_BY_VIEW` by `_gait_stepping()` as he
+## walks at her through his notice, the way `ROBBER_LUNGING_BY_VIEW_B` is with his lunge: one walk
+## cycle, the same canvas and anchor per view. Held still (a held lunge he stands for) he shows the
+## first.
+const ROBBER_ALERT_BY_VIEW_B := {
+	"front": "events/robber_alert_front_b",
+	"back": "events/robber_alert_back_b",
+	"side": "events/robber_alert_side_b",
+	"front_diagonal": "events/robber_alert_front_diagonal_b",
+	"back_diagonal": "events/robber_alert_back_diagonal_b",
+}
 ## The policeman on foot (`art/events/policeman_*`): the robber's set one for one — the same
 ## canvases, anchors and postures, east-authored like the robber's — so he is drawn the way the
 ## robber is (`_draw_policeman()`). The unsuffixed lunge is his badge silhouette (`icon_for()`).
@@ -5333,7 +5344,7 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 					VAN_VICTIM_BY_VIEW, VAN_VICTIM_BY_VIEW_B])
 		EventDef.Look.ROBBER:
 			_collect_views(sources, [ROBBER_WAITING_BY_VIEW, ROBBER_ALERT_BY_VIEW,
-					ROBBER_LUNGING_BY_VIEW, ROBBER_LUNGING_BY_VIEW_B])
+					ROBBER_ALERT_BY_VIEW_B, ROBBER_LUNGING_BY_VIEW, ROBBER_LUNGING_BY_VIEW_B])
 		EventDef.Look.ROBBER_GIVING_CHASE:
 			# Sent already chasing: no notice, so no alert to draw.
 			_collect_views(sources, [ROBBER_WAITING_BY_VIEW, ROBBER_LUNGING_BY_VIEW,
@@ -5840,15 +5851,15 @@ func _draw_robber(canvas: CanvasItem = self) -> void:
 	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
-## The robber's picture for this frame: waiting, his alert through his notice (`is_telegraphing()`,
-## which the sent robber, arriving already chasing, never is), and the lunge with its stride frame
-## once he goes. The waiting posture holds still by construction — he has nothing to stride toward
+## The robber's picture for this frame: waiting, his two-frame alert walk through his notice
+## (`is_telegraphing()`, which the sent robber, arriving already chasing, never is), and the lunge
+## with its stride frame once he goes. The waiting posture holds still by construction — he has nothing to stride toward
 ## yet. The one place the choice is read, so the draw, its halo and a test ask the same question.
 func robber_pictures() -> Dictionary:
 	if is_waiting():
 		return ROBBER_WAITING_BY_VIEW
 	if is_telegraphing():
-		return ROBBER_ALERT_BY_VIEW
+		return ROBBER_ALERT_BY_VIEW_B if _gait_stepping() else ROBBER_ALERT_BY_VIEW
 	return ROBBER_LUNGING_BY_VIEW_B if _gait_stepping() else ROBBER_LUNGING_BY_VIEW
 
 ## **The policeman on foot, drawn as the robber is**: his waiting posture while his notice runs —
