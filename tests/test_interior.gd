@@ -34,6 +34,7 @@ func run(t) -> void:
 	_test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t)
 	_test_a_vent_never_closes_around_her(t)
 	_test_no_pocket_between_two_vents_outlasts_the_noise(t)
+	_test_one_blow_of_steam_costs_forty_to_fifty_points(t)
 	_test_every_vent_has_its_grate_blowing_or_not(t)
 	_test_an_explosion_flashes_every_hallway_window(t)
 	_test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t)
@@ -1551,6 +1552,32 @@ func _test_no_pocket_between_two_vents_outlasts_the_noise(t: Node) -> void:
 	t.check(pairs > 0, "there were adjacent vents to make a pocket (%d pairs)" % pairs)
 	events.free()
 	scene.free()
+
+## *"The steam should have a stronger impact."* / *"steam should be 40 to 50."* (inbox #741, #747)
+## **One blow, stood in, costs her 40 to 50 points of a hundred awake** (22 to 28 asleep), measured
+## on the row itself: an instance of the blow is run from its first frame to its last with her
+## standing `STAND_AT` out from the vent, and every frame's `contribution_at()` is summed. 30px is
+## where a vent holds her centre (`STEAM_VENT_BODY` + her own body), which is where she waits at
+## the gate and the nearest she can be to a blow, so the dearest a blow costs her.
+func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	const STAND_AT := 30.0
+	var steam := EventCatalogue.by_id("basement_steam")
+	var blow := EventInstance.new()
+	t.add_child(blow)
+	blow.setup(steam, Vector2.ZERO)
+	var cost := 0.0
+	var elapsed := 0.0
+	while not blow.is_finished and elapsed < 20.0:
+		blow.player_at = Vector2(STAND_AT, 0.0)
+		blow._process(STEP)
+		cost += blow.contribution_at(Vector2(STAND_AT, 0.0)) * STEP
+		elapsed += STEP
+	print("One blow of steam, stood %.0fpx from the vent for %.2fs: %.1f points awake, %.1f asleep"
+			% [STAND_AT, elapsed, cost, cost * Tuning.SLEEPING_SENSITIVITY])
+	t.check(cost >= 40.0 and cost <= 50.0,
+			"one blow costs 40 to 50 points awake at %.0fpx (%.1f)" % [STAND_AT, cost])
+	blow.free()
 
 ## The longest run of seconds during which both vents are solid at once, over the whole sequence's
 ## own clock. Sampled rather than solved: the two windows are periodic with different periods and

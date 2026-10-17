@@ -1595,6 +1595,9 @@ stands on each, in the same place every attempt, blowing on its own period out o
 three of them never fall into a rhythm. A blow shuts its cell outright for
 `Tuning.FINALE_STEAM_BLOWS_FOR` after a notice, and the shortest period still leaves twice as long
 open as walking through the vent's reach costs. Waiting is the answer; there is no line past one.
+Standing at a blowing vent costs the meter hard *("steam should be 40 to 50")*: one blow takes 40 to
+50 points awake at the 30px a vent holds her out, so waiting right at the gate is paid for, and the
+pocket between two vents is still never shut at both ends for long enough to fill the meter.
 
 **Two hint lines, said once each** as she starts walking a section she has not walked before:
 *"Escape the building"* and *"Escape the city"* — the same words that head each section's brief,

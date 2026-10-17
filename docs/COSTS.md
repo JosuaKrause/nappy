@@ -78,7 +78,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | finale_explosion     |      wall |      24.0 |              — |           — |        300.0 |        520.0 |           2.0 |            — |            — |         — |             165.2 |
 | impact_crater        |  friction |       0.0 |              — |           — |         40.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
 | masked_pursuer       |      wall |      18.0 |              — |           — |         28.0 |        120.0 |           2.0 |            — |            — |     130.0 |              19.3 |
-| basement_steam       |  friction |      14.0 |              — |           — |         24.0 |         90.0 |           2.0 |          4.0 |          3.5 |         — |               9.0 |
+| basement_steam       |  friction |      25.0 |              — |           — |         24.0 |         90.0 |           2.0 |          4.0 |          6.2 |         — |              25.2 |
 
 ## Walking at a fixed distance — awake
 
@@ -138,7 +138,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | finale_explosion     |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      18.0 |      13.0 |      -6.0 |
 | impact_crater        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | masked_pursuer       |      12.0 |      12.0 |      11.0 |       7.3 |       1.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| basement_steam       |       2.8 |       2.7 |       1.4 |      -2.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| basement_steam       |       9.6 |       9.6 |       7.2 |       0.3 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 
 ## Walking at a fixed distance — asleep
 
@@ -198,7 +198,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | finale_explosion     |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       7.2 |       4.5 |      -6.0 |
 | impact_crater        |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | masked_pursuer       |       3.9 |       3.9 |       3.3 |       1.3 |      -2.2 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
-| basement_steam       |      -1.2 |      -1.2 |      -1.9 |      -4.1 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| basement_steam       |       2.6 |       2.6 |       1.3 |      -2.5 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 
 ## The pass — awake
 
