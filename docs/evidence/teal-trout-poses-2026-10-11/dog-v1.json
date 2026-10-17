@@ -5,13 +5,13 @@
   ],
   "rows": [
     [
-      "art/events/dog_resting.svg",
-      "art/events/dog_alert.svg",
+      "art/events/charging_dog_resting.svg",
+      "art/events/charging_dog_alert.svg",
       "art/events/charging_dog.svg"
     ],
     [
-      "art/events/dog_resting_front.svg",
-      "art/events/dog_alert_front.svg",
+      "art/events/charging_dog_resting_front.svg",
+      "art/events/charging_dog_alert_front.svg",
       "art/events/charging_dog_front.svg"
     ]
   ]

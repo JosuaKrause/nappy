@@ -268,6 +268,14 @@ The [complete vehicle, animal and rider source review](evidence/svg-vehicles-202
 adds all eight facings, tint composites and wing phases. Its `facings.csv` records exact source
 paths, mirrors, canvases, anchors and alpha bounds; several canonical van side pictures face west.
 
+The chargers' rest and alert poses (teal-trout, [teal-trout-3](decisions/2026-10-11-teal-trout-3.md);
+sheets in [teal-trout-views-2026-10-17](evidence/teal-trout-views-2026-10-17/README.md)) are drawn in
+all five views and not yet bound, each grounded at bottom centre: the charging dog's
+`art/events/charging_dog_resting*.svg` and `charging_dog_alert*.svg` (40x22 side, 30x28 front and
+back, 38x28 diagonals); the alley robber's `art/events/robber_alert_*.svg` (26x44); the guards'
+`art/checkpoints/guard_alert_*.svg` (22x44 front and back, 26x44 side and diagonals). The
+diagonals face east and are mirrored for west.
+
 The [environment source review](evidence/svg-environment-2026-09-10/INVENTORY.md) lists the
 interior, ground, roof, frontage and prop sources it reviewed in `sources.csv`, with native
 canvases, anchors and alpha bounds. It includes tile repetition, facade overlays and chalk on

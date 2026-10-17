@@ -1,9 +1,9 @@
-<!-- The charging dog on alert, front view: dog_alert.svg from this side, the same animal as
-     charging_dog_front.svg the moment it has noticed her. Squared up on four stiff straight
-     legs, head held high, ears pricked straight up, the hackles standing on the shoulders
-     behind the head, lips drawn back off white teeth with the jaw still shut; the open red jaw
-     stays the charge's own. Canvas 30x28, ground anchor bottom centre (15,28), the canvas
-     charging_dog_front.svg uses. -->
+<!-- The charging dog on alert, front view: charging_dog_alert.svg from this side, the same
+     animal as charging_dog_front.svg the moment it has noticed her. Squared up on four stiff
+     straight legs, head held high, ears pricked straight up, the hackles standing on the
+     shoulders behind the head, lips drawn back off white teeth with the jaw still shut; the
+     open red jaw stays the charge's own. Canvas 30x28, ground anchor bottom centre (15,28), the
+     canvas charging_dog_front.svg uses. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="28" viewBox="0 0 30 28" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <clipPath id="alert-back"><path d="M8.4 14 L8.8 12.2 L9.6 12.8 L10 11.2 L10.8 11.8 L11.4 10.4 L12.2 11 L17.8 11 L18.6 10.4 L19.2 11.8 L20 11.2 L20.4 12.8 L21.2 12.2 L21.6 14 C21.6 16.6 18.8 18.2 15 18.2 C11.2 18.2 8.4 16.6 8.4 14 Z"/></clipPath>
   <path d="M8.4 14 L8.8 12.2 L9.6 12.8 L10 11.2 L10.8 11.8 L11.4 10.4 L12.2 11 L17.8 11 L18.6 10.4 L19.2 11.8 L20 11.2 L20.4 12.8 L21.2 12.2 L21.6 14 C21.6 16.6 18.8 18.2 15 18.2 C11.2 18.2 8.4 16.6 8.4 14 Z" fill="#5b4536" stroke="none"/>

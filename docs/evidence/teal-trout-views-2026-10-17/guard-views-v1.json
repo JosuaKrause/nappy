@@ -1,0 +1,33 @@
+{
+  "scales": [
+    1.0,
+    6.0
+  ],
+  "rows": [
+    [
+      "art/checkpoints/guard_standing_front.svg",
+      "art/checkpoints/guard_alert_front.svg",
+      "art/checkpoints/guard_lunging_front.svg"
+    ],
+    [
+      "art/checkpoints/guard_standing_front_diagonal.svg",
+      "art/checkpoints/guard_alert_front_diagonal.svg",
+      "art/checkpoints/guard_lunging_front_diagonal.svg"
+    ],
+    [
+      "art/checkpoints/guard_standing_side.svg",
+      "art/checkpoints/guard_alert_side.svg",
+      "art/checkpoints/guard_lunging_side.svg"
+    ],
+    [
+      "art/checkpoints/guard_standing_back_diagonal.svg",
+      "art/checkpoints/guard_alert_back_diagonal.svg",
+      "art/checkpoints/guard_lunging_back_diagonal.svg"
+    ],
+    [
+      "art/checkpoints/guard_standing_back.svg",
+      "art/checkpoints/guard_alert_back.svg",
+      "art/checkpoints/guard_lunging_back.svg"
+    ]
+  ]
+}

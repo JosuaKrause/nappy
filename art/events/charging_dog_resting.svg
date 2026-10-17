@@ -2,9 +2,10 @@
      points) sitting on the sidewalk while it waits, so the waiting dog stands on the ground
      instead of holding its gallop in the air. Everything that says *coming at you* is put away:
      ears up and soft rather than pinned, the back smooth with no hackles, the jaw shut, the tail
-     lying on the ground. dog_alert.svg is the same dog once it has noticed her. Faces east;
-     mirrored for a westward heading like charging_dog.svg. Canvas 40x22, ground anchor bottom
-     centre (20,22), the canvas charging_dog.svg uses, so the three stages swap in place. -->
+     lying on the ground. charging_dog_alert.svg is the same dog once it has noticed her. Faces
+     east; mirrored for a westward heading like charging_dog.svg. Canvas 40x22, ground anchor
+     bottom centre (20,22), the canvas charging_dog.svg uses, so the three stages swap in
+     place. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="22" viewBox="0 0 40 22" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <path d="M13.4 20 Q9.6 21 6 20.4" fill="none" stroke-width="2.30"/>
   <path d="M13.4 20 Q9.6 21 6 20.4" fill="none" stroke="#5b4536" stroke-width="1.40"/>
