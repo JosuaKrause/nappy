@@ -1525,7 +1525,8 @@ static func _is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 ## two-thirds of its length from the edge nearer the mark — or, where that point is within 62px of
 ## the mark (his catch and the touch reach), 62px past the mark. Every alley here is one block
 ## long, so this is the short case on every mark: he stands two-thirds in although that is under
-## 176px from the mark, which the test counts so it is not vacuous. Before, he stood at the far end
+## 216px from the mark (his `pursues_within` and the touch reach), which the test counts so it is
+## not vacuous. Before, he stood at the far end
 ## tile or up to three tiles in from it, at least 176px from the mark where the alley allowed.
 func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
@@ -1589,7 +1590,7 @@ func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t) -> void:
 			"the guard's own distance from the mark still varies from mark to mark")
 
 ## The long case of the same rule: where an alley is long enough for its two-thirds point to be
-## 176px or more from the mark (his 140px `pursues_within` and `ContactPoint.REACH`), he stands
+## 216px or more from the mark (his 180px `pursues_within` and `ContactPoint.REACH`), he stands
 ## there, and walking in from the mark's own end to read it and back out never wakes him. No city
 ## has an alley that long — every one is a block, 8 tiles — so the test carves one, 16 tiles, into a
 ## generated map's own grid and registers it as a through-alley, and reads a mark on its first

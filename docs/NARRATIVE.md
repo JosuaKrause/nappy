@@ -233,7 +233,7 @@ touch".)*
   two-thirds of the way through the mark's own alley, counted from the mark's end and one tile
   further for the tile the mark stands in, so he is as far from it as ever: inside
   the alley rather than at its edge, where he would be easier to see and to avoid. Where the alley
-  is long enough for that spot to be 176px or more from the mark (his 140px trigger range and the
+  is long enough for that spot to be 216px or more from the mark (his 180px trigger range and the
   36px touch reach), walking in from the mark's own end, reading it and walking back out never
   wakes him; in a shorter alley, which every alley one block long is, he still stands two-thirds
   in, and reading the mark may wake him. He never stands within 62px of the mark (his catch and the
@@ -250,7 +250,7 @@ touch".)*
   the day's events otherwise leave alone (`EventScheduler._calm_to_leave_alone`): the courtyard
   behind a guarded passage mark is no place to settle the baby that day until she has lured him
   out. The player approved exactly this spot (2026-09-27, crisp-moose, statement 3). The roadblock,
-  the one task guarded where it waits, keeps a robber somewhere between 62px and 176px of it
+  the one task guarded where it waits, keeps a robber somewhere between 62px and 216px of it
   instead, measured from the ground it is touched from — touched from any side of its band, so he
   stands that far beyond the band's own reach: inside that band touching it is death, always;
   above it he never notices them on their way to it; between them, which side the player
