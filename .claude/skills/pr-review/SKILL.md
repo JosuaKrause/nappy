@@ -144,6 +144,18 @@ something to wrap and retry.**
 The conversation still gets the recap, since the player reads that first; the PR is where the
 findings live.
 
+## Three verdicts of *not ready* mean the approach is rethought
+
+*(2026-10-17: "add a rule / note that if a review returns unsuccessful three times the approach
+should be rethought".)* When a pull request's reviews have come back *not ready* three times, the
+next step is not a fourth round of fixes to the findings. The orchestrator stops and rethinks the
+approach: whether the brief asked for the right thing, whether the design or the reading of the
+player's words is wrong, whether the work should be split, restarted or put to the player.
+*Proposed, not asked for, open to the player's correction:* the count is per pull request, over
+its full reviews and its delta reviews alike; the rethinking, and what it decided, is written in
+the pull request's conversation before any further commit, and a change of approach that touches
+what the player asked for goes to them as a question first.
+
 ## Briefing a review agent
 
 The brief names the PR, its branch, the playtests and queue entry it answers, and anything the
