@@ -16,12 +16,12 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
                              under a visible mark the tool writes: --quote-file (--body-file, or
                              standard input when no block is named) is the player's words, a direct
                              quote; --context-file, --reading-file (shown as `Read as:`) and
-                             --note-file are the agent's. Each is repeatable and kept in order. A lone
-                             quote is the bare words, as before
+                             --note-file are the agent's. Each is repeatable and kept in order, and a
+                             lone quote is marked like the rest
     append N                 adds the player's further words on a captured note's topic to note N as a
                              comment marked so the tool tells it from a question; the same blocks
     correct N --line-file F  posts on note N a comment marking the line in F as not the player's
-                             (refused unless it is word for word in N's body or appended words),
+                             (refused unless it is one whole line of N's body or appended words),
                              with --context-file, --reading-file or --note-file blocks
     draft N M ...            prints the playtest sections of those notes in the filed layout: the
                              player's quote blocks as `> ` lines, every other block labelled the
@@ -300,10 +300,25 @@ def format_blocks(blocks: Sequence[Block]) -> str:
     return "\n\n".join(f"{MARKS[kind]}\n\n{text.strip()}" for kind, text in blocks) + "\n"
 
 
+def mark_title(line: str) -> str:
+    """A line without its leading `#`s and spaces, curly quotes straightened, in lower case."""
+    straight = line
+    for curly, plain in (("\u2018", "'"), ("\u2019", "'"), ("\u201c", '"'), ("\u201d", '"')):
+        straight = straight.replace(curly, plain)
+    return " ".join(straight.lstrip("# \t").split()).casefold()
+
+
+MARK_TITLES = {mark_title(mark) for mark in MARKS.values()}
+
+
 def refuse_markers(text: str, what: str) -> None:
-    """Only this tool writes a mark or a marker line; text for any block, comment or question may not carry one."""
+    """Only this tool writes a mark or a marker line; text for any block, comment or question may not carry one.
+
+    A look-alike is refused too (another heading level, a curly apostrophe, no space after the `#`s),
+    since on the issue it reads as the real mark.
+    """
     for line in text.replace("\r\n", "\n").split("\n"):
-        if line.strip() in MARK_KIND or line.strip().startswith("<!-- inbox-"):
+        if line.strip() in MARK_KIND or line.strip().startswith("<!-- inbox-") or mark_title(line) in MARK_TITLES:
             raise InboxError(
                 f"{what} has a line that is an append marker or a mark only this tool writes ({line.strip()[:50]!r});"
                 " nothing was written"
@@ -349,10 +364,15 @@ def corrected_lines(blocks: Sequence[Block]) -> list[str]:
     return [text for kind, text in blocks if kind == "correction"]
 
 
+def holds_line(text: str, line: str) -> bool:
+    """Whether `text` has `line` as a whole line, each compared after `normalize`; never a part of a line."""
+    wanted = normalize(line)
+    return bool(wanted) and any(normalize(each) == wanted for each in text.replace("\r\n", "\n").split("\n"))
+
+
 def flags_for(text: str, lines: Sequence[str]) -> list[str]:
-    """The corrected lines that are in `text`, word for word."""
-    said = normalize(text)
-    return [line for line in lines if normalize(line) and normalize(line) in said]
+    """The corrected lines that `text` holds as whole lines."""
+    return [line for line in lines if holds_line(text, line)]
 
 
 def bands(labels: Sequence[str]) -> list[str]:
@@ -579,7 +599,10 @@ def cmd_show(github: GitHub, number: int) -> int:
 
 
 def read_text(body_file: str | None, what: str) -> str:
-    text = Path(body_file).read_text(encoding="utf-8") if body_file else sys.stdin.read()
+    try:
+        text = Path(body_file).read_text(encoding="utf-8") if body_file else sys.stdin.read()
+    except (OSError, UnicodeDecodeError) as error:
+        raise InboxError(f"{what}: {body_file} cannot be read ({error}); nothing was written") from error
     if not text.strip():
         raise InboxError(f"{what} is empty; nothing was written")
     return text
@@ -601,13 +624,6 @@ def default_title(text: str) -> str:
 ISSUE_URL = re.compile(r"/issues/(\d+)\s*$")
 
 
-def blocks_text(blocks: Sequence[Block]) -> str:
-    """The text a note body or an appended comment carries: a lone quote is the bare words, anything else marked."""
-    if len(blocks) == 1 and blocks[0][0] == "quote":
-        return blocks[0][1]
-    return format_blocks(blocks)
-
-
 def check_blocks(blocks: Sequence[Block], what: str) -> None:
     for _, text in blocks:
         refuse_markers(text, what)
@@ -620,8 +636,8 @@ def check_blocks(blocks: Sequence[Block], what: str) -> None:
 def cmd_capture(github: GitHub, role: str, blocks: Sequence[Block], title: str | None, band: str | None) -> int:
     """Opens a note whose body is `blocks`, tagged so it counts as the player's.
 
-    A lone quote is the body bare, so it is the words alone; anything more is a run of blocks, each
-    under the mark of its kind, and only the quote blocks are the player's words.
+    The body is a run of blocks, each under the mark of its kind, a lone quote included; only the
+    quote blocks are the player's words.
     """
     check_blocks(blocks, "the note")
     first = next(text for kind, text in blocks if kind == "quote")
@@ -629,7 +645,7 @@ def cmd_capture(github: GitHub, role: str, blocks: Sequence[Block], title: str |
     args = ["issue", "create", "-R", github.repo, "--title", title or default_title(first), "--body-file", "-"]
     for label in labels:
         args += ["--label", label]
-    print(github.write(role, args, blocks_text(blocks)).strip())
+    print(github.write(role, args, format_blocks(blocks)).strip())
     return 0
 
 
@@ -643,8 +659,8 @@ def cmd_ask(github: GitHub, role: str, number: int, text: str) -> int:
 def cmd_append(github: GitHub, role: str, number: int, blocks: Sequence[Block]) -> int:
     """Adds `blocks`, the player's further words among them, to captured note `number`, marked as `append`'s.
 
-    A lone quote is posted bare under the marker line; anything more is a run of marked blocks. A note
-    the player wrote gets the player's own comments, and a closed note is filed.
+    The comment is a run of marked blocks under the marker line. A note the player wrote gets the
+    player's own comments, and a closed note is filed.
     """
     note = open_note(github, number)
     if not is_captured(note):
@@ -654,7 +670,7 @@ def cmd_append(github: GitHub, role: str, number: int, blocks: Sequence[Block]) 
         )
     check_blocks(blocks, "the appended comment")
     comment = ["issue", "comment", str(number), "-R", github.repo, "--body-file", "-"]
-    print(github.write(role, comment, f"{APPEND_MARKER}\n\n{blocks_text(blocks)}").strip())
+    print(github.write(role, comment, f"{APPEND_MARKER}\n\n{format_blocks(blocks)}").strip())
     return 0
 
 
@@ -675,10 +691,9 @@ def cmd_correct(github: GitHub, role: str, number: int, line: str, blocks: Seque
         found = comment_blocks(note, comment)
         if found is not None and (comment.author.lower() == PLAYER.lower() or appended_parts(note, comment)):
             held += [text for kind, text in found if kind == "quote"]
-    said = normalize(line)
-    if not said or not any(said in normalize(text) for text in held):
+    if "\n" in line.strip() or not any(holds_line(text, line) for text in held):
         raise InboxError(
-            f"that line is not word for word in #{number}'s body or in the words appended to it; nothing was written"
+            f"that is not one whole line of #{number}'s body or of the words appended to it; nothing was written"
         )
     posted = format_blocks([("correction", line), *blocks])
     print(github.write(role, ["issue", "comment", str(number), "-R", github.repo, "--body-file", "-"], posted).strip())
@@ -782,11 +797,14 @@ def draft_note(note: Note, comments: Sequence[Comment]) -> str:
     """
     pieces: list[tuple[str, list[Block]]] = [("body", body_blocks(note))]
     answered: list[Block] = []
-    for index, comment in enumerate(comments):
+    unmarked = is_captured(note) and parse_blocks(note.body) is None
+    kept = 0
+    for comment in comments:
         found = comment_blocks(note, comment)
         if found is None:
             continue
-        if index == 0 and is_captured(note) and found and found[0][0] == "agent":
+        kept += 1
+        if kept == 1 and unmarked and found and found[0][0] == "agent":
             answered = [("context", found[0][1])]  # a context posted before the marks existed
             continue
         pieces.append(("comment", found))
@@ -797,22 +815,17 @@ def draft_note(note: Note, comments: Sequence[Comment]) -> str:
     def item(label: str, text: str) -> None:
         nonlocal count
         count += 1
-        out.extend([f"{count}. {label}", "", indented(text), ""])
+        out.extend([f"{count}. {label}", "", indented(text, " " * len(f"{count}. ")), ""])
 
     def quote(label: str, text: str) -> None:
         nonlocal count
         count += 1
-        out.extend(
-            [
-                f"{count}. {label}",
-                "",
-                indented("\n".join("> " + line if line.strip() else ">" for line in text.split("\n"))),
-            ]
-        )
+        pad = " " * len(f"{count}. ")  # a list item's paragraphs are indented by the width of its number
+        quoted = "\n".join("> " + line if line.strip() else ">" for line in text.split("\n"))
+        out.extend([f"{count}. {label}", "", indented(quoted, pad)])
         for line in flags_for(text, lines):
-            out.extend(
-                ["", f"   The line \u201c{line}\u201d above is not the player's: a correction on this note says so."]
-            )
+            flag = f"The line \u201c{line}\u201d above is not the player's: a correction on this note says so."
+            out.extend(["", f"{pad}{flag}"])
         out.append("")
 
     if answered:

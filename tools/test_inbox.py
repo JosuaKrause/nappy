@@ -278,7 +278,8 @@ class WriteTests(unittest.TestCase):
         self.assertIn("/issues/77", out)
         self.assertEqual(len(fake.writes), 1)
         args, stdin = fake.writes[0]
-        self.assertEqual(stdin, words)
+        self.assertEqual(stdin, inbox.format_blocks([("quote", words)]))  # a lone quote carries its mark too
+        self.assertEqual(inbox.parse_blocks(stdin or ""), [("quote", words.strip())])
         self.assertEqual(args[: len(self.wrapped("claude-orchestrator"))], self.wrapped("claude-orchestrator"))
         self.assertEqual(args[6:8], ["issue", "create"])
         labels = [args[i + 1] for i, arg in enumerate(args) if arg == "--label"]
@@ -507,7 +508,13 @@ class AppendTests(unittest.TestCase):
         self.assertEqual(code, 0, err)
         wrapper = [sys.executable, str(TOOLS / "agent-identity.py"), "run", "claude-orchestrator", "--", "gh"]
         self.assertEqual(
-            fake.writes, [([*wrapper, "issue", "comment", "5", "-R", REPO, "--body-file", "-"], marked(MORE + "\n"))]
+            fake.writes,
+            [
+                (
+                    [*wrapper, "issue", "comment", "5", "-R", REPO, "--body-file", "-"],
+                    marked(inbox.format_blocks([("quote", MORE)])),
+                )
+            ],
         )
 
     def test_append_posts_marked_blocks_in_one_comment(self) -> None:
@@ -731,7 +738,7 @@ class BlockTests(unittest.TestCase):
             argv = ["--role", "claude-orchestrator", "correct", "5", "--line-file", str(line), "--note-file", str(why)]
             code, _, err = run(fake, *argv)
             self.assertEqual(code, 1)
-            self.assertIn("not word for word", err)
+            self.assertIn("not one whole line", err)
             self.assertEqual(fake.writes, [])
             line.write_text(self.STRAY, encoding="utf-8")
             code, _, err = run(fake, *argv)
@@ -745,9 +752,87 @@ class BlockTests(unittest.TestCase):
         fake = FakeGh(self.reads([appended]))
         with tempfile.TemporaryDirectory() as folder:
             line = Path(folder) / "line.md"
-            line.write_text("one more stray line", encoding="utf-8")
+            line.write_text("and one more stray line", encoding="utf-8")
             code, _, err = run(fake, "--role", "claude-orchestrator", "correct", "5", "--line-file", str(line))
         self.assertEqual(code, 0, err)
+
+    def test_a_correction_is_a_whole_line_never_a_fragment_or_a_run_across_lines(self) -> None:
+        body = inbox.format_blocks([("quote", "what about the steam punishment?\n\nother words")])
+        fake = FakeGh(
+            {
+                f"repos/{REPO}/issues/5": issue(5, author=BOT, labels=("inbox", "captured"), body=body),
+                f"repos/{REPO}/issues/5/comments": [],
+            }
+        )
+        with tempfile.TemporaryDirectory() as folder:
+            line = Path(folder) / "line.md"
+            for fragment in (
+                "e",
+                "team pun",
+                "steam punishment? other",
+                "what about the steam punishment?\nother words",
+            ):
+                line.write_text(fragment, encoding="utf-8")
+                code, _, err = run(fake, "--role", "claude-orchestrator", "correct", "5", "--line-file", str(line))
+                self.assertEqual(code, 1, fragment)
+                self.assertIn("not one whole line", err)
+            self.assertEqual(fake.writes, [])
+            line.write_text("  What about the steam punishment?\n", encoding="utf-8")  # case and spacing still count
+            self.assertEqual(run(fake, "--role", "claude-orchestrator", "correct", "5", "--line-file", str(line))[0], 1)
+            line.write_text("what  about the steam punishment?", encoding="utf-8")  # only whitespace is folded
+            code, _, err = run(fake, "--role", "claude-orchestrator", "correct", "5", "--line-file", str(line))
+            self.assertEqual(code, 0, err)
+
+    def test_a_flag_names_only_a_quote_holding_that_exact_line(self) -> None:
+        self.assertEqual(inbox.flags_for("Yesterday\nYes, I did", ["Yes"]), [])
+        self.assertEqual(inbox.flags_for("Yes\nmore", ["Yes"]), ["Yes"])
+        self.assertEqual(inbox.flags_for("> Yes  \n", ["Yes"]), ["Yes"])
+        self.assertEqual(inbox.flags_for("anything", [""]), [])
+
+    def test_a_look_alike_mark_is_refused_in_any_block(self) -> None:
+        for line in (
+            "## The player's words (direct quote)",
+            "### The player\u2019s words (direct quote)",
+            "###The player's words (direct quote)",
+            "#### Context (the agent's)",
+            "### context (the agent\u2019s)",
+        ):
+            with self.subTest(line=line), self.assertRaises(inbox.InboxError):
+                inbox.refuse_markers(f"fine\n{line}\nfine", "the block")
+        inbox.refuse_markers("a # comment, and a ### heading of other words", "the block")
+
+    def test_a_missing_input_file_is_a_clean_error(self) -> None:
+        fake = FakeGh({})
+        code, _, err = run(fake, "--role", "claude-orchestrator", "capture", "--quote-file", "/nonexistent/x.md")
+        self.assertEqual(code, 1)
+        self.assertIn("cannot be read", err)
+        self.assertNotIn("Traceback", err)
+        self.assertEqual(fake.writes, [])
+
+    def test_draft_does_not_take_a_question_on_a_marked_note_for_its_context(self) -> None:
+        question = self.comment("Follow-up question: why A?")
+        out = self.draft(self.reads([question]))
+        self.assertNotIn("What the note answered", out)
+        self.assertLess(out.index(self.QUOTE), out.index("Follow-up question"))
+
+    def test_draft_counts_only_comments_it_keeps_for_the_old_layout_context(self) -> None:
+        stranger = self.comment("hello", author="someone")
+        reads = {
+            f"repos/{REPO}/issues/5": issue(5, author=BOT, labels=("inbox", "captured"), body="plain words"),
+            f"repos/{REPO}/issues/5/comments": [stranger, self.comment("Asked: which?")],
+        }
+        out = self.draft(reads)
+        self.assertIn("What the note answered", out)
+        self.assertLess(out.index("which?"), out.index("plain words"))
+
+    def test_draft_indents_a_list_item_by_the_width_of_its_number(self) -> None:
+        comments = [
+            self.comment(f"{inbox.APPEND_MARKER}\n\n{inbox.format_blocks([('quote', f'word {n}')])}") for n in range(8)
+        ]
+        out = self.draft(self.reads(comments))
+        self.assertIn("\n10. ", out)
+        self.assertIn("\n    > word 5", out)  # the tenth item
+        self.assertIn("\n   > word 0", out)
 
     def test_show_prints_each_block_under_its_kind_and_flags_the_corrected_line(self) -> None:
         fake = FakeGh(self.reads([self.correction()]))

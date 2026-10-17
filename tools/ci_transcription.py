@@ -274,6 +274,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
             f" with the `{CAPTURE_LABEL}` label, and"
             " its body must appear word for word (blockquote markers and line wrapping aside) in a playtest file"
             " the branch adds since BASE, and so must the words `tools/inbox.py append` added to a captured note."
+            " On a captured note whose body or appended comment is marked, only its quote blocks ('The player's"
+            " words (direct quote)') are checked; context, a reading, a note and a correction need not be copied."
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,

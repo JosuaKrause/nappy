@@ -102,14 +102,13 @@ uv run python tools/inbox.py --role claude-orchestrator capture --band next \
 labels them, and `ci_transcription.py` and `close --pr` need the quote blocks word for word in the
 playtest file, so context, readings and notes need not be copied verbatim. A note takes at least one
 quote block. A text holding a mark line (or a marker line the tool writes) is refused, which keeps
-a block's kind unforgeable. A lone quote is stored as the bare words, and text with no mark at its
-start, a note the player wrote themselves or one captured before the marks, is all the player's.
-A stray line the player did not say is never put in a quote block; it belongs in a context or note
-block. The player's worry was words lost (bouncy-heron 2) when a session is cleared before an agent
-writes them down, and **which messages to capture is the agent's judgment**: no hook reminds it, and
-the conversation is not recorded as a whole (bouncy-heron 13). The script tags the note with the
-label `captured`, which only it sets, and opens it as `claude-orchestrator` (Codex: `codex-coder`),
-which is what makes a captured note count as the player's.
+a block's kind unforgeable, and so is a look-alike of a mark (another heading level, a curly
+apostrophe, no space after the `#`s), since on the issue it reads as the real one. A quote alone is
+marked like any other block; text with no mark at its start, a note the player wrote themselves or
+one captured before the marks, is all the player's. A stray line the player did not say is never put
+in a quote block; it belongs in a context or note block. The script tags the note with the label
+`captured`, which only it sets, and opens it as `claude-orchestrator` (Codex: `codex-coder`), which
+is what makes a captured note count as the player's.
 
 **A further word on the topic of a note already open is appended to that note, never captured as a
 new one** (olive-tapir). When the agent already knows an open captured note on the topic, one it
@@ -136,8 +135,9 @@ never by a new note** (inbox #767):
 uv run python tools/inbox.py --role claude-orchestrator correct N --line-file /tmp/line.md --note-file /tmp/why.md
 ```
 
-The comment is the agent's side, so the append rule above needs no exception. The line must be in
-the note's body or its appended words word for word, or nothing is written. `show N` flags the line
+The comment is the agent's side, so the append rule above needs no exception. The line must be one
+whole line of a quote in the note's body or its appended words, compared word for word, or nothing is
+written; a fragment of a line, or a run across two lines, is refused. `show N` flags the line
 as not the player's, and the draft flags it right after its quoted block.
 
 ## Asking about a note
