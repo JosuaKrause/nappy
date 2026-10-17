@@ -182,11 +182,12 @@ statements, the statement's number: `(woolly-penguin #759)`, `(PLAYTEST-16 7)`. 
 `docs/decisions/` that does, named the same way. The number is `#N` in a file whose statements are
 `## #N` headings, the note of that number there, and otherwise the file's own number for the
 statement, a numbered heading (`## 7. …`) or a numbered statement (`7. **…**`), with a range as
-`18-23`. The one other form is what `tools/inbox.py cite` writes after an inbox number, `inbox #N in
-woolly-penguin`, the playtest holding that note. A citation is never a Markdown link, a path or an
-anchor, and `tools/check_citations.py`, which `tools/lint.sh` runs, checks every one. Whether a rule
-reads the player right is established once, by the review of the change that writes it, so a reader
-does not re-check it on every read, and a quote in the rule is only a distraction.
+`18-23`. Where a number is both a numbered heading and a numbered statement in its file, the heading
+is meant. The one other form is what `tools/inbox.py cite` writes after an inbox number, `inbox #N
+in woolly-penguin`, the playtest holding that note. A citation is never a Markdown link, a path or
+an anchor, and `tools/check_citations.py`, which `tools/lint.sh` runs, checks every one. Whether a
+rule reads the player right is established once, by the review of the change that writes it, so a
+reader does not re-check it on every read, and a quote in the rule is only a distraction.
 
 ---
 

@@ -6,8 +6,8 @@ link or path, only the file's name; the reading is established once, by the revi
 that writes the rule; and a change's consequences are fixed in the PR that makes them.
 
 **Built (PR #756).** `CLAUDE.md` states the rule and says once how to read a citation: a name such
-as `woolly-penguin` is the playtest of that name under `docs/playtests/`, and a statement in a file of
-several is given either as `#N`, the statement under its `## #N` heading, or as the file's own
+as `woolly-penguin` is the playtest of that name under `docs/playtests/`, and a statement in a file
+of several is given either as `#N`, the statement under its `## #N` heading, or as the file's own
 statement number, as in `(PLAYTEST-16 7)`; words no playtest holds cite their record under
 `docs/decisions/` the same way, and `inbox #N in <name>`, which `tools/inbox.py cite` writes, is the
 one other form. Every quote of the player in `CLAUDE.md` and the skills became such a citation: 109

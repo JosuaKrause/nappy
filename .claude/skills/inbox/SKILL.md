@@ -5,7 +5,7 @@ description: The player's inbox on GitHub Issues — where it is found at the st
 
 # The inbox
 
-**GitHub Issues are the player's inbox, and nothing else** (bouncy-heron 13). A note is an open
+**GitHub Issues are the player's inbox, and nothing else** (bouncy-heron 5). A note is an open
 issue carrying the label `inbox`, and an issue without it is never filed (plaid-tapir 2), whoever
 opened it: `tools/inbox.py` skips it and refuses to close a batch naming it, and CI's
 `tools/ci_transcription.py` fails a filing pull request that names it. The player writes one at any

@@ -16,7 +16,11 @@ one other form. This flags, as `file:line: label`:
 - a bare name for a file with several numbered statements;
 - a `#N` with no `## #N` heading in its file, or a plain number for a file that has them;
 - a plain number its file does not have;
-- an `inbox #N in name` whose name is no playtest with a `## #N` heading for each number.
+- an `inbox #N in name` whose name is no playtest with a `## #N` heading for each number. The name
+  is hyphenated, like every playtest's, so prose such as "inbox #12 in March" is not read as one.
+
+A number that is both a numbered heading and a numbered statement in its file (`## Finding 3` and a
+`3.` list item) means the heading; the check only asks that the number exists, so it accepts either.
 
 What is read where: fenced code blocks are never read. Links and paths are flagged everywhere
 else, inside code spans too, since a path in backticks is still a path. Parenthesised citations
@@ -52,7 +56,7 @@ NAME = r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+"
 NOTES = r"#\d+(?:, #\d+)*"
 NUMBERS = r"\d+(?:[-\u2013]\d+)?(?:, \d+(?:[-\u2013]\d+)?)*"
 CITATION = re.compile(rf"^({NAME})(?: ({NOTES}|{NUMBERS}))?(?:, .*)?$", re.DOTALL)
-INBOX_IN = re.compile(r"\binbox (#\d+(?:(?:, and |, | and )#\d+)*) in ([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\b")
+INBOX_IN = re.compile(rf"\binbox (#\d+(?:(?:, and |, | and )#\d+)*) in ({NAME})\b")
 NOTE_HEADING = re.compile(r"^##[ \t]+#(\d+)\b", re.MULTILINE)
 NUMBER_HEADING = re.compile(r"^#{2,3}[ \t]+(?:Finding |Statement )?(\d+)\b(?![-/])", re.MULTILINE)
 NUMBER_ITEM = re.compile(r"^ {0,3}(\d+)\. ", re.MULTILINE)

@@ -119,6 +119,15 @@ class CheckCitationsTests(unittest.TestCase):
         self.flagged("Filed as inbox #760 in woolly-penguin.\n", "(inbox #760 in woolly-penguin)")
         self.flagged("Filed as inbox #759 in woolly-pengiun.\n", "(woolly-pengiun) names no file")
 
+    def test_an_unhyphenated_word_after_inbox_n_in_is_prose(self) -> None:
+        self.skill("Filed as inbox #12 in March, and inbox #5 in PR #700.\n")
+        self.assertEqual(self.run_check(), (0, "", ""))
+
+    def test_a_number_both_a_heading_and_a_statement_is_accepted(self) -> None:
+        self.write("docs/playtests/PLAYTEST-05.md", "# Playtest 5\n\n## Finding 3\n\n1. a\n2. b\n3. c\n")
+        self.skill("A rule (PLAYTEST-05 3).\n")
+        self.assertEqual(self.run_check()[0], 0)
+
     def test_code_spans_fences_and_lint_allow_are_not_read_for_citations(self) -> None:
         self.skill(
             "Run `tools/x.sh (not-a-name)` here.\n```\n(also-not-a-name)\n```\n"
