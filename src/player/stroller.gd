@@ -405,8 +405,9 @@ func _ready() -> void:
 
 ## Hands all three of her groups back — the other half of `_enter_tree()`'s own acquire. **A
 ## reference taken and never released is a page held at shutdown**, so nothing here waits for it
-## to be asked for again. A second rig alive at the same time would simply hold a second reference on the same
-## page rather than lose it, since `AtlasLibrary` counts references rather than owners; there is
+## to be asked for again. A second rig alive at the same time would simply hold a second
+## reference on the same page rather than lose it, since `AtlasLibrary` counts references rather
+## than owners; there is
 ## never more than one of her in a running game. In the running game none of these three drops a
 ## page: the boot's own residency is still holding each of them underneath her.
 func _exit_tree() -> void:
