@@ -2,7 +2,8 @@
 
 Post type: **Images & Video**, the trailer uploaded as the video (`build/trailer/trailer.mp4`,
 re-rendered with `tools/trailer.sh` after the release). Flair: **Browser Game**.
-Lines marked **[check]** are guesses about the player's side and need the player's word.
+Revised after a cold read by an agent that had never seen the game; the player's own lines were
+kept in their words except where a newcomer could not follow them.
 
 ---
 
@@ -12,43 +13,62 @@ Lines marked **[check]** are guesses about the player's side and need the player
 
 Just a walk, until she sleeps.
 
-Nappy is a top-down game about a mother pushing a stroller through a city, trying to get her baby
+Nappy is a top-down game about a parent pushing a stroller through a city, trying to get her baby
 to sleep. The only thing you decide is where you walk: the city is the same all run, so you learn
-it, but what happens in its streets changes every day. Free, no sign-up, plays on phone and desktop:
+it, but what happens in its streets changes every in-game day. Noise and crowds wind the baby up;
+if she gets too upset the day is lost, and a few things end it at once. Find a park where the baby
+can calm down. Free, no sign-up, plays in the browser on phone and desktop:
 https://nappy.josuakrause.com/
 
 **What Claude did**
 
-- Wrote the game, in Godot 4.7 and GDScript, and the tooling around it. **[check: no hand-written code]**
+- Wrote the game, in Godot 4.7 and GDScript, and the tooling around it. No hand-written code.
 - Worked as a team of agents: one session plans the work and briefs agents that each build one
   item in their own git worktree; a separate agent reviews every pull request adversarially before
-  it may merge, each under its own bot account. About 600 pull requests in seven weeks.
+  it may merge, and every agent works under its own bot account. About 600 pull requests in seven
+  weeks.
 - Kept the rules in the repo as skills (25 of them) that hooks load before an edit touches the area
   they govern, so a lesson learned once is in front of the next agent at the moment it matters.
 - Turned my playtest notes into work: I write a note as a GitHub issue (or say it in a session),
-  and it is filed word for word as a playtest record before anything is built from it.
-- Drew the art as SVG, generated the sound effects from code, and cut the trailer from the game's
-  own saved scenes by script, so it renders the same every time.
-- Tested headless, with rigs that walk the routes and check that every day stays winnable, plus a
-  browser check of the web build on every pull request.
+  and it is saved word for word in the repo before anything is built from it.
+- Drew the art as SVG, and cut the trailer from scripted scenes the game plays by itself, so it
+  renders the same every time.
+- Tested headless, with test scripts that walk every route and check that every day can still be
+  finished, plus a browser check of the web build on every pull request.
 
-Other tools: Codex (the illustrated pictures, and some of the work), GoatCounter (anonymous counts
-of what players run into, which Claude reads back).
+Other tools: Codex (the painted PNG art, and some features and reviews), GoatCounter (anonymous
+counts of where players lose a day and what they run into, which Claude reads back).
 
 **What went wrong**
 
-- Standing still was the best move in the game. The baby calmed fastest while the stroller stood,
-  so a full meter cleared in seventeen seconds anywhere, and the run log showed the winning strategy
-  as a 74-second gap where nothing happened. Now only walking calms her, and quiet streets calm her
-  faster, which is what makes the route matter.
-- Road closures could cut off every way home. Every closure is now checked before it is placed,
-  counting how many separate routes are left. **[check: is this a real incident?]**
-- The game locked up on my phone and never on a desktop. Finding it started with a per-frame
-  record you can save from the phone's browser.
+- Turning vector art into painted sprites with an image model. It painted a fake transparency
+  checkerboard even when told not to, a "style transfer" came back as the same drawing with a
+  nicer texture, and characters changed size between facing directions. What helped: keep the
+  vector original as the source, ask for a redraw rather than a retexture, and check every output
+  by script (real transparency, the original's canvas size and anchor point, the same height in
+  every direction) before looking at it by eye.
+- Walk cycles. Generated frames kept putting the same leg in front, and "fixed" frames often only
+  recolored the other leg. What helped: compare the frames' leg outlines with the colors removed,
+  and trace each leg from hip to knee to foot; in a two-frame walk the front leg has to swap.
+- Lag on phones. The obvious suspect, draw calls, turned out not to matter: cutting them in half
+  left the frame time where it was. What helped: a debug overlay in the live web build (turned on
+  by a URL flag) with switches that turn off one system at a time, so the phone itself shows what
+  each part of the game costs.
 
-**What I did:** the game itself and every decision about it. I came up with the idea and its
-rules, playtested on my phone after nearly every change (281 playtest records hold my notes word
-for word), and answered every question the agents brought back. I also set how the agents work:
-most of the repo's working rules began as something I told them after a mistake.
+**What I did:** the design and every decision about it. I came up with the idea and its rules,
+playtested on my laptop and phone after nearly every change (281 notes from my playtests, kept word
+for word), and brought in project management guidance for Claude: how work is planned, handed to
+agents and reviewed.
 
-**One question:** which way did you walk, and what made you avoid the other street?
+**What made it fair** (my strategies):
+
+- Build full paths through the city first, then place obstacles along them.
+- Draw random events from a shuffled "marble bag" instead of rolling dice, so luck evens out; you
+  can stack a guaranteed event into a bag, or put one bag inside another to keep similar events
+  apart.
+- Warn about a fast hazard before it appears, then spawn it just off screen where the warning
+  pointed.
+- Guide the player without them noticing they are being guided.
+- One unlucky hit never ends a day on its own; a loss takes several mistakes.
+
+**If you try it:** what made you pick one street over another?
