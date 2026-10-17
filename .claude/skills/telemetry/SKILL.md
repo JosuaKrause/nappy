@@ -98,8 +98,8 @@ A **`_draw()` counter** is the fourth shape, and it counts and nothing else. The
 a game `_draw()` override is `if FrameRecord.on: FrameRecord.drew(FrameLedger.DRAWS_<KIND>)`: one
 guarded static read off, one added integer on, never a time (the page's clock steps in 100µs, and
 a `_draw()` is far shorter) and never a branch in the body. It exists because the player asked
-which kinds of node redraw each frame (docs/playtests/2026-10-04-jolly-trout.md, #541: the
-per-kind `_draw()` counts) and a node's own `_draw()` is the only place that is known. A new
+which kinds of node redraw each frame, the per-kind `_draw()` counts (jolly-trout #541), and a
+node's own `_draw()` is the only place that is known. A new
 `_draw()` override in `src/` takes the line with the kind it belongs to, or the kind `other`;
 dev-only layers are not counted.
 

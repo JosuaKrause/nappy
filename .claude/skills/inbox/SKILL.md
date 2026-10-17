@@ -157,13 +157,14 @@ request carries the whole batch:
 
   `cite` finds each note's playtest from its `## #N` heading under `docs/playtests/` and, in every
   tracked text file outside `docs/playtests/`, turns the plain `inbox #N` (and a run such as
-  `inbox #9001, #9002 and #9003`) into `inbox #N in [name](relative link)` in Markdown, skills
-  included, and `inbox #N in name` in a code comment. A number counts only as `#N` followed by no
+  `inbox #9001, #9002 and #9003`) into `inbox #N in name`, the playtest's bare name, in every file,
+  Markdown and skills included, and never into a link (`CLAUDE.md` says once how a name is found).
+  A number counts only as `#N` followed by no
   digit or letter, or as `issues/N` in a URL, so an SVG colour such as `#9004a6` never matches. A
   bare `(#N)`, a range such as `#9001-#9005`, an issue URL, a link text and a run mixing playtests are
   listed as `file:line: text` and never edited. **Fix a listed citation by hand, the same way, when
   nothing near it names the playtest**; a bare number inside a sentence, list or heading that already
-  links the playtest can stay. A line that already names the playtest, or a citation already followed
+  names the playtest can stay. A line that already names the playtest, or a citation already followed
   by ` in <name or link>`, is left alone (a different playtest there is listed), so a second run
   changes nothing. **Then read
   `git diff` by eye**: a `#N` that is not a note (a pull request, an SVG colour written as three
