@@ -2499,6 +2499,16 @@ func _chase(delta: float) -> void:
 		# `_lunge_held`. Once held, he lunges the moment she is back at the full stand-off with
 		# the line clear, which is where a walker leaving him puts her, and his notice does not
 		# run out while she is inside it (`_pause_a_held_notice()`).
+		# **A pursuer with a notice walk of its own closes to its stand-off at it**
+		# (`EventDef.notice_walk_speed`, the alley robber's: inbox #761, "we can increase the
+		# noticing if the robber starts walking slowly"), so his alert walk is seen; every lunge
+		# below is decided exactly as it is for a pursuer that closes at its chase speed. **A held
+		# one keeps its stand-off at its chase speed** rather than at the walk: it is already at its
+		# lunge, and a robber left trailing out of an alley mouth at a walk while she walks on past
+		# starts his chase from deep in the alley, where a straight chase slides along its walls
+		# and a walker can outlast it — the one way walking could win.
+		if def.notice_walk_speed > 0.0 and not (def.sets_off_beside_her or _lunge_held):
+			step = minf(def.notice_walk_speed * delta, range_to_her)
 		var clear := _clear_line_to(player_at)
 		if def.sets_off_beside_her or _lunge_held:
 			step = clampf(range_to_her - standoff, 0.0, step)

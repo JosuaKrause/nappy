@@ -471,7 +471,7 @@ func _test_robber_waiting_faces_her(t) -> void:
 	instance.setup(def, Vector2.ZERO)
 	t.check(instance.is_waiting(), "nobody has come near him yet")
 	for sector in range(8):
-		# Well outside `pursues_within` (140px), so he never actually notices her — this is the
+		# Well outside `pursues_within` (180px), so he never actually notices her — this is the
 		# waiting posture's own facing, not the notice turning `_heading` for it.
 		instance.player_at = _heading_for_sector(sector) * (def.pursues_within + 40.0)
 		var heading := instance._robber_waiting_heading()
@@ -634,11 +634,11 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 			"walking at her through his notice (%.1fpx)" % instance.global_position.x)
 	t.check(instance.robber_pictures() == EventInstance.ROBBER_ALERT_BY_VIEW,
 			"still in his alert while he walks")
-	_hold(instance, her, 0.5)
+	_hold(instance, her, def.telegraph_time)
 	t.check(not instance.is_telegraphing()
 			and instance.robber_pictures() in [EventInstance.ROBBER_LUNGING_BY_VIEW,
 					EventInstance.ROBBER_LUNGING_BY_VIEW_B],
-			"once she is inside his stand-off he lunges")
+			"once his slow walk has brought her inside his stand-off he lunges")
 	instance.free()
 	# The sent robber arrives chasing, with no notice to be alert through.
 	var sent := EventInstance.new()

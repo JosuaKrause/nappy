@@ -14,10 +14,10 @@ extends RefCounted
 ## of 108, 112, 116, 120 and 130px (`lunge_reach` = stand-off less 78). The game ships the 26px catch
 ## with the 116px lunge (`lunge_reach` 38); the probe sets both per row, whatever the catalogue says.
 ##
-## The rig walks her along a line at the robber from outside his notice (`pursues_within` 140),
-## and answers after a reaction time drawn per seed: `turns` runs away `reaction` seconds after
-## the lunge (the chase begins), accelerating at `Tuning.ACCELERATION`. Other rigs: stands still,
-## walks away, runs from the notice.
+## The rig walks her along a line at the robber from outside his notice (`pursues_within`, read off
+## the row), and answers after a reaction time drawn per seed: `turns` runs away `reaction` seconds
+## after the lunge (the chase begins), accelerating at `Tuning.ACCELERATION`. Other rigs: stands
+## still, walks away, runs from the notice.
 
 const STEP := 1.0 / 60.0
 const SEEDS := 200
@@ -59,13 +59,14 @@ func _report(catch_radius: float, lunge: float) -> void:
 ## **The notice she really gets**: seconds from the frame (counted frame to frame, so a lunge on the
 ## frame after the notice reads one step, 0.017s) the real `EventInstance` leaves waiting (he
 ## turns to face her) to the frame its telegraph ends (he lunges). He is not still during it: he
-## closes on her at `pursue_speed` until she is at the stand-off, so the gap closes at 130 + 92px/s
-## when she walks in (from 200px, at `WALK_SPEED`) and at 130px/s when she stands at 139px, just
-## inside his 140px notice. Not the `(140 - stand-off) / WALK_SPEED` of her walk alone.
+## closes on her at his notice walk (`EventDef.notice_walk_speed`, or `pursue_speed` on a row with
+## none) until she is at the stand-off, so the gap closes at that plus 92px/s when she walks in
+## (from 60px outside his notice, at `WALK_SPEED`) and at his walk alone when she stands 1px inside
+## it. Not the `(notice - stand-off) / WALK_SPEED` of her walk alone.
 func _notice_to_lunge(def: EventDef, walking: bool) -> float:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	var her := Vector2(200.0 if walking else 139.0, 0.0)
+	var her := Vector2(def.pursues_within + (60.0 if walking else -1.0), 0.0)
 	var noticed := -1.0
 	var elapsed := 0.0
 	var result := -1.0
@@ -82,20 +83,21 @@ func _notice_to_lunge(def: EventDef, walking: bool) -> float:
 	instance.free()
 	return result
 
-## One chase. She starts 170-230px out walking in (or still), the robber notices at 140.
+## One chase. She starts 30-90px outside his notice walking in, or 10px inside it still or walking
+## away.
 func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	var her := Vector2(rng.randf_range(170.0, 230.0), 0.0)
+	var her := Vector2(def.pursues_within + rng.randf_range(30.0, 90.0), 0.0)
 	var reaction := rng.randf_range(0.15, 0.75)
 	var speed := -Tuning.WALK_SPEED
 	var wanted := -Tuning.WALK_SPEED
 	if mode == "still":
 		speed = 0.0
-		her.x = 130.0
+		her.x = def.pursues_within - 10.0
 		wanted = 0.0
 	elif mode == "walk_away":
-		her.x = 130.0
+		her.x = def.pursues_within - 10.0
 		speed = Tuning.WALK_SPEED
 		wanted = Tuning.WALK_SPEED
 	var elapsed := 0.0

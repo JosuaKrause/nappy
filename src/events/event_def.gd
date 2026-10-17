@@ -623,6 +623,22 @@ func departure_speed() -> float:
 ## the day-3 dog sent down her heading, and the same dog sprinkled in later — keeps closing, since
 ## its approach is the lesson (`EventInstance.is_standing_for_its_notice()`).
 @export var stands_for_its_notice := false
+## How fast this pursuer **walks at her through its notice**, in px/s, when that is slower than its
+## chase; 0 means it closes at `pursue_speed`, as every pursuer but the alley robber does. *(Inbox
+## #761, the player: "we can increase the noticing if the robber starts walking slowly".)* Closing
+## at his full chase speed, the robber's alert walk would be over in about a tenth of a second; a
+## slow walk from a wider trigger is what lets it be seen.
+##
+## **Only the closing slows**: he still lunges the moment she is inside his stand-off, along a clear
+## line (`EventInstance._chase()`), keeps a held lunge's stand-off at `pursue_speed` (`_lunge_held`),
+## and still chases at `pursue_speed` once the notice runs out, so
+## `Tuning.validate_pursuit()`'s clauses read the same numbers. What the slow walk changes is where
+## the chase starts when she does not walk in — from wherever the notice left her, which is further
+## than the stand-off — and `tests/test_events_pursuit.gd` walks that against the chase.
+##
+## Read only on a row that waits for her (`pursues_within`) and does not stand for its notice: a
+## notice that stands has no walk to slow, and one with no trigger has no notice spent walking.
+@export var notice_walk_speed := 0.0
 ## What `pursues_within_on()` answers once `day` is past `spawn_mode_switches_after_day`. Unread
 ## while that is 0.
 @export var pursues_within_after_first_day := 0.0
@@ -1354,6 +1370,16 @@ func validate() -> bool:
 			and pursues_within_after_first_day <= 0.0 and not sets_off_beside_her:
 		push_error("event '%s' stands for a notice it never takes: it neither waits for her nor "
 				% id + "sets off beside her")
+		return false
+	# A notice walk is a decision about a pursuer that walks at her through a notice it took by
+	# waiting: on a row that stands, that never pursues or that has no trigger nothing reads it, and
+	# one at or past its chase speed is not a slower walk at all.
+	if notice_walk_speed > 0.0 and (not pursues or stands_for_its_notice
+			or (pursues_within <= 0.0 and pursues_within_after_first_day <= 0.0)
+			or notice_walk_speed >= pursue_speed):
+		push_error("event '%s' walks %.0fpx/s through a notice it never walks: it must pursue, "
+				% [id, notice_walk_speed] + "wait for her, not stand, and walk slower than its "
+				+ "%.0fpx/s chase" % pursue_speed)
 		return false
 	# A flag nothing can read is a decision that silently did not happen: without a trigger there is
 	# no waiting state for `quiet_until_noticed` to quieten.
