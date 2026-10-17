@@ -4,7 +4,7 @@
 draws while neutral, what changes when she comes close, and what it draws while charging, and the
 code that picks each picture. Each row is backed by one frame-locked clip of that charger going
 through its stages, from a scene recipe that stands her in front of it, and a strip of its key
-frames. It is the audit behind [teal-trout](../../todo/2026-10-11-teal-trout/README.md), *every
+frames. It is the audit behind [teal-trout](../../decisions/2026-10-11-teal-trout.md), *every
 charger is neutral, then warns, then charges*, and the evidence for the player's choice of what
 the warning stage looks like; it proposes no drawing.
 
