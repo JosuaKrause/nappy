@@ -1628,11 +1628,20 @@ is paid for at the next one; the rest of the escape recovers as it always did.
 so the line on the screen and the line in the HUD are one instruction rather than two.
 
 **Section two is the city she knows with the men in it.** Army trucks, unmarked vans and
-roadblocks at full resistance progress stand on every street either chain walks. A roadblock is a
-barrier with a guard standing at it from the moment it is placed; when he notices her **he** comes
-for her, on foot, and the barrier he leaves stays drawn and stays shut across the road behind him.
-What takes the baby is his own reach (`EventCatalogue.MASKED_MAN_REACH`, 28px, the same as the man
-on the stairs) — nothing about the barricade catches her. See `docs/EVENTS.md`, "The heat".
+roadblocks at full resistance progress stand on every street either chain walks, at most one of
+each a street (`Tuning.FINALE_*_PER_STREET`). A roadblock is a barrier with a guard standing at it from
+the moment it is placed; when he notices her **he** comes for her, on foot, and the barrier he
+leaves stays drawn and stays shut across the road behind him. What takes the baby is his own reach
+(`EventCatalogue.MASKED_MAN_REACH`, 28px, the same as the man on the stairs) — nothing about the
+barricade catches her. See `docs/EVENTS.md`, "The heat".
+
+**A roadblock is passed by luring its guard off.** *(Inbox #771: "it should be in a way that
+luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
+charge. Walking in until he charges and running back until he gives up takes him off for good, and
+once he has left his post the band is only a barrier: solid, and costing nothing to walk past
+(`EventCatalogue.escape_roadblock()`). One roadblock a street means there is one guard to lure,
+not a second band's still posted beside the first. See `docs/EVENTS.md`, "The escape — the walk
+that is not a day".
 
 **Nothing on the walk closes a street.** *(Inbox #747: "one sidewalk must be open if they're
 en-route. the escape's street should not have fully blocking events like in the normal game.")*

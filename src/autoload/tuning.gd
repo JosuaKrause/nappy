@@ -2695,12 +2695,19 @@ const FINALE_STEAM_BLOWS_FOR := 2.0
 
 ## How many of each kind of danger the finale's own plan puts on one open chain street. *"Lots of
 ## lethal and dangerous events"*: a street is `BLOCK_SIZE` (8) tiles long, so one truck, one van
-## and one pair of masked men on a street is roughly one lethal thing every two tiles of walking
+## and one roadblock on a street is roughly one lethal thing every three tiles of walking
 ## — several times an ordinary day's own one-event-per-block, which is what the climax asks for,
 ## while `EventScheduler._room_around()` still refuses anything it cannot give room to.
 const FINALE_TRUCKS_PER_STREET := 1
 const FINALE_VANS_PER_STREET := 1
-const FINALE_GUARDS_PER_STREET := 2
+## **One roadblock a street, so a crossing is one band and the one guard on her side of it.**
+## *(Inbox #771: "it should be in a way that luring away the guard is enough. Right now there are
+## for guards and the player adds excitement by just being close. Luring away one guard (the
+## challenge) is not enough to make the obstacle survivable")* Two bands on one street would stand
+## a couple of tiles apart, and luring the first one's guard off would leave the second one's posted
+## on the same sidewalk, so walking past would still meet his charge: the lure is the answer only
+## when there is one guard to lure.
+const FINALE_GUARDS_PER_STREET := 1
 ## And how many explosions are sited off the chain per open street. Off screen by definition, so
 ## these are placed *beside* the corridor rather than on it — see `FinalePlanner`.
 const FINALE_EXPLOSIONS_PER_STREET := 1

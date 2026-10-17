@@ -4226,6 +4226,11 @@ func _pause_a_held_notice(delta: float) -> void:
 ## `_caret_intensity_over_horizon()`, asking for the pulse's own mean over
 ## `Tuning.EXPECTED_IMPACT_HORIZON` instead of the beat this instant happens to be on.
 func current_intensity(pulse_multiplier_override := -1.0) -> float:
+	if def.silent_once_unmanned and is_a_spent_guard():
+		# **Nobody mans it, so it is only a barrier** (`EventDef.silent_once_unmanned`, the
+		# escape's roadblock): solid and drawn, with no field, once its guard has left his post
+		# for good. *(Inbox #771: "it should be in a way that luring away the guard is enough")*
+		return 0.0
 	if is_leaving and _is_a_guard_leaving_his_barrier():
 		# **The barrier's own peak, not the man's.** He walks away but the band keeps charging what
 		# a waiting roadblock charges (`_field_at()` centres it on the band).

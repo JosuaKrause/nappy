@@ -310,13 +310,16 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ## fixed count of a fixed handful of rows *per open street*: army trucks on the carriageways,
 ## masked men on foot and in vans, and the bursts that leave craters.
 ##
-## **Four rows, three of which already exist and are not changed.** `military_convoy` is the truck,
-## with the barricade it ordinarily leaves stripped — on an ordinary day that aftermath is the
-## point of the row, and here a convoy is traffic rather than the thing that closed a street.
-## `abduction` is the masked men in a van. `roadblock` at full heat is the masked men on foot: at
-## `Tuning.RESISTANCE_GOAL` its guards leave the post, so it stands as a band across the road until
-## she comes within `Tuning.HEAT_HUNTS_WITHIN` and then comes at her on foot as
-## `guard_standing.svg` and `guard_lunging.svg` — see `EventInstance._draw_roadblock()`. Only the
+## **Four rows, three of which already exist.** `military_convoy` is the truck, with the barricade
+## it ordinarily leaves stripped — on an ordinary day that aftermath is the point of the row, and
+## here a convoy is traffic rather than the thing that closed a street. `abduction` is the masked
+## men in a van. `roadblock` at full heat is the masked men on foot: at `Tuning.RESISTANCE_GOAL` its
+## guards leave the post, so it stands as a band across the road until she comes within
+## `Tuning.HEAT_HUNTS_WITHIN` and then the guard on her side comes at her on foot as
+## `guard_standing.svg` and `guard_lunging.svg` — see `EventInstance._draw_roadblock()`. Its one
+## change is `EventCatalogue.escape_roadblock()`'s: once that guard has left his post for good, the
+## band is only a barrier and costs nothing, so luring him off and running him off is the way past,
+## and one roadblock a street (`Tuning.FINALE_GUARDS_PER_STREET`) leaves one guard to lure. Only the
 ## explosion is new.
 ##
 ## **Every density rule a day keeps is kept here.** `_build_placement` sites each one, `_room_around`
@@ -342,7 +345,7 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 	var planned: Array[Planned] = []
 	var trucks := _without_its_aftermath(EventCatalogue.by_id("military_convoy"))
 	var vans := EventCatalogue.by_id("abduction")
-	var masked := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	var masked := EventCatalogue.escape_roadblock()
 	var bursts := EventCatalogue.by_id("finale_explosion")
 	# **A tree and an event never share ground**, the finale's streets included — `docs/CITY.md`,
 	# "Street trees". Scanned once for the whole plan rather than once per street per row: a city

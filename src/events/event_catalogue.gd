@@ -45,6 +45,8 @@ const MAST_BODY := 6.0
 static var _all: Array[EventDef] = []
 ## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
 static var _hot: Dictionary[String, EventDef] = {}
+## The escape's own roadblock. See `escape_roadblock()`.
+static var _escape_roadblock: EventDef = null
 
 ## Every heat level a run can reach. Progress runs 0..`RESISTANCE_GOAL`; a task completed past the
 ## goal adds nothing, because full heat is the qualification rather than the last errand. A
@@ -69,6 +71,7 @@ static func all() -> Array[EventDef]:
 		for day: int in [guardsmen_from_day() - 1, guardsmen_from_day()]:
 			out_of_the_car(day).validate()
 			out_of_the_car(day, false).validate()
+		escape_roadblock().validate()
 	return _all
 
 ## This row at a resistance level, derived once per run and kept.
@@ -83,6 +86,24 @@ static func heated(def: EventDef, level: int) -> EventDef:
 	if not _hot.has(key):
 		_hot[key] = def.at_heat(level)
 	return _hot[key]
+
+## **The roadblock the escape stands on its streets**: the row at full heat, its guards hunting,
+## with one difference — once the guard who set off from it has left his post for good, the band
+## is only a barrier and costs nothing (`EventDef.silent_once_unmanned`). *(Inbox #771: "it should
+## be in a way that luring away the guard is enough. Right now there are for guards and the player
+## adds excitement by just being close.")* While he stands at his post, warns and charges, the band
+## charges what the hunting row charges. A derived copy, never a mutation, kept for the run, for the
+## reason `heated()` caches its own; `shape` and `solid_parts` are carried across by hand, as
+## `EventDef.at_heat()` carries them, since `Resource.duplicate()` does not copy them.
+static func escape_roadblock() -> EventDef:
+	if _escape_roadblock == null:
+		var hunting := heated(by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+		var escape: EventDef = hunting.duplicate()
+		escape.shape = hunting.shape
+		escape.solid_parts = hunting.solid_parts
+		escape.silent_once_unmanned = true
+		_escape_roadblock = escape
+	return _escape_roadblock
 
 static func by_id(id: String) -> EventDef:
 	for def in all():
