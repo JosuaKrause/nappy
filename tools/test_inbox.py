@@ -304,20 +304,63 @@ class WriteTests(unittest.TestCase):
                 run(fake, "--role", "claude-orchestrator", "capture", "--band", "soon", stdin="words")
         self.assertEqual(fake.writes, [])
 
-    def test_capture_posts_what_the_words_answered_as_the_first_comment(self) -> None:
+    def test_capture_marks_each_block_in_the_order_given(self) -> None:
+        fake = FakeGh({})
+        with tempfile.TemporaryDirectory() as folder:
+            files = {}
+            for name, text in (
+                ("c", "Asked: which band?"),
+                ("q", "the next band"),
+                ("r", "wants it later"),
+                ("n", "n.b."),
+            ):
+                files[name] = Path(folder) / name
+                files[name].write_text(text, encoding="utf-8")
+            code, _, err = run(
+                fake,
+                "--role", "claude-orchestrator", "capture",
+                "--context-file", str(files["c"]), "--quote-file", str(files["q"]),
+                "--reading-file", str(files["r"]), "--note-file", str(files["n"]),
+            )  # fmt: skip
+        self.assertEqual(code, 0, err)
+        self.assertEqual(len(fake.writes), 1)
+        args, body = fake.writes[0]
+        self.assertEqual(args[args.index("--title") + 1], "the next band")
+        self.assertEqual(
+            inbox.parse_blocks(body or ""),
+            [
+                ("context", "Asked: which band?"),
+                ("quote", "the next band"),
+                ("reading", "wants it later"),
+                ("note", "n.b."),
+            ],
+        )
+        self.assertIn(inbox.MARKS["reading"], body or "")
+
+    def test_capture_needs_a_quote_and_refuses_a_mark_in_a_block(self) -> None:
         fake = FakeGh({})
         with tempfile.TemporaryDirectory() as folder:
             context = Path(folder) / "context.md"
             context.write_text("Asked: which band?", encoding="utf-8")
-            code, out, _ = run(
-                fake, "--role", "claude-orchestrator", "capture", "--context-file", str(context), stdin="x"
+            code, _, err = run(fake, "--role", "claude-orchestrator", "capture", "--context-file", str(context))
+            self.assertEqual(code, 1)
+            self.assertIn("no block of the player's words", err)
+            context.write_text(f"{inbox.MARKS['quote']}\nI said so", encoding="utf-8")
+            quote = Path(folder) / "q.md"
+            quote.write_text("x", encoding="utf-8")
+            code, _, err = run(
+                fake,
+                "--role",
+                "claude-orchestrator",
+                "capture",
+                "--context-file",
+                str(context),
+                "--quote-file",
+                str(quote),
             )
-        self.assertEqual(code, 0)
-        self.assertIn("posted the context on #77", out)
-        self.assertEqual(
-            [args[6:9] for args, _ in fake.writes], [["issue", "create", "-R"], ["issue", "comment", "77"]]
-        )
-        self.assertEqual([stdin for _, stdin in fake.writes], ["x", "Asked: which band?"])
+            self.assertEqual(code, 1)
+            self.assertIn("only this tool writes", err)
+        self.assertEqual(fake.writes, [])
 
     def test_a_long_first_line_is_cut_at_a_word_for_the_title(self) -> None:
         title = inbox.default_title("> " + "word " * 30)
@@ -467,18 +510,32 @@ class AppendTests(unittest.TestCase):
             fake.writes, [([*wrapper, "issue", "comment", "5", "-R", REPO, "--body-file", "-"], marked(MORE + "\n"))]
         )
 
-    def test_append_posts_what_the_words_answered_first(self) -> None:
+    def test_append_posts_marked_blocks_in_one_comment(self) -> None:
         fake = self.captured()
         with tempfile.TemporaryDirectory() as folder:
-            context = Path(folder) / "context.md"
+            context, reading = Path(folder) / "c.md", Path(folder) / "r.md"
             context.write_text("Asked: generic how?", encoding="utf-8")
+            reading.write_text("a bag of any kind", encoding="utf-8")
             code, out, _ = run(
-                fake, "--role", "claude-orchestrator", "append", "5", "--context-file", str(context), stdin=MORE
-            )
+                fake, "--role", "claude-orchestrator", "append", "5", "--context-file", str(context),
+                "--reading-file", str(reading), stdin="",
+            )  # fmt: skip
+            self.assertEqual(code, 1)  # no quote block: nothing is posted
+            quote = Path(folder) / "q.md"
+            quote.write_text(MORE, encoding="utf-8")
+            code, out, _ = run(
+                fake, "--role", "claude-orchestrator", "append", "5", "--context-file", str(context),
+                "--quote-file", str(quote), "--reading-file", str(reading),
+            )  # fmt: skip
         self.assertEqual(code, 0)
         self.assertEqual(out.count("\n"), 1)
-        both = f"{inbox.APPEND_MARKER}\n\nAsked: generic how?\n\n{inbox.WORDS_MARKER}\n\n{MORE}"
-        self.assertEqual([stdin for _, stdin in fake.writes], [both])
+        posted = fake.writes[0][1] or ""
+        first, _, rest = posted.partition("\n")
+        self.assertEqual(first, inbox.APPEND_MARKER)
+        self.assertEqual(
+            inbox.parse_blocks(rest),
+            [("context", "Asked: generic how?"), ("quote", MORE), ("reading", "a bag of any kind")],
+        )
 
     def test_a_failed_post_leaves_nothing_to_duplicate_on_a_retry(self) -> None:
         # The context and the words are one comment, so a failing post leaves no context alone on
@@ -496,13 +553,23 @@ class AppendTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             context = Path(folder) / "context.md"
             context.write_text("Asked: generic how?", encoding="utf-8")
-            argv = ["--role", "claude-orchestrator", "append", "5", "--context-file", str(context)]
+            body = Path(folder) / "body.md"
+            body.write_text(MORE, encoding="utf-8")
+            argv = [
+                "--role",
+                "claude-orchestrator",
+                "append",
+                "5",
+                "--context-file",
+                str(context),
+                "--body-file",
+                str(body),
+            ]
             err = io.StringIO()
             for _ in range(2):
                 with (
                     redirect_stdout(io.StringIO()),
                     redirect_stderr(err),
-                    mock.patch.object(sys, "stdin", io.StringIO(MORE)),
                 ):
                     inbox.main(["--repo", REPO, *argv], flaky)
         self.assertIn("network down", err.getvalue())
@@ -519,14 +586,17 @@ class AppendTests(unittest.TestCase):
                     self.assertEqual(code, 1)
                     self.assertIn("append marker", err)
         with tempfile.TemporaryDirectory() as folder:
-            context = Path(folder) / "context.md"
-            context.write_text(f"{inbox.APPEND_MARKER}\nx", encoding="utf-8")
-            for with_context in (("capture",), ("append", "5")):
-                code, _, err = run(
-                    fake, "--role", "claude-orchestrator", *with_context, "--context-file", str(context), stdin="words"
-                )
-                self.assertEqual(code, 1)
-                self.assertIn("append marker", err)
+            context, quote = Path(folder) / "context.md", Path(folder) / "q.md"
+            quote.write_text("words", encoding="utf-8")
+            for text in (f"{inbox.APPEND_MARKER}\nx", f"{inbox.MARKS['quote']}\nx"):
+                context.write_text(text, encoding="utf-8")
+                for with_context in (("capture",), ("append", "5")):
+                    code, _, err = run(
+                        fake, "--role", "claude-orchestrator", *with_context,
+                        "--context-file", str(context), "--quote-file", str(quote),
+                    )  # fmt: skip
+                    self.assertEqual(code, 1)
+                    self.assertIn("only this tool writes", err)
         self.assertEqual(fake.writes, [])
 
     def test_append_refuses_without_a_role_an_empty_text_and_a_stray_role(self) -> None:
@@ -614,6 +684,167 @@ class AppendTests(unittest.TestCase):
         # The context in an appended comment is the agent's side: not required in the playtest file.
         both = f"{inbox.APPEND_MARKER}\n\nAsked: which bag?\n\n{inbox.WORDS_MARKER}\n\n{MORE}"
         self.assertEqual(inbox.unfiled_words(note, [inbox.Comment(BOT, "t1", both)], text), [])
+
+
+class BlockTests(unittest.TestCase):
+    """A captured note is a run of marked blocks: only the quote blocks are the player's words."""
+
+    QUOTE = "make the bag generic, not marbles only"
+    STRAY = "what about the steam punishment?"
+
+    def body(self) -> str:
+        text: str = inbox.format_blocks(
+            [
+                ("context", "Asked: what should the bag hold?"),
+                ("quote", f"{self.QUOTE}\n{self.STRAY}"),
+                ("reading", "any item, not only marbles"),
+                ("note", "see the bag entry"),
+            ]
+        )
+        return text
+
+    def reads(self, comments: Sequence[dict[str, Any]] = ()) -> dict[str, Any]:
+        return {
+            f"repos/{REPO}/issues/5": issue(5, author=BOT, labels=("inbox", "captured"), body=self.body()),
+            f"repos/{REPO}/issues/5/comments": list(comments),
+        }
+
+    def comment(self, body: str, author: str = BOT) -> dict[str, Any]:
+        return {"user": {"login": author}, "created_at": "2026-10-17T10:00:00Z", "body": body}
+
+    def correction(self) -> dict[str, Any]:
+        return self.comment(inbox.format_blocks([("correction", self.STRAY), ("note", "not said")]))
+
+    def test_blocks_round_trip_and_unmarked_text_is_all_quote(self) -> None:
+        blocks = [("quote", "a"), ("context", "b\n\nc"), ("reading", "d")]
+        self.assertEqual(inbox.parse_blocks(inbox.format_blocks(blocks)), blocks)
+        self.assertIsNone(inbox.parse_blocks("just words\n" + inbox.MARKS["context"] + "\nx"))
+        note = inbox.note_from_api(issue(5, body=inbox.format_blocks(blocks)))
+        self.assertEqual(inbox.body_blocks(note), [("quote", inbox.format_blocks(blocks).strip())])  # the player's own
+
+    def test_a_correction_needs_the_line_in_the_body_or_the_appended_words(self) -> None:
+        fake = FakeGh(self.reads())
+        with tempfile.TemporaryDirectory() as folder:
+            line, why = Path(folder) / "line.md", Path(folder) / "why.md"
+            why.write_text("not said", encoding="utf-8")
+            line.write_text("a line nobody said", encoding="utf-8")
+            argv = ["--role", "claude-orchestrator", "correct", "5", "--line-file", str(line), "--note-file", str(why)]
+            code, _, err = run(fake, *argv)
+            self.assertEqual(code, 1)
+            self.assertIn("not word for word", err)
+            self.assertEqual(fake.writes, [])
+            line.write_text(self.STRAY, encoding="utf-8")
+            code, _, err = run(fake, *argv)
+        self.assertEqual(code, 0, err)
+        args, posted = fake.writes[0]
+        self.assertEqual(args[6:9], ["issue", "comment", "5"])
+        self.assertEqual(inbox.parse_blocks(posted or ""), [("correction", self.STRAY), ("note", "not said")])
+
+    def test_a_line_appended_later_can_be_corrected_too(self) -> None:
+        appended = self.comment(f"{inbox.APPEND_MARKER}\n\nand one more stray line")
+        fake = FakeGh(self.reads([appended]))
+        with tempfile.TemporaryDirectory() as folder:
+            line = Path(folder) / "line.md"
+            line.write_text("one more stray line", encoding="utf-8")
+            code, _, err = run(fake, "--role", "claude-orchestrator", "correct", "5", "--line-file", str(line))
+        self.assertEqual(code, 0, err)
+
+    def test_show_prints_each_block_under_its_kind_and_flags_the_corrected_line(self) -> None:
+        fake = FakeGh(self.reads([self.correction()]))
+        code, out, err = run(fake, "show", "5")
+        self.assertEqual(code, 0, err)
+        for text in (
+            "context (the agent's)",
+            "the player's words (direct quote)",
+            "Read as: any item, not only marbles",
+        ):
+            self.assertIn(text, out)
+        self.assertIn("(the agent's interpretation, not the player's words)", out)
+        self.assertIn(f"[this line is not the player's, a correction on this note says so: {self.STRAY}]", out)
+
+    def test_a_marked_note_needs_only_its_quote_blocks_in_the_playtest(self) -> None:
+        fake_reads = {
+            **self.reads(
+                [
+                    self.comment(
+                        f"{inbox.APPEND_MARKER}\n\n{inbox.format_blocks([('context', 'asked'), ('quote', MORE)])}"
+                    )
+                ]
+            ),
+            f"repos/{REPO}/pulls/430": filing_pr(430, "Filed from #5"),
+            **playtest_reads(430, f"> {self.QUOTE}\n> {self.STRAY}\n\nanything\n\n> {MORE}\n"),
+        }
+        fake = FakeGh(fake_reads)
+        code, out, err = run(fake, "close", "--pr", "430", "--dry-run")
+        self.assertEqual(code, 0, err)
+        self.assertIn("would close #5", out)
+        fake = FakeGh({**fake_reads, **playtest_reads(430, f"> {self.QUOTE}\n\n> {MORE}\n")})
+        code, _, err = run(fake, "close", "--pr", "430", "--dry-run")
+        self.assertEqual(code, 1)
+
+    def draft(self, reads: dict[str, Any]) -> str:
+        code, out, err = run(FakeGh(reads), "draft", "5")
+        self.assertEqual(code, 0, err)
+        return out
+
+    def test_draft_labels_every_kind_and_flags_after_the_quote(self) -> None:
+        out = self.draft(self.reads([self.correction()]))
+        self.assertIn("## #5", out)
+        self.assertIn("**Context** (the assistant's):", out)
+        self.assertIn("**Read as:** (the assistant's interpretation, not the player's words)", out)
+        self.assertIn("**Note** (the assistant's):", out)
+        quote_end = out.index(f"   > {self.STRAY}")
+        flag = out.index("is not the player's: a correction on this note says so.")
+        self.assertGreater(flag, quote_end)
+        between = out[quote_end:flag]
+        self.assertIn("\n\n", between)  # a blank line closes the quote before the flag
+        self.assertNotIn("> The line", out)
+
+    def test_the_draft_passes_the_transcription_check(self) -> None:
+        path = TOOLS / "ci_transcription.py"
+        if not path.exists():
+            self.skipTest("tools/ci_transcription.py is not in this checkout")
+        sys.path.insert(0, str(TOOLS))
+        spec = importlib.util.spec_from_file_location("ci_transcription", path)
+        assert spec and spec.loader
+        ci = importlib.util.module_from_spec(spec)
+        sys.modules["ci_transcription"] = ci
+        spec.loader.exec_module(ci)
+        appended = self.comment(
+            f"{inbox.APPEND_MARKER}\n\n{inbox.format_blocks([('context', 'asked'), ('quote', MORE)])}"
+        )
+        legacy = self.comment(f"{inbox.APPEND_MARKER}\n\nasked\n\n{inbox.WORDS_MARKER}\n\n{MORE} again")
+        comments = [self.correction(), appended, legacy]
+        out = self.draft(self.reads(comments))
+        words = ci.appended_words(BOT, ("inbox", "captured"), comments)
+        self.assertEqual(words, (MORE, f"{MORE} again"))
+        checked = ci.Note(
+            number=5, author=BOT, labels=("inbox", "captured"), body=self.body(), is_pull_request=False, appended=words
+        )
+        self.assertEqual(ci.check([checked], {"docs/playtests/2026-10-17-x-y.md": out}), [])
+        # the quote blocks are what is checked: dropping the quote from the playtest fails
+        broken = out.replace(self.QUOTE, "something else")
+        self.assertTrue(ci.check([checked], {"docs/playtests/2026-10-17-x-y.md": broken}))
+
+    def test_the_draft_of_a_note_from_before_the_marks_is_unchanged_in_substance(self) -> None:
+        legacy_reads = {
+            f"repos/{REPO}/issues/5": issue(5, author=BOT, labels=("inbox", "captured"), body="plain words"),
+            f"repos/{REPO}/issues/5/comments": [self.comment("Asked: which?")],
+        }
+        out = self.draft(legacy_reads)
+        self.assertIn("**What the note answered** (the assistant):", out)
+        self.assertIn("   > plain words", out)
+        self.assertLess(out.index("which?"), out.index("plain words"))
+
+    def test_a_mark_in_the_players_own_note_is_just_their_words(self) -> None:
+        body = inbox.format_blocks([("context", "pretend")])
+        reads = {
+            f"repos/{REPO}/issues/5": issue(5, body=body),
+            f"repos/{REPO}/issues/5/comments": [],
+        }
+        out = self.draft(reads)
+        self.assertNotIn("**Context**", out)
+        self.assertIn("> ### Context (the agent's)", out)
 
 
 class CiteTests(unittest.TestCase):
@@ -792,6 +1023,10 @@ class AgreementTests(unittest.TestCase):
     def test_the_append_marker_is_the_same(self) -> None:
         self.assertEqual(self.ci.APPEND_MARKER, inbox.APPEND_MARKER)
         self.assertEqual(self.ci.WORDS_MARKER, inbox.WORDS_MARKER)
+
+    def test_the_marks_are_the_same(self) -> None:
+        self.assertEqual(self.ci.MARKS, tuple(inbox.MARKS.values()))
+        self.assertEqual(self.ci.QUOTE_MARK, inbox.MARKS["quote"])
 
     def test_both_read_the_words_of_an_appended_comment_alike(self) -> None:
         for body in (marked(MORE), f"{inbox.APPEND_MARKER}\n\nctx\n\n{inbox.WORDS_MARKER}\n\n{MORE}"):

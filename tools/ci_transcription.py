@@ -24,6 +24,8 @@ such line (bouncy-heron, statements 12, 19 and 23):
   appears the same way in a playtest file the pull request adds. The marker is not part of the words,
   and the same comment on a note the player opened counts for nothing. When the comment carries
   what the words answered, a `WORDS_MARKER` line ends it and only what follows is the words.
+  On a captured note whose body or appended comment is marked, only the quote blocks are the
+  player's words and the rest (context, a reading, a note, a correction) need not be copied.
   This is looser than `tools/inbox.py close`, which needs the body and every appended comment in
   one and the same playtest file: here each may be in any file the pull request adds.
 
@@ -72,6 +74,16 @@ APPEND_MARKER = "<!-- inbox-append: the player's further words, added by tools/i
 # Separates what the words answered (above it) from the words (below it) in one append comment, so a
 # failed post can never leave the context alone on the issue or duplicate it on a retry.
 WORDS_MARKER = "<!-- inbox-append: the player's words follow -->"
+# The marks of the blocks a captured note or appended comment holds (`tools/inbox.py` holds the same):
+# only a quote block is the player's words; unmarked text is all of it.
+QUOTE_MARK = "### The player's words (direct quote)"
+MARKS = (
+    QUOTE_MARK,
+    "### Context (the agent's)",
+    "### Read as (the agent's interpretation)",
+    "### Note (the agent's)",
+    "### Correction (the line below is not the player's)",
+)
 
 EPILOG = """\
 examples:
@@ -91,6 +103,32 @@ class Note:
     appended: tuple[str, ...] = ()
 
 
+def quote_blocks(text: str) -> list[str] | None:
+    """The texts of the quote blocks of marked text, or None when its first non-blank line is no mark."""
+    lines = text.replace("\r\n", "\n").split("\n")
+    if next((line.strip() for line in lines if line.strip()), "") not in MARKS:
+        return None
+    quotes: list[str] = []
+    current: list[str] | None = None
+    for line in [*lines, MARKS[0] + "\0"]:
+        if line.strip() in MARKS or line.endswith("\0"):
+            if current is not None and "\n".join(current).strip():
+                quotes.append("\n".join(current).strip())
+            current = [] if line.strip() == QUOTE_MARK else None
+        elif current is not None:
+            current.append(line)
+    return quotes
+
+
+def body_quotes(note: Note) -> list[str]:
+    """The player's words in the note's body: its quote blocks on a captured note with marks, else all of it."""
+    if note.author in CAPTURE_BOTS and CAPTURE_LABEL in note.labels:
+        marked = quote_blocks(note.body)
+        if marked is not None:
+            return marked
+    return [note.body]
+
+
 def appended_words(author: str, labels: tuple[str, ...], comments: list[dict[str, object]]) -> tuple[str, ...]:
     """The words of every marked comment by a capture identity on a note it opened, marker removed."""
     if author not in CAPTURE_BOTS or CAPTURE_LABEL not in labels:
@@ -102,6 +140,10 @@ def appended_words(author: str, labels: tuple[str, ...], comments: list[dict[str
         body = comment.get("body")
         first, _, rest = (body if isinstance(body, str) else "").replace("\r\n", "\n").partition("\n")
         if login not in CAPTURE_BOTS or first.strip() != APPEND_MARKER:
+            continue
+        marked = quote_blocks(rest) if WORDS_MARKER not in rest else None
+        if marked is not None:
+            words.extend(marked)
             continue
         lines = rest.split("\n")
         for index, line in enumerate(lines):
@@ -192,14 +234,16 @@ def check(notes: list[Note], added_playtests: dict[str, str]) -> list[str]:
         if failure is not None:
             failures.append(failure)
             continue
-        body = lib_ci.normalize(note.body)
-        if not body:
+        quotes = [words for words in (lib_ci.normalize(text) for text in body_quotes(note)) if words]
+        if not quotes:
             failures.append(f"#{note.number}: the note has no body to transcribe")
         elif not normalized:
             failures.append(f"#{note.number}: the pull request adds no file under {PLAYTESTS}/ to transcribe it into")
-        elif not any(body in text for text in normalized.values()):
+        elif missing := [body for body in quotes if not any(body in text for text in normalized.values())]:
             names = ", ".join(sorted(normalized))
-            failures.append(f"#{note.number}: its body is not in {names} word for word: {mismatch(body, normalized)}")
+            failures.append(
+                f"#{note.number}: its body is not in {names} word for word: {mismatch(missing[0], normalized)}"
+            )
         else:
             for words in note.appended:
                 said = lib_ci.normalize(words)
