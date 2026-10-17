@@ -11,7 +11,7 @@ chain walks, with nothing checking that the street stayed walkable. A van's body
 sidewalk it stands on; a roadblock's band covers one sidewalk and the carriageway. Since sandy-ferret
 (#663) the hunting van stays parked and solid, and since spotted-wombat (#676) the band stands for
 the whole walk, so a van on one side and a band on the other, or two bands on opposite sides, closed
-a street for good. A flood past every body over eight seeds reached no exit on any of them. The
+a street for good. A flood past every body over eight seeds reached one exit of sixteen (seed 77's bridge). The
 escape never had the yellow curb tint: [M145](2026-09-14-M145-the-routes-curbs-tinted-faint-yellow-built-an-experiment.md)
 draws it from a day's route tree, which the escape does not have.
 
