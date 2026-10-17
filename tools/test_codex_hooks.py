@@ -57,7 +57,8 @@ class CodexHooksTest(unittest.TestCase):
         root = self.base / name
         (root / "tools").mkdir(parents=True)
         shutil.copytree(SOURCE / ".claude/hooks", root / ".claude/hooks")
-        for name in ("codex-hooks.py", "lint.sh"):
+        # lint.sh runs check_citations.py whenever a playtest, a record, CLAUDE.md or a skill is linted.
+        for name in ("codex-hooks.py", "lint.sh", "check_citations.py"):
             shutil.copy2(SOURCE / "tools" / name, root / "tools" / name)
         # lint.sh reads the name word lists to check a playtest's or a record's name against the rest.
         shutil.copytree(SOURCE / "tools/names", root / "tools/names")

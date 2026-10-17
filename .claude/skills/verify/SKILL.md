@@ -13,18 +13,16 @@ earn: run one only when the thing being checked *is what the screen looks like*,
 smallest number of them that answers the question.
 
 **Why, beyond tidiness — a windowed run used to be able to hang forever, and working beside one is
-still not free.** *(2026-09-05: "if you run in a windowed mode and the window loses focus the test
-gets stalled since the window will never close. when I'm doing something else the window will lose
-focus 100%".)* A rig's own window now carries three defences against exactly that (docs/DECISIONS.md,
-M195, "a rig's window takes no focus, hears no stray key, and always closes"): it never takes the OS
-focus in the first place (`DisplayServer.WINDOW_FLAG_NO_FOCUS`), its main loop runs at full speed
-while covered or unfocused rather than throttling to about once a second the way an ordinary
-window's does on macOS (`--disable-vsync`, both scripts' own launch; running is not drawing, see "a
-hidden window is not drawn" below), and it always closes — the
-game's own wall-clock timer, backstopped by `tools/shot.sh`'s (and a rig-flagged `tools/run.sh`'s)
-outside kill. None of that makes a windowed run *free*, only bounded: it is still slower than a
-headless check by however long Godot takes to boot a window and draw a frame, and a run left to its
-outside kill still costs the whole of that wait before it says so.
+still not free** (woolly-finch 1). A rig's own window now carries three defences against exactly
+that (docs/DECISIONS.md, M195, "a rig's window takes no focus, hears no stray key, and always
+closes"): it never takes the OS focus in the first place (`DisplayServer.WINDOW_FLAG_NO_FOCUS`), its
+main loop runs at full speed while covered or unfocused rather than throttling to about once a
+second the way an ordinary window's does on macOS (`--disable-vsync`, both scripts' own launch;
+running is not drawing, see "a hidden window is not drawn" below), and it always closes — the game's
+own wall-clock timer, backstopped by `tools/shot.sh`'s (and a rig-flagged `tools/run.sh`'s) outside
+kill. None of that makes a windowed run *free*, only bounded: it is still slower than a headless
+check by however long Godot takes to boot a window and draw a frame, and a run left to its outside
+kill still costs the whole of that wait before it says so.
 
 So: **never reach for a windowed run to check something a headless one can answer.** A rig that
 prints numbers, an assertion in a suite, or a `check.sh` boot beats a screenshot for anything that
@@ -155,12 +153,11 @@ apologise for.
 - **On a pull request that touches `src/` or `tests/`, or anything that is not documentation**:
   every check ran and passed — the repository's consistency checks and every test of the game.
 - **On a docs-only pull request** — every file Markdown or under `docs/`, none under `src/` or
-  `tests/`, none of `docs/TELEMETRY.md`, `docs/COSTS.md` or `docs/ARCHITECTURE.md`, which the
-  game's own checks read, and no `.gdignore`, which decides whether Godot imports `docs/` at all:
-  every consistency check ran and passed, and the game's tests were
-  skipped, since nothing they read changed. *(2026-09-27, bouncy-heron: "I mean all game tests
-  that are not checking doc consistencies etc.")* A pull request touching `src/` or `tests/` is
-  never docs-only, so it never skips them.
+  `tests/`, none of `docs/TELEMETRY.md`, `docs/COSTS.md` or `docs/ARCHITECTURE.md`, which the game's
+  own checks read, and no `.gdignore`, which decides whether Godot imports `docs/` at all: every
+  consistency check ran and passed, and the game's tests were skipped (bouncy-heron 20), since
+  nothing they read changed. A pull request touching `src/` or `tests/` is never docs-only, so it
+  never skips them.
 - **On a queue update** — every file under `docs/todo/`, `docs/review/` or `docs/playtests/`: as
   docs-only, plus the queue update's mechanical checks.
 
@@ -328,25 +325,22 @@ somewhere.
   carriageway.
 - **`--after` is in seconds, not frames.** The windowed build draws ~110fps, so a frame count is
   quietly useless.
-- **`--press snapshot_burst <seconds>` records a burst instead of a still.** *(2026-09-11: "use
-  burst mode for mid turn capture"; "add somewhere that taking burst captures is an option when
-  recording evidence / creating screenshots".)* A still lands on a two-second turn, a stride or a
-  wing beat by luck, and cannot establish that motion was smooth; the burst is the same rig with
-  thirty-six frames over three seconds and a timing record, so **evidence about anything that
-  moves is a burst, not a screenshot**. `tools/shot.sh out.png 10 --seed 4242 --spawn
-  signal --layers 2,3 --press snapshot_burst 5` records from second five to eight and quits at
-  ten; `tools/clip.sh` makes the video, and the **session-captures** skill says what is kept and
-  what a frame may be said to prove.
-- **`--invincible` keeps the day running so the capture can wait for its moment.** *(2026-09-11:
-  "make future agents aware that invincibility exists to capture things where timing to avoid a
-  death screen would be difficult to do".)* A rig standing still at a busy junction pushes the
-  meter to a hundred inside ten seconds, and a `--after 13` shot lands on the summary screen.
-  Under the flag nothing ends the day, the clock never moves and the excitement meter never
-  rises, so the light stays where the day started and no alarm flashes over the capture; a car or a hard fail does not end it either. So
-  **any capture whose timing is hard to hit adds `--invincible`** and waits as long as it needs
-  to. The HUD shows `INVINCIBLE` and the run log says so in its day header, which is what stops
-  the picture being mistaken for a real run; a capture meant to show *cost* or a *loss* leaves
-  the flag off, since a meter that cannot end the day answers nothing about either.
+- **`--press snapshot_burst <seconds>` records a burst instead of a still** (PLAYTEST-56;
+  woolly-finch 16). A still lands on a two-second turn, a stride or a wing beat by luck, and cannot
+  establish that motion was smooth; the burst is the same rig with thirty-six frames over three
+  seconds and a timing record, so **evidence about anything that moves is a burst, not a
+  screenshot**. `tools/shot.sh out.png 10 --seed 4242 --spawn signal --layers 2,3 --press
+  snapshot_burst 5` records from second five to eight and quits at ten; `tools/clip.sh` makes the
+  video, and the **session-captures** skill says what is kept and what a frame may be said to prove.
+- **`--invincible` keeps the day running so the capture can wait for its moment** (woolly-finch 17).
+  A rig standing still at a busy junction pushes the meter to a hundred inside ten seconds, and a
+  `--after 13` shot lands on the summary screen. Under the flag nothing ends the day, the clock
+  never moves and the excitement meter never rises, so the light stays where the day started and no
+  alarm flashes over the capture; a car or a hard fail does not end it either. So **any capture
+  whose timing is hard to hit adds `--invincible`** and waits as long as it needs to. The HUD shows
+  `INVINCIBLE` and the run log says so in its day header, which is what stops the picture being
+  mistaken for a real run; a capture meant to show *cost* or a *loss* leaves the flag off, since a
+  meter that cannot end the day answers nothing about either.
 
 **Where a cue cannot be triggered on demand, relax its condition, look, and put it back.** The
 screen-edge badge needs something lethal off-screen and closing, which is not something a six-second
@@ -370,12 +364,11 @@ Test what a screenshot cannot see, and screenshot what a test cannot judge.
   a street.
 - **A test asserting a relationship beats one asserting a value.** `intensity < walking decay`
   survives rebalancing; `intensity == 3.2` does not.
-- **A test that only doubles the work of a change is deleted, not maintained.**
-  *(2026-09-03: "this was one example of pointless brittle tests … they just double the amount of
-  work when changing things".)* The shape is a test that **reads a design decision back to itself** —
-  asserting `act_for_day(4) == 2` when `ACT_START_DAYS` is `[1, 4, 8, 12]` is the table restated, so
-  moving an act boundary means editing the constant *and* editing the test, and no arrangement of
-  those two numbers was ever going to disagree.
+- **A test that only doubles the work of a change is deleted, not maintained** (PLAYTEST-67). The
+  shape is a test that **reads a design decision back to itself** — asserting `act_for_day(4) == 2`
+  when `ACT_START_DAYS` is `[1, 4, 8, 12]` is the table restated, so moving an act boundary means
+  editing the constant *and* editing the test, and no arrangement of those two numbers was ever
+  going to disagree.
 
   **The distinction from a value that is worth pinning is the reason, not the literal.**
   `CAR_HORN_TIME >= required_horn_time()` also fails when somebody lowers the horn time — and that
