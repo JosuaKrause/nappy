@@ -272,7 +272,8 @@ The chargers' rest and alert poses (teal-trout, [teal-trout-3](decisions/2026-10
 sheets in [teal-trout-views-2026-10-17](evidence/teal-trout-views-2026-10-17/README.md)) are drawn in
 all five views and not yet bound, each grounded at bottom centre: the charging dog's
 `art/events/charging_dog_resting*.svg` and `charging_dog_alert*.svg` (40x22 side, 30x28 front and
-back, 38x28 diagonals); the alley robber's `art/events/robber_alert_*.svg` (26x44); the guards'
+back, 38x28 diagonals); the alley robber's `art/events/robber_alert_*.svg` (26x44), two walk frames per
+view, `robber_alert_<view>.svg` and `robber_alert_<view>_b.svg`, on one canvas and anchor; the guards'
 `art/checkpoints/guard_alert_*.svg` (22x44 front and back, 26x44 side and diagonals). The
 diagonals face east and are mirrored for west.
 

@@ -1,0 +1,12 @@
+{
+  "scales": [1.0, 2.0, 6.0],
+  "frame_ms": 130,
+  "version": "v2",
+  "views": {
+    "front": ["art/events/robber_alert_front.svg", "art/events/robber_alert_front_b.svg"],
+    "front_diagonal": ["art/events/robber_alert_front_diagonal.svg", "art/events/robber_alert_front_diagonal_b.svg"],
+    "side": ["art/events/robber_alert_side.svg", "art/events/robber_alert_side_b.svg"],
+    "back_diagonal": ["art/events/robber_alert_back_diagonal.svg", "art/events/robber_alert_back_diagonal_b.svg"],
+    "back": ["art/events/robber_alert_back.svg", "art/events/robber_alert_back_b.svg"]
+  }
+}
