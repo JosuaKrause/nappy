@@ -1,0 +1,36 @@
+<!-- The charging dog at rest, back view: charging_dog_resting.svg from behind, the same animal
+     as charging_dog_back.svg (dark coat, tan points) sitting with its back to the viewer: the
+     rump on the ground between both haunches, the hind paws flat either side, the tail lying
+     on the ground, the back smooth with no hackles and the head held easy above the shoulders
+     with the ears up and tipped outward. Canvas 30x28, ground anchor bottom centre (15,28), the
+     canvas charging_dog_back.svg uses. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="28" viewBox="0 0 30 28" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <clipPath id="resting-body"><path d="M9.6 25.6 C8.4 21 9 16 11.2 13 C12 11.6 12.6 10.4 13 9.4 L17 9.4 C17.4 10.4 18 11.6 18.8 13 C21 16 21.6 21 20.4 25.6 C18.6 27 11.4 27 9.6 25.6 Z"/></clipPath>
+  <path d="M9.6 25.6 C8.4 21 9 16 11.2 13 C12 11.6 12.6 10.4 13 9.4 L17 9.4 C17.4 10.4 18 11.6 18.8 13 C21 16 21.6 21 20.4 25.6 C18.6 27 11.4 27 9.6 25.6 Z" fill="#5b4536" stroke="none"/>
+  <g clip-path="url(#resting-body)" stroke="none">
+    <path d="M8 16 C11 13.6 19 13.6 22 16 L22 8 L8 8 Z" fill="#735a4a"/>
+    <path d="M8 22.6 C11 25 19 25 22 22.6 L22 28 L8 28 Z" fill="#43322a"/>
+  </g>
+  <path d="M9.6 25.6 C8.4 21 9 16 11.2 13 C12 11.6 12.6 10.4 13 9.4 L17 9.4 C17.4 10.4 18 11.6 18.8 13 C21 16 21.6 21 20.4 25.6 C18.6 27 11.4 27 9.6 25.6 Z" fill="none"/>
+  <g transform="translate(0 -3)">
+    <path d="M12.8 9.2 L10 5.8 L14.2 7.8 Z" fill="#33261f"/>
+    <path d="M17.2 9.2 L20 5.8 L15.8 7.8 Z" fill="#33261f"/>
+    <clipPath id="resting-head"><path d="M11.6 11 C11.6 8.8 13.2 7.6 15 7.6 C16.8 7.6 18.4 8.8 18.4 11 C18.4 12.8 16.8 13.8 15 13.8 C13.2 13.8 11.6 12.8 11.6 11 Z"/></clipPath>
+    <path d="M11.6 11 C11.6 8.8 13.2 7.6 15 7.6 C16.8 7.6 18.4 8.8 18.4 11 C18.4 12.8 16.8 13.8 15 13.8 C13.2 13.8 11.6 12.8 11.6 11 Z" fill="#5b4536" stroke="none"/>
+    <g clip-path="url(#resting-head)" stroke="none">
+      <path d="M10 10 C12 7.8 18 7.8 20 10 L20 6 L10 6 Z" fill="#735a4a"/>
+      <path d="M10 12.2 C12 13.6 18 13.6 20 12.2 L20 15 L10 15 Z" fill="#43322a"/>
+    </g>
+    <path d="M11.6 11 C11.6 8.8 13.2 7.6 15 7.6 C16.8 7.6 18.4 8.8 18.4 11 C18.4 12.8 16.8 13.8 15 13.8 C13.2 13.8 11.6 12.8 11.6 11 Z" fill="none"/>
+  </g>
+  <path d="M7.6 26.6 C5.8 25.2 5.8 21.6 7.4 19.8 C9 18.2 11.6 19 12 21.6 C12.4 24.2 11.4 26.6 9.6 27 Z" fill="#5b4536"/>
+  <path d="M22.4 26.6 C24.2 25.2 24.2 21.6 22.6 19.8 C21 18.2 18.4 19 18 21.6 C17.6 24.2 18.6 26.6 20.4 27 Z" fill="#5b4536"/>
+  <path d="M7.4 21.4 C8.2 20 9.8 19.8 10.8 20.6" fill="none" stroke="#735a4a" stroke-width="0.9"/>
+  <path d="M22.6 21.4 C21.8 20 20.2 19.8 19.2 20.6" fill="none" stroke="#735a4a" stroke-width="0.9"/>
+  <path d="M5 26.8 L8.4 26.8" fill="none" stroke-width="2.60"/>
+  <path d="M5 26.8 L8.4 26.8" fill="none" stroke="#5b4536" stroke-width="1.70"/>
+  <path d="M21.6 26.8 L25 26.8" fill="none" stroke-width="2.60"/>
+  <path d="M21.6 26.8 L25 26.8" fill="none" stroke="#5b4536" stroke-width="1.70"/>
+  <path d="M14.6 25.6 Q15 27.3 18.2 27.2 L20 27.1" fill="none" stroke-width="2.30"/>
+  <path d="M14.6 25.6 Q15 27.3 18.2 27.2 L20 27.1" fill="none" stroke="#5b4536" stroke-width="1.40"/>
+</svg>

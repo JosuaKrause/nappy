@@ -1,0 +1,39 @@
+{
+  "scales": [
+    1.0,
+    6.0
+  ],
+  "ground": "3c3a42",
+  "rows": [
+    [
+      "art/events/robber_waiting_front.svg",
+      "art/events/robber_alert_front.svg",
+      "art/events/robber_lunging_front.svg"
+    ],
+    [
+      "art/events/robber_waiting_front_diagonal.svg",
+      "art/events/robber_alert_front_diagonal.svg",
+      "art/events/robber_lunging_front_diagonal.svg"
+    ],
+    [
+      "art/events/robber_waiting_side.svg",
+      "art/events/robber_alert_side.svg",
+      "art/events/robber_lunging_side.svg"
+    ],
+    [
+      "art/events/robber_waiting_side.svg",
+      "docs/evidence/teal-trout-views-2026-10-17/robber_alert_side-v2.svg",
+      "art/events/robber_lunging_side.svg"
+    ],
+    [
+      "art/events/robber_waiting_back_diagonal.svg",
+      "art/events/robber_alert_back_diagonal.svg",
+      "art/events/robber_lunging_back_diagonal.svg"
+    ],
+    [
+      "art/events/robber_waiting_back.svg",
+      "art/events/robber_alert_back.svg",
+      "art/events/robber_lunging_back.svg"
+    ]
+  ]
+}

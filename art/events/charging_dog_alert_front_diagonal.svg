@@ -1,0 +1,50 @@
+<!-- The charging dog on alert, front diagonal view: charging_dog_alert.svg turned towards the
+     viewer, the same animal as charging_dog_front_diagonal.svg the moment it has noticed her.
+     Up on four stiff straight legs, head raised and pointed at her, ears pricked straight up,
+     the hackles standing along its shoulders, the tail held up stiff, lips drawn back off white
+     teeth with the jaw still shut; the open red jaw stays the charge's own. The body is the side
+     view's, foreshortened along its length as charging_dog_front_diagonal.svg is against
+     charging_dog.svg, and the head is that view's three-quarter head with both eyes. Faces
+     south-east, towards the viewer and to the right; EventInstance mirrors it for south-west.
+     Canvas 38x28, ground anchor bottom centre (19,28), the canvas
+     charging_dog_front_diagonal.svg uses; the nearest paw stands on the canvas bottom. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="38" height="28" viewBox="0 0 38 28" shape-rendering="geometricPrecision" stroke="#2a2226" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M9.2 16.2 Q7 13.6 6.3 9.6" fill="none" stroke-width="2.30"/>
+  <path d="M9.2 16.2 Q7 13.6 6.3 9.6" fill="none" stroke="#5b4536" stroke-width="1.40"/>
+  <path d="M14.4 19.4 L13.8 23 L14.2 26 L15.4 26" fill="none" stroke-width="2.80"/>
+  <path d="M14.4 19.4 L13.8 23 L14.2 26 L15.4 26" fill="none" stroke="#3e2f27" stroke-width="1.90"/>
+  <path d="M26.4 19.4 L26.6 23 L26.8 26 L28 26" fill="none" stroke-width="2.80"/>
+  <path d="M26.4 19.4 L26.6 23 L26.8 26 L28 26" fill="none" stroke="#3e2f27" stroke-width="1.90"/>
+  <clipPath id="alert-body"><path d="M9.2 16 C10.5 14.2 12.6 14 15.2 14 L16.2 12.9 L17 13.9 L18 12.6 L18.9 13.7 L19.9 12.5 L20.8 13.6 L21.8 12.7 L22.5 13.9 C23.7 13.6 24.3 12.4 24.9 10.2 L28.2 11.8 L27.4 15.6 C27.9 17.6 27.6 20 26.2 21 C24.9 21.8 23.1 21 21.1 20.8 C18.6 20.6 15.7 21.2 13.1 21 C10.6 20.8 8.9 19.6 8.7 18 C8.6 17.2 8.8 16.5 9.2 16 Z"/></clipPath>
+  <path d="M9.2 16 C10.5 14.2 12.6 14 15.2 14 L16.2 12.9 L17 13.9 L18 12.6 L18.9 13.7 L19.9 12.5 L20.8 13.6 L21.8 12.7 L22.5 13.9 C23.7 13.6 24.3 12.4 24.9 10.2 L28.2 11.8 L27.4 15.6 C27.9 17.6 27.6 20 26.2 21 C24.9 21.8 23.1 21 21.1 20.8 C18.6 20.6 15.7 21.2 13.1 21 C10.6 20.8 8.9 19.6 8.7 18 C8.6 17.2 8.8 16.5 9.2 16 Z" fill="#5b4536" stroke="none"/>
+  <g clip-path="url(#alert-body)" stroke="none">
+    <path d="M6.7 19 C10.9 20.4 16.9 19.6 22 19.4 C24.5 19.3 26.6 19 29.6 18 L29.6 24 L6.7 24 Z" fill="#43322a"/>
+    <path d="M6.7 16.6 C10.1 15.4 15.2 15.2 20.3 15.2 C22.8 15 24.5 13 26.2 10 L26.2 8 L6.7 8 Z" fill="#735a4a"/>
+    <path d="M25 14.6 C26.8 15.4 28.1 17.2 27.9 19.2 C27.6 20.6 26.7 21.2 25.6 21 C25.8 19 25.6 16.6 25 14.6 Z" fill="#b27b4a"/>
+  </g>
+  <path d="M9.2 16 C10.5 14.2 12.6 14 15.2 14 L16.2 12.9 L17 13.9 L18 12.6 L18.9 13.7 L19.9 12.5 L20.8 13.6 L21.8 12.7 L22.5 13.9 C23.7 13.6 24.3 12.4 24.9 10.2 L28.2 11.8 L27.4 15.6 C27.9 17.6 27.6 20 26.2 21 C24.9 21.8 23.1 21 21.1 20.8 C18.6 20.6 15.7 21.2 13.1 21 C10.6 20.8 8.9 19.6 8.7 18 C8.6 17.2 8.8 16.5 9.2 16 Z" fill="none"/>
+  <path d="M13.5 16.2 C11.8 17 11.1 18.6 11.6 20.2" fill="none" stroke="#33261f" stroke-width="0.55"/>
+  <path d="M11.6 18.6 L10.9 23 L11.4 27.2 L12.6 27.2" fill="none" stroke-width="2.80"/>
+  <path d="M11.6 18.6 L10.9 23 L11.4 27.2 L12.6 27.2" fill="none" stroke="#5b4536" stroke-width="1.90"/>
+  <path d="M24.8 19.6 L24.9 23.4 L25.1 27.2 L26.3 27.2" fill="none" stroke-width="2.80"/>
+  <path d="M24.8 19.6 L24.9 23.4 L25.1 27.2 L26.3 27.2" fill="none" stroke="#5b4536" stroke-width="1.90"/>
+  <g transform="translate(-1.8 -4.7)">
+    <path d="M31.4 12.8 L32.8 9.6 L33.6 13.2 Z" fill="#33261f"/>
+    <clipPath id="alert-head"><path d="M26.4 15.8 C26.2 13.6 27.8 12.2 29.8 12.2 C31.8 12.2 33 13.2 33.6 14.4 L36.6 15.8 C37.4 16.2 37.4 17.8 36.6 18.2 L32.8 19.4 C31 20.4 29 20.4 27.8 19.6 C27 19 26.5 17.4 26.4 15.8 Z"/></clipPath>
+    <path d="M26.4 15.8 C26.2 13.6 27.8 12.2 29.8 12.2 C31.8 12.2 33 13.2 33.6 14.4 L36.6 15.8 C37.4 16.2 37.4 17.8 36.6 18.2 L32.8 19.4 C31 20.4 29 20.4 27.8 19.6 C27 19 26.5 17.4 26.4 15.8 Z" fill="#5b4536" stroke="none"/>
+    <g clip-path="url(#alert-head)" stroke="none">
+      <path d="M25 15 C27 12.4 30.6 12 33.6 14 L34 10 L25 10 Z" fill="#735a4a"/>
+      <path d="M32.4 17 L38 16 L38 20 L32 20 Z" fill="#b27b4a"/>
+      <path d="M25 18 C26.4 19.6 28.4 20 30.4 19.8 L30.4 22 L25 22 Z" fill="#43322a"/>
+    </g>
+    <path d="M26.4 15.8 C26.2 13.6 27.8 12.2 29.8 12.2 C31.8 12.2 33 13.2 33.6 14.4 L36.6 15.8 C37.4 16.2 37.4 17.8 36.6 18.2 L32.8 19.4 C31 20.4 29 20.4 27.8 19.6 C27 19 26.5 17.4 26.4 15.8 Z" fill="none"/>
+    <path d="M32.8 18.4 L36.8 17.6" fill="none" stroke-width="0.6"/>
+    <path d="M33.6 18.3 L34.1 19.5 L34.6 18.2 Z M35.6 17.9 L36 18.9 L36.4 17.8 Z" fill="#f2ece2" stroke-width="0.3"/>
+    <path d="M28 13.2 L28.6 9.4 L30.4 12.4 Z" fill="#33261f"/>
+    <circle cx="29.8" cy="14.4" r="0.45" fill="#b27b4a" stroke="none"/>
+    <circle cx="30" cy="15.5" r="0.55" fill="#221f28" stroke="none"/>
+    <circle cx="32.5" cy="15" r="0.45" fill="#221f28" stroke="none"/>
+    <path d="M28.9 14.4 L31 15.1 M31.7 14.1 L33.1 14.6" fill="none" stroke="#221f28" stroke-width="0.6"/>
+    <circle cx="36.9" cy="16.6" r="0.8" fill="#221f28" stroke="none"/>
+  </g>
+</svg>

@@ -1,0 +1,33 @@
+{
+  "scales": [
+    1.0,
+    6.0
+  ],
+  "rows": [
+    [
+      "art/events/charging_dog_resting_front.svg",
+      "art/events/charging_dog_alert_front.svg",
+      "art/events/charging_dog_front.svg"
+    ],
+    [
+      "art/events/charging_dog_resting_front_diagonal.svg",
+      "art/events/charging_dog_alert_front_diagonal.svg",
+      "art/events/charging_dog_front_diagonal.svg"
+    ],
+    [
+      "art/events/charging_dog_resting.svg",
+      "art/events/charging_dog_alert.svg",
+      "art/events/charging_dog.svg"
+    ],
+    [
+      "art/events/charging_dog_resting_back_diagonal.svg",
+      "art/events/charging_dog_alert_back_diagonal.svg",
+      "art/events/charging_dog_back_diagonal.svg"
+    ],
+    [
+      "art/events/charging_dog_resting_back.svg",
+      "art/events/charging_dog_alert_back.svg",
+      "art/events/charging_dog_back.svg"
+    ]
+  ]
+}
