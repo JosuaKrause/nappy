@@ -147,14 +147,16 @@ findings live.
 ## Three verdicts of *not ready* mean the approach is rethought
 
 *(2026-10-17: "add a rule / note that if a review returns unsuccessful three times the approach
-should be rethought".)* When a pull request's reviews have come back *not ready* three times, the
-approach is rethought.
+should be rethought" · "per PR, yes. rethinking also involves analyzing whether the chosen solution
+is the right way".)* When a pull request's reviews have come back *not ready* three times, the
+approach is rethought, and that includes analysing whether the chosen solution is the right way at
+all. The count is per pull request.
 
 *Proposed, not asked for, open to the player's correction:*
 
-- **What counts:** every *not ready* verdict on the pull request, full reviews and reviews of a
-  delta alike, a queue update included. The count starts again after a rethink is written down.
-- **What the rethink asks:** whether the brief asked for the right thing, whether the design or
+- **What counts:** every *not ready* verdict, full reviews and reviews of a delta alike, a queue
+  update included. The count starts again after a rethink is written down.
+- **What else the rethink asks:** whether the brief asked for the right thing, whether the design or
   the reading of the player's words is wrong, and whether the work should be split, restarted or
   put to the player. It decides *how* the open findings get fixed, never whether: the pull request
   still does not merge with a found defect open ("Is every defect already found in this change
