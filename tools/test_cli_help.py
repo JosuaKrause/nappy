@@ -48,6 +48,7 @@ ENTRY_POINTS = (
     "convert-queue-edits.py",
     "release-notes.py",
     "inbox.py",
+    "reddit.py",
     "check_citations.py",
     "ci_classify.py",
     "ci_telemetry_kinds.py",
