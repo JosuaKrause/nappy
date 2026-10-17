@@ -1784,8 +1784,10 @@ func contribution_at(world_position: Vector2, ...) -> float:
 ```
 
 A source further from the point than `EventDef.silent_beyond()` answers zero before any of that is
-read: past every radius the field reads, plus the body's reach, over the most a moving field
-stretches, so nothing it skips could have charged her. A flock and a guard leaving his barrier,
+read: the body's reach, plus the widest radius the field reads and one pixel more divided by
+`1 − Tuning.FIELD_ECCENTRICITY_MAX` (0.5, the most a moving field's forward stretch shrinks a
+distance), so nothing it skips could have charged her. The radius is stretched, the body's reach is
+not: the steam's `silent_beyond()` is 198px, not 212px. A flock and a guard leaving his barrier,
 whose fields are not centred on the node, always work it out.
 
 Because it is a pure query there is no ordering to get wrong, events compose by simple
