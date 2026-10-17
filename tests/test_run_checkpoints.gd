@@ -38,6 +38,7 @@ func run(t) -> void:
 	_test_parse_nerves_accepts_one_to_five_and_refuses_the_rest(t)
 	_test_the_lost_day_screen_says_where_she_goes_back_to(t)
 	_test_the_checkbox_shows_only_for_a_new_game(t)
+	_test_which_titles_show_the_checkbox_today(t)
 	_test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t)
 	_test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t)
 	_test_no_control_on_the_title_stops_a_press(t)
@@ -452,6 +453,52 @@ func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
 	t.check(title.hard_mode_checked(), "--hard opens it checked")
 	GameState.hard_mode = false
 	title.free()
+
+## **Which titles a player can meet show the box today, pinned as it stands, not as settled.**
+## *(inbox #746, the player: "I don't see the hard mode button at all locally".)* The title opens
+## through `main._open_the_title()`, which passes `new_game` as `_resume.is_empty()`: whether the boot
+## found a saved run to resume. A run is saved from its first day on, so every boot after a first
+## one, until that run ends or the held restart throws it away, opens on a title with no box. Whether
+## the box belongs on that title is open (plaid-goose's report); this pins what each title does now,
+## so a change to it is a decision someone made rather than a side effect.
+##
+## - A boot with nothing to resume (a first visit, after an ending, after the held restart): shown,
+##   whether or not an ending was shown in this scene first (`_ending_shown`, `open()`'s `again`).
+## - A boot that resumed a saved run, its day under way or not: none.
+## - The escape's resume gate (`open(false)`) and the `--start-escape` epilogue (`open(true)`): none.
+func _test_which_titles_show_the_checkbox_today(t) -> void:
+	var main := _bare_gate_main(t)
+	# `_open_the_title()` turns every layer through `_apply_orientation()`, which reaches
+	# `_hud.set_rotated()`: the bare layer the gate rig carries has no such method.
+	main._hud.free()
+	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	t.add_child(hud)
+	hud.set_process(false)
+	main._hud = hud
+	main._status_layer = CanvasLayer.new()
+	GameState.start_run(_SEED)
+	var cases := [
+		[{}, false, true, "a boot with nothing to resume"],
+		[{}, true, true, "the same, after an ending in this scene"],
+		[{"day_under_way": false}, false, false, "a boot that resumed a saved run between days"],
+		[{"day_under_way": true}, false, false, "a boot that resumed a run in the middle of a day"],
+	]
+	for case: Array in cases:
+		main._resume = case[0]
+		main._ending_shown = case[1]
+		main._open_the_title()
+		t.check(main._title.hard_mode_shown() == case[2],
+				"%s: the box is %s" % [case[3], "shown" if case[2] else "not shown"])
+		main._title.close()
+	main._title.open(false)
+	t.check(not main._title.hard_mode_shown(), "the escape's resume gate shows none")
+	main._title.open(true)
+	t.check(not main._title.hard_mode_shown(), "nor does the --start-escape epilogue")
+	main._title.close()
+	main._resume = {}
+	main._ending_shown = false
+	main._status_layer.free()
+	_free_gate_main(t, main)
 
 ## The box answers a touch, a click and `H`, and none of them starts the run; the three buttons
 ## still do.
