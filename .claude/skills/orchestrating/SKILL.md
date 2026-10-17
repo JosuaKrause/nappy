@@ -163,9 +163,8 @@ role named has nothing to check `status` against:
   continues. The player's CLI cannot display images: push review artifacts first, then embed
   them in the PR description as images with commit-pinned URLs, as **committing** says.
   A local file link is not a delivered visual review. Showing an attempt does not authorize
-  runtime installation. **A question the player answers by eye gets one labelled picture of its
-  own**, the options side by side with the question above it in words; a full sheet is evidence,
-  not a question (`references/agent-contract.md` has the player's words).
+  runtime installation. **A question the player answers by eye gets a picture of its own**, the
+  options alone with the question above it in words; a full sheet is evidence, not a question (`references/agent-contract.md` has the player's words).
   **A delivered review file stays byte-for-byte unchanged.** Render into job-owned scratch,
   wait for its writer to finish, then copy the completed artifact to a new versioned delivery
   filename and record its hash. Once the player has a link, no render or copy overwrites that
