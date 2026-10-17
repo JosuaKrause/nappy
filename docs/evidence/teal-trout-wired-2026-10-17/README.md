@@ -27,10 +27,11 @@ Each strip is cut from a frame-locked recording of its recipe at the labelled ti
   raised at his post, in the same place at 2.6s and 3.5s, through his 1.8s notice; lunging once it
   runs out.
 - [strip-robber.png](strip-robber.png), from [recipes/robber.json](recipes/robber.json), day 8.
-  Waiting; his alert from about 1.23s; lunging from about 1.38s. His alert lasts that short a time
-  because he walks at her and lunges the moment the gap is down to his 116px stand-off: she walks
-  in at 92px/s while he comes at 130px/s, so 24px of trigger beyond his stand-off is gone in about
-  a tenth of a second.
+  Waiting; his alert from about 1.23s; lunging from about 1.38s, so his alert lasts about 0.15s.
+  It is that short because he walks at her at 130px/s and lunges the moment the gap is down to his
+  116px stand-off, and the recipe stops her just inside his 140px trigger: about 19px for him to
+  close alone. Standing at the very edge of the trigger it would be about 0.18s (24px at 130px/s);
+  walking in at 92px/s, about a tenth of a second (24px at 130 + 92px/s).
 
 ## How they were made
 
