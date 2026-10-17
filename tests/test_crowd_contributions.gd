@@ -4,7 +4,8 @@ extends RefCounted
 func run(t) -> void:
 	# `CrowdAgent._widest_jolt_outer` is a static that only grows, and every suite after this one in
 	# the same process would otherwise ask the crowd's sweep with the jolts written below, which
-	# skips nothing. Kept here and written back before any check is made.
+	# skips nothing. Kept here and written back after the first three checks, which are made with it
+	# widened, and before the rest.
 	var widest_before := CrowdAgent._widest_jolt_outer
 	var agent := CrowdAgent.new()
 	var mismatches := 0
