@@ -2092,9 +2092,11 @@ func _write_dawn_for_a_resumed_run() -> void:
 		_save_now(false)
 
 ## Lifecycle relocations prepare the destination before play/brief reveal, including dev spawns
-## and the escape's camera handoff from the interior.
+## and the escape's camera handoff from the interior. Nothing to prepare for a script-only `main`
+## a test drives with no tree behind it, which has no viewport to measure — never the case in the
+## running game.
 func _prepare_city_scenery() -> void:
-	if not _city or not _city.scenery or not _player:
+	if not _city or not _city.scenery or not _player or not is_inside_tree():
 		return
 	var camera: Camera2D = _player.get_node("Camera2D")
 	camera.force_update_scroll()

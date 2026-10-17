@@ -31,7 +31,7 @@ func run(t) -> void:
 	_test_nothing_the_finale_places_stands_where_she_comes_out(t)
 	_test_no_lethal_field_covers_the_ground_she_comes_out_on(t)
 	_test_the_finale_city_has_nobody_in_it(t)
-	_test_the_escape_streets_carry_the_route_tint(t)
+	_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t)
 	_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
 	_test_the_clock_reads_hundredths_only_in_the_finale(t)
 	_test_a_lost_section_starts_again_and_costs_no_nerve(t)
@@ -470,43 +470,114 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 ## different in the last section?"* (inbox #747). Both kerb lines of every street the chains run
 ## through carry the route twin of their kerb source, and no other street's kerb does — the paint
 ## asked through `City.scenery_ground_source()`, the one answer every ground chunk is painted from.
-func _test_the_escape_streets_carry_the_route_tint(t) -> void:
+##
+## **Driven through `main`, because the wiring is what the player saw missing.** The city walks a
+## day first, so a day's own route kerbs are tinted when the escape starts and a tint left over
+## from them would show. Then the first plan, through `main._plan_the_finale_city()` — what
+## `_build_the_finale_city()` ends on — and a restart, through `main._on_finale_section_started()`
+## with `restarted` set, which is what a lost section's brief reaches. The tint is wiped between
+## the two, so the restart is checked painting it rather than inheriting it.
+func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -> void:
+	var saved_section := GameState.escape_section
+	var day := GameState.day
+	var main: Node2D = MAIN_SCRIPT.new()
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
+	main._city = city
 	city.build(CityGenerator.generate(SEEDS[0]))
-	GameState.city_state.begin_day(city.map.block_plans, 1)
-	city.start_finale(GameState.city_state, 1)
+	var state := CityState.new()
+	state.begin_day(city.map.block_plans, day)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEEDS[0]
-	var plan := FinalePlanner.plan(city.map, rng)
+	city.start_day(state, day, rng)
+	var corridor := Corridor.of(city.route_tree())
+	var on_the_day := 0
+	for tile in _kerb_tiles(city, day):
+		if corridor.depth(tile) == 0 and city.scenery_ground_source(tile) \
+				== GroundTiles.route_twin_of(GroundTiles.source_for(city.map, tile, day)):
+			on_the_day += 1
+	t.check(on_the_day > 0, "the day before tints its own route's kerbs (%d)" % on_the_day)
+
+	city.start_finale(state, day)
+	main._plan_the_finale_city()
+	var plan := FinalePlanner.plan(city.map, GameState.day_rng(day, "finale"))
 	var on_the_walk := {}
 	for segment in plan.open_streets:
 		on_the_walk[segment.key()] = true
-	city.tint_the_escape_route(plan.open_streets)
-	var tinted := 0
-	var plain := 0
-	var wrong := 0
+	var first := _escape_tint(city, day, on_the_walk, corridor)
+	t.check(first.x > 0 and first.y > 0,
+			"there were kerbs on and off the escape's streets to ask about (%d and %d)"
+			% [first.x, first.y])
+	t.check(first.w > 0, "and kerbs the day tinted that the escape does not walk (%d)" % first.w)
+	t.check(first.z == 0,
+			"the first plan tints every kerb of the escape's streets and no other (%d wrong)"
+			% first.z)
+
+	city.tint_the_escape_route([] as Array[StreetNetwork.Segment])
+	t.check(_escape_tint(city, day, on_the_walk, corridor).z == first.x,
+			"wiping the tint leaves every kerb of the walk plain")
+	main._summary = SUMMARY_SCENE.instantiate()
+	t.add_child(main._summary)
+	main._hud = HUD_SCENE.instantiate()
+	t.add_child(main._hud)
+	var finale := FinaleController.new()
+	t.add_child(finale)
+	main._finale = finale
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	var stroller := Stroller.new()
+	stroller.add_child(camera)
+	city.add_entity(stroller)
+	stroller.set_physics_process(false)
+	var baby := Baby.new()
+	baby.name = "Baby"
+	stroller.add_child(baby)
+	baby.set_physics_process(false)
+	main._player = stroller
+	main._baby = baby
+	main._on_finale_section_started(FinaleController.Section.CITY, true)
+	t.check(_escape_tint(city, day, on_the_walk, corridor).z == 0,
+			"and a restart tints them again, and no other")
+
+	main._summary.free()
+	main._hud.free()
+	finale.free()
+	city.free()
+	main.free()
+	t.get_tree().paused = false
+	GameState.escape_section = saved_section
+
+## Every tile of `city` whose plain ground source is a kerb a route can tint.
+static func _kerb_tiles(city: City, day: int) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
 	for y in city.map.size.y:
 		for x in city.map.size.x:
 			var tile := Vector2i(x, y)
-			var source := GroundTiles.source_for(city.map, tile, 1)
-			if not (source in GroundTiles.ROUTE_KERB_SOURCES):
-				continue
-			var segment := StreetNetwork.segment_containing(tile)
-			var wanted := segment != null and on_the_walk.has(segment.key())
-			var painted := city.scenery_ground_source(tile)
-			if painted != (GroundTiles.route_twin_of(source) if wanted else source):
-				wrong += 1
-			elif wanted:
-				tinted += 1
-			else:
-				plain += 1
-	t.check(tinted > 0 and plain > 0,
-			"there were kerbs on and off the escape's streets to ask about (%d and %d)"
-			% [tinted, plain])
-	t.check(wrong == 0, "every kerb of the escape's streets is tinted and no other is (%d wrong)"
-			% wrong)
-	city.free()
+			if GroundTiles.source_for(city.map, tile, day) in GroundTiles.ROUTE_KERB_SOURCES:
+				found.append(tile)
+	return found
+
+## How the kerbs are painted against the escape's streets: `x` tinted on the walk, `y` plain off
+## it, `z` painted the other way from what the walk says, and `w` of the plain ones the day's own
+## corridor had tinted.
+static func _escape_tint(city: City, day: int, on_the_walk: Dictionary,
+		corridor: Corridor) -> Vector4i:
+	var counted := Vector4i.ZERO
+	for tile in _kerb_tiles(city, day):
+		var source := GroundTiles.source_for(city.map, tile, day)
+		var segment := StreetNetwork.segment_containing(tile)
+		var wanted := segment != null and on_the_walk.has(segment.key())
+		if city.scenery_ground_source(tile) != (GroundTiles.route_twin_of(source) if wanted \
+				else source):
+			counted.z += 1
+		elif wanted:
+			counted.x += 1
+		else:
+			counted.y += 1
+			if corridor.depth(tile) == 0:
+				counted.w += 1
+	return counted
 
 ## *"Explosions happen off screen (but loud enough to cause excitement) leaving craters on the
 ## street."* Both halves: the row names its successor, and what the successor obstructs is exactly
