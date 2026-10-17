@@ -5,11 +5,11 @@ description: The player's inbox on GitHub Issues — where it is found at the st
 
 # The inbox
 
-**GitHub Issues are the player's inbox, and nothing else.** *(2026-09-27: "the important thing is
-that it ends up in a safe queue in issues and I can choose when we want to turn those into a doc
-update PR (so I can even go in and edit the issues after the fact before the get merged)".)* A
-note is an open issue carrying the label `inbox`, and an issue without it is never filed, whoever
-opened it *(2026-10-03: "if an issue has no inbox label it shouldn't get filed")*: `tools/inbox.py`
+**GitHub Issues are the
+[player's inbox](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-list), and nothing
+else.** A note is an open issue carrying the label `inbox`, and an issue without it is
+[never filed](../../../docs/playtests/2026-10-03-plaid-tapir.md#statements), whoever opened it:
+`tools/inbox.py`
 skips it and refuses to close a batch naming it, and CI's `tools/ci_transcription.py` fails a
 filing pull request that names it. The player writes one at any time, edits it
 until it is filed, and says when a batch of notes becomes a filing pull request. The queue, the
@@ -17,9 +17,9 @@ review items, the playtest files and the decision records stay in the repository
 entry is reviewed when it enters the queue (`tools/decisions.sh leafy-finch` has the reasons,
 and the options weighed against them).
 
-`tools/inbox.py` is the tool, and **the one way an agent writes an issue** *(2026-09-27: "if it
-goes through a script it's safe we just need to get it working once -- an agent shouldn't use gh
-issue directly")*. `.claude/hooks/github-write-guard.sh` denies a direct `gh issue` write, wrapped
+`tools/inbox.py` is the tool, and **the
+[one way an agent writes an issue](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-list)**.
+`.claude/hooks/github-write-guard.sh` denies a direct `gh issue` write, wrapped
 in an identity or not, and an issue write through `gh api` the same way, all but a comment POST to
 `issues/N/comments`, which a pull request's own conversation comments share.
 
@@ -39,28 +39,25 @@ A blank note comes from the issue template `.github/ISSUE_TEMPLATE/inbox-note.md
 ## Whose notes count
 
 **Only an issue the player opened, or one the capture script (`tools/inbox.py capture`) opened
-for them, is a note**
-*(2026-09-27: "for now let's also require that inbox issues are created by me so random people
-opening github issues don't get their comments ingested into the queue")*. The repository is
+for them, [is a note](../../../docs/playtests/2026-09-27-bouncy-heron.md#who-may-write-to-the-inbox)**,
+so people outside the project do not put work into the queue. The repository is
 public and the template's label goes on any issue opened with it, so the label alone admits
-anybody: an issue from outside the project is welcome as something to look at and is never an
-automatic call for action ("currently anybody on the internet can create an issue. and that is
-good for bringing things to our attention but shouldn't be an automatic call for action"). A
+anybody: an issue from outside the project is welcome as something to look at and is
+[never an automatic call for action](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-filings-review). A
 captured note counts when it was opened as `nappy-claude-orchestrator[bot]` or
-`nappy-codex-coder[bot]` and carries the capture script's tag, the label `captured` (asked, the
-player chose "Yes, marked by the script"). The player's own comments are the player's words, and so,
+`nappy-codex-coder[bot]` and carries the capture script's tag,
+[the label `captured`](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-filings-review). The player's own comments are the player's words, and so,
 on a captured note alone, are the words `append` added (below).
 `tools/inbox.py` skips everything else with a line saying so, and CI's transcription check
 (`tools/ci_transcription.py`) fails a filing that names any other issue.
 
 ## The labels
 
-**`inbox` marks a note, and `queue_<band>` sets the band its work is filed in**: `queue_now`,
-`queue_next`, `queue_later`, `queue_parked` *(2026-09-27: "I created an issue with inbox label and
-with priority I choose the convention of queue_now, queue_next, queue_later, and queue_parked")*,
-and `queue_bug`, a band above `now` *(2026-10-11, mossy-ferret: "we need a new band "bug" that has
-priority over now")*. A note is never filed `bug` unless the player says so *("Only when you say
-so")*, and "up next" is not a label: it is an `upnext: true` line in the entry's opening block.
+**`inbox` marks a note, and `queue_<band>` sets the
+[band its work is filed in](../../../docs/playtests/2026-09-27-dotted-quail.md#statements)**:
+`queue_now`, `queue_next`, `queue_later`, `queue_parked`, and `queue_bug`,
+[a band above `now`](../../../docs/playtests/2026-10-11-mossy-ferret.md#710). A note is never
+filed `bug` [unless the player says so](../../../docs/playtests/2026-10-11-mossy-ferret.md#710), and "up next" is not a label: it is an `upnext: true` line in the entry's opening block.
 A label outside that pattern is never taken for a band. The entry filed from a note opens with its
 band; a note with no band label is filed as **playtest-feedback** says, `now` for a note from
 playing and otherwise a band the filer proposes and names in its report; a note with two band
@@ -71,11 +68,10 @@ labels is filed under neither and asked about on its issue.
 **When the player says something in a session that should outlive it — a thought for the queue, a
 correction to a task — capture it into the inbox, in one call, before going on with anything
 else**, so the words are safe even if the session is cleared before a filing pull request exists.
-The player's worry was having "to hope that the agent gets to write a comment down before a
-session is cleared", and **which messages to capture is the agent's judgment**: no hook reminds
-it, and the conversation is not recorded as a whole *(2026-09-27: "okay, we can do via capture and
-then it also shows up as issue -- great -- no need for a hook I don't want my entire conversation
-recorded. an agent has better judgement there.")*.
+The player's worry was [words lost](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-question)
+when a session is cleared before an agent writes them down, and **which messages to capture is the
+agent's judgment**: no hook reminds it, and
+[the conversation is not recorded as a whole](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-list).
 
 ```sh
 cat > /tmp/note.md <<'NOTE'
@@ -99,18 +95,17 @@ answered as **playtest-feedback** asks. The script tags the note with the label 
 only it sets, and opens it as `claude-orchestrator` (Codex: `codex-coder`), which is what makes a
 captured note count as the player's.
 
-**A further word on the topic of a note already open is appended to that note, never captured as a
-new one.** *(2026-10-03: "don't create new inbox notes for the same topic -- keep adding comments
-to it".)* When the agent already knows an open captured note on the topic, one it captured or read
+**A further word on the topic of a note already open is
+[appended to that note](../../../docs/decisions/2026-10-03-olive-tapir.md), never captured as a
+new one.** When the agent already knows an open captured note on the topic, one it captured or read
 this session, the player's next words on it go onto that note:
 
 ```sh
 uv run python tools/inbox.py --role claude-orchestrator append N --body-file /tmp/more.md
 ```
 
-**Only when the agent already knows the note** *(2026-10-03: "well, only if you already know that
-there is an open issue about this topic -- don't spend time reading all issues just to figure out
-whether there is an overlap")*: the inbox is never searched or read to look for an overlap, and
+**Only when the agent
+[already knows the note](../../../docs/decisions/2026-10-03-olive-tapir.md)**: the inbox is never searched or read to look for an overlap, and
 with no such note in hand the words are captured as a new note. The words go into a file first,
 exactly as for `capture`, and are the player's verbatim. `append` posts them as one comment under
 the same identity rules as `capture`, led by a marker line (an HTML comment, invisible on the
@@ -124,15 +119,14 @@ the filing treats the words like the body.
 
 ## Asking about a note
 
-**An ingestion never waits on a question.** *(2026-10-03: "If there is an open question in an
-issue stays open until the task gets picked up. Most of the time there needs to be some exploration
-etc done. The whole point of the issue ingestion is to get things in to the codebase fast. The
-questions come later after the ingestion is merged")* Every note is filed as it stands, and a
+**An ingestion
+[never waits on a question](../../../docs/playtests/2026-10-03-minty-hedgehog.md#how-an-ingestion-treats-open-questions)**,
+since its point is to get the notes into the repository fast, and most questions need exploring
+once the task is picked up anyway. Every note is filed as it stands, and a
 question it leaves open is written into its queue entry, marked open, for whoever picks the task up.
 
-**A question about a note can still be asked on its issue** *(2026-09-27: "if you need more info you
-can also ask in the github issue. so by the time we queue a task most questions are already
-resolved")*, when the filer has one before the batch is filed; the answer is filed with the note,
+**A question about a note can still be
+[asked on its issue](../../../docs/playtests/2026-09-27-dotted-quail.md#statements)**, when the filer has one before the batch is filed; the answer is filed with the note,
 and the batch does not wait for it:
 
 ```sh
@@ -200,9 +194,9 @@ request carries the whole batch:
   it is a code pull request. CI's transcription check reads those lines and
   fails a note that is not the player's or whose text, appended words included, is not in a playtest
   file the pull request adds, word for word.
-- **Right after pushing the pull request, close the batch in one call** *(2026-09-27: "maybe
-  let's change the flow to close the issue upon *creating* the PR. so no deferred "Closes #N" but a
-  single action by the orchestrator after pushing the PR.")*:
+- **Right after pushing the pull request,
+  [close the batch](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-filings-review) in one
+  call**:
 
   ```sh
   uv run python tools/inbox.py --role claude-orchestrator close --pr P
