@@ -6,6 +6,12 @@ gallop and holds it with no caret over it, its excitement halo coming on about a
 charging, it gallops. **Neutral** becomes "a proper
 resting frame when in wait" (#698), standing or sitting on the ground. **Warning** becomes an alert pose distinct from both, as the README says. The charge keeps the gallop.
 
-New artwork: drawing is Opus's, the first attempt comes back early as a review sheet in the pull
-request, and the svg-art or illustrated-png rules apply to whichever form the dog's frames are in.
+The game draws the charging dog from comic PNG transfers under `art/illustrated/svg-transfer/`, so
+its rest and alert need theirs before they are wired in, or the dog changes style between its
+stages; the illustrated-png rules apply to them.
 Evidence is a clip of the dog waiting, warning and charging, from the audit's `dog.json` recipe.
+
+**Where it stands.** The dog's rest (`charging_dog_resting*`) and alert (`charging_dog_alert*`) is drawn in all five views and approved as drawn
+([teal-trout-3](../../decisions/2026-10-11-teal-trout-3.md)), not wired into the game. Left: the
+answers to the questions that record leaves open (the review item), then the wiring, its tests and
+its clip.
