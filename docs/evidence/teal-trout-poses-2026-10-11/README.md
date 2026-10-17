@@ -2,8 +2,8 @@
 
 The poses asked for in [teal-trout](../../todo/2026-10-11-teal-trout/README.md) (every charger is
 neutral, then warns, then charges), drawn as SVG and laid side by side before anything is wired
-into the game. Only the **front and side** views are drawn so far; the back and both diagonals
-follow once the idea is approved.
+into the game. These sheets show the **front and side** views only; the back and both diagonals
+are on the next sheets, [teal-trout-views-2026-10-17](../teal-trout-views-2026-10-17/README.md).
 
 Each sheet has two blocks on the sidewalk ground colour (`Palette.SIDEWALK`, `#8b8478`): on top
 at **game scale** (1x, the SVG's own pixel size), below **enlarged six times**. In each block the
@@ -11,8 +11,8 @@ columns are, left to right:
 
 | Column | Dog (`dog-v1.png`) | Robber (`robber-v1.png`) | Guard (`guard-v1.png`) |
 |---|---|---|---|
-| **neutral** | `dog_resting` — **new**: sitting on the ground, ears soft, back smooth, jaw shut, tail lying down | `robber_waiting` — today's: hood up, hands in his coat | `guard_standing` — today's: at his post, arms down |
-| **alert** | `dog_alert` — **new**: four stiff straight legs, head high, ears pricked, hackles up, teeth shown with the jaw shut | `robber_alert` — **new**: both hands out of the coat, held low and open, feet set | `guard_alert` — **new**: square-on, one hand raised palm out at head height |
+| **neutral** | `charging_dog_resting` — **new**: sitting on the ground, ears soft, back smooth, jaw shut, tail lying down | `robber_waiting` — today's: hood up, hands in his coat | `guard_standing` — today's: at his post, arms down |
+| **alert** | `charging_dog_alert` — **new**: four stiff straight legs, head high, ears pricked, hackles up, teeth shown with the jaw shut | `robber_alert` — **new**: both hands out of the coat, held low and open, feet set | `guard_alert` — **new**: square-on, one hand raised palm out at head height |
 | **charge** | `charging_dog` — today's gallop, frame a | `robber_lunging` — today's | `guard_lunging` — today's |
 
 The dog's rows are side then front (its side picture is its main one); the robber's and the
