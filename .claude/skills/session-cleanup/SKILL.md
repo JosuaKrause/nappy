@@ -154,27 +154,25 @@ Keep unrelated tracked archives out of new worktrees through sparse checkout (**
 
 ### 7. There is no checked-in handoff
 
-**Nothing in the repository says where a session stopped**, since every agent has its own thread
-to work on and no session hands over to
-another (polite-marten). The pick-up state is live — `gh pr list`, `tools/agent-status.sh`, `tools/queue.sh`, the
-inbox (`uv run python tools/inbox.py list`, **inbox**) and the items under `docs/review/` answer
-it at the moment they are asked — and what a document would have said about it is stale the
-moment another thread merges. So the session's end writes nothing
-checked in about itself: the durable part of what it learned is already in a skill, a doc, an
-entry, a review item or a record by the steps above, and the rest is the restart prompt below.
-`tools/decisions.sh handoff` has the reasons.
+**Nothing in the repository says where a session stopped**, since every agent has its own thread to
+work on and no session hands over to another (polite-marten). The pick-up state is live — `gh pr
+list`, `tools/agent-status.sh`, `tools/queue.sh`, the inbox (`uv run python tools/inbox.py list`,
+**inbox**) and the items under `docs/review/` answer it at the moment they are asked — and what a
+document would have said about it is stale the moment another thread merges. So the session's end
+writes nothing checked in about itself: the durable part of what it learned is already in a skill, a
+doc, an entry, a review item or a record by the steps above, and the rest is the restart prompt
+below. `tools/decisions.sh handoff` has the reasons.
 
 ### 8. End with a fresh-context restart prompt
 
-Every session handover ends with a restart prompt the player can use to start the next session
-with a genuinely fresh context. **The prompt goes into `.claude/restart-prompt.md`, a local file
-that git ignores, and never into the chat**: copying long text out of the CLI corrupts it
-(woolly-finch). Each handover overwrites the file, and the
-report in the chat names its path. Do not require the next session to have read this conversation or
-to resume an old agent transcript. The prompt tells it to fetch and inspect live PR state
-(`gh pr list`, `tools/agent-status.sh`) and the inbox (`uv run python tools/inbox.py list`), then
-read `CLAUDE.md` and `docs/TODO.md`, run `tools/queue.sh`, and read the named work-item sources
-before acting.
+Every session handover ends with a restart prompt the player can use to start the next session with
+a genuinely fresh context. **The prompt goes into `.claude/restart-prompt.md`, a local file that git
+ignores, and never into the chat**: copying long text out of the CLI corrupts it (woolly-finch).
+Each handover overwrites the file, and the report in the chat names its path. Do not require the
+next session to have read this conversation or to resume an old agent transcript. The prompt tells
+it to fetch and inspect live PR state (`gh pr list`, `tools/agent-status.sh`) and the inbox (`uv run
+python tools/inbox.py list`), then read `CLAUDE.md` and `docs/TODO.md`, run `tools/queue.sh`, and
+read the named work-item sources before acting.
 
 Name every open thread by PR number and short title, branch or worktree when relevant, current
 checkpoint, exact next action, remaining gate and verification already completed. **List the
@@ -185,8 +183,7 @@ self-contained briefs rather than resuming the session's agents. Keep the prompt
 current at the moment of handover; the final report may summarize it, but the file must stand on
 its own.
 
-**The restart prompt never records a merge or release
-permission** (polite-marten). Permission is given in a
-session and ends with it (**committing**, "Merging"), so a
-sentence carrying it forward is either a grant nobody gave the next session or an invitation to
-act on one; the next session asks the player.
+**The restart prompt never records a merge or release permission** (polite-marten). Permission is
+given in a session and ends with it (**committing**, "Merging"), so a sentence carrying it forward
+is either a grant nobody gave the next session or an invitation to act on one; the next session asks
+the player.

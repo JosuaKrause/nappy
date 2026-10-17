@@ -74,64 +74,61 @@ because nothing checks a route around a thing with no tile.
 `EventDef.warning_time()` — the badge to the earliest it can reach her — against
 `minimum_telegraph()`, which for such a non-pursuer is the flat `Tuning.OFFSCREEN_WARNING_MIN` (a
 second, the player's time to react), never a figure worked out from its field or speed — the fire
-engine and day 13's column included, whose place follows her so a walk out of their
-field is not one she can take during the badge. A pursuer warned first is held to
-`validate_pursuit` like every pursuer: its telegraph is the approach she watches once it exists.
-A sent robber or guard instead arrives chasing, with no approach: its notice is its badge alone.
-Running while it is offscreen counts toward `PURSUIT_SHAKEN_OFF`, so it can be shaken off before
-it becomes visible (tall-owl).
+engine and day 13's column included, whose place follows her so a walk out of their field is not one
+she can take during the badge. A pursuer warned first is held to `validate_pursuit` like every
+pursuer: its telegraph is the approach she watches once it exists. A sent robber or guard instead
+arrives chasing, with no approach: its notice is its badge alone. Running while it is offscreen
+counts toward `PURSUIT_SHAKEN_OFF`, so it can be shaken off before it becomes visible (tall-owl).
 `EventDef.validate()` requires that badge and validates its chase without inventing an approach.
-Standing robbers and the day-3 dog's approach keep their separate notice floor. Verify escape
-with the actual Baby meter: reaching the pursuit cap after the baby cries is a lost day.
+Standing robbers and the day-3 dog's approach keep their separate notice floor. Verify escape with
+the actual Baby meter: reaching the pursuit cap after the baby cries is a lost day.
 
 ## What telegraphs
 
-**A thing telegraphs its coming only if it goes fast, comes
-toward her, and carries a heavy penalty — it can end the day or hit her hard** (PLAYTEST-145; olive-hedgehog #598). A
-thing that does not telegraph its coming is **outside** the screen-edge badge and warning-first
-placement: `EventDef.telegraphs` is false. Its in-world telegraph still satisfies the fairness
-contract, including the waiting flock and mouse. Only the loose dog, met with its telegraph already
-spent, has no in-world telegraph to validate. A heavy hit is a quarter of the meter or more in one
-pass. By that, `loose_dog` (created at once just off screen down her sidewalk), `cat_dash`,
-`alley_mouse`, `pigeon_flock` and `police_patrol` do not telegraph; the cyclist, the fire engine,
-the column and the planned convoy, and every pursuer do. A row that stands still has no coming to
-telegraph and keeps its in-world telegraph inside the contract. `docs/EVENTS.md`, "What telegraphs",
-has each row's numbers. Do not turn a row's telegraphing off to make a contract pass: whether it
-telegraphs is the rule's question, not the contract's.
+**A thing telegraphs its coming only if it goes fast, comes toward her, and carries a heavy penalty
+— it can end the day or hit her hard** (PLAYTEST-145; olive-hedgehog #598). A thing that does not
+telegraph its coming is **outside** the screen-edge badge and warning-first placement:
+`EventDef.telegraphs` is false. Its in-world telegraph still satisfies the fairness contract,
+including the waiting flock and mouse. Only the loose dog, met with its telegraph already spent, has
+no in-world telegraph to validate. A heavy hit is a quarter of the meter or more in one pass. By
+that, `loose_dog` (created at once just off screen down her sidewalk), `cat_dash`, `alley_mouse`,
+`pigeon_flock` and `police_patrol` do not telegraph; the cyclist, the fire engine, the column and
+the planned convoy, and every pursuer do. A row that stands still has no coming to telegraph and
+keeps its in-world telegraph inside the contract. `docs/EVENTS.md`, "What telegraphs", has each
+row's numbers. Do not turn a row's telegraphing off to make a contract pass: whether it telegraphs
+is the rule's question, not the contract's.
 
 ## Everything from off screen is warned first, for at most a second, and is placed just out of sight
 
-A row that arrives from off screen under the screen-edge badge — `cyclist`,
-`charging_dog` sent down her heading, the fire engine, the resistance's own
-`robber_giving_chase` and `van_guard_giving_chase`, a torn poster's pursuer on foot
-(`policeman_giving_chase`, `guardsman_giving_chase`), day 13's column, each a row
-`warns_before_it_exists()` answers true for (flagged `warned_first` on its row, or made so by
-`EventManager.as_warned()`, which every warning goes through) — is a `PendingWarning` first
-(`EventManager.warn_first()`; PLAYTEST-145): nothing in the world, the badge up at once for the row's own
-`EventDef.warned_for()`, **at most `Tuning.WARNING_ALONE_MAX`** (`validate()` refuses longer; busy-quail #569), its
-place fixed against her so the badge moves only with her walking and never jumps. Then the thing is
-created **just off
-screen** (calm-kestrel #559)
-where its ground has a place for it from where she is by then
+A row that arrives from off screen under the screen-edge badge — `cyclist`, `charging_dog` sent down
+her heading, the fire engine, the resistance's own `robber_giving_chase` and
+`van_guard_giving_chase`, a torn poster's pursuer on foot (`policeman_giving_chase`,
+`guardsman_giving_chase`), day 13's column, each a row `warns_before_it_exists()` answers true for
+(flagged `warned_first` on its row, or made so by `EventManager.as_warned()`, which every warning
+goes through) — is a `PendingWarning` first (`EventManager.warn_first()`; PLAYTEST-145): nothing in
+the world, the badge up at once for the row's own `EventDef.warned_for()`, **at most
+`Tuning.WARNING_ALONE_MAX`** (`validate()` refuses longer; busy-quail #569), its place fixed against
+her so the badge moves only with her walking and never jumps. Then the thing is created **just off
+screen** (calm-kestrel #559) where its ground has a place for it from where she is by then
 (`PendingWarning.just_out_of_sight()`: everything it can draw, `EventInstance.footprint_of()`,
 wholly outside the camera's whole view, corners included, never nearer than
-`PendingWarning.least_distance()`) — **no pop-in** (olive-hedgehog #598), and `tests/test_no_pop_in.gd` holds it — a sidewalk for the bike, walkable ground down her
-heading for the day-3 dog, the road on its way to the fire for the engine, its lane for the column,
-the director's own rules for the trap. A non-pursuer is created with its telegraph spent
+`PendingWarning.least_distance()`) — **no pop-in** (olive-hedgehog #598), and
+`tests/test_no_pop_in.gd` holds it — a sidewalk for the bike, walkable ground down her heading for
+the day-3 dog, the road on its way to the fire for the engine, its lane for the column, the
+director's own rules for the trap. A non-pursuer is created with its telegraph spent
 (`EventManager.spawn_warned()`); **a pursuer with its telegraph still to run**, since its telegraph
 is its approach — except one that `arrives_chasing` (the resistance's sent robber and guard, and a
-torn poster's pursuer on foot (olive-hedgehog #598). Where its ground has no place when the second is up,
-the warning is withdrawn; a withdrawn day-3 dog is owed again.
+torn poster's pursuer on foot (olive-hedgehog #598). Where its ground has no place when the second
+is up, the warning is withdrawn; a withdrawn day-3 dog is owed again.
 
-**The warning time is the row's own number** (PLAYTEST-145). Nothing about where a thing is created may be
-derived from its telegraph, and a row's telegraph is not shortened by shrinking its field.
+**The warning time is the row's own number** (PLAYTEST-145). Nothing about where a thing is created
+may be derived from its telegraph, and a row's telegraph is not shortened by shrinking its field.
 
-**The day-3 dog keeps its gold timing, in the player's terms**: the warning is badge to visible
-(its half second), the chase is lunge to catch (0.35s, 0.60s and 2.05s walking into it, standing and
+**The day-3 dog keeps its gold timing, in the player's terms**: the warning is badge to visible (its
+half second), the chase is lunge to catch (0.35s, 0.60s and 2.05s walking into it, standing and
 walking away). `tests/test_events_pursuit.gd` fails if either moves. **No pursuer gives up on a
-walker** (olive-hedgehog #598): every
-chase lasts `Tuning.PURSUIT_TIME`, a long cap (30s), so walking away loses by construction; running
-ends it at `PURSUIT_SHAKEN_OFF`'s rate.
+walker** (olive-hedgehog #598): every chase lasts `Tuning.PURSUIT_TIME`, a long cap (30s), so
+walking away loses by construction; running ends it at `PURSUIT_SHAKEN_OFF`'s rate.
 
 **Not warned first: a patrol sent down the road and a `MAP` mover** (`military_convoy`). The patrol
 does not telegraph its coming at all (slower than a walk; its strike is a car's, warned the way a

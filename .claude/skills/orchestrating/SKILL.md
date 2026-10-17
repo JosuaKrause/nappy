@@ -12,25 +12,26 @@ the whole queue and the player's words.
 
 Use Sonnet in Claude Code for implementation, Haiku for a wait — polling a check, retargeting a PR,
 removing a worktree, pulling `main` — and a stronger model when a milestone's geometry or contracts
-warrant it, by judgement (woolly-finch). **In Claude Code, drawing is Opus's** (PLAYTEST-123): an agent that makes or revises artwork — SVG,
-PNG, a review sheet — runs on Opus, since the result is judged by eye and a weaker first pass costs
-the player a review round;
-Codex has its own model hierarchy and keeps its own tiering for art (woolly-finch). In Codex, pick the subagent
-tier by the task's remaining difficulty: see `references/codex-models.md`. **Generating a raster
-is Codex's alone**: Claude Code has no image generator (**illustrated-png**, "Asset contract"), so
-a brief whose work includes generating an illustrated PNG, a comic transfer included, goes to a
-Codex agent (which writes as `codex-coder`); the drawing rule above covers SVG and the review
-sheets. Installing, registering, rebaking and checking PNGs that already exist stays open to
-either host. The contract is the same
-on either host: fresh context, a bounded scope and an isolated checkout for implementation. Create
-the worktree explicitly if the tool does not create one. Read-only review can share a checkout. If
-delegation is unavailable, do the bounded work locally and retain the same verification gate.
+warrant it, by judgement (woolly-finch). **In Claude Code, drawing is Opus's** (PLAYTEST-123): an
+agent that makes or revises artwork — SVG, PNG, a review sheet — runs on Opus, since the result is
+judged by eye and a weaker first pass costs the player a review round; Codex has its own model
+hierarchy and keeps its own tiering for art (woolly-finch). In Codex, pick the subagent tier by the
+task's remaining difficulty: see `references/codex-models.md`. **Generating a raster is Codex's
+alone**: Claude Code has no image generator (**illustrated-png**, "Asset contract"), so a brief
+whose work includes generating an illustrated PNG, a comic transfer included, goes to a Codex agent
+(which writes as `codex-coder`); the drawing rule above covers SVG and the review sheets.
+Installing, registering, rebaking and checking PNGs that already exist stays open to either host.
+The contract is the same on either host: fresh context, a bounded scope and an isolated checkout for
+implementation. Create the worktree explicitly if the tool does not create one. Read-only review can
+share a checkout. If delegation is unavailable, do the bounded work locally and retain the same
+verification gate.
 
-**A usage or quota limit is already over by the time the orchestrator hears of it**, in Claude
-Code and in Codex alike. Nothing about delegation changes because of one: no fewer agents, no
-cheaper models, no implementing locally to save quota. Do not carry a limit message (codex-delegation-after-visible-usage-limit-messages)
-from an earlier agent or turn forward as a reason to do anything differently (woolly-finch). What an interruption does change is which
-agents can continue — see "Recovering from an interruption".
+**A usage or quota limit is already over by the time the orchestrator hears of it**, in Claude Code
+and in Codex alike. Nothing about delegation changes because of one: no fewer agents, no cheaper
+models, no implementing locally to save quota. Do not carry a limit message
+(codex-delegation-after-visible-usage-limit-messages) from an earlier agent or turn forward as a
+reason to do anything differently (woolly-finch). What an interruption does change is which agents
+can continue — see "Recovering from an interruption".
 
 ## Delegating is the default, and implementing by hand is the decision
 
@@ -197,34 +198,33 @@ role named has nothing to check `status` against:
 
 ## Running agents in parallel
 
-**Create sparse worktrees before materializing files, with `tools/agent-setup.sh`** (busy-ibis). It runs the
-disk preflight, `git worktree add --no-checkout --no-track` onto a new branch from `origin/main`
-(so the branch inherits no upstream), enables non-cone sparse checkout and only then materializes
-HEAD. The patterns are the `gates` job's sparse checkout in `.github/workflows/ci.yml` — the one
-list, which keeps back what the repository's own checks read from `docs/evidence/` (the SVGs
-`lint.sh` validates and the experiment scripts `pycheck.sh` runs) — followed by
+**Create sparse worktrees before materializing files, with `tools/agent-setup.sh`** (busy-ibis). It
+runs the disk preflight, `git worktree add --no-checkout --no-track` onto a new branch from
+`origin/main` (so the branch inherits no upstream), enables non-cone sparse checkout and only then
+materializes HEAD. The patterns are the `gates` job's sparse checkout in `.github/workflows/ci.yml`
+— the one list, which keeps back what the repository's own checks read from `docs/evidence/` (the
+SVGs `lint.sh` validates and the experiment scripts `pycheck.sh` runs) — followed by
 `!/docs/reference/` and `!/docs/style-references/`; `--include <path>` adds a folder back for a task
 that needs it (evidence, references or style references are the point of some tasks). A tools-only
-task may omit runtime art/assets too. **Claude Code's worktree isolation makes a full checkout here**, since
-`.claude/settings.json` sets neither its `worktree.sparsePaths` (which can only include whole
-folders) nor a `WorktreeCreate` hook. So the orchestrator runs the tool, which creates the worktree
-under `.claude/worktrees/<name>` (the path-triggered rules hook loads only for paths inside the
-project, so a worktree under `$TMPDIR` gets no rules), and starts the agent in it without
-isolation; the brief carries the `worktree:` line and the agent's `agent:` line the moment its id
-is known, as for any agent started into an existing worktree. A review agent's scratch checkout is
-made sparse with `tools/agent-setup.sh --detach <ref> <name>`: the same patterns, detached at
-`<ref>`, with no branch and no brief, so `agent-status.sh` never counts it as an agent. Worktrees
-share history, so clone
-depth does not avoid repeated working files. Before checkout, import, build or capture batches,
-check free space on the destination volume against the estimated peak working set plus explicit
-headroom (`tools/lib_disk_headroom.sh` holds the measured estimates, worktrees' included); an unknown
-peak or inadequate room means measure or reduce the batch before starting. **A low-disk warning
-from a tool, or a check that leaves less than the reserve, stops new work** (quiet-yak #496).
-It is guidance, not a hard hook. The orchestrator starts no new agent or worktree and an agent starts no new task or batch until the
-space is sorted out by **session-cleanup**'s storage steps; work already running may finish, and
-an agent reports the warning in its report rather than leaving it in a log.
-Record scratch paths and cleanup ownership in the brief, and follow **session-cleanup**'s
-job-owned storage rules. Release a finished agent's brief only after its
+task may omit runtime art/assets too. **Claude Code's worktree isolation makes a full checkout
+here**, since `.claude/settings.json` sets neither its `worktree.sparsePaths` (which can only
+include whole folders) nor a `WorktreeCreate` hook. So the orchestrator runs the tool, which creates
+the worktree under `.claude/worktrees/<name>` (the path-triggered rules hook loads only for paths
+inside the project, so a worktree under `$TMPDIR` gets no rules), and starts the agent in it without
+isolation; the brief carries the `worktree:` line and the agent's `agent:` line the moment its id is
+known, as for any agent started into an existing worktree. A review agent's scratch checkout is made
+sparse with `tools/agent-setup.sh --detach <ref> <name>`: the same patterns, detached at `<ref>`,
+with no branch and no brief, so `agent-status.sh` never counts it as an agent. Worktrees share
+history, so clone depth does not avoid repeated working files. Before checkout, import, build or
+capture batches, check free space on the destination volume against the estimated peak working set
+plus explicit headroom (`tools/lib_disk_headroom.sh` holds the measured estimates, worktrees'
+included); an unknown peak or inadequate room means measure or reduce the batch before starting. **A
+low-disk warning from a tool, or a check that leaves less than the reserve, stops new work**
+(quiet-yak #496). It is guidance, not a hard hook. The orchestrator starts no new agent or worktree
+and an agent starts no new task or batch until the space is sorted out by **session-cleanup**'s
+storage steps; work already running may finish, and an agent reports the warning in its report
+rather than leaving it in a log. Record scratch paths and cleanup ownership in the brief, and follow
+**session-cleanup**'s job-owned storage rules. Release a finished agent's brief only after its
 processes stop and useful artifacts are retained (`tools/agent-setup.sh --release <branch>` adds
 `cleanup: ready`); retirement refuses an unreleased brief.
 
@@ -304,26 +304,25 @@ worktrees — merging is what collides — so parallelism is planned at the file
   disjoint file sets are what makes parallel safe in a single repo.
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the
   player through the orchestrator, in the entry where the next reader will look for it.
-- **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent
-  that reported an hour ago replays its whole transcript at full price, because the prompt cache
-  behind it has expired (woolly-finch). Resume only while the
-  cache is live, and the windows are exact: **Claude Code's cache lasts one hour, Codex's twenty
-  minutes** (woolly-finch), counted from
-  the agent's last request. **Resume only with five minutes to spare** — 55 minutes in Claude
-  Code, 15 in Codex — since the clock is the provider's and not observable from here (woolly-finch). Past that, spawn a fresh agent with a
-  self-contained brief that names the branch and the report to read first.
-- **An agent that died mid-task is replaced in its own worktree.** A usage limit or an API
-  error kills the agent and leaves every edit it made, usually uncommitted. Past the cache
-  window (woolly-finch), start the
-  fresh agent without worktree isolation, pointed at the dead agent's worktree path. The brief it
-  needs comes from `.claude/briefs/<branch-slug>.md` — the file the orchestrator wrote before
-  spawning, kept current by every amendment sent since; the previous session's transcript under
-  `~/.claude/projects/` is only the fallback when no such file exists. Its replacement agent's
-  prompt is "read `.claude/briefs/<file>`, then what changed: …", plus what the orchestrator
-  verified on disk: which files are modified, what was never run, and where the dead agent
-  stopped, read from its own transcript's last tool calls. Its first two steps are to commit the
-  inherited work as it stands and to merge `origin/main`. Say plainly that nothing inherited has
-  been reviewed, and that it may not even compile.
+- **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent that
+  reported an hour ago replays its whole transcript at full price, because the prompt cache behind
+  it has expired (woolly-finch). Resume only while the cache is live, and the windows are exact:
+  **Claude Code's cache lasts one hour, Codex's twenty minutes** (woolly-finch), counted from the
+  agent's last request. **Resume only with five minutes to spare** — 55 minutes in Claude Code, 15
+  in Codex — since the clock is the provider's and not observable from here (woolly-finch). Past
+  that, spawn a fresh agent with a self-contained brief that names the branch and the report to read
+  first.
+- **An agent that died mid-task is replaced in its own worktree.** A usage limit or an API error
+  kills the agent and leaves every edit it made, usually uncommitted. Past the cache window
+  (woolly-finch), start the fresh agent without worktree isolation, pointed at the dead agent's
+  worktree path. The brief it needs comes from `.claude/briefs/<branch-slug>.md` — the file the
+  orchestrator wrote before spawning, kept current by every amendment sent since; the previous
+  session's transcript under `~/.claude/projects/` is only the fallback when no such file exists.
+  Its replacement agent's prompt is "read `.claude/briefs/<file>`, then what changed: …", plus what
+  the orchestrator verified on disk: which files are modified, what was never run, and where the
+  dead agent stopped, read from its own transcript's last tool calls. Its first two steps are to
+  commit the inherited work as it stands and to merge `origin/main`. Say plainly that nothing
+  inherited has been reviewed, and that it may not even compile.
 
   **Starting the replacement includes updating ownership.** Right after spawning it, run
   `tools/agent-setup.sh --agent <branch> <new id>` to append `agent: <new id>` to the worktree's
@@ -351,17 +350,18 @@ worktrees — merging is what collides — so parallelism is planned at the file
   files are kept) and make a WIP commit on the branch, kept local and unpushed; undo it with
   `git reset HEAD~1`, which leaves the changes unstaged as a pop would. Once it is pushed it is
   not undone: a follow-up commit continues from it. A brief for an agent says so.
-- **The main checkout is the player's test bed.** Whatever the player is asked to try out is
-  checked out in the repository's own folder before they are told it is ready — never left in an
-  agent's worktree under `.claude/worktrees/` (woolly-finch). That means freeing the agent's worktree first if it holds the branch (`git worktree
-  remove`), then `git checkout` in the main folder, and saying so; and while the player is testing
-  there, nothing touches that checkout but docs commits on the same branch.
+- **The main checkout is the player's test bed.** Whatever the player is asked to try out is checked
+  out in the repository's own folder before they are told it is ready — never left in an agent's
+  worktree under `.claude/worktrees/` (woolly-finch). That means freeing the agent's worktree first
+  if it holds the branch (`git worktree remove`), then `git checkout` in the main folder, and saying
+  so; and while the player is testing there, nothing touches that checkout but docs commits on the
+  same branch.
 
 ## Recovering from an interruption
 
 **A limit or an outage stops every agent at once, and the pause's length decides what happens
-next.** The player usually tries to hand the session off before a limit hits, so the next one
-starts fresh at the reset, but not every limit is seen coming (woolly-finch).
+next.** The player usually tries to hand the session off before a limit hits, so the next one starts
+fresh at the reset, but not every limit is seen coming (woolly-finch).
 
 1. **Run `tools/agent-status.sh` before touching anything.** It covers every worktree's branch,
    uncommitted files, how far it is ahead of and behind its own upstream (another session may have

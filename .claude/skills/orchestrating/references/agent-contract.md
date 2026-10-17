@@ -90,12 +90,12 @@ internal revision loop. For artwork, sound or any visual or audible result:
 - The player's CLI cannot display images: push the review artifacts first, then embed them in the
   PR description as images with commit-pinned URLs, as **committing** says. A local file link is
   not a delivered visual review.
-- **A question the player is to answer by eye
-  gets a picture of its own** (woolly-penguin #758). A full sheet is evidence of what was drawn;
-  the decision is shown apart from it, in a picture of the options alone, with the question
-  written above it in the PR description, and a choice is never asked by row number. *The form
-  PR #750 used, open to the player's correction:* only the options and the stages either side of
-  them, each labelled with a letter the question uses, each option said in words.
+- **A question the player is to answer by eye gets a picture of its own** (woolly-penguin #758). A
+  full sheet is evidence of what was drawn; the decision is shown apart from it, in a picture of the
+  options alone, with the question written above it in the PR description, and a choice is never
+  asked by row number. *The form PR #750 used, open to the player's correction:* only the options
+  and the stages either side of them, each labelled with a letter the question uses, each option
+  said in words.
 - **A delivered review file stays byte-for-byte unchanged.** Render into job-owned scratch, wait
   for the writer to finish, then copy the completed artifact to a new versioned delivery filename
   and record its hash. Once the player has a link, no render or copy overwrites that file: further

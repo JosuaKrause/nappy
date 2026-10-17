@@ -84,13 +84,11 @@ a warning with the same figures and run. An unmeasured job or an unreadable `df`
 guessing. The library's header names the variables that override an estimate, the reserve or the
 check itself.
 
-**A low-disk warning is taken seriously, though nothing enforces
-it** (quiet-yak #496).
-On seeing one, the
-job in hand may finish, but no new task, agent, worktree, build or capture batch is started; sorting
-out the space comes first, by **session-cleanup**'s "Finish the job's storage cleanup" steps (the
-worktree inventory, job-owned scratch, then `df` again), and the warning is reported to the player
-if the space cannot be found.
+**A low-disk warning is taken seriously, though nothing enforces it** (quiet-yak #496). On seeing
+one, the job in hand may finish, but no new task, agent, worktree, build or capture batch is
+started; sorting out the space comes first, by **session-cleanup**'s "Finish the job's storage
+cleanup" steps (the worktree inventory, job-owned scratch, then `df` again), and the warning is
+reported to the player if the space cannot be found.
 
 `lint.sh` reports absent skip-worktree SVGs as omitted from a sparse checkout's validation;
 materialized or explicitly named SVGs must be readable and well-formed. A parser or discovery
@@ -123,33 +121,32 @@ whatever never puts `grep` as its own word right after `git` and its options: `g
 **A GitHub write outside an agent's own identity is denied the same way.**
 `.claude/hooks/github-write-guard.sh`, the other `PreToolUse` hook on every `Bash`/`Monitor` call
 (and Codex's, through `tools/codex-hooks.py`), denies a `git push`; a commit-making git verb
-(`commit`, and `cherry-pick`/`revert`/`am`/`merge`/`rebase`/`pull` past their own abort-like or
-safe flag); any `gh` noun's write verb, every noun, not only `pr`/`issue`/`release`; a `gh api`
-call with a non-GET method or a field outside `-X GET`, or a GraphQL call whose query is a
-mutation or is not written inline; or one of the `tools/` scripts that pushes
-or posts internally (`tools/release.sh`, `tools/prune-merged.sh`, `tools/land-prs.sh`,
-`tools/update-pr.sh`), only in command position — unless the same command is wrapped in
-`tools/agent-identity.py run <role> -- <command>`, or, in Claude Code where no identity can work
-and the player has switched the asking on, it is an ordinary write the guard asks the player about
-instead; see **committing**'s "Who a commit and a pull request are from" for why the wrapper is
-mandatory and which writes are asked about when, and the hook's own header comment for the exact,
-current list of what it denies rather than a second copy of it here. A read (`git status`, `gh pr
-view/list/checks`, ...) is unguarded, and a reviewer identity is refused a merge-type write too,
-not only a push. **A `gh issue` write is denied wrapped or not, and so is one through `gh api`**
-(a new issue, `issues/N`, its labels, assignees or lock, an issue comment's edit, a GraphQL issue
-mutation; a comment POST to `issues/N/comments`, which a pull request's conversation comments
-share, stays open): an agent writes an issue only through `tools/inbox.py` (**inbox**), which
-wraps its own writes. **A write's words in text deny like a call** — in an echo, a commit
-message, a PR body, a heredoc, a comment — **except in three shapes, each the whole command and
-nothing else in it**: `cat > FILE <<'EOF'` (or `cat <<'EOF' > FILE`, `>>`, the delimiter quoted
-or after a backslash), whose body is text; a coder's or the orchestrator's wrapped
-`git commit -F - <<'EOF'`, whose body is text and which is judged as the wrapped commit; and `rg` or `grep` with
-one quoted pattern, plain options and paths, whose pattern is text (plaid-tapir). Anything else — a second command after the body, `mkdir -p … &&` in front, an unquoted
-delimiter, `<<-`, a `$` in a double-quoted pattern, a pipe — is read as the guard reads every
-command, and a body that names a write then denies. So a message, a brief or a note that names a
-write goes into a file with the first shape as a command of its own, and is passed on by name
-(`git commit -F file`, `--body-file file`, `gh api -F body=@file`, `tools/inbox.py capture
---body-file file`).
+(`commit`, and `cherry-pick`/`revert`/`am`/`merge`/`rebase`/`pull` past their own abort-like or safe
+flag); any `gh` noun's write verb, every noun, not only `pr`/`issue`/`release`; a `gh api` call with
+a non-GET method or a field outside `-X GET`, or a GraphQL call whose query is a mutation or is not
+written inline; or one of the `tools/` scripts that pushes or posts internally (`tools/release.sh`,
+`tools/prune-merged.sh`, `tools/land-prs.sh`, `tools/update-pr.sh`), only in command position —
+unless the same command is wrapped in `tools/agent-identity.py run <role> -- <command>`, or, in
+Claude Code where no identity can work and the player has switched the asking on, it is an ordinary
+write the guard asks the player about instead; see **committing**'s "Who a commit and a pull request
+are from" for why the wrapper is mandatory and which writes are asked about when, and the hook's own
+header comment for the exact, current list of what it denies rather than a second copy of it here. A
+read (`git status`, `gh pr view/list/checks`, ...) is unguarded, and a reviewer identity is refused
+a merge-type write too, not only a push. **A `gh issue` write is denied wrapped or not, and so is
+one through `gh api`** (a new issue, `issues/N`, its labels, assignees or lock, an issue comment's
+edit, a GraphQL issue mutation; a comment POST to `issues/N/comments`, which a pull request's
+conversation comments share, stays open): an agent writes an issue only through `tools/inbox.py`
+(**inbox**), which wraps its own writes. **A write's words in text deny like a call** — in an echo,
+a commit message, a PR body, a heredoc, a comment — **except in three shapes, each the whole command
+and nothing else in it**: `cat > FILE <<'EOF'` (or `cat <<'EOF' > FILE`, `>>`, the delimiter quoted
+or after a backslash), whose body is text; a coder's or the orchestrator's wrapped `git commit -F -
+<<'EOF'`, whose body is text and which is judged as the wrapped commit; and `rg` or `grep` with one
+quoted pattern, plain options and paths, whose pattern is text (plaid-tapir). Anything else — a
+second command after the body, `mkdir -p … &&` in front, an unquoted delimiter, `<<-`, a `$` in a
+double-quoted pattern, a pipe — is read as the guard reads every command, and a body that names a
+write then denies. So a message, a brief or a note that names a write goes into a file with the
+first shape as a command of its own, and is passed on by name (`git commit -F file`, `--body-file
+file`, `gh api -F body=@file`, `tools/inbox.py capture --body-file file`).
 
 ## A manual sequence done a second time becomes a script
 

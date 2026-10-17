@@ -42,17 +42,14 @@ again with it on and requires the plans to be **identical event for event**.
 Anything needing a per-frame check goes in `TelemetryObserver`, **not** in the gameplay class. The
 telemetry stays out of the files that decide things, which is what makes the rule easy to keep.
 
-**The one exception is the per-system frame record's timing wrap** (`FrameRecord`, docs/TELEMETRY.md,
-"Per-system frame records"). It records what makes a frame spill over its 2ms
-budget (quiet-yak #510),
-since the stutter comes with many objects on screen and influence, pathing or drawing may each be
-the culprit, and the player accepted the exception
-itself (azure-tapir #526)
-on 2026-10-04. A phone has no
-profiler, so the only way to know what a system cost in a frame is to time it where it runs, and
-an observer cannot do that from outside. The wrap is a single branch in front of an unchanged
-body, and it takes one of two shapes by how often it runs, because what it costs with the record
-off is paid by every player; the scenery queue alone has a third.
+**The one exception is the per-system frame record's timing wrap** (`FrameRecord`,
+docs/TELEMETRY.md, "Per-system frame records"). It records what makes a frame spill over its 2ms
+budget (quiet-yak #510), since the stutter comes with many objects on screen and influence, pathing
+or drawing may each be the culprit, and the player accepted the exception itself (azure-tapir #526)
+on 2026-10-04. A phone has no profiler, so the only way to know what a system cost in a frame is to
+time it where it runs, and an observer cannot do that from outside. The wrap is a single branch in
+front of an unchanged body, and it takes one of two shapes by how often it runs, because what it
+costs with the record off is paid by every player; the scenery queue alone has a third.
 
 A system timed **once a frame** (the crowd's and the event manager's physics steps, the sweep, the
 halo, the edge) reads `FrameRecord.on` and moves its body into a private function of its own:

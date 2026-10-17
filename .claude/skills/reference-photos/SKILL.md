@@ -126,13 +126,11 @@ moves.
 
 **When the player hands over photos or videos, they are imported first, and only then talked about
 in anything that lasts.** The originals are never uploaded, so anything written about them before
-the
-import (woolly-walrus #516)
-is stale at once, with nothing to reference. An inbox note, a brief, a queue entry
-or a pull request names a file by the subject name it is committed under, or describes it by what
-it shows; never by the local path or archive it arrived in, its camera filename, or when or where it
-was taken. The originals never reach the repository, so a reference to one is a pointer nobody can
-follow, and its name and time are the metadata this pass removes.
+the import (woolly-walrus #516) is stale at once, with nothing to reference. An inbox note, a brief,
+a queue entry or a pull request names a file by the subject name it is committed under, or describes
+it by what it shows; never by the local path or archive it arrived in, its camera filename, or when
+or where it was taken. The originals never reach the repository, so a reference to one is a pointer
+nobody can follow, and its name and time are the metadata this pass removes.
 
 ## Never republish what the pass just stripped
 

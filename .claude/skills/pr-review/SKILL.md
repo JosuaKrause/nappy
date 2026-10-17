@@ -5,10 +5,11 @@ description: How every pull request is reviewed before it may merge — adversar
 
 # Reviewing a pull request
 
-**Every pull request goes through an adversarial review before it is ready to merge** (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it).
-No exception for size or kind: a one-line fix, a docs PR filing a playtest, a hook, the
-orchestrator's own queue moves, though a queue update's review has a shape of its own (see "A queue
-update is reviewed for faithfulness and merged first"). **Ready to merge** means a review by a reviewer that did not write
+**Every pull request goes through an adversarial review before it is ready to merge**
+(how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it). No exception for
+size or kind: a one-line fix, a docs PR filing a playtest, a hook, the orchestrator's own queue
+moves, though a queue update's review has a shape of its own (see "A queue update is reviewed for
+faithfulness and merged first"). **Ready to merge** means a review by a reviewer that did not write
 the change has posted the verdict *ready* on the PR, against the PR's current head. Green CI and an
 author's report of "done and verified" are inputs to the review, never a substitute for it.
 
@@ -37,12 +38,13 @@ review agent like any other. In Codex, use its delegation tools with the same fe
 
 ## Semantic correctness first
 
-A review checks that a work item is semantically correct (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it), not only that its code is. Correct code that builds the wrong thing
-passes every other check this repo has. So before reading the diff for bugs, the reviewer reads the
-player's own words the PR cites (the playtest, not the queue entry's paraphrase of it; for a PR with
-no playtest, the quote in its queue entry, its brief or its own description) and every decision
-the change touches, and
-answers these. Each "no" is a finding:
+A review checks that a work item is semantically correct
+(how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it), not only that
+its code is. Correct code that builds the wrong thing passes every other check this repo has. So
+before reading the diff for bugs, the reviewer reads the player's own words the PR cites (the
+playtest, not the queue entry's paraphrase of it; for a PR with no playtest, the quote in its queue
+entry, its brief or its own description) and every decision the change touches, and answers these.
+Each "no" is a finding:
 
 - **Is this what the player asked for?** Nothing they asked for is left out, and every case they
   described is covered and shown, not only the first. Nothing is built beyond their words unless
@@ -55,11 +57,12 @@ answers these. Each "no" is a finding:
   what the PR happened to build.
 - **Would the player recognise it in the pictures?** A visible change is judged on its pictures
   against their words, before its code. A visible change with no pictures is a finding.
-- **Does the finished work leave the queue inside this PR?** (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it) Every
-  item the PR completes is gone from the queue in this diff, with its record written, and every
-  item it only partly does is still there and says what is left. An item left queued after its work
-  merges is how a finished thing gets picked up again with a different approach; an item removed
-  for work the PR did not do is how an ask disappears.
+- **Does the finished work leave the queue inside this PR?**
+  (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it) Every item the
+  PR completes is gone from the queue in this diff, with its record written, and every item it only
+  partly does is still there and says what is left. An item left queued after its work merges is how
+  a finished thing gets picked up again with a different approach; an item removed for work the PR
+  did not do is how an ask disappears.
 - **Is every defect already found in this change fixed inside it?** Nothing merges carrying a
   defect that was already found: a finding from a playtest, a review or the player about work
   whose PR is still open is built into that PR, never queued against it (`docs/decisions/`, M90,
@@ -86,8 +89,8 @@ over a folder that holds images (see **using-tools**).
 
 ## The findings go on the PR
 
-**A review's findings are posted as comments on the PR, anchored to the lines they are about,
-never only reported in the conversation** (woolly-finch). A finding in a chat message is read once by
+**A review's findings are posted as comments on the PR, anchored to the lines they are about, never
+only reported in the conversation** (woolly-finch). A finding in a chat message is read once by
 whoever asked and is gone for the person who has to fix it; a comment on the diff is a thing the
 author, or an agent sent to the branch, can pick up one at a time and resolve, and its thread
 records what was decided about it.
@@ -99,37 +102,37 @@ finding with no line to hang on — a missing doc, a missing test, a missing pic
 summary. **The summary ends with the verdict, *ready* or *not ready*, and the head commit it was
 given against.** A review with nothing to say still says so, and what it checked.
 
-**The review's GitHub event follows the verdict**: APPROVE (tall-egret) when it is *ready*, REQUEST_CHANGES
-when it is *not ready*, and COMMENT for an interim or partial review that gives neither verdict
-yet. The verdict still lives in the review's own text either way — the
-event is what GitHub shows beside it, not a replacement for writing it out. **The reviewer still
-never merges**: merging is **committing**'s, under its permission rule, whatever the review's
-event says.
+**The review's GitHub event follows the verdict**: APPROVE (tall-egret) when it is *ready*,
+REQUEST_CHANGES when it is *not ready*, and COMMENT for an interim or partial review that gives
+neither verdict yet. The verdict still lives in the review's own text either way — the event is what
+GitHub shows beside it, not a replacement for writing it out. **The reviewer still never merges**:
+merging is **committing**'s, under its permission rule, whatever the review's event says.
 
 **A reviewer bot's APPROVE counts toward `main`'s required approval** (**committing** says what
 that requires), the same as the player's own.
 
-**A review thread is resolved only by whoever opened it** — a reviewer bot resolves its own
-threads once satisfied, a thread the player opened is the player's to resolve; the author of a fix
-replies on the thread and never resolves it (woolly-finch). **It is a convention, not a gate**: an unresolved
-thread blocks neither an approval nor a merge, and no ruleset requires thread resolution (woolly-finch).
+**A review thread is resolved only by whoever opened it** — a reviewer bot resolves its own threads
+once satisfied, a thread the player opened is the player's to resolve; the author of a fix replies
+on the thread and never resolves it (woolly-finch). **It is a convention, not a gate**: an
+unresolved thread blocks neither an approval nor a merge, and no ruleset requires thread resolution
+(woolly-finch).
 
-**The review posts under its author's own reviewer identity, mandatorily**: a Claude Code review
-as `claude-reviewer`, a Codex review as `codex-reviewer`, on a docs-only pull request as much as on
-one that changes code (the pull request's own writes are `claude-orchestrator`'s or
-`claude-coder`'s by what it contains, **committing** says which) — never the player's own
-account. `uv run python tools/agent-identity.py status claude-reviewer` or `... status codex-reviewer`
-(**using-tools**) says whether the role is usable; the `gh` command that posts the review then
-runs through `uv run python tools/agent-identity.py run claude-reviewer -- <command>` (or
-`codex-reviewer`) instead of running it directly, so the comments and the review event show as
-`claude-reviewer[bot]` or `codex-reviewer[bot]`. **When the role is not usable (not created yet,
-not installed, or a cloud session), the review stops there and is reported to the player
-instead — it is never posted as the player** (tall-egret). That holds where the write guard can ask
-(**committing**, "Who a commit and a pull request are from"): a review's findings are never sent
-as a `gh pr comment` or any other write the guard's prompt would let through as the player. The same `PreToolUse` hook that makes committing's
-rule mechanical (`.claude/hooks/github-write-guard.sh`) covers `gh pr review` too, denying it
-unless it is wrapped in `run <role> --`. **An admin action no bot identity can perform** (a
-repository ruleset, a GitHub App's own permissions) **is the player's to do directly, never
+**The review posts under its author's own reviewer identity, mandatorily**: a Claude Code review as
+`claude-reviewer`, a Codex review as `codex-reviewer`, on a docs-only pull request as much as on one
+that changes code (the pull request's own writes are `claude-orchestrator`'s or `claude-coder`'s by
+what it contains, **committing** says which) — never the player's own account. `uv run python
+tools/agent-identity.py status claude-reviewer` or `... status codex-reviewer` (**using-tools**)
+says whether the role is usable; the `gh` command that posts the review then runs through `uv run
+python tools/agent-identity.py run claude-reviewer -- <command>` (or `codex-reviewer`) instead of
+running it directly, so the comments and the review event show as `claude-reviewer[bot]` or
+`codex-reviewer[bot]`. **When the role is not usable (not created yet, not installed, or a cloud
+session), the review stops there and is reported to the player instead — it is never posted as the
+player** (tall-egret). That holds where the write guard can ask (**committing**, "Who a commit and a
+pull request are from"): a review's findings are never sent as a `gh pr comment` or any other write
+the guard's prompt would let through as the player. The same `PreToolUse` hook that makes
+committing's rule mechanical (`.claude/hooks/github-write-guard.sh`) covers `gh pr review` too,
+denying it unless it is wrapped in `run <role> --`. **An admin action no bot identity can perform**
+(a repository ruleset, a GitHub App's own permissions) **is the player's to do directly, never
 something to wrap and retry.**
 
 The conversation still gets the recap, since the player reads that first; the PR is where the
@@ -137,23 +140,23 @@ findings live.
 
 ## Three verdicts of *not ready* mean the approach is rethought
 
-When a pull request's reviews have come back *not ready* three
-times (woolly-penguin #759), the approach is rethought,
-including whether the chosen solution is the right way at all. The count is per pull request.
+When a pull request's reviews have come back *not ready* three times (woolly-penguin #759), the
+approach is rethought, including whether the chosen solution is the right way at all. The count is
+per pull request.
 
 *Proposed, not asked for, open to the player's correction:*
 
 - **What counts:** every *not ready* verdict, full reviews and reviews of a delta alike, a queue
   update included. The count starts again after a rethink is written down.
 - **What else the rethink asks:** whether the brief asked for the right thing, whether the design or
-  the reading of the player's words is wrong, and whether the work should be split, restarted or
-  put to the player. It decides *how* the open findings get fixed, never whether: the pull request
-  still does not merge with a found defect open ("Is every defect already found in this change
-  fixed inside it?", above).
+  the reading of the player's words is wrong, and whether the work should be split, restarted or put
+  to the player. It decides *how* the open findings get fixed, never whether: the pull request still
+  does not merge with a found defect open ("Is every defect already found in this change fixed
+  inside it?", above).
 - **Who and where:** the orchestrating session, or in a session with none (a Codex session working
-  alone) the session that owns the pull request, writes the rethink and what it decided in the
-  pull request's conversation before any further commit; a change of approach that touches what
-  the player asked for goes to them as a question first.
+  alone) the session that owns the pull request, writes the rethink and what it decided in the pull
+  request's conversation before any further commit; a change of approach that touches what the
+  player asked for goes to them as a question first.
 
 ## Briefing a review agent
 
@@ -168,16 +171,16 @@ drawing, or a change to the rules is reviewed by a stronger model.
 
 **A queue update is a PR whose every changed file is under `docs/todo/`, `docs/review/` or
 `docs/playtests/`**: filing a playtest, filing or rewording an entry or an item, moving a band. CI
-calls it queue-only (`tools/ci_classify.py`) and runs its mechanical checks before the review
-does. It is merged ahead of other work (woolly-finch), since every brief is written from the queue on
+calls it queue-only (`tools/ci_classify.py`) and runs its mechanical checks before the review does.
+It is merged ahead of other work (woolly-finch), since every brief is written from the queue on
 `origin/main` (**orchestrating**) and a filing left open is a brief written from the older text. A
 diff that also touches anything else, a skill or `CLAUDE.md` included, is not a queue update and
 gets the full review above; the orchestrator's queue move on a PR that builds the work is reviewed
 with that PR.
 
-**Its review is Sonnet's, and it asks whether the queue says what the player said** (bouncy-heron). For each
-entry or item the PR adds or rewords, the reviewer reads it beside the playtest statements it
-cites, in the playtest file itself, and asks:
+**Its review is Sonnet's, and it asks whether the queue says what the player said** (bouncy-heron).
+For each entry or item the PR adds or rewords, the reviewer reads it beside the playtest statements
+it cites, in the playtest file itself, and asks:
 
 - **Does it claim anything the player's words do not say?**
 - **Does it drop a specific the player gave?** A number, a place, a case they described, a word
@@ -188,17 +191,18 @@ cites, in the playtest file itself, and asks:
 - **Does it collide with a recorded decision without naming it?** `tools/decisions.sh <noun>` finds
   the records about each thing the entry changes; an entry that replaces one quotes it.
 
-These five are the reviewer's reading of faithfulness (bouncy-heron), proposed at filing (leafy-finch) and open to the player's correction. A "yes" to the
-first, second, third or fifth, and a "no" to the fourth, is a finding. **A reviewer flags; it does not resolve**:
-it says what does not match and where, and the filer takes it back to the player or to the words.
+These five are the reviewer's reading of faithfulness (bouncy-heron), proposed at filing
+(leafy-finch) and open to the player's correction. A "yes" to the first, second, third or fifth, and
+a "no" to the fourth, is a finding. **A reviewer flags; it does not resolve**: it says what does not
+match and where, and the filer takes it back to the player or to the words.
 
-**It also verifies what CI checked, since a script sees that a thing exists, not what it says** (bouncy-heron).
-The `gates` job's queue update step (`tools/ci_queue_update.py`) fails on an existing playtest
-changed, on a deleted queue file with neither a record on `main` for its entry nor a `Dropped:
-<path> — "<the player's words>"` line in the description quoting a playtest verbatim, and on a
-deleted review item no playtest names; it puts `tools/queue.sh`'s line for every entry touched in
-the job's summary. The reviewer checks that the step ran (CI called the PR queue-only), and then
-what it could not:
+**It also verifies what CI checked, since a script sees that a thing exists, not what it says**
+(bouncy-heron). The `gates` job's queue update step (`tools/ci_queue_update.py`) fails on an
+existing playtest changed, on a deleted queue file with neither a record on `main` for its entry nor
+a `Dropped: <path> — "<the player's words>"` line in the description quoting a playtest verbatim,
+and on a deleted review item no playtest names; it puts `tools/queue.sh`'s line for every entry
+touched in the job's summary. The reviewer checks that the step ran (CI called the PR queue-only),
+and then what it could not:
 
 - **A record that exists covers the item deleted**: it says the item's work was built, not only
   that the entry has a record.
