@@ -1,7 +1,7 @@
 # plaid-goose — The Hard Mode box takes a tap and a click, over its whole box grown 5% · 2026-10-17
 
 [fluffy-kestrel](../playtests/2026-10-17-fluffy-kestrel.md), #740, "Cannot select hard mode": "Hard
-mode should have the same 5% extension over the box and text as other buttons". Then (inbox #746):
+mode should have the same 5% extension over the box and text as other buttons". Then (inbox #746 in [woolly-penguin](../playtests/2026-10-17-woolly-penguin.md)):
 "all of this was on phone"; "I see the hard mode selection after restarting the game (fresh save)
 but I cannot click on it locally either. I clicked on the text and the button. the whole bounding
 box should trigger"; "+5% of course".

@@ -455,7 +455,7 @@ func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
 	title.free()
 
 ## **Which titles a player can meet show the box today, pinned as it stands, not as settled.**
-## *(inbox #746, the player: "I don't see the hard mode button at all locally".)* The title opens
+## *(inbox #746 in woolly-penguin, the player: "I don't see the hard mode button at all locally".)* The title opens
 ## through `main._open_the_title()`, which passes `new_game` as `_resume.is_empty()`: whether the boot
 ## found a saved run to resume. A run is saved from its first day on, so every boot after a first
 ## one, until that run ends or the held restart throws it away, opens on a title with no box. Whether
@@ -542,7 +542,7 @@ func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
 
 ## **A real tap on the box flips it, through the engine's own input dispatch.** *(fluffy-kestrel,
 ## the player, #740: "Hard mode should have the same 5% extension over the box and text as other
-## buttons", titled "Cannot select hard mode"; inbox #746: "all of this was on phone.")* The test
+## buttons", titled "Cannot select hard mode"; inbox #746 in woolly-penguin: "all of this was on phone.")* The test
 ## above hands its events straight to `_unhandled_input()`, which skips the step that stopped them:
 ## Godot's GUI pass, which runs first and offers a press to the topmost `Control` under it that does
 ## not ignore the mouse. Under the box that was the bottom scrim, a `ColorRect` left at Godot's
@@ -554,7 +554,7 @@ func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
 ## an emulated click) held landscape, held portrait (the title turned, the touch arriving in the
 ## 720x1280 box) and a desktop's mouse, each at the drawn box's centre, on its label, in the space
 ## between the two, at a corner of the drawn rect and just inside two corners of its catch: *"the
-## whole bounding box should trigger"* (inbox #746). Each tap must flip the box exactly once. The
+## whole bounding box should trigger"* (inbox #746 in woolly-penguin). Each tap must flip the box exactly once. The
 ## window is sized to the device for the span, since real dispatch maps a window position through
 ## the stretch.
 func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> void:
