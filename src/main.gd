@@ -996,10 +996,16 @@ static func escape_part_for(raw: String) -> String:
 ## city is built on this frame, the building is left standing on its own map with nobody on it,
 ## and `FinaleController.enter_city()` begins section two on its own brief and its own clock.
 ##
+## **The building's wall blockers go, though; its pictures and its fade stay.** The building and
+## the city share one physics space and both are laid out from the world origin, so its blockers
+## would stand across the city's top rows as a wall nobody draws (inbox #777) —
+## `InteriorScene.take_the_walls_out()`.
+##
 ## The fade is not reversed here. `InteriorScene` holds the black at full opacity from the moment
 ## it emits, and `_on_finale_section_started()` clears it once she has been put down on the street,
 ## so nothing of the city is seen being assembled.
 func _on_escape_exit_requested() -> void:
+	_interior.take_the_walls_out()
 	_build_the_finale_city()
 	_finale.enter_city()
 	# `VisitCounter`'s own "escape-city" — the building is behind her and the city section begins.

@@ -722,6 +722,23 @@ func clear_fade() -> void:
 	var tween := create_tween()
 	tween.tween_property(_fade_rect, "modulate:a", 0.0, FADE_SECONDS)
 
+## Takes the building's wall blockers out of the physics space for good, once she has walked out
+## into the city. **The building shares the city's space and its coordinates:** both are laid out
+## from the world origin, and the footprint's blockers reach city row 26, with the margin row
+## solid along the city's whole width, so left in place they are a wall across the city that
+## nothing draws (inbox #777). Only the blockers go: the building's pictures stay, under the city's
+## own, and so does its fade, which `clear_fade()` still lifts over the street. Freed at once
+## rather than queued, so nothing else in this same call, the city's build and its first streaming
+## pass included, finds them in the space; the caller is the exit's own tween callback, never a
+## physics query. Nothing walks the building again on this boot — a lost city section starts the
+## city again — so nothing rebuilds them.
+func take_the_walls_out() -> void:
+	if _collision == null:
+		return
+	remove_child(_collision)
+	_collision.free()
+	_collision = null
+
 ## Moves `player` to the door named `door_id`'s own tile — "just inside its counterpart door," in
 ## the TODO's own words, since the door tile is exactly where she is placed. Exposed rather than
 ## kept behind the tween above, so a test can drive the same teleport the running game uses without
