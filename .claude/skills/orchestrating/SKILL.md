@@ -18,7 +18,12 @@ PNG, a review sheet — runs on Opus, since the result is judged by eye and a we
 the player a review round *(2026-09-23: "what is the model making those images? use opus 5.5")*;
 Codex has its own model hierarchy and keeps its own tiering for art *(2026-09-23: "make the opus
 guidance claude only -- codex has a different model hierarchy here")*. In Codex, pick the subagent
-tier by the task's remaining difficulty: see `references/codex-models.md`. The contract is the same
+tier by the task's remaining difficulty: see `references/codex-models.md`. **Generating a raster
+is Codex's alone**: Claude Code has no image generator (**illustrated-png**, "Asset contract"), so
+a brief whose work includes generating an illustrated PNG, a comic transfer included, goes to a
+Codex agent (which writes as `codex-coder`); the drawing rule above covers SVG and the review
+sheets. Installing, registering, rebaking and checking PNGs that already exist stays open to
+either host. The contract is the same
 on either host: fresh context, a bounded scope and an isolated checkout for implementation. Create
 the worktree explicitly if the tool does not create one. Read-only review can share a checkout. If
 delegation is unavailable, do the bounded work locally and retain the same verification gate.
