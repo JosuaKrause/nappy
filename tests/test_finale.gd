@@ -30,6 +30,7 @@ func run(t) -> void:
 	_test_both_exits_are_reachable_past_every_body_the_escape_stands(t)
 	_test_no_street_of_the_walk_stands_two_roadblocks(t)
 	_test_a_lured_off_roadblock_is_only_a_barrier(t)
+	_test_a_lured_off_roadblock_raises_no_mark_over_her(t)
 	_test_luring_its_guard_off_is_the_way_past_a_roadblock(t)
 	_test_the_service_exit_is_beside_the_home_block(t)
 	_test_nothing_the_finale_places_stands_where_she_comes_out(t)
@@ -420,6 +421,40 @@ func _test_a_lured_off_roadblock_is_only_a_barrier(t) -> void:
 	t.check(streamed.is_solid() and streamed.contribution_at(Vector2(400.0, 70.0)) == 0.0,
 			"the escape's band streamed back in after its guard was spent is solid and silent")
 	streamed.free()
+
+## **And nothing over her head says otherwise.** A posted band's guard has not noticed her yet, so
+## inside its outer radius it raises the `SOON` mark (`EventManager._warn_about_the_ground_she_is_on()`),
+## as every `hard_fail` row waiting for her does. A band whose guard has left for good waits for
+## nobody: he never notices her or charges again, so it raises nothing, or the walk past a band
+## that costs nothing would be made under a warning of a catch that cannot come.
+func _test_a_lured_off_roadblock_raises_no_mark_over_her(t) -> void:
+	var manager := EventManager.new()
+	t.add_child(manager)
+	var her := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	her.add_child(camera)
+	t.add_child(her)
+	her.set_physics_process(false)
+	her.add_to_group("player")
+	var band := EventInstance.new()
+	band.setup(EventCatalogue.escape_roadblock(), Vector2(1000.0, 1000.0))
+	manager.add_child(band)
+	manager._instances.append(band)
+	her.global_position = band.global_position + Vector2(0.0, band.def.outer_radius - 20.0)
+	manager._find_player()
+	manager._warn_about_the_ground_she_is_on()
+	t.check(her.alert_level() == Stroller.Alert.SOON,
+			"a posted band's guard waiting for her raises the mark inside its outer radius")
+	band.come_back_as_the_barrier(1)
+	her._physics_process(1.0)
+	manager._warn_about_the_ground_she_is_on()
+	t.check(her.alert_level() == Stroller.Alert.NONE,
+			"a band whose guard has left for good raises nothing over her head")
+	her.remove_from_group("player")
+	her.free()
+	manager.free()
 
 ## **The target, walked on the plan's own streets.** On every roadblock street of the walk, in
 ## both directions, along the middle of its open sidewalk: walking straight past the band with its

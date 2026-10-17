@@ -1652,6 +1652,10 @@ func _warn_about_the_ground_she_is_on() -> void:
 			continue
 		if instance.is_finished or not instance.def.hard_fail:
 			continue
+		# A barrier whose guard has left his post for good is waiting for nobody: he never notices
+		# her or charges again (`EventInstance.is_a_spent_guard()`), so it has nothing to warn of.
+		if instance.is_a_spent_guard():
+			continue
 		var gap := instance.global_position.distance_to(here) - instance.def.inner_radius
 		# `SOON` is anything that cannot kill her *yet* — a telegraph running, or a pursuer that has
 		# not noticed her. Without the second half a man standing in an alley raises `NOW` — one

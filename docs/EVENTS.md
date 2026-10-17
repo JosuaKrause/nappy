@@ -1036,8 +1036,10 @@ Four things worth keeping straight:
   clock (`_leaving_must_clear_sight`, as for a car): the instance goes back to being only the
   barrier — waiting, solid, costing what a barrier costs — once he is out of her sight, or after
   the backstop when there is no player to be out of sight of. The exception to "it is over the
-  moment it starts leaving" is the barrier, not the man. **The escape's barrier is silent from the
-  moment he leaves** (`EventDef.silent_once_unmanned`): it stays and stays solid, and costs
+  moment it starts leaving" is the barrier, not the man. **Once he has left, the barrier raises no
+  exclamation mark over her head**: it waits for nobody, since he never notices her or charges
+  again, and `EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard. **The
+  escape's barrier is silent from the moment he leaves** (`EventDef.silent_once_unmanned`): it stays and stays solid, and costs
   nothing — see "The escape — the walk that is not a day".
 
 **Streaming never ends a departure she could be watching.** A plan is streamed out by how far she is
@@ -1828,7 +1830,8 @@ obstacle survivable")* Two things make that true, and both are the escape's alon
 - **Once its guard has left his post for good, the band is only a barrier**: solid, drawn, and no
   field of its own (`EventCatalogue.escape_roadblock()`, the hunting row with
   `EventDef.silent_once_unmanned`), while he walks away and once he is gone, and when it is
-  streamed back in as only the barrier. While he stands at his post, warns and charges, the band
+  streamed back in as only the barrier; and, as any barrier whose guard has gone, it raises no
+  mark over her head. While he stands at his post, warns and charges, the band
   charges what the hunting row charges and he is the danger, warning by radius and charging at
   his stand-off ("Every charger that does not arrive charging warns first"). The guard at the
   far post stays a drawing, as on a day.
