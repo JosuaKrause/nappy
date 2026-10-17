@@ -23,11 +23,13 @@ label, the space between them and the drawn rect's corner; they fail on the old 
 names any `Control` on the title left at STOP. The godot skill now says a press read in
 `_unhandled_input()` must cross every `Control` above it, and how to test it.
 
-**Open, asked of the player:** the box is shown only on a title with nothing to resume. The save is
-written as day 1 starts, so every later boot of that run gets a title without it; the held restart,
-or the run ending, is the way back to one with it, and nothing says so. A test pins which titles
-show it today; the choices and what each costs are the review item
-[plaid-goose](../review/2026-10-17-plaid-goose.md).
+**Hard Mode is chosen for a new game only.** The box is shown only on a title with nothing to
+resume; the save is written as day 1 starts, so every later boot of that run gets a title without
+it, and a test pins which titles show it. Asked whether a player with a saved run should be able to
+choose it, the player ([woolly-penguin](../playtests/2026-10-17-woolly-penguin.md), #746): "yes,
+hard mode is new game only. you cannot change in the middle of a run." The line on the resume
+title saying a held restart begins a new game was the filer's addition to that option; asked what
+it was for, it was left unbuilt.
 
 **Choices open to overturn:** the catch through `ButtonGeometry` (proposed in the entry, not asked
 for); the two margins combined with `Rect2.merge`; no hover or pressed look added, since the cause

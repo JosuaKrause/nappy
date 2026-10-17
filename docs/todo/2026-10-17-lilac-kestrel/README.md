@@ -21,12 +21,12 @@ into `CLAUDE.md`, and every quote already in `CLAUDE.md` and the skills becomes 
 
 **What it keeps.** The playtest files stay the primary source and are never rewritten; a quote whose
 words are in no playtest yet (said in a session, or recorded only in a record under
-`docs/decisions/`) links to wherever they are recorded. The records under `docs/decisions/` are
-history and keep their quotes. A quote was there to show the rule reads the player right; that is
+`docs/decisions/`) links to wherever they are recorded. A quote was there to show the rule reads the player right; that is
 established once, by the review of the change that wrote the rule, so a reader does not re-check it.
 The reason a rule exists is still said in the skill, in the skill's own words.
 
-*Proposed, not asked for:* the band `now`; the form of a link (`[name](path)` to the playtest, with
+*Proposed, not asked for:* the band `now`; the records under `docs/decisions/`, which are history,
+keep their quotes; the form of a link (`[name](path)` to the playtest, with
 the statement's `#N` or number where the file has several); where a quote's words are in no file,
 filing them first rather than dropping the link.
 
