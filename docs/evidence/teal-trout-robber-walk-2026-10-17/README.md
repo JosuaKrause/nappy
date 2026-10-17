@@ -14,7 +14,7 @@ game's camera draws on screen) and **6x**.
 |---|---|---|---|
 | front | `robber-walk-front-v1.gif` | `robber_alert_front.svg`, the planted step | `robber_alert_front_b.svg`, the passing step |
 | front diagonal | `robber-walk-front_diagonal-v1.gif` | `robber_alert_front_diagonal.svg`, the planted step | `robber_alert_front_diagonal_b.svg`, the passing step |
-| side | `robber-walk-side-v1.gif` | `robber_alert_side.svg` (A on PR #750), the passing step | `robber_alert_side_b.svg` (B on PR #750), the planted step |
+| side | `robber-walk-side-v1.gif` | `robber_alert_side.svg` (B on PR #750), the planted step | `robber_alert_side_b.svg` (A on PR #750), the passing step |
 | back diagonal | `robber-walk-back_diagonal-v1.gif` | `robber_alert_back_diagonal.svg`, the planted step | `robber_alert_back_diagonal_b.svg`, the passing step |
 | back | `robber-walk-back-v1.gif` | `robber_alert_back.svg`, the planted step | `robber_alert_back_b.svg`, the passing step |
 
@@ -23,9 +23,10 @@ coat, held low and off the body on either side of him. **The passing step** is A
 drawn in under him and one hand held low in front of the coat at the hip; in the front and back
 views, where a stride cannot be seen fore and aft, one foot is also lifted off the ground. Each
 pair shares its canvas (26x44), its bottom-centre ground anchor (13,44) and its torso and hood, so
-only the legs and arms change at the swap. `robber_alert_side_b.svg` is the second sheet's
-`robber_alert_side-v2.svg`, its drawing unchanged and its comment rewritten for its place in the
-game's art.
+only the legs and arms change at the swap. Frame a is the planted step in every view, because the
+game draws frame a whenever he covers no ground, so it is the picture he holds while he stands.
+`robber_alert_side.svg` is the second sheet's `robber_alert_side-v2.svg` and
+`robber_alert_side_b.svg` the side alert approved on PR #726, both drawings unchanged.
 
 **The rate** is the robber's own stride. `EventInstance` swaps a walking family's frame every
 quarter turn of its gait phase, `PI / 2 / GAIT_RATE` (17.5px) of ground (`_gait_stepping()`), the

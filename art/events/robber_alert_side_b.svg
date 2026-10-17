@@ -1,24 +1,17 @@
-<!-- Hooded robber on alert, side, walk frame b: robber_alert_side.svg's partner in his
-     two-frame walk toward her while he warns. robber_alert_side.svg is the passing step, feet
-     under him and the near hand held low in front of the hip; this is the planted step: the
-     stance wide, the back foot planted behind him and the front foot ahead, the near arm held
-     off the body, back and low, with its open hand behind his hip, and the far arm hanging
-     forward of his chest with its hand showing past his front, so both hands are out of the
-     coat on either side of him as they are in robber_alert_front.svg. Still not a reach:
-     robber_lunging_side.svg's arm is thrown out at shoulder height. Drawn first as the second
-     side alert of the teal-trout views sheet (robber_alert_side-v2.svg there), unchanged here.
-     Faces east; mirrored for a westward heading. Canvas 26x44, ground anchor bottom centre
-     (13,44), robber_alert_side.svg's, torso and hood unmoved from it, so the cycle does not
-     jump. -->
+<!-- Hooded robber on alert, side, walk frame b, the passing step: robber_alert_front_b.svg
+     facing east, and robber_alert_side.svg's partner in his two-frame walk toward her while he
+     warns. Knees set, body leaning toward her, the near hand out of the coat and held low in
+     front of the hip: ready, not yet reaching. robber_lunging_side.svg is the reach itself, the
+     arm thrown out at shoulder height and the stride open. The side alert approved on PR #726
+     (A on PR #750), the drawing unchanged. Canvas 26x44, ground anchor bottom centre (13,44),
+     torso and hood those of robber_alert_side.svg, so the cycle does not jump. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="26" height="44" viewBox="0 0 26 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
-  <path d="M8.6 33 L12.6 34 L8.6 42 L4.4 42Z M14 33 L18 33 L21.6 42 L16.6 42Z" fill="#26262e"/>
-  <path d="M3 41 L9.6 41 L9.4 44 L2.2 44Z M15.6 41 L22 41 L24 44 L16.4 44Z" fill="#17171c"/>
-  <path d="M15 17.4 L18.6 16.4 L22.6 23.2 L23.2 26.2 L20.6 26.8 L19.6 24 L16 20.6Z" fill="#24262e"/>
-  <ellipse cx="22.4" cy="27.8" rx="1.9" ry="2.2" fill="#d9a878"/>
+  <path d="M8.6 33 L12.6 34 L11 42 L7 42Z M14 33 L18 33 L20 42 L15 42Z" fill="#26262e"/>
+  <path d="M6 41 L12 41 L12 44 L5 44Z M14 41 L20 41 L22 44 L15 44Z" fill="#17171c"/>
   <path d="M9 16 L15.4 13.6 L19.6 17.6 L18 35 L9 36 L7 31Z" fill="#353a46"/>
   <path d="M7 28 L13 31 L19 29 L18 35 L13 37 L7 34Z" fill="#2b303a"/>
-  <path d="M10.4 16.4 L14.2 17.4 L9.6 24.6 L6.2 28.2 L3.8 26.4 L7.2 22.6Z" fill="#2b303a"/>
-  <ellipse cx="4.4" cy="28" rx="2" ry="2.3" fill="#d9a878"/>
+  <path d="M12.6 17.4 L16.4 16.2 L21.6 25.4 L18.8 27.4Z" fill="#2b303a"/>
+  <ellipse cx="21.2" cy="27.6" rx="2" ry="2.3" fill="#d9a878"/>
   <g transform="translate(14.6 9.6)">
   <ellipse cx="0" cy="0" rx="7" ry="7" fill="#2b303a"/>
   <path d="M3 -3 Q8 -2 7 2 L4 5 L2 3Z" fill="#141419"/>
