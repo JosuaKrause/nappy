@@ -552,9 +552,11 @@ func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
 ## `tests/test_held_restart.gd` does, which runs the GUI pass and the engine's
 ## emulate-mouse-from-touch pass both: a phone (`_touch`, its finger arriving as a screen touch and
 ## an emulated click) held landscape, held portrait (the title turned, the touch arriving in the
-## 720x1280 box) and a desktop's mouse, each at the drawn box's centre, on its label, and just inside
-## each corner of its catch. Each tap must flip the box exactly once. The window is sized to the
-## device for the span, since real dispatch maps a window position through the stretch.
+## 720x1280 box) and a desktop's mouse, each at the drawn box's centre, on its label, in the space
+## between the two, at a corner of the drawn rect and just inside two corners of its catch: *"the
+## whole bounding box should trigger"* (inbox #746). Each tap must flip the box exactly once. The
+## window is sized to the device for the span, since real dispatch maps a window position through
+## the stretch.
 func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> void:
 	GameState.start_run(_SEED)
 	var original_window_size: Vector2i = t.get_window().size
@@ -591,6 +593,8 @@ func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> 
 		var points := {
 			"the box's centre": box.get_center(),
 			"its label": Vector2(drawn.end.x - drawn.size.x * 0.25, drawn.get_center().y),
+			"the space between the box and its label": Vector2(box.end.x + 1.0, box.get_center().y),
+			"the drawn rect's top-right corner": Vector2(drawn.end.x - 1.0, drawn.position.y + 1.0),
 			"just inside its catch's top-left": catch.position + inset,
 			"just inside its catch's bottom-right": catch.end - inset,
 		}
