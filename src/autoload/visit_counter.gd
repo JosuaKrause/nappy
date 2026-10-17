@@ -93,6 +93,9 @@ func _ready() -> void:
 	EventBus.event_lit_unmet.connect(_on_event_lit_unmet)
 	EventBus.city_gone_dark.connect(_on_city_gone_dark)
 	EventBus.pursuit_began.connect(_on_pursuit_began)
+	EventBus.pursuit_warned.connect(_on_pursuit_warned)
+	EventBus.pursuit_caught.connect(_on_pursuit_caught)
+	EventBus.pursuit_cut_short.connect(_on_pursuit_cut_short)
 	EventBus.pursuit_ended.connect(_on_pursuit_ended)
 	EventBus.encounter_seen.connect(_on_encounter_seen)
 	EventBus.encounter_influenced.connect(_on_encounter_influenced)
@@ -386,15 +389,41 @@ func _on_event_lit_unmet(id: String) -> void:
 func _on_city_gone_dark() -> void:
 	_send_event(_day_event_name(GameState.day, "blackout"))
 
+## **Every charger's own charging counter** *(inbox #764, the player: "Ending a day and a charging
+## counter are not the same thing"; "Charging is independent of an ended day")*: `<charger>-warned`
+## when it starts warning her, `-chased` at its charge, and its charge's end in exactly one of
+## `-caught`, `-shaken`, `-outlasted` and `-ended` (the day ended some other way under it), whatever
+## the day does — a catch that ends the day sends `lost-hard-fail-<row>` as well. `<charger>` is
+## `charger_counter_name()`.
+func _on_pursuit_warned(id: String) -> void:
+	_send_event(_day_event_name(GameState.day, "%s-warned" % charger_counter_name(id)))
+
 func _on_pursuit_began(id: String) -> void:
-	if id != "charging_dog":
-		return
-	_send_event(_day_event_name(GameState.day, "dog-chased"))
+	_send_event(_day_event_name(GameState.day, "%s-chased" % charger_counter_name(id)))
+
+func _on_pursuit_caught(id: String) -> void:
+	_send_event(_day_event_name(GameState.day, "%s-caught" % charger_counter_name(id)))
+
+func _on_pursuit_cut_short(id: String) -> void:
+	_send_event(_day_event_name(GameState.day, "%s-ended" % charger_counter_name(id)))
 
 func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
-	if id != "charging_dog":
-		return
-	_send_event(_day_event_name(GameState.day, "dog-shaken" if shaken_off else "dog-outlasted"))
+	_send_event(_day_event_name(GameState.day, "%s-%s" % [charger_counter_name(id),
+			"shaken" if shaken_off else "outlasted"]))
+
+## A charger's name in its counter: `dog` for `charging_dog`, so its `dog-chased`, `dog-shaken` and
+## `dog-outlasted` keep the names their history has; `dog-tutorial` for the day-3 lesson's dog
+## (`EventInstance.charger_name()`'s `charging_dog_tutorial`), which sends its own set and not the
+## dog's *(PLAYTEST-141: "we need to record like dog tutorial")*; every other row its id hyphenated,
+## as the encounter events are (`alley_robbery` -> `alley-robbery`), and `task-guard` for day 13's
+## task guard once the task sets him on her (`EventInstance.counted_as`).
+static func charger_counter_name(id: String) -> String:
+	match id:
+		"charging_dog":
+			return "dog"
+		"charging_dog_tutorial":
+			return "dog-tutorial"
+	return id.replace("_", "-")
 
 ## An encounter's `name` (`EventInstance.logged_name()`) as a name's last part: hyphenated the way
 ## every other id in a name is, `charging_dog` -> `charging-dog`.

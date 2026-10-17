@@ -1062,12 +1062,13 @@ pursuer holds the ground a pursuer that sets off beside her holds (`EventDef.set
 it stands while she is nearer than the stand-off, follows at the stand-off once she is further, and
 lunges the moment she is back at the full stand-off with the line clear. A pursuer that stands for
 its notice (`EventDef.stands_for_its_notice`: the dog that waited, the hunting roadblock's guard,
-the door guard) follows nowhere: it stands where it is for the whole notice and lunges the same
-way. **Its notice does not run out while she is inside
-the stand-off**, since a notice ending there would start the chase from a fraction of it, the same
-trap reached by standing still; it runs on while she is outside, and if it ends there the chase
-starts from the stand-off as well, or, for a pursuer that stands, from wherever she is, which is
-further. So the chase starts from at least the full stand-off however she came. A
+the man a vehicle lets out) follows nowhere: it stands where it is and lunges the same way. **A pursuer that
+waited for her has no notice clock** (`EventInstance.warns_by_radius()`): it charges only when she
+crosses its stand-off along a clear line, so the chase starts from the full stand-off however she
+came, and where the wall keeps the line from clearing until she is out of its radius, it never
+charges and waits again. **The timed notice of a guard a task sets on her does not run out while a
+held lunge has her inside the stand-off** (`_pause_a_held_notice()`), since a notice ending there
+would start the chase from a fraction of it, the same trap reached by standing still. A
 held pursuer she stays beside never sets off: it stands turned toward her with the doubled red caret
 up and its field charging her, and the way out is the walk the contract was written for. A waiting
 robber is drawn facing her only along the same clear line, so he does not visibly track her round a
@@ -1149,12 +1150,17 @@ and price and route around, and that becomes a chase if you do not. Three states
 | | it emits | it can kill | it moves |
 | --- | --- | --- | --- |
 | **waiting** | at full strength | no | no |
-| **noticing** (`telegraph_time`) | at full strength | no | closes to the stand-off (the alley robber at a slow walk of his own, `EventDef.notice_walk_speed`), or stands for it (`EventDef.stands_for_its_notice`: the waiting dog, the hunting roadblock's guard, the door guard) |
+| **warning** (no clock: for as long as she is inside `pursues_within`; out of it, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`EventDef.notice_walk_speed`) and stops where he is if she walks out of his radius; the others stand (`EventDef.stands_for_its_notice`: the waiting dog, the hunting roadblock's guard) |
 | **chasing** (`duration`) | at full strength | yes | holds, then comes |
 
-Two things are deliberately not the same as an ordinary telegraph. The **clock starts when it
-notices**, not when the day put it there — a robbery whose telegraph ran at dawn four streets away
-would arrive with no notice in it at all. And its notice does **not** damp what it is emitting:
+Two things are deliberately not the same as an ordinary telegraph. **The warning is a radius, not a
+clock** *(inbox #764: a warning happens when she comes close; she can turn around; if she keeps
+getting closer the charge starts)*: it starts when she comes inside `pursues_within` along a clear
+line, not when the day put it there, it lasts for as long as she stays inside, and it ends in a
+charge only when she crosses the stand-off (`EventInstance.warns_by_radius()`). A guard a task sets
+on her from wherever he stands (`EventInstance.notice_her_at()`) is not on this rule: in her view
+he stands with his warning up for `Tuning.WARNING_ALONE_MAX` and then charges, and out of it he is
+sent at her under a badge of the same second. And its warning does **not** damp what it is emitting:
 `TELEGRAPH_INTENSITY_FRACTION` means *this has not started yet*, and a man who has been standing in
 that alley since she came round the corner has started. What has not started is the lunge.
 

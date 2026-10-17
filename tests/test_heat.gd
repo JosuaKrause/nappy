@@ -465,17 +465,24 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 	t.check(guard.body_position().is_equal_approx(post),
 			"exactly where it was built (%s against %s)" % [guard.body_position(), post])
 
-	# His whole notice runs while he is standing where she can see him, and nothing is lethal
-	# during it — that is the contract every pursuer keeps and the reason he is worth seeing.
+	# He warns, standing where she can see him, for as long as she stays in his radius and outside
+	# his stand-off, and nothing is lethal during it (`EventInstance.warns_by_radius()`); she steps
+	# inside his stand-off and he charges.
 	var frames := 0
-	while guard.is_telegraphing() and frames < int(10.0 / STEP):
+	while guard.is_telegraphing() and frames < int((hot.telegraph_time + 1.0) / STEP):
 		t.check(not guard.is_lethal_at(guard.global_position),
-				"nothing is lethal while his notice runs")
+				"nothing is lethal while he warns")
 		guard.player_at = her
 		guard._process(STEP)
 		frames += 1
-	t.check(not guard.is_telegraphing() and frames > 0,
-			"his %.1fs notice runs in full and ends (%d frames)" % [hot.telegraph_time, frames])
+	t.check(guard.is_telegraphing(),
+			"he is still warning %d frames on, past his %.1fs telegraph" % [frames, hot.telegraph_time])
+	her = guard.global_position + Vector2(
+			Tuning.pursuit_standoff(hot.pursue_speed, hot.standoff_reach()) - 2.0, 0.0)
+	guard.player_at = her
+	guard._process(STEP)
+	t.check(not guard.is_telegraphing() and not guard.is_waiting(),
+			"she crosses his stand-off and he charges")
 
 	# The reach is a man's, measured from him.
 	var on_him := guard.global_position + Vector2(reach - 1.0, 0.0)

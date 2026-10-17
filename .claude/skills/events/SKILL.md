@@ -80,7 +80,9 @@ pursuer: its telegraph is the approach she watches once it exists. A sent robber
 arrives chasing, with no approach: its notice is its badge alone. Running while it is offscreen
 counts toward `PURSUIT_SHAKEN_OFF`, so it can be shaken off before it becomes visible (tall-owl).
 `EventDef.validate()` requires that badge and validates its chase without inventing an approach.
-Standing robbers and the day-3 dog's approach keep their separate notice floor. Verify escape with
+The day-3 dog's approach keeps its separate notice floor (`Tuning.PURSUIT_MIN_NOTICE`); a pursuer
+that waited for her, a robber included, warns by radius with no clock, so that floor bounds nothing
+it does (inbox #764). Verify escape with
 the actual Baby meter: reaching the pursuit cap after the baby cries is a lost day.
 
 ## What telegraphs
@@ -268,15 +270,26 @@ it was written from. The traps:
   stand-off however she came. **A pursuer that stands still for its notice
   (`EventDef.stands_for_its_notice`) closes nothing and keeps every lunge**, which
   is what keeps standing from being this trap: walking in, she is lunged at from the full
-  stand-off; staying out, she is chased from wherever she is when the notice runs out, which is
-  further (woolly-penguin #748). A wall between them that holds the lunge back is the same trap: at an
+  stand-off (woolly-penguin #748); staying out, one that waited for her never charges, since its
+  warning has no clock and lasts while she is inside its radius, and out of the radius it waits
+  again (`EventInstance.warns_by_radius()`; inbox #764); one that sets off beside her charges from
+  where it stood once its notice has run. A wall between them that holds the lunge back is the same trap: at an
   alley mouth the line clears with her already inside the stand-off. The notice, the lunge and the
   catch all ask for a clear line, so a held lunge is not deferred until the line clears: the pursuer
   holds the ground of one that sets off beside her (`EventInstance._lunge_held`) — it stands while
   she is nearer than the stand-off and follows at it once she is further, or only stands if it
   stands for its notice — and lunges once she is back at the
-  full stand-off, and its notice does not run out while she is inside it (`_pause_a_held_notice()`)
+  full stand-off; a timed notice does not run out while she is inside it (`_pause_a_held_notice()`)
   — a notice ending there is the same trap, reached by her standing still.
+- **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
+  (inbox #764). His warning comes before he exists — a hut's guard raising his hand while she is
+  near a raised boom — and he charges the moment she goes under it, from the hut across the road,
+  inside his own stand-off (`EventDef.charges_at_once`: no notice of his own, telegraph 0; at an
+  alley's door, half a second standing first). So his charge is not met at the stand-off with
+  `PURSUIT_REACTION` to answer it, and a walker under the boom is caught in under half a second by
+  design: the answer is the warning: don't go under, or go under running, which
+  `tests/test_checkpoints.gd` walks. **No other row may carry `charges_at_once` without the player's
+  word**: on any other pursuer it is exactly the trap above.
 - **A break-off stated as a distance needs two inequalities, and they fight.**
   `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a **rate** — the gap opening — which only running can
   do, and it is stated over *her*, because a proxy over the pursuer's geometry resets at every
@@ -287,8 +300,8 @@ it was written from. The traps:
   direction she is *actually travelling*, so a `--flee` that starts early puts the pursuit in front
   of the run. It waits for the chase.
 
-Two more about the waiting state (`pursues_within`): **the clock starts when it notices her**, not
-at dawn; and **whatever draws it asks `is_waiting()` as well as `is_telegraphing()`** — each is
+Two more about the waiting state (`pursues_within`): **whatever follows it starts when it notices
+her**, not at dawn — for a pursuer a warning with no clock, for anything else its telegraph; and **whatever draws it asks `is_waiting()` as well as `is_telegraphing()`** — each is
 false in the other's phase, so a picture that asks only the second holds its whole wait in the
 wrong posture.
 

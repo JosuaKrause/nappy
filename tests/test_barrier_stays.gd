@@ -25,7 +25,9 @@ func run(t) -> void:
 func _hot_roadblock() -> EventDef:
 	return EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 
-## A guard that has set off after her, her standing still beside the post.
+## A guard that has set off after her, her standing still beside the post: she comes inside his
+## radius and he warns, then she steps inside his stand-off and he charges — his warning has no clock
+## (`EventInstance.warns_by_radius()`), so only her crossing it sets him off.
 func _chasing(t, post: Vector2) -> Array:
 	var hot := _hot_roadblock()
 	var guard := EventInstance.new()
@@ -36,7 +38,17 @@ func _chasing(t, post: Vector2) -> Array:
 	var her := post + Vector2(0.0, hot.pursues_within - 10.0)
 	guard.player_at = her
 	guard._process(STEP)
+	her = _charge(guard)
 	return [guard, her]
+
+## Steps her just inside the stand-off of a guard who is warning her, along +y from where he stands,
+## so he charges; answers where she now stands.
+func _charge(guard: EventInstance) -> Vector2:
+	var her := guard.global_position \
+			+ Vector2(0.0, Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach()) - 2.0)
+	guard.player_at = her
+	guard._process(STEP)
+	return her
 
 func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> void:
 	var post := Vector2(400.0, 0.0)
@@ -242,6 +254,21 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	if post == Vector2.INF:
 		city.free()
 		return
+	# The page's charging counter, read off the signals: one warning, one charge, one ending, and
+	# nothing more for the barrier streamed back in, at the day's end included.
+	var counted: Array[String] = []
+	var listen: Array[Callable] = [
+		func(id: String) -> void: counted.append("warned:" + id),
+		func(id: String) -> void: counted.append("chased:" + id),
+		func(id: String) -> void: counted.append("caught:" + id),
+		func(id: String, shaken_off: bool) -> void:
+			counted.append(("shaken:" if shaken_off else "outlasted:") + id),
+		func(id: String) -> void: counted.append("ended:" + id)]
+	EventBus.pursuit_warned.connect(listen[0])
+	EventBus.pursuit_began.connect(listen[1])
+	EventBus.pursuit_caught.connect(listen[2])
+	EventBus.pursuit_ended.connect(listen[3])
+	EventBus.pursuit_cut_short.connect(listen[4])
 	var plan := EventScheduler.Planned.new(_hot_roadblock(), post)
 	city.events._stream_in(plan)
 	var guard: EventInstance = plan.live
@@ -253,6 +280,8 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	var her := post + Vector2(0.0, _hot_roadblock().pursues_within - 10.0)
 	guard.player_at = her
 	guard._process(STEP)
+	her = _charge(guard)
+	t.check(not guard.is_telegraphing(), "she crosses his stand-off and he charges")
 	t.check(guard.has_left_its_body_behind() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.has_left_its_body_behind(), guard.is_waiting(), guard.global_position, guard.age])
 	var side := guard.chaser_side()
 	# Stream out in the middle of his walking away.
@@ -286,4 +315,13 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		city.events._stream_in(plan)
 		t.check(plan.live != null and plan.live.is_waiting() and plan.live.is_a_spent_guard(),
 				"and a barrier streamed out and in again stays spent")
+		city.events.end_the_charges_still_running()
+		t.check(counted == ["warned:roadblock", "chased:roadblock", "shaken:roadblock"],
+				"the page counts one warning, one charge and its one ending, nothing for the barrier "
+				+ "streamed back in, the day's end included (%s)" % [counted])
+	EventBus.pursuit_warned.disconnect(listen[0])
+	EventBus.pursuit_began.disconnect(listen[1])
+	EventBus.pursuit_caught.disconnect(listen[2])
+	EventBus.pursuit_ended.disconnect(listen[3])
+	EventBus.pursuit_cut_short.disconnect(listen[4])
 	city.free()

@@ -565,11 +565,17 @@ func departure_speed() -> float:
 ## and an ambush.
 ##
 ## Three states rather than two, and the middle one is the load-bearing one: **waiting** (standing
-## there, emitting at full strength, not lethal and not moving), **noticing** (`telegraph_time` of
-## visibly coming, the
-## notice the fairness contract owes), then the chase. `telegraph_time` and `duration` are both
-## measured from the moment it notices, not from the moment it was put in the world — a robbery
-## that spends its telegraph at dawn, four streets away, has no notice left in it at all.
+## there, emitting at full strength, not lethal and not moving), **warning** (it has noticed her and
+## shows it, for as long as she stays inside this radius, not lethal), then the charge, which only
+## her crossing its stand-off starts. **A pursuer's warning has no clock** *(inbox #764, the player:
+## a warning happens when she comes close; she can turn around; if she keeps getting closer the
+## charge starts)*: out of this radius again, it waits again (`EventInstance.warns_by_radius()`).
+## A row that runs its own line once she is near (`charges_within`, the masked man) warns the same
+## way. For any other row that does not pursue, the middle state is `telegraph_time` long; a pursuer
+## a task sets on her from wherever it stands (`EventInstance.notice_her_at()`) has the notice the
+## task gives it. Either way the clock, and `duration` after it, are measured from the moment it
+## notices, not from the moment it was put in the world — a thing that spends its telegraph at
+## dawn, four streets away, has no notice left in it at all.
 ##
 ## **The name is older than the field's own reach.** `is_waiting()`, `chase_age()`,
 ## `current_intensity()`'s undamped notice and `_has_expired()` all read this rather than
@@ -588,41 +594,62 @@ func departure_speed() -> float:
 
 ## Whether this pursuer **sets off beside her** — spawned already inside its own stand-off
 ## (`Tuning.pursuit_standoff()`), rather than sited or noticing her outside it the way every other
-## pursuer is. `door_guard` is the one row: he steps out of a hut a few strides from where she has
-## just walked under the boom. The men an investigating vehicle lets out are copies that carry it
-## too (`EventCatalogue.out_of_the_car()`).
+## pursuer is: the men an investigating vehicle lets out (`EventCatalogue.out_of_the_car()`), who get
+## out at its door a few strides from her.
 ##
 ## **Its notice cannot be the approach, so it is the ground held.** An ordinary pursuer spends its
 ## telegraph closing to the stand-off, holding it, and lunging the moment she comes inside it —
-## which, from a hut's width away, is a lunge on its first frame and a catch with no notice at all.
+## which, from a vehicle's width away, is a lunge on its first frame and a catch with no notice at all.
 ## So through the telegraph this one never lunges early and never backs off: it holds its ground
 ## while she is nearer than the stand-off and follows at the stand-off once she is further — or, if
-## it also `stands_for_its_notice` as `door_guard` does, holds its ground throughout — and the
-## chase starts when the notice has run its whole length. Walking away still loses — at the end of
-## the notice he is at the stand-off, or where he stood, and faster than her walk — and running
-## still wins. The price
-## is the trap a stand-off exists to avoid, and it is taken knowingly: a player who walks *into*
-## him during his notice is caught when it ends, having been shown him standing there for all of
-## it. `EventInstance._chase()` reads it.
+## it also `stands_for_its_notice` as the men out of a vehicle do, holds its ground
+## throughout with its warning up — and the chase starts when the notice has run its whole length.
+## **It exists to charge her**, so it charges whatever she does, and its notice is the indicator
+## that it is about to, owed the badge's heads-up (`Tuning.OFFSCREEN_WARNING_MIN`) rather than an
+## approach's. Walking away still loses — at the end of the notice he is where he stood, and faster
+## than her walk — and running still wins. The price is the trap a stand-off exists to avoid, and
+## it is taken knowingly: a player who walks *into* him during his notice is caught when it ends,
+## having been shown him standing there for all of it. `EventInstance._chase()` reads it.
 @export var sets_off_beside_her := false
 ## Whether this pursuer **stands still for its notice**, turned to her in its alert pose, rather than
 ## closing on her while it warns. *(Inbox #748, the player: "robber can walk towards her but guards
 ## should lift their hand in warning"; "nobody walks -- only the robber".)* `charging_dog`,
-## `roadblock` (read once its hunting copy pursues) and `door_guard` set it; `alley_robbery` does
-## not, and walks at her through his notice.
+## `roadblock` (read once its hunting copy pursues) and the men a vehicle lets out
+## (`EventCatalogue.out_of_the_car()`) set it; `alley_robbery` does not, and walks at her through
+## his notice.
 ##
-## **It still lunges the moment she comes inside its stand-off**, along a clear line, exactly as a
-## pursuer that closes does (`EventInstance._chase()`): only the closing stops. Clamping the approach
-## at zero *without* that lunge is the **events** skill's trap — she walks the last of the gap
-## herself and is caught from a standing start the frame the notice ends. With it, the chase starts
-## from the full stand-off when she walks in, and from wherever she stood when the notice runs out
-## otherwise, which is further away.
+## **One that waited for her still lunges the moment she comes inside its stand-off**, along a clear
+## line, exactly as a pursuer that closes does (`EventInstance._chase()`): only the closing stops.
+## Clamping the approach at zero *without* that lunge is the **events** skill's trap — she walks the
+## last of the gap herself and is caught from a standing start. With it, the chase starts from the
+## full stand-off when she walks in, and never while she stays outside it: its warning has no clock
+## (`EventInstance.warns_by_radius()`). One that sets off beside her stands for its whole notice and
+## then charges from where it stood.
 ##
 ## **Read only on an instance that noticed her**: one that waited for her (`pursues_within` on the
 ## def it was handed) or one that sets off beside her. A pursuer whose telegraph *is* its approach —
 ## the day-3 dog sent down her heading, and the same dog sprinkled in later — keeps closing, since
 ## its approach is the lesson (`EventInstance.is_standing_for_its_notice()`).
 @export var stands_for_its_notice := false
+## Whether this pursuer **charges from its first frame because its warning came before it was set on
+## her**: `door_guard`, whose warning is the hut guard's raised hand while she is near a raised boom
+## (`EventManager._warn_at_the_doors()`), and who charges the moment she goes under it. *(Inbox #764,
+## the player: when the player approaches the boom gate the guard should raise the hand, the warning
+## radius around the boom gate, and when she actually goes under it he should immediately start
+## charging.)* It owes no notice of its own (`Tuning.validate_pursuit()`): at a boom its
+## `telegraph_time` is 0; at an alley's door, which has no boom and whose guard steps out beside
+## her, he stands with his hand raised for half a second first (`EventCatalogue.alley_door_guard()`,
+## inbox #764: "maybe 0.5s wait before charging after crossing?"). Running counts toward shaking it
+## off from its first frame.
+@export var charges_at_once := false
+## **How close she has to come before a row that waits for her and runs its own line starts its run**
+## — the masked man on the escape's stairs — in px, or 0 for a row whose run starts when its
+## telegraph ends. *(Inbox #764, the player: "player should have to run to the door".)* It warns
+## while she is inside `pursues_within`, with no clock, starts its run when she comes inside this,
+## and waits again once she is back outside `pursues_within` (`EventInstance._warn_on_its_line()`).
+## One that notices her already inside this warns for `Tuning.WARNING_ALONE_MAX` first. Read only
+## on a mobile row that waits for her and does not pursue (`validate()`).
+@export var charges_within := 0.0
 ## How fast this pursuer **walks at her through its notice**, in px/s, when that is slower than its
 ## chase; 0 means it closes at `pursue_speed`, as every pursuer but the alley robber does. *(Inbox
 ## #761, the player: "we can increase the noticing if the robber starts walking slowly".)* Closing
@@ -631,10 +658,12 @@ func departure_speed() -> float:
 ##
 ## **Only the closing slows**: he still lunges the moment she is inside his stand-off, along a clear
 ## line (`EventInstance._chase()`), keeps a held lunge's stand-off at `pursue_speed` (`_lunge_held`),
-## and still chases at `pursue_speed` once the notice runs out, so
-## `Tuning.validate_pursuit()`'s clauses read the same numbers. What the slow walk changes is where
-## the chase starts when she does not walk in — from wherever the notice left her, which is further
-## than the stand-off — and `tests/test_events_pursuit.gd` walks that against the chase.
+## and chases at `pursue_speed` once he lunges, so `Tuning.validate_pursuit()`'s clauses read the
+## same numbers. What the slow walk changes is that a player who stands inside his warning radius is
+## walked up to and charged from his stand-off, while one who walks away (her 92px/s against his
+## walk) leaves his radius and he stops where he is and waits again *(inbox #764, the player: the
+## robber walking slowly stops if she gets out of the radius)*; `tests/test_events_pursuit.gd` walks
+## both.
 ##
 ## Read only on a row that waits for her (`pursues_within`) and does not stand for its notice: a
 ## notice that stands has no walk to slow, and one with no trigger has no notice spent walking.
@@ -1507,11 +1536,19 @@ func validate() -> bool:
 		return false
 	# A sent pursuer warns with its badge and starts chasing immediately. Only an ordinary
 	# pursuer has an approach whose notice duration the pursuit validator must check.
+	if charges_within > 0.0 and (pursues or not mobile or pursues_within <= charges_within):
+		push_error("event '%s' charges within %.0fpx but is not a mobile row that waits for her "
+				% [id, charges_within] + "from further than that")
+		return false
+	if charges_at_once and (not pursues or pursues_within > 0.0 or arrives_chasing):
+		push_error("event '%s' charges at once but has a wait or another start of its own" % id)
+		return false
 	if arrives_chasing and not (pursues and warns_before_it_exists() and warned_for() > 0.0):
 		push_error("event '%s' arrives chasing but is not a pursuer warned of first" % id)
 		return false
 	if pursues and not Tuning.validate_pursuit(id, pursue_speed, duration, lethal_reach(),
-			telegraph_time, pursues_within, outer_radius, standoff_reach(), arrives_chasing):
+			telegraph_time, pursues_within, outer_radius, standoff_reach(),
+			arrives_chasing or charges_at_once, sets_off_beside_her):
 		return false
 	# The day-switched trigger is a second shape of the same contract and nothing else exercises
 	# it: `EventCatalogue.all()` validates every *heat* shape of every row, but the day axis is
@@ -1551,9 +1588,15 @@ func validate() -> bool:
 ##
 ## A pursuer's is a different quantity and is stated in `Tuning.PURSUIT_MIN_NOTICE`: the ordinary
 ## rule buys the time to walk out of a *field*, and there is no walking out of something that
-## follows. What its telegraph buys is the time to see it coming and change what you are doing.
+## follows. What its telegraph buys is the time to see it coming and change what you are doing. One
+## that sets off beside her is owed the badge's heads-up instead, `Tuning.OFFSCREEN_WARNING_MIN`.
 func minimum_telegraph() -> float:
 	if warns_before_it_exists() and not pursues:
+		return Tuning.OFFSCREEN_WARNING_MIN
+	# Warned before it was set on her, at the door (`charges_at_once`): it owes none of its own.
+	if pursues and charges_at_once:
+		return 0.0
+	if pursues and sets_off_beside_her:
 		return Tuning.OFFSCREEN_WARNING_MIN
 	if pursues:
 		return Tuning.PURSUIT_MIN_NOTICE

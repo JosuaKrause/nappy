@@ -115,6 +115,8 @@ func setup(interior: InteriorScene, rng: RandomNumberGenerator) -> void:
 ## rather than an easier one; `_seed` is drawn once in `setup()` and reused, not redrawn here.
 func restart() -> void:
 	for instance in _instances:
+		# A charge still running ends for the page's counter as the section does.
+		instance.report_the_charge_cut_short()
 		instance.queue_free()
 	_instances.clear()
 	_hard_failed = false
@@ -140,6 +142,7 @@ func restart() -> void:
 func stand_down() -> void:
 	set_physics_process(false)
 	for instance in _instances:
+		instance.report_the_charge_cut_short()
 		instance.queue_free()
 	_instances.clear()
 	_pursuer = null
@@ -213,7 +216,7 @@ static func _indoor_fire() -> EventDef:
 ## and the rubble shuts the right one off the top floor, so the walk is left, across a hallway,
 ## right — and a man who was spent after one run left the second half of that with nothing in it.
 ## `_send_the_masked_man_again()` owns the clock; this is only the placement, called again with a
-## fresh instance each time so the telegraph, the wait and the line are the ones the first man had.
+## fresh instance each time so the wait, the warning and the line are the ones the first man had.
 ##
 ## **His path is the staircase itself**, asked of the map rather than drawn between the two
 ## landings: the landings alternate between the grammar's two `F` columns, so a straight line from
@@ -472,9 +475,10 @@ func _retire_finished() -> void:
 ## is processing at all (see `stand_down()`).
 ##
 ## **A fresh instance rather than a rewound one**, which is what keeps him fair: a new
-## `EventInstance` waits at the foot until she is within `masked_pursuer.pursues_within` and then
-## spends its whole `telegraph_time` standing there before it moves, so every run he makes gives
-## the same notice the first one did. Resuming an old instance would hand her a man already at
+## `EventInstance` waits at the foot until she is within `masked_pursuer.pursues_within`, then warns
+## her standing there with his hand raised until she comes within `charges_within` of him — for at
+## least `Tuning.WARNING_ALONE_MAX` if she was already that near when he appeared
+## (`EventInstance._warn_on_its_line()`) — so every run he makes gives the warning the first one did. Resuming an old instance would hand her a man already at
 ## speed, which is the one thing `still_while_telegraphing` exists to prevent.
 func _send_the_masked_man_again(delta: float) -> void:
 	if _pursuer != null:
@@ -521,6 +525,8 @@ func _check_hard_fails() -> void:
 	for instance in _instances:
 		if instance.is_lethal_at(_player.global_position):
 			_hard_failed = true
+			# His charge's own catch, counted whatever the section does (`report_the_catch()`).
+			instance.report_the_catch()
 			EventBus.hard_fail_triggered.emit(instance.def.id)
 			return
 

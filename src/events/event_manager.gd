@@ -246,8 +246,8 @@ func send_a_pursuer() -> void:
 ## down at its door on her side (`EventInstance.door_for_its_officer()`),
 ## spread along its flank `OFFICER_SPACING` apart when there are two, or on the other side where
 ## hers is not walkable, or at the vehicle itself where neither is. They appear in her view, so
-## there is no badge: their notice is the sight of them, the door guard's
-## (`EventDef.sets_off_beside_her`). Outside the day's plan, like everything put down after dawn by
+## there is no badge: their notice is the sight of them, standing with a hand raised
+## (`EventDef.sets_off_beside_her`, `stands_for_its_notice`). Outside the day's plan, like everything put down after dawn by
 ## a director.
 func _let_the_officers_out() -> void:
 	for vehicle: EventInstance in _instances.duplicate():
@@ -363,6 +363,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	clear()
 	_hard_failed = false
 	_struck_by = ""
+	_lesson_dog_made = false
 	_day = day
 	_encounters.day = day
 	_consumed = consumed_one_shots
@@ -524,6 +525,7 @@ func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -
 	clear()
 	_hard_failed = false
 	_struck_by = ""
+	_lesson_dog_made = false
 	_day = GameState.day
 	_walking_the_finale = true
 	# Nothing is held: a hold keeps the catalogue's own roll off ground something else has taken,
@@ -553,7 +555,17 @@ func start_recipe(plans: Array[EventScheduler.Planned], day: int, focus: Vector2
 	_walking_the_finale = finale
 	_recipe_plan = true
 
+## **Every charge still running ends for its counter as cut short** (`EventInstance.
+## report_the_charge_cut_short()`): asked by `main._on_day_finished()` as a day ends, before the day's
+## own end is counted, and by `clear()` for anything a section's end leaves running. A charge that
+## caught her, or is over, has already ended and is not counted twice. Telemetry only.
+func end_the_charges_still_running() -> void:
+	for instance in _instances:
+		if is_instance_valid(instance):
+			instance.report_the_charge_cut_short()
+
 func clear() -> void:
+	end_the_charges_still_running()
 	_pursuer_owed = null
 	_pursuer_retry_in = 0.0
 	_pursuer_failure_logged = false
@@ -997,6 +1009,10 @@ func what_struck_her() -> String:
 
 var _struck_by := ""
 
+## Whether today's first `charging_dog` has been made, the day-3 lesson's dog (`_create()`). Reset
+## with the day. Telemetry only.
+var _lesson_dog_made := false
+
 ## Builds an instance, puts it in the world, and records any permanent mark it leaves.
 ## Everything that puts an event on the map goes through here, so a scar can never be
 ## missed by whichever path created the event.
@@ -1004,6 +1020,11 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 		facing := Vector2.RIGHT) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, path, facing, _map)
+	# The day-3 lesson's dog, for its own charging counter: the first dog today on the day the run
+	# is taught (`EventInstance.is_the_lesson`). Telemetry only.
+	if def.id == "charging_dog" and _day == Tuning.RUN_TAUGHT_DAY and not _lesson_dog_made:
+		_lesson_dog_made = true
+		instance.is_the_lesson = true
 	# The lights a car that drives stops at, the crowd's own (`EventInstance.signals`).
 	instance.signals = _city.signals
 	_city.add_entity(instance)
@@ -1468,6 +1489,7 @@ func _tick_the_events(delta: float) -> void:
 		_tell_them_where_she_is()
 		_let_the_officers_out()
 		_warn_about_the_ground_she_is_on()
+		_warn_at_the_doors()
 		_watch_the_door_lines()
 		_check_detentions()
 	_check_hard_fails()
@@ -2298,45 +2320,114 @@ func _watch_the_door_lines() -> void:
 		if crossed.def.lifts_for_traffic else ""])
 	_set_a_guard_on_her(crossed, here)
 
-## One `door_guard` after her, stepping out of the wall of the hut nearer to her — of the huts on the
-## crossed body's own line — on the side of the line she has crossed to. *(2026-09-24: "Or guards
+## One `door_guard` after her, stepping out of the wall of the hut across the road from her — the
+## farther of the huts on the crossed body's own line — on the side of the line she has crossed to. *(2026-09-24: "Or guards
 ## that pursue her should spawn at the huts" · "One guard is enough".)* The guards drawn at the huts
 ## stay at their posts; this is another man out of the door.
 ##
 ## **One at a time.** A second walk under the same boom while he is still after her sets nobody else
 ## on her; once he has caught her, given up or run out his chase, the next walk under sets the next
 ## one. A crossed alley post is its own door and its own guard, so he steps out of the post.
+##
+## **He charges at once** (`EventDef.charges_at_once`): the guard at that hut raised his hand while
+## she was near the raised boom (`_warn_at_the_doors()`), which was his warning. **The hut across the
+## road, not the nearer one**, because a charge with no notice from the nearer hut's wall — about
+## 57px from her as she crosses the near lane, 16px if she crosses beside it — catches her in under
+## a fifth of a second whatever she does; from across the road, about 80px, she escapes it at a run
+## (`tests/test_checkpoints.gd`). An alley's door has only its post, so its guard steps out of it
+## beside her and waits half a second before he charges (`EventCatalogue.alley_door_guard()`, inbox
+## #764: "maybe 0.5s wait before charging after crossing?"). *The far hut is chosen while building,
+## open to overturn.*
 func _set_a_guard_on_her(crossed: EventInstance, here: Vector2) -> void:
 	if is_instance_valid(_guard_after_her) \
 			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving:
 		return
+	var hut := _hut_on_the_line_nearest(crossed, here, true)
+	if not hut:
+		return
 	var axis := crossed.facing_now()
+	var side := -1.0 if (here - hut.global_position).dot(axis) < 0.0 else 1.0
+	var at := hut.global_position + axis * side * hut.def.obstructs_radius
+	# An alley's door has no boom and its guard steps out beside her, so he waits half a second.
+	var guard := EventCatalogue.alley_door_guard() \
+			if hut.def.look == EventDef.Look.CHECKPOINT_POST else EventCatalogue.by_id("door_guard")
+	_guard_after_her = _spawn_unplanned(guard, at)
+
+## The hut or post on `door`'s own cross-street line nearest `here` — or, with `farthest`, the
+## farthest — or null. The farthest is the one whose guard warns her and the one a guard steps out
+## of (`_set_a_guard_on_her()`).
+func _hut_on_the_line_nearest(door: EventInstance, here: Vector2, farthest := false) -> EventInstance:
+	var axis := door.facing_now()
 	var hut: EventInstance = null
 	var nearest := INF
 	for instance in _instances:
 		if not instance.def.redetains or instance.is_finished or instance.is_leaving:
 			continue
 		if absf(instance.facing_now().dot(axis)) < 0.99 \
-				or absf((instance.global_position - crossed.global_position).dot(axis)) > 1.0:
+				or absf((instance.global_position - door.global_position).dot(axis)) > 1.0:
+			continue
+		# This door's own huts only: another door further along the same line is another street's.
+		if instance.global_position.distance_to(door.global_position) \
+				> Tuning.STREET_WIDTH * Tuning.TILE_SIZE:
 			continue
 		var range_to := instance.global_position.distance_to(here)
+		if farthest:
+			range_to = -range_to
 		if range_to < nearest:
 			nearest = range_to
 			hut = instance
-	if not hut:
-		return
-	var side := -1.0 if (here - hut.global_position).dot(axis) < 0.0 else 1.0
-	var at := hut.global_position + axis * side * hut.def.obstructs_radius
-	_guard_after_her = _spawn_unplanned(EventCatalogue.by_id("door_guard"), at)
+	return hut
+
+## How near a raised boom she has to be for the guard at the hut across the road from her to raise
+## his hand, in px,
+## measured from the boom gate's own ground point (`checkpoint_gate`), not from the guard. *(Inbox
+## #764, the player: when the player approaches the boom gate the guard should raise the hand, the
+## warning radius around the boom gate not the guard.)* Four tiles: from the far kerb, or two of her
+## steps up the street, to the boom, so she is warned before the step that takes her under it.
+## *Chosen while building, open to overturn.*
+const DOOR_WARNING_RADIUS := 128.0
+
+## **The checkpoint's warning**: for every raised boom she is within `DOOR_WARNING_RADIUS` of, the
+## guard at the hut on its line across the road from her — the one who would charge her — raises his
+## hand, and the page counts each time he does (`EventBus.pursuit_warned`, `door-guard-warned`) (`EventInstance.guard_warns_her`), and an
+## alley's post, which has no boom and is its whole door, raises his within the same radius of the
+## post; every other guard stands as he always does. Nothing while she is held at a hut, nor at a boom that
+## is down, which she cannot walk under. Going under a raised boom then sets a guard on her who
+## charges at once (`_set_a_guard_on_her()`). A drawing only: it changes nothing a hut does.
+func _warn_at_the_doors() -> void:
+	var body := _player as Stroller
+	var warned := {}
+	if body and door_holding_her_at(body.global_position) == null:
+		var here := body.global_position
+		for gate in _instances:
+			if not gate.def.lifts_for_traffic or gate.is_finished or gate.gate_state == null \
+					or not gate.gate_state.raised \
+					or gate.global_position.distance_to(here) > DOOR_WARNING_RADIUS:
+				continue
+			var hut := _hut_on_the_line_nearest(gate, here, true)
+			if hut:
+				warned[hut.get_instance_id()] = true
+		# An alley's door has no boom: its post is its whole line, so its own guard warns her.
+		for post in _instances:
+			if post.def.look == EventDef.Look.CHECKPOINT_POST and not post.is_finished \
+					and post.global_position.distance_to(here) <= DOOR_WARNING_RADIUS:
+				warned[post.get_instance_id()] = true
+	for instance in _instances:
+		if instance.def.redetains:
+			var warns := warned.has(instance.get_instance_id())
+			# `VisitCounter`'s own "door-guard-warned", each time a guard raises his hand: the
+			# warning level of the checkpoint guard, who is not in the world until she goes under.
+			if warns and not instance.guard_warns_her:
+				EventBus.pursuit_warned.emit("door_guard")
+			instance.guard_warns_her = warns
 
 ## *(2026-09-24, the player, answering whether a hold should end the chase: "we can try b. if she
 ## voluntarily goes to a hut the whole pursuit has been accomplished".)* Called from
 ## `_check_detentions()` the moment any `redetains` row — a checkpoint hut or an alley post, the one
 ## `_guard_after_her` stepped out of included — starts a hold: he gives up exactly as
 ## `EventInstance._chase()` has him give up when she outruns it, same state, same drawing, same
-## telemetry, through `EventInstance.give_up_the_chase()`. A guard still in his own notice when the
-## hold starts gives up too, since nothing here asks whether it is over — the smallest reading of
-## "the whole pursuit has been accomplished" once she is inside a hut of her own accord. The
+## telemetry, through `EventInstance.give_up_the_chase()` — the smallest reading of "the whole
+## pursuit has been accomplished" once she is inside a hut of her own accord. The
 ## roadblock's hunting guard and the escape's masked pursuer are never `_guard_after_her`, so a hold
 ## never reaches them — and neither is the robber a done task sends after her
 ## (`ResistanceDirector._set_the_trap_on_her()`), on day 9 the one sent the moment the inspection
@@ -2389,6 +2480,8 @@ func _check_hard_fails() -> void:
 			_hard_failed = true
 			_struck_by = instance.logged_name()
 			_tell_the_watch_of_the_catch(instance)
+			# The charge's own catch, counted whatever the day does (`EventInstance.report_the_catch()`).
+			instance.report_the_catch()
 			# Ahead of the hard fail, which ends the day and sends its loss.
 			if instance.is_pelican:
 				EventBus.pelican_struck_her.emit(instance)

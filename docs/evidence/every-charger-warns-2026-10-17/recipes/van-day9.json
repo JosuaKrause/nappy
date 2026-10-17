@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "name": "every charger warns: a hunting unmarked van on day 9 lets out its two men, guardsmen, who stand with their hands raised for a second and then charge",
+  "seed": 4242,
+  "extent": {
+    "scope": "full"
+  },
+  "city": {
+    "context_seed": 4242
+  },
+  "anchors": {
+    "start": {
+      "tile": [
+        144,
+        113
+      ]
+    },
+    "van": {
+      "tile": [
+        141,
+        121
+      ]
+    }
+  },
+  "setup": {
+    "tutorial_complete": true,
+    "day": 9,
+    "parent": "mother",
+    "player": {
+      "at": "start",
+      "facing": "south"
+    },
+    "events": [
+      {
+        "name": "van",
+        "row": "abduction",
+        "at": "van",
+        "heat": 4
+      }
+    ]
+  },
+  "playback": {
+    "walk": "1p1.6s3.4p",
+    "duration": 6.0,
+    "capture_at": 1.0,
+    "camera": {
+      "fixed": true,
+      "fixed_offset": [
+        -40,
+        110
+      ]
+    },
+    "observations": [
+      {
+        "tick": 10,
+        "subject": "van",
+        "condition": "visible"
+      }
+    ]
+  }
+}
