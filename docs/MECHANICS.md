@@ -1546,9 +1546,13 @@ floor's hallway between her own door and the right stair door, both rows of it
 (`InteriorMap.TOP_FLOOR_RUBBLE`), so the right stairwell cannot be entered on that floor at all and
 the only flight down is the left one — which is the shaft the fire is in
 (`InteriorEvents._BURNING_SIDE`, fixed rather than rolled, since a fire on the shut side would
-leave her nothing). Getting past the fire means stepping through the nearest corridor door and
-walking to the other end of that hallway, which is why the two stair doors are at opposite ends;
-the right shaft it leads to is where the masked man is.
+leave her nothing). **The fire always stands on the second floor's level approach, never rolled**
+(`InteriorScene.inner_floor_approaches()` lists it first), so it closes the flight from the second
+floor down and the walk is the same every attempt: left from the third floor to the second, right
+across that hallway to the other stairwell and down to the first, left again to the lobby. Getting
+past the fire means stepping through the nearest corridor door and walking to the other end of that
+hallway, which is why the two stair doors are at opposite ends; the right shaft it leads to is
+where the masked man is.
 
 **And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
 of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long

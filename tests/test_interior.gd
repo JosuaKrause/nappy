@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
 	_test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t)
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
+	_test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t)
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
 	_test_a_door_is_always_within_his_own_notice_from_his_line(t)
 	_test_another_masked_man_comes_up_the_same_shaft(t)
@@ -880,6 +881,79 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 	scene.free()
 
 ## Every painted grammar cell in one stairwell, including its non-walkable sides.
+## *"The fire in the house moved one floor down from what it was before breaking the escape
+## sequence left right left."* (inbox #741) **The fire stands on the second floor's approach in
+## the left shaft whatever the seed**, because it is not rolled, and with its body down the stairs
+## are left, right, left: the flights are asked one by one over the plan with the fire's blocking
+## reach taken out of the floor. Left from the third floor to the second is open; left from the
+## second to the first is shut by the fire; right from the second to the first is open; left from
+## the first to the lobby is open. A fire on the first floor's approach would leave the second
+## flight open and shut the last, which is the walk that lost the crossing.
+func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t: Node) -> void:
+	for run_seed in [1, 2, 7, 99, 4242, 12345, 777, 31337, 5, 8675309]:
+		var scene := InteriorScene.new()
+		t.add_child(scene)
+		var events := InteriorEvents.new()
+		t.add_child(events)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = run_seed
+		events.setup(scene, rng)
+		var fire: EventInstance = null
+		for instance in events.instances():
+			if instance.def.id == "burning_building":
+				fire = instance
+		t.check(fire != null, "seed %d: the escape puts a fire in the building" % run_seed)
+		if fire == null:
+			events.free()
+			scene.free()
+			continue
+		var second := scene.waypoint("stairwell_left:landing_second") + Vector2i.DOWN
+		t.check(scene.world_to_tile(fire.global_position) == second,
+				"seed %d: the fire stands on the second floor's approach %s, at %s"
+				% [run_seed, second, scene.world_to_tile(fire.global_position)])
+		var f := InteriorMap.build()
+		var reach := fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+		var shut := {}
+		for tile in f.tiles:
+			if scene.tile_to_world(tile).distance_to(fire.global_position) < reach:
+				shut[tile] = true
+		# Each flight is walked between the shaft's own doors, which is where a flight begins and ends
+		# and where a door arrival lands clear of the fire.
+		var landing := {}
+		for side in ["left", "right"]:
+			for floor_id in ["third", "second", "first", "lobby"]:
+				landing["%s:%s" % [side, floor_id]] = f.door("stairwell_%s:landing_%s" % [side, floor_id]).tile
+		t.check(_walks_between(f, shut, landing["left:third"], landing["left:second"]),
+				"seed %d: left, from the third floor to the second, is open" % run_seed)
+		t.check(not _walks_between(f, shut, landing["left:second"], landing["left:first"]),
+				"seed %d: the fire shuts the left flight from the second floor to the first" % run_seed)
+		t.check(_walks_between(f, shut, landing["right:second"], landing["right:first"]),
+				"seed %d: right, from the second floor to the first, is open" % run_seed)
+		t.check(_walks_between(f, shut, landing["left:first"], landing["left:lobby"]),
+				"seed %d: left again, from the first floor to the lobby, is open" % run_seed)
+		events.free()
+		scene.free()
+
+## Whether `to` can be walked to from `from` over the plan's ground with `shut` taken out of it,
+## never crossing a door.
+func _walks_between(f: InteriorMapPlan, shut: Dictionary, from: Vector2i, to: Vector2i) -> bool:
+	if shut.has(from) or shut.has(to):
+		return false
+	var seen := {from: true}
+	var queue: Array[Vector2i] = [from]
+	while not queue.is_empty():
+		var here: Vector2i = queue.pop_back()
+		if here == to:
+			return true
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
+				var next := here + Vector2i(dx, dy)
+				if (dx == 0 and dy == 0) or seen.has(next) or shut.has(next) or not f.is_walkable(next):
+					continue
+				seen[next] = true
+				queue.append(next)
+	return false
+
 func _shaft_tiles(scene: InteriorScene, part_id: String) -> Array[Vector2i]:
 	return scene.stairwell_tiles(part_id)
 

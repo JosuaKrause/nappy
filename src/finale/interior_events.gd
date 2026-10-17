@@ -126,7 +126,7 @@ func restart() -> void:
 	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _seed
-	_place_the_fire(rng)
+	_place_the_fire()
 	_place_the_masked_man()
 	_place_the_basement(rng)
 
@@ -171,11 +171,16 @@ func instances() -> Array[EventInstance]:
 ##
 ## Its blocking reach is its own 30px body plus her 14px, and the door tile is 64px from the cell
 ## it stands on, so a door arrival lands clear of it.
-func _place_the_fire(rng: RandomNumberGenerator) -> void:
+func _place_the_fire() -> void:
 	var approaches := _inner_floor_approaches(_BURNING_SIDE)
 	if approaches.is_empty():
 		return
-	var at: Vector2i = approaches[rng.randi_range(0, approaches.size() - 1)]
+	# **Always the second floor's approach, never a roll** (`inner_floor_approaches()` lists it
+	# first). It closes the flight from the second floor down, so her walk from the top is left,
+	# right, left: the rubble sends her down the burning side's shaft from the third floor, the fire
+	# makes her cross over at the second, the lobby is reached by the left shaft again. The first
+	# floor's approach only closes the last flight, which leaves the walk left and right alone.
+	var at: Vector2i = approaches[0]
 	_spawn(_indoor_fire(), _interior.tile_to_world(at))
 
 ## `burning_building` outdoors carries no field and no body of its own — the fire truck it calls in
