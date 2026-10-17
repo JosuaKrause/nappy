@@ -1478,9 +1478,13 @@ losing paths, the `EventBus.day_time_changed` the HUD draws from, and `--invinci
 clock still are all a day's already and none of them change. What the escape does differently is
 only what happens at the end of one.
 
-**The clock reads to the millisecond** — `%d:%02d.%03d` through `GameState.format_clock()`, in
-place of a day's `%d:%02d` — and nothing else about it changes. Milliseconds ticking make the same
-countdown read as faster, which is the whole of the reason.
+**The clock reads to the hundredth** — `%d:%02d.%02d` through `GameState.format_clock_hundredths()`,
+in place of a day's `%d:%02d` — and the escape's `DayController` tells the HUD on every frame
+(`emit_every_frame`) so the digits move as often as the screen draws; a day's clock still emits
+once a second. Digits ticking make the same countdown read as faster, which is the whole of the
+reason. *(The player: "escape clocke we can try 100s but it's not going to be much better?
+framerate is too low? all of this was on phone.")* The ending screens' run length stays at
+milliseconds, a still number.
 
 **A lost section starts again where it began, and in a normal run costs no Nerve.** Being taken,
 the meter reaching 100 and the clock running out are the same three losses a day has, and every one
