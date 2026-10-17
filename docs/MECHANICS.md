@@ -116,6 +116,7 @@ what she is doing, times what she is standing on.
 | Ordinary street | `1.0` | `6.0/s` |
 | Alley | `0.58` | `3.5/s` |
 | Main road | `0.02` | `0.12/s` |
+| Escape basement | `0.0` | `0.0/s` (see "the meter does not fall in the basement", below) |
 
 **The decay is what the bar shows.** A player watching the meter on a street with nothing on it is
 watching this number and nothing else, so it is set from a *net* measurement rather than from
@@ -1610,6 +1611,11 @@ open as walking through the vent's reach costs. Waiting is the answer; there is 
 Standing at a blowing vent costs the meter hard *("steam should be 40 to 50")*: one blow takes 40 to
 50 points awake at the 30px a vent holds her out, so waiting right at the gate is paid for, and the
 pocket between two vents is still never shut at both ends for long enough to fill the meter.
+**And the meter does not fall in the basement** *("let's not replenish the meter in the basement it's a
+tense situation")*: walking there earns no decay, awake or asleep, because the building answers the
+ground's decay multiplier with `Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER` (0) on the basement's
+tiles and 1.0 elsewhere. What a blow charges her with stays until she is out, so a mistimed vent
+is paid for at the next one; the rest of the escape recovers as it always did.
 
 **Two hint lines, said once each** as she starts walking a section she has not walked before:
 *"Escape the building"* and *"Escape the city"* — the same words that head each section's brief,

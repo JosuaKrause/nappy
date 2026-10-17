@@ -222,6 +222,12 @@ const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
 const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
 const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
 const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
+## **The meter does not fall in the escape's basement** *(inbox #765: "let's not replenish the meter
+## in the basement it's a tense situation")*: walking there earns no decay, awake or asleep, so a
+## blow's 40 to 50 points stay on the meter and the blows add up. It is the ground's
+## multiplier like the others, `InteriorScene.decay_multiplier()`, and it is the only ground inside
+## the building that is not 1.0.
+const EXCITEMENT_DECAY_BASEMENT_MULTIPLIER := 0.0
 
 ## The rate a source has to beat before it is counted as denying the calm ground near it —
 ## `EventScheduler._denial_radius`, and `EventCatalogue`'s own reasoning for the one ambient row
