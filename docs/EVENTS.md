@@ -46,6 +46,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `lethal_radius` | How close the thing that ends the day has to get, when that is **not** the field's own core. `0` — almost every row — means `inner_radius`, and `lethal_reach()` is what every caller asks. It exists for a row whose killer is not what the field is drawn around: a `roadblock`'s field is cored on the barrier and its guard catches at a man's reach — see "The heat" |
 | `lunge_reach` | Where a pursuer's lunge is measured from when that is **not** its catch. `0` — every row but the alley robber and the man who comes at her from his row — means the catch, and `standoff_reach()` is what every stand-off caller asks. The alley robber catches at 26px but lunges from `lunge_reach` 38, so his stand-off is 116px and the room between his lunge and his catch is 90px. `EventDef.validate()` refuses a `lunge_reach` inside the row's own catch (`lunge_is_inside_the_catch()`), since that stand-off would leave her less than `PURSUIT_REACTION` of his approach |
 | `body_stays_behind` | Whether this row's body is a **fixture of the street** a pursuer leaves standing rather than the pursuer's own bulk. Every other pursuer's body comes down the frame it starts hunting; a roadblock's barrier is pinned where it was built, so the street stays shut behind the man who left it |
+| `silent_once_unmanned` | Whether the barrier a `body_stays_behind` guard leaves **costs nothing once he has left his post for good** — walking away after a chase, or gone — so it is only a barrier: solid, drawn, no field. Only the escape's roadblock sets it (`EventCatalogue.escape_roadblock()`); a day's roadblock keeps costing what a barrier costs — see "The escape — the walk that is not a day" |
 | `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the two region-door rows that inspect her, `checkpoint_hut` and `checkpoint_post` — see "Checkpoints" |
 | `sets_off_beside_her` | Whether a pursuer starts **inside its own stand-off**, spawned beside her rather than sited or noticing her outside it: it exists to charge her. Its notice then cannot be cut short by her being close and it never backs off: it holds its ground, follows at the stand-off once she is further (unless it also `stands_for_its_notice`, below, as both that carry it do), and chases when the notice has run its whole length, which is owed at least the badge's `Tuning.OFFSCREEN_WARNING_MIN` rather than an approach's `PURSUIT_MIN_NOTICE`. The men an investigating vehicle lets out are the copies that carry it (`EventCatalogue.out_of_the_car()`). Any other pursuer takes the same ground once a wall has held its lunge back, and lunges when she is back at its stand-off with the line clear |
 | `stands_for_its_notice` | Whether a pursuer that noticed her **stands still for its notice**, turned to her in its alert pose, instead of closing on her *(inbox #748: "robber can walk towards her but guards should lift their hand in warning"; "nobody walks -- only the robber")*. Every lunge still fires — the moment she walks inside its stand-off along a clear line — so only the closing stops: walking in, the chase starts from the full stand-off, and one that waited for her never charges while she stays outside it. Read only on an instance that waited for her (`pursues_within`) or set off beside her, so the day-3 dog, whose telegraph is its approach, still comes. `charging_dog`, `roadblock` (its hunting copy) and the men an investigating vehicle lets out set it, and day 13's task guard stands for the second his task gives him in her view; `alley_robbery` does not |
@@ -1035,7 +1036,9 @@ Four things worth keeping straight:
   clock (`_leaving_must_clear_sight`, as for a car): the instance goes back to being only the
   barrier — waiting, solid, costing what a barrier costs — once he is out of her sight, or after
   the backstop when there is no player to be out of sight of. The exception to "it is over the
-  moment it starts leaving" is the barrier, not the man.
+  moment it starts leaving" is the barrier, not the man. **The escape's barrier is silent from the
+  moment he leaves** (`EventDef.silent_once_unmanned`): it stays and stays solid, and costs
+  nothing — see "The escape — the walk that is not a day".
 
 **Streaming never ends a departure she could be watching.** A plan is streamed out by how far she is
 from its *route* (`Tuning.EVENT_STREAM_RADIUS` and its hysteresis), but a car that has run out of
@@ -1599,7 +1602,8 @@ standing at his. Two fields make that work and both are general rather than writ
   departure too. **It outlives the chase**: when the chase ends — she shook him off, or his chase
   ran out — he walks away at his chasing pace, the barrier keeping its own field on while he goes,
   and the instance goes back to being only the barrier, waiting, solid and costing what a barrier
-  costs, with the post he left empty. **A warning that ends with her walking back out of his
+  costs, with the post he left empty (on a day; the escape's barrier costs nothing once he has
+  left, `EventDef.silent_once_unmanned`). **A warning that ends with her walking back out of his
   180px is not a chase**: he is back at the band, both guards posted and the body under him, and
   he can warn again (`EventInstance._stop_warning()`). Once he has chased, he does not come back for her, and **the guard still
   standing at the other post is only a drawing from then on** (a choice open to overturn; the
@@ -1807,10 +1811,33 @@ day 9")*.
 Four rows nothing but the escape ever places. All four are `SCRIPTED` with `scripted_day` 0, the
 same gate the seal pictures use, so the ordinary catalogue roll can never reach one:
 `FinalePlanner` places the first two on the city's open chains and `InteriorEvents` places the last
-two inside the building. Three rows the escape uses are not new and are not changed —
+two inside the building. Three rows the escape uses are not new —
 `military_convoy` is the army truck (with the barricade it ordinarily leaves stripped, since a
 convoy in the escape is traffic rather than the aftermath of something), `abduction` is the masked
-men in a van, and `roadblock` at full heat is the masked man on foot who leaves the post — the barrier he was standing at stays where it is and stays shut.
+men in a van, and `roadblock` at full heat is the masked man on foot who leaves the post — the
+barrier he was standing at stays where it is and stays shut.
+
+**The escape's roadblock is passed by luring its guard off.** *(Inbox #771: "it should be in a way
+that luring away the guard is enough. Right now there are for guards and the player adds
+excitement by just being close. Luring away one guard (the challenge) is not enough to make the
+obstacle survivable")* Two things make that true, and both are the escape's alone:
+
+- **One roadblock a street** (`Tuning.FINALE_GUARDS_PER_STREET`, 1), so a crossing is one band
+  and the one guard on her side of it. Two bands on a street stand a couple of tiles apart on the
+  same sidewalk, and luring the first one's guard off leaves the second one's posted in her way.
+- **Once its guard has left his post for good, the band is only a barrier**: solid, drawn, and no
+  field of its own (`EventCatalogue.escape_roadblock()`, the hunting row with
+  `EventDef.silent_once_unmanned`), while he walks away and once he is gone, and when it is
+  streamed back in as only the barrier. While he stands at his post, warns and charges, the band
+  charges what the hunting row charges and he is the danger, warning by radius and charging at
+  his stand-off ("Every charger that does not arrive charging warns first"). The guard at the
+  far post stays a drawing, as on a day.
+
+So walking straight past a posted band is caught, and walking in until he charges, running back
+until he gives up and then walking past costs what the run costs and nothing more, awake or
+asleep. `tests/test_finale.gd` walks exactly that on every roadblock street of two seeds' plans,
+in both directions, and `tests/probes/escape_roadblock_cost.gd` prints what each walk costs over
+more of them.
 
 **The escape rolls its ground per street rather than per city** — `EventScheduler._finale_ground`
 over one segment's own rect, since the chains already say which streets exist for it, there is no

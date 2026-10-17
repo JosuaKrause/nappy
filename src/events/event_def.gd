@@ -1101,6 +1101,17 @@ func lunge_is_inside_the_catch() -> bool:
 ## chases has nothing to leave its body behind *from*.
 @export var body_stays_behind := false
 
+## Whether the barrier a `body_stays_behind` guard leaves **costs nothing once he has left his post
+## for good** — walking away after a chase, or gone — so that it is only a barrier: solid, drawn,
+## and no field of its own. While he stands at his post, warns and charges, the field is there as
+## ever. The escape's roadblock is the one row that sets it (`EventCatalogue.escape_roadblock()`):
+## there the guards are the danger and luring the one on her side off is the answer *(inbox #771:
+## "it should be in a way that luring away the guard is enough")*. A day's roadblock keeps costing
+## what a barrier costs after its guard has gone.
+##
+## Read only where `body_stays_behind` is set; nothing else has a guard to leave.
+@export var silent_once_unmanned := false
+
 ## Which side or sides of a `Look.ROADBLOCK` band `_draw_roadblock()` posts a standing guard on —
 ## `-1`/`+1` in `_guard_post_offset()`'s own reading of `side`, the same sign `_guard_side_toward()`
 ## and `_chaser_side` use. `[-1, 1]` (both) is every row's own default: the catalogue `roadblock`
