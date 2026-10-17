@@ -34,6 +34,7 @@ func run(t) -> void:
 	_test_a_paced_event_walks_a_beat(t)
 	_test_a_pursuer_can_wait(t)
 	_test_every_waiting_charger_warns_by_radius(t)
+	_test_a_warning_is_not_counted_as_a_chase(t)
 	_test_a_pursuer_stops_at_walls(t)
 	_test_the_robbers_lunge_is_further_out_than_his_catch(t)
 	_test_the_robber_does_not_catch_her_through_a_wall(t)
@@ -1012,6 +1013,31 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 				near["from"],
 				("charged at %.0fpx" % near["at_the_lunge"]) if near["at_the_lunge"] != INF
 						else "never charged in 20s"])
+
+## **A warning she walks out of is not a chase**, so the page's `dog-chased` (`EventBus.pursuit_began`,
+## docs/TELEMETRY.md, "The page counts visits") is sent at the charge and never for a warning alone.
+func _test_a_warning_is_not_counted_as_a_chase(t) -> void:
+	var def := EventScheduler._for_day(EventCatalogue.by_id("charging_dog"), Tuning.RUN_TAUGHT_DAY + 1)
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	var began: Array[String] = []
+	var listen := func(id: String) -> void: began.append(id)
+	EventBus.pursuit_began.connect(listen)
+	var dog := _instance(t, def, Vector2.ZERO)
+	dog.player_at = Vector2(def.pursues_within - 10.0, 0.0)
+	_advance(dog, 2.0)
+	t.check(dog.is_telegraphing() and began.is_empty(), "warning her, it has not begun a chase")
+	dog.player_at = Vector2(def.pursues_within + 10.0, 0.0)
+	_advance(dog, 0.5)
+	t.check(dog.is_waiting() and began.is_empty(), "and walked out of, it never did")
+	dog.player_at = Vector2(def.pursues_within - 10.0, 0.0)
+	_advance(dog, 0.2)
+	t.check(dog.is_telegraphing() and began.is_empty(), "back inside, it warns again, still no chase")
+	dog.player_at = Vector2(standoff - 2.0, 0.0)
+	_advance(dog, 0.2)
+	t.check(not dog.is_telegraphing() and began == ["charging_dog"],
+			"it begins one at its charge (%s)" % str(began))
+	EventBus.pursuit_began.disconnect(listen)
+	dog.free()
 
 ## Every pursuer that waits for her, in each state it is met in: every catalogue row on every day
 ## of a run (`EventScheduler._for_day()`, which is where the dog's trigger switches on past

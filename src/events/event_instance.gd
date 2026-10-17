@@ -2495,11 +2495,12 @@ func _chase(delta: float) -> void:
 			and body_position().distance_to(player_at) > def.pursues_within:
 		_stop_warning()
 		return
-	if not _pursuit_began_reported:
+	if not _pursuit_began_reported and not (warns_by_radius() and is_telegraphing()):
 		_pursuit_began_reported = true
 		# `VisitCounter`'s own "dog-chased" — actually coming for her, whether that is a transition
-		# out of `is_waiting()` or (a row with no `pursues_within` at all) this chase's first frame.
-		# See docs/TELEMETRY.md, "The page counts visits".
+		# out of `is_waiting()`, the charge of one that warns by radius (its warning is not a chase:
+		# she can walk out of it, `warns_by_radius()`), or (a row with no `pursues_within` at all)
+		# this chase's first frame. See docs/TELEMETRY.md, "The page counts visits".
 		EventBus.pursuit_began.emit(def.id)
 	_heading = toward.normalized()
 	# **She ran, so it backs off.** Counting seconds of the *gap actually opening* is the same

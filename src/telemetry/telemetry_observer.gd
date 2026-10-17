@@ -380,6 +380,7 @@ func _forget_the_walk() -> void:
 	_blocked_last_report = -1000.0
 	_near.clear()
 	_chases.clear()
+	_warnings.clear()
 	_seen_closures.clear()
 	_last_closure = ""
 	_last_closure_at = -1000.0
@@ -1042,12 +1043,21 @@ func _watch_what_is_near(here: Vector2) -> void:
 ##
 ## One line per pursuit, written when it ends, which is the same rule as the `cue` and `idle` spans:
 ## the duration and the outcome are the finding, and neither exists until it is over.
+##
+## **A warning is not a chase.** A pursuer that waited for her warns for as long as she is inside its
+## radius and charges only when she crosses its stand-off (`EventInstance.warns_by_radius()`; inbox
+## #764: she can turn around). So its warning is its own span (`_watch_the_warning()`): one line when
+## it starts and one when it ends, saying whether she walked out of it or it charged, and the chase
+## span starts at the charge.
 func _watch_the_chase(here: Vector2, delta: float) -> void:
+	_watch_the_warning(here)
 	var seen := {}
 	for instance in _live():
 		# A pursuer that has not noticed her is not a chase, it is scenery with teeth. The span
-		# starts the moment it takes an interest, which for a robbery is the whole finding.
-		if not instance.def.pursues or instance.is_finished or instance.is_waiting():
+		# starts the moment it comes for her, which for a robbery is the whole finding; for one that
+		# warns by radius, that is its charge rather than its warning.
+		if not instance.def.pursues or instance.is_finished or instance.is_waiting() \
+				or _is_warning(instance):
 			continue
 		var id := instance.get_instance_id()
 		seen[id] = true
@@ -1093,6 +1103,49 @@ func _write_the_chase(chase: Dictionary) -> void:
 ## Live pursuits: instance id -> what has happened during it. Ids rather than references, for the
 ## same reason `_near` uses them — nothing here may keep a freed event alive.
 var _chases := {}
+
+## Live warnings of pursuers that warn by radius: instance id -> when it began, how close it came
+## and its row. Ids, as `_chases`.
+var _warnings := {}
+
+## Whether `instance` is warning her by radius right now, rather than chasing or waiting.
+static func _is_warning(instance: EventInstance) -> bool:
+	return instance.def.pursues and not instance.is_finished and not instance.is_waiting() \
+			and instance.warns_by_radius() and instance.is_telegraphing()
+
+## The warning span of a pursuer that warns by radius: a line when it starts warning her, and a line
+## when the warning ends — she walked out of its radius and it waits again, or it charged, after
+## which `_watch_the_chase()` has the chase. Read-only: it asks the instance and changes nothing.
+func _watch_the_warning(here: Vector2) -> void:
+	var seen := {}
+	var charged := {}
+	var waits_again := {}
+	for instance in _live():
+		var id := instance.get_instance_id()
+		if not _is_warning(instance):
+			if _warnings.has(id) and instance.is_waiting():
+				waits_again[id] = true
+			elif _warnings.has(id) and instance.def.pursues and not instance.is_finished:
+				charged[id] = true
+			continue
+		seen[id] = true
+		if not _warnings.has(id):
+			_warnings[id] = {"since": Telemetry.clock(), "closest": INF, "id": instance.def.id}
+			Telemetry.note("chase", "%s warned her at %s | %s" % [instance.def.id,
+					TelemetryLog.tile(_tile_of(instance.global_position)), _meters()])
+		var warning: Dictionary = _warnings[id]
+		warning["closest"] = minf(float(warning["closest"]),
+				instance.global_position.distance_to(here))
+	for id: int in _warnings.keys():
+		if seen.has(id):
+			continue
+		var warning: Dictionary = _warnings[id]
+		_warnings.erase(id)
+		Telemetry.note("chase", "%s's warning %s after %.1fs — closest %.0fpx | %s" % [
+			warning["id"], "ended in its charge" if charged.has(id)
+					else ("ended, she was out of its radius" if waits_again.has(id)
+							else "ended without a charge"),
+			Telemetry.clock() - float(warning["since"]), warning["closest"], _meters()])
 
 ## A barrier coming into view. Recorded from where it was seen, because "the player found out
 ## two junctions later" and "the player could see it from the corner" are different days, and

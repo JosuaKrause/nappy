@@ -268,14 +268,16 @@ it was written from. The traps:
   stand-off however she came. **A pursuer that stands still for its notice
   (`EventDef.stands_for_its_notice`) closes nothing and keeps every lunge**, which
   is what keeps standing from being this trap: walking in, she is lunged at from the full
-  stand-off; staying out, she is chased from wherever she is when the notice runs out, which is
-  further (woolly-penguin #748). A wall between them that holds the lunge back is the same trap: at an
+  stand-off (woolly-penguin #748); staying out, one that waited for her never charges, since its
+  warning has no clock and lasts while she is inside its radius, and out of the radius it waits
+  again (`EventInstance.warns_by_radius()`); one that sets off beside her charges from where it
+  stood once its notice has run. A wall between them that holds the lunge back is the same trap: at an
   alley mouth the line clears with her already inside the stand-off. The notice, the lunge and the
   catch all ask for a clear line, so a held lunge is not deferred until the line clears: the pursuer
   holds the ground of one that sets off beside her (`EventInstance._lunge_held`) — it stands while
   she is nearer than the stand-off and follows at it once she is further, or only stands if it
   stands for its notice — and lunges once she is back at the
-  full stand-off, and its notice does not run out while she is inside it (`_pause_a_held_notice()`)
+  full stand-off; a timed notice does not run out while she is inside it (`_pause_a_held_notice()`)
   — a notice ending there is the same trap, reached by her standing still.
 - **A break-off stated as a distance needs two inequalities, and they fight.**
   `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a **rate** — the gap opening — which only running can
@@ -287,8 +289,8 @@ it was written from. The traps:
   direction she is *actually travelling*, so a `--flee` that starts early puts the pursuit in front
   of the run. It waits for the chase.
 
-Two more about the waiting state (`pursues_within`): **the clock starts when it notices her**, not
-at dawn; and **whatever draws it asks `is_waiting()` as well as `is_telegraphing()`** — each is
+Two more about the waiting state (`pursues_within`): **whatever follows it starts when it notices
+her**, not at dawn — for a pursuer a warning with no clock, for anything else its telegraph; and **whatever draws it asks `is_waiting()` as well as `is_telegraphing()`** — each is
 false in the other's phase, so a picture that asks only the second holds its whole wait in the
 wrong posture.
 
