@@ -90,15 +90,14 @@ internal revision loop. For artwork, sound or any visual or audible result:
 - The player's CLI cannot display images: push the review artifacts first, then embed them in the
   PR description as images with commit-pinned URLs, as **committing** says. A local file link is
   not a delivered visual review.
-- **A question the player is to answer by eye gets a picture of its own.** *(2026-10-17, of a
-  six-row sheet whose rows 3 and 4 held two candidate pictures: "745 is *not* how to present
-  results if you have a question like this -- I do see the 6 row sheets but it's not clear what I'm
-  supposed to decide here".)* A full sheet is evidence of what was drawn; it asks nothing. Each
-  choice gets one small picture that holds only the options and what they are judged against (the
-  stages either side of them), each option labelled with a letter the question uses, and the
-  question is written above that picture in the PR description, with each option said in words
-  and the recommendation. Never ask about "row 3" of a sheet. A broad "do these hold" over a whole
-  sheet names what to look at in words, not by row number.
+- **A question the player is to answer by eye gets a picture of its own.** *(2026-10-17, in the
+  session, of PR #745, which asked them to choose between rows 3 and 4 of a six-row sheet: "745 is
+  *not* how to present results if you have a question like this -- I do see the 6 row sheets but
+  it's not clear what I'm supposed to decide here".)* A full sheet is evidence of what was drawn;
+  the decision is shown apart from it, in a picture of the options alone, with the question
+  written above it in the PR description, and a choice is never asked by row number. *The form
+  PR #750 used, open to the player's correction:* only the options and the stages either side of
+  them, each labelled with a letter the question uses, each option said in words.
 - **A delivered review file stays byte-for-byte unchanged.** Render into job-owned scratch, wait
   for the writer to finish, then copy the completed artifact to a new versioned delivery filename
   and record its hash. Once the player has a link, no render or copy overwrites that file: further
