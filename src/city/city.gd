@@ -130,6 +130,9 @@ var _day := 1
 var _authored_ground_tile_set: TileSet
 var scenery: SceneryResidency
 var _ground_corridor: Corridor
+## The escape's own route kerbs: the segment keys of every street its two chains run through, set
+## by `tint_the_escape_route()`. Empty on a day, whose kerbs `_ground_corridor` answers for.
+var _escape_route_streets := {}
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
 ## Today's corridor: the ways from the doorstep to the calm areas still worth reaching, grown
@@ -988,10 +991,10 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 ## The repaint, the ground, the litter and the block dressing all still happen, because the parks
 ## she walks through have to be the parks the run's seed built.
 ##
-## And the route-kerb tint (M145) goes with the tree it has nothing to draw from without anything
-## extra here: `_tint_the_route_kerbs()` only ever runs from `_close_streets()`, which the finale
-## never calls, and `_paint_ground()` above paints every kerb cell its plain source, so a twin from
-## yesterday cannot survive the repaint.
+## The route-kerb tint (M145) is not painted here, because what it marks is not known yet: the
+## escape's streets are `FinalePlanner`'s chains, planned after the city is dressed, and `Main`
+## hands them to `tint_the_escape_route()` once they are. `_paint_ground()` above paints every kerb
+## cell its plain source first, so a twin from yesterday's tree cannot survive into the escape.
 func start_finale(state: CityState, day: int) -> void:
 	scenery.view = _home_scenery_view()
 	map.repaint(state)
@@ -1065,6 +1068,32 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 func _tint_the_route_kerbs() -> void:
 	_ground_corridor = Corridor.of(_tree)
 	_ground.repaint()
+
+## The same tint on the escape's streets: both kerb lines of every street either chain runs
+## through, from intersection to intersection. *(Inbox #747: "yes, of course the yellow tint. we
+## spent the whole game establishing that why would it be different in the last section?")*
+##
+## **The same grain as a day's, read from the escape's own plan.** A day tints every street whose
+## `Corridor.depth()` is zero, a whole segment at a time; the escape has no tree to build a
+## `Corridor` from, so the streets are `FinalePlanner.Plan.open_streets` — the ones
+## `SealPlanner.runs_through()` says a chain walks, which is the same set the escape's events
+## stand on and its seals spare. A street a chain only turns at is sealed and carries no tint, and
+## a junction resolves to no street, exactly as on a day. Called by `Main` after every plan of the
+## section, a restart's included; the plan is deterministic, so a replan paints the same kerbs.
+func tint_the_escape_route(streets: Array[StreetNetwork.Segment]) -> void:
+	_escape_route_streets.clear()
+	for segment in streets:
+		_escape_route_streets[segment.key()] = true
+	_ground.repaint()
+
+## Whether a kerb tile is on today's route — the day's tree, or the escape's chains.
+func _is_on_the_tinted_route(tile: Vector2i) -> bool:
+	if _ground_corridor:
+		return _ground_corridor.depth(tile) == 0
+	if _escape_route_streets.is_empty():
+		return false
+	var segment := StreetNetwork.segment_containing(tile)
+	return segment != null and _escape_route_streets.has(segment.key())
 
 func closures() -> Array[RoadClosure]:
 	return _closures
@@ -1506,6 +1535,7 @@ func add_entity(node: Node) -> void:
 ## place rather than four.
 func _paint_ground() -> void:
 	_ground_corridor = null
+	_escape_route_streets.clear()
 	_ground.configure(self, _composed_ground_tile_set())
 	var initial := scenery.view if scenery.view.has_area() else _home_scenery_view()
 	for key in _ground.keys_in(initial.grow(SceneryResidency.LOAD_MARGIN)):
@@ -1525,8 +1555,7 @@ func scenery_ground_source(tile: Vector2i) -> int:
 	if tile.x < 0 or tile.y < 0 or tile.x >= map.size.x or tile.y >= map.size.y:
 		return _paint_outside_the_map(tile)
 	var source := GroundTiles.source_for(map, tile, _day)
-	if _ground_corridor and source in GroundTiles.ROUTE_KERB_SOURCES \
-			and _ground_corridor.depth(tile) == 0:
+	if source in GroundTiles.ROUTE_KERB_SOURCES and _is_on_the_tinted_route(tile):
 		var twin := GroundTiles.route_twin_of(source)
 		if twin >= 0 and _ground.tile_set.has_source(twin):
 			return twin
