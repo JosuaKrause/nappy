@@ -108,11 +108,29 @@ func _ready() -> void:
 
 func run(t) -> void:
 	_test_schema(t)
+	_test_hold_is_for_a_straight_departure(t)
 	_test_heat_installs_the_heated_row(t)
 	_test_a_task_gone_after_the_read(t)
 	_test_arguments(t)
 	_test_inputs(t)
 	_test_real_argv_and_failure(t)
+
+## `hold` reproduces a plain walk away, so it is refused for every row whose departure is anything
+## else, with a reason that fits the row.
+func _test_hold_is_for_a_straight_departure(t) -> void:
+	t.check(SceneRecipeRuntime.hold_refusal(EventCatalogue.by_id("charging_dog")) == "",
+			"a dog may be held")
+	for row: String in ["fire_truck", "delivery_van", "roadblock"]:
+		t.check(SceneRecipeRuntime.hold_refusal(EventCatalogue.by_id(row)) != "",
+				"%s is refused" % row)
+	var flock := ""
+	for def: EventDef in EventCatalogue.all():
+		if def.flock_size > 0 and not def.pursues:
+			flock = SceneRecipeRuntime.hold_refusal(def)
+	t.check(flock.contains("does not pursue"), "a flock is refused for not pursuing: %s" % flock)
+	var message := SceneRecipeRuntime.hold_refusal_message("post", EventCatalogue.by_id("roadblock"))
+	t.check(message.contains("post") and message.contains("roadblock") and not message.contains("%s"),
+			"the refusal names the event and the row: %s" % message)
 
 func _test_schema(t) -> void:
 	var valid := {"setup": {"day": 1, "parent": "mother"},
