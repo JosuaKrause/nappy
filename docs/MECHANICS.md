@@ -1148,7 +1148,7 @@ and price and route around, and that becomes a chase if you do not. Three states
 | | it emits | it can kill | it moves |
 | --- | --- | --- | --- |
 | **waiting** | at full strength | no | no |
-| **noticing** (`telegraph_time`) | at full strength | no | closes to the stand-off, or stands for it (`EventDef.stands_for_its_notice`: the waiting dog, the hunting roadblock's guard, the door guard) |
+| **noticing** (`telegraph_time`) | at full strength | no | closes to the stand-off (the alley robber at a slow walk of his own, `EventDef.notice_walk_speed`), or stands for it (`EventDef.stands_for_its_notice`: the waiting dog, the hunting roadblock's guard, the door guard) |
 | **chasing** (`duration`) | at full strength | yes | holds, then comes |
 
 Two things are deliberately not the same as an ordinary telegraph. The **clock starts when it
