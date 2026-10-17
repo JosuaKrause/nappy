@@ -125,13 +125,12 @@ moves.
 ## Files are ingested before anything is written about them
 
 **When the player hands over photos or videos, they are imported first, and only then talked about
-in anything that lasts.** *(2026-10-04, [woolly-walrus](../../../docs/playtests/2026-10-04-woolly-walrus.md), #516: "this
-immediately becomes stale when ingesting files we need to do it immediately properly -- we cannot
-upload the originals so we cannot reference them either".)* An inbox note, a brief, a queue entry
-or a pull request names a file by the subject name it is committed under, or describes it by what
-it shows; never by the local path or archive it arrived in, its camera filename, or when or where it
-was taken. The originals never reach the repository, so a reference to one is a pointer nobody can
-follow, and its name and time are the metadata this pass removes.
+in anything that lasts.** The originals are never uploaded, so anything written about them before
+the import (woolly-walrus #516) is stale at once, with nothing to reference. An inbox note, a brief,
+a queue entry or a pull request names a file by the subject name it is committed under, or describes
+it by what it shows; never by the local path or archive it arrived in, its camera filename, or when
+or where it was taken. The originals never reach the repository, so a reference to one is a pointer
+nobody can follow, and its name and time are the metadata this pass removes.
 
 ## Never republish what the pass just stripped
 

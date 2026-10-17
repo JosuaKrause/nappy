@@ -35,8 +35,8 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
                              identity after P was opened and whose last filing note names P
     cite [N ...] [--pr P]    in the working tree, puts the playtest a filed note is in beside every
                              existing citation of it outside docs/playtests/ -- `inbox #N` becomes
-                             `inbox #N in [name](relative/link)` in Markdown and `inbox #N in name`
-                             elsewhere -- and lists every other form for a hand fix; local only
+                             `inbox #N in name`, the playtest's bare name, in every file (never a
+                             link) -- and lists every other form for a hand fix; local only
 
 **Only the player's notes count** (statements 19 and 23): an issue the player (`PLAYER`) opened,
 or one the capture script opened as one of `CAPTURE_BOTS` with its tag, the label `captured`. The
@@ -71,7 +71,6 @@ import base64
 import difflib
 import json
 import os
-import posixpath
 import re
 import subprocess
 import sys
@@ -686,7 +685,7 @@ RANGE = re.compile(r"#(\d+)[ \t]*(?:\u2013|\u2014|-|\.\.|to)[ \t]*#?(\d+)(?![0-9
 # The regular form, the only one edited: `inbox #N` or a run of numbers after one.
 CITATION = re.compile(r"\binbox #\d+(?![0-9A-Za-z])(?:(?:, and |, | and )#\d+(?![0-9A-Za-z]))*", re.IGNORECASE)
 
-# ` in name` or ` in [name](link)` right after a citation.
+# ` in name` right after a citation, or the ` in [name](link)` an older run of `cite` wrote.
 ALREADY_IN = re.compile(r" in (?:\[([^\]]*)\]\([^)]*\)|([A-Za-z][\w-]*))")
 
 
@@ -740,11 +739,8 @@ def cite_line(line: str, path: str, targets: dict[int, Playtest]) -> tuple[str, 
             continue
         regular = len(mine) == len(numbers) and all(targets[n] == playtest for n in mine)
         if regular and line[match.end() : match.end() + 1] != "]":
-            if path.endswith(".md"):
-                link = posixpath.relpath(playtest.path, posixpath.dirname(path) or ".")
-                edits.append((match.end(), f" in [{playtest.name}]({link})"))
-            else:
-                edits.append((match.end(), f" in {playtest.name}"))
+            # The bare name in every file, Markdown included: CLAUDE.md says once how a name is found.
+            edits.append((match.end(), f" in {playtest.name}"))
         else:
             irregular = True
 
@@ -933,9 +929,9 @@ def build_parser() -> argparse.ArgumentParser:
             "For each note, N given here or named by --pr's `Filed from #N` lines, finds its playtest (the file"
             " under docs/playtests/ with a `## #N` heading) and, in every tracked text file outside"
             " docs/playtests/, edits the plain `inbox #N` form (or `inbox #N, #M and #K`) to carry the playtest:"
-            " ` in [name](relative link)` in Markdown, ` in name` elsewhere. A bare `(#N)`, a range, an issue URL"
-            " or a link text is listed as file:line for a hand fix, never edited; a line already naming the"
-            " playtest is left alone, so a second run changes nothing. Edits this checkout only."
+            " ` in name`, the playtest's bare name, in every file and never a link. A bare `(#N)`, a range,"
+            " an issue URL or a link text is listed as file:line for a hand fix, never edited; a line already"
+            " naming the playtest is left alone, so a second run changes nothing. Edits this checkout only."
         ),
     )
     cite.add_argument("numbers", nargs="*", type=int, metavar="N", help="a filed note's number")

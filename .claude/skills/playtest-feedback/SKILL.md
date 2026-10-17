@@ -18,12 +18,11 @@ never evidence of what was **agreed**. A decision can sit written down and unbui
 milestones, and a session that checks only `src/` will confidently tell the player their own
 decision never happened.
 
-**A code comment is positive; the queue is normative.** *(2026-09-24, playtest 128: "The code
-comment is positive, the queue is normative. The code only describes what is, not what should
-be. That's a general rule.")* A docstring saying a thing "takes no picture" or "is drawn in code"
-describes what was built, however deliberate it sounds; it is never a decision that competes with
-the queue. Where the two disagree, build what the queue says and rewrite the comment with the
-code. That disagreement is not an open question for the player.
+**A code comment is positive; the queue is normative** (PLAYTEST-128 3). The code describes what is,
+never what should be. A docstring saying a thing "takes no picture" or "is drawn in code" describes
+what was built, however deliberate it sounds; it is never a decision that competes with the queue.
+Where the two disagree, build what the queue says and rewrite the comment with the code. That
+disagreement is not an open question for the player.
 
 Two costs, and the second does the damage:
 
@@ -42,50 +41,42 @@ reader loses the half with the measurement in it.
 player's own words, and every specific they gave — before a line of code is written.** Then it
 becomes a queue entry, and only then does it get implemented.
 
-**The first place the player's words are written is the inbox.** *(2026-09-27: "the important
-thing is that it ends up in a safe queue in issues and I can choose when we want to turn those into
-a doc update PR".)* When the player says something in a session that should outlive it, the agent
-captures it verbatim into the inbox on GitHub Issues, in one call, before going on with anything
-else, so the words are safe even if the session is cleared; which words to capture is the agent's
-judgment. The notes the player writes there directly are the same. A note becomes a playtest file
-and its queue entries when the player asks for its batch to be filed, exactly as this skill says
-below — **inbox** has the capture, the filing pull request and the closing of the notes.
+**The first place the player's words are written is the inbox** (bouncy-heron 13). When the player
+says something in a session that should outlive it, the agent captures it verbatim into the inbox on
+GitHub Issues, in one call, before going on with anything else, so the words are safe even if the
+session is cleared; which words to capture is the agent's judgment. The notes the player writes
+there directly are the same. A note becomes a playtest file and its queue entries when the player
+asks for its batch to be filed, exactly as this skill says below — **inbox** has the capture, the
+filing pull request and the closing of the notes.
 
-**Words said in conversation are recorded with what they answered.** *(2026-09-27: "you need to
-also include what (b) meant at the time. if you just record my side then important context is
-lost".)* Before each quote the playtest file states the assistant's side as far as the quote
-answers it: the question asked, the options with their labels, the proposal a "yes" accepts. Every
-label the player uses — "(b)", "option C", "your categories" — is defined where it is quoted,
-since the quote alone does not say what it points at, and a reader of the file has not seen the
-conversation.
+**Words said in conversation are recorded with what they answered** (bouncy-heron 16), since the
+player's side alone loses the context. Before each quote the playtest file states the assistant's
+side as far as the quote answers it: the question asked, the options with their labels, the proposal
+a "yes" accepts. Every label the player uses — "(b)", "option C", "your categories" — is defined
+where it is quoted, since the quote alone does not say what it points at, and a reader of the file
+has not seen the conversation.
 
 **A new playtest, a new queue entry, a new decision and a new review item are named, never
-numbered.** *(2026-09-26: "that numbering should be for everything that currently has a strict
-sequential number".)* `tools/new-name.sh <kind> "<title>"` draws `<date>-<adjective>-<animal>`,
-writes the file or the entry's folder with its heading and date, and prints the name, which is
-spoken and linked by its two words ("busy-badger"); sorting a folder puts the newest last.
-The playtests that already have a number keep it, and so do the entries and records that
-already have one.
+numbered** (PLAYTEST-144 6). `tools/new-name.sh <kind> "<title>"` draws
+`<date>-<adjective>-<animal>`, writes the file or the entry's folder with its heading and date, and
+prints the name, which is spoken and linked by its two words ("busy-badger"); sorting a folder puts
+the newest last. The playtests that already have a number keep it, and so do the entries and records
+that already have one.
 
 - **A playtest** is `docs/playtests/<name>.md`.
-- **A queue entry** is a folder, `docs/todo/<name>/`. Its `README.md` opens with the entry's
-  band, `priority: bug|now|next|later|parked`, optionally an `upnext: true` line (it prints
-  first, whatever the band, until the work starts), and an `after: <entry folder>` line for each
-  entry it truly waits on; `tools/queue.sh` prints the queue in the order the bands give, and there is no
-  order list to edit *(2026-09-26: "a priority system?", brisk-heron, statement 13)*.
-  **A playtest note is filed `now`** unless the player names another band, since a note from
-  playing is a bug report *(2026-09-27: "btw all notes I have from playtesting should be filed
-  under now first unless otherwise stated" · "since those are bug reports")*: pass
-  `--priority now` to `tools/new-name.sh todo`, which writes `priority: later` otherwise. For
-  anything else, a band the player did not name is the filer's proposal and the report says so.
-  **`bug` is never proposed or defaulted, for any entry**: it is filed only when the player names
-  it *(2026-10-11, asked whether notes from playing now default to `bug`: "Only when you say
-  so")*. The rest of the `README.md` holds the player's words, the playtest links and the
-  context. **Each item is a file
-  of its own** beside it, under a short descriptive name (`stack-in-front.md`), written in full
-  prose with no checkbox *(2026-09-26: "that way completing a task is just deleting the file and no
-  awkward - [ ] is necessary. the item can be written in full")*; an item somebody is mid-way
-  through says so in its text. Finishing an item deletes its file.
+- **A queue entry** is a folder, `docs/todo/<name>/`. Its `README.md` opens with the entry's band,
+  `priority: bug|now|next|later|parked`, optionally an `upnext: true` line (it prints first,
+  whatever the band, until the work starts), and an `after: <entry folder>` line for each entry it
+  truly waits on; `tools/queue.sh` prints the queue in the order the bands give, and there is no
+  order list to edit (brisk-heron 13). **A playtest note is filed `now`** unless the player names
+  another band, since a note from playing is a bug report (olive-koala 11): pass `--priority now` to
+  `tools/new-name.sh todo`, which writes `priority: later` otherwise. For anything else, a band the
+  player did not name is the filer's proposal and the report says so. **`bug` is never proposed or
+  defaulted, for any entry**: it is filed only when the player names it (mossy-ferret #710). The
+  rest of the `README.md` holds the player's words, the playtest links and the context. **Each item
+  is a file of its own** beside it, under a short descriptive name (`stack-in-front.md`), written in
+  full prose with no checkbox (PLAYTEST-144 7); an item somebody is mid-way through says so in its
+  text. Finishing an item deletes its file.
 - **A decision** is `docs/decisions/<entry name>.md`, written by the PR that builds the work
   (**committing**); when an entry's last item goes, its folder goes in the same commit.
 - **A review item** is `docs/review/<entry name>.md` (`tools/new-name.sh review --entry <name>`,
@@ -101,42 +92,35 @@ decision somebody can overturn. Nothing else is.
 The test of whether it was written down is not "did I mention it" — it is whether **somebody opening
 the repo cold could build the thing that was asked for** from what is on disk.
 
-**A mechanism the player did not name is the filer's proposal, and the entry says so.** Filing
-turns a sentence like "a spent park should not be accesible" into something buildable, and the
-how is easy to write as though it were part of the ask. *(2026-09-26, on a park fenced with a
-street closure's barriers: "where do you get this from? I never asked for this. a park that was
-used should be shut down, yes, but by placing events in it how it was before.")* The queue entry
-states the player's ask in their terms, and any mechanism beyond it under **Proposed, not asked
-for:**, with the plainer alternative the proposal replaces. A proposal that changes what the
-player sees across the whole game goes back to them as a question before it is briefed; a small
-one is briefed with its first pictures due early, so the player can turn it down before it is
-built everywhere.
+**A mechanism the player did not name is the filer's proposal, and the entry says so.** Filing turns
+a sentence of the player's (PLAYTEST-140 1) about a spent park into something buildable, and the how
+is easy to write as though it were part of the ask, as a park fenced with a street closure's
+barriers (PLAYTEST-140 8) was. The queue entry states the player's ask in their terms, and any
+mechanism beyond it under **Proposed, not asked for:**, with the plainer alternative the proposal
+replaces. A proposal that changes what the player sees across the whole game goes back to them as a
+question before it is briefed; a small one is briefed with its first pictures due early, so the
+player can turn it down before it is built everywhere.
 
-**An answer that can be read two ways is read back before it is filed.** One line in the same
-turn — "I read this as X, not Y" — costs the player a word; filing the wrong reading costs a
-milestone. *(2026-09-26: "the Sep 25th answer was about *routing* the router should not attempt
-to path through a spent park", after "a spent park should not be accesible" had been filed as a
-park she cannot enter.)* And **an item that replaces something already built quotes the decision
-that built it**: search the records (`tools/decisions.sh`) and the docs for the mechanism's own
-name before writing "instead", since a replacement that does not name what it replaces is an
-overturn nobody sees.
+**An answer that can be read two ways is read back before it is filed.** One line in the same turn —
+"I read this as X, not Y" — costs the player a word; filing the wrong reading costs a milestone, as
+when the spent park's ask, which was about routing, was filed as a park she cannot enter
+(how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it). And **an item
+that replaces something already built quotes the decision that built it**: search the records
+(`tools/decisions.sh`) and the docs for the mechanism's own name before writing "instead", since a
+replacement that does not name what it replaces is an overturn nobody sees.
 
 **A playtest also closes what it covered under `docs/review/`.** Those files are the things
 waiting on a person; when a run has looked at one, the verdict is in the playtest file and the
 item's file is deleted in the same commit, whether the verdict was *fine* or a new finding. An item
 that stays after its run has been played is asked for twice.
 
-**A bug that does not reproduce here is not closed here.** *(2026-10-11, of day 12's softlock,
-closed after headless desktop rigs did not reproduce it, when the player had met it on the phone:
-"how can you close something as not-reproduced when it happened on a phone?" · "what is the point
-of an issue system if you just close items nilly willy?" · "I confirmed them since I filed them. if
-you can't reproduce just ask me to provide a frame record".)* A bug the player
-filed is confirmed by the filing; a headless rig, a suite or a desktop run that does not show it has
-only failed to see it: a long frame on a phone can read to the player as a lock and to a rig as
-nothing at all. So when a report does not reproduce here, the player is asked for a frame record
-(`?debug=1&framerecord=1` on the phone, saved with the page's own button; `docs/TELEMETRY.md`,
-"Per-system frame records") by a review item and in the conversation, and the entry stays open,
-saying what was ruled out, until it comes.
+**A bug that does not reproduce here is not closed here** (coral-lark #695). A bug the player filed
+is confirmed by the filing (coral-lark #694); a headless rig, a suite or a desktop run that does not
+show it has only failed to see it: a long frame on a phone can read to the player as a lock and to a
+rig as nothing at all. So when a report does not reproduce here, the player is asked for a frame
+record (`?debug=1&framerecord=1` on the phone, saved with the page's own button;
+`docs/TELEMETRY.md`, "Per-system frame records") by a review item and in the conversation, and the
+entry stays open, saying what was ruled out, until it comes.
 
 ## Never silently overturn a decision the player took
 

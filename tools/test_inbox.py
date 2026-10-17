@@ -656,12 +656,13 @@ class CiteTests(unittest.TestCase):
     def read(self, name: str) -> str:
         return (self.root / name).read_text(encoding="utf-8")
 
-    def test_a_markdown_citation_gets_a_link_relative_to_its_file(self) -> None:
+    def test_a_markdown_citation_gets_the_bare_name_and_no_link(self) -> None:
         code, _, _ = self.cite("9001", "9002", "9003")
         self.assertEqual(code, 0)
-        self.assertIn("(inbox #9001 in [quiet-yak](playtests/2026-10-03-quiet-yak.md))", self.read("docs/MECHANICS.md"))
+        self.assertIn("(inbox #9001 in quiet-yak) and more.", self.read("docs/MECHANICS.md"))
         deeper = self.read("docs/decisions/2026-10-03-one.md")
-        self.assertIn("(inbox #9001 in [quiet-yak](../playtests/2026-10-03-quiet-yak.md): ", deeper)
+        self.assertIn("(inbox #9001 in quiet-yak: ", deeper)
+        self.assertNotIn("](", self.read("docs/MECHANICS.md") + deeper)
 
     def test_a_code_comment_gets_the_name_and_a_run_is_edited_once(self) -> None:
         self.cite("9001", "9002")
@@ -724,7 +725,7 @@ class CiteTests(unittest.TestCase):
 
     def test_a_dry_run_prints_the_diff_and_writes_nothing(self) -> None:
         _, out, _ = self.cite("9001", "--dry-run")
-        self.assertIn("+Two-thirds (inbox #9001 in [quiet-yak](playtests/2026-10-03-quiet-yak.md)) and more.", out)
+        self.assertIn("+Two-thirds (inbox #9001 in quiet-yak) and more.", out)
         self.assertIn("would edit", out)
         self.assertEqual(self.read("docs/MECHANICS.md"), self.FILES["docs/MECHANICS.md"])
 

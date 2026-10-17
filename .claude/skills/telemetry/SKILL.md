@@ -42,16 +42,14 @@ again with it on and requires the plans to be **identical event for event**.
 Anything needing a per-frame check goes in `TelemetryObserver`, **not** in the gameplay class. The
 telemetry stays out of the files that decide things, which is what makes the rule easy to keep.
 
-**The one exception is the per-system frame record's timing wrap** (`FrameRecord`, docs/TELEMETRY.md,
-"Per-system frame records"). *(2026-10-03, inbox #510: "let's focus on recording what cause
-spillover in the regular 2ms ... it seems that stuttering happens with a lot of objects on screen
-so influence calculation, pathing, drawing, etc. can all be the culprit".)* The player accepted
-the exception itself on 2026-10-04 (inbox #526 in [azure-tapir](../../../docs/playtests/2026-10-04-azure-tapir.md)), asked whether to "accept the timing wraps in
-gameplay code as a telemetry-skill exception": "Accept all three (Recommended)". A phone has no
-profiler, so the only way to know what a system cost in a frame is to time it where it runs, and
-an observer cannot do that from outside. The wrap is a single branch in front of an unchanged
-body, and it takes one of two shapes by how often it runs, because what it costs with the record
-off is paid by every player; the scenery queue alone has a third.
+**The one exception is the per-system frame record's timing wrap** (`FrameRecord`,
+docs/TELEMETRY.md, "Per-system frame records"). It records what makes a frame spill over its 2ms
+budget (quiet-yak #510), since the stutter comes with many objects on screen and influence, pathing
+or drawing may each be the culprit, and the player accepted the exception itself (azure-tapir #526)
+on 2026-10-04. A phone has no profiler, so the only way to know what a system cost in a frame is to
+time it where it runs, and an observer cannot do that from outside. The wrap is a single branch in
+front of an unchanged body, and it takes one of two shapes by how often it runs, because what it
+costs with the record off is paid by every player; the scenery queue alone has a third.
 
 A system timed **once a frame** (the crowd's and the event manager's physics steps, the sweep, the
 halo, the edge) reads `FrameRecord.on` and moves its body into a private function of its own:
@@ -98,12 +96,11 @@ another system.
 
 A **`_draw()` counter** is the fourth shape, and it counts and nothing else. The first statement of
 a game `_draw()` override is `if FrameRecord.on: FrameRecord.drew(FrameLedger.DRAWS_<KIND>)`: one
-guarded static read off, one added integer on, never a time (the page's clock steps in 100µs, and
-a `_draw()` is far shorter) and never a branch in the body. It exists because the player asked
-which kinds of node redraw each frame (docs/playtests/2026-10-04-jolly-trout.md, #541: the
-per-kind `_draw()` counts) and a node's own `_draw()` is the only place that is known. A new
-`_draw()` override in `src/` takes the line with the kind it belongs to, or the kind `other`;
-dev-only layers are not counted.
+guarded static read off, one added integer on, never a time (the page's clock steps in 100µs, and a
+`_draw()` is far shorter) and never a branch in the body. It exists because the player asked which
+kinds of node redraw each frame, the per-kind `_draw()` counts (jolly-trout #541), and a node's own
+`_draw()` is the only place that is known. A new `_draw()` override in `src/` takes the line with
+the kind it belongs to, or the kind `other`; dev-only layers are not counted.
 
 Nothing else about the frame record goes in a gameplay class — no reading of state, no counting
 beyond the scenery queue's own jobs and the `_draw()` counter, no deferred markers beyond the
