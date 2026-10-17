@@ -1683,7 +1683,9 @@ block day 11 boarded up and the park day 12 took are arc steps in `CityState`, t
 *(gentle-osprey, the player: "a "Hard Mode" checkbox on the title screen (if new game) that decides
 whether checkpoints are available".)* It shows only when the title begins a new game — never in
 front of a resumed save, whose run already has its mode — opens unchecked every time, and is never
-remembered between sittings. A press on it, or `H` on a keyboard, flips it and never starts the run:
+remembered between sittings. A touch or a click on its box or label, or anywhere within the larger of
+5% beyond them (the margin every button catches by) and 28 design px (`TitleScreen.hard_mode_target()`),
+or `H` on a keyboard, flips it and never starts the run:
 the run still begins only from the title's three controls buttons or a key, so the box can be set
 first (`TitleScreen`). The mode is `GameState.hard_mode`, fixed for the run and carried in the save.
 **Nothing during play shows it** and nothing about the city, the events or a day's difficulty reads

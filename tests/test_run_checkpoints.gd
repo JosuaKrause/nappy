@@ -39,6 +39,8 @@ func run(t) -> void:
 	_test_the_lost_day_screen_says_where_she_goes_back_to(t)
 	_test_the_checkbox_shows_only_for_a_new_game(t)
 	_test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t)
+	_test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t)
+	_test_no_control_on_the_title_stops_a_press(t)
 	_test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t)
 
 	GameSave._clear_now()
@@ -490,6 +492,130 @@ func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
 	t.check(started[0] == 1 and title.hard_mode_checked(),
 			"a button still starts the run, with the box as it was set")
 	title.free()
+
+## **A real tap on the box flips it, through the engine's own input dispatch.** *(fluffy-kestrel,
+## the player, #740: "Hard mode should have the same 5% extension over the box and text as other
+## buttons", titled "Cannot select hard mode"; inbox #746: "all of this was on phone.")* The test
+## above hands its events straight to `_unhandled_input()`, which skips the step that stopped them:
+## Godot's GUI pass, which runs first and offers a press to the topmost `Control` under it that does
+## not ignore the mouse. Under the box that was the bottom scrim, a `ColorRect` left at Godot's
+## default `MOUSE_FILTER_STOP`, so every touch and click on the box was used up there and never
+## reached the title's own handler; the three buttons worked because their columns are containers,
+## which pass a press on. So this drives `Input.parse_input_event()` + `flush_buffered_events()`, as
+## `tests/test_held_restart.gd` does, which runs the GUI pass and the engine's
+## emulate-mouse-from-touch pass both: a phone (`_touch`, its finger arriving as a screen touch and
+## an emulated click) held landscape, held portrait (the title turned, the touch arriving in the
+## 720x1280 box) and a desktop's mouse, each at the drawn box's centre, on its label, and just inside
+## each corner of its catch. Each tap must flip the box exactly once. The window is sized to the
+## device for the span, since real dispatch maps a window position through the stretch.
+func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> void:
+	GameState.start_run(_SEED)
+	var original_window_size: Vector2i = t.get_window().size
+	# [the window, whether it is a touch device, the name of the case]
+	var devices := [
+		[Vector2i(852, 393), true, "a phone held landscape"],
+		[Vector2i(393, 852), true, "a phone held portrait"],
+		[Vector2i(ScreenOrientation.DESIGN_SIZE), false, "a desktop's mouse"],
+	]
+	for device: Array in devices:
+		var window: Vector2i = device[0]
+		var touch: bool = device[1]
+		var rotate := ScreenOrientation.wants_rotation(Vector2(window), touch)
+		t.get_window().size = window
+		t.get_window().content_scale_size = ScreenOrientation.content_scale_size(rotate)
+		var title: TitleScreen = TITLE.instantiate()
+		t.add_child(title)
+		title._touch = touch
+		ScreenOrientation.apply_to_layer(title, rotate)
+		var started := [0]
+		title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
+				_side: ControlsMode.Side) -> void: started[0] += 1)
+		title.open(false, true)
+		var drawn := title._hard_mode.get_global_transform() \
+				* Rect2(Vector2.ZERO, title._hard_mode.size)
+		var box := title._hard_mode_frame.get_global_transform() \
+				* Rect2(Vector2.ZERO, title._hard_mode_frame.size)
+		var catch := title.hard_mode_target()
+		t.check(catch.encloses(ButtonGeometry.margin_rect(drawn))
+				and catch.encloses(drawn.grow(TitleScreen._HARD_MODE_REACH)),
+				"%s: the catch %s holds the box and label grown by 5%% and by the old reach"
+						% [device[2], catch])
+		var inset := Vector2.ONE
+		var points := {
+			"the box's centre": box.get_center(),
+			"its label": Vector2(drawn.end.x - drawn.size.x * 0.25, drawn.get_center().y),
+			"just inside its catch's top-left": catch.position + inset,
+			"just inside its catch's bottom-right": catch.end - inset,
+		}
+		for where: String in points:
+			var was := title.hard_mode_checked()
+			var at: Vector2 = points[where]
+			_tap_through_the_engine(t, ScreenOrientation.to_presented_space(at, rotate), touch)
+			t.check(title.hard_mode_checked() != was,
+					"%s: a tap on %s %s flips the box" % [device[2], where, at])
+		t.get_tree().process_frame.emit()
+		t.get_tree().process_frame.emit()
+		t.check(started[0] == 0, "%s: and none of those taps started the run" % device[2])
+		# The same scrim covered the strip of each button's catch above its column, the part of the
+		# square grown by a third of the radius that lies outside the container.
+		title._tap_button.get_parent().notification(Container.NOTIFICATION_SORT_CHILDREN)
+		var button := title._tap_button.get_global_rect()
+		var above := Vector2(button.get_center().x, button.position.y - ModeButton.RADIUS / 3.0 + 1.0)
+		t.check(title._tap_button.contains_design_point(above),
+				"%s: %s is inside the tap button's catch" % [device[2], above])
+		_tap_through_the_engine(t, ScreenOrientation.to_presented_space(above, rotate), touch)
+		t.get_tree().process_frame.emit()
+		t.get_tree().process_frame.emit()
+		t.check(started[0] == 1,
+				"%s: and a tap there, above its column, starts the run" % device[2])
+		title.free()
+	t.get_window().content_scale_size = Vector2i(ScreenOrientation.DESIGN_SIZE)
+	t.get_window().size = original_window_size
+	t.get_tree().paused = false
+
+## **Nothing on the title uses a press up before the title's own handler reads it.** Every press on
+## this screen is read off its raw position in `TitleScreen._unhandled_input()`, and Godot's GUI pass
+## runs before that phase and ends a press at the first `Control` under it set to
+## `MOUSE_FILTER_STOP`, Godot's default for a bare `Control` or `ColorRect`. So a node added later
+## that keeps the default would silently swallow every press over it, as the bottom scrim once did
+## over the Hard Mode box; this names it. A container's default, `MOUSE_FILTER_PASS`, hands the press
+## on and is fine.
+func _test_no_control_on_the_title_stops_a_press(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	title.open(false, true)
+	var stopping: Array[String] = []
+	var pending: Array[Node] = [title]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		pending.append_array(node.get_children())
+		if node is Control and (node as Control).mouse_filter == Control.MOUSE_FILTER_STOP:
+			stopping.append(str(title.get_path_to(node)))
+	t.check(stopping.is_empty(), "no Control on the title stops a press (%s)" % [stopping])
+	title.free()
+
+## A tap at `presented`, a point in the viewport's own (stretched, possibly rotated) box, sent as a
+## real device sends it: from a phone a screen touch, which the engine also turns into an emulated
+## click; from a desktop a left click. Press and release, so no touch is left held for the next.
+func _tap_through_the_engine(t, presented: Vector2, touch: bool) -> void:
+	var on_the_window: Vector2 = t.get_viewport().get_final_transform() * presented
+	for pressed: bool in [true, false]:
+		var event: InputEvent
+		if touch:
+			var finger := InputEventScreenTouch.new()
+			finger.index = 0
+			finger.position = on_the_window
+			finger.pressed = pressed
+			event = finger
+		else:
+			var click := InputEventMouseButton.new()
+			click.button_index = MOUSE_BUTTON_LEFT
+			click.position = on_the_window
+			click.global_position = on_the_window
+			click.pressed = pressed
+			event = click
+		Input.parse_input_event(event)
+		Input.flush_buffered_events()
 
 ## `main._on_title_start()` reads the box for a new game and nothing for a resumed one, and tells
 ## the counter the mode only for the new game. The rig is `tests/test_save.gd`'s bare gate `main`,
