@@ -27,6 +27,11 @@
 # neither an open entry nor a closed one's record, an `after:` cycle, a band line below the opening
 # block), so the band set lives in that one script.
 #
+# One check is about the citations of the player's words in CLAUDE.md and the skills, and runs
+# whenever one of them, a playtest or a record is linted: no Markdown link, path or anchor into
+# docs/playtests/ or docs/decisions/, every cited name exactly one file there, and every `#N` a
+# `## #N` heading in it (tools/check_citations.py, under the host's python3).
+#
 # A hit is `file:line: label`, and a nonzero exit if there is at least one. The marker
 # `lint-allow` inside an HTML comment on the same line is a deliberate exception and is not
 # reported.
@@ -50,7 +55,8 @@ governed set (AGENTS.md, CLAUDE.md, README.md, every
 and docs/review/). Also checks the queue's layout: a name used for two things across docs/todo,
 docs/decisions, docs/review and docs/playtests, a checkbox under docs/todo/, a link in
 docs/TODO.md to an entry folder that does not exist, and every entry's band line (through
-tools/queue.sh --check). Given file arguments, scans only those --
+tools/queue.sh --check), and the citations of the player's words in CLAUDE.md and every
+.claude/skills/**/*.md (tools/check_citations.py). Given file arguments, scans only those --
 how the PostToolUse hook calls it after an edit -- and runs the layout check each one belongs to.
 A named file that does not exist is an error, not a silent skip.
 
@@ -345,7 +351,50 @@ PY
     [[ -z "$output" ]] || printf '%s\n' "$output"
 }
 
+# The citations of the player's words (CLAUDE.md, "cite the player's words and never quote
+# them"). tools/check_citations.py does the reading under the host's python3, since CI runs this
+# before it installs uv. Given files, it checks CLAUDE.md and the skill files among them; a
+# playtest or a record among them can break a citation anywhere, so that checks them all.
+lint_citations() {
+    local targets=() f out status all=0
+    [[ $# -eq 0 ]] && all=1
+    for f in "$@"; do
+        case "$f" in
+            docs/playtests/*|docs/decisions/*) all=1 ;;
+            CLAUDE.md|.claude/skills/*.md) targets+=("$f") ;;
+        esac
+    done
+    if [[ "$all" -eq 0 && ${#targets[@]} -eq 0 ]]; then
+        return
+    fi
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "tools/lint.sh: python3 is needed to check the citations and was not found" >&2
+        hits=$((hits + 1))
+        return
+    fi
+    if [[ "$all" -eq 1 ]]; then
+        out="$(python3 tools/check_citations.py 2>&1)"
+    else
+        out="$(python3 tools/check_citations.py "${targets[@]}" 2>&1)"
+    fi
+    status=$?
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        printf '%s\n' "$line"
+        hits=$((hits + 1))
+    done <<< "$out"
+    if [[ "$status" -ne 0 && -z "$out" ]]; then
+        echo "tools/lint.sh: tools/check_citations.py failed without naming a line" >&2
+        hits=$((hits + 1))
+    fi
+}
+
 lint_svgs "$@"
+if [[ $# -eq 0 ]]; then
+    lint_citations
+else
+    lint_citations "${files[@]}"
+fi
 if [[ $# -eq 0 || "$layout_names" -eq 1 ]]; then
     lint_duplicate_names
 fi

@@ -16,13 +16,14 @@ dev = [
     "ruff>=0.15",
 ]
 
-# The one script that does not run inside this environment is tools/codex-hooks.py: Codex
-# invokes it with the host's own `python3` from .codex/hooks.json, so it stays 3.9-compatible
-# and ruff is told not to modernise it past that.
+# Two scripts do not run inside this environment: tools/codex-hooks.py, which Codex invokes with
+# the host's own `python3` from .codex/hooks.json, and tools/check_citations.py, which
+# tools/lint.sh runs with the host's `python3` before CI installs uv. Both stay 3.9-compatible and
+# ruff is told not to modernise them past that.
 [tool.ruff]
 line-length = 120
 target-version = "py314"
-per-file-target-version = { "tools/codex-hooks.py" = "py39" }
+per-file-target-version = { "tools/codex-hooks.py" = "py39", "tools/check_citations.py" = "py39" }
 extend-exclude = [".godot", "build", "docs", "assets"]
 
 [tool.ruff.lint]

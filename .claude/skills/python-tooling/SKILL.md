@@ -38,14 +38,16 @@ on purpose: a typed `tools/` is the only place in this repository where a wrong 
 before it runs, since GDScript's checks are the engine's and shell has none. Where a library's own
 typing is the problem, say so beside the override rather than loosening the whole check.
 
-## The hook adapter is the one exception
+## Two scripts run on the host's own Python
 
-`tools/codex-hooks.py` is checked like everything else, but Codex runs it with the host's own
-`python3` from `.codex/hooks.json`, not through `uv`. So it stays **3.9-compatible** —
-`typing.Optional` rather than `X | None`, nothing newer than what `CLAUDE.md`'s "Python 3.9+" line
-promises — and `pyproject.toml` pins ruff's per-file target for it so `UP` rules do not modernise it
-past that. Nothing in the gate proves the compatibility; run the hook once under an older
-interpreter when you change it:
+`tools/codex-hooks.py` and `tools/check_citations.py` are checked like everything else, but neither
+runs through `uv`: Codex runs the hook adapter with the host's own `python3` from
+`.codex/hooks.json`, and `tools/lint.sh` runs the citation check with it, since CI lints before it
+installs uv. So both stay **3.9-compatible** — `typing.Optional` rather than `X | None` outside an
+annotation, nothing newer than what `CLAUDE.md`'s "Python 3.9+" line promises — and
+`pyproject.toml` pins ruff's per-file target for each so `UP` rules do not modernise them past
+that. Nothing in the gate proves the compatibility; run each once under an older interpreter when
+you change it (`/usr/bin/python3 tools/test_check_citations.py` for the citation check):
 
 ```sh
 echo '{"hook_event_name":"SessionStart","session_id":"x","cwd":"'"$PWD"'"}' | /usr/bin/python3 tools/codex-hooks.py

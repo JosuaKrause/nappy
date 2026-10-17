@@ -463,7 +463,7 @@ class SparseLintTests(unittest.TestCase):
         (self.root / "tools").mkdir()
         (self.root / "README.md").write_text("# Fixture\n")
         (self.root / "docs/todo").mkdir(parents=True)
-        for tool in ("lint.sh", "queue.sh"):
+        for tool in ("lint.sh", "queue.sh", "check_citations.py"):
             shutil.copy2(ROOT / "tools" / tool, self.root / "tools" / tool)
         (self.root / "art").mkdir()
         self.svg = self.root / "art/image.svg"

@@ -896,7 +896,7 @@ fi
 # On the same scratch tree: an entry, its review items and an old entry's decision share names on
 # purpose and pass; a second use of a pair of words, a checkbox in a queue file, and a link in
 # TODO.md to an entry folder that is not there are each a hit.
-cp "$root/tools/lint.sh" "$names_repo/tools/"
+cp "$root/tools/lint.sh" "$root/tools/check_citations.py" "$names_repo/tools/"
 lint_in_names_repo() {
     (cd "$names_repo" && ./tools/lint.sh "$@" >/dev/null 2>&1)
 }

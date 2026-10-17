@@ -41,7 +41,7 @@ pull request docs-only):
 Run it as `uv run python tools/agent-identity.py run <role> -- <command>`. If `uv run` is refused
 in the worktree, use `.venv/bin/python tools/agent-identity.py run <role> -- <command>`. Check
 `uv run python tools/agent-identity.py status <role>` first; if the role is not usable, stop and
-report — never fall back to a direct call. Open a ready (non-draft) PR.
+report — never fall back to a direct call. Open a ready PR, not a draft.
 
 ## Scope
 

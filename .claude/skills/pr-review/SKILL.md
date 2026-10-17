@@ -55,6 +55,11 @@ Each "no" is a finding:
 - **Does it keep what is already decided?** No record under `docs/decisions/` and no doc rule is
   overturned, narrowed or rewritten in passing. A doc sentence the PR changed says what the player decided, not
   what the PR happened to build.
+- **Does every citation it adds or changes say what the player said?** For each citation of the
+  player's words a PR adds or changes in `CLAUDE.md` or a skill, the reviewer opens the cited
+  statement and checks that it resolves to one file and one statement, and that the rule says what
+  those words say. This review is where a rule's reading of the player is established, once, so no
+  later reader re-checks it (woolly-penguin #759).
 - **Would the player recognise it in the pictures?** A visible change is judged on its pictures
   against their words, before its code. A visible change with no pictures is a finding.
 - **Does the finished work leave the queue inside this PR?**
