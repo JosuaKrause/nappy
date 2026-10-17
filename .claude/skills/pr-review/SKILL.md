@@ -146,11 +146,9 @@ findings live.
 
 ## Three verdicts of *not ready* mean the approach is rethought
 
-*(2026-10-17: "add a rule / note that if a review returns unsuccessful three times the approach
-should be rethought" · "per PR, yes. rethinking also involves analyzing whether the chosen solution
-is the right way".)* When a pull request's reviews have come back *not ready* three times, the
-approach is rethought, and that includes analysing whether the chosen solution is the right way at
-all. The count is per pull request.
+When a pull request's reviews have come back *not ready* three times, the approach is rethought,
+including whether the chosen solution is the right way at all. The count is per pull request
+([woolly-penguin](../../../docs/playtests/2026-10-17-woolly-penguin.md), #759).
 
 *Proposed, not asked for, open to the player's correction:*
 
