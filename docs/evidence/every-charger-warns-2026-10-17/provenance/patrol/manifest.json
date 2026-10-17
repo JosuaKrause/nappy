@@ -1,0 +1,226 @@
+{
+	"anchors": {
+		"car": [
+			4560.0,
+			3984.0
+		],
+		"start": [
+			4624.0,
+			3728.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 4242.0
+	},
+	"classification": "normal",
+	"context_seed": 4242,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {
+			"police_patrol": 1
+		},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"final_actors": {
+		"car": {
+			"position": [
+				4560.0,
+				3810.1001
+			],
+			"pursuing": false,
+			"row": "police_patrol",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				4624.0,
+				3728.0
+			],
+			"speed": 0.0
+		}
+	},
+	"final_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"initial_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"initial_actors": {
+		"car": {
+			"position": [
+				4560.0,
+				3984.0
+			],
+			"pursuing": false,
+			"row": "police_patrol",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				4624.0,
+				3728.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				4560.0,
+				3984.0
+			],
+			"row": "police_patrol"
+		}
+	],
+	"observations": [
+		{
+			"condition": "visible",
+			"passed": true,
+			"player_at": [
+				4624.0,
+				3728.0
+			],
+			"state": {
+				"position": [
+					4560.0,
+					3960.5667
+				],
+				"pursuing": false,
+				"row": "police_patrol",
+				"telegraphing": false
+			},
+			"subject": "car",
+			"tick": 10.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "every charger warns: an investigating patrol car on day 6 stops and lets its policeman out, who stands with his hand raised for a second and then charges",
+	"recipe_sha256": "e391759cbc6b954bf80c803a96d073091ab8b765395b440bdf0f557f21afdcd1",
+	"scope": "full",
+	"seed": 4242,
+	"setup": {
+		"day": 6.0,
+		"events": [
+			{
+				"at": "car",
+				"heat": 3.0,
+				"name": "car",
+				"row": "police_patrol"
+			}
+		],
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "south"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

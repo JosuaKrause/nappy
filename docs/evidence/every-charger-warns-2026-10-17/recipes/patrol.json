@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "name": "every charger warns: an investigating patrol car on day 6 stops and lets its policeman out, who stands with his hand raised for a second and then charges",
+  "seed": 4242,
+  "extent": {
+    "scope": "full"
+  },
+  "city": {
+    "context_seed": 4242
+  },
+  "anchors": {
+    "start": {
+      "tile": [
+        144,
+        116
+      ]
+    },
+    "car": {
+      "tile": [
+        142,
+        124
+      ]
+    }
+  },
+  "setup": {
+    "tutorial_complete": true,
+    "day": 6,
+    "parent": "mother",
+    "player": {
+      "at": "start",
+      "facing": "south"
+    },
+    "events": [
+      {
+        "name": "car",
+        "row": "police_patrol",
+        "at": "car",
+        "heat": 3
+      }
+    ]
+  },
+  "playback": {
+    "walk": "7p",
+    "duration": 7.0,
+    "capture_at": 1.0,
+    "camera": {
+      "fixed": true,
+      "fixed_offset": [
+        -40,
+        120
+      ]
+    },
+    "observations": [
+      {
+        "tick": 10,
+        "subject": "car",
+        "condition": "visible"
+      }
+    ]
+  }
+}

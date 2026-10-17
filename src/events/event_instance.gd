@@ -396,6 +396,19 @@ const POLICEMAN_LUNGING_BY_VIEW := {
 	"front_diagonal": "events/policeman_lunging_front_diagonal",
 	"back_diagonal": "events/policeman_lunging_back_diagonal",
 }
+## **A policeman who is about to charge stands square-on with one hand raised, palm out**, as the
+## guard's alert is drawn (`GUARD_ALERT_BY_VIEW`): the man an investigating patrol car or a hunting
+## van lets out, through day 8, for the second he stands beside her before he charges
+## (`policeman_pictures()`). On the policeman's own canvases and bottom-centre anchor, sharing his
+## waiting picture's body. *(Inbox #764, the player: van guardsmen about to charge hold up their
+## hands; an event that does not spawn already charging always needs a warning.)*
+const POLICEMAN_ALERT_BY_VIEW := {
+	"front": "events/policeman_alert_front",
+	"back": "events/policeman_alert_back",
+	"side": "events/policeman_alert_side",
+	"front_diagonal": "events/policeman_alert_front_diagonal",
+	"back_diagonal": "events/policeman_alert_back_diagonal",
+}
 ## The lunge's own stride, as `ROBBER_LUNGING_BY_VIEW_B` is the robber's.
 const POLICEMAN_LUNGING_BY_VIEW_B := {
 	"front": "events/policeman_lunging_front_b",
@@ -781,9 +794,10 @@ const GUARD_LUNGING_BY_VIEW := {
 }
 ## **A guard who has noticed her stands square-on with one hand raised, palm out** *(inbox #748:
 ## "guards should lift their hand in warning")*, held still for his notice: the hunting roadblock's
-## guard at his post and the door guard where he stepped out, never the masked man, the van's guard
-## or the guardsman, who keep their standing picture (`masked_pursuer_pictures()`). 22×44 front and
-## back, 26×44 side and diagonals, bottom-centre anchored like the standing family.
+## guard at his post, the door guard where he stepped out, the guardsman a vehicle lets out beside
+## its door, and the masked man at the foot of the shaft (`masked_pursuer_pictures()`). Never the
+## van's guard a task sends or the guardsman a torn poster sends: both arrive already charging.
+## 22×44 front and back, 26×44 side and diagonals, bottom-centre anchored like the standing family.
 const GUARD_ALERT_BY_VIEW := {
 	"front": "checkpoints/guard_alert_front",
 	"back": "checkpoints/guard_alert_back",
@@ -2131,7 +2145,7 @@ func _process(delta: float) -> void:
 		return
 	_clock += delta
 	age += delta
-	_pause_a_held_notice(delta)
+	_hold_the_notice_clock(delta)
 	# The gait phase advances by whatever this tick actually adds to `_path_travelled` below,
 	# whichever branch does the adding (`_leave`, `_advance_along_path`, `_chase`) or none of them
 	# — see `_advance_gait()`, called once at every exit from this function.
@@ -2406,7 +2420,9 @@ var _notice_paused_for := 0.0
 ## (`EventDef.stands_for_its_notice`, inbox #748: "robber can walk towards her but guards should lift
 ## their hand in warning"; "nobody walks -- only the robber"): the head start is hers to take, and
 ## what keeps it a chase is the rest of this function — the lunge the moment she walks inside its
-## stand-off, and a chase faster than her walk once the notice runs out.
+## stand-off, and a chase faster than her walk once it has lunged. One that waited for her has no
+## notice clock at all (`warns_by_radius()`); one that set off beside her charges when its notice
+## has run.
 ##
 ## **But it closes to a stand-off and holds it, rather than arriving.** The paragraph above buys the
 ## notice in seconds and says nothing about *where* the pursuer spends them: sited across her line a
@@ -2429,8 +2445,16 @@ var _notice_paused_for := 0.0
 ## A pursuer may also be a **place** before it is a moment: something that raises the meter on
 ## sight, and comes for her if she gets close. While
 ## it is waiting it emits at full strength, is not lethal and does not move; `pursues_within` is
-## where that stops. Everything below then runs exactly as it does for a dog sited in front of her,
-## started later.
+## where that stops.
+##
+## **And a pursuer that waited for her warns by radius, not by a clock** (`warns_by_radius()`;
+## inbox #764, the player: a warning happens when she comes close, she can turn around, and if she
+## keeps getting closer the charge starts). From the frame it notices her inside `pursues_within`
+## it shows its warning, for as long as she stays inside that radius: the notice clock does not run
+## (`_hold_the_notice_clock()`), so it charges only when she crosses its stand-off, the charge
+## radius. Once she is back outside `pursues_within` it stops warning and waits again, from where
+## it stands (`_stop_warning()`), and it can warn again. Standing outside the stand-off is safe for
+## as long as she stays there; walking away is safe until it charges.
 func _chase(delta: float) -> void:
 	if player_at == Vector2.INF or is_telegraphing_still() or _guard_spent:
 		return
@@ -2464,6 +2488,13 @@ func _chase(delta: float) -> void:
 			if range_to_her <= standoff:
 				_lunge_held = true
 		return
+	# **Out of its warning radius, it stops warning** and waits again where it stands. Measured from
+	# where it noticed her (`body_position()`, the band's centre for a roadblock's guard, who stepped
+	# out to his post), so the frame it waits again it does not notice her again.
+	if is_telegraphing() and warns_by_radius() \
+			and body_position().distance_to(player_at) > def.pursues_within:
+		_stop_warning()
+		return
 	if not _pursuit_began_reported:
 		_pursuit_began_reported = true
 		# `VisitCounter`'s own "dog-chased" — actually coming for her, whether that is a transition
@@ -2486,8 +2517,10 @@ func _chase(delta: float) -> void:
 	_last_range = range_to_her
 	# An ordinary pursuer keeps its approach notice. A sent pursuer already warned with its badge:
 	# running counts while it is still offscreen, too (tall-owl: "starting to run while he's
-	# offscreen still counts towards the shaking off timer? sure").
-	var may_give_up := def.arrives_chasing or chase_age() >= Tuning.PURSUIT_MIN_NOTICE
+	# offscreen still counts towards the shaking off timer? sure"). One that warns by radius warned
+	# her in place for as long as she stood in its radius, so running counts from its charge.
+	var may_give_up := def.arrives_chasing or warns_by_radius() \
+			or chase_age() >= Tuning.PURSUIT_MIN_NOTICE
 	if _outrun_for >= Tuning.PURSUIT_SHAKEN_OFF and may_give_up:
 		gave_up = true
 		_be_done()
@@ -2539,6 +2572,11 @@ func _chase(delta: float) -> void:
 		# a catch from a standing start.
 		if is_standing_for_its_notice():
 			step = 0.0
+	# **The charge of one that warns by radius starts its chase clock**: its notice is set as one
+	# that has just run its whole length, so the chase is `duration` long from the charge and a
+	# stream-out carries it as a chase (`_hold_the_notice_clock()`).
+	if _lunged and warns_by_radius() and chase_age() < def.telegraph_time:
+		_noticed_at = age - _notice_paused_for - def.telegraph_time
 	# **Day 13's task guard walks round buildings toward her** (`_paths_to_her`): where no clear
 	# line runs to her he follows the walk to her instead of the straight line. Only the direction
 	# changes; how far he may close, and when he lunges, are decided above as for every pursuer.
@@ -3932,7 +3970,7 @@ func is_telegraphing() -> bool:
 
 ## True while a pursuer that noticed her stands for its notice in its alert pose rather than closing
 ## on her (`EventDef.stands_for_its_notice`): the dog that waited, the hunting roadblock's guard, the
-## door guard. **Asked of the def the instance was handed**, so the day-3 dog — the same row, sent
+## door guard and the man a vehicle lets out. **Asked of the def the instance was handed**, so the day-3 dog — the same row, sent
 ## down her heading with no trigger to have waited behind — is false here and spends its telegraph
 ## coming, which is the lesson; and false for anything that has not noticed her yet or has lunged.
 func is_standing_for_its_notice() -> bool:
@@ -3957,6 +3995,58 @@ func chase_age() -> float:
 	if def.pursues_within <= 0.0:
 		return age - _notice_paused_for
 	return 0.0 if _noticed_at == INF else age - _noticed_at - _notice_paused_for
+
+## **Whether this pursuer warns by radius rather than by a clock**: one that waited for her and
+## noticed her by sight (`pursues_within` on the def it was handed) — the dog that waited, the alley
+## robber and every guard drawn from his row, the hunting roadblock's guard. *(Inbox #764, the
+## player: a warning happens when she comes close; she can turn around; if she keeps getting closer
+## the charge starts.)* Its warning lasts for as long as she is inside `pursues_within` and ends in a
+## charge only when she crosses its stand-off (`_chase()`); out of the radius it waits again
+## (`_stop_warning()`).
+##
+## **Not one set on her by what she did** (`notice_her_at()`, day 13's task guard, `_paths_to_her`):
+## he is sent after her from wherever he stands, often a city away, so a radius he has to be inside
+## would leave him nothing to do; he keeps his timed notice. Nor one with no trigger — the day-3 dog
+## and everything sent at her from off screen, whose approach or badge is the warning — nor one that
+## sets off beside her, whose notice is a clock by construction.
+func warns_by_radius() -> bool:
+	return def.pursues and def.pursues_within > 0.0 and not def.sets_off_beside_her \
+			and not _paths_to_her
+
+## **It stops warning and waits again, where it stands**: she has gone back out of its warning
+## radius. Its notice is forgotten, so the next time she comes inside the radius it notices her and
+## warns again from the start. The robber stops where his warning walk had got him and waits there
+## *(inbox #764, the player: the robber walking slowly stops if she gets out of the radius)*; the
+## dog and the guards never moved. A roadblock's guard, who stepped out to his post on her side when
+## he noticed her, is back at the band he was standing at, with the band's body under him again.
+func _stop_warning() -> void:
+	_noticed_at = INF
+	_notice_paused_for = 0.0
+	_lunge_held = false
+	if def.body_stays_behind and has_left_its_body_behind():
+		global_position = _body_left_at
+		_body_left_at = Vector2.INF
+		_chaser_side = 0
+		if _obstruction:
+			_obstruction.position = Vector2.ZERO
+		_move_the_band(true)
+	_invalidate_contribution_cache()
+
+## The notice clock for this tick, run straight after `age` advances and before anything asks
+## `is_telegraphing()`. **A pursuer that warns by radius has no notice clock** (`warns_by_radius()`):
+## for every tick of its warning the age it noticed her moves on with the tick, so its notice never
+## runs out and the charge comes only from her crossing its stand-off (`_chase()`, which then sets
+## the clock as a notice that has just run out, so `chase_age()` past `telegraph_time` counts the
+## chase from the charge). Moving the notice rather than counting a pause is what a stream-out
+## carries (`noticed_at()`, `resume()`), so a warning streamed back in is still a warning and a
+## charge is still a charge. Every other pursuer's notice runs, held still only while a held lunge
+## has her inside its stand-off (`_pause_a_held_notice()`).
+func _hold_the_notice_clock(delta: float) -> void:
+	if warns_by_radius() and not _lunged and not is_waiting() \
+			and chase_age() - delta < def.telegraph_time:
+		_noticed_at += delta
+		return
+	_pause_a_held_notice(delta)
 
 ## Holds a held lunge's notice clock still for this tick while she is inside its stand-off — see
 ## `_notice_paused_for`. Run straight after `age` advances, before anything asks
@@ -5390,12 +5480,17 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.DOOR_GUARD:
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
 					GUARD_LUNGING_BY_VIEW])
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.VAN_GUARD_GIVING_CHASE, \
-				EventDef.Look.GUARDSMAN_GIVING_CHASE:
+		EventDef.Look.VAN_GUARD_GIVING_CHASE:
+			# Sent already chasing: no notice, so no alert to draw.
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.GUARDSMAN_GIVING_CHASE:
+			# The masked man's notice at the foot of the shaft, and the guardsman's out of a vehicle.
+			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
+					GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.POLICEMAN_GIVING_CHASE:
-			_collect_views(sources, [POLICEMAN_WAITING_BY_VIEW, POLICEMAN_LUNGING_BY_VIEW,
-					POLICEMAN_LUNGING_BY_VIEW_B])
+			# His alert is the man out of a vehicle's; the one a torn poster sends never shows it.
+			_collect_views(sources, [POLICEMAN_WAITING_BY_VIEW, POLICEMAN_ALERT_BY_VIEW,
+					POLICEMAN_LUNGING_BY_VIEW, POLICEMAN_LUNGING_BY_VIEW_B])
 			_collect(sources, [POLICEMAN_LUNGING])
 		EventDef.Look.STEAM:
 			_collect(sources, [STEAM, STEAM_B])
@@ -5862,22 +5957,28 @@ func robber_pictures() -> Dictionary:
 		return ROBBER_ALERT_BY_VIEW_B if _gait_stepping() else ROBBER_ALERT_BY_VIEW
 	return ROBBER_LUNGING_BY_VIEW_B if _gait_stepping() else ROBBER_LUNGING_BY_VIEW
 
-## **The policeman on foot, drawn as the robber is**: his waiting posture while his notice runs —
-## the one sent from off screen has none and is only ever drawn coming; the one who gets out of an
-## investigating vehicle holds his ground in it (`EventDef.sets_off_beside_her`) — and while
-## he stands with her through a stop (`has_stopped_her()`); his lunge, with its stride, once he gives
-## chase and as he walks back to his vehicle. The switch is `_stands_still_now()`, the one
-## `_draw_masked_pursuer()` reads for the guard. He faces her while he is after her (`_chase()`
-## keeps `_heading` on her) and his vehicle's door as he walks back (`_walk_back()`).
+## **The policeman on foot, drawn as the robber is.** He faces her while he is after her (`_chase()`
+## keeps `_heading` on her) and his vehicle's door as he walks back (`_walk_back()`); which picture
+## is `policeman_pictures()`.
 func _draw_policeman(canvas: CanvasItem = self) -> void:
 	_draw_body_shadow(canvas)
-	var waiting := _stands_still_now()
-	var by_view := POLICEMAN_WAITING_BY_VIEW if waiting else POLICEMAN_LUNGING_BY_VIEW
-	if not waiting and _gait_stepping():
-		by_view = POLICEMAN_LUNGING_BY_VIEW_B
+	var by_view := policeman_pictures()
 	var view := _select_view(_heading)
 	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
+
+## The policeman's picture for this frame: his alert, hand raised, for the second the man out of an
+## investigating vehicle stands beside her before he charges (`is_standing_for_its_notice()`); his
+## waiting posture while he stands with her through a stop (`has_stopped_her()`, through
+## `_stands_still_now()`); his lunge, with its stride, once he gives chase and as he walks back to
+## his vehicle. The one a torn poster sends arrives charging and is only ever drawn coming. The one
+## place the choice is read, so the draw, its halo and a test ask the same question.
+func policeman_pictures() -> Dictionary:
+	if is_standing_for_its_notice():
+		return POLICEMAN_ALERT_BY_VIEW
+	if _stands_still_now():
+		return POLICEMAN_WAITING_BY_VIEW
+	return POLICEMAN_LUNGING_BY_VIEW_B if _gait_stepping() else POLICEMAN_LUNGING_BY_VIEW
 
 ## Whether a man on foot is drawn standing rather than lunging: while he waits for her to come
 ## near (`is_waiting()`, which `is_telegraphing()` is false for, the masked man at the foot of the
@@ -6337,11 +6438,10 @@ func _draw_crater(canvas: CanvasItem = self) -> void:
 
 ## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
 ## its boom — the same man, and the guardsman a torn poster sends or a vehicle lets out:
-## the `guard_standing_*` family while he waits for her, while the telegraph is running, and through a stop
-## (`_stands_still_now()`), and `guard_lunging_*` once he is actually on her line — except the door
-## guard, who holds `guard_alert_*` for his notice instead (`masked_pursuer_pictures()`), as a
-## heated roadblock's guard does at his post, on a row that was never a barrier and so has no band
-## to swap *out of*. Read from his own travel heading
+## the `guard_standing_*` family while he waits for her and through a stop (`_stands_still_now()`),
+## `guard_alert_*` for any notice he gives (`masked_pursuer_pictures()`), as a heated roadblock's
+## guard does at his post, and `guard_lunging_*` once he is actually on her line. Read from his own
+## travel heading
 ## through `_draw_eight_view()`, the same helper every other moving family uses, so he turns to
 ## face where he is going on every step of the shaft rather than only mirroring east/west
 ## (PLAYTEST-128, M56). No `side_faces_west` override: `guard_lunging_side.svg`'s own comment says
@@ -6351,13 +6451,17 @@ func _draw_crater(canvas: CanvasItem = self) -> void:
 func _draw_masked_pursuer(canvas: CanvasItem = self) -> void:
 	_draw_eight_view(masked_pursuer_pictures(), _heading, canvas)
 
-## The guard-drawn pursuer's picture for this frame. **The door guard alone takes the alert**, hand
-## raised, for the notice he stands where he stepped out (`is_standing_for_its_notice()`, read off
-## his row's `EventDef.stands_for_its_notice`): the masked man, the van's guard and the guardsman
-## share this drawing and none of their rows sets it, so each keeps `guard_standing_*` while
-## `_stands_still_now()` and `guard_lunging_*` after.
+## The guard-drawn pursuer's picture for this frame. **The alert, hand raised, is every notice one
+## of them gives**: the door guard where he stepped out and the guardsman a vehicle lets out, each
+## standing for his notice (`is_standing_for_its_notice()`, read off `EventDef.stands_for_its_notice`),
+## and the masked man standing at the foot of the shaft through his notice (`is_telegraphing()`
+## after his wait, which his row's `pursues_within` gives him and no other guard-drawn row has).
+## *(Inbox #764, the player: an event that does not spawn already charging always needs a
+## warning.)* The van's guard a task sends and the guardsman a torn poster sends arrive charging and
+## never give one. Otherwise `guard_standing_*` while `_stands_still_now()` — the masked man's wait,
+## a stop — and `guard_lunging_*` after.
 func masked_pursuer_pictures() -> Dictionary:
-	if is_standing_for_its_notice():
+	if is_standing_for_its_notice() or (def.pursues_within > 0.0 and is_telegraphing()):
 		return GUARD_ALERT_BY_VIEW
 	return GUARD_STANDING_BY_VIEW if _stands_still_now() else GUARD_LUNGING_BY_VIEW
 

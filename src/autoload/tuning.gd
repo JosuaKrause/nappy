@@ -2013,12 +2013,20 @@ const OFFSCREEN_WARNING_MIN := 1.0
 ## alone (`EventDef.warned_for()`) is longer.
 const WARNING_ALONE_MAX := 1.0
 
-## A pursuer's telegraph is the **approach**: it exists and visibly closes on her the whole time it
-## telegraphs, unlike a row warned of before it exists (the fire engine, sited by a screen-edge
-## badge with nothing in the world until its telegraph is spent). A dog that has to bark for two
-## seconds before it is allowed to start running is not a dog. So the notice is the sight of it
-## closing, and this is how much of that she is owed before it can touch her. A sent robber or
-## guard has no approach: its badge is the notice, and an offscreen run can shake it off.
+## An ordinary pursuer's telegraph is the **approach**: it exists and visibly closes on her the
+## whole time it telegraphs, unlike a row warned of before it exists (the fire engine, sited by a
+## screen-edge badge with nothing in the world until its telegraph is spent). A dog that has to bark
+## for two seconds before it is allowed to start running is not a dog. So the notice is the sight of
+## it closing, and this is how much of that she is owed before it can touch her: the day-3 dog's
+## approach, and the timed notice of a waiting guard set on her by a task.
+##
+## **Two other kinds of pursuer are owed something else.** A sent robber or guard has no approach:
+## its badge is the notice, and an offscreen run can shake it off. A pursuer that sets off beside her
+## (the man a vehicle lets out, the door guard) is the badge's kind too: it exists only to charge
+## her, and what she is owed is the indicator that it is about to, for at least the off-screen
+## charger's `OFFSCREEN_WARNING_MIN` (inbox #764). A pursuer that waited for her warns by radius
+## rather than by any clock (`EventInstance.warns_by_radius()`): it charges only when she crosses
+## its stand-off, so this floor bounds nothing it does.
 const PURSUIT_MIN_NOTICE := 1.5
 
 ## How long she is allowed to take to answer the lunge, at the speed the gap is actually closing.
@@ -2111,7 +2119,14 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 ##   running is the correct answer and still not enough.
 ## - **An ordinary pursuer's notice is the sight of it coming**, at least `PURSUIT_MIN_NOTICE`.
 ##   A sent pursuer (`arrives_chasing`) has its badge alone, checked by `EventDef.validate()`,
-##   and running may shake it off while it is still offscreen.
+##   and running may shake it off while it is still offscreen. One that sets off beside her
+##   (`sets_off_beside_her`) stands with its warning up for its notice and is owed the badge's
+##   heads-up, `OFFSCREEN_WARNING_MIN`, rather than an approach she never sees.
+## - **A pursuer that waited for her warns for as long as she is inside its trigger and charges only
+##   when she crosses its stand-off** (`EventInstance.warns_by_radius()`; inbox #764). That is a
+##   contract in distances, not in these numbers: walking in meets the charge at the full stand-off,
+##   standing or walking away outside the stand-off is never charged, and once charged walking loses
+##   and running wins by the speed clauses above. `tests/test_events_pursuit.gd` walks it.
 ## - **It stands off inside its own field.** A pursuer holding a stand-off outside `outer_radius`
 ##   emits nothing at her for the whole of the phase that is supposed to *be* the warning: no meter,
 ##   no `!` over her head, and a telemetry entry that cannot say what raised the mark. This one was
@@ -2138,7 +2153,7 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 ## `tests/test_events.gd` that has to accelerate is what checks the half this cannot.
 func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		telegraph: float, notice_within := 0.0, outer := 0.0, standoff_from := 0.0,
-		arrives_chasing := false) -> bool:
+		arrives_chasing := false, sets_off_beside_her := false) -> bool:
 	if speed < WALK_SPEED + PURSUIT_MIN_MARGIN:
 		push_error("Unfair pursuit '%s': %.0fpx/s is not enough faster than a walk (%.0f)"
 				% [id, speed, WALK_SPEED])
@@ -2158,9 +2173,11 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		push_error("Unfair pursuit '%s': running opens %.0fpx over %.1fs, less than the %.0fpx "
 				% [id, opened, chase_time, inner] + "that ends the day")
 		return false
-	if not arrives_chasing and telegraph < PURSUIT_MIN_NOTICE:
-		push_error("Unfair pursuit '%s': %.1fs of it coming is not enough notice (%.1fs)"
-				% [id, telegraph, PURSUIT_MIN_NOTICE])
+	# A pursuer that sets off beside her is owed the badge's heads-up, not an approach's.
+	var least_notice := OFFSCREEN_WARNING_MIN if sets_off_beside_her else PURSUIT_MIN_NOTICE
+	if not arrives_chasing and telegraph < least_notice:
+		push_error("Unfair pursuit '%s': %.1fs of notice is not enough (%.1fs)"
+				% [id, telegraph, least_notice])
 		return false
 	# Being shaken off has to be reachable inside the chase at all, or the rate rule is decorative
 	# and the clock is back to pricing the answer.

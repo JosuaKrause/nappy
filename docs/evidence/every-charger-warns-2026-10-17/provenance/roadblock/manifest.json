@@ -1,0 +1,226 @@
+{
+	"anchors": {
+		"block": [
+			4560.0,
+			3888.0
+		],
+		"start": [
+			4656.0,
+			3632.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 4242.0
+	},
+	"classification": "normal",
+	"context_seed": 4242,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {
+			"roadblock": 1
+		},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"final_actors": {
+		"block": {
+			"position": [
+				4560.0,
+				3888.0
+			],
+			"pursuing": false,
+			"row": "roadblock",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				4656.0,
+				3616.6667
+			],
+			"speed": 0.0
+		}
+	},
+	"final_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"initial_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"initial_actors": {
+		"block": {
+			"position": [
+				4560.0,
+				3888.0
+			],
+			"pursuing": false,
+			"row": "roadblock",
+			"telegraphing": false
+		},
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				4656.0,
+				3632.0
+			],
+			"speed": 0.0
+		}
+	},
+	"initial_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				4560.0,
+				3888.0
+			],
+			"row": "roadblock"
+		}
+	],
+	"observations": [
+		{
+			"condition": "visible",
+			"passed": true,
+			"player_at": [
+				4656.0,
+				3632.0
+			],
+			"state": {
+				"position": [
+					4560.0,
+					3888.0
+				],
+				"pursuing": false,
+				"row": "roadblock",
+				"telegraphing": false
+			},
+			"subject": "block",
+			"tick": 10.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "every charger warns: the hunting roadblock guard stands at his post with his hand raised for 4s while she stands inside his radius, longer than the 1.8s his notice used to run, and is back at the band when she walks out",
+	"recipe_sha256": "beecb4f812a0f053893034901dccd22fe26c1c6ccfc36f2ae970dc877accce91",
+	"scope": "full",
+	"seed": 4242,
+	"setup": {
+		"day": 7.0,
+		"events": [
+			{
+				"at": "block",
+				"heat": 4.0,
+				"name": "block",
+				"row": "roadblock"
+			}
+		],
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "south"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

@@ -289,9 +289,10 @@ func _test_his_catch_ends_the_day_with_its_own_line(t) -> void:
 # ----------------------------------------------------------- out of the car ---
 
 ## The man an investigating patrol car lets out is the day's pursuer on foot, met in her view:
-## not warned of from off screen and not arriving chasing, but holding the door guard's ground for
-## the alley robber's notice — at least `Tuning.PURSUIT_MIN_NOTICE` — and then chasing under the
-## pursuit contract, which `validate()` holds him to. **His catch is a stop, never the end of the
+## not warned of from off screen and not arriving chasing, but standing where he got out with his
+## hand raised for the badge's heads-up — `Tuning.WARNING_ALONE_MAX`, at least
+## `Tuning.OFFSCREEN_WARNING_MIN` (inbox #764) — and then chasing under the pursuit contract, which
+## `validate()` holds him to. **His catch is a stop, never the end of the
 ## day** *(inbox #669 in coral-lark: "it needs to give a substantial cost but not lethal directly")*: standing
 ## beside him she is reached only after his notice, and stopped rather than struck.
 func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
@@ -306,8 +307,10 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 				% [day, out.stop_excitement])
 		t.check(not out.warns_before_it_exists() and not out.arrives_chasing,
 				"day %d: he gets out in her view, with no off-screen badge" % day)
-		t.check(out.sets_off_beside_her and out.telegraph_time >= Tuning.PURSUIT_MIN_NOTICE,
-				"day %d: he holds his ground for a %.1fs notice before he chases"
+		t.check(out.sets_off_beside_her and out.stands_for_its_notice
+				and is_equal_approx(out.telegraph_time, Tuning.WARNING_ALONE_MAX)
+				and out.telegraph_time >= Tuning.OFFSCREEN_WARNING_MIN,
+				"day %d: he stands with his hand raised for a %.1fs heads-up before he chases"
 				% [day, out.telegraph_time])
 		t.check(out.validate(), "day %d: and the pursuit contract holds him" % day)
 		var her := Vector2.ZERO
