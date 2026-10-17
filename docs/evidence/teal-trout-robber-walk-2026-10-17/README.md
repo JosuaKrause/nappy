@@ -73,6 +73,9 @@ A delivered GIF is never overwritten; a revision is a new file with the next ver
 **What the GIFs cannot show**: the robber moving over the ground, his heading turning toward her,
 the caret over him, or the alley floor he waits on; only the two pictures alternating in place.
 **And they show far more walking than the game does.** The GIFs loop forever, but he notices her
-within 140px and closes only to his 116px stand-off, then stands still in frame a until she moves
-or his 1.8s notice ends. Unless she backs away he walks about 24px, about 0.2s and one swap, and
-holds the planted step for the rest of his warning.
+within 140px and, with a clear line, lunges the moment he reaches his 116px stand-off. Unless she
+backs away he walks about 24px, about 0.2s and mostly the passing step, since his gait starts at
+phase 0 and his first 17.5px are frame b, and then lunges. He stands in the planted step only when
+a wall held his lunge back (round the alley mouth), until she is back at his stand-off. The player
+has asked that he notice her from farther away and walk slowly while he warns (inbox #761), which
+lengthens the walk once it is wired.
