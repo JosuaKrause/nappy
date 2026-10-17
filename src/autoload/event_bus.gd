@@ -107,21 +107,31 @@ signal event_lit_unmet(id: String)
 # or `charging_dog_tutorial` for the day-3 lesson's dog. `VisitCounter` sends a counter of its own
 # for every charger. Listen-only — see docs/TELEMETRY.md, "The page counts visits".
 
-## `EventInstance._chase()`'s own moment a pursuer that warns by radius
-## (`EventInstance.warns_by_radius()`) first notices her and starts warning: a warning, which she can
-## walk out of, rather than a charge, which `pursuit_began` is sent for. Once per instance.
+## A charger's warning going up, the level below its charge, which `pursuit_began` is sent for: a
+## waiting charger noticing her (`EventInstance.warns_by_radius()`), the masked man's raised hand,
+## the raised hand of the man a vehicle lets out and of day 13's guard in her view — once per
+## instance — and a checkpoint hut's guard raising his hand as she nears a raised boom
+## (`EventManager._warn_at_the_doors()`, `door_guard`), each time he does.
 signal pursuit_warned(id: String)
-## `EventInstance._chase()`'s own moment a pursuer comes for her: its charge, the first frame of a
-## pursuer with no wait, or the end of the notice of one that sets off beside her. Once per instance.
+## `EventInstance._chase()`'s own moment a pursuer comes for her: its charge, never its warning — a
+## waiting charger when she crosses its stand-off, the man a vehicle lets out and day 13's guard in
+## her view when their raised hand has been up its second, the masked man when he starts his run,
+## and a pursuer whose telegraph is its approach (the day-3 dog) or that arrives charging from its
+## first frame. Once per instance.
 signal pursuit_began(id: String)
 ## A charge that caught her (`EventInstance.report_the_catch()`): a catch that ends the day, sent
 ## ahead of `hard_fail_triggered` and beside it, or a patrol car's man stopping her, which does not.
 ## Once per instance; the charge then sends no `pursuit_ended`.
 signal pursuit_caught(id: String)
+## A charge still running when the day, or the escape's section, ended some other way
+## (`EventInstance.report_the_charge_cut_short()`): the meter at its cap, another thing's catch, her
+## reaching home. Once per instance, and never beside `pursuit_caught` or `pursuit_ended`.
+signal pursuit_cut_short(id: String)
 ## `EventInstance._be_done()`'s own moment a charge that had begun is over without catching her.
 ## `shaken_off` is `EventInstance.gave_up` — `_chase()`'s own record of whether she outran it
 ## (`Tuning.PURSUIT_SHAKEN_OFF`) rather than its `duration` simply running out. Never for a charge
-## that caught her (`pursuit_caught`), so a charge that ends ends in exactly one of the three.
+## that caught her (`pursuit_caught`) or was cut short (`pursuit_cut_short`), so every charge ends in
+## exactly one of the four.
 signal pursuit_ended(id: String, shaken_off: bool)
 
 # Encounters and bouts of running, for the page's counter — `EncounterWatch`, which `EventManager`

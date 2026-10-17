@@ -94,3 +94,22 @@ scratch.
 during its warning is the existing cue that its course would end her day, not part of this change.
 The door guard and the masked man are not shown: the door guard's stages are unchanged, and the
 masked man's alert is pinned by `tests/test_event_views.gd`.
+
+## The warnings no recipe can stage
+
+[warning-stills-v1.png](warning-stills-v1.png), sha256 `be9244a2fb64d7c1c735eefcc6d30b26410bd8de5798e75346991a1ed6545fd5`: the checkpoint hut's guard
+standing and then with his hand raised as she nears the raised boom; an alley post's guard the same;
+the masked man at the foot of the escape's stairwell waiting, warning while she is in the stairwell,
+and running; and day 13's task guard waiting, warning in her view, and charging. Composed by
+[warning-stills.gd](warning-stills.gd) from the game's own SVGs placed the way the drawing code
+places them (its header says where each offset and anchor comes from), at 4x on the sidewalk's
+colour, and labelled with Pillow. A raised boom needs live traffic a scene recipe cannot time, and
+recipes cannot stage the escape's building, so these are compositions, not captures; the tests
+(`tests/test_checkpoints.gd`, `tests/test_event_views.gd`, `tests/test_day13_guard.gd`,
+`tests/test_interior.gd`) pin when each picture shows.
+
+```sh
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
+    --script docs/evidence/every-charger-warns-2026-10-17/warning-stills.gd -- \
+    --repo "$PWD" --output <fresh>.png
+```

@@ -1158,8 +1158,9 @@ clock** *(inbox #764: a warning happens when she comes close; she can turn aroun
 getting closer the charge starts)*: it starts when she comes inside `pursues_within` along a clear
 line, not when the day put it there, it lasts for as long as she stays inside, and it ends in a
 charge only when she crosses the stand-off (`EventInstance.warns_by_radius()`). A guard a task sets
-on her from wherever he stands (`EventInstance.notice_her_at()`) is the one waiting pursuer whose
-notice is still `telegraph_time` long. And its warning does **not** damp what it is emitting:
+on her from wherever he stands (`EventInstance.notice_her_at()`) is not on this rule: in her view
+he stands with his warning up for `Tuning.WARNING_ALONE_MAX` and then charges, and out of it he is
+sent at her under a badge of the same second. And its warning does **not** damp what it is emitting:
 `TELEGRAPH_INTENSITY_FRACTION` means *this has not started yet*, and a man who has been standing in
 that alley since she came round the corner has started. What has not started is the lunge.
 

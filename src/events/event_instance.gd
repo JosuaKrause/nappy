@@ -2372,8 +2372,22 @@ var _pursuit_began_reported := false
 var guard_warns_her := false
 ## Whether `EventBus.pursuit_warned` has already been sent for this instance's first warning.
 var _warning_reported := false
-## Whether `EventBus.pursuit_caught` has been sent for this instance's charge (`report_the_catch()`).
-var _catch_reported := false
+## Whether this instance's charge has ended for its counter: caught (`report_the_catch()`), over
+## (`_be_done()`), or cut short by the day ending some other way (`report_the_charge_cut_short()`).
+## Exactly one of the three is sent.
+var _charge_ended := false
+
+## **Whether this instance has a charging counter**: every pursuer, and a row that waits for her
+## and runs its own line at her once she is near (`EventDef.charges_within`, the masked man in the
+## escape's stairwell). Telemetry only.
+func counts_a_charge() -> bool:
+	return def.pursues or def.charges_within > 0.0
+
+## The name its counter goes under when something other than its row gave it its errand
+## (`charger_name()`): `task_guard` for day 13's task guard once the task sets him on her, in her
+## view or sent from out of it (`ResistanceDirector._set_the_task_guard_on_her()`). Empty for every
+## other instance. Telemetry only.
+var counted_as := ""
 
 ## **The day-3 lesson's dog**, the one the run tip is shown for: the first `charging_dog`
 ## `EventManager` creates on `Tuning.RUN_TAUGHT_DAY` (`EventManager._create()`), which is the lesson
@@ -2385,20 +2399,48 @@ var is_the_lesson := false
 ## `pursuit_ended`): `charging_dog_tutorial` for the day-3 lesson's dog (`is_the_lesson`), otherwise
 ## the row's own `def.id`. Telemetry only.
 func charger_name() -> String:
+	if counted_as != "":
+		return counted_as
 	return "charging_dog_tutorial" if is_the_lesson else def.id
 
 ## **Its charge caught her**, said once: by `EventManager._check_hard_fails()` when its catch ends
 ## the day, ahead of `hard_fail_triggered`, and by a patrol car's man the frame he stops her
 ## (`_stop_her_if_he_has_reached_her()`), whose catch does not. Telemetry only: it sends
 ## `EventBus.pursuit_caught` and keeps `_be_done()` from also sending `pursuit_ended`, so a charge
-## ends in exactly one of caught, shaken off and outlasted, whatever the day does *(inbox #764, the
-## player: "Charging is independent of an ended day")*. Nothing for a row that does not pursue or
-## a charge that has not begun.
+## ends in exactly one of caught, shaken off, outlasted and cut short, whatever the day does
+## *(inbox #764, the player: "Charging is independent of an ended day")*. Also asked by
+## `InteriorEvents` when the masked man catches her. Nothing for a row with no charging counter
+## (`counts_a_charge()`) or a charge that has not begun.
 func report_the_catch() -> void:
-	if not def.pursues or not _pursuit_began_reported or _catch_reported:
+	if not counts_a_charge() or not _pursuit_began_reported or _charge_ended:
 		return
-	_catch_reported = true
+	_charge_ended = true
 	EventBus.pursuit_caught.emit(charger_name())
+
+## **Its charge was cut short**: the day, or the escape's section, ended some other way while it
+## was still charging — the meter reached its cap, another thing caught her, she reached home.
+## Sends `EventBus.pursuit_cut_short` once, so that charge too ends in exactly one counted way.
+## Asked by `EventManager.end_the_charges_still_running()` and `InteriorEvents` as they end.
+## Telemetry only.
+func report_the_charge_cut_short() -> void:
+	if not counts_a_charge() or not _pursuit_began_reported or _charge_ended or is_finished:
+		return
+	_charge_ended = true
+	EventBus.pursuit_cut_short.emit(charger_name())
+
+## Sends `EventBus.pursuit_warned` once for this instance: its warning has gone up.
+func _report_the_warning() -> void:
+	if _warning_reported or not counts_a_charge():
+		return
+	_warning_reported = true
+	EventBus.pursuit_warned.emit(charger_name())
+
+## **Whether its notice is a warning she is shown, standing**, rather than its approach: one that
+## warns by radius, the man a vehicle lets out (`EventDef.sets_off_beside_her`), day 13's guard
+## raising his warning in her view. Its charge, and so its `-chased`, comes only when that ends; a
+## pursuer whose telegraph is its approach (the day-3 dog) has come for her from its first frame.
+func _its_notice_is_a_warning() -> bool:
+	return warns_by_radius() or def.sets_off_beside_her or _stands_for_this_notice
 ## True once she has come close enough during the telegraph for the thing to start, which ends the
 ## telegraph there and then. **The start is fired by her, not by a clock**, and two rows want it
 ## for the same reason at two distances.
@@ -2514,12 +2556,10 @@ func _chase(delta: float) -> void:
 		# inbox #648: "yes noticing needs a clear line".)*
 		if range_to_her <= def.pursues_within and _clear_line_to(player_at):
 			_noticed_at = age
-			# `VisitCounter`'s own "dog-warned", once per instance: the warning level below the
-			# chase that `pursuit_began` reports at the charge (docs/TELEMETRY.md, "The page counts
-			# visits").
-			if warns_by_radius() and not _warning_reported:
-				_warning_reported = true
-				EventBus.pursuit_warned.emit(charger_name())
+			# `VisitCounter`'s own "-warned", once per instance: the warning level below the
+			# charge that `pursuit_began` reports (docs/TELEMETRY.md, "The page counts visits").
+			if warns_by_radius():
+				_report_the_warning()
 			# It turns to face her on the frame it notices: a dog or a guard that was looking
 			# elsewhere is now looking at her. A waiting robber is already drawn facing her along a
 			# clear line (`_robber_waiting_heading()`), so for him the cue is the posture switch,
@@ -2538,7 +2578,11 @@ func _chase(delta: float) -> void:
 			and body_position().distance_to(player_at) > def.pursues_within:
 		_stop_warning()
 		return
-	if not _pursuit_began_reported and not (warns_by_radius() and is_telegraphing()):
+	# A raised hand that is the indicator of a charge to come is a warning too: the man a vehicle
+	# lets out, day 13's guard in her view.
+	if is_telegraphing() and _its_notice_is_a_warning():
+		_report_the_warning()
+	if not _pursuit_began_reported and not (_its_notice_is_a_warning() and is_telegraphing()):
 		_pursuit_began_reported = true
 		# `VisitCounter`'s own "dog-chased" — actually coming for her, whether that is a transition
 		# out of `is_waiting()`, the charge of one that warns by radius (its warning is not a chase:
@@ -2888,7 +2932,9 @@ func give_up_the_chase() -> void:
 ## from then on he is an ordinary pursuer — his notice runs before he may lunge, he closes only to
 ## his stand-off while it runs, and he lunges only along a clear line. Noticed already inside his
 ## stand-off, which only a wall between them allows here, the lunge is held as `_chase()` holds it
-## (`_lunge_held`). Nothing for a pursuer no longer waiting, or for a `her` of `Vector2.INF`.
+## (`_lunge_held`). **A guard already warning her by sight is set on her the same way**, his own
+## warning giving way to this notice, since she could walk out of a warning and he would never come.
+## Nothing for a pursuer already charging or done, or for a `her` of `Vector2.INF`.
 ##
 ## `notice` replaces the row's `telegraph_time` for this notice when it is not negative, and `stand`
 ## has him stand still in his warning for it (`is_standing_for_its_notice()`): day 13's guard, in her
@@ -2898,8 +2944,15 @@ func give_up_the_chase() -> void:
 ## **From here he walks round buildings toward her** (`_paths_to_her`): set on her from wherever he
 ## stands, he may start a city away with blocks between them.
 func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
-	if not is_waiting() or her == Vector2.INF or is_finished:
+	if not (is_waiting() or (is_telegraphing() and warns_by_radius())) or her == Vector2.INF \
+			or is_finished:
 		return
+	# A warning of his own already under way gives way to the one the task sets: the lunge it held
+	# back and the notice it held still start again from here.
+	_lunge_held = false
+	_notice_paused_for = 0.0
+	if stand:
+		_warning_reported = false
 	player_at = her
 	_noticed_at = age
 	_paths_to_her = true
@@ -3641,7 +3694,8 @@ func _give_up_what_cannot_reach_her(delta: float) -> void:
 func _be_done(may_park := true) -> void:
 	if is_finished or is_leaving or is_parked or _guard_spent:
 		return
-	if def.pursues and _pursuit_began_reported and not _catch_reported:
+	if counts_a_charge() and _pursuit_began_reported and not _charge_ended:
+		_charge_ended = true
 		# `VisitCounter`'s own "-shaken"/"-outlasted" — a charge that had begun is over without
 		# catching her, `gave_up` telling which of the two ways. A charge that caught her reported
 		# its catch instead (`report_the_catch()`), so it ends in exactly one of the three. See
@@ -4107,6 +4161,7 @@ func _warn_on_its_line(delta: float) -> void:
 	var range_to_her := global_position.distance_to(player_at)
 	if _warned_on_its_line_for == 0.0:
 		_noticed_inside_its_charge = range_to_her <= def.charges_within
+		_report_the_warning()
 	_warned_on_its_line_for += delta
 	if range_to_her > def.pursues_within:
 		_noticed_at = INF
@@ -4117,6 +4172,10 @@ func _warn_on_its_line(delta: float) -> void:
 		return
 	if not _noticed_inside_its_charge or _warned_on_its_line_for >= Tuning.WARNING_ALONE_MAX:
 		_lunged = true
+		# His run is his charge, for his counter (`EventBus.pursuit_began`).
+		if not _pursuit_began_reported:
+			_pursuit_began_reported = true
+			EventBus.pursuit_began.emit(charger_name())
 
 ## How long a row that runs its own line has been warning her, and whether it noticed her already
 ## inside its charge distance. See `_warn_on_its_line()`.

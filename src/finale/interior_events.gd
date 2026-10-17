@@ -115,6 +115,8 @@ func setup(interior: InteriorScene, rng: RandomNumberGenerator) -> void:
 ## rather than an easier one; `_seed` is drawn once in `setup()` and reused, not redrawn here.
 func restart() -> void:
 	for instance in _instances:
+		# A charge still running ends for the page's counter as the section does.
+		instance.report_the_charge_cut_short()
 		instance.queue_free()
 	_instances.clear()
 	_hard_failed = false
@@ -140,6 +142,7 @@ func restart() -> void:
 func stand_down() -> void:
 	set_physics_process(false)
 	for instance in _instances:
+		instance.report_the_charge_cut_short()
 		instance.queue_free()
 	_instances.clear()
 	_pursuer = null
@@ -522,6 +525,8 @@ func _check_hard_fails() -> void:
 	for instance in _instances:
 		if instance.is_lethal_at(_player.global_position):
 			_hard_failed = true
+			# His charge's own catch, counted whatever the section does (`report_the_catch()`).
+			instance.report_the_catch()
 			EventBus.hard_fail_triggered.emit(instance.def.id)
 			return
 

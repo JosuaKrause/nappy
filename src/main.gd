@@ -2279,6 +2279,10 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# out. See `EventBus.day_lost_to`'s own doc and docs/TELEMETRY.md, "The page counts visits".
 	if cause != "":
 		EventBus.day_lost_to.emit(finished_day, cause)
+	# Every charge still running ends for the page's charging counter, cut short by the day
+	# (`EventManager.end_the_charges_still_running()`), on the day it was charged.
+	if _city and _city.events:
+		_city.events.end_the_charges_still_running()
 	# `VisitCounter`'s own "each day's end, won or lost and to what" — `finished_day` rather
 	# than `GameState.day`, since a won final day hands over to the escape before the calendar
 	# would otherwise move past it. Fires whether or not a run log is being kept.

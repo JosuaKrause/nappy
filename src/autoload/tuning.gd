@@ -2024,14 +2024,16 @@ const WARNING_ALONE_MAX := 1.0
 ## screen-edge badge with nothing in the world until its telegraph is spent). A dog that has to bark
 ## for two seconds before it is allowed to start running is not a dog. So the notice is the sight of
 ## it closing, and this is how much of that she is owed before it can touch her: the day-3 dog's
-## approach, and the timed notice of a waiting guard set on her by a task.
+## approach. Day 13's guard set on her by the task in her view is the badge's kind instead: he stands
+## with his warning up for `WARNING_ALONE_MAX`, a notice the task gives this one instance
+## (`EventInstance.notice_her_at()`), which no row's contract states.
 ##
 ## **Two other kinds of pursuer are owed something else.** A sent robber or guard has no approach:
 ## its badge is the notice, and an offscreen run can shake it off. A pursuer that sets off beside her
 ## (the man a vehicle lets out) is the badge's kind too: it exists only to charge her, and what she
 ## is owed is the indicator that it is about to, for at least the off-screen charger's
-## `OFFSCREEN_WARNING_MIN` (inbox #764). A door's guard owes none of his own: his warning came
-## before he was set on her (`EventDef.charges_at_once`). A pursuer that waited for her warns by radius
+## `OFFSCREEN_WARNING_MIN` (inbox #764). A checkpoint's guard owes none of his own: his warning came
+## before he was set on her, a hut's guard's raised hand (`EventDef.charges_at_once`). A pursuer that waited for her warns by radius
 ## rather than by any clock (`EventInstance.warns_by_radius()`): it charges only when she crosses
 ## its stand-off, so this floor bounds nothing it does.
 const PURSUIT_MIN_NOTICE := 1.5

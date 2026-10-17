@@ -454,7 +454,7 @@ met — see docs/TELEMETRY.md, "The page counts visits" for the full event list.
 method answers an `EventBus` signal — `run_begun`, `day_started`/`day_ended`, `day_lost_to`,
 `run_restarted`, `run_ended`, the resistance's own `resistance_contact_available`/
 `resistance_step_completed`/`_step_failed`/`_mark_seen`, `event_sighted`, `event_lit_unmet`,
-`city_gone_dark`, `pursuit_warned`/`pursuit_began`/`pursuit_caught`/`pursuit_ended`, `poster_torn`, `poster_pursuit_sent`,
+`city_gone_dark`, `pursuit_warned`/`pursuit_began`/`pursuit_caught`/`pursuit_cut_short`/`pursuit_ended`, `poster_torn`, `poster_pursuit_sent`,
 `player_detained`, `escape_begun`/`escape_city_entered`/`escape_lost`/`escape_out`,
 `controls_chosen`, `run_mode_chosen` and `went_back_to_a_checkpoint` — decides nothing and writes nothing back. Sends only on a released web build
 with `?debug=1` unasked and `window.goatcounter.count` actually present — `VisitCounter._should_send()` is the pure gate, and

@@ -49,6 +49,9 @@ func run(t) -> void:
 	_test_every_charger_has_its_own_counter(t)
 	_test_a_charge_ends_in_exactly_one_of_three(t)
 	_test_the_lesson_dog_has_its_own_set(t)
+	_test_a_raised_hand_is_counted_warned_and_the_charge_chased(t)
+	_test_the_masked_man_has_his_counter(t)
+	_test_a_charge_cut_short_by_the_day_is_counted_ended(t)
 	_test_the_pelican_is_its_own_entry(t)
 	_test_a_day_lost_to_the_pelican_names_the_pelican(t)
 	_test_encounters_and_runs_are_named_by_their_day_and_row(t)
@@ -213,6 +216,7 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	counter._on_pursuit_warned("charging_dog")
 	counter._on_pursuit_began("charging_dog")
 	counter._on_pursuit_caught("alley_robbery")
+	counter._on_pursuit_cut_short("alley_robbery")
 	counter._on_pursuit_ended("charging_dog", true)
 	counter._on_encounter_seen(1, "homeless_yeller")
 	counter._on_encounter_influenced(1, "homeless_yeller", true)
@@ -620,18 +624,123 @@ func _test_the_lesson_dog_has_its_own_set(t) -> void:
 	_unlisten(listening)
 	counter.free()
 
-## Connects `counter` to the four charging signals, as the real counter is; answers what
+## **A raised hand is a warning, and the charge comes after it** *(inbox #764, the player: "Dog-chased
+## implies charge")*. The man a vehicle lets out stands with his hand raised for a second: the
+## counter sends his `-warned` as the hand goes up, nothing more for that second, and `-chased` only
+## when he charges. Day 13's guard set on her in her view counts the same way, as `task-guard`.
+func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t) -> void:
+	var counter := RecordingCounter.new()
+	var listening := _listen(counter)
+	var day := GameState.day
+	var def := EventCatalogue.out_of_the_car(EventCatalogue.guardsmen_from_day())
+	var man := _charger(t, def)
+	man.global_position = Vector2(150.0, 0.0)
+	_walk(man, Vector2.ZERO, 1.0 / 60.0)
+	var name := "nappy-day-%d-guardsman-giving-chase-" % day
+	t.check(counter.sent == [name + "warned"],
+		"his raised hand is counted warned at once (%s)" % [counter.sent])
+	_walk(man, Vector2.ZERO, def.telegraph_time - 0.1)
+	t.check(counter.sent == [name + "warned"],
+		"and nothing more while it is up (%s)" % [counter.sent])
+	_walk(man, Vector2.ZERO, 0.2)
+	t.check(counter.sent == [name + "warned", name + "chased"],
+		"his charge is counted chased (%s)" % [counter.sent])
+	man.free()
+	counter.sent.clear()
+	var guard := _charger(t, EventCatalogue.by_id("alley_robbery"))
+	guard.counted_as = "task_guard"
+	guard.notice_her_at(Vector2(300.0, 0.0), Tuning.WARNING_ALONE_MAX, true)
+	_walk(guard, Vector2(300.0, 0.0), 0.5)
+	t.check(counter.sent == ["nappy-day-%d-task-guard-warned" % day],
+		"day 13's guard warning in her view is counted warned, as the task's guard (%s)" % [counter.sent])
+	_walk(guard, Vector2(300.0, 0.0), 0.7)
+	t.check(counter.sent == ["nappy-day-%d-task-guard-warned" % day,
+			"nappy-day-%d-task-guard-chased" % day],
+		"and his charge after his second chased (%s)" % [counter.sent])
+	guard.free()
+	_unlisten(listening)
+	counter.free()
+
+## **The masked man in the escape's stairwell has his counter** like every charger: `-warned` as his
+## hand goes up, `-chased` when he starts his run, and then `-caught` (`InteriorEvents` reports his
+## catch) or `-outlasted` when his run is over without one.
+func _test_the_masked_man_has_his_counter(t) -> void:
+	var counter := RecordingCounter.new()
+	var listening := _listen(counter)
+	var day := GameState.day
+	var def := EventCatalogue.by_id("masked_pursuer")
+	var name := "nappy-day-%d-masked-pursuer-" % day
+	var path := PackedVector2Array([Vector2.ZERO, Vector2(0.0, -400.0)])
+	var man := EventInstance.new()
+	man.setup(def, Vector2.ZERO, path)
+	t.add_child(man)
+	man.set_process(false)
+	_walk(man, Vector2(0.0, -(def.charges_within + 100.0)), 0.5)
+	t.check(counter.sent == [name + "warned"], "warning her, he is counted warned (%s)" % [counter.sent])
+	_walk(man, Vector2(0.0, -(def.charges_within - 10.0)), 1.0 / 60.0)
+	t.check(counter.sent == [name + "warned", name + "chased"],
+		"his run is counted chased (%s)" % [counter.sent])
+	for i in int(round(6.0 / (1.0 / 60.0))):
+		man.player_at = Vector2(200.0, 0.0)
+		man._process(1.0 / 60.0)
+		if man.is_leaving:
+			break
+	t.check(counter.sent == [name + "warned", name + "chased", name + "outlasted"],
+		"and his run over without a catch is counted outlasted (%s)" % [counter.sent])
+	man.free()
+	counter.sent.clear()
+	var caught := EventInstance.new()
+	caught.setup(def, Vector2.ZERO, path)
+	t.add_child(caught)
+	caught.set_process(false)
+	_walk(caught, Vector2(0.0, -(def.charges_within - 10.0)), Tuning.WARNING_ALONE_MAX + 0.1)
+	caught.report_the_catch()
+	t.check(counter.sent == [name + "warned", name + "chased", name + "caught"],
+		"a run that catches her is counted caught (%s)" % [counter.sent])
+	caught.free()
+	_unlisten(listening)
+	counter.free()
+
+## **A charge the day ends under is counted ended**, so every charge still ends in exactly one way
+## *(inbox #764, the player: "Charging is independent of an ended day")*: the day's end asks every
+## charge still running (`EventManager.end_the_charges_still_running()`), and one that ends this way
+## is not also counted shaken or outlasted when it is finished after.
+func _test_a_charge_cut_short_by_the_day_is_counted_ended(t) -> void:
+	var counter := RecordingCounter.new()
+	var listening := _listen(counter)
+	var day := GameState.day
+	var name := "nappy-day-%d-robber-giving-chase-" % day
+	var robber := _charger(t, EventCatalogue.by_id("robber_giving_chase"))
+	_walk(robber, Vector2(300.0, 0.0), 0.2)
+	robber.report_the_charge_cut_short()
+	robber.report_the_charge_cut_short()
+	robber._be_done()
+	t.check(counter.sent == [name + "chased", name + "ended"],
+		"cut short by the day, it is counted ended once and nothing else (%s)" % [counter.sent])
+	robber.free()
+	counter.sent.clear()
+	var waiting := _charger(t, EventCatalogue.by_id("alley_robbery"))
+	_walk(waiting, Vector2(500.0, 0.0), 0.2)
+	waiting.report_the_charge_cut_short()
+	t.check(counter.sent.is_empty(), "a charger that never charged has nothing to end (%s)" % [counter.sent])
+	waiting.free()
+	_unlisten(listening)
+	counter.free()
+
+## Connects `counter` to the charging signals, as the real counter is; answers what
 ## `_unlisten()` takes.
 func _listen(counter: Node) -> Array[Callable]:
 	var calls: Array[Callable] = [
 		func(id: String) -> void: counter._on_pursuit_warned(id),
 		func(id: String) -> void: counter._on_pursuit_began(id),
 		func(id: String) -> void: counter._on_pursuit_caught(id),
-		func(id: String, shaken_off: bool) -> void: counter._on_pursuit_ended(id, shaken_off)]
+		func(id: String, shaken_off: bool) -> void: counter._on_pursuit_ended(id, shaken_off),
+		func(id: String) -> void: counter._on_pursuit_cut_short(id)]
 	EventBus.pursuit_warned.connect(calls[0])
 	EventBus.pursuit_began.connect(calls[1])
 	EventBus.pursuit_caught.connect(calls[2])
 	EventBus.pursuit_ended.connect(calls[3])
+	EventBus.pursuit_cut_short.connect(calls[4])
 	return calls
 
 func _unlisten(calls: Array[Callable]) -> void:
@@ -639,6 +748,7 @@ func _unlisten(calls: Array[Callable]) -> void:
 	EventBus.pursuit_began.disconnect(calls[1])
 	EventBus.pursuit_caught.disconnect(calls[2])
 	EventBus.pursuit_ended.disconnect(calls[3])
+	EventBus.pursuit_cut_short.disconnect(calls[4])
 
 ## A charger at the origin, in the tree, stepped by hand.
 func _charger(t: Node, def: EventDef) -> EventInstance:

@@ -2020,9 +2020,10 @@ static func _alley_robbery() -> EventDef:
 	# worth crossing the road for. The twenty pixels between this and `pursues_within` are the row's
 	# first sentence — **on sight** — with somewhere to happen, and his slow walk is its second.
 	def.outer_radius = 200.0
-	# The notice of a guard drawn from this row whom a task sets on her from wherever he stands (day
-	# 13's, `EventInstance.notice_her_at()`), from that moment rather than from dawn. A robber who
-	# notices her by sight has no notice clock and does not read it (`EventInstance.warns_by_radius()`).
+	# Read only by the pursuit contract's notice clause (`Tuning.validate_pursuit()`): no robber's
+	# notice runs on it. One who notices her by sight warns by radius, with no clock
+	# (`EventInstance.warns_by_radius()`), and day 13's guard set on her by the task has the task's
+	# own second (`EventInstance.notice_her_at()`, `ResistanceDirector._set_the_task_guard_on_her()`).
 	def.telegraph_time = 1.8
 	def.duration = Tuning.PURSUIT_TIME
 	def.pursues = true
@@ -2307,6 +2308,29 @@ static func task_guard_sent() -> EventDef:
 	return _task_guard_sent
 
 static var _task_guard_sent: EventDef = null
+
+## **The checkpoint guard at an alley's door**, set on her when she walks past its post: the door
+## guard, who steps out of the post beside her, standing with his hand raised for half a second and
+## then charging. *(Inbox #764, the player, of an alley door, which has no boom and so no guard
+## across the road: "maybe 0.5s wait before charging after crossing?")* He owes no notice of his own
+## (`charges_at_once`: the post's guard raised his hand as she came near), holds his ground for the
+## half second (`sets_off_beside_her`, `stands_for_its_notice`), and then chases as the door guard
+## does. A derived copy, built once.
+static func alley_door_guard() -> EventDef:
+	if _alley_door_guard == null:
+		var guard := by_id("door_guard")
+		_alley_door_guard = guard.duplicate() as EventDef
+		_alley_door_guard.shape = guard.shape
+		_alley_door_guard.telegraph_time = ALLEY_DOOR_GUARD_WAIT
+		_alley_door_guard.sets_off_beside_her = true
+		_alley_door_guard.stands_for_its_notice = true
+	return _alley_door_guard
+
+static var _alley_door_guard: EventDef = null
+
+## How long the alley door's guard stands with his hand raised before he charges, in seconds. The
+## player's own number (inbox #764).
+const ALLEY_DOOR_GUARD_WAIT := 0.5
 
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##

@@ -570,11 +570,12 @@ func departure_speed() -> float:
 ## her crossing its stand-off starts. **A pursuer's warning has no clock** *(inbox #764, the player:
 ## a warning happens when she comes close; she can turn around; if she keeps getting closer the
 ## charge starts)*: out of this radius again, it waits again (`EventInstance.warns_by_radius()`).
-## For a row that does not pursue, and for a pursuer a task sets on her from wherever it stands
-## (`EventInstance.notice_her_at()`), the middle state is `telegraph_time` long, and `telegraph_time`
-## and `duration` are both measured from the moment it notices, not from the moment it was put in
-## the world — a thing that spends its telegraph at dawn, four streets away, has no notice left in
-## it at all.
+## A row that runs its own line once she is near (`charges_within`, the masked man) warns the same
+## way. For any other row that does not pursue, the middle state is `telegraph_time` long; a pursuer
+## a task sets on her from wherever it stands (`EventInstance.notice_her_at()`) has the notice the
+## task gives it. Either way the clock, and `duration` after it, are measured from the moment it
+## notices, not from the moment it was put in the world — a thing that spends its telegraph at
+## dawn, four streets away, has no notice left in it at all.
 ##
 ## **The name is older than the field's own reach.** `is_waiting()`, `chase_age()`,
 ## `current_intensity()`'s undamped notice and `_has_expired()` all read this rather than
@@ -635,8 +636,11 @@ func departure_speed() -> float:
 ## (`EventManager._warn_at_the_doors()`), and who charges the moment she goes under it. *(Inbox #764,
 ## the player: when the player approaches the boom gate the guard should raise the hand, the warning
 ## radius around the boom gate, and when she actually goes under it he should immediately start
-## charging.)* Its `telegraph_time` is 0 and it owes no notice of its own (`Tuning.validate_pursuit()`);
-## running counts toward shaking it off from its first frame.
+## charging.)* It owes no notice of its own (`Tuning.validate_pursuit()`): at a boom its
+## `telegraph_time` is 0; at an alley's door, which has no boom and whose guard steps out beside
+## her, he stands with his hand raised for half a second first (`EventCatalogue.alley_door_guard()`,
+## inbox #764: "maybe 0.5s wait before charging after crossing?"). Running counts toward shaking it
+## off from its first frame.
 @export var charges_at_once := false
 ## **How close she has to come before a row that waits for her and runs its own line starts its run**
 ## — the masked man on the escape's stairs — in px, or 0 for a row whose run starts when its
@@ -1536,10 +1540,8 @@ func validate() -> bool:
 		push_error("event '%s' charges within %.0fpx but is not a mobile row that waits for her "
 				% [id, charges_within] + "from further than that")
 		return false
-	if charges_at_once and (not pursues or telegraph_time > 0.0 or pursues_within > 0.0
-			or sets_off_beside_her or stands_for_its_notice or arrives_chasing):
-		push_error("event '%s' charges at once but has a notice, a wait or another start of its own"
-				% id)
+	if charges_at_once and (not pursues or pursues_within > 0.0 or arrives_chasing):
+		push_error("event '%s' charges at once but has a wait or another start of its own" % id)
 		return false
 	if arrives_chasing and not (pursues and warns_before_it_exists() and warned_for() > 0.0):
 		push_error("event '%s' arrives chasing but is not a pursuer warned of first" % id)
@@ -1591,11 +1593,11 @@ func validate() -> bool:
 func minimum_telegraph() -> float:
 	if warns_before_it_exists() and not pursues:
 		return Tuning.OFFSCREEN_WARNING_MIN
-	if pursues and sets_off_beside_her:
-		return Tuning.OFFSCREEN_WARNING_MIN
 	# Warned before it was set on her, at the door (`charges_at_once`): it owes none of its own.
 	if pursues and charges_at_once:
 		return 0.0
+	if pursues and sets_off_beside_her:
+		return Tuning.OFFSCREEN_WARNING_MIN
 	if pursues:
 		return Tuning.PURSUIT_MIN_NOTICE
 	return Tuning.required_telegraph_time(inner_radius, outer_radius, hard_fail,

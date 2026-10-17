@@ -55,6 +55,7 @@ func run(t) -> void:
 	_test_a_walk_under_the_boom_is_seen(t)
 	_test_a_raised_boom_does_not_open_the_checkpoint_for_her(t)
 	_test_a_huts_hold_ends_the_door_guards_chase(t)
+	_test_the_alley_door_guard_waits_half_a_second(t)
 	_test_a_hold_at_the_guards_own_hut_ends_it_too(t)
 	_test_a_hold_does_not_end_the_roadblock_guard(t)
 	_test_a_huts_hold_does_not_end_the_robbers_chase(t)
@@ -2005,10 +2006,17 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	city.events._warn_at_the_doors()
 	t.check(not near_hut.guard_warns_her and not far_hut.guard_warns_her,
 			"far from the boom, no guard raises his hand")
+	var warned: Array[String] = []
+	var on_warned := func(id: String) -> void: warned.append(id)
+	EventBus.pursuit_warned.connect(on_warned)
 	_step_her_to(rig, lane - axis * 20.0)
 	city.events._warn_at_the_doors()
 	t.check(far_hut.guard_warns_her and not near_hut.guard_warns_her,
 			"near the raised boom, the guard across the road raises his hand")
+	city.events._warn_at_the_doors()
+	EventBus.pursuit_warned.disconnect(on_warned)
+	t.check(warned == ["door_guard"],
+			"and the page counts it as the checkpoint guard's warning, once while it is up (%s)" % [warned])
 	t.check(city.events._guard_after_her == null, "nobody is after her before she crosses")
 	_step_her_to(rig, lane + axis * 20.0)
 	var guard := city.events._guard_after_her
@@ -2070,6 +2078,36 @@ func _test_the_guard_leaves_room_to_answer(t) -> void:
 	print("[test_checkpoints] door_guard rig: walking on caught at %.2fs, standing at %.2fs; "
 			% [walked["ended_at"], stood["ended_at"]] + "running 0.3s after going under: %s at %.2fs"
 			% ["caught" if late["caught"] else "free", late["ended_at"]])
+
+## **At an alley's door the guard waits half a second, then charges** *(inbox #764, the player, of an
+## alley door, which has no boom and so no guard across the road: "maybe 0.5s wait before charging
+## after crossing?")*. He steps out of the post's wall beside her (`EventCatalogue.alley_door_guard()`)
+## and stands with his hand raised for `ALLEY_DOOR_GUARD_WAIT`, then charges. Walked from the post's
+## own geometry — he steps out 32px along the alley from its centre, and she has passed it 16px to
+## 48px across — the print says what each answer does: walking on, and running from the moment she
+## passes, at each distance.
+func _test_the_alley_door_guard_waits_half_a_second(t) -> void:
+	var def := EventCatalogue.alley_door_guard()
+	t.check(def.validate() and def.charges_at_once and def.stands_for_its_notice
+			and is_equal_approx(def.telegraph_time, EventCatalogue.ALLEY_DOOR_GUARD_WAIT),
+			"the alley door's guard is a valid charger that waits %.1fs" % def.telegraph_time)
+	var lines: Array[String] = []
+	for across: float in [16.0, 32.0, 48.0]:
+		var guard_at := Vector2(32.0, across)
+		var her_at := Vector2(1.0, 0.0)
+		var walked := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, Tuning.WALK_SPEED, 0.0)
+		t.check(walked["caught"] and not walked["lethal_in_notice"],
+				"%.0fpx across: walking on is caught, and not during his half second" % across)
+		var ran := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, Tuning.RUN_SPEED, 0.0)
+		var away := _guard_rig(def, guard_at, her_at, Vector2(1.0, -1.0).normalized(),
+				Tuning.RUN_SPEED, 0.0)
+		lines.append("%.0fpx across: walking on caught at %.2fs; running on %s; running away %s" % [
+				across, walked["ended_at"],
+				"caught at %.2fs" % ran["ended_at"] if ran["caught"] else "free",
+				"caught at %.2fs" % away["ended_at"] if away["caught"] else "free"])
+		t.check(not away["caught"],
+				"%.0fpx across: running away from him the moment she passes escapes" % across)
+	print("[test_checkpoints] alley door guard: " + "; ".join(lines))
 
 ## Walks her from `her_at` along `heading`, walking until `reaction` seconds and at `speed`
 ## (accelerating as she really does) after it, against a `door_guard` set off at `guard_at`.

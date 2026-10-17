@@ -118,37 +118,45 @@ The events:
   (`main._on_escape_exit_requested()`). Once per attempt at the *building* section; a retry of the
   city section alone (`FinaleController.restart_section()`) never repeats it.
 - **Every charger's own charging counter**, counted on its own whatever the day does *(inbox #764,
-  the player: "Ending a day and a charging counter are not the same thing"; "Charging is
-  independent of an ended day")* — `nappy-day-N-<charger>-warned`, `-chased`, `-caught`, `-shaken`
-  and `-outlasted`, for every row that pursues her (`VisitCounter.charger_counter_name()` names it):
-  - `-warned` — a charger that waited for her first notices her and starts warning
-    (`EventInstance._chase()`, `EventBus.pursuit_warned`), once per instance: the level below the
-    charge, which she can still walk out of. Only a charger with a warning she can turn round from
-    sends it: the dog that waits past the teaching day, the alley robber and the guards drawn from
-    him, the hunting roadblock's guard.
-  - `-chased` — its charge (`EventBus.pursuit_began`): a waiting charger when she crosses its
-    stand-off, never for its warning alone; the day-3 dog and every charger sent from off screen
-    from its first frame, and so does the door guard, who charges at once; a vehicle's man and day
-    13's guard set on her in her view when their second's notice has run.
+  the player: "Dog-chased implies charge"; "Ending a day and a charging counter are not the same
+  thing"; "Charging is independent of an ended day")* — `nappy-day-N-<charger>-warned`, `-chased`,
+  and then exactly one of `-caught`, `-shaken`, `-outlasted` and `-ended`, for every charger
+  (`VisitCounter.charger_counter_name()` names it, `EventInstance.counts_a_charge()` says which):
+  - `-warned` — its warning goes up (`EventBus.pursuit_warned`), the level below the charge: a
+    charger that waited for her noticing her (the dog that waits past the teaching day, the alley
+    robber and the guards drawn from him, the hunting roadblock's guard), the masked man's raised
+    hand at the foot of the escape's stairwell, and the raised hand of the man a vehicle lets out
+    and of day 13's guard set on her in her view — each once per instance — and the checkpoint
+    guard's, `door-guard-warned`, each time the guard at a hut or an alley's post raises his hand as
+    she nears the door (`EventManager._warn_at_the_doors()`).
+  - `-chased` — its charge (`EventBus.pursuit_began`), never its warning: a waiting charger when
+    she crosses its stand-off; a vehicle's man and day 13's guard in her view when their raised
+    hand has been up its second; the masked man when he starts his run; the checkpoint guard from
+    his first frame at a boom, half a second after he steps out at an alley's door; the day-3 dog,
+    whose approach is its telegraph, and every charger sent from off screen, from their first frame.
   - then exactly one of `-caught` (`EventBus.pursuit_caught`, `EventInstance.report_the_catch()`):
     its charge reached her, a catch that ends the day — which also sends that day's own
     `lost-hard-fail-<row>` — or a patrol car's man stopping her, which does not; `-shaken`, she ran
-    it off; or `-outlasted`, its own clock ran out (`EventInstance._be_done()`,
-    `EventInstance.gave_up`). A charge cut short by something else ending the day, or streamed out
-    under her feet, sends none of the three.
+    it off; `-outlasted`, its own clock ran out, or the masked man's run ended without a catch
+    (`EventInstance._be_done()`, `EventInstance.gave_up`); or `-ended`, the day or the escape's
+    section ended some other way while it was still charging — the meter at its cap, another
+    thing's catch, home (`EventBus.pursuit_cut_short`, `EventManager.end_the_charges_still_running()`,
+    which `main._on_day_finished()` asks before the day's own end is sent, and `InteriorEvents` as a
+    section ends).
 
   `<charger>` is the row's own id hyphenated, as the encounter events are (`alley-robbery`,
-  `roadblock`, `door-guard`, `robber-giving-chase`, `van-guard-giving-chase`), except that
-  `charging_dog` keeps its `dog-*` names, so `dog-chased`, `dog-shaken` and `dog-outlasted` count
-  what they always counted. A man out of a patrol car or a hunting van counts under his row,
-  `policeman-giving-chase` or `guardsman-giving-chase`, as the one a torn poster sends does. Neither
-  sends `-warned`: his raised hand is a notice that ends in a charge, not a warning she can walk
-  out of.
+  `roadblock`, `door-guard`, `masked-pursuer`, `robber-giving-chase`, `van-guard-giving-chase`),
+  except that `charging_dog` keeps its `dog-*` names, so `dog-chased`, `dog-shaken` and
+  `dog-outlasted` count what they always counted, and **day 13's task guard counts as
+  `task-guard`** once the task sets him on her, in her view or sent from out of it
+  (`EventInstance.counted_as`), apart from every other alley robber and sent robber. A man out of a
+  patrol car or a hunting van counts under his row, `policeman-giving-chase` or
+  `guardsman-giving-chase`, as the one a torn poster sends does.
   **The day-3 lesson's dog has its own set**, `nappy-day-3-dog-tutorial-chased`, `-caught`,
-  `-shaken` and `-outlasted` *(PLAYTEST-141: "we need to record like dog tutorial")*, and does not
-  also send the dog's: `charging_dog`'s `max_per_day` of 3 holds on day 3 for the dogs the director
-  hands out (`EventDirector._met_today`), so day 3 can send up to three, and the lesson is the first
-  of them, the one the run tip is shown for (`EventInstance.is_the_lesson`, set by
+  `-shaken`, `-outlasted` and `-ended` *(PLAYTEST-141: "we need to record like dog tutorial")*, and
+  does not also send the dog's: `charging_dog`'s `max_per_day` of 3 holds on day 3 for the dogs the
+  director hands out (`EventDirector._met_today`), so day 3 can send up to three, and the lesson is
+  the first of them, the one the run tip is shown for (`EventInstance.is_the_lesson`, set by
   `EventManager._create()` on the first dog it makes that day). It never waits, so it has no
   `-warned`.
 - `nappy-day-N-pelican-spawned` / `nappy-day-N-pelican-seen` / `nappy-day-N-pelican-excited` /
@@ -242,7 +250,7 @@ The events:
 
 Every signal named above that exists purely for this page — `day_lost_to`, `event_sighted`,
 `event_lit_unmet`, `city_gone_dark`, `escape_city_entered`, `pursuit_warned`, `pursuit_began`,
-`pursuit_caught`, `pursuit_ended`,
+`pursuit_caught`, `pursuit_cut_short`, `pursuit_ended`,
 `resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent`, `run_mode_chosen`,
 `went_back_to_a_checkpoint`, `pelican_spawned`,
 `pelican_sighted`, `pelican_excited_her`, `pelican_struck_her`, `encounter_seen`,

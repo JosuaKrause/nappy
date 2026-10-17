@@ -52,6 +52,7 @@ func run(t) -> void:
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, true)
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, false)
 	_test_out_of_her_view_the_done_task_sends_him_under_a_badge(t)
+	_test_a_guard_warning_her_when_the_task_is_done_still_charges(t)
 	_test_the_guard_walks_round_a_building_to_her(t)
 	for seed_value in PLACEMENT_SEEDS:
 		_test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value)
@@ -398,7 +399,8 @@ func _test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t) -> void:
 
 ## **The done task sets the guard on her, wherever he stands.** With `parked`, she touches another
 ## live roadblock while the guard is held at the task's own by her view on him; without, he has
-## already noticed her at the task's own before she touches it.
+## already noticed her at the task's own before she touches it, and is warning her by sight in her
+## view: the task's own second of warning replaces his.
 func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: bool) -> void:
 	var saved_completed := GameState.completed_resistance_steps.duplicate()
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
@@ -448,14 +450,13 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	var at := _beside(map, touched.body_position(), ContactPoint.body_reach(touched))
 	t.check(at != Vector2.INF, "(%s) there is ground to touch the roadblock from" % what)
 	player.global_position = at
-	var noticed_before := INF
 	if not parked:
 		# He notices her the ordinary way: she comes within his reach along a clear line, here a
 		# step from him on his own tile.
 		guard.player_at = guard.global_position + Vector2(4.0, 0.0)
 		guard._process(0.1)
-		noticed_before = guard.noticed_at()
 		t.check(not guard.is_waiting(), "(%s) he noticed her the ordinary way" % what)
+		_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
 	director._on_contact_completed(step.index)
 	t.check(not guard.is_finished and not guard.is_waiting(),
 			"(%s) the moment she has done the task, he is after her" % what)
@@ -473,8 +474,11 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 		guard._process(0.2)
 		t.check(not guard.is_telegraphing(), "(%s) and then he charges" % what)
 	if not parked:
-		t.check(guard.noticed_at() == noticed_before,
-				"(%s) a guard already after her is left as he was" % what)
+		t.check(guard.is_standing_for_its_notice()
+				and is_equal_approx(guard.notice_time(), Tuning.WARNING_ALONE_MAX)
+				and guard.counted_as == "task_guard",
+				"(%s) a guard already warning her by sight is set on her with the task's second (standing %s, %.1fs, %s)"
+				% [what, guard.is_standing_for_its_notice(), guard.notice_time(), guard.counted_as])
 		_tear_down(player, director, city)
 		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 		return
@@ -540,6 +544,69 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
 			and warning.def.arrives_chasing,
 			"and sent at her under a %.1fs badge, to arrive charging"
 			% (warning.def.warned_for() if warning else -1.0))
+	_tear_down(player, director, city)
+	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+
+## **A guard already warning her when she finishes the task is set on her too** — left to his own
+## warning by radius, she could walk out of it and he would never come *(inbox #651 follow-up, the
+## player: "as long as he starts pursuing when you hit the task it's fine")*. She comes inside his
+## radius and outside his stand-off along a clear line, so he warns; the task is done; she walks
+## straight away from him, and he still charges.
+func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
+	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_failed := GameState.failed_resistance_steps.duplicate()
+	var saved_progress := GameState.resistance_progress
+	var saved_scars := GameState.scars.duplicate()
+	var saved_state := GameState.city_state
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEED))
+	GameState.scars = []
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director.contact_position())
+	var mark := director.current_step()
+	if mark:
+		director._on_contact_completed(mark.index)
+	var step := director.current_step()
+	var guard: EventInstance = director._task_guard
+	t.check(step != null and guard != null and guard.is_waiting(), "a waiting guard at the roadblock")
+	if step == null or guard == null:
+		_tear_down(player, director, city)
+		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+		return
+	var map := city.map
+	var standoff := Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach())
+	var away := Vector2.ZERO
+	var her := Vector2.INF
+	for i in 16:
+		var dir := Vector2.RIGHT.rotated(TAU * i / 16.0)
+		var at := guard.global_position + dir * 150.0
+		var far := guard.global_position + dir * 1200.0
+		if map.is_walkable(map.world_to_tile(at)) and map.clear_line(guard.global_position, at):
+			her = at
+			away = dir
+			break
+	t.check(her != Vector2.INF, "there is open ground 150px from him to warn her on")
+	if her == Vector2.INF:
+		_tear_down(player, director, city)
+		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
+		return
+	_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
+	guard.player_at = her
+	guard._process(0.1)
+	t.check(guard.is_telegraphing() and guard.warns_by_radius(),
+			"150px from him, outside his %.0fpx stand-off, he warns her" % standoff)
+	player.global_position = her
+	director._on_contact_completed(step.index)
+	var charged := false
+	var walked := 0.0
+	while walked < 10.0 and not charged and not guard.is_finished:
+		her += away * Tuning.WALK_SPEED * 0.05
+		guard.player_at = her
+		guard._process(0.05)
+		walked += 0.05
+		charged = not guard.is_waiting() and not guard.is_telegraphing()
+	t.check(charged, "the task done, he charges her even as she walks away (after %.1fs)" % walked)
 	_tear_down(player, director, city)
 	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 
