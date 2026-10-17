@@ -28,6 +28,5 @@ Three things the player found in the escape, the finale after the last day, each
 *Proposed, not asked for:* one entry for the note, with the three as items, since they were
 reported together and may share a cause.
 
-Items: [the-fire-is-on-its-floor.md](the-fire-is-on-its-floor.md),
-[the-steam-hits-harder.md](the-steam-hits-harder.md),
-[the-city-section-has-a-route.md](the-city-section-has-a-route.md).
+Item: [the-city-section-has-a-route.md](the-city-section-has-a-route.md). The fire and the steam
+are built ([grassy-dolphin](../../decisions/2026-10-17-grassy-dolphin.md)).
