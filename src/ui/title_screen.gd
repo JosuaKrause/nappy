@@ -282,7 +282,9 @@ const _HARD_MODE_KEY := KEY_H
 ## authored in the 1280x720 design box and scaled to fit, so a phone held landscape (about 393pt
 ## tall) shows it at about x0.55: this reach, in design px around the box at `_HARD_MODE_SCALE`,
 ## makes the target about 92 design px tall, about 50pt there, over the 44pt a finger needs. The space it reaches into holds nothing else a press can
-## land on — the hint line above is not a target, and the buttons' catches end well above it.
+## land on — the hint line above is not a target, and the buttons' catches end well above it. It is
+## the floor under the 5% margin every button has (`ButtonGeometry.margin_rect()`, see
+## `hard_mode_target()`), and at this size it is also the larger of the two each way.
 const _HARD_MODE_REACH := 28.0
 
 ## How much larger than the theme's own the checkbox is drawn, box and label together — scaling the
@@ -295,6 +297,14 @@ const _HARD_MODE_SCALE := 1.5
 ## design space the way the three buttons are, since `mouse_filter` is `IGNORE` on it too and a
 ## rotated layer would otherwise put Godot's own hit test in the wrong place. On the press, like the
 ## buttons; the mouse branch is gated `not _touch` for the same doubled-press reason theirs is.
+##
+## **It is reached only because nothing on this screen stops a press first.** Godot's GUI pass runs
+## before `_unhandled_input()` and ends a press at the topmost `Control` under it set to
+## `MOUSE_FILTER_STOP`, the default for a bare `Control` or `ColorRect`; so every node in
+## `title_screen.tscn` ignores the mouse or, as a container does by default, passes it on — the two
+## scrims included, since the bottom one lies under this box and under the strip of each button's
+## catch above its column. `tests/test_run_checkpoints.gd` holds both: it taps through the engine's
+## own dispatch rather than calling this, and names any `Control` here left stopping a press.
 func _handle_hard_mode_press(event: InputEvent) -> bool:
 	if not hard_mode_shown():
 		return false
@@ -340,17 +350,21 @@ func _place_the_hard_mode_frame() -> void:
 			+ _hard_mode.get_theme_constant("check_v_offset"))
 	_hard_mode_frame.size = icon.get_size()
 
-## Whether `point`, in the 1280x720 design box, lands on the checkbox or within `_HARD_MODE_REACH`
-## of it.
+## Whether `point`, in the 1280x720 design box, lands on the checkbox's catch (`hard_mode_target()`).
 func hard_mode_contains_design_point(point: Vector2) -> bool:
 	return hard_mode_target().has_point(point)
 
 ## The checkbox's tappable area in the 1280x720 design box: the box and its label as drawn, scale
-## included, grown by `_HARD_MODE_REACH` on every side.
+## included, grown by the larger of two margins each way — the 5% every button catches beyond what
+## it draws (`ButtonGeometry.margin_rect()`; *fluffy-kestrel, the player, #740: "Hard mode should
+## have the same 5% extension over the box and text as other buttons"*) and `_HARD_MODE_REACH`, the
+## catch it had before, which no margin may shrink (the calm-pelican record: "the 5% button reach is
+## a minimum, and no catch shrank"). The two are centred on the same rect, so their merge is each
+## axis's larger.
 func hard_mode_target() -> Rect2:
 	var transform := _hard_mode.get_global_transform()
 	var drawn := transform * Rect2(Vector2.ZERO, _hard_mode.size)
-	return drawn.grow(_HARD_MODE_REACH)
+	return drawn.grow(_HARD_MODE_REACH).merge(ButtonGeometry.margin_rect(drawn))
 
 ## `space` or a direction key begins the run **in `Mode.TAP`**, and a press on one of the
 ## buttons begins it in whichever mode — and, for a joystick, side — that button names. *(2026-09-07: "using awsd or arrow keys
