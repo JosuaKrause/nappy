@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
 	_test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t)
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
+	_test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t)
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
 	_test_a_door_is_always_within_his_own_notice_from_his_line(t)
 	_test_another_masked_man_comes_up_the_same_shaft(t)
@@ -33,6 +34,7 @@ func run(t) -> void:
 	_test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t)
 	_test_a_vent_never_closes_around_her(t)
 	_test_no_pocket_between_two_vents_outlasts_the_noise(t)
+	_test_one_blow_of_steam_costs_forty_to_fifty_points(t)
 	_test_every_vent_has_its_grate_blowing_or_not(t)
 	_test_an_explosion_flashes_every_hallway_window(t)
 	_test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t)
@@ -879,6 +881,83 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 	events.free()
 	scene.free()
 
+## *"The fire in the house moved one floor down from what it was before breaking the escape
+## sequence left right left."* (inbox #741) **The fire stands on the second floor's approach in
+## the left shaft whatever the seed**, because it is not rolled. The flights are asked one by one
+## over the plan with the fire's blocking reach taken out of the floor. What the fire forces: left
+## from the third floor to the second is open, left from the second to the first is shut, right
+## from the second to the first is open, so she crosses over at the second. What it leaves open,
+## and the map does not forbid: the left shaft from the first floor to the lobby (where the masked
+## man coming up the right shaft pushes her) and the right shaft from the first floor to the lobby
+## (the way she can also take). A fire on the first floor's approach would leave the second flight
+## open and shut the last, which is the walk that lost the crossing.
+func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t: Node) -> void:
+	for run_seed in [1, 2, 7, 99, 4242, 12345, 777, 31337, 5, 8675309]:
+		var scene := InteriorScene.new()
+		t.add_child(scene)
+		var events := InteriorEvents.new()
+		t.add_child(events)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = run_seed
+		events.setup(scene, rng)
+		var fire: EventInstance = null
+		for instance in events.instances():
+			if instance.def.id == "burning_building":
+				fire = instance
+		t.check(fire != null, "seed %d: the escape puts a fire in the building" % run_seed)
+		if fire == null:
+			events.free()
+			scene.free()
+			continue
+		var second := scene.waypoint("stairwell_left:landing_second") + Vector2i.DOWN
+		t.check(scene.world_to_tile(fire.global_position) == second,
+				"seed %d: the fire stands on the second floor's approach %s, at %s"
+				% [run_seed, second, scene.world_to_tile(fire.global_position)])
+		var f := InteriorMap.build()
+		var reach := fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+		var shut := {}
+		for tile in f.tiles:
+			if scene.tile_to_world(tile).distance_to(fire.global_position) < reach:
+				shut[tile] = true
+		# Each flight is walked between the shaft's own doors, which is where a flight begins and ends
+		# and where a door arrival lands clear of the fire.
+		var landing := {}
+		for side in ["left", "right"]:
+			for floor_id in ["third", "second", "first", "lobby"]:
+				landing["%s:%s" % [side, floor_id]] = f.door("stairwell_%s:landing_%s" % [side, floor_id]).tile
+		t.check(_walks_between(f, shut, landing["left:third"], landing["left:second"]),
+				"seed %d: left, from the third floor to the second, is open" % run_seed)
+		t.check(not _walks_between(f, shut, landing["left:second"], landing["left:first"]),
+				"seed %d: the fire shuts the left flight from the second floor to the first" % run_seed)
+		t.check(_walks_between(f, shut, landing["right:second"], landing["right:first"]),
+				"seed %d: right, from the second floor to the first, is open" % run_seed)
+		t.check(_walks_between(f, shut, landing["left:first"], landing["left:lobby"]),
+				"seed %d: left, from the first floor to the lobby, is open" % run_seed)
+		t.check(_walks_between(f, shut, landing["right:first"], landing["right:lobby"]),
+				"seed %d: the right shaft from the first floor to the lobby is open too" % run_seed)
+		events.free()
+		scene.free()
+
+## Whether `to` can be walked to from `from` over the plan's ground with `shut` taken out of it,
+## never crossing a door.
+func _walks_between(f: InteriorMapPlan, shut: Dictionary, from: Vector2i, to: Vector2i) -> bool:
+	if shut.has(from) or shut.has(to):
+		return false
+	var seen := {from: true}
+	var queue: Array[Vector2i] = [from]
+	while not queue.is_empty():
+		var here: Vector2i = queue.pop_back()
+		if here == to:
+			return true
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
+				var next := here + Vector2i(dx, dy)
+				if (dx == 0 and dy == 0) or seen.has(next) or shut.has(next) or not f.is_walkable(next):
+					continue
+				seen[next] = true
+				queue.append(next)
+	return false
+
 ## Every painted grammar cell in one stairwell, including its non-walkable sides.
 func _shaft_tiles(scene: InteriorScene, part_id: String) -> Array[Vector2i]:
 	return scene.stairwell_tiles(part_id)
@@ -1477,6 +1556,34 @@ func _test_no_pocket_between_two_vents_outlasts_the_noise(t: Node) -> void:
 	t.check(pairs > 0, "there were adjacent vents to make a pocket (%d pairs)" % pairs)
 	events.free()
 	scene.free()
+
+## *"The steam should have a stronger impact."* / *"steam should be 40 to 50."* (inbox #741, #747)
+## **One blow, stood in, costs her 40 to 50 points of a hundred awake** (22 to 28 asleep), measured
+## on the row itself: an instance of the blow is run from its first frame to its last with her
+## standing `STAND_AT` out from the vent, and every frame's `contribution_at()` is summed. 30px is
+## where a vent holds her centre (`STEAM_VENT_BODY` + her own body), which is where she waits at
+## the gate and the nearest she can be to a blow, so the dearest a blow costs her.
+func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	const STAND_AT := 30.0
+	var steam := EventCatalogue.by_id("basement_steam")
+	var blow := EventInstance.new()
+	# Set up before it joins the tree, the order `InteriorEvents._spawn()` uses: `_ready()` reads
+	# the def.
+	blow.setup(steam, Vector2.ZERO)
+	t.add_child(blow)
+	var cost := 0.0
+	var elapsed := 0.0
+	while not blow.is_finished and elapsed < 20.0:
+		blow.player_at = Vector2(STAND_AT, 0.0)
+		blow._process(STEP)
+		cost += blow.contribution_at(Vector2(STAND_AT, 0.0)) * STEP
+		elapsed += STEP
+	print("One blow of steam, stood %.0fpx from the vent for %.2fs: %.1f points awake, %.1f asleep"
+			% [STAND_AT, elapsed, cost, cost * Tuning.SLEEPING_SENSITIVITY])
+	t.check(cost >= 40.0 and cost <= 50.0,
+			"one blow costs 40 to 50 points awake at %.0fpx (%.1f)" % [STAND_AT, cost])
+	blow.free()
 
 ## The longest run of seconds during which both vents are solid at once, over the whole sequence's
 ## own clock. Sampled rather than solved: the two windows are periodic with different periods and

@@ -1550,9 +1550,16 @@ floor's hallway between her own door and the right stair door, both rows of it
 (`InteriorMap.TOP_FLOOR_RUBBLE`), so the right stairwell cannot be entered on that floor at all and
 the only flight down is the left one — which is the shaft the fire is in
 (`InteriorEvents._BURNING_SIDE`, fixed rather than rolled, since a fire on the shut side would
-leave her nothing). Getting past the fire means stepping through the nearest corridor door and
-walking to the other end of that hallway, which is why the two stair doors are at opposite ends;
-the right shaft it leads to is where the masked man is.
+leave her nothing). **The fire always stands on the second floor's level approach, never rolled**
+(`InteriorScene.waypoint()` of the left shaft's second-floor landing, one cell in), so it closes
+the flight from the second floor down and the first half of the walk is the same every attempt:
+left from the third floor to the second, then across that hallway to the other stairwell and down
+to the first. The last leg is not forced: from the first floor the right shaft reaches the lobby
+and the left one stays open too, which is the way off the masked man's shaft when he comes up the
+right one. A fire on the first floor's approach would shut only the last left flight and leave the second
+one open, so she would never need to cross over. Getting past the fire means stepping through the nearest corridor door and walking to the other end of that
+hallway, which is why the two stair doors are at opposite ends; the right shaft it leads to is
+where the masked man is.
 
 **And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
 of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
@@ -1595,6 +1602,9 @@ stands on each, in the same place every attempt, blowing on its own period out o
 three of them never fall into a rhythm. A blow shuts its cell outright for
 `Tuning.FINALE_STEAM_BLOWS_FOR` after a notice, and the shortest period still leaves twice as long
 open as walking through the vent's reach costs. Waiting is the answer; there is no line past one.
+Standing at a blowing vent costs the meter hard *("steam should be 40 to 50")*: one blow takes 40 to
+50 points awake at the 30px a vent holds her out, so waiting right at the gate is paid for, and the
+pocket between two vents is still never shut at both ends for long enough to fill the meter.
 
 **Two hint lines, said once each** as she starts walking a section she has not walked before:
 *"Escape the building"* and *"Escape the city"* — the same words that head each section's brief,
