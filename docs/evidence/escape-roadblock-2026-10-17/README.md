@@ -31,7 +31,7 @@ past is free asleep in every row. Every walk's line is in `probe-main.txt.gz`,
 `probe-item2-only.txt.gz` and `probe-branch.txt.gz`; the probe at `a2b94a29` produced all three.
 
 **Rerun**, in a fresh checkout of this pull request's head (after the merge,
-`git fetch origin refs/pull/<PR>/head` and check out `a8a6d065`), with `check.sh` run once:
+`git fetch origin refs/pull/781/head` and check out `a8a6d065`), with `check.sh` run once:
 `tools/test.sh probes/escape_roadblock_cost.gd > OUT.txt` for this branch's row; for `main`'s,
 the same after `git checkout 5f7923b6 -- src` (the rig reads only the plan, so it runs on either);
 for the middle row, after setting `escape.silent_once_unmanned = false` in
