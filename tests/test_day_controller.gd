@@ -101,7 +101,7 @@ func _test_invincible_stops_emitting_once_the_first_second_is_told(t) -> void:
 	DevFlags._invincible_override = null
 
 ## The escape's clock reads to the hundredth and tells the HUD on every frame; a day's still emits
-## once a second; the ending screens' formatter keeps three digits. *(inbox #746.)*
+## once a second; the ending screens' formatter keeps three digits. *(inbox #746 in woolly-penguin.)*
 func _test_the_escape_clock_moves_every_frame(t) -> void:
 	var escape := _rig(t)
 	escape.emit_every_frame = true
