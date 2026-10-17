@@ -1,0 +1,19 @@
+<!-- Policeman on foot about to charge, back: the man of policeman_waiting_back.svg the moment he has got out of a vehicle beside her, before he moves. Square-on, feet planted wider, his left hand raised palm out at head height, on the picture's left since he faces away, his other arm down: *stop there*, the guard's alert (guard_alert_back.svg) in a policeman's coat. policeman_lunging_back.svg is the charge. Canvas 22x44, the waiting picture's, ground anchor bottom centre (11,44). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="44" viewBox="0 0 22 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M5.2 30 L9.6 30 L8.8 42 L4.2 42Z M12.4 30 L16.8 30 L17.8 42 L13.2 42Z" fill="#1f2740"/>
+  <path d="M3.6 41 L9.4 41 L9 44 L2.8 44Z M12.6 41 L18.4 41 L19.2 44 L13 44Z" fill="#17171c"/>
+  <path d="M3 13 L19 13 L17.5 31 L4.5 31Z" fill="#31497a"/>
+  <path d="M11 14 L11 26.5" fill="none" stroke="#263a63" stroke-width="0.8"/>
+  <path d="M4.3 27 L17.7 27 L17.6 29.5 L4.4 29.5Z" fill="#17171c"/>
+  <path d="M4.4 25 L3.6 34" fill="none" stroke="#17171c" stroke-width="1.6"/>
+  <path d="M5.8 16.5 L3 13.5 L0.4 5.6 L3 4.6 L5.6 10.8Z M19 13.5 L21.2 18 L20.4 28.5 L17.4 28.5 L16.4 16.5Z" fill="#263a63"/>
+  <ellipse cx="1.8" cy="2.6" rx="1.7" ry="2.2" fill="#d9a878"/>
+  <circle cx="18.9" cy="29.4" r="1.5" fill="#d9a878"/>
+  <g transform="translate(11 8.5)">
+  <circle cx="-5" cy="0.6" r="1.3" fill="#d9a878"/>
+  <circle cx="5" cy="0.6" r="1.3" fill="#d9a878"/>
+  <ellipse cx="0" cy="0" rx="5" ry="5.5" fill="#3a2b26"/>
+  <path d="M-7.5 -4 Q0 -8.5 7.5 -4 L5.5 -1.5 L-5.5 -1.5Z" fill="#22304f"/>
+  <path d="M-5.5 -2.3 L5.5 -2.3 L5.5 -0.6 L-5.5 -0.6Z" fill="#121218"/>
+  </g>
+</svg>

@@ -1,0 +1,38 @@
+{
+  "scales": [
+    1.0,
+    6.0
+  ],
+  "rows": [
+    [
+      "art/events/policeman_waiting_front.svg",
+      "art/events/policeman_alert_front.svg",
+      "art/events/policeman_lunging_front.svg",
+      "art/checkpoints/guard_alert_front.svg"
+    ],
+    [
+      "art/events/policeman_waiting_front_diagonal.svg",
+      "art/events/policeman_alert_front_diagonal.svg",
+      "art/events/policeman_lunging_front_diagonal.svg",
+      "art/checkpoints/guard_alert_front_diagonal.svg"
+    ],
+    [
+      "art/events/policeman_waiting_side.svg",
+      "art/events/policeman_alert_side.svg",
+      "art/events/policeman_lunging_side.svg",
+      "art/checkpoints/guard_alert_side.svg"
+    ],
+    [
+      "art/events/policeman_waiting_back_diagonal.svg",
+      "art/events/policeman_alert_back_diagonal.svg",
+      "art/events/policeman_lunging_back_diagonal.svg",
+      "art/checkpoints/guard_alert_back_diagonal.svg"
+    ],
+    [
+      "art/events/policeman_waiting_back.svg",
+      "art/events/policeman_alert_back.svg",
+      "art/events/policeman_lunging_back.svg",
+      "art/checkpoints/guard_alert_back.svg"
+    ]
+  ]
+}

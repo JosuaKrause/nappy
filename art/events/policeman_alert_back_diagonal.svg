@@ -1,0 +1,22 @@
+<!-- Policeman on foot about to charge, back_diagonal: the man of policeman_waiting_back_diagonal.svg the moment he has got out of a vehicle beside her, before he moves. Planted, feet wider, his far hand raised palm out at head height beyond his shoulder, his near arm down: *stop there*, the guard's alert (guard_alert_back_diagonal.svg) in a policeman's coat. policeman_lunging_back_diagonal.svg is the charge. East-authored like the rest of the family; EventInstance mirrors it for the west. Canvas widened to 26, 2px each side, for the hand, and the whole figure moved +2 with it, so the body stands exactly where policeman_waiting_back_diagonal.svg's does over the same bottom-centre ground anchor (13,44 here, 11,44 there) and does not step at the swap. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="44" viewBox="0 0 26 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+<g transform="translate(2 0)">
+  <path d="M6.2 30 L10.6 30.5 L9.6 42 L5.2 42Z M12.4 30 L16.4 30 L18.6 42 L13.6 42Z" fill="#1f2740"/>
+  <path d="M4.2 41 L10 41 L10.4 44 L3.6 44Z M13 41 L19 41 L20.6 44 L13.6 44Z" fill="#17171c"/>
+  <path d="M4.4 25 L3.4 34" fill="none" stroke="#17171c" stroke-width="1.6"/>
+  <path d="M15.4 16 L18.4 9.4 L20.4 4.8 L23 6.2 L21 10.6 L18.4 17Z" fill="#263a63"/>
+  <ellipse cx="22" cy="4" rx="1.9" ry="2.3" fill="#d9a878"/>
+  <path d="M4.5 13.5 L12 12 L18 14.5 L17.5 31 L11.5 32.5 L5 31Z" fill="#31497a"/>
+  <path d="M4.5 13.5 L8 13 L8.5 32 L5 31Z" fill="#263a63"/>
+  <path d="M4.8 27 L11.5 28.3 L17.6 27 L17.6 29.5 L11.5 30.8 L4.9 29.5Z" fill="#17171c"/>
+  <path d="M5 14.5 L3 19 L3.5 28.5 L6.5 28.5 L7.5 17Z" fill="#263a63"/>
+  <circle cx="5" cy="29.3" r="1.5" fill="#d9a878"/>
+  <g transform="translate(12 8.5)">
+  <path d="M1.5 -4.5 Q5.6 -3.5 5.6 0 L6.6 1.2 L5 2.8 L3.8 5 L0.8 4.4Z" fill="#d9a878"/>
+  <ellipse cx="-0.6" cy="0" rx="4.8" ry="5.5" fill="#3a2b26"/>
+  <path d="M-7 -3.8 Q0 -8.5 7 -4.6 L5.2 -1.6 L-5.6 -1.4Z" fill="#22304f"/>
+  <path d="M-5.6 -2.2 L5.4 -2.6 L5.4 -0.9 L-5.6 -0.5Z" fill="#121218"/>
+  <path d="M4.6 -1.6 L8.2 -1 L5 0.2Z" fill="#121218"/>
+  </g>
+</g>
+</svg>
