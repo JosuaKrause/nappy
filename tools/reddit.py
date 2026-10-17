@@ -200,6 +200,15 @@ def credentials() -> dict[str, str]:
     return {key: value for key, value in found.items() if value}
 
 
+def scrub(text: str) -> str:
+    """`text` with every credential value replaced, so no error can carry one to a terminal or a log."""
+    for key in CREDENTIAL_KEYS:
+        value = env_or_dotenv(key)
+        if value:
+            text = text.replace(value, "[redacted]")
+    return text
+
+
 def make_reddit() -> Any:
     """A PRAW client in read-only mode. No username or password is ever passed, so it cannot sign in."""
     creds = credentials()
@@ -307,15 +316,14 @@ def fetch_search(reddit: Any, args: argparse.Namespace) -> dict[str, Any]:
 
 def fetch_rules(reddit: Any, args: argparse.Namespace) -> dict[str, Any]:
     sub = reddit.subreddit(args.subreddit)
-    raw = sub.rules()
-    listed = raw.get("rules", []) if isinstance(raw, dict) else list(raw)
+    listed = list(sub.rules)  # PRAW's SubredditRules: an iterable of Rule objects, not a callable
     rules = [
         {
             "kind": "rule",
             "priority": index,
-            "short_name": str(rule.get("short_name", "")),
-            "description": str(rule.get("description", "")),
-            "applies_to": str(rule.get("kind", "")),
+            "short_name": str(getattr(rule, "short_name", "")),
+            "description": str(getattr(rule, "description", "")),
+            "applies_to": str(getattr(rule, "kind", "")),
         }
         for index, rule in enumerate(listed, start=1)
     ]
@@ -400,8 +408,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     except RedditToolError as err:
         print(f"error: {err}", file=sys.stderr)
         return 1
-    except Exception as err:  # PRAW/prawcore errors: the class and status, never a request that holds a secret
-        print(f"error: Reddit request failed: {type(err).__name__}: {err}", file=sys.stderr)
+    except Exception as err:  # PRAW/prawcore errors: the class and message, with any credential value scrubbed
+        print(scrub(f"error: Reddit request failed: {type(err).__name__}: {err}"), file=sys.stderr)
         return 1
     return 0
 

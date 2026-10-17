@@ -18,6 +18,8 @@ from types import SimpleNamespace
 from typing import Any
 from unittest import mock
 
+from praw.models.reddit.rules import Rule, SubredditRules
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import reddit
 
@@ -85,8 +87,13 @@ class FakeSubreddit:
         self.public_description = "A place for Godot."
         self.description = "Sidebar text"
 
-    def rules(self) -> dict[str, Any]:
-        return {"rules": [{"short_name": "Self promo", "description": "Saturdays only", "kind": "all"}]}
+    @property
+    def rules(self) -> SubredditRules:
+        """PRAW's own SubredditRules over its own Rule objects, so the shape is the library's."""
+        rules = SubredditRules(SimpleNamespace(_reddit=None))  # type: ignore[arg-type]
+        data = {"short_name": "Self promo", "description": "Saturdays only", "kind": "all"}
+        rules.__dict__["_rule_list"] = [Rule(None, _data=data)]  # type: ignore[arg-type]
+        return rules
 
 
 class FakeReddit:
@@ -259,13 +266,22 @@ class CredentialTests(unittest.TestCase):
         self.assertIn("missing", err.getvalue())
 
     def test_main_failure_does_not_echo_secret(self) -> None:
+        values = {"REDDIT_CLIENT_ID": "id", "REDDIT_CLIENT_SECRET": SECRET, "REDDIT_USER": "me"}
+
+        def failing(**kwargs: Any) -> Any:
+            raise RuntimeError(f"auth failed with {kwargs}")  # a library error that carries the secret
+
         err = io.StringIO()
+        out = io.StringIO()
         with (
-            mock.patch.object(reddit, "run", side_effect=RuntimeError("boom")),
+            mock.patch.object(reddit, "env_or_dotenv", lambda key, root=None: values[key]),
+            mock.patch("praw.Reddit", side_effect=failing),
             redirect_stderr(err),
+            redirect_stdout(out),
         ):
             self.assertEqual(reddit.main(["posts", "godot"]), 1)
-        self.assertNotIn(SECRET, err.getvalue())
+        self.assertIn("auth failed", err.getvalue())
+        self.assertNotIn(SECRET, err.getvalue() + out.getvalue())
 
     def test_no_write_verbs_in_source(self) -> None:
         source = Path(reddit.__file__).read_text(encoding="utf-8")
@@ -279,6 +295,12 @@ class CredentialTests(unittest.TestCase):
             ".save(",
             "username=",
             "password=",
+            ".message(",
+            ".comment(",
+            ".vote(",
+            ".crosspost(",
+            "read_only = False",
+            "read_only=False",
         ):
             self.assertNotIn(verb, code)
 
