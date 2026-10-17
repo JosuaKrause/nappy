@@ -324,6 +324,13 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ## was checked at boot. The off-corridor exemption is untouched: these are on the corridor, and
 ## nothing here bypasses `_keeps_its_field_clear` — the two lethal rows in the list are a pursuer
 ## and a `WALL`, which is how they were already exempt on an ordinary day.
+##
+## **And no street of the walk is closed by what stands on it**, the one guarantee a day keeps
+## through its placement rules that this pass has to keep for itself, since the escape's bodies
+## stand on the one route rather than off it. *(Inbox #747: "roadblocks currently are impossible
+## to get past. one sidewalk must be open if they're en-route. the escape's street should not have
+## fully blocking events like in the normal game.")* Each candidate is asked
+## `_leaves_a_finale_sidewalk_open()` before it is accepted — see there.
 static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 		streets: Array[StreetNetwork.Segment], standing_at: Vector2) -> Array[Planned]:
 	var planned: Array[Planned] = []
@@ -337,22 +344,25 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 	var trees := StreetTrees.footprint_tiles(map)
 	for segment in streets:
 		_fill_a_finale_street(map, rng, segment, trucks, Tuning.FINALE_TRUCKS_PER_STREET, trees,
-				standing_at, planned)
+				standing_at, planned, streets)
 		_fill_a_finale_street(map, rng, segment, vans, Tuning.FINALE_VANS_PER_STREET, trees,
-				standing_at, planned)
+				standing_at, planned, streets)
 		_fill_a_finale_street(map, rng, segment, masked, Tuning.FINALE_GUARDS_PER_STREET, trees,
-				standing_at, planned)
+				standing_at, planned, streets)
 		_fill_a_finale_street(map, rng, segment, bursts, Tuning.FINALE_EXPLOSIONS_PER_STREET,
-				trees, standing_at, planned)
+				trees, standing_at, planned, streets)
 	return planned
 
 ## `count` copies of one row on one street, sited the same way `_place_one` sites a day's: roll a
 ## tile of the right kind, build the placement, take the first that satisfies every rule and
 ## otherwise the roomiest one the tries found. A street with no ground of the right kind simply
-## gets none of that row, which is the same failure direction a day's own placement has.
+## gets none of that row, which is the same failure direction a day's own placement has — and so
+## does a street where every try would close the walk's last sidewalk: a refused candidate is
+## never the fallback, so the copy is simply not placed.
 static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 		segment: StreetNetwork.Segment, def: EventDef, count: int, trees: Dictionary,
-		standing_at: Vector2, planned: Array[Planned]) -> void:
+		standing_at: Vector2, planned: Array[Planned],
+		streets: Array[StreetNetwork.Segment]) -> void:
 	var candidates := _finale_ground(map, segment, def, trees, standing_at)
 	if candidates.is_empty():
 		return
@@ -364,6 +374,8 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 			var candidate := _build_placement(def, map, tile, rng)
 			if not candidate:
 				continue
+			if not _leaves_a_finale_sidewalk_open(candidate, map, streets, planned):
+				continue
 			candidate.role = _role_for(def)
 			var room := _room_around(candidate, planned)
 			if room == INF:
@@ -374,6 +386,71 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 				best = candidate
 		if best:
 			planned.append(best)
+
+## **Every street of the escape's walk keeps one sidewalk open past everything standing on it**,
+## asked of each candidate before it is accepted and never repaired afterwards (`docs/CITY.md`,
+## "Check before accepting"). *(Inbox #747: "one sidewalk must be open if they're en-route. the
+## escape's street should not have fully blocking events like in the normal game.")*
+##
+## **The day's own physical reading, reused rather than restated**: `closes_a_walked_sidewalk_band`
+## is the question `_leaves_the_routes_sidewalk_open` asks of a day's walked sidewalk — whether
+## a set of bodies leaves no four-connected run of free sidewalk tiles from one end of a band to the
+## other. A day asks it of the one band its route is walked along; the escape asks it of **both**
+## bands of every street the chains run through and refuses the candidate only when neither stays
+## open, because the player's sentence is *one sidewalk*, and the escape's two sidewalks are both
+## ground she may take — nothing on a chain street is a route drawn along one of them.
+## `_leaves_the_routes_sidewalk_open` itself cannot be called here: it is stated over a day's
+## `Corridor`, and the escape's route is not a tree.
+##
+## **Cumulatively, and over every street the body reaches rather than only its own.** The streets
+## closed in the player's run were closed by a van and a band together, or by two bands across
+## opposite sidewalks, and a body on a street's last tile reaches the end of the cross street's
+## sidewalk at the same corner. So each candidate is asked with everything already planned whose
+## reach touches the street, the way the day's width rule reads.
+##
+## **What stands for the whole walk is what is counted.** A van that hunts stays parked and solid,
+## a roadblock's band stands after its guard has left (`EventInstance._stand_as_the_barrier()`),
+## and a burst leaves its crater where it stood for the rest of the sequence — so a row that
+## spawns a solid successor is counted at the successor's body (`_escape_body_of()`). Mobile rows
+## are traffic and close no ground. The seals are not asked about: they stand at the middle of
+## streets the chains do not run through (`SealPlanner.plan_finale()`), off every band asked here.
+static func _leaves_a_finale_sidewalk_open(candidate: Planned, map: CityMap,
+		streets: Array[StreetNetwork.Segment], already: Array[Planned]) -> bool:
+	var own := _escape_body_of(candidate)
+	if own <= 0.0:
+		return true
+	for segment in streets:
+		var rect := segment.tile_rect()
+		var world := map.tile_rect_to_world(rect)
+		if not _reach_touches(candidate, world, own + Tuning.PLAYER_BODY_RADIUS):
+			continue
+		var bodies: Array = [Vector3(candidate.position.x, candidate.position.y, own)]
+		for plan in already:
+			var radius := _escape_body_of(plan)
+			if radius > 0.0 and _reach_touches(plan, world, radius + Tuning.PLAYER_BODY_RADIUS):
+				bodies.append(Vector3(plan.position.x, plan.position.y, radius))
+		var open := false
+		for band in _sidewalk_bands(rect, segment.horizontal):
+			if not closes_a_walked_sidewalk_band(map, band, segment.horizontal, bodies,
+					map.closed_tiles):
+				open = true
+				break
+		if not open:
+			return false
+	return true
+
+## The radius of the body an escape placement leaves standing for the rest of the walk: its own
+## `obstructs_radius`, or its successor's when it leaves one (a burst's crater), whichever is wider;
+## zero for a mobile row, which closes no ground.
+static func _escape_body_of(plan: Planned) -> float:
+	if plan.def.mobile:
+		return 0.0
+	var radius := plan.def.obstructs_radius
+	if plan.def.spawns_on_finish != "":
+		var successor := EventCatalogue.by_id(plan.def.spawns_on_finish)
+		if successor and not successor.mobile:
+			radius = maxf(radius, successor.obstructs_radius)
+	return radius
 
 ## The tiles of one street a given row may stand on. Stated over the street's own rect rather than
 ## over the whole city the way `_open_ground_for` is, because the finale already knows which

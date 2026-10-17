@@ -945,6 +945,8 @@ func _plan_the_finale_city() -> void:
 	var elapsed := Time.get_ticks_msec()
 	var plan := FinalePlanner.plan(_city.map, GameState.day_rng(GameState.day, "finale"))
 	_city.events.start_finale(plan.placements, _finale_start_position())
+	# The streets the chains run through carry the route's kerb tint, as a day's corridor does.
+	_city.tint_the_escape_route(plan.open_streets)
 	# Printed as well as logged, for the same reason `_start_day()` prints the day it just built:
 	# the shape of the walk is the one thing worth knowing before anything else in the log means
 	# anything, and a run with telemetry off still has a console.
