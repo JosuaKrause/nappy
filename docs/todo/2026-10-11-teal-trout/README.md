@@ -33,11 +33,10 @@ fairness contract. A charger's warning must not read as one of the existing cues
 else.
 
 **The audit** ([teal-trout-2026-10-11](../../evidence/teal-trout-2026-10-11/README.md), a table and
-a clip of each charger) found these short of a stage, each an item here:
-[the-dog-rests-then-warns.md](the-dog-rests-then-warns.md) (neutral and warning both),
-[the-robbers-warning-is-not-his-lunge.md](the-robbers-warning-is-not-his-lunge.md),
-[the-roadblock-guards-warning.md](the-roadblock-guards-warning.md) and
-[the-door-guards-stages.md](the-door-guards-stages.md). The policeman out of an investigating patrol
+a clip of each charger) found the charging dog, the alley robber, the hunting roadblock's guard
+and the door guard short of a stage. The dog's and the two guards' stages are built
+([teal-trout-5](../../decisions/2026-10-11-teal-trout-5.md)); the robber's walk is the item left,
+[the-robbers-warning-is-not-his-lunge.md](the-robbers-warning-is-not-his-lunge.md). The policeman out of an investigating patrol
 car and the men out of a hunting van show three distinct stages. The alley mouse, the pigeon flock
 and the masked man do not charge her; the masked man waits standing and is drawn lunging
 only once he goes (the [teal-trout-2 record](../../decisions/2026-10-11-teal-trout-2.md)).

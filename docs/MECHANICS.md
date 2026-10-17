@@ -1057,7 +1057,8 @@ clear line".)* A waiting pursuer notices her within `pursues_within` only along 
 and its lunge at the stand-off asks for it too. A lunge the wall holds back is not simply deferred
 until the line clears, which would clamp the approach at zero — at an alley mouth the line clears
 with her already well inside the stand-off, and it would fire from a fraction of it. Instead the
-pursuer holds the door guard's ground (`EventDef.sets_off_beside_her`): it stands while she is
+pursuer holds the ground a pursuer that sets off beside her holds (`EventDef.sets_off_beside_her`;
+the door guard stands for his whole notice instead, `EventDef.stands_for_its_notice`): it stands while she is
 nearer than the stand-off, follows at the stand-off once she is further, and lunges the moment she
 is back at the full stand-off with the line clear. **Its notice does not run out while she is inside
 the stand-off**, since a notice ending there would start the chase from a fraction of it, the same
@@ -1144,7 +1145,7 @@ and price and route around, and that becomes a chase if you do not. Three states
 | | it emits | it can kill | it moves |
 | --- | --- | --- | --- |
 | **waiting** | at full strength | no | no |
-| **noticing** (`telegraph_time`) | at full strength | no | closes to the stand-off |
+| **noticing** (`telegraph_time`) | at full strength | no | closes to the stand-off, or stands for it (`EventDef.stands_for_its_notice`: the waiting dog, the hunting roadblock's guard, the door guard) |
 | **chasing** (`duration`) | at full strength | yes | holds, then comes |
 
 Two things are deliberately not the same as an ordinary telegraph. The **clock starts when it
