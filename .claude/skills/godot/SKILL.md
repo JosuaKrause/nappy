@@ -101,6 +101,14 @@ node is looked up by path.**
 **Nodes are not refcounted.** A test double extending a `Node` class must be `free()`d by hand or it
 leaks. `RefCounted` doubles do not.
 
+**A press read in `_unhandled_input()` must cross every `Control` above it.** The GUI pass runs
+first and ends a press at the topmost `Control` under it whose `mouse_filter` is STOP, and a bare
+`Control`, `ColorRect` or `Panel` defaults to STOP; containers default to PASS. So every drawn-only
+`Control` over such a screen is set to IGNORE. A test that calls `_unhandled_input()` directly skips
+the GUI pass and cannot see this: send the press through `Input.parse_input_event()` and
+`Input.flush_buffered_events()`. (The title's Hard Mode box took no tap or click at all while a
+full-width scrim left at STOP sat over it, and its test, calling the handler, passed.)
+
 **Never commit `.godot/`** — the **committing** skill, "Never commit", says why and what a fresh
 clone needs instead.
 

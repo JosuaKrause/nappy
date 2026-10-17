@@ -18,7 +18,12 @@ PNG, a review sheet — runs on Opus, since the result is judged by eye and a we
 the player a review round *(2026-09-23: "what is the model making those images? use opus 5.5")*;
 Codex has its own model hierarchy and keeps its own tiering for art *(2026-09-23: "make the opus
 guidance claude only -- codex has a different model hierarchy here")*. In Codex, pick the subagent
-tier by the task's remaining difficulty: see `references/codex-models.md`. The contract is the same
+tier by the task's remaining difficulty: see `references/codex-models.md`. **Generating a raster
+is Codex's alone**: Claude Code has no image generator (**illustrated-png**, "Asset contract"), so
+a brief whose work includes generating an illustrated PNG, a comic transfer included, goes to a
+Codex agent (which writes as `codex-coder`); the drawing rule above covers SVG and the review
+sheets. Installing, registering, rebaking and checking PNGs that already exist stays open to
+either host. The contract is the same
 on either host: fresh context, a bounded scope and an isolated checkout for implementation. Create
 the worktree explicitly if the tool does not create one. Read-only review can share a checkout. If
 delegation is unavailable, do the bounded work locally and retain the same verification gate.
@@ -163,7 +168,9 @@ role named has nothing to check `status` against:
   continues. The player's CLI cannot display images: push review artifacts first, then embed
   them in the PR description as images with commit-pinned URLs, as **committing** says.
   A local file link is not a delivered visual review. Showing an attempt does not authorize
-  runtime installation.
+  runtime installation. **A question the player answers by eye gets a picture of its own**, the
+  options alone with the question above it in words; a full sheet is evidence, not a question
+  (`references/agent-contract.md` has the player's words).
   **A delivered review file stays byte-for-byte unchanged.** Render into job-owned scratch,
   wait for its writer to finish, then copy the completed artifact to a new versioned delivery
   filename and record its hash. Once the player has a link, no render or copy overwrites that
