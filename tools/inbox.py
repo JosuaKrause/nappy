@@ -11,12 +11,21 @@ through a script it's safe ... an agent shouldn't use gh issue directly"), so
 `.claude/hooks/github-write-guard.sh` denies a direct `gh issue` write, wrapped or not, and an
 issue write through `gh api` (all but a comment, which pull requests share) the same way.
 
-    capture                  opens a note holding the player's words verbatim, from --body-file or
-                             standard input, labelled `inbox` and `captured` and, with --band, its
-                             band, in one call (statements 2 and 13)
+    capture                  opens a note in one call (statements 2 and 13), labelled `inbox` and
+                             `captured` and, with --band, its band. Its body is a run of blocks, each
+                             under a visible mark the tool writes: --quote-file (--body-file, or
+                             standard input when no block is named) is the player's words, a direct
+                             quote; --context-file, --reading-file (shown as `Read as:`) and
+                             --note-file are the agent's. Each is repeatable and kept in order, and a
+                             lone quote is marked like the rest
     append N                 adds the player's further words on a captured note's topic to note N as a
-                             comment marked so the tool tells it from a question, from --body-file or
-                             standard input; --context-file first posts what the words answered
+                             comment marked so the tool tells it from a question; the same blocks
+    correct N --line-file F  posts on note N a comment marking the line in F as not the player's
+                             (refused unless it is one whole line of N's body or appended words),
+                             with --context-file, --reading-file or --note-file blocks
+    draft N M ...            prints the playtest sections of those notes in the filed layout: the
+                             player's quote blocks as `> ` lines, every other block labelled the
+                             assistant's, a corrected line flagged right after its quoted block
     list                     every open note, oldest first, with its band; every other issue
                              labelled `inbox` is skipped with a line saying why
     show N                   one note in full: its body as it stands now, then the comments in
@@ -37,6 +46,11 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
                              existing citation of it outside docs/playtests/ -- `inbox #N` becomes
                              `inbox #N in name`, the playtest's bare name, in every file (never a
                              link) -- and lists every other form for a hand fix; local only
+
+**Only a quote block is the player's words.** On a captured note, a body or an appended comment whose
+first line is a mark is a run of blocks (`MARKS`); on any other note, and in a comment the player
+wrote, the whole text is the player's, marks or not. `close --pr` and the transcription check need
+the quote blocks word for word in a playtest file, and the rest need not be copied.
 
 **Only the player's notes count** (statements 19 and 23): an issue the player (`PLAYER`) opened,
 or one the capture script opened as one of `CAPTURE_BOTS` with its tag, the label `captured`. The
@@ -93,6 +107,19 @@ APPEND_MARKER = "<!-- inbox-append: the player's further words, added by tools/i
 # Separates what the words answered (above it) from the words (below it) in one append comment, so a
 # failed post can never leave the context alone on the issue or duplicate it on a retry.
 WORDS_MARKER = "<!-- inbox-append: the player's words follow -->"
+# The marks of the blocks a captured note holds: one line each, visible on the issue, written only by
+# this tool and read by it and by `tools/ci_transcription.py` (which holds the same). A captured note
+# or an appended comment is a run of blocks, each under the mark of its kind; only a `quote` block is
+# the player's words. Text with no mark at its start is all the player's (a note they wrote themselves,
+# and a note captured before the marks).
+MARKS = {
+    "quote": "### The player's words (direct quote)",
+    "context": "### Context (the agent's)",
+    "reading": "### Read as (the agent's interpretation)",
+    "note": "### Note (the agent's)",
+    "correction": "### Correction (the line below is not the player's)",
+}
+MARK_KIND = {mark: kind for kind, mark in MARKS.items()}
 INBOX_LABEL = "inbox"
 BANDS = ("bug", "now", "next", "later", "parked")
 BAND_LABEL = re.compile(r"^queue_(bug|now|next|later|parked)$")
@@ -112,7 +139,9 @@ FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
 EPILOG = """\
 examples:
   uv run python tools/inbox.py --role claude-orchestrator capture --band next < /tmp/words.md
-  uv run python tools/inbox.py --role claude-orchestrator append 423 --body-file /tmp/more.md
+  uv run python tools/inbox.py --role claude-orchestrator append 423 --quote-file /tmp/more.md --reading-file /tmp/r.md
+  uv run python tools/inbox.py --role claude-orchestrator correct 423 --line-file /tmp/line.md --note-file /tmp/why.md
+  uv run python tools/inbox.py draft 423 424 > /tmp/sections.md
   uv run python tools/inbox.py list
   uv run python tools/inbox.py show 423
   uv run python tools/inbox.py --role claude-orchestrator ask 423 --body-file /tmp/question.md
@@ -242,12 +271,108 @@ def appended_words(note: Note, comment: Comment) -> str | None:
     return parts[1] if parts is not None else None
 
 
+Block = tuple[str, str]  # (kind, text); kind is a key of MARKS
+
+
+def parse_blocks(text: str) -> list[Block] | None:
+    """The blocks of marked text, or None when its first non-blank line is not a mark (all the player's words)."""
+    lines = text.replace("\r\n", "\n").split("\n")
+    first = next((line.strip() for line in lines if line.strip()), "")
+    if first not in MARK_KIND:
+        return None
+    blocks: list[Block] = []
+    kind = ""
+    current: list[str] = []
+    for line in lines:
+        if line.strip() in MARK_KIND:
+            if kind and "\n".join(current).strip():
+                blocks.append((kind, "\n".join(current).strip()))
+            kind, current = MARK_KIND[line.strip()], []
+        else:
+            current.append(line)
+    if kind and "\n".join(current).strip():
+        blocks.append((kind, "\n".join(current).strip()))
+    return blocks
+
+
+def format_blocks(blocks: Sequence[Block]) -> str:
+    """Marked text for `blocks`, each under the mark of its kind; the format never varies."""
+    return "\n\n".join(f"{MARKS[kind]}\n\n{text.strip()}" for kind, text in blocks) + "\n"
+
+
+def mark_title(line: str) -> str:
+    """A line without its leading `#`s and spaces, curly quotes straightened, in lower case."""
+    straight = line
+    for curly, plain in (("\u2018", "'"), ("\u2019", "'"), ("\u201c", '"'), ("\u201d", '"')):
+        straight = straight.replace(curly, plain)
+    return " ".join(straight.lstrip("# \t").split()).casefold()
+
+
+MARK_TITLES = {mark_title(mark) for mark in MARKS.values()}
+
+
 def refuse_markers(text: str, what: str) -> None:
-    """Only `append` writes a marker line; text for any other comment, or for the append, may not carry one."""
-    if any(line.strip() in (APPEND_MARKER, WORDS_MARKER) for line in text.replace("\r\n", "\n").split("\n")):
-        raise InboxError(
-            f"{what} has a line that is the append marker, which only `append` writes; nothing was written"
-        )
+    """Only this tool writes a mark or a marker line; text for any block, comment or question may not carry one.
+
+    A look-alike is refused too (another heading level, a curly apostrophe, no space after the `#`s),
+    since on the issue it reads as the real mark.
+    """
+    for line in text.replace("\r\n", "\n").split("\n"):
+        if line.strip() in MARK_KIND or line.strip().startswith("<!-- inbox-") or mark_title(line) in MARK_TITLES:
+            raise InboxError(
+                f"{what} has a line that is an append marker or a mark only this tool writes ({line.strip()[:50]!r});"
+                " nothing was written"
+            )
+
+
+def body_blocks(note: Note) -> list[Block]:
+    """The blocks of the note's body: marked on a captured note that has marks, else all the player's words."""
+    if is_captured(note):
+        marked = parse_blocks(note.body)
+        if marked is not None:
+            return marked
+    return [("quote", note.body.strip())] if note.body.strip() else []
+
+
+def comment_blocks(note: Note, comment: Comment) -> list[Block] | None:
+    """The blocks of a comment worth reading: the player's words, an appended comment, or the agent's side.
+
+    A kind `agent` block is an unmarked comment by a capture identity that is no append (a question, a
+    context from before the marks); None is a comment of anybody else.
+    """
+    if comment.author.lower() == PLAYER.lower():
+        return [("quote", comment.body.strip())] if comment.body.strip() else []
+    if comment.author not in CAPTURE_BOTS:
+        return None
+    parts = appended_parts(note, comment)
+    if parts is not None:
+        _, _, rest = comment.body.replace("\r\n", "\n").partition("\n")
+        marked = parse_blocks(rest) if WORDS_MARKER not in rest else None
+        if marked is not None:
+            return marked
+        blocks: list[Block] = [("context", parts[0])] if parts[0] else []
+        return blocks + ([("quote", parts[1])] if parts[1] else [])
+    marked = parse_blocks(comment.body)
+    if marked is None:
+        return [("agent", comment.body.strip())]
+    # Only an append or the player's own comment holds the player's words; a mark of that kind elsewhere is not one.
+    return [("agent" if kind == "quote" else kind, text) for kind, text in marked]
+
+
+def corrected_lines(blocks: Sequence[Block]) -> list[str]:
+    """The lines a comment's blocks say are not the player's."""
+    return [text for kind, text in blocks if kind == "correction"]
+
+
+def holds_line(text: str, line: str) -> bool:
+    """Whether `text` has `line` as a whole line, each compared after `normalize`; never a part of a line."""
+    wanted = normalize(line)
+    return bool(wanted) and any(normalize(each) == wanted for each in text.replace("\r\n", "\n").split("\n"))
+
+
+def flags_for(text: str, lines: Sequence[str]) -> list[str]:
+    """The corrected lines that `text` holds as whole lines."""
+    return [line for line in lines if holds_line(text, line)]
 
 
 def bands(labels: Sequence[str]) -> list[str]:
@@ -391,40 +516,93 @@ def cmd_list(github: GitHub) -> int:
     return 0
 
 
+SHOWN = {
+    "quote": "the player's words (direct quote)",
+    "context": "context (the agent's)",
+    "note": "note (the agent's)",
+    "correction": "correction: this line is not the player's",
+    "agent": "the agent's side, not the player's words",
+}
+
+
+def show_blocks(blocks: Sequence[Block], lines: Sequence[str], header: str) -> None:
+    """Prints each block under its kind; a quote holding a corrected line is flagged right after it."""
+    for kind, text in blocks:
+        if kind == "reading":
+            print(f"--- {header} ---")
+            print(f"Read as: {text}")
+            print("(the agent's interpretation, not the player's words)")
+            continue
+        print(f"--- {header}: {SHOWN[kind]} ---")
+        print(text)
+        if kind == "quote":
+            for line in flags_for(text, lines):
+                print(f"[this line is not the player's, a correction on this note says so: {line}]")
+
+
 def cmd_show(github: GitHub, number: int) -> int:
     note = github.note(number)
     reason = skip_reason(note)
     if reason is not None:
         raise InboxError(f"#{number} is not an inbox note: {reason}")
+    comments = github.comments(number)
+    lines = [
+        line
+        for comment in comments
+        if (blocks := comment_blocks(note, comment)) is not None
+        for line in corrected_lines(blocks)
+    ]
     print(f"#{note.number} {note.title}")
     print(f"opened by {note.author} · {note.state} · {band_text(note.labels)} · labels {', '.join(note.labels)}")
     print(note.url)
     print()
-    print("--- the note, as it stands now (the player's words) ---")
-    print(note.body)
-    for comment in github.comments(number):
+    marked = parse_blocks(note.body) if is_captured(note) else None
+    if marked is None:
+        print("--- the note, as it stands now (the player's words) ---")
+        print(note.body)
+        for line in flags_for(note.body, lines):
+            print(f"[this line is not the player's, a correction on this note says so: {line}]")
+    else:
+        show_blocks(marked, lines, "the note, as it stands now")
+    for comment in comments:
         print()
         parts = appended_parts(note, comment)
-        if parts is not None:
+        when = f"comment by {comment.author}, {comment.created}"
+        if (
+            parts is not None
+            and (blocks := comment_blocks(note, comment)) is not None
+            and (parse_blocks(comment.body.partition("\n")[2]) is not None)
+        ):
+            show_blocks(blocks, lines, f"{when} (appended)")
+        elif parts is not None:
             if parts[0]:
-                print(f"--- comment by {comment.author}, {comment.created} (appended: what the words answered) ---")
+                print(f"--- {when} (appended: what the words answered) ---")
                 print(parts[0])
                 print()
-            print(f"--- comment by {comment.author}, {comment.created} (appended: the player's words) ---")
+            print(f"--- {when} (appended: the player's words) ---")
             print(parts[1])
+            for line in flags_for(parts[1], lines):
+                print(f"[this line is not the player's, a correction on this note says so: {line}]")
         elif comment.author.lower() == PLAYER.lower():
-            print(f"--- comment by {comment.author}, {comment.created} (the player's words) ---")
+            print(f"--- {when} (the player's words) ---")
             print(comment.body)
         elif comment.author in CAPTURE_BOTS:
-            print(f"--- comment by {comment.author}, {comment.created} (the agent's side, not the player's words) ---")
-            print(comment.body)
+            blocks = comment_blocks(note, comment) or []
+            if blocks and blocks[0][0] != "agent":
+                show_blocks(blocks, lines, when)
+            else:
+                print(f"--- {when} (the agent's side, not the player's words) ---")
+                print(comment.body)
         else:
             print(f"skipped a comment by {comment.author or 'an unknown account'}, {comment.created}: not the player's")
     return 0
 
 
 def read_text(body_file: str | None, what: str) -> str:
-    text = Path(body_file).read_text(encoding="utf-8") if body_file else sys.stdin.read()
+    try:
+        text = Path(body_file).read_text(encoding="utf-8") if body_file else sys.stdin.read()
+    except (OSError, UnicodeDecodeError) as error:
+        raise InboxError(f"{what}: {body_file} cannot be read ({error}); nothing was written") from error
     if not text.strip():
         raise InboxError(f"{what} is empty; nothing was written")
     return text
@@ -446,28 +624,28 @@ def default_title(text: str) -> str:
 ISSUE_URL = re.compile(r"/issues/(\d+)\s*$")
 
 
-def cmd_capture(
-    github: GitHub, role: str, text: str, title: str | None, band: str | None, context: str | None = None
-) -> int:
-    """Opens a note with the player's words as its body, tagged so it counts as the player's.
+def check_blocks(blocks: Sequence[Block], what: str) -> None:
+    for _, text in blocks:
+        refuse_markers(text, what)
+    if not any(kind == "quote" for kind, _ in blocks):
+        raise InboxError(
+            f"{what} has no block of the player's words (--quote-file or --body-file); nothing was written"
+        )
 
-    The body is the words alone, so it can be copied word for word; what they answered, when given,
-    goes on the note as its first comment, the agent's side, which `show` prints before any answer.
+
+def cmd_capture(github: GitHub, role: str, blocks: Sequence[Block], title: str | None, band: str | None) -> int:
+    """Opens a note whose body is `blocks`, tagged so it counts as the player's.
+
+    The body is a run of blocks, each under the mark of its kind, a lone quote included; only the
+    quote blocks are the player's words.
     """
-    if context is not None:
-        refuse_markers(context, "the context")
+    check_blocks(blocks, "the note")
+    first = next(text for kind, text in blocks if kind == "quote")
     labels = [INBOX_LABEL, CAPTURE_LABEL] + ([f"queue_{band}"] if band else [])
-    args = ["issue", "create", "-R", github.repo, "--title", title or default_title(text), "--body-file", "-"]
+    args = ["issue", "create", "-R", github.repo, "--title", title or default_title(first), "--body-file", "-"]
     for label in labels:
         args += ["--label", label]
-    url = github.write(role, args, text).strip()
-    print(url)
-    if context is not None:
-        match = ISSUE_URL.search(url)
-        if match is None:
-            raise InboxError(f"the note is open ({url}), but its number could not be read to post the context")
-        github.write(role, ["issue", "comment", match.group(1), "-R", github.repo, "--body-file", "-"], context)
-        print(f"posted the context on #{match.group(1)}")
+    print(github.write(role, args, format_blocks(blocks)).strip())
     return 0
 
 
@@ -478,12 +656,11 @@ def cmd_ask(github: GitHub, role: str, number: int, text: str) -> int:
     return 0
 
 
-def cmd_append(github: GitHub, role: str, number: int, text: str, context: str | None = None) -> int:
-    """Adds the player's further words to captured note `number`, marked as `append`'s.
+def cmd_append(github: GitHub, role: str, number: int, blocks: Sequence[Block]) -> int:
+    """Adds `blocks`, the player's further words among them, to captured note `number`, marked as `append`'s.
 
-    What the words answered, when given, goes first in the same comment, above a `WORDS_MARKER` line,
-    so one post is all there is to fail or to retry. A note the player wrote gets the player's own
-    comments, and a closed note is filed.
+    The comment is a run of marked blocks under the marker line. A note the player wrote gets the
+    player's own comments, and a closed note is filed.
     """
     note = open_note(github, number)
     if not is_captured(note):
@@ -491,13 +668,35 @@ def cmd_append(github: GitHub, role: str, number: int, text: str, context: str |
             f"#{number} was not opened by the capture script, so it takes the player's own comments;"
             " words are appended only to a captured note"
         )
-    refuse_markers(text, "the player's words")
-    posted = f"{APPEND_MARKER}\n\n{text}"
-    if context is not None:
-        refuse_markers(context, "the context")
-        posted = f"{APPEND_MARKER}\n\n{context.strip()}\n\n{WORDS_MARKER}\n\n{text}"
+    check_blocks(blocks, "the appended comment")
     comment = ["issue", "comment", str(number), "-R", github.repo, "--body-file", "-"]
-    print(github.write(role, comment, posted).strip())
+    print(github.write(role, comment, f"{APPEND_MARKER}\n\n{format_blocks(blocks)}").strip())
+    return 0
+
+
+def cmd_correct(github: GitHub, role: str, number: int, line: str, blocks: Sequence[Block]) -> int:
+    """Posts, on note `number`, a comment marking `line` as not the player's, with any blocks of the agent's.
+
+    The line must be in the note's body or in words appended to it, word for word, or nothing is written:
+    a correction of a line the note does not hold would flag nothing.
+    """
+    note = open_note(github, number)
+    refuse_markers(line, "the line")
+    for _, text in blocks:
+        refuse_markers(text, "the correction's note")
+    if any(kind == "quote" for kind, _ in blocks):
+        raise InboxError("a correction holds the agent's blocks only; the player's words are appended, not corrected")
+    held = [text for kind, text in body_blocks(note) if kind == "quote"]
+    for comment in github.comments(number):
+        found = comment_blocks(note, comment)
+        if found is not None and (comment.author.lower() == PLAYER.lower() or appended_parts(note, comment)):
+            held += [text for kind, text in found if kind == "quote"]
+    if "\n" in line.strip() or not any(holds_line(text, line) for text in held):
+        raise InboxError(
+            f"that is not one whole line of #{number}'s body or of the words appended to it; nothing was written"
+        )
+    posted = format_blocks([("correction", line), *blocks])
+    print(github.write(role, ["issue", "comment", str(number), "-R", github.repo, "--body-file", "-"], posted).strip())
     return 0
 
 
@@ -562,18 +761,18 @@ def unfiled_words(note: Note, comments: Sequence[Comment], playtests: dict[str, 
     `tools/ci_transcription.py` fails it with, since an empty body is in every text and would
     otherwise be closed for a filing CI then rejects.
     """
-    body = normalize(note.body)
-    if not body:
+    quotes = [words for kind, text in body_blocks(note) if kind == "quote" and (words := normalize(text))]
+    if not quotes:
         return [f"#{note.number}: the note has no body to transcribe"]
-    holding = [path for path, text in sorted(playtests.items()) if body in text]
+    holding = [path for path, text in sorted(playtests.items()) if all(words in text for words in quotes)]
     if not holding:
         return [f"the current text of #{note.number} is not word for word there"]
     said: list[tuple[Comment, str]] = []  # the player's words only; an appended comment's context is the agent's
     for comment in comments:
-        appended = appended_words(note, comment)
-        words = normalize(appended if appended is not None else comment.body)
-        if words and (appended is not None or comment.author.lower() == PLAYER.lower()):
-            said.append((comment, words))
+        found = comment_blocks(note, comment)
+        if found is None or not (comment.author.lower() == PLAYER.lower() or appended_parts(note, comment)):
+            continue
+        said += [(comment, words) for kind, text in found if kind == "quote" and (words := normalize(text))]
     if any(all(words in playtests[path] for _, words in said) for path in holding):
         return []
     in_one = ", ".join(holding)
@@ -582,6 +781,88 @@ def unfiled_words(note: Note, comments: Sequence[Comment], playtests: dict[str, 
         f"the player's comment on #{note.number} of {comment.created} is not word for word in {in_one}"
         for comment in missing
     ]
+
+
+def indented(text: str, prefix: str = "   ") -> str:
+    return "\n".join(prefix + line if line.strip() else prefix.rstrip() for line in text.split("\n"))
+
+
+def draft_note(note: Note, comments: Sequence[Comment]) -> str:
+    """The playtest section for `note`, in the filed layout, each kind of block labelled.
+
+    The player's words are `> ` blocks, the only lines that are the player's; context, a reading
+    (`Read as:`), a further note and a correction are the assistant's sentences. A corrected line is
+    flagged in a sentence right after the quoted block, never inside it, since the transcription check
+    needs the words as one unbroken run.
+    """
+    pieces: list[tuple[str, list[Block]]] = [("body", body_blocks(note))]
+    answered: list[Block] = []
+    unmarked = is_captured(note) and parse_blocks(note.body) is None
+    kept = 0
+    for comment in comments:
+        found = comment_blocks(note, comment)
+        if found is None:
+            continue
+        kept += 1
+        if kept == 1 and unmarked and found and found[0][0] == "agent":
+            answered = [("context", found[0][1])]  # a context posted before the marks existed
+            continue
+        pieces.append(("comment", found))
+    lines = [line for _, blocks in pieces for line in corrected_lines(blocks)]
+    out = [f"## #{note.number}", ""]
+    count = 0
+
+    def item(label: str, text: str) -> None:
+        nonlocal count
+        count += 1
+        out.extend([f"{count}. {label}", "", indented(text, " " * len(f"{count}. ")), ""])
+
+    def quote(label: str, text: str) -> None:
+        nonlocal count
+        count += 1
+        pad = " " * len(f"{count}. ")  # a list item's paragraphs are indented by the width of its number
+        quoted = "\n".join("> " + line if line.strip() else ">" for line in text.split("\n"))
+        out.extend([f"{count}. {label}", "", indented(quoted, pad)])
+        for line in flags_for(text, lines):
+            flag = f"The line \u201c{line}\u201d above is not the player's: a correction on this note says so."
+            out.extend(["", f"{pad}{flag}"])
+        out.append("")
+
+    if answered:
+        item("**What the note answered** (the assistant):", answered[0][1])
+    for origin, blocks in pieces:
+        first_quote = True
+        for kind, text in blocks:
+            if kind == "quote":
+                quote("**The note.**" if origin == "body" and first_quote else "**The player's words.**", text)
+                first_quote = False
+            elif kind == "reading":
+                item("**Read as:** (the assistant's interpretation, not the player's words)", text)
+            elif kind == "correction":
+                item(
+                    "**Correction** (the assistant's): this line is not the player's, and the note holds it anyway:",
+                    text,
+                )
+            elif kind == "note":
+                item("**Note** (the assistant's):", text)
+            elif kind == "context":
+                item("**Context** (the assistant's):", text)
+            else:
+                item("**The assistant's comment:**", text)
+    return "\n".join(out).rstrip() + "\n"
+
+
+def cmd_draft(github: GitHub, numbers: Sequence[int]) -> int:
+    """Prints the playtest sections of notes `numbers`, one `## #N` each; reads only."""
+    sections = []
+    for number in numbers:
+        note = github.note(number)
+        reason = skip_reason(note)
+        if reason is not None:
+            raise InboxError(f"#{number} is not an inbox note: {reason}")
+        sections.append(draft_note(note, github.comments(number)))
+    print("\n".join(sections), end="")
+    return 0
 
 
 def cmd_close(github: GitHub, role: str | None, pr: int, dry_run: bool) -> int:
@@ -876,6 +1157,45 @@ def add_role(parser: argparse.ArgumentParser, *, top: bool) -> None:
     )
 
 
+class BlockAction(argparse.Action):
+    """Collects `--quote-file F`, `--context-file F` and so on into one ordered list of (kind, file)."""
+
+    def __init__(self, *args: Any, kind: str, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.kind = kind
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: str | None = None,
+    ) -> None:
+        found = list(getattr(namespace, self.dest, None) or [])
+        found.append((self.kind, str(values)))
+        setattr(namespace, self.dest, found)
+
+
+def add_blocks(parser: argparse.ArgumentParser, what: str) -> None:
+    """The block options, repeatable and kept in command-line order; `--body-file` is a quote block."""
+    helps = {
+        "quote": "the player's words, a direct quote (default with no block at all: standard input)",
+        "context": "context the filer needs, the agent's",
+        "reading": "the agent's reading of the words, shown as `Read as:`",
+        "note": "a further note, the agent's",
+    }
+    for kind, text in helps.items():
+        parser.add_argument(f"--{kind}-file", action=BlockAction, dest="blocks", kind=kind, help=f"{text}; repeatable")
+    parser.add_argument("--body-file", action=BlockAction, dest="blocks", kind="quote", help="same as --quote-file")
+
+
+def read_blocks(chosen: Sequence[tuple[str, str]] | None, what: str) -> list[Block]:
+    """The blocks named on the command line, read in order; with none, standard input is one quote."""
+    if not chosen:
+        return [("quote", read_text(None, what))]
+    return [(kind, read_text(path, f"the {kind} block").strip()) for kind, path in chosen]
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tools/inbox.py",
@@ -886,27 +1206,27 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--repo", default=None, metavar="OWNER/NAME", help="default $GITHUB_REPOSITORY, or gh's own")
     add_role(parser, top=True)
     commands = parser.add_subparsers(
-        dest="command", required=True, metavar="{capture,append,list,show,ask,close,reopen,cite}"
+        dest="command", required=True, metavar="{capture,append,correct,draft,list,show,ask,close,reopen,cite}"
     )
     capture = commands.add_parser("capture", help="open a note holding the player's words verbatim")
-    capture.add_argument("--body-file", default=None, help="the player's words (default: standard input)")
+    add_blocks(capture, "the note")
     capture.add_argument("--title", default=None, help="the note's title (default: the words' first line, cut short)")
     capture.add_argument("--band", default=None, choices=BANDS, help="the band the player named, as its queue_ label")
-    capture.add_argument(
-        "--context-file",
-        default=None,
-        help="what the words answered, posted as the note's first comment, the agent's side (default: none)",
-    )
     add_role(capture, top=False)
     append = commands.add_parser("append", help="add the player's further words to a captured note")
     append.add_argument("number", type=int)
-    append.add_argument("--body-file", default=None, help="the player's further words (default: standard input)")
-    append.add_argument(
-        "--context-file",
-        default=None,
-        help="what the words answered, posted first as a comment, the agent's side (default: none)",
-    )
+    add_blocks(append, "the comment")
     add_role(append, top=False)
+    correct = commands.add_parser("correct", help="mark a line of a note as not the player's, in a comment on it")
+    correct.add_argument("number", type=int)
+    correct.add_argument("--line-file", required=True, help="the line that is not the player's, word for word")
+    for kind in ("context", "reading", "note"):
+        correct.add_argument(
+            f"--{kind}-file", action=BlockAction, dest="blocks", kind=kind, help=f"a {kind} block (the agent's)"
+        )
+    add_role(correct, top=False)
+    draft = commands.add_parser("draft", help="print the playtest sections of notes, each kind of block labelled")
+    draft.add_argument("numbers", nargs="+", type=int, metavar="N")
     commands.add_parser("list", help="every open note, and a line for each issue skipped")
     show = commands.add_parser("show", help="one note in full, with its comments in order")
     show.add_argument("number", type=int)
@@ -957,14 +1277,18 @@ def main(argv: Sequence[str], runner: Runner = run_command) -> int:
         github = GitHub(args.repo or default_repo(runner), runner)
         if args.command == "capture":
             writer = write_role(args.role)
-            words = read_text(args.body_file, "the player's words")
-            context = read_text(args.context_file, "the context") if args.context_file else None
-            return cmd_capture(github, writer, words, args.title, args.band, context)
+            return cmd_capture(github, writer, read_blocks(args.blocks, "the player's words"), args.title, args.band)
         if args.command == "append":
             writer = write_role(args.role)
-            words = read_text(args.body_file, "the player's words")
-            context = read_text(args.context_file, "the context") if args.context_file else None
-            return cmd_append(github, writer, args.number, words, context)
+            return cmd_append(github, writer, args.number, read_blocks(args.blocks, "the player's words"))
+        if args.command == "correct":
+            writer = write_role(args.role)
+            line = read_text(args.line_file, "the line").strip()
+            return cmd_correct(
+                github, writer, args.number, line, read_blocks(args.blocks, "the note") if args.blocks else []
+            )
+        if args.command == "draft":
+            return cmd_draft(github, args.numbers)
         if args.command == "list":
             return cmd_list(github)
         if args.command == "show":

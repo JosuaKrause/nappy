@@ -97,7 +97,10 @@ a sentence of the player's (PLAYTEST-140 1) about a spent park into something bu
 is easy to write as though it were part of the ask, as a park fenced with a street closure's
 barriers (PLAYTEST-140 8) was. The queue entry states the player's ask in their terms, and any
 mechanism beyond it under **Proposed, not asked for:**, with the plainer alternative the proposal
-replaces. A proposal that changes what the player sees across the whole game goes back to them as a
+replaces. **And every sentence about what the player asked is marked as a direct quote or as an
+interpretation** (inbox #767): their words in quotation marks with their citation, and the filer's
+reading of them under **Read as:**, so a reader tells the two apart without opening the playtest.
+A proposal that changes what the player sees across the whole game goes back to them as a
 question before it is briefed; a small one is briefed with its first pictures due early, so the
 player can turn it down before it is built everywhere.
 

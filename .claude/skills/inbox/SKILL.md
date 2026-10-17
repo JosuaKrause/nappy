@@ -26,8 +26,8 @@ first, each with its band and link, and a line for every other issue labelled `i
 is not a note. It sits beside `gh pr list`, `tools/agent-status.sh` and `tools/queue.sh` in
 `CLAUDE.md`'s "where to pick up", and **session-cleanup** lists the open notes in the restart
 prompt. `uv run python tools/inbox.py show N` prints one note in full: its body as it stands now,
-then its comments in order, each marked as the player's words or the agent's side, and a line for
-each comment it skips.
+then its comments in order, each block marked as the player's words, context, a reading (`Read as:`),
+a note, a correction or the agent's side, and a line for each comment it skips.
 
 A blank note comes from the issue template `.github/ISSUE_TEMPLATE/inbox-note.md`, which puts the
 `inbox` label on it.
@@ -41,7 +41,7 @@ alone admits anybody: an issue from outside the project is welcome as something 
 never an automatic call for action (bouncy-heron 23). A captured note counts when it was opened as
 `nappy-claude-orchestrator[bot]` or `nappy-codex-coder[bot]` and carries the capture script's tag,
 the label `captured` (bouncy-heron 23). The player's own comments are the player's words, and so, on
-a captured note alone, are the words `append` added (below). `tools/inbox.py` skips everything else
+a captured note alone, are the quote blocks of its body and of the comments `append` added (below). `tools/inbox.py` skips everything else
 with a line saying so, and CI's transcription check (`tools/ci_transcription.py`) fails a filing
 that names any other issue.
 
@@ -78,34 +78,67 @@ uv run python tools/inbox.py --role claude-orchestrator capture --band next --bo
 The words go into a file first, as a command of its own, because the write guard reads a heredoc
 fed to the script as commands: words that name a write (`git push`, `gh issue close`) would deny
 the capture, while a `cat > FILE <<'NOTE'` that is the whole command is one of the shapes it reads
-as text (**using-tools**). The body is **the player's words verbatim and nothing else**, so it can be copied word for word
-when it is filed; the title is the agent's (the words' first line when `--title` is not given).
-`--band` goes on only when the player named a band. When the words answer something the agent
-said — a question, an option with a label — `--context-file` posts what they answered as the
-note's first comment, the agent's side, so the filing can record the words with what they
-answered as **playtest-feedback** asks. The script tags the note with the label `captured`, which
-only it sets, and opens it as `claude-orchestrator` (Codex: `codex-coder`), which is what makes a
-captured note count as the player's.
+as text (**using-tools**). The title is the agent's (the first quote's first line when `--title` is
+not given). `--band` goes on only when the player named a band.
+
+**A note holds blocks, and every block carries a visible mark saying whose it is** (inbox #767), so
+nobody filing it later takes an interpretation for something the player said. The tool writes the
+marks itself from the options, so their format never varies, and each option is repeatable and kept
+in the order given:
+
+| Option | Block | Whose |
+|---|---|---|
+| `--quote-file` (`--body-file`; with no block named, standard input) | `The player's words (direct quote)` | the player's, verbatim and nothing else |
+| `--context-file` | `Context` | the agent's: what the words answered, with whatever else the filer needs |
+| `--reading-file` | `Read as` | the agent's interpretation of the words, never written as though the player had said it |
+| `--note-file` | `Note` | the agent's further note |
+
+```sh
+uv run python tools/inbox.py --role claude-orchestrator capture --band next \
+  --context-file /tmp/context.md --quote-file /tmp/words.md --reading-file /tmp/reading.md
+```
+
+**Only a quote block is the player's words**: `show` prints every block under its kind, the draft
+labels them, and `ci_transcription.py` and `close --pr` need the quote blocks word for word in the
+playtest file, so context, readings and notes need not be copied verbatim. A note takes at least one
+quote block. A text holding a mark line (or a marker line the tool writes) is refused, which keeps
+a block's kind unforgeable, and so is a look-alike of a mark (another heading level, a curly
+apostrophe, no space after the `#`s), since on the issue it reads as the real one. A quote alone is
+marked like any other block; text with no mark at its start, a note the player wrote themselves or
+one captured before the marks, is all the player's. A stray line the player did not say is never put
+in a quote block; it belongs in a context or note block. The script tags the note with the label
+`captured`, which only it sets, and opens it as `claude-orchestrator` (Codex: `codex-coder`), which
+is what makes a captured note count as the player's.
 
 **A further word on the topic of a note already open is appended to that note, never captured as a
 new one** (olive-tapir). When the agent already knows an open captured note on the topic, one it
-captured or read this session, the player's next words on it go onto that note:
+captured or read this session, the player's next words on it go onto that note, with the same block
+options:
 
 ```sh
-uv run python tools/inbox.py --role claude-orchestrator append N --body-file /tmp/more.md
+uv run python tools/inbox.py --role claude-orchestrator append N --quote-file /tmp/more.md --context-file /tmp/context.md
 ```
 
 **Only when the agent already knows the note** (olive-tapir): the inbox is never searched or read to
 look for an overlap, and with no such note in hand the words are captured as a new note. The words
-go into a file first, exactly as for `capture`, and are the player's verbatim. `append` posts them
-as one comment under the same identity rules as `capture`, led by a marker line (an HTML comment,
-invisible on the issue) that only the script writes, so the tool tells them from a question asked
-with `ask`; `--context-file` puts what they answered, the agent's side, above the words in that same
-comment, so a failed post leaves nothing alone on the issue and a retry duplicates nothing. `ask`,
-`capture --context-file` and `append` refuse text with a marker line in it. It refuses a note that
-is not captured, since a note the player wrote gets the player's own comments, and a closed one.
-`show` prints an appended comment's words as the player's and its context as what the words
-answered, and the filing treats the words like the body.
+go into a file first, exactly as for `capture`. `append` posts the blocks as one comment under the
+same identity rules as `capture`, led by a marker line (an HTML comment, invisible on the issue) that
+only the script writes, so the tool tells them from a question asked with `ask`; one comment, so a
+failed post leaves nothing alone on the issue and a retry duplicates nothing. `ask`, `capture`,
+`append` and `correct` refuse text with a mark or marker line in it. `append` refuses a note that is
+not captured, since a note the player wrote gets the player's own comments, and a closed one.
+
+**A line the player did not say that reached a quote anyway is corrected in a comment on that note,
+never by a new note** (inbox #767):
+
+```sh
+uv run python tools/inbox.py --role claude-orchestrator correct N --line-file /tmp/line.md --note-file /tmp/why.md
+```
+
+The comment is the agent's side, so the append rule above needs no exception. The line must be one
+whole line of a quote in the note's body or its appended words, compared word for word, or nothing is
+written; a fragment of a line, or a run across two lines, is refused. `show N` flags the line
+as not the player's, and the draft flags it right after its quoted block.
 
 ## Asking about a note
 
@@ -134,13 +167,17 @@ request carries the whole batch:
 
 - **List and read every note** with `list` and `show`, and settle what is unclear by asking on the
   issue first.
-- **Copy each note's current text word for word into a playtest file** made with
-  `tools/new-name.sh playtest "<title>"`: what the words answered first, when a captured note
-  carries it as its first comment, then the body quoted in `> ` lines, then the player's
-  comments and the words appended to it, in the order they were said, each after what it answers
-  (the first comment's context, the question before it, or the context its append comment holds). Wrapping and the `> ` markers are free; every
-  word, letter case and punctuation mark is copied as it stands. A playtest file is a primary
-  source and is never rewritten afterwards.
+- **Draft each note's playtest section with `tools/inbox.py draft N M ...`** and put it in a
+  playtest file made with `tools/new-name.sh playtest "<title>"`. The draft is the filed layout,
+  every block labelled: the player's quote blocks in `> ` lines, the only lines that are the
+  player's; context, a note and a correction as the assistant's sentences; a reading under
+  `Read as:` (inbox #767); a corrected line flagged in a sentence right after its quoted block,
+  never inside it, since a quote must stay one unbroken run of words. The comments the player wrote
+  and the quotes appended to the note follow in the order they were said, each after what it
+  answers. Wrapping and the `> ` markers are free; every word, letter case and punctuation mark of
+  a quote is copied as it stands, and context, readings and notes need not be copied word for word.
+  A corrected line is still copied, since it is in the note. A playtest file is a primary source and
+  is never rewritten afterwards.
 - **File the queue from it** exactly as **playtest-feedback** says, each entry opening with the
   note's band.
 - **Patch the citations of the notes just copied**, before the pull request is opened. Records,
