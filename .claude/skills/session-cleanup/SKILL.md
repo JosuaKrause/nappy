@@ -169,8 +169,7 @@ entry, a review item or a record by the steps above, and the rest is the restart
 Every session handover ends with a restart prompt the player can use to start the next session
 with a genuinely fresh context. **The prompt goes into `.claude/restart-prompt.md`, a local file
 that git ignores, and never into the chat**: copying long text out of the CLI corrupts it
-*(2026-09-26: "make a note to not write the local handoff in the chat since CLI c&p is broken
-write it to a local file and don't check it in")*. Each handover overwrites the file, and the
+(woolly-finch). Each handover overwrites the file, and the
 report in the chat names its path. Do not require the next session to have read this conversation or
 to resume an old agent transcript. The prompt tells it to fetch and inspect live PR state
 (`gh pr list`, `tools/agent-status.sh`) and the inbox (`uv run python tools/inbox.py list`), then

@@ -87,8 +87,7 @@ over a folder that holds images (see **using-tools**).
 ## The findings go on the PR
 
 **A review's findings are posted as comments on the PR, anchored to the lines they are about,
-never only reported in the conversation.** *(2026-09-09: "reviewing a PR should result in comments
-in the PR so they can be picked up and resolved".)* A finding in a chat message is read once by
+never only reported in the conversation** (woolly-finch). A finding in a chat message is read once by
 whoever asked and is gone for the person who has to fix it; a comment on the diff is a thing the
 author, or an agent sent to the branch, can pick up one at a time and resolve, and its thread
 records what was decided about it.
@@ -112,11 +111,8 @@ that requires), the same as the player's own.
 
 **A review thread is resolved only by whoever opened it** — a reviewer bot resolves its own
 threads once satisfied, a thread the player opened is the player's to resolve; the author of a fix
-replies on the thread and never resolves it. *(2026-09-26, the player: "also add a note that only
-whoever raised a concern can resolve it, too.")* **It is a convention, not a gate**: an unresolved
-thread blocks neither an approval nor a merge, and no ruleset requires thread resolution.
-*(2026-09-26: "but dont enforce that resolving all comments is required for approval. resolving is
-more of a gentlement's agreement".)*
+replies on the thread and never resolves it (woolly-finch). **It is a convention, not a gate**: an unresolved
+thread blocks neither an approval nor a merge, and no ruleset requires thread resolution (woolly-finch).
 
 **The review posts under its author's own reviewer identity, mandatorily**: a Claude Code review
 as `claude-reviewer`, a Codex review as `codex-reviewer`, on a docs-only pull request as much as on
@@ -170,14 +166,10 @@ drawing, or a change to the rules is reviewed by a stronger model.
 
 ## A queue update is reviewed for faithfulness and merged first
 
-*(2026-09-27: "Task list updates should have priority and could use a weaker review agent (or no
-review at all if you think that is safe)" · "Write it down how it makes sense. You might see some
-gaps that I missed".)*
-
 **A queue update is a PR whose every changed file is under `docs/todo/`, `docs/review/` or
 `docs/playtests/`**: filing a playtest, filing or rewording an entry or an item, moving a band. CI
 calls it queue-only (`tools/ci_classify.py`) and runs its mechanical checks before the review
-does. It is merged ahead of other work, since every brief is written from the queue on
+does. It is merged ahead of other work (woolly-finch), since every brief is written from the queue on
 `origin/main` (**orchestrating**) and a filing left open is a brief written from the older text. A
 diff that also touches anything else, a skill or `CLAUDE.md` included, is not a queue update and
 gets the full review above; the orchestrator's queue move on a PR that builds the work is reviewed

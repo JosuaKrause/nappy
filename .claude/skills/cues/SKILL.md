@@ -213,8 +213,7 @@ is a PNG, and both satisfy the rule for the same reason — a file a person can 
 project uses the word.** So no argument about
 where drawing work sits in the queue is ever cover for painting a button in `_draw()`.
 
-**The reason is the feedback loop, and it is decisive:** *(2026-09-06: "that way you can evaluate
-the assets independently of running code".)* An SVG can be opened and looked at — by a person, or by
+**The reason is the feedback loop, and it is decisive** (woolly-finch): An SVG can be opened and looked at — by a person, or by
 an agent reading the file — and judged on its own. A picture assembled in `_draw()` can only be
 judged by booting the game and taking a screenshot, and **the same headless run that proves the code
 correct proves nothing about whether it looks like anything at all.** And an asset is **replaceable

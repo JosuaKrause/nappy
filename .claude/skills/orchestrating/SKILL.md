@@ -12,12 +12,10 @@ the whole queue and the player's words.
 
 Use Sonnet in Claude Code for implementation, Haiku for a wait — polling a check, retargeting a PR,
 removing a worktree, pulling `main` — and a stronger model when a milestone's geometry or contracts
-warrant it, by judgement *(2026-09-11: "for wait tasks like this haiku makes more sense -- use your
-judgement")*. **In Claude Code, [drawing is Opus's](../../../docs/playtests/PLAYTEST-123.md#statements)**: an agent that makes or revises artwork — SVG,
+warrant it, by judgement (woolly-finch). **In Claude Code, [drawing is Opus's](../../../docs/playtests/PLAYTEST-123.md#statements)**: an agent that makes or revises artwork — SVG,
 PNG, a review sheet — runs on Opus, since the result is judged by eye and a weaker first pass costs
 the player a review round;
-Codex has its own model hierarchy and keeps its own tiering for art *(2026-09-23: "make the opus
-guidance claude only -- codex has a different model hierarchy here")*. In Codex, pick the subagent
+Codex has its own model hierarchy and keeps its own tiering for art (woolly-finch). In Codex, pick the subagent
 tier by the task's remaining difficulty: see `references/codex-models.md`. **Generating a raster
 is Codex's alone**: Claude Code has no image generator (**illustrated-png**, "Asset contract"), so
 a brief whose work includes generating an illustrated PNG, a comic transfer included, goes to a
@@ -31,10 +29,7 @@ delegation is unavailable, do the bounded work locally and retain the same verif
 **A usage or quota limit is already over by the time the orchestrator hears of it**, in Claude
 Code and in Codex alike. Nothing about delegation changes because of one: no fewer agents, no
 cheaper models, no implementing locally to save quota. Do not carry [a limit message](../../../docs/decisions/2026-09-12-codex-delegation-after-visible-usage-limit-messages.md)
-from an earlier agent or turn forward as a reason to do anything differently.
-*(2026-09-22: "by the time _you_ hear of it the quota or usage is fully
-restored so there is no need to change behavior due to it (ie no reducing agent usage or things
-like that). quota limits happen from time to time.")* What an interruption does change is which
+from an earlier agent or turn forward as a reason to do anything differently (woolly-finch). What an interruption does change is which
 agents can continue — see "Recovering from an interruption".
 
 ## Delegating is the default, and implementing by hand is the decision
@@ -311,17 +306,15 @@ worktrees — merging is what collides — so parallelism is planned at the file
   player through the orchestrator, in the entry where the next reader will look for it.
 - **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent
   that reported an hour ago replays its whole transcript at full price, because the prompt cache
-  behind it has expired. *(2026-09-08: "resuming after an hour will be a huge token hit because
-  the cache expires. at that point it's better to just start a new one.")* Resume only while the
+  behind it has expired (woolly-finch). Resume only while the
   cache is live, and the windows are exact: **Claude Code's cache lasts one hour, Codex's twenty
-  minutes** *(2026-09-08: "claude cache is 1h", "caching for codex is 20min only")*, counted from
+  minutes** (woolly-finch), counted from
   the agent's last request. **Resume only with five minutes to spare** — 55 minutes in Claude
-  Code, 15 in Codex — since the clock is the provider's and not observable from here *(2026-09-08:
-  "I would give like a 5min safety buffer")*. Past that, spawn a fresh agent with a
+  Code, 15 in Codex — since the clock is the provider's and not observable from here (woolly-finch). Past that, spawn a fresh agent with a
   self-contained brief that names the branch and the report to read first.
 - **An agent that died mid-task is replaced in its own worktree.** A usage limit or an API
   error kills the agent and leaves every edit it made, usually uncommitted. Past the cache
-  window *(2026-09-20: "don't let them continue because their cache is expired")*, start the
+  window (woolly-finch), start the
   fresh agent without worktree isolation, pointed at the dead agent's worktree path. The brief it
   needs comes from `.claude/briefs/<branch-slug>.md` — the file the orchestrator wrote before
   spawning, kept current by every amendment sent since; the previous session's transcript under
@@ -360,8 +353,7 @@ worktrees — merging is what collides — so parallelism is planned at the file
   not undone: a follow-up commit continues from it. A brief for an agent says so.
 - **The main checkout is the player's test bed.** Whatever the player is asked to try out is
   checked out in the repository's own folder before they are told it is ready — never left in an
-  agent's worktree under `.claude/worktrees/`. *(2026-09-08: "always check out what you want me to
-  test.")* That means freeing the agent's worktree first if it holds the branch (`git worktree
+  agent's worktree under `.claude/worktrees/` (woolly-finch). That means freeing the agent's worktree first if it holds the branch (`git worktree
   remove`), then `git checkout` in the main folder, and saying so; and while the player is testing
   there, nothing touches that checkout but docs commits on the same branch.
 
@@ -369,11 +361,7 @@ worktrees — merging is what collides — so parallelism is planned at the file
 
 **A limit or an outage stops every agent at once, and the pause's length decides what happens
 next.** The player usually tries to hand the session off before a limit hits, so the next one
-starts fresh at the reset, but not every limit is seen coming. *(2026-09-22: "long pauses let the
-cache expire which means we probably shouldn't let existing agents continue and start a new agent
-with a precise updated prompt instead. if the pause was brief nudging the existing agents is
-enough since the cache is still warm and they can just continue. usually, I'll tell you which kind
-of interruption it was.")*
+starts fresh at the reset, but not every limit is seen coming (woolly-finch).
 
 1. **Run `tools/agent-status.sh` before touching anything.** It covers every worktree's branch,
    uncommitted files, how far it is ahead of and behind its own upstream (another session may have

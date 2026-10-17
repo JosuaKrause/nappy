@@ -120,10 +120,7 @@ rather than a place:
 | build a worksheet for the player to answer the review items in | **review-answers** |
 | **end a session** | **session-cleanup** |
 
-**A manual sequence done a second time becomes a script.** *(2026-09-22: "if you find yourself
-doing similar things over and over again that require a lot of manual work maybe that's a time to
-move them to shell scripts and note them down somewhere. is there a skill about how to use the
-scripts in the tools folder?")* It follows **cli-tools** for what a command-line entry point owes,
+**A manual sequence done a second time becomes a script** (woolly-finch). It follows **cli-tools** for what a command-line entry point owes,
 and its row goes into the **using-tools** catalogue in the same commit. This is a conversation
 rule rather than a hook: the moment a second manual pass is noticed, nothing has been edited yet,
 so there is no file to hang it on.
@@ -139,10 +136,7 @@ inline. And **the hook cannot reach a rule about a conversation**: anything that
 *say* rather than what you *edit* has to live in this file, because there is no tool call to hang it
 on.
 
-**A skill found wrong is fixed, and the fix is flagged to the player.** *(2026-09-22: "if you
-ever notice that a skill doesn't work correctly or contains incorrect information or otherwise
-could be improved fix that and flag the fix to me since I want to understand how skills can be
-improved.")* Wrong includes a step that fails in practice, a sentence that is no longer true, a
+**A skill found wrong is fixed, and the fix is flagged to the player** (woolly-finch). Wrong includes a step that fails in practice, a sentence that is no longer true, a
 broken or duplicated passage, and a gap that let a mistake through. The fix goes on a branch and
 PR like any other change, and the report to the player names the skill, what was wrong, the
 moment it showed, and what the text now says — the point is that the player learns how a skill
@@ -210,12 +204,11 @@ follow; it is a claim with the evidence withheld.
   confusion is a label that sounds official and is not.
 - **A queue entry is named by its two words, or an entry from before names by its number, *and* a
   short title**, every time: "busy-badger, stars for nerves" or "M98, pressure in the empty acts",
-  never "busy-badger" or "M98" alone. *(2026-09-09: "whenever you're talking about milestones and
-  todos give a short title in addition to the number.")* A name or a number is a lookup the player
+  never "busy-badger" or "M98" alone (woolly-finch). A name or a number is a lookup the player
   has to perform; the title is the thing they were asked about.
 - **A question carries all the context needed to answer it** — what was asked, what it collides
   with, what each answer costs, and which you would pick — in the message that asks it, not in an
-  earlier one. *(2026-09-09: "also provide all necessary context when asking a question.")* The
+  earlier one (woolly-finch). The
   player answers from the message in front of them, and a question that leans on something said
   three turns ago is a question with its evidence withheld.
 
@@ -279,8 +272,7 @@ account: invisible to everybody else who opens the repo, not reviewable in a dif
 moment that store is cleared or the work moves.
 
 **"Make a note of that" means write it somewhere in the repository** — this file, a skill, or the
-doc it belongs to — and commit it. *(2026-09-08: "'making a note' means writing it somewhere in the
-repo (eg claude.md) *not* storing it as memory".)* It never means an assistant's memory store.
+doc it belongs to — and commit it (woolly-finch). It never means an assistant's memory store.
 
 ---
 

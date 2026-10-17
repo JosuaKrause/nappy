@@ -119,9 +119,8 @@ always was.
 
 ## Pushing
 
-**Always push branch work and create or update its pull request before ending the session.**
-*(2026-09-09: "always create prs don't leave branches locally only"; "or have branches on the
-remote without pr without good reason".)*
+**Always push branch work and create or update its pull request before ending the session** (woolly-finch).
+
 Do not leave work only on a local branch or leave a remote work branch without a PR unless there
 is a specific good reason, documented in the final report. Use a draft PR when the work is
 unfinished, and include the PR link in the final report. This is standing authorization; no
@@ -257,15 +256,12 @@ reasoning a later reader needs is in the decision record, and the description su
 ## A pull request is self-contained
 
 **A pull request is a completed work item, and a broken one is fixed on its own branch, never
-by a second PR.** *(2026-09-14: "we're not merging broken things -- fixes go in the same PR
-*always*"; "a PR is a *completed* workitem"; "we don't merge PRs that are broken, we fix PRs, not
-by creating new PRs".)* When review, a playtest or the player finds that a PR built the wrong
+by a second PR** (woolly-finch). When review, a playtest or the player finds that a PR built the wrong
 thing or built it wrong, the correction is committed on that PR's branch and the PR's description
 is updated to say what it now carries. A follow-up PR for the fix would either merge the broken
 work first or leave two PRs that only make sense together, and neither is a completed item.
 
-**And the unit is the work item, not the queue entry.** *(2026-09-14: "why do you keep
-creating new PRs for things that should go in the same PR?")* One question splits into several
+**And the unit is the work item, not the queue entry** (woolly-finch). One question splits into several
 queue entries as it is worked — a probe, the thing the probe found, the fix for it — and each
 entry is still the same item until the player has what they asked for. The fix for what a PR's
 probe found goes on that PR, whatever name or number the queue gave it; a new PR is for a new question.
@@ -301,19 +297,15 @@ the pass that untangles it is a milestone rather than a review comment.
 reader a sentence that is no longer true, the PR is not finished. Read the entry's own folder
 before proposing, not after.
 
-**And every doc the change owes is in the PR before it merges. This is a hard requirement.**
-*(2026-09-09: "why do you keep updating handoffs and todos *after* a PR has landed? the updates
-*must* go in the PR … that's a hard requirement" — and, on the shape of it: "the requirement is not
-for docs to be updated before the PR opens. it's for the docs to be updated *before* it
-**merges**".)* The entry's files, the decision record, the review item and every other doc the
+**And every doc the change owes is in the PR before it merges. This is a hard requirement** (woolly-finch).
+The entry's files, the decision record, the review item and every other doc the
 change touches are committed on the branch by the time the merge button is pressed. Pushing them onto an open PR is
 fine; filing them in the next PR, or in a cleanup afterwards, is not — once the squashed commit
 exists, `main` has handed every reader a false sentence until something else lands. Before merging,
 re-read the branch's own diff against the list above and ask what it left stale. The end-of-session
 cleanup pass is for drift no single PR caused, not for finishing a PR's own doc work.
 
-**A work item never merges while its queue item is unresolved.** *(2026-09-09: "a workitem may
-never merge if it's corresponding TODO item hasn't been resolved".)* Resolved means the item's
+**A work item never merges while its queue item is unresolved** (woolly-finch). Resolved means the item's
 file is gone from its entry's folder and its record — what was built, the measurement, the
 rejected options — is filed under `docs/decisions/`, both on the branch. A PR whose own item still
 sits open in the queue is not finished, however green its checks are; if the item is only partly
@@ -322,9 +314,7 @@ still open, with the built half filed as a decision.
 
 **And work that only a person can judge adds its review item in the same PR**: a file
 `docs/review/<entry name>.md`, made with `tools/new-name.sh review --entry <name> "<title>"`, which
-takes `-2` and on for a second item from the same entry. *(2026-09-11: "keep a document with items
-that need human review / test runs. That way you can keep working without having to stop. And test
-runs can capture multiple items at once.")* The item says what to do, where to look, and the
+takes `-2` and on for a second item from the same entry (woolly-finch). The item says what to do, where to look, and the
 question a run answers, its steps written as prose rather than numbered; the record of what was
 built stays in the decision. The review items are the list a playtest is asked against, so an item
 missing from them is an item no run will ever be asked to look at.
@@ -344,19 +334,17 @@ returns a 404 the moment the branch is deleted — and this workflow deletes eve
 it is merged, so every such link in every merged PR is dead. The description is the one place the
 before-and-after pictures live once the PR is closed, so a dead link there is the evidence gone.
 
-Link the commit instead, and **embed a picture with image syntax, never as a bare URL**:
+Link the commit instead, and **embed a picture with image syntax, never as a bare URL** (woolly-finch):
 
 ```
 ![what the picture shows](https://raw.githubusercontent.com/<owner>/<repo>/<full-commit-sha>/docs/evidence/x.png)
 ```
 
-*(2026-09-23: "the images don't show up inline"; "while they do show up inline for the other
-prs".)* GitHub renders a bare URL in a description as a link, so the player has to open every
+GitHub renders a bare URL in a description as a link, so the player has to open every
 picture to see it, which is exactly what a visual review is meant to spare them.
 
 **A pull request that went through several visual passes opens with the current proposal**, its
-pictures embedded, and lists the superseded passes last as plain links. *(2026-09-23: "it's not
-clear what the current proposal is".)* A description that grows a section per pass reads as a
+pictures embedded, and lists the superseded passes last as plain links (woolly-finch). A description that grows a section per pass reads as a
 history, and the reviewer has to work out which picture is the one being asked about.
 
 A branch commit's URL
@@ -455,8 +443,7 @@ can read by itself on the pull request. The commits are for the review and for t
 is open: `main` receives the squash, so nothing on `main` is reverted or bisected finer than a pull
 request, and an item that must be revertible alone is a pull request of its own.
 
-**But a branch is yours, and a messy commit inside one is fine.** *(2026-09-05: "unclean commits are
-fine inside a branch since main is protected".)* `main`'s ruleset means nothing lands except through
+**But a branch is yours, and a messy commit inside one is fine** (woolly-finch). `main`'s ruleset means nothing lands except through
 a pull request with the `test` check green on the merge result, so **the branch cannot hurt anybody**
 — the thing that has to be clean is what reaches `main`, and the squashed commit is what the
 project keeps. A half-finished item, a commit that does not build, a "wip" while you go and check something,
