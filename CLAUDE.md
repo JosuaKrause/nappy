@@ -203,8 +203,9 @@ follow; it is a claim with the evidence withheld.
 - Say **what is at** a `file:line` rather than pointing at it.
 - Quote the code comment or doc sentence that carries the reasoning rather than paraphrasing it as
   settled fact.
-- If a name was invented for the conversation rather than found in the repo, say so. Half the
-  confusion is a label that sounds official and is not.
+- If a name was invented for the conversation rather than found in the repo, say so and say what
+  it names; it never stands alone (inbox #772). Half the confusion is a label that sounds official
+  and is not.
 - **A queue entry is named by its two words, or an entry from before names by its number, *and* a
   short title**, every time: "busy-badger, stars for nerves" or "M98, pressure in the empty acts",
   never "busy-badger" or "M98" alone (woolly-finch 9). A name or a number is a lookup the player has
@@ -213,13 +214,12 @@ follow; it is a claim with the evidence withheld.
   with, what each answer costs, and which you would pick — in the message that asks it, not in an
   earlier one (woolly-finch 10). The player answers from the message in front of them, and a
   question that leans on something said three turns ago is a question with its evidence withheld.
-- **A thing in the game is named the way the player knows it, and said what it is the first time
-  it comes up in a message** (inbox #772): what it is and what it does in play, in a clause — "the
+- **A thing in the game is named the way the player knows it, and said what it is in each
+  message that mentions it** (inbox #772): what it is and what it does in play, in a clause — "the
   checkpoint guard, who steps out of the hut when she walks under the raised boom" — never only
-  the code's name for it ("the door guard", from `_door_guard()`) or a label a brief, a report or
-  an agent made up ("kind 2", "the masked man"). A code name may follow in brackets, never stand
-  alone. It holds for an agent's report relayed to the player too, since the player has read none
-  of what the names come from.
+  the code's name for it ("the door guard", from `_door_guard()`). Even the player's own name for
+  a thing needs its clause, since they may not recall which one is meant. A code name may follow in
+  brackets, never stand alone; this holds for a relayed agent report too.
 
 **"Telemetry", in the player's words, primarily means GoatCounter** (azure-tapir #527). A request
 for telemetry on something is a request for its own GoatCounter events (`VisitCounter`, the page
