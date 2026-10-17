@@ -49,7 +49,7 @@
     }
   },
   "playback": {
-    "walk": "1.95w0.7n0.7s5.71w3.13s0.35e",
+    "walk": "1.95w0.42n0.42s0.56p5.71w3.13s0.35e",
     "duration": 13.3,
     "capture_at": 12.3,
     "observations": [

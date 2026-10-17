@@ -138,16 +138,21 @@ func _test_every_badge_silhouette_is_on_the_page(t) -> void:
 
 ## Both dog families draw the comic pictures the player accepted *(2026-09-27, dotted-panda: "the
 ## graphics should be used in game")*: every picture the normal dog (the dog walker's and the loose
-## dog's) and the charging dog can draw has its transfer PNG beside its SVG, so the default bake —
-## every release and every CI run — bakes the PNG. `tests/test_atlas_library.gd` holds each baked
-## region to its own PNG pixel for pixel; this holds that there is a PNG to hold it to.
+## dog's) can draw, and every frame of the charging dog's gallop, has its transfer PNG beside its
+## SVG, so the default bake — every release and every CI run — bakes the PNG.
+## `tests/test_atlas_library.gd` holds each baked region to its own PNG pixel for pixel; this holds
+## that there is a PNG to hold it to. The charging dog's rest and alert are drawn from their SVGs,
+## which the player judges in the game (inbox #748: "yes that's what I've been saying all along").
 func _test_both_dog_families_draw_their_accepted_transfers(t) -> void:
 	var pictures: Dictionary = {}
-	for look: EventDef.Look in [EventDef.Look.LOOSE_DOG, EventDef.Look.CHARGING_DOG]:
-		for picture in EventInstance.family_sources(look):
-			pictures[picture] = true
+	for picture in EventInstance.family_sources(EventDef.Look.LOOSE_DOG):
+		pictures[picture] = true
+	for table: Dictionary in [EventInstance.CHARGING_DOG_BY_VIEW,
+			EventInstance.CHARGING_DOG_BY_VIEW_B]:
+		for view: String in table.keys():
+			pictures[str(table[view])] = true
 	t.check(pictures.size() == 25,
-			"the two dog families draw fifteen and ten pictures (%d)" % pictures.size())
+			"the normal dog and the gallop draw fifteen and ten pictures (%d)" % pictures.size())
 	for picture: String in pictures.keys():
 		var transfer := AtlasLibrary.illustrated_path_for("art/%s.svg" % picture)
 		t.check(FileAccess.file_exists(transfer), "%s is drawn from %s" % [picture, transfer])

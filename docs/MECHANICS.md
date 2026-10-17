@@ -1057,12 +1057,16 @@ clear line".)* A waiting pursuer notices her within `pursues_within` only along 
 and its lunge at the stand-off asks for it too. A lunge the wall holds back is not simply deferred
 until the line clears, which would clamp the approach at zero — at an alley mouth the line clears
 with her already well inside the stand-off, and it would fire from a fraction of it. Instead the
-pursuer holds the door guard's ground (`EventDef.sets_off_beside_her`): it stands while she is
-nearer than the stand-off, follows at the stand-off once she is further, and lunges the moment she
-is back at the full stand-off with the line clear. **Its notice does not run out while she is inside
+pursuer holds the ground a pursuer that sets off beside her holds (`EventDef.sets_off_beside_her`):
+it stands while she is nearer than the stand-off, follows at the stand-off once she is further, and
+lunges the moment she is back at the full stand-off with the line clear. A pursuer that stands for
+its notice (`EventDef.stands_for_its_notice`: the dog that waited, the hunting roadblock's guard,
+the door guard) follows nowhere: it stands where it is for the whole notice and lunges the same
+way. **Its notice does not run out while she is inside
 the stand-off**, since a notice ending there would start the chase from a fraction of it, the same
 trap reached by standing still; it runs on while she is outside, and if it ends there the chase
-starts from the stand-off as well. So the chase starts from the full stand-off however she came. A
+starts from the stand-off as well, or, for a pursuer that stands, from wherever she is, which is
+further. So the chase starts from at least the full stand-off however she came. A
 held pursuer she stays beside never sets off: it stands turned toward her with the doubled red caret
 up and its field charging her, and the way out is the walk the contract was written for. A waiting
 robber is drawn facing her only along the same clear line, so he does not visibly track her round a
@@ -1144,7 +1148,7 @@ and price and route around, and that becomes a chase if you do not. Three states
 | | it emits | it can kill | it moves |
 | --- | --- | --- | --- |
 | **waiting** | at full strength | no | no |
-| **noticing** (`telegraph_time`) | at full strength | no | closes to the stand-off |
+| **noticing** (`telegraph_time`) | at full strength | no | closes to the stand-off (the alley robber at a slow walk of his own, `EventDef.notice_walk_speed`), or stands for it (`EventDef.stands_for_its_notice`: the waiting dog, the hunting roadblock's guard, the door guard) |
 | **chasing** (`duration`) | at full strength | yes | holds, then comes |
 
 Two things are deliberately not the same as an ordinary telegraph. The **clock starts when it
@@ -1366,8 +1370,8 @@ in reach. Its guard moves with it, to two-thirds of the way through that alley f
 nearer wherever the mark lands, plus the tile the mark stands in from that end so he keeps the
 distance from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end, for a
 courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
-his own `pursues_within` of her or in view when he is placed — so where that spot is 176px or
-more from the mark, entering the alley from the mark's own end, reading it and leaving the same way
+his own `pursues_within` of her or in view when he is placed — so where that spot is 216px or
+more from the mark (his 180px notice and her 36px reach), entering the alley from the mark's own end, reading it and leaving the same way
 never wakes him, and in a shorter alley reading it may. The mark does not move while its guard is awake or any part of him
 is on her screen, since the move retires him and he would vanish in front of her or out of a chase;
 once read, the mark never moves and its guard stays until the day ends. The guard a task stands at

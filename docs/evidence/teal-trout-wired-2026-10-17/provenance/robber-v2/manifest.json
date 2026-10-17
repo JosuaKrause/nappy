@@ -1,0 +1,225 @@
+{
+	"anchors": {
+		"robber": [
+			4848.0,
+			240.0
+		],
+		"start": [
+			4848.0,
+			430.0
+		]
+	},
+	"authored_posters": [],
+	"bounds": [
+		0,
+		0,
+		160,
+		160
+	],
+	"checks": [
+		"construction_schema",
+		"production_choice_predicates",
+		"whole_visible_footprints",
+		"full_context_guarantees"
+	],
+	"choices": {
+		"context_seed": 4242.0
+	},
+	"classification": "normal",
+	"context_seed": 4242,
+	"engine": "4.7.2-stable (official)",
+	"expected_violations": [],
+	"final_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {
+			"alley_robbery": 1
+		},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"final_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				4848.0,
+				409.8666
+			],
+			"speed": 0.0
+		},
+		"robber": {
+			"position": [
+				4848.0,
+				409.366
+			],
+			"pursuing": true,
+			"row": "alley_robbery",
+			"telegraphing": false
+		}
+	},
+	"final_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"initial_activity": {
+		"moving_crowd": 0,
+		"visible_cars": 0,
+		"visible_events": {},
+		"visible_walkers": 0,
+		"walker_streets": {},
+		"walkers_left": 0,
+		"walkers_right": 0
+	},
+	"initial_actors": {
+		"player": {
+			"carrying": false,
+			"gait_frame": 1,
+			"position": [
+				4848.0,
+				430.0
+			],
+			"speed": 0.0
+		},
+		"robber": {
+			"position": [
+				4848.0,
+				240.0
+			],
+			"pursuing": false,
+			"row": "alley_robbery",
+			"telegraphing": false
+		}
+	},
+	"initial_crowd": {
+		"cars": 0,
+		"moving": 0,
+		"moving_cars": 0,
+		"quadrants": {
+			"ne": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"nw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"se": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			},
+			"sw": {
+				"cars": 0,
+				"moving": 0,
+				"moving_cars": 0,
+				"total": 0,
+				"walkers": 0
+			}
+		},
+		"scope": "local",
+		"total": 0,
+		"walkers": 0
+	},
+	"installed_events": [
+		{
+			"facing": [
+				1.0,
+				0.0
+			],
+			"position": [
+				4848.0,
+				240.0
+			],
+			"row": "alley_robbery"
+		}
+	],
+	"observations": [
+		{
+			"condition": "visible",
+			"passed": true,
+			"player_at": [
+				4848.0,
+				430.0
+			],
+			"state": {
+				"position": [
+					4848.0,
+					240.0
+				],
+				"pursuing": false,
+				"row": "alley_robbery",
+				"telegraphing": false
+			},
+			"subject": "robber",
+			"tick": 10.0
+		}
+	],
+	"physics_ticks_per_second": 30,
+	"playback_complete": true,
+	"recipe": "teal-trout: an alley robber waits, notices her at 180px, walks at her slowly in his two-frame alert, and lunges",
+	"recipe_sha256": "3d7261e89829d894a828258a8f78f365b171b13803e916f7aed9aba5c2cb64d3",
+	"scope": "full",
+	"seed": 4242,
+	"setup": {
+		"day": 8.0,
+		"events": [
+			{
+				"at": "robber",
+				"name": "robber",
+				"row": "alley_robbery"
+			}
+		],
+		"parent": "mother",
+		"player": {
+			"at": "start",
+			"facing": "north"
+		},
+		"tutorial_complete": true
+	},
+	"violations": []
+}

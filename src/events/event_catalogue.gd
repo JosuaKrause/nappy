@@ -1586,6 +1586,12 @@ static func _charging_dog() -> EventDef:
 	def.telegraph_time = 4.5
 	def.pursues = true
 	def.pursue_speed = 130.0
+	# **The dog that waited stands for its notice** *(inbox #748: "dog also doesn't walk -- only
+	# one is the robber")*: from day 4, once it notices her, it holds its ground in its alert pose
+	# for this 4.5s rather than closing, and lunges the moment she comes inside its 104px stand-off.
+	# The day-3 dog sent down her heading has no wait to notice her from, so its approach is still
+	# this telegraph (`EventInstance.is_standing_for_its_notice()`).
+	def.stands_for_its_notice = true
 	# Its badge alone, sent at her down her heading, before it is placed just out of sight
 	# (`EventDef.warned_for()`): half a second, the gold timing's off-screen part, under the one-second
 	# ceiling and not lengthened to it. See `EventDef.offscreen_notice` for where 0.5 came from.
@@ -1892,6 +1898,9 @@ static func _roadblock() -> EventDef:
 	# this post and the masked man on the escape's stairs are the same figure doing the same thing.
 	def.lethal_radius = MASKED_MAN_REACH
 	def.body_stays_behind = true
+	# His notice, once the hunting copy pursues, is spent at his post with his hand raised rather
+	# than walking at her *(inbox #748: "guards should lift their hand in warning")*.
+	def.stands_for_its_notice = true
 	def.barrier_structure = true
 	def.weight = 2.0
 	def.max_per_day = 6
@@ -1968,12 +1977,12 @@ static func _abduction() -> EventDef:
 ## - **Getting close is day ending.** `hard_fail` inside 26px, and it has to be **reachable**: he
 ##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
 ##   the inner radius means the kill can never fire.
-## - **Get close and he comes at you.** `pursues_within` 140: inside that he stands up, turns to
-##   face her and closes at 130px/s for as long as she is outside his 116px stand-off, up to a
-##   1.8s notice (`Tuning.PURSUIT_MIN_NOTICE` is what the notice may not be shorter than) — the
-##   lunge ends it the moment she is inside the stand-off, so a walker who comes in has about a tenth
-##   of a second between his turning and his lunge, and one who stands still at his edge about a fifth
-##   — and then chases at 130px/s until she has shaken him off. Walking away does not work and
+## - **Get close and he comes at you.** `pursues_within` 180: inside that he stands up, turns to
+##   face her and walks at her slowly, at 40px/s (`EventDef.notice_walk_speed`), for as long as she
+##   is outside his 116px stand-off, up to a 1.8s notice (`Tuning.PURSUIT_MIN_NOTICE` is what the
+##   notice may not be shorter than) — the lunge ends it the moment she is inside the stand-off, so a
+##   walker who comes in sees him walk for about half a second, and one who stands still at his edge
+##   about 1.6s — and then chases at 130px/s until she has shaken him off. Walking away does not work and
 ##   running away does, which is exactly `charging_dog`'s contract arriving in act III as a *place* rather than a moment.
 ##
 ## The alley is the warning, and it is not the only one.
@@ -2000,8 +2009,8 @@ static func _alley_robbery() -> EventDef:
 	def.lunge_reach = 38.0
 	# Wider than the trigger, and that is the contract rather than a taste: he may not notice her from
 	# outside his own field, because the meter is the only thing that says a stranger in an alley is
-	# worth crossing the road for. The sixty pixels between this and `pursues_within` are the row's
-	# first sentence — **on sight** — with somewhere to happen.
+	# worth crossing the road for. The twenty pixels between this and `pursues_within` are the row's
+	# first sentence — **on sight** — with somewhere to happen, and his slow walk is its second.
 	def.outer_radius = 200.0
 	# From the moment he notices her, not from dawn. See `EventDef.pursues_within`.
 	def.telegraph_time = 1.8
@@ -2011,15 +2020,25 @@ static func _alley_robbery() -> EventDef:
 	# that comes after you moves like should not have to learn it again in act III.
 	def.pursue_speed = 130.0
 	# Outside his stand-off (116px) and inside his field, which is what leaves room for both halves of
-	# the row: far enough out that the notice is not spent standing still, near enough that she has
-	# felt him for a while before he decides anything about her.
+	# the row: far enough out that his notice walk is seen, near enough that she has felt him before
+	# he decides anything about her. *(Inbox #761, the player: "we can increase the noticing if the
+	# robber starts walking slowly".)* 64px past his stand-off at the slow walk below is about half a
+	# second of him walking for a walker coming in (64 / (40 + 92)) and 1.6s for one who stops at the
+	# edge, and 180px is the hunting roadblock guard's own trigger (`Tuning.HEAT_HUNTS_WITHIN`) and
+	# half the view's height, so he notices her on screen.
 	#
 	# The trap, and the reason this is worth a comment rather than a number: with a chase that ends
 	# at a *distance*, a trigger at or past that distance is a pursuit that loses interest the
 	# instant it starts — she is already standing where it means "it has lost her", and she can
 	# stroll away from him every time. `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a rate instead, so
 	# no trigger distance can reproduce it.
-	def.pursues_within = 140.0
+	def.pursues_within = 180.0
+	# **He walks at her slowly through his notice**, a man getting up off a wall rather than a man
+	# already running: his chase is 130px/s, and closing at that from his trigger would be over in a
+	# tenth of a second. At 40px/s, a little over the dog walker's 32px/s stroll, a stride beat
+	# (`EventInstance._gait_stepping()`, 17.5px of ground) lasts about 0.44s, near the 450ms the
+	# walkers' two-frame pictures were reviewed at.
+	def.notice_walk_speed = 40.0
 	# And he walks off when he has lost her, rather than being deleted where he stood.
 	def.departs_at = 100.0
 	def.hard_fail = true
@@ -2811,7 +2830,8 @@ static func _checkpoint_post() -> EventDef:
 ##
 ## **`sets_off_beside_her`, because he does.** A hut's width from her is well inside his 106px
 ## stand-off, so the ordinary rule would lunge on his first frame; instead his notice is spent
-## holding his ground and then following at the stand-off, and cannot be cut short. See that field.
+## standing where he stepped out with his hand raised (`stands_for_its_notice`, inbox #748: "guards
+## should lift their hand in warning"), and cannot be cut short. See both fields.
 static func _door_guard() -> EventDef:
 	var def := EventDef.new()
 	def.id = "door_guard"
@@ -2829,6 +2849,7 @@ static func _door_guard() -> EventDef:
 	def.pursues = true
 	def.pursue_speed = Tuning.HEAT_HUNTS_SPEED
 	def.sets_off_beside_her = true
+	def.stands_for_its_notice = true
 	def.hard_fail = true
 	return def
 

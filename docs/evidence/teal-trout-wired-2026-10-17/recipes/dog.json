@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "name": "teal-trout wired: a map-placed charging dog sits, stands alert through its whole notice while she stands inside its trigger, and charges",
+  "seed": 4242,
+  "extent": {
+    "scope": "full"
+  },
+  "city": {
+    "context_seed": 4242
+  },
+  "anchors": {
+    "start": {
+      "tile": [
+        139,
+        127
+      ]
+    },
+    "dog": {
+      "tile": [
+        132,
+        127
+      ]
+    }
+  },
+  "setup": {
+    "tutorial_complete": true,
+    "day": 5,
+    "parent": "mother",
+    "player": {
+      "at": "start",
+      "facing": "west"
+    },
+    "events": [
+      {
+        "name": "dog",
+        "row": "charging_dog",
+        "at": "dog"
+      }
+    ]
+  },
+  "playback": {
+    "walk": "1p1.25w6p",
+    "duration": 8.0,
+    "capture_at": 1.0,
+    "camera": {
+      "fixed": true,
+      "fixed_offset": [
+        -110,
+        0
+      ]
+    },
+    "observations": [
+      {
+        "tick": 10,
+        "subject": "dog",
+        "condition": "visible"
+      }
+    ]
+  }
+}

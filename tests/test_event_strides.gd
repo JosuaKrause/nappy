@@ -22,6 +22,7 @@ const GAIT_FAMILY_DICTS := {
 	"person": [EventInstance.PERSON_BY_VIEW, EventInstance.PERSON_BY_VIEW_B],
 	"yeller": [EventInstance.YELLER_BY_VIEW, EventInstance.YELLER_BY_VIEW_B],
 	"robber_lunging": [EventInstance.ROBBER_LUNGING_BY_VIEW, EventInstance.ROBBER_LUNGING_BY_VIEW_B],
+	"robber_alert": [EventInstance.ROBBER_ALERT_BY_VIEW, EventInstance.ROBBER_ALERT_BY_VIEW_B],
 	"protester": [EventInstance.PROTESTER_BY_VIEW, EventInstance.PROTESTER_BY_VIEW_B],
 	"leaf_blower": [EventInstance.LEAF_BLOWER_BY_VIEW, EventInstance.LEAF_BLOWER_BY_VIEW_B],
 	"van_victim": [EventInstance.VAN_VICTIM_BY_VIEW, EventInstance.VAN_VICTIM_BY_VIEW_B],

@@ -1456,7 +1456,7 @@ func _depth_of_the_mark(at: Vector2, near: Vector2, axis: Vector2) -> float:
 ## (`_through_alley_span()`): **two-thirds of the way through it**, from the edge nearer the mark at
 ## `at` (`THROUGH_THE_ALLEY`) plus the tile the mark stands in from its mouth
 ## (`_depth_of_the_mark()`), so he is inside the alley rather than at its edge, the player's own
-## reason, and as far from the mark as when it stood on the mouth. Where that point is `pursues_within + ContactPoint.REACH` (176px) or more from the mark,
+## reason, and as far from the mark as when it stood on the mouth. Where that point is `pursues_within + ContactPoint.REACH` (216px) or more from the mark,
 ## a touch of the mark from its own end never wakes him; in an alley too short for both — every
 ## one-block alley: a mark stands one tile in from its end tile (`_mark_tiles()`), 48px in, so he
 ## stands about 155px from it — he still stands two-thirds in, and reading the mark may wake him: *"Two-thirds

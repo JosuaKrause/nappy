@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "name": "teal-trout: an alley robber waits, notices her at 180px, walks at her slowly in his two-frame alert, and lunges",
+  "seed": 4242,
+  "extent": {
+    "scope": "full"
+  },
+  "city": {
+    "context_seed": 4242
+  },
+  "anchors": {
+    "start": {
+      "world": [
+        4848,
+        430
+      ]
+    },
+    "robber": {
+      "world": [
+        4848,
+        240
+      ]
+    }
+  },
+  "setup": {
+    "tutorial_complete": true,
+    "day": 8,
+    "parent": "mother",
+    "player": {
+      "at": "start",
+      "facing": "north"
+    },
+    "events": [
+      {
+        "name": "robber",
+        "row": "alley_robbery",
+        "at": "robber"
+      }
+    ]
+  },
+  "playback": {
+    "walk": "1p0.2n4p",
+    "duration": 5.2,
+    "capture_at": 1.0,
+    "camera": {
+      "fixed": true,
+      "fixed_offset": [
+        0,
+        -80
+      ]
+    },
+    "observations": [
+      {
+        "tick": 10,
+        "subject": "robber",
+        "condition": "visible"
+      }
+    ]
+  }
+}
