@@ -1564,8 +1564,10 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: Node) -> void:
 	const STAND_AT := 30.0
 	var steam := EventCatalogue.by_id("basement_steam")
 	var blow := EventInstance.new()
-	t.add_child(blow)
+	# Set up before it joins the tree, the order `InteriorEvents._spawn()` uses: `_ready()` reads
+	# the def.
 	blow.setup(steam, Vector2.ZERO)
+	t.add_child(blow)
 	var cost := 0.0
 	var elapsed := 0.0
 	while not blow.is_finished and elapsed < 20.0:
