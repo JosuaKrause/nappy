@@ -15,19 +15,26 @@ a street for good. A flood past every body over eight seeds reached one exit of 
 escape never had the yellow curb tint: [M145](2026-09-14-M145-the-routes-curbs-tinted-faint-yellow-built-an-experiment.md)
 draws it from a day's route tree, which the escape does not have.
 
-**Built (PR #755).** `_fill_a_finale_street` refuses, before accepting it, a placement that would
-leave neither sidewalk of a chain street walkable from junction to junction, counting every body as
-it stands for the whole walk (the parked van, the band after its guard leaves, each explosion as its
-crater); it asks the day's own physical check, `closes_a_walked_sidewalk_band()`, of both sidewalks.
-A refused candidate is not replaced, so the street carries one fewer; nothing is repaired afterwards
-and no event's lifetime changes. Over eight seeds the chain streets keep their pressure: 216
-roadblocks where there were 232, the same 241 vans. `City.tint_the_escape_route()` tints both kerb
-lines of every street the plan's chains run through, after every plan, restarts included.
-`tests/test_finale.gd` floods from the service exit past every body over eight seeds and requires
-both exits (15 of its 16 checks fail on `main`), and checks the tint is on the escape's streets and
-no others.
+**Built (PR #755).** `_fill_a_finale_street` asks two questions of a placement before accepting
+it, counting every body as it stands for the whole walk (the parked van, the band after its guard
+leaves, each explosion as its crater) where the game builds it, and the seals with them: an unused
+alley's mouth wall lies along the chain street it opens onto and takes the outer lane of that
+street's sidewalk. **One sidewalk stays open**: the day's physical check,
+`closes_a_walked_sidewalk_band()`, asked of both sidewalks. **The walk stays joined**: on an 8px
+grid of her centre, any two points on the edge of a box round the placement that were connected
+inside it without the placement must still be connected with it, and so must the service exit and
+the exits where they fall inside; that is the day's junction rule asked of a box round the
+placement, and it keeps an alley's mouth open as well as the street. Since the seals alone leave
+both exits reachable, every accepted placement does too. A refused candidate is rolled again or
+not placed; nothing is repaired afterwards and no event's lifetime changes. Over seeds 1 to 20 the
+chain streets keep their pressure: 610 vans as before, 530 roadblocks where there were 553. Planning
+costs about 110ms more inside a plan. `City.tint_the_escape_route()` tints both kerb lines of every
+street the plan's chains run through, after every plan, restarts included. `tests/test_finale.gd`
+floods from the service exit past every body, seed 23 among its seeds, and requires both exits (it
+fails on `main`; a sweep of seeds 1 to 80 finds none failing), and checks through `Main` that the
+first plan and a restart tint the escape's streets and no others, the day's tint gone.
 
 **Choices open to overturn:** either sidewalk counts as the open one, not only the side the chain's
-cells run along; the seals are not part of the check (they stand on streets the chains do not use);
-the tint is whole streets and both kerb lines, as on a day; an escape started from a scene recipe
+cells run along; the joined-walk check refuses more than it strictly must, since two points on the
+box's edge may also join round its outside; the tint is whole streets and both kerb lines, as on a day; an escape started from a scene recipe
 gets no tint.
