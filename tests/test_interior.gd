@@ -881,7 +881,6 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 	events.free()
 	scene.free()
 
-## Every painted grammar cell in one stairwell, including its non-walkable sides.
 ## *"The fire in the house moved one floor down from what it was before breaking the escape
 ## sequence left right left."* (inbox #741) **The fire stands on the second floor's approach in
 ## the left shaft whatever the seed**, because it is not rolled, and with its body down the stairs
@@ -955,6 +954,7 @@ func _walks_between(f: InteriorMapPlan, shut: Dictionary, from: Vector2i, to: Ve
 				queue.append(next)
 	return false
 
+## Every painted grammar cell in one stairwell, including its non-walkable sides.
 func _shaft_tiles(scene: InteriorScene, part_id: String) -> Array[Vector2i]:
 	return scene.stairwell_tiles(part_id)
 
