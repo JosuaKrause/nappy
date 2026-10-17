@@ -5,8 +5,8 @@ and `CLAUDE.md` and the skills cite them rather than quote them; a citation adds
 link or path, only the file's name; the reading is established once, by the review of the change
 that writes the rule; and a change's consequences are fixed in the PR that makes them.
 
-**Built (PR #756).** `CLAUDE.md` states the rule and says once how to read a citation: a name such as
-`woolly-penguin` is the playtest of that name under `docs/playtests/`, and a statement in a file of
+**Built (PR #756).** `CLAUDE.md` states the rule and says once how to read a citation: a name such
+as `woolly-penguin` is the playtest of that name under `docs/playtests/`, and a statement in a file of
 several is given either as `#N`, the statement under its `## #N` heading, or as the file's own
 statement number, as in `(PLAYTEST-16 7)`; words no playtest holds cite their record under
 `docs/decisions/` the same way, and `inbox #N in <name>`, which `tools/inbox.py cite` writes, is the
