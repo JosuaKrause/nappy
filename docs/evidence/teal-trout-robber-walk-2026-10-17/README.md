@@ -54,3 +54,7 @@ A delivered GIF is never overwritten; a revision is a new file with the next ver
 
 **What the GIFs cannot show**: the robber moving over the ground, his heading turning toward her,
 the caret over him, or the alley floor he waits on; only the two pictures alternating in place.
+**And they show far more walking than the game does.** The GIFs loop forever, but he notices her
+within 140px and closes only to his 116px stand-off, then stands still in frame a until she moves
+or his 1.8s notice ends. Unless she backs away he walks about 24px, about 0.2s and one swap, and
+holds the planted step for the rest of his warning.
