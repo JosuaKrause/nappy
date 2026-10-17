@@ -148,13 +148,21 @@ findings live.
 
 *(2026-10-17: "add a rule / note that if a review returns unsuccessful three times the approach
 should be rethought".)* When a pull request's reviews have come back *not ready* three times, the
-next step is not a fourth round of fixes to the findings. The orchestrator stops and rethinks the
-approach: whether the brief asked for the right thing, whether the design or the reading of the
-player's words is wrong, whether the work should be split, restarted or put to the player.
-*Proposed, not asked for, open to the player's correction:* the count is per pull request, over
-its full reviews and its delta reviews alike; the rethinking, and what it decided, is written in
-the pull request's conversation before any further commit, and a change of approach that touches
-what the player asked for goes to them as a question first.
+approach is rethought.
+
+*Proposed, not asked for, open to the player's correction:*
+
+- **What counts:** every *not ready* verdict on the pull request, full reviews and reviews of a
+  delta alike, a queue update included. The count starts again after a rethink is written down.
+- **What the rethink asks:** whether the brief asked for the right thing, whether the design or
+  the reading of the player's words is wrong, and whether the work should be split, restarted or
+  put to the player. It decides *how* the open findings get fixed, never whether: the pull request
+  still does not merge with a found defect open ("Is every defect already found in this change
+  fixed inside it?", above).
+- **Who and where:** the orchestrating session, or in a session with none (a Codex session working
+  alone) the session that owns the pull request, writes the rethink and what it decided in the
+  pull request's conversation before any further commit; a change of approach that touches what
+  the player asked for goes to them as a question first.
 
 ## Briefing a review agent
 
