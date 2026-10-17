@@ -1610,6 +1610,11 @@ open as walking through the vent's reach costs. Waiting is the answer; there is 
 Standing at a blowing vent costs the meter hard *("steam should be 40 to 50")*: one blow takes 40 to
 50 points awake at the 30px a vent holds her out, so waiting right at the gate is paid for, and the
 pocket between two vents is still never shut at both ends for long enough to fill the meter.
+**And the meter does not fall in the basement** *("let's not replenish the meter in the basement it's a
+tense situation")*: walking there earns no decay, awake or asleep, because the building answers the
+ground's decay multiplier with `Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER` (0) on the basement's
+tiles and 1.0 elsewhere. What a blow charges her with stays until she is out, so a mistimed vent
+is paid for at the next one; the rest of the escape recovers as it always did.
 
 **Two hint lines, said once each** as she starts walking a section she has not walked before:
 *"Escape the building"* and *"Escape the city"* — the same words that head each section's brief,

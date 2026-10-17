@@ -641,6 +641,14 @@ func add_entity(node: Node) -> void:
 ## hold the world, because an event has to be added to the scene it stands in.
 var events: InteriorEvents = null
 
+## **The basement gives nothing back**: the meter does not fall while she is in it, awake or asleep
+## (`Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`), so what a vent charges her with stays until she
+## is out. Every other part of the building is an ordinary 1.0.
+func decay_multiplier(world_position: Vector2) -> float:
+	if InteriorMap.part_at(world_to_tile(world_position)) == "basement":
+		return Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER
+	return 1.0
+
 func total_excitement_at(world_position: Vector2) -> float:
 	return events.total_excitement_at(world_position) if events else 0.0
 

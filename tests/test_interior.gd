@@ -35,6 +35,7 @@ func run(t) -> void:
 	_test_a_vent_never_closes_around_her(t)
 	_test_no_pocket_between_two_vents_outlasts_the_noise(t)
 	_test_one_blow_of_steam_costs_forty_to_fifty_points(t)
+	_test_the_meter_does_not_fall_in_the_basement(t)
 	_test_every_vent_has_its_grate_blowing_or_not(t)
 	_test_an_explosion_flashes_every_hallway_window(t)
 	_test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t)
@@ -1612,6 +1613,29 @@ func _is_shut(vent: InteriorEvents.Vent, at: float, steam: EventDef) -> bool:
 	var phase := fmod(since, vent.period)
 	return phase >= steam.telegraph_time \
 			and phase < steam.telegraph_time + Tuning.FINALE_STEAM_BLOWS_FOR
+
+## *"Let's not replenish the meter in the basement it's a tense situation."* (inbox #765) The
+## scene answers the baby's `decay_multiplier()` with `Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`
+## (nothing) at every tile of the basement's corridor and with an ordinary 1.0 in every other part
+## of the building, so a blow's points stay on the meter until she is out.
+func _test_the_meter_does_not_fall_in_the_basement(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var walk := scene.basement_walk()
+	t.check(not walk.is_empty(), "the basement has a corridor to walk")
+	var worst := 0.0
+	for tile in walk:
+		worst = maxf(worst, scene.decay_multiplier(scene.tile_to_world(tile)))
+	t.check(worst == 0.0 and Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER == 0.0,
+			"no tile of the basement corridor gives any decay back (%.2f)" % worst)
+	for part in InteriorMap.PARTS:
+		if part == "basement":
+			continue
+		var at := scene.tile_to_world(scene.waypoint(part))
+		t.check(scene.decay_multiplier(at) == 1.0,
+				"%s is ordinary ground for the meter" % part)
+	scene.free()
 
 ## **A vent that is there all the time, blowing or not, is what a player can plan around.** Each
 ## vent's floor grate lies on its site from the moment the section is placed, before the first blow
