@@ -1743,13 +1743,17 @@ the candidate loop, never moved afterwards.
 **And no street of the walk is closed by what stands on it.** *(Inbox #747: "roadblocks currently
 are impossible to get past. one sidewalk must be open if they're en-route.")* On a day the
 placement rules keep the bodies off the route; in the escape they stand on it, so each candidate is
-refused when, with everything already planned whose reach touches the street, it would leave
-neither sidewalk of a chain street walkable from end to end
-(`EventScheduler._leaves_a_finale_sidewalk_open()`, which asks the day's own
-`closes_a_walked_sidewalk_band()` of both bands). The bodies are counted as they stand for the
-whole walk: the hunting van parked, the roadblock's band after its guard has gone, and a burst at
-the crater it leaves. A refused candidate is never a fallback, so a street with no such ground
-simply carries one fewer.
+refused when, with the seals and everything already planned whose reach touches the street, it
+would leave neither sidewalk of a chain street walkable from end to end
+(`EventScheduler.EscapeGround.leaves_a_sidewalk_open()`, which asks the day's own
+`closes_a_walked_sidewalk_band()` of both bands), or when the ground around it would no longer join
+up everything it joined without it (`EscapeGround.keeps_the_walk_joined()`, the day's junction rule
+asked of a box round the placement, its whole rim the arms) — which is what keeps an alley's mouth
+in the middle of a block open as well as the street it opens onto. The bodies are counted as they
+stand for the whole walk and at the body they have: the hunting van parked, the roadblock's band
+after its guard has gone, a burst at the crater it leaves, each recentred and laid along the street
+the way `EventInstance` builds it, and the seals with them. A refused candidate is never a
+fallback, so a street with no such ground simply carries one fewer.
 
 | id | kind | where | Behaviour |
 | --- | --- | --- | --- |

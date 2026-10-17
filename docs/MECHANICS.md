@@ -1614,10 +1614,16 @@ A roadblock's band leaves the far sidewalk open past it, a parked van shuts the 
 on, and a burst's crater narrows the road's edge — and every street either chain walks keeps at
 least one of its two sidewalks walkable from junction to junction past all of them together,
 standing as they stand for the whole walk: the hunting van stays parked, the band stays after its
-guard has gone, and the crater stays where the burst was. Each placement is checked before it is
-accepted (`EventScheduler._leaves_a_finale_sidewalk_open()`, the day's own sidewalk-band reading
-asked of both bands), so a van and a roadblock can stand on the same side of a street and never on
-opposite sides of it.
+guard has gone, and the crater stays where the burst was. The seals off the chains count too: an
+unused alley's mouth wall lies along the chain street it opens onto and takes the outer edge of that
+sidewalk. **And nothing standing on the walk cuts it anywhere else**: where a chain leaves a street
+in the middle of a block, through an alley, a park or a courtyard, the ground around a placement
+still joins up everything it joined without it, so a van and a roadblock either side of an alley's
+mouth cannot shut it while the street's far sidewalk stays open. Each placement is checked before
+it is accepted (`EventScheduler._the_escape_accepts()`: the day's own sidewalk-band reading asked of
+both bands, and the day's junction rule asked of the ground around the placement), so a van and a
+roadblock can stand on the same side of a street and never on opposite sides of it, and the walk
+from the service exit reaches both exits past everything that stands on it.
 
 **And the streets of the walk carry the route's kerb tint**, the faint yellow on the curbstones a
 day's route streets carry (`docs/CITY.md`, "Guiding her to the calm"), on both kerb lines of every

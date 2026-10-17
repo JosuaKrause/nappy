@@ -224,8 +224,11 @@ func _test_both_exits_are_reachable_through_the_open_cells_alone(t) -> void:
 ##
 ## On an 8px grid of points her centre may stand on: walkable ground under her and a body's
 ## reach away from every solid piece. Both exits have to be reached from the service exit on
-## every seed.
-const BODY_FLOOD_SEEDS := [4242, 1, 77, 9001, 5, 1234, 31337, 808]
+## every seed. Seed 23 is a city whose bridge chain leaves a north-south street through a
+## through-alley's mouth in the middle of a block, where a van at the mouth and a roadblock's band
+## just south of it can shut the mouth while the street's far sidewalk stays open — the cut a
+## sidewalk-by-sidewalk reading cannot see.
+const BODY_FLOOD_SEEDS := [4242, 1, 77, 9001, 5, 1234, 31337, 808, 23]
 const BODY_FLOOD_STEP := 8.0
 
 func _test_both_exits_are_reachable_past_every_body_the_escape_stands(t) -> void:
