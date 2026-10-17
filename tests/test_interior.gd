@@ -883,12 +883,14 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 
 ## *"The fire in the house moved one floor down from what it was before breaking the escape
 ## sequence left right left."* (inbox #741) **The fire stands on the second floor's approach in
-## the left shaft whatever the seed**, because it is not rolled, and with its body down the stairs
-## are left, right, left: the flights are asked one by one over the plan with the fire's blocking
-## reach taken out of the floor. Left from the third floor to the second is open; left from the
-## second to the first is shut by the fire; right from the second to the first is open; left from
-## the first to the lobby is open. A fire on the first floor's approach would leave the second
-## flight open and shut the last, which is the walk that lost the crossing.
+## the left shaft whatever the seed**, because it is not rolled. The flights are asked one by one
+## over the plan with the fire's blocking reach taken out of the floor. What the fire forces: left
+## from the third floor to the second is open, left from the second to the first is shut, right
+## from the second to the first is open, so she crosses over at the second. What it leaves open,
+## and the map does not forbid: the left shaft from the first floor to the lobby (where the masked
+## man coming up the right shaft pushes her) and the right shaft from the first floor to the lobby
+## (the way she can also take). A fire on the first floor's approach would leave the second flight
+## open and shut the last, which is the walk that lost the crossing.
 func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t: Node) -> void:
 	for run_seed in [1, 2, 7, 99, 4242, 12345, 777, 31337, 5, 8675309]:
 		var scene := InteriorScene.new()
@@ -930,7 +932,9 @@ func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t
 		t.check(_walks_between(f, shut, landing["right:second"], landing["right:first"]),
 				"seed %d: right, from the second floor to the first, is open" % run_seed)
 		t.check(_walks_between(f, shut, landing["left:first"], landing["left:lobby"]),
-				"seed %d: left again, from the first floor to the lobby, is open" % run_seed)
+				"seed %d: left, from the first floor to the lobby, is open" % run_seed)
+		t.check(_walks_between(f, shut, landing["right:first"], landing["right:lobby"]),
+				"seed %d: the right shaft from the first floor to the lobby is open too" % run_seed)
 		events.free()
 		scene.free()
 
