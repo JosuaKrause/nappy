@@ -700,7 +700,7 @@ func _ready_escape() -> void:
 	_hud = HUD.instantiate()
 	_release_shaped_hud()
 	add_child(_hud)
-	# The one thing the escape changes about the HUD: the clock reads to the millisecond.
+	# The one thing the escape changes about the HUD: the clock reads to the hundredth.
 	_hud.set_finale(true)
 	_add_touch_controls()
 	# Built the same way `_ready()` builds it, wired through `_connect_pause_signals()` rather than

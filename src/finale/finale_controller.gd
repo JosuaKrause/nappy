@@ -67,6 +67,7 @@ var _exits := {}
 
 func _ready() -> void:
 	_clock.name = "Clock"
+	_clock.emit_every_frame = true
 	add_child(_clock)
 	_clock.setup(null, null)
 	_clock.day_finished.connect(_on_section_lost)

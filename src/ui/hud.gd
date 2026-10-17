@@ -285,8 +285,9 @@ func say_once(line: String) -> void:
 
 ## Whether the clock is the escape's rather than a day's. The only thing it changes is the format —
 ## *"in addition to minutes and seconds the timer also shows milliseconds. this makes the timer
-## appear faster than just the seconds alone which adds additional tension"* — so it is a flag on
-## the one function that draws the clock rather than a second clock or a second label.
+## appear faster than just the seconds alone which adds additional tension"*, tried as hundredths
+## (inbox #746) — so it is a flag on the one function that draws the clock rather than a second
+## clock or a second label.
 var _finale := false
 
 func set_finale(on: bool) -> void:
@@ -345,12 +346,11 @@ func _refresh_state() -> void:
 	_state_label.text = text
 
 func _on_day_time_changed(remaining: float, total: float) -> void:
-	# A day reads to the second and the escape reads to the millisecond. `GameState.format_clock()`
-	# is the one place the longer form is written, shared with the run length on an ending screen;
-	# `GameState.format_clock_seconds()` is this clock's own shape, shared with the day summary's
-	# elapsed-time line (`DaySummary.show_day()`) so the two can never carry two copies of the same
-	# format string.
-	_clock.text = GameState.format_clock(remaining) if _finale \
+	# A day reads to the second (`GameState.format_clock_seconds()`, shared with the day summary's
+	# elapsed-time line) and the escape reads to the hundredth (`GameState.format_clock_hundredths()`),
+	# which its `DayController` feeds on every frame (`emit_every_frame`). The ending screens'
+	# run length keeps the millisecond (`GameState.format_clock()`): it is a still number.
+	_clock.text = GameState.format_clock_hundredths(remaining) if _finale \
 			else GameState.format_clock_seconds(remaining)
 	# The last minute is the one worth panicking about.
 	var urgent := remaining < 60.0 and total > 0.0
