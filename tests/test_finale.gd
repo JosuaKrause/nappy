@@ -26,10 +26,12 @@ func run(t) -> void:
 	_test_each_chain_reaches_its_own_edge(t)
 	_test_every_street_off_the_chains_is_sealed(t)
 	_test_both_exits_are_reachable_through_the_open_cells_alone(t)
+	_test_both_exits_are_reachable_past_every_body_the_escape_stands(t)
 	_test_the_service_exit_is_beside_the_home_block(t)
 	_test_nothing_the_finale_places_stands_where_she_comes_out(t)
 	_test_no_lethal_field_covers_the_ground_she_comes_out_on(t)
 	_test_the_finale_city_has_nobody_in_it(t)
+	_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t)
 	_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
 	_test_the_clock_reads_hundredths_only_in_the_finale(t)
 	_test_a_lost_section_starts_again_and_costs_no_nerve(t)
@@ -211,6 +213,117 @@ func _test_both_exits_are_reachable_through_the_open_cells_alone(t) -> void:
 					"seed %d: the %s is reached from the door through open cells only"
 					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
 
+## *"Roadblocks currently are impossible to get past. One sidewalk must be open if they're
+## en-route. The escape's street should not have fully blocking events like in the normal game"*
+## (inbox #747). The test above floods the plan's cells and ignores what stands in them; this one
+## floods the ground itself, with every body the escape puts down built as a real
+## `EventInstance` — its own recentring onto the pavement band, its own spread axis across the
+## street and its own parts — and a burst's crater built where the burst stands, since the hole
+## stays for the rest of the walk. A van that hunts stays parked and solid and a roadblock's band
+## stands after its guard has gone, so the bodies standing is what the whole walk looks like.
+##
+## On an 8px grid of points her centre may stand on: walkable ground under her and a body's
+## reach away from every solid piece. Both exits have to be reached from the service exit on
+## every seed. Seed 23 is a city whose bridge chain leaves a north-south street through a
+## through-alley's mouth in the middle of a block, where a van at the mouth and a roadblock's band
+## just south of it can shut the mouth while the street's far sidewalk stays open — the cut a
+## sidewalk-by-sidewalk reading cannot see.
+const BODY_FLOOD_SEEDS := [4242, 1, 77, 9001, 5, 1234, 31337, 808, 23]
+const BODY_FLOOD_STEP := 8.0
+
+func _test_both_exits_are_reachable_past_every_body_the_escape_stands(t) -> void:
+	var bodies := 0
+	for seed_value in BODY_FLOOD_SEEDS:
+		var built := _plan_for(seed_value)
+		var map: CityMap = built["map"]
+		var plan: FinalePlanner.Plan = built["plan"]
+		var blocked := {}
+		bodies += _block_every_body(t, map, plan, blocked)
+		var reached := _flood_past_the_bodies(map, blocked,
+				map.tile_to_world(FinalePlanner.service_exit_tile(map)))
+		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
+			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
+			var found := false
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					if reached.has(at + Vector2i(dx, dy)):
+						found = true
+			t.check(found, "seed %d: the %s is reached from the door past every body standing"
+					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+	t.check(bodies > 0, "there were escape bodies to stand in the way (%d)" % bodies)
+
+## Marks every grid point a solid piece of the plan's bodies keeps her centre off, and answers how
+## many bodies it built. Mobile rows have no body (a truck is traffic), and a row that leaves a
+## solid successor is built as that successor where it stands.
+static func _block_every_body(t, map: CityMap, plan: FinalePlanner.Plan,
+		blocked: Dictionary) -> int:
+	var holder := Node2D.new()
+	t.add_child(holder)
+	var count := 0
+	for placement: EventScheduler.Planned in plan.placements:
+		for def: EventDef in [placement.def,
+				EventCatalogue.by_id(placement.def.spawns_on_finish)]:
+			if def == null or def.mobile or def.obstructs_radius <= 0.0:
+				continue
+			var path := placement.path if def == placement.def else PackedVector2Array()
+			var instance := EventInstance.new()
+			instance.setup(def, placement.position, path, placement.facing, map)
+			holder.add_child(instance)
+			count += 1
+			var centres := instance.solid_part_centres()
+			var shapes := instance.solid_part_shapes()
+			var axis := instance.solid_axis()
+			for i in centres.size():
+				var shape: GroundShape = shapes[i]
+				var centre: Vector2 = centres[i]
+				var rounding := shape.radius if shape.kind != GroundShape.Kind.RECT else 0.0
+				var reach := shape.reach() + Tuning.PLAYER_BODY_RADIUS
+				for gy in range(floori((centre.y - reach) / BODY_FLOOD_STEP),
+						ceili((centre.y + reach) / BODY_FLOOD_STEP) + 1):
+					for gx in range(floori((centre.x - reach) / BODY_FLOOD_STEP),
+							ceili((centre.x + reach) / BODY_FLOOD_STEP) + 1):
+						var local := (Vector2(gx, gy) * BODY_FLOOD_STEP - centre) \
+								.rotated(-axis.angle())
+						if shape.distance_to_spine(local) < rounding + Tuning.PLAYER_BODY_RADIUS:
+							blocked[Vector2i(gx, gy)] = true
+	holder.free()
+	return count
+
+static func _flood_past_the_bodies(map: CityMap, blocked: Dictionary, from: Vector2) -> Dictionary:
+	var start := Vector2i(roundi(from.x / BODY_FLOOD_STEP), roundi(from.y / BODY_FLOOD_STEP))
+	var reached := {start: true}
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	var clear := {}
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		for step: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+			var next: Vector2i = at + step
+			if reached.has(next) or blocked.has(next) or not _she_fits(map, next, clear):
+				continue
+			reached[next] = true
+			queue.append(next)
+	return reached
+
+## Her centre may stand on this grid point: the tile under it and the four her body reaches are
+## walkable and not closed.
+static func _she_fits(map: CityMap, point: Vector2i, cache: Dictionary) -> bool:
+	if cache.has(point):
+		return cache[point]
+	var at := Vector2(point) * BODY_FLOOD_STEP
+	var reach := Tuning.PLAYER_BODY_RADIUS - 1.0
+	var fits := true
+	for offset: Vector2 in [Vector2.ZERO, Vector2(reach, 0), Vector2(-reach, 0),
+			Vector2(0, reach), Vector2(0, -reach)]:
+		var tile := map.world_to_tile(at + offset)
+		if not map.in_bounds(tile) or not map.is_walkable(tile) or map.is_closed(tile):
+			fits = false
+			break
+	cache[point] = fits
+	return fits
+
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.
 func _test_the_service_exit_is_beside_the_home_block(t) -> void:
@@ -352,6 +465,119 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	# `Baby._ready()` takes its world from, first node wins. A city left standing here is therefore
 	# the world every later suite's hand-built baby asks about the ground, instead of its own fake.
 	city.free()
+
+## *"Yes, of course the yellow tint. We spent the whole game establishing that why would it be
+## different in the last section?"* (inbox #747). Both kerb lines of every street the chains run
+## through carry the route twin of their kerb source, and no other street's kerb does — the paint
+## asked through `City.scenery_ground_source()`, the one answer every ground chunk is painted from.
+##
+## **Driven through `main`, because the wiring is what the player saw missing.** The city walks a
+## day first, so a day's own route kerbs are tinted when the escape starts and a tint left over
+## from them would show. Then the first plan, through `main._plan_the_finale_city()` — what
+## `_build_the_finale_city()` ends on — and a restart, through `main._on_finale_section_started()`
+## with `restarted` set, which is what a lost section's brief reaches. The tint is wiped between
+## the two, so the restart is checked painting it rather than inheriting it.
+func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -> void:
+	var saved_section := GameState.escape_section
+	var day := GameState.day
+	var main: Node2D = MAIN_SCRIPT.new()
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	main._city = city
+	city.build(CityGenerator.generate(SEEDS[0]))
+	var state := CityState.new()
+	state.begin_day(city.map.block_plans, day)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = SEEDS[0]
+	city.start_day(state, day, rng)
+	var corridor := Corridor.of(city.route_tree())
+	var on_the_day := 0
+	for tile in _kerb_tiles(city, day):
+		if corridor.depth(tile) == 0 and city.scenery_ground_source(tile) \
+				== GroundTiles.route_twin_of(GroundTiles.source_for(city.map, tile, day)):
+			on_the_day += 1
+	t.check(on_the_day > 0, "the day before tints its own route's kerbs (%d)" % on_the_day)
+
+	city.start_finale(state, day)
+	main._plan_the_finale_city()
+	var plan := FinalePlanner.plan(city.map, GameState.day_rng(day, "finale"))
+	var on_the_walk := {}
+	for segment in plan.open_streets:
+		on_the_walk[segment.key()] = true
+	var first := _escape_tint(city, day, on_the_walk, corridor)
+	t.check(first.x > 0 and first.y > 0,
+			"there were kerbs on and off the escape's streets to ask about (%d and %d)"
+			% [first.x, first.y])
+	t.check(first.w > 0, "and kerbs the day tinted that the escape does not walk (%d)" % first.w)
+	t.check(first.z == 0,
+			"the first plan tints every kerb of the escape's streets and no other (%d wrong)"
+			% first.z)
+
+	city.tint_the_escape_route([] as Array[StreetNetwork.Segment])
+	t.check(_escape_tint(city, day, on_the_walk, corridor).z == first.x,
+			"wiping the tint leaves every kerb of the walk plain")
+	main._summary = SUMMARY_SCENE.instantiate()
+	t.add_child(main._summary)
+	main._hud = HUD_SCENE.instantiate()
+	t.add_child(main._hud)
+	var finale := FinaleController.new()
+	t.add_child(finale)
+	main._finale = finale
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	var stroller := Stroller.new()
+	stroller.add_child(camera)
+	city.add_entity(stroller)
+	stroller.set_physics_process(false)
+	var baby := Baby.new()
+	baby.name = "Baby"
+	stroller.add_child(baby)
+	baby.set_physics_process(false)
+	main._player = stroller
+	main._baby = baby
+	main._on_finale_section_started(FinaleController.Section.CITY, true)
+	t.check(_escape_tint(city, day, on_the_walk, corridor).z == 0,
+			"and a restart tints them again, and no other")
+
+	main._summary.free()
+	main._hud.free()
+	finale.free()
+	city.free()
+	main.free()
+	t.get_tree().paused = false
+	GameState.escape_section = saved_section
+
+## Every tile of `city` whose plain ground source is a kerb a route can tint.
+static func _kerb_tiles(city: City, day: int) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for y in city.map.size.y:
+		for x in city.map.size.x:
+			var tile := Vector2i(x, y)
+			if GroundTiles.source_for(city.map, tile, day) in GroundTiles.ROUTE_KERB_SOURCES:
+				found.append(tile)
+	return found
+
+## How the kerbs are painted against the escape's streets: `x` tinted on the walk, `y` plain off
+## it, `z` painted the other way from what the walk says, and `w` of the plain ones the day's own
+## corridor had tinted.
+static func _escape_tint(city: City, day: int, on_the_walk: Dictionary,
+		corridor: Corridor) -> Vector4i:
+	var counted := Vector4i.ZERO
+	for tile in _kerb_tiles(city, day):
+		var source := GroundTiles.source_for(city.map, tile, day)
+		var segment := StreetNetwork.segment_containing(tile)
+		var wanted := segment != null and on_the_walk.has(segment.key())
+		if city.scenery_ground_source(tile) != (GroundTiles.route_twin_of(source) if wanted \
+				else source):
+			counted.z += 1
+		elif wanted:
+			counted.x += 1
+		else:
+			counted.y += 1
+			if corridor.depth(tile) == 0:
+				counted.w += 1
+	return counted
 
 ## *"Explosions happen off screen (but loud enough to cause excitement) leaving craters on the
 ## street."* Both halves: the row names its successor, and what the successor obstructs is exactly

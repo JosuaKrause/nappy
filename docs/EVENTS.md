@@ -1740,6 +1740,21 @@ placed inside it has spent her notice before she has taken a step. Both carry ha
 since a stationary body is recentred on the pavement band when the instance is built. Refused at
 the candidate loop, never moved afterwards.
 
+**And no street of the walk is closed by what stands on it.** *(Inbox #747: "roadblocks currently
+are impossible to get past. one sidewalk must be open if they're en-route.")* On a day the
+placement rules keep the bodies off the route; in the escape they stand on it, so each candidate is
+refused when, with the seals and everything already planned whose reach touches the street, it
+would leave neither sidewalk of a chain street walkable from end to end
+(`EventScheduler.EscapeGround.leaves_a_sidewalk_open()`, which asks the day's own
+`closes_a_walked_sidewalk_band()` of both bands), or when the ground around it would no longer join
+up everything it joined without it (`EscapeGround.keeps_the_walk_joined()`, the day's junction rule
+asked of a box round the placement, its whole rim the arms) — which is what keeps an alley's mouth
+in the middle of a block open as well as the street it opens onto. The bodies are counted as they
+stand for the whole walk and at the body they have: the hunting van parked, the roadblock's band
+after its guard has gone, a burst at the crater it leaves, each recentred and laid along the street
+the way `EventInstance` builds it, and the seals with them. A refused candidate is never a
+fallback, so a street with no such ground simply carries one fewer.
+
 | id | kind | where | Behaviour |
 | --- | --- | --- | --- |
 | `finale_explosion` | SCRIPTED | the chains' carriageways, and once a beat indoors | The bang she hears and does not see. **Draws nothing** — the fourth row in the catalogue with no picture — because there is no burst on the street, only the noise and the hole afterwards. Off screen is bought with the streaming radius rather than with a rule: a `MAP` placement enters the world at `Tuning.EVENT_STREAM_RADIUS` (900px) against a 640×360 view, and its telegraph plus duration (3.7s, about 340px of walking) are over before she can reach it. `intensity` 24 over a 300–520px band, so a burst just past the screen edge still lands close to full strength. Not lethal: *the danger is always noise*. `spawns_on_finish` names the crater. |

@@ -116,12 +116,16 @@ static func plan(map: CityMap, rng: RandomNumberGenerator, populate_events := tr
 	# offered every tile of an open street including hers. Neither is a check on the spawn and
 	# neither moves anything afterwards: they are never offered the ground she is on.
 	var standing_at := map.tile_to_world(start)
-	result.placements.append_array(
-			SealPlanner.plan_finale(map, result.open_cells, rng, standing_at))
+	var seals := SealPlanner.plan_finale(map, result.open_cells, rng, standing_at)
+	result.placements.append_array(seals)
 	# Recipes keep the real chains and seals, then validate their exact actors on these streets.
+	# The events are handed the seals and both exits, because what they may not close is the walk
+	# from where she stands to either exit with the seals already down.
 	if populate_events:
-		result.placements.append_array(
-				EventScheduler.build_finale(map, rng, result.open_streets, standing_at))
+		var ends: Array[Vector2] = [map.tile_to_world(exit_tile(map, CityEdge.Kind.TUNNEL)),
+				map.tile_to_world(exit_tile(map, CityEdge.Kind.BRIDGE))]
+		result.placements.append_array(EventScheduler.build_finale(map, rng,
+				result.open_streets, standing_at, seals, ends))
 	return result
 
 ## One chain: the door, each stop in turn, then the edge. Each leg is a shortest walk on the grid
