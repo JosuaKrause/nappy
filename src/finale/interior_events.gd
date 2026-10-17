@@ -172,15 +172,19 @@ func instances() -> Array[EventInstance]:
 ## Its blocking reach is its own 30px body plus her 14px, and the door tile is 64px from the cell
 ## it stands on, so a door arrival lands clear of it.
 func _place_the_fire() -> void:
-	var approaches := _inner_floor_approaches(_BURNING_SIDE)
-	if approaches.is_empty():
+	# **Always the second floor's approach, never a roll**, named rather than taken from the head of
+	# `inner_floor_approaches()`'s list, which would quietly become the first floor's if the second
+	# floor's cell stopped being walkable. It closes the flight from the second floor down, so her
+	# walk from the top is left, right: the rubble sends her down the burning side's shaft from the
+	# third floor and the fire makes her cross over at the second. The way on from the first floor is
+	# not forced: the right shaft reaches the lobby, and the left one stays open too, which is where
+	# the masked man coming up the right shaft pushes her. The first floor's approach would instead
+	# shut the last flight and leave the second one open, so no crossing back is possible.
+	var landing := _interior.waypoint("stairwell_%s:landing_second" % _BURNING_SIDE)
+	var at := landing + Vector2i.DOWN
+	if landing == InteriorScene.NOWHERE or not _interior.is_walkable(at):
+		push_error("the second floor's approach in the %s shaft is not walkable" % _BURNING_SIDE)
 		return
-	# **Always the second floor's approach, never a roll** (`inner_floor_approaches()` lists it
-	# first). It closes the flight from the second floor down, so her walk from the top is left,
-	# right, left: the rubble sends her down the burning side's shaft from the third floor, the fire
-	# makes her cross over at the second, the lobby is reached by the left shaft again. The first
-	# floor's approach only closes the last flight, which leaves the walk left and right alone.
-	var at: Vector2i = approaches[0]
 	_spawn(_indoor_fire(), _interior.tile_to_world(at))
 
 ## `burning_building` outdoors carries no field and no body of its own — the fire truck it calls in
@@ -347,12 +351,6 @@ func _blow_the_vents(delta: float) -> void:
 ## distance between them and about their clocks, and neither is answerable from outside.
 func vents() -> Array[Vent]:
 	return _vents
-
-## The inner cell of each intermediate floor's level approach in one shaft. Asked of the plan
-## rather than recomputed from the grammar's own arithmetic here, so a change to a flight's length
-## moves the fire with it.
-func _inner_floor_approaches(side: String) -> Array[Vector2i]:
-	return _interior.inner_floor_approaches("stairwell_%s" % side)
 
 # -------------------------------------------------------------- the instances ---
 
