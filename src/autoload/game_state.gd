@@ -70,7 +70,8 @@ static func format_clock(seconds: float) -> String:
 	return "%d:%02d.%03d" % [total_seconds / 60, total_seconds % 60, total_ms % 1000]
 
 ## `%d:%02d.%02d` — minutes, seconds, hundredths — the escape's live clock in the HUD. Truncates
-## like `format_clock_seconds()`, so a countdown never reads lower than it is. *(inbox #746, the
+## like `format_clock_seconds()`, so a remaining time of 59.999 shows 59.99 — a countdown never
+## reads higher than what is left. *(inbox #746, the
 ## player: "escape clocke we can try 100s but it's not going to be much better? framerate is too
 ## low? all of this was on phone.")* A tried precision: the hundredth changes on almost every frame
 ## at 60 fps and on every frame at 30 fps.
