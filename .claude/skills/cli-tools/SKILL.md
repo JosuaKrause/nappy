@@ -5,10 +5,9 @@ description: What every command-line entry point owes — help on --help and -h,
 
 # Command-line entry points
 
-**Everything reachable from a shell prints help and refuses what it does not understand.** *(2026-09-11:
-"help doesn't work it just starts the game which becomes unresponsive. also invalid arguments should
-get rejected and cause the help to be printed"; "rejecting invalid args and having a --help/-h is a
-general requirements for everything that is cli accessible".)* That is every script in `tools/`,
+**Everything reachable from a shell [prints help and refuses what it does not
+understand](../../../docs/decisions/2026-09-11-M100-small-real-and-nobodys-every-command-line-entry-point-owes-help.md).**
+That is every script in `tools/`,
 shell or Python, and the game's own dev-flag surface behind `tools/run.sh`, `tools/shot.sh` and the
 web build's query string.
 

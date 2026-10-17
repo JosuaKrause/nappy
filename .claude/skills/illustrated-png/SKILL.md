@@ -13,8 +13,7 @@ The catalogue-wide conversion manifest is open work under M109, convert the SVG 
 Raw generator outputs belong with generation evidence, not in the runtime asset catalogue.
 
 **The pelican cyclist is never converted.** `art/events/pelican_cyclist*.svg` stays SVG by the
-player's word *(minty-hedgehog: "converted to PNG during atlas creation but otherwise it will
-always stay SVG never become a converted PNG")*: the bake rasterizes it like any SVG, and no
+[player's word](../../../docs/playtests/2026-10-03-minty-hedgehog.md#437--easter-egg): the bake rasterizes it like any SVG, and no
 illustrated PNG of it is generated or placed under `art/illustrated/`. `tests/test_pelican.gd`
 fails if one appears there.
 

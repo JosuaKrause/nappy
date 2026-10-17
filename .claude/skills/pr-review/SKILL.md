@@ -5,8 +5,7 @@ description: How every pull request is reviewed before it may merge — adversar
 
 # Reviewing a pull request
 
-**Every pull request goes through an adversarial review before it is ready to merge.**
-*(2026-09-26: "also all PRs must go through a (adversarial) review before ready to be merged.")*
+**Every pull request goes through [an adversarial review](../../../docs/decisions/2026-09-26-how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it.md) before it is ready to merge.**
 No exception for size or kind: a one-line fix, a docs PR filing a playtest, a hook, the
 orchestrator's own queue moves, though a queue update's review has a shape of its own (see "A queue
 update is reviewed for faithfulness and merged first"). **Ready to merge** means a review by a reviewer that did not write
@@ -38,8 +37,7 @@ review agent like any other. In Codex, use its delegation tools with the same fe
 
 ## Semantic correctness first
 
-*(2026-09-26, after a post-mortem: "a PR review should not only check for code correctness but
-also verify that a work item is semantically correct".)* Correct code that builds the wrong thing
+A review checks that a work item is [semantically correct](../../../docs/decisions/2026-09-26-how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it.md), not only that its code is. Correct code that builds the wrong thing
 passes every other check this repo has. So before reading the diff for bugs, the reviewer reads the
 player's own words the PR cites (the playtest, not the queue entry's paraphrase of it; for a PR with
 no playtest, the quote in its queue entry, its brief or its own description) and every decision
@@ -57,8 +55,7 @@ answers these. Each "no" is a finding:
   what the PR happened to build.
 - **Would the player recognise it in the pictures?** A visible change is judged on its pictures
   against their words, before its code. A visible change with no pictures is a finding.
-- **Does the finished work leave the queue inside this PR?** *(2026-09-26: "reviews should check
-  that work items are properly removed from the queue *inside* the PR that finished it".)* Every
+- **Does the finished work [leave the queue inside this PR](../../../docs/decisions/2026-09-26-how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it.md)?** Every
   item the PR completes is gone from the queue in this diff, with its record written, and every
   item it only partly does is still there and says what is left. An item left queued after its work
   merges is how a finished thing gets picked up again with a different approach; an item removed
@@ -103,10 +100,9 @@ finding with no line to hang on — a missing doc, a missing test, a missing pic
 summary. **The summary ends with the verdict, *ready* or *not ready*, and the head commit it was
 given against.** A review with nothing to say still says so, and what it checked.
 
-**The review's GitHub event follows the verdict**: APPROVE when it is *ready*, REQUEST_CHANGES
+**The review's GitHub event follows the verdict**: [APPROVE](../../../docs/decisions/2026-09-27-tall-egret.md) when it is *ready*, REQUEST_CHANGES
 when it is *not ready*, and COMMENT for an interim or partial review that gives neither verdict
-yet. *(2026-09-26, the player, once the four identities existed: "a reviewer app will be allowed
-to approve pull requests".)* The verdict still lives in the review's own text either way — the
+yet. The verdict still lives in the review's own text either way — the
 event is what GitHub shows beside it, not a replacement for writing it out. **The reviewer still
 never merges**: merging is **committing**'s, under its permission rule, whatever the review's
 event says.
@@ -131,9 +127,8 @@ account. `uv run python tools/agent-identity.py status claude-reviewer` or `... 
 runs through `uv run python tools/agent-identity.py run claude-reviewer -- <command>` (or
 `codex-reviewer`) instead of running it directly, so the comments and the review event show as
 `claude-reviewer[bot]` or `codex-reviewer[bot]`. **When the role is not usable (not created yet,
-not installed, or a cloud session), the review stops there and is reported to the player instead —
-it is never posted as the player.** *(2026-09-26, asked what an agent does when its identity is
-unusable, the player chose "Stop and tell me".)* That holds where the write guard can ask
+not installed, or a cloud session), the review [stops there and is reported to the player](../../../docs/decisions/2026-09-27-tall-egret.md)
+instead — it is never posted as the player.** That holds where the write guard can ask
 (**committing**, "Who a commit and a pull request are from"): a review's findings are never sent
 as a `gh pr comment` or any other write the guard's prompt would let through as the player. The same `PreToolUse` hook that makes committing's
 rule mechanical (`.claude/hooks/github-write-guard.sh`) covers `gh pr review` too, denying it
@@ -146,9 +141,9 @@ findings live.
 
 ## Three verdicts of *not ready* mean the approach is rethought
 
-When a pull request's reviews have come back *not ready* three times, the approach is rethought,
-including whether the chosen solution is the right way at all. The count is per pull request
-([woolly-penguin](../../../docs/playtests/2026-10-17-woolly-penguin.md), #759).
+When a pull request's reviews have come back *not ready* [three
+times](../../../docs/playtests/2026-10-17-woolly-penguin.md#759), the approach is rethought,
+including whether the chosen solution is the right way at all. The count is per pull request.
 
 *Proposed, not asked for, open to the player's correction:*
 
@@ -177,10 +172,7 @@ drawing, or a change to the rules is reviewed by a stronger model.
 
 *(2026-09-27: "Task list updates should have priority and could use a weaker review agent (or no
 review at all if you think that is safe)" · "Write it down how it makes sense. You might see some
-gaps that I missed" · bouncy-heron, statement 4: "by faithfulness I meant having another agent
-review that the wording I used (in the playtest file) and the actual scheduled work (in the todo)
-matches" · statement 8, asked which model: "Sonnet now" · statement 9: "the reviewer still needs to
-verify the correctness of those changes anyway. the CI is only a help".)*
+gaps that I missed".)*
 
 **A queue update is a PR whose every changed file is under `docs/todo/`, `docs/review/` or
 `docs/playtests/`**: filing a playtest, filing or rewording an entry or an item, moving a band. CI
@@ -191,7 +183,7 @@ diff that also touches anything else, a skill or `CLAUDE.md` included, is not a 
 gets the full review above; the orchestrator's queue move on a PR that builds the work is reviewed
 with that PR.
 
-**Its review is Sonnet's, and it asks whether the queue says what the player said.** For each
+**Its review is [Sonnet's](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-list), and it asks whether the queue says what the player said.** For each
 entry or item the PR adds or rewords, the reviewer reads it beside the playtest statements it
 cites, in the playtest file itself, and asks:
 
@@ -204,12 +196,11 @@ cites, in the playtest file itself, and asks:
 - **Does it collide with a recorded decision without naming it?** `tools/decisions.sh <noun>` finds
   the records about each thing the entry changes; an entry that replaces one quotes it.
 
-These five are the reviewer's reading of "the wording I used … and the actual scheduled work …
-matches", proposed at filing (leafy-finch) and open to the player's correction. A "yes" to the
+These five are the reviewer's reading of [faithfulness](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-options), proposed at filing (leafy-finch) and open to the player's correction. A "yes" to the
 first, second, third or fifth, and a "no" to the fourth, is a finding. **A reviewer flags; it does not resolve**:
 it says what does not match and where, and the filer takes it back to the player or to the words.
 
-**It also verifies what CI checked, since a script sees that a thing exists, not what it says.**
+**It also [verifies what CI checked](../../../docs/playtests/2026-09-27-bouncy-heron.md#the-list), since a script sees that a thing exists, not what it says.**
 The `gates` job's queue update step (`tools/ci_queue_update.py`) fails on an existing playtest
 changed, on a deleted queue file with neither a record on `main` for its entry nor a `Dropped:
 <path> — "<the player's words>"` line in the description quoting a playtest verbatim, and on a

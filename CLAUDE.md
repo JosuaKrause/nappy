@@ -20,9 +20,9 @@ outside an agent's own identity every time, even an ordinary one that Claude Cod
 player switches its asking on, asks them about instead, and reloads the startup rules on session
 start, resume, compaction and subagent start. **A change to a hook
 script under `.claude/hooks/` or to the hooks in `.claude/settings.json` checks whether the
-adapter and its tests need to change — a new tool name, payload field or hook event — and updates
-them in the same PR when they do** *(2026-09-26: "okay, yes this is important to keep up to
-date")*, because Codex names its tools differently (`apply_patch` rather than `Edit`/`Write`) and a
+adapter and its tests need to change — a new tool name, payload field or hook event — and [updates
+them in the same PR when they do](docs/playtests/2026-09-26-brisk-heron.md#the-codex-adapter)**,
+because Codex names its tools differently (`apply_patch` rather than `Edit`/`Write`) and a
 hook that works only in Claude Code leaves Codex unguarded; a change to a hook's own logic alone
 needs nothing from the adapter. The hooks need Python 3.9+, Bash and jq, and run only once the
 repository is trusted and the hooks are reviewed through `/hooks`; restart Codex if new hooks or
@@ -169,17 +169,28 @@ in it is wrong about nothing.**
 unless recording that measurement is the document's job. Say what the command is, not what it
 prints.
 
-**No quest logs outside the decision records.** *(2026-09-01: "there should be no quest logs outside
-of decisions.md — that information is rarely relevant when working on the codebase. it only ever
-comes in to play when planning things out, so we don't attempt approaches again that we already
-ruled out.")* A ticked box, a "Done:" paragraph, a branch name or a status word in a heading is a
-quest log wherever it stands: `TODO.md` and the entries under `docs/todo/` hold open work only,
-`REVIEW.md` and the items under `docs/review/` hold what waits on a person only, and what was
+**[No quest logs](docs/playtests/PLAYTEST-18.md#2-no-quest-logs-outside-decisionsmd) outside the
+decision records.** What was done is rarely relevant when working on the codebase and only comes
+into play when planning, so that an approach already ruled out is not tried again. A ticked box,
+a "Done:" paragraph, a branch name or a status word in a heading is a quest log wherever it stands:
+`TODO.md` and the entries under `docs/todo/` hold open work only, `REVIEW.md` and the items under
+`docs/review/` hold what waits on a person only, and what was
 done — with its measurement and its rejected options — is retrievable on demand from the records
 under `docs/decisions/` and nowhere else.
 
 The playtest files under `docs/playtests/` are the exception and are never rewritten. They are
 primary sources: a player's own words on a date.
+
+**`CLAUDE.md` and the skills [link the player's words and never quote
+them](docs/playtests/2026-10-17-woolly-penguin.md#759).** A rule that rests on something the
+player said states the rule and its reason in its own words, and the link sits on some of those
+words without adding any, as `[three times](../../../docs/playtests/2026-10-17-woolly-penguin.md#759)`
+does in **pr-review**: no parenthesis, file name or number in the text. It points at the anchor of
+the playtest heading the player's words stand under (a note's `## #759` is `#759`), or at the bare
+file where they stand under none; words no playtest
+holds link the record under `docs/decisions/` that does. Whether a rule reads the player right is
+established once, by the review of the change that writes it, so a reader does not re-check it on
+every read, and a quote in the rule is only a distraction.
 
 ---
 
@@ -208,8 +219,9 @@ follow; it is a claim with the evidence withheld.
   player answers from the message in front of them, and a question that leans on something said
   three turns ago is a question with its evidence withheld.
 
-**"Telemetry", in the player's words, primarily means GoatCounter.** *(2026-10-04: "for future reference I
-primarily consider goatcounter telemetry. what you think of telemetry is just logs".)* A request for
+**"Telemetry", in the player's words, [primarily means
+GoatCounter](docs/playtests/2026-10-04-azure-tapir.md#527--the-pelican-has-its-own-goatcounter-events-spawn-on-screen-hits-her-and-its-own-log-lines-in-the-same-release-telemetry-means-goatcounter).**
+A request for
 telemetry on something is a request for its own GoatCounter events (`VisitCounter`, the page counts
 visits in `docs/TELEMETRY.md`); the run log is "logs", which name each thing correctly from its
 first line as well.
@@ -250,8 +262,8 @@ decision that was meant to be cheap to revisit. The code calls them what they *a
 
 The same holds for anything else the fiction may rename: the city has no name for the same reason.
 
-**New things get American English names.** *(2026-09-11: "use american words for new things";
-"existing names are fine".)* A new event, asset, identifier, constant or doc noun says *sidewalk*,
+**New things get [American English
+names](docs/playtests/PLAYTEST-56.md#new-names-in-american-english).** A new event, asset, identifier, constant or doc noun says *sidewalk*,
 *crosswalk*, *street musician*, not *pavement*, *zebra*, *busker* — the player is not a native British
 speaker and a British word is a lookup. Nothing existing is renamed for it: `pavement`, `zebra` and
 `busker` stay wherever they already are, since a rename across the tree is a diff nobody can review
@@ -282,9 +294,11 @@ Each was a decision. Do not "fix" one without a reason; the reasoning is in the 
   counting distinct routes is a max flow; the home's doorstep is exempt from the route-redundancy
   guarantee (**city**); no spatial hash, no `impulse` field, and events defined in code rather
   than `.tres` (**events**).
-- **No quest log for the resistance** — *asked for no marker and no quest log (playtest 2) ·
-  overturned on 2026-08-31 to "Only the first encounter (the chalk mark) should come without
-  hint" (playtest 16, finding 7) · overturned again on 2026-09-23: "we do now hint at the first
-  task" (playtest 122).* Nothing lists the tasks and the day brief carries none; day 6's brief
+- **No quest log for the resistance** — *[asked for](docs/playtests/PLAYTEST-02.md) no marker and
+  no quest log · [overturned on
+  2026-08-31](docs/playtests/PLAYTEST-16.md#7-the-resistance-never-announced-itself) to only the
+  first encounter, the chalk mark, coming without a hint · [overturned again on
+  2026-09-23](docs/playtests/PLAYTEST-122.md#statements) to the first task being hinted at too.*
+  Nothing lists the tasks and the day brief carries none; day 6's brief
   names the rumor of chalk, and every task has a red arrow (M181, the resistance has a reason,
   and a task is one day).

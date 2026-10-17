@@ -154,9 +154,9 @@ Keep unrelated tracked archives out of new worktrees through sparse checkout (**
 
 ### 7. There is no checked-in handoff
 
-**Nothing in the repository says where a session stopped.** *(2026-09-26: "we don't need session
-handover across agents. each have their own threads to work on. let's remove the handoff file from
-github".)* The pick-up state is live — `gh pr list`, `tools/agent-status.sh`, `tools/queue.sh`, the
+**Nothing in the repository says where a session stopped**, since every agent has its own thread
+to work on and [no session hands over to
+another](../../../docs/decisions/2026-09-26-polite-marten.md). The pick-up state is live — `gh pr list`, `tools/agent-status.sh`, `tools/queue.sh`, the
 inbox (`uv run python tools/inbox.py list`, **inbox**) and the items under `docs/review/` answer
 it at the moment they are asked — and what a document would have said about it is stale the
 moment another thread merges. So the session's end writes nothing
@@ -186,8 +186,8 @@ self-contained briefs rather than resuming the session's agents. Keep the prompt
 current at the moment of handover; the final report may summarize it, but the file must stand on
 its own.
 
-**The restart prompt never records a merge or release permission.** *(2026-09-26, on a line
-recording one: "remove that bit altogether -- this is not something that should go into a checked
-in handoff".)* Permission is given in a session and ends with it (**committing**, "Merging"), so a
+**The restart prompt [never records a merge or release
+permission](../../../docs/decisions/2026-09-26-polite-marten.md).** Permission is given in a
+session and ends with it (**committing**, "Merging"), so a
 sentence carrying it forward is either a grant nobody gave the next session or an invitation to
 act on one; the next session asks the player.

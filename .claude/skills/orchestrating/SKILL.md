@@ -13,9 +13,9 @@ the whole queue and the player's words.
 Use Sonnet in Claude Code for implementation, Haiku for a wait — polling a check, retargeting a PR,
 removing a worktree, pulling `main` — and a stronger model when a milestone's geometry or contracts
 warrant it, by judgement *(2026-09-11: "for wait tasks like this haiku makes more sense -- use your
-judgement")*. **In Claude Code, drawing is Opus's**: an agent that makes or revises artwork — SVG,
+judgement")*. **In Claude Code, [drawing is Opus's](../../../docs/playtests/PLAYTEST-123.md#statements)**: an agent that makes or revises artwork — SVG,
 PNG, a review sheet — runs on Opus, since the result is judged by eye and a weaker first pass costs
-the player a review round *(2026-09-23: "what is the model making those images? use opus 5.5")*;
+the player a review round;
 Codex has its own model hierarchy and keeps its own tiering for art *(2026-09-23: "make the opus
 guidance claude only -- codex has a different model hierarchy here")*. In Codex, pick the subagent
 tier by the task's remaining difficulty: see `references/codex-models.md`. **Generating a raster
@@ -30,10 +30,9 @@ delegation is unavailable, do the bounded work locally and retain the same verif
 
 **A usage or quota limit is already over by the time the orchestrator hears of it**, in Claude
 Code and in Codex alike. Nothing about delegation changes because of one: no fewer agents, no
-cheaper models, no implementing locally to save quota. Do not carry a limit message from an
-earlier agent or turn forward as a reason to do anything differently. *(2026-09-12: "when you see
-usage limit errors that means they are already resolved. if the usage limit was reached you
-wouldn't see anything."; 2026-09-22: "by the time _you_ hear of it the quota or usage is fully
+cheaper models, no implementing locally to save quota. Do not carry [a limit message](../../../docs/decisions/2026-09-12-codex-delegation-after-visible-usage-limit-messages.md)
+from an earlier agent or turn forward as a reason to do anything differently.
+*(2026-09-22: "by the time _you_ hear of it the quota or usage is fully
 restored so there is no need to change behavior due to it (ie no reducing agent usage or things
 like that). quota limits happen from time to time.")* What an interruption does change is which
 agents can continue — see "Recovering from an interruption".
@@ -203,7 +202,7 @@ role named has nothing to check `status` against:
 
 ## Running agents in parallel
 
-**Create sparse worktrees before materializing files, with `tools/agent-setup.sh`.** It runs the
+**[Create sparse worktrees](../../../docs/playtests/2026-10-03-busy-ibis.md) before materializing files, with `tools/agent-setup.sh`.** It runs the
 disk preflight, `git worktree add --no-checkout --no-track` onto a new branch from `origin/main`
 (so the branch inherits no upstream), enables non-cone sparse checkout and only then materializes
 HEAD. The patterns are the `gates` job's sparse checkout in `.github/workflows/ci.yml` — the one
@@ -211,9 +210,7 @@ list, which keeps back what the repository's own checks read from `docs/evidence
 `lint.sh` validates and the experiment scripts `pycheck.sh` runs) — followed by
 `!/docs/reference/` and `!/docs/style-references/`; `--include <path>` adds a folder back for a task
 that needs it (evidence, references or style references are the point of some tasks). A tools-only
-task may omit runtime art/assets too. *(2026-10-03: "add wording to use
-sparse worktrees for subagents where applicable (obviously when evidence is needed it needs to be
-included)".)* **Claude Code's worktree isolation makes a full checkout here**, since
+task may omit runtime art/assets too. **Claude Code's worktree isolation makes a full checkout here**, since
 `.claude/settings.json` sets neither its `worktree.sparsePaths` (which can only include whole
 folders) nor a `WorktreeCreate` hook. So the orchestrator runs the tool, which creates the worktree
 under `.claude/worktrees/<name>` (the path-triggered rules hook loads only for paths inside the
@@ -227,8 +224,8 @@ depth does not avoid repeated working files. Before checkout, import, build or c
 check free space on the destination volume against the estimated peak working set plus explicit
 headroom (`tools/lib_disk_headroom.sh` holds the measured estimates, worktrees' included); an unknown
 peak or inadequate room means measure or reduce the batch before starting. **A low-disk warning
-from a tool, or a check that leaves less than the reserve, stops new work.** *(2026-10-03, quiet-yak, inbox #496: "Yes tool should warm and only refuse if it's not possible. The warning should be taken seriously though so for example the situation should be started to get sorted out and no new tasks should be started. That's a guidance no hard hook".)* The
-orchestrator starts no new agent or worktree and an agent starts no new task or batch until the
+from a tool, or a check that leaves less than the reserve, [stops new work](../../../docs/playtests/2026-10-03-quiet-yak.md#496--disk-check-warns-below-the-reserve-and-refuses-only-when-the-job-cant-fit-a-warning-stops-new-work).**
+It is guidance, not a hard hook. The orchestrator starts no new agent or worktree and an agent starts no new task or batch until the
 space is sorted out by **session-cleanup**'s storage steps; work already running may finish, and
 an agent reports the warning in its report rather than leaving it in a log.
 Record scratch paths and cleanup ownership in the brief, and follow **session-cleanup**'s

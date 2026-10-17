@@ -43,11 +43,12 @@ Anything needing a per-frame check goes in `TelemetryObserver`, **not** in the g
 telemetry stays out of the files that decide things, which is what makes the rule easy to keep.
 
 **The one exception is the per-system frame record's timing wrap** (`FrameRecord`, docs/TELEMETRY.md,
-"Per-system frame records"). *(2026-10-03, inbox #510: "let's focus on recording what cause
-spillover in the regular 2ms ... it seems that stuttering happens with a lot of objects on screen
-so influence calculation, pathing, drawing, etc. can all be the culprit".)* The player accepted
-the exception itself on 2026-10-04 (inbox #526 in [azure-tapir](../../../docs/playtests/2026-10-04-azure-tapir.md)), asked whether to "accept the timing wraps in
-gameplay code as a telemetry-skill exception": "Accept all three (Recommended)". A phone has no
+"Per-system frame records"). It records [what makes a frame spill over its 2ms
+budget](../../../docs/playtests/2026-10-03-quiet-yak.md#510--ground-mode-2-the-default-record-what-causes-spillover-past-the-2ms-budget),
+since the stutter comes with many objects on screen and influence, pathing or drawing may each be
+the culprit, and the player [accepted the exception
+itself](../../../docs/playtests/2026-10-04-azure-tapir.md#526--answers-robber-keeps-the-108px-stand-off-pelican-merges-m159-choices-accepted-recorder-ships-in-the-next-release)
+on 2026-10-04. A phone has no
 profiler, so the only way to know what a system cost in a frame is to time it where it runs, and
 an observer cannot do that from outside. The wrap is a single branch in front of an unchanged
 body, and it takes one of two shapes by how often it runs, because what it costs with the record

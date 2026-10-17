@@ -90,10 +90,8 @@ internal revision loop. For artwork, sound or any visual or audible result:
 - The player's CLI cannot display images: push the review artifacts first, then embed them in the
   PR description as images with commit-pinned URLs, as **committing** says. A local file link is
   not a delivered visual review.
-- **A question the player is to answer by eye gets a picture of its own.** *(2026-10-17, in the
-  session, of PR #745, which asked them to choose between rows 3 and 4 of a six-row sheet: "745 is
-  *not* how to present results if you have a question like this -- I do see the 6 row sheets but
-  it's not clear what I'm supposed to decide here".)* A full sheet is evidence of what was drawn;
+- **A question the player is to answer by eye
+  [gets a picture of its own](../../../../docs/playtests/2026-10-17-woolly-penguin.md#758).** A full sheet is evidence of what was drawn;
   the decision is shown apart from it, in a picture of the options alone, with the question
   written above it in the PR description, and a choice is never asked by row number. *The form
   PR #750 used, open to the player's correction:* only the options and the stages either side of
