@@ -64,12 +64,12 @@ or edge correction. The reproducible accepted example is
 
 The one programmatic limb repaint in the dog families is a seam the player asked for by name: the
 black line between the body and the lighter hind leg in the side dog's opposite step, removed as a
-recipe step (dotted-panda) so that it stays reproducible, while the darker hind leg, which needs it,
-keeps its line. It is not a general permission. A seam like it is done only on the player's request
-for that seam, as a named step of the family's own recipe: a fixed box in the registered plane that
-bounds every changed pixel, a stated operation inside it, a build that stops when the artwork under
-the box is not the shape the step expects, a native footprint outside which every pixel stays byte
-for byte, and before/after crops with the changed pixels marked. `SEAM` in
+recipe step (dotted-panda 4) so that it stays reproducible, while the darker hind leg, which needs
+it, keeps its line. It is not a general permission. A seam like it is done only on the player's
+request for that seam, as a named step of the family's own recipe: a fixed box in the registered
+plane that bounds every changed pixel, a stated operation inside it, a build that stops when the
+artwork under the box is not the shape the step expects, a native footprint outside which every
+pixel stays byte for byte, and before/after crops with the changed pixels marked. `SEAM` in
 `docs/evidence/comic-dogs-2026-09-27/walked-revision-5/assemble.py` is the example.
 
 ## Freeze and review the complete family

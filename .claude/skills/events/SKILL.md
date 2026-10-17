@@ -86,8 +86,8 @@ the actual Baby meter: reaching the pursuit cap after the baby cries is a lost d
 ## What telegraphs
 
 **A thing telegraphs its coming only if it goes fast, comes toward her, and carries a heavy penalty
-— it can end the day or hit her hard** (PLAYTEST-145; olive-hedgehog #598). A thing that does not
-telegraph its coming is **outside** the screen-edge badge and warning-first placement:
+— it can end the day or hit her hard** (PLAYTEST-145 18-23; olive-hedgehog #598). A thing that does
+not telegraph its coming is **outside** the screen-edge badge and warning-first placement:
 `EventDef.telegraphs` is false. Its in-world telegraph still satisfies the fairness contract,
 including the waiting flock and mouse. Only the loose dog, met with its telegraph already spent, has
 no in-world telegraph to validate. A heavy hit is a quarter of the meter or more in one pass. By
@@ -105,8 +105,8 @@ her heading, the fire engine, the resistance's own `robber_giving_chase` and
 `van_guard_giving_chase`, a torn poster's pursuer on foot (`policeman_giving_chase`,
 `guardsman_giving_chase`), day 13's column, each a row `warns_before_it_exists()` answers true for
 (flagged `warned_first` on its row, or made so by `EventManager.as_warned()`, which every warning
-goes through) — is a `PendingWarning` first (`EventManager.warn_first()`; PLAYTEST-145): nothing in
-the world, the badge up at once for the row's own `EventDef.warned_for()`, **at most
+goes through) — is a `PendingWarning` first (`EventManager.warn_first()`; PLAYTEST-145 2): nothing
+in the world, the badge up at once for the row's own `EventDef.warned_for()`, **at most
 `Tuning.WARNING_ALONE_MAX`** (`validate()` refuses longer; busy-quail #569), its place fixed against
 her so the badge moves only with her walking and never jumps. Then the thing is created **just off
 screen** (calm-kestrel #559) where its ground has a place for it from where she is by then
@@ -121,8 +121,9 @@ is its approach — except one that `arrives_chasing` (the resistance's sent rob
 torn poster's pursuer on foot (olive-hedgehog #598). Where its ground has no place when the second
 is up, the warning is withdrawn; a withdrawn day-3 dog is owed again.
 
-**The warning time is the row's own number** (PLAYTEST-145). Nothing about where a thing is created
-may be derived from its telegraph, and a row's telegraph is not shortened by shrinking its field.
+**The warning time is the row's own number** (PLAYTEST-145 1). Nothing about where a thing is
+created may be derived from its telegraph, and a row's telegraph is not shortened by shrinking its
+field.
 
 **The day-3 dog keeps its gold timing, in the player's terms**: the warning is badge to visible (its
 half second), the chase is lunge to catch (0.35s, 0.60s and 2.05s walking into it, standing and

@@ -15,8 +15,8 @@ tools/shot.sh /private/tmp/nappy-shot.png 4 --seed 4242 --spawn arterial --walk 
 ```
 
 New evidence goes in `docs/evidence/<words>-<slug>-<date>/`, where `<words>` are the two words of
-the queue entry (PLAYTEST-144) or playtest it belongs to (`busy-otter-roof-cases-2026-09-27/`), and
-an entry or playtest from before names gives its number instead (`m203-roof-cases-2026-09-26/`,
+the queue entry (PLAYTEST-144 8) or playtest it belongs to (`busy-otter-roof-cases-2026-09-27/`),
+and an entry or playtest from before names gives its number instead (`m203-roof-cases-2026-09-26/`,
 `playtest-144-phone-v0.18.0-2026-09-26/`). The slug says what it shows, so two folders for one entry
 differ by their slugs. When selected artifacts come from a telemetry run, keep them under that run
 folder's original name. `archive/session-captures/<date>/` holds earlier captures. Update every
@@ -47,6 +47,6 @@ Motion is a burst. What it writes and how `tools/clip.sh` converts it is in `doc
 and encode overhead is not an animation defect.
 
 **A short clip is committed only when a pull request needs it to show motion; a recording of a whole
-run never is** (PLAYTEST-139; woolly-finch). A burst's MP4 belongs in an evidence folder when a
-still cannot show what the PR changed — a turn, a gait, a pursuer arriving. A review video of a rig
-run and the trailer are made and watched locally and stay out of the repository.
+run never is** (PLAYTEST-139 11; woolly-finch 30). A burst's MP4 belongs in an evidence folder when
+a still cannot show what the PR changed — a turn, a gait, a pursuer arriving. A review video of a
+rig run and the trailer are made and watched locally and stay out of the repository.

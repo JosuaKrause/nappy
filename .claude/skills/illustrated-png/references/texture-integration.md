@@ -39,13 +39,13 @@ git diff --check
 git status --short
 ```
 
-Inspect every error, including resource import failures. The full suite runs in CI. Every tool
-that starts the engine (`check.sh`, `test.sh`, `shot.sh`, `run.sh`) rebakes in the default PNG
-mode, so an `--svg` bake cannot be tested or captured through them. Compare against the SVG with
-source previews at the same scale (svg-art, "Render with the game's SVG parser").
-Keep captures bounded to one or two windowed runs. Preserve only the relevant artifacts with the
-provenance session-captures requires, and record build, flags and coverage in the entry's decision
-record under `docs/decisions/`.
+Inspect every error, including resource import failures. The full suite runs in CI. Every tool that
+starts the engine (`check.sh`, `test.sh`, `shot.sh`, `run.sh`) rebakes in the default PNG mode, so
+an `--svg` bake cannot be tested or captured through them. Compare against the SVG with source
+previews at the same scale (**svg-art**, "Render with the game's SVG parser"). Keep captures bounded
+to one or two windowed runs. Preserve only the relevant artifacts with the provenance
+session-captures requires, and record build, flags and coverage in the entry's decision record under
+`docs/decisions/`.
 
 For comic redraws, preserve generated alpha within the native canvas and align functional
 anchors. Save the actual registration script with each family. Opaque terrain retains full

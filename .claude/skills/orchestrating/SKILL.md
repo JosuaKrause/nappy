@@ -12,11 +12,11 @@ the whole queue and the player's words.
 
 Use Sonnet in Claude Code for implementation, Haiku for a wait — polling a check, retargeting a PR,
 removing a worktree, pulling `main` — and a stronger model when a milestone's geometry or contracts
-warrant it, by judgement (woolly-finch). **In Claude Code, drawing is Opus's** (PLAYTEST-123): an
-agent that makes or revises artwork — SVG, PNG, a review sheet — runs on Opus, since the result is
-judged by eye and a weaker first pass costs the player a review round; Codex has its own model
-hierarchy and keeps its own tiering for art (woolly-finch). In Codex, pick the subagent tier by the
-task's remaining difficulty: see `references/codex-models.md`. **Generating a raster is Codex's
+warrant it, by judgement (woolly-finch 15). **In Claude Code, drawing is Opus's** (PLAYTEST-123 8):
+an agent that makes or revises artwork — SVG, PNG, a review sheet — runs on Opus, since the result
+is judged by eye and a weaker first pass costs the player a review round; Codex has its own model
+hierarchy and keeps its own tiering for art (woolly-finch 27). In Codex, pick the subagent tier by
+the task's remaining difficulty: see `references/codex-models.md`. **Generating a raster is Codex's
 alone**: Claude Code has no image generator (**illustrated-png**, "Asset contract"), so a brief
 whose work includes generating an illustrated PNG, a comic transfer included, goes to a Codex agent
 (which writes as `codex-coder`); the drawing rule above covers SVG and the review sheets.
@@ -30,8 +30,8 @@ verification gate.
 and in Codex alike. Nothing about delegation changes because of one: no fewer agents, no cheaper
 models, no implementing locally to save quota. Do not carry a limit message
 (codex-delegation-after-visible-usage-limit-messages) from an earlier agent or turn forward as a
-reason to do anything differently (woolly-finch). What an interruption does change is which agents
-can continue — see "Recovering from an interruption".
+reason to do anything differently (woolly-finch 25). What an interruption does change is which
+agents can continue — see "Recovering from an interruption".
 
 ## Delegating is the default, and implementing by hand is the decision
 
@@ -198,8 +198,8 @@ role named has nothing to check `status` against:
 
 ## Running agents in parallel
 
-**Create sparse worktrees before materializing files, with `tools/agent-setup.sh`** (busy-ibis). It
-runs the disk preflight, `git worktree add --no-checkout --no-track` onto a new branch from
+**Create sparse worktrees before materializing files, with `tools/agent-setup.sh`** (busy-ibis 3).
+It runs the disk preflight, `git worktree add --no-checkout --no-track` onto a new branch from
 `origin/main` (so the branch inherits no upstream), enables non-cone sparse checkout and only then
 materializes HEAD. The patterns are the `gates` job's sparse checkout in `.github/workflows/ci.yml`
 — the one list, which keeps back what the repository's own checks read from `docs/evidence/` (the
@@ -306,15 +306,15 @@ worktrees — merging is what collides — so parallelism is planned at the file
   player through the orchestrator, in the entry where the next reader will look for it.
 - **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent that
   reported an hour ago replays its whole transcript at full price, because the prompt cache behind
-  it has expired (woolly-finch). Resume only while the cache is live, and the windows are exact:
-  **Claude Code's cache lasts one hour, Codex's twenty minutes** (woolly-finch), counted from the
+  it has expired (woolly-finch 5). Resume only while the cache is live, and the windows are exact:
+  **Claude Code's cache lasts one hour, Codex's twenty minutes** (woolly-finch 6), counted from the
   agent's last request. **Resume only with five minutes to spare** — 55 minutes in Claude Code, 15
-  in Codex — since the clock is the provider's and not observable from here (woolly-finch). Past
+  in Codex — since the clock is the provider's and not observable from here (woolly-finch 7). Past
   that, spawn a fresh agent with a self-contained brief that names the branch and the report to read
   first.
 - **An agent that died mid-task is replaced in its own worktree.** A usage limit or an API error
   kills the agent and leaves every edit it made, usually uncommitted. Past the cache window
-  (woolly-finch), start the fresh agent without worktree isolation, pointed at the dead agent's
+  (woolly-finch 22), start the fresh agent without worktree isolation, pointed at the dead agent's
   worktree path. The brief it needs comes from `.claude/briefs/<branch-slug>.md` — the file the
   orchestrator wrote before spawning, kept current by every amendment sent since; the previous
   session's transcript under `~/.claude/projects/` is only the fallback when no such file exists.
@@ -352,16 +352,16 @@ worktrees — merging is what collides — so parallelism is planned at the file
   not undone: a follow-up commit continues from it. A brief for an agent says so.
 - **The main checkout is the player's test bed.** Whatever the player is asked to try out is checked
   out in the repository's own folder before they are told it is ready — never left in an agent's
-  worktree under `.claude/worktrees/` (woolly-finch). That means freeing the agent's worktree first
-  if it holds the branch (`git worktree remove`), then `git checkout` in the main folder, and saying
-  so; and while the player is testing there, nothing touches that checkout but docs commits on the
-  same branch.
+  worktree under `.claude/worktrees/` (woolly-finch 8). That means freeing the agent's worktree
+  first if it holds the branch (`git worktree remove`), then `git checkout` in the main folder, and
+  saying so; and while the player is testing there, nothing touches that checkout but docs commits
+  on the same branch.
 
 ## Recovering from an interruption
 
 **A limit or an outage stops every agent at once, and the pause's length decides what happens
 next.** The player usually tries to hand the session off before a limit hits, so the next one starts
-fresh at the reset, but not every limit is seen coming (woolly-finch).
+fresh at the reset, but not every limit is seen coming (woolly-finch 26).
 
 1. **Run `tools/agent-status.sh` before touching anything.** It covers every worktree's branch,
    uncommitted files, how far it is ahead of and behind its own upstream (another session may have

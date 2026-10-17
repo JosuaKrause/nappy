@@ -43,18 +43,22 @@ typing is the problem, say so beside the override rather than loosening the whol
 `tools/codex-hooks.py` and `tools/check_citations.py` are checked like everything else, but neither
 runs through `uv`: Codex runs the hook adapter with the host's own `python3` from
 `.codex/hooks.json`, and `tools/lint.sh` runs the citation check with it, since CI lints before it
-installs uv. So both stay **3.9-compatible** — `typing.Optional` rather than `X | None` outside an
-annotation, nothing newer than what `CLAUDE.md`'s "Python 3.9+" line promises — and
-`pyproject.toml` pins ruff's per-file target for each so `UP` rules do not modernise them past
-that. Nothing in the gate proves the compatibility; run each once under an older interpreter when
-you change it (`/usr/bin/python3 tools/test_check_citations.py` for the citation check):
+installs uv. So both stay **3.9-compatible**, nothing newer than what `CLAUDE.md`'s "Python 3.9+"
+line promises. `X | None` is 3.10's, so it is `typing.Optional` instead, everywhere in a file
+without `from __future__ import annotations` (`tools/codex-hooks.py`); only a file with that import
+(`tools/check_citations.py`) may write `X | None` in an annotation, which the import leaves
+unevaluated, and never outside one. Builtin generics such as `dict[str, Any]` are 3.9's and fine
+anywhere. And `pyproject.toml` pins ruff's per-file target for each so `UP` rules do not modernise
+them past that. Nothing in the gate proves the compatibility; run each once under an older
+interpreter when you change it (`/usr/bin/python3 tools/test_check_citations.py` for the citation
+check):
 
 ```sh
 echo '{"hook_event_name":"SessionStart","session_id":"x","cwd":"'"$PWD"'"}' | /usr/bin/python3 tools/codex-hooks.py
 ```
 
 **A change to a hook is checked against the adapter, and updates it in the same PR when it needs
-to** (brisk-heron). A new or changed script under `.claude/hooks/`, or a changed hook entry in
+to** (brisk-heron 6). A new or changed script under `.claude/hooks/`, or a changed hook entry in
 `.claude/settings.json`, asks whether Codex's side is affected: a new tool name, a new payload field
 read, a new hook event, a matcher Codex should share. Where it is, the same PR changes
 `tools/codex-hooks.py`, `.codex/hooks.json` and `tools/test_codex_hooks.py` to match. A change to a

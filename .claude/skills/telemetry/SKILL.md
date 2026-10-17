@@ -96,12 +96,11 @@ another system.
 
 A **`_draw()` counter** is the fourth shape, and it counts and nothing else. The first statement of
 a game `_draw()` override is `if FrameRecord.on: FrameRecord.drew(FrameLedger.DRAWS_<KIND>)`: one
-guarded static read off, one added integer on, never a time (the page's clock steps in 100µs, and
-a `_draw()` is far shorter) and never a branch in the body. It exists because the player asked
-which kinds of node redraw each frame, the per-kind `_draw()` counts (jolly-trout #541), and a
-node's own `_draw()` is the only place that is known. A new
-`_draw()` override in `src/` takes the line with the kind it belongs to, or the kind `other`;
-dev-only layers are not counted.
+guarded static read off, one added integer on, never a time (the page's clock steps in 100µs, and a
+`_draw()` is far shorter) and never a branch in the body. It exists because the player asked which
+kinds of node redraw each frame, the per-kind `_draw()` counts (jolly-trout #541), and a node's own
+`_draw()` is the only place that is known. A new `_draw()` override in `src/` takes the line with
+the kind it belongs to, or the kind `other`; dev-only layers are not counted.
 
 Nothing else about the frame record goes in a gameplay class — no reading of state, no counting
 beyond the scenery queue's own jobs and the `_draw()` counter, no deferred markers beyond the

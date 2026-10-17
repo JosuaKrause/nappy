@@ -20,7 +20,7 @@ real element type at the call site.
 **Some warnings are errors by default.** `var x := some_variant` ("the variable type is being
 inferred from a Variant value") fails the parse outright. Annotate instead: `var x: int = ...`.
 
-**And no warning the engine prints is left standing** (woolly-finch). A warning at boot, in
+**And no warning the engine prints is left standing** (woolly-finch 19). A warning at boot, in
 `check.sh`'s log or in a test run is fixed at its cause rather than read around: a `Camera2D` under
 physics interpolation wants `process_callback` set to physics in its scene, so the engine has
 nothing to override and nothing to say about it once a run.
@@ -54,7 +54,7 @@ one of those feature families, follow
 [Turning a module back on](../../../tools/web-template/README.md#turning-a-module-back-on).
 
 **Never tie a feature straight to the environment. Tie it to a flag the environment *informs*, and
-leave the override**, so that, for one, telemetry can be had when it is needed (PLAYTEST-25).
+leave the override**, so that, for one, telemetry can be had when it is needed (PLAYTEST-25 1).
 
 So `OS.has_feature("web")`, `OS.is_debug_build()` and `DisplayServer.is_touchscreen_available()` are
 allowed to **answer** the flag. They may not **be** it. The platform is the default; the flag is the
@@ -212,9 +212,9 @@ A comment states what the thing **is** and **why**, never where it came from.
 
 - **A citation carries the player's reason, or it goes.** A comment may quote the player's own words
   with where they were said, `*(PLAYTEST-28, finding 4: "…")*` or `*(2026-09-13: "…")*`, because the
-  quote is the reason the code is the way it is, and that reason is current (woolly-finch). A bare
-  milestone number or entry name with no quote (`(M39)`, "since M33", "for twelve milestones this
-  was wrong") is history, not a reason, and goes.
+  quote is the reason the code is the way it is, and that reason is current (woolly-finch 34). A
+  bare milestone number or entry name with no quote (`(M39)`, "since M33", "for twelve milestones
+  this was wrong") is history, not a reason, and goes.
 - **No former values.** Not "it was 148 until M35", not "this used to be `(1−t)²`". Keep the
   *relationship* that makes the current number right — "above the 12.0/s decay on the ground it
   stands on" — and let the decision records under `docs/decisions/` hold the story.

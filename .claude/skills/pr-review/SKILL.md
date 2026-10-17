@@ -95,7 +95,7 @@ over a folder that holds images (see **using-tools**).
 ## The findings go on the PR
 
 **A review's findings are posted as comments on the PR, anchored to the lines they are about, never
-only reported in the conversation** (woolly-finch). A finding in a chat message is read once by
+only reported in the conversation** (woolly-finch 11). A finding in a chat message is read once by
 whoever asked and is gone for the person who has to fix it; a comment on the diff is a thing the
 author, or an agent sent to the branch, can pick up one at a time and resolve, and its thread
 records what was decided about it.
@@ -118,9 +118,9 @@ that requires), the same as the player's own.
 
 **A review thread is resolved only by whoever opened it** — a reviewer bot resolves its own threads
 once satisfied, a thread the player opened is the player's to resolve; the author of a fix replies
-on the thread and never resolves it (woolly-finch). **It is a convention, not a gate**: an
+on the thread and never resolves it (woolly-finch 32). **It is a convention, not a gate**: an
 unresolved thread blocks neither an approval nor a merge, and no ruleset requires thread resolution
-(woolly-finch).
+(woolly-finch 33).
 
 **The review posts under its author's own reviewer identity, mandatorily**: a Claude Code review as
 `claude-reviewer`, a Codex review as `codex-reviewer`, on a docs-only pull request as much as on one
@@ -177,15 +177,15 @@ drawing, or a change to the rules is reviewed by a stronger model.
 **A queue update is a PR whose every changed file is under `docs/todo/`, `docs/review/` or
 `docs/playtests/`**: filing a playtest, filing or rewording an entry or an item, moving a band. CI
 calls it queue-only (`tools/ci_classify.py`) and runs its mechanical checks before the review does.
-It is merged ahead of other work (woolly-finch), since every brief is written from the queue on
+It is merged ahead of other work (woolly-finch 35), since every brief is written from the queue on
 `origin/main` (**orchestrating**) and a filing left open is a brief written from the older text. A
 diff that also touches anything else, a skill or `CLAUDE.md` included, is not a queue update and
 gets the full review above; the orchestrator's queue move on a PR that builds the work is reviewed
 with that PR.
 
-**Its review is Sonnet's, and it asks whether the queue says what the player said** (bouncy-heron).
-For each entry or item the PR adds or rewords, the reviewer reads it beside the playtest statements
-it cites, in the playtest file itself, and asks:
+**Its review is Sonnet's, and it asks whether the queue says what the player said** (bouncy-heron
+8). For each entry or item the PR adds or rewords, the reviewer reads it beside the playtest
+statements it cites, in the playtest file itself, and asks:
 
 - **Does it claim anything the player's words do not say?**
 - **Does it drop a specific the player gave?** A number, a place, a case they described, a word
@@ -196,13 +196,13 @@ it cites, in the playtest file itself, and asks:
 - **Does it collide with a recorded decision without naming it?** `tools/decisions.sh <noun>` finds
   the records about each thing the entry changes; an entry that replaces one quotes it.
 
-These five are the reviewer's reading of faithfulness (bouncy-heron), proposed at filing
+These five are the reviewer's reading of faithfulness (bouncy-heron 4), proposed at filing
 (leafy-finch) and open to the player's correction. A "yes" to the first, second, third or fifth, and
 a "no" to the fourth, is a finding. **A reviewer flags; it does not resolve**: it says what does not
 match and where, and the filer takes it back to the player or to the words.
 
 **It also verifies what CI checked, since a script sees that a thing exists, not what it says**
-(bouncy-heron). The `gates` job's queue update step (`tools/ci_queue_update.py`) fails on an
+(bouncy-heron 9). The `gates` job's queue update step (`tools/ci_queue_update.py`) fails on an
 existing playtest changed, on a deleted queue file with neither a record on `main` for its entry nor
 a `Dropped: <path> — "<the player's words>"` line in the description quoting a playtest verbatim,
 and on a deleted review item no playtest names; it puts `tools/queue.sh`'s line for every entry

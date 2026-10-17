@@ -20,18 +20,18 @@ agent's own identity every time, even an ordinary one that Claude Code's guard, 
 switches its asking on, asks them about instead, and reloads the startup rules on session start,
 resume, compaction and subagent start. **A change to a hook script under `.claude/hooks/` or to the
 hooks in `.claude/settings.json` checks whether the adapter and its tests need to change — a new
-tool name, payload field or hook event — and updates them in the same PR when they do**
-(brisk-heron), because Codex names its tools differently (`apply_patch` rather than `Edit`/`Write`)
-and a hook that works only in Claude Code leaves Codex unguarded; a change to a hook's own logic
-alone needs nothing from the adapter. The hooks need Python 3.9+, Bash and jq, and run only once the
-repository is trusted and the hooks are reviewed through `/hooks`; restart Codex if new hooks or
-skills do not appear. Where a rule says `Read`, Codex uses file-reading tools or shell reads; where
-it says `Edit` or `Write`, `apply_patch`, which keeps the diff reviewable, fails on a stale match
-and is what the path rules load on — shell scripts are for tools, git and inspection. Where a skill
-names Claude's `Agent`/`Task` tools or Sonnet, use the Codex delegation tools and models with the
-same scope fences and verification; an agent has an isolated worktree only if one was actually
-created. The post-edit lint hook does not replace `./tools/lint.sh` before committing a governed
-doc, `CLAUDE.md` included. A request for a PR ends with a reviewable PR.
+tool name, payload field or hook event — and updates them in the same PR when they do** (brisk-heron
+6), because Codex names its tools differently (`apply_patch` rather than `Edit`/`Write`) and a hook
+that works only in Claude Code leaves Codex unguarded; a change to a hook's own logic alone needs
+nothing from the adapter. The hooks need Python 3.9+, Bash and jq, and run only once the repository
+is trusted and the hooks are reviewed through `/hooks`; restart Codex if new hooks or skills do not
+appear. Where a rule says `Read`, Codex uses file-reading tools or shell reads; where it says `Edit`
+or `Write`, `apply_patch`, which keeps the diff reviewable, fails on a stale match and is what the
+path rules load on — shell scripts are for tools, git and inspection. Where a skill names Claude's
+`Agent`/`Task` tools or Sonnet, use the Codex delegation tools and models with the same scope fences
+and verification; an agent has an isolated worktree only if one was actually created. The post-edit
+lint hook does not replace `./tools/lint.sh` before committing a governed doc, `CLAUDE.md` included.
+A request for a PR ends with a reviewable PR.
 
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is the records under
@@ -118,10 +118,10 @@ rather than a place:
 | build a worksheet for the player to answer the review items in | **review-answers** |
 | **end a session** | **session-cleanup** |
 
-**A manual sequence done a second time becomes a script** (woolly-finch). It follows **cli-tools**
-for what a command-line entry point owes, and its row goes into the **using-tools** catalogue in the
-same commit. This is a conversation rule rather than a hook: the moment a second manual pass is
-noticed, nothing has been edited yet, so there is no file to hang it on.
+**A manual sequence done a second time becomes a script** (woolly-finch 23). It follows
+**cli-tools** for what a command-line entry point owes, and its row goes into the **using-tools**
+catalogue in the same commit. This is a conversation rule rather than a hook: the moment a second
+manual pass is noticed, nothing has been edited yet, so there is no file to hang it on.
 
 If a skill turns out not to cover something it should, add it there rather than here — **anything
 too long for one file becomes a file of its own, and this one does not grow.** If a new area of the
@@ -134,7 +134,7 @@ inline. And **the hook cannot reach a rule about a conversation**: anything that
 *say* rather than what you *edit* has to live in this file, because there is no tool call to hang it
 on.
 
-**A skill found wrong is fixed, and the fix is flagged to the player** (woolly-finch). Wrong
+**A skill found wrong is fixed, and the fix is flagged to the player** (woolly-finch 24). Wrong
 includes a step that fails in practice, a sentence that is no longer true, a broken or duplicated
 passage, and a gap that let a mistake through. The fix goes on a branch and PR like any other
 change, and the report to the player names the skill, what was wrong, the moment it showed, and what
@@ -162,9 +162,9 @@ in it is wrong about nothing.**
 unless recording that measurement is the document's job. Say what the command is, not what it
 prints.
 
-**No quest logs outside the decision records** (PLAYTEST-18). What was done is rarely relevant when
-working on the codebase and only comes into play when planning, so that an approach already ruled
-out is not tried again. A ticked box, a "Done:" paragraph, a branch name or a status word in a
+**No quest logs outside the decision records** (PLAYTEST-18 2). What was done is rarely relevant
+when working on the codebase and only comes into play when planning, so that an approach already
+ruled out is not tried again. A ticked box, a "Done:" paragraph, a branch name or a status word in a
 heading is a quest log wherever it stands: `TODO.md` and the entries under `docs/todo/` hold open
 work only, `REVIEW.md` and the items under `docs/review/` hold what waits on a person only, and what
 was done — with its measurement and its rejected options — is retrievable on demand from the records
@@ -175,14 +175,18 @@ primary sources: a player's own words on a date.
 
 **`CLAUDE.md` and the skills cite the player's words and never quote them** (woolly-penguin #759). A
 rule that rests on something the player said states the rule and its reason in its own words and
-ends them with the bare name of the file that records the words: `(woolly-penguin #759)`,
-`(PLAYTEST-63)`. A name such as `woolly-penguin` or `PLAYTEST-63` is the playtest
-`docs/playtests/<date>-<name>.md`, or `docs/playtests/<name>.md` for a numbered one, and `#N`, given
-where the file has several statements, is the one under the heading `## #N` there; words no playtest
-holds cite the record under `docs/decisions/` that does, named the same way. A citation is never a
-Markdown link, a path or an anchor. Whether a rule reads the player right is established once, by
-the review of the change that writes it, so a reader does not re-check it on every read, and a quote
-in the rule is only a distraction.
+ends them with the name of the file that records the words and, where that file has several
+statements, the statement's number: `(woolly-penguin #759)`, `(PLAYTEST-16 7)`. A name such as
+`woolly-penguin` or `PLAYTEST-16` is the playtest `docs/playtests/<date>-<name>.md`, or
+`docs/playtests/<name>.md` for a numbered one; words no playtest holds cite the record under
+`docs/decisions/` that does, named the same way. The number is `#N` in a file whose statements are
+`## #N` headings, the note of that number there, and otherwise the file's own number for the
+statement, a numbered heading (`## 7. …`) or a numbered statement (`7. **…**`), with a range as
+`18-23`. The one other form is what `tools/inbox.py cite` writes after an inbox number, `inbox #N in
+woolly-penguin`, the playtest holding that note. A citation is never a Markdown link, a path or an
+anchor, and `tools/check_citations.py`, which `tools/lint.sh` runs, checks every one. Whether a rule
+reads the player right is established once, by the review of the change that writes it, so a reader
+does not re-check it on every read, and a quote in the rule is only a distraction.
 
 ---
 
@@ -202,12 +206,12 @@ follow; it is a claim with the evidence withheld.
   confusion is a label that sounds official and is not.
 - **A queue entry is named by its two words, or an entry from before names by its number, *and* a
   short title**, every time: "busy-badger, stars for nerves" or "M98, pressure in the empty acts",
-  never "busy-badger" or "M98" alone (woolly-finch). A name or a number is a lookup the player has
+  never "busy-badger" or "M98" alone (woolly-finch 9). A name or a number is a lookup the player has
   to perform; the title is the thing they were asked about.
 - **A question carries all the context needed to answer it** — what was asked, what it collides
   with, what each answer costs, and which you would pick — in the message that asks it, not in an
-  earlier one (woolly-finch). The player answers from the message in front of them, and a question
-  that leans on something said three turns ago is a question with its evidence withheld.
+  earlier one (woolly-finch 10). The player answers from the message in front of them, and a
+  question that leans on something said three turns ago is a question with its evidence withheld.
 
 **"Telemetry", in the player's words, primarily means GoatCounter** (azure-tapir #527). A request
 for telemetry on something is a request for its own GoatCounter events (`VisitCounter`, the page
@@ -266,7 +270,7 @@ account: invisible to everybody else who opens the repo, not reviewable in a dif
 moment that store is cleared or the work moves.
 
 **"Make a note of that" means write it somewhere in the repository** — this file, a skill, or the
-doc it belongs to — and commit it (woolly-finch). It never means an assistant's memory store.
+doc it belongs to — and commit it (woolly-finch 4). It never means an assistant's memory store.
 
 ---
 
@@ -280,9 +284,9 @@ Each was a decision. Do not "fix" one without a reason; the reasoning is in the 
   counting distinct routes is a max flow; the home's doorstep is exempt from the route-redundancy
   guarantee (**city**); no spatial hash, no `impulse` field, and events defined in code rather
   than `.tres` (**events**).
-- **No quest log for the resistance** — *asked for no marker and no quest log (PLAYTEST-02) ·
+- **No quest log for the resistance** — *asked for no marker and no quest log (PLAYTEST-02 14) ·
   overturned on 2026-08-31 to only the first encounter, the chalk mark, coming without a hint
-  (PLAYTEST-16) · overturned again on 2026-09-23 to the first task being hinted at too
-  (PLAYTEST-122).* Nothing lists the tasks and the day brief carries none; day 6's brief names the
-  rumor of chalk, and every task has a red arrow (M181, the resistance has a reason, and a task is
-  one day).
+  (PLAYTEST-16 7) · overturned again on 2026-09-23 to the first task being hinted at too
+  (PLAYTEST-122 12).* Nothing lists the tasks and the day brief carries none; day 6's brief names
+  the rumor of chalk, and every task has a red arrow (M181, the resistance has a reason, and a task
+  is one day).

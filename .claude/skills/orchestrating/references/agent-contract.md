@@ -38,10 +38,10 @@ pull request docs-only):
   one, `claude-reviewer` for a review;
 - in Codex, `codex-coder` for both kinds of PR and `codex-reviewer` for a review.
 
-Run it as `uv run python tools/agent-identity.py run <role> -- <command>`. If `uv run` is refused
-in the worktree, use `.venv/bin/python tools/agent-identity.py run <role> -- <command>`. Check
-`uv run python tools/agent-identity.py status <role>` first; if the role is not usable, stop and
-report — never fall back to a direct call. Open a ready PR, not a draft.
+Run it as `uv run python tools/agent-identity.py run <role> -- <command>`. If `uv run` is refused in
+the worktree, use `.venv/bin/python tools/agent-identity.py run <role> -- <command>`. Check `uv run
+python tools/agent-identity.py status <role>` first; if the role is not usable, stop and report —
+never fall back to a direct call. Open a ready PR, not a draft.
 
 ## Scope
 

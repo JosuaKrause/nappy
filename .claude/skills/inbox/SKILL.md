@@ -5,16 +5,16 @@ description: The player's inbox on GitHub Issues — where it is found at the st
 
 # The inbox
 
-**GitHub Issues are the player's inbox, and nothing else** (bouncy-heron). A note is an open issue
-carrying the label `inbox`, and an issue without it is never filed (plaid-tapir), whoever opened it:
-`tools/inbox.py` skips it and refuses to close a batch naming it, and CI's
+**GitHub Issues are the player's inbox, and nothing else** (bouncy-heron 13). A note is an open
+issue carrying the label `inbox`, and an issue without it is never filed (plaid-tapir 2), whoever
+opened it: `tools/inbox.py` skips it and refuses to close a batch naming it, and CI's
 `tools/ci_transcription.py` fails a filing pull request that names it. The player writes one at any
 time, edits it until it is filed, and says when a batch of notes becomes a filing pull request. The
 queue, the review items, the playtest files and the decision records stay in the repository, because
 an entry is reviewed when it enters the queue (`tools/decisions.sh leafy-finch` has the reasons, and
 the options weighed against them).
 
-`tools/inbox.py` is the tool, and **the one way an agent writes an issue** (bouncy-heron).
+`tools/inbox.py` is the tool, and **the one way an agent writes an issue** (bouncy-heron 14).
 `.claude/hooks/github-write-guard.sh` denies a direct `gh issue` write, wrapped in an identity or
 not, and an issue write through `gh api` the same way, all but a comment POST to
 `issues/N/comments`, which a pull request's own conversation comments share.
@@ -35,19 +35,19 @@ A blank note comes from the issue template `.github/ISSUE_TEMPLATE/inbox-note.md
 ## Whose notes count
 
 **Only an issue the player opened, or one the capture script (`tools/inbox.py capture`) opened for
-them, is a note** (bouncy-heron), so people outside the project do not put work into the queue. The
-repository is public and the template's label goes on any issue opened with it, so the label alone
-admits anybody: an issue from outside the project is welcome as something to look at and is never an
-automatic call for action (bouncy-heron). A captured note counts when it was opened as
+them, is a note** (bouncy-heron 19), so people outside the project do not put work into the queue.
+The repository is public and the template's label goes on any issue opened with it, so the label
+alone admits anybody: an issue from outside the project is welcome as something to look at and is
+never an automatic call for action (bouncy-heron 23). A captured note counts when it was opened as
 `nappy-claude-orchestrator[bot]` or `nappy-codex-coder[bot]` and carries the capture script's tag,
-the label `captured` (bouncy-heron). The player's own comments are the player's words, and so, on a
-captured note alone, are the words `append` added (below). `tools/inbox.py` skips everything else
+the label `captured` (bouncy-heron 23). The player's own comments are the player's words, and so, on
+a captured note alone, are the words `append` added (below). `tools/inbox.py` skips everything else
 with a line saying so, and CI's transcription check (`tools/ci_transcription.py`) fails a filing
 that names any other issue.
 
 ## The labels
 
-**`inbox` marks a note, and `queue_<band>` sets the band its work is filed in** (dotted-quail):
+**`inbox` marks a note, and `queue_<band>` sets the band its work is filed in** (dotted-quail 2):
 `queue_now`, `queue_next`, `queue_later`, `queue_parked`, and `queue_bug`, a band above `now`
 (mossy-ferret #710). A note is never filed `bug` unless the player says so (mossy-ferret #710), and
 "up next" is not a label: it is an `upnext: true` line in the entry's opening block. A label outside
@@ -61,9 +61,9 @@ and asked about on its issue.
 **When the player says something in a session that should outlive it — a thought for the queue, a
 correction to a task — capture it into the inbox, in one call, before going on with anything else**,
 so the words are safe even if the session is cleared before a filing pull request exists. The
-player's worry was words lost (bouncy-heron) when a session is cleared before an agent writes them
+player's worry was words lost (bouncy-heron 2) when a session is cleared before an agent writes them
 down, and **which messages to capture is the agent's judgment**: no hook reminds it, and the
-conversation is not recorded as a whole (bouncy-heron).
+conversation is not recorded as a whole (bouncy-heron 13).
 
 ```sh
 cat > /tmp/note.md <<'NOTE'
@@ -109,12 +109,12 @@ answered, and the filing treats the words like the body.
 
 ## Asking about a note
 
-**An ingestion never waits on a question** (minty-hedgehog), since its point is to get the notes
-into the repository fast, and most questions need exploring once the task is picked up anyway. Every
-note is filed as it stands, and a question it leaves open is written into its queue entry, marked
-open, for whoever picks the task up.
+**An ingestion never waits on a question** (minty-hedgehog #459), since its point is to get the
+notes into the repository fast, and most questions need exploring once the task is picked up anyway.
+Every note is filed as it stands, and a question it leaves open is written into its queue entry,
+marked open, for whoever picks the task up.
 
-**A question about a note can still be asked on its issue** (dotted-quail), when the filer has one
+**A question about a note can still be asked on its issue** (dotted-quail 1), when the filer has one
 before the batch is filed; the answer is filed with the note, and the batch does not wait for it:
 
 ```sh
@@ -158,24 +158,23 @@ request carries the whole batch:
   `cite` finds each note's playtest from its `## #N` heading under `docs/playtests/` and, in every
   tracked text file outside `docs/playtests/`, turns the plain `inbox #N` (and a run such as
   `inbox #9001, #9002 and #9003`) into `inbox #N in name`, the playtest's bare name, in every file,
-  Markdown and skills included, and never into a link (`CLAUDE.md` says once how a name is found).
-  A number counts only as `#N` followed by no
-  digit or letter, or as `issues/N` in a URL, so an SVG colour such as `#9004a6` never matches. A
-  bare `(#N)`, a range such as `#9001-#9005`, an issue URL, a link text and a run mixing playtests are
-  listed as `file:line: text` and never edited. **Fix a listed citation by hand, the same way, when
-  nothing near it names the playtest**; a bare number inside a sentence, list or heading that already
-  names the playtest can stay. A line that already names the playtest, or a citation already followed
-  by ` in <name or link>`, is left alone (a different playtest there is listed), so a second run
-  changes nothing. **Then read
-  `git diff` by eye**: a `#N` that is not a note (a pull request, an SVG colour written as three
-  digits) shows up there, and an edit the tool should not have made is reverted by hand. Because
-  this edits code comments, the filing pull request may touch `src/` and `tests/`, which makes it a
-  code pull request for CI (`tools/ci_classify.py`), and **that has a cost**: it is no longer
-  queue-only, so it loses the queue update's merge-first lane and its lighter faithfulness review
-  and gets the full review. Its commits, push and writes go out as
-  `claude-coder` from that commit on, and its description carries a `No queue item: <reason>` line
-  (`tools/ci_code_pr_queue.py`). **Anything written after a filing cites the playtest file, not the
-  closed issue.**
+  Markdown and skills included, and never into a link: `CLAUDE.md`'s citation rule counts that form
+  as a citation, and `tools/check_citations.py` checks that the name holds the note. A number counts
+  only as `#N` followed by no digit or letter, or as `issues/N` in a URL, so an SVG colour such as
+  `#9004a6` never matches. A bare `(#N)`, a range such as `#9001-#9005`, an issue URL, a link text
+  and a run mixing playtests are listed as `file:line: text` and never edited. **Fix a listed
+  citation by hand, the same way, when nothing near it names the playtest**; a bare number inside a
+  sentence, list or heading that already names the playtest can stay. A line that already names the
+  playtest, or a citation already followed by ` in <name or link>`, is left alone (a different
+  playtest there is listed), so a second run changes nothing. **Then read `git diff` by eye**: a
+  `#N` that is not a note (a pull request, an SVG colour written as three digits) shows up there,
+  and an edit the tool should not have made is reverted by hand. Because this edits code comments,
+  the filing pull request may touch `src/` and `tests/`, which makes it a code pull request for CI
+  (`tools/ci_classify.py`), and **that has a cost**: it is no longer queue-only, so it loses the
+  queue update's merge-first lane and its lighter faithfulness review and gets the full review. Its
+  commits, push and writes go out as `claude-coder` from that commit on, and its description carries
+  a `No queue item: <reason>` line (`tools/ci_code_pr_queue.py`). **Anything written after a filing
+  cites the playtest file, not the closed issue.**
 - **Open one pull request whose description names every note on a line of its own,
   `Filed from #N`** — never `Closes #N`, which would leave the note open and editable until the
   merge. It is docs-only unless `cite` edited a code comment, so its commits, push and pull request go
@@ -183,7 +182,7 @@ request carries the whole batch:
   it is a code pull request. CI's transcription check reads those lines and
   fails a note that is not the player's or whose text, appended words included, is not in a playtest
   file the pull request adds, word for word.
-- **Right after pushing the pull request, close the batch in one call** (bouncy-heron):
+- **Right after pushing the pull request, close the batch in one call** (bouncy-heron 22):
 
   ```sh
   uv run python tools/inbox.py --role claude-orchestrator close --pr P

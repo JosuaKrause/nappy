@@ -18,7 +18,7 @@ never evidence of what was **agreed**. A decision can sit written down and unbui
 milestones, and a session that checks only `src/` will confidently tell the player their own
 decision never happened.
 
-**A code comment is positive; the queue is normative** (PLAYTEST-128). The code describes what is,
+**A code comment is positive; the queue is normative** (PLAYTEST-128 3). The code describes what is,
 never what should be. A docstring saying a thing "takes no picture" or "is drawn in code" describes
 what was built, however deliberate it sounds; it is never a decision that competes with the queue.
 Where the two disagree, build what the queue says and rewrite the comment with the code. That
@@ -41,15 +41,15 @@ reader loses the half with the measurement in it.
 player's own words, and every specific they gave — before a line of code is written.** Then it
 becomes a queue entry, and only then does it get implemented.
 
-**The first place the player's words are written is the inbox** (bouncy-heron). When the player says
-something in a session that should outlive it, the agent captures it verbatim into the inbox on
+**The first place the player's words are written is the inbox** (bouncy-heron 13). When the player
+says something in a session that should outlive it, the agent captures it verbatim into the inbox on
 GitHub Issues, in one call, before going on with anything else, so the words are safe even if the
 session is cleared; which words to capture is the agent's judgment. The notes the player writes
 there directly are the same. A note becomes a playtest file and its queue entries when the player
 asks for its batch to be filed, exactly as this skill says below — **inbox** has the capture, the
 filing pull request and the closing of the notes.
 
-**Words said in conversation are recorded with what they answered** (bouncy-heron), since the
+**Words said in conversation are recorded with what they answered** (bouncy-heron 16), since the
 player's side alone loses the context. Before each quote the playtest file states the assistant's
 side as far as the quote answers it: the question asked, the options with their labels, the proposal
 a "yes" accepts. Every label the player uses — "(b)", "option C", "your categories" — is defined
@@ -57,25 +57,25 @@ where it is quoted, since the quote alone does not say what it points at, and a 
 has not seen the conversation.
 
 **A new playtest, a new queue entry, a new decision and a new review item are named, never
-numbered** (PLAYTEST-144). `tools/new-name.sh <kind> "<title>"` draws `<date>-<adjective>-<animal>`,
-writes the file or the entry's folder with its heading and date, and prints the name, which is
-spoken and linked by its two words ("busy-badger"); sorting a folder puts the newest last. The
-playtests that already have a number keep it, and so do the entries and records that already have
-one.
+numbered** (PLAYTEST-144 6). `tools/new-name.sh <kind> "<title>"` draws
+`<date>-<adjective>-<animal>`, writes the file or the entry's folder with its heading and date, and
+prints the name, which is spoken and linked by its two words ("busy-badger"); sorting a folder puts
+the newest last. The playtests that already have a number keep it, and so do the entries and records
+that already have one.
 
 - **A playtest** is `docs/playtests/<name>.md`.
 - **A queue entry** is a folder, `docs/todo/<name>/`. Its `README.md` opens with the entry's band,
   `priority: bug|now|next|later|parked`, optionally an `upnext: true` line (it prints first,
   whatever the band, until the work starts), and an `after: <entry folder>` line for each entry it
   truly waits on; `tools/queue.sh` prints the queue in the order the bands give, and there is no
-  order list to edit (brisk-heron). **A playtest note is filed `now`** unless the player names
-  another band, since a note from playing is a bug report (olive-koala): pass `--priority now` to
+  order list to edit (brisk-heron 13). **A playtest note is filed `now`** unless the player names
+  another band, since a note from playing is a bug report (olive-koala 11): pass `--priority now` to
   `tools/new-name.sh todo`, which writes `priority: later` otherwise. For anything else, a band the
   player did not name is the filer's proposal and the report says so. **`bug` is never proposed or
   defaulted, for any entry**: it is filed only when the player names it (mossy-ferret #710). The
   rest of the `README.md` holds the player's words, the playtest links and the context. **Each item
   is a file of its own** beside it, under a short descriptive name (`stack-in-front.md`), written in
-  full prose with no checkbox (PLAYTEST-144); an item somebody is mid-way through says so in its
+  full prose with no checkbox (PLAYTEST-144 7); an item somebody is mid-way through says so in its
   text. Finishing an item deletes its file.
 - **A decision** is `docs/decisions/<entry name>.md`, written by the PR that builds the work
   (**committing**); when an entry's last item goes, its folder goes in the same commit.
@@ -93,9 +93,9 @@ The test of whether it was written down is not "did I mention it" — it is whet
 the repo cold could build the thing that was asked for** from what is on disk.
 
 **A mechanism the player did not name is the filer's proposal, and the entry says so.** Filing turns
-a sentence of the player's (PLAYTEST-140) about a spent park into something buildable, and the how
+a sentence of the player's (PLAYTEST-140 1) about a spent park into something buildable, and the how
 is easy to write as though it were part of the ask, as a park fenced with a street closure's
-barriers (PLAYTEST-140) was. The queue entry states the player's ask in their terms, and any
+barriers (PLAYTEST-140 8) was. The queue entry states the player's ask in their terms, and any
 mechanism beyond it under **Proposed, not asked for:**, with the plainer alternative the proposal
 replaces. A proposal that changes what the player sees across the whole game goes back to them as a
 question before it is briefed; a small one is briefed with its first pictures due early, so the

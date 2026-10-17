@@ -29,11 +29,11 @@ coming* are claims about the thing's own course.
 - a **badge at the screen edge** whenever something lethal or faster than a walk is out of sight
   (`VisibleView`) and closing **under its own steam**, carrying its own silhouette so it says *what*
   is coming rather than that something is — **for the things that telegraph**: a thing telegraphs
-  its coming only if it goes fast, comes toward her (PLAYTEST-145), and carries a heavy penalty
-  (olive-hedgehog #598), ending the day or a heavy hit. One that does not (`EventDef.telegraphs`) —
-  the loose dog and the cat, the player's own — is outside the badge and warning-first placement
-  rather than exempted from them, as are `alley_mouse`, `pigeon_flock` and `police_patrol` by the
-  rule's numbers (`docs/EVENTS.md`, "What telegraphs")
+  its coming only if it goes fast, comes toward her (PLAYTEST-145 18-23), and carries a heavy
+  penalty (olive-hedgehog #598), ending the day or a heavy hit. One that does not
+  (`EventDef.telegraphs`) — the loose dog and the cat, the player's own — is outside the badge and
+  warning-first placement rather than exempted from them, as are `alley_mouse`, `pigeon_flock` and
+  `police_patrol` by the rule's numbers (`docs/EVENTS.md`, "What telegraphs")
 - above the **player**, a flashing exclamation mark for a soon-to-be-bad spot, doubled and red for
   danger already on her
 - over the **pram**, the only cue that is not about the world — four states of the baby herself
@@ -68,11 +68,11 @@ narrowness is what stops it from being the next ring somebody wants:**
 - **For the cost being charged right now, not for what exists.** Colour is `colour_for()`, linear
   through `Palette.HALO_MID` over `ExcitementHalo.net_landed()`: the source's traced `landed()` less
   its share of the decay the bar took in the same window, floored at zero. A rim reads red only
-  while the bar is climbing because of it (PLAYTEST-112). Transparency is `magnitude_for()` over the
-  same net on a curve that saturates early *(asked on 2026-09-07 for brightness to show distance ·
-  overturned on 2026-09-08: only the amount received counts, colour and transparency are not the
-  same number, and transparency emphasizes low values)* (PLAYTEST-38). Both channels ease rather
-  than jump (PLAYTEST-38).
+  while the bar is climbing because of it (PLAYTEST-112 2). Transparency is `magnitude_for()` over
+  the same net on a curve that saturates early *(asked on 2026-09-07 for brightness to show distance
+  · overturned on 2026-09-08: only the amount received counts, colour and transparency are not the
+  same number, and transparency emphasizes low values)* (PLAYTEST-38 3). Both channels ease rather
+  than jump (PLAYTEST-38 3).
 - **Soft and under everything.** Each rim is a child of its own entity with `show_behind_parent`, so
   Y-sort places it behind the entity, the crowd and the player; it stays a hint rather than a wall,
   and the caret, the badge and the exclamation mark keep meaning exactly what they meant.
@@ -97,8 +97,8 @@ row as far as any feedback is concerned. The crowd is the deliberate opposite; s
 
 ### A cue that marks everything says nothing
 
-**And a cue that marks the wrong things says something false** (PLAYTEST-37). What decides the mark
-is what the thing is **projected** to net her, not a row's declared cost: `EventInstance` and
+**And a cue that marks the wrong things says something false** (PLAYTEST-37 5). What decides the
+mark is what the thing is **projected** to net her, not a row's declared cost: `EventInstance` and
 `CrowdAgent` each answer `expected_impact_at()` and `will_be_lethal()`. `tests/test_danger.gd` holds
 the scenarios: a cat dashing at her is unmarked, a cyclist or a car whose line reaches her is red
 and one passing wide is not, and a crowd at ordinary arterial density around a standing player marks
@@ -134,7 +134,7 @@ includes her own walking is a cue for walking; `will_be_lethal()` keeps the same
 **The amber caret is the one exception, and it is the player's own overturn.** *(Asked on 2026-09-08
 for the source's own velocity with her position fixed, so that her own walking cannot raise or lower
 it · overturned on 2026-09-20: the caret is the net gain she very likely gets if she keeps doing
-what she is doing, so the halo roughly matches it when she does.)* (PLAYTEST-115)
+what she is doing, so the halo roughly matches it when she does.)* (PLAYTEST-115 7)
 `expected_impact_at()` moves her too, at her own current velocity, and nets what she would gain
 against what her own current decay gives back over the horizon (`Baby.decay_rate()`,
 `Baby.current_sensitivity()`), floored at zero — the forward half of `net_landed()`'s sentence.
@@ -152,7 +152,7 @@ the clock has started**, which is the difference between information and instruc
 
 **Only a `hard_fail` event and a closing car raise it.** Raised for every telegraph it would mean "a
 number is about to move faster" for most of the catalogue — which the meter already says, and the
-player's verdict on that (PLAYTEST-05) was that she can just keep doing what she was doing.
+player's verdict on that (PLAYTEST-05 3) was that she can just keep doing what she was doing.
 
 Its `NOW` level is **two** conditions: within `LETHAL_MARK_LEAD` of the radius that ends the day,
 **and closing**.
@@ -200,18 +200,18 @@ reason.
 
 **Anything that is a *picture* — a glyph, an icon, a silhouette, a symbol — is authored as an image
 file under `art/` and drawn as a texture, never assembled at runtime out of `draw_circle`,
-`draw_rect`, `draw_line`, `draw_arc` or `draw_colored_polygon`** (PLAYTEST-29). The **godot** skill
-carries the short version for every `_draw()`; this is the rule in full.
+`draw_rect`, `draw_line`, `draw_arc` or `draw_colored_polygon`** (PLAYTEST-29 3). The **godot**
+skill carries the short version for every `_draw()`; this is the rule in full.
 
 **SVG or PNG, and which one is the asset's own question rather than this rule's.** SVG is the
 default for a glyph or a flat symbol, because it stays hand-editable; a painted or generated sheet
 is a PNG, and both satisfy the rule for the same reason — a file a person can open.
 
 **An icon or a symbol on a control is not "graphics" in the sense anything else in this project uses
-the word** (PLAYTEST-29). So no argument about where drawing work sits in the queue is ever cover
+the word** (PLAYTEST-29 3). So no argument about where drawing work sits in the queue is ever cover
 for painting a button in `_draw()`.
 
-**The reason is the feedback loop, and it is decisive** (woolly-finch): An SVG can be opened and
+**The reason is the feedback loop, and it is decisive** (woolly-finch 3): An SVG can be opened and
 looked at — by a person, or by an agent reading the file — and judged on its own. A picture
 assembled in `_draw()` can only be judged by booting the game and taking a screenshot, and **the
 same headless run that proves the code correct proves nothing about whether it looks like anything
