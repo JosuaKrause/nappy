@@ -28,6 +28,12 @@ var _connected := false
 ## colour it would draw identically to what it drew last time. `-1` so the day's first frame,
 ## whatever `time_remaining` starts at, always counts as a change.
 var _last_emitted_second := -1
+## Set by `FinaleController` on its own clock only. The escape's label reads to the hundredth
+## (`GameState.format_clock_hundredths()`), which changes on nearly every frame, so this clock
+## tells the HUD on every frame rather than once a second. A day's controller leaves it false and
+## keeps the once-a-second emission above. *(inbox #746, the player: "escape clocke we can try
+## 100s but it's not going to be much better? framerate is too low? all of this was on phone.")*
+var emit_every_frame := false
 
 func setup(map: CityMap, player: Node2D) -> void:
 	_map = map
@@ -73,12 +79,17 @@ func _process(delta: float) -> void:
 	if not DevFlags.invincible():
 		time_remaining -= delta
 	var displayed := maxf(time_remaining, 0.0)
-	# The label this feeds reads to the whole second and nothing finer, so a frame that has not
-	# crossed a second boundary since the last emit would only hand the HUD the same text and the
-	# same urgency colour it already drew — sixty avoidable emits (and, downstream, sixty format
-	# calls and a `modulate` write) for the one that actually changes anything.
+	# A day's label reads to the whole second and nothing finer, so a frame that has not crossed a
+	# second boundary since the last emit would only hand the HUD the same text and the same
+	# urgency colour it already drew — sixty avoidable emits (and, downstream, sixty format calls
+	# and a `modulate` write) for the one that actually changes anything. The escape's clock
+	# (`emit_every_frame`) reads to the hundredth and emits on every frame the countdown moves; a
+	# frozen `--invincible` clock never reaches this line's emit twice, as before.
 	var second := int(displayed)
-	if second != _last_emitted_second:
+	if emit_every_frame and not DevFlags.invincible():
+		_last_emitted_second = second
+		EventBus.day_time_changed.emit(displayed, time_total)
+	elif second != _last_emitted_second:
 		_last_emitted_second = second
 		EventBus.day_time_changed.emit(displayed, time_total)
 	if time_remaining <= 0.0:

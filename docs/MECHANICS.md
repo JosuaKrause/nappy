@@ -1478,9 +1478,13 @@ losing paths, the `EventBus.day_time_changed` the HUD draws from, and `--invinci
 clock still are all a day's already and none of them change. What the escape does differently is
 only what happens at the end of one.
 
-**The clock reads to the millisecond** — `%d:%02d.%03d` through `GameState.format_clock()`, in
-place of a day's `%d:%02d` — and nothing else about it changes. Milliseconds ticking make the same
-countdown read as faster, which is the whole of the reason.
+**The clock reads to the hundredth** — `%d:%02d.%02d` through `GameState.format_clock_hundredths()`,
+in place of a day's `%d:%02d` — and the escape's `DayController` tells the HUD on every frame
+(`emit_every_frame`) so the digits move as often as the screen draws; a day's clock still emits
+once a second. Digits ticking make the same countdown read as faster, which is the whole of the
+reason. *(The player: "escape clocke we can try 100s but it's not going to be much better?
+framerate is too low? all of this was on phone.")* The ending screens' run length stays at
+milliseconds, a still number.
 
 **A lost section starts again where it began, and in a normal run costs no Nerve.** Being taken,
 the meter reaching 100 and the clock running out are the same three losses a day has, and every one
@@ -1693,7 +1697,9 @@ block day 11 boarded up and the park day 12 took are arc steps in `CityState`, t
 *(gentle-osprey, the player: "a "Hard Mode" checkbox on the title screen (if new game) that decides
 whether checkpoints are available".)* It shows only when the title begins a new game — never in
 front of a resumed save, whose run already has its mode — opens unchecked every time, and is never
-remembered between sittings. A press on it, or `H` on a keyboard, flips it and never starts the run:
+remembered between sittings. A touch or a click on its box or label, or anywhere within the larger of
+5% beyond them (the margin every button catches by) and 28 design px (`TitleScreen.hard_mode_target()`),
+or `H` on a keyboard, flips it and never starts the run:
 the run still begins only from the title's three controls buttons or a key, so the box can be set
 first (`TitleScreen`). The mode is `GameState.hard_mode`, fixed for the run and carried in the save.
 **Nothing during play shows it** and nothing about the city, the events or a day's difficulty reads
