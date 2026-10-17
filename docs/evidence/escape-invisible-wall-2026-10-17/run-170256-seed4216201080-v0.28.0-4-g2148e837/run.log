@@ -1,0 +1,186 @@
+nappy run log  2026-10-17T17:02:56  version v0.28.0-4-g2148e837
+
+escape  run seed 4216201080  length 180.0s
+   0.0  texture  atlas page 'ui' loaded in the escape: 0.7 ms, 392 x 392
+   0.0  texture  atlas page 'stroller' loaded in the escape: 0.2 ms, 104 x 66
+   0.0  texture  atlas page 'buildings' loaded in the escape: 2.4 ms, 570 x 394
+   0.0  texture  atlas page 'street_kit' loaded in the escape: 1.5 ms, 394 x 454
+   0.0  texture  atlas page 'ground' loaded in the escape: 1.2 ms, 172 x 308
+   0.0  texture  atlas page 'decoration' loaded in the escape: 0.6 ms, 144 x 196
+   0.0  texture  atlas page 'crowd' loaded in the escape: 0.5 ms, 194 x 250
+   0.0  texture  atlas page 'events' loaded in the escape: 11.8 ms, 810 x 1101
+   0.0  texture  atlas page 'interior' loaded in the escape: 1.3 ms, 466 x 326
+   0.0  texture  atlas page 'father' loaded in the escape: 1.9 ms, 168 x 242
+   0.0  start    entered the building at (7,1), facing 0°
+   1.0  frame    fps 119, worst frame 16.3ms, draws 93, objects 940, primitives 1912, process 16.23ms, physics 1.74ms
+   2.0  frame    fps 118, worst frame 31.7ms, draws 93, objects 944, primitives 1920, process 11.12ms, physics 0.31ms
+   3.0  frame    fps 119, worst frame 15.1ms, draws 93, objects 935, primitives 1902, process 15.08ms, physics 0.29ms
+   4.0  frame    fps 120, worst frame 13.7ms, draws 107, objects 941, primitives 1914, process 13.73ms, physics 0.32ms
+   5.0  frame    fps 120, worst frame 12.7ms, draws 108, objects 947, primitives 1950, process 10.90ms, physics 0.27ms
+   5.4  near     burning_building at (72,9), 259px, exc 0, in 0.0/s (crowd 0.0, events 0.1), sleep 100
+   6.0  frame    fps 120, worst frame 14.3ms, draws 109, objects 1007, primitives 2070, process 14.31ms, physics 0.50ms
+   6.8  near     burning_building at (72,9), 142px, exc 0, in 5.1/s (crowd 0.0, events 9.5), sleep 100
+   7.0  frame    fps 120, worst frame 13.1ms, draws 106, objects 971, primitives 1998, process 12.67ms, physics 0.38ms
+   7.5  near     burning_building at (72,9), 77px, exc 2, in 9.8/s (crowd 0.0, events 17.9), sleep 100
+   8.0  frame    fps 120, worst frame 13.4ms, draws 107, objects 968, primitives 1992, process 12.11ms, physics 0.47ms
+   9.1  frame    fps 120, worst frame 10.9ms, draws 91, objects 897, primitives 1826, process 13.33ms, physics 1.03ms
+  10.1  frame    fps 120, worst frame 8.3ms, draws 91, objects 905, primitives 1842, process 11.03ms, physics 0.36ms
+  11.1  frame    fps 118, worst frame 16.7ms, draws 91, objects 907, primitives 1846, process 17.52ms, physics 0.29ms
+  12.1  frame    fps 120, worst frame 8.3ms, draws 91, objects 907, primitives 1846, process 12.94ms, physics 0.29ms
+  13.1  frame    fps 120, worst frame 8.3ms, draws 91, objects 904, primitives 1840, process 11.18ms, physics 0.33ms
+  14.1  frame    fps 120, worst frame 8.3ms, draws 104, objects 912, primitives 1856, process 11.15ms, physics 0.34ms
+  15.1  frame    fps 120, worst frame 8.3ms, draws 104, objects 912, primitives 1856, process 11.14ms, physics 0.55ms
+  16.1  frame    fps 120, worst frame 8.3ms, draws 129, objects 944, primitives 1920, process 11.14ms, physics 0.35ms
+  17.1  frame    fps 120, worst frame 8.3ms, draws 128, objects 943, primitives 1918, process 11.18ms, physics 0.43ms
+  17.6  cue      edge badge: masked_pursuer at 354px, closing 47px/s
+  18.1  frame    fps 120, worst frame 8.3ms, draws 134, objects 947, primitives 2046, process 13.09ms, physics 0.47ms
+  18.2  cue      edge badge gone: masked_pursuer after 0.6s, now 261px away
+  19.1  frame    fps 118, worst frame 16.7ms, draws 136, objects 955, primitives 1972, process 16.76ms, physics 0.30ms
+  19.2  near     masked_pursuer at (131,19), 120px, exc 0, in 5.1/s (crowd 0.0, events 10.1), sleep 100
+  20.1  frame    fps 119, worst frame 16.7ms, draws 92, objects 897, primitives 1826, process 15.85ms, physics 0.42ms
+  21.1  frame    fps 120, worst frame 8.3ms, draws 91, objects 899, primitives 1830, process 11.86ms, physics 6.75ms
+  22.0  near     finale_explosion at (265,0), 0px, exc 0, in 0.0/s (crowd 0.0, events 24.0), sleep 100
+  22.2  frame    fps 120, worst frame 8.3ms, draws 91, objects 909, primitives 1850, process 13.53ms, physics 0.31ms
+  23.2  frame    fps 120, worst frame 8.3ms, draws 91, objects 903, primitives 1838, process 14.30ms, physics 0.35ms
+  24.2  frame    fps 120, worst frame 8.3ms, draws 91, objects 903, primitives 1838, process 13.68ms, physics 0.32ms
+  25.2  frame    fps 120, worst frame 8.3ms, draws 91, objects 901, primitives 1834, process 12.83ms, physics 0.33ms
+  26.2  frame    fps 118, worst frame 16.7ms, draws 129, objects 937, primitives 1906, process 12.55ms, physics 18.61ms
+  27.2  frame    fps 120, worst frame 16.7ms, draws 129, objects 938, primitives 1908, process 10.88ms, physics 0.25ms
+  28.2  frame    fps 120, worst frame 8.3ms, draws 129, objects 936, primitives 1904, process 13.79ms, physics 0.42ms
+  28.5  turn     doubled back 315°
+  29.2  frame    fps 120, worst frame 8.3ms, draws 129, objects 939, primitives 1910, process 12.94ms, physics 0.31ms
+  30.2  frame    fps 120, worst frame 8.3ms, draws 130, objects 942, primitives 1940, process 11.05ms, physics 0.34ms
+  30.4  near     burning_building at (72,9), 259px, exc 0, in 0.1/s (crowd 0.0, events 0.1), sleep 100
+  31.2  frame    fps 120, worst frame 8.3ms, draws 131, objects 1007, primitives 2070, process 14.01ms, physics 0.31ms
+  31.9  turn     doubled back 225°
+  32.2  frame    fps 119, worst frame 8.3ms, draws 130, objects 946, primitives 1948, process 14.41ms, physics 0.49ms
+  33.2  frame    fps 120, worst frame 8.3ms, draws 129, objects 937, primitives 1906, process 11.74ms, physics 0.32ms
+  34.3  frame    fps 120, worst frame 8.3ms, draws 129, objects 940, primitives 1912, process 13.39ms, physics 0.40ms
+  35.3  frame    fps 120, worst frame 8.3ms, draws 128, objects 939, primitives 1910, process 10.98ms, physics 0.36ms
+  36.3  frame    fps 120, worst frame 8.3ms, draws 88, objects 890, primitives 1812, process 10.97ms, physics 0.33ms
+  37.3  frame    fps 120, worst frame 8.3ms, draws 88, objects 892, primitives 1816, process 10.96ms, physics 0.32ms
+  38.3  frame    fps 120, worst frame 75.0ms, draws 92, objects 891, primitives 1814, process 10.88ms, physics 0.31ms
+  39.3  frame    fps 109, worst frame 16.4ms, draws 91, objects 908, primitives 1848, process 17.98ms, physics 72.13ms
+  40.3  frame    fps 120, worst frame 8.3ms, draws 91, objects 902, primitives 1836, process 13.71ms, physics 0.32ms
+  41.3  frame    fps 120, worst frame 8.3ms, draws 99, objects 901, primitives 1858, process 13.12ms, physics 0.46ms
+  42.3  frame    fps 120, worst frame 8.3ms, draws 101, objects 912, primitives 1904, process 12.61ms, physics 0.69ms
+  42.4  near     basement_steam (telegraph) at (388,9), 89px, exc 0, in 0.0/s (crowd 0.0, events 0.1), sleep 100
+  43.0  near     basement_steam at (388,9), 49px, exc 3, in 11.1/s (crowd 0.0, events 20.2), sleep 100
+  43.3  frame    fps 120, worst frame 8.3ms, draws 101, objects 924, primitives 1928, process 11.03ms, physics 1.97ms
+  43.8  turn     doubled back 210°
+  44.0  near     finale_explosion at (387,11), 0px, exc 13, in 3.3/s (crowd 0.0, events 29.9), sleep 100
+  44.3  frame    fps 120, worst frame 8.3ms, draws 103, objects 923, primitives 1926, process 12.07ms, physics 0.41ms
+  45.2  turn     doubled back 90°
+  45.3  frame    fps 120, worst frame 8.3ms, draws 99, objects 913, primitives 1882, process 11.79ms, physics 0.44ms
+  45.4  near     basement_steam (telegraph) at (388,9), 71px, exc 29, in 0.0/s (crowd 0.0, events 0.5), sleep 100
+  46.0  near     basement_steam (telegraph) at (388,9), 38px, exc 30, in 0.9/s (crowd 0.0, events 1.6), sleep 100
+  46.4  frame    fps 120, worst frame 8.3ms, draws 102, objects 923, primitives 1926, process 10.76ms, physics 0.30ms
+  47.4  frame    fps 120, worst frame 8.3ms, draws 100, objects 915, primitives 1886, process 11.30ms, physics 0.35ms
+  47.4  turn     doubled back 270°
+  48.4  frame    fps 120, worst frame 8.3ms, draws 103, objects 917, primitives 1914, process 12.16ms, physics 0.38ms
+  49.4  near     basement_steam (telegraph) at (388,9), 2px, exc 42, in 0.0/s (crowd 0.0, events 0.9), sleep 100
+  49.4  frame    fps 120, worst frame 8.3ms, draws 101, objects 908, primitives 1896, process 10.97ms, physics 0.41ms
+  49.5  near     basement_steam at (387,6), 89px, exc 42, in 1.1/s (crowd 0.0, events 1.9), sleep 100
+  50.4  frame    fps 120, worst frame 16.7ms, draws 103, objects 925, primitives 1954, process 11.18ms, physics 0.39ms
+  51.0  near     basement_steam at (387,6), 89px, exc 52, in 0.2/s (crowd 0.0, events 0.4), sleep 100
+  51.3  near     basement_steam at (388,9), 90px, exc 52, in 0.1/s (crowd 0.0, events 0.1), sleep 100
+  51.3  turn     doubled back 270°
+  51.4  frame    fps 118, worst frame 8.3ms, draws 101, objects 919, primitives 1918, process 17.10ms, physics 0.32ms
+  52.4  frame    fps 120, worst frame 8.3ms, draws 100, objects 907, primitives 1894, process 13.19ms, physics 0.33ms
+  52.5  near     basement_steam (telegraph) at (387,6), 34px, exc 53, in 0.0/s (crowd 0.0, events 0.9), sleep 100
+  52.7  near     basement_steam at (386,3), 88px, exc 53, in 0.9/s (crowd 0.0, events 1.7), sleep 100
+  53.4  frame    fps 120, worst frame 8.3ms, draws 100, objects 926, primitives 1932, process 11.11ms, physics 0.41ms
+  54.4  frame    fps 120, worst frame 8.3ms, draws 97, objects 904, primitives 1864, process 11.12ms, physics 0.44ms
+  55.2  texture  ground composed: 65 sources over 64 pictures into 424x444 in 22.1 ms
+  55.2  texture  ground composed: 65 sources over 64 pictures into 424x444 in 21.6 ms
+  55.2  plan     finale: tunnel via 3 calm, 119 cells | bridge via 3 calm, 177 cells | 33 open streets, 642 placements
+  55.2  woke     woken in the building, sleep back to 0 | near: nothing live
+  55.2  asleep   asleep after 55.2s, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+   0.0  start    entered the city at (75,80), facing 180°
+   0.0  near     military_convoy (telegraph) at (73,79), 72px, exc 0, in 0.0/s (crowd 0.0, events 6.9), sleep 100
+   0.0  near     finale_explosion (telegraph) at (72,77), 136px, exc 0, in 0.0/s (crowd 0.0, events 6.9), sleep 100
+   0.2  cue      edge badge: military_convoy at 712px, closing 142px/s
+   1.0  frame    fps 95, worst frame 141.7ms, draws 275, objects 1599, primitives 3535, process 17.39ms, physics 137.12ms
+   1.2  near     abduction (telegraph) at (68,85), 247px, exc 0, in 0.0/s (crowd 0.0, events 6.8), sleep 100
+   1.8  cross    stepped into the road at (73,81), mid-block
+   2.0  frame    fps 119, worst frame 16.7ms, draws 321, objects 1796, primitives 3907, process 14.80ms, physics 0.89ms
+   2.1  cue      edge badge gone: military_convoy after 1.9s, now 197px away
+   2.2  cue      edge badge: military_convoy at 413px, closing 106px/s
+   2.7  near     finale_explosion at (72,77), 74px, exc 0, in 0.0/s (crowd 0.0, events 25.2), sleep 100
+   3.0  frame    fps 119, worst frame 16.7ms, draws 317, objects 1728, primitives 3747, process 12.23ms, physics 0.76ms
+   3.1  near     finale_explosion at (72,77), 40px, exc 0, in 0.0/s (crowd 0.0, events 24.4), sleep 100
+   3.7  near     abduction (telegraph) at (71,69), 248px, exc 0, in 0.0/s (crowd 0.0, events 24.1), sleep 100
+   3.7  near     impact_crater (telegraph) at (72,77), 28px, exc 0, in 0.0/s (crowd 0.0, events 0.2), sleep 100
+   3.7  taken    'abduction' takes a bystander
+   4.0  frame    fps 119, worst frame 8.3ms, draws 381, objects 2053, primitives 4373, process 14.02ms, physics 1.03ms
+   4.8  cross    stepped into the road at (71,73), at a zebra
+   4.9  near     abduction at (71,69), 135px, exc 0, in 0.0/s (crowd 0.0, events 16.6), sleep 100
+   5.0  cue      the mark over her head: soon for 3.7s (1.7s of it on the road) | abduction 247px
+   5.0  frame    fps 118, worst frame 16.7ms, draws 265, objects 1822, primitives 3964, process 20.07ms, physics 0.96ms
+   5.2  cue      edge badge gone: military_convoy after 2.9s, now 458px away
+   5.4  cue      edge badge: military_convoy at 898px, closing 120px/s
+   6.0  frame    fps 119, worst frame 16.7ms, draws 238, objects 1695, primitives 3761, process 11.59ms, physics 0.81ms
+   6.2  taken    'abduction' takes a bystander
+   7.1  frame    fps 119, worst frame 8.3ms, draws 344, objects 1672, primitives 3664, process 13.34ms, physics 0.91ms
+   7.3  near     collapsed_frontage at (76,65), 119px, exc 0, in 0.0/s (crowd 0.0, events 17.5), sleep 100
+   8.1  frame    fps 120, worst frame 8.3ms, draws 267, objects 1556, primitives 3480, process 10.76ms, physics 0.79ms
+   8.2  near     collapsed_frontage at (76,65), 65px, exc 0, in 0.0/s (crowd 0.0, events 19.6), sleep 100
+   8.4  near     military_convoy at (72,55), 298px, exc 0, in 0.0/s (crowd 0.0, events 23.0), sleep 100
+   8.8  cue      edge badge gone: military_convoy after 3.4s, now 216px away
+   9.1  near     military_convoy at (72,58), 164px, exc 0, in 0.0/s (crowd 0.0, events 23.8), sleep 100
+   9.1  frame    fps 120, worst frame 8.3ms, draws 260, objects 1544, primitives 3336, process 11.73ms, physics 0.83ms
+   9.5  near     military_convoy at (72,60), 89px, exc 0, in 0.0/s (crowd 0.0, events 22.0), sleep 100
+  10.1  frame    fps 120, worst frame 8.3ms, draws 267, objects 1771, primitives 3790, process 10.94ms, physics 0.94ms
+  10.2  cross    stepped into the road at (74,59), at a zebra
+  10.8  near     abduction at (75,50), 247px, exc 0, in 0.0/s (crowd 0.0, events 5.7), sleep 100
+  11.1  frame    fps 120, worst frame 8.3ms, draws 206, objects 1575, primitives 3377, process 10.55ms, physics 1.01ms
+  12.1  near     abduction at (75,50), 135px, exc 0, in 0.0/s (crowd 0.0, events 16.6), sleep 100
+  12.1  frame    fps 120, worst frame 8.3ms, draws 237, objects 1489, primitives 3224, process 11.47ms, physics 0.77ms
+  12.1  cross    stepped into the road at (73,54), mid-block
+  13.1  frame    fps 120, worst frame 8.3ms, draws 376, objects 1747, primitives 3743, process 12.29ms, physics 0.80ms
+  13.3  taken    'abduction' takes a bystander
+  14.1  frame    fps 118, worst frame 16.7ms, draws 236, objects 1520, primitives 3268, process 16.67ms, physics 0.91ms
+  14.8  near     abduction at (75,41), 249px, exc 0, in 0.0/s (crowd 0.0, events 15.4), sleep 100
+  15.1  frame    fps 119, worst frame 16.7ms, draws 248, objects 2076, primitives 4474, process 12.78ms, physics 1.04ms
+  15.6  cross    stepped into the road at (70,45), at a zebra
+  16.1  frame    fps 120, worst frame 8.3ms, draws 274, objects 2134, primitives 4539, process 11.70ms, physics 0.84ms
+  16.6  near     abduction at (75,41), 137px, exc 0, in 0.0/s (crowd 0.0, events 16.4), sleep 100
+  17.1  frame    fps 120, worst frame 8.3ms, draws 255, objects 1746, primitives 3768, process 11.38ms, physics 0.87ms
+  17.3  taken    'abduction' takes a bystander
+  18.1  frame    fps 120, worst frame 8.3ms, draws 248, objects 1733, primitives 3619, process 11.82ms, physics 0.76ms
+  19.2  frame    fps 120, worst frame 8.3ms, draws 280, objects 1919, primitives 3866, process 11.25ms, physics 0.81ms
+  20.0  near     abduction at (71,25), 249px, exc 0, in 0.0/s (crowd 0.0, events 0.2), sleep 100
+  20.1  cue      edge badge: military_convoy at 694px, closing 79px/s
+  20.2  frame    fps 120, worst frame 8.3ms, draws 176, objects 1969, primitives 4086, process 11.29ms, physics 0.84ms
+  21.2  frame    fps 120, worst frame 8.3ms, draws 294, objects 2275, primitives 4822, process 11.43ms, physics 0.97ms
+  21.3  near     abduction at (71,25), 135px, exc 0, in 0.0/s (crowd 0.0, events 16.6), sleep 100
+  21.6  cross    stepped into the road at (72,29), at a zebra
+  22.1  near     roadblock at (72,22), 179px, exc 0, in 0.0/s (crowd 0.0, events 18.9), sleep 100
+  22.1  chase    roadblock came for her at (72,23) | exc 0, in 0.0/s (crowd 0.0, events 25.5), sleep 100
+  22.2  frame    fps 119, worst frame 50.0ms, draws 306, objects 2109, primitives 4616, process 15.98ms, physics 0.87ms
+  22.5  taken    'abduction' takes a bystander
+  23.2  frame    fps 110, worst frame 16.7ms, draws 306, objects 2101, primitives 4600, process 51.67ms, physics 0.97ms
+  23.9  cue      the mark over her head: soon for 1.8s (0.5s of it on the road) | abduction 104px
+  24.1  near     roadblock at (73,24), 98px, exc 0, in 0.0/s (crowd 0.0, events 25.3), sleep 100
+  24.2  frame    fps 120, worst frame 8.3ms, draws 307, objects 2098, primitives 4576, process 11.25ms, physics 0.99ms
+  24.5  near     roadblock at (73,26), 54px, exc 0, in 0.0/s (crowd 0.0, events 25.3), sleep 100
+  24.9  turn     doubled back 180°
+  25.0  chase    roadblock gave up after 2.9s — closest 39px, she ran 0.4s of it | exc 2, in 7.7/s (crowd 0.0, events 12.5), sleep 100
+  25.1  cue      the mark over her head: now for 1.2s (0.0s of it on the road) | abduction 151px
+  25.1  cross    stepped into the road at (74,30), at a zebra
+  25.2  frame    fps 120, worst frame 8.3ms, draws 208, objects 1942, primitives 4131, process 11.37ms, physics 0.75ms
+  25.4  cue      edge badge gone: military_convoy after 5.3s, now 486px away
+  25.5  run      ran 0.9s, exc 0 -> 5, nearest when it started: roadblock 43px
+  25.8  cross    stepped into the road at (73,32), at a zebra
+  26.2  frame    fps 120, worst frame 8.3ms, draws 198, objects 1998, primitives 4072, process 10.95ms, physics 0.77ms
+  26.4  turn     doubled back 45°
+  27.2  frame    fps 120, worst frame 8.3ms, draws 291, objects 2066, primitives 4311, process 10.93ms, physics 0.75ms
+  28.2  frame    fps 109, worst frame 83.3ms, draws 344, objects 2204, primitives 5274, process 83.05ms, physics 0.76ms
+  28.7  blocked  pressed 0° for 1.0s at (75,27) without moving
+  29.2  frame    fps 120, worst frame 10.9ms, draws 297, objects 2180, primitives 4614, process 11.31ms, physics 0.72ms
+  29.4  near     roadblock at (72,22), 179px, exc 0, in 0.0/s (crowd 0.0, events 18.2), sleep 100
+  30.3  frame    fps 120, worst frame 8.3ms, draws 295, objects 2178, primitives 4586, process 11.16ms, physics 0.86ms
+  31.2  shot     asked for a picture at (74,27) | exc 0, sleep 100 | playing
+  31.3  frame    fps 119, worst frame 50.0ms, draws 295, objects 2174, primitives 4578, process 12.69ms, physics 0.85ms
+  32.3  frame    fps 115, worst frame 11.4ms, draws 295, objects 2174, primitives 4578, process 50.07ms, physics 0.72ms
+  33.3  frame    fps 120, worst frame 16.7ms, draws 295, objects 2174, primitives 4578, process 12.28ms, physics 0.77ms
