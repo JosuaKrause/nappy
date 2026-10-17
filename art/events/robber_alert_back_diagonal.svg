@@ -1,12 +1,14 @@
 <!-- Hooded robber on alert, back diagonal: robber_alert_front_diagonal.svg turned to the
      north-east, the figure of robber_waiting_back_diagonal.svg the moment he has noticed her,
-     before he moves. Both hands are out of the coat, held low and open: the near arm off the
+     as he walks toward her. Both hands are out of the coat, held low and open: the near arm off the
      body with its hand beside his hip, the far hand showing past his front; the stance is wider
      than his waiting one, and the rear of the hood hides the face opening. Ready, not yet
      reaching: robber_lunging_back_diagonal.svg is the reach. East-authored like the rest of the
      family; EventInstance mirrors it for north-west. Canvas 26, robber_alert_front.svg's, the
      body 2px right of robber_waiting_back_diagonal.svg's on its 22-wide canvas; ground anchor
-     bottom centre (13,44). -->
+     bottom centre (13,44).
+     Walk frame a: while he warns he walks toward her in two frames, this one the planted step
+     and robber_alert_back_diagonal_b.svg the other, on the same canvas and anchor. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="26" height="44" viewBox="0 0 26 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <path d="M8.4 33 L12.4 34 L10.6 42 L6.4 42Z M14 33 L18 33 L21 42 L16 42Z" fill="#26262e"/>
   <path d="M5 41 L11.2 41 L11.2 44 L4.2 44Z M15 41 L21.2 41 L23.2 44 L15.8 44Z" fill="#17171c"/>
