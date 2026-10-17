@@ -213,6 +213,13 @@ follow; it is a claim with the evidence withheld.
   with, what each answer costs, and which you would pick — in the message that asks it, not in an
   earlier one (woolly-finch 10). The player answers from the message in front of them, and a
   question that leans on something said three turns ago is a question with its evidence withheld.
+- **A thing in the game is named the way the player knows it, and said what it is the first time
+  it comes up in a message** (inbox #772): what it is and what it does in play, in a clause — "the
+  checkpoint guard, who steps out of the hut when she walks under the raised boom" — never only
+  the code's name for it ("the door guard", from `_door_guard()`) or a label a brief, a report or
+  an agent made up ("kind 2", "the masked man"). A code name may follow in brackets, never stand
+  alone. It holds for an agent's report relayed to the player too, since the player has read none
+  of what the names come from.
 
 **"Telemetry", in the player's words, primarily means GoatCounter** (azure-tapir #527). A request
 for telemetry on something is a request for its own GoatCounter events (`VisitCounter`, the page
