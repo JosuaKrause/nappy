@@ -31,7 +31,7 @@ var _last_emitted_second := -1
 ## Set by `FinaleController` on its own clock only. The escape's label reads to the hundredth
 ## (`GameState.format_clock_hundredths()`), which changes on nearly every frame, so this clock
 ## tells the HUD on every frame rather than once a second. A day's controller leaves it false and
-## keeps the once-a-second emission above. *(inbox #746, the player: "escape clocke we can try
+## keeps the once-a-second emission above. *(inbox #746 in woolly-penguin, the player: "escape clocke we can try
 ## 100s but it's not going to be much better? framerate is too low? all of this was on phone.")*
 var emit_every_frame := false
 

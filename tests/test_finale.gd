@@ -403,7 +403,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 # ------------------------------------------------------------------ the clock ---
 
 ## *"The timer also shows milliseconds. This makes the timer appear faster than just the seconds
-## alone which adds additional tension."* Tried as hundredths (inbox #746). The only thing that
+## alone which adds additional tension."* Tried as hundredths (inbox #746 in woolly-penguin). The only thing that
 ## changes, so both shapes are checked off the same signal and the same time.
 func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
