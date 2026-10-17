@@ -1,9 +1,12 @@
 <!-- Hooded robber on alert, back: robber_alert_front.svg from behind, the figure of
-     robber_waiting_back.svg the moment he has noticed her, before he moves. Both hands are out
+     robber_waiting_back.svg the moment he has noticed her, as he walks toward her. Both hands are out
      of the coat and held low and open at his sides, arms off the body, feet set wider: ready,
      not yet reaching; the rear of the hood hides the face opening. robber_lunging_back.svg is
      the reach itself. Canvas 26, robber_alert_front.svg's, the body 2px right of
-     robber_waiting_back.svg's on its 22-wide canvas; ground anchor bottom centre (13,44). -->
+     robber_waiting_back.svg's on its 22-wide canvas; ground anchor bottom centre (13,44).
+     Walk frame a: while he warns he walks toward her in two frames, this one the planted step
+     and robber_alert_back_b.svg the other, on the same canvas and anchor.
+     Frame a is also the picture he holds whenever he covers no ground. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="26" height="44" viewBox="0 0 26 44" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <path d="M7.6 34 L11.6 34 L11 42 L7 42Z M14.4 34 L18.4 34 L19 42 L15 42Z" fill="#26262e"/>
   <path d="M6 41.6 L11.4 41.6 L11.4 44 L5.4 44Z M14.6 41.6 L20 41.6 L20.6 44 L14.6 44Z" fill="#17171c"/>

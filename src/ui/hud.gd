@@ -286,7 +286,7 @@ func say_once(line: String) -> void:
 ## Whether the clock is the escape's rather than a day's. The only thing it changes is the format —
 ## *"in addition to minutes and seconds the timer also shows milliseconds. this makes the timer
 ## appear faster than just the seconds alone which adds additional tension"*, tried as hundredths
-## (inbox #746) — so it is a flag on the one function that draws the clock rather than a second
+## (inbox #746 in woolly-penguin) — so it is a flag on the one function that draws the clock rather than a second
 ## clock or a second label.
 var _finale := false
 
