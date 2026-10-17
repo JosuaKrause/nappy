@@ -6,12 +6,12 @@ link or path, only the file's name; the reading is established once, by the revi
 that writes the rule; and a change's consequences are fixed in the PR that makes them.
 
 **Built (PR #756).** `CLAUDE.md` states the rule and says once how to read a citation: a name such as
-`woolly-penguin` or `PLAYTEST-63` is that playtest under `docs/playtests/`, `#N` the statement under
-its `## #N` heading, and words no playtest holds cite their record under `docs/decisions/` the same
+`woolly-penguin` is that playtest under `docs/playtests/`, and a statement in a file of several is
+given as `#N` (under its `## #N` heading) or as the file's own statement number, `(PLAYTEST-16 7)`; and words no playtest holds cite their record under `docs/decisions/` the same
 way. Every quote of the player in `CLAUDE.md` and the skills became a bare citation: 109 traced to a
 playtest or record, and 35 whose words were recorded nowhere but the skills, moved verbatim, each
 under its date, into the new playtest woolly-finch. Where a quote carried a rule's reason, the skill
-now says it in its own words; the PR lists every such rewording. The same PR changes the one tool
+now says it in its own words; PR #756's description lists every such rewording. The same PR changes the one tool
 that wrote the old form, `tools/inbox.py cite`, to write the bare name; adds
 `tools/check_citations.py`, run by `./tools/lint.sh`, which fails a link, path or anchor into the
 playtests or records, a name that resolves to no file or to several, and a `#N` with no heading; and
