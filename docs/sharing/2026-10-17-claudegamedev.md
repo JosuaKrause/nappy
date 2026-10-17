@@ -63,12 +63,9 @@ agents and reviewed.
 **What made it fair** (my strategies):
 
 - Build full paths through the city first, then place obstacles along them.
-- Draw random events from a shuffled "marble bag" instead of rolling dice, so luck evens out; you
-  can stack a guaranteed event into a bag, or put one bag inside another to keep similar events
-  apart.
-- Warn about a fast hazard before it appears, then spawn it just off screen where the warning
-  pointed.
-- Guide the player without them noticing they are being guided.
-- One unlucky hit never ends a day on its own; a loss takes several mistakes.
+- Draw random events from a "marble bag", not dice, so luck evens out.
+- Announce a fast hazard before it appears, then spawn it just off screen where the warning pointed.
+- Guide the player without them noticing.
+- One unlucky hit never ends a day.
 
 **If you try it:** what made you pick one street over another?
