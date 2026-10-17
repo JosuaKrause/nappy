@@ -1,20 +1,20 @@
 extends RefCounted
-## Inbox #777: an invisible wall on the escape's city street stops her where she stands. Fails on
-## `main` as it is and is meant to; it is the reproduction a fix makes pass.
+## Inbox #777: once she has walked out of the escape building, nothing of the building stands in
+## the city's street.
 ##
-## **What the wall is.** The escape building (`InteriorScene`) puts one `StaticBody2D` on every cell
-## of its footprint grown by a cell that is not floor (`InteriorScene._rebuild_collision()`), at its
+## **What would.** The escape building (`InteriorScene`) puts one `StaticBody2D` on every cell of
+## its footprint grown by a cell that is not floor (`InteriorScene._rebuild_collision()`), at its
 ## own tile coordinates from the world origin. The footprint is tiles (0,0) to (390,25), so the
 ## blockers cover city rows -1 to 26 wherever the building has no floor, and row 26, the margin, is
-## blocked along the city's whole width: the strip from y 832 to 864.
-## `main._on_escape_exit_requested()` builds the city beside the building in the same viewport and
-## nothing takes the building's bodies out of the physics space, so on the street she walks into
-## them. None has a picture: they stand for the building's walls and the empty ground round its
-## parts.
+## blocked along the city's whole width: the strip from y 832 to 864. The city is built beside the
+## building in the same viewport and the same physics space, and none of the blockers has a
+## picture, so left in place they are a wall across the city that nobody can see — the player met
+## it at tile 74,27. `main._on_escape_exit_requested()` takes them out
+## (`InteriorScene.take_the_walls_out()`) before it builds the city.
 ##
 ## **Driven through the real `main.tscn`**, booted on the building the way a run's own ending is
-## and walked out of through the service door's `exit_requested`, so a fix anywhere in that path
-## is what this reads. A boot straight onto the street (`--start-escape city`) never builds the
+## and walked out of through the service door's `exit_requested`, so what it reads is the handover
+## itself rather than a copy of it. A boot straight onto the street (`--start-escape city`) never builds the
 ## building, which is why nothing that starts there meets the wall.
 ##
 ## The seed, the day and the tile are the player's run: seed 4216201080 booted by
@@ -48,6 +48,11 @@ func run(t) -> void:
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
+	# Without it, `tests/test_run_checkpoints.gd` run after this suite boots `main.tscn` into
+	# engine errors ("Atlas group 'ui' was read from disk outside a loading window", "Released
+	# atlas group 'father' that was not acquired"): this escape boot leaves its held pages behind.
+	# Nothing of this boot is left in the tree, so dropping every page desyncs no live consumer.
+	AtlasLibrary.reset_for_tests()
 	GameState.escape_section = saved_section
 
 ## The player's own moment: on the sidewalk at 74,27 with the street open ahead of her, a step north

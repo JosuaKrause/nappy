@@ -1,7 +1,8 @@
 # The escape's invisible wall (inbox #777)
 
-**The claim.** In the escape's city section, entered by walking out of the building, a wall nobody
-can see runs the whole width of the city along row 26 (y 832 to 864). It is the escape building's
+**The claim, measured on `main` at `8d76e7e6`.** In the escape's city section, entered by walking
+out of the building, a wall nobody can see runs the whole width of the city along row 26 (y 832 to
+864). It is the escape building's
 own collision. `InteriorScene._rebuild_collision()` puts a 32px `StaticBody2D` on every cell of the
 building's footprint, grown by one cell, that is not floor. The footprint is tiles (0,0) to
 (390,25) from the world origin, so that comes to 10,755 bodies covering city rows -1 to 26.
@@ -10,7 +11,7 @@ nothing takes the building's bodies out of the physics space, so she walks into 
 Row 26 is the footprint's margin, so it is blocked along its whole length, and the walk north stops
 on the row below it. That is tile 74,27, where the player stood.
 
-**Why nothing is drawn.** The blockers have no picture of their own: they stand for the building's
+**Why nothing was drawn.** The blockers have no picture of their own: they stand for the building's
 walls and for the empty ground around and between its parts. The building's own pictures stay in
 the tree at the same world coordinates. Near tile 74,27 those are floor cells only, on its ground
 layer at z-index 0, the same as the city's ground. The city is added to the tree after the
@@ -20,8 +21,8 @@ debug view's bounding-box layer (`3`) does not draw the blockers either, because
 section it walks only the city's subtree (`DebugLayers.collision_nodes_under()` is set up on
 `main._world_now()`).
 
-**How often.** It happens on every seed and in every escape that reaches the city through the
-building: a run's own ending, or `--start-escape` at any part but `city`. The tunnel exit is the
+**How often, at `8d76e7e6`.** It happened on every seed and in every escape that reaches the city
+through the building: a run's own ending, or `--start-escape` at any part but `city`. The tunnel exit is the
 spine's top row (`FinalePlanner.exit_tile()`, row 0), and the service exit is always south of the
 wall (row 80 on a 160-tile map). So the tunnel chain is cut off at row 26 every time, and the bridge
 chain, which runs south, never is. It never happens in a city section booted on its own,
@@ -37,6 +38,10 @@ neighbours to a tile, and ignores the escape's own event bodies on both passes a
 what the building's cells alone take away. The real-physics reproduction is
 `tests/test_escape_invisible_wall.gd` on the player's seed only. That the city covers the
 building's floor pictures is read from tree order and z-index, not from a capture.
+
+**The fix**, in the same pull request: `main._on_escape_exit_requested()` calls
+`InteriorScene.take_the_walls_out()`, which frees the building's blockers before the city is
+built. The building's pictures and its fade stay.
 
 ## What is here
 
@@ -75,7 +80,7 @@ EIW_PICTURE="$(mktemp -d)/players-city.png" tools/test.sh probes/eiw_sweep.gd
 ```
 
 The suite boots the real `main.tscn` on the building for seed 4216201080, day 1, walks out through
-the service door's `exit_requested` and asks two things. Both fail until the wall is gone:
+the service door's `exit_requested` and asks two things. At `8d76e7e6`, before the fix, both fail:
 
 - A tile's step north from 74,27 is stopped, by `Interior/Collision/@StaticBody2D@…` at (2384, 864).
 - 328 of the 1,170 walkable tiles on the escape's open cells overlap a body outside the city, every
