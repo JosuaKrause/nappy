@@ -914,15 +914,30 @@ func _test_a_pursuer_can_wait(t) -> void:
 ## walking away caught, running shaken off — and that it does not move while it warns. The numbers
 ## each walk produced are printed rather than asserted. The door guard, who sets off beside her, is
 ## walked at a door in `tests/test_checkpoints.gd`.
+##
+## **The rows come from the catalogue** (`_rows_that_stand_for_their_notice()`), so a row that
+## starts standing for its notice is walked here without anybody listing it. **And its walk-away gap
+## is bounded against its chase**: a pursuer that stands hands a walker who leaves at once her whole
+## notice at her walking speed, so the chase starts `pursues_within + WALK_SPEED × telegraph_time`
+## from her, and it has to close that to its catch inside its `duration`, or a walker outlasts the
+## chase and "no pursuer gives up on a walker" (`docs/EVENTS.md`) breaks. Nothing in
+## `Tuning.validate_pursuit()` states that gap, so a longer notice or a slower pursuer on a standing
+## row would otherwise pass every clause and be seen only by a walk, which this is.
 func _test_a_pursuer_that_stands_for_its_notice_leaves_room_to_answer(t) -> void:
-	var rows: Array[EventDef] = [
-		EventScheduler._for_day(EventCatalogue.by_id("charging_dog"), Tuning.RUN_TAUGHT_DAY + 1),
-		EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.HEAT_HUNTS_LEVEL),
-	]
+	var rows := _rows_that_stand_for_their_notice()
+	var ids := {}
 	for def in rows:
-		t.check(def.pursues and def.pursues_within > 0.0 and def.stands_for_its_notice,
-				"'%s' waits for her and stands for its notice" % def.id)
+		ids[def.id] = true
+	t.check(ids.has("charging_dog") and ids.has("roadblock"),
+			"the waiting dog and the hunting roadblock's guard are among the rows that stand (%s)"
+			% ", ".join(ids.keys()))
+	for def in rows:
 		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+		var gap := def.pursues_within + Tuning.WALK_SPEED * def.telegraph_time
+		var catch_after := (gap - def.lethal_reach()) / (def.pursue_speed - Tuning.WALK_SPEED)
+		t.check(catch_after < def.duration,
+				"a walker leaving '%s' at once is %.0fpx off when its notice ends and caught %.1fs "
+				% [def.id, gap, catch_after] + "into its %.0fs chase" % def.duration)
 		var walked_in := _standing_rig(t, def, -Tuning.WALK_SPEED)
 		t.check(walked_in["stood"], "'%s' holds its ground while she walks in (moved %.1fpx)"
 				% [def.id, walked_in["moved_in_notice"]])
@@ -955,6 +970,30 @@ func _test_a_pursuer_that_stands_for_its_notice_leaves_room_to_answer(t) -> void
 				stood["ended_at"], walked_off["at_the_lunge"], walked_off["ended_at"],
 				ran["ended_at"]])
 
+## Every pursuer that waits for her and stands for its notice, in each state it is met in: every
+## catalogue row on every day of a run (`EventScheduler._for_day()`, which is where the dog's
+## trigger switches on past `Tuning.RUN_TAUGHT_DAY`) at every heat (`EventCatalogue.heated()`,
+## which is where the roadblock's guard starts to pursue), kept where it pursues, waits
+## (`pursues_within`) and `stands_for_its_notice`, once per distinct set of the numbers the walk
+## reads. One that sets off beside her or arrives chasing has no trigger to be sited inside.
+func _rows_that_stand_for_their_notice() -> Array[EventDef]:
+	var rows: Array[EventDef] = []
+	var seen := {}
+	for row in EventCatalogue.all():
+		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
+			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+				var def := EventScheduler._for_day(EventCatalogue.heated(row, level), day)
+				if not def.pursues or not def.stands_for_its_notice or def.pursues_within <= 0.0 \
+						or def.sets_off_beside_her or def.arrives_chasing:
+					continue
+				var key := "%s|%.2f|%.2f|%.2f|%.2f|%.2f" % [def.id, def.pursues_within,
+						def.telegraph_time, def.pursue_speed, def.duration, def.lethal_reach()]
+				if seen.has(key):
+					continue
+				seen[key] = true
+				rows.append(def)
+	return rows
+
 ## Walks her from just inside `def`'s trigger, along +y from where it stands, at `player_speed`
 ## (positive is away, negative into it, zero standing) and — when `reaction` is finite — turning to
 ## run, accelerating as she really does, `reaction` seconds after it lunges. In the tree, since a
@@ -971,8 +1010,8 @@ func _standing_rig(t, def: EventDef, player_speed: float, reaction := INF) -> Di
 			"at_the_lunge": INF, "ended_at": INF, "moved_in_notice": 0.0, "stood": false,
 			"closest": INF}
 	var noticed := false
-	while elapsed < 20.0 and not instance.is_finished and not instance.is_leaving \
-			and not result["caught"]:
+	while elapsed < def.telegraph_time + def.duration + 1.0 and not instance.is_finished \
+			and not instance.is_leaving and not result["caught"]:
 		if since_the_lunge != INF and since_the_lunge >= reaction:
 			speed = move_toward(speed, Tuning.RUN_SPEED, Tuning.ACCELERATION * STEP)
 		her.y += speed * STEP
