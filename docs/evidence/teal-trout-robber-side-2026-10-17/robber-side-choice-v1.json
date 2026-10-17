@@ -1,0 +1,11 @@
+{
+  "scales": [1.0, 6.0],
+  "rows": [
+    [
+      "art/events/robber_waiting_side.svg",
+      "art/events/robber_alert_side.svg",
+      "docs/evidence/teal-trout-views-2026-10-17/robber_alert_side-v2.svg",
+      "art/events/robber_lunging_side.svg"
+    ]
+  ]
+}
