@@ -1,0 +1,52 @@
+{
+ "version": 1,
+ "name": "Mother carrying her sleeping baby through a turn",
+ "seed": 11,
+ "kind": "escape",
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "start": {
+   "world": [
+    2208,
+    560
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 14,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "east",
+   "sleep": 100
+  },
+  "progression": {
+   "escape_part": "city",
+   "blackout": true
+  },
+  "events": []
+ },
+ "playback": {
+  "settled_camera": true,
+  "walk": "0.5w0.7s0.7e0.7n0.6w",
+  "smooth": true,
+  "duration": 3.4,
+  "capture_at": 1.5,
+  "camera": {
+   "zoom": 1.35
+  },
+  "observations": [
+   {
+    "tick": 30,
+    "subject": "player",
+    "condition": "carrying"
+   }
+  ]
+ }
+}
