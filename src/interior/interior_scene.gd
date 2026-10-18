@@ -9,9 +9,14 @@ extends WorldContext
 ## Ground is a `TileMapLayer` built from `InteriorTileSet`; walls, doors, the barricade and the
 ## brick stand in elevation in a plain layer under everything, the same reasoning `Building` and
 ## `City`'s own `Buildings` layer use — nothing can ever legitimately stand *behind* a wall, so
-## nothing needs to sort against one. The chandelier, ground decals and every door threshold's own
-## standing sprite live in a y-sorted layer above the ground, the same layer the player joins
-## through `add_entity()`. The stair-side roles are ground cells now: the TileMap paints exactly
+## nothing needs to sort against one. **Every door is drawn under her**, in its own layer between
+## the walls and her *(the player, 2026-10-18: the escape's door graphics should always be under
+## her)*: the stairwell doors, the open and the apartments' thresholds and the emergency exit, as the
+## lift door and the entrance in the wall layer already are. A door in her y-sorted layer, sorted by
+## its foot against hers, was drawn over her whenever its foot was lower than hers, which a
+## threshold's, at its tile's south edge, always is while she stands on it. The chandelier and the
+## ground decals live in a y-sorted layer above the ground, the same layer the player joins through
+## `add_entity()`. The stair-side roles are ground cells now: the TileMap paints exactly
 ## the grammar the collision pass reads instead of placing a second visual assembly over another
 ## walkable map.
 ##
@@ -70,6 +75,9 @@ var _tile_set: TileSet
 var _ground: TileMapLayer
 var _backdrops: Node2D
 var _walls: Node2D
+## Every door picture but the lift's and the entrance's, which are wall sprites: under her always —
+## see this class's own doc.
+var _doors: Node2D
 var _entities: Node2D
 ## Plain `StaticBody2D` blockers, one per non-walkable cell in a margin around the building's own
 ## footprint — the physical half of `InteriorMapPlan.is_walkable()`. A `TileMapLayer` only gives
@@ -123,6 +131,10 @@ func build() -> void:
 	_walls.name = "Walls"
 	_walls.z_index = 1
 	add_child(_walls)
+	_doors = Node2D.new()
+	_doors.name = "Doors"
+	_doors.z_index = 1
+	add_child(_doors)
 	_entities = Node2D.new()
 	_entities.name = "Entities"
 	_entities.z_index = 2
@@ -509,8 +521,9 @@ func _decal_texture(kind: InteriorTile.Kind) -> StringName:
 		_:
 			return PUDDLE_TEXTURE
 
-## A bottom-centre-anchored standing sprite at a tile's own centre — a door threshold, drawn the
-## same way `Sprites.draw_standing()` draws every other feet-anchored actor.
+## A bottom-centre-anchored standing sprite at a tile's own centre — a stairwell door or the
+## emergency exit, drawn the same way `Sprites.draw_standing()` draws every other feet-anchored
+## actor, in the door layer under her.
 func _add_standing(tile: Vector2i, name: StringName) -> void:
 	var sprite := Sprite2D.new()
 	var texture := AtlasLibrary.region(name)
@@ -518,7 +531,7 @@ func _add_standing(tile: Vector2i, name: StringName) -> void:
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = tile_to_world(tile)
-	_entities.add_child(sprite)
+	_doors.add_child(sprite)
 
 ## A threshold sits at a floor tile's south boundary. Its origin is intentionally lower than an
 ## upright stairwell door's: the opening belongs to the wall beyond the corridor, not the floor.
@@ -529,7 +542,7 @@ func _add_threshold(tile: Vector2i, name: StringName) -> void:
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = Vector2((tile.x + 0.5) * TILE, (tile.y + 1) * TILE)
-	_entities.add_child(sprite)
+	_doors.add_child(sprite)
 
 ## Repeats the shaft wall behind the ten-column grammar. The four eight-row panels cover the
 ## complete 26-row stairwell, including the final two-cell lobby approach, but add no floor:

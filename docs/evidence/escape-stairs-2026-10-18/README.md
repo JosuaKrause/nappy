@@ -64,3 +64,15 @@ the landing she takes the flight from.
   1p3.5e0.4s0.4w3W1.2N --invincible --press snapshot_burst 4.6`, then
   `tools/clip.sh <burst> <out.mp4>`. `--invincible` stages the shot and also keeps the clock at
   3:00.
+
+## The doors under her
+
+**The claim.** Every door picture in the building is drawn under her. Before this, the stairwell
+doors, the thresholds and the emergency exit stood in her y-sorted layer, so a door whose foot was
+lower than hers was drawn over her.
+
+- `doors-before-after.png`: two stills of her stepping onto an apartment's threshold on the second
+  floor, cropped round her feet. The before is from `9454b831`, the after from this change. Both
+  were captured with `tools/shot.sh out.png 3 --start-escape floor:2 --press ui_accept 0.5 --walk
+  1p0.6s --invincible`. The two differ in light because the hallway's windows flash at their own
+  moments.

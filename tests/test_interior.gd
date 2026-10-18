@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t)
 	_test_her_body_walks_every_flight_at_45_degrees(t)
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
+	_test_every_door_is_drawn_under_her(t)
 	_test_the_basement_entry_is_a_straight_level_stair(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
 	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
@@ -613,6 +614,88 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
 						"%s: and touches no wall on it (%d contacts)" % [label, flight_contacts])
 	player.free()
 	scene.free()
+
+## **Every door in the building is drawn under her** *(the player, 2026-10-18: the escape's door
+## graphics should always be under her)*: the stairwell doors, the open and the apartments'
+## thresholds, the emergency exit, the lift door and the entrance. Asked of the canvas the way the
+## engine orders it, by her absolute z against each door picture's, and for one in her own z and
+## y-sorted with her, by its foot against hers, with her standing on every walkable tile within a
+## tile of each door, at the tile's centre and at its four edges as near as her body lets her.
+func _test_every_door_is_drawn_under_her(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var f := InteriorMap.build()
+	var player := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	player.add_child(camera)
+	scene.add_entity(player)
+	var door_textures := [InteriorScene.DOOR_TEXTURE, InteriorScene.OPEN_THRESHOLD_TEXTURE,
+			InteriorScene.APARTMENT_THRESHOLD_TEXTURE, InteriorScene.EMERGENCY_EXIT_TEXTURE,
+			InteriorScene.LIFT_DOOR_TEXTURE, InteriorScene.ENTRANCE_DOOR_TEXTURE]
+	var pictures := {}
+	for name: StringName in door_textures:
+		pictures[AtlasLibrary.region(name)] = name
+	var doors: Array[Sprite2D] = []
+	var stack: Array[Node] = [scene]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		stack.append_array(node.get_children())
+		if node is Sprite2D and pictures.has((node as Sprite2D).texture):
+			doors.append(node)
+	var expected := f.doors.size() + f.locked_thresholds.size() + (1 if f.exit_tile.x >= 0 else 0)
+	for at: Vector2i in f.walls:
+		if f.walls[at] in [InteriorTile.Kind.LIFT_DOOR, InteriorTile.Kind.ENTRANCE_DOOR]:
+			expected += 1
+	t.check(doors.size() == expected, "every door picture is found (%d of %d)" % [doors.size(), expected])
+	var reach := Tuning.PLAYER_BODY_RADIUS
+	var offsets: Array[Vector2] = [Vector2.ZERO, Vector2(0, -0.5 * InteriorScene.TILE + reach),
+			Vector2(0, 0.5 * InteriorScene.TILE - reach), Vector2(-0.5 * InteriorScene.TILE + reach, 0),
+			Vector2(0.5 * InteriorScene.TILE - reach, 0)]
+	var asked := 0
+	var over := 0
+	for door: Sprite2D in doors:
+		var foot := scene.world_to_tile(door.global_position - Vector2(0, 1))
+		for dy in range(-2, 3):
+			for dx in range(-2, 3):
+				var tile := foot + Vector2i(dx, dy)
+				if not f.is_walkable(tile):
+					continue
+				for offset: Vector2 in offsets:
+					player.global_position = scene.tile_to_world(tile) + offset
+					asked += 1
+					if not _drawn_over(player, door):
+						over += 1
+						t.check(false, "%s at %s is drawn over her at %s"
+								% [pictures[door.texture], door.global_position, player.global_position])
+	t.check(over == 0 and asked > doors.size(),
+			"every door is under her wherever she stands beside one (%d positions asked)" % asked)
+	player.free()
+	scene.free()
+
+## Whether `top` draws over `under`: a higher absolute z, or the same z in the same y-sorted parent
+## with its foot no higher.
+static func _drawn_over(top: CanvasItem, under: CanvasItem) -> bool:
+	var a := _absolute_z(top)
+	var b := _absolute_z(under)
+	if a != b:
+		return a > b
+	var parent := top.get_parent() as Node2D
+	if parent and parent == under.get_parent() and parent.y_sort_enabled:
+		return (top as Node2D).global_position.y >= (under as Node2D).global_position.y
+	return false
+
+static func _absolute_z(item: CanvasItem) -> int:
+	var z := 0
+	var node: Node = item
+	while node is CanvasItem:
+		z += (node as CanvasItem).z_index
+		if not (node as CanvasItem).z_as_relative:
+			break
+		node = node.get_parent()
+	return z
 
 ## The explicit-displacement half `move_and_slide()` normally derives from the physics delta that
 ## the synchronous test runner cannot advance. The real body's sweep supplies every collision
