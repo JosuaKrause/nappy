@@ -87,7 +87,7 @@ game's own. A route bag also switches on the rest of what the director does whil
 a played day: a place a marble puts on her route is sited on her way, and on days 8 to 14, once the
 baby sleeps and the walk home begins, the act III and IV return patrols are owed.
 
-An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path`, `age`, `hold` and
+An event gives `name`, catalogue `row`, `at`, optional `route_seed`, `path`, `age`, `hold`, `charging` and
 `heat`. `heat` (an integer from 0 to `Tuning.RESISTANCE_GOAL`) installs the row in the shape a
 played day's dawn puts it in at that resistance progress (`EventCatalogue.heated()`): the
 investigating patrol car, the hunting roadblock and the hunting vans, which no authored day
@@ -110,7 +110,8 @@ the picture on a wide frame. `hold` is limited to a pursuer on foot that leaves 
 pursue, drives, lets men out, parks, hands on, or a guard leaves his barrier) the recipe fails with a message
 naming the event, the row and its own reason, and the scene fails if a held event is later sent along a set
 path. The game's despawn rules are unchanged; a held event is simply
-never removed, and `trailer-dog.json` holds its dog. Director pursuers use the real
+never removed, and `trailer-dog.json` holds its dog. `charging: true` starts a pursuer that waits for her (a roadblock's guard, a dog on its tile) already set on her, its notice spent, the way the guard a task sends is: it charges from the first frame instead of warning until she
+walks into its radius, and still gives up when she has run from it for `Tuning.PURSUIT_SHAKEN_OFF`. A row that does not wait, or sets off beside her, fails the recipe with its reason. Director pursuers use the real
 ahead-of-player siting. `age` may advance through the initial warning only; active movement is
 simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direction` and optional
 `speed`; production lane, ground, speed and car-gap checks apply.

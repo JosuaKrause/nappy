@@ -109,6 +109,7 @@ func _ready() -> void:
 func run(t) -> void:
 	_test_schema(t)
 	_test_hold_is_for_a_straight_departure(t)
+	_test_charging_is_for_a_pursuer_that_waits(t)
 	_test_heat_installs_the_heated_row(t)
 	_test_a_task_gone_after_the_read(t)
 	_test_arguments(t)
@@ -131,6 +132,19 @@ func _test_hold_is_for_a_straight_departure(t) -> void:
 	var message := SceneRecipeRuntime.hold_refusal_message("post", EventCatalogue.by_id("roadblock"))
 	t.check(message.contains("post") and message.contains("roadblock") and not message.contains("%s"),
 			"the refusal names the event and the row: %s" % message)
+
+## `charging` starts a pursuer that waits for her already set on her, so it is refused for a row with
+## no radius to skip and for one that sets off beside her on its own clock.
+func _test_charging_is_for_a_pursuer_that_waits(t) -> void:
+	t.check(SceneRecipeRuntime.charging_refusal(
+			EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)) == "",
+			"the hunting roadblock's guard may start charging")
+	t.check(SceneRecipeRuntime.charging_refusal(EventCatalogue.by_id("roadblock")) != "",
+			"the cold roadblock has no radius to skip")
+	t.check(SceneRecipeRuntime.charging_refusal(EventCatalogue.by_id("fire_truck")).contains("wait"),
+			"a row that does not wait is refused")
+	t.check(SceneRecipeRuntime.validate_runtime({"setup": {"day": 7, "events": [{"name": "g",
+			"row": "roadblock", "at": [0, 0], "charging": 1}]}}).size() > 0, "charging must be a boolean")
 
 func _test_schema(t) -> void:
 	var valid := {"setup": {"day": 1, "parent": "mother"},

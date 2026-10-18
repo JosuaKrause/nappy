@@ -120,7 +120,7 @@
       "name": "chase",
       "recipe": "scene-recipes/trailer-chase.json",
       "motion": true,
-      "in": 0.95,
+      "in": 1.15,
       "length": 1,
       "gap": 0.3
     },
