@@ -36,33 +36,31 @@ is left as it is.
   tree (both build labels read `-dirty`). The camera follows her, so the
   difference shows in how she moves against the treads, and the path picture shows it more clearly.
 
-## The stairwell guard's trigger
+## The stairwell guard's charge distance
 
-**The claim.** The masked man at the foot of the right shaft starts his run on the frame she first
-stands on that shaft's first-floor landing, whichever way she comes to it. From there, the first
-floor's door is her way out at a walk.
+**The claim.** The masked man at the foot of the right shaft runs once she is within 426px of him.
+Coming down from the second floor, she meets that at the head of the second flight. From there, a
+walker making for the first floor's door is caught and a runner gets through, whichever row of
+the landing she takes the flight from.
 
-- `stairwell-guard-trigger-candidates.png`: the readings of "the end of the second stair" put to
-  the player as a question. The player picked B, the first-floor landing of the right shaft.
-- `guard-trigger.txt`: what `tests/probes/escape_stairwell_guard_trigger.gd` prints, on three
-  seeds, for four ways to the landing, at a walk and at a run. Each line gives where she stood
-  when he ran (in local tile units), how far she was from him, and whether she got through the
-  first floor's door. The `late` lines walk on down for that many seconds first, then run back.
-  The first block is this branch. The second is the alternative that was not built, measured with
-  `TRIGGER_RADIUS=343`: no landing, and a 343px charge distance, the smallest circle that leaves no
-  way to the door without setting him off. Rerun:
-  `tools/test.sh probes/escape_stairwell_guard_trigger.gd`, and again with `TRIGGER_RADIUS=343` in
-  the environment. The seeds agree line for line.
-- `guard-trigger.png`: those charge points over the right shaft's lower cells, with the landing on
-  the left and the circle on the right. Made by
-  `python3 guard-trigger.py guard-trigger.txt out.png` (Pillow).
-- `guard-charge.mp4`, its timing in `guard-charge-burst.json`, and `guard-charge-strip.png` (six
-  of its frames). The game's own window: she is held down the right shaft's first two flights onto
-  the first-floor landing, and then up into its door. The readout's `nearest` line turns from
-  `telegraph` to `active` as she steps onto the landing (frame 14). The screen-edge badge comes up
-  while he is still out of view, and he comes into view on his flight. Captured from this branch at
-  `4d88c52c` with the item's change in the working tree (its build label reads `-dirty`), with
+- `stairwell-guard-trigger-candidates.png`: the readings of "the end of the second stair" that were
+  put to the player as a question.
+- `guard-trigger-2.txt`: what `tests/probes/escape_stairwell_guard_trigger.gd` prints on three
+  seeds. Each line gives the way she came, her pace, where she stood when he ran (in local tile
+  units), how far she was from him, whether she got through the first floor's door, and how near
+  he came. The first block is this branch's 426px. The next three are `CHARGES_WITHIN=420`, `432`
+  and `440`, the edges of the window. Rerun: `tools/test.sh probes/escape_stairwell_guard_trigger.gd`,
+  and again with `CHARGES_WITHIN=<px>` in the environment. The seeds agree line for line.
+- `guard-trigger-2.png`: the walkers' charge points over the right shaft's lower cells, with the
+  426px circle round where he waits. Made by
+  `python3 guard-trigger-2.py guard-trigger-2.txt out.png` (Pillow).
+- `guard-charge-2.mp4`, its timing in `guard-charge-burst-2.json`, and `guard-charge-strip-2.png`
+  (six of its frames). This is the game's own window: she walks down the right shaft's first flight
+  and the landing, starts down the second flight, and runs. The readout's `nearest` line turns from
+  `telegraph` to `active` between frames 13 and 17. He comes into view on his flight, and she runs
+  on down and out through the first floor's door after the burst ends. Captured from `4f21c548`
+  with this change in the working tree (its build label reads `-dirty`), with
   `tools/shot.sh out.png 11 --start-escape stairwell:right --press ui_accept 0.5 --walk
-  1p3.5e4.3@225@0.3p1.2n --invincible --press snapshot_burst 7.2`, then
+  1p3.5e0.4s0.4w3W1.2N --invincible --press snapshot_burst 4.6`, then
   `tools/clip.sh <burst> <out.mp4>`. `--invincible` stages the shot and also keeps the clock at
-  3:00. She steps through the door after the burst ends.
+  3:00.

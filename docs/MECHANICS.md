@@ -1576,12 +1576,10 @@ where the masked man is.
 **And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
 of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
 as she is in the building. The answer is the one the row is built around — step through the
-nearest corridor door and let him pass. **He starts his run as she reaches the first-floor landing
-of his shaft** *(inbox #782)*, the end of her second flight from the top, beside the first floor's
-door: she cannot walk down to that door and out to the left shaft without setting him off, and
-every way to the lobby from above crosses the landing. From there the door is a few steps away
-while he has the whole of his flight to climb, so at a walk she is through it with him well clear;
-walking on down his flight first, she has about a second and a half to turn back. So the side she
+nearest corridor door and let him pass. **He starts his run once she is within 426px of him**
+*(inbox #764, inbox #782)*, which coming down from the second floor is at the head of the second
+flight: from there a walker making for the first floor's door is caught and a runner gets through,
+so she cannot walk down to that door and out to the left shaft without meeting him. So the side she
 switched to is not a side she can settle on, which is the whole point of him: the
 way down is a sequence of crossings rather than one.
 

@@ -3041,15 +3041,18 @@ static func _masked_pursuer() -> EventDef:
 	# And the warning is spent standing, not approaching: a man already running when he first
 	# becomes visible has given no notice at all.
 	def.still_while_telegraphing = true
-	# **He warns while she is in the stairwell, and his run starts on its first-floor landing**
-	# *(inbox #782)*: no clock, so his `telegraph_time` above is read only by the telegraph
-	# contract. That landing is a place no distance from the foot of the shaft describes, so
-	# `InteriorEvents._run_once_she_is_on_the_landing()` hands him a copy of this row that charges
-	# at any distance the moment she stands on it. These 150px set him off only when she comes in
-	# at the lobby's door, the one way into the shaft below the landing: she is always inside them
-	# there, so he warns for `Tuning.WARNING_ALONE_MAX` first *(inbox #764, the player: an event
-	# that does not spawn already charging always needs a warning)*.
-	def.charges_within = 150.0
+	# **He warns while she is in the stairwell, and runs once she is within this of him**, so that
+	# she has to run to the first floor's door *(inbox #764, the player: "player should have to run
+	# to the door")* rather than walk down to it and out to the other shaft without meeting him
+	# *(inbox #782: the player wants the radius bigger to achieve that, and him not moved)*. No
+	# clock, so his `telegraph_time` above is read only by the telegraph contract. 426px is
+	# measured on the escape as built (`tests/probes/escape_stairwell_guard_trigger.gd`, three
+	# seeds): coming down from the second floor's door she meets it at the head of the second flight,
+	# and making for the first floor's door from there a walker is caught on every way onto the
+	# flight while a runner gets through, at 30px from him at the closest on the tightest. The window
+	# is narrow: at 420px a walker taking the flight from the landing tile between the two flights
+	# gets through, and at 432px a runner taking it from the row below its head is caught.
+	def.charges_within = 426.0
 	def.hard_fail = true
 	return def
 
