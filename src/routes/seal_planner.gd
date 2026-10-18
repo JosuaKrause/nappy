@@ -741,20 +741,36 @@ static func _hard_positions(map: CityMap, segment: StreetNetwork.Segment,
 ## dummy def to carry the radius. Otherwise identical geometry either way: cover `world`'s
 ## cross-axis edge to edge with the fewest bodies whose circles still touch, centred on `world`'s
 ## own along-axis midpoint.
+##
+## **The outer two stand flush with the edges, never past them.** A street's cross-section ends at
+## the buildings either side, so a body centred half a share from the edge reaches past it by
+## however much its radius is more than half a share: the barricade, at 62px, two to the 192px
+## street, stood 14px into the buildings, and the carts were drawn over the roofs. *(Inbox #785,
+## 2026-10-18: "I saw wood on the roof for example")* So the first and last stand one radius in from
+## their edges and the rest are spread evenly between them. The copy count is unchanged, so the
+## neighbours stand closer rather than further apart and still touch; and where the width is a whole
+## number of diameters, the region wall's 32px at a street's 192, the spacing is the even share
+## exactly as before. One body wider than the rect is centred, as before: nothing lets it fit.
 static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -> Array[Vector2]:
 	var width: float = world.size.y if horizontal else world.size.x
 	var radius := maxf(1.0, radius_in)
 	var copies := 1 if 2.0 * radius >= width else ceili(width / (2.0 * radius))
-	var spacing := width / float(copies)
+	var offsets: Array[float] = []
+	if copies == 1:
+		offsets.append(width * 0.5)
+	else:
+		var spacing := (width - 2.0 * radius) / float(copies - 1)
+		for i in copies:
+			offsets.append(radius + spacing * i)
 	var positions: Array[Vector2] = []
 	if horizontal:
 		var along := world.position.x + world.size.x * 0.5
-		for i in copies:
-			positions.append(Vector2(along, world.position.y + spacing * (i + 0.5)))
+		for offset in offsets:
+			positions.append(Vector2(along, world.position.y + offset))
 	else:
 		var along := world.position.y + world.size.y * 0.5
-		for i in copies:
-			positions.append(Vector2(world.position.x + spacing * (i + 0.5), along))
+		for offset in offsets:
+			positions.append(Vector2(world.position.x + offset, along))
 	return positions
 
 # ----------------------------------------------------------------------- alleys ---

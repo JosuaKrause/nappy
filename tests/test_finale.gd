@@ -15,6 +15,7 @@ const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
 const TITLE_SCREEN_SCENE := preload("res://scenes/ui/title_screen.tscn")
 const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
+const Reach := preload("res://tests/seal_reach_rig.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 ## The seed the player played the escape on and could not win (inbox #771), from the building, and
 ## the tile on the tunnel chain's street where the second band's guard caught her.
@@ -43,6 +44,7 @@ func run(t) -> void:
 	_test_the_players_seed_is_winnable_past_its_roadblocks(t)
 	_test_the_escape_stands_its_rows_on_the_days_own_ground(t)
 	_test_an_alley_mouth_wall_fits_the_mouth(t)
+	_test_nothing_the_escape_stands_reaches_over_a_building(t)
 	_test_the_service_exit_is_beside_the_home_block(t)
 	_test_nothing_the_finale_places_stands_where_she_comes_out(t)
 	_test_no_lethal_field_covers_the_ground_she_comes_out_on(t)
@@ -874,6 +876,28 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t) -> void:
 			t.check(not over, "seed %d: the %s in the alley mouth at %s keeps its body off the buildings"
 					% [seed_value, placement.def.id, tile])
 	t.check(walls > 0, "there were alley-mouth walls to ask about (%d)" % walls)
+
+## **Nothing the escape stands reaches over a building**, seals and events alike, with its body or
+## with the ground its picture is drawn over (`tests/seal_reach_rig.gd`'s measure). *(Inbox #785,
+## 2026-10-18: "I saw wood on the roof for example")* The barricade's carts across a street off the
+## chains are the pieces that reached over the buildings either side.
+func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:
+	var barricades := 0
+	for seed_value in SEEDS:
+		var built := _plan_for(seed_value)
+		var map: CityMap = built["map"]
+		var plan: FinalePlanner.Plan = built["plan"]
+		var ground := EventScheduler.EscapeGround.new(map, [], [])
+		for placement in plan.placements:
+			if placement.def.id == "barricade":
+				barricades += 1
+			var body := Reach.body_overhang(map, ground, placement)
+			var drawn := Reach.drawing_overhang(map, placement)
+			t.check(body <= 0.5 and drawn <= 0.5,
+					"seed %d: the %s at %s keeps off the buildings (body %.1fpx, drawing %.1fpx over)"
+					% [seed_value, placement.def.id, map.world_to_tile(placement.position), body,
+					drawn])
+	t.check(barricades > 0, "there were barricade pieces among them (%d)" % barricades)
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.

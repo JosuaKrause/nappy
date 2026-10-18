@@ -1457,7 +1457,8 @@ where she may walk, not a piece of the catalogue's variety.
 
 **Two strengths, both obstacles from the existing catalogue rather than a new mechanism.** A
 **hard** seal — `barricade`, from act IV — stands several bodies across the street's whole width,
-sidewalk to sidewalk, so nothing gets past. A **soft** seal takes both pavements (`construction`,
+sidewalk to sidewalk, so nothing gets past, the outer two flush with the street's edges so none
+reaches over the buildings either side (`SealPlanner.positions_across()`). A **soft** seal takes both pavements (`construction`,
 `cafe_tables`, `market_stall` or `delivery_van`, one on each side) and leaves the carriageway open:
 the road is always still there, so a soft seal always costs time, never the day. **A thing whose
 job is to stand in the way costs route and nothing else** — `construction`, `delivery_van` and
