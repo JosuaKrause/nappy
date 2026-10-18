@@ -27,7 +27,9 @@ extends RefCounted
 ## the landing, then up into the door.
 
 const TICK := 1.0 / 30.0
-const FRAME := 1.0 / 60.0
+## Drawn frames between ticks: 2 is 60fps. `FRAMES_PER_TICK=4` (120fps) or `5` (150fps) in the
+## environment steps him on more, shorter frames.
+var _frames := maxi(int(OS.get_environment("FRAMES_PER_TICK")), 2)
 ## The seed events are set up with; the building itself is not seeded, so other seeds print the
 ## same lines.
 const SEEDS := [4242]
@@ -78,6 +80,7 @@ func _once(t, s: int, route: String, pace: String) -> void:
 	var charged_range := 0.0
 	var outcome := "neither"
 	var closest := INF
+	var closest_on_tick := INF
 	var elapsed := 0.0
 	var charged_for := 0.0
 	var left_the_door := false
@@ -89,10 +92,11 @@ func _once(t, s: int, route: String, pace: String) -> void:
 		events._physics_process(TICK)
 		man.player_running = running
 		var caught := man.is_lethal_at(her)
-		var near := man.global_position.distance_to(her)
-		man._process(FRAME)
-		near = minf(near, man.global_position.distance_to(her))
-		man._process(FRAME)
+		var on_tick := man.global_position.distance_to(her)
+		var near := on_tick
+		for _i in _frames:
+			man._process(TICK / _frames)
+			near = minf(near, man.global_position.distance_to(her))
 		elapsed += TICK
 		if not turned and tile.y - origin.y >= int(ROUTES[route][0]) \
 				and her.y >= scene.tile_to_world(tile).y:
@@ -108,7 +112,8 @@ func _once(t, s: int, route: String, pace: String) -> void:
 			elif route == "door":
 				_hold(["move_up"], running)
 		if charged_at != Vector2.INF:
-			closest = minf(closest, minf(near, man.global_position.distance_to(her)))
+			closest = minf(closest, near)
+			closest_on_tick = minf(closest_on_tick, on_tick)
 			charged_for += TICK
 		if caught:
 			outcome = "caught"
@@ -124,9 +129,9 @@ func _once(t, s: int, route: String, pace: String) -> void:
 			_hold(["move_up"], running)
 	_hold([], false)
 	var local := charged_at - scene.tile_to_world(origin) + Vector2.ONE * InteriorScene.TILE * 0.5
-	print("TRIGGER seed %d %s %s charged at %s %.0fpx from him, %s at %.2fs, %.2fs after he ran, closest %.0fpx"
+	print("TRIGGER seed %d %s %s charged at %s %.0fpx from him, %s at %.2fs, %.2fs after he ran, closest %.1fpx drawn, %.1fpx on a tick (the catch is 28px)"
 			% [s, route, pace, (local / InteriorScene.TILE).snapped(Vector2(0.01, 0.01)),
-			charged_range, outcome, elapsed, charged_for, closest])
+			charged_range, outcome, elapsed, charged_for, closest, closest_on_tick])
 	player.free()
 	events.free()
 	scene.free()

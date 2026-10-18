@@ -1233,8 +1233,8 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 ## the two flights gets through**. A runner gets through on every line, whether she was running all
 ## along or starts running the moment he does, with the keys she already holds. **The margins are
 ## thin:** on the tightest runner's line (walking until he runs, then running, turning plain left at
-## row 11's centre) he is drawn about 24px from her centre (23.8 to 25 by frame rate), inside his
-## 28px catch, and she clears it on the tick by under a pixel; **she is caught if she starts running
+## row 11's centre) he is drawn about 25px from her centre (24.6px, at 60, 120 and 150fps), inside his
+## 28px catch, and she clears it on the tick at 28.6px, by 0.6px; **she is caught if she starts running
 ## 0.3s after he does.**
 func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 	for walk: Array in _SECOND_FLIGHT_TURNS:
@@ -1255,6 +1255,9 @@ func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 				t.check(met["closest"] > 20.0 and met["closest"] < 28.0,
 						"%s at a %s: he is drawn inside the catch for a frame (%.1fpx)"
 						% [walk[3], pace, met["closest"]])
+				t.check(met["on_tick"] > 28.0 and met["on_tick"] < 29.5,
+						"%s at a %s: and she clears it on the tick by under 1.5px (%.1fpx)"
+						% [walk[3], pace, met["on_tick"]])
 			print("The masked man, %s at a %s: %s, %.0fpx from him at the closest"
 					% [walk[3], pace, met["outcome"], met["closest"]])
 
@@ -1301,7 +1304,7 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
 	player.velocity = Vector2.ZERO
 	var running := pace == "run"
 	_hold_keys(["move_down"], running)
-	var met := {"ran": false, "outcome": "neither", "closest": INF}
+	var met := {"ran": false, "outcome": "neither", "closest": INF, "on_tick": INF}
 	var turned := false
 	var elapsed := 0.0
 	var ran_at := 0.0
@@ -1314,6 +1317,8 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
 		man.player_running = running
 		# The catch is the tick's: where he was drawn when the tick ran.
 		var caught := man.is_lethal_at(her)
+		if met["ran"]:
+			met["on_tick"] = minf(met["on_tick"], man.global_position.distance_to(her))
 		if met["ran"]:
 			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
 		man._process(FRAME)
