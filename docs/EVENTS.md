@@ -906,7 +906,9 @@ the guard drawn at the gatehouse across the road from her raises his hand
 an alley's door the post's own guard. Back across the line before `Tuning.CROSSING_WARNING` (2.0s)
 has run, or held at a hut (gone through the lawful way), the crossing is called off and nobody
 comes. **Still across once it has run, one `door_guard` steps out of the wall of that gatehouse, or
-of the post, on the side she crossed to, and charges at once** (`EventDef.charges_at_once`); the
+of the post, on the side she crossed to, and charges at once** (`EventDef.charges_at_once`): the
+gatehouse whose guard raised his hand, wherever she has walked to through the warning, so the man
+who warned her is the man who comes (`EventManager._crossing_hut`); the
 guards drawn at the gatehouses stay at their posts, so the door stays manned. He is the roadblock's
 hunting guard copied — the same man, 130px/s, a chase of `Tuning.PURSUIT_TIME`, and a catch at
 `MASKED_MAN_REACH` (28px). A catch is `hard_fail` on every day a door stands and at every heat

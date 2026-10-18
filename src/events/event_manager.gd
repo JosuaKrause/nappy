@@ -2408,9 +2408,10 @@ func _run_the_crossing_warning(here: Vector2, delta: float) -> bool:
 	if _crossing_for < Tuning.CROSSING_WARNING:
 		return false
 	var crossed := _crossing
+	var hut := _crossing_hut
 	_crossing = null
 	_crossing_hut = null
-	_set_a_guard_on_her(crossed, here)
+	_set_a_guard_on_her(hut, crossed, here)
 	door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 	return false
 
@@ -2420,8 +2421,11 @@ func _call_off_the_crossing(why: String) -> void:
 	_crossing = null
 	_crossing_hut = null
 
-## One `door_guard` after her, stepping out of the wall of the hut across the road from her — the
-## farther of the huts on the crossed body's own line — on the side of the line she has crossed to. *(2026-09-24: "Or guards
+## One `door_guard` after her, stepping out of the wall of `hut` — the hut whose guard raised his
+## hand at her when she crossed (`_crossing_hut`, the farther of the huts on the crossed body's own
+## line from where she crossed) — on the side of the line she has crossed to. **The man who warned
+## is the man who comes**: in the warning's 2.0s at a walk she can cross most of the street, which
+## can make the other hut the farther one by then, so the hut is not asked for again. *(2026-09-24: "Or guards
 ## that pursue her should spawn at the huts" · "One guard is enough".)* The guards drawn at the huts
 ## stay at their posts; this is another man out of the door.
 ##
@@ -2436,12 +2440,9 @@ func _call_off_the_crossing(why: String) -> void:
 ## (about 57px from her as she crosses the near lane, 16px if she crosses beside it) his charge
 ## comes with almost no ground to answer it in. An alley's door has only its post, so its guard
 ## steps out of it. *The far hut is chosen while building, open to overturn.*
-func _set_a_guard_on_her(crossed: EventInstance, here: Vector2) -> void:
-	if is_instance_valid(_guard_after_her) \
+func _set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vector2) -> void:
+	if not is_instance_valid(hut) or is_instance_valid(_guard_after_her) \
 			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving:
-		return
-	var hut := _hut_on_the_line_nearest(crossed, here, true)
-	if not hut:
 		return
 	var axis := crossed.facing_now()
 	var side := -1.0 if (here - hut.global_position).dot(axis) < 0.0 else 1.0

@@ -51,6 +51,7 @@ func run(t) -> void:
 	_test_the_boom_never_inspects_her(t)
 	_test_the_arm_never_comes_down_on_her(t)
 	_test_walking_under_the_boom_sets_a_guard_on_her(t)
+	_test_the_guard_who_warned_is_the_guard_who_comes(t)
 	_test_the_guard_leaves_room_to_answer(t)
 	_test_a_walk_under_the_boom_is_seen(t)
 	_test_a_raised_boom_does_not_open_the_checkpoint_for_her(t)
@@ -2058,6 +2059,48 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	_stand_for(rig, Tuning.CROSSING_WARNING + 0.2)
 	t.check(city.events.walks_under_a_boom() == walks + 1 and city.events._guard_after_her == guard,
 			"walking back under it while he is after her sets nobody else on her")
+	_free_street_door_rig(rig)
+
+## **The man who warned her is the man who comes** (review 4 of PR #781). She crosses under the
+## raised boom in the near lane, so the guard at the hut across the road raises his hand; through
+## the warning she walks on across the street to the far lane, still past the line, which makes the
+## other hut the farther one by then. Once the warning has run, the `door_guard` steps out of the
+## hut whose guard warned her (`EventManager._crossing_hut`), not out of the one now farther away.
+func _test_the_guard_who_warned_is_the_guard_who_comes(t) -> void:
+	var rig := _street_door_rig(t)
+	var city: City = rig["city"]
+	var gate: EventInstance = rig["gate"]
+	var huts: Array[EventInstance] = []
+	huts.assign(rig["huts"])
+	if not gate or huts.size() != 2:
+		_free_street_door_rig(rig)
+		return
+	var axis := gate.facing_now()
+	var across := Vector2(-axis.y, axis.x)
+	gate.gate_state.raised = true
+	var lane := gate.global_position + across * 16.0
+	var near_hut := huts[0] if huts[0].global_position.distance_to(lane) \
+			< huts[1].global_position.distance_to(lane) else huts[1]
+	var far_hut := huts[1] if near_hut == huts[0] else huts[0]
+	_step_her_to(rig, lane - axis * 20.0)
+	_step_her_to(rig, lane + axis * 20.0)
+	_stand_for(rig, 0.5)
+	t.check(far_hut.guard_warns_her and not near_hut.guard_warns_her,
+			"crossing in the near lane, the guard across the road raises his hand")
+	var far_lane := gate.global_position - across * 60.0 + axis * 20.0
+	_step_her_to(rig, far_lane)
+	t.check(far_lane.distance_to(near_hut.global_position)
+			> far_lane.distance_to(far_hut.global_position),
+			"walked on to the far lane, the hut that warned her is now the nearer one")
+	_stand_for(rig, Tuning.CROSSING_WARNING)
+	var guard := city.events._guard_after_her
+	t.check(guard != null and guard.global_position.distance_to(far_hut.global_position)
+			<= far_hut.def.obstructs_radius + 0.5,
+			"once the warning has run, the guard steps out of the hut that warned her (%s)"
+			% ("%.1fpx from it, %.1fpx from the other" % [
+					guard.global_position.distance_to(far_hut.global_position),
+					guard.global_position.distance_to(near_hut.global_position)]
+			if guard else "nobody came"))
 	_free_street_door_rig(rig)
 
 ## **The answer to a crossing, walked at the door's own geometry**, a street door's and an alley
