@@ -102,6 +102,10 @@ const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
 ## same family as the three discs above it; the `checked` icon covers it whole. Engine data rather
 ## than anything drawn — see the **cues** rule, "Prefer the engine's data over any drawing at all".
 @onready var _hard_mode_frame: Panel = $Root/HardMode/Frame
+## The name of the run's mode, "Normal" or "Hard Mode", shown where the checkbox would stand when
+## the mode is already decided (a save brought back): the checkbox and this label are never on
+## screen together. Made in `_ready()` in the checkbox's colour, so it reads as the same line.
+var _mode_name: Label
 
 ## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
 ## each use site, so a test — never itself a web export — can set this and drive both shapes.
@@ -130,6 +134,16 @@ func _ready() -> void:
 	_right_caption.text = Texts.TITLE_CAPTION_JOYSTICK
 	_hint.text = Texts.TITLE_HINT_BEGIN
 	_hard_mode.text = Texts.TITLE_HARD_MODE
+	_mode_name = Label.new()
+	_mode_name.name = "ModeName"
+	_mode_name.anchor_right = 1.0
+	_mode_name.offset_top = 643.0
+	_mode_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_mode_name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mode_name.add_theme_color_override("font_color", Color(0.72, 0.69, 0.64, 1))
+	_mode_name.add_theme_font_size_override("font_size", 22)
+	_mode_name.visible = false
+	$Root.add_child(_mode_name)
 	_refresh_body()
 	_version.text = version_text()
 	# Above the pause screen: this is the outermost frame the game runs inside, and nothing should
@@ -222,6 +236,12 @@ func is_open() -> bool:
 ## opens on the mode the run already holds, `GameState.hard_mode`: `false` for every fresh run, and
 ## `true` only under `--hard`.
 ##
+## `mode_decided` is whether the mode is already fixed for this run, which is when a save brought
+## it back (the title before a resumed day or a resumed escape): the checkbox has nothing to ask
+## then, so the mode's name, "Normal" or "Hard Mode" (`GameState.hard_mode`), stands in its place.
+## A new game shows the checkbox and no name; a title with neither (the escape flag's, which has
+## no run) shows neither.
+##
 ## It does **not** touch `get_tree().paused`, which is where it differs from `PauseScreen` and why:
 ## a pause stops the world and this one deliberately does not. What stops, and what carries on
 ## behind the scrims, is `main`'s decision — see `main._open_the_title()`.
@@ -235,12 +255,14 @@ func is_open() -> bool:
 ## mentioned to the user".)* — it also points the sentence at the discs themselves, which are
 ## otherwise the only thing on this screen that does anything. `q to quit` still does not appear
 ## here even though the key still works — `_can_quit` gates `_unhandled_input()` alone.
-func open(again := false, new_game := false) -> void:
+func open(again := false, new_game := false, mode_decided := false) -> void:
 	visible = true
 	if _hard_mode:
 		_hard_mode.visible = new_game
 		_hard_mode.button_pressed = new_game and GameState.hard_mode
 		_place_the_hard_mode_frame()
+	_mode_name.visible = mode_decided and not new_game
+	_mode_name.text = Texts.TITLE_MODE_HARD if GameState.hard_mode else Texts.TITLE_MODE_NORMAL
 	_hint.text = Texts.TITLE_HINT_AGAIN if again else Texts.TITLE_HINT_BEGIN
 	# A press that closed this screen can leave a button's own forced-pressed look set — see
 	# `_acknowledge_and_begin()`'s own doc for why the release that would otherwise clear it may
@@ -264,6 +286,10 @@ func close() -> void:
 ## `main._on_title_start()` through.
 func hard_mode_checked() -> bool:
 	return _hard_mode != null and _hard_mode.visible and _hard_mode.button_pressed
+
+## The mode's name on screen, or `""` while it is not showing (a new game, where the checkbox asks).
+func mode_name_shown() -> String:
+	return _mode_name.text if _mode_name != null and _mode_name.visible else ""
 
 ## Whether the Hard Mode checkbox is on screen: only while the title begins a new game.
 func hard_mode_shown() -> bool:
