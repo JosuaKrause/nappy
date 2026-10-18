@@ -1,0 +1,32 @@
+extends Node
+# usage: godot --path . -s sheet.gd -- out.png
+func _ready() -> void:
+	var out := OS.get_cmdline_user_args()[0]
+	get_window().size = Vector2i(1280, 360)
+	var bg := ColorRect.new()
+	bg.color = Color(0.2, 0.2, 0.24)
+	bg.size = Vector2(1280, 360)
+	add_child(bg)
+	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var dirs := [Vector2.UP, Vector2(1,-1), Vector2.RIGHT, Vector2(1,1), Vector2.DOWN, Vector2(-1,1), Vector2.LEFT, Vector2(-1,-1)]
+	var rigs := []
+	for i in 8:
+		var s: Stroller = scene.instantiate()
+		s.carrying = true
+		s.set_physics_process(false)
+		add_child(s)
+		s.position = Vector2(90 + i * 150, 480)
+		s.get_node("Camera2D").enabled = false
+		s.facing = (dirs[i] as Vector2).normalized()
+		s._view_direction = s._nearest_view_direction()
+		var b: Baby = s.get_node("Baby")
+		b.set_physics_process(false)
+		b.state = GameEnums.BabyState.ASLEEP
+		rigs.append(s)
+		s.scale = Vector2(3.5, 3.5)
+		s.queue_redraw()
+	for i in 4:
+		await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(out)
+	get_tree().quit()

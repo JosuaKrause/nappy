@@ -919,7 +919,10 @@ func _test_the_carried_babys_cue_stays_over_her_head(t) -> void:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var rig: Stroller = scene.instantiate()
 	rig.carrying = true
-	var lift := Stroller.BABY_CUE_LIFT + Stroller.FIGURE_HEIGHT
+	# Just over her head: her height plus the clearance the cue keeps over a pram's art, 52px, and
+	# not a pram's height more (82px, where it floated with nothing under it).
+	var lift := Stroller.FIGURE_HEIGHT + (Stroller.BABY_CUE_LIFT - Stroller.PRAM_ART_HEIGHT)
+	t.check(is_equal_approx(lift, 52.0), "the carried cue sits 52px above her feet")
 	for facing: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT,
 			Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(),
 			Vector2(1, -1).normalized(), Vector2(-1, -1).normalized()]:
