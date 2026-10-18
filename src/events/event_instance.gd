@@ -1657,13 +1657,11 @@ func _leave_the_body_behind() -> void:
 
 ## **Whether a waiting charger would raise his warning in her view**: the whole of his warning
 ## picture (`warning_rect()`) inside the camera's view this frame (`player_view`). *(Inbox #788, the
-## player: the charging radius of waiting chargers is tuned so that baiting is possible and so that
-## the warning is visible on screen.)* Every charger that waits, warns by radius and charges by
-## proximity notices her only then, on a day as in the escape, so his warning never starts off the
-## screen. The view is the camera's own, look-ahead included: walking at him, the camera leads her by
-## `Stroller.CAMERA_LOOK_AHEAD`, which is what puts a warning outside his charge radius in view when
-## she comes at him up the screen. Always true for any other row, and in a rig with no camera
-## (`player_view` empty), where the notice is the radius alone.
+## player: the warning should be visible on screen.)* Every charger that waits for her and pursues
+## notices her only then, on a day as in the escape, so his warning never starts off the screen, and
+## his warning's clock starts from there. The view is the camera's own, look-ahead and trailing
+## included. Always true for any other row, and for an instance nobody has handed a view
+## (`player_view` empty, a rig that steps it directly), where the notice is the radius alone.
 func _would_stand_in_her_view() -> bool:
 	if not def.pursues or not warns_by_radius() or not player_view.has_area():
 		return true
@@ -2446,10 +2444,11 @@ var _noticed_at := INF
 ## `VisitCounter` yet" rather than re-derived from `_noticed_at`. See `EventBus.pursuit_began`'s own
 ## doc.
 var _pursuit_began_reported := false
-## **A checkpoint hut's guard raising his hand**: true while she is near a raised boom on this hut's
-## line and this hut is the one across the road from her, or she is near this alley post
-## (`EventManager._warn_at_the_doors()`, which sets it every
-## frame), so going under it would set its guard on her at once (`EventDef.charges_at_once`). Drawn
+## **A checkpoint hut's guard raising his hand**: true while a crossing of this hut's door is
+## warning her and this hut is the one across the road from her, or this alley post's
+## (`EventManager._warn_at_the_doors()`, which sets it every frame); once the crossing's warning has
+## run with her still across, this hut's guard comes out and charges at once
+## (`EventDef.charges_at_once`). Drawn
 ## with `guard_alert_front` beside the hut instead of `guard_standing` (`_draw_checkpoint_hut()`).
 var guard_warns_her := false
 ## Whether `EventBus.pursuit_warned` has already been sent for this instance's first warning.
@@ -2611,14 +2610,14 @@ var _notice_paused_for := 0.0
 ## it is waiting it emits at full strength, is not lethal and does not move; `pursues_within` is
 ## where that stops.
 ##
-## **And a pursuer that waited for her warns by radius, not by a clock** (`warns_by_radius()`;
-## inbox #764, the player: a warning happens when she comes close, she can turn around, and if she
-## keeps getting closer the charge starts). From the frame it notices her inside `pursues_within`
-## it shows its warning, for as long as she stays inside that radius: the notice clock does not run
-## (`_hold_the_notice_clock()`), so it charges only when she crosses its stand-off, the charge
-## radius. Once she is back outside `pursues_within` it stops warning and waits again, from where
-## it stands (`_stop_warning()`), and it can warn again. Standing outside the stand-off is safe for
-## as long as she stays there; walking away is safe until it charges.
+## **And a pursuer that waited for her warns inside its one radius, on a clock** (`warns_by_radius()`;
+## inbox #788, the player: "We should do one radius and warn inside it for 2s. If the player leaves
+## the radius nothing happens and the warning stops. If they stay within the charge starts"). From
+## the frame it notices her inside `pursues_within` it shows its warning for its row's `warns_for`
+## (`notice_time()`); once she is back outside `pursues_within` it stops warning and waits again,
+## from where it stands (`_stop_warning()`), and can warn again from the start; still inside when
+## the warning has run, it charges, along a clear line (`_hold_the_notice_clock()`). Walking away
+## from the warning is safe; standing in it is not.
 func _chase(delta: float) -> void:
 	if player_at == Vector2.INF or is_telegraphing_still() or _guard_spent:
 		return
@@ -2654,8 +2653,9 @@ func _chase(delta: float) -> void:
 			_heading = toward.normalized()
 			# Noticed already inside the stand-off, which only a wall can do — `pursues_within` is
 			# wider than the stand-off on every row (`Tuning.validate_pursuit()`) — so the wall held
-			# the lunge back as well as the notice. See `_lunge_held`.
-			if range_to_her <= standoff:
+			# the lunge back as well as the notice. See `_lunge_held`. A charger that warns by
+			# radius has no lunge to hold: its charge is its warning running out.
+			if range_to_her <= standoff and not warns_by_radius():
 				_lunge_held = true
 		return
 	# **Out of its warning radius, it stops warning** and waits again where it stands. Measured from
@@ -2733,6 +2733,12 @@ func _chase(delta: float) -> void:
 			step = clampf(range_to_her - standoff, 0.0, step)
 			if _lunge_held and clear and range_to_her >= standoff:
 				_lunged = true
+		elif warns_by_radius():
+			# **A charger that waits for her charges when his warning runs out, not on a
+			# distance** (`EventDef.warns_for`): she can walk anywhere inside his radius, up to
+			# him, and he only warns; one that walks at her through his warning (the robber) holds
+			# at his stand-off.
+			step = clampf(range_to_her - standoff, 0.0, step)
 		elif range_to_her <= standoff:
 			if clear:
 				_lunged = true
@@ -2747,11 +2753,6 @@ func _chase(delta: float) -> void:
 		# a catch from a standing start.
 		if is_standing_for_its_notice():
 			step = 0.0
-	# **The charge of one that warns by radius starts its chase clock**: its notice is set as one
-	# that has just run its whole length, so the chase is `duration` long from the charge and a
-	# stream-out carries it as a chase (`_hold_the_notice_clock()`).
-	if _lunged and warns_by_radius() and chase_age() < def.telegraph_time:
-		_noticed_at = age - _notice_paused_for - def.telegraph_time
 	# **Day 13's task guard walks round buildings toward her** (`_paths_to_her`): where no clear
 	# line runs to her he follows the walk to her instead of the straight line. Only the direction
 	# changes; how far he may close, and when he lunges, are decided above as for every pursuer.
@@ -3445,7 +3446,7 @@ var _victim_logged := false
 func _victim_time_left() -> float:
 	if is_waiting() or def.duration <= 0.0:
 		return INF
-	return (def.telegraph_time + def.duration) - chase_age()
+	return (notice_time() + def.duration) - chase_age()
 
 ## Runs the scene: starts it, times it, and tells the log when it finishes.
 ##
@@ -4219,10 +4220,15 @@ func is_standing_for_its_notice() -> bool:
 	return (def.stands_for_its_notice or _stands_for_this_notice) and is_telegraphing() \
 			and (def.pursues_within > 0.0 or def.sets_off_beside_her)
 
-## How long this instance's notice runs once it has noticed her: its row's `telegraph_time`, or the
-## notice a task gave it when it set it on her (`notice_her_at()`).
+## How long this instance's notice runs once it has noticed her: a charger that warns by radius
+## warns for its row's `warns_for` (`warns_by_radius()`); anything else for its row's
+## `telegraph_time`, or the notice a task gave it when it set it on her (`notice_her_at()`).
 func notice_time() -> float:
-	return _notice_time if _notice_time >= 0.0 else def.telegraph_time
+	if _notice_time >= 0.0:
+		return _notice_time
+	if warns_by_radius() and def.warns_for > 0.0:
+		return def.warns_for
+	return def.telegraph_time
 
 ## True for a pursuer that is only standing there, because she has not come near enough for it to
 ## take an interest. It emits at full strength, it is not lethal, and it does not move.
@@ -4247,9 +4253,12 @@ func chase_age() -> float:
 ## noticed her by sight (`pursues_within` on the def it was handed) — the dog that waited, the alley
 ## robber and every guard drawn from his row, the hunting roadblock's guard. *(Inbox #764, the
 ## player: a warning happens when she comes close; she can turn around; if she keeps getting closer
-## the charge starts.)* Its warning lasts for as long as she is inside `pursues_within` and ends in a
-## charge only when she crosses its stand-off (`_chase()`); out of the radius it waits again
-## (`_stop_warning()`).
+## the charge starts; inbox #788: "We should do one radius and warn inside it for 2s. If the player
+## leaves the radius nothing happens and the warning stops. If they stay within the charge
+## starts.")* **One radius, and a warning on a clock inside it**: from the frame it notices her
+## inside `pursues_within` it warns for its row's `warns_for` (`notice_time()`); back outside the
+## radius before that, the warning stops and it waits again (`_stop_warning()`), its clock reset;
+## still inside when it runs out, it charges.
 ##
 ## **Not one set on her by what she did** (`notice_her_at()`, day 13's task guard, `_paths_to_her`):
 ## he is sent after her from wherever he stands, often a city away, so a radius he has to be inside
@@ -4260,20 +4269,13 @@ func warns_by_radius() -> bool:
 	return (def.pursues or def.charges_within > 0.0) and def.pursues_within > 0.0 \
 			and not def.sets_off_beside_her and not _paths_to_her
 
-## **The distance from him at which a pursuer lunges**: for one that waits for her, warns by radius
-## and charges by proximity, his charge radius, `Tuning.bait_radius()` over his catch, wide enough
-## that a walker coming in who turns and runs a prompt `Tuning.BAIT_REACTION` after he charges gets
-## away *(inbox #788, the player: a charger that warns and starts charging by proximity needs a
-## bigger radius for starting to charge, otherwise it is impossible to bait him out)*; for any other
-## pursuer, the stand-off it closes to and holds, `Tuning.pursuit_standoff()` over
-## `EventDef.standoff_reach()`, which the day-3 dog's gold timing is spent at. **The alley robber
-## keeps his stand-off**: a row with a `lunge_reach` of its own has its lunge set by the player
-## (tall-osprey's record, "116px, keep every rule"), so it is not widened here.
+## **The stand-off a pursuer closes to and holds**, `Tuning.pursuit_standoff()` over
+## `EventDef.standoff_reach()`: the distance a pursuer that comes for her through its telegraph
+## lunges from (the day-3 dog's gold timing is spent at it), and where one that walks at her through
+## its warning (the robber) stops. A charger that waits for her charges on its warning's clock, not
+## on this distance (`warns_by_radius()`).
 func charge_radius() -> float:
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
-	if def.pursues and warns_by_radius() and def.lunge_reach <= 0.0:
-		return maxf(standoff, Tuning.bait_radius(def.pursue_speed, def.lethal_reach()))
-	return standoff
+	return Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 
 ## **It stops warning and waits again, where it stands**: she has gone back out of its warning
 ## radius. Its notice is forgotten, so the next time she comes inside the radius it notices her and
@@ -4295,50 +4297,42 @@ func _stop_warning() -> void:
 	_invalidate_contribution_cache()
 
 ## **A row that waits and runs its own line warns by radius too** (`EventDef.charges_within`, the
-## masked man): while it warns, she back outside `pursues_within` has it wait again, and she inside
-## `charges_within` starts its run — at once if she came in from outside it, after
-## `Tuning.WARNING_ALONE_MAX` of warning if it noticed her already inside, so it never runs at her
-## with no warning at all. Its run is the end of its telegraph (`_lunged`), as a flock's flush is.
+## masked man), on the one-radius rule every waiting charger keeps: while it warns, she back outside
+## `pursues_within` has it wait again, its clock reset; she still inside `charges_within` once it has
+## warned for its row's `warns_for` starts its run. Its run is the end of its telegraph
+## (`_lunged`), as a flock's flush is.
 func _warn_on_its_line(delta: float) -> void:
 	if def.charges_within <= 0.0 or is_waiting() or _lunged or player_at == Vector2.INF:
 		return
 	var range_to_her := global_position.distance_to(player_at)
 	if _warned_on_its_line_for == 0.0:
-		_noticed_inside_its_charge = range_to_her <= def.charges_within
 		_report_the_warning()
 	_warned_on_its_line_for += delta
 	if range_to_her > def.pursues_within:
 		_noticed_at = INF
 		_warned_on_its_line_for = 0.0
 		return
-	if range_to_her > def.charges_within:
-		_noticed_inside_its_charge = false
-		return
-	if not _noticed_inside_its_charge or _warned_on_its_line_for >= Tuning.WARNING_ALONE_MAX:
+	if range_to_her <= def.charges_within and _warned_on_its_line_for >= notice_time():
 		_lunged = true
 		# His run is his charge, for his counter (`EventBus.pursuit_began`).
 		if not _pursuit_began_reported:
 			_pursuit_began_reported = true
 			EventBus.pursuit_began.emit(charger_name())
 
-## How long a row that runs its own line has been warning her, and whether it noticed her already
-## inside its charge distance. See `_warn_on_its_line()`.
+## How long a row that runs its own line has been warning her. See `_warn_on_its_line()`.
 var _warned_on_its_line_for := 0.0
-var _noticed_inside_its_charge := false
 
 ## The notice clock for this tick, run straight after `age` advances and before anything asks
-## `is_telegraphing()`. **A pursuer that warns by radius has no notice clock** (`warns_by_radius()`):
-## for every tick of its warning the age it noticed her moves on with the tick, so its notice never
-## runs out and the charge comes only from her crossing its stand-off (`_chase()`, which then sets
-## the clock as a notice that has just run out, so `chase_age()` past `telegraph_time` counts the
-## chase from the charge). Moving the notice rather than counting a pause is what a stream-out
-## carries (`noticed_at()`, `resume()`), so a warning streamed back in is still a warning and a
-## charge is still a charge. Every other pursuer's notice runs, held still only while a held lunge
-## has her inside its stand-off (`_pause_a_held_notice()`).
+## `is_telegraphing()`. Every notice runs, a waiting charger's warning included (`notice_time()`),
+## held still only while a held lunge has her inside its stand-off (`_pause_a_held_notice()`), and
+## a waiting charger's at its last moment while a wall stands between them: **his charge needs a
+## clear line** *(mossy-beaver, inbox #650: "how can it pursue without noticing? obviously it needs
+## a clear line")*, so he goes on warning until the line clears or she leaves his radius.
 func _hold_the_notice_clock(delta: float) -> void:
-	if warns_by_radius() and not _lunged and not is_waiting() \
-			and chase_age() - delta < def.telegraph_time:
-		_noticed_at += delta
+	if warns_by_radius() and def.pursues and not _lunged and not is_waiting() \
+			and player_at != Vector2.INF and chase_age() >= notice_time() \
+			and chase_age() - delta < notice_time() and not _clear_line_to(player_at):
+		_notice_paused_for += delta
 		return
 	_pause_a_held_notice(delta)
 
@@ -4393,7 +4387,7 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# front of it: for everything without a trigger the two are the same number, and for a row
 		# that stood on a pavement half the morning before she came near, `age` would hand the
 		# first instant of the burst the multiplier the *end* of it is meant to have.
-		var through := clampf((chase_age() - def.telegraph_time) / def.duration, 0.0, 1.0)
+		var through := clampf((chase_age() - notice_time()) / def.duration, 0.0, 1.0)
 		value *= lerpf(1.0, def.intensity_ramp, through)
 	if def.pulse_period > 0.0:
 		# 0.25..1.0, so a pulsing event is never entirely silent between beats. On `age` rather
@@ -6891,9 +6885,8 @@ func _draw_masked_pursuer(canvas: CanvasItem = self) -> void:
 ## after his wait, which his row's `pursues_within` gives him and no other guard-drawn row has).
 ## *(Inbox #764, the player: an event that does not spawn already charging always needs a
 ## warning.)* The van's guard a task sends and the guardsman a torn poster sends arrive charging and
-## never give one, nor does the door guard at a boom, whose warning was the hut's guard's
-## (`EventDef.charges_at_once`); at an alley's door he stands in his alert for his half second
-## (`EventCatalogue.alley_door_guard()`). Otherwise `guard_standing_*` while `_stands_still_now()` — the masked man's wait,
+## never give one, nor does the door guard, whose warning was the hut's or the post's guard's from
+## her crossing (`EventDef.charges_at_once`). Otherwise `guard_standing_*` while `_stands_still_now()` — the masked man's wait,
 ## a stop — and `guard_lunging_*` after.
 func masked_pursuer_pictures() -> Dictionary:
 	if is_standing_for_its_notice() or (def.pursues_within > 0.0 and is_telegraphing()):

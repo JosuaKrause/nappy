@@ -6,8 +6,11 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/escape_stairwell_guard_trigger.gd
 ##     CHARGES_WITHIN=420 tools/test.sh probes/escape_stairwell_guard_trigger.gd
+##     WARNS_FOR=1.5 tools/test.sh probes/escape_stairwell_guard_trigger.gd
 ##
-## The second tries another charge distance for his row on that run alone. Her real carrying body
+## The second tries another charge distance for his row on that run alone, the third another
+## warning time (`EventDef.warns_for`: how long he warns once she is within his radius before he
+## runs, if she is still within it). Her real carrying body
 ## walks with the real stair steering and collision, and the real man is driven by
 ## `InteriorEvents._physics_process()`, which tells him where she is, and his own `_process()`. It
 ## is stepped at the game's rhythm: a 30Hz physics tick moves her, tells him where she is and checks
@@ -63,6 +66,8 @@ func _once(t, s: int, route: String, pace: String) -> void:
 			man = instance
 	if OS.get_environment("CHARGES_WITHIN") != "":
 		man.def.charges_within = float(OS.get_environment("CHARGES_WITHIN"))
+	if OS.get_environment("WARNS_FOR") != "":
+		man.def.warns_for = float(OS.get_environment("WARNS_FOR"))
 	var origin: Vector2i = f.waypoints["stairwell_right"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	var door_tile: Vector2i = (f.doors["stairwell_right:landing_first"] as InteriorMapPlan.Door).tile
 	var second_door: Vector2i = (f.doors["stairwell_right:landing_second"] as InteriorMapPlan.Door).tile

@@ -468,24 +468,19 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 	t.check(guard.body_position().is_equal_approx(post),
 			"exactly where it was built (%s against %s)" % [guard.body_position(), post])
 
-	# He warns, standing where she can see him, for as long as she stays in his radius and outside
-	# his stand-off, and nothing is lethal during it (`EventInstance.warns_by_radius()`); she steps
-	# inside his stand-off and he charges.
+	# He warns, standing where she can see him, for his `warns_for` while she stays in his radius,
+	# and nothing is lethal during it (`EventInstance.warns_by_radius()`); then he charges.
 	var frames := 0
-	while guard.is_telegraphing() and frames < int((hot.telegraph_time + 1.0) / STEP):
+	while guard.is_telegraphing() and frames < int((hot.warns_for + 1.0) / STEP):
 		t.check(not guard.is_lethal_at(guard.global_position),
 				"nothing is lethal while he warns")
 		guard.player_at = her
 		guard._process(STEP)
 		frames += 1
-	t.check(guard.is_telegraphing(),
-			"he is still warning %d frames on, past his %.1fs telegraph" % [frames, hot.telegraph_time])
-	her = guard.global_position + Vector2(
-			Tuning.pursuit_standoff(hot.pursue_speed, hot.standoff_reach()) - 2.0, 0.0)
-	guard.player_at = her
-	guard._process(STEP)
+	t.check(absf(frames * STEP - hot.warns_for) <= 2.0 * STEP,
+			"he warns her for %.2fs, his %.1fs warning" % [frames * STEP, hot.warns_for])
 	t.check(not guard.is_telegraphing() and not guard.is_waiting(),
-			"she crosses his stand-off and he charges")
+			"and then, she still inside his radius, he charges")
 
 	# The reach is a man's, measured from him.
 	var on_him := guard.global_position + Vector2(reach - 1.0, 0.0)
@@ -517,25 +512,15 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 
 ## *"have one guard on each side?"* · *"only the guard on her side can chase since the other one
 ## will be blocked"* — and he sets off from his own post, beside the band, rather than from its
-## centre. That post is nearer her than the centre where his notice is measured, by at most
-## `Tuning.ROADBLOCK_POST_REACH`, which his warning radius allows for: she comes straight across the
-## band, the approach that puts his post nearest her, and stands still once he has noticed her. He
-## notices her outside his charge radius (`EventInstance.charge_radius()`, measured from his catch
-## reach) by at least the ground a walker needs to stop short of it (`Tuning.bait_warning_lead()`),
-## and his notice runs with nothing lethal in it. Both street axes, both sides.
+## centre. That post is nearer her than the centre where his notice is measured: she comes straight
+## across the band, the approach that puts his post nearest her, and stands still once he has
+## noticed her. He warns for his row's `warns_for` with nothing lethal in it and charges when it has
+## run, she still inside his radius *(inbox #788: one radius, a warning inside it)*, not on the
+## frame he notices her. Both street axes, both sides.
 func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 	var hot := EventCatalogue.heated(_cold_roadblock(), Tuning.RESISTANCE_GOAL)
-	var reach := hot.lethal_reach()
-	var farthest := 0.0
-	for vertical: bool in [false, true]:
-		for side: int in [-1, 1]:
-			farthest = maxf(farthest, EventInstance._guard_post_offset(vertical, side).length())
-	t.check(farthest <= Tuning.ROADBLOCK_POST_REACH,
-			"no post stands further from the band than ROADBLOCK_POST_REACH (%.0fpx of %.0f)"
-			% [farthest, Tuning.ROADBLOCK_POST_REACH])
-	t.check(hot.pursues_within - Tuning.ROADBLOCK_POST_REACH
-			>= Tuning.bait_notice(hot.pursue_speed, reach) - 0.01,
-			"a guard posted beside the band notices her from outside his charge radius and its lead")
+	t.check(hot.warns_for >= Tuning.OFFSCREEN_WARNING_MIN,
+			"the hunting guard warns for %.1fs before he charges" % hot.warns_for)
 	var post := Vector2(400.0, 0.0)
 	for vertical: bool in [false, true]:
 		for side: int in [-1, 1]:
@@ -556,12 +541,6 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 					"%s: from his own post (%s, the post %s)" % [what, guard.global_position, his_post])
 			t.check(guard.body_position().is_equal_approx(post),
 					"%s: the band stays where it was built" % what)
-			var noticed_at := guard.global_position.distance_to(her)
-			var charge := guard.charge_radius()
-			t.check(noticed_at >= charge + Tuning.bait_warning_lead() - 1.0,
-					"%s: noticed %.0fpx from his post, outside his %.0fpx charge radius by the %.0fpx "
-					% [what, noticed_at, charge, Tuning.bait_warning_lead()]
-					+ "a walker needs to stop short of it")
 			var frames := 0
 			var lethal := false
 			while guard.is_telegraphing() and frames < int(10.0 / STEP):
@@ -569,14 +548,10 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 				guard.player_at = her
 				guard._process(STEP)
 				frames += 1
-			t.check(not lethal and frames > 1,
-					"%s: his notice runs, nothing lethal in it, rather than a first-frame lunge (%d)"
-					% [what, frames])
-			# The frame the lunge fires he has already taken its first step.
-			var first_step := hot.pursue_speed * STEP
-			t.check(guard.global_position.distance_to(her) >= charge - first_step - 1.0,
-					"%s: and he is never nearer her than his charge radius (%.0fpx of %.0f)"
-					% [what, guard.global_position.distance_to(her), charge])
+			t.check(not lethal and absf(frames * STEP - hot.warns_for) <= 2.0 * STEP,
+					"%s: he warns her for %.2fs, nothing lethal in it, then charges"
+					% [what, frames * STEP])
+			t.check(guard.is_chasing(), "%s: and he charges, she still inside his radius" % what)
 			guard.free()
 
 ## `EventInstance.resume()` restores age and distance travelled so a streamed-out event picks up

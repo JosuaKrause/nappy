@@ -114,7 +114,7 @@ signal event_lit_unmet(id: String)
 ## (`EventManager._warn_at_the_doors()`, `door_guard`), each time he does.
 signal pursuit_warned(id: String)
 ## `EventInstance._chase()`'s own moment a pursuer comes for her: its charge, never its warning — a
-## waiting charger when she crosses its stand-off, the man a vehicle lets out and day 13's guard in
+## waiting charger when its warning has run with her still inside its radius, the man a vehicle lets out and day 13's guard in
 ## her view when their raised hand has been up its second, the masked man when he starts his run,
 ## and a pursuer whose telegraph is its approach (the day-3 dog) or that arrives charging from its
 ## first frame. Once per instance.

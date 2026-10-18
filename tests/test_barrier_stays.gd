@@ -26,8 +26,8 @@ func _hot_roadblock() -> EventDef:
 	return EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 
 ## A guard that has set off after her, her standing still beside the post: she comes inside his
-## radius and he warns, then she steps inside his stand-off and he charges — his warning has no clock
-## (`EventInstance.warns_by_radius()`), so only her crossing it sets him off.
+## radius and he warns, and she stays inside it until his warning has run and he charges
+## (`EventInstance.warns_by_radius()`, `EventDef.warns_for`).
 func _chasing(t, post: Vector2) -> Array:
 	var hot := _hot_roadblock()
 	var guard := EventInstance.new()
@@ -41,13 +41,15 @@ func _chasing(t, post: Vector2) -> Array:
 	her = _charge(guard)
 	return [guard, her]
 
-## Steps her just inside the stand-off of a guard who is warning her, along +y from where he stands,
-## so he charges; answers where she now stands.
+## Holds her where she stands, inside the radius of a guard who is warning her, until his warning
+## has run and he charges; answers where she stands.
 func _charge(guard: EventInstance) -> Vector2:
-	var her := guard.global_position \
-			+ Vector2(0.0, Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach()) - 2.0)
-	guard.player_at = her
-	guard._process(STEP)
+	var her := guard.player_at
+	var frames := 0
+	while guard.is_telegraphing() and frames < int((guard.def.warns_for + 1.0) / STEP):
+		guard.player_at = her
+		guard._process(STEP)
+		frames += 1
 	return her
 
 func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> void:
@@ -281,7 +283,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	guard.player_at = her
 	guard._process(STEP)
 	her = _charge(guard)
-	t.check(not guard.is_telegraphing(), "she crosses his stand-off and he charges")
+	t.check(not guard.is_telegraphing(), "she stays in his radius and he charges")
 	t.check(guard.has_left_its_body_behind() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.has_left_its_body_behind(), guard.is_waiting(), guard.global_position, guard.age])
 	var side := guard.chaser_side()
 	# Stream out in the middle of his walking away.

@@ -1055,7 +1055,9 @@ a pursuer asks — every other `hard_fail` row's catch is still the straight-lin
 **Nor does it notice or lunge through them.** *(leafy-puffin, inbox #648: "yes noticing needs a
 clear line"; mossy-beaver, inbox #650: "how can it pursue without noticing? obviously it needs a
 clear line".)* A waiting pursuer notices her within `pursues_within` only along the same clear line,
-and its lunge at the stand-off asks for it too. A lunge the wall holds back is not simply deferred
+and its charge asks for it too: a waiting charger whose warning runs out with a wall between them
+goes on warning until the line clears or she leaves its radius. For a pursuer that comes for her, a
+lunge the wall holds back is not simply deferred
 until the line clears, which would clamp the approach at zero — at an alley mouth the line clears
 with her already well inside the stand-off, and it would fire from a fraction of it. Instead the
 pursuer holds the ground a pursuer that sets off beside her holds (`EventDef.sets_off_beside_her`):
@@ -1063,10 +1065,9 @@ it stands while she is nearer than the stand-off, follows at the stand-off once 
 lunges the moment she is back at the full stand-off with the line clear. A pursuer that stands for
 its notice (`EventDef.stands_for_its_notice`: the dog that waited, the hunting roadblock's guard,
 the man a vehicle lets out) follows nowhere: it stands where it is and lunges the same way. **A pursuer that
-waited for her has no notice clock** (`EventInstance.warns_by_radius()`): it charges only when she
-crosses its stand-off along a clear line, so the chase starts from the full stand-off however she
-came, and where the wall keeps the line from clearing until she is out of its radius, it never
-charges and waits again. **The timed notice of a guard a task sets on her does not run out while a
+waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `warns_for`), so a
+late notice at an alley mouth is answered by the warning's whole length to leave in, and where the wall
+keeps the line from clearing until she is out of its radius, it never charges and waits again. **The timed notice of a guard a task sets on her does not run out while a
 held lunge has her inside the stand-off** (`_pause_a_held_notice()`), since a notice ending there
 would start the chase from a fraction of it, the same trap reached by standing still. A
 held pursuer she stays beside never sets off: it stands turned toward her with the doubled red caret
@@ -1150,17 +1151,18 @@ and price and route around, and that becomes a chase if you do not. Three states
 | | it emits | it can kill | it moves |
 | --- | --- | --- | --- |
 | **waiting** | at full strength | no | no |
-| **warning** (no clock: for as long as she is inside `pursues_within`; out of it, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`EventDef.notice_walk_speed`) and stops where he is if she walks out of his radius; the others stand (`EventDef.stands_for_its_notice`: the waiting dog, the hunting roadblock's guard) |
+| **warning** (for its `warns_for` while she is inside `pursues_within`; out of it first, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`EventDef.notice_walk_speed`) and stops where he is if she walks out of his radius; the others stand (`EventDef.stands_for_its_notice`: the waiting dog, the hunting roadblock's guard) |
 | **chasing** (`duration`) | at full strength | yes | holds, then comes |
 
-Two things are deliberately not the same as an ordinary telegraph. **The warning is a radius, not a
-clock** *(inbox #764: a warning happens when she comes close; she can turn around; if she keeps
-getting closer the charge starts)*: it starts when she comes inside `pursues_within` along a clear
-line and with its warning picture in the camera's view, not when the day put it there, it lasts
-for as long as she stays inside, and it ends in a charge only when she crosses its charge radius
-(`EventInstance.warns_by_radius()`, `EventInstance.charge_radius()`), which is wide enough to bait
-it out: turning and running 0.3s after the charge gets away (`docs/EVENTS.md`, "Every charger that
-does not arrive charging warns first"). A guard a task sets
+Two things are deliberately not the same as an ordinary telegraph. **The warning is one radius
+and a clock inside it** *(inbox #764: a warning happens when she comes close; she can turn around;
+inbox #788: "We should do one radius and warn inside it for 2s. If the player leaves the radius
+nothing happens and the warning stops. If they stay within the charge starts")*: it starts when she
+comes inside `pursues_within` along a clear line and with its warning picture in the camera's view,
+not when the day put it there; leaving the radius before its `warns_for` has run stops it, and it
+waits again; still inside when it has run, it charges (`EventInstance.warns_by_radius()`). Standing
+in it and running 0.3s after the charge gets away (`docs/EVENTS.md`, "Every charger that does not
+arrive charging warns first"). A guard a task sets
 on her from wherever he stands (`EventInstance.notice_her_at()`) is not on this rule: in her view
 he stands with his warning up for `Tuning.WARNING_ALONE_MAX` and then charges, and out of it he is
 sent at her under a badge of the same second. And its warning does **not** damp what it is emitting:
@@ -1579,16 +1581,14 @@ where the masked man is.
 **And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
 of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
 as she is in the building. The answer is the one the row is built around — step through the
-nearest corridor door and let him pass. **He starts his run once she is within 426px of him**
-*(inbox #764, inbox #782)*, which coming down from the second floor is at the head of the second
-flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
-walker is caught when she takes the flight holding plain left from the row level with its head tread
-or the row below, or down-left from the landing tile between the two flights. A walker who holds
-plain left from that landing tile gets through, and the margins are thin (on the tightest runner's
-line, walking until he runs, then running, and turning plain left at row 11's centre, he is drawn
-about 25px from her centre (24.6px), inside his 28px catch, and she clears it on the tick at 28.6px,
-by 0.6px; she is caught if she starts running 0.3s late). In the stairwell his warning is off screen,
-and only the edge badge shows his charge once he runs; the player accepted both *(inbox #782)*. So
+nearest corridor door and let him pass. **He warns once she is within 426px of him, and runs if she is still
+within it a second later** *(inbox #764, inbox #782; inbox #788: one radius and a warning inside it,
+and his 426px kept)*, which coming down from the second floor is at the head of the second flight.
+His second is the least heads-up the game gives, measured for him: any warning lets her walk on
+toward the first floor's door before he runs, so a walker is caught on three of her five ways onto
+the flight with none, on one at 1.0s and on none from 1.5s; a runner gets through on every line
+(`tests/probes/escape_stairwell_guard_trigger.gd`). In the stairwell his warning is off screen, and
+only the edge badge shows his charge once he runs; the player accepted that *(inbox #782)*. So
 the side she switched to is not a side she can settle on, which is the whole point of him: the way
 down is a sequence of crossings rather than one.
 

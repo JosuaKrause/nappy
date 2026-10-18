@@ -314,9 +314,10 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ## it ordinarily leaves stripped — on an ordinary day that aftermath is the point of the row, and
 ## here a convoy is traffic rather than the thing that closed a street. `abduction` is the masked
 ## men in a van. `roadblock` at full heat is the masked men on foot: at `Tuning.RESISTANCE_GOAL` its
-## guards leave the post, so it stands as a band across the road until she comes within his warning
-## radius (`EventDef.pursues_within`, 237px from the band) and then the guard on her side warns and,
-## inside his charge radius, comes at her on foot as `guard_standing.svg` and `guard_lunging.svg` —
+## guards leave the post, so it stands as a band across the road until she comes within his radius
+## (`EventDef.pursues_within`, 180px from the band) and then the guard on her side warns and, if she
+## is still inside it once his warning has run, comes at her on foot as `guard_standing.svg` and
+## `guard_lunging.svg` —
 ## see `EventInstance._draw_roadblock()`. Once that guard has left his post for good, the far guard
 ## walks off too and the band, which costs nothing, stands unmanned, as on every day, so luring him
 ## off is the way past (`EventCatalogue.escape_roadblock()`),
@@ -459,16 +460,16 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 			ground.stand(best)
 
 ## **One waiting guard at a time.** A candidate that waits to notice her (`EventDef.pursues_within`:
-## the escape's roadblock, whose guard notices her within 237px of his band, `Tuning.bait_notice()`
-## and `Tuning.ROADBLOCK_POST_REACH`) is refused when the ground it notices her from meets the ground
-## another placed one notices her from: the two notice discs, each centred where its band stands, may
-## not overlap, so two of the escape's roadblocks stand at least twice that, 475px, apart, on one
-## street or on two.
+## the escape's roadblock, whose guard notices her within 180px of his band) is refused when the
+## ground it notices her from meets the ground another placed one notices her from: the two notice
+## discs, each centred where its band stands, may not overlap, so two of the escape's roadblocks stand
+## at least twice that, 360px, apart, on one street or on two.
 ## *(Inbox #771, 2026-10-18: "two roadblocks are right next to each other and the second guard is
 ## invisible (hidden) until it already charges".)*
 ##
 ## **Why the notice is the distance that matters.** Dealing with one roadblock happens inside its
-## guard's notice: he warns while she is inside it, charges only once she crosses his charge radius,
+## guard's notice: he warns while she is inside it, charges only if she stays inside it his warning's
+## length,
 ## and the run that shakes him off goes back out of it. Another guard can come for her only once
 ## she is inside *his* notice too, so with no ground inside both she deals with one band and its
 ## guard at a time — wherever the two stand, either side of a junction or round a corner as much

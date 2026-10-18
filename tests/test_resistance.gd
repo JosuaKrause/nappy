@@ -5071,7 +5071,8 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 	GameState.city_state = saved_state
 
 ## Walks her across a door's line at `at`, along `axis` in `direction`, in one step the way
-## `EventManager._watch_the_door_lines()` reads a frame: from 40px on one side to 40px on the other.
+## `EventManager._watch_the_door_lines()` reads a frame: from 40px on one side to 40px on the other,
+## and stands there while the crossing's warning runs.
 func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Stroller) -> void:
 	var events := _city.events
 	events._player = player
@@ -5080,6 +5081,10 @@ func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Strolle
 	events._watch_the_door_lines()
 	player.global_position = at + axis * 40.0 * direction
 	events._watch_the_door_lines()
+	# And stays across while the crossing's warning runs (`Tuning.CROSSING_WARNING`), so a crossing
+	# that sets a guard on her has set him by the time this returns.
+	for i in int(ceil(Tuning.CROSSING_WARNING / STEP)) + 1:
+		events._watch_the_door_lines(STEP)
 
 # ------------------------------------------------------ M188: reachable targets ---
 # A mark and every contact stand on ground clear of a solid body, or on the item itself, and are

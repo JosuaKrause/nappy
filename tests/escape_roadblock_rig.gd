@@ -214,10 +214,14 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	return {"cost": meter.peak - start, "peak": meter.peak, "end": meter.value, "caught": caught,
 			"charged": charged.size(), "strongest": strongest, "at": her}
 
-## The lure, as baiting is played: in from `from` at a walk until a guard charges, on at the walk
-## for `Tuning.BAIT_REACTION`, then turned and run straight back, her speed changing at
-## `Tuning.ACCELERATION` as hers does, until every charge has given up; then standing until each
-## guard who charged has left his post for good (at most 30s); then `walk()` from there to `to`. Answers `{"lure": …, "after": …}`, each in
+## Her reaction to a charge, in seconds, in `lure()`.
+const REACTION := 0.3
+
+## The lure, as baiting is played under the one-radius rule (inbox #788): in from `from` at a walk
+## until a guard's hand goes up, then standing where she is, her speed changing at
+## `Tuning.ACCELERATION` as hers does, until he charges; `REACTION` later turned and run straight
+## back, until every charge has given up; then standing until each guard who charged has left his
+## post for good (at most 30s); then `walk()` from there to `to`. Answers `{"lure": …, "after": …}`, each in
 ## `walk()`'s shape; `after` is empty when the lure itself was caught.
 static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], from: Vector2,
 		to: Vector2, meter: Meter) -> Dictionary:
@@ -229,20 +233,28 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	var caught := false
 	var lured := {}
 	var frames := 0
-	while _charging(instances) == 0 and her.distance_to(from) < from.distance_to(to):
+	# Positive is on along `heading`, toward the band.
+	var speed := Tuning.WALK_SPEED
+	var warned := false
+	while _charging(instances) == 0 and her.distance_to(from) < from.distance_to(to) \
+			and frames < int(20.0 / STEP):
 		if _tick(instances, her, false, heading):
 			caught = true
 			break
-		meter.feed(instances, her, false, false)
-		her += heading * Tuning.WALK_SPEED * STEP
-	# Positive is on along `heading`, toward the band.
-	var speed := Tuning.WALK_SPEED
+		meter.feed(instances, her, false, speed == 0.0)
+		for instance in instances:
+			warned = warned or (not instance.is_waiting() and not instance.is_a_spent_guard())
+		speed = move_toward(speed, 0.0 if warned else Tuning.WALK_SPEED, Tuning.ACCELERATION * STEP)
+		her += heading * speed * STEP
+		if warned:
+			frames += 1
+	frames = 0
 	var since := 0.0
 	while not caught and _charging(instances) > 0 and frames < int(20.0 / STEP):
 		for instance in instances:
 			if instance.is_chasing():
 				lured[instance] = true
-		var wanted := Tuning.WALK_SPEED if since < Tuning.BAIT_REACTION else -Tuning.RUN_SPEED
+		var wanted := 0.0 if since < REACTION else -Tuning.RUN_SPEED
 		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
 		her += heading * speed * STEP
 		var running := speed < -Tuning.WALK_SPEED

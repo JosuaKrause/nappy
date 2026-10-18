@@ -151,16 +151,11 @@ func _test_pursues_within_switches_after_the_teaching_day(t) -> void:
 	t.check(def.pursues_within_on(Tuning.RUN_TAUGHT_DAY) <= 0.0,
 			"on the teaching day itself it still charges the moment it streams in")
 	var waiting := def.pursues_within_on(Tuning.RUN_TAUGHT_DAY + 1)
-	t.check(waiting > 0.0, "the day after, it waits for her to come within its warning radius")
-	# Its charge radius and the ground to stop short of it (`Tuning.bait_notice()`; inbox #788: a
-	# waiting charger is tuned so that baiting is possible and its warning comes first), inside what
-	# its field reaches ahead of it at its speed, which is what `Tuning.validate_pursuit` reads.
-	var ahead := def.outer_radius * Tuning.field_scale(Tuning.field_eccentricity(def.pursue_speed))
-	t.check(is_equal_approx(waiting, Tuning.bait_notice(def.pursue_speed, def.inner_radius))
-			and waiting > Tuning.bait_radius(def.pursue_speed, def.inner_radius)
-			and waiting <= ahead,
-			"its warning radius (%.0fpx) is its charge radius and the ground to stop short of it, "
-			% waiting + "inside the %.0fpx its field reaches ahead of it" % ahead)
+	t.check(waiting > 0.0, "the day after, it waits for her to come within its own field")
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+	t.check(waiting < def.outer_radius and waiting > standoff,
+			"inside its own outer radius, an 'on sight' band before the trigger — alley_robbery's " +
+					"shape — and past the stand-off, or the notice would be spent standing still")
 	t.check(is_equal_approx(def.pursues_within_on(Tuning.RUN_TAUGHT_DAY + 11), waiting),
 			"and it stays the waiting shape for every day after that")
 
@@ -178,11 +173,12 @@ func _test_day_4_dog_waits_until_she_is_in_its_field(t) -> void:
 
 	var dog := EventInstance.new()
 	dog.setup(hot, Vector2.ZERO)
-	# Just outside its trigger (`pursues_within`).
-	dog.set_player_at(Vector2(hot.pursues_within + 10.0, 0.0))
+	# Inside the field (`outer_radius`) but outside the trigger (`pursues_within`) — the "on sight"
+	# band alley_robbery's own shape leaves room for.
+	dog.set_player_at(Vector2((hot.outer_radius + hot.pursues_within) * 0.5, 0.0))
 	dog._process(STEP)
 	t.check(dog.is_waiting() and not dog.is_telegraphing(),
-			"just outside its trigger, a day-4 dog has not noticed her yet")
+			"inside its own field but outside the trigger, a day-4 dog has not noticed her yet")
 
 	dog.set_player_at(Vector2(hot.pursues_within - 10.0, 0.0))
 	dog._process(STEP)

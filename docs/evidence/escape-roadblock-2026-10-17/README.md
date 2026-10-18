@@ -270,9 +270,37 @@ has turned and runs. D: he has given up and walks off up the street; she got awa
 gives his charge at 145px from her (his charge radius is 144px) and his closest at 105px.
 `--invincible` stages the walk only; the probes are the measurement.
 
+## One radius and a warning on a clock (inbox #788)
+
+The bait section above records the branch at `0befef53`; the player then replaced the bait radius
+with one radius and a warning inside it ("We should do one radius and warn inside it for 2s. If the
+player leaves the radius nothing happens and the warning stops. If they stay within the charge
+starts"), so `bait-before.txt`, `bait-after.txt`, `baited.png` and the `*-bait.txt.gz` files describe
+a design no longer built.
+
+**The warning times.** `charger-warning.txt`, `tests/probes/charger_warning.gd`: every waiting
+charger on the real instance at 60Hz, her reaction 0.3s and her speed changing at
+`Tuning.ACCELERATION`, warnings from 1s to 3s, four walks: turning back as it warns (never
+charged at any warning), standing in it (caught), standing and running 0.3s after its charge (gets
+away, closest 62px to 80px against 26px and 28px catches), and walking on in (caught, but at 3s a
+walker passes the dog's 130px before it runs). 2s is kept for all three rows.
+
+**The masked man's warning.** `stairwell-warning-sweep.txt.gz`,
+`WARNS_FOR=<n> tools/test.sh probes/escape_stairwell_guard_trigger.gd` for n in 0.5 to 3.0: a walker
+is caught on one of her five ways down (plain left from the row below the flight's head) at 0.5s and
+1.0s and on none from 1.5s; a runner gets through on every line at every warning. Built: 1.0s.
+
+**The escape on its own plans.** `probe-one-radius.txt.gz` (`tests/probes/escape_roadblock_cost.gd`,
+whose lure now walks in until his hand goes up, stands until he charges and runs back 0.3s later):
+over eight seeds, 100 crossings, walking straight past a posted guard is caught 200 of 200 times, the
+lure is caught 0 of 200, and walking on past after it costs nothing. `spacing-one-radius.txt.gz`:
+520 roadblocks over seeds 1 to 40 at the 360px spacing, nearest pair 362px apart.
+`density-one-radius.txt.gz`: trucks 124, vans 299, roadblocks 131, bursts 130 over ten seeds.
+
 Footprint: four stills, the first strip and its script, the far-guard strip, the barricade pair
 and its script, two compressed overhang-probe outputs, two compressed replan-probe outputs, three compressed cost-probe outputs, the
 player's run folder (`run.log` and two stills), two burst strips and their script, two
 compressed spacing-probe outputs, the alley-wall pair, three compressed density-probe outputs, the
 bait strip, two bait-probe outputs, and one compressed output each of the cost, spacing and density
-probes after the bait change, and this README.
+probes after the bait change, the one-radius probe's output, the stairwell sweep, one compressed
+output each of the cost, spacing and density probes on the one radius, and this README.

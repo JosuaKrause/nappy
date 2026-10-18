@@ -13,8 +13,8 @@ extends RefCounted
 ## the walk has just woken. Three walks each:
 ##
 ## - **posted**: straight past at a walk, the guards at their posts. Ends at a catch.
-## - **lure**: in at a walk until a guard charges, on at the walk for `Tuning.BAIT_REACTION`, then
-##   turned and run straight back at `Tuning.ACCELERATION` until every charge has given up, then
+## - **lure**: in at a walk until a guard's hand goes up, standing until he charges, then turned and
+##   run straight back 0.3s later at `Tuning.ACCELERATION` until every charge has given up, then
 ##   standing until each guard who charged has left his post for good.
 ## - **after**: on from where the lure left her, at a walk, past the band to the far end. A guard
 ##   who charges now is one the lure did not take off.
