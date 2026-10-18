@@ -160,9 +160,38 @@ escape walls both its mouths. In A each wall is the collapsed frontage, a street
 laid across the 64px alley, so its timbers stand two tiles into the buildings either side, over
 their roofs; in B each is the widest row of the escape's own list that fits the mouth, the impact
 crater. The crater's picture is a little wider than its body, so its rim still touches the alley's
-walls. On the player's still (`run-235901-seed4216201080-v0.28.0-7-g5f7923b6/auto/004-attempt1-chase-roadblock.png`) the
-wooden carts at the right edge are a different seal, the barricade standing across a street off
-the chain, which a day stands the same way.
+walls.
+
+**The carts on the roof's edge.** On the player's still
+(`run-235901-seed4216201080-v0.28.0-7-g5f7923b6/auto/004-attempt1-chase-roadblock.png`) the wooden
+carts at the right edge are a different seal, the barricade standing across a street off the
+chain, and the leftmost stands over the building's roof edge. Which of the two the player meant is
+theirs to say; both are fixed. A day stands that seal the same way: its pieces were centred in even
+shares of the street, so the 62px barricade, two to the 192px street, reached 14px into the
+buildings either side. `barricade-off-the-roofs.png`, two stills of one moment on the player's
+seed, cropped to the block east of the tunnel street with the carts at its top right and a second
+barricade across the street below it, built by `pair.py` (`--crop 700,150,1280,720`):
+
+```sh
+tools/shot.sh OUT.png 22.5 --start-escape city --seed 4216201080 --invincible --player-view \
+    --press ui_accept 1 --walk 3p9.63n0.7w5.33n0.7e3.55n
+```
+
+A at `5a078d80`, B at `0ab30c98`, where a hard seal's outer pieces stand flush with the street's
+edges (`SealPlanner.positions_across()`). In A the carts stand over the roof's east edge and the
+column's top cart over the building's front; in B both stop at the sidewalk.
+
+`tests/probes/seal_overhang.gd`, over seeds 1 to 30, days 1 to 14 and the escape, its
+`SEAL_OVERHANG` lines in `seal-overhang-before.txt.gz` (at `5a078d80`) and
+`seal-overhang-after.txt.gz` (at `0ab30c98`); the measure is `tests/seal_reach_rig.gd`'s, each
+solid piece's body without her body radius and the ground its picture is drawn over:
+
+| | Day barricade pieces over a building | Escape barricade pieces over a building | Deepest | Any other row |
+|---|---|---|---|---|
+| before | 1,269 of 1,494 (body) | 2,799 of 3,326 (body), 2,587 (drawing) | 14px | none |
+| after | none | none | | none |
+
+Every row's piece count is the same before and after.
 
 **Density.** `tests/probes/escape_density.gd` over ten seeds, its `ESCAPE_DENSITY` lines in
 `density-before.txt.gz` (at `2d775386`, the escape's own ground), `density-after.txt.gz` (at
@@ -179,7 +208,8 @@ the chain, which a day stands the same way.
 `tests/test_finale.gd` floods from the service exit past every body on nine seeds' plans and on the
 player's seed, and every one reaches both exits.
 
-Footprint: four stills, the first strip, the far-guard strip, its script, three compressed cost-probe outputs, the
+Footprint: four stills, the first strip and its script, the far-guard strip, the barricade pair
+and its script, two compressed overhang-probe outputs, three compressed cost-probe outputs, the
 player's run folder (`run.log` and two stills), two burst strips and their script, two
 compressed spacing-probe outputs, the alley-wall pair, three compressed density-probe outputs and
 this README.
