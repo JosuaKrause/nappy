@@ -300,10 +300,58 @@ lure is caught 0 of 200, and walking on past after it costs nothing. `spacing-on
 520 roadblocks over seeds 1 to 40 at the 360px spacing, nearest pair 362px apart.
 `density-one-radius.txt.gz`: trucks 124, vans 299, roadblocks 131, bursts 130 over ten seeds.
 
+## The warnings in the game (review 4, inbox #788)
+
+Taken on this branch at `2dfc6562`. `--invincible` stages each walk only (it stops the clock, so
+the run log's times read 0.0); the tests are the measurement.
+
+**A waiting charger's warning, her inside its radius.** `one-radius-warning.png`, four frames of
+one burst cropped by `bursts.py` (`--crop 300,120,940,520`, frames 5, 9, 28 and 34), the waiting dog
+on day 5:
+
+```sh
+tools/shot.sh OUT.png 6 --seed 4242 --day 5 --spawn event:charging_dog --invincible --player-view \
+    --press ui_accept 0.3 --press snapshot_burst 0.35 --walk 0.4p1.2w2.4p3E
+```
+
+A: the dog sits while she walks up. B: she is inside its 130px radius and it stands in its alert.
+C: she stands there, 1.8s into its warning, and it still only warns. D: its 2.0s have run with her
+inside, and it gallops at her. The run log has it warn her, then "warning ended in its charge".
+
+**A crossing's warning at a boom.** `crossing-warning.png`, four stills of one scene recipe
+(`boom-crossing-recipe.json`, the gatehouse recipe's door with its background traffic, her in the
+middle of the carriageway), each its own run at 12.2, 13.0, 14.0 and 14.9s, each cropped by
+`stills.py` to follow her:
+
+```sh
+tools/shot.sh OUT.png 13.0 --recipe boom-crossing-recipe.json --recipe-mode scripted \
+    --invincible --player-view
+```
+
+A: a car stops at the boom and it rises for it; she waits behind. B: she has walked under the
+raised boom, and the guard at the north hut, the one across the road from where she crossed,
+raises his hand. C: a second later she is still across and his hand is still up. D: the 2.0s have
+run, and a door guard steps out of that hut and charges. The run log has "walked through ... the
+boom up", then "warns her: back across within 2.0s or a guard comes", then the door guard.
+
+**The stairwell's masked man and the screen-edge badge.** `stairwell-badge.png`, four frames of one
+burst cropped by `bursts.py` (`--crop 60,60,700,720`, frames 3, 4, 14 and 33):
+
+```sh
+tools/shot.sh OUT.png 9 --seed 4242 --start-escape stairwell:right --invincible --player-view \
+    --press ui_accept 0.3 --press snapshot_burst 5.4 --walk 1.5p3.6@135@1.5s5@225@
+```
+
+A: she is on the second floor's landing, he waits at the foot of the shaft, out of view, and no
+badge is up. B: the next frame, she is within his 426px and he runs: the badge is up at the bottom
+edge with his picture. C: he is still off screen, the badge still up. D: he has come into view, and
+the badge is off. The run log has "edge badge: masked_pursuer at 425px, closing 91px/s".
+
 Footprint: four stills, the first strip and its script, the far-guard strip, the barricade pair
 and its script, two compressed overhang-probe outputs, two compressed replan-probe outputs, three compressed cost-probe outputs, the
 player's run folder (`run.log` and two stills), two burst strips and their script, two
 compressed spacing-probe outputs, the alley-wall pair, three compressed density-probe outputs, the
 bait strip, two bait-probe outputs, and one compressed output each of the cost, spacing and density
 probes after the bait change, the one-radius probe's output, the stairwell sweep, one compressed
-output each of the cost, spacing and density probes on the one radius, and this README.
+output each of the cost, spacing and density probes on the one radius, the three strips of
+the warnings in the game with the recipe and the script for the crossing's stills, and this README.

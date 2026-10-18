@@ -1,0 +1,51 @@
+{
+ "version": 1,
+ "name": "Scratch: a walk under the raised boom behind a car",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "start": {
+   "world": [
+    3440,
+    2784
+   ]
+  },
+  "gate": {
+   "world": [
+    3568,
+    2784
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 13,
+  "parent": "father",
+  "player": {
+   "at": "start",
+   "facing": "east"
+  },
+  "gates": [
+   {
+    "segment": [
+     7,
+     6,
+     0
+    ]
+   }
+  ],
+  "background": {
+   "crowd": true
+  }
+ },
+ "playback": {
+  "walk": "9.5p1.0e1.6p1.8e8p",
+  "duration": 20.0,
+  "capture_at": 19.0
+ }
+}
