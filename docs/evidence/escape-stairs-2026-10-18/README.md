@@ -43,8 +43,10 @@ Coming down from the second floor, she meets that at the head of the second flig
 walker making for the first floor's door is caught when she takes the flight holding plain left
 from the row level with its head tread or the row below, or down-left from the landing tile between
 the two flights; a walker who holds plain left from that landing tile gets through. A runner gets
-through on every line. The margins are thin: on the tightest runner's line he is drawn within about
-33px of her centre, against the 28px catch. In the stairwell his warning is off screen, and only the
+through on every line. The margins are thin: on the tightest runner's line (walking until he runs, then
+running, turning plain left at row 11's centre) he is drawn about 24px from her centre (23.8 to 25px
+by frame rate), inside the 28px catch, and she clears it on the tick by under a pixel; she is caught
+if she starts running 0.3s after he does. In the stairwell his warning is off screen, and only the
 edge badge shows his charge once he runs.
 
 - `stairwell-guard-trigger-candidates.png`: the readings of "the end of the second stair" that were

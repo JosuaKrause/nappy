@@ -1231,20 +1231,30 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 ## from the rows level with and below the flight's head tread, and from the landing tile between
 ## the two flights holding down-left; **a walker who holds plain left from the landing tile between
 ## the two flights gets through**. A runner gets through on every line, whether she was running all
-## along or starts running the moment he does. **The margins are thin:** on the tightest runner's line
-## his drawn position comes within about 33px of her centre at 60fps, against the catch's 28px.
+## along or starts running the moment he does, with the keys she already holds. **The margins are
+## thin:** on the tightest runner's line (walking until he runs, then running, turning plain left at
+## row 11's centre) he is drawn about 24px from her centre (23.8 to 25 by frame rate), inside his
+## 28px catch, and she clears it on the tick by under a pixel; **she is caught if she starts running
+## 0.3s after he does.**
 func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 	for walk: Array in _SECOND_FLIGHT_TURNS:
-		for pace: String in ["walk", "run", "walk-run"]:
+		for pace: String in ["walk", "run", "walk-run", "run-late"]:
+			if pace == "run-late" and walk[0] != 11:
+				continue
 			var met := _meet_the_masked_man(t, walk, pace)
 			var expected := "through" if pace != "walk" or not walk[2] else "caught"
+			if pace == "run-late":
+				expected = "caught"
 			t.check(met["ran"], "%s at a %s: he runs" % [walk[3], pace])
 			t.check(met["outcome"] == expected,
 					"%s at a %s: %s (%s, %.0fpx from him at the closest)"
 					% [walk[3], pace, expected, met["outcome"], met["closest"]])
-			if expected == "through":
-				t.check(met["closest"] > 28.0, "%s at a %s: his drawn position stays outside the 28px catch"
-						% [walk[3], pace])
+			if walk[0] == 11 and pace == "walk-run":
+				# The tightest line: on a drawn frame he is inside his 28px catch, and she lives
+				# only because the catch is checked on the tick.
+				t.check(met["closest"] > 20.0 and met["closest"] < 28.0,
+						"%s at a %s: he is drawn inside the catch for a frame (%.1fpx)"
+						% [walk[3], pace, met["closest"]])
 			print("The masked man, %s at a %s: %s, %.0fpx from him at the closest"
 					% [walk[3], pace, met["outcome"], met["closest"]])
 
@@ -1259,7 +1269,8 @@ const _SECOND_FLIGHT_TURNS := [
 
 ## One meeting with the right shaft's masked man: her real body from the shaft's second-floor door
 ## down the landing to `walk`'s row, then holding its keys, walking (`pace` "walk"), running all the
-## way ("run") or walking until he runs and running from then on ("walk-run"); once he runs she
+## way ("run"), walking until he runs and running from then on with the keys she already holds, the
+## turn coming at its row ("walk-run"), or starting to run 0.3s after he does ("run-late"); once he runs she
 ## makes for the first floor's door. Answers whether he ran, the outcome ("through", "caught" or
 ## "neither") and how near he came.
 func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
@@ -1293,6 +1304,7 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
 	var met := {"ran": false, "outcome": "neither", "closest": INF}
 	var turned := false
 	var elapsed := 0.0
+	var ran_at := 0.0
 	while man != null and elapsed < 20.0:
 		player._physics_process(TICK)
 		_move_real_body_one_step(player, player.velocity * TICK)
@@ -1314,9 +1326,14 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
 			_hold_keys(walk[1], running)
 		if not met["ran"] and not man.is_waiting() and not man.is_telegraphing():
 			met["ran"] = true
+			ran_at = elapsed
 			if pace == "walk-run":
+				# Runs with the keys she already holds; the turn comes at its row.
 				running = true
-				_hold_keys(walk[1], true)
+				_hold_keys(walk[1] if turned else ["move_down"], true)
+		if pace == "run-late" and met["ran"] and not running and elapsed - ran_at >= 0.3:
+			running = true
+			_hold_keys(walk[1] if turned else ["move_down"], true)
 		if met["ran"]:
 			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
 		if caught:

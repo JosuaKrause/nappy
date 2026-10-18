@@ -102,8 +102,9 @@ func _once(t, s: int, route: String, pace: String) -> void:
 			charged_at = her
 			charged_range = man.global_position.distance_to(her)
 			if pace == "walk-run":
+				# Runs with the keys she already holds; the turn comes at its row.
 				running = true
-				_hold(ROUTES[route][1] if route != "door" else ["move_up"], true)
+				_hold(["move_up"] if route == "door" else (ROUTES[route][1] if turned else ["move_down"]), true)
 			elif route == "door":
 				_hold(["move_up"], running)
 		if charged_at != Vector2.INF:

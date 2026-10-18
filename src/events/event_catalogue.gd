@@ -3053,8 +3053,10 @@ static func _masked_pursuer() -> EventDef:
 	# flight, while a walker is caught holding plain left from the row level with the flight's head
 	# tread or the row below it, or down-left from the landing tile between the two flights. **A
 	# walker holding plain left from that landing tile gets through**, the margins are thin (a
-	# runner comes within about 33px of him against his 28px catch, and at 440px that runner is
-	# caught), and in the stairwell his warning is off screen, since the view reaches 180px from her
+	# runner who walks until he runs, then runs, turning plain left at row 11's centre, is drawn
+	# about 24px from him inside his 28px catch and clears it on the tick by under a pixel, is
+	# caught if she starts running 0.3s late, and a runner who runs the whole way is caught at
+	# 440px), and in the stairwell his warning is off screen, since the view reaches 180px from her
 	# and he starts about 400px below; only the edge badge shows his charge once he runs. The player
 	# accepted both (inbox #782).
 	def.charges_within = 426.0
