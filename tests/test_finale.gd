@@ -374,8 +374,7 @@ func _test_no_street_of_the_walk_stands_two_roadblocks(t) -> void:
 func _test_a_roadblock_band_costs_nothing(t) -> void:
 	var escape := EventCatalogue.escape_roadblock()
 	var day := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
-	t.check(escape.far_guard_leaves and not day.far_guard_leaves,
-			"only the escape's copy of the roadblock sends its far guard off")
+	t.check(escape == day, "the escape's roadblock is a day's at full resistance progress, one row")
 	t.check(escape.pursues and escape.body_stays_behind and escape.hard_fail,
 			"the escape's roadblock is still the hunting row: its guard chases and catches")
 	t.check(EventCatalogue.by_id("roadblock").intensity == 0.0 and day.intensity == 0.0
@@ -438,103 +437,85 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 				"%s band streamed back in after its guard was spent is solid and silent" % name)
 		streamed.free()
 
-## **The far guard leaves too, so the band stands unmanned.** *(Inbox #771, asked whether the
-## guard at the far post should leave as well once his partner has been lured off: "He leaves too")*
-## On the escape's band, the frame the guard on her side starts to walk away, the one at the far
-## post sets off from it the same way: away from her, at his partner's pace, gone once he is past
-## `Tuning.OUT_OF_SIGHT` from her, his own node freed with him (the way he walks is over walkable
-## ground, which `_test_neither_guard_walks_off_over_a_building` walks on a real map); the band draws no posted
+## **The far guard leaves too, so the band stands unmanned, on every day.** *(Inbox #771, asked
+## whether the guard at the far post should leave as well once his partner has been lured off: "He
+## leaves too"; inbox #788, asked whether on a day as well: "Days too".)* The frame the guard on her
+## side starts to walk away, the one at the far post sets off from it the same way: away from her,
+## at his partner's pace, gone once he is past `Tuning.OUT_OF_SIGHT` from her, his own node freed
+## with him (the way he walks is over walkable ground, which
+## `_test_neither_guard_walks_off_over_a_building` walks on a real map); the band draws no posted
 ## guard from that frame on, and one streamed back in after its guard was spent comes back with
-## neither. A day's band keeps its far guard standing at his post throughout, so the flag is what
-## sends him.
+## neither. Walked on the hunting roadblock, which is a day's and the escape's alike.
 func _test_the_far_guard_leaves_with_his_partner(t) -> void:
-	var escape := EventCatalogue.escape_roadblock()
-	var day := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	var def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	t.check(def == EventCatalogue.escape_roadblock(),
+			"a day's hunting roadblock and the escape's are the same row")
 	var step := 1.0 / 60.0
-	for def: EventDef in [escape, day]:
-		var name := "the escape's" if def == escape else "a day's"
-		var post := Vector2(400.0, 0.0)
-		var guard := EventInstance.new()
-		guard.setup(def, post)
-		t.add_child(guard)
-		guard.set_process(false)
-		guard._attach_the_band()
-		var posted_first := guard.has_its_far_guard_posted()
-		guard.player_at = post + Vector2(0.0, def.pursues_within - 10.0)
+	var post := Vector2(400.0, 0.0)
+	var guard := EventInstance.new()
+	guard.setup(def, post)
+	t.add_child(guard)
+	guard.set_process(false)
+	guard._attach_the_band()
+	var posted_first := guard.has_its_far_guard_posted()
+	guard.player_at = post + Vector2(0.0, def.pursues_within - 10.0)
+	guard._process(step)
+	guard.player_at = guard.global_position + Vector2(0.0, guard.charge_radius() - 2.0)
+	guard._process(step)
+	var posted_through_the_chase := true
+	var frames := 0
+	while not guard.is_leaving and frames < int(10.0 / step):
+		guard.player_at = guard.global_position + Vector2(0.0, 300.0)
+		guard.player_running = true
 		guard._process(step)
-		guard.player_at = guard.global_position + Vector2(0.0,
-				Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()) - 2.0)
+		if not guard.is_leaving:
+			posted_through_the_chase = posted_through_the_chase \
+					and guard.has_its_far_guard_posted()
+		frames += 1
+	var her := guard.player_at
+	guard.player_running = false
+	t.check(posted_first and posted_through_the_chase,
+			"the far guard stands at his post until his partner leaves")
+	t.check(guard.is_leaving, "the guard on her side was shaken off and walks away")
+	var set_off := guard.far_guard_at()
+	t.check(set_off != Vector2.INF and not guard.has_its_far_guard_posted(),
+			"the far guard sets off from his post the frame his partner starts to leave")
+	t.check(set_off.distance_to(her) > guard.body_position().distance_to(her),
+			"and he sets off from the far post, beyond the band from her")
+	t.check(guard._far_guard != null and guard._far_guard.is_inside_tree(),
+			"and walks on his own node beside the band's")
+	# She has come back to stand beside the band, so he has a walk to make before he is out of
+	# her sight.
+	her = guard.body_position() + Vector2(0.0, 120.0)
+	var paced := true
+	var last := set_off
+	var walked := 0
+	while guard.far_guard_at() != Vector2.INF and walked < int(30.0 / step):
+		guard.player_at = her
 		guard._process(step)
-		var posted_through_the_chase := true
-		var frames := 0
-		while not guard.is_leaving and frames < int(10.0 / step):
-			guard.player_at = guard.global_position + Vector2(0.0, 300.0)
-			guard.player_running = true
-			guard._process(step)
-			if not guard.is_leaving:
-				posted_through_the_chase = posted_through_the_chase \
-						and guard.has_its_far_guard_posted()
-			frames += 1
-		var her := guard.player_at
-		guard.player_running = false
-		t.check(posted_first and posted_through_the_chase,
-				"%s far guard stands at his post until his partner leaves" % name)
-		t.check(guard.is_leaving, "%s guard was shaken off and walks away" % name)
-		var set_off := guard.far_guard_at()
-		if def == day:
-			var stays := guard.has_its_far_guard_posted() and set_off == Vector2.INF
-			while guard.is_leaving and frames < int(40.0 / step):
-				guard.player_at = her
-				guard._process(step)
-				stays = stays and guard.has_its_far_guard_posted() \
-						and guard.far_guard_at() == Vector2.INF
-				frames += 1
-			t.check(stays, "a day's far guard stays standing at his post after his partner has gone")
-			guard.free()
-			continue
-		t.check(set_off != Vector2.INF and not guard.has_its_far_guard_posted(),
-				"the escape's far guard sets off from his post the frame his partner starts to leave")
-		t.check(set_off.distance_to(her) > guard.body_position().distance_to(her),
-				"and he sets off from the far post, beyond the band from her")
-		t.check(guard._far_guard != null and guard._far_guard.is_inside_tree(),
-				"and walks on his own node beside the band's")
-		# She has come back to stand beside the band, so he has a walk to make before he is out of
-		# her sight.
-		her = guard.body_position() + Vector2(0.0, 120.0)
-		var paced := true
-		var last := set_off
-		var walked := 0
-		while guard.far_guard_at() != Vector2.INF and walked < int(30.0 / step):
-			guard.player_at = her
-			guard._process(step)
-			walked += 1
-			var now := guard.far_guard_at()
-			if now == Vector2.INF:
-				break
-			paced = paced and now.distance_to(last) <= def.pursue_speed * step + 0.01 \
-					and is_equal_approx(guard._far_guard_walked, def.pursue_speed * step * walked)
-			last = now
-		t.check(last.distance_to(her) > set_off.distance_to(her) and paced,
-				"he walks away from her at his partner's pace (%d frames)" % walked)
-		t.check(guard.far_guard_at() == Vector2.INF and not guard.has_its_far_guard_posted(),
-				"and he is gone, and nobody stands at the band")
-		t.check(last.distance_to(her) > Tuning.OUT_OF_SIGHT - def.pursue_speed * step,
-				"only once he is out of her sight (%.0fpx from her)" % last.distance_to(her))
-		t.check(guard._far_guard == null, "his node goes with him")
-		guard.free()
-	for def: EventDef in [escape, day]:
-		var streamed := EventInstance.new()
-		streamed.setup(def, Vector2(400.0, 0.0))
-		t.add_child(streamed)
-		streamed.set_process(false)
-		streamed.come_back_as_the_barrier(1)
-		if def == escape:
-			t.check(not streamed.has_its_far_guard_posted(),
-					"the escape's band streamed back in after its guard was spent stands unmanned")
-		else:
-			t.check(streamed.has_its_far_guard_posted(),
-					"a day's band streamed back in keeps its far guard at his post")
-		streamed.free()
+		walked += 1
+		var now := guard.far_guard_at()
+		if now == Vector2.INF:
+			break
+		paced = paced and now.distance_to(last) <= def.pursue_speed * step + 0.01 \
+				and is_equal_approx(guard._far_guard_walked, def.pursue_speed * step * walked)
+		last = now
+	t.check(last.distance_to(her) > set_off.distance_to(her) and paced,
+			"he walks away from her at his partner's pace (%d frames)" % walked)
+	t.check(guard.far_guard_at() == Vector2.INF and not guard.has_its_far_guard_posted(),
+			"and he is gone, and nobody stands at the band")
+	t.check(last.distance_to(her) > Tuning.OUT_OF_SIGHT - def.pursue_speed * step,
+			"only once he is out of her sight (%.0fpx from her)" % last.distance_to(her))
+	t.check(guard._far_guard == null, "his node goes with him")
+	guard.free()
+	var streamed := EventInstance.new()
+	streamed.setup(def, Vector2(400.0, 0.0))
+	t.add_child(streamed)
+	streamed.set_process(false)
+	streamed.come_back_as_the_barrier(1)
+	t.check(not streamed.has_its_far_guard_posted(),
+			"a band streamed back in after its guard was spent stands unmanned")
+	streamed.free()
 
 ## **Neither guard walks off over a building.** The guard on her side, shaken off, and on the
 ## escape's band his partner at the far post walk away over walkable ground

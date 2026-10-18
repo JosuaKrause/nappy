@@ -317,9 +317,9 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ## guards leave the post, so it stands as a band across the road until she comes within his warning
 ## radius (`EventDef.pursues_within`, 237px from the band) and then the guard on her side warns and,
 ## inside his charge radius, comes at her on foot as `guard_standing.svg` and `guard_lunging.svg` —
-## see `EventInstance._draw_roadblock()`. Its one change is `EventCatalogue.escape_roadblock()`'s:
-## once that guard has left his post for good, the far guard walks off too and the band, which
-## costs nothing as every roadblock's does, stands unmanned, so luring him off is the way past,
+## see `EventInstance._draw_roadblock()`. Once that guard has left his post for good, the far guard
+## walks off too and the band, which costs nothing, stands unmanned, as on every day, so luring him
+## off is the way past (`EventCatalogue.escape_roadblock()`),
 ## and one roadblock a street (`Tuning.FINALE_GUARDS_PER_STREET`) leaves one guard to lure. Only the
 ## explosion is new.
 ##

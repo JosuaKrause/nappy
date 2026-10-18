@@ -45,8 +45,6 @@ const MAST_BODY := 6.0
 static var _all: Array[EventDef] = []
 ## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
 static var _hot: Dictionary[String, EventDef] = {}
-## The escape's own roadblock. See `escape_roadblock()`.
-static var _escape_roadblock: EventDef = null
 
 ## Every heat level a run can reach. Progress runs 0..`RESISTANCE_GOAL`; a task completed past the
 ## goal adds nothing, because full heat is the qualification rather than the last errand. A
@@ -88,22 +86,12 @@ static func heated(def: EventDef, level: int) -> EventDef:
 	return _hot[key]
 
 ## **The roadblock the escape stands on its streets**: the row at full heat, its guards hunting,
-## with one difference — once the guard who set off from it has left his post for good, the guard
-## at the far post walks off too, so the band stands unmanned (`EventDef.far_guard_leaves`).
-## *(Inbox #771: "it should be in a way that luring away the guard is enough"; asked whether the far
-## guard should leave as well: "He leaves too".)* Its band costs nothing, as every roadblock's does
-## (`_roadblock()`). A derived copy, never a mutation, kept for the run, for the
-## reason `heated()` caches its own; `shape` and `solid_parts` are carried across by hand, as
-## `EventDef.at_heat()` carries them, since `Resource.duplicate()` does not copy them.
+## exactly as a day's at full resistance progress. *(Inbox #771: "it should be in a way that luring
+## away the guard is enough".)* Its band costs nothing and, once the guard on her side has left his
+## post for good, the guard at the far post walks off too, as on every day (`_roadblock()`,
+## `EventInstance._send_the_far_guard_off()`).
 static func escape_roadblock() -> EventDef:
-	if _escape_roadblock == null:
-		var hunting := heated(by_id("roadblock"), Tuning.RESISTANCE_GOAL)
-		var escape: EventDef = hunting.duplicate()
-		escape.shape = hunting.shape
-		escape.solid_parts = hunting.solid_parts
-		escape.far_guard_leaves = true
-		_escape_roadblock = escape
-	return _escape_roadblock
+	return heated(by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 
 static func by_id(id: String) -> EventDef:
 	for def in all():

@@ -46,7 +46,6 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `lethal_radius` | How close the thing that ends the day has to get, when that is **not** the field's own core. `0` — almost every row — means `inner_radius`, and `lethal_reach()` is what every caller asks. It exists for a row whose killer is not what the field is drawn around: a `roadblock`'s field is cored on the barrier and its guard catches at a man's reach — see "The heat" |
 | `lunge_reach` | Where a pursuer's lunge is measured from when that is **not** its catch. `0` — every row but the alley robber and the man who comes at her from his row — means the catch, and `standoff_reach()` is what every stand-off caller asks. The alley robber catches at 26px but lunges from `lunge_reach` 38, so his stand-off is 116px and the room between his lunge and his catch is 90px. `EventDef.validate()` refuses a `lunge_reach` inside the row's own catch (`lunge_is_inside_the_catch()`), since that stand-off would leave her less than `PURSUIT_REACTION` of his approach |
 | `body_stays_behind` | Whether this row's body is a **fixture of the street** a pursuer leaves standing rather than the pursuer's own bulk. Every other pursuer's body comes down the frame it starts hunting; a roadblock's barrier is pinned where it was built, so the street stays shut behind the man who left it |
-| `far_guard_leaves` | Whether **the guard at a roadblock's far post walks off too** once the guard on her side has left his post for good, from the frame his partner starts to walk away (`EventInstance._send_the_far_guard_off()`), so the band stands unmanned. Only the escape's roadblock sets it (`EventCatalogue.escape_roadblock()`); a day's keeps its far guard standing at the band. The band costs nothing on either — see "The escape — the walk that is not a day" |
 | `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the two region-door rows that inspect her, `checkpoint_hut` and `checkpoint_post` — see "Checkpoints" |
 | `sets_off_beside_her` | Whether a pursuer starts **inside its own stand-off**, spawned beside her rather than sited or noticing her outside it: it exists to charge her. Its notice then cannot be cut short by her being close and it never backs off: it holds its ground, follows at the stand-off once she is further (unless it also `stands_for_its_notice`, below, as both that carry it do), and chases when the notice has run its whole length, which is owed at least the badge's `Tuning.OFFSCREEN_WARNING_MIN` rather than an approach's `PURSUIT_MIN_NOTICE`. The men an investigating vehicle lets out are the copies that carry it (`EventCatalogue.out_of_the_car()`). Any other pursuer takes the same ground once a wall has held its lunge back, and lunges when she is back at its stand-off with the line clear |
 | `stands_for_its_notice` | Whether a pursuer that noticed her **stands still for its notice**, turned to her in its alert pose, instead of closing on her *(inbox #748: "robber can walk towards her but guards should lift their hand in warning"; "nobody walks -- only the robber")*. Every lunge still fires — the moment she walks inside its stand-off along a clear line — so only the closing stops: walking in, the chase starts from the full stand-off, and one that waited for her never charges while she stays outside it. Read only on an instance that waited for her (`pursues_within`) or set off beside her, so the day-3 dog, whose telegraph is its approach, still comes. `charging_dog`, `roadblock` (its hunting copy) and the men an investigating vehicle lets out set it, and day 13's task guard stands for the second his task gives him in her view; `alley_robbery` does not |
@@ -1066,9 +1065,9 @@ Four things worth keeping straight:
   the backstop when there is no player to be out of sight of. The exception to "it is over the
   moment it starts leaving" is the barrier, not the man. **Once he has left, the barrier raises no
   exclamation mark over her head**: it waits for nobody, since he never notices her or charges
-  again, and `EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard. In the
-  escape the guard at the far post walks off with him (`EventDef.far_guard_leaves`) — see "The
-  escape — the walk that is not a day".
+  again, and `EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard. The guard
+  at the far post walks off with him, on every day as in the escape
+  (`EventInstance._send_the_far_guard_off()`; inbox #788: "Days too").
 
 **Streaming never ends a departure she could be watching.** A plan is streamed out by how far she is
 from its *route* (`Tuning.EVENT_STREAM_RADIUS` and its hysteresis), but a car that has run out of
@@ -1636,10 +1635,11 @@ standing at his. Two fields make that work and both are general rather than writ
   he can warn again (`EventInstance._stop_warning()`). **While he warns he is drawn above the
   street's other figures** (`EventInstance.WARNING_GUARD_Z`): he sorts at his own feet, so a van
   parked in front of his post or another band nearer her would otherwise be drawn over the man
-  whose raised hand is the warning; once he charges he sorts with them again. Once he has chased, he does not come back for her, and **the guard still
-  standing at the other post is only a drawing from then on** (a choice open to overturn; the
-  alternative is that the one who chased walks back to his post and the barrier is armed again);
-  in the escape he walks off with his partner instead (`EventDef.far_guard_leaves`).
+  whose raised hand is the warning; once he charges he sorts with them again. Once he has chased, he does not come back for her, and **the guard at the
+  other post walks off with him**, on every day as in the escape, so the band stands unmanned
+  (`EventInstance._send_the_far_guard_off()`; inbox #771: "He leaves too"; inbox #788: "Days
+  too"). That he does not come back is a choice open to overturn; the alternative is that the one
+  who chased walks back to his post and the barrier is armed again.
   A barrier streamed out and in again comes back the same way: the plan carries the spent guard
   (`Planned.guard_spent`, `chaser_side`). *("the guarded barriers disappear after shaking off the pursuer. that doesn't make sense.")*
 - **`EventDef.lethal_radius`**, and `lethal_reach()` is what every caller asks. The field and the
@@ -1868,8 +1868,8 @@ obstacle survivable")* Four things make that true:
   the far post leaves too** *(inbox #771, asked whether he should: "He leaves too")*: the frame
   his partner starts to walk away, he walks off from his own post the same way — over walkable
   ground away from her (`EventInstance._way_on_out_of_sight_from()`), at his partner's pace, standing, gone once he is past `Tuning.OUT_OF_SIGHT` from her —
-  so the band she walks past is unmanned and reads as the barrier it is. On a day he stays a
-  drawing at his post.
+  so the band she walks past is unmanned and reads as the barrier it is. He does the same on every
+  day *(inbox #788, asked whether he should: "Days too")*.
 - **One guard at a time, wherever the bands stand.** No two of the escape's roadblocks stand where
   both guards can notice her: their notices, `pursues_within` round each band, never overlap, so
   two bands are at least twice the guard's 237px warning radius, 475px, apart on one street or

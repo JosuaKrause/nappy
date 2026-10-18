@@ -1641,8 +1641,8 @@ barricade catches her. See `docs/EVENTS.md`, "The heat".
 **A roadblock is passed by luring its guard off.** *(Inbox #771: "it should be in a way that
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
 charge. Walking in until he charges and running back until he gives up takes him off for good, and
-once he has left his post the guard at its far post walks off with him
-(`EventCatalogue.escape_roadblock()`), so it stands unmanned. The band itself costs nothing to walk
+once he has left his post the guard at its far post walks off with him, as on every day
+(`EventInstance._send_the_far_guard_off()`), so it stands unmanned. The band itself costs nothing to walk
 past at any time, manned or not, as every roadblock's band, a day's included
 (`EventCatalogue._roadblock()`): the guard is the danger, not the concrete. One roadblock a street means there is one guard to lure,
 not a second band's still posted beside the first, and no two bands stand where both guards can

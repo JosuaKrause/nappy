@@ -246,8 +246,8 @@ was a *place* rather than a moment is simply over. **One thing leaves and is not
 guard who set off from a barrier (`EventDef.body_stays_behind`) walks away at his chasing pace over walkable ground, and
 the instance goes back to being only the barrier: solid and silent, since a roadblock's band
 costs nothing at any time, manned or not, on a day as in the escape (its `intensity` is 0; the
-guard is the danger), and in the escape its far guard walks off with him
-(`EventDef.far_guard_leaves`). A barrier whose guard has gone raises no mark over her head (`EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard), since he
+guard is the danger), and the guard at its far post walks off with him, on every day
+(`EventInstance._send_the_far_guard_off()`). A barrier whose guard has gone raises no mark over her head (`EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard), since he
 never notices her or charges again — so "it is over the moment it starts leaving" holds for the
 man and not for the barrier he left. He is in her view as he goes, so
 he is held to the sight rule like a car (`_leaving_must_clear_sight`) rather than vanishing on the

@@ -58,7 +58,7 @@ static func _waiting_chargers() -> Array[EventDef]:
 				or def.arrives_chasing:
 			continue
 		var key := "%s|%.2f|%.2f|%.2f|%s" % [def.id, def.pursues_within, def.pursue_speed,
-				def.lethal_reach(), def.far_guard_leaves]
+				def.lethal_reach(), def.notice_walk_speed]
 		if seen.has(key):
 			continue
 		seen[key] = true
