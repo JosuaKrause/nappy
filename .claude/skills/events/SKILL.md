@@ -293,7 +293,10 @@ it was written from. The traps:
   leave. It notices her only with its warning picture in the camera's view
   (`EventInstance._would_stand_in_her_view()`, the view `EventManager` hands it as `player_view`);
   an instance stepped directly with no view handed to it gets the radius alone, so a test of the
-  view hands it one (`tests/escape_roadblock_rig.gd`, `view_round()`).
+  view hands it one (`tests/escape_roadblock_rig.gd`, `view_round()`). The masked man runs a line
+  rather than pursuing, so neither his notice nor his run asks the clear line, and his notice asks
+  no view (`EventInstance._check_for_notice()`, `_warn_on_its_line()`): in the stairwell his warning is off screen, which the
+  player accepted (inbox #782).
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
   (inbox #764, inbox #788). His warning comes before he exists — from the frame she crosses a
   door's line, the hut's guard across the road (or the post's) raises his hand for

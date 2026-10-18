@@ -469,8 +469,7 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 ##
 ## **Why the notice is the distance that matters.** Dealing with one roadblock happens inside its
 ## guard's notice: he warns while she is inside it, charges only if she stays inside it his warning's
-## length,
-## and the run that shakes him off goes back out of it. Another guard can come for her only once
+## length, and the run that shakes him off goes back out of it. Another guard can come for her only once
 ## she is inside *his* notice too, so with no ground inside both she deals with one band and its
 ## guard at a time — wherever the two stand, either side of a junction or round a corner as much
 ## as on one street.
@@ -481,9 +480,10 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 ## every notice but his; running on past his band towards the next one can bring her into that
 ## band's notice with the first guard still behind her, and then she has both. That is the wrong
 ## answer to a charge, so the spacing is not widened for it: twice his warning radius keeps the
-## notices apart, which is what one guard at a time needs of the right answer. It is also what keeps one guard from standing behind another's drawing: the
-## near guard of a band two tiles up the street stands between the two bands, where the nearer
-## band and the guard posted on its far side are drawn over him.
+## notices apart, which is what one guard at a time needs of the right answer. It is also what
+## keeps one guard from standing behind another's drawing: the near guard of a band two tiles up
+## the street stands between the two bands, where the nearer band and the guard posted on its far
+## side are drawn over him.
 static func _keeps_its_notice_to_itself(map: CityMap, candidate: Planned,
 		planned: Array[Planned]) -> bool:
 	var reach := candidate.def.pursues_within

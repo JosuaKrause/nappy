@@ -93,7 +93,7 @@ enum Look {
 	NEIGHBOR,         ## The neighbor down the hall, in work clothes: steel-blue coveralls with a
 	                  ## reflective band and a dark work cap — the face on the wanted notice.
 	# ---- the region door's own guard, off his post ----
-	DOOR_GUARD,       ## The guard a door sets on her when she walks under its raised boom — the
+	DOOR_GUARD,       ## The guard a door sets on her when she stays across its line — the
 	                  ## same man in the same two postures as `MASKED_PURSUER` and a heated
 	                  ## roadblock's guard, badged by his side view.
 	# ---- the resistance's own robber, sent after her ----
@@ -571,8 +571,9 @@ func departure_speed() -> float:
 ## "We should do one radius and warn inside it for 2s. If the player leaves the radius nothing
 ## happens and the warning stops. If they stay within the charge starts")*: out of it again before
 ## then, it waits again (`EventInstance.warns_by_radius()`). A row that runs its own line once she is
-## near (`charges_within`, the masked man) warns the same way. For any other row that does not pursue, the middle state is `telegraph_time` long; a pursuer
-## a task sets on her from wherever it stands (`EventInstance.notice_her_at()`) has the notice the
+## near (`charges_within`, the masked man) warns the same way. For any other row that waits without
+## pursuing (`alley_mouse`, `pigeon_flock`) the middle state is `telegraph_time` long; a pursuer a
+## task sets on her from wherever it stands (`EventInstance.notice_her_at()`) has the notice the
 ## task gives it. Either way the clock, and `duration` after it, are measured from the moment it
 ## notices, not from the moment it was put in the world — a thing that spends its telegraph at
 ## dawn, four streets away, has no notice left in it at all.
@@ -597,9 +598,10 @@ func departure_speed() -> float:
 ## pursuer is: the men an investigating vehicle lets out (`EventCatalogue.out_of_the_car()`), who get
 ## out at its door a few strides from her.
 ##
-## **Its notice cannot be the approach, so it is the ground held.** An ordinary pursuer spends its
-## telegraph closing to the stand-off, holding it, and lunging the moment she comes inside it —
-## which, from a vehicle's width away, is a lunge on its first frame and a catch with no notice at all.
+## **Its notice cannot be the approach, so it is the ground held.** A pursuer that comes for her
+## through its telegraph (the day-3 dog) spends it closing to the stand-off, holding it, and lunging
+## the moment she comes inside it — which, from a vehicle's width away, is a lunge on its first frame
+## and a catch with no notice at all.
 ## So through the telegraph this one never lunges early and never backs off: it holds its ground
 ## while she is nearer than the stand-off and follows at the stand-off once she is further — or, if
 ## it also `stands_for_its_notice` as the men out of a vehicle do, holds its ground
@@ -649,7 +651,8 @@ func departure_speed() -> float:
 ## view), he warns for this; back outside the radius before it runs out, he stops warning and waits
 ## again; still inside when it runs out, he charges (`EventInstance.notice_time()`,
 ## `EventInstance.warns_by_radius()`). *(Inbox #788, the player: "We should do one radius and warn
-## inside it for 2s".)* `Tuning.CHARGER_WARNING` unless the row's own measurement says otherwise.
+## inside it for 2s".)* `Tuning.CHARGER_WARNING` unless the row's own measurement says otherwise;
+## `validate()` refuses a row that waits for her with less than `Tuning.OFFSCREEN_WARNING_MIN`.
 ## Read only on a row that waits for her; a row with no wait keeps its `telegraph_time`.
 @export var warns_for := 0.0
 ## How fast this pursuer **walks at her through its notice**, in px/s, when that is slower than its
@@ -658,14 +661,14 @@ func departure_speed() -> float:
 ## at his full chase speed, the robber's alert walk would be over in about a tenth of a second; a
 ## slow walk from a wider trigger is what lets it be seen.
 ##
-## **Only the closing slows**: he still lunges the moment she is inside his stand-off, along a clear
-## line (`EventInstance._chase()`), keeps a held lunge's stand-off at `pursue_speed` (`_lunge_held`),
-## and chases at `pursue_speed` once he lunges, so `Tuning.validate_pursuit()`'s clauses read the
-## same numbers. What the slow walk changes is that a player who stands inside his warning radius is
-## walked up to and charged from his stand-off, while one who walks away (her 92px/s against his
-## walk) leaves his radius and he stops where he is and waits again *(inbox #764, the player: the
-## robber walking slowly stops if she gets out of the radius)*; `tests/test_events_pursuit.gd` walks
-## both.
+## **Only the closing slows**: he walks at her no nearer than his stand-off, charges on his warning's
+## clock as every charger that waits for her does (`warns_for`, `EventInstance.warns_by_radius()`),
+## and chases at `pursue_speed` once he charges, so `Tuning.validate_pursuit()`'s clauses read the
+## same numbers. What the slow walk changes is that a player who stands inside his radius is walked
+## up to his stand-off and charged from there once his warning has run, while one who walks away
+## (her 92px/s against his walk) leaves his radius and he stops where he is and waits again *(inbox
+## #764, the player: the robber walking slowly stops if she gets out of the radius)*;
+## `tests/test_events_pursuit.gd` walks both.
 ##
 ## Read only on a row that waits for her (`pursues_within`) and does not stand for its notice: a
 ## notice that stands has no walk to slow, and one with no trigger has no notice spent walking.

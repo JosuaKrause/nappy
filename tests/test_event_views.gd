@@ -738,9 +738,10 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 	guard.free()
 
 func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> void:
-	# The warning is the hut's guard's, drawn while she is near the raised boom
+	# The warning is the hut's guard's, drawn from her crossing of the door's line
 	# (`EventInstance.guard_warns_her`, set by `EventManager._warn_at_the_doors()`); the man set on
-	# her when she goes under it charges from his first frame (`EventDef.charges_at_once`).
+	# her once it has run with her still across charges from his first frame
+	# (`EventDef.charges_at_once`).
 	var def := EventCatalogue.by_id("door_guard")
 	t.check(def.charges_at_once and is_zero_approx(def.telegraph_time),
 			"the door guard owes no notice of his own")

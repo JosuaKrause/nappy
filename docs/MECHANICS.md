@@ -1062,9 +1062,9 @@ until the line clears, which would clamp the approach at zero — at an alley mo
 with her already well inside the stand-off, and it would fire from a fraction of it. Instead the
 pursuer holds the ground a pursuer that sets off beside her holds (`EventDef.sets_off_beside_her`):
 it stands while she is nearer than the stand-off, follows at the stand-off once she is further, and
-lunges the moment she is back at the full stand-off with the line clear. A pursuer that stands for
-its notice (`EventDef.stands_for_its_notice`: the dog that waited, the hunting roadblock's guard,
-the man a vehicle lets out) follows nowhere: it stands where it is and lunges the same way. **A pursuer that
+lunges the moment she is back at the full stand-off with the line clear. One held while it stands
+for its notice (day 13's task guard set on her in her view, `EventInstance.notice_her_at()`)
+follows nowhere: it stands where it is and lunges the same way. **A pursuer that
 waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `warns_for`), so a
 late notice at an alley mouth is answered by the warning's whole length to leave in, and where the wall
 keeps the line from clearing until she is out of its radius, it never charges and waits again. **The timed notice of a guard a task sets on her does not run out while a
@@ -1176,9 +1176,9 @@ street — and there the damping is telling the truth: what is standing there is
 the event is the flock going up. With the flag, the top two rows of the table above read *at
 `TELEGRAPH_INTENSITY_FRACTION`* instead of *at full strength*.
 
-**And what ends a telegraph is her, wherever a clock cannot know when the thing started.** A
-pursuer's lunge fires when she reaches its stand-off rather than when its clock runs out, and a
-flock's flush fires when she reaches the birds — `flock_spread` plus her own body — for the same
+**And what ends a telegraph is her, wherever a clock cannot know when the thing started.** The
+lunge of a pursuer that comes for her through its telegraph (the day-3 dog) fires when she reaches
+its stand-off rather than when its clock runs out, and a flock's flush fires when she reaches the birds — `flock_spread` plus her own body — for the same
 reason: the birds are on the ground for the whole telegraph, so its length is the wait between her
 walking into them and them reacting, and a fixed wait puts them up behind whoever walked in.
 `telegraph_time` is then the backstop for a flock she came near and never reached, and the
@@ -1196,13 +1196,16 @@ and field move — as the stand-off changes, the trigger has to stay outside it 
 the trigger, so *on sight* keeps coming before *he has seen you* — without any clause being
 rewritten.
 
-| she | outcome | cost |
-| --- | --- | ---: |
-| walks up and stops | caught | the day |
-| walks up and past | caught | the day |
-| walks away at a walk | caught | the day |
-| runs when he stands up | shakes him off in 1.5s | 21 points |
-| dithers a second, then runs | shakes him off in 1.6s | 22 points |
+Against the alley robber, walked on the real instance (`tests/probes/charger_warning.gd` and
+`tests/test_events_pursuit.gd`, her reaction 0.3s):
+
+| she | outcome |
+| --- | --- |
+| walks up and stops | charged once his 2.0s warning has run, and caught |
+| walks on in | caught |
+| walks or runs away as he warns | never charged: he stops and waits again |
+| stands until he charges, then runs | gets away, 62px at the closest |
+| walks away once he has charged | caught |
 
 ### A beat rather than a journey
 

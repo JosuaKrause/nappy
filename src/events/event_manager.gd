@@ -2286,8 +2286,9 @@ func _update_door_release_latches(body: Stroller) -> void:
 # *walked* is a crossing under a raised boom and nothing else. Nothing here asks where the arm is.
 #
 # *(2026-09-24: "The guards should start pursuing her in that case".)* **And it sets a guard on
-# her**, one, from the door's hut nearer to her; a catch ends the day, since *"not going through the
-# checkpoint is a clear unlawful thing here"*. See `EventCatalogue._door_guard()`.
+# her**, one, from the door's hut across the road from her, once the crossing's warning has run with
+# her still across (`_start_the_crossing_warning()`); a catch ends the day, since *"not going
+# through the checkpoint is a clear unlawful thing here"*. See `EventCatalogue._door_guard()`.
 
 ## How many times today she has walked across a door's line rather than being let through it —
 ## the count `tests/test_route_rig.gd` holds a rig run to zero on.
@@ -2295,7 +2296,9 @@ func walks_under_a_boom() -> int:
 	return _walked_under
 
 ## Once a frame: whether she has crossed a door body's own cross-street line since the last look,
-## and no `Stroller.teleport_to()` (nor `reset_at()`) moved her in between. Run before
+## and no `Stroller.teleport_to()` (nor `reset_at()`) moved her in between, which starts a
+## crossing's warning, and one frame of the crossing already warning her
+## (`_run_the_crossing_warning()`). Run before
 ## `_check_detentions()`, so a release that teleports her this frame is seen by the next look as
 ## the outright move it is.
 ##

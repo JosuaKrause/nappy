@@ -796,7 +796,7 @@ const GUARD_LUNGING_BY_VIEW := {
 ## "guards should lift their hand in warning")*, held still for his notice: the hunting roadblock's
 ## guard at his post, the guardsman a vehicle lets out beside its door, the masked man at the foot
 ## of the shaft (`masked_pursuer_pictures()`), and — the front view — a checkpoint hut's or post's
-## guard while she is near the raised boom (`guard_warns_her`). Never the
+## guard while her crossing of its door's line warns her (`guard_warns_her`). Never the
 ## van's guard a task sends or the guardsman a torn poster sends: both arrive already charging.
 ## 22×44 front and back, 26×44 side and diagonals, bottom-centre anchored like the standing family.
 const GUARD_ALERT_BY_VIEW := {
@@ -1646,8 +1646,8 @@ func body_position() -> Vector2:
 ## **A roadblock's chaser sets off from his own post**, the one on her side of the band: this node
 ## steps from the band's centre, where his notice was measured — inside the band's own field, which
 ## `Tuning.validate_pursuit()` requires — out to that post the frame he notices her, and `_chase()`
-## walks him from there. Beside the band he is nearer her than the centre is, which his stand-off
-## allows for: it is measured from his catch reach (`EventDef.lethal_reach()`), not the field's core.
+## walks him from there. Beside the band he is nearer her than the centre is, which costs her none
+## of his warning: he charges on its clock (`warns_by_radius()`), not at a distance from him.
 func _leave_the_body_behind() -> void:
 	if _body_left_at == Vector2.INF:
 		_body_left_at = global_position
@@ -2529,8 +2529,9 @@ func _its_notice_is_a_warning() -> bool:
 ## telegraph there and then. **The start is fired by her, not by a clock**, and two rows want it
 ## for the same reason at two distances.
 ##
-## **A pursuer's lunge**, at `Tuning.pursuit_standoff()`, and the two alternatives each fail in
-## their own way. It reaches its stand-off in about a third of a second and then has the rest of a
+## **The lunge of a pursuer that comes for her through its telegraph** (the day-3 dog), at
+## `Tuning.pursuit_standoff()`, and the two alternatives each fail in their own way. A charger that
+## waits for her has no lunge: its charge is its warning running out (`warns_by_radius()`). It reaches its stand-off in about a third of a second and then has the rest of a
 ## 2.4s telegraph to spend while she keeps walking into it — so *holding a distance* means backing
 ## away from her, and a dog that reverses down the street in front of you is not a dog that is
 ## about to charge. **Standing still instead** is worse: she closes the last hundred pixels
@@ -2552,6 +2553,11 @@ var _lunged := false
 ## the line clears is the **events** skill's trap: at an alley mouth the line clears with her
 ## already inside the stand-off, and he would lunge from a fraction of it.
 ##
+## **Only a pursuer that comes for her through its notice holds a lunge** — the day-3 dog, and day
+## 13's task guard set on her (`notice_her_at()`); a charger that waits for her charges on its
+## warning's clock instead, and behind a wall goes on warning until the line clears
+## (`_hold_the_notice_clock()`).
+##
 ## So from here on it holds `EventDef.sets_off_beside_her`'s ground — it holds its position while
 ## she is nearer than the stand-off and follows at the stand-off once she is further — and lunges
 ## the moment she is back at the full stand-off with the line clear. **Its notice does not run out
@@ -2563,8 +2569,8 @@ var _lunge_held := false
 ## Seconds the notice has stood still because a held lunge (`_lunge_held`) had her inside its
 ## stand-off; `chase_age()` leaves them out. **A held pursuer she stays beside never sets off**, for
 ## as long as she stays: he stands turned toward her with the doubled red caret up, his field
-## charging her meter (at full strength for the robber and the heated rows; the day-3 teaching
-## dog's warning period is damped), and the chase starts only once she walks back out to the
+## charging her meter (at full strength for day 13's task guard; the day-3 teaching dog's warning
+## period is damped), and the chase starts only once she walks back out to the
 ## stand-off. That is fair because the one way out of it is the walk the contract was written for —
 ## the lunge from the full stand-off, with all of `PURSUIT_REACTION` to answer it. See `_pause_a_held_notice()`.
 var _notice_paused_for := 0.0
@@ -2582,10 +2588,9 @@ var _notice_paused_for := 0.0
 ## **A pursuer that waited for her and stands for its notice is the exception the player asked for**
 ## (`EventDef.stands_for_its_notice`, inbox #748: "robber can walk towards her but guards should lift
 ## their hand in warning"; "nobody walks -- only the robber"): the head start is hers to take, and
-## what keeps it a chase is the rest of this function — the lunge the moment she walks inside its
-## stand-off, and a chase faster than her walk once it has lunged. One that waited for her has no
-## notice clock at all (`warns_by_radius()`); one that set off beside her charges when its notice
-## has run.
+## what keeps it a chase is the rest of this function — the charge once its warning has run with her
+## still inside its radius (`warns_by_radius()`), and a chase faster than her walk once it has
+## charged. One that set off beside her charges when its notice has run.
 ##
 ## **But it closes to a stand-off and holds it, rather than arriving.** The paragraph above buys the
 ## notice in seconds and says nothing about *where* the pursuer spends them: sited across her line a
@@ -2628,8 +2633,8 @@ func _chase(delta: float) -> void:
 	# From what ends her day, not from where the field's core ends: the same `lethal_reach()`
 	# `Tuning.validate_pursuit()` states the contract over. Every row but `roadblock` has no
 	# `lethal_radius` and reads its `inner_radius` here; a roadblock's guard catches at a man's reach,
-	# and a stand-off measured from the band's 86px core would put the guard posted beside the band
-	# inside it the frame he notices her, and he would lunge with no warning at all.
+	# not at the band's 86px core. A charger that waits for her charges on its warning's clock rather
+	# than at this distance; the robber's slow walk stops at it.
 	#
 	# `standoff_reach()` is that same reach unless the row keeps its lunge further out than its catch
 	# (`EventDef.lunge_reach`, the alley robber's): his catch and his lunge are set separately.
@@ -4202,8 +4207,9 @@ func _finish() -> void:
 
 ## True while the event is visible but has not yet reached full strength.
 ##
-## A pursuer has a second way out of it, and it is the one that usually happens: `_lunged`, when
-## she walked up to the stand-off before the clock ran out.
+## A pursuer that comes for her through its telegraph (the day-3 dog) has a second way out of it:
+## `_lunged`, when she walked up to the stand-off before the clock ran out. A charger that waits
+## for her has none: it charges when its warning has run (`warns_by_radius()`).
 func is_telegraphing() -> bool:
 	if is_waiting():
 		return false

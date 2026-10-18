@@ -1850,12 +1850,12 @@ static func _curfew_announce() -> EventDef:
 ## of the event's life. Nothing appears, nothing disappears, and the street he abandoned stays shut
 ## behind him — which is the point of leaving a barrier rather than dissolving one.
 ##
-## **His notice is measured from the band's centre and his stand-off from his reach.** The notice
-## stays on the band because it may not reach past the field, which is cored there. His post is
-## nearer her than the centre, so a stand-off measured from the field's core would already have
-## him inside it the frame he notices her; `EventInstance._chase()` measures every stand-off from
-## `lethal_reach()`, the number `Tuning.validate_pursuit()` states the contract over, which for this
-## row is his 28px catch.
+## **His one radius is measured from the band's centre, and he charges on his warning's clock.**
+## The radius stays on the band because it may not reach past the field, which is cored there. His
+## post is nearer her than the centre, which costs her none of his warning: he charges once it has
+## run with her still inside his radius, not at a distance from him
+## (`EventInstance.warns_by_radius()`). His stand-off is measured from `lethal_reach()`, his 28px
+## catch, which is the number `Tuning.validate_pursuit()` states the contract over.
 ##
 ## **The catch is a man's reach, not a barrier's.** `lethal_radius` is 28px, read off
 ## `masked_pursuer` — the same row, the same fiction, the same distance at which a masked man in
@@ -1989,8 +1989,8 @@ static func _abduction() -> EventDef:
 ## Three numbers for three sentences, in order:
 ##
 ## - **On sight.** 16 over a 200px field, so the far end of an alley is already expensive and the
-##   meter is what tells you he is there. This is the *only* warning the design will give: a robbery
-##   has no telegraph you could see coming, and it never did.
+##   meter is what tells you he is there, before he has noticed her at all. His own warning comes
+##   only once she is inside his radius, below.
 ## - **Getting close is day ending.** `hard_fail` inside 26px, and it has to be **reachable**: he
 ##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
 ##   the inner radius means the kill can never fire.
@@ -2861,7 +2861,7 @@ static func _checkpoint_post() -> EventDef:
 	def.barrier_structure = true
 	return def
 
-## The guard a street door sets on her when she walks under its raised boom. *(2026-09-24, the
+## The guard a door sets on her when she walks across its line and stays. *(2026-09-24, the
 ## player: "The guards should start pursuing her in that case" · "Or guards that pursue her should
 ## spawn at the huts" · "The day ends, not going through the checkpoint is a clear unlawful thing
 ## here. She gets detained/imprisoned or whatever in that case. This is independent of the
@@ -3003,10 +3003,11 @@ static func _impact_crater() -> EventDef:
 ## leaving the corridor.
 ##
 ## **Faster than a walk, so it cannot be out-walked**, which is what makes stepping aside the
-## answer rather than a preference — and what makes the telegraph the long one: at 130px/s the
-## contract prices the escape as the field's whole forward reach rather than its falloff band, so
-## `outer_radius` 120 at `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and this carries a little over
-## it. Three and a half seconds is also what the picture wants: she hears him a floor below.
+## answer rather than a preference — and what makes the telegraph contract ask for a long one: at
+## 130px/s it prices the escape as the field's whole forward reach rather than its falloff band, so
+## `outer_radius` 120 at `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and `telegraph_time` carries a
+## little over it. That number is read only by the contract: what he shows her before he runs is his
+## warning inside his one radius (`warns_for`, below).
 ##
 ## **No body**, like every other mobile row: a moving wall on a stairwell one tile wide would pin
 ## her against the shaft. What stops her walking into him is that it ends the section.
