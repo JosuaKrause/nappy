@@ -69,9 +69,14 @@ nothing about cost; the probe above is the cost). Nothing in a still shows a fie
 
 ## The player's run on seed 4216201080, and the guard who could not be seen (inbox #771)
 
-**The player's run.** `players-run-235901/` is the run folder the player's game wrote on `main` at
-`5f7923b6` (`run.log` and the four stills it took under `auto/`), copied whole from the player's
-own scratch telemetry, which they may empty. Seed 4216201080 from the building
+**The player's run.** `run-235901-seed4216201080-v0.28.0-7-g5f7923b6/` is the run folder the
+player's game wrote on `main` at `5f7923b6`, under its original name, copied from the player's own
+scratch telemetry, which they may empty. Three of its files are kept: `run.log`, the player's own
+walk, which no replay recreates; `auto/003-attempt1-mark-now.png`, a band at the top edge of the
+view while she is marked; and `auto/004-attempt1-chase-roadblock.png`, the two bands, the guard
+between them and the carts on the roof's edge. Its other two stills are left out: one is the
+building section's loss screen and the other a van on another street, neither of which bears on
+either claim here. Seed 4216201080 from the building
 (`tools/run.sh --start-escape --seed 4216201080 --no-save` replays it). Lines 179-212 of `run.log`
 are the city attempt the player could not win: the guard of a band at tile (72,22) warns and
 charges, she runs and he gives up, and on her way back the guard of a second band at (72,20) warns
@@ -138,7 +143,7 @@ escape walls both its mouths. In A each wall is the collapsed frontage, a street
 laid across the 64px alley, so its timbers stand two tiles into the buildings either side, over
 their roofs; in B each is the widest row of the escape's own list that fits the mouth, the impact
 crater. The crater's picture is a little wider than its body, so its rim still touches the alley's
-walls. On the player's still (`players-run-235901/auto/004-attempt1-chase-roadblock.png`) the
+walls. On the player's still (`run-235901-seed4216201080-v0.28.0-7-g5f7923b6/auto/004-attempt1-chase-roadblock.png`) the
 wooden carts at the right edge are a different seal, the barricade standing across a street off
 the chain, which a day stands the same way.
 
@@ -158,6 +163,6 @@ the chain, which a day stands the same way.
 player's seed, and every one reaches both exits.
 
 Footprint: four stills, the first strip, its script, three compressed cost-probe outputs, the
-player's run folder (`run.log` and four stills), two burst strips and their script, two
+player's run folder (`run.log` and two stills), two burst strips and their script, two
 compressed spacing-probe outputs, the alley-wall pair, three compressed density-probe outputs and
 this README.
