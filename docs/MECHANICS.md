@@ -1585,17 +1585,13 @@ walking on down his flight first, she has about a second and a half to turn back
 switched to is not a side she can settle on, which is the whole point of him: the
 way down is a sequence of crossings rather than one.
 
-**On a stair she walks the stair's own 45 degrees** *(inbox #783)*. On a flight tile any press
-with a leftward part walks 45 degrees to the left, down if the flight descends to the left and up
-if it climbs, and a rightward one likewise; a pure up or down press on a flight moves nowhere, as
-there is no floor beside the tread to step onto. A landing tile turns a press onto the flight it
-steps onto, so the first step off a landing and the last step onto one are 45 degrees too: the
-flight touching the tile diagonally on the pressed side, else the one straight beside it, and only
-one whose way, up or down, is the way the press points when it points up or down. So a down-left
-press at the foot of a flight goes on down-left rather than back up the flight she came down. The
-landing tile between the foot of one flight and the head of the next has both touching it
-diagonally on the same side, so it takes a level press as it is and turns a diagonal one onto the
-flight that way (`InteriorScene.slope_dir_at()`, read by `Stroller._redirect_along_a_flight()`).
+**On a stair she walks the stair's own 45 degrees** *(inbox #783)*, **and off a stair the way
+she presses** *(inbox #782)*. On a flight tile any press with a leftward part walks 45 degrees to
+the left, down if the flight descends to the left and up if it climbs, and a rightward one
+likewise; a pure up or down press on a flight moves nowhere, as there is no floor beside the tread
+to step onto. On a landing, as in a hallway, a press is not turned, so stepping off a landing onto
+a flight is a level step until she is on its first tread (`InteriorScene.slope_dir_at()`, read by
+`Stroller._redirect_along_a_flight()`).
 
 **And her body goes where she is steered, because a flight's edges are straight.** The solid
 cells either side of a flight meet it at square corners only 22.6px apart across the slope, against
@@ -1604,8 +1600,8 @@ nearly straight down, and a held press would walk a zigzag. Each of those cells 
 flight's band cut off along the slope (`InteriorScene._blocker_outline()`), leaving straight edges
 51px apart across it (`InteriorScene.FLIGHT_HALF_WIDTH`). From the landing tile level with a
 flight's first or last tread she walks the whole flight within two degrees of 45 and touches neither
-edge; from the landing tile one row below that, she slides along the stair side's top for about a
-tile before she is on the line. `tests/test_interior.gd` pins the steering of every tile of both
+edge; from the landing tile one row below that, she slides along the stair side for about a tile
+before she is on the line. `tests/test_interior.gd` pins the steering of every tile of both
 shafts for eight directions and an analog diagonal, and her body's heading on every flight, down and
 up; `tests/probes/escape_stairs_heading.gd` prints both.
 

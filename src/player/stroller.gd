@@ -298,12 +298,11 @@ var _parent_atlas: StringName = &""
 var carrying := false
 
 ## `InteriorScene.slope_dir_at`, or an unset `Callable` outdoors — the one hook the escape scene's
-## diagonal stairs need from this otherwise interior-agnostic rig. Asked every physics frame, with
-## her position and the press, which flight slope that press walks (`+1` descending toward east,
-## `-1` toward west, `0` none): the slope of the flight tile she stands on, or on a landing tile
-## the slope of the flight the press steps onto — see `_redirect_along_a_flight()`. Set once by
-## `main._ready_escape()`, the same shape `carrying` is set in; unset (`Callable()`) leaves every
-## outdoor run and every other test untouched.
+## diagonal stairs need from this otherwise interior-agnostic rig. Asked every physics frame for
+## whether her *current* position sits on a diagonal flight tile (`+1` descending toward east,
+## `-1` toward west, `0` off any flight), so a sideways press can be redirected along the slope —
+## see `_physics_process()`. Set once by `main._ready_escape()`, the same shape `carrying` is set
+## in; unset (`Callable()`) leaves every outdoor run and every other test untouched.
 var slope_dir_at := Callable()
 
 ## Her own ground shape and the pram's, read by `_draw()` for their shadows — 9px and 12px, the
@@ -494,15 +493,12 @@ func _physics_process(delta: float) -> void:
 
 ## On a diagonal flight tile, a sideways press walks the slope rather than the screen axis it was
 ## pressed on — *(2026-09-10, playtest 55: "holding right or left on the switchback stairs moves
-## the player diagonally")* — and on a landing tile, a press that steps onto a flight walks that
-## flight's slope from the first step. `slope_dir_at` is handed the press and answers `+1` for a
-## slope descending toward east, `-1` toward west, `0` for none (a hallway, a landing tile with no
-## flight on the pressed side, or one whose flight runs the other way from the press's up or down);
-## at `0`, or outdoors where the callable was never set, `raw` is returned unchanged.
+## the player diagonally")*. `slope_dir_at` answers `+1` on a tile descending toward east, `-1`
+## toward west, `0` everywhere else (including a flat landing); off a flight, or outdoors where the
+## callable was never set, `raw` is returned unchanged.
 ##
-## Once a slope is chosen, the walk reads only `raw.x`'s **sign**, never its `y` component or which
-## device pressed it — key, tap and joystick share this one call; `raw.y` only picks, on a landing
-## tile, which flight a diagonal press steps onto. Pressing *toward* the flight's own descending
+## The redirection reads only `raw.x`'s **sign**, never its `y` component or which device pressed
+## it — key, tap and joystick share this one call. Pressing *toward* the flight's own descending
 ## side (`sign(raw.x) == slope`) walks toward its lower end; pressing the other way climbs toward
 ## its upper end; a press with no horizontal component (`raw.x == 0`, including a pure up/down
 ## press) moves nowhere, since there is no floor beside the tread to step onto. The result keeps
@@ -510,7 +506,7 @@ func _physics_process(delta: float) -> void:
 func _redirect_along_a_flight(raw: Vector2) -> Vector2:
 	if not slope_dir_at.is_valid():
 		return raw
-	var slope: int = slope_dir_at.call(global_position, raw)
+	var slope: int = slope_dir_at.call(global_position)
 	if slope == 0:
 		return raw
 	if raw.x == 0.0:

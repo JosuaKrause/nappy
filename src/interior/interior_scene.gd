@@ -592,53 +592,12 @@ func wall_grid() -> CityMap:
 			_wall_grid.set_tile(tile, GameEnums.TileType.SIDEWALK)
 	return _wall_grid
 
-## `+1`/`-1` if `press` from `world_position` walks a descending-east or descending-west flight's
-## slope, `0` if it walks none — the one question `Stroller._redirect_along_a_flight()` asks every
-## physics frame to turn a sideways press into a flight's own 45 degrees. See
-## `InteriorTile.flight_direction()`.
-##
-## **On a flight tile the slope is the tile's own**, whatever she presses. **On a level `F` tile it
-## is the flight a press toward `press.x`'s side steps onto**, so the first step off a landing and
-## the last step onto one are 45 degrees too, rather than a horizontal step the flight then turns:
-##
-## - a diagonal neighbour on the pressed side that is a flight tile running along that diagonal
-##   (a descending-east flight runs down-right and up-left, a descending-west one down-left and
-##   up-right), and **only the one on the side `press.y` points to when the press has a vertical
-##   part**: a down-left press at the foot of a flight never turns her back up it;
-## - else the flight tile straight beside her on the pressed side, if the way a press walks it,
-##   down or up, is the way `press.y` points (or the press is level);
-## - else `0`, and the press is left as it is. That includes a level press on the landing tile
-##   between the foot of one flight and the head of the next, which has both of them as diagonal
-##   neighbours on the same side and no heading of its own.
-##
-## `press` of zero, the default, asks only about the tile she stands on.
-func slope_dir_at(world_position: Vector2, press := Vector2.ZERO) -> int:
-	var tile := world_to_tile(world_position)
-	var here := InteriorTile.flight_direction(_plan.tiles.get(tile, InteriorTile.Kind.NONE))
-	if here != 0 or press.x == 0.0:
-		return here
-	if _plan.tiles.get(tile, InteriorTile.Kind.NONE) != InteriorTile.Kind.STAIRWELL_FLOOR:
-		return 0
-	var side := 1 if press.x > 0.0 else -1
-	var down := int(signf(press.y))
-	var found := 0
-	var count := 0
-	for dy: int in [-1, 1]:
-		if down != 0 and dy != down:
-			continue
-		var slope := InteriorTile.flight_direction(
-				_plan.tiles.get(tile + Vector2i(side, dy), InteriorTile.Kind.NONE))
-		if slope != 0 and slope == side * dy:
-			found = slope
-			count += 1
-	if count == 0:
-		var beside := InteriorTile.flight_direction(
-				_plan.tiles.get(tile + Vector2i(side, 0), InteriorTile.Kind.NONE))
-		# Pressed toward the side a flight descends to, she walks down it; away from it, up.
-		if beside != 0 and down != 0 and (1 if side == beside else -1) != down:
-			return 0
-		return beside
-	return found if count == 1 else 0
+## `+1`/`-1` if `world_position`'s tile is a diagonal flight tile, `0` otherwise — the one question
+## `Stroller._physics_process()` asks every frame to redirect a sideways press along a flight's own
+## slope. See `InteriorTile.flight_direction()`. Off a flight, a landing tile included, she walks
+## the way she presses *(inbox #782, the player: outside of a stair she goes into the direction)*.
+func slope_dir_at(world_position: Vector2) -> int:
+	return InteriorTile.flight_direction(_plan.tiles.get(world_to_tile(world_position), InteriorTile.Kind.NONE))
 
 ## Where a fresh run starts — the third floor's own door, mid-hallway on its south edge.
 func start_world_position() -> Vector2:
