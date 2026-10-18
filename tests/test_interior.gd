@@ -29,7 +29,8 @@ func run(t) -> void:
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
 	_test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t)
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
-	_test_she_has_to_run_to_the_door_once_he_charges(t)
+	_test_he_runs_as_she_reaches_the_first_floor_landing(t)
+	_test_from_the_landing_the_first_floor_door_is_her_way_out(t)
 	_test_another_masked_man_comes_up_the_same_shaft(t)
 	_test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t)
 	_test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t)
@@ -1200,93 +1201,195 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 	events.free()
 	scene.free()
 
-## **She has to run to the door** *(inbox #764, the player: "player should have to run to the
-## door")*. He warns while she is in the stairwell and runs his line once she is within
-## `masked_pursuer.charges_within` of him (`EventInstance._warn_on_its_line()`), so where she meets
-## that distance is a fact of the escape as built: walking down the shaft toward the lobby, past the
-## first floor's door. Driven with the real man on the real shaft: she walks down his line from the
-## first floor's landing, and the frame he runs she turns for that door — the nearest off his line —
-## accelerating as she really does, at a walk or at a run. A walker is caught on the stairs; a runner
-## reaches the door and steps through it, clear of his reach.
-func _test_she_has_to_run_to_the_door_once_he_charges(t: Node) -> void:
+## **He runs as she reaches the first floor's landing of his shaft** *(inbox #782, the player's pick
+## B)*, the end of her second flight from the top beside the first floor's door, and not before.
+## Driven as the running game drives them: her real carrying body with the real stair steering and
+## collision, `InteriorEvents._physics_process()` handing him where she is and starting his run on
+## the landing, and his own `_process()`. She comes to the landing every way there is: down the
+## second flight on the line most walks take (from the landing tile level with its head), on the
+## band's upper and lower edges (from the tiles above and below that), at a walk and at a run, and
+## in from the first floor's hallway, down the landing from its door. On every one he is still
+## standing at the foot while she is on the flight or in the doorway, and runs on the frame she
+## first stands on a landing tile.
+##
+## And the landing is the whole of the way down: with its tiles taken out of the walkable set, no
+## ground of his shaft above it reaches the lobby's door, so she cannot get past him to the lobby
+## without crossing it.
+func _test_he_runs_as_she_reaches_the_first_floor_landing(t: Node) -> void:
+	var f := InteriorMap.build()
+	var origin: Vector2i = f.waypoints["stairwell_right"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+	for walk: Array in _FIRST_FLOOR_WALKS:
+		for pace: String in ["walk", "run"]:
+			var met := _meet_the_masked_man(t, walk, pace, -1.0)
+			var label := "from %s (%s), at a %s" % [walk[0], " + ".join(walk[1]), pace]
+			t.check(met["charged_on"] != InteriorScene.NOWHERE,
+					"%s: he runs (%s)" % [label, met["outcome"]])
+			var landing: Array = met["landing"]
+			t.check(landing.has(met["charged_on"]),
+					"%s: on the frame she first stands on the first-floor landing (local %s)"
+					% [label, met["charged_on"] - origin])
+			t.check(met["charged_on"] == met["first_on_landing"],
+					"%s: and not a frame before or after it (first on the landing at local %s)"
+					% [label, met["first_on_landing"] - origin])
+
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var landing := events.first_floor_landing()
+	var expected: Array[Vector2i] = []
+	for y in [16, 17, 18, 19]:
+		expected.append(origin + Vector2i(1, y))
+	t.check(landing.size() == expected.size() and expected.all(func(tile): return landing.has(tile)),
+			"the landing is the level column below the first floor's door, local (1, 16)-(1, 19)")
+	var open := {}
+	for tile: Vector2i in scene.stairwell_tiles("stairwell_right"):
+		if f.is_walkable(tile) and not landing.has(tile):
+			open[tile] = true
+	var top: Vector2i = f.waypoints["stairwell_right"]
+	var reached := {top: true}
+	var queue: Array[Vector2i] = [top]
+	while not queue.is_empty():
+		var here: Vector2i = queue.pop_back()
+		for dy in [-1, 0, 1]:
+			for dx in [-1, 0, 1]:
+				var next := here + Vector2i(dx, dy)
+				if open.has(next) and not reached.has(next):
+					reached[next] = true
+					queue.append(next)
+	var lobby_door: Vector2i = (f.doors["stairwell_right:landing_lobby"] as InteriorMapPlan.Door).tile
+	var second_door: Vector2i = (f.doors["stairwell_right:landing_second"] as InteriorMapPlan.Door).tile
+	t.check(reached.has(second_door), "the flood from the top reaches the second floor's door")
+	t.check(not reached.has(lobby_door) and not reached.has(f.waypoints["stairwell_right:landing_lobby"]),
+			"and without the landing it never reaches the lobby's (%d tiles reached)" % reached.size())
+	events.free()
+	scene.free()
+
+## **And from the landing the first floor's door is her way out.** *(Inbox #782, the player's pick
+## B: the left shaft stays a way out, reached with him already coming.)* Driven as above, from the
+## frame he runs she makes for that door, at a walk or at a run, and steps through it with him
+## never in reach. Walking on down the landing and onto his flight for a second and a half before
+## turning back still gets her there; for two seconds, she meets him on his flight.
+func _test_from_the_landing_the_first_floor_door_is_her_way_out(t: Node) -> void:
+	for walk: Array in _FIRST_FLOOR_WALKS:
+		for pace: String in ["walk", "run"]:
+			var met := _meet_the_masked_man(t, walk, pace, -1.0)
+			t.check(met["outcome"] == "through",
+					"from %s at a %s: she steps through the first floor's door (%s, %.0fpx from him at the closest)"
+					% [walk[0], pace, met["outcome"], met["closest"]])
+	for late: float in [1.5, 2.0]:
+		for walk: Array in [_FIRST_FLOOR_WALKS[0], _FIRST_FLOOR_WALKS[3]]:
+			var met := _meet_the_masked_man(t, walk, "walk", late)
+			var expected := "through" if late < 2.0 else "caught"
+			t.check(met["outcome"] == expected,
+					"from %s, walking on %.1fs after he runs and then running back: %s (%s, %.0fpx)"
+					% [walk[0], late, expected, met["outcome"], met["closest"]])
+
+## Every way she comes to the right shaft's first-floor landing, local to the grammar: where she
+## starts and what she holds. The landing tile level with the second flight's head, the tile above
+## it (the band's upper edge), the tile below (its lower edge), and the first floor's door.
+const _FIRST_FLOOR_WALKS := [
+	[Vector2i(8, 10), ["move_left"]],
+	[Vector2i(8, 9), ["move_left", "move_down"]],
+	[Vector2i(8, 11), ["move_left"]],
+	[Vector2i(1, 15), ["move_down"]],
+]
+
+## One meeting with the right shaft's masked man: her real body from `walk`'s start holding its keys
+## (running if `pace` is "run") until he runs, then making for the first floor's door, or, with a
+## `late` of zero or more, walking on down for that long first and then running back to it. Answers
+## the tile she stood on when he ran, the first landing tile she stood on, the landing, the outcome
+## ("through", "caught" or "neither") and how near he came.
+func _meet_the_masked_man(t: Node, walk: Array, pace: String, late: float) -> Dictionary:
 	const STEP := 1.0 / 60.0
 	var f := InteriorMap.build()
-	for speed: float in [Tuning.WALK_SPEED, Tuning.RUN_SPEED]:
-		var scene := InteriorScene.new()
-		t.add_child(scene)
-		var events := InteriorEvents.new()
-		t.add_child(events)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 4242
-		events.setup(scene, rng)
-		var man: EventInstance = null
-		for instance in events.instances():
-			if instance.def.id == "masked_pursuer":
-				man = instance
-		t.check(man != null, "a masked man is on the stairs")
-		if not man:
-			events.free()
-			scene.free()
-			return
-		var part := "stairwell_%s" % ("right" if events.burning_side() == "left" else "left")
-		var landing := scene.tile_to_world(f.waypoints["%s:landing_first" % part])
-		var door := scene.tile_to_world((f.doors["%s:landing_first" % part] as InteriorMapPlan.Door).tile)
-		var line := man.path
-		var cum: Array[float] = [0.0]
-		for i in range(1, line.size()):
-			cum.append(cum[i - 1] + line[i].distance_to(line[i - 1]))
-		var landing_at := 0.0
-		var nearest := INF
-		for i in line.size():
-			if line[i].distance_to(landing) < nearest:
-				nearest = line[i].distance_to(landing)
-				landing_at = cum[i]
-		var along := landing_at
-		var velocity := -Tuning.WALK_SPEED
-		var charged_at := INF
-		var caught := false
-		var through := false
-		var off := 0.0
-		var elapsed := 0.0
-		while elapsed < 20.0 and not caught and not through:
-			var her: Vector2
-			if off > 0.0:
-				off += speed * STEP
-				her = landing.lerp(door, minf(off / landing.distance_to(door), 1.0))
-				through = off >= landing.distance_to(door)
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var man: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "masked_pursuer":
+			man = instance
+	var origin: Vector2i = f.waypoints["stairwell_right"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+	var door: Vector2i = (f.doors["stairwell_right:landing_first"] as InteriorMapPlan.Door).tile
+	var landing := events.first_floor_landing()
+	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
+	var player: Stroller = packed.instantiate()
+	player.carrying = true
+	player.slope_dir_at = scene.slope_dir_at
+	scene.add_entity(player)
+	player.set_physics_process(false)
+	player.global_position = scene.tile_to_world(origin + (walk[0] as Vector2i))
+	player.velocity = Vector2.ZERO
+	var running := pace == "run"
+	_hold_keys(walk[1], running)
+	var met := {"charged_on": InteriorScene.NOWHERE, "first_on_landing": InteriorScene.NOWHERE,
+			"landing": landing, "outcome": "neither", "closest": INF}
+	var phase := "coming"
+	var since := 0.0
+	var left_the_door := door != origin + (walk[0] as Vector2i)
+	var elapsed := 0.0
+	while man != null and elapsed < 20.0:
+		player._physics_process(STEP)
+		_move_real_body_one_step(player, player.velocity * STEP)
+		var her := player.global_position
+		var tile := scene.world_to_tile(her)
+		if landing.has(tile) and met["first_on_landing"] == InteriorScene.NOWHERE:
+			met["first_on_landing"] = tile
+		events._physics_process(STEP)
+		man._process(STEP)
+		elapsed += STEP
+		if phase == "coming" and not man.is_waiting() and not man.is_telegraphing():
+			met["charged_on"] = tile
+			phase = "down" if late >= 0.0 else "out"
+		if phase != "coming":
+			since += STEP
+			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
+		if man.is_lethal_at(her):
+			met["outcome"] = "caught"
+			break
+		if tile != door:
+			left_the_door = true
+		elif left_the_door:
+			met["outcome"] = "through"
+			break
+		var on_landing := landing.has(tile)
+		if phase == "out" and on_landing:
+			_hold_keys(["move_up"], running)
+		elif phase == "down":
+			# On down: the second flight descends to the left, the landing straight down, his flight
+			# to the right.
+			if on_landing:
+				_hold_keys(["move_down"], false)
+			elif tile.y - origin.y <= 16:
+				_hold_keys(["move_left"], false)
 			else:
-				if charged_at != INF:
-					velocity = move_toward(velocity, speed, Tuning.ACCELERATION * STEP)
-				var next := clampf(along + velocity * STEP, 0.0, cum[cum.size() - 1])
-				if charged_at != INF and next >= landing_at:
-					next = landing_at
-					off = 0.0001
-				along = next
-				her = _point_along(line, cum, along)
-			man.player_at = her
-			man._process(STEP)
-			elapsed += STEP
-			if charged_at == INF and not man.is_waiting() and not man.is_telegraphing():
-				charged_at = man.global_position.distance_to(her)
-			caught = man.is_lethal_at(her)
-		t.check(charged_at != INF and absf(charged_at - man.def.charges_within) < 4.0,
-				"he runs once she is within %.0fpx of him (%.0fpx)" % [man.def.charges_within, charged_at])
-		if speed == Tuning.WALK_SPEED:
-			t.check(caught and not through, "turning for the first floor's door at a walk, she is caught")
-		else:
-			t.check(through and not caught, "at a run she reaches it and steps through")
-		print("The masked man, at %.0fpx/s: charged at %.0fpx, %s at %.2fs" % [speed, charged_at,
-				"caught" if caught else ("through the door" if through else "neither"), elapsed])
-		events.free()
-		scene.free()
+				_hold_keys(["move_right"], false)
+			if since >= late:
+				phase = "back"
+				_hold_keys(["move_left"], true)
+		elif phase == "back" and on_landing:
+			_hold_keys(["move_up"], true)
+	_hold_keys([], false)
+	player.free()
+	events.free()
+	scene.free()
+	return met
 
-## The point `along` px down `line` from its start, `cum` its running lengths.
-static func _point_along(line: PackedVector2Array, cum: Array[float], along: float) -> Vector2:
-	for i in range(1, line.size()):
-		if along <= cum[i]:
-			var span := cum[i] - cum[i - 1]
-			return line[i - 1].lerp(line[i], 0.0 if span <= 0.0 else (along - cum[i - 1]) / span)
-	return line[line.size() - 1]
+func _hold_keys(actions: Array, running: bool) -> void:
+	for a in ["move_left", "move_right", "move_up", "move_down", "run"]:
+		Input.action_release(a)
+	for a: String in actions:
+		Input.action_press(a)
+	if running:
+		Input.action_press("run")
 
 ## *"Then the pursuing guy should respawn forcing to switch the side again."*
 ##
@@ -1390,9 +1493,9 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 ## Asked as a flood from her own door across the whole building, doors included, with **both of the
 ## things that actually close ground taken out of the walkable set**: the collapse, and every cell
 ## within the fire's own blocking reach. The masked man closes nothing — he is mobile and carries
-## no body — so what he owes is the run to the door
-## `_test_she_has_to_run_to_the_door_once_he_charges` measures, and it is named here rather than
-## repeated.
+## no body — so what he owes is the way out through the first floor's door
+## `_test_from_the_landing_the_first_floor_door_is_her_way_out` measures, and it is named here
+## rather than repeated.
 ##
 ## Non-vacuous on purpose: both closures are counted, so a build where the fire stood somewhere
 ## harmless or the rubble was never laid would fail the guard rather than pass the flood.

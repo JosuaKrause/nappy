@@ -83,6 +83,9 @@ var _flashes := RandomNumberGenerator.new()
 var _pursuer: EventInstance = null
 ## Seconds until the next masked man comes up the shaft, counted only while there is none.
 var _until_the_next_pursuer := 0.0
+## The level tiles of his shaft's first-floor landing, `tile -> true`: where his run starts
+## (`_run_once_she_is_on_the_landing()`). Found from the map by `restart()`.
+var _first_floor_landing := {}
 ## Which stairwell the fire closes, and it is **always the left one**. *(2026-09-19: "there should
 ## be a fire on the left like it is right now but the top floor right side should be completely
 ## blocked off with rubble.")* The two have to agree: the rubble shuts the right stairwell off the
@@ -129,6 +132,7 @@ func restart() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _seed
 	_place_the_fire()
+	_find_the_first_floor_landing()
 	_place_the_masked_man()
 	_place_the_basement(rng)
 
@@ -237,6 +241,57 @@ func _place_the_masked_man() -> void:
 	for tile in walk:
 		path.append(_interior.tile_to_world(tile))
 	_pursuer = _spawn(EventCatalogue.by_id(_PURSUER_ID), path[0], path)
+
+## **He runs the moment she reaches the first floor's landing of his shaft** *(inbox #782, the
+## player's pick B)*: the end of her second flight from the top, beside the first floor's door.
+## Before it, she could walk down to that door and out to the left shaft's last flight without ever
+## coming near enough to set him off, and so never meet the man on these stairs at all. Now the left
+## shaft is still a way out, but she reaches it with him already coming, and every way to the lobby
+## from above runs across this landing.
+##
+## **A place, not a distance.** His row starts a run by how near she is (`charges_within`), and no
+## circle round the foot of the shaft is this landing: the second flight comes down toward him at a
+## slant, so a circle wide enough to take in the whole landing takes in the flight's last two treads
+## too, and one that does not lets her step off the flight's top edge and into the door without
+## setting him off. So
+## the moment she stands on one of the landing's tiles, he is handed a copy of his row that charges
+## at any distance (`_charging_at_any_distance()`), and his own `_warn_on_its_line()` does the rest:
+## he has been warning since she came within `pursues_within`, so he runs at once, and a man who has
+## only just noticed her warns for `Tuning.WARNING_ALONE_MAX` first. His row's own 150px is still
+## what sets him off when she comes in at the lobby's door, the one way into the shaft below the
+## landing. Once he has the copy he keeps it; a fresh man after him starts from his row again.
+func _run_once_she_is_on_the_landing() -> void:
+	if _pursuer == null or not is_instance_valid(_pursuer) or _pursuer.is_leaving \
+			or _pursuer.is_finished or is_inf(_pursuer.def.charges_within):
+		return
+	if not _first_floor_landing.has(_interior.world_to_tile(_player.global_position)):
+		return
+	_pursuer.def = _charging_at_any_distance(_pursuer.def)
+
+## His row as it is once she has reached the landing: a derived copy, never a mutation of the
+## catalogue's, for the reason `EventDef.at_heat()` gives; `shape` is carried by hand because it is a
+## plain `RefCounted` field that `Resource.duplicate()` does not copy.
+static func _charging_at_any_distance(def: EventDef) -> EventDef:
+	var variant: EventDef = def.duplicate()
+	variant.shape = def.shape
+	variant.charges_within = INF
+	return variant
+
+## The level `F` column of his shaft's first-floor landing, from the tile below its door down to the
+## last level tile before the stair side under it.
+func _find_the_first_floor_landing() -> void:
+	_first_floor_landing.clear()
+	var tile := _interior.waypoint("stairwell_%s:landing_first" % _PURSUED_SIDE)
+	if tile == InteriorScene.NOWHERE:
+		push_error("the %s shaft has no first-floor landing" % _PURSUED_SIDE)
+		return
+	while _interior.is_walkable(tile) and _interior.slope_dir_at(_interior.tile_to_world(tile)) == 0:
+		_first_floor_landing[tile] = true
+		tile += Vector2i.DOWN
+
+## The landing `_run_once_she_is_on_the_landing()` reads, for `tests/test_interior.gd`.
+func first_floor_landing() -> Array:
+	return _first_floor_landing.keys()
 
 ## The mouse a third of the way along the basement's own corridor, and the vents spread down the
 ## rest of it.
@@ -399,6 +454,7 @@ func _physics_process(delta: float) -> void:
 	if not _find_player():
 		return
 	_tell_them_where_she_is()
+	_run_once_she_is_on_the_landing()
 	_check_hard_fails()
 
 ## The bang outside, on the shared clock. Section one has no street for an explosion to stand on,
@@ -476,10 +532,12 @@ func _retire_finished() -> void:
 ##
 ## **A fresh instance rather than a rewound one**, which is what keeps him fair: a new
 ## `EventInstance` waits at the foot until she is within `masked_pursuer.pursues_within`, then warns
-## her standing there with his hand raised until she comes within `charges_within` of him — for at
-## least `Tuning.WARNING_ALONE_MAX` if she was already that near when he appeared
-## (`EventInstance._warn_on_its_line()`) — so every run he makes gives the warning the first one did. Resuming an old instance would hand her a man already at
-## speed, which is the one thing `still_while_telegraphing` exists to prevent.
+## her standing there with his hand raised until she reaches the first-floor landing or comes within
+## `charges_within` of him (`_run_once_she_is_on_the_landing()`) — for at least
+## `Tuning.WARNING_ALONE_MAX` if she was already there when he appeared
+## (`EventInstance._warn_on_its_line()`) — so every run he makes gives the warning the first one
+## did. Resuming an old instance would hand her a man already at speed, which is the one thing
+## `still_while_telegraphing` exists to prevent.
 func _send_the_masked_man_again(delta: float) -> void:
 	if _pursuer != null:
 		# **His run is over when he is off the end of it**, not when his instance is finally

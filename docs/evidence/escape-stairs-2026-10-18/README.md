@@ -39,5 +39,31 @@ every flight of both shafts at 45 degrees, down and up.
 
 ## The stairwell guard's trigger
 
+**The claim.** The masked man at the foot of the right shaft starts his run on the frame she first
+stands on that shaft's first-floor landing, whichever way she comes to it. From there, the first
+floor's door is her way out at a walk.
+
 - `stairwell-guard-trigger-candidates.png`: the readings of "the end of the second stair" put to
   the player as a question. The player picked B, the first-floor landing of the right shaft.
+- `guard-trigger.txt`: what `tests/probes/escape_stairwell_guard_trigger.gd` prints, on three
+  seeds, for four ways to the landing, at a walk and at a run. Each line gives where she stood
+  when he ran (in local tile units), how far she was from him, and whether she got through the
+  first floor's door. The `late` lines walk on down for that many seconds first, then run back.
+  The first block is this branch. The second is the alternative that was not built, measured with
+  `TRIGGER_RADIUS=343`: no landing, and a 343px charge distance, the smallest circle that leaves no
+  way to the door without setting him off. Rerun:
+  `tools/test.sh probes/escape_stairwell_guard_trigger.gd`, and again with `TRIGGER_RADIUS=343` in
+  the environment. The seeds agree line for line.
+- `guard-trigger.png`: those charge points over the right shaft's lower cells, with the landing on
+  the left and the circle on the right. Made by
+  `python3 guard-trigger.py guard-trigger.txt out.png` (Pillow).
+- `guard-charge.mp4`, its timing in `guard-charge-burst.json`, and `guard-charge-strip.png` (six
+  of its frames). The game's own window: she is held down the right shaft's first two flights onto
+  the first-floor landing, and then up into its door. The readout's `nearest` line turns from
+  `telegraph` to `active` as she steps onto the landing (frame 14). The screen-edge badge comes up
+  while he is still out of view, and he comes into view on his flight. Captured from this branch at
+  `4d88c52c` with the item's change in the working tree (its build label reads `-dirty`), with
+  `tools/shot.sh out.png 11 --start-escape stairwell:right --press ui_accept 0.5 --walk
+  1p3.5e4.3@225@0.3p1.2n --invincible --press snapshot_burst 7.2`, then
+  `tools/clip.sh <burst> <out.mp4>`. `--invincible` stages the shot and also keeps the clock at
+  3:00. She steps through the door after the burst ends.

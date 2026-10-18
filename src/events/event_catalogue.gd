@@ -3041,13 +3041,14 @@ static func _masked_pursuer() -> EventDef:
 	# And the warning is spent standing, not approaching: a man already running when he first
 	# becomes visible has given no notice at all.
 	def.still_while_telegraphing = true
-	# **He warns while she is in the stairwell, and runs once she is within this of him** *(inbox
-	# #764, the player: "player should have to run to the door")*: no clock, so his `telegraph_time`
-	# above is read only by the telegraph contract. 150px is measured on the escape as built
-	# (`tests/test_interior.gd`): she meets it walking down the last flight to the lobby, past the
-	# first floor's door, which is then 199px back up his line — a walker turning for it is caught,
-	# a runner reaches it with about 1.7s to spare at 49px from him at the closest when she turns
-	# within 0.3s; at 155px a walker gets there too.
+	# **He warns while she is in the stairwell, and his run starts on its first-floor landing**
+	# *(inbox #782)*: no clock, so his `telegraph_time` above is read only by the telegraph
+	# contract. That landing is a place no distance from the foot of the shaft describes, so
+	# `InteriorEvents._run_once_she_is_on_the_landing()` hands him a copy of this row that charges
+	# at any distance the moment she stands on it. These 150px set him off only when she comes in
+	# at the lobby's door, the one way into the shaft below the landing: she is always inside them
+	# there, so he warns for `Tuning.WARNING_ALONE_MAX` first *(inbox #764, the player: an event
+	# that does not spawn already charging always needs a warning)*.
 	def.charges_within = 150.0
 	def.hard_fail = true
 	return def
