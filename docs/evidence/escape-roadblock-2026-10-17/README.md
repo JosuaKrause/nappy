@@ -285,10 +285,13 @@ charged at any warning), standing in it (caught), standing and running 0.3s afte
 away, closest 62px to 80px against 26px and 28px catches), and walking on in (caught, but at 3s a
 walker passes the dog's 130px before it runs). 2s is kept for all three rows.
 
-**The masked man's warning.** `stairwell-warning-sweep.txt.gz`,
-`WARNS_FOR=<n> tools/test.sh probes/escape_stairwell_guard_trigger.gd` for n in 0.5 to 3.0: a walker
-is caught on one of her five ways down (plain left from the row below the flight's head) at 0.5s and
-1.0s and on none from 1.5s; a runner gets through on every line at every warning. Built: 1.0s.
+**The masked man's warning.** `stairwell-warning-sweep.txt.gz`, the stairwell probe
+(`tests/probes/escape_stairwell_guard_trigger.gd`) with a warning of n seconds before he runs, for n
+in 0.5 to 3.0, at `30e75013`, whose probe took the warning from a `WARNS_FOR` setting: a walker is
+caught on one of her five ways down (plain left from the row below the flight's head) at 0.5s and
+1.0s and on none from 1.5s, against three of five with none; a runner gets through on every line at
+every warning. The player chose none, as on `main` (inbox #788, "No delay, as on main"), so the
+probe on this branch is `main`'s again, with no warning setting.
 
 **The escape on its own plans.** `probe-one-radius.txt.gz` (`tests/probes/escape_roadblock_cost.gd`,
 whose lure now walks in until his hand goes up, stands until he charges and runs back 0.3s later):
