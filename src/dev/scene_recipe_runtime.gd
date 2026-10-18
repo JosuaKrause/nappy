@@ -222,7 +222,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if not entry is Dictionary:
 				errors.append(where + " entries must be objects")
 				continue
-			_keys(entry, ["name", "row", "at", "path", "age", "route_seed", "mast_id", "heat"] if collection == "events"
+			_keys(entry, ["name", "row", "at", "path", "age", "route_seed", "mast_id", "heat", "hold", "charging", "relentless"] if collection == "events"
 					else ["name", "kind", "at", "direction", "speed"], where, errors)
 			var label: Variant = entry.get("name")
 			if not label is String or str(label).is_empty() or names.has(label):
@@ -246,6 +246,12 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 				_number(entry.get("age", 0), where + ".age", 0, 3600, errors)
 				_number(entry.get("route_seed", 1), where + ".route_seed", 0, 2147483647, errors, true)
 				_number(entry.get("heat", 0), where + ".heat", 0, Tuning.RESISTANCE_GOAL, errors, true)
+				if entry.has("hold") and not entry.hold is bool:
+					errors.append(where + ".hold must be true or false")
+				if entry.has("charging") and not entry.charging is bool:
+					errors.append(where + ".charging must be true or false")
+				if entry.has("relentless") and not entry.relentless is bool:
+					errors.append(where + ".relentless must be true or false")
 				if not entry.get("path", []) is Array:
 					errors.append(where + ".path must be an array")
 				else:
@@ -537,6 +543,16 @@ func install(city: City, player: Stroller, baby: Baby,
 					errors.append("event %s is not live at its required initial position" % entry.name)
 				else:
 					named[entry.name] = plan.live
+					if plan.get_meta("recipe_charging", false):
+						# Set on her from the first frame, as a guard sent after her is: no radius
+						# to cross and no warning to stand through.
+						plan.live.notice_her_at(at, 0.0)
+					if plan.get_meta("recipe_relentless", false):
+						_relentless.append(plan.live)
+					if plan.get_meta("recipe_hold", false):
+						_held.append(plan.live)
+						# Never streamed out either, however far she runs from it.
+						plan.kept_live = true
 	city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
 			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
@@ -909,6 +925,19 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		if plan.age > plan.def.telegraph_time:
 			errors.append("event %s.age cannot skip active simulation; use playback warmup" % entry.name)
 		plan.set_meta("recipe_name", entry.name)
+		if bool(entry.get("hold", false)):
+			if hold_refusal(def) != "":
+				errors.append(hold_refusal_message(str(entry.name), def))
+		plan.set_meta("recipe_hold", bool(entry.get("hold", false)))
+		if bool(entry.get("charging", false)):
+			if charging_refusal(plan.def) != "":
+				errors.append("event %s.charging is refused: row %s %s"
+						% [entry.name, plan.def.id, charging_refusal(plan.def)])
+		plan.set_meta("recipe_charging", bool(entry.get("charging", false)))
+		if bool(entry.get("relentless", false)) and relentless_refusal(plan.def) != "":
+			errors.append("event %s.relentless is refused: row %s %s"
+					% [entry.name, plan.def.id, relentless_refusal(plan.def)])
+		plan.set_meta("recipe_relentless", bool(entry.get("relentless", false)))
 		if def.id == EventScheduler.WalkSiting.MAST_ROW:
 			# Every mast the game stands has an id, and the director's lists and the blackout
 			# find a mast by it: a recipe's own, or the one a mast added for day 11 is named by.
@@ -1045,7 +1074,102 @@ func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 	fixed.force_update_scroll()
 	_fixed_camera = fixed
 
+## Why `hold` is refused for a row, or "" when it may be held. `_process()` reproduces only the plain
+## walk straight away from her that a pursuer on foot leaves by, so every row whose departure is
+## anything else is refused, each with its own reason.
+static func hold_refusal(def: EventDef) -> String:
+	if not def.pursues:
+		return "does not pursue her, so it has no straight walk away to hold"
+	if def.drives:
+		return "drives, and a car leaves by its own rules"
+	if def.investigates:
+		return "lets men out, who walk back to it"
+	if def.stops_where_it_arrives:
+		return "parks where it arrives"
+	if def.spawns_on_finish != "":
+		return "hands on to another event when it finishes"
+	if def.body_stays_behind:
+		return "leaves a barrier standing as a guard walks off"
+	return ""
+
+## Why `charging` is refused for a row, or "" when it may charge from the first frame. `charging: true`
+## has a pursuer that waits for her (`pursues_within`) start the scene already set on her, as the guard
+## a task sends is (`EventInstance.notice_her_at()`), its notice spent: the recording shows the charge
+## rather than waiting for her to walk into its radius. A row that does not wait has no radius to skip,
+## and one that sets off beside her or runs its own line does not charge by that rule.
+static func charging_refusal(def: EventDef) -> String:
+	if not def.pursues or def.pursues_within <= 0.0:
+		return "does not wait for her, so it has no radius to skip"
+	if def.sets_off_beside_her:
+		return "sets off beside her, on its own clock"
+	return ""
+
+## Why `relentless` is refused for a row, or "" when it may be kept coming. `relentless: true` keeps a
+## pursuer from giving up because she ran (`_keep_the_pursuers_coming()`), so a row that does not
+## pursue her has nothing to keep.
+static func relentless_refusal(def: EventDef) -> String:
+	if not def.pursues:
+		return "does not pursue her, so it has no chase to keep going"
+	return ""
+
+## The error a refused `hold` reports, naming the event and the row.
+static func hold_refusal_message(event_name: String, def: EventDef) -> String:
+	return "event %s.hold is refused: row %s %s" % [event_name, def.id, hold_refusal(def)]
+
+## The pursuers the recipe asked never to give up (`relentless`).
+var _relentless: Array[EventInstance] = []
+
+## **A relentless pursuer never gives up because she ran.** A pursuer that has seen her run for
+## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventInstance._chase()`'s `_outrun_for`), right for a played
+## day, and a guard who stops coming half a second into a mother's run in a trailer shot. Each physics
+## tick this clears that running clock, so it never gets near the limit; nothing else about the
+## chase changes, and the game's rule is untouched.
+func _keep_the_pursuers_coming() -> void:
+	for instance in _relentless:
+		if is_instance_valid(instance) and not instance.is_finished and not instance.is_leaving:
+			instance._outrun_for = 0.0
+
+## The events the recipe asked to keep (`hold`), so a recording never loses one to the game's own
+## despawn: see `_process()`.
+var _held: Array[EventInstance] = []
+
+## **A held event is never removed while the scene runs.** A pursuer that gave up the chase walks
+## away and is removed once she is more than `Tuning.OUT_OF_SIGHT` from it, which is well inside the
+## picture on a wide frame, or after `EventInstance.LEAVING_GIVES_UP` seconds: right for a played
+## day, and a dog vanishing in the middle of a trailer shot. Once a held event is leaving, its own
+## process is switched off and this walks it on instead, the same straight departure away from her
+## at the row's own departure speed and gait (`EventInstance._leave()`'s plain branch), with the
+## removal left out, and only for a row whose departure is that plain walk (`hold` on any other row
+## fails the recipe, `hold_refusal()`), and the scene fails if a held event is sent along a set path
+## or otherwise stops leaving in a straight line mid-scene (day 12's park cordon does that).
+## Nothing else about the event changes; the game's despawn rules are untouched.
+func _process(delta: float) -> void:
+	if get_tree().paused:
+		return
+	for instance in _held:
+		if not is_instance_valid(instance) or instance.is_finished or not instance.is_leaving:
+			continue
+		if instance._walks_a_way or not instance._trail.is_empty() \
+				or instance._is_a_guard_leaving_his_barrier():
+			manifest["playback_error"] = "held event %s no longer leaves in a straight line" \
+					% instance.def.id
+			manifest["stopped_tick"] = tick
+			push_error(manifest["playback_error"])
+			if _active:
+				write_manifest()
+				_active = false
+				get_tree().quit(1)
+			return
+		instance.set_process(false)
+		var before := instance._path_travelled
+		var step := instance._leaving_speed() * delta
+		instance.position += instance._heading * step
+		instance._path_travelled += step
+		instance._advance_gait(instance._path_travelled - before)
+		instance._redraw_if_the_picture_changed()
+
 func _physics_process(_delta: float) -> void:
+	_keep_the_pursuers_coming()
 	if _hand_played and not get_tree().paused:
 		tick += 1
 		_bind_task_names()

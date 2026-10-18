@@ -489,11 +489,16 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 		main._open_the_title()
 		t.check(main._title.hard_mode_shown() == case[2],
 				"%s: the box is %s" % [case[3], "shown" if case[2] else "not shown"])
+		# Where the box is not shown a resumed run's mode is decided, so its name stands there.
+		t.check(main._title.mode_name_shown() == ("" if case[2] else "Normal"),
+				"%s: the mode's name is %s" % [case[3], "not shown" if case[2] else "shown"])
 		main._title.close()
-	main._title.open(false)
-	t.check(not main._title.hard_mode_shown(), "the escape's resume gate shows none")
+	main._title.open(false, false, true)
+	t.check(not main._title.hard_mode_shown(), "the escape's resume gate shows no box")
+	t.check(main._title.mode_name_shown() == "Normal", "but names the mode")
 	main._title.open(true)
-	t.check(not main._title.hard_mode_shown(), "nor does the --start-escape epilogue")
+	t.check(not main._title.hard_mode_shown() and main._title.mode_name_shown() == "",
+			"nor does the --start-escape epilogue show a box or a name")
 	main._title.close()
 	main._resume = {}
 	main._ending_shown = false

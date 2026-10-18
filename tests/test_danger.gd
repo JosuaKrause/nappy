@@ -36,6 +36,7 @@ func run(t) -> void:
 	_test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
 	_test_the_pram_says_how_the_baby_is(t)
 	_test_the_babys_cue_only_steps_aside_for_something(t)
+	_test_the_carried_babys_cue_stays_over_her_head(t)
 
 const STEP := 1.0 / 60.0
 
@@ -909,6 +910,27 @@ func _test_the_babys_cue_only_steps_aside_for_something(t) -> void:
 		rig.warn(Stroller.Alert.SOON, 1.0, &"test")
 		t.check(not is_zero_approx(rig.baby_cue_aside()) == in_column,
 				"facing %v steps out of the mark's column only when it shares one" % facing)
+		rig.stand_down(&"test")
+	rig.free()
+
+## Carrying, the cue sits over her head on all eight facings and steps aside to one fixed shoulder,
+## so a run that turns does not move it (inbox #778: the zzz "moves around wildly").
+func _test_the_carried_babys_cue_stays_over_her_head(t) -> void:
+	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var rig: Stroller = scene.instantiate()
+	rig.carrying = true
+	var lift := Stroller.BABY_CUE_LIFT + Stroller.FIGURE_HEIGHT
+	for facing: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT,
+			Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(),
+			Vector2(1, -1).normalized(), Vector2(-1, -1).normalized()]:
+		rig.facing = facing
+		t.check(is_equal_approx(rig.baby_cue_lift(), lift),
+				"carrying, facing %v the cue is over her head" % facing)
+		t.check(is_zero_approx(rig.baby_cue_aside()),
+				"carrying, facing %v with nothing happening the cue is not stepped aside" % facing)
+		rig.warn(Stroller.Alert.SOON, 1.0, &"test")
+		t.check(is_equal_approx(rig.baby_cue_aside(), Stroller.BABY_CUE_ASIDE),
+				"carrying, facing %v the cue steps to the same shoulder" % facing)
 		rig.stand_down(&"test")
 	rig.free()
 
