@@ -1021,7 +1021,7 @@ outcomes* rather than the same outcome at two prices:
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
 | Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`EventDef.stop_excitement`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
-| Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
+| Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does, and for a charger that waits for her only once he has charged, never while he warns — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
 telegraphs. One sent at her from off screen is warned of first like everything that arrives from off
@@ -1203,7 +1203,8 @@ Against the alley robber, walked on the real instance (`tests/probes/charger_war
 | --- | --- |
 | walks up and stops | charged once his 2.0s warning has run, and caught |
 | walks on in | caught |
-| walks or runs away as he warns | never charged: he stops and waits again |
+| walks or runs away as he warns, out of his radius | never charged: he stops and waits again |
+| runs inside his radius as he warns, then stands | charged once his warning has run, and caught: running shakes him off only once he has charged |
 | stands until he charges, then runs | gets away, 62px at the closest |
 | walks away once he has charged | caught |
 

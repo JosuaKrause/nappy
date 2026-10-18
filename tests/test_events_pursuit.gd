@@ -982,6 +982,12 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 		t.check(not answered["caught"] and answered["gave_up"],
 				"running from %s the moment it charges shakes it off (closest %.0fpx)"
 				% [name, answered["closest"]])
+		var ran_inside := _run_inside_the_warning_rig(t, def)
+		t.check(ran_inside["stayed_inside"] and ran_inside["charged"] and ran_inside["caught"]
+				and not ran_inside["gave_up_warning"],
+				"running inside %s's radius as it warns does not call it off: she stands after, " % name
+				+ "and it charges once its warning has run and catches her (ran %.1fs, %.0fpx at most)"
+				% [ran_inside["ran_for"], ran_inside["farthest"]])
 		var charged_then_walked := _standing_rig(t, def, 0.0, 0.0, 10.0, 40.0,
 				INF, Tuning.WALK_SPEED)
 		t.check(charged_then_walked["caught"] and not charged_then_walked["gave_up"],
@@ -1027,6 +1033,50 @@ func _test_a_warning_is_not_counted_as_a_chase(t) -> void:
 			"it begins one at its charge, once its warning has run (%s)" % str(began))
 	EventBus.pursuit_began.disconnect(listen)
 	dog.free()
+
+## **She runs inside his radius while he warns, then stands** (review 4 of PR #781): she stands
+## half his radius out and to one side, he notices her, she runs across in front of him for half a
+## second (her real acceleration, so `PURSUIT_SHAKEN_OFF` is passed with room), staying inside his
+## radius, then stops and stands. Reports whether she stayed inside, whether he gave up while he
+## warned, whether he charged and whether he caught her.
+func _run_inside_the_warning_rig(t, def: EventDef) -> Dictionary:
+	var instance := _instance(t, def, Vector2.ZERO)
+	instance._attach_the_band()
+	var her := Vector2(-def.pursues_within * 0.3, def.pursues_within * 0.5)
+	var speed := 0.0
+	var ran_for := 0.0
+	var noticed_for := -1.0
+	var result := {"stayed_inside": true, "gave_up_warning": false, "charged": false,
+			"caught": false, "ran_for": 0.0, "farthest": 0.0}
+	var elapsed := 0.0
+	while elapsed < 10.0 and not instance.is_finished and not result["caught"]:
+		if noticed_for >= 0.0 and noticed_for < 0.5:
+			speed = move_toward(speed, Tuning.RUN_SPEED, Tuning.ACCELERATION * STEP)
+		else:
+			speed = move_toward(speed, 0.0, Tuning.ACCELERATION * STEP)
+		her.x += speed * STEP
+		instance.player_at = her
+		instance.player_running = speed > Tuning.WALK_SPEED
+		if instance.player_running:
+			ran_for += STEP
+		var was_telegraphing := instance.is_telegraphing()
+		instance._process(STEP)
+		elapsed += STEP
+		if instance.is_telegraphing() or noticed_for >= 0.0:
+			noticed_for = maxf(noticed_for, 0.0) + STEP
+		var off := instance.body_position().distance_to(her)
+		result["farthest"] = maxf(float(result["farthest"]), off)
+		if noticed_for >= 0.0 and off > def.pursues_within:
+			result["stayed_inside"] = false
+		if was_telegraphing and (instance.gave_up or instance.is_leaving):
+			result["gave_up_warning"] = true
+		if was_telegraphing and instance.is_chasing():
+			result["charged"] = true
+		if instance.is_lethal_at(her):
+			result["caught"] = true
+	result["ran_for"] = ran_for
+	instance.free()
+	return result
 
 ## Every pursuer that waits for her, in each state it is met in: every catalogue row on every day
 ## of a run (`EventScheduler._for_day()`, which is where the dog's trigger switches on past
@@ -1336,8 +1386,9 @@ func _test_the_robber_does_not_lunge_through_a_wall(t) -> void:
 ## **A late notice is answered by the warning, not by a stand-off.** The robber waits 20, 40, 60 and
 ## 90px back in the alley; she steps in front of the mouth, the line clear, so he notices her already
 ## near him. **Running off the moment he warns** (0.3s later), on along the sidewalk, she is never
-## charged: she is out of his radius, or he gives up on a runner, before his warning has run; **standing there**, he charges once his warning has run
-## and catches her.
+## charged: she is out of his radius before his warning has run, and he waits again (running counts
+## toward shaking him off only once he has charged); **standing there**, he charges once his warning
+## has run and catches her.
 func _test_a_late_notice_is_answered_by_his_warning(t) -> void:
 	var map := _map()
 	var mouth := _an_alley_mouth(map)
@@ -1371,9 +1422,9 @@ func _test_a_late_notice_is_answered_by_his_warning(t) -> void:
 				if answer == "run" and instance.is_waiting():
 					break
 			if answer == "run":
-				t.check(not charged and not caught,
-						"%dpx in: running off as he warns, she is never charged (he %s)"
-						% [int(back), "waits again" if instance.is_waiting() else "gives up"])
+				t.check(not charged and not caught and instance.is_waiting() and not instance.gave_up,
+						"%dpx in: running off as he warns, she is out of his radius first: never "
+						% int(back) + "charged, and he waits again rather than giving up")
 			else:
 				t.check(charged and caught,
 						"%dpx in: standing in the mouth, he charges once his warning has run" % int(back))

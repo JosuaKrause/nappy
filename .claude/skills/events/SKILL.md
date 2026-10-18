@@ -288,7 +288,9 @@ it was written from. The traps:
   alley robber, the hunting roadblock's guard, the masked man) warns for its row's `warns_for` from
   the frame it notices her inside its one radius, and charges only if she is still inside once
   that has run; out of the radius first, it waits again (`EventInstance.warns_by_radius()`,
-  `notice_time()`; inbox #788). Behind a wall at that moment it goes on warning until the line
+  `notice_time()`; inbox #788). **Running while it warns counts for nothing**: `_chase()` adds to
+  `PURSUIT_SHAKEN_OFF`'s count only once it has charged, or a half-second run beside a roadblock's
+  band would send its guards off with no lure. Behind a wall at that moment it goes on warning until the line
   clears. A late notice, at an alley mouth, is answered by the warning: she has its whole length to
   leave. It notices her only with its warning picture in the camera's view
   (`EventInstance._would_stand_in_her_view()`, the view `EventManager` hands it as `player_view`);

@@ -2690,7 +2690,12 @@ func _chase(delta: float) -> void:
 	# player can state and therefore learn: **run and it gives up.**
 	#
 	# `_last_range` is still tracked because the leaving phase reads it; nothing decides on it.
-	if player_running:
+	#
+	# **A charger that waits for her is shaken off only once he has charged**: while he warns, a
+	# run inside his radius counts for nothing (inbox #788: "If they stay within the charge
+	# starts"), so she answers his warning by leaving the radius, not by running on the spot, and
+	# running beside a roadblock's band does not send its guards off without a lure.
+	if player_running and not (warns_by_radius() and is_telegraphing()):
 		_outrun_for += delta
 	else:
 		_outrun_for = 0.0
@@ -2698,7 +2703,7 @@ func _chase(delta: float) -> void:
 	# An ordinary pursuer keeps its approach notice. A sent pursuer already warned with its badge:
 	# running counts while it is still offscreen, too (tall-owl: "starting to run while he's
 	# offscreen still counts towards the shaking off timer? sure"). One that warns by radius warned
-	# her in place for as long as she stood in its radius, so running counts from its charge.
+	# her in place for as long as she stood in its radius, so running counts from its charge (above).
 	var may_give_up := def.arrives_chasing or def.charges_at_once or warns_by_radius() \
 			or chase_age() >= Tuning.PURSUIT_MIN_NOTICE
 	if _outrun_for >= Tuning.PURSUIT_SHAKEN_OFF and may_give_up:

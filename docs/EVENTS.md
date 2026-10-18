@@ -456,7 +456,10 @@ for every kind-1 row from the catalogue): walking in, she is warned for the whol
 nothing lethal in it, and then charged and caught; standing just inside its radius is charged once
 the warning has run, and caught; baiting it — standing in it and running 0.3s after the charge —
 gets away; running the moment it charges shakes it off; walking away once it charges is caught;
-**walking or running away from a warning is never charged**, and it waits again. A kind-2 man is
+**walking or running away from a warning is never charged**, and it waits again; **running inside
+its radius while it warns and then standing is charged and caught**, since running counts toward
+shaking a waiting charger off only once it has charged, so the answer to a warning is leaving the
+radius, not running on the spot. A kind-2 man is
 walked in `tests/test_pursuer_on_foot.gd`: walking away from him is caught, running shakes him off.
 The door guard is walked at the door in `tests/test_checkpoints.gd`.
 
