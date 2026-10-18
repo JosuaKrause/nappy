@@ -13,3 +13,8 @@ or 46px (father) above the anchor, so 52px clears the tallest by 6px.
   (smooth turns), 5 frames a second, cropped around her, rendered with `tools/trailer.sh --shot`
   from `turn-recipe.json` (the chase recipe without the guards; the first frames are the shot's
   fade in from black).
+- `mark-up-a-vs-b.png`: carrying with a danger mark up (`alert` on the left, the wider `alert_close`
+  on the right), mother above and father below, the cue's two possible steps: A as built (34px) and
+  B a wider step (56px). The step is the same on every facing, so one facing (east) shows it. B was
+  drawn from a temporary local edit of `BABY_CUE_ASIDE`; no code carries it. Drawn by
+  `mark-harness.gd.txt`.

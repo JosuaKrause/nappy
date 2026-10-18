@@ -825,12 +825,13 @@ func _pram_shares_her_column() -> bool:
 ## facings.
 ##
 ## `BABY_CUE_LIFT` is measured from the pram's ground point and clears the pram's own art, which is
-## all it has to do when the pram is the topmost thing under the cue. Walking **due south** it is not: the pram is in front of her and
-## therefore *lower* on the screen, so a cue lifted off the pram alone lands over her chest. There
-## the cue is measured from her instead: `FIGURE_HEIGHT` plus the same clearance
-## (`BABY_CUE_LIFT` less the pram art's height) that the other facings keep over the pram, so it
-## sits just above her head, over the pram's own column, with no extra gap. The lift is taken from
-## the pram's ground point, so the pram's offset below her feet is added back.
+## all it has to do when the pram is the topmost thing under the cue. Walking **due south** it is
+## not: the pram is in front of her and therefore *lower* on the screen, so a cue lifted off the
+## pram alone lands over her chest. There the cue is measured from her instead: `FIGURE_HEIGHT`
+## plus the same clearance (`BABY_CUE_LIFT` less the pram art's height) that the other facings
+## keep over the pram, so it sits just above her head, over the pram's own column, with no extra
+## gap. The lift is taken from the pram's ground point, so the pram's offset below her feet is
+## added back.
 ##
 ## South**-east** and south-west are not that facing, whatever they have in common with it: the
 ## pram already has enough horizontal separation to sit outside her column, and the extra height
