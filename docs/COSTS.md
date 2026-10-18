@@ -50,7 +50,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | poster_crew_square   |  friction |       5.0 |              — |           — |         30.0 |        110.0 |           2.0 |            — |            — |         — |              -5.3 |
 | loudspeaker          |  friction |      20.0 |              — |           — |         45.0 |        210.0 |           2.0 |         22.0 |          5.0 |         — |              40.0 |
 | curfew_announce      |      wall |      30.0 |              — |           — |         45.0 |        210.0 |           2.0 |            — |            — |         — |              73.7 |
-| roadblock            |  friction |       9.0 |              — |           — |         86.0 |        179.0 |           2.0 |            — |            — |         — |               5.6 |
+| roadblock            |  friction |       0.0 |              — |           — |         86.0 |        179.0 |           2.0 |            — |            — |         — |             -23.3 |
 | checkpoint_hut       |  friction |       4.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -4.7 |
 | checkpoint_gate      |  friction |       0.0 |              — |           — |         84.0 |        120.0 |           2.0 |            — |            — |         — |             -15.7 |
 | checkpoint_post      |  friction |       4.0 |              — |           — |         84.0 |         98.0 |           2.0 |            — |            — |         — |              -4.7 |
@@ -110,7 +110,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | poster_crew_square   |      -1.0 |      -1.0 |      -1.3 |      -2.6 |      -4.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | loudspeaker          |       6.5 |       6.5 |       6.5 |       6.1 |       5.1 |       1.4 |      -4.5 |      -6.0 |      -6.0 |      -6.0 |
 | curfew_announce      |      24.0 |      24.0 |      24.0 |      23.0 |      20.7 |      11.9 |      -2.5 |      -6.0 |      -6.0 |      -6.0 |
-| roadblock            |       3.0 |       3.0 |       3.0 |       3.0 |       2.8 |      -1.3 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| roadblock            |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | checkpoint_hut       |      -2.0 |      -2.0 |      -2.0 |      -2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | checkpoint_gate      |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | checkpoint_post      |      -2.0 |      -2.0 |      -2.0 |      -2.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -170,7 +170,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | poster_crew_square   |      -3.2 |      -3.2 |      -3.4 |      -4.1 |      -5.4 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | loudspeaker          |       0.9 |       0.9 |       0.9 |       0.6 |       0.1 |      -1.9 |      -5.2 |      -6.0 |      -6.0 |      -6.0 |
 | curfew_announce      |      10.5 |      10.5 |      10.5 |      10.0 |       8.7 |       3.8 |      -4.1 |      -6.0 |      -6.0 |      -6.0 |
-| roadblock            |      -1.0 |      -1.0 |      -1.0 |      -1.0 |      -1.2 |      -3.4 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
+| roadblock            |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | checkpoint_hut       |      -3.8 |      -3.8 |      -3.8 |      -3.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | checkpoint_gate      |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
 | checkpoint_post      |      -3.8 |      -3.8 |      -3.8 |      -3.8 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |      -6.0 |
@@ -230,7 +230,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | poster_crew_square   |         — |      -5.3 |      -5.5 |      -6.5 |       0.0 |
 | loudspeaker          |         — |      14.4 |      13.6 |       9.7 |       2.8 |
 | curfew_announce      |      55.3 |      54.6 |      52.7 |      43.5 |      27.1 |
-| roadblock            |         — |      10.2 |       9.8 |       8.2 |       2.9 |
+| roadblock            |         — |     -23.2 |     -22.7 |     -20.9 |     -17.3 |
 | checkpoint_hut       |         — |      -4.6 |      -4.4 |      -3.2 |       0.0 |
 | checkpoint_gate      |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | checkpoint_post      |         — |      -4.6 |      -4.4 |      -3.2 |       0.0 |
@@ -290,7 +290,7 @@ Deterministic: fixed row order, fixed decimals (one), a fixed pulse sampling, a 
 | poster_crew_square   |         — |      -9.3 |      -9.0 |      -8.0 |       0.0 |
 | loudspeaker          |         — |      -4.3 |      -4.6 |      -6.0 |      -8.6 |
 | curfew_announce      |      18.1 |      17.7 |      16.9 |      12.5 |       4.8 |
-| roadblock            |         — |      -4.8 |      -4.8 |      -4.9 |      -6.2 |
+| roadblock            |         — |     -23.2 |     -22.7 |     -20.9 |     -17.3 |
 | checkpoint_hut       |         — |      -8.1 |      -7.7 |      -5.0 |       0.0 |
 | checkpoint_gate      |         — |     -15.5 |     -14.7 |     -11.7 |       0.0 |
 | checkpoint_post      |         — |      -8.1 |      -7.7 |      -5.0 |       0.0 |

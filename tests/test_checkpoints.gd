@@ -51,11 +51,11 @@ func run(t) -> void:
 	_test_the_boom_never_inspects_her(t)
 	_test_the_arm_never_comes_down_on_her(t)
 	_test_walking_under_the_boom_sets_a_guard_on_her(t)
+	_test_the_guard_who_warned_is_the_guard_who_comes(t)
 	_test_the_guard_leaves_room_to_answer(t)
 	_test_a_walk_under_the_boom_is_seen(t)
 	_test_a_raised_boom_does_not_open_the_checkpoint_for_her(t)
 	_test_a_huts_hold_ends_the_door_guards_chase(t)
-	_test_the_alley_door_guard_waits_half_a_second(t)
 	_test_a_hold_at_the_guards_own_hut_ends_it_too(t)
 	_test_a_hold_does_not_end_the_roadblock_guard(t)
 	_test_a_huts_hold_does_not_end_the_robbers_chase(t)
@@ -675,16 +675,16 @@ class _DoorWorld extends WorldContext:
 ## **The hold charges its toll and nothing else.** She is inside the hut for those two seconds, not
 ## on the pavement, so a door standing beside a loud field has to cost exactly what a door standing
 ## on a quiet street costs — *"it works in both directions with the same cost each time"*. A
-## `roadblock` is parked across the corner at its full rate to make the rig mean something.
+## `loudspeaker` stands across the corner at its full rate to make the rig mean something (a
+## `roadblock`'s band costs nothing, so it cannot).
 ##
 ## **What makes it mean something is stated over what this rig could see**, not over the toll. With
-## the fields left running through the hold, the roadblock alone would land its rate times the two
+## the fields left running through the hold, the loudspeaker alone would land its rate times the two
 ## seconds of the hold on top of the toll — and the assertion below reads the toll to within
 ## `TOLL_TOLERANCE`, so the leak has to be several times that or a rig that measured nothing would
-## look identical to one that measured the rule. Said against the toll instead, the guard was
-## really asking the roadblock to be louder than a door, which is a balance decision it has no
-## business holding: it went red when `roadblock` dropped to 9/s on a leak it would still have
-## caught twelve times over.
+## look identical to one that measured the rule. Said against the toll instead, the guard would be
+## asking the neighbour to be louder than a door, which is a balance decision it has no business
+## holding.
 func _test_the_hold_charges_only_its_toll(t) -> void:
 	var world := _DoorWorld.new()
 	t.add_child(world)
@@ -701,7 +701,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	var centre := Vector2(5200.0, 5200.0)
 	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
 	manager._instances.append(hut)
-	var loud := _door_instance(t, "roadblock", centre + Vector2(0.0, 72.0), axis)
+	var loud := _door_instance(t, "loudspeaker", centre + Vector2(0.0, 72.0), axis)
 	# Past its own telegraph, so the field it is standing there with is the field it declares.
 	loud.age = loud.def.telegraph_time + 1.0
 	manager._instances.append(loud)
@@ -712,7 +712,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	var beside_it := loud.contribution_at(entry)
 	var would_leak := beside_it * Tuning.CHECKPOINT_DETAIN_SECONDS
 	t.check(would_leak > TOLL_TOLERANCE * 4.0,
-			("a leak would be worth %.1f points of the roadblock beside the door over the hold, " +
+			("a leak would be worth %.1f points of the loudspeaker beside the door over the hold, " +
 			"well past the %.1f this rig reads the toll to — otherwise it checks nothing")
 			% [would_leak, TOLL_TOLERANCE])
 
@@ -733,7 +733,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 			"the whole crossing costs the toll and nothing else (%.1f against %.0f)"
 			% [baby.excitement - before, Tuning.CHAT_EXCITEMENT], TOLL_TOLERANCE)
 	t.close_to(loud.landed(), 0.0,
-			"and nothing of it is attributed to the roadblock beside the door (%.1f)"
+			"and nothing of it is attributed to the loudspeaker beside the door (%.1f)"
 			% loud.landed(), 0.01)
 
 	# And the moment she is out, the street is back: the silence is a fact about being inside a
@@ -749,11 +749,12 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	world.free()
 	manager.free()
 
-## **A wall and the door beside it are one barrier, not five.** *(2026-09-20, the player: "since
-## two gates can be adjacent to each other their influence shouldn't add up".)* The rig is the
-## corner day 7 of the run died at: a region wall's three `roadblock` bodies a tile apart across
-## one street, and a door's hut and gate across the cross street, with her standing where the
-## release sets her down.
+## **A boundary's structures are one barrier, not five.** *(2026-09-20, the player: "since two
+## gates can be adjacent to each other their influence shouldn't add up".)* The rig is the corner
+## day 7 of the run died at, with the region wall's three `roadblock` bodies a tile apart across
+## one street stood in for by three alley-door `checkpoint_post`s (a roadblock's band costs
+## nothing, so the wall's own bodies would overlap nothing), and a door's hut and gate across the
+## cross street, with her standing where the release sets her down.
 ##
 ## Three things have to agree, and the point of holding them together is that they are three
 ## different code paths reading one answer: the meter's own sum, what each body's `landed()` says
@@ -767,7 +768,8 @@ func _test_a_boundarys_structures_charge_as_one(t) -> void:
 	var here := Vector2(6400.0, 6400.0)
 	var kit: Array[EventInstance] = []
 	for i in 3:
-		var block := _door_instance(t, "roadblock", here + Vector2(-56.0, -32.0 + i * 32.0), axis)
+		var block := _door_instance(t, "checkpoint_post", here + Vector2(-56.0, -32.0 + i * 32.0),
+				axis)
 		block.age = block.def.telegraph_time + 1.0
 		kit.append(block)
 	kit.append(_door_instance(t, "checkpoint_hut", here + Vector2(0.0, 54.0), axis))
@@ -1236,7 +1238,8 @@ func _test_the_ground_she_is_let_out_onto_is_survivable(t) -> void:
 ##   check is asked of the rule itself, at the distance the run actually put it at.
 ## - **The barriers are not**, and cannot be: they are the region wall, they stand where the
 ##   boundary is, and dropping one opens a street the partition means to hold. What makes them
-##   survivable is that all four bodies are one source.
+##   survivable is that a roadblock's band costs nothing, so the wall's three add nothing to the
+##   hut's own rate.
 func _test_the_run_that_killed_her_five_times(t) -> void:
 	var axis := Vector2.RIGHT
 	var hut_at := Vector2(8000.0, 8000.0)
@@ -1262,17 +1265,15 @@ func _test_the_run_that_killed_her_five_times(t) -> void:
 			"hut against a gap of %.0f plus its own %.0fpx of field")
 			% [patrol_at.distance_to(hut_at), Tuning.CHECKPOINT_EVENT_GAP, patrol.field_reach()])
 
-	var summed := 0.0
+	var walls := 0.0
 	for plan in plans:
-		if plan.def.barrier_structure:
-			summed += plan.def.emission_at_distance(maxf(0.0,
+		if plan.def == wall:
+			walls += plan.def.emission_at_distance(maxf(0.0,
 					plan.position.distance_to(released)
 					- (plan.def.shape.half_length if plan.def.shape.kind
 					== GroundShape.Kind.SEGMENT else 0.0)))
-	var one_source := _planned_field_at(plans, released)
-	t.check(summed > one_source * 1.8,
-			("the four barriers summed are %.1f/s where the strongest alone is %.1f/s — the run " +
-			"took the first number") % [summed, one_source])
+	t.check(walls == 0.0,
+			"the wall's three roadblocks beside the release cost nothing (%.1f/s)" % walls)
 
 	var peak := _peak_walking_out(plans, released, Vector2.UP)
 	t.check(peak < Tuning.METER_MAX,
@@ -1977,15 +1978,25 @@ func _test_a_walk_under_the_boom_is_seen(t) -> void:
 			% [city.events.walks_under_a_boom(), before])
 	_free_street_door_rig(rig)
 
-## **Near the raised boom the guard across the road raises his hand; a walk under it sets him on her
-## at once.** *(2026-09-24: "Or guards that pursue her should spawn at the huts" · "One guard is
-## enough"; inbox #764: when the player approaches the boom gate the guard should raise the hand,
-## the warning radius round the boom gate, and when she goes under it he should immediately start
-## charging.)* Within `EventManager.DOOR_WARNING_RADIUS` of the raised boom, the hut across the road
-## from her warns (`guard_warns_her`) and the nearer one does not; a `door_guard` steps out of the
-## wall of that hut, on the side of the line she crossed to, charging from his first frame, while the
-## hut's own guard stays at his post; a second walk under while he is after her sets nobody else on
-## her.
+## Holds her where she is for `seconds`, the door's lines watched every frame at `STEP` and its
+## hands raised as the game raises them.
+func _stand_for(rig: Dictionary, seconds: float) -> void:
+	var city: City = rig["city"]
+	for i in int(round(seconds / STEP)):
+		city.events._warn_at_the_doors()
+		city.events._watch_the_door_lines(STEP)
+
+## **A walk under the boom warns first, on a clock: going back calls it off, staying across sets
+## the guard on her.** *(2026-09-24: "Or guards that pursue her should spawn at the huts" · "One
+## guard is enough"; inbox #788, the player: "The actual crossing will start the timer and if the
+## player goes back no charge happens but if they stay crossed the charge will start. Warning
+## starts when the player is crossing".)* Walking up to the raised boom, nobody raises his hand. The
+## frame she crosses, the guard at the hut across the road from her raises his (`guard_warns_her`),
+## counted once on the page; for `Tuning.CROSSING_WARNING` nobody comes; back across the line
+## before it runs, it is called off and nobody comes after it either. Staying across, once it has
+## run a `door_guard` steps out of the wall of that hut, on her side of the line, charging from his
+## first frame, while the hut's own guard stays at his post; a second walk under while he is after
+## her sets nobody else on her.
 func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
@@ -2002,26 +2013,34 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	var near_hut := huts[0] if huts[0].global_position.distance_to(lane) \
 			< huts[1].global_position.distance_to(lane) else huts[1]
 	var far_hut := huts[1] if near_hut == huts[0] else huts[0]
-	_step_her_to(rig, lane - axis * (EventManager.DOOR_WARNING_RADIUS + 40.0))
-	city.events._warn_at_the_doors()
+	_step_her_to(rig, lane - axis * 20.0)
+	_stand_for(rig, 0.5)
 	t.check(not near_hut.guard_warns_her and not far_hut.guard_warns_her,
-			"far from the boom, no guard raises his hand")
+			"walking up to the raised boom, no guard raises his hand")
 	var warned: Array[String] = []
 	var on_warned := func(id: String) -> void: warned.append(id)
 	EventBus.pursuit_warned.connect(on_warned)
-	_step_her_to(rig, lane - axis * 20.0)
-	city.events._warn_at_the_doors()
-	t.check(far_hut.guard_warns_her and not near_hut.guard_warns_her,
-			"near the raised boom, the guard across the road raises his hand")
-	city.events._warn_at_the_doors()
-	EventBus.pursuit_warned.disconnect(on_warned)
-	t.check(warned == ["door_guard"],
-			"and the page counts it as the checkpoint guard's warning, once while it is up (%s)" % [warned])
-	t.check(city.events._guard_after_her == null, "nobody is after her before she crosses")
+	# Across, and back before the warning runs: called off.
 	_step_her_to(rig, lane + axis * 20.0)
+	_stand_for(rig, Tuning.CROSSING_WARNING * 0.5)
+	t.check(far_hut.guard_warns_her and not near_hut.guard_warns_her,
+			"the frame she crosses, the guard across the road raises his hand")
+	t.check(city.events._guard_after_her == null, "and nobody is after her yet")
+	_step_her_to(rig, lane - axis * 20.0)
+	_stand_for(rig, Tuning.CROSSING_WARNING * 2.0)
+	t.check(city.events._guard_after_her == null and not far_hut.guard_warns_her,
+			"back across before it runs, it is called off: nobody comes, and his hand is down")
+	# Across, and staying across: the guard comes once it has run.
+	_step_her_to(rig, lane + axis * 20.0)
+	_stand_for(rig, Tuning.CROSSING_WARNING - 0.1)
+	t.check(city.events._guard_after_her == null, "staying across, nobody comes before it runs")
+	_stand_for(rig, 0.2)
+	EventBus.pursuit_warned.disconnect(on_warned)
+	t.check(warned == ["door_guard", "door_guard"],
+			"and the page counts each crossing's warning once (%s)" % [warned])
 	var guard := city.events._guard_after_her
 	t.check(guard != null and guard.def.id == "door_guard",
-			"walking under the boom sets a door_guard on her")
+			"once it has run, a door_guard is set on her")
 	if guard:
 		t.check(city.events.instances().has(guard), "a live event, like anything else in the day")
 		t.check(guard.global_position.distance_to(far_hut.global_position)
@@ -2035,98 +2054,109 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 		t.check(not guard.is_telegraphing() and not guard.is_waiting(), "and charging at once")
 		t.check(not far_hut.is_finished and not far_hut.is_its_guard_inside(),
 				"while the hut and its own guard stay where they are")
+	var walks := city.events.walks_under_a_boom()
 	_step_her_to(rig, lane - axis * 20.0)
-	t.check(city.events.walks_under_a_boom() == 2 and city.events._guard_after_her == guard,
+	_stand_for(rig, Tuning.CROSSING_WARNING + 0.2)
+	t.check(city.events.walks_under_a_boom() == walks + 1 and city.events._guard_after_her == guard,
 			"walking back under it while he is after her sets nobody else on her")
-	gate.gate_state.raised = false
-	city.events._warn_at_the_doors()
-	t.check(not far_hut.guard_warns_her and not near_hut.guard_warns_her,
-			"with the boom down, nobody warns her: she cannot go under it")
 	_free_street_door_rig(rig)
 
-## **The guard's charge, walked at the door's own geometry.** The catalogue's pursuer rigs
-## (`tests/test_events_pursuit.gd`) walk a pursuer the director sites outside its stand-off; this one
-## charges at once from the hut across the road as she goes under the boom (`charges_at_once`), so
-## its rig is here. **His warning came first**, the raised hand while she was near the boom, so the
-## answer is to go under it running or not at all: walking on is caught, standing is caught, and
-## going under at a run — on along the street, or away across it — escapes, and he gives up rather
-## than tailing her. Turning to run only after she has walked under is too late, and the print says
-## how soon he catches her.
+## **The man who warned her is the man who comes** (review 4 of PR #781). She crosses under the
+## raised boom in the near lane, so the guard at the hut across the road raises his hand; through
+## the warning she walks on across the street to the far lane, still past the line, which makes the
+## other hut the farther one by then. Once the warning has run, the `door_guard` steps out of the
+## hut whose guard warned her (`EventManager._crossing_hut`), not out of the one now farther away.
+func _test_the_guard_who_warned_is_the_guard_who_comes(t) -> void:
+	var rig := _street_door_rig(t)
+	var city: City = rig["city"]
+	var gate: EventInstance = rig["gate"]
+	var huts: Array[EventInstance] = []
+	huts.assign(rig["huts"])
+	if not gate or huts.size() != 2:
+		_free_street_door_rig(rig)
+		return
+	var axis := gate.facing_now()
+	var across := Vector2(-axis.y, axis.x)
+	gate.gate_state.raised = true
+	var lane := gate.global_position + across * 16.0
+	var near_hut := huts[0] if huts[0].global_position.distance_to(lane) \
+			< huts[1].global_position.distance_to(lane) else huts[1]
+	var far_hut := huts[1] if near_hut == huts[0] else huts[0]
+	_step_her_to(rig, lane - axis * 20.0)
+	_step_her_to(rig, lane + axis * 20.0)
+	_stand_for(rig, 0.5)
+	t.check(far_hut.guard_warns_her and not near_hut.guard_warns_her,
+			"crossing in the near lane, the guard across the road raises his hand")
+	var far_lane := gate.global_position - across * 60.0 + axis * 20.0
+	_step_her_to(rig, far_lane)
+	t.check(far_lane.distance_to(near_hut.global_position)
+			> far_lane.distance_to(far_hut.global_position),
+			"walked on to the far lane, the hut that warned her is now the nearer one")
+	_stand_for(rig, Tuning.CROSSING_WARNING)
+	var guard := city.events._guard_after_her
+	t.check(guard != null and guard.global_position.distance_to(far_hut.global_position)
+			<= far_hut.def.obstructs_radius + 0.5,
+			"once the warning has run, the guard steps out of the hut that warned her (%s)"
+			% ("%.1fpx from it, %.1fpx from the other" % [
+					guard.global_position.distance_to(far_hut.global_position),
+					guard.global_position.distance_to(near_hut.global_position)]
+			if guard else "nobody came"))
+	_free_street_door_rig(rig)
+
+## **The answer to a crossing, walked at the door's own geometry**, a street door's and an alley
+## door's. Once she has crossed, `Tuning.CROSSING_WARNING` runs (the hand across the road, or the
+## post's, raised) and then the guard steps out of that hut or post and charges at once; going back
+## within it is the answer that brings nobody (`_test_walking_under_the_boom_sets_a_guard_on_her`).
+## Staying across, what she does through the warning decides it: walking on is caught, standing is
+## caught, and going on at a run — on along the street, or away across it — escapes, and he gives up
+## rather than tailing her. From a street door's far hut he steps out 32px along the street from its
+## centre, 80px across from the near lane she crossed in; from an alley's post, 32px along, 16px to
+## 48px across.
 func _test_the_guard_leaves_room_to_answer(t) -> void:
 	var def := EventCatalogue.by_id("door_guard")
 	t.check(def != null and def.pursues and def.hard_fail and def.charges_at_once,
-			"door_guard is a lethal pursuer that charges at once")
+			"door_guard is a lethal pursuer that charges at once once the crossing's warning has run")
 	if not def:
 		return
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
-	# The door's own geometry: he steps out of the far hut's wall 32px along the street from its
-	# centre, and she has just crossed the line in the near lane, 80px across from that hut.
-	var guard_at := Vector2(32.0, 80.0)
-	var her_at := Vector2(1.0, 0.0)
-	t.check(guard_at.distance_to(her_at) < standoff,
-			"he starts inside his own %.0fpx stand-off: the warning was the hut's" % standoff)
-	var walked := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, Tuning.WALK_SPEED, 0.0)
-	t.check(walked["caught"], "walking on along the street is caught (at %.2fs)" % walked["ended_at"])
-	var stood := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, 0.0, 0.0)
-	t.check(stood["caught"], "and so is standing there (at %.2fs)" % stood["ended_at"])
-	for heading: Vector2 in [Vector2.RIGHT, Vector2(1.0, -1.0).normalized(), Vector2.UP]:
-		var ran := _guard_rig(def, guard_at, her_at, heading, Tuning.RUN_SPEED, 0.0)
-		t.check(not ran["caught"] and ran["gave_up"],
-				"going under at a run, on toward %s, outpaces him and he gives up (%.1fs)"
-				% [heading, ran["ended_at"]])
-	var late := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, Tuning.RUN_SPEED, 0.3)
-	print("[test_checkpoints] door_guard rig: walking on caught at %.2fs, standing at %.2fs; "
-			% [walked["ended_at"], stood["ended_at"]] + "running 0.3s after going under: %s at %.2fs"
-			% ["caught" if late["caught"] else "free", late["ended_at"]])
-
-## **At an alley's door the guard waits half a second, then charges** *(inbox #764, the player, of an
-## alley door, which has no boom and so no guard across the road: "maybe 0.5s wait before charging
-## after crossing?")*. He steps out of the post's wall beside her (`EventCatalogue.alley_door_guard()`)
-## and stands with his hand raised for `ALLEY_DOOR_GUARD_WAIT`, then charges. Walked from the post's
-## own geometry — he steps out 32px along the alley from its centre, and she has passed it 16px to
-## 48px across — the print says what each answer does: walking on, and running from the moment she
-## passes, at each distance.
-func _test_the_alley_door_guard_waits_half_a_second(t) -> void:
-	var def := EventCatalogue.alley_door_guard()
-	t.check(def.validate() and def.charges_at_once and def.stands_for_its_notice
-			and is_equal_approx(def.telegraph_time, EventCatalogue.ALLEY_DOOR_GUARD_WAIT),
-			"the alley door's guard is a valid charger that waits %.1fs" % def.telegraph_time)
 	var lines: Array[String] = []
-	# His own instance sends no warning: the post's guard's raised hand was it, counted where it
-	# went up (`EventManager._warn_at_the_doors()`), so a crossing counts one, as at a boom.
-	var warned: Array[String] = []
-	var on_warned := func(id: String) -> void: warned.append(id)
-	EventBus.pursuit_warned.connect(on_warned)
-	for across: float in [16.0, 32.0, 48.0]:
-		var guard_at := Vector2(32.0, across)
+	for guard_at: Vector2 in [Vector2(32.0, 80.0), Vector2(32.0, 16.0), Vector2(32.0, 48.0)]:
 		var her_at := Vector2(1.0, 0.0)
-		var walked := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, Tuning.WALK_SPEED, 0.0)
-		t.check(walked["caught"] and not walked["lethal_in_notice"],
-				"%.0fpx across: walking on is caught, and not during his half second" % across)
-		var ran := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, Tuning.RUN_SPEED, 0.0)
-		var away := _guard_rig(def, guard_at, her_at, Vector2(1.0, -1.0).normalized(),
-				Tuning.RUN_SPEED, 0.0)
-		lines.append("%.0fpx across: walking on caught at %.2fs; running on %s; running away %s" % [
-				across, walked["ended_at"],
-				"caught at %.2fs" % ran["ended_at"] if ran["caught"] else "free",
-				"caught at %.2fs" % away["ended_at"] if away["caught"] else "free"])
-		t.check(not away["caught"],
-				"%.0fpx across: running away from him the moment she passes escapes" % across)
-	EventBus.pursuit_warned.disconnect(on_warned)
-	t.check(warned.is_empty(), "and his own instance counts no warning of its own (%s)" % [warned])
-	print("[test_checkpoints] alley door guard: " + "; ".join(lines))
+		var where := "from %s" % guard_at
+		var walked := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, Tuning.WALK_SPEED, 0.0,
+				Tuning.CROSSING_WARNING)
+		t.check(walked["caught"], "%s: walking on along the street is caught (at %.2fs)"
+				% [where, walked["ended_at"]])
+		var stood := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, 0.0, 0.0,
+				Tuning.CROSSING_WARNING)
+		t.check(stood["caught"], "%s: and so is standing there (at %.2fs)" % [where, stood["ended_at"]])
+		for heading: Vector2 in [Vector2.RIGHT, Vector2(1.0, -1.0).normalized(), Vector2.UP]:
+			var ran := _guard_rig(def, guard_at, her_at, heading, Tuning.RUN_SPEED, 0.0,
+					Tuning.CROSSING_WARNING)
+			t.check(not ran["caught"] and ran["gave_up"],
+					"%s: going on at a run toward %s outpaces him and he gives up (%.1fs)"
+					% [where, heading, ran["ended_at"]])
+		lines.append("%s: walking on caught at %.2fs, standing at %.2fs" % [where,
+				walked["ended_at"], stood["ended_at"]])
+	print("[test_checkpoints] door_guard after the %.1fs crossing warning: %s"
+			% [Tuning.CROSSING_WARNING, "; ".join(lines)])
 
 ## Walks her from `her_at` along `heading`, walking until `reaction` seconds and at `speed`
-## (accelerating as she really does) after it, against a `door_guard` set off at `guard_at`.
+## (accelerating as she really does) after it, against a `door_guard` set off at `guard_at` once
+## `head_start` seconds have passed (the crossing's warning, with nobody in the world yet).
 func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vector2,
-		speed: float, reaction: float) -> Dictionary:
-	var guard := EventInstance.new()
-	guard.setup(def, guard_at)
+		speed: float, reaction: float, head_start := 0.0) -> Dictionary:
 	var her := her_at
 	var moving := minf(speed, Tuning.WALK_SPEED)
 	var elapsed := 0.0
+	while elapsed < head_start:
+		var early := speed if elapsed >= reaction else minf(speed, Tuning.WALK_SPEED)
+		moving = move_toward(moving, early, Tuning.ACCELERATION * STEP)
+		her += heading * moving * STEP
+		elapsed += STEP
+	var guard := EventInstance.new()
+	guard.setup(def, guard_at)
 	var result := {"caught": false, "gave_up": false, "lethal_in_notice": false, "ended_at": INF}
-	while elapsed < 12.0 and not guard.is_finished and not guard.is_leaving:
+	while elapsed < 12.0 + head_start and not guard.is_finished and not guard.is_leaving:
 		var wanted := speed if elapsed >= reaction else minf(speed, Tuning.WALK_SPEED)
 		moving = move_toward(moving, wanted, Tuning.ACCELERATION * STEP)
 		her += heading * moving * STEP

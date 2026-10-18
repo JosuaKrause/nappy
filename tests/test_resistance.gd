@@ -109,6 +109,8 @@ func run(t) -> void:
 	_test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
 	_test_the_swings_touch_is_the_ellipse_at_its_base(t)
 	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
+	_test_a_crossing_taken_back_does_not_do_day_nine(t)
+	_test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t)
 	_test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t)
 	_test_day_nine_completes_when_she_is_let_through_after_the_inspection(t)
 	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
@@ -4908,6 +4910,139 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
 	GameState.city_state = saved_state
 
+## Review 4 of PR #781, day 9: **a walked crossing counts only once it stands.** Under the named
+## door's raised boom the crossing starts its warning (`EventManager._start_the_crossing_warning()`,
+## `Tuning.CROSSING_WARNING`); she steps back across the line halfway through it, so the crossing is
+## called off and no guard comes, and the task is not done either, however long she then waits:
+## `door_crossed` is sent only when the warning has run with her still across. Walked through and
+## staying across, the same door then does the task, with its guard after her.
+func _test_a_crossing_taken_back_does_not_do_day_nine(t) -> void:
+	_build_city(t)
+	var saved_state := GameState.city_state
+	_with_clean_run(func() -> void:
+		for direction: float in [1.0, -1.0]:
+			_city.events.stream_radius = INF
+			var read := _read_the_mark_on(t, 9, SEED)
+			var director: ResistanceDirector = read[0]
+			var player: Stroller = read[2]
+			var events := _city.events
+			if director._door_at == Vector2.INF:
+				t.check(false, "day 9's door is named")
+				player.free()
+				director.free()
+				continue
+			events._player = player
+			if is_instance_valid(events._guard_after_her):
+				events._guard_after_her.give_up_the_chase()
+			var at := director._door_at
+			var axis := director._door_axis
+			player.global_position = at - axis * 40.0 * direction
+			events._last_seen_at = Vector2.INF
+			events._watch_the_door_lines()
+			player.global_position = at + axis * 40.0 * direction
+			events._watch_the_door_lines()
+			t.check(events._crossing != null, "walking under the named boom starts its warning")
+			for i in int(round(Tuning.CROSSING_WARNING * 0.5 / STEP)):
+				events._watch_the_door_lines(STEP)
+			t.check(not director._contact.is_done,
+					"halfway through the crossing's warning the task is not done yet")
+			player.global_position = at - axis * 40.0 * direction
+			events._watch_the_door_lines(STEP)
+			t.check(events._crossing == null, "stepping back across calls the crossing off")
+			for i in int(ceil(Tuning.CROSSING_WARNING * 2.0 / STEP)):
+				events._watch_the_door_lines(STEP)
+			var guard_before := events._guard_after_her
+			t.check(not director._contact.is_done and (not is_instance_valid(guard_before)
+					or guard_before.is_finished or guard_before.is_leaving),
+					"a crossing taken back does not do the task, and sets no guard on her")
+			_walk_through(at, axis, direction, player)
+			var guard := events._guard_after_her
+			t.check(director._contact.is_done and guard != null and guard != guard_before
+					and not guard.is_finished and not guard.is_leaving,
+					"walked through and staying across, the same door does the task, its guard after her")
+			if guard:
+				guard.give_up_the_chase()
+			player.free()
+			director.free()
+		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
+	GameState.city_state = saved_state
+
+## Reviews 5 and 6 of PR #781, day 9 at two doors: **a walked crossing counts only if she is still
+## across that door's line when a guard is set on her for it.** She walks under another door A's
+## raised boom (A's warning starts) and then, inside A's 2s, under the named door B or not, which
+## starts no warning of its own while A's runs (`EventManager._held_crossings`). Every combination is
+## walked: B not crossed, crossed and stayed across, or crossed and taken back; A then stayed across
+## or taken back before its 2s. A's guard comes exactly when she stays across A, and the task is done
+## exactly when she is across both when he comes. She steps between the two doors as a rig does
+## (`_last_seen_at` cleared), so the step is not seen as a walk across anything.
+func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> void:
+	_build_city(t)
+	var saved_state := GameState.city_state
+	_with_clean_run(func() -> void:
+		for a_stays: bool in [true, false]:
+			for b_walk: String in ["none", "stays", "back"]:
+				_city.events.stream_radius = INF
+				var read := _read_the_mark_on(t, 9, SEED)
+				var director: ResistanceDirector = read[0]
+				var player: Stroller = read[2]
+				var events := _city.events
+				events._player = player
+				if is_instance_valid(events._guard_after_her):
+					events._guard_after_her.give_up_the_chase()
+				var b_at := director._door_at
+				var b_axis := director._door_axis
+				var a_at := Vector2.INF
+				var a_axis := Vector2.ZERO
+				# Another door's boom with the named door well to one side of its line, so that she
+				# can be across A's line while she stands at B.
+				for body in _city.region_plan().door_bodies:
+					if body.def.lifts_for_traffic and body.position.distance_to(b_at) > 200.0 \
+							and absf((b_at - body.position).dot(body.facing)) > 100.0:
+						a_at = body.position
+						a_axis = body.facing
+						break
+				t.check(b_at != Vector2.INF and a_at != Vector2.INF, "day 9 names a door and has another")
+				if b_at == Vector2.INF or a_at == Vector2.INF:
+					player.free()
+					director.free()
+					continue
+				var name := "A %s, B %s" % ["stayed across" if a_stays else "taken back", {
+						"none": "not crossed", "stays": "stayed across", "back": "taken back"}[b_walk]]
+				# Across A toward B's side of A's line, so that standing at B she is still across A.
+				var a_dir := signf((b_at - a_at).dot(a_axis))
+				var step_to := func(at: Vector2, jump := false) -> void:
+					player.global_position = at
+					if jump:
+						events._last_seen_at = Vector2.INF
+					events._watch_the_door_lines(STEP)
+				step_to.call(a_at - a_axis * 40.0 * a_dir, true)
+				step_to.call(a_at + a_axis * 40.0 * a_dir)
+				t.check(events._crossing != null, "%s: walking under A's boom starts its warning" % name)
+				if b_walk != "none":
+					step_to.call(b_at - b_axis * 40.0, true)
+					step_to.call(b_at + b_axis * 40.0)
+					t.check(not director._contact.is_done,
+							"%s: under the named door while A's warning runs, nothing is done yet" % name)
+					if b_walk == "back":
+						step_to.call(b_at - b_axis * 40.0)
+				if not a_stays:
+					step_to.call(a_at + a_axis * 40.0 * a_dir, true)
+					step_to.call(a_at - a_axis * 40.0 * a_dir)
+				for i in int(ceil(Tuning.CROSSING_WARNING * 2.0 / STEP)):
+					events._watch_the_door_lines(STEP)
+				var guard := events._guard_after_her
+				var chased := is_instance_valid(guard) and not guard.is_finished and not guard.is_leaving
+				var done_expected := a_stays and b_walk == "stays"
+				t.check(chased == a_stays and director._contact.is_done == done_expected,
+						"%s: A's guard %s and the task is %s" % [name,
+						"comes" if a_stays else "does not come", "done" if done_expected else "not done"])
+				if chased:
+					guard.give_up_the_chase()
+				player.free()
+				director.free()
+		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
+	GameState.city_state = saved_state
+
 ## lilac-marmot (inbox #651), day 9's walk under the named boom and then a hut: *"Let's not send the
 ## robber in that case and stop the chase. It's a fair cheat getting through the barrier is hard
 ## enough. Well earned if the player pulls it off."* She walks under the named door's raised boom
@@ -5071,7 +5206,8 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 	GameState.city_state = saved_state
 
 ## Walks her across a door's line at `at`, along `axis` in `direction`, in one step the way
-## `EventManager._watch_the_door_lines()` reads a frame: from 40px on one side to 40px on the other.
+## `EventManager._watch_the_door_lines()` reads a frame: from 40px on one side to 40px on the other,
+## and stands there while the crossing's warning runs.
 func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Stroller) -> void:
 	var events := _city.events
 	events._player = player
@@ -5080,6 +5216,10 @@ func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Strolle
 	events._watch_the_door_lines()
 	player.global_position = at + axis * 40.0 * direction
 	events._watch_the_door_lines()
+	# And stays across while the crossing's warning runs (`Tuning.CROSSING_WARNING`), so a crossing
+	# that sets a guard on her has set him by the time this returns.
+	for i in int(ceil(Tuning.CROSSING_WARNING / STEP)) + 1:
+		events._watch_the_door_lines(STEP)
 
 # ------------------------------------------------------ M188: reachable targets ---
 # A mark and every contact stand on ground clear of a solid body, or on the item itself, and are

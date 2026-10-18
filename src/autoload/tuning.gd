@@ -2033,9 +2033,9 @@ const WARNING_ALONE_MAX := 1.0
 ## (the man a vehicle lets out) is the badge's kind too: it exists only to charge her, and what she
 ## is owed is the indicator that it is about to, for at least the off-screen charger's
 ## `OFFSCREEN_WARNING_MIN` (inbox #764). A checkpoint's guard owes none of his own: his warning came
-## before he was set on her, a hut's guard's raised hand (`EventDef.charges_at_once`). A pursuer that waited for her warns by radius
-## rather than by any clock (`EventInstance.warns_by_radius()`): it charges only when she crosses
-## its stand-off, so this floor bounds nothing it does.
+## before he was set on her, a hut's guard's raised hand from her crossing for `CROSSING_WARNING`
+## (`EventDef.charges_at_once`). A pursuer that waited for her warns on its own clock inside its one
+## radius (`EventDef.warns_for`), so this floor bounds nothing it does.
 const PURSUIT_MIN_NOTICE := 1.5
 
 ## How long she is allowed to take to answer the lunge, at the speed the gap is actually closing.
@@ -2109,6 +2109,22 @@ const PURSUIT_SHAKEN_OFF := 0.35
 func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 	return inner + pursue_speed * PURSUIT_REACTION
 
+## **How long a charger that waits for her warns before he charges**, in seconds, while she stays
+## inside his one radius (`EventDef.warns_for`, `EventInstance.warns_by_radius()`). *(Inbox #788, the
+## player: "We should do one radius and warn inside it for 2s. If the player leaves the radius
+## nothing happens and the warning stops. If they stay within the charge starts.")* The row reads it
+## as its own `warns_for`, and the measurement that keeps it fair is per row
+## (`tests/probes/charger_warning.gd`): a walker who turns back the moment his warning starts is out
+## of his radius before it runs out, and one who stands in it is caught.
+const CHARGER_WARNING := 2.0
+
+## **How long a door's guard warns once she has crossed its line**, in seconds (`door_guard` and its
+## alley copy, `EventManager._watch_the_door_lines()`). *(Inbox #788, the player: "The actual crossing
+## will start the timer and if the player goes back no charge happens but if they stay crossed the
+## charge will start. Warning starts when the player is crossing".)* Measured the same way as
+## `CHARGER_WARNING` (`tests/test_checkpoints.gd`).
+const CROSSING_WARNING := 2.0
+
 ## The pursuit fairness contract, and the one place it is stated.
 ##
 ## `validate_event`'s escape-distance rule is about walking out of a *field*, and a pursuer has no
@@ -2131,11 +2147,10 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 ##   and running may shake it off while it is still offscreen. One that sets off beside her
 ##   (`sets_off_beside_her`) stands with its warning up for its notice and is owed the badge's
 ##   heads-up, `OFFSCREEN_WARNING_MIN`, rather than an approach she never sees.
-## - **A pursuer that waited for her warns for as long as she is inside its trigger and charges only
-##   when she crosses its stand-off** (`EventInstance.warns_by_radius()`; inbox #764). That is a
-##   contract in distances, not in these numbers: walking in meets the charge at the full stand-off,
-##   standing or walking away outside the stand-off is never charged, and once charged walking loses
-##   and running wins by the speed clauses above. `tests/test_events_pursuit.gd` walks it.
+## - **A pursuer that waited for her warns inside its one radius for its `warns_for` and charges if
+##   she is still inside once that has run** (`EventInstance.warns_by_radius()`; inbox #788). Leaving
+##   the radius first is never charged, and once charged walking loses and running wins by the speed
+##   clauses above. `tests/test_events_pursuit.gd` walks it.
 ## - **It stands off inside its own field.** A pursuer holding a stand-off outside `outer_radius`
 ##   emits nothing at her for the whole of the phase that is supposed to *be* the warning: no meter,
 ##   no `!` over her head, and a telemetry entry that cannot say what raised the mark. This one was
@@ -2695,12 +2710,19 @@ const FINALE_STEAM_BLOWS_FOR := 2.0
 
 ## How many of each kind of danger the finale's own plan puts on one open chain street. *"Lots of
 ## lethal and dangerous events"*: a street is `BLOCK_SIZE` (8) tiles long, so one truck, one van
-## and one pair of masked men on a street is roughly one lethal thing every two tiles of walking
+## and one roadblock on a street is roughly one lethal thing every three tiles of walking
 ## — several times an ordinary day's own one-event-per-block, which is what the climax asks for,
 ## while `EventScheduler._room_around()` still refuses anything it cannot give room to.
 const FINALE_TRUCKS_PER_STREET := 1
 const FINALE_VANS_PER_STREET := 1
-const FINALE_GUARDS_PER_STREET := 2
+## **One roadblock a street, so a crossing is one band and the one guard on her side of it.**
+## *(Inbox #771: "it should be in a way that luring away the guard is enough. Right now there are
+## for guards and the player adds excitement by just being close. Luring away one guard (the
+## challenge) is not enough to make the obstacle survivable")* Two bands on one street would stand
+## a couple of tiles apart, and luring the first one's guard off would leave the second one's posted
+## on the same sidewalk, so walking past would still meet his charge: the lure is the answer only
+## when there is one guard to lure.
+const FINALE_GUARDS_PER_STREET := 1
 ## And how many explosions are sited off the chain per open street. Off screen by definition, so
 ## these are placed *beside* the corridor rather than on it — see `FinalePlanner`.
 const FINALE_EXPLOSIONS_PER_STREET := 1

@@ -1,0 +1,4 @@
+BAIT charging_dog: speed 130, catch 26, warning 130, charge radius 104 (stand-off 104), field 150; widest reaction survived 0.16s; at 0.30s closest 24.7px, caught
+BAIT roadblock: speed 130, catch 28, warning 180, charge radius 106 (stand-off 106), field 180; widest reaction survived 0.16s; at 0.30s closest 25.6px, caught
+BAIT alley_robbery: speed 130, catch 26, warning 180, charge radius 116 (stand-off 116), field 200; widest reaction survived 0.21s; at 0.30s closest 24.0px, caught
+BAIT roadblock: speed 130, catch 28, warning 180, charge radius 106 (stand-off 106), field 180; widest reaction survived 0.16s; at 0.30s closest 25.6px, caught

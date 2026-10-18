@@ -1,0 +1,5 @@
+BAIT a roadblock's posts from its band: (0.0, -32.0), (0.0, 46.0), (-23.0, 0.0), (23.0, 0.0); his raised hand (26.0, 44.0)
+BAIT charging_dog: speed 130, catch 26, warning 189, charge radius 142 (stand-off 104), field 150; widest reaction survived 0.33s; at 0.30s closest 34.6px, got away
+BAIT roadblock: speed 130, catch 28, warning 237, charge radius 144 (stand-off 106), field 180; widest reaction survived 0.33s; at 0.30s closest 36.6px, got away
+BAIT alley_robbery: speed 130, catch 26, warning 180, charge radius 116 (stand-off 116), field 200; widest reaction survived 0.21s; at 0.30s closest 24.0px, caught
+BAIT roadblock: speed 130, catch 28, warning 237, charge radius 144 (stand-off 106), field 180; widest reaction survived 0.33s; at 0.30s closest 36.6px, got away

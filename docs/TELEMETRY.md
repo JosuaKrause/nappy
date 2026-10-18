@@ -127,13 +127,14 @@ The events:
     robber and the guards drawn from him, the hunting roadblock's guard), the masked man's raised
     hand at the foot of the escape's stairwell, and the raised hand of the man a vehicle lets out
     and of day 13's guard set on her in her view — each once per instance — and the checkpoint
-    guard's, `door-guard-warned`, each time the guard at a hut or an alley's post raises his hand as
-    she nears the door (`EventManager._warn_at_the_doors()`).
+    guard's, `door-guard-warned`, each time the guard at a hut or an alley's post raises his hand
+    from her crossing of the door's line (`EventManager._warn_at_the_doors()`).
   - `-chased` — its charge (`EventBus.pursuit_began`), never its warning: a waiting charger when
-    she crosses its stand-off; a vehicle's man and day 13's guard in her view when their raised
-    hand has been up its second; the masked man when he starts his run; the checkpoint guard from
-    his first frame at a boom, half a second after he steps out at an alley's door; the day-3 dog,
-    whose approach is its telegraph, and every charger sent from off screen, from their first frame.
+    its warning has run with her still inside its radius; a vehicle's man and day 13's guard in her
+    view when their raised hand has been up its second; the masked man when he starts his run; the
+    checkpoint guard from his first frame, once the crossing's warning has run with her still
+    across, at a boom or an alley's door alike; the day-3 dog, whose approach is its telegraph, and
+    every charger sent from off screen, from their first frame.
   - then exactly one of `-caught` (`EventBus.pursuit_caught`, `EventInstance.report_the_catch()`):
     its charge reached her, a catch that ends the day — which also sends that day's own
     `lost-hard-fail-<row>` — or a patrol car's man stopping her, which does not; `-shaken`, she ran

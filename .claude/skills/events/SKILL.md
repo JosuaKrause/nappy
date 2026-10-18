@@ -81,8 +81,8 @@ arrives chasing, with no approach: its notice is its badge alone. Running while 
 counts toward `PURSUIT_SHAKEN_OFF`, so it can be shaken off before it becomes visible (tall-owl).
 `EventDef.validate()` requires that badge and validates its chase without inventing an approach.
 The day-3 dog's approach keeps its separate notice floor (`Tuning.PURSUIT_MIN_NOTICE`); a pursuer
-that waited for her, a robber included, warns by radius with no clock, so that floor bounds nothing
-it does (inbox #764). Verify escape with
+that waited for her, a robber included, warns inside its one radius on its own clock (`warns_for`),
+so that floor bounds nothing it does (inbox #788). Verify escape with
 the actual Baby meter: reaching the pursuit cap after the baby cries is a lost day.
 
 ## What telegraphs
@@ -243,10 +243,13 @@ nothing, cannot end the day and carries no cue, and moves until it is past `Tuni
 `spawns_on_finish` row stops where the thing it leaves belongs; a `stops_where_it_arrives` row parks
 and stays — still emitting, still the same event (the fire engine at its fire); and anything that
 was a *place* rather than a moment is simply over. **One thing leaves and is not deleted**: the
-guard who set off from a barrier (`EventDef.body_stays_behind`) walks away at his chasing pace, and
-the instance goes back to being only the barrier, which keeps charging what a waiting roadblock
-charges throughout (the field centred on the band, a rim of its own) — so "it is over the moment it
-starts leaving" holds for the man and not for the barrier he left. He is in her view as he goes, so
+guard who set off from a barrier (`EventDef.body_stays_behind`) walks away at his chasing pace over walkable ground and round his own band, and
+the instance goes back to being only the barrier: solid and silent, since a roadblock's band
+costs nothing at any time, manned or not, on a day as in the escape (its `intensity` is 0; the
+guard is the danger), and the guard at its far post walks off with him, on every day
+(`EventInstance._send_the_far_guard_off()`). A barrier whose guard has gone raises no mark over her head (`EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard), since he
+never notices her or charges again — so "it is over the moment it starts leaving" holds for the
+man and not for the barrier he left. He is in her view as he goes, so
 he is held to the sight rule like a car (`_leaving_must_clear_sight`) rather than vanishing on the
 6-second backstop beside her; the backstop remains for a departure with no player to be out of
 sight of. A plan streamed out while he is spent or leaving must carry that (`Planned.guard_spent`), or
@@ -269,11 +272,9 @@ it was written from. The traps:
   (`Tuning.pursuit_standoff()`) and lunges the moment she reaches it, so the chase starts at the
   stand-off however she came. **A pursuer that stands still for its notice
   (`EventDef.stands_for_its_notice`) closes nothing and keeps every lunge**, which
-  is what keeps standing from being this trap: walking in, she is lunged at from the full
-  stand-off (woolly-penguin #748); staying out, one that waited for her never charges, since its
-  warning has no clock and lasts while she is inside its radius, and out of the radius it waits
-  again (`EventInstance.warns_by_radius()`; inbox #764); one that sets off beside her charges from
-  where it stood once its notice has run. A wall between them that holds the lunge back is the same trap: at an
+  is what keeps standing from being this trap for one that comes for her (woolly-penguin #748);
+  one that waited for her charges on its warning's clock instead (next trap); one that sets off
+  beside her charges from where it stood once its notice has run. A wall between them that holds the lunge back is the same trap: at an
   alley mouth the line clears with her already inside the stand-off. The notice, the lunge and the
   catch all ask for a clear line, so a held lunge is not deferred until the line clears: the pursuer
   holds the ground of one that sets off beside her (`EventInstance._lunge_held`) — it stands while
@@ -281,13 +282,32 @@ it was written from. The traps:
   stands for its notice — and lunges once she is back at the
   full stand-off; a timed notice does not run out while she is inside it (`_pause_a_held_notice()`)
   — a notice ending there is the same trap, reached by her standing still.
+- **A waiting charger has one radius and charges on a clock, never on a distance.** Charged at a
+  stand-off while she walks into it, `PURSUIT_REACTION` of its approach is worth about a fifth of a
+  second, too short to turn and run. So every charger that waits for her (the waiting dog, the
+  alley robber, the hunting roadblock's guard) warns for its row's `warns_for` from
+  the frame it notices her inside its one radius, and charges only if she is still inside once
+  that has run; out of the radius first, it waits again (`EventInstance.warns_by_radius()`,
+  `notice_time()`; inbox #788). **Running while it warns counts for nothing**: `_chase()` adds to
+  `PURSUIT_SHAKEN_OFF`'s count only once it has charged, or a half-second run beside a roadblock's
+  band would send its guards off with no lure. Behind a wall at that moment it goes on warning until the line
+  clears. A late notice, at an alley mouth, is answered by the warning: she has its whole length to
+  leave. It notices her only with its warning picture in the camera's view
+  (`EventInstance._would_stand_in_her_view()`, the view `EventManager` hands it as `player_view`);
+  an instance stepped directly with no view handed to it gets the radius alone, so a test of the
+  view hands it one (`tests/escape_roadblock_rig.gd`, `view_round()`). **The masked man is the one
+  exception**: he runs a line rather than pursuing, so neither his notice nor his run asks the
+  clear line, his notice asks no view, and he runs the moment she comes within his
+  `charges_within`, with no `warns_for` (`EventInstance._check_for_notice()`,
+  `_warn_on_its_line()`; inbox #788): in the stairwell his warning is off screen, which the player
+  accepted (inbox #782), so a clock before he runs is no heads-up she can see.
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
-  (inbox #764). His warning comes before he exists — a hut's guard raising his hand while she is
-  near a raised boom — and he charges the moment she goes under it, from the hut across the road,
-  inside his own stand-off (`EventDef.charges_at_once`: no notice of his own, telegraph 0; at an
-  alley's door, half a second standing first). So his charge is not met at the stand-off with
-  `PURSUIT_REACTION` to answer it, and a walker under the boom is caught in under half a second by
-  design: the answer is the warning: don't go under, or go under running, which
+  (inbox #764, inbox #788). His warning comes before he exists — from the frame she crosses a
+  door's line, the hut's guard across the road (or the post's) raises his hand for
+  `Tuning.CROSSING_WARNING`; back across first, it is called off — and once it has run with her
+  still across he charges from that hut or post, inside his own stand-off
+  (`EventDef.charges_at_once`: no notice of his own, telegraph 0). So his charge is not met at the
+  stand-off: the answer is the warning — go back, or go on running — which
   `tests/test_checkpoints.gd` walks. **No other row may carry `charges_at_once` without the player's
   word**: on any other pursuer it is exactly the trap above.
 - **A break-off stated as a distance needs two inequalities, and they fight.**
@@ -301,7 +321,7 @@ it was written from. The traps:
   of the run. It waits for the chase.
 
 Two more about the waiting state (`pursues_within`): **whatever follows it starts when it notices
-her**, not at dawn — for a pursuer a warning with no clock, for anything else its telegraph; and **whatever draws it asks `is_waiting()` as well as `is_telegraphing()`** — each is
+her**, not at dawn — for a pursuer its warning's clock, for anything else its telegraph; and **whatever draws it asks `is_waiting()` as well as `is_telegraphing()`** — each is
 false in the other's phase, so a picture that asks only the second holds its whole wait in the
 wrong posture.
 

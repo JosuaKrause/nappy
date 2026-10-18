@@ -1457,7 +1457,8 @@ where she may walk, not a piece of the catalogue's variety.
 
 **Two strengths, both obstacles from the existing catalogue rather than a new mechanism.** A
 **hard** seal — `barricade`, from act IV — stands several bodies across the street's whole width,
-sidewalk to sidewalk, so nothing gets past. A **soft** seal takes both pavements (`construction`,
+sidewalk to sidewalk, so nothing gets past, the outer two flush with the street's edges so none
+reaches over the buildings either side (`SealPlanner.positions_across()`). A **soft** seal takes both pavements (`construction`,
 `cafe_tables`, `market_stall` or `delivery_van`, one on each side) and leaves the carriageway open:
 the road is always still there, so a soft seal always costs time, never the day. **A thing whose
 job is to stand in the way costs route and nothing else** — `construction`, `delivery_van` and
@@ -1550,7 +1551,11 @@ open cells where `plan_day` takes a tree. Three differences, each for a reason t
 seals are all **hard**, since a soft one leaves the carriageway open and the brief is a single path;
 the **main road is sealed like anything else**, because the chains *end* on the spine and leaving
 the rest of it open would join them at the one street that touches both exits; and **every alley
-mouth off the chains** is walled rather than a fraction of the qualifying ones. And **the exempt
+mouth off the chains** is walled rather than a fraction of the qualifying ones — by the day's own
+pick of what stands in a mouth, the widest row that still fits it (`SealPlanner.
+_widest_that_fits_a_mouth()`), made of the escape's own list, so the wall is a crater in the mouth
+rather than a street seal reaching past the alley over the buildings either side *(inbox #785: "I
+saw wood on the roof for example")*. And **the exempt
 street is the one she is standing in rather than the doorstep's**: a day's exemption is the front
 door, because the home is a notch with one exit; the escape comes out of the service exit on the
 side of the block and never uses that door, so sealing *that* street is the same mistake one door
@@ -1679,7 +1684,8 @@ across a street a route needs — the decree that a region edge may never affect
 stronger rule, and what is refused instead is whatever would have made the far side lethal. Four
 facts compose into the guarantee: she arrives at `Tuning.CHAT_EXCITEMENT` and nothing else was
 charged while she was inside; no catalogue field reaches inside the gap; the boundary's own
-structures charge as one source, so the ceiling out there is a single `roadblock`'s peak; and
+structures charge as one source, so the ceiling out there is a single structure's peak (the wall's
+`roadblock` bands cost nothing, so it is a door's own); and
 walking pays back `EXCITEMENT_DECAY_WALKING` times the ground. `tests/test_checkpoints.gd` walks
 every door on sampled days, both sides and across the pavement band, from the toll and on the
 worst ground in the city, and holds the meter under `METER_MAX` — with the same days planned

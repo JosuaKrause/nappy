@@ -308,8 +308,8 @@ static func plan_finale(map: CityMap, open_cells: Dictionary,
 		if _covers_any_cell(rect, open_cells):
 			continue
 		var vertical := rect.size.x < rect.size.y
-		planned.append(alley_mouth_wall(map, rect, vertical, true, _FINALE_ALLEY_DEF))
-		planned.append(alley_mouth_wall(map, rect, vertical, false, _FINALE_ALLEY_DEF))
+		planned.append(alley_mouth_wall(map, rect, vertical, true, _finale_alley_def()))
+		planned.append(alley_mouth_wall(map, rect, vertical, false, _finale_alley_def()))
 	return planned
 
 ## Whether a chain actually **walks** this street, as opposed to clipping a corner of it.
@@ -380,11 +380,27 @@ static func _finale_candidate(rng: RandomNumberGenerator) -> Candidate:
 	var eligible := finale_candidates()
 	return eligible[rng.randi_range(0, eligible.size() - 1)]
 
-## What stands in an alley mouth off the chains. The widest silhouette in the finale's own list, so
-## it leaves the least of the mouth's 64px open beside it — the same reason `_best_alley_mouth_def`
-## picks by width on an ordinary day, decided once here rather than rolled, since the finale's list
-## does not change with the day.
-const _FINALE_ALLEY_DEF := "collapsed_frontage"
+## What stands in an alley mouth off the chains: the day's own pick (`_widest_that_fits_a_mouth()`)
+## made of the finale's own list — the widest row whose body still fits the mouth, so it leaves the
+## least of the mouth's 64px open beside it without reaching past it. Decided once rather than
+## rolled, since the finale's list does not change with the day.
+##
+## **Fitting the mouth is the day's rule, and the finale's list is where it has to be asked.** A
+## day's alley-mouth rows are its soft seals, every one of them sidewalk-sized, so a day's pick has
+## always fitted. The finale's rows are street seals, sized for a 192px street: the widest, the
+## collapsed frontage, stood its six tiles of timber across a two-tile alley and two tiles into the
+## buildings either side, over their roofs. *(Inbox #785, 2026-10-18: "does the escape use the same
+## placement rules as the regular game? it doesn't seem like it does. it should, though. I saw wood
+## on the roof for example")*
+static func _finale_alley_def() -> String:
+	if _finale_alley == "":
+		var ids: Array[String] = []
+		for candidate in finale_candidates():
+			ids.append_array(candidate.def_ids)
+		_finale_alley = _widest_that_fits_a_mouth(ids)
+	return _finale_alley
+
+static var _finale_alley := ""
 
 ## Whether `segment` is the main road. See the class doc: never a seal candidate on a day, because
 ## `RouteTree` already refuses to route a strand along it, and sealing it too would wall the one
@@ -725,20 +741,36 @@ static func _hard_positions(map: CityMap, segment: StreetNetwork.Segment,
 ## dummy def to carry the radius. Otherwise identical geometry either way: cover `world`'s
 ## cross-axis edge to edge with the fewest bodies whose circles still touch, centred on `world`'s
 ## own along-axis midpoint.
+##
+## **The outer two stand flush with the edges, never past them.** A street's cross-section ends at
+## the buildings either side, so a body centred half a share from the edge reaches past it by
+## however much its radius is more than half a share: the barricade, at 62px, two to the 192px
+## street, stood 14px into the buildings, and the carts were drawn over the roofs. *(Inbox #785,
+## 2026-10-18: "I saw wood on the roof for example")* So the first and last stand one radius in from
+## their edges and the rest are spread evenly between them. The copy count is unchanged, so the
+## neighbours stand closer rather than further apart and still touch; and where the width is a whole
+## number of diameters, the region wall's 32px at a street's 192, the spacing is the even share
+## exactly as before. One body wider than the rect is centred, as before: nothing lets it fit.
 static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -> Array[Vector2]:
 	var width: float = world.size.y if horizontal else world.size.x
 	var radius := maxf(1.0, radius_in)
 	var copies := 1 if 2.0 * radius >= width else ceili(width / (2.0 * radius))
-	var spacing := width / float(copies)
+	var offsets: Array[float] = []
+	if copies == 1:
+		offsets.append(width * 0.5)
+	else:
+		var spacing := (width - 2.0 * radius) / float(copies - 1)
+		for i in copies:
+			offsets.append(radius + spacing * i)
 	var positions: Array[Vector2] = []
 	if horizontal:
 		var along := world.position.x + world.size.x * 0.5
-		for i in copies:
-			positions.append(Vector2(along, world.position.y + spacing * (i + 0.5)))
+		for offset in offsets:
+			positions.append(Vector2(along, world.position.y + offset))
 	else:
 		var along := world.position.y + world.size.y * 0.5
-		for i in copies:
-			positions.append(Vector2(world.position.x + spacing * (i + 0.5), along))
+		for offset in offsets:
+			positions.append(Vector2(world.position.x + offset, along))
 	return positions
 
 # ----------------------------------------------------------------------- alleys ---
@@ -825,16 +857,28 @@ static func alley_mouth_wall(map: CityMap, rect: Rect2i, vertical: bool, at_star
 ## mouth's own 64px open beside it. Generic over the candidate list for the same reason `_place`
 ## is: a future candidate with a wider row simply wins this pick on the days it is eligible.
 static func _best_alley_mouth_def(day: int) -> String:
-	var best_id := ""
-	var best_radius := 0.0
+	var ids: Array[String] = []
 	for candidate in candidates():
 		if candidate.strength != Strength.SOFT:
 			continue
 		for id in candidate.def_ids:
 			var def := EventCatalogue.by_id(id)
-			if not def or day < _effective_first_day(def):
-				continue
-			if def.obstructs_radius > best_radius:
-				best_radius = def.obstructs_radius
-				best_id = id
+			if def and day >= _effective_first_day(def):
+				ids.append(id)
+	return _widest_that_fits_a_mouth(ids)
+
+## Of `ids`, the row with the widest `obstructs_radius` whose body still fits a through-alley's
+## mouth — `Tuning.ALLEY_WIDTH_TILES` across, so twice its radius no wider than that — or `""` when
+## none does. The first of equals, in `ids`' own order. Shared by a day's pick and the finale's.
+static func _widest_that_fits_a_mouth(ids: Array[String]) -> String:
+	var mouth := float(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE)
+	var best_id := ""
+	var best_radius := 0.0
+	for id in ids:
+		var def := EventCatalogue.by_id(id)
+		if not def or def.obstructs_radius * 2.0 > mouth:
+			continue
+		if def.obstructs_radius > best_radius:
+			best_radius = def.obstructs_radius
+			best_id = id
 	return best_id

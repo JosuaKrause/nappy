@@ -310,13 +310,18 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ## fixed count of a fixed handful of rows *per open street*: army trucks on the carriageways,
 ## masked men on foot and in vans, and the bursts that leave craters.
 ##
-## **Four rows, three of which already exist and are not changed.** `military_convoy` is the truck,
-## with the barricade it ordinarily leaves stripped — on an ordinary day that aftermath is the
-## point of the row, and here a convoy is traffic rather than the thing that closed a street.
-## `abduction` is the masked men in a van. `roadblock` at full heat is the masked men on foot: at
-## `Tuning.RESISTANCE_GOAL` its guards leave the post, so it stands as a band across the road until
-## she comes within `Tuning.HEAT_HUNTS_WITHIN` and then comes at her on foot as
-## `guard_standing.svg` and `guard_lunging.svg` — see `EventInstance._draw_roadblock()`. Only the
+## **Four rows, three of which already exist.** `military_convoy` is the truck, with the barricade
+## it ordinarily leaves stripped — on an ordinary day that aftermath is the point of the row, and
+## here a convoy is traffic rather than the thing that closed a street. `abduction` is the masked
+## men in a van. `roadblock` at full heat is the masked men on foot: at `Tuning.RESISTANCE_GOAL` its
+## guards leave the post, so it stands as a band across the road until she comes within his radius
+## (`EventDef.pursues_within`, 180px from the band) and then the guard on her side warns and, if she
+## is still inside it once his warning has run, comes at her on foot as `guard_standing.svg` and
+## `guard_lunging.svg` —
+## see `EventInstance._draw_roadblock()`. Once that guard has left his post for good, the far guard
+## walks off too and the band, which costs nothing, stands unmanned, as on every day, so luring him
+## off is the way past (`EventCatalogue.escape_roadblock()`),
+## and one roadblock a street (`Tuning.FINALE_GUARDS_PER_STREET`) leaves one guard to lure. Only the
 ## explosion is new.
 ##
 ## **Every density rule a day keeps is kept here.** `_build_placement` sites each one, `_room_around`
@@ -336,31 +341,69 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ## the ground around it still joins up the way it did without it — see
 ## `_the_escape_accepts()`. `ends` is where the walk has to get to, the two exits beside
 ## `standing_at`.
+##
+## **And she meets one roadblock's guard at a time**: no two stand where both can notice her
+## (`_keeps_its_notice_to_itself()`).
+##
+## **Three of a day's placement rules are not the escape's, each by the player's word** *(inbox
+## #785, asked which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules"
+## for the home's streets and the caps)*. Nothing here asks `_calm_to_leave_alone()`: the escape is
+## the climax and its chains pass a calm area at every stop, so a field kept off every calm area
+## she has not used would clear the streets round every stop of most of what this stands. Nothing
+## here holds the streets round the home block or keeps off the front door's street
+## (`_open_ground_for()`'s `from_the_door`, false here): she sets off from the service exit, which
+## opens onto one of those streets, so holding them would empty the street she starts on. And no
+## budget or `max_per_day` cap applies: the counts are per street, above.
 static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 		streets: Array[StreetNetwork.Segment], standing_at: Vector2,
 		seals: Array[Planned] = [], ends: Array[Vector2] = []) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	var trucks := _without_its_aftermath(EventCatalogue.by_id("military_convoy"))
 	var vans := EventCatalogue.by_id("abduction")
-	var masked := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	var masked := EventCatalogue.escape_roadblock()
 	var bursts := EventCatalogue.by_id("finale_explosion")
 	# **A tree and an event never share ground**, the finale's streets included — `docs/CITY.md`,
 	# "Street trees". Scanned once for the whole plan rather than once per street per row: a city
-	# plants its trees in `City.build()` and nothing in a walk moves them.
-	var trees := StreetTrees.footprint_tiles(map)
+	# plants its trees in `City.build()` and nothing in a walk moves them. Kept where the day keeps
+	# its own copy, in the ground a restart reads again (`_finale_ground_cache()`), so
+	# `_open_ground_for()` reads this one.
+	var open := _finale_ground_cache(map)
+	var trees: Dictionary = open[_TREE_TILES_KEY]
 	var terminals: Array[Vector2] = [standing_at]
 	terminals.append_array(ends)
 	var ground := EscapeGround.new(map, seals, terminals)
 	for segment in streets:
 		_fill_a_finale_street(map, rng, segment, trucks, Tuning.FINALE_TRUCKS_PER_STREET, trees,
-				standing_at, planned, streets, ground)
+				standing_at, planned, streets, ground, open)
 		_fill_a_finale_street(map, rng, segment, vans, Tuning.FINALE_VANS_PER_STREET, trees,
-				standing_at, planned, streets, ground)
+				standing_at, planned, streets, ground, open)
 		_fill_a_finale_street(map, rng, segment, masked, Tuning.FINALE_GUARDS_PER_STREET, trees,
-				standing_at, planned, streets, ground)
+				standing_at, planned, streets, ground, open)
 		_fill_a_finale_street(map, rng, segment, bursts, Tuning.FINALE_EXPLOSIONS_PER_STREET,
-				trees, standing_at, planned, streets, ground)
+				trees, standing_at, planned, streets, ground, open)
 	return planned
+
+## **The day's ground for the escape's rows, kept across restarts of the city section.** A loss in
+## the city replans it on the same city (`main._plan_the_finale_city()`), and every answer
+## `_open_ground_for()` keeps here is a function of that city alone: its tiles, its closed tiles,
+## its held streets and its street trees, none of which a walk changes, while the escape holds and
+## closes nothing of its own. So a restart reads the answers the first plan worked out rather than
+## scanning the whole city again for every row. Kept for one map at a time, held weakly so it never
+## keeps a city alive, and thrown away the moment any of the four differs from what it was read off.
+static func _finale_ground_cache(map: CityMap) -> Dictionary:
+	var trees := StreetTrees.footprint_tiles(map)
+	var stamp := [hash(map.tiles), map.closed_tiles.hash(), map.held_segments.hash(),
+			trees.hash()]
+	if _finale_ground_of == null or _finale_ground_of.get_ref() != map \
+			or _finale_ground_stamp != stamp:
+		_finale_ground_of = weakref(map)
+		_finale_ground_stamp = stamp
+		_finale_ground_kept = {_TREE_TILES_KEY: trees}
+	return _finale_ground_kept
+
+static var _finale_ground_of: WeakRef = null
+static var _finale_ground_stamp: Array = []
+static var _finale_ground_kept := {}
 
 ## `count` copies of one row on one street, sited the same way `_place_one` sites a day's: roll a
 ## tile of the right kind, build the placement, take the first that satisfies every rule and
@@ -378,8 +421,8 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 		segment: StreetNetwork.Segment, def: EventDef, count: int, trees: Dictionary,
 		standing_at: Vector2, planned: Array[Planned],
-		streets: Array[StreetNetwork.Segment], ground: EscapeGround) -> void:
-	var candidates := _finale_ground(map, segment, def, trees, standing_at)
+		streets: Array[StreetNetwork.Segment], ground: EscapeGround, open := {}) -> void:
+	var candidates := _finale_ground(map, segment, def, trees, standing_at, open)
 	if candidates.is_empty():
 		return
 	for _copy in count:
@@ -391,6 +434,9 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 			if not candidate:
 				continue
 			candidate.role = _role_for(def)
+			# A waiting guard's own refusal, which never bends: one guard's notice at a time.
+			if not _keeps_its_notice_to_itself(map, candidate, planned):
+				continue
 			var room := _room_around(candidate, planned)
 			# `-INF` is the spacing rules' own refusal, never a pick at any room.
 			if room == -INF:
@@ -412,6 +458,55 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 		if best:
 			planned.append(best)
 			ground.stand(best)
+
+## **One waiting guard at a time.** A candidate that waits to notice her (`EventDef.pursues_within`:
+## the escape's roadblock, whose guard notices her within 180px of his band) is refused when the
+## ground it notices her from meets the ground another placed one notices her from: the two notice
+## discs, each centred where its band stands, may not overlap, so two of the escape's roadblocks stand
+## at least twice that, 360px, apart, on one street or on two.
+## *(Inbox #771, 2026-10-18: "two roadblocks are right next to each other and the second guard is
+## invisible (hidden) until it already charges".)*
+##
+## **Why the notice is the distance that matters.** Dealing with one roadblock happens inside its
+## guard's notice: he warns while she is inside it, charges only if she stays inside it his warning's
+## length, and the run that shakes him off goes back out of it. Another guard can come for her only once
+## she is inside *his* notice too, so with no ground inside both she deals with one band and its
+## guard at a time — wherever the two stand, either side of a junction or round a corner as much
+## as on one street.
+##
+## **That rests on her turning back from the charge, and is not a bound on a chase.** A guard who
+## charges is no longer held to his notice: he comes for her for up to `Tuning.PURSUIT_TIME`
+## wherever she runs. Running back the way she came, the answer the lure asks for, takes her out of
+## every notice but his; running on past his band towards the next one can bring her into that
+## band's notice with the first guard still behind her, and then she has both. That is the wrong
+## answer to a charge, so the spacing is not widened for it: twice his warning radius keeps the
+## notices apart, which is what one guard at a time needs of the right answer. It is also what
+## keeps one guard from standing behind another's drawing: the near guard of a band two tiles up
+## the street stands between the two bands, where the nearer band and the guard posted on its far
+## side are drawn over him.
+static func _keeps_its_notice_to_itself(map: CityMap, candidate: Planned,
+		planned: Array[Planned]) -> bool:
+	var reach := candidate.def.pursues_within
+	if reach <= 0.0:
+		return true
+	var at := _stands_at(map, candidate)
+	for plan in planned:
+		if plan.def.pursues_within <= 0.0 or not plan.is_placed():
+			continue
+		if at.distance_to(_stands_at(map, plan)) < reach + plan.def.pursues_within:
+			return false
+	return true
+
+## Where a placement's body stands once it is built: the first point of its path when it has one,
+## recentred on the pavement band unless `pavement_side` pins it — the reading
+## `EventInstance.setup()` makes of a stationary body, which is where a waiting guard's band stands
+## and where he notices her from.
+static func _stands_at(map: CityMap, plan: Planned) -> Vector2:
+	var at: Vector2 = plan.path[0] if plan.path.size() > 0 else plan.position
+	if not plan.def.mobile and plan.def.obstructs_radius > 0.0 \
+			and plan.def.pavement_side == EventDef.Pavement.ANY:
+		at = EventInstance._centred_on_the_pavement_band(map, at)
+	return at
 
 ## **Every street of the escape's walk keeps one sidewalk open past everything standing on it, and
 ## nothing standing on it cuts the walk anywhere else either**, asked of each candidate before it
@@ -828,16 +923,19 @@ class EscapeGround extends RefCounted:
 	static func _chunk_of(at: Vector2) -> Vector2i:
 		return Vector2i(floori(at.x / _CHUNK), floori(at.y / _CHUNK))
 
-## The tiles of one street a given row may stand on. Stated over the street's own rect rather than
-## over the whole city the way `_open_ground_for` is, because the finale already knows which
-## streets exist for it — there is no corridor weighting to apply and no closure to avoid, since
-## the finale plans no closures at all.
+## The tiles of one street a given row may stand on: **the day's own ground for the row**
+## (`_open_ground_for()`, every refusal a day makes of a tile — a closed tile, a held street, the
+## home block, a standing street tree's footprint, the side of the sidewalk the row wants, a corner
+## for a row with a spread, the power station's front — and its precinct weight), on the street's
+## own rect. All but the front door's street: she never sets off from that door in the escape. *(Inbox #785, 2026-10-18:
+## "does the escape use the same placement rules as the regular game? it doesn't seem like it does.
+## it should, though.")* The finale knows which streets exist for it, so the rect takes the place
+## of a day's corridor weighting, and it plans no closures.
 ##
-## `trees` is `StreetTrees.footprint_tiles()`, refused here for the same reason
-## `_open_ground_for` refuses it on a day: *(2026-09-12, the player: "trees read like obstacles
-## (they add noise) so it makes detecting actual obstacles harder")*, and the climax is the one
-## walk where telling an obstacle from scenery matters most. The footprint rather than the trunk
-## tile, because the ground the canopy reaches over is ground a van would be standing in.
+## `trees` is `StreetTrees.footprint_tiles()`, the trees the day's ground refuses, *(2026-09-12, the
+## player: "trees read like obstacles (they add noise) so it makes detecting actual obstacles
+## harder")*. `open` is the cache `_open_ground_for()` keeps its answers in for the whole plan, as a
+## day's `ground` is kept for the whole day; a caller with none gets the trees put in a new one.
 ##
 ## `standing_at` is where she comes out of the building, and ground within a body's reach of it is
 ## refused the same way a tree's is. *(2026-09-19: "the spawning shouldn't be a check. the pathing
@@ -847,20 +945,35 @@ class EscapeGround extends RefCounted:
 ## a check that moved *her* instead is the option they named and rejected. Ground she is standing
 ## on is not ground this is ever offered.
 static func _finale_ground(map: CityMap, segment: StreetNetwork.Segment, def: EventDef,
-		trees: Dictionary, standing_at: Vector2) -> Array[Vector2i]:
+		trees: Dictionary, standing_at: Vector2, open := {}) -> Array[Vector2i]:
+	if not open.has(_TREE_TILES_KEY):
+		open[_TREE_TILES_KEY] = trees
+	var copies := _open_ground_counts(def, map, open)
 	var found: Array[Vector2i] = []
 	var rect := segment.tile_rect()
 	var clear_of_her := _clearance_around_her(def)
 	for y in range(rect.position.y, rect.end.y):
 		for x in range(rect.position.x, rect.end.x):
 			var tile := Vector2i(x, y)
-			if trees.has(tile):
+			if not copies.has(tile):
 				continue
 			if map.tile_to_world(tile).distance_to(standing_at) <= clear_of_her:
 				continue
-			if def.placement.has(map.tile_at(tile)) and map.is_open(tile):
+			for _copy in int(copies[tile]):
 				found.append(tile)
 	return found
+
+## `_open_ground_for()`'s answer for `def` as a count of copies per tile, kept beside it in `open`,
+## so a street's tiles are looked up rather than the whole city's list walked once per street.
+static func _open_ground_counts(def: EventDef, map: CityMap, open: Dictionary) -> Dictionary:
+	var key := "finale counts|%s|%d|%s|%s" % [def.placement, def.pavement_side,
+			_burns_its_front(def), def.has_a_spread]
+	if not open.has(key):
+		var counts := {}
+		for tile in _open_ground_for(def, map, open, -1, false):
+			counts[tile] = int(counts.get(tile, 0)) + 1
+		open[key] = counts
+	return open[key]
 
 ## How far from the tile she is put down on a row of this kind may not be offered ground — the
 ## wider of the two things she can arrive *inside* of: a body, and a lethal field.
@@ -2617,13 +2730,19 @@ static func _is_a_corner(tile: Vector2i) -> bool:
 ## has no wall at all for the burnt building's red arrow to end on, and it is the last night's
 ## building. Cached under its own key, so a poster crew asking for the same `AT_THE_FRONT` lane
 ## keeps the station's front.
+##
+## `from_the_door` is whether she sets off from the home's front door, whose street nothing stands
+## on (`_the_street_she_starts_on()`): every day does; the escape comes out of the service exit on
+## the side of the block and never uses that door, the reason `SealPlanner.plan_finale()` seals the
+## home street like any other (`docs/CITY.md`, "The escape").
 static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
-		side: int = -1) -> Array[Vector2i]:
+		side: int = -1, from_the_door := true) -> Array[Vector2i]:
 	var wanted_side := def.pavement_side if side < 0 else side
 	var burns := _burns_its_front(def)
-	var key := "%s|%d%s" % [def.placement, wanted_side, "|burns" if burns else ""]
+	var key := "%s|%d%s%s" % [def.placement, wanted_side, "|burns" if burns else "",
+			"" if from_the_door else "|no door"]
 	if not ground.has(key):
-		var doorstep := _the_street_she_starts_on(map)
+		var doorstep := _the_street_she_starts_on(map) if from_the_door else Rect2i()
 		var trees := _street_tree_tiles(map, ground)
 		# In tiles: `CityMap.power_station` names the station's two blocks.
 		var station := CityMap.blocks_tile_rect(map.power_station) \

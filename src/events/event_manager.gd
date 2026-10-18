@@ -98,6 +98,20 @@ var _walked_under := 0
 ## The guard a walked crossing last set on her, or `null` — one at a time, see
 ## `_set_a_guard_on_her()`.
 var _guard_after_her: EventInstance = null
+## **A crossing still warning her** (`_watch_the_door_lines()`): the door body whose line she walked
+## across, the hut or post whose guard raises his hand at her, which side of the line she crossed
+## to, and for how long she has stood across it. `null` with no crossing pending.
+var _crossing: EventInstance = null
+var _crossing_hut: EventInstance = null
+var _crossed_to := 0.0
+var _crossing_for := 0.0
+## **Crossings held behind the one still warning her**: `[position, facing]` of each other door's
+## line she walked across while `_crossing` was warning her, which starts no warning of its own. Each
+## is announced (`door_crossed`) the frame that warning runs out and its guard is set on her, and
+## dropped if it is called off or she walks back across that door's line first. **The rule, once: a
+## walked crossing counts only if she is still across that door's line when a guard is set on her
+## for it** (reviews 5 and 6 of PR #781: two doors meeting at a corner).
+var _held_crossings: Array = []
 
 ## One `ReleaseLatch` per redetaining instance she has been let out of — `instance -> latch`. Armed
 ## the frame the release teleports her, with that instance's own trigger circle, and holding until
@@ -585,6 +599,9 @@ func clear() -> void:
 	_last_seen_at = Vector2.INF
 	_walked_under = 0
 	_guard_after_her = null
+	_crossing = null
+	_crossing_hut = null
+	_held_crossings.clear()
 	_sent_after_her = null
 	_sent_warning = null
 	_sighted.clear()
@@ -1189,8 +1206,11 @@ var _task_siting_tree: RouteTree
 
 ## She has crossed a district door: let out on its far side after the inspection
 ## (`_release_finished_door_detentions()`, `inspected` true), or walked through its line under a
-## raised boom (`_watch_the_door_lines()`, `inspected` false, which sets the door's own guard on her
-## as well). `at` is the body of the door that saw it and `axis` the street's own axis, which every
+## raised boom (`_watch_the_door_lines()`, `inspected` false), sent once that crossing's warning has
+## run with her still across, the frame the door's own guard is set on her
+## (`_run_the_crossing_warning()`): a crossing she takes back is never announced, and one made while
+## another door's crossing is warning her is announced with that one or not at all
+## (`_held_crossings`). `at` is the body of the door that saw it and `axis` the street's own axis, which every
 ## body of one door shares, so a listener can tell which door it was. Day 9's task is completed on
 ## it either way, and sends its trap only after an inspection (`ResistanceDirector._on_door_crossed()`).
 signal door_crossed(at: Vector2, axis: Vector2, inspected: bool)
@@ -1490,7 +1510,7 @@ func _tick_the_events(delta: float) -> void:
 		_let_the_officers_out()
 		_warn_about_the_ground_she_is_on()
 		_warn_at_the_doors()
-		_watch_the_door_lines()
+		_watch_the_door_lines(delta)
 		_check_detentions()
 	_check_hard_fails()
 
@@ -1651,6 +1671,10 @@ func _warn_about_the_ground_she_is_on() -> void:
 				body.warn(Stroller.Alert.SOON, WARNING_HOLD, WARNING_SOURCE)
 			continue
 		if instance.is_finished or not instance.def.hard_fail:
+			continue
+		# A barrier whose guard has left his post for good is waiting for nobody: he never notices
+		# her or charges again (`EventInstance.is_a_spent_guard()`), so it has nothing to warn of.
+		if instance.is_a_spent_guard():
 			continue
 		var gap := instance.global_position.distance_to(here) - instance.def.inner_radius
 		# `SOON` is anything that cannot kill her *yet* — a telegraph running, or a pursuer that has
@@ -2047,6 +2071,7 @@ func _tell_them_where_she_is() -> void:
 		pram = stroller.global_position + stroller.facing * Tuning.PLAYER_BODY_RADIUS
 	for instance in _instances:
 		instance.player_at = _player.global_position
+		instance.player_view = _visible.view
 		instance.pram_at = pram
 		instance.player_running = running
 		instance.baby_awake = awake
@@ -2272,8 +2297,9 @@ func _update_door_release_latches(body: Stroller) -> void:
 # *walked* is a crossing under a raised boom and nothing else. Nothing here asks where the arm is.
 #
 # *(2026-09-24: "The guards should start pursuing her in that case".)* **And it sets a guard on
-# her**, one, from the door's hut nearer to her; a catch ends the day, since *"not going through the
-# checkpoint is a clear unlawful thing here"*. See `EventCatalogue._door_guard()`.
+# her**, one, from the door's hut across the road from her, once the crossing's warning has run with
+# her still across (`_start_the_crossing_warning()`); a catch ends the day, since *"not going
+# through the checkpoint is a clear unlawful thing here"*. See `EventCatalogue._door_guard()`.
 
 ## How many times today she has walked across a door's line rather than being let through it —
 ## the count `tests/test_route_rig.gd` holds a rig run to zero on.
@@ -2281,7 +2307,9 @@ func walks_under_a_boom() -> int:
 	return _walked_under
 
 ## Once a frame: whether she has crossed a door body's own cross-street line since the last look,
-## and no `Stroller.teleport_to()` (nor `reset_at()`) moved her in between. Run before
+## and no `Stroller.teleport_to()` (nor `reset_at()`) moved her in between, which starts a
+## crossing's warning, and one frame of the crossing already warning her
+## (`_run_the_crossing_warning()`). Run before
 ## `_check_detentions()`, so a release that teleports her this frame is seen by the next look as
 ## the outright move it is.
 ##
@@ -2290,7 +2318,7 @@ func walks_under_a_boom() -> int:
 ## is reflected through, `facing_now()`'s axis), and the crossing counts against the body whose own
 ## reach across that line it happened inside, so the three bodies of a street door cover the street
 ## kerb to kerb between them and a line through a door never extends past the door.
-func _watch_the_door_lines() -> void:
+func _watch_the_door_lines(delta := 0.0) -> void:
 	var body := _player as Stroller
 	if not body:
 		return
@@ -2301,6 +2329,7 @@ func _watch_the_door_lines() -> void:
 	_last_outright_moves = body.outright_moves
 	if was == Vector2.INF or put_down:
 		return
+	var called_off := _run_the_crossing_warning(here, delta)
 	var crossed: EventInstance = null
 	for instance in _instances:
 		if not instance.def.redetains and not instance.def.lifts_for_traffic:
@@ -2312,16 +2341,129 @@ func _watch_the_door_lines() -> void:
 	if not crossed:
 		return
 	_walked_under += 1
-	door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 	Telemetry.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
 		crossed.def.id, TelemetryLog.tile(_map.world_to_tile(crossed.global_position)),
 		_heading_name(here - was),
 		(", the boom up" if crossed.is_raised() else ", the boom down")
 		if crossed.def.lifts_for_traffic else ""])
-	_set_a_guard_on_her(crossed, here)
+	# Back across the line of the crossing still warning her: that crossing is called off, and the
+	# walk back starts no warning of its own.
+	if called_off:
+		return
+	if _crossing != null and _crossing_is_on(crossed):
+		_call_off_the_crossing("she went back")
+		return
+	# **A walked crossing counts once it stands** (`door_crossed`, day 9's task): when its warning has
+	# run with her still across (`_run_the_crossing_warning()`), so a crossing she takes back counts
+	# for nothing. **One made while another door's crossing is warning her is held with it**
+	# (`_held_crossings`): counted when that warning runs out and its guard comes, dropped if it is
+	# called off or she walks back across that door first. One that starts no warning of its own otherwise — a guard already after her, a
+	# door with no hut today — has no clock to wait for and counts as it happens: the guard after
+	# her is its price.
+	if _crossing != null:
+		# Back across a door whose crossing is held: taken back, so it is dropped, not held twice.
+		var held := _held_crossing_on(crossed)
+		if held >= 0:
+			_held_crossings.remove_at(held)
+		else:
+			_held_crossings.append([crossed.global_position, crossed.facing_now()])
+		return
+	if not _start_the_crossing_warning(crossed, here):
+		door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 
-## One `door_guard` after her, stepping out of the wall of the hut across the road from her — the
-## farther of the huts on the crossed body's own line — on the side of the line she has crossed to. *(2026-09-24: "Or guards
+## **A crossing warns first, on a clock** *(inbox #788, the player: "The actual crossing will start
+## the timer and if the player goes back no charge happens but if they stay crossed the charge will
+## start. Warning starts when the player is crossing")*: the guard at the hut across the road from
+## her (or an alley door's post) raises his hand at her (`EventInstance.guard_warns_her`, drawn by
+## `_warn_at_the_doors()`) from the frame she crosses. Back across the line before
+## `Tuning.CROSSING_WARNING` has run, the crossing is called off and nothing comes; still across it
+## once it has run, a guard is set on her (`_set_a_guard_on_her()`). One crossing at a time, and
+## none while a guard is already after her. Answers whether a warning started.
+func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> bool:
+	if _crossing != null or (is_instance_valid(_guard_after_her)
+			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving):
+		return false
+	var hut := _hut_on_the_line_nearest(crossed, here, true)
+	if not hut:
+		return false
+	_crossing = crossed
+	_crossing_hut = hut
+	_crossed_to = signf((here - crossed.global_position).dot(crossed.facing_now()))
+	_crossing_for = 0.0
+	Telemetry.note("checkpoint", "%s at %s warns her: back across within %.1fs or a guard comes" % [
+		hut.def.id, TelemetryLog.tile(_map.world_to_tile(hut.global_position)),
+		Tuning.CROSSING_WARNING])
+	return true
+
+## The index in `_held_crossings` of the held crossing on `door`'s line (the same test as
+## `_crossing_is_on()`), or -1.
+func _held_crossing_on(door: EventInstance) -> int:
+	var axis := door.facing_now()
+	for i in _held_crossings.size():
+		var at: Vector2 = _held_crossings[i][0]
+		var facing: Vector2 = _held_crossings[i][1]
+		if absf(facing.dot(axis)) >= 0.99 and absf((door.global_position - at).dot(axis)) <= 1.0 \
+				and door.global_position.distance_to(at) <= Tuning.STREET_WIDTH * Tuning.TILE_SIZE:
+			return i
+	return -1
+
+## Whether `door` stands on the line of the crossing still warning her: the same cross-street line,
+## within a street's width of the body she crossed.
+func _crossing_is_on(door: EventInstance) -> bool:
+	if not is_instance_valid(_crossing):
+		return false
+	var axis := _crossing.facing_now()
+	return absf(door.facing_now().dot(axis)) >= 0.99 \
+			and absf((door.global_position - _crossing.global_position).dot(axis)) <= 1.0 \
+			and door.global_position.distance_to(_crossing.global_position) \
+					<= Tuning.STREET_WIDTH * Tuning.TILE_SIZE
+
+## One frame of the crossing still warning her: called off once she is back on the side she came
+## from or held at a hut (gone through the door the lawful way), and its guard set on her once
+## `Tuning.CROSSING_WARNING` has run with her still across, which is also when the crossing counts
+## as crossing the door (`door_crossed`, day 9's task). Answers whether it was called off this
+## frame, so the walk back that called it off starts no warning of its own.
+func _run_the_crossing_warning(here: Vector2, delta: float) -> bool:
+	if _crossing == null:
+		return false
+	if not is_instance_valid(_crossing) or not is_instance_valid(_crossing_hut):
+		_crossing = null
+		_crossing_hut = null
+		_held_crossings.clear()
+		return false
+	if door_holding_her_at(here) != null:
+		_call_off_the_crossing("she is held at a door")
+		return true
+	if signf((here - _crossing.global_position).dot(_crossing.facing_now())) != _crossed_to:
+		_call_off_the_crossing("she went back")
+		return true
+	_crossing_for += delta
+	if _crossing_for < Tuning.CROSSING_WARNING:
+		return false
+	var crossed := _crossing
+	var hut := _crossing_hut
+	_crossing = null
+	_crossing_hut = null
+	_set_a_guard_on_her(hut, crossed, here)
+	door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
+	for held: Array in _held_crossings:
+		door_crossed.emit(held[0] as Vector2, held[1] as Vector2, false)
+	_held_crossings.clear()
+	return false
+
+func _call_off_the_crossing(why: String) -> void:
+	Telemetry.note("checkpoint", "the crossing's warning is called off after %.1fs: %s"
+			% [_crossing_for, why])
+	_crossing = null
+	_crossing_hut = null
+	# The crossings held behind it go with it: nobody comes, so none of them counts.
+	_held_crossings.clear()
+
+## One `door_guard` after her, stepping out of the wall of `hut` — the hut whose guard raised his
+## hand at her when she crossed (`_crossing_hut`, the farther of the huts on the crossed body's own
+## line from where she crossed) — on the side of the line she has crossed to. **The man who warned
+## is the man who comes**: in the warning's 2.0s at a walk she can cross most of the street, which
+## can make the other hut the farther one by then, so the hut is not asked for again. *(2026-09-24: "Or guards
 ## that pursue her should spawn at the huts" · "One guard is enough".)* The guards drawn at the huts
 ## stay at their posts; this is another man out of the door.
 ##
@@ -2329,29 +2471,21 @@ func _watch_the_door_lines() -> void:
 ## on her; once he has caught her, given up or run out his chase, the next walk under sets the next
 ## one. A crossed alley post is its own door and its own guard, so he steps out of the post.
 ##
-## **He charges at once** (`EventDef.charges_at_once`): the guard at that hut raised his hand while
-## she was near the raised boom (`_warn_at_the_doors()`), which was his warning. **The hut across the
-## road, not the nearer one**, because a charge with no notice from the nearer hut's wall — about
-## 57px from her as she crosses the near lane, 16px if she crosses beside it — catches her in under
-## a fifth of a second whatever she does; from across the road, about 80px, she escapes it at a run
-## (`tests/test_checkpoints.gd`). An alley's door has only its post, so its guard steps out of it
-## beside her and waits half a second before he charges (`EventCatalogue.alley_door_guard()`, inbox
-## #764: "maybe 0.5s wait before charging after crossing?"). *The far hut is chosen while building,
-## open to overturn.*
-func _set_a_guard_on_her(crossed: EventInstance, here: Vector2) -> void:
-	if is_instance_valid(_guard_after_her) \
+## **He charges at once** (`EventDef.charges_at_once`): the guard at that hut raised his hand from
+## her crossing for `Tuning.CROSSING_WARNING` (`_start_the_crossing_warning()`,
+## `_warn_at_the_doors()`), which was his warning, and he is set on her only once it has run with
+## her still across. **The hut across the road, not the nearer one**: from the nearer hut's wall
+## (about 57px from her as she crosses the near lane, 16px if she crosses beside it) his charge
+## comes with almost no ground to answer it in. An alley's door has only its post, so its guard
+## steps out of it. *The far hut is chosen while building, open to overturn.*
+func _set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vector2) -> void:
+	if not is_instance_valid(hut) or is_instance_valid(_guard_after_her) \
 			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving:
-		return
-	var hut := _hut_on_the_line_nearest(crossed, here, true)
-	if not hut:
 		return
 	var axis := crossed.facing_now()
 	var side := -1.0 if (here - hut.global_position).dot(axis) < 0.0 else 1.0
 	var at := hut.global_position + axis * side * hut.def.obstructs_radius
-	# An alley's door has no boom and its guard steps out beside her, so he waits half a second.
-	var guard := EventCatalogue.alley_door_guard() \
-			if hut.def.look == EventDef.Look.CHECKPOINT_POST else EventCatalogue.by_id("door_guard")
-	_guard_after_her = _spawn_unplanned(guard, at)
+	_guard_after_her = _spawn_unplanned(EventCatalogue.by_id("door_guard"), at)
 
 ## The hut or post on `door`'s own cross-street line nearest `here` — or, with `farthest`, the
 ## farthest — or null. The farthest is the one whose guard warns her and the one a guard steps out
@@ -2378,40 +2512,16 @@ func _hut_on_the_line_nearest(door: EventInstance, here: Vector2, farthest := fa
 			hut = instance
 	return hut
 
-## How near a raised boom she has to be for the guard at the hut across the road from her to raise
-## his hand, in px,
-## measured from the boom gate's own ground point (`checkpoint_gate`), not from the guard. *(Inbox
-## #764, the player: when the player approaches the boom gate the guard should raise the hand, the
-## warning radius around the boom gate not the guard.)* Four tiles: from the far kerb, or two of her
-## steps up the street, to the boom, so she is warned before the step that takes her under it.
-## *Chosen while building, open to overturn.*
-const DOOR_WARNING_RADIUS := 128.0
-
-## **The checkpoint's warning**: for every raised boom she is within `DOOR_WARNING_RADIUS` of, the
-## guard at the hut on its line across the road from her — the one who would charge her — raises his
-## hand, and the page counts each time he does (`EventBus.pursuit_warned`, `door-guard-warned`) (`EventInstance.guard_warns_her`), and an
-## alley's post, which has no boom and is its whole door, raises his within the same radius of the
-## post; every other guard stands as he always does. Nothing while she is held at a hut, nor at a boom that
-## is down, which she cannot walk under. Going under a raised boom then sets a guard on her who
-## charges at once (`_set_a_guard_on_her()`). A drawing only: it changes nothing a hut does.
+## **The checkpoint's warning**: while a crossing is warning her (`_start_the_crossing_warning()`),
+## the guard at the hut on its line across the road from her — the one who would come for her —
+## raises his hand, or an alley's post's own guard, its post being its whole door, and the page
+## counts each time he does (`EventBus.pursuit_warned`, `door-guard-warned`;
+## `EventInstance.guard_warns_her`). Every other guard stands as he always does. A drawing only: it
+## changes nothing a hut does.
 func _warn_at_the_doors() -> void:
-	var body := _player as Stroller
 	var warned := {}
-	if body and door_holding_her_at(body.global_position) == null:
-		var here := body.global_position
-		for gate in _instances:
-			if not gate.def.lifts_for_traffic or gate.is_finished or gate.gate_state == null \
-					or not gate.gate_state.raised \
-					or gate.global_position.distance_to(here) > DOOR_WARNING_RADIUS:
-				continue
-			var hut := _hut_on_the_line_nearest(gate, here, true)
-			if hut:
-				warned[hut.get_instance_id()] = true
-		# An alley's door has no boom: its post is its whole line, so its own guard warns her.
-		for post in _instances:
-			if post.def.look == EventDef.Look.CHECKPOINT_POST and not post.is_finished \
-					and post.global_position.distance_to(here) <= DOOR_WARNING_RADIUS:
-				warned[post.get_instance_id()] = true
+	if is_instance_valid(_crossing_hut):
+		warned[_crossing_hut.get_instance_id()] = true
 	for instance in _instances:
 		if instance.def.redetains:
 			var warns := warned.has(instance.get_instance_id())

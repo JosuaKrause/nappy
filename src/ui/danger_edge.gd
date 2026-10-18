@@ -237,6 +237,14 @@ func _measure(delta: float) -> void:
 		# distances are measured to the same point, so her own walking cancels out of it.
 		var raw := approach_speed(state["was"], at, here, delta)
 		var approach: float = lerpf(state["approach"], raw, clampf(delta * SMOOTHING, 0.0, 1.0))
+		# **A charge is met at its true approach on its first moving frame** *(inbox #788, the
+		# player, of the stairwell's masked man, whose only heads-up is this badge once he runs:
+		# "Let's show that at least")*. The smoothing is there for a thing hovering near the
+		# threshold; a charger setting off is a step from standing to its full speed, and smoothed
+		# it would reach the badge's line about a tenth of a second after he ran.
+		if not state.get("charged", false) and raw > 0.0 and instance.has_charged():
+			approach = maxf(approach, raw)
+			state["charged"] = true
 		var distance := at.distance_to(here)
 		# The gap to its *field*, not to its centre: an event reaches her when its outer radius
 		# does, and for a fire engine that is a third of a block earlier.

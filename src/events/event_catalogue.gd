@@ -69,6 +69,7 @@ static func all() -> Array[EventDef]:
 		for day: int in [guardsmen_from_day() - 1, guardsmen_from_day()]:
 			out_of_the_car(day).validate()
 			out_of_the_car(day, false).validate()
+		escape_roadblock().validate()
 	return _all
 
 ## This row at a resistance level, derived once per run and kept.
@@ -83,6 +84,14 @@ static func heated(def: EventDef, level: int) -> EventDef:
 	if not _hot.has(key):
 		_hot[key] = def.at_heat(level)
 	return _hot[key]
+
+## **The roadblock the escape stands on its streets**: the row at full heat, its guards hunting,
+## exactly as a day's at full resistance progress. *(Inbox #771: "it should be in a way that luring
+## away the guard is enough".)* Its band costs nothing and, once the guard on her side has left his
+## post for good, the guard at the far post walks off too, as on every day (`_roadblock()`,
+## `EventInstance._send_the_far_guard_off()`).
+static func escape_roadblock() -> EventDef:
+	return heated(by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 
 static func by_id(id: String) -> EventDef:
 	for def in all():
@@ -1563,17 +1572,9 @@ static func _charging_dog() -> EventDef:
 	# would never go up, and the trace would attribute the mark it eventually raises to "nothing in
 	# reach". `validate_pursuit` refuses the arrangement.
 	def.outer_radius = 150.0
-	# From day 4 it waits inside this field rather than announcing itself the moment it streams in
-	# from `Tuning.EVENT_STREAM_RADIUS` away — a dog she can see is a dog she can route around,
-	# `alley_robbery`'s shape: an "on sight" band before the trigger, the same two sentences in the
-	# same order, not the same distances. 130, inside this row's 150 outer radius (20px she can
-	# feel it before it decides, the row's own first sentence, on the teaching day's own field
-	# rather than a wider one built for this) and outside its 104px stand-off
-	# (`Tuning.pursuit_standoff(130.0, 26.0)`) with 26px to spare — both bounds
-	# `Tuning.validate_pursuit` checks, held with room rather than pinned to either.
-	# `EventScheduler._for_day()` is where a `MAP` placement past the switch gets a copy carrying
-	# this instead of the authored 0.0 — see `EventDef.pursues_within_on()`.
-	def.pursues_within_after_first_day = 130.0
+	# From day 4 it waits for her rather than announcing itself the moment it streams in from
+	# `Tuning.EVENT_STREAM_RADIUS` away — a dog she can see is a dog she can route around. Its one
+	# radius is set below.
 	# The chase proper, once it can end the day: `Tuning.PURSUIT_TIME`, a long cap rather than an end
 	# a walk can outlast (amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if
 	# she walks"). Running is what ends it, at `Tuning.PURSUIT_SHAKEN_OFF`'s rate.
@@ -1588,11 +1589,21 @@ static func _charging_dog() -> EventDef:
 	def.telegraph_time = 4.5
 	def.pursues = true
 	def.pursue_speed = 130.0
+	# **Its one radius, from day 4: 130px**, inside its 150px field, so she can feel it before it
+	# decides, and the bigger of the two radii it had before a charge radius was split off from its
+	# warning *(inbox #788, the player: one radius, "the bigger of the two")*. `EventScheduler._for_day()`
+	# is where a `MAP` placement past the switch gets a copy carrying this instead of the authored
+	# 0.0 — see `EventDef.pursues_within_on()`.
+	def.pursues_within_after_first_day = 130.0
+	# Its warning, from day 4, on the clock every charger that waits for her keeps (`EventDef.warns_for`;
+	# inbox #788: "warn inside it for 2s. If the player leaves the radius nothing happens"). The day-3
+	# dog has no wait, so it does not read this.
+	def.warns_for = Tuning.CHARGER_WARNING
 	# **The dog that waited stands for its notice** *(inbox #748: "dog also doesn't walk -- only
 	# one is the robber")*: from day 4, once it notices her, it holds its ground in its alert pose
-	# rather than closing, for as long as she stays inside its 130px radius *(inbox #764: a warning
+	# rather than closing, for as long as she stays inside its radius *(inbox #764: a warning
 	# happens when she comes close; she can turn around)*, sits again once she is outside it, and
-	# lunges the moment she comes inside its 104px stand-off.
+	# charges if she is still inside when its warning runs out.
 	# The day-3 dog sent down her heading has no wait to notice her from, so its approach is still
 	# this telegraph (`EventInstance.is_standing_for_its_notice()`).
 	def.stands_for_its_notice = true
@@ -1839,12 +1850,12 @@ static func _curfew_announce() -> EventDef:
 ## of the event's life. Nothing appears, nothing disappears, and the street he abandoned stays shut
 ## behind him — which is the point of leaving a barrier rather than dissolving one.
 ##
-## **His notice is measured from the band's centre and his stand-off from his reach.** The notice
-## stays on the band because it may not reach past the field, which is cored there. His post is
-## nearer her than the centre, so a stand-off measured from the field's core would already have
-## him inside it the frame he notices her; `EventInstance._chase()` measures every stand-off from
-## `lethal_reach()`, the number `Tuning.validate_pursuit()` states the contract over, which for this
-## row is his 28px catch.
+## **His one radius is measured from the band's centre, and he charges on his warning's clock.**
+## The radius stays on the band because it may not reach past the field, which is cored there. His
+## post is nearer her than the centre, which costs her none of his warning: he charges once it has
+## run with her still inside his radius, not at a distance from him
+## (`EventInstance.warns_by_radius()`). His stand-off is measured from `lethal_reach()`, his 28px
+## catch, which is the number `Tuning.validate_pursuit()` states the contract over.
 ##
 ## **The catch is a man's reach, not a barrier's.** `lethal_radius` is 28px, read off
 ## `masked_pursuer` — the same row, the same fiction, the same distance at which a masked man in
@@ -1858,29 +1869,27 @@ static func _curfew_announce() -> EventDef:
 ## ends and the falloff begins, and it is what the cost table is stated against; there is no longer
 ## any reachability arithmetic pulling on it.
 ##
-## **Intensity 9, down from 13, because a door is several bodies and she has to stand in one.**
-## *(2026-09-20: "guard posts should emit less excitement by themselves, too"; "since there can be
-## other obstacles around".)* `barrier_structure` below already stopped a corner's worth of them
-## summing — the strongest at her position is the whole answer — so what was left to move is that
-## one source's own rate. It is the strongest of the door's parts and the one that decides what
-## standing in a door costs: a hold earns no decay (`Tuning.EXCITEMENT_DECAY_IDLE` is zero), so
-## every second of it is paid in full on top of the flat `Tuning.CHAT_EXCITEMENT` the detention
-## charges. The row stays `FRICTION` — its `walk_through_cost()` was never near
-## `Tuning.WALL_WORTH_OF_COST` and is further from it now — and what actually shuts the street is
-## its 60px body, which is untouched. The **resistance**'s own checkpoint task, *"Don't go around
-## it this time. Go through"*, is priced by that body and by the guard rather than by this number.
+## **Intensity 0: the band costs nothing, manned or not, on a day and in the escape alike; the guard
+## is the danger.** *(Inbox #788, the player: "No cost at all, ever", of the escape's band; then
+## "band costing nothing should also apply to a normal day" and "the challenge is the guard not the
+## concrete".)* The band is concrete: it shuts the street with its 60px body and costs nothing to
+## walk beside, while the guard posted at it warns her with his raised hand and catches her if she
+## walks on into his charge. A region wall stands as hard seals of this row
+## (`RegionPlanner._WALL_DEF_ID`), so a wall's bands cost nothing either; a door's own structures
+## (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`) keep their rates. The row keeps its radii:
+## `outer_radius` is still what the hunting guard's notice may not reach past and what the `SOON`
+## mark over her is drawn out to. The **resistance**'s own checkpoint task, *"Don't go around it this
+## time. Go through"*, is priced by the body and by the guard.
 ##
 ## **`barrier_structure`, because one street being held is one source however many bodies hold
-## it.** A region wall stands three of these a tile apart across a single street and the region
-## door on the cross street stands three more, so ground inside five at once exists at a corner —
-## summed, that is 39/s of one barrier read three times over before the door beside it is counted.
-## The flag makes the strongest of them at her position the whole answer; see
-## `EventDef.barrier_structure`.
+## it.** A region wall stands three of these a tile apart across a single street beside a region
+## door's structures. The band adds nothing to that sum, costing nothing, and keeps the flag so the
+## boundary kit stays one source by one rule; see `EventDef.barrier_structure`.
 ##
 ## **The 179px cold field sits under the shared 180px trigger, which the 24px `abduction` and
 ## `night_raid` never had to notice because their own fields (250/330) already cleared it.**
 ## `EventDef.at_heat()` widens only the hunting copy's `outer_radius` to `maxf(outer_radius,
-## pursues_within)` — the smallest fix that holds for every `HUNTS` row rather than one that asks
+## Tuning.HEAT_HUNTS_WITHIN)` — the smallest fix that holds for every `HUNTS` row rather than one that asks
 ## a row's cold field to carry a number that belongs to the ladder — so the roadblock's own 179px
 ## field is exactly what it was cold, and only the moment its guard starts hunting reaches 180px.
 ## `tests/test_heat.gd`'s generic loop (`_test_a_hunts_row_wakes_up_at_its_own_threshold`) is what
@@ -1893,7 +1902,7 @@ static func _roadblock() -> EventDef:
 	def.first_day = 7
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
-	def.intensity = 9.0
+	def.intensity = 0.0
 	def.inner_radius = 86.0
 	def.outer_radius = 179.0
 	def.telegraph_time = 1.8
@@ -1903,9 +1912,12 @@ static func _roadblock() -> EventDef:
 	def.lethal_radius = MASKED_MAN_REACH
 	def.body_stays_behind = true
 	# His warning, once the hunting copy pursues, is spent at his post with his hand raised rather
-	# than walking at her *(inbox #748: "guards should lift their hand in warning")*, for as long as
-	# she stays inside his radius, with no clock (`EventInstance.warns_by_radius()`).
+	# than walking at her *(inbox #748: "guards should lift their hand in warning")*, for his
+	# `warns_for` while she stays inside his radius (`EventInstance.warns_by_radius()`).
 	def.stands_for_its_notice = true
+	# On the clock every charger that waits for her keeps (`EventDef.warns_for`; inbox #788): read
+	# only once the hunting copy waits for her.
+	def.warns_for = Tuning.CHARGER_WARNING
 	def.barrier_structure = true
 	def.weight = 2.0
 	def.max_per_day = 6
@@ -1977,16 +1989,15 @@ static func _abduction() -> EventDef:
 ## Three numbers for three sentences, in order:
 ##
 ## - **On sight.** 16 over a 200px field, so the far end of an alley is already expensive and the
-##   meter is what tells you he is there. This is the *only* warning the design will give: a robbery
-##   has no telegraph you could see coming, and it never did.
+##   meter is what tells you he is there, before he has noticed her at all. His own warning comes
+##   only once she is inside his radius, below.
 ## - **Getting close is day ending.** `hard_fail` inside 26px, and it has to be **reachable**: he
 ##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
 ##   the inner radius means the kill can never fire.
-## - **Get close and he comes at you.** `pursues_within` 180: inside that he stands up, turns to
-##   face her and walks at her slowly, at 40px/s (`EventDef.notice_walk_speed`), for as long as she
-##   is inside that radius and outside his 116px stand-off, with no clock — the lunge ends it the
-##   moment she is inside the stand-off, so a walker who comes in sees him walk for about 0.4s, and
-##   one who stands still at his edge is walked up to in about 1.5s — and then chases at 130px/s
+## - **Get close and he comes at you.** `pursues_within` 180, his one radius: inside that he stands
+##   up, turns to face her and walks at her slowly, at 40px/s (`EventDef.notice_walk_speed`),
+##   holding at his 116px stand-off, for his 2.0s warning (`warns_for`; inbox #788), and if she is
+##   still inside his radius once it has run he lunges, and chases at 130px/s
 ##   until she has shaken him off. **Turning round from his warning is an answer**: she outwalks his
 ##   slow walk, and once she is outside his radius he stops where he is and waits there *(inbox
 ##   #764, the player: the robber walking slowly stops if she gets out of the radius)*. Once he has
@@ -2021,7 +2032,7 @@ static func _alley_robbery() -> EventDef:
 	# first sentence — **on sight** — with somewhere to happen, and his slow walk is its second.
 	def.outer_radius = 200.0
 	# Read only by the pursuit contract's notice clause (`Tuning.validate_pursuit()`): no robber's
-	# notice runs on it. One who notices her by sight warns by radius, with no clock
+	# notice runs on it. One who notices her by sight warns for his `warns_for`
 	# (`EventInstance.warns_by_radius()`), and day 13's guard set on her by the task has the task's
 	# own second (`EventInstance.notice_her_at()`, `ResistanceDirector._set_the_task_guard_on_her()`).
 	def.telegraph_time = 1.8
@@ -2035,8 +2046,10 @@ static func _alley_robbery() -> EventDef:
 	# he decides anything about her. *(Inbox #761, the player: "we can increase the noticing if the
 	# robber starts walking slowly".)* 64px past his stand-off at the slow walk below is about half a
 	# second of him walking for a walker coming in (64 / (40 + 92)) and 1.6s for one who stops at the
-	# edge, and 180px is the hunting roadblock guard's own trigger (`Tuning.HEAT_HUNTS_WITHIN`) and
-	# half the view's height, so he notices her on screen.
+	# edge, and 180px is half the view's height; he notices her only once his warning would stand in
+	# her view (`EventInstance._would_stand_in_her_view()`). 180px is his one radius, the bigger of
+	# the two he had before a charge radius was split off from his warning *(inbox #788)*: he charges
+	# if she is still inside it once his warning has run (`warns_for`, below).
 	#
 	# The trap, and the reason this is worth a comment rather than a number: with a chase that ends
 	# at a *distance*, a trigger at or past that distance is a pursuit that loses interest the
@@ -2050,6 +2063,11 @@ static func _alley_robbery() -> EventDef:
 	# (`EventInstance._gait_stepping()`, 17.5px of ground) lasts about 0.44s, near the 450ms the
 	# walkers' two-frame pictures were reviewed at.
 	def.notice_walk_speed = 40.0
+	# **He charges once his warning has run with her still inside his radius**, on the clock every
+	# charger that waits for her keeps (`EventDef.warns_for`; inbox #788: one radius, a warning
+	# inside it, and leaving it calls him off), walking at her and holding at his stand-off while
+	# he warns.
+	def.warns_for = Tuning.CHARGER_WARNING
 	# And he walks off when he has lost her, rather than being deleted where he stood.
 	def.departs_at = 100.0
 	def.hard_fail = true
@@ -2309,28 +2327,6 @@ static func task_guard_sent() -> EventDef:
 
 static var _task_guard_sent: EventDef = null
 
-## **The checkpoint guard at an alley's door**, set on her when she walks past its post: the door
-## guard, who steps out of the post beside her, standing with his hand raised for half a second and
-## then charging. *(Inbox #764, the player, of an alley door, which has no boom and so no guard
-## across the road: "maybe 0.5s wait before charging after crossing?")* He owes no notice of his own
-## (`charges_at_once`: the post's guard raised his hand as she came near), holds his ground for the
-## half second (`sets_off_beside_her`, `stands_for_its_notice`), and then chases as the door guard
-## does. A derived copy, built once.
-static func alley_door_guard() -> EventDef:
-	if _alley_door_guard == null:
-		var guard := by_id("door_guard")
-		_alley_door_guard = guard.duplicate() as EventDef
-		_alley_door_guard.shape = guard.shape
-		_alley_door_guard.telegraph_time = ALLEY_DOOR_GUARD_WAIT
-		_alley_door_guard.sets_off_beside_her = true
-		_alley_door_guard.stands_for_its_notice = true
-	return _alley_door_guard
-
-static var _alley_door_guard: EventDef = null
-
-## How long the alley door's guard stands with his hand raised before he charges, in seconds. The
-## player's own number (inbox #764).
-const ALLEY_DOOR_GUARD_WAIT := 0.5
 
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##
@@ -2865,7 +2861,7 @@ static func _checkpoint_post() -> EventDef:
 	def.barrier_structure = true
 	return def
 
-## The guard a street door sets on her when she walks under its raised boom. *(2026-09-24, the
+## The guard a door sets on her when she walks across its line and stays. *(2026-09-24, the
 ## player: "The guards should start pursuing her in that case" · "Or guards that pursue her should
 ## spawn at the huts" · "The day ends, not going through the checkpoint is a clear unlawful thing
 ## here. She gets detained/imprisoned or whatever in that case. This is independent of the
@@ -2883,15 +2879,14 @@ static func _checkpoint_post() -> EventDef:
 ## never a rung of the resistance's ladder. The field is `masked_pursuer`'s — 18 over a 28–120px
 ## band, the same figure coming at her.
 ##
-## **He charges at once** (`charges_at_once`): his warning came before he was set on her. While she
-## is within `EventManager.DOOR_WARNING_RADIUS` of a raised boom, the guard at the hut across the
-## road from her raises his hand (`EventInstance.guard_warns_her`); the moment she goes under it, this
-## man steps out of that hut and charges from his first frame. *(Inbox #764, the player: when the player approaches
-## the boom gate the guard should raise the hand, warning radius around the boom gate not the guard,
-## and when the player actually goes under it should immediately start charging.)* A hut's width
-## from her is well inside his 106px stand-off, so the charge comes with less than
-## `Tuning.PURSUIT_REACTION` to answer it: the answer is the warning — not to go under, or to go
-## under running — which `tests/test_checkpoints.gd` walks.
+## **He charges at once** (`charges_at_once`): his warning came before he was set on her. From the
+## frame she crosses the door's line, the guard at the hut across the road from her raises his hand
+## (`EventInstance.guard_warns_her`), or an alley post's guard; back across before
+## `Tuning.CROSSING_WARNING` has run, nobody comes, and still across once it has, this man steps out
+## of that hut or post and charges from his first frame. *(Inbox #788, the player: "The actual
+## crossing will start the timer and if the player goes back no charge happens but if they stay
+## crossed the charge will start. Warning starts when the player is crossing".)* The answer is the
+## warning — go back, or go on running — which `tests/test_checkpoints.gd` walks.
 static func _door_guard() -> EventDef:
 	var def := EventDef.new()
 	def.id = "door_guard"
@@ -2904,8 +2899,8 @@ static func _door_guard() -> EventDef:
 	def.intensity = 18.0
 	def.inner_radius = MASKED_MAN_REACH
 	def.outer_radius = 120.0
-	# No notice of his own: his warning was the hut guard's raised hand while she was near the
-	# raised boom (`EventManager._warn_at_the_doors()`), and he charges the moment she goes under it
+	# No notice of his own: his warning was the hut guard's raised hand from her crossing
+	# (`EventManager._warn_at_the_doors()`), and he charges the moment he is set on her
 	# (`charges_at_once`).
 	def.telegraph_time = 0.0
 	def.duration = Tuning.PURSUIT_TIME
@@ -3008,10 +3003,11 @@ static func _impact_crater() -> EventDef:
 ## leaving the corridor.
 ##
 ## **Faster than a walk, so it cannot be out-walked**, which is what makes stepping aside the
-## answer rather than a preference — and what makes the telegraph the long one: at 130px/s the
-## contract prices the escape as the field's whole forward reach rather than its falloff band, so
-## `outer_radius` 120 at `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and this carries a little over
-## it. Three and a half seconds is also what the picture wants: she hears him a floor below.
+## answer rather than a preference — and what makes the telegraph contract ask for a long one: at
+## 130px/s it prices the escape as the field's whole forward reach rather than its falloff band, so
+## `outer_radius` 120 at `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and `telegraph_time` carries a
+## little over it. That number is read only by the contract: he warns while she is in the stairwell
+## and runs on a distance, with no clock (below).
 ##
 ## **No body**, like every other mobile row: a moving wall on a stairwell one tile wide would pin
 ## her against the shaft. What stops her walking into him is that it ends the section.
@@ -3041,7 +3037,10 @@ static func _masked_pursuer() -> EventDef:
 	# And the warning is spent standing, not approaching: a man already running when he first
 	# becomes visible has given no notice at all.
 	def.still_while_telegraphing = true
-	# **He warns while she is in the stairwell, and runs once she is within this of him**, so that
+	# **He warns while she is in the stairwell, and runs the moment she is within this of him, with
+	# no warning clock**: the one waiting charger outside the one-radius rule *(inbox #788, the
+	# player, asked whether he should warn for a second or run as on main: "No delay, as on main")*,
+	# since his warning is off screen and a delay only lets a walker reach the door (below). So that
 	# she has to run to the first floor's door *(inbox #764, the player: "player should have to run
 	# to the door")* rather than walk down to it and out to the other shaft without meeting him
 	# *(inbox #782: the player wants the radius bigger to achieve that, and him not moved)*. No
@@ -3057,7 +3056,7 @@ static func _masked_pursuer() -> EventDef:
 	# about 25px from him (24.6px at 60, 120 and 150fps) inside his 28px catch and clears it on the
 	# tick at 28.6px, by 0.6px; she is caught if she starts running 0.3s late, and a runner who
 	# runs the whole way is caught at 440px), and in the stairwell his warning is off screen, since the view reaches 180px from her
-	# and he starts about 400px below; only the edge badge shows his charge once he runs. The player
+	# and he starts about 400px below; only the edge badge shows his charge, from the frame he runs (`DangerEdge`). The player
 	# accepted both (inbox #782).
 	def.charges_within = 426.0
 	def.hard_fail = true

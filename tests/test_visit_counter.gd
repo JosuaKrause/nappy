@@ -508,9 +508,10 @@ func _test_a_waiting_dog_is_counted_warned_then_chased(t) -> void:
 	_walk(dog, Vector2(def.pursues_within - 10.0, 0.0), 0.5)
 	t.check(counter.sent.size() == 1, "walked out of and back into, it is not counted again (%s)"
 		% [counter.sent])
-	_walk(dog, Vector2(standoff - 2.0, 0.0), 0.2)
+	_walk(dog, Vector2(standoff - 2.0, 0.0), def.warns_for + 0.2)
 	t.check(counter.sent == ["nappy-day-%d-dog-warned" % day, "nappy-day-%d-dog-chased" % day],
-		"its charge is counted chased (%s)" % [counter.sent])
+		"its charge, once its warning has run with her still inside, is counted chased (%s)"
+		% [counter.sent])
 	dog.free()
 	counter.sent.clear()
 	var robber := _charger(t, EventCatalogue.by_id("alley_robbery"))

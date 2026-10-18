@@ -17,6 +17,7 @@ extends RefCounted
 ## way to tell the two apart. `_test_a_day_is_reachable_without_the_main_road` is the restatement;
 ## see its own doc for exactly what it proves and what it does not.
 
+const Reach := preload("res://tests/seal_reach_rig.gd")
 const SEEDS := 6
 const BASE_SEED := 71717
 
@@ -41,6 +42,7 @@ func run(t) -> void:
 	_test_a_placed_crash_keeps_its_two_car_bodies(t)
 	_test_squeezing_past_a_crash_costs_more_than_half_the_meter(t)
 	_test_no_seal_body_stands_in_a_street_tree(t)
+	_test_no_seal_reaches_over_a_building(t)
 	_test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t)
 	_test_the_catalogue_sees_a_seal_at_a_route_junction(t)
 
@@ -667,6 +669,31 @@ func _test_no_seal_body_stands_in_a_street_tree(t) -> void:
 						"seed %d day %d: seal '%s' stands in a street tree at %s"
 						% [map.seed_used, day, plan.def.id, tile])
 	t.check(checked > 0, "there were seal bodies to check (%d)" % checked)
+
+## **No seal stands over a building**, with its body or with the ground its picture is drawn over
+## (`tests/seal_reach_rig.gd`'s measure). *(Inbox #785, 2026-10-18: "I saw wood on the roof for
+## example")* A street's cross-section ends at the buildings either side, so a hard seal's outer
+## pieces stand flush with its edges (`SealPlanner.positions_across()`); the barricade, wider than
+## half a share of the street, is the row that reached over them. Every seal of every day, on every
+## map.
+func _test_no_seal_reaches_over_a_building(t) -> void:
+	var checked := 0
+	var barricades := 0
+	for map in _maps:
+		var ground := EventScheduler.EscapeGround.new(map, [], [])
+		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			for plan in _seals_for(map, day):
+				checked += 1
+				if plan.def.id == "barricade":
+					barricades += 1
+				var body := Reach.body_overhang(map, ground, plan)
+				var drawn := Reach.drawing_overhang(map, plan)
+				t.check(body <= 0.5 and drawn <= 0.5,
+						"seed %d day %d: seal '%s' at %s keeps off the buildings (body %.1fpx, drawing %.1fpx over)"
+						% [map.seed_used, day, plan.def.id, map.world_to_tile(plan.position), body,
+						drawn])
+	t.check(checked > 0 and barricades > 0,
+			"there were seals to ask about (%d, %d of them barricade pieces)" % [checked, barricades])
 
 ## *(2026-09-11, the player: "fallen trees should only be possible on streets with trees and one
 ## spot should be empty (the fallen tree's spot)".)* Two halves, and the second is what makes the

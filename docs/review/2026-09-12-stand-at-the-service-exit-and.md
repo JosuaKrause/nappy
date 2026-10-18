@@ -6,4 +6,4 @@ for it to be a decision rather than a coin flip — and **do the three calm area
 calm on the way**, the places to settle a woken baby, rather than as scenery she walks past?
 `Tuning.FINALE_PARKS_PER_CHAIN` (3) and the per-street densities `FINALE_TRUCKS_PER_STREET`,
 `FINALE_VANS_PER_STREET`, `FINALE_GUARDS_PER_STREET` and `FINALE_EXPLOSIONS_PER_STREET` (1, 1,
-2, 1) are the dials, all open to overturn. Same record.
+1, 1) are the dials, all open to overturn. Same record.

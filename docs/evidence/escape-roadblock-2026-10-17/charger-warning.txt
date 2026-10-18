@@ -1,0 +1,15 @@
+WARNING charging_dog (radius 130px, catch 26px) warns 1.0s | back: never charged | stand: caught, closest 26px | bait: charged, got away, closest 69px | on: caught, closest 23px
+WARNING charging_dog (radius 130px, catch 26px) warns 1.5s | back: never charged | stand: caught, closest 26px | bait: charged, got away, closest 69px | on: caught, closest 9px
+WARNING charging_dog (radius 130px, catch 26px) warns 2.0s | back: never charged | stand: caught, closest 26px | bait: charged, got away, closest 69px | on: caught, closest 26px
+WARNING charging_dog (radius 130px, catch 26px) warns 2.5s | back: never charged | stand: caught, closest 26px | bait: charged, got away, closest 69px | on: caught, closest 25px
+WARNING charging_dog (radius 130px, catch 26px) warns 3.0s | back: never charged | stand: caught, closest 26px | bait: charged, got away, closest 69px | on: never charged
+WARNING roadblock (radius 180px, catch 28px) warns 1.0s | back: never charged | stand: caught, closest 28px | bait: charged, got away, closest 73px | on: caught, closest 27px
+WARNING roadblock (radius 180px, catch 28px) warns 1.5s | back: never charged | stand: caught, closest 28px | bait: charged, got away, closest 73px | on: caught, closest 5px
+WARNING roadblock (radius 180px, catch 28px) warns 2.0s | back: never charged | stand: caught, closest 28px | bait: charged, got away, closest 73px | on: caught, closest 27px
+WARNING roadblock (radius 180px, catch 28px) warns 2.5s | back: never charged | stand: caught, closest 28px | bait: charged, got away, closest 73px | on: caught, closest 28px
+WARNING roadblock (radius 180px, catch 28px) warns 3.0s | back: never charged | stand: caught, closest 28px | bait: charged, got away, closest 73px | on: caught, closest 28px
+WARNING alley_robbery (radius 180px, catch 26px) warns 1.0s | back: never charged | stand: caught, closest 26px | bait: charged, got away, closest 80px | on: caught, closest 25px
+WARNING alley_robbery (radius 180px, catch 26px) warns 1.5s | back: never charged | stand: caught, closest 25px | bait: charged, got away, closest 62px | on: caught, closest 18px
+WARNING alley_robbery (radius 180px, catch 26px) warns 2.0s | back: never charged | stand: caught, closest 25px | bait: charged, got away, closest 62px | on: caught, closest 24px
+WARNING alley_robbery (radius 180px, catch 26px) warns 2.5s | back: never charged | stand: caught, closest 25px | bait: charged, got away, closest 62px | on: caught, closest 26px
+WARNING alley_robbery (radius 180px, catch 26px) warns 3.0s | back: never charged | stand: caught, closest 25px | bait: charged, got away, closest 62px | on: caught, closest 25px
