@@ -437,7 +437,17 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 ## and the run that shakes him off goes back out of it. Another guard can come for her only once
 ## she is inside *his* notice too, so with no ground inside both she deals with one band and its
 ## guard at a time — wherever the two stand, either side of a junction or round a corner as much
-## as on one street. It is also what keeps one guard from standing behind another's drawing: the
+## as on one street.
+##
+## **That rests on her turning back from the charge, and is not a bound on a chase.** A guard who
+## charges is no longer held to his notice: he comes for her for up to `Tuning.PURSUIT_TIME`
+## wherever she runs. Running back the way she came, the answer the lure asks for, takes her out of
+## every notice but his; running on past his band towards the next one can bring her into that
+## band's notice with the first guard still behind her, and then she has both. That is the wrong
+## answer to a charge, so the spacing is not widened for it: 360px (twice `HEAT_HUNTS_WITHIN`)
+## keeps the notices apart, which is what one guard at a time needs of the right answer. The band's
+## own field reaches no further than its notice (`outer_radius` 179), so two fields never overlap
+## at this spacing either. It is also what keeps one guard from standing behind another's drawing: the
 ## near guard of a band two tiles up the street stands between the two bands, where the nearer
 ## band and the guard posted on its far side are drawn over him.
 static func _keeps_its_notice_to_itself(map: CityMap, candidate: Planned,

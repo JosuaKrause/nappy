@@ -1846,7 +1846,12 @@ obstacle survivable")* Two things make that true, and both are the escape's alon
   roadblocks are right next to each other and the second guard is invisible (hidden) until it
   already charges")* Dealing with a band happens inside its guard's notice, so she meets one band
   and its guard at a time, across a junction or a corner as well as along a street, and no guard
-  stands behind another band and the guard posted on its far side.
+  stands behind another band and the guard posted on its far side. **The spacing assumes she turns
+  back from a charge**, the answer the lure asks for: a guard who charges is no longer held to his
+  notice and comes for her for up to `Tuning.PURSUIT_TIME` wherever she runs, so running on past
+  his band towards the next one can bring the next guard's notice in with the first still behind
+  her. That is the wrong answer to a charge and the spacing is not widened for it; it is a bound
+  on two notices, not on a chase.
 - **His warning starts with him on the screen.** The guard notices her only once the whole of his
   raised-hand picture at his post would be inside her view (`EventDef.notices_in_her_view`). The
   view reaches 180px above and below her, the same as his notice, and a band across an east-west
