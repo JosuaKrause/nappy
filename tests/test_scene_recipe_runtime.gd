@@ -110,6 +110,7 @@ func run(t) -> void:
 	_test_schema(t)
 	_test_hold_is_for_a_straight_departure(t)
 	_test_charging_is_for_a_pursuer_that_waits(t)
+	_test_relentless_is_for_a_pursuer(t)
 	_test_heat_installs_the_heated_row(t)
 	_test_a_task_gone_after_the_read(t)
 	_test_arguments(t)
@@ -145,6 +146,15 @@ func _test_charging_is_for_a_pursuer_that_waits(t) -> void:
 			"a row that does not wait is refused")
 	t.check(SceneRecipeRuntime.validate_runtime({"setup": {"day": 7, "events": [{"name": "g",
 			"row": "roadblock", "at": [0, 0], "charging": 1}]}}).size() > 0, "charging must be a boolean")
+
+## `relentless` keeps a pursuer from giving up because she ran, so a row that does not pursue is refused.
+func _test_relentless_is_for_a_pursuer(t) -> void:
+	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.by_id("charging_dog")) == "",
+			"a pursuer may be kept coming")
+	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.by_id("pigeon_flock")).contains("pursue"),
+			"a row that does not pursue is refused")
+	t.check(SceneRecipeRuntime.validate_runtime({"setup": {"day": 7, "events": [{"name": "g",
+			"row": "roadblock", "at": [0, 0], "relentless": 1}]}}).size() > 0, "relentless must be a boolean")
 
 func _test_schema(t) -> void:
 	var valid := {"setup": {"day": 1, "parent": "mother"},

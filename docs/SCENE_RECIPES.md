@@ -110,8 +110,8 @@ the picture on a wide frame. `hold` is limited to a pursuer on foot that leaves 
 pursue, drives, lets men out, parks, hands on, or a guard leaves his barrier) the recipe fails with a message
 naming the event, the row and its own reason, and the scene fails if a held event is later sent along a set
 path. The game's despawn rules are unchanged; a held event is simply
-never removed, and `trailer-dog.json` holds its dog. `charging: true` starts a pursuer that waits for her (a roadblock's guard, a dog on its tile) already set on her, its notice spent, the way the guard a task sends is: it charges from the first frame instead of warning until she
-walks into its radius, and still gives up when she has run from it for `Tuning.PURSUIT_SHAKEN_OFF`. A row that does not wait, or sets off beside her, fails the recipe with its reason. Director pursuers use the real
+never removed, and `trailer-dog.json` holds its dog. `charging: true` starts a pursuer that waits for her already set on her, its notice spent, the way the guard a task sends is: it charges from the first frame instead of warning until she
+walks into its radius, and still gives up when she has run from it for `Tuning.PURSUIT_SHAKEN_OFF`. Of the catalogue only the hunting roadblock guard of the escape and the alley robber wait for her (the charging dog has no radius and charges from its first frame, so it needs no option); any row that does not wait, or sets off beside her, fails the recipe with its reason. `relentless: true` keeps a pursuer from giving up because she ran: the runtime clears the pursuer's running clock every tick (`EventInstance._outrun_for`), so a charging guard keeps coming however long she runs, for a shot that holds the chase for longer than the 0.35s a run takes to shake him off; the game's rule is unchanged. A row that does not pursue her fails the recipe with its reason. Director pursuers use the real
 ahead-of-player siting. `age` may advance through the initial warning only; active movement is
 simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direction` and optional
 `speed`; production lane, ground, speed and car-gap checks apply.

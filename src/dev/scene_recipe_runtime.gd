@@ -222,7 +222,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 			if not entry is Dictionary:
 				errors.append(where + " entries must be objects")
 				continue
-			_keys(entry, ["name", "row", "at", "path", "age", "route_seed", "mast_id", "heat", "hold", "charging"] if collection == "events"
+			_keys(entry, ["name", "row", "at", "path", "age", "route_seed", "mast_id", "heat", "hold", "charging", "relentless"] if collection == "events"
 					else ["name", "kind", "at", "direction", "speed"], where, errors)
 			var label: Variant = entry.get("name")
 			if not label is String or str(label).is_empty() or names.has(label):
@@ -250,6 +250,8 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 					errors.append(where + ".hold must be true or false")
 				if entry.has("charging") and not entry.charging is bool:
 					errors.append(where + ".charging must be true or false")
+				if entry.has("relentless") and not entry.relentless is bool:
+					errors.append(where + ".relentless must be true or false")
 				if not entry.get("path", []) is Array:
 					errors.append(where + ".path must be an array")
 				else:
@@ -545,6 +547,8 @@ func install(city: City, player: Stroller, baby: Baby,
 						# Set on her from the first frame, as a guard sent after her is: no radius
 						# to cross and no warning to stand through.
 						plan.live.notice_her_at(at, 0.0)
+					if plan.get_meta("recipe_relentless", false):
+						_relentless.append(plan.live)
 					if plan.get_meta("recipe_hold", false):
 						_held.append(plan.live)
 						# Never streamed out either, however far she runs from it.
@@ -930,6 +934,10 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 				errors.append("event %s.charging is refused: row %s %s"
 						% [entry.name, plan.def.id, charging_refusal(plan.def)])
 		plan.set_meta("recipe_charging", bool(entry.get("charging", false)))
+		if bool(entry.get("relentless", false)) and relentless_refusal(plan.def) != "":
+			errors.append("event %s.relentless is refused: row %s %s"
+					% [entry.name, plan.def.id, relentless_refusal(plan.def)])
+		plan.set_meta("recipe_relentless", bool(entry.get("relentless", false)))
 		if def.id == EventScheduler.WalkSiting.MAST_ROW:
 			# Every mast the game stands has an id, and the director's lists and the blackout
 			# find a mast by it: a recipe's own, or the one a mast added for day 11 is named by.
@@ -1096,9 +1104,30 @@ static func charging_refusal(def: EventDef) -> String:
 		return "sets off beside her, on its own clock"
 	return ""
 
+## Why `relentless` is refused for a row, or "" when it may be kept coming. `relentless: true` keeps a
+## pursuer from giving up because she ran (`_keep_the_pursuers_coming()`), so a row that does not
+## pursue her has nothing to keep.
+static func relentless_refusal(def: EventDef) -> String:
+	if not def.pursues:
+		return "does not pursue her, so it has no chase to keep going"
+	return ""
+
 ## The error a refused `hold` reports, naming the event and the row.
 static func hold_refusal_message(event_name: String, def: EventDef) -> String:
 	return "event %s.hold is refused: row %s %s" % [event_name, def.id, hold_refusal(def)]
+
+## The pursuers the recipe asked never to give up (`relentless`).
+var _relentless: Array[EventInstance] = []
+
+## **A relentless pursuer never gives up because she ran.** A pursuer that has seen her run for
+## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventInstance._chase()`'s `_outrun_for`), right for a played
+## day, and a guard who stops coming half a second into a mother's run in a trailer shot. Each physics
+## tick this clears that running clock, so it never gets near the limit; nothing else about the
+## chase changes, and the game's rule is untouched.
+func _keep_the_pursuers_coming() -> void:
+	for instance in _relentless:
+		if is_instance_valid(instance) and not instance.is_finished and not instance.is_leaving:
+			instance._outrun_for = 0.0
 
 ## The events the recipe asked to keep (`hold`), so a recording never loses one to the game's own
 ## despawn: see `_process()`.
@@ -1140,6 +1169,7 @@ func _process(delta: float) -> void:
 		instance._redraw_if_the_picture_changed()
 
 func _physics_process(_delta: float) -> void:
+	_keep_the_pursuers_coming()
 	if _hand_played and not get_tree().paused:
 		tick += 1
 		_bind_task_names()
