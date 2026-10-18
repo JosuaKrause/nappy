@@ -1106,8 +1106,11 @@ func lunge_is_inside_the_catch() -> bool:
 ## and no field of its own. While he stands at his post, warns and charges, the field is there as
 ## ever. The escape's roadblock is the one row that sets it (`EventCatalogue.escape_roadblock()`):
 ## there the guards are the danger and luring the one on her side off is the answer *(inbox #771:
-## "it should be in a way that luring away the guard is enough")*. A day's roadblock keeps costing
-## what a barrier costs after its guard has gone.
+## "it should be in a way that luring away the guard is enough")*. **And the guard at the far post
+## walks off too**, from the frame his partner starts to walk away, so the band stands unmanned
+## *(inbox #771, asked whether he should: "He leaves too")* — `EventInstance._send_the_far_guard_off()`.
+## A day's roadblock keeps costing what a barrier costs after its guard has gone, and keeps its far
+## guard standing at it.
 ##
 ## Read only where `body_stays_behind` is set; nothing else has a guard to leave.
 @export var silent_once_unmanned := false

@@ -1639,7 +1639,8 @@ barricade catches her. See `docs/EVENTS.md`, "The heat".
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
 charge. Walking in until he charges and running back until he gives up takes him off for good, and
 once he has left his post the band is only a barrier: solid, and costing nothing to walk past
-(`EventCatalogue.escape_roadblock()`). One roadblock a street means there is one guard to lure,
+(`EventCatalogue.escape_roadblock()`), and the guard at its far post walks off with him, so it
+stands unmanned. One roadblock a street means there is one guard to lure,
 not a second band's still posted beside the first, and no two bands stand where both guards can
 notice her, so she meets one guard at a time. His warning starts with him on the screen and drawn
 above everything round him. See `docs/EVENTS.md`, "The escape — the walk that is not a day".

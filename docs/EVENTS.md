@@ -46,7 +46,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `lethal_radius` | How close the thing that ends the day has to get, when that is **not** the field's own core. `0` — almost every row — means `inner_radius`, and `lethal_reach()` is what every caller asks. It exists for a row whose killer is not what the field is drawn around: a `roadblock`'s field is cored on the barrier and its guard catches at a man's reach — see "The heat" |
 | `lunge_reach` | Where a pursuer's lunge is measured from when that is **not** its catch. `0` — every row but the alley robber and the man who comes at her from his row — means the catch, and `standoff_reach()` is what every stand-off caller asks. The alley robber catches at 26px but lunges from `lunge_reach` 38, so his stand-off is 116px and the room between his lunge and his catch is 90px. `EventDef.validate()` refuses a `lunge_reach` inside the row's own catch (`lunge_is_inside_the_catch()`), since that stand-off would leave her less than `PURSUIT_REACTION` of his approach |
 | `body_stays_behind` | Whether this row's body is a **fixture of the street** a pursuer leaves standing rather than the pursuer's own bulk. Every other pursuer's body comes down the frame it starts hunting; a roadblock's barrier is pinned where it was built, so the street stays shut behind the man who left it |
-| `silent_once_unmanned` | Whether the barrier a `body_stays_behind` guard leaves **costs nothing once he has left his post for good** — walking away after a chase, or gone — so it is only a barrier: solid, drawn, no field. Only the escape's roadblock sets it (`EventCatalogue.escape_roadblock()`); a day's roadblock keeps costing what a barrier costs — see "The escape — the walk that is not a day" |
+| `silent_once_unmanned` | Whether the barrier a `body_stays_behind` guard leaves **costs nothing once he has left his post for good** — walking away after a chase, or gone — so it is only a barrier: solid, drawn, no field; and whether **the guard at its far post walks off with him** (`EventInstance._send_the_far_guard_off()`), so it stands unmanned. Only the escape's roadblock sets it (`EventCatalogue.escape_roadblock()`); a day's roadblock keeps costing what a barrier costs — see "The escape — the walk that is not a day" |
 | `notices_in_her_view` | Whether a roadblock's guard who waits for her notices her **only once he would stand in her view**: inside `pursues_within` along a clear line, and with the whole of his raised-hand picture at the post on her side inside `Tuning.VIEW_HALF_EXTENT` either way of her (`EventInstance._would_stand_in_her_view()`). Only the escape's roadblock sets it; a day's guard notices her by his radius alone — see "The escape — the walk that is not a day" |
 | `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the two region-door rows that inspect her, `checkpoint_hut` and `checkpoint_post` — see "Checkpoints" |
 | `sets_off_beside_her` | Whether a pursuer starts **inside its own stand-off**, spawned beside her rather than sited or noticing her outside it: it exists to charge her. Its notice then cannot be cut short by her being close and it never backs off: it holds its ground, follows at the stand-off once she is further (unless it also `stands_for_its_notice`, below, as both that carry it do), and chases when the notice has run its whole length, which is owed at least the badge's `Tuning.OFFSCREEN_WARNING_MIN` rather than an approach's `PURSUIT_MIN_NOTICE`. The men an investigating vehicle lets out are the copies that carry it (`EventCatalogue.out_of_the_car()`). Any other pursuer takes the same ground once a wall has held its lunge back, and lunges when she is back at its stand-off with the line clear |
@@ -1613,7 +1613,8 @@ standing at his. Two fields make that work and both are general rather than writ
   parked in front of his post or another band nearer her would otherwise be drawn over the man
   whose raised hand is the warning; once he charges he sorts with them again. Once he has chased, he does not come back for her, and **the guard still
   standing at the other post is only a drawing from then on** (a choice open to overturn; the
-  alternative is that the one who chased walks back to his post and the barrier is armed again).
+  alternative is that the one who chased walks back to his post and the barrier is armed again);
+  in the escape he walks off with his partner instead (`EventDef.silent_once_unmanned`).
   A barrier streamed out and in again comes back the same way: the plan carries the spent guard
   (`Planned.guard_spent`, `chaser_side`). *("the guarded barriers disappear after shaking off the pursuer. that doesn't make sense.")*
 - **`EventDef.lethal_radius`**, and `lethal_reach()` is what every caller asks. The field and the
@@ -1837,8 +1838,12 @@ obstacle survivable")* Two things make that true, and both are the escape's alon
   streamed back in as only the barrier; and, as any barrier whose guard has gone, it raises no
   mark over her head. While he stands at his post, warns and charges, the band
   charges what the hunting row charges and he is the danger, warning by radius and charging at
-  his stand-off ("Every charger that does not arrive charging warns first"). The guard at the
-  far post stays a drawing, as on a day.
+  his stand-off ("Every charger that does not arrive charging warns first"). **And the guard at
+  the far post leaves too** *(inbox #771, asked whether he should: "He leaves too")*: the frame
+  his partner starts to walk away, he walks off from his own post the same way — straight away
+  from her, at his partner's pace, standing, gone once he is past `Tuning.OUT_OF_SIGHT` from her —
+  so the band she walks past is unmanned and reads as the barrier it is. On a day he stays a
+  drawing at his post.
 - **One guard at a time, wherever the bands stand.** No two of the escape's roadblocks stand where
   both guards can notice her: their notices, `pursues_within` round each band, never overlap, so
   two bands are at least twice `Tuning.HEAT_HUNTS_WITHIN` apart on one street or on two
