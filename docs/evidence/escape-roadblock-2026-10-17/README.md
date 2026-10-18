@@ -123,6 +123,41 @@ lines in `spacing-before.txt.gz` (this branch at `1c0f5d3f` with the
 Rerun: `tools/test.sh probes/escape_roadblock_spacing.gd > OUT.txt` in a checkout of the pull
 request's head (`git fetch origin refs/pull/781/head`).
 
+## The escape's placement and the day's (inbox #785)
+
+**The wood on the roof.** `alley-mouth-walls.png`, two stills of the same moment cropped to the
+block east of the tunnel chain's street, from
+
+```sh
+tools/shot.sh OUT.png 8 --start-escape city --seed 4216201080 --invincible \
+    --press ui_accept 1 --walk 3p20n
+```
+
+A at `5586bff1`, B at `462958b8`. The block has a through-alley the chains do not use, and the
+escape walls both its mouths. In A each wall is the collapsed frontage, a street seal 192px long
+laid across the 64px alley, so its timbers stand two tiles into the buildings either side, over
+their roofs; in B each is the widest row of the escape's own list that fits the mouth, the impact
+crater. The crater's picture is a little wider than its body, so its rim still touches the alley's
+walls. On the player's still (`players-run-235901/auto/004-attempt1-chase-roadblock.png`) the
+wooden carts at the right edge are a different seal, the barricade standing across a street off
+the chain, which a day stands the same way.
+
+**Density.** `tests/probes/escape_density.gd` over ten seeds, its `ESCAPE_DENSITY` lines in
+`density-before.txt.gz` (at `2d775386`, the escape's own ground), `density-after.txt.gz` (at
+`462958b8`, the day's ground) and `density-with-the-calm-rule.txt.gz` (`462958b8` with
+`_reaches_any(candidate, _calm_to_leave_alone(map, []))` added to the candidate's refusals in
+`EventScheduler._fill_a_finale_street`, the day's calm rule, which is not built):
+
+| | Trucks | Vans | Roadblocks | Bursts | Planned in |
+|---|---|---|---|---|---|
+| before | 126 | 299 | 127 | 131 | 204-284 ms |
+| the day's ground | 124 | 299 | 131 | 130 | 332-405 ms |
+| and the day's calm rule | 76 | 254 | 143 | 62 | |
+
+`tests/test_finale.gd` floods from the service exit past every body on nine seeds' plans and on the
+player's seed, and every one reaches both exits.
+
 Footprint: four stills, the first strip, its script, three compressed cost-probe outputs, the
 player's run folder (`run.log` and four stills), two burst strips and their script, two
-compressed spacing-probe outputs and this README.
+compressed spacing-probe outputs, the alley-wall pair, three compressed density-probe outputs and
+this README.
