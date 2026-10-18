@@ -540,9 +540,9 @@ func _test_chatting_mother_state_predicate_selects_the_conversation_posture(t) -
 	instance.free()
 
 ## The masked man on the escape's stairs stands while he waits for her, stands with his hand raised
-## through his notice *(inbox #764, the player: an event that does not spawn already charging always
-## needs a warning)*, and is drawn lunging (`masked_pursuer_pictures()`) only once the notice is over
-## and he runs his line.
+## through his warning *(inbox #764, the player: an event that does not spawn already charging always
+## needs a warning)*, and is drawn lunging (`masked_pursuer_pictures()`) only once his warning
+## (`warns_for`) has run with her still inside his radius and he runs his line.
 func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var instance := EventInstance.new()
@@ -550,23 +550,21 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 	t.check(instance.is_waiting() and instance._stands_still_now()
 			and instance.masked_pursuer_pictures() == EventInstance.GUARD_STANDING_BY_VIEW,
 			"waiting at the foot of the shaft he is drawn standing")
-	# Inside `pursues_within` (900px), outside `charges_within`: one step notices her, and he warns
-	# for as long as she stays there, longer than his `telegraph_time`.
-	instance.player_at = Vector2(0.0, def.charges_within + 100.0)
+	# Inside his one radius: one step notices her, and he warns for his `warns_for`.
+	instance.player_at = Vector2(0.0, def.charges_within - 100.0)
 	instance._process(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he has noticed her")
 	var alert := true
-	for i in int(round((def.telegraph_time + 2.0) / STEP)):
+	for i in int(round(def.warns_for / STEP)) - 2:
 		alert = alert and instance._stands_still_now() \
 				and instance.masked_pursuer_pictures() == EventInstance.GUARD_ALERT_BY_VIEW
 		instance._process(STEP)
-	t.check(alert, "and stands with his hand raised for as long as she stays out of his reach")
-	instance.player_at = Vector2(0.0, def.charges_within - 10.0)
-	for i in int(round(0.1 / STEP)):
+	t.check(alert, "and stands with his hand raised through his warning")
+	for i in int(round(0.2 / STEP)):
 		instance._process(STEP)
 	t.check(not instance.is_telegraphing() and not instance._stands_still_now()
 			and instance.masked_pursuer_pictures() == EventInstance.GUARD_LUNGING_BY_VIEW,
-			"once she comes within his charge distance he is drawn lunging")
+			"once it has run with her still inside his radius he is drawn lunging")
 	instance.free()
 
 # ----------------------------------------------------------- every charger's three stages ---
@@ -593,7 +591,7 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 	var pictures := instance.charging_dog_pictures()
 	t.check(instance.is_waiting() and pictures[0] == EventInstance.CHARGING_DOG_RESTING_BY_VIEW
 			and pictures[1].is_empty(), "waiting for her, the dog sits, with no stride frame")
-	# Inside its trigger and outside its stand-off, where she stands for longer than its telegraph.
+	# Inside its radius, where she stands through its warning.
 	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
 	var her := Vector2((def.pursues_within + standoff) * 0.5, 0.0)
 	_hold(instance, her, STEP)
@@ -601,14 +599,14 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 	t.check(instance._heading.is_equal_approx(her.normalized()), "turned to face her")
 	var still := true
 	var alert := true
-	for i in int(round((def.telegraph_time + 3.0) / STEP)):
+	for i in int(round(def.warns_for / STEP)) - 3:
 		instance._process(STEP)
 		still = still and instance.global_position.is_equal_approx(Vector2.ZERO) \
 				and not instance._gait_stepping()
 		pictures = instance.charging_dog_pictures()
 		alert = alert and pictures[0] == EventInstance.CHARGING_DOG_ALERT_BY_VIEW \
 				and pictures[1].is_empty()
-	t.check(alert, "its alert, a still picture, for as long as she stays in its radius")
+	t.check(alert, "its alert, a still picture, through its warning")
 	t.check(still, "and it does not move toward her while it warns")
 	# Back out of its radius it sits again, and warns again when she comes back.
 	_hold(instance, Vector2(def.pursues_within + 10.0, 0.0), STEP)
@@ -618,11 +616,11 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 	_hold(instance, her, STEP)
 	t.check(instance.charging_dog_pictures()[0] == EventInstance.CHARGING_DOG_ALERT_BY_VIEW,
 			"and back inside, it warns again")
-	_hold(instance, Vector2(standoff - 2.0, 0.0), 0.2)
+	_hold(instance, her, def.warns_for + 0.2)
 	pictures = instance.charging_dog_pictures()
 	t.check(not instance.is_telegraphing() and pictures[0] == EventInstance.CHARGING_DOG_BY_VIEW
 			and pictures[1] == EventInstance.CHARGING_DOG_BY_VIEW_B,
-			"once she crosses its stand-off it gallops, both frames")
+			"once its warning has run with her still inside it gallops, both frames")
 	instance.free()
 
 ## **The day-3 dog's telegraph is its approach**, so it is drawn galloping at her for all of it and
@@ -720,10 +718,10 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 			"the guard on her side has noticed her and stands for his notice")
 	t.check(guard.chaser_pictures() == EventInstance.GUARD_ALERT_BY_VIEW, "hand raised")
 	var post := guard.global_position
-	_hold(guard, her, hot.telegraph_time + 3.0)
+	_hold(guard, her, hot.warns_for - 0.2)
 	t.check(guard.global_position.is_equal_approx(post)
 			and guard.chaser_pictures() == EventInstance.GUARD_ALERT_BY_VIEW,
-			"at his post, hand raised, for as long as she stays in his radius")
+			"at his post, hand raised, through his warning")
 	# Out of his radius he is back at the band, and both guards stand at their posts again.
 	_hold(guard, Vector2(0.0, hot.pursues_within + 10.0), STEP)
 	t.check(guard.is_waiting() and guard.chaser_side() == 0 and not guard.has_left_its_body_behind()
@@ -733,11 +731,10 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 	t.check(guard.is_standing_for_its_notice()
 			and guard.chaser_pictures() == EventInstance.GUARD_ALERT_BY_VIEW,
 			"and back inside it he raises his hand again")
-	var standoff := Tuning.pursuit_standoff(hot.pursue_speed, hot.standoff_reach())
-	_hold(guard, guard.global_position + Vector2(0.0, standoff - 2.0), 0.1)
+	_hold(guard, her, hot.warns_for + 0.2)
 	t.check(not guard.is_telegraphing()
 			and guard.chaser_pictures() == EventInstance.GUARD_LUNGING_BY_VIEW,
-			"then she crosses his stand-off and he lunges")
+			"then, his warning run with her still inside his radius, he lunges")
 	guard.free()
 
 func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> void:
