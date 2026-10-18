@@ -1882,7 +1882,9 @@ tile holds here — a closed tile, a held street, the home block, **a standing s
 spread, the power station's front — and the precinct weight with them; all but the street the
 home's front door opens onto, a door the escape never sets off from (`docs/CITY.md`, "The escape").
 Each candidate then meets the day's own spacing (`_room_around()`) and the escape's own refusals
-below.
+below. The answers are a function of the city alone, so a restart of the city section reads the
+ones the first plan worked out (`EventScheduler._finale_ground_cache()`) unless the city's tiles,
+closures, held streets or trees have changed since.
 
 **Three of a day's rules are not the escape's, each by the player's word** *(inbox #785, asked
 which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules" for the home's

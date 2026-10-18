@@ -45,6 +45,7 @@ func run(t) -> void:
 	_test_the_escape_stands_its_rows_on_the_days_own_ground(t)
 	_test_an_alley_mouth_wall_fits_the_mouth(t)
 	_test_nothing_the_escape_stands_reaches_over_a_building(t)
+	_test_a_restart_plans_the_same_escape_on_the_kept_ground(t)
 	_test_the_service_exit_is_beside_the_home_block(t)
 	_test_nothing_the_finale_places_stands_where_she_comes_out(t)
 	_test_no_lethal_field_covers_the_ground_she_comes_out_on(t)
@@ -898,6 +899,39 @@ func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:
 					% [seed_value, placement.def.id, map.world_to_tile(placement.position), body,
 					drawn])
 	t.check(barricades > 0, "there were barricade pieces among them (%d)" % barricades)
+
+## **A restart plans the same escape, on the ground the first plan read.** A loss in the city
+## replans it on the same city (`main._plan_the_finale_city()`), and the day's ground for the
+## escape's rows is kept across it (`EventScheduler._finale_ground_cache()`): the restart's plan is
+## the first one, placement for placement, and the kept ground is the same answer. A city whose
+## ground did change — a tile closed — is read again rather than answered from the kept copy.
+func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
+	var map := CityGenerator.generate(SEEDS[0])
+	GameState.city_state.begin_day(map.block_plans, 1)
+	map.repaint(GameState.city_state)
+	var plans: Array[FinalePlanner.Plan] = []
+	var kept: Array[Dictionary] = []
+	for attempt in 2:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = SEEDS[0]
+		plans.append(FinalePlanner.plan(map, rng))
+		kept.append(EventScheduler._finale_ground_kept)
+	var same := plans[0].placements.size() == plans[1].placements.size()
+	for i in mini(plans[0].placements.size(), plans[1].placements.size()):
+		var a := plans[0].placements[i]
+		var b := plans[1].placements[i]
+		same = same and a.def.id == b.def.id and a.position.is_equal_approx(b.position)
+	t.check(same and plans[0].placements.size() > 0,
+			"a restart plans the same %d placements as the first plan" % plans[0].placements.size())
+	t.check(is_same(kept[0], kept[1]), "and reads the ground the first plan kept")
+	var tile := map.world_to_tile(map.tile_rect_to_world(
+			plans[0].open_streets[0].tile_rect()).get_center())
+	map.closed_tiles[tile] = true
+	var rng := RandomNumberGenerator.new()
+	rng.seed = SEEDS[0]
+	FinalePlanner.plan(map, rng)
+	t.check(not is_same(EventScheduler._finale_ground_kept, kept[1]),
+			"a city with a tile closed since is read again (%s)" % tile)
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.

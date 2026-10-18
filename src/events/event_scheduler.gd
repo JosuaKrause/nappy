@@ -363,9 +363,10 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 	# **A tree and an event never share ground**, the finale's streets included — `docs/CITY.md`,
 	# "Street trees". Scanned once for the whole plan rather than once per street per row: a city
 	# plants its trees in `City.build()` and nothing in a walk moves them. Kept where the day keeps
-	# its own copy, so `_open_ground_for()` reads this one.
-	var trees := StreetTrees.footprint_tiles(map)
-	var open := {_TREE_TILES_KEY: trees}
+	# its own copy, in the ground a restart reads again (`_finale_ground_cache()`), so
+	# `_open_ground_for()` reads this one.
+	var open := _finale_ground_cache(map)
+	var trees: Dictionary = open[_TREE_TILES_KEY]
 	var terminals: Array[Vector2] = [standing_at]
 	terminals.append_array(ends)
 	var ground := EscapeGround.new(map, seals, terminals)
@@ -379,6 +380,28 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 		_fill_a_finale_street(map, rng, segment, bursts, Tuning.FINALE_EXPLOSIONS_PER_STREET,
 				trees, standing_at, planned, streets, ground, open)
 	return planned
+
+## **The day's ground for the escape's rows, kept across restarts of the city section.** A loss in
+## the city replans it on the same city (`main._plan_the_finale_city()`), and every answer
+## `_open_ground_for()` keeps here is a function of that city alone: its tiles, its closed tiles,
+## its held streets and its street trees, none of which a walk changes, while the escape holds and
+## closes nothing of its own. So a restart reads the answers the first plan worked out rather than
+## scanning the whole city again for every row. Kept for one map at a time, held weakly so it never
+## keeps a city alive, and thrown away the moment any of the four differs from what it was read off.
+static func _finale_ground_cache(map: CityMap) -> Dictionary:
+	var trees := StreetTrees.footprint_tiles(map)
+	var stamp := [hash(map.tiles), map.closed_tiles.hash(), map.held_segments.hash(),
+			trees.hash()]
+	if _finale_ground_of == null or _finale_ground_of.get_ref() != map \
+			or _finale_ground_stamp != stamp:
+		_finale_ground_of = weakref(map)
+		_finale_ground_stamp = stamp
+		_finale_ground_kept = {_TREE_TILES_KEY: trees}
+	return _finale_ground_kept
+
+static var _finale_ground_of: WeakRef = null
+static var _finale_ground_stamp: Array = []
+static var _finale_ground_kept := {}
 
 ## `count` copies of one row on one street, sited the same way `_place_one` sites a day's: roll a
 ## tile of the right kind, build the placement, take the first that satisfies every rule and

@@ -208,8 +208,22 @@ Every row's piece count is the same before and after.
 `tests/test_finale.gd` floods from the service exit past every body on nine seeds' plans and on the
 player's seed, and every one reaches both exits.
 
+**A restart reads the ground the first plan worked out.** `tests/probes/escape_replan_time.gd`, the
+escape's plan on eight seeds' cities, first and on three restarts on the same city with the same rng,
+its `ESCAPE_REPLAN` lines in `replan-before.txt.gz` (at `096beb3d`) and `replan-after.txt.gz` (with
+`EventScheduler._finale_ground_cache()`), on the desktop; the placement counts are the same in every
+attempt, and `tests/test_finale.gd` holds that a restart's plan is the first one placement for
+placement:
+
+| | First plan | Restarts |
+|---|---|---|
+| before | 332-405 ms, median 349 | 304-377 ms, median 321 |
+| after | 333-404 ms, median 348 | 206-280 ms, median 221 |
+
+Not measured on a phone.
+
 Footprint: four stills, the first strip and its script, the far-guard strip, the barricade pair
-and its script, two compressed overhang-probe outputs, three compressed cost-probe outputs, the
+and its script, two compressed overhang-probe outputs, two compressed replan-probe outputs, three compressed cost-probe outputs, the
 player's run folder (`run.log` and two stills), two burst strips and their script, two
 compressed spacing-probe outputs, the alley-wall pair, three compressed density-probe outputs and
 this README.
