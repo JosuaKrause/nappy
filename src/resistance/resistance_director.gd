@@ -2124,7 +2124,9 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 ## **Day 9 is done by crossing the door, never by standing near it** *(the player: "Cross at this
 ## district door" · "Should trigger on the action not on a proximity test")*: `EventManager`'s
 ## `door_crossed` — she was let out on the far side after the inspection, or walked through the
-## door's line — completes the task when it is the named door, in either direction. A crossing of
+## door's line and stayed across while its crossing warning ran
+## (`EventManager._run_the_crossing_warning()`) — completes the task when it is the named door, in
+## either direction. A crossing of
 ## any other door does nothing.
 ##
 ## **Only an inspected crossing sends the trap.** Walked under a raised boom (`inspected` false), the
