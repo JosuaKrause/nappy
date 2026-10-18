@@ -64,7 +64,24 @@ runs south for 0.8s and he gives up and walks off; she waits 5s and walks north 
   post stays standing as a drawing.
 
 `--invincible` stages the lure only (the meter and clock do not move under it, so the stills show
-nothing about cost; the probe above is the cost). Nothing in a still shows a field; the probe and
+nothing about cost; the probe above is the cost).
+
+**The far guard leaves too** (inbox #771, the player's answer "He leaves too").
+`far-guard-leaves.png`, four frames of one burst on this branch at `f1d5dd3d`, cropped to the
+street by `bursts.py` (`--crop 480,0,1120,600`, frames 1, 13, 21 and 35):
+
+```sh
+tools/shot.sh OUT.png 9.2 --seed 7 --start-escape city --invincible --player-view \
+    --press ui_accept 0.3 --press snapshot_burst 5.9 --walk 0.1e5.4n0.6S0.2p8n
+```
+
+The same crossing, with a shorter run back and no wait, so the band is still in view when the
+guard on her side gives up. A: he charges and the guard at the far post, north of the band, is
+standing at it. B: he walks off up the west sidewalk, and the far post is empty. C: she walks past
+the band with nobody at it. D: beyond it, still nobody. On this crossing the far guard sets off
+from just above the top of the view, straight away from her, so he is not seen walking: the frames
+show his post empty from the frame his partner walks off (on `main`, and in still D above, he stays
+standing there). `tests/test_finale.gd` holds his walk, his pace and his end out of her sight. Nothing in a still shows a field; the probe and
 `tests/test_finale.gd` hold that the band's field is zero after the lure.
 
 ## The player's run on seed 4216201080, and the guard who could not be seen (inbox #771)
@@ -162,7 +179,7 @@ the chain, which a day stands the same way.
 `tests/test_finale.gd` floods from the service exit past every body on nine seeds' plans and on the
 player's seed, and every one reaches both exits.
 
-Footprint: four stills, the first strip, its script, three compressed cost-probe outputs, the
+Footprint: four stills, the first strip, the far-guard strip, its script, three compressed cost-probe outputs, the
 player's run folder (`run.log` and two stills), two burst strips and their script, two
 compressed spacing-probe outputs, the alley-wall pair, three compressed density-probe outputs and
 this README.
