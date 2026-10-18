@@ -1198,8 +1198,9 @@ var _task_siting_tree: RouteTree
 
 ## She has crossed a district door: let out on its far side after the inspection
 ## (`_release_finished_door_detentions()`, `inspected` true), or walked through its line under a
-## raised boom (`_watch_the_door_lines()`, `inspected` false, which sets the door's own guard on her
-## as well). `at` is the body of the door that saw it and `axis` the street's own axis, which every
+## raised boom (`_watch_the_door_lines()`, `inspected` false), sent once that crossing's warning has
+## run with her still across, the frame the door's own guard is set on her
+## (`_run_the_crossing_warning()`): a crossing she takes back is never announced. `at` is the body of the door that saw it and `axis` the street's own axis, which every
 ## body of one door shares, so a listener can tell which door it was. Day 9's task is completed on
 ## it either way, and sends its trap only after an inspection (`ResistanceDirector._on_door_crossed()`).
 signal door_crossed(at: Vector2, axis: Vector2, inspected: bool)
@@ -2330,7 +2331,6 @@ func _watch_the_door_lines(delta := 0.0) -> void:
 	if not crossed:
 		return
 	_walked_under += 1
-	door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 	Telemetry.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
 		crossed.def.id, TelemetryLog.tile(_map.world_to_tile(crossed.global_position)),
 		_heading_name(here - was),
@@ -2343,7 +2343,13 @@ func _watch_the_door_lines(delta := 0.0) -> void:
 	if _crossing != null and _crossing_is_on(crossed):
 		_call_off_the_crossing("she went back")
 		return
-	_start_the_crossing_warning(crossed, here)
+	# **A walked crossing counts once it stands** (`door_crossed`, day 9's task): when its warning has
+	# run with her still across (`_run_the_crossing_warning()`), so a crossing she takes back counts
+	# for nothing. One that starts no warning of its own — a guard already after her, another
+	# crossing already warning her, a door with no hut today — has no clock to wait for and counts
+	# as it happens.
+	if not _start_the_crossing_warning(crossed, here):
+		door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 
 ## **A crossing warns first, on a clock** *(inbox #788, the player: "The actual crossing will start
 ## the timer and if the player goes back no charge happens but if they stay crossed the charge will
@@ -2352,14 +2358,14 @@ func _watch_the_door_lines(delta := 0.0) -> void:
 ## `_warn_at_the_doors()`) from the frame she crosses. Back across the line before
 ## `Tuning.CROSSING_WARNING` has run, the crossing is called off and nothing comes; still across it
 ## once it has run, a guard is set on her (`_set_a_guard_on_her()`). One crossing at a time, and
-## none while a guard is already after her.
-func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> void:
+## none while a guard is already after her. Answers whether a warning started.
+func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> bool:
 	if _crossing != null or (is_instance_valid(_guard_after_her)
 			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving):
-		return
+		return false
 	var hut := _hut_on_the_line_nearest(crossed, here, true)
 	if not hut:
-		return
+		return false
 	_crossing = crossed
 	_crossing_hut = hut
 	_crossed_to = signf((here - crossed.global_position).dot(crossed.facing_now()))
@@ -2367,6 +2373,7 @@ func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> void:
 	Telemetry.note("checkpoint", "%s at %s warns her: back across within %.1fs or a guard comes" % [
 		hut.def.id, TelemetryLog.tile(_map.world_to_tile(hut.global_position)),
 		Tuning.CROSSING_WARNING])
+	return true
 
 ## Whether `door` stands on the line of the crossing still warning her: the same cross-street line,
 ## within a street's width of the body she crossed.
@@ -2381,7 +2388,8 @@ func _crossing_is_on(door: EventInstance) -> bool:
 
 ## One frame of the crossing still warning her: called off once she is back on the side she came
 ## from or held at a hut (gone through the door the lawful way), and its guard set on her once
-## `Tuning.CROSSING_WARNING` has run with her still across. Answers whether it was called off this
+## `Tuning.CROSSING_WARNING` has run with her still across, which is also when the crossing counts
+## as crossing the door (`door_crossed`, day 9's task). Answers whether it was called off this
 ## frame, so the walk back that called it off starts no warning of its own.
 func _run_the_crossing_warning(here: Vector2, delta: float) -> bool:
 	if _crossing == null:
@@ -2403,6 +2411,7 @@ func _run_the_crossing_warning(here: Vector2, delta: float) -> bool:
 	_crossing = null
 	_crossing_hut = null
 	_set_a_guard_on_her(crossed, here)
+	door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 	return false
 
 func _call_off_the_crossing(why: String) -> void:

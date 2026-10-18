@@ -915,7 +915,10 @@ through the warning decides it**: walking on is caught, standing is caught, and 
 along the street or away across it, escapes (`tests/test_checkpoints.gd`). The far gatehouse,
 about 80px across from the near lane, is *chosen while building, open to overturn*.
 One at a time: a second walk under while he is after her sets nobody else on her. On day 9 a walk
-under the named door's boom completes the task, and he is the whole of its price: the robber the
+under the named door's boom completes the task once it stands, the frame its warning has run with
+her still across and he is set on her; a crossing she takes back within the warning counts for
+nothing (`EventManager.door_crossed`), so the task is never done without its price. He is the whole
+of that price: the robber the
 task sends (`robber_giving_chase`, "The resistance's trap" below) comes only after a crossing
 inspected at a gatehouse. *(2026-10-04, the player, asked whether both should come at once:
 "(a)" — under the boom only the guard, the robber only after an inspected crossing.)*
