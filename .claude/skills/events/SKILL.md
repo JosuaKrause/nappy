@@ -243,7 +243,7 @@ nothing, cannot end the day and carries no cue, and moves until it is past `Tuni
 `spawns_on_finish` row stops where the thing it leaves belongs; a `stops_where_it_arrives` row parks
 and stays — still emitting, still the same event (the fire engine at its fire); and anything that
 was a *place* rather than a moment is simply over. **One thing leaves and is not deleted**: the
-guard who set off from a barrier (`EventDef.body_stays_behind`) walks away at his chasing pace over walkable ground, and
+guard who set off from a barrier (`EventDef.body_stays_behind`) walks away at his chasing pace over walkable ground and round his own band, and
 the instance goes back to being only the barrier: solid and silent, since a roadblock's band
 costs nothing at any time, manned or not, on a day as in the escape (its `intensity` is 0; the
 guard is the danger), and the guard at its far post walks off with him, on every day

@@ -1057,7 +1057,8 @@ Four things worth keeping straight:
   (`EventDef.body_stays_behind`). A roadblock has no departure speed, so he leaves at his chasing
   pace, over walkable ground by the way `leave_along()` plans on from its end
   (`EventInstance._way_on_out_of_sight()`), never in a straight line away from her, which from
-  anywhere not level with the band along its street crosses the roofs beside it. The barrier is its own node (`RoadblockBand`) and costs nothing while he goes, as a
+  anywhere not level with the band along its street crosses the roofs beside it, and never through
+  the tiles under his own band, so he goes round it by the open ground. The barrier is its own node (`RoadblockBand`) and costs nothing while he goes, as a
   roadblock's band never costs anything (its `intensity` is 0: the guard is the danger, not the
   concrete). He is in her view as he goes, so he is held to the rule above and not to `LEAVING_GIVES_UP`'s
   clock (`_leaving_must_clear_sight`, as for a car): the instance goes back to being only the

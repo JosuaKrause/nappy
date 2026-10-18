@@ -78,7 +78,10 @@ func run(t) -> void:
 ## (`RouteTree.for_day`) and a roadblock's band costing nothing: the whole share stands at 36.92%
 ## (127 of 344 rows), more than 1.5 points above its own 0.35 ceiling, so the floor is the ceiling —
 ## 0.35. The narrow share stands at 38.20% (34 of 89 rows), under its own 0.40 ceiling, so its floor
-## is the lower number it clears by 1.5 points, rounded down — 0.36. Both still sit above the third of the ground that is corridor,
+## is the lower number it clears by 1.5 points, rounded down — 0.36. **`roadblock` is in the narrow
+## class**: with its `intensity` 0, `EventScheduler._line_reach_of()` falls to its 60px body, under
+## the half junction box, so its 18 rows (5 on the corridor) joined the class; the other narrow rows
+## stand where they did, 29 of 71. Both still sit above the third of the ground that is corridor,
 ## which is what an unweighted day would give. **The sample is one city, so any change to the
 ## corridor reshuffles it**: the roll draws over per-tile copies, so moving the weight of even two
 ## junction-box cells changes every

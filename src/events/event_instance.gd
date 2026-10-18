@@ -3827,6 +3827,13 @@ func _be_done(may_park := true) -> void:
 		_walks_a_way = true
 		_way = PackedVector2Array()
 		_way_on = PackedVector2Array()
+		# **And never through his own band**: a road tile under the barrier is walkable to the
+		# search, since the band is a body and not a tile, and she usually stands on the side she
+		# lured him from, so the nearest ground out of her sight lies straight through the concrete
+		# she cannot pass. The search refuses the tiles under the band (`_way_avoids`, what
+		# `leave_along()` refuses for a cordon's park), so he goes round by the open ground, and so
+		# does his partner at the far post (PR #781's review 3).
+		_way_avoids = _tiles_under_the_band()
 		# And on a band whose far guard leaves too, his partner at the far post goes with him.
 		_send_the_far_guard_off()
 	if not _trail.is_empty():
@@ -4070,6 +4077,19 @@ func is_a_spent_guard() -> bool:
 func _is_a_guard_leaving_his_barrier() -> bool:
 	return def.body_stays_behind and has_left_its_body_behind()
 
+## The tiles under a barrier's solid body where it was left (`body_position()`), as the smallest
+## rect holding them: the ground a guard walking off from it, and the far guard, never walk through.
+func _tiles_under_the_band() -> Rect2i:
+	if def.shape == null:
+		return Rect2i()
+	var tiles := def.shape.tiles_under(body_position(), _solid_axis())
+	var low := tiles[0]
+	var high := tiles[0]
+	for tile in tiles:
+		low = Vector2i(mini(low.x, tile.x), mini(low.y, tile.y))
+		high = Vector2i(maxi(high.x, tile.x), maxi(high.y, tile.y))
+	return Rect2i(low, high - low + Vector2i.ONE)
+
 ## Which side's guard set off, the other half of what a stream-out carries; `0` while both stand.
 func chaser_side() -> int:
 	return _chaser_side
@@ -4083,6 +4103,7 @@ func _stand_as_the_barrier() -> void:
 	_guard_spent = true
 	is_leaving = false
 	_walks_a_way = false
+	_way_avoids = Rect2i()
 	_leaving_for = 0.0
 	_leaving_must_clear_sight = false
 	_noticed_at = INF
@@ -6458,6 +6479,8 @@ func _walk_the_far_guard_off(delta: float) -> void:
 		if player_at != Vector2.INF and not player_at.is_equal_approx(_far_guard_at):
 			away = (_far_guard_at - player_at).normalized()
 		var moved := walkable_step_on(_map, _far_guard_at, away * left) if _map else away * left
+		if _map and _way_avoids.has_point(_map.world_to_tile(_far_guard_at + moved)):
+			moved = Vector2.ZERO
 		if not moved.is_zero_approx():
 			_far_guard_heading = moved.normalized()
 			_far_guard_at += moved

@@ -523,7 +523,8 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 ## a straight line away from her, which from anywhere not level with the band along its street
 ## crossed the roofs beside it in her view. Walked on the escape's real plan for seed 4242: at every
 ## band, from 16 bearings, she walks in until his charge, runs straight back until he gives up and
-## stands; every frame either guard walks, he stands on a walkable tile. The band at tile (73,50)
+## stands; every frame either guard walks, he stands on a walkable tile, and neither walks through
+## his own band (crosses its line within its length; review 3). The band at tile (73,50)
 ## with her standing at (70,50), west of it on the open sidewalk, is the case PR #781's review found
 ## the far guard on the roof at (76,48) in: it is stood there even where the plan no longer puts a
 ## band on that tile, lured from the south down its street, and walked off with her at (70,50).
@@ -578,6 +579,10 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 				guard._far_guard_way = PackedVector2Array()
 			var far_walked := false
 			var on_ground := true
+			var axis := guard.solid_axis()
+			var across := Vector2(-axis.y, axis.x)
+			var reach := guard.def.obstructs_radius
+			var sides := {}
 			frames = 0
 			while (guard.is_leaving or guard.far_guard_at() != Vector2.INF) \
 					and frames < int(30.0 / step):
@@ -589,13 +594,26 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 				if guard.far_guard_at() != Vector2.INF:
 					at.append(guard.far_guard_at())
 					far_walked = true
-				for point in at:
+				for k in at.size():
+					var point := at[k]
 					var tile := map.world_to_tile(point)
 					if not map.is_walkable(tile):
 						on_ground = false
 						t.check(false, "%s: a guard walking off stands on %s, not walkable ground"
 								% [where, tile])
 						break
+					# Through his own band: his side of its line flips while he is within its
+					# length.
+					var key := "near" if guard.is_leaving and k == 0 else "far"
+					var side := signf((point - band).dot(across))
+					if sides.has(key) and side != 0.0 and side != sides[key] \
+							and absf((point - band).dot(axis)) <= reach:
+						on_ground = false
+						t.check(false, "%s: the %s guard walks through his own band at %s"
+								% [where, key, map.world_to_tile(point)])
+						break
+					if side != 0.0:
+						sides[key] = side
 				if not on_ground:
 					break
 			if far_walked:
