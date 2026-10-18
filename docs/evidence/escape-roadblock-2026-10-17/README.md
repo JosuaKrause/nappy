@@ -67,4 +67,62 @@ runs south for 0.8s and he gives up and walks off; she waits 5s and walks north 
 nothing about cost; the probe above is the cost). Nothing in a still shows a field; the probe and
 `tests/test_finale.gd` hold that the band's field is zero after the lure.
 
-Footprint: four stills, the strip, its script, three compressed probe outputs and this README.
+## The player's run on seed 4216201080, and the guard who could not be seen (inbox #771)
+
+**The player's run.** `players-run-235901/` is the run folder the player's game wrote on `main` at
+`5f7923b6` (`run.log` and the four stills it took under `auto/`), copied whole from the player's
+own scratch telemetry, which they may empty. Seed 4216201080 from the building
+(`tools/run.sh --start-escape --seed 4216201080 --no-save` replays it). Lines 179-212 of `run.log`
+are the city attempt the player could not win: the guard of a band at tile (72,22) warns and
+charges, she runs and he gives up, and on her way back the guard of a second band at (72,20) warns
+for half a second and catches her. `auto/004-attempt1-chase-roadblock.png` shows the two bands two
+tiles apart with one guard between them.
+
+**The guard who could not be seen.** `hidden-guard.png`, four frames of one burst, cropped to the
+street, built by `bursts.py`. Taken on this branch at `5586bff1` with
+`Tuning.FINALE_GUARDS_PER_STREET` set back to 2 for the capture only, which reproduces `main`'s
+plan for the seed exactly (642 placements, bands at (72,20) and (72,22), as the player's
+`run.log` says):
+
+```sh
+tools/shot.sh OUT.png 35 --start-escape city --seed 4216201080 --invincible \
+    --press ui_accept 1 --press snapshot_burst 30.5 --walk 3p9.63n0.7w5.33n0.7e3.55n1.2S6p5n
+```
+
+- A: the near band's guard on her side steps out with his hand up.
+- B: between the two bands stands one man.
+- C: the near band's guard charges; the far band's guard is warning too (his caret is up), and the
+  only man under the caret is the near band's far-side guard, a drawing.
+- D: the far band's guard, who was standing at his post between the bands the whole time, shows
+  from behind the near band's barrier and its far-side guard.
+
+So the cause is the drawing order, not the camera or the streaming: the far band's guard on her
+side stands two tiles in front of his band, which puts him just behind the near band, and both
+the near band and the guard it posts on its far side sort nearer her than his feet and are drawn
+over him. The branch now keeps two bands' notices apart (twice `Tuning.HEAT_HUNTS_WITHIN`), draws a
+warning guard above the street's other figures, and has the escape's guard notice her only once
+he would stand in her view (`EventDef.notices_in_her_view`): a separate case found by measuring,
+a band beside a junction seen from the cross street, where his radius alone reached her with his
+head off the top of the view. `tests/test_finale.gd` holds all three.
+
+**After.** `one-guard-on-screen.png`, the seed 7 crossing above on this branch at `1c0f5d3f`, as
+a burst (`--player-view`, `--press ui_accept 0.3 --press snapshot_burst 4.2`, the same walk,
+8 seconds): one band, its guard steps out on screen with his hand up, charges, and walks off once
+she has run.
+
+**Spacing.** `tests/probes/escape_roadblock_spacing.gd` over seeds 1 to 40, its `ESCAPE_SPACING`
+lines in `spacing-before.txt.gz` (this branch at `1c0f5d3f` with the
+`_keeps_its_notice_to_itself()` call taken out of `EventScheduler._fill_a_finale_street`) and
+`spacing-branch.txt.gz` (at `1c0f5d3f`):
+
+| | Roadblocks | Pairs nearer than their two notices (360px) | Nearest two |
+|---|---|---|---|
+| before | 594 | 135 | 160px |
+| this branch | 508 | 0 | 362px |
+
+Rerun: `tools/test.sh probes/escape_roadblock_spacing.gd > OUT.txt` in a checkout of the pull
+request's head (`git fetch origin refs/pull/781/head`).
+
+Footprint: four stills, the first strip, its script, three compressed cost-probe outputs, the
+player's run folder (`run.log` and four stills), two burst strips and their script, two
+compressed spacing-probe outputs and this README.
