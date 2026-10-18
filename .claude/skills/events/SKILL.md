@@ -244,9 +244,13 @@ nothing, cannot end the day and carries no cue, and moves until it is past `Tuni
 and stays — still emitting, still the same event (the fire engine at its fire); and anything that
 was a *place* rather than a moment is simply over. **One thing leaves and is not deleted**: the
 guard who set off from a barrier (`EventDef.body_stays_behind`) walks away at his chasing pace, and
-the instance goes back to being only the barrier, which keeps charging what a waiting roadblock
-charges throughout (the field centred on the band, a rim of its own) — so "it is over the moment it
-starts leaving" holds for the man and not for the barrier he left. He is in her view as he goes, so
+the instance goes back to being only the barrier. On a day that barrier keeps charging what a
+waiting roadblock charges throughout (the field centred on the band, a rim of its own); the
+escape's costs nothing from the moment he leaves, and its far guard walks off with him
+(`EventDef.silent_once_unmanned`). Either way a barrier whose guard has gone raises no mark over
+her head (`EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard), since he
+never notices her or charges again — so "it is over the moment it starts leaving" holds for the
+man and not for the barrier he left. He is in her view as he goes, so
 he is held to the sight rule like a car (`_leaving_must_clear_sight`) rather than vanishing on the
 6-second backstop beside her; the backstop remains for a departure with no player to be out of
 sight of. A plan streamed out while he is spent or leaving must carry that (`Planned.guard_spent`), or
