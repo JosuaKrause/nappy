@@ -4559,10 +4559,7 @@ func _contribution_at_uncached(world_position: Vector2, intensity_override: floa
 		if global_position.distance_squared_to(world_position) > reach * reach:
 			return 0.0
 	var field := _field_at(world_position, intensity_override, velocity_override)
-	# From where the field is centred: the band while a guard walks away from it, this node else.
-	var source_at := _body_left_at if is_leaving and _is_a_guard_leaving_his_barrier() \
-			else global_position
-	if field > 0.0 and _walled_off_now(source_at, world_position):
+	if field > 0.0 and _walled_off_now(global_position, world_position):
 		return 0.0
 	return field
 
@@ -4614,13 +4611,9 @@ func _field_at(world_position: Vector2, intensity_override: float,
 	if is_finished:
 		return 0.0
 	if is_leaving:
-		# **A guard walking away from his barrier leaves the barrier's own field on**, centred on
-		# the band where it stands rather than on him; every other leaving event emits nothing.
-		if not _is_a_guard_leaving_his_barrier():
-			return 0.0
-		var held := intensity_override if intensity_override >= 0.0 else current_intensity()
-		var shape_distance := _field_distance_at(_body_left_at, world_position, Vector2.ZERO)
-		return def.emission_at_distance(shape_distance, held)
+		# A leaving event emits nothing, a guard walking away from his barrier included: a
+		# roadblock's band has no field strength of its own (`EventCatalogue._roadblock()`).
+		return 0.0
 	var intensity := intensity_override if intensity_override >= 0.0 else current_intensity()
 	if not _flock.is_empty():
 		return _flock_contribution_at(world_position, intensity)
@@ -5344,8 +5337,8 @@ func solid_axis() -> Vector2:
 ## cut off mid-fade instead of draining over `EntityHalo.FADE_OUT_SECONDS`. The same lifetime
 ## `CrowdAgent.set_halo_strength()` gives its own rim; `release_halo()` is how it is given back.
 func set_halo_strength(strength: float, colour: Color) -> void:
-	# **While a guard walks away from his barrier the cost is the barrier's**, so the rim is on the
-	# band (`RoadblockBand`'s own) and not on the man, who is costing her nothing. **An instance
+	# **While a guard walks away from his barrier any rim is the barrier's**, on the band
+	# (`RoadblockBand`'s own) and not on the man, who is costing her nothing. **An instance
 	# never holds two rims at once** (`ExcitementHalo` counts one block per instance against
 	# `EntityHalo.RIM_BUDGET`): the man's is given back on the spot as the band's is built, and the
 	# band's on the spot as the instance's own is wanted again once the barrier stands alone.

@@ -22,7 +22,7 @@ func run(t) -> void:
 	_test_an_event_leaves_rather_than_vanishing(t)
 	_test_no_field_reaches_past_silent_beyond(t)
 	_test_contribution_skips_only_silence(t)
-	_test_flocks_and_a_leaving_guard_are_not_skipped(t)
+	_test_flocks_are_not_skipped(t)
 
 
 func _instance(t, def: EventDef, at := Vector2.ZERO,
@@ -332,10 +332,10 @@ func _test_contribution_skips_only_silence(t) -> void:
 			"contribution_at() answers what the field answers, skip or no skip (%d differed)"
 			% differed)
 
-## A flock's birds and a guard's band charge from away from the instance's node, so
-## `contribution_at()` does not skip them by the node's distance: a bird, and a band, put far past
-## `silent_beyond()` are still heard where they are.
-func _test_flocks_and_a_leaving_guard_are_not_skipped(t) -> void:
+## A flock's birds charge from away from the instance's node, so `contribution_at()` does not skip
+## them by the node's distance: a bird put far past `silent_beyond()` is still heard where it is.
+## (A roadblock's band, which a guard walking away leaves behind, has no field to hear.)
+func _test_flocks_are_not_skipped(t) -> void:
 	var flock := EventInstance.new()
 	flock.setup(EventCatalogue.by_id("pigeon_flock"), Vector2.ZERO)
 	flock._build_the_flock()
@@ -344,11 +344,3 @@ func _test_flocks_and_a_leaving_guard_are_not_skipped(t) -> void:
 	t.check(flock.contribution_at(far_bird) > 0.0,
 			"a bird far past its flock's silent_beyond() is still heard where it is")
 	flock.free()
-	var guard := EventInstance.new()
-	guard.setup(EventCatalogue.by_id("roadblock"), Vector2.ZERO)
-	var band := Vector2(guard.def.silent_beyond() * 3.0, 0.0)
-	guard._body_left_at = band
-	guard.is_leaving = true
-	t.check(guard.contribution_at(band) > 0.0,
-			"a guard walking away still charges at the band he left, however far from him")
-	guard.free()
