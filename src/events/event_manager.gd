@@ -105,6 +105,12 @@ var _crossing: EventInstance = null
 var _crossing_hut: EventInstance = null
 var _crossed_to := 0.0
 var _crossing_for := 0.0
+## **Crossings held behind the one still warning her**: `[position, facing]` of each other door's
+## line she walked across while `_crossing` was warning her, which starts no warning of its own. Each
+## is announced (`door_crossed`) the frame that warning runs out and its guard is set on her, and
+## dropped if it is called off, so no walk under a boom counts without a guard coming for it (review 5
+## of PR #781: two doors meeting at a corner).
+var _held_crossings: Array = []
 
 ## One `ReleaseLatch` per redetaining instance she has been let out of — `instance -> latch`. Armed
 ## the frame the release teleports her, with that instance's own trigger circle, and holding until
@@ -594,6 +600,7 @@ func clear() -> void:
 	_guard_after_her = null
 	_crossing = null
 	_crossing_hut = null
+	_held_crossings.clear()
 	_sent_after_her = null
 	_sent_warning = null
 	_sighted.clear()
@@ -1200,7 +1207,9 @@ var _task_siting_tree: RouteTree
 ## (`_release_finished_door_detentions()`, `inspected` true), or walked through its line under a
 ## raised boom (`_watch_the_door_lines()`, `inspected` false), sent once that crossing's warning has
 ## run with her still across, the frame the door's own guard is set on her
-## (`_run_the_crossing_warning()`): a crossing she takes back is never announced. `at` is the body of the door that saw it and `axis` the street's own axis, which every
+## (`_run_the_crossing_warning()`): a crossing she takes back is never announced, and one made while
+## another door's crossing is warning her is announced with that one or not at all
+## (`_held_crossings`). `at` is the body of the door that saw it and `axis` the street's own axis, which every
 ## body of one door shares, so a listener can tell which door it was. Day 9's task is completed on
 ## it either way, and sends its trap only after an inspection (`ResistanceDirector._on_door_crossed()`).
 signal door_crossed(at: Vector2, axis: Vector2, inspected: bool)
@@ -2345,9 +2354,14 @@ func _watch_the_door_lines(delta := 0.0) -> void:
 		return
 	# **A walked crossing counts once it stands** (`door_crossed`, day 9's task): when its warning has
 	# run with her still across (`_run_the_crossing_warning()`), so a crossing she takes back counts
-	# for nothing. One that starts no warning of its own — a guard already after her, another
-	# crossing already warning her, a door with no hut today — has no clock to wait for and counts
-	# as it happens.
+	# for nothing. **One made while another door's crossing is warning her is held with it**
+	# (`_held_crossings`): counted when that warning runs out and its guard comes, dropped if it is
+	# called off. One that starts no warning of its own otherwise — a guard already after her, a
+	# door with no hut today — has no clock to wait for and counts as it happens: the guard after
+	# her is its price.
+	if _crossing != null:
+		_held_crossings.append([crossed.global_position, crossed.facing_now()])
+		return
 	if not _start_the_crossing_warning(crossed, here):
 		door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 
@@ -2397,6 +2411,7 @@ func _run_the_crossing_warning(here: Vector2, delta: float) -> bool:
 	if not is_instance_valid(_crossing) or not is_instance_valid(_crossing_hut):
 		_crossing = null
 		_crossing_hut = null
+		_held_crossings.clear()
 		return false
 	if door_holding_her_at(here) != null:
 		_call_off_the_crossing("she is held at a door")
@@ -2413,6 +2428,9 @@ func _run_the_crossing_warning(here: Vector2, delta: float) -> bool:
 	_crossing_hut = null
 	_set_a_guard_on_her(hut, crossed, here)
 	door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
+	for held: Array in _held_crossings:
+		door_crossed.emit(held[0] as Vector2, held[1] as Vector2, false)
+	_held_crossings.clear()
 	return false
 
 func _call_off_the_crossing(why: String) -> void:
@@ -2420,6 +2438,8 @@ func _call_off_the_crossing(why: String) -> void:
 			% [_crossing_for, why])
 	_crossing = null
 	_crossing_hut = null
+	# The crossings held behind it go with it: nobody comes, so none of them counts.
+	_held_crossings.clear()
 
 ## One `door_guard` after her, stepping out of the wall of `hut` — the hut whose guard raised his
 ## hand at her when she crossed (`_crossing_hut`, the farther of the huts on the crossed body's own

@@ -920,7 +920,11 @@ about 80px across from the near lane, is *chosen while building, open to overtur
 One at a time: a second walk under while he is after her sets nobody else on her. On day 9 a walk
 under the named door's boom completes the task once it stands, the frame its warning has run with
 her still across and he is set on her; a crossing she takes back within the warning counts for
-nothing (`EventManager.door_crossed`), so the task is never done without its price. He is the whole
+nothing (`EventManager.door_crossed`), so the task is never done without its price. A crossing of
+the named door made while another door's crossing is still warning her (two doors meeting at a
+corner) is held with that one: it counts when that warning runs out and its guard comes, and not at
+all if she goes back across and calls it off. Only with a guard already after her, which is its
+price, does a walk under count as it happens. He is the whole
 of that price: the robber the
 task sends (`robber_giving_chase`, "The resistance's trap" below) comes only after a crossing
 inspected at a gatehouse. *(2026-10-04, the player, asked whether both should come at once:
