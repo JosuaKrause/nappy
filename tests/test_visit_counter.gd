@@ -676,11 +676,11 @@ func _test_the_masked_man_has_his_counter(t) -> void:
 	man.setup(def, Vector2.ZERO, path)
 	t.add_child(man)
 	man.set_process(false)
-	_walk(man, Vector2(0.0, -(def.charges_within - 100.0)), def.warns_for * 0.5)
+	_walk(man, Vector2(0.0, -(def.charges_within + 100.0)), 0.5)
 	t.check(counter.sent == [name + "warned"], "warning her, he is counted warned (%s)" % [counter.sent])
-	_walk(man, Vector2(0.0, -(def.charges_within - 10.0)), def.warns_for)
+	_walk(man, Vector2(0.0, -(def.charges_within - 10.0)), 1.0 / 60.0)
 	t.check(counter.sent == [name + "warned", name + "chased"],
-		"his run, once his warning has run, is counted chased (%s)" % [counter.sent])
+		"his run is counted chased (%s)" % [counter.sent])
 	for i in int(round(6.0 / (1.0 / 60.0))):
 		man.player_at = Vector2(200.0, 0.0)
 		man._process(1.0 / 60.0)
