@@ -1648,6 +1648,30 @@ func _leave_the_body_behind() -> void:
 			_set_off_from_the_near_post()
 	_keep_the_body_where_it_was_left()
 
+## **Whether the guard who would step out at her stands in her view**: the whole of his raised-hand
+## picture at the post on her side of the band (`warning_guard_rect()`) inside the world the camera
+## shows round her, `Tuning.VIEW_HALF_EXTENT` either way. No credit is taken for her look-ahead,
+## which points wherever she happens to be walking, and she can come into his notice walking across
+## it as well as towards him. Always true for a row that does not ask
+## (`EventDef.notices_in_her_view`, the escape's roadblock, which notices her only then).
+func _would_stand_in_her_view() -> bool:
+	if not def.notices_in_her_view or def.look != EventDef.Look.ROADBLOCK:
+		return true
+	return Rect2(player_at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0).encloses(
+			warning_guard_rect(_spread_vertical, body_position(), player_at))
+
+## The world rect a roadblock's guard fills with his hand raised, standing at the post on `her` side
+## of a band at `band_at` laid along `vertical` — what his warning draws (`chaser_pictures()`), at
+## the widest and tallest of its views, standing on his feet.
+static func warning_guard_rect(vertical: bool, band_at: Vector2, her: Vector2) -> Rect2:
+	var feet := band_at + _guard_post_offset(vertical, _guard_side_toward(vertical, her - band_at))
+	if _warning_guard == Vector2.ZERO:
+		for view: String in GUARD_ALERT_BY_VIEW:
+			_warning_guard = _warning_guard.max(_native_size(GUARD_ALERT_BY_VIEW[view]))
+	return Rect2(feet - Vector2(_warning_guard.x * 0.5, _warning_guard.y), _warning_guard)
+
+static var _warning_guard := Vector2.ZERO
+
 func _set_off_from_the_near_post() -> void:
 	var toward := player_at - global_position if player_at != Vector2.INF else Vector2.ZERO
 	_chaser_side = _guard_side_toward(_spread_vertical, toward)
@@ -2261,7 +2285,27 @@ func _process(delta: float) -> void:
 		# needs no redraw for it. A spent guard moves nothing, so there is nothing to re-pin.
 		_keep_the_body_where_it_was_left()
 	_move_the_band()
+	_draw_a_warning_guard_on_top()
 	_redraw_if_the_picture_changed()
+
+## **A roadblock's guard warning her is drawn over everything round him**, for the whole of his
+## warning: from the frame he steps out to his post with his hand raised until he charges. *(Inbox
+## #771, 2026-10-18: "the second guard is invisible (hidden) until it already charges".)* He sorts
+## at his own feet like any other figure, so anything standing between him and her with its feet
+## nearer her than his — a van parked in front of his post, another band and the guard posted on
+## its far side — is drawn over him, and a man who is hidden while he warns has not warned. Above
+## the rest of the street (`WARNING_GUARD_Z`) only while he warns; once he charges he sorts with
+## everything else again.
+func _draw_a_warning_guard_on_top() -> void:
+	if def.look != EventDef.Look.ROADBLOCK:
+		return
+	var wanted := WARNING_GUARD_Z if is_standing_for_its_notice() else 0
+	if z_index != wanted:
+		z_index = wanted
+
+## How far above the street's own figures a warning roadblock guard is drawn — one step, under the
+## city's overhead layer (`City.OVERHEAD_Z_INDEX`).
+const WARNING_GUARD_Z := 1
 
 # ------------------------------------------------------------------- the chat ---
 # `chatting_mother`'s whole mechanic: a trigger rather than a field. `EventManager` decides *when*
@@ -2556,8 +2600,10 @@ func _chase(delta: float) -> void:
 	if is_waiting():
 		# **It notices her only along a clear line** (`_clear_line_to()`, the catch's own test):
 		# within `pursues_within` round a building's corner, he has not seen her. *(leafy-puffin,
-		# inbox #648: "yes noticing needs a clear line".)*
-		if range_to_her <= def.pursues_within and _clear_line_to(player_at):
+		# inbox #648: "yes noticing needs a clear line".)* And the escape's roadblock guard notices
+		# her only once he would stand in her view (`_would_stand_in_her_view()`).
+		if range_to_her <= def.pursues_within and _clear_line_to(player_at) \
+				and _would_stand_in_her_view():
 			_noticed_at = age
 			# `VisitCounter`'s own "-warned", once per instance: the warning level below the
 			# charge that `pursuit_began` reports (docs/TELEMETRY.md, "The page counts visits").

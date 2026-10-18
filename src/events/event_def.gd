@@ -1112,6 +1112,19 @@ func lunge_is_inside_the_catch() -> bool:
 ## Read only where `body_stays_behind` is set; nothing else has a guard to leave.
 @export var silent_once_unmanned := false
 
+## Whether a roadblock's guard who waits for her (`pursues_within`) notices her **only once he would
+## stand in her view**: inside `pursues_within` along a clear line as ever, and with the whole of his
+## raised-hand picture, at the post on her side he steps out to, inside the world the camera shows
+## round her (`Tuning.VIEW_HALF_EXTENT` either way of her). *(Inbox #771, 2026-10-18: "the second
+## guard is invisible (hidden) until it already charges".)* The view reaches 180px above and below
+## her, the same as his notice, and a band across an east-west street posts its guards level with
+## its own line, so from the cross street below the junction the radius alone noticed her with his
+## head off the top of the screen. The escape's roadblock is the one row that sets it
+## (`EventCatalogue.escape_roadblock()`).
+##
+## Read only where `look` is `Look.ROADBLOCK`; nothing else steps out to a post.
+@export var notices_in_her_view := false
+
 ## Which side or sides of a `Look.ROADBLOCK` band `_draw_roadblock()` posts a standing guard on —
 ## `-1`/`+1` in `_guard_post_offset()`'s own reading of `side`, the same sign `_guard_side_toward()`
 ## and `_chaser_side` use. `[-1, 1]` (both) is every row's own default: the catalogue `roadblock`

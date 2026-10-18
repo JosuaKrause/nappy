@@ -92,7 +92,8 @@ static func heated(def: EventDef, level: int) -> EventDef:
 ## is only a barrier and costs nothing (`EventDef.silent_once_unmanned`). *(Inbox #771: "it should
 ## be in a way that luring away the guard is enough. Right now there are for guards and the player
 ## adds excitement by just being close.")* While he stands at his post, warns and charges, the band
-## charges what the hunting row charges. A derived copy, never a mutation, kept for the run, for the
+## charges what the hunting row charges. And he notices her only once he would stand in her view
+## (`EventDef.notices_in_her_view`), so his warning never starts off the screen. A derived copy, never a mutation, kept for the run, for the
 ## reason `heated()` caches its own; `shape` and `solid_parts` are carried across by hand, as
 ## `EventDef.at_heat()` carries them, since `Resource.duplicate()` does not copy them.
 static func escape_roadblock() -> EventDef:
@@ -102,6 +103,7 @@ static func escape_roadblock() -> EventDef:
 		escape.shape = hunting.shape
 		escape.solid_parts = hunting.solid_parts
 		escape.silent_once_unmanned = true
+		escape.notices_in_her_view = true
 		_escape_roadblock = escape
 	return _escape_roadblock
 

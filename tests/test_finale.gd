@@ -15,6 +15,11 @@ const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
 const TITLE_SCREEN_SCENE := preload("res://scenes/ui/title_screen.tscn")
 const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
+const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+## The seed the player played the escape on and could not win (inbox #771), from the building, and
+## the tile on the tunnel chain's street where the second band's guard caught her.
+const PLAYERS_SEED := 4216201080
+const WHERE_THE_PLAYER_WAS_CAUGHT := Vector2i(74, 22)
 
 ## Four cities rather than one. A chain is a search over a generated lattice and the thing most
 ## likely to go wrong about it — a park the walk cannot reach, an exit behind a wall — is a
@@ -32,6 +37,9 @@ func run(t) -> void:
 	_test_a_lured_off_roadblock_is_only_a_barrier(t)
 	_test_a_lured_off_roadblock_raises_no_mark_over_her(t)
 	_test_luring_its_guard_off_is_the_way_past_a_roadblock(t)
+	_test_no_two_roadblocks_notice_her_from_the_same_ground(t)
+	_test_an_escape_guard_warns_on_the_screen_and_on_top(t)
+	_test_the_players_seed_is_winnable_past_its_roadblocks(t)
 	_test_the_service_exit_is_beside_the_home_block(t)
 	_test_nothing_the_finale_places_stands_where_she_comes_out(t)
 	_test_no_lethal_field_covers_the_ground_she_comes_out_on(t)
@@ -501,6 +509,192 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t) -> void:
 						"%s: and the band charges her nothing on the way (%.1f/s at most, %.1f points)"
 						% [where, after["strongest"], after["cost"]])
 	t.check(crossings > 0, "there were roadblock crossings to walk (%d)" % crossings)
+
+## **One guard at a time, wherever the two bands stand.** No two of the escape's roadblocks stand
+## where one's guard notices her while she deals with the other: their notices, each
+## `pursues_within` round its band, never overlap (`EventScheduler._keeps_its_notice_to_itself()`).
+## *(Inbox #771, 2026-10-18: "two roadblocks are right next to each other and the second guard is
+## invisible (hidden) until it already charges".)* One a street keeps two off one street; this keeps
+## two apart across a junction or a corner as well.
+func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
+	var pairs := 0
+	for seed_value in SEEDS:
+		var built := _plan_for(seed_value)
+		var map: CityMap = built["map"]
+		var plan: FinalePlanner.Plan = built["plan"]
+		var bands := _escape_roadblocks(plan)
+		for i in bands.size():
+			for j in range(i + 1, bands.size()):
+				pairs += 1
+				var gap := EventScheduler._stands_at(map, bands[i]).distance_to(
+						EventScheduler._stands_at(map, bands[j]))
+				var apart := bands[i].def.pursues_within + bands[j].def.pursues_within
+				t.check(gap >= apart, "seed %d: the roadblocks at %s and %s stand %.0fpx apart, at least the %.0fpx their two notices take"
+						% [seed_value, map.world_to_tile(bands[i].position),
+						map.world_to_tile(bands[j].position), gap, apart])
+	t.check(pairs > 0, "there were pairs of roadblocks to measure (%d)" % pairs)
+
+## **An escape guard warns on the screen and in front of everything round him**, from the first frame
+## of his warning until he charges. *(Inbox #771, 2026-10-18: "the second guard is invisible
+## (hidden) until it already charges".)* Walked: she comes at each of the plan's roadblocks in a
+## straight line from all round it, and on the frame his hand goes up, the whole of his raised-hand
+## picture at his post (`EventInstance.warning_guard_rect()`) is inside the view round her
+## (`Tuning.VIEW_HALF_EXTENT` either way, no credit for her look-ahead) and he is drawn above the
+## street's other figures (`EventInstance.WARNING_GUARD_Z`); once he charges, he sorts with them
+## again. The approaches on which the radius alone would have warned her with him off the view are
+## counted, so the view's part in the notice is shown to be doing something.
+func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
+	var step := RoadblockRig.STEP
+	var warned := 0
+	var off_by_the_radius := 0
+	for seed_value: int in [4242, 77]:
+		var built := RoadblockRig.plan_for(seed_value)
+		var map: CityMap = built["map"]
+		var plan: FinalePlanner.Plan = built["plan"]
+		for band_plan in _escape_roadblocks(plan):
+			var group: Array[EventScheduler.Planned] = [band_plan]
+			for bearing in 16:
+				var made := RoadblockRig.build(t, map, group)
+				var guard: EventInstance = made[1][0]
+				var band := guard.body_position()
+				var view_half := Tuning.VIEW_HALF_EXTENT
+				var toward := Vector2.from_angle(TAU * float(bearing) / 16.0)
+				var her := band + toward * (guard.def.pursues_within + 80.0)
+				var radius_alone_seen := false
+				var charged := false
+				var where := "seed %d band %s from %d°" % [seed_value,
+						map.world_to_tile(band_plan.position), bearing * 360 / 16]
+				while her.distance_to(band) > 40.0 and not charged:
+					her -= toward * Tuning.WALK_SPEED * step
+					var tile := map.world_to_tile(her)
+					if not map.in_bounds(tile) or not map.is_walkable(tile):
+						continue
+					var was_waiting := guard.is_waiting()
+					if was_waiting and not radius_alone_seen \
+							and her.distance_to(band) <= guard.def.pursues_within \
+							and map.clear_line(band, her):
+						radius_alone_seen = true
+						if not Rect2(her - view_half, view_half * 2.0).encloses(
+								EventInstance.warning_guard_rect(guard._spread_vertical, band, her)):
+							off_by_the_radius += 1
+					RoadblockRig._tick(made[1], her, false)
+					if was_waiting and guard.is_standing_for_its_notice():
+						warned += 1
+						var view := Rect2(her - view_half, view_half * 2.0)
+						t.check(view.encloses(EventInstance.warning_guard_rect(
+								guard._spread_vertical, band, her)),
+								"%s: his raised hand goes up in her view" % where)
+						t.check(guard.z_index == EventInstance.WARNING_GUARD_Z,
+								"%s: and he is drawn above the street round him" % where)
+					if guard.is_chasing():
+						charged = true
+						t.check(guard.z_index == 0,
+								"%s: once he charges he sorts with the street again" % where)
+				made[0].free()
+	t.check(warned > 0, "there were warnings to watch (%d)" % warned)
+	t.check(off_by_the_radius > 0,
+			"and approaches the radius alone would have warned from off the view (%d)"
+			% off_by_the_radius)
+
+## The plan's own roadblocks, the escape's copy of the row.
+static func _escape_roadblocks(plan: FinalePlanner.Plan) -> Array[EventScheduler.Planned]:
+	var found: Array[EventScheduler.Planned] = []
+	for placement in plan.placements:
+		if placement.def == EventCatalogue.escape_roadblock():
+			found.append(placement)
+	return found
+
+## **The seed the player could not win, booted the way the player booted it.** *(Inbox #771,
+## 2026-10-18: "the seed you gave me for testing the escape is still unwinnable. two roadblocks are
+## right next to each other and the second guard is invisible (hidden) until it already charges")*
+## Seed 4216201080 from the building, walked out of the service door through the real `main.tscn`
+## (as `tests/test_escape_invisible_wall.gd` does), and the city section's own plan read off the
+## city it built: the street the player was caught on stands one band; no two bands notice her from
+## the same ground; from the door both exits are reached past every body standing for the walk; and
+## on every roadblock street, both ways, from the asleep baby every attempt at the city starts with,
+## walking straight past a posted guard is caught while luring him off and walking on is not, and
+## costs nothing.
+func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
+	var saved_section := GameState.escape_section
+	GameState.start_run(PLAYERS_SEED)
+	GameState.day = 1
+	GameState.escape_section = FinaleController.Section.BUILDING
+	var main: Node2D = MAIN_SCENE.instantiate()
+	t.add_child(main)
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	main._on_finale_summary_continued()
+	main._interior.exit_requested.emit()
+	main._on_finale_summary_continued()
+	t.check(main._city != null and main._finale.section == FinaleController.Section.CITY,
+			"seed %d: the service door puts her in the city" % PLAYERS_SEED)
+	if main._city != null:
+		var map: CityMap = main._city.map
+		var plan := FinalePlanner.plan(map, GameState.day_rng(GameState.day, "finale"))
+		var bands := _escape_roadblocks(plan)
+		var hers := StreetNetwork.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
+		var on_her_street := 0
+		for band_plan in bands:
+			var street := StreetNetwork.segment_containing(map.world_to_tile(band_plan.position))
+			if hers and street and street.key() == hers.key():
+				on_her_street += 1
+		t.check(hers != null and on_her_street == 1,
+				"seed %d: the street she was caught on stands one band (%d)"
+				% [PLAYERS_SEED, on_her_street])
+		for i in bands.size():
+			for j in range(i + 1, bands.size()):
+				t.check(EventScheduler._stands_at(map, bands[i]).distance_to(
+						EventScheduler._stands_at(map, bands[j]))
+						>= bands[i].def.pursues_within + bands[j].def.pursues_within,
+						"seed %d: the bands at %s and %s notice her from no common ground"
+						% [PLAYERS_SEED, map.world_to_tile(bands[i].position),
+						map.world_to_tile(bands[j].position)])
+		var blocked := {}
+		_block_every_body(t, map, plan, blocked)
+		var reached := _flood_past_the_bodies(map, blocked,
+				map.tile_to_world(FinalePlanner.service_exit_tile(map)))
+		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
+			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
+			var found := false
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					found = found or reached.has(at + Vector2i(dx, dy))
+			t.check(found, "seed %d: the %s is reached from the door past every body standing"
+					% [PLAYERS_SEED, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+		var crossings := 0
+		for street: Array in RoadblockRig.roadblock_streets(map, plan):
+			var segment: StreetNetwork.Segment = street[0]
+			var group: Array[EventScheduler.Planned] = []
+			group.assign(street[1])
+			var line := RoadblockRig.her_line(t, map, segment, group)
+			t.check(not line.is_empty(), "seed %d: street %s keeps a sidewalk open past its band"
+					% [PLAYERS_SEED, segment.key()])
+			if line.is_empty():
+				continue
+			for forward in [true, false]:
+				crossings += 1
+				var from: Vector2 = line[0] if forward else line[1]
+				var to: Vector2 = line[1] if forward else line[0]
+				var where := "seed %d street %s %s" % [PLAYERS_SEED, segment.key(),
+						"forward" if forward else "back"]
+				var posted := RoadblockRig.walk(t, map, group, from, to,
+						RoadblockRig.Meter.new(0.0, true))
+				t.check(posted["caught"], "%s: walking straight past its posted guard is caught"
+						% where)
+				var lured := RoadblockRig.lure(t, map, group, from, to,
+						RoadblockRig.Meter.new(0.0, true))
+				var after: Dictionary = lured["after"]
+				t.check(not lured["lure"]["caught"] and not after.is_empty() \
+						and not after["caught"] and after["charged"] == 0 and after["cost"] == 0.0,
+						"%s: luring its guard off and walking on past is not caught and costs nothing"
+						% where)
+		t.check(crossings > 0, "seed %d: there were roadblock crossings to walk (%d)"
+				% [PLAYERS_SEED, crossings])
+	t.get_tree().paused = false
+	Telemetry.end_run()
+	main.free()
+	GameState.escape_section = saved_section
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.

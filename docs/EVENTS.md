@@ -47,6 +47,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `lunge_reach` | Where a pursuer's lunge is measured from when that is **not** its catch. `0` — every row but the alley robber and the man who comes at her from his row — means the catch, and `standoff_reach()` is what every stand-off caller asks. The alley robber catches at 26px but lunges from `lunge_reach` 38, so his stand-off is 116px and the room between his lunge and his catch is 90px. `EventDef.validate()` refuses a `lunge_reach` inside the row's own catch (`lunge_is_inside_the_catch()`), since that stand-off would leave her less than `PURSUIT_REACTION` of his approach |
 | `body_stays_behind` | Whether this row's body is a **fixture of the street** a pursuer leaves standing rather than the pursuer's own bulk. Every other pursuer's body comes down the frame it starts hunting; a roadblock's barrier is pinned where it was built, so the street stays shut behind the man who left it |
 | `silent_once_unmanned` | Whether the barrier a `body_stays_behind` guard leaves **costs nothing once he has left his post for good** — walking away after a chase, or gone — so it is only a barrier: solid, drawn, no field. Only the escape's roadblock sets it (`EventCatalogue.escape_roadblock()`); a day's roadblock keeps costing what a barrier costs — see "The escape — the walk that is not a day" |
+| `notices_in_her_view` | Whether a roadblock's guard who waits for her notices her **only once he would stand in her view**: inside `pursues_within` along a clear line, and with the whole of his raised-hand picture at the post on her side inside `Tuning.VIEW_HALF_EXTENT` either way of her (`EventInstance._would_stand_in_her_view()`). Only the escape's roadblock sets it; a day's guard notices her by his radius alone — see "The escape — the walk that is not a day" |
 | `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the two region-door rows that inspect her, `checkpoint_hut` and `checkpoint_post` — see "Checkpoints" |
 | `sets_off_beside_her` | Whether a pursuer starts **inside its own stand-off**, spawned beside her rather than sited or noticing her outside it: it exists to charge her. Its notice then cannot be cut short by her being close and it never backs off: it holds its ground, follows at the stand-off once she is further (unless it also `stands_for_its_notice`, below, as both that carry it do), and chases when the notice has run its whole length, which is owed at least the badge's `Tuning.OFFSCREEN_WARNING_MIN` rather than an approach's `PURSUIT_MIN_NOTICE`. The men an investigating vehicle lets out are the copies that carry it (`EventCatalogue.out_of_the_car()`). Any other pursuer takes the same ground once a wall has held its lunge back, and lunges when she is back at its stand-off with the line clear |
 | `stands_for_its_notice` | Whether a pursuer that noticed her **stands still for its notice**, turned to her in its alert pose, instead of closing on her *(inbox #748: "robber can walk towards her but guards should lift their hand in warning"; "nobody walks -- only the robber")*. Every lunge still fires — the moment she walks inside its stand-off along a clear line — so only the closing stops: walking in, the chase starts from the full stand-off, and one that waited for her never charges while she stays outside it. Read only on an instance that waited for her (`pursues_within`) or set off beside her, so the day-3 dog, whose telegraph is its approach, still comes. `charging_dog`, `roadblock` (its hunting copy) and the men an investigating vehicle lets out set it, and day 13's task guard stands for the second his task gives him in her view; `alley_robbery` does not |
@@ -1607,7 +1608,10 @@ standing at his. Two fields make that work and both are general rather than writ
   costs, with the post he left empty (on a day; the escape's barrier costs nothing once he has
   left, `EventDef.silent_once_unmanned`). **A warning that ends with her walking back out of his
   180px is not a chase**: he is back at the band, both guards posted and the body under him, and
-  he can warn again (`EventInstance._stop_warning()`). Once he has chased, he does not come back for her, and **the guard still
+  he can warn again (`EventInstance._stop_warning()`). **While he warns he is drawn above the
+  street's other figures** (`EventInstance.WARNING_GUARD_Z`): he sorts at his own feet, so a van
+  parked in front of his post or another band nearer her would otherwise be drawn over the man
+  whose raised hand is the warning; once he charges he sorts with them again. Once he has chased, he does not come back for her, and **the guard still
   standing at the other post is only a drawing from then on** (a choice open to overturn; the
   alternative is that the one who chased walks back to his post and the barrier is armed again).
   A barrier streamed out and in again comes back the same way: the plan carries the spent guard
@@ -1835,12 +1839,28 @@ obstacle survivable")* Two things make that true, and both are the escape's alon
   charges what the hunting row charges and he is the danger, warning by radius and charging at
   his stand-off ("Every charger that does not arrive charging warns first"). The guard at the
   far post stays a drawing, as on a day.
+- **One guard at a time, wherever the bands stand.** No two of the escape's roadblocks stand where
+  both guards can notice her: their notices, `pursues_within` round each band, never overlap, so
+  two bands are at least twice `Tuning.HEAT_HUNTS_WITHIN` apart on one street or on two
+  (`EventScheduler._keeps_its_notice_to_itself()`, a refusal at placement). *(Inbox #771: "two
+  roadblocks are right next to each other and the second guard is invisible (hidden) until it
+  already charges")* Dealing with a band happens inside its guard's notice, so she meets one band
+  and its guard at a time, across a junction or a corner as well as along a street, and no guard
+  stands behind another band and the guard posted on its far side.
+- **His warning starts with him on the screen.** The guard notices her only once the whole of his
+  raised-hand picture at his post would be inside her view (`EventDef.notices_in_her_view`). The
+  view reaches 180px above and below her, the same as his notice, and a band across an east-west
+  street posts its guards level with its line, so from the cross street below the junction his
+  radius alone noticed her with his head off the top of the screen.
 
 So walking straight past a posted band is caught, and walking in until he charges, running back
 until he gives up and then walking past costs what the run costs and nothing more, awake or
 asleep. `tests/test_finale.gd` walks exactly that on every roadblock street of two seeds' plans,
-in both directions, and `tests/probes/escape_roadblock_cost.gd` prints what each walk costs over
-more of them.
+in both directions, and on seed 4216201080 booted from the building through `main.tscn`; it walks
+her in at every band from all round it and requires his warning to start in her view and above the
+street; `tests/probes/escape_roadblock_cost.gd` prints what each walk costs over more seeds, and
+`tests/probes/escape_roadblock_spacing.gd` how many bands a plan stands and how near the nearest
+two are.
 
 **The escape rolls its ground per street rather than per city** — `EventScheduler._finale_ground`
 over one segment's own rect, since the chains already say which streets exist for it, there is no

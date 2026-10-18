@@ -339,6 +339,9 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ## the ground around it still joins up the way it did without it — see
 ## `_the_escape_accepts()`. `ends` is where the walk has to get to, the two exits beside
 ## `standing_at`.
+##
+## **And she meets one roadblock's guard at a time**: no two stand where both can notice her
+## (`_keeps_its_notice_to_itself()`).
 static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 		streets: Array[StreetNetwork.Segment], standing_at: Vector2,
 		seals: Array[Planned] = [], ends: Array[Vector2] = []) -> Array[Planned]:
@@ -394,6 +397,9 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 			if not candidate:
 				continue
 			candidate.role = _role_for(def)
+			# A waiting guard's own refusal, which never bends: one guard's notice at a time.
+			if not _keeps_its_notice_to_itself(map, candidate, planned):
+				continue
 			var room := _room_around(candidate, planned)
 			# `-INF` is the spacing rules' own refusal, never a pick at any room.
 			if room == -INF:
@@ -415,6 +421,46 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 		if best:
 			planned.append(best)
 			ground.stand(best)
+
+## **One waiting guard at a time.** A candidate that waits to notice her (`EventDef.pursues_within`:
+## the escape's roadblock, whose guard notices her within `Tuning.HEAT_HUNTS_WITHIN`) is refused
+## when the ground it notices her from meets the ground another placed one notices her from: the
+## two notice discs, each centred where its band stands, may not overlap, so two of the escape's
+## roadblocks stand at least twice `Tuning.HEAT_HUNTS_WITHIN` apart, on one street or on two.
+## *(Inbox #771, 2026-10-18: "two roadblocks are right next to each other and the second guard is
+## invisible (hidden) until it already charges".)*
+##
+## **Why the notice is the distance that matters.** Dealing with one roadblock happens inside its
+## guard's notice: he warns while she is inside it, charges only once she crosses his stand-off,
+## and the run that shakes him off goes back out of it. Another guard can come for her only once
+## she is inside *his* notice too, so with no ground inside both she deals with one band and its
+## guard at a time — wherever the two stand, either side of a junction or round a corner as much
+## as on one street. It is also what keeps one guard from standing behind another's drawing: the
+## near guard of a band two tiles up the street stands between the two bands, where the nearer
+## band and the guard posted on its far side are drawn over him.
+static func _keeps_its_notice_to_itself(map: CityMap, candidate: Planned,
+		planned: Array[Planned]) -> bool:
+	var reach := candidate.def.pursues_within
+	if reach <= 0.0:
+		return true
+	var at := _stands_at(map, candidate)
+	for plan in planned:
+		if plan.def.pursues_within <= 0.0 or not plan.is_placed():
+			continue
+		if at.distance_to(_stands_at(map, plan)) < reach + plan.def.pursues_within:
+			return false
+	return true
+
+## Where a placement's body stands once it is built: the first point of its path when it has one,
+## recentred on the pavement band unless `pavement_side` pins it — the reading
+## `EventInstance.setup()` makes of a stationary body, which is where a waiting guard's band stands
+## and where he notices her from.
+static func _stands_at(map: CityMap, plan: Planned) -> Vector2:
+	var at: Vector2 = plan.path[0] if plan.path.size() > 0 else plan.position
+	if not plan.def.mobile and plan.def.obstructs_radius > 0.0 \
+			and plan.def.pavement_side == EventDef.Pavement.ANY:
+		at = EventInstance._centred_on_the_pavement_band(map, at)
+	return at
 
 ## **Every street of the escape's walk keeps one sidewalk open past everything standing on it, and
 ## nothing standing on it cuts the walk anywhere else either**, asked of each candidate before it
