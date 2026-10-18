@@ -342,6 +342,16 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ##
 ## **And she meets one roadblock's guard at a time**: no two stand where both can notice her
 ## (`_keeps_its_notice_to_itself()`).
+##
+## **Three of a day's placement rules are not the escape's, each by the player's word** *(inbox
+## #785, asked which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules"
+## for the home's streets and the caps)*. Nothing here asks `_calm_to_leave_alone()`: the escape is
+## the climax and its chains pass a calm area at every stop, so a field kept off every calm area
+## she has not used would clear the streets round every stop of most of what this stands. Nothing
+## here holds the streets round the home block or keeps off the front door's street
+## (`_open_ground_for()`'s `from_the_door`, false here): she sets off from the service exit, which
+## opens onto one of those streets, so holding them would empty the street she starts on. And no
+## budget or `max_per_day` cap applies: the counts are per street, above.
 static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 		streets: Array[StreetNetwork.Segment], standing_at: Vector2,
 		seals: Array[Planned] = [], ends: Array[Vector2] = []) -> Array[Planned]:

@@ -1877,10 +1877,22 @@ tile holds here — a closed tile, a held street, the home block, **a standing s
 spread, the power station's front — and the precinct weight with them; all but the street the
 home's front door opens onto, a door the escape never sets off from (`docs/CITY.md`, "The escape").
 Each candidate then meets the day's own spacing (`_room_around()`) and the escape's own refusals
-below. Two of a day's rules the escape does not keep: its budget and `max_per_day` caps, since the
-escape stands a fixed count of its own rows a street (above); and the calm it leaves alone
-(`_calm_to_leave_alone()`, nothing's field reaching a calm area she has not used yet), which is
-open to the player's word.
+below.
+
+**Three of a day's rules are not the escape's, each by the player's word** *(inbox #785, asked
+which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules" for the home's
+streets and the caps)*:
+
+- **The calm a day leaves alone** (`_calm_to_leave_alone()`: nothing's field may reach a calm area
+  she has not used yet). The escape is the climax, its streets stand a fixed count of lethal rows
+  each, and the chains pass a calm area at every stop, so the rule would clear the streets round
+  every stop: about a third of the trucks, a sixth of the vans and over half the bursts would go.
+- **The home's streets.** A day places nothing on the street the front door opens onto and holds
+  the streets round the home block, because she sets off from that door. The escape sets off from
+  the service exit on the side of the block (`docs/CITY.md`, "The escape"), and that exit opens onto
+  one of the streets round the home block, so holding them would empty the street she starts on.
+- **The budget and `max_per_day` caps**: a day spends a per-block allowance on a weighted roll; the
+  escape stands a fixed count of its own rows a street (above).
 
 **And the ground she is put down on is refused to everything that could already be reaching her**
 (`EventScheduler._clearance_around_her`), because *"the spawning shouldn't be a check. the pathing
