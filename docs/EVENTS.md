@@ -1030,7 +1030,9 @@ Four things worth keeping straight:
   the standing field is the whole point of it.
 - **One thing leaves and is not deleted: the guard who set off from a barrier**
   (`EventDef.body_stays_behind`). A roadblock has no departure speed, so he leaves at his chasing
-  pace. The barrier is its own node (`RoadblockBand`) and keeps charging what a waiting roadblock
+  pace, over walkable ground by the way `leave_along()` plans on from its end
+  (`EventInstance._way_on_out_of_sight()`), never in a straight line away from her, which from
+  anywhere not level with the band along its street crosses the roofs beside it. The barrier is its own node (`RoadblockBand`) and keeps charging what a waiting roadblock
   charges (`def.intensity`) while he goes: the field is centred on the band, walled off from the
   band, and carries a rim of its own on the band, while the man, who costs her nothing, has none.
   He is in her view as he goes, so he is held to the rule above and not to `LEAVING_GIVES_UP`'s
@@ -1603,7 +1605,7 @@ standing at his. Two fields make that work and both are general rather than writ
   beside it are their own y-sorted node (`EventInstance.RoadblockBand`) standing at the body, so
   they never ride his stride bob and never re-sort with him, and the body is re-pinned through his
   departure too. **It outlives the chase**: when the chase ends — she shook him off, or his chase
-  ran out — he walks away at his chasing pace, the barrier keeping its own field on while he goes,
+  ran out — he walks away at his chasing pace over walkable ground, the barrier keeping its own field on while he goes,
   and the instance goes back to being only the barrier, waiting, solid and costing what a barrier
   costs, with the post he left empty (on a day; the escape's barrier costs nothing once he has
   left, `EventDef.silent_once_unmanned`). **A warning that ends with her walking back out of his
@@ -1840,8 +1842,8 @@ obstacle survivable")* Two things make that true, and both are the escape's alon
   charges what the hunting row charges and he is the danger, warning by radius and charging at
   his stand-off ("Every charger that does not arrive charging warns first"). **And the guard at
   the far post leaves too** *(inbox #771, asked whether he should: "He leaves too")*: the frame
-  his partner starts to walk away, he walks off from his own post the same way — straight away
-  from her, at his partner's pace, standing, gone once he is past `Tuning.OUT_OF_SIGHT` from her —
+  his partner starts to walk away, he walks off from his own post the same way — over walkable
+  ground away from her (`EventInstance._way_on_out_of_sight_from()`), at his partner's pace, standing, gone once he is past `Tuning.OUT_OF_SIGHT` from her —
   so the band she walks past is unmanned and reads as the barrier it is. On a day he stays a
   drawing at his post.
 - **One guard at a time, wherever the bands stand.** No two of the escape's roadblocks stand where

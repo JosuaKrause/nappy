@@ -3785,6 +3785,13 @@ func _be_done(may_park := true) -> void:
 		# **He is in her view as he goes**, and the barrier he leaves is there to be looked at: he is
 		# gone only once she could not be watching, never off `LEAVING_GIVES_UP`'s clock beside her.
 		_leaving_must_clear_sight = true
+		# **And he walks off over walkable ground**, by the way `leave_along()` plans on from its
+		# end (`_way_on_out_of_sight()`), never in a straight line across a roof: straight away
+		# from her, from anywhere not level with the band along its street, crosses the buildings
+		# beside it in her view.
+		_walks_a_way = true
+		_way = PackedVector2Array()
+		_way_on = PackedVector2Array()
 		# And on a band that is silent once unmanned, his partner at the far post goes with him.
 		_send_the_far_guard_off()
 	if not _trail.is_empty():
@@ -3946,7 +3953,12 @@ func _walk_points(planned: bool, step: float) -> float:
 ## Empty when no such tile is found within `WAY_ON_SEARCH_LIMIT` tiles, and the step falls back to
 ## walking away from her.
 func _way_on_out_of_sight() -> PackedVector2Array:
-	var start := _map.world_to_tile(global_position)
+	return _way_on_out_of_sight_from(global_position)
+
+## `_way_on_out_of_sight()` from any point, not only this instance's own: the far guard at a band
+## walks off from his post by the same search (`_walk_the_far_guard_off()`).
+func _way_on_out_of_sight_from(at: Vector2) -> PackedVector2Array:
+	var start := _map.world_to_tile(at)
 	var came_from: Dictionary[Vector2i, Vector2i] = {start: start}
 	var queue: Array[Vector2i] = [start]
 	var head := 0
@@ -4037,6 +4049,7 @@ func chaser_side() -> int:
 func _stand_as_the_barrier() -> void:
 	_guard_spent = true
 	is_leaving = false
+	_walks_a_way = false
 	_leaving_for = 0.0
 	_leaving_must_clear_sight = false
 	_noticed_at = INF
@@ -6319,9 +6332,11 @@ var _band: RoadblockBand
 ## gone, and the guard at the far post stays a drawing at it.
 ##
 ## **His partner's departure, from his own post.** He sets off the frame his partner starts walking
-## away (`_be_done()`), straight away from her at the pace his partner leaves at
-## (`EventDef.pursue_speed`, `_leaving_speed()`'s for a guard leaving his barrier), standing as he
-## walks, and he is gone once she could not be watching: past `Tuning.OUT_OF_SIGHT` from her, or
+## away (`_be_done()`), at the pace his partner leaves at (`EventDef.pursue_speed`,
+## `_leaving_speed()`'s for a guard leaving his barrier), standing as he walks, over walkable ground
+## by the way his partner walks (`_way_on_out_of_sight_from()`, planned again from where he is each
+## time it runs out while she could still be watching; away from her by `walkable_step_on()` only
+## where it finds none), and he is gone once she could not be watching: past `Tuning.OUT_OF_SIGHT` from her, or
 ## after `LEAVING_GIVES_UP` with no player to be out of sight of — the sight rule his partner's
 ## departure keeps (`_leaving_must_clear_sight`). He notices nothing, chases nothing and costs
 ## nothing: the band is silent from the same frame. A band streamed back in after its guard was
@@ -6334,6 +6349,9 @@ var _far_guard_heading := Vector2.ZERO
 var _far_guard_walked := 0.0
 var _far_guard_for := 0.0
 var _far_guard_gone := false
+## The way he walks, tile centres, each dropped as he reaches it; planned from where he stands
+## whenever it is empty.
+var _far_guard_way := PackedVector2Array()
 var _far_guard: FarGuard
 
 ## The far guard walking away, drawn standing, facing where he goes, on the stride his partner
@@ -6379,6 +6397,7 @@ func _send_the_far_guard_off() -> void:
 		_far_guard_heading = (_far_guard_at - player_at).normalized()
 	_far_guard_walked = 0.0
 	_far_guard_for = 0.0
+	_far_guard_way = PackedVector2Array()
 	_far_guard = FarGuard.new()
 	_far_guard.instance = self
 	_far_guard.name = "FarGuard"
@@ -6392,7 +6411,28 @@ func _walk_the_far_guard_off(delta: float) -> void:
 	if _far_guard_at == Vector2.INF:
 		return
 	var step := def.pursue_speed * delta
-	_far_guard_at += _far_guard_heading * step
+	var left := step
+	if _map and player_at != Vector2.INF:
+		if _far_guard_way.is_empty():
+			_far_guard_way = _way_on_out_of_sight_from(_far_guard_at)
+		while left > 0.0 and not _far_guard_way.is_empty():
+			var toward := _far_guard_way[0] - _far_guard_at
+			if toward.length() > left:
+				_far_guard_heading = toward.normalized()
+				_far_guard_at += _far_guard_heading * left
+				left = 0.0
+				break
+			_far_guard_at = _far_guard_way[0]
+			left -= toward.length()
+			_far_guard_way.remove_at(0)
+	if left > 0.0:
+		var away := _far_guard_heading
+		if player_at != Vector2.INF and not player_at.is_equal_approx(_far_guard_at):
+			away = (_far_guard_at - player_at).normalized()
+		var moved := walkable_step_on(_map, _far_guard_at, away * left) if _map else away * left
+		if not moved.is_zero_approx():
+			_far_guard_heading = moved.normalized()
+			_far_guard_at += moved
 	_far_guard_walked += step
 	_far_guard_for += delta
 	var gone := player_at != Vector2.INF \

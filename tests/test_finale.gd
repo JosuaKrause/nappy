@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_no_street_of_the_walk_stands_two_roadblocks(t)
 	_test_a_lured_off_roadblock_is_only_a_barrier(t)
 	_test_the_far_guard_leaves_with_his_partner(t)
+	_test_neither_guard_walks_off_over_a_building(t)
 	_test_a_lured_off_roadblock_raises_no_mark_over_her(t)
 	_test_luring_its_guard_off_is_the_way_past_a_roadblock(t)
 	_test_no_two_roadblocks_notice_her_from_the_same_ground(t)
@@ -439,8 +440,9 @@ func _test_a_lured_off_roadblock_is_only_a_barrier(t) -> void:
 ## **The far guard leaves too, so the band stands unmanned.** *(Inbox #771, asked whether the
 ## guard at the far post should leave as well once his partner has been lured off: "He leaves too")*
 ## On the escape's band, the frame the guard on her side starts to walk away, the one at the far
-## post sets off from it the same way: straight away from her, at his partner's pace, gone once he
-## is past `Tuning.OUT_OF_SIGHT` from her, his own node freed with him; the band draws no posted
+## post sets off from it the same way: away from her, at his partner's pace, gone once he is past
+## `Tuning.OUT_OF_SIGHT` from her, his own node freed with him (the way he walks is over walkable
+## ground, which `_test_neither_guard_walks_off_over_a_building` walks on a real map); the band draws no posted
 ## guard from that frame on, and one streamed back in after its guard was spent comes back with
 ## neither. A day's band keeps its far guard standing at his post throughout, so the flag is what
 ## sends him.
@@ -495,7 +497,9 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 				"and he sets off from the far post, beyond the band from her")
 		t.check(guard._far_guard != null and guard._far_guard.is_inside_tree(),
 				"and walks on his own node beside the band's")
-		var away := true
+		# She has come back to stand beside the band, so he has a walk to make before he is out of
+		# her sight.
+		her = guard.body_position() + Vector2(0.0, 120.0)
 		var paced := true
 		var last := set_off
 		var walked := 0
@@ -506,11 +510,11 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 			var now := guard.far_guard_at()
 			if now == Vector2.INF:
 				break
-			away = away and now.distance_to(her) > last.distance_to(her)
-			paced = paced and absf(now.distance_to(last) - def.pursue_speed * step) < 0.01
+			paced = paced and now.distance_to(last) <= def.pursue_speed * step + 0.01 \
+					and is_equal_approx(guard._far_guard_walked, def.pursue_speed * step * walked)
 			last = now
-		t.check(away and paced,
-				"he walks straight away from her at his partner's pace (%d frames)" % walked)
+		t.check(last.distance_to(her) > set_off.distance_to(her) and paced,
+				"he walks away from her at his partner's pace (%d frames)" % walked)
 		t.check(guard.far_guard_at() == Vector2.INF and not guard.has_its_far_guard_posted(),
 				"and he is gone, and nobody stands at the band")
 		t.check(last.distance_to(her) > Tuning.OUT_OF_SIGHT - def.pursue_speed * step,
@@ -530,6 +534,82 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 			t.check(streamed.has_its_far_guard_posted(),
 					"a day's band streamed back in keeps its far guard at his post")
 		streamed.free()
+
+## **Neither guard walks off over a building.** The guard on her side, shaken off, and on the
+## escape's band his partner at the far post walk away over walkable ground
+## (`EventInstance._way_on_out_of_sight()`, the way `leave_along()` plans on from its end), not in
+## a straight line away from her, which from anywhere not level with the band along its street
+## crossed the roofs beside it in her view. Walked on the escape's real plan for seed 4242: at every
+## band, from 16 bearings, she walks in until his charge, runs straight back until he gives up and
+## stands; every frame either guard walks, he stands on a walkable tile. The band at tile (73,50)
+## approached from the west is the case PR #781's review found the far guard on the roof at (76,48).
+func _test_neither_guard_walks_off_over_a_building(t) -> void:
+	var step := RoadblockRig.STEP
+	var built := RoadblockRig.plan_for(4242)
+	var map: CityMap = built["map"]
+	var plan: FinalePlanner.Plan = built["plan"]
+	var walks := 0
+	var far_walks := 0
+	var the_reviewed_case := false
+	for band_plan in _escape_roadblocks(plan):
+		var group: Array[EventScheduler.Planned] = [band_plan]
+		for bearing in 16:
+			var made := RoadblockRig.build(t, map, group)
+			var guard: EventInstance = made[1][0]
+			var band := guard.body_position()
+			var toward := Vector2.from_angle(TAU * float(bearing) / 16.0)
+			var her := band + toward * (guard.def.pursues_within + 80.0)
+			var where := "band %s from %d°" % [map.world_to_tile(band_plan.position),
+					bearing * 360 / 16]
+			var caught := false
+			while her.distance_to(band) > 40.0 and not guard.is_chasing():
+				her -= toward * Tuning.WALK_SPEED * step
+				var tile := map.world_to_tile(her)
+				if map.in_bounds(tile) and map.is_walkable(tile):
+					caught = RoadblockRig._tick(made[1], her, false)
+				if caught:
+					break
+			var frames := 0
+			while not caught and guard.is_chasing() and frames < int(10.0 / step):
+				her += toward * Tuning.RUN_SPEED * step
+				caught = RoadblockRig._tick(made[1], her, true)
+				frames += 1
+			if caught or not guard.is_leaving:
+				made[0].free()
+				continue
+			walks += 1
+			var far_walked := false
+			var on_ground := true
+			frames = 0
+			while (guard.is_leaving or guard.far_guard_at() != Vector2.INF) \
+					and frames < int(30.0 / step):
+				RoadblockRig._tick(made[1], her, false)
+				frames += 1
+				var at: Array[Vector2] = []
+				if guard.is_leaving:
+					at.append(guard.global_position)
+				if guard.far_guard_at() != Vector2.INF:
+					at.append(guard.far_guard_at())
+					far_walked = true
+				for point in at:
+					var tile := map.world_to_tile(point)
+					if not map.is_walkable(tile):
+						on_ground = false
+						t.check(false, "%s: a guard walking off stands on %s, not walkable ground"
+								% [where, tile])
+						break
+				if not on_ground:
+					break
+			if far_walked:
+				far_walks += 1
+			if map.world_to_tile(band_plan.position) == Vector2i(73, 50) and bearing == 8 \
+					and far_walked:
+				the_reviewed_case = true
+			made[0].free()
+	t.check(walks > 0 and far_walks > 0,
+			"there were guards walking off to watch (%d, %d with the far guard)" % [walks, far_walks])
+	t.check(the_reviewed_case,
+			"and the band at (73,50) lured from the west sent its far guard off")
 
 ## **And nothing over her head says otherwise.** A posted band's guard has not noticed her yet, so
 ## inside its outer radius it raises the `SOON` mark (`EventManager._warn_about_the_ground_she_is_on()`),
