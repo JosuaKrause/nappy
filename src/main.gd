@@ -1087,7 +1087,7 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 		# never in the running game.
 		if is_inside_tree():
 			get_tree().paused = true
-		_title.open(false)
+		_title.open(false, false, true)
 		return
 	# And the screen the section opens on, over the world she is already standing in. Raised last,
 	# because `DaySummary._present()` pauses the tree and everything above this line is placement.
@@ -1361,7 +1361,7 @@ func _open_the_title() -> void:
 	_set_readout_visible(false)
 	if _frame_graph:
 		_frame_graph.visible = false
-	_title.open(_ending_shown, _resume.is_empty())
+	_title.open(_ending_shown, _resume.is_empty(), not _resume.is_empty())
 
 ## The title screen has been pressed, which is also the start: hand the city back to the day it
 ## belongs to.

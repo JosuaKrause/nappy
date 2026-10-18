@@ -790,6 +790,10 @@ func baby_cue_aside() -> float:
 		return 0.0
 	if alert_level() == Alert.NONE:
 		return 0.0
+	# Carrying, the bundle has no side to follow: stepping to whichever side she faces would swap
+	# the cue from one shoulder to the other every time a turn crossed the vertical.
+	if carrying:
+		return BABY_CUE_ASIDE
 	return BABY_CUE_ASIDE if facing.x >= 0.0 else -BABY_CUE_ASIDE
 
 ## Whether the pram is drawn in her own column, which is the one question both cues below turn on.
@@ -831,11 +835,13 @@ func _pram_shares_her_column() -> bool:
 ## would lift the cue off a pram it is supposed to be sitting on.
 ##
 ## Carrying has no pram at all and keeps the full `BABY_CUE_LIFT + FIGURE_HEIGHT` above her feet
-## walking south.
+## on every facing.
 func baby_cue_lift() -> float:
+	# Carrying, the cue is over her head on every facing. Lifted only walking south, it dropped to
+	# her chest the moment a turn crossed the horizontal and jumped back on the way out.
+	if carrying:
+		return BABY_CUE_LIFT + FIGURE_HEIGHT
 	if _pram_shares_her_column() and facing.y > 0.0:
-		if carrying:
-			return BABY_CUE_LIFT + FIGURE_HEIGHT
 		return FIGURE_HEIGHT + (BABY_CUE_LIFT - PRAM_ART_HEIGHT) + pram_draw_offset().y
 	return BABY_CUE_LIFT
 

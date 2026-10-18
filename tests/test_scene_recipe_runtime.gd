@@ -108,11 +108,53 @@ func _ready() -> void:
 
 func run(t) -> void:
 	_test_schema(t)
+	_test_hold_is_for_a_straight_departure(t)
+	_test_charging_is_for_a_pursuer_that_waits(t)
+	_test_relentless_is_for_a_pursuer(t)
 	_test_heat_installs_the_heated_row(t)
 	_test_a_task_gone_after_the_read(t)
 	_test_arguments(t)
 	_test_inputs(t)
 	_test_real_argv_and_failure(t)
+
+## `hold` reproduces a plain walk away, so it is refused for every row whose departure is anything
+## else, with a reason that fits the row.
+func _test_hold_is_for_a_straight_departure(t) -> void:
+	t.check(SceneRecipeRuntime.hold_refusal(EventCatalogue.by_id("charging_dog")) == "",
+			"a dog may be held")
+	for row: String in ["fire_truck", "delivery_van", "roadblock"]:
+		t.check(SceneRecipeRuntime.hold_refusal(EventCatalogue.by_id(row)) != "",
+				"%s is refused" % row)
+	var flock := ""
+	for def: EventDef in EventCatalogue.all():
+		if def.flock_size > 0 and not def.pursues:
+			flock = SceneRecipeRuntime.hold_refusal(def)
+	t.check(flock.contains("does not pursue"), "a flock is refused for not pursuing: %s" % flock)
+	var message := SceneRecipeRuntime.hold_refusal_message("post", EventCatalogue.by_id("roadblock"))
+	t.check(message.contains("post") and message.contains("roadblock") and not message.contains("%s"),
+			"the refusal names the event and the row: %s" % message)
+
+## `charging` starts a pursuer that waits for her already set on her, so it is refused for a row with
+## no radius to skip and for one that sets off beside her on its own clock.
+func _test_charging_is_for_a_pursuer_that_waits(t) -> void:
+	t.check(SceneRecipeRuntime.charging_refusal(
+			EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)) == "",
+			"the hunting roadblock's guard may start charging")
+	t.check(SceneRecipeRuntime.charging_refusal(EventCatalogue.by_id("roadblock")) != "",
+			"the cold roadblock has no radius to skip")
+	t.check(SceneRecipeRuntime.charging_refusal(EventCatalogue.by_id("fire_truck")).contains("wait"),
+			"a row that does not wait is refused")
+	t.check(SceneRecipeRuntime.validate_runtime({"setup": {"day": 7, "events": [{"name": "g",
+			"row": "roadblock", "at": [0, 0], "charging": 1}]}}).size() > 0, "charging must be a boolean")
+
+## `relentless` keeps a pursuer from giving up because she ran, so a row that does not pursue is refused.
+func _test_relentless_is_for_a_pursuer(t) -> void:
+	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.by_id("charging_dog")) == "",
+			"a pursuer may be kept coming")
+	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.by_id("pigeon_flock")).contains("pursue"),
+			"a row that does not pursue is refused")
+	t.check(SceneRecipeRuntime.validate_runtime({"setup": {"day": 7, "events": [{"name": "g",
+			"row": "roadblock", "at": [0, 0], "relentless": 1}]}}).size() > 0, "relentless must be a boolean")
 
 func _test_schema(t) -> void:
 	var valid := {"setup": {"day": 1, "parent": "mother"},

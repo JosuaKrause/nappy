@@ -125,6 +125,15 @@ theme_override_font_sizes/font_size = 15
 show_behind_parent = true
 mouse_filter = 2
 
+[node name="ModeName" type="Label" parent="Root"]
+visible = false
+anchor_right = 1.0
+offset_top = 643.0
+mouse_filter = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.72, 0.69, 0.64, 1)
+theme_override_font_sizes/font_size = 22
+
 [node name="Version" type="Label" parent="Root"]
 anchor_left = 1.0
 anchor_top = 1.0

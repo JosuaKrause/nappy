@@ -38,6 +38,7 @@ func run(t) -> void:
 	_test_a_tap_advances_every_screen(t)
 	_test_a_mouse_click_advances_every_screen(t)
 	_test_the_title_hint_and_body_match_the_platform(t)
+	_test_the_title_names_the_mode_once_it_is_decided(t)
 	_test_the_button_fill_states_are_distinguishable(t)
 	_test_the_title_names_a_version(t)
 	_test_mode_button_restart_hold_state_machine(t)
@@ -496,6 +497,28 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 	pause.close()
 	t.get_tree().paused = false
 	pause.queue_free()
+
+## A title whose mode is already decided (a save brought back) names it, "Normal" or "Hard Mode",
+## in place of the checkbox; a new game shows the checkbox and no name.
+func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
+	var title: TitleScreen = TITLE.instantiate()
+	t.add_child(title)
+	var was_hard: bool = GameState.hard_mode
+	GameState.hard_mode = false
+	title.open(false, false, true)
+	t.check(title.mode_name_shown() == "Normal", "a decided Normal run is named 'Normal'")
+	t.check(not title.hard_mode_shown(), "and the checkbox is not offered beside it")
+	GameState.hard_mode = true
+	title.open(false, false, true)
+	t.check(title.mode_name_shown() == "Hard Mode", "a decided Hard Mode run is named 'Hard Mode'")
+	title.open(false, true)
+	t.check(title.mode_name_shown() == "", "a new game, where the mode is not decided, names none")
+	t.check(title.hard_mode_shown(), "and offers the checkbox")
+	title.open(true)
+	t.check(title.mode_name_shown() == "" and not title.hard_mode_shown(),
+			"a title with no run behind it shows neither")
+	GameState.hard_mode = was_hard
+	title.queue_free()
 
 ## **The hint has to name the thing that actually works.** *(2026-09-07, on review: "a bare tap no
 ## longer begins anything ... the screen instructs the player to do the one thing that will not

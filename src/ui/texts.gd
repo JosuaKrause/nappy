@@ -45,6 +45,11 @@ const TITLE_CAPTION_TAP := "Tap to Go"
 const TITLE_HINT_BEGIN := "press a button to begin"
 const TITLE_HINT_AGAIN := "press a button to walk again"
 const TITLE_HARD_MODE := "Hard Mode"
+## The name of the mode on a title whose mode is already decided, in the place the Hard Mode
+## checkbox would stand. *(inbox #784, the player: "the title screen should show the mode name
+## (Normal / Hard Mode) if the decision is already made (eg loading a save)".)*
+const TITLE_MODE_NORMAL := "Normal"
+const TITLE_MODE_HARD := TITLE_HARD_MODE
 ## The mark in the lower right of the two joystick buttons, which tells them apart.
 const TITLE_LETTER_LEFT := "L"
 const TITLE_LETTER_RIGHT := "R"
