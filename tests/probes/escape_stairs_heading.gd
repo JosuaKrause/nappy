@@ -47,7 +47,10 @@ func run(t) -> void:
 ## Every flight of both shafts, down and up, held from one landing's approach until she stands on
 ## the next: the body's heading over each tenth of a second of the walk, and the largest departure
 ## from the flight's 45 degrees while she is on a flight tile. A line is `WALK <side> <flight>
-## <down|up> <from> -> <to> steps <n> worst <degrees> headings <list>`.
+## <down|up|down-2nd|up-2nd> <from> -> <to> (ended <tile>) steps <n> worst <degrees> headings
+## <list>`; `-2nd` starts on the landing's next row down. The left shaft's first flight walked down
+## from the top landing also prints `TRACE <step> <x> <y>`, her centre each frame in pixels from
+## the landing tile's centre.
 const FLIGHTS := [
 	# [name, local start (the landing approach above), local end (the one below), down action]
 	["first", Vector2i(1, 2), Vector2i(8, 8), "move_right"],
@@ -87,6 +90,10 @@ func _walk_one(scene: InteriorScene, player: Stroller, side: String, flight: Str
 		player._physics_process(STEP)
 		_move(player, player.velocity * STEP)
 		steps += 1
+		# Her centre every frame on one walk, for a picture of the path rather than its headings.
+		if side == "left" and flight == "first" and way == "down":
+			var at := player.global_position - scene.tile_to_world(from)
+			print("TRACE %d %.2f %.2f" % [steps, at.x, at.y])
 		if steps % 6 == 0:
 			var moved := player.global_position - last
 			headings.append(_deg(moved))
