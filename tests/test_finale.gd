@@ -1184,6 +1184,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	t.check(not main._summary.is_showing(), "the section's brief does not show yet")
 	t.check(main._title.is_open(), "a genuinely resumed escape opens on the title first")
 	t.check(not main._escape_resumed_from_disk, "consumed the instant it is read")
+	t.check(main._title.mode_name_shown() != "", "and names the mode, which the save already fixed")
 	t.check(not finale.is_running(), "with nothing counting down behind either screen")
 
 	main._title.start_requested.emit(ControlsMode.Mode.TAP, false, ControlsMode.Side.LEFT)
