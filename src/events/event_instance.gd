@@ -4307,39 +4307,57 @@ func _stop_warning() -> void:
 		_move_the_band(true)
 	_invalidate_contribution_cache()
 
-## **A row that waits and runs its own line warns by radius too** (`EventDef.charges_within`, the
-## masked man), on the one-radius rule every waiting charger keeps: while it warns, she back outside
-## `pursues_within` has it wait again, its clock reset; she still inside `charges_within` once it has
-## warned for its row's `warns_for` starts its run. Its run is the end of its telegraph
-## (`_lunged`), as a flock's flush is.
+## **A row that waits and runs its own line runs on a distance, with no warning clock**
+## (`EventDef.charges_within`, the masked man): the one exception to the one-radius rule every
+## waiting charger keeps *(inbox #788, the player, of the stairwell's man: "No delay, as on main")*,
+## since in the stairwell his warning is off screen, so a delay before he runs buys her nothing she
+## can see to answer. While it warns, she back outside `pursues_within` has it wait again, and she
+## inside `charges_within` starts its run — at once if she came in from outside it, after
+## `Tuning.WARNING_ALONE_MAX` of warning if it noticed her already inside, so it never runs at her
+## with no warning at all. Its run is the end of its telegraph (`_lunged`), as a flock's flush is;
+## its notice does not run out before then (`_hold_the_notice_clock()`).
 func _warn_on_its_line(delta: float) -> void:
 	if def.charges_within <= 0.0 or is_waiting() or _lunged or player_at == Vector2.INF:
 		return
 	var range_to_her := global_position.distance_to(player_at)
 	if _warned_on_its_line_for == 0.0:
+		_noticed_inside_its_charge = range_to_her <= def.charges_within
 		_report_the_warning()
 	_warned_on_its_line_for += delta
 	if range_to_her > def.pursues_within:
 		_noticed_at = INF
 		_warned_on_its_line_for = 0.0
 		return
-	if range_to_her <= def.charges_within and _warned_on_its_line_for >= notice_time():
+	if range_to_her > def.charges_within:
+		_noticed_inside_its_charge = false
+		return
+	if not _noticed_inside_its_charge or _warned_on_its_line_for >= Tuning.WARNING_ALONE_MAX:
 		_lunged = true
 		# His run is his charge, for his counter (`EventBus.pursuit_began`).
 		if not _pursuit_began_reported:
 			_pursuit_began_reported = true
 			EventBus.pursuit_began.emit(charger_name())
 
-## How long a row that runs its own line has been warning her. See `_warn_on_its_line()`.
+## How long a row that runs its own line has been warning her, and whether it noticed her already
+## inside its charge distance. See `_warn_on_its_line()`.
 var _warned_on_its_line_for := 0.0
+var _noticed_inside_its_charge := false
 
 ## The notice clock for this tick, run straight after `age` advances and before anything asks
 ## `is_telegraphing()`. Every notice runs, a waiting charger's warning included (`notice_time()`),
 ## held still only while a held lunge has her inside its stand-off (`_pause_a_held_notice()`), and
 ## a waiting charger's at its last moment while a wall stands between them: **his charge needs a
 ## clear line** *(mossy-beaver, inbox #650: "how can it pursue without noticing? obviously it needs
-## a clear line")*, so he goes on warning until the line clears or she leaves his radius.
+## a clear line")*, so he goes on warning until the line clears or she leaves his radius. **A row
+## that runs its own line has no notice clock** (`_warn_on_its_line()`, the masked man): for every
+## tick of its warning the age it noticed her moves on with the tick, so its notice never runs out
+## and its run comes only from her coming within `charges_within`. Moving the notice rather than
+## counting a pause is what a stream-out carries (`noticed_at()`, `resume()`).
 func _hold_the_notice_clock(delta: float) -> void:
+	if def.charges_within > 0.0 and not _lunged and not is_waiting() \
+			and chase_age() - delta < def.telegraph_time:
+		_noticed_at += delta
+		return
 	if warns_by_radius() and def.pursues and not _lunged and not is_waiting() \
 			and player_at != Vector2.INF and chase_age() >= notice_time() \
 			and chase_age() - delta < notice_time() and not _clear_line_to(player_at):

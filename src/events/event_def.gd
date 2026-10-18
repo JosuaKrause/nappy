@@ -571,7 +571,8 @@ func departure_speed() -> float:
 ## "We should do one radius and warn inside it for 2s. If the player leaves the radius nothing
 ## happens and the warning stops. If they stay within the charge starts")*: out of it again before
 ## then, it waits again (`EventInstance.warns_by_radius()`). A row that runs its own line once she is
-## near (`charges_within`, the masked man) warns the same way. For any other row that waits without
+## near (`charges_within`, the masked man) is the one exception: it warns while she is inside this
+## radius with no clock and runs the moment she comes within `charges_within`. For any other row that waits without
 ## pursuing (`alley_mouse`, `pigeon_flock`) the middle state is `telegraph_time` long; a pursuer a
 ## task sets on her from wherever it stands (`EventInstance.notice_her_at()`) has the notice the
 ## task gives it. Either way the clock, and `duration` after it, are measured from the moment it
@@ -642,9 +643,13 @@ func departure_speed() -> float:
 ## **How close she has to come before a row that waits for her and runs its own line starts its run**
 ## — the masked man on the escape's stairs — in px, or 0 for a row whose run starts when its
 ## telegraph ends. *(Inbox #764, the player: "player should have to run to the door".)* It warns
-## while she is inside `pursues_within`, for its `warns_for`, starts its run if she is then inside
-## this, and waits again once she is back outside `pursues_within` (`EventInstance._warn_on_its_line()`).
-## Read only on a mobile row that waits for her and does not pursue (`validate()`).
+## while she is inside `pursues_within`, with no clock, starts its run when she comes inside this,
+## and waits again once she is back outside `pursues_within` (`EventInstance._warn_on_its_line()`).
+## One that notices her already inside this warns for `Tuning.WARNING_ALONE_MAX` first. **The one
+## waiting charger with no `warns_for`** *(inbox #788, the player, of the stairwell's man: "No delay,
+## as on main")*: his warning is off screen in the stairwell, so a clock before he runs is no
+## heads-up she can see, only time for a walker to reach the door. Read only on a mobile row that
+## waits for her and does not pursue (`validate()`).
 @export var charges_within := 0.0
 ## **How long a charger that waits for her warns before he charges**, in seconds: from the frame he
 ## notices her inside his one radius (`pursues_within`, along a clear line, his warning in her
@@ -652,8 +657,9 @@ func departure_speed() -> float:
 ## again; still inside when it runs out, he charges (`EventInstance.notice_time()`,
 ## `EventInstance.warns_by_radius()`). *(Inbox #788, the player: "We should do one radius and warn
 ## inside it for 2s".)* `Tuning.CHARGER_WARNING` unless the row's own measurement says otherwise;
-## `validate()` refuses a row that waits for her with less than `Tuning.OFFSCREEN_WARNING_MIN`.
-## Read only on a row that waits for her; a row with no wait keeps its `telegraph_time`.
+## `validate()` refuses a pursuer that waits for her with less than `Tuning.OFFSCREEN_WARNING_MIN`.
+## Read only on a pursuer that waits for her; a row with no wait keeps its `telegraph_time`, and the
+## masked man, who runs his own line, has none (`charges_within`).
 @export var warns_for := 0.0
 ## How fast this pursuer **walks at her through its notice**, in px/s, when that is slower than its
 ## chase; 0 means it closes at `pursue_speed`, as every pursuer but the alley robber does. *(Inbox
@@ -1545,7 +1551,7 @@ func validate() -> bool:
 		return false
 	# A sent pursuer warns with its badge and starts chasing immediately. Only an ordinary
 	# pursuer has an approach whose notice duration the pursuit validator must check.
-	if charges_within > 0.0 and (pursues or not mobile or pursues_within < charges_within):
+	if charges_within > 0.0 and (pursues or not mobile or pursues_within <= charges_within):
 		push_error("event '%s' charges within %.0fpx but is not a mobile row that waits for her "
 				% [id, charges_within] + "from further than that")
 		return false
@@ -1569,7 +1575,10 @@ func validate() -> bool:
 		return false
 	# **A charger that waits for her warns on a clock** (`warns_for`): one that waits, warns by its one
 	# radius and charges once its warning runs out with her still inside needs a warning to run.
-	var waits_for_her := (pursues or charges_within > 0.0) and not sets_off_beside_her \
+	# **Except a row that runs its own line** (`charges_within`, the masked man): it runs on a
+	# distance with no clock, the player's choice (inbox #788, "No delay, as on main"), because its
+	# warning is off screen in the stairwell, where a delay is no heads-up she can see.
+	var waits_for_her := pursues and not sets_off_beside_her \
 			and not arrives_chasing \
 			and (pursues_within > 0.0 or pursues_within_after_first_day > 0.0)
 	if waits_for_her and warns_for < Tuning.OFFSCREEN_WARNING_MIN:

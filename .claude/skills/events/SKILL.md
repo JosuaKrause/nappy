@@ -285,7 +285,7 @@ it was written from. The traps:
 - **A waiting charger has one radius and charges on a clock, never on a distance.** Charged at a
   stand-off while she walks into it, `PURSUIT_REACTION` of its approach is worth about a fifth of a
   second, too short to turn and run. So every charger that waits for her (the waiting dog, the
-  alley robber, the hunting roadblock's guard, the masked man) warns for its row's `warns_for` from
+  alley robber, the hunting roadblock's guard) warns for its row's `warns_for` from
   the frame it notices her inside its one radius, and charges only if she is still inside once
   that has run; out of the radius first, it waits again (`EventInstance.warns_by_radius()`,
   `notice_time()`; inbox #788). **Running while it warns counts for nothing**: `_chase()` adds to
@@ -295,10 +295,12 @@ it was written from. The traps:
   leave. It notices her only with its warning picture in the camera's view
   (`EventInstance._would_stand_in_her_view()`, the view `EventManager` hands it as `player_view`);
   an instance stepped directly with no view handed to it gets the radius alone, so a test of the
-  view hands it one (`tests/escape_roadblock_rig.gd`, `view_round()`). The masked man runs a line
-  rather than pursuing, so neither his notice nor his run asks the clear line, and his notice asks
-  no view (`EventInstance._check_for_notice()`, `_warn_on_its_line()`): in the stairwell his warning is off screen, which the
-  player accepted (inbox #782).
+  view hands it one (`tests/escape_roadblock_rig.gd`, `view_round()`). **The masked man is the one
+  exception**: he runs a line rather than pursuing, so neither his notice nor his run asks the
+  clear line, his notice asks no view, and he runs the moment she comes within his
+  `charges_within`, with no `warns_for` (`EventInstance._check_for_notice()`,
+  `_warn_on_its_line()`; inbox #788): in the stairwell his warning is off screen, which the player
+  accepted (inbox #782), so a clock before he runs is no heads-up she can see.
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
   (inbox #764, inbox #788). His warning comes before he exists — from the frame she crosses a
   door's line, the hut's guard across the road (or the post's) raises his hand for

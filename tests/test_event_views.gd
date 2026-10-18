@@ -540,9 +540,9 @@ func _test_chatting_mother_state_predicate_selects_the_conversation_posture(t) -
 	instance.free()
 
 ## The masked man on the escape's stairs stands while he waits for her, stands with his hand raised
-## through his warning *(inbox #764, the player: an event that does not spawn already charging always
-## needs a warning)*, and is drawn lunging (`masked_pursuer_pictures()`) only once his warning
-## (`warns_for`) has run with her still inside his radius and he runs his line.
+## through his notice *(inbox #764, the player: an event that does not spawn already charging always
+## needs a warning)*, and is drawn lunging (`masked_pursuer_pictures()`) only once the notice is over
+## and he runs his line.
 func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var instance := EventInstance.new()
@@ -550,21 +550,23 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 	t.check(instance.is_waiting() and instance._stands_still_now()
 			and instance.masked_pursuer_pictures() == EventInstance.GUARD_STANDING_BY_VIEW,
 			"waiting at the foot of the shaft he is drawn standing")
-	# Inside his one radius: one step notices her, and he warns for his `warns_for`.
-	instance.player_at = Vector2(0.0, def.charges_within - 100.0)
+	# Inside `pursues_within` (900px), outside `charges_within`: one step notices her, and he warns
+	# for as long as she stays there, longer than his `telegraph_time`.
+	instance.player_at = Vector2(0.0, def.charges_within + 100.0)
 	instance._process(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he has noticed her")
 	var alert := true
-	for i in int(round(def.warns_for / STEP)) - 2:
+	for i in int(round((def.telegraph_time + 2.0) / STEP)):
 		alert = alert and instance._stands_still_now() \
 				and instance.masked_pursuer_pictures() == EventInstance.GUARD_ALERT_BY_VIEW
 		instance._process(STEP)
-	t.check(alert, "and stands with his hand raised through his warning")
-	for i in int(round(0.2 / STEP)):
+	t.check(alert, "and stands with his hand raised for as long as she stays out of his reach")
+	instance.player_at = Vector2(0.0, def.charges_within - 10.0)
+	for i in int(round(0.1 / STEP)):
 		instance._process(STEP)
 	t.check(not instance.is_telegraphing() and not instance._stands_still_now()
 			and instance.masked_pursuer_pictures() == EventInstance.GUARD_LUNGING_BY_VIEW,
-			"once it has run with her still inside his radius he is drawn lunging")
+			"once she comes within his charge distance he is drawn lunging")
 	instance.free()
 
 # ----------------------------------------------------------- every charger's three stages ---

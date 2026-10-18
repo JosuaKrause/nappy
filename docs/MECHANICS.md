@@ -1585,14 +1585,17 @@ where the masked man is.
 **And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
 of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
 as she is in the building. The answer is the one the row is built around — step through the
-nearest corridor door and let him pass. **He warns once she is within 426px of him, and runs if she is still
-within it a second later** *(inbox #764, inbox #782; inbox #788: one radius and a warning inside it,
-and his 426px kept)*, which coming down from the second floor is at the head of the second flight.
-His second is the least heads-up the game gives, measured for him: any warning lets her walk on
-toward the first floor's door before he runs, so a walker is caught on three of her five ways onto
-the flight with none, on one at 1.0s and on none from 1.5s; a runner gets through on every line
-(`tests/probes/escape_stairwell_guard_trigger.gd`). In the stairwell his warning is off screen, and
-only the edge badge shows his charge once he runs; the player accepted that *(inbox #782)*. So
+nearest corridor door and let him pass. **He starts his run the moment she is within 426px of him**
+*(inbox #764, inbox #782)*, with no warning clock, the one waiting charger without one *(inbox
+#788, the player: "No delay, as on main")*, which coming down from the second floor is at the head of the second
+flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
+walker is caught when she takes the flight holding plain left from the row level with its head tread
+or the row below, or down-left from the landing tile between the two flights. A walker who holds
+plain left from that landing tile gets through, and the margins are thin (on the tightest runner's
+line, walking until he runs, then running, and turning plain left at row 11's centre, he is drawn
+about 25px from her centre (24.6px), inside his 28px catch, and she clears it on the tick at 28.6px,
+by 0.6px; she is caught if she starts running 0.3s late). In the stairwell his warning is off screen,
+and only the edge badge shows his charge once he runs; the player accepted both *(inbox #782)*. So
 the side she switched to is not a side she can settle on, which is the whole point of him: the way
 down is a sequence of crossings rather than one.
 

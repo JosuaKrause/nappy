@@ -3006,8 +3006,8 @@ static func _impact_crater() -> EventDef:
 ## answer rather than a preference — and what makes the telegraph contract ask for a long one: at
 ## 130px/s it prices the escape as the field's whole forward reach rather than its falloff band, so
 ## `outer_radius` 120 at `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and `telegraph_time` carries a
-## little over it. That number is read only by the contract: what he shows her before he runs is his
-## warning inside his one radius (`warns_for`, below).
+## little over it. That number is read only by the contract: he warns while she is in the stairwell
+## and runs on a distance, with no clock (below).
 ##
 ## **No body**, like every other mobile row: a moving wall on a stairwell one tile wide would pin
 ## her against the shaft. What stops her walking into him is that it ends the section.
@@ -3030,34 +3030,35 @@ static func _masked_pursuer() -> EventDef:
 	# moment the section begins and being gone before she has come down a floor. `pursues_within`
 	# is the field's own name for that state and is wider than its name — a row that sets it
 	# without `pursues` stands unclocked until she is in range and then runs its ordinary path,
-	# which is exactly `alley_mouse`'s shape at a stairwell's scale. Its radius is his one radius,
-	# below.
-	def.pursues_within = 426.0
+	# which is exactly `alley_mouse`'s shape at a stairwell's scale. 900px is the shaft's own
+	# height (three floors of eight tiles is 768px) with room over it, so he notices her the moment
+	# she is anywhere in the same stairwell and never from the hallway two parts away.
+	def.pursues_within = 900.0
 	# And the warning is spent standing, not approaching: a man already running when he first
 	# becomes visible has given no notice at all.
 	def.still_while_telegraphing = true
-	# **His one radius, 426px, and a one-second warning inside it** *(inbox #788, the player: one
-	# radius and a warning inside it, leave and nothing happens, stay and he charges; "Only the
-	# basement guard needs to keep his new radius", the stairwell's man, and of his warning:
-	# "Measure how what warning would make sense")*. He waits at the foot of the shaft; once she is
-	# within 426px of him (`pursues_within`, `charges_within`) he warns her standing, hand raised,
-	# and runs his line if she is still within it once his warning has run (`warns_for`); back out
-	# of it first, he waits again. 426px is where, coming down from the second floor's door, she is
-	# at the head of the second flight *(inbox #764: "player should have to run to the door";
-	# inbox #782: the radius bigger to achieve that, and him not moved)*.
-	#
-	# **The warning is the least heads-up the game gives, `Tuning.OFFSCREEN_WARNING_MIN`, because
-	# any warning lets a walker reach the first floor's door** (measured with
-	# `tests/probes/escape_stairwell_guard_trigger.gd`, stepped as the game steps, over her five
-	# ways down onto the flight, walking, running and walking until he runs): with none, walkers
-	# were caught on three of the five; with 0.5s or 1.0s on one, holding plain left from the row
-	# below the flight's head, caught at 24px on a tick at 1.0s; from 1.5s on, on none. A runner gets
-	# through on every line at every warning tried. So the shortest warning the rest of the game
-	# owes keeps the most of "player should have to run to the door". In the stairwell his warning
-	# is off screen, since the view reaches 180px from her and he starts about 400px below; only
-	# the edge badge shows his charge once he runs. The player accepted that (inbox #782).
+	# **He warns while she is in the stairwell, and runs the moment she is within this of him, with
+	# no warning clock**: the one waiting charger outside the one-radius rule *(inbox #788, the
+	# player, asked whether he should warn for a second or run as on main: "No delay, as on main")*,
+	# since his warning is off screen and a delay only lets a walker reach the door (below). So that
+	# she has to run to the first floor's door *(inbox #764, the player: "player should have to run
+	# to the door")* rather than walk down to it and out to the other shaft without meeting him
+	# *(inbox #782: the player wants the radius bigger to achieve that, and him not moved)*. No
+	# clock, so his `telegraph_time` above is read only by the telegraph contract. 426px is
+	# measured on the escape as built (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as
+	# the game steps, a 30Hz physics tick with the catch on it and him moving on drawn frames):
+	# coming down from the second floor's door she meets it at the head of the second flight, and
+	# making for the first floor's door from there a runner gets through on every line onto the
+	# flight, while a walker is caught holding plain left from the row level with the flight's head
+	# tread or the row below it, or down-left from the landing tile between the two flights. **A
+	# walker holding plain left from that landing tile gets through**, the margins are thin (a
+	# runner who walks until he runs, then runs, turning plain left at row 11's centre, is drawn
+	# about 25px from him (24.6px at 60, 120 and 150fps) inside his 28px catch and clears it on the
+	# tick at 28.6px, by 0.6px; she is caught if she starts running 0.3s late, and a runner who
+	# runs the whole way is caught at 440px), and in the stairwell his warning is off screen, since the view reaches 180px from her
+	# and he starts about 400px below; only the edge badge shows his charge once he runs. The player
+	# accepted both (inbox #782).
 	def.charges_within = 426.0
-	def.warns_for = Tuning.OFFSCREEN_WARNING_MIN
 	def.hard_fail = true
 	return def
 

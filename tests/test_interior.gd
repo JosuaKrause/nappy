@@ -1216,23 +1216,26 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 	events.free()
 	scene.free()
 
-## **She has to run to the door, on the one line a warning leaves it** *(inbox #764, the player:
-## "player should have to run to the door"; inbox #782, the player: the radius bigger, not him moved;
-## inbox #788: one radius and a warning inside it, his 426px kept, his warning measured)*. He warns
-## once she is within his 426px and runs his line if she is still within it once his warning
-## (`masked_pursuer.warns_for`, 1.0s) has run (`EventInstance._warn_on_its_line()`). Stepped at the
-## game's own rhythm: the game's physics ticks at 30Hz (`common/physics_ticks_per_second` in
-## `project.godot`), and on each tick her real carrying body moves with the real stair steering and
-## collision, `InteriorEvents._physics_process()` tells him where she is, and the catch is checked;
-## he moves in his own `_process()` on every drawn frame, two to a tick here (60fps). She comes in at
-## his shaft's second-floor door and down the landing, and takes the second flight from each line a
-## player turns onto it by. Once he runs she makes for the first floor's door, on along the flight
-## and up the landing into it.
+## **She has to run to the door** *(inbox #764, the player: "player should have to run to the
+## door"; inbox #782, the player: the radius bigger, not him moved)*. He warns while she is in the
+## stairwell and runs his line once she is within `masked_pursuer.charges_within` of him
+## (`EventInstance._warn_on_its_line()`). Stepped at the game's own rhythm: the game's physics
+## ticks at 30Hz (`common/physics_ticks_per_second` in `project.godot`), and on each tick her real
+## carrying body moves with the real stair steering and collision, `InteriorEvents._physics_process()`
+## tells him where she is, and the catch is checked; he moves in his own `_process()` on every drawn
+## frame, two to a tick here (60fps). She comes in at his shaft's second-floor door and down the
+## landing, and takes the second flight from each line a player turns onto it by. Once he runs she
+## makes for the first floor's door, on along the flight and up the landing into it.
 ##
-## **Which lines catch a walker is what is pinned:** with his warning she walks on toward the door
-## before he runs, so a walker is caught only holding plain left from the row below the flight's head
-## tread, and gets through on the other three lines. A runner gets through on every line, whether she
-## was running all along, starts running the moment he does, or starts 0.3s after he does.
+## **Which lines catch a walker is what is pinned, and not every line does:** a walker is caught
+## from the rows level with and below the flight's head tread, and from the landing tile between
+## the two flights holding down-left; **a walker who holds plain left from the landing tile between
+## the two flights gets through**. A runner gets through on every line, whether she was running all
+## along or starts running the moment he does, with the keys she already holds. **The margins are
+## thin:** on the tightest runner's line (walking until he runs, then running, turning plain left at
+## row 11's centre) he is drawn about 25px from her centre (24.6px, at 60, 120 and 150fps), inside his
+## 28px catch, and she clears it on the tick at 28.6px, by 0.6px; **she is caught if she starts running
+## 0.3s after he does.**
 func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 	for walk: Array in _SECOND_FLIGHT_TURNS:
 		for pace: String in ["walk", "run", "walk-run", "run-late"]:
@@ -1240,19 +1243,30 @@ func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 				continue
 			var met := _meet_the_masked_man(t, walk, pace)
 			var expected := "through" if pace != "walk" or not walk[2] else "caught"
+			if pace == "run-late":
+				expected = "caught"
 			t.check(met["ran"], "%s at a %s: he runs" % [walk[3], pace])
 			t.check(met["outcome"] == expected,
 					"%s at a %s: %s (%s, %.0fpx from him at the closest)"
 					% [walk[3], pace, expected, met["outcome"], met["closest"]])
+			if walk[0] == 11 and pace == "walk-run":
+				# The tightest line: on a drawn frame he is inside his 28px catch, and she lives
+				# only because the catch is checked on the tick.
+				t.check(met["closest"] > 20.0 and met["closest"] < 28.0,
+						"%s at a %s: he is drawn inside the catch for a frame (%.1fpx)"
+						% [walk[3], pace, met["closest"]])
+				t.check(met["on_tick"] > 28.0 and met["on_tick"] < 29.5,
+						"%s at a %s: and she clears it on the tick by under 1.5px (%.1fpx)"
+						% [walk[3], pace, met["on_tick"]])
 			print("The masked man, %s at a %s: %s, %.0fpx from him at the closest"
 					% [walk[3], pace, met["outcome"], met["closest"]])
 
 ## The lines onto the second flight, local to the grammar: the row of her turn, what she holds
 ## there, whether a walker is caught, and what to call it.
 const _SECOND_FLIGHT_TURNS := [
-	[10, ["move_left"], false, "plain left from row 10 (level with the flight's head tread)"],
+	[10, ["move_left"], true, "plain left from row 10 (level with the flight's head tread)"],
 	[11, ["move_left"], true, "plain left from row 11 (the row below it)"],
-	[9, ["move_left", "move_down"], false, "down-left from row 9 (the landing tile between the two flights)"],
+	[9, ["move_left", "move_down"], true, "down-left from row 9 (the landing tile between the two flights)"],
 	[9, ["move_left"], false, "plain left from row 9 (the landing tile between the two flights)"],
 ]
 
@@ -1362,7 +1376,8 @@ func _hold_keys(actions: Array, running: bool) -> void:
 ##
 ## - **More than one of him over a section**, or "switch the side again" has nothing behind it.
 ## - **Every one of them warns her standing still before he runs.** Appearing with her already
-##   inside his radius, he warns for his `warns_for` first (`EventInstance._warn_on_its_line()`); a respawned pursuer that inherited an old instance's
+##   inside his charge distance, he warns for `Tuning.WARNING_ALONE_MAX` first
+##   (`EventInstance._warn_on_its_line()`); a respawned pursuer that inherited an old instance's
 ##   state would arrive at speed, which is the exact thing `still_while_telegraphing` exists to
 ##   prevent, and no screenshot could ever catch it.
 ## - **The gap is the stated one**, measured from him leaving the top of the shaft to the next one
@@ -1425,8 +1440,8 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 		if first_step_age[i] < 0.0:
 			continue
 		notices += 1
-		t.check(first_step_age[i] >= EventCatalogue.by_id("masked_pursuer").warns_for - STEP,
-				"man %d took his first step %.2fs into his warning, after the warning it owes"
+		t.check(first_step_age[i] >= Tuning.WARNING_ALONE_MAX - STEP,
+				"man %d took his first step %.2fs into his warning, after the second it owes"
 				% [i, first_step_age[i]])
 	t.check(notices >= 2, "at least two of them actually ran (%d)" % notices)
 	var gaps := 0
