@@ -542,12 +542,16 @@ func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
 ## straight line from all round it, and on the frame his hand goes up, the whole of his raised-hand
 ## picture at his post (`EventInstance.warning_guard_rect()`) is inside the view round her
 ## (`Tuning.VIEW_HALF_EXTENT` either way, no credit for her look-ahead) and he is drawn above the
-## street's other figures (`EventInstance.WARNING_GUARD_Z`); once he charges, he sorts with them
+## street's other figures (`EventInstance.WARNING_GUARD_Z`); on every approach that ends in his
+## charge, his hand went up first, so the view's hold on his notice never turns a warning into a
+## charge with none (it rests on his raised-hand picture's height against his stand-off, which a
+## taller picture or a faster guard would close); once he charges, he sorts with them
 ## again. The approaches on which the radius alone would have warned her with him off the view are
 ## counted, so the view's part in the notice is shown to be doing something.
 func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 	var step := RoadblockRig.STEP
 	var warned := 0
+	var charges := 0
 	var off_by_the_radius := 0
 	for seed_value: int in [4242, 77]:
 		var built := RoadblockRig.plan_for(seed_value)
@@ -564,6 +568,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 				var her := band + toward * (guard.def.pursues_within + 80.0)
 				var radius_alone_seen := false
 				var charged := false
+				var warned_here := false
 				var where := "seed %d band %s from %d°" % [seed_value,
 						map.world_to_tile(band_plan.position), bearing * 360 / 16]
 				while her.distance_to(band) > 40.0 and not charged:
@@ -582,6 +587,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 					RoadblockRig._tick(made[1], her, false)
 					if was_waiting and guard.is_standing_for_its_notice():
 						warned += 1
+						warned_here = true
 						var view := Rect2(her - view_half, view_half * 2.0)
 						t.check(view.encloses(EventInstance.warning_guard_rect(
 								guard._spread_vertical, band, her)),
@@ -590,10 +596,14 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 								"%s: and he is drawn above the street round him" % where)
 					if guard.is_chasing():
 						charged = true
+						charges += 1
+						t.check(warned_here,
+								"%s: his hand went up before he charged" % where)
 						t.check(guard.z_index == 0,
 								"%s: once he charges he sorts with the street again" % where)
 				made[0].free()
 	t.check(warned > 0, "there were warnings to watch (%d)" % warned)
+	t.check(charges > 0, "and charges to ask about (%d)" % charges)
 	t.check(off_by_the_radius > 0,
 			"and approaches the radius alone would have warned from off the view (%d)"
 			% off_by_the_radius)
