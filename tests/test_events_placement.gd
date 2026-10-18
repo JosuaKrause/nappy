@@ -75,10 +75,10 @@ func run(t) -> void:
 ## number the measurement clears by at least 1.5 points**, so a small future regression fails loudly
 ## rather than drifting under a floor nobody re-measured. Measured over the days sampled here, with
 ## `Tuning.WALL_WORTH_OF_COST` at 48 and the last day carrying its spur to the power station's door
-## (`RouteTree.for_day`): the whole share stands at 36.34% (125 of 344 rows), under 1.5 points above
-## its own 0.35 ceiling, so the floor is the lower number it clears by 1.5 points, rounded down —
-## 0.34. The narrow share stands at 40.85% (29 of 71 rows), likewise under 1.5 points above its own
-## 0.40 ceiling, so its floor is the lower number it clears by 1.5 points — 0.39. Both still sit above the third of the ground that is corridor,
+## (`RouteTree.for_day`) and a roadblock's band costing nothing: the whole share stands at 36.92%
+## (127 of 344 rows), more than 1.5 points above its own 0.35 ceiling, so the floor is the ceiling —
+## 0.35. The narrow share stands at 38.20% (34 of 89 rows), under its own 0.40 ceiling, so its floor
+## is the lower number it clears by 1.5 points, rounded down — 0.36. Both still sit above the third of the ground that is corridor,
 ## which is what an unweighted day would give. **The sample is one city, so any change to the
 ## corridor reshuffles it**: the roll draws over per-tile copies, so moving the weight of even two
 ## junction-box cells changes every
@@ -187,10 +187,10 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(friction > 0, "and friction at all (%d)" % friction)
 	t.check(narrow > 50, "and enough of it narrow enough to stand beside a crossing (%d)" % narrow)
 	var share := float(friction_on_the_route) / maxf(1.0, float(friction))
-	t.check(share > 0.34, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
+	t.check(share > 0.35, "%d of %d costly rows are on the corridor" % [friction_on_the_route, friction])
 	t.check(share < 0.9, "and the streets off it are not empty (%.0f%% on it)" % (share * 100.0))
 	var narrow_share := float(narrow_on_the_route) / maxf(1.0, float(narrow))
-	t.check(narrow_share > 0.39,
+	t.check(narrow_share > 0.36,
 			"and the corridor weight still shows through the three rules that can refuse a narrow "
 			+ "row (%d of %d narrow rows on the corridor)" % [narrow_on_the_route, narrow])
 	crew.sited_on_her_way = true
