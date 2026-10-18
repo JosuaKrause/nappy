@@ -176,6 +176,7 @@ func _rebuild_collision() -> void:
 	for child in _collision.get_children():
 		child.queue_free()
 	var box := _footprint().grow(_MARGIN)
+	var bands := _flight_bands()
 	for y in range(box.position.y, box.position.y + box.size.y):
 		for x in range(box.position.x, box.position.x + box.size.x):
 			var tile := Vector2i(x, y)
@@ -187,12 +188,122 @@ func _rebuild_collision() -> void:
 				continue
 			var body := StaticBody2D.new()
 			var shape := CollisionShape2D.new()
-			var rectangle := RectangleShape2D.new()
-			rectangle.size = Vector2.ONE * TILE
-			shape.shape = rectangle
+			var outline := _blocker_outline(tile, bands)
+			if outline.is_empty():
+				var rectangle := RectangleShape2D.new()
+				rectangle.size = Vector2.ONE * TILE
+				shape.shape = rectangle
+			else:
+				var polygon := ConvexPolygonShape2D.new()
+				polygon.points = outline
+				shape.shape = polygon
 			body.position = tile_to_world(tile)
 			body.add_child(shape)
 			_collision.add_child(body)
+
+## **A flight's two edges are straight lines along its slope, not the stair sides' square corners.**
+## A flight's walkable `t/m` band is two cells wide on every row, but the solid cells either side of
+## it meet it at convex corners that lie on two lines only 22.6px apart across the slope, and her
+## body is 28px across (`Tuning.PLAYER_BODY_RADIUS`, 14px): with full-cell blockers she can only
+## pass each pair of corners moving nearly flat or nearly straight down, and a held sideways press
+## walks a zigzag of flat steps and steep drops however the press is steered (inbox #783). So each
+## solid cell beside a flight has the part of it inside the flight's band cut off, and the band's
+## two edges are straight, `FLIGHT_HALF_WIDTH` either side of the flight's centre line (the line
+## half-way between the centres of its `t` and its `m` cells).
+##
+## **1.125, so a landing's line is inside the band.** The landing tile level with a flight's first
+## or last tread has its centre half a unit off the flight's centre line, and her centre stays
+## `FLIGHT_HALF_WIDTH` less her radius (0.62 units) from it at most: at 1.125 a press from that
+## tile's centre walks onto the flight and down the whole of it at 45 degrees without touching an
+## edge, where at 1.0 she would touch the lower edge on the first tread and slide flat for a
+## moment. Her centre has 11.5px of play either side of the centre line, so one that arrives off
+## the line, from the landing's next row down, is slid onto it by the cut faces, and her centre is
+## always over the drawn treads. Along a row, the lower edge lies 4px beyond the drawn side face
+## (the hypotenuse of the `c`/`C` triangle) and the upper one 12px beyond the treads' tips.
+##
+## **Only solid cells are cut; the walkable flight cells keep no blocker of their own.** The corners
+## of a `t` or `m` cell outside the band are pockets too small to hold her (the circle they hold
+## is under 4px in radius), and a blocker in them would face the landing beside the flight's first
+## and last row with a wall she could not step past.
+##
+## In tile units, measured along `(slope, -1)`: a descending-east flight's `t` cells are at one
+## value of `x - y` and its `m` cells one lower, so the centre line is half-way between; a
+## descending-west flight is the mirror, `-x - y`. One unit is 22.6px across the slope.
+const FLIGHT_HALF_WIDTH := 1.125
+
+## Every flight in the building as `{normal, centre, cells}`: `normal` is `(slope, -1)`, `centre`
+## the mean of `normal · cell centre` over the flight's cells, and `cells` the solid cells beside it
+## (its eight-neighbours that are not walkable), which are the ones `_blocker_outline()` cuts. A
+## flight is one eight-connected run of flight cells of one slope.
+func _flight_bands() -> Array[Dictionary]:
+	var bands: Array[Dictionary] = []
+	var seen := {}
+	for start: Vector2i in _plan.tiles:
+		var slope := InteriorTile.flight_direction(_plan.tiles[start])
+		if slope == 0 or seen.has(start):
+			continue
+		var normal := Vector2(slope, -1)
+		var total := 0.0
+		var count := 0
+		var beside := {}
+		var queue: Array[Vector2i] = [start]
+		seen[start] = true
+		while not queue.is_empty():
+			var cell: Vector2i = queue.pop_back()
+			total += normal.dot(Vector2(cell) + Vector2(0.5, 0.5))
+			count += 1
+			for dy in [-1, 0, 1]:
+				for dx in [-1, 0, 1]:
+					var next := cell + Vector2i(dx, dy)
+					if next == cell:
+						continue
+					if InteriorTile.flight_direction(_plan.tiles.get(next, InteriorTile.Kind.NONE)) == slope:
+						if not seen.has(next):
+							seen[next] = true
+							queue.append(next)
+					elif not _plan.is_walkable(next):
+						beside[next] = true
+		bands.append({"normal": normal, "centre": total / count, "cells": beside})
+	return bands
+
+## The blocker for a solid `tile` as a convex outline in pixels about the tile's centre, or empty
+## for the plain full cell. Each flight it stands beside cuts away the part of it inside that
+## flight's band, keeping the side of the band its own centre is on.
+func _blocker_outline(tile: Vector2i, bands: Array[Dictionary]) -> PackedVector2Array:
+	var corners := PackedVector2Array([Vector2(tile), Vector2(tile) + Vector2(1, 0),
+			Vector2(tile) + Vector2(1, 1), Vector2(tile) + Vector2(0, 1)])
+	var outline := corners
+	var cut := false
+	for band: Dictionary in bands:
+		if not (band["cells"] as Dictionary).has(tile):
+			continue
+		var normal: Vector2 = band["normal"]
+		var centre: float = band["centre"]
+		var side := signf(normal.dot(Vector2(tile) + Vector2(0.5, 0.5)) - centre)
+		# Kept: `side * (normal · p) >= side * centre + FLIGHT_HALF_WIDTH`.
+		outline = _clip_to_half_plane(outline, normal * side, side * centre + FLIGHT_HALF_WIDTH)
+		cut = true
+	if not cut or outline == corners:
+		return PackedVector2Array()
+	var local := PackedVector2Array()
+	for point in outline:
+		local.append((point - Vector2(tile) - Vector2(0.5, 0.5)) * TILE)
+	return local
+
+## The part of convex `polygon` where `normal · p >= limit` (Sutherland–Hodgman against one line).
+static func _clip_to_half_plane(polygon: PackedVector2Array, normal: Vector2, limit: float
+		) -> PackedVector2Array:
+	var kept := PackedVector2Array()
+	for i in polygon.size():
+		var a := polygon[i]
+		var b := polygon[(i + 1) % polygon.size()]
+		var da := normal.dot(a) - limit
+		var db := normal.dot(b) - limit
+		if da >= 0.0:
+			kept.append(a)
+		if (da >= 0.0) != (db >= 0.0):
+			kept.append(a.lerp(b, da / (da - db)))
+	return kept
 
 func _rebuild_walls() -> void:
 	# Wide doors are drawn after the repeating 32px wall strips. Their own centre registration keeps
@@ -481,39 +592,52 @@ func wall_grid() -> CityMap:
 			_wall_grid.set_tile(tile, GameEnums.TileType.SIDEWALK)
 	return _wall_grid
 
-## `+1`/`-1` if a press toward `press_x`'s side from `world_position` walks a descending-east or
-## descending-west slope, `0` if it walks none — the one question `Stroller._physics_process()`
-## asks every frame to turn a sideways press into a flight's own 45 degrees. See
+## `+1`/`-1` if `press` from `world_position` walks a descending-east or descending-west flight's
+## slope, `0` if it walks none — the one question `Stroller._redirect_along_a_flight()` asks every
+## physics frame to turn a sideways press into a flight's own 45 degrees. See
 ## `InteriorTile.flight_direction()`.
 ##
-## **On a flight tile the slope is the tile's own**, whichever way she presses. **On a level `F`
-## tile it is the flight she would step onto**, read off the two diagonal neighbours on the pressed
-## side: a flight tile there whose slope runs along that diagonal (a descending-east flight runs
-## down-right and up-left, a descending-west one down-left and up-right). That is what makes the
-## first step off a landing and the last step onto one 45 degrees as well, rather than a
-## horizontal step the flight then turns. **Exactly one such neighbour, or it answers `0`**: the
-## middle of a two-row landing has a flight above it and one below it on the same side and no
-## heading of its own, and a landing that touches no flight on that side has nothing to walk.
-## `press_x` of `0.0`, the default, asks only about the tile she stands on.
-func slope_dir_at(world_position: Vector2, press_x := 0.0) -> int:
+## **On a flight tile the slope is the tile's own**, whatever she presses. **On a level `F` tile it
+## is the flight a press toward `press.x`'s side steps onto**, so the first step off a landing and
+## the last step onto one are 45 degrees too, rather than a horizontal step the flight then turns:
+##
+## - a diagonal neighbour on the pressed side that is a flight tile running along that diagonal
+##   (a descending-east flight runs down-right and up-left, a descending-west one down-left and
+##   up-right), and **only the one on the side `press.y` points to when the press has a vertical
+##   part**: a down-left press at the foot of a flight never turns her back up it;
+## - else the flight tile straight beside her on the pressed side, if the way a press walks it,
+##   down or up, is the way `press.y` points (or the press is level);
+## - else `0`, and the press is left as it is. That includes a level press on the landing tile
+##   between the foot of one flight and the head of the next, which has both of them as diagonal
+##   neighbours on the same side and no heading of its own.
+##
+## `press` of zero, the default, asks only about the tile she stands on.
+func slope_dir_at(world_position: Vector2, press := Vector2.ZERO) -> int:
 	var tile := world_to_tile(world_position)
 	var here := InteriorTile.flight_direction(_plan.tiles.get(tile, InteriorTile.Kind.NONE))
-	if here != 0 or press_x == 0.0:
+	if here != 0 or press.x == 0.0:
 		return here
 	if _plan.tiles.get(tile, InteriorTile.Kind.NONE) != InteriorTile.Kind.STAIRWELL_FLOOR:
 		return 0
-	var side := 1 if press_x > 0.0 else -1
+	var side := 1 if press.x > 0.0 else -1
+	var down := int(signf(press.y))
 	var found := 0
 	var count := 0
-	for dy in [-1, 1]:
+	for dy: int in [-1, 1]:
+		if down != 0 and dy != down:
+			continue
 		var slope := InteriorTile.flight_direction(
 				_plan.tiles.get(tile + Vector2i(side, dy), InteriorTile.Kind.NONE))
 		if slope != 0 and slope == side * dy:
 			found = slope
 			count += 1
 	if count == 0:
-		return InteriorTile.flight_direction(
+		var beside := InteriorTile.flight_direction(
 				_plan.tiles.get(tile + Vector2i(side, 0), InteriorTile.Kind.NONE))
+		# Pressed toward the side a flight descends to, she walks down it; away from it, up.
+		if beside != 0 and down != 0 and (1 if side == beside else -1) != down:
+			return 0
+		return beside
 	return found if count == 1 else 0
 
 ## Where a fresh run starts — the third floor's own door, mid-hallway on its south edge.

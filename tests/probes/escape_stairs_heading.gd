@@ -40,8 +40,64 @@ func run(t) -> void:
 				print("STAIRS %s %s %s %s steer %s moved %s" % [
 						side, InteriorTile.Kind.keys()[kind], tile, name,
 						_deg(heading[0]), _deg(heading[1])])
+	_walk_flights(scene, player)
 	player.free()
 	scene.free()
+
+## Every flight of both shafts, down and up, held from one landing's approach until she stands on
+## the next: the body's heading over each tenth of a second of the walk, and the largest departure
+## from the flight's 45 degrees while she is on a flight tile. A line is `WALK <side> <flight>
+## <down|up> <from> -> <to> steps <n> worst <degrees> headings <list>`.
+const FLIGHTS := [
+	# [name, local start (the landing approach above), local end (the one below), down action]
+	["first", Vector2i(1, 2), Vector2i(8, 8), "move_right"],
+	["second", Vector2i(8, 10), Vector2i(1, 16), "move_left"],
+	["third", Vector2i(1, 18), Vector2i(8, 24), "move_right"],
+]
+
+func _walk_flights(scene: InteriorScene, player: Stroller) -> void:
+	var f := InteriorMap.build()
+	for side in ["left", "right"]:
+		var origin: Vector2i = f.waypoints["stairwell_%s" % side] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		for flight: Array in FLIGHTS:
+			var down: String = flight[3]
+			var up := "move_left" if down == "move_right" else "move_right"
+			_walk_one(scene, player, side, flight[0], "down", origin + flight[1], origin + flight[2], down)
+			_walk_one(scene, player, side, flight[0], "up", origin + flight[2], origin + flight[1], up)
+			# And from each landing's second row, a tile below the flight's first or last tread.
+			_walk_one(scene, player, side, flight[0], "down-2nd", origin + flight[1] + Vector2i.DOWN,
+					origin + flight[2], down)
+			_walk_one(scene, player, side, flight[0], "up-2nd", origin + flight[2] + Vector2i.DOWN,
+					origin + flight[1], up)
+
+func _walk_one(scene: InteriorScene, player: Stroller, side: String, flight: String, way: String,
+		from: Vector2i, to: Vector2i, action: String) -> void:
+	for a in ["move_left", "move_right", "move_up", "move_down"]:
+		Input.action_release(a)
+	Input.action_press(action)
+	player.global_position = scene.tile_to_world(from)
+	player.velocity = Vector2.ZERO
+	var headings: Array[String] = []
+	var worst := 0.0
+	var last := player.global_position
+	var steps := 0
+	# Arrived once she stands on the next landing's column, whichever of its rows.
+	while steps < 900 and not (scene.world_to_tile(player.global_position).x == to.x
+			and scene.slope_dir_at(player.global_position) == 0):
+		player._physics_process(STEP)
+		_move(player, player.velocity * STEP)
+		steps += 1
+		if steps % 6 == 0:
+			var moved := player.global_position - last
+			headings.append(_deg(moved))
+			var on_flight := scene.slope_dir_at(last) != 0 and scene.slope_dir_at(player.global_position) != 0
+			if on_flight and moved.length() > 0.5:
+				var off := absf(rad_to_deg(absf(moved.angle())) - 90.0)
+				worst = maxf(worst, absf(off - 45.0))
+			last = player.global_position
+	Input.action_release(action)
+	print("WALK %s %s %s %s -> %s (ended %s) steps %d worst %.1f headings %s" % [side, flight, way,
+			from, to, scene.world_to_tile(player.global_position), steps, worst, " ".join(headings)])
 
 func _deg(v: Vector2) -> String:
 	if v.length() < 0.001:
