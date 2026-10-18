@@ -275,11 +275,12 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 				t.check(blocked.has(at) == should_block,
 						"%s '%s' collision matches its grammar role at row %d column %d"
 						% [part, symbol, y, x])
-	# The two-row diagonal is wider at its narrowest cross-section than the player's circular body,
-	# and each diagonal same-role step has the other role in one orthogonal corner. One outside
-	# blocker therefore cannot recreate the two-blocker pinch the old one-row flight needed repaired.
-	t.check(Tuning.PLAYER_BODY_RADIUS * 2.0 < InteriorScene.TILE * sqrt(2.0),
-			"the player fits inside the two-row diagonal surface")
+	# A flight's two straight edges (`InteriorScene._blocker_outline()`) are further apart across the
+	# slope than her circular body is wide, and each diagonal same-role step has the other role in
+	# one orthogonal corner, so no blocker pinches a flight shut.
+	t.check(Tuning.PLAYER_BODY_RADIUS * 2.0
+			< InteriorScene.FLIGHT_HALF_WIDTH * 2.0 * InteriorScene.TILE / sqrt(2.0),
+			"the player fits between a flight's two edges")
 	var paired_steps := 0
 	for tile: Vector2i in f.tiles:
 		var kind: InteriorTile.Kind = f.tiles[tile]
