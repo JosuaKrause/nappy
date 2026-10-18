@@ -1172,6 +1172,14 @@ func is_chasing() -> bool:
 	return def.pursues and _pursuit_began_reported and not is_finished and not is_leaving \
 			and not is_waiting()
 
+## Whether this charger's charge has begun and is still running: `EventBus.pursuit_began` sent for
+## it (a pursuer's charge, the masked man's run up his shaft) and it has neither left, finished nor
+## had its charge end. Asked by `DangerEdge`, which meets the frame a charge starts at its true
+## approach rather than its smoothed one, so the badge is up from the frame he runs.
+func has_charged() -> bool:
+	return _pursuit_began_reported and not _charge_ended and not is_finished and not is_leaving \
+			and not is_waiting()
+
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
 ## otherwise the row's own `def.id`. Telemetry only — nothing that decides anything reads it.
 func logged_name() -> String:

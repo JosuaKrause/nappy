@@ -1595,7 +1595,7 @@ plain left from that landing tile gets through, and the margins are thin (on the
 line, walking until he runs, then running, and turning plain left at row 11's centre, he is drawn
 about 25px from her centre (24.6px), inside his 28px catch, and she clears it on the tick at 28.6px,
 by 0.6px; she is caught if she starts running 0.3s late). In the stairwell his warning is off screen,
-and only the edge badge shows his charge once he runs; the player accepted both *(inbox #782)*. So
+and only the screen-edge badge shows his charge once he runs, up from the frame he starts running *(inbox #788: "Let's show that at least")*; the player accepted both *(inbox #782)*. So
 the side she switched to is not a side she can settle on, which is the whole point of him: the way
 down is a sequence of crossings rather than one.
 

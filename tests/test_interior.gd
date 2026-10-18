@@ -30,6 +30,7 @@ func run(t) -> void:
 	_test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t)
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
 	_test_she_has_to_run_to_the_first_floor_door(t)
+	_test_the_edge_badge_points_at_the_masked_man_from_his_run(t)
 	_test_another_masked_man_comes_up_the_same_shaft(t)
 	_test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t)
 	_test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t)
@@ -1261,6 +1262,23 @@ func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 			print("The masked man, %s at a %s: %s, %.0fpx from him at the closest"
 					% [walk[3], pace, met["outcome"], met["closest"]])
 
+## **The screen-edge badge points at the masked man from the frame he starts running** *(inbox
+## #788, the player, told that his only heads-up is the badge once he runs: "Let's show that at
+## least")*. On every way down onto the second flight and at each pace, with her real camera and a
+## real `DangerEdge` (`_meet_the_masked_man()` with `badge`): on every drawn frame from his run until
+## he comes into her view, or she is through the door or caught, the badge for him is up. The badge
+## is drawn at his own position (`DangerEdge._draw_arrow()`), so up is pointing at him.
+func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: Node) -> void:
+	for walk: Array in _SECOND_FLIGHT_TURNS:
+		for pace: String in ["walk", "run", "walk-run"]:
+			var met := _meet_the_masked_man(t, walk, pace, true)
+			t.check(met["ran"] and int(met["unseen_frames"]) > 0,
+					"%s at a %s: he runs while she cannot see him" % [walk[3], pace])
+			t.check(int(met["badge_first"]) == 0 and int(met["badge_dropped"]) == 0,
+					"%s at a %s: the edge badge points at him from the frame he runs, and stays up "
+					% [walk[3], pace] + "until he is in view (first up %d frames in, down on %d of %d)"
+					% [met["badge_first"], met["badge_dropped"], met["unseen_frames"]])
+
 ## The lines onto the second flight, local to the grammar: the row of her turn, what she holds
 ## there, whether a walker is caught, and what to call it.
 const _SECOND_FLIGHT_TURNS := [
@@ -1276,7 +1294,7 @@ const _SECOND_FLIGHT_TURNS := [
 ## turn coming at its row ("walk-run"), or starting to run 0.3s after he does ("run-late"); once he runs she
 ## makes for the first floor's door. Answers whether he ran, the outcome ("through", "caught" or
 ## "neither") and how near he came.
-func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
+func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false) -> Dictionary:
 	const TICK := 1.0 / 30.0
 	const FRAME := 1.0 / 60.0
 	var f := InteriorMap.build()
@@ -1302,6 +1320,21 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
 	player.global_position = scene.tile_to_world(
 			(f.doors["stairwell_right:landing_second"] as InteriorMapPlan.Door).tile)
 	player.velocity = Vector2.ZERO
+	# **With `badge`, the screen-edge badge as the game raises it**: a real `DangerEdge` reading
+	# these events and her, and her real camera made current and stepped on each physics tick
+	# (its own smoothing, `NOTIFICATION_INTERNAL_PHYSICS_PROCESS`, after her `_update_camera()`), so
+	# the view it asks is the one the stairwell is drawn from.
+	var edge: DangerEdge = null
+	var camera: Camera2D = null
+	if badge:
+		camera = player.get_node("Camera2D") as Camera2D
+		camera.make_current()
+		camera.reset_smoothing()
+		edge = DangerEdge.new()
+		t.add_child(edge)
+		edge.set_process(false)
+		edge.setup(events, player)
+	var badge_log := {"first": -1, "dropped": 0, "unseen": 0}
 	var running := pace == "run"
 	_hold_keys(["move_down"], running)
 	var met := {"ran": false, "outcome": "neither", "closest": INF, "on_tick": INF}
@@ -1321,10 +1354,14 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
 			met["on_tick"] = minf(met["on_tick"], man.global_position.distance_to(her))
 		if met["ran"]:
 			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
+		if camera:
+			camera.notification(Node.NOTIFICATION_INTERNAL_PHYSICS_PROCESS)
 		man._process(FRAME)
+		_count_the_badge(edge, man, badge_log)
 		if met["ran"]:
 			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
 		man._process(FRAME)
+		_count_the_badge(edge, man, badge_log)
 		elapsed += TICK
 		if not turned and tile.y - origin.y >= int(walk[0]) and her.y >= scene.tile_to_world(tile).y:
 			turned = true
@@ -1351,10 +1388,34 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
 		if met["ran"] and tile.x == origin.x + 1 and tile.y - origin.y >= 16:
 			_hold_keys(["move_up"], running)
 	_hold_keys([], false)
+	met["badge_first"] = badge_log["first"]
+	met["badge_dropped"] = badge_log["dropped"]
+	met["unseen_frames"] = badge_log["unseen"]
+	if edge:
+		edge.free()
 	player.free()
 	events.free()
 	scene.free()
 	return met
+
+## One drawn frame of the edge watching him (`_meet_the_masked_man()` with `badge`): the edge
+## measures, and on every frame from the one he is first running on (neither waiting nor warning)
+## while she cannot see him, counts whether his badge is up, the first such frame it is, and the
+## frames it is down after it first went up.
+func _count_the_badge(edge: DangerEdge, man: EventInstance, log: Dictionary) -> void:
+	if not edge:
+		return
+	edge._process(1.0 / 60.0)
+	if man.is_waiting() or man.is_telegraphing() or edge._shows(man):
+		return
+	var up := false
+	for b: Dictionary in edge.announcing():
+		up = up or b["id"] == "masked_pursuer"
+	if up and int(log["first"]) < 0:
+		log["first"] = log["unseen"]
+	elif not up and int(log["first"]) >= 0:
+		log["dropped"] = int(log["dropped"]) + 1
+	log["unseen"] = int(log["unseen"]) + 1
 
 func _hold_keys(actions: Array, running: bool) -> void:
 	for a in ["move_left", "move_right", "move_up", "move_down", "run"]:
