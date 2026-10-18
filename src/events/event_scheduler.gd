@@ -352,20 +352,22 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 	var bursts := EventCatalogue.by_id("finale_explosion")
 	# **A tree and an event never share ground**, the finale's streets included — `docs/CITY.md`,
 	# "Street trees". Scanned once for the whole plan rather than once per street per row: a city
-	# plants its trees in `City.build()` and nothing in a walk moves them.
+	# plants its trees in `City.build()` and nothing in a walk moves them. Kept where the day keeps
+	# its own copy, so `_open_ground_for()` reads this one.
 	var trees := StreetTrees.footprint_tiles(map)
+	var open := {_TREE_TILES_KEY: trees}
 	var terminals: Array[Vector2] = [standing_at]
 	terminals.append_array(ends)
 	var ground := EscapeGround.new(map, seals, terminals)
 	for segment in streets:
 		_fill_a_finale_street(map, rng, segment, trucks, Tuning.FINALE_TRUCKS_PER_STREET, trees,
-				standing_at, planned, streets, ground)
+				standing_at, planned, streets, ground, open)
 		_fill_a_finale_street(map, rng, segment, vans, Tuning.FINALE_VANS_PER_STREET, trees,
-				standing_at, planned, streets, ground)
+				standing_at, planned, streets, ground, open)
 		_fill_a_finale_street(map, rng, segment, masked, Tuning.FINALE_GUARDS_PER_STREET, trees,
-				standing_at, planned, streets, ground)
+				standing_at, planned, streets, ground, open)
 		_fill_a_finale_street(map, rng, segment, bursts, Tuning.FINALE_EXPLOSIONS_PER_STREET,
-				trees, standing_at, planned, streets, ground)
+				trees, standing_at, planned, streets, ground, open)
 	return planned
 
 ## `count` copies of one row on one street, sited the same way `_place_one` sites a day's: roll a
@@ -384,8 +386,8 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 		segment: StreetNetwork.Segment, def: EventDef, count: int, trees: Dictionary,
 		standing_at: Vector2, planned: Array[Planned],
-		streets: Array[StreetNetwork.Segment], ground: EscapeGround) -> void:
-	var candidates := _finale_ground(map, segment, def, trees, standing_at)
+		streets: Array[StreetNetwork.Segment], ground: EscapeGround, open := {}) -> void:
+	var candidates := _finale_ground(map, segment, def, trees, standing_at, open)
 	if candidates.is_empty():
 		return
 	for _copy in count:
@@ -877,16 +879,19 @@ class EscapeGround extends RefCounted:
 	static func _chunk_of(at: Vector2) -> Vector2i:
 		return Vector2i(floori(at.x / _CHUNK), floori(at.y / _CHUNK))
 
-## The tiles of one street a given row may stand on. Stated over the street's own rect rather than
-## over the whole city the way `_open_ground_for` is, because the finale already knows which
-## streets exist for it — there is no corridor weighting to apply and no closure to avoid, since
-## the finale plans no closures at all.
+## The tiles of one street a given row may stand on: **the day's own ground for the row**
+## (`_open_ground_for()`, every refusal a day makes of a tile — a closed tile, a held street, the
+## home block, a standing street tree's footprint, the side of the sidewalk the row wants, a corner
+## for a row with a spread, the power station's front — and its precinct weight), on the street's
+## own rect. All but the front door's street: she never sets off from that door in the escape. *(Inbox #785, 2026-10-18:
+## "does the escape use the same placement rules as the regular game? it doesn't seem like it does.
+## it should, though.")* The finale knows which streets exist for it, so the rect takes the place
+## of a day's corridor weighting, and it plans no closures.
 ##
-## `trees` is `StreetTrees.footprint_tiles()`, refused here for the same reason
-## `_open_ground_for` refuses it on a day: *(2026-09-12, the player: "trees read like obstacles
-## (they add noise) so it makes detecting actual obstacles harder")*, and the climax is the one
-## walk where telling an obstacle from scenery matters most. The footprint rather than the trunk
-## tile, because the ground the canopy reaches over is ground a van would be standing in.
+## `trees` is `StreetTrees.footprint_tiles()`, the trees the day's ground refuses, *(2026-09-12, the
+## player: "trees read like obstacles (they add noise) so it makes detecting actual obstacles
+## harder")*. `open` is the cache `_open_ground_for()` keeps its answers in for the whole plan, as a
+## day's `ground` is kept for the whole day; a caller with none gets the trees put in a new one.
 ##
 ## `standing_at` is where she comes out of the building, and ground within a body's reach of it is
 ## refused the same way a tree's is. *(2026-09-19: "the spawning shouldn't be a check. the pathing
@@ -896,20 +901,35 @@ class EscapeGround extends RefCounted:
 ## a check that moved *her* instead is the option they named and rejected. Ground she is standing
 ## on is not ground this is ever offered.
 static func _finale_ground(map: CityMap, segment: StreetNetwork.Segment, def: EventDef,
-		trees: Dictionary, standing_at: Vector2) -> Array[Vector2i]:
+		trees: Dictionary, standing_at: Vector2, open := {}) -> Array[Vector2i]:
+	if not open.has(_TREE_TILES_KEY):
+		open[_TREE_TILES_KEY] = trees
+	var copies := _open_ground_counts(def, map, open)
 	var found: Array[Vector2i] = []
 	var rect := segment.tile_rect()
 	var clear_of_her := _clearance_around_her(def)
 	for y in range(rect.position.y, rect.end.y):
 		for x in range(rect.position.x, rect.end.x):
 			var tile := Vector2i(x, y)
-			if trees.has(tile):
+			if not copies.has(tile):
 				continue
 			if map.tile_to_world(tile).distance_to(standing_at) <= clear_of_her:
 				continue
-			if def.placement.has(map.tile_at(tile)) and map.is_open(tile):
+			for _copy in int(copies[tile]):
 				found.append(tile)
 	return found
+
+## `_open_ground_for()`'s answer for `def` as a count of copies per tile, kept beside it in `open`,
+## so a street's tiles are looked up rather than the whole city's list walked once per street.
+static func _open_ground_counts(def: EventDef, map: CityMap, open: Dictionary) -> Dictionary:
+	var key := "finale counts|%s|%d|%s|%s" % [def.placement, def.pavement_side,
+			_burns_its_front(def), def.has_a_spread]
+	if not open.has(key):
+		var counts := {}
+		for tile in _open_ground_for(def, map, open, -1, false):
+			counts[tile] = int(counts.get(tile, 0)) + 1
+		open[key] = counts
+	return open[key]
 
 ## How far from the tile she is put down on a row of this kind may not be offered ground — the
 ## wider of the two things she can arrive *inside* of: a body, and a lethal field.
@@ -2666,13 +2686,19 @@ static func _is_a_corner(tile: Vector2i) -> bool:
 ## has no wall at all for the burnt building's red arrow to end on, and it is the last night's
 ## building. Cached under its own key, so a poster crew asking for the same `AT_THE_FRONT` lane
 ## keeps the station's front.
+##
+## `from_the_door` is whether she sets off from the home's front door, whose street nothing stands
+## on (`_the_street_she_starts_on()`): every day does; the escape comes out of the service exit on
+## the side of the block and never uses that door, the reason `SealPlanner.plan_finale()` seals the
+## home street like any other (`docs/CITY.md`, "The escape").
 static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
-		side: int = -1) -> Array[Vector2i]:
+		side: int = -1, from_the_door := true) -> Array[Vector2i]:
 	var wanted_side := def.pavement_side if side < 0 else side
 	var burns := _burns_its_front(def)
-	var key := "%s|%d%s" % [def.placement, wanted_side, "|burns" if burns else ""]
+	var key := "%s|%d%s%s" % [def.placement, wanted_side, "|burns" if burns else "",
+			"" if from_the_door else "|no door"]
 	if not ground.has(key):
-		var doorstep := _the_street_she_starts_on(map)
+		var doorstep := _the_street_she_starts_on(map) if from_the_door else Rect2i()
 		var trees := _street_tree_tiles(map, ground)
 		# In tiles: `CityMap.power_station` names the station's two blocks.
 		var station := CityMap.blocks_tile_rect(map.power_station) \

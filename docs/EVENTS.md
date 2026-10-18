@@ -1862,11 +1862,20 @@ street; `tests/probes/escape_roadblock_cost.gd` prints what each walk costs over
 `tests/probes/escape_roadblock_spacing.gd` how many bands a plan stands and how near the nearest
 two are.
 
-**The escape rolls its ground per street rather than per city** — `EventScheduler._finale_ground`
-over one segment's own rect, since the chains already say which streets exist for it, there is no
-corridor to weight against and no closure to avoid. Of the five refusals above it keeps the two
-that are still true of a walk with no day behind it: a tile must be open, and **a standing street
-tree's ground is refused here exactly as it is on a day** (`docs/CITY.md`, "Street trees").
+**The escape rolls its ground per street rather than per city, on the day's own ground** —
+`EventScheduler._finale_ground` takes the day's answer for the row (`_open_ground_for()`) on one
+segment's own rect, since the chains already say which streets exist for it and there is no
+corridor to weight against. *(Inbox #785: "does the escape use the same placement rules as the
+regular game? it doesn't seem like it does. it should, though.")* So every refusal a day makes of a
+tile holds here — a closed tile, a held street, the home block, **a standing street tree's ground**
+(`docs/CITY.md`, "Street trees"), the side of the sidewalk a row wants, a corner for a row with a
+spread, the power station's front — and the precinct weight with them; all but the street the
+home's front door opens onto, a door the escape never sets off from (`docs/CITY.md`, "The escape").
+Each candidate then meets the day's own spacing (`_room_around()`) and the escape's own refusals
+below. Two of a day's rules the escape does not keep: its budget and `max_per_day` caps, since the
+escape stands a fixed count of its own rows a street (above); and the calm it leaves alone
+(`_calm_to_leave_alone()`, nothing's field reaching a calm area she has not used yet), which is
+open to the player's word.
 
 **And the ground she is put down on is refused to everything that could already be reaching her**
 (`EventScheduler._clearance_around_her`), because *"the spawning shouldn't be a check. the pathing

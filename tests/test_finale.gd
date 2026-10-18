@@ -40,6 +40,8 @@ func run(t) -> void:
 	_test_no_two_roadblocks_notice_her_from_the_same_ground(t)
 	_test_an_escape_guard_warns_on_the_screen_and_on_top(t)
 	_test_the_players_seed_is_winnable_past_its_roadblocks(t)
+	_test_the_escape_stands_its_rows_on_the_days_own_ground(t)
+	_test_an_alley_mouth_wall_fits_the_mouth(t)
 	_test_the_service_exit_is_beside_the_home_block(t)
 	_test_nothing_the_finale_places_stands_where_she_comes_out(t)
 	_test_no_lethal_field_covers_the_ground_she_comes_out_on(t)
@@ -695,6 +697,77 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 	Telemetry.end_run()
 	main.free()
 	GameState.escape_section = saved_section
+
+# ------------------------------------------------------- the day's own rules ---
+
+## **The escape's own rows stand on the day's own ground for them** (`EventScheduler._finale_ground()`
+## asks `_open_ground_for()`): every truck, van, roadblock and burst on a tile a day would offer that
+## row — none on the home block, none in a street tree, none on the wrong side of a sidewalk, no
+## spread on a corner — all but the front door's street, a door the escape never sets off from.
+## *(Inbox #785, 2026-10-18: "does the escape use the same placement rules as the regular game? it
+## doesn't seem like it does. it should, though.")*
+func _test_the_escape_stands_its_rows_on_the_days_own_ground(t) -> void:
+	var asked := 0
+	for seed_value in SEEDS:
+		var built := _plan_for(seed_value)
+		var map: CityMap = built["map"]
+		var plan: FinalePlanner.Plan = built["plan"]
+		var offered := {}
+		for placement in plan.placements:
+			if not ESCAPE_ROWS.has(placement.def.id):
+				continue
+			asked += 1
+			var key := placement.def.get_instance_id()
+			if not offered.has(key):
+				var tiles := {}
+				for tile in EventScheduler._open_ground_for(placement.def, map, {}, -1, false):
+					tiles[tile] = true
+				offered[key] = tiles
+			var at := map.world_to_tile(placement.position)
+			t.check(offered[key].has(at), "seed %d: the %s at %s stands on ground a day offers it"
+					% [seed_value, placement.def.id, at])
+	t.check(asked > 0, "there were escape rows to ask about (%d)" % asked)
+
+## The escape's own rows, the four `EventScheduler.build_finale()` places.
+const ESCAPE_ROWS := ["military_convoy", "abduction", "roadblock", "finale_explosion"]
+
+## **An alley's mouth wall fits the mouth**, on a day and in the escape: the widest row whose body
+## is no wider than the alley (`SealPlanner._widest_that_fits_a_mouth()`). A day's soft rows always
+## fitted; the escape's own list is street seals sized for a 192px street, and the widest of them
+## stood across a 64px alley and two tiles into the buildings either side, over their roofs.
+## *(Inbox #785, 2026-10-18: "I saw wood on the roof for example")* Asked of every alley-mouth wall
+## the escape's plans stand, by its body: nothing of it reaches a building tile.
+func _test_an_alley_mouth_wall_fits_the_mouth(t) -> void:
+	var mouth := float(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE)
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		var id := SealPlanner._best_alley_mouth_def(day)
+		if id != "":
+			t.check(EventCatalogue.by_id(id).obstructs_radius * 2.0 <= mouth,
+					"day %d's alley-mouth row %s fits the mouth" % [day, id])
+	var walls := 0
+	for seed_value in SEEDS:
+		var built := _plan_for(seed_value)
+		var map: CityMap = built["map"]
+		var plan: FinalePlanner.Plan = built["plan"]
+		var ground := EventScheduler.EscapeGround.new(map, [], [])
+		for placement in plan.placements:
+			var tile := map.world_to_tile(placement.position)
+			if map.tile_at(tile) != GameEnums.TileType.ALLEY:
+				continue
+			walls += 1
+			var over := false
+			for solid in ground.solids_of(placement):
+				var reach := solid.shape.reach()
+				for step in range(-ceili(reach), ceili(reach) + 1, 4):
+					for across: Vector2 in [solid.axis, Vector2(-solid.axis.y, solid.axis.x)]:
+						var at := solid.centre + across * float(step)
+						if solid.stops_her_at(at) and at.distance_to(solid.centre) \
+								<= solid.shape.reach() - 1.0 \
+								and map.tile_at(map.world_to_tile(at)) == GameEnums.TileType.BUILDING:
+							over = true
+			t.check(not over, "seed %d: the %s in the alley mouth at %s keeps its body off the buildings"
+					% [seed_value, placement.def.id, tile])
+	t.check(walls > 0, "there were alley-mouth walls to ask about (%d)" % walls)
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.

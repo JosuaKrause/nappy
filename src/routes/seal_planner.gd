@@ -308,8 +308,8 @@ static func plan_finale(map: CityMap, open_cells: Dictionary,
 		if _covers_any_cell(rect, open_cells):
 			continue
 		var vertical := rect.size.x < rect.size.y
-		planned.append(alley_mouth_wall(map, rect, vertical, true, _FINALE_ALLEY_DEF))
-		planned.append(alley_mouth_wall(map, rect, vertical, false, _FINALE_ALLEY_DEF))
+		planned.append(alley_mouth_wall(map, rect, vertical, true, _finale_alley_def()))
+		planned.append(alley_mouth_wall(map, rect, vertical, false, _finale_alley_def()))
 	return planned
 
 ## Whether a chain actually **walks** this street, as opposed to clipping a corner of it.
@@ -380,11 +380,27 @@ static func _finale_candidate(rng: RandomNumberGenerator) -> Candidate:
 	var eligible := finale_candidates()
 	return eligible[rng.randi_range(0, eligible.size() - 1)]
 
-## What stands in an alley mouth off the chains. The widest silhouette in the finale's own list, so
-## it leaves the least of the mouth's 64px open beside it — the same reason `_best_alley_mouth_def`
-## picks by width on an ordinary day, decided once here rather than rolled, since the finale's list
-## does not change with the day.
-const _FINALE_ALLEY_DEF := "collapsed_frontage"
+## What stands in an alley mouth off the chains: the day's own pick (`_widest_that_fits_a_mouth()`)
+## made of the finale's own list — the widest row whose body still fits the mouth, so it leaves the
+## least of the mouth's 64px open beside it without reaching past it. Decided once rather than
+## rolled, since the finale's list does not change with the day.
+##
+## **Fitting the mouth is the day's rule, and the finale's list is where it has to be asked.** A
+## day's alley-mouth rows are its soft seals, every one of them sidewalk-sized, so a day's pick has
+## always fitted. The finale's rows are street seals, sized for a 192px street: the widest, the
+## collapsed frontage, stood its six tiles of timber across a two-tile alley and two tiles into the
+## buildings either side, over their roofs. *(Inbox #785, 2026-10-18: "does the escape use the same
+## placement rules as the regular game? it doesn't seem like it does. it should, though. I saw wood
+## on the roof for example")*
+static func _finale_alley_def() -> String:
+	if _finale_alley == "":
+		var ids: Array[String] = []
+		for candidate in finale_candidates():
+			ids.append_array(candidate.def_ids)
+		_finale_alley = _widest_that_fits_a_mouth(ids)
+	return _finale_alley
+
+static var _finale_alley := ""
 
 ## Whether `segment` is the main road. See the class doc: never a seal candidate on a day, because
 ## `RouteTree` already refuses to route a strand along it, and sealing it too would wall the one
@@ -825,16 +841,28 @@ static func alley_mouth_wall(map: CityMap, rect: Rect2i, vertical: bool, at_star
 ## mouth's own 64px open beside it. Generic over the candidate list for the same reason `_place`
 ## is: a future candidate with a wider row simply wins this pick on the days it is eligible.
 static func _best_alley_mouth_def(day: int) -> String:
-	var best_id := ""
-	var best_radius := 0.0
+	var ids: Array[String] = []
 	for candidate in candidates():
 		if candidate.strength != Strength.SOFT:
 			continue
 		for id in candidate.def_ids:
 			var def := EventCatalogue.by_id(id)
-			if not def or day < _effective_first_day(def):
-				continue
-			if def.obstructs_radius > best_radius:
-				best_radius = def.obstructs_radius
-				best_id = id
+			if def and day >= _effective_first_day(def):
+				ids.append(id)
+	return _widest_that_fits_a_mouth(ids)
+
+## Of `ids`, the row with the widest `obstructs_radius` whose body still fits a through-alley's
+## mouth — `Tuning.ALLEY_WIDTH_TILES` across, so twice its radius no wider than that — or `""` when
+## none does. The first of equals, in `ids`' own order. Shared by a day's pick and the finale's.
+static func _widest_that_fits_a_mouth(ids: Array[String]) -> String:
+	var mouth := float(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE)
+	var best_id := ""
+	var best_radius := 0.0
+	for id in ids:
+		var def := EventCatalogue.by_id(id)
+		if not def or def.obstructs_radius * 2.0 > mouth:
+			continue
+		if def.obstructs_radius > best_radius:
+			best_radius = def.obstructs_radius
+			best_id = id
 	return best_id

@@ -1651,8 +1651,8 @@ on, and a burst's crater narrows the road's edge — and every street either cha
 least one of its two sidewalks walkable from junction to junction past all of them together,
 standing as they stand for the whole walk: the hunting van stays parked, the band stays after its
 guard has gone, and the crater stays where the burst was. The seals off the chains count too: an
-unused alley's mouth wall lies along the chain street it opens onto and takes the outer edge of that
-sidewalk. **And nothing standing on the walk cuts it anywhere else**: where a chain leaves a street
+unused alley's mouth wall stands in the alley's end tile, beside the chain street it opens onto, and
+can narrow that sidewalk's outer lane. **And nothing standing on the walk cuts it anywhere else**: where a chain leaves a street
 in the middle of a block, through an alley, a park or a courtyard, the ground around a placement
 still joins up everything it joined without it, so a van and a roadblock either side of an alley's
 mouth cannot shut it while the street's far sidewalk stays open. Each placement is checked before
